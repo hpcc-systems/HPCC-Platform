@@ -145,7 +145,7 @@
 
           <programlisting>sudo service hpcc-init start</programlisting>
 
-          <para>Debian 6 (Squeeze):</para>
+          <para>Debian 6 (Squeeze or some Ubuntu flavors):</para>
 
           <para><programlisting>sudo /etc/init.d/hpcc-init start</programlisting></para>
         </listitem>
@@ -376,15 +376,6 @@
           <listitem>
             <para>Start the system using the default configuration.</para>
 
-            <para><emphasis role="bold">Centos/Red
-            Hat</emphasis><programlisting>sudo service hpcc-init start</programlisting></para>
-
-            <para><emphasis role="bold">Ubuntu</emphasis></para>
-
-            <programlisting>sudo service hpcc-init start</programlisting>
-
-            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
-
             <para><programlisting>sudo /etc/init.d/hpcc-init start</programlisting><graphic
             fileref="images/GS-InitStart.jpg" /><informaltable colsep="1"
                 frame="all" rowsep="1">
@@ -405,11 +396,20 @@
                       role="bold">/var/log/HPCCSystems</emphasis> (default
                       location) including an hpcc-init log for the start up
                       process. If any component fails to start, these logs can
-                      help in troubleshooting.</entry>
+                      help in troubleshooting.<para>*Additional information
+                      about the hpcc-init system and logs in the <link
+                      linkend="hpcc-init">hpcc-init</link> appendix.
+                      </para></entry>
                     </row>
                   </tbody>
                 </tgroup>
               </informaltable></para>
+
+            <para><emphasis role="bold">Note:</emphasis> On many systems the
+            "service" command can still work, however on some versions of
+            Ubuntu it does not provide any logging.</para>
+
+            <programlisting>sudo service hpcc-init start</programlisting>
           </listitem>
         </orderedlist>
       </sect2>
@@ -816,7 +816,8 @@
 
             <para><programlisting>sudo service hpcc-init stop</programlisting></para>
 
-            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+            <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
+            versions)</emphasis></para>
 
             <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
 
@@ -837,7 +838,8 @@
                       processes are stopped (on Centos/Red
                       Hat):<para><programlisting>sudo /sbin/service hpcc-init status</programlisting><phrase>For
                       Ubuntu</phrase><programlisting>sudo service hpcc-init status
-</programlisting><phrase>For Debian 6 (Squeeze)</phrase><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
+</programlisting><phrase>For Debian 6 (Squeeze and some Ubuntu
+                      versions)</phrase><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -863,8 +865,6 @@
             interface:</para>
 
             <programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting>
-
-            <para></para>
           </listitem>
 
           <listitem>
@@ -1158,11 +1158,10 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
             <para><programlisting>sudo service hpcc-init start</programlisting></para>
 
-            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+            <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
+            versions)</emphasis></para>
 
             <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
-
-            <para></para>
 
             <informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -1216,7 +1215,8 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
           <para><programlisting>sudo service hpcc-init start</programlisting></para>
 
-          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+          <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
+          versions)</emphasis></para>
 
           <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
         </sect3>
@@ -1231,7 +1231,8 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
           <para><programlisting>sudo service hpcc-init stop</programlisting></para>
 
-          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+          <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
+          versions)</emphasis></para>
 
           <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
 
@@ -1271,7 +1272,8 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
           <para><programlisting>sudo service hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting></para>
 
-          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+          <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
+          versions)</emphasis></para>
 
           <programlisting>sudo /etc/init.d/hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting>
 
@@ -1317,7 +1319,8 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
             <para><programlisting>sudo service hpcc-init stop</programlisting></para>
 
-            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+            <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
+            versions)</emphasis></para>
 
             <programlisting>sudo /etc/init.d/hpcc-init stop
 </programlisting>
@@ -2610,7 +2613,7 @@ init_start_thor--></property></para>
     <sect1 id="hpcc-init">
       <title>hpcc-init</title>
 
-      <para><emphasis role="bold">sbin/service hpcc-init
+      <para><emphasis role="bold"> service hpcc-init
       </emphasis><emphasis><emphasis>[</emphasis>option<emphasis>]</emphasis>
       command</emphasis></para>
 
@@ -2697,14 +2700,6 @@ init_start_thor--></property></para>
                     </listitem>
 
                     <listitem>
-                      <para>force-reload</para>
-
-                      <para>Deletes all local configuration files, data files,
-                      log files, and then restarts component(s). BE CAREFUL
-                      using this command.</para>
-                    </listitem>
-
-                    <listitem>
                       <para>setup</para>
 
                       <para>Initializes component configuration files but does
@@ -2722,14 +2717,122 @@ init_start_thor--></property></para>
 
       <para><emphasis role="bold">Examples:</emphasis></para>
 
-      <programlisting>sudo /sbin/service hpcc-init start
-sudo /sbin/service hpcc-init stop
+      <programlisting>sudo /etc/init.d/hpcc-init start
+sudo /etc/init.d/hpcc-init stop
 
-sudo /sbin/service hpcc-init -c myeclserver start
-sudo /sbin/service hpcc-init --component=myeclserver start
+sudo /etc/init.d/hpcc-init -c myeclserver start
+sudo /etc/init.d/hpcc-init --component=myeclserver start
 
-sudo /sbin/service hpcc-init -c esp start
+sudo /etc/init.d/hpcc-init -c esp start
 </programlisting>
+
+      <sect2 id="HPCC_systemd_svc">
+        <title>HPCC systemd services</title>
+
+        <para>There are two HPCC systemd services: hpcc-init and dafilesrv.
+        While some hpcc-init systemd services are still developmental, users
+        are can use <emphasis>/etc/init.d/hpcc-init</emphasis> and
+        <emphasis>/etc/init.d/dafilesrv</emphasis> directly. Invoking these
+        services in this way provides status in the same manner as invoking
+        them with a service command does for HPCC processes.</para>
+
+        <para>Currently, the hpcc-init system service will only support
+        "start", "stop" and "restart" options. The other options, such as
+        "status", "-c" are not supported.</para>
+
+        <para>There are two sets of HPCC systemd service scripts:
+        <emphasis>hpcc-init.service/dafilesrv.service</emphasis> and
+        <emphasis>hpcc-init@.service/dafilesrv@.service</emphasis> installed
+        under /lib/systemd/system.</para>
+
+        <para>The first set does not have any output to STDOUT/STDERROR,
+        instead it logs to /var/log/syslog. Users can enter: "journalctl -u
+        &lt;service&gt; -f" to see the output. The second set has the same
+        output to STDOUT/STDERROR as directly invoking
+        /etc/init.d/&lt;hpcc-init|dafilesrv&gt;</para>
+
+        <para>User can either use "sudo service &lt;service&gt;
+        &lt;start|stop|restart&gt;" or "sudo systemctl
+        &lt;start|stop|restart&gt; &lt;full service name&gt;". The systemd
+        displays service status in it's own format: "sudo service
+        &lt;service&gt; status" or "sudo systemctl status &lt;full service
+        name&gt;". This is different than the output from
+        "/etc/init.d/hpcc-init status".</para>
+
+        <para>HPCC services started through systemd will be listed as active
+        in systemd. They can be listed as "sudo systemctl list-units
+        [PATTERN...]". To remove them from the systemd active service list,
+        the user must run the stop service from the "service" or "systemctl"
+        commands even though it is already stopped by directly calling
+        /etc/init.d/&lt;hpcc-init|dafilesrv&gt; stop.</para>
+
+        <para>HPCC uninstall will automatically remove HPCC services from
+        active list and /etc/systemd/system/ directory.</para>
+
+        <sect3>
+          <title id="hpcc_systemd_usage">hpcc-init systemd service
+          usage</title>
+
+          <para>To start or stop HPCC with hpcc-init without STDOUT/STDERR
+          output: <orderedlist>
+              <listitem>
+                <para>Start</para>
+
+                <programlisting>sudo service hpcc-init start </programlisting>
+
+                <para>or</para>
+
+                <programlisting>sudo systemctl start hpcc-init.service</programlisting>
+              </listitem>
+
+              <listitem>
+                <para>Check</para>
+
+                <para>sudo journalctl -u hpcc-init -f</para>
+              </listitem>
+
+              <listitem>
+                <para>Stop</para>
+
+                <programlisting>sudo service hpcc-init stop </programlisting>
+
+                <para>or</para>
+
+                <programlisting>sudo systemctl stop hpcc-init.service</programlisting>
+              </listitem>
+            </orderedlist></para>
+
+          <para>To start/stop HPCC with hpcc-init with STDOUT/STDERR output.
+          Get current tty by run "tty". For example, tty -&gt; /dev/pts/1.
+          "pts/1" will be used in following commands. <orderedlist>
+              <listitem>
+                <para>Start</para>
+
+                <programlisting>sudo service hpcc-init@pts/1 start</programlisting>
+
+                <para>or</para>
+
+                <programlisting>sudo systemctl start hpcc-init@pts/1.service</programlisting>
+              </listitem>
+
+              <listitem>
+                <para>Check</para>
+
+                <para>sudo journalctl -u hpcc-init -f</para>
+              </listitem>
+
+              <listitem>
+                <para>Stop</para>
+
+                <programlisting>sudo service hpcc-init@pts/1 stop</programlisting>
+
+                <para>or</para>
+
+                <programlisting>sudo systemctl stop hpcc-init@pts/1.service</programlisting>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+      </sect2>
     </sect1>
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UnityLauncher.xml"
