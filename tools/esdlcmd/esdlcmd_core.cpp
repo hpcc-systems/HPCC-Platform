@@ -276,9 +276,9 @@ public:
     {
         puts("Usage:");
         puts("esdl xsd sourcePath serviceName [options]\n" );
-        puts("\nsourcePath - Absolute path to the EXSDL Definition file (XML) containing the" );
-        puts("               EsdlService definition for the service you want to work with.\n" );
-        puts("serviceName  - EsdlService definition for the service you want to work with.\n" );
+        puts("\nsourcePath - Absolute path to the EXSDL Definition file ( XML generated from ECM )" );
+        puts("               which contains ESDL Service definition.\n" );
+        puts("serviceName  - Name of ESDL Service defined in the given EXSDL file.\n" );
 
         printOptions();
         EsdlConvertCmd::usage();
@@ -574,9 +574,9 @@ public:
     {
         puts("Usage:");
         puts("esdl wsdl sourcePath serviceName [options]\n" );
-        puts("\nsourcePath - Absolute path to the EXSDL Definition file (XML) containing the" );
-        puts("               EsdlService definition for the service you want to work with.\n" );
-        puts("serviceName  - EsdlService definition for the service you want to work with.\n" );
+        puts("\nsourcePath - Absolute path to the EXSDL Definition file ( XML generated from ECM )" );
+        puts("               which contains ESDL Service definition.\n" );
+        puts("serviceName  - Name of ESDL Service defined in the given EXSDL file.\n" );
 
         printOptions();
         puts("  --wsdladdress  Defines the output WSDL's location address\n");
@@ -780,9 +780,9 @@ public:
         puts("Usage:");
 
         puts("esdl java sourcePath serviceName [options]\n" );
-        puts("sourcePath  - Absolute path to the EXSDL Definition file (XML) containing the" );
-        puts("              EsdlService definition for the service you want to work with.\n" );
-        puts("serviceName - EsdlService definition for the service you want to work with.\n" );
+        puts("\nsourcePath - Absolute path to the EXSDL Definition file ( XML generated from ECM )" );
+        puts("               which contains ESDL Service definition.\n" );
+        puts("serviceName  - Name of ESDL Service defined in the given EXSDL file.\n" );
 
         printOptions();
         EsdlConvertCmd::usage();
