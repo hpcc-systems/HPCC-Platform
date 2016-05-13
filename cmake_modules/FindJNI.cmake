@@ -156,16 +156,13 @@ JAVA_APPEND_LIBRARY_DIRECTORIES(JAVA_AWT_LIBRARY_DIRECTORIES
   /usr/lib/jvm/jre/lib/{libarch}
   /usr/local/lib/java/jre/lib/{libarch}
   /usr/local/share/java/jre/lib/{libarch}
-  /usr/lib/j2sdk1.4-sun/jre/lib/{libarch}
-  /usr/lib/j2sdk1.5-sun/jre/lib/{libarch}
-  /opt/sun-jdk-1.5.0.04/jre/lib/{libarch}
-  /usr/lib/jvm/java-6-sun/jre/lib/{libarch}
-  /usr/lib/jvm/java-1.5.0-sun/jre/lib/{libarch}
-  /usr/lib/jvm/java-6-sun-1.6.0.00/jre/lib/{libarch}       # can this one be removed according to #8821 ? Alex
+  /usr/lib/j2sdk1.7-sun/jre/lib/{libarch}
+  /usr/lib/jvm/java-7-sun/jre/lib/{libarch}
+  /usr/lib/jvm/java-1.7.0-sun/jre/lib/{libarch}
+  /usr/lib/jvm/java-7-sun-1.7.0.00/jre/lib/{libarch}       # can this one be removed according to #8821 ? Alex
   /usr/lib/jvm/java-7-openjdk-{libarch}/jre/lib/{libarch}  # Ubuntu 13.04 location
-  /usr/lib/jvm/java-6-openjdk-{libarch}/jre/lib/{libarch}  # Ubuntu 12.10 location
-  /usr/lib/jvm/java-6-openjdk/jre/lib/{libarch}
-  /usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0/jre/lib/{libarch}        # fedora
+  /usr/lib/jvm/java-8-openjdk-{libarch}/jre/lib/{libarch}  # Ubuntu 16.04 location
+  /usr/lib/jvm/java-9-openjdk-{libarch}/jre/lib/{libarch}
   # Debian specific paths for default JVM
   /usr/lib/jvm/default-java/jre/lib/{libarch}
   /usr/lib/jvm/default-java/jre/lib
@@ -190,17 +187,16 @@ JAVA_APPEND_LIBRARY_DIRECTORIES(JAVA_AWT_EXPANDED_INCLUDE_DIRECTORIES
   /usr/lib/java/include
   /usr/local/lib/java/include
   /usr/lib/jvm/java/include
-  /usr/lib/jvm/java-6-sun/include
-  /usr/lib/jvm/java-1.5.0-sun/include
-  /usr/lib/jvm/java-6-sun-1.6.0.00/include       # can this one be removed according to #8821 ? Alex
+  /usr/lib/jvm/java-7-sun/include
+  /usr/lib/jvm/java-1.7.0-sun/include
+  /usr/lib/jvm/java-7-sun-1.7.0.00/include       # can this one be removed according to #8821 ? Alex
   /usr/lib/jvm/java-7-openjdk-{libarch}/include  # Ubuntu 13.04 location
-  /usr/lib/jvm/java-6-openjdk-{libarch}/jre/lib/{libarch}  # Ubuntu 12.10 location
-  /usr/lib/jvm/java-6-openjdk-{libarch}/include
-  /usr/lib/jvm/java-6-openjdk/include
+  /usr/lib/jvm/java-8-openjdk-{libarch}/include  # Ubuntu 16.04 location
+  /usr/lib/jvm/java-9-openjdk-{libarch}/include  #
   /usr/local/share/java/include
-  /usr/lib/j2sdk1.4-sun/include
-  /usr/lib/j2sdk1.5-sun/include
-  /opt/sun-jdk-1.5.0.04/include
+  /usr/lib/j2sdk1.7-sun/include
+  /usr/lib/j2sdk1.8-sun/include
+  /usr/lib/j2sdk1.9-sun/include
   # Debian specific path for default JVM
   /usr/lib/jvm/default-java/include
   )
