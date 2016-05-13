@@ -18,6 +18,11 @@
 #include "caching.hpp"
 #include "jtime.hpp"
 
+//define a container for multiple instances of a security manager cache
+typedef map<string, CPermissionsCache*> MapCache;
+static CriticalSection mapCacheCS;//guards modifications to the cache map
+static MapCache g_mapCache;
+
 /**********************************************************
  *     CResPermissionsCache                               *
  *     (used by CPermissionsCache defined below)          *
@@ -212,7 +217,7 @@ CPermissionsCache::~CPermissionsCache()
 {
     if (!m_secMgrClass.isEmpty())
     {
-        CriticalBlock block(PCCritSect);
+        CriticalBlock block(mapCacheCS);
         g_mapCache.erase(m_secMgrClass.str());
     }
     flush();
@@ -629,4 +634,23 @@ void CPermissionsCache::flush()
     }
     m_lastManagedFileScopesRefresh = 0;
     m_defaultPermission = SecAccess_Unknown;//trigger refresh
+}
+
+CPermissionsCache* CPermissionsCache::getInstance(const char * _secMgrClass)
+{
+    const char * secMgrClass = (_secMgrClass != nullptr  &&  *_secMgrClass) ? _secMgrClass : "genericSecMgrClass";
+
+    CriticalBlock block(mapCacheCS);
+    MapCache::iterator it = g_mapCache.find(secMgrClass);
+    if (it != g_mapCache.end())//exists in cache
+    {
+        LINK((*it).second);
+        return (*it).second;
+    }
+    else
+    {
+        CPermissionsCache * instance = new CPermissionsCache(_secMgrClass);
+        g_mapCache.insert(pair<string, CPermissionsCache*>(secMgrClass, instance));
+        return instance;
+    }
 }

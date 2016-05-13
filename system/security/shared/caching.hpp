@@ -134,10 +134,6 @@ public:
 
 // main cache that stores all user-specific caches (defined by CResPermissionsCache above)
 //
-static CriticalSection PCCritSect;//guards instance factory
-typedef map<string, CPermissionsCache*> MapCache;
-static MapCache g_mapCache;
-
 class CPermissionsCache : public CInterface, implements IInterface
 {
 public:
@@ -155,27 +151,10 @@ public:
 
     virtual ~CPermissionsCache();
 
-    //Returns an owned reference to a shared cache of a given class type.
+    //Returns an owned reference to a shared cache of a given Sec Mgr class type.
     //Call this method with a unique class string ("LDAP", "MyOtherSecMgr")
     //to create a cache shared amongst security managers of the same class
-    static CPermissionsCache* getInstance(const char * _secMgrClass)
-    {
-        const char * secMgrClass = (_secMgrClass != nullptr  &&  *_secMgrClass) ? _secMgrClass : "genericSecMgrClass";
-
-        CriticalBlock block(PCCritSect);
-        MapCache::iterator it = g_mapCache.find(secMgrClass);
-        if (it != g_mapCache.end())//exists in cache
-        {
-            LINK((*it).second);
-            return (*it).second;
-        }
-        else
-        {
-            CPermissionsCache * instance = new CPermissionsCache(_secMgrClass);
-            g_mapCache.insert(pair<string, CPermissionsCache*>(secMgrClass, instance));
-            return instance;
-        }
-    }
+    static CPermissionsCache* getInstance(const char * _secMgrClass);
 
     //finds cached permissions for a number of resources and sets them in
     //and also returns status in the boolean array passed in
@@ -231,6 +210,5 @@ private:
 };
 
 time_t getThreadCreateTime();
-
 
 #endif
