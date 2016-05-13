@@ -369,7 +369,7 @@ public:
     virtual offset_t size()
     {
         if (!entry)
-            return 0;
+            return (offset_t) -1;
         return entry->size();
     }
 
