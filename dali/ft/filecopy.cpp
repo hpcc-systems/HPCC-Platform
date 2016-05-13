@@ -78,6 +78,7 @@
 #define ANtransferBufferSize "@transferBufferSize"
 #define ANencryptKey        "@encryptKey"
 #define ANdecryptKey        "@decryptKey"
+#define ANumask             "@umask"
 
 #define PNpartition         "partition"
 #define PNprogress          "progress"
@@ -369,6 +370,9 @@ bool FileTransferThread::performTransfer()
             progress.item(i2).serializeExtra(msg, 1);
 
         //NB: Any extra data must be appended at the end...
+
+        msg.append(sprayer.fileUmask);
+
         if (!catchWriteBuffer(socket, msg))
             throwError1(RFSERR_TimeoutWaitConnect, url.str());
 
@@ -592,6 +596,24 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     encryptKey.set(options->queryProp(ANencryptKey));
     decryptKey.set(options->queryProp(ANdecryptKey));
 
+    fileUmask = -1;
+    const char *umaskStr = options->queryProp(ANumask);
+    if (umaskStr)
+    {
+        char *eptr = nullptr;
+        errno = 0;
+        fileUmask = (int)strtol(umaskStr, &eptr, 8);
+        if (errno || *eptr != '\0')
+        {
+            LOG(MCdebugInfo, job, "Invalid umask value <%s> ignored", umaskStr);
+            fileUmask = -1;
+        }
+        else
+        {
+            // never strip off owner
+            fileUmask &= 077;
+        }
+    }
 }
 
 
@@ -816,25 +838,6 @@ void FileSprayer::beforeTransfer()
         checker.For(targets.ordinality(), 25, true, true);
     }
 
-    int umask = -1;
-    if (options->hasProp("@umask"))
-    {
-        StringBuffer umaskStr;
-        options->getProp("@umask", umaskStr);
-        errno = 0;
-        umask = (int)strtol(umaskStr.str(), NULL, 8);
-        if (errno)
-        {
-            LOG(MCdebugInfo, job, "Invalid umask value <%s> ignored", umaskStr.str());
-            umask = -1;
-        }
-        else
-        {
-            // never strip off owner
-            umask &= 077;
-        }
-    }
-
     if (!isRecovering && !usePullOperation())
     {
         try {
@@ -852,8 +855,8 @@ void FileSprayer::beforeTransfer()
                     if (!dir->exists())
                     {
                         dir->createDirectory();
-                        if (umask != -1)
-                            dir->setFilePermissions(~umask&0777);
+                        if (fileUmask != -1)
+                            dir->setFilePermissions(~fileUmask&0777);
                     }
                 }
             }
@@ -892,8 +895,8 @@ void FileSprayer::beforeTransfer()
                     remote.getPath(name);
                     throwError1(DFTERR_CouldNotCreateOutput, name.str());
                 }
-                if (umask != -1)
-                    file->setFilePermissions(~umask&0666);
+                if (fileUmask != -1)
+                    file->setFilePermissions(~fileUmask&0666);
                 //Create the headers on the utf files.
                 unsigned headerSize = getHeaderSize(tgtFormat.type);
                 if (headerSize)
