@@ -320,6 +320,7 @@ protected:
     bool                    preserveCompression;
     offset_t                headerSize;
     offset_t                footerSize;
+    int                     fileUmask;
 };
 
 
