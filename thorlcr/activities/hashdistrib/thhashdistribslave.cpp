@@ -1990,7 +1990,7 @@ public:
         CriticalBlock block(stopsect);  // can be called async by distribute
         if (!inputstopped)
         {
-            PARENT::stop();
+            PARENT::stopInput(0);
             inputstopped = true;
         }
     }
@@ -2024,6 +2024,7 @@ public:
         }
         stopInput();
         instrm.clear();
+        dataLinkStop();
     }
     virtual void kill() override
     {
