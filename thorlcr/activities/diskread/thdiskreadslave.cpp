@@ -526,6 +526,8 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
 
     class CNormalizePartHandler : public CDiskRecordPartHandler
     {
+        typedef CDiskRecordPartHandler PARENT;
+
         RtlDynamicRowBuilder outBuilder;
         CDiskNormalizeSlave &activity;
         const void * nextrow;
@@ -537,34 +539,39 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
         {
             nextrow = NULL;
         }
-
-        ~CNormalizePartHandler()
+        virtual void close(CRC32 &fileCRC) override
         {
             if (nextrow)
-                CDiskRecordPartHandler::prefetchDone();
+                prefetchDone();
+            PARENT::close(fileCRC);
         }
-
-        const void *nextRow()
+        const void *nextRow() override
         {
             // logic here is a bit obscure
-            if (eoi || activity.queryAbortSoon()) {
+            if (eoi || activity.queryAbortSoon())
+            {
                 eoi = true;
                 return NULL;
             }
-            loop {
-                if (nextrow) {
-                    while (activity.helper->next()) {
+            loop
+            {
+                if (nextrow)
+                {
+                    while (activity.helper->next())
+                    {
                         size32_t sz = activity.helper->transform(outBuilder.ensureRow());
                         if (sz) 
                             return outBuilder.finalizeRowClear(sz);
                     }
-                    CDiskRecordPartHandler::prefetchDone();
+                    prefetchDone();
                 }
-                nextrow = CDiskRecordPartHandler::prefetchRow();
+                nextrow = prefetchRow();
                 if (!nextrow)
                     break;
-                if (activity.segMonitorsMatch(nextrow)) {
-                    if (activity.helper->first(nextrow)) {
+                if (activity.segMonitorsMatch(nextrow))
+                {
+                    if (activity.helper->first(nextrow))
+                    {
                         size32_t sz = activity.helper->transform(outBuilder.ensureRow());
                         if (sz) 
                             return outBuilder.finalizeRowClear(sz);
@@ -572,7 +579,7 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
                     }
                 }
                 nextrow = NULL;
-                CDiskRecordPartHandler::prefetchDone();
+                prefetchDone();
             }
             eoi = true;
             return NULL;
