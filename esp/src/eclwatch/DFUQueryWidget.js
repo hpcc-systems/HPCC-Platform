@@ -69,6 +69,7 @@ define([
     "dijit/form/DropDownButton",
     "dijit/form/Select",
     "dijit/form/CheckBox",
+    "dijit/Dialog",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
@@ -104,6 +105,10 @@ define([
             this.desprayForm = registry.byId(this.id + "DesprayForm");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
             this.desprayTooltiopDialog = registry.byId(this.id + "DesprayTooltipDialog");
+            this.downloadToList = registry.byId(this.id + "DownloadToList");
+            this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
+            this.downListForm = registry.byId(this.id + "DownListForm");
+            this.fileName = registry.byId(this.id + "FileName");
             var context = this;
             var origOnOpen = this.desprayTooltiopDialog.onOpen;
             this.desprayTooltiopDialog.onOpen = function () {
@@ -132,6 +137,62 @@ define([
             this.inherited(arguments);
             this.initContextMenu();
             this.initFilter();
+        },
+
+        _onDownloadToListCancelDialog: function (event){
+            this.downloadToListDialog.hide();
+        },
+
+        _onDownloadToList: function (event) {
+            this.downloadToListDialog.show();
+        },
+
+        _buildCSV: function (event) {
+            var selections = this.workunitsGrid.getSelected();
+            var csvContent = "";
+            var headers = this.workunitsGrid.columns;
+            var container = [];
+            var headerNames = [this.i18n.Protected,this.i18n.IsCompressed,this.i18n.KeyFile,headers.__hpcc_displayName.label,headers.Owner.field,headers.Description.field,headers.NodeGroup.label,headers.RecordCount.label,headers.IntSize.label,headers.Parts.field,headers.Modified.field];
+            container.push(headerNames);
+
+            arrayUtil.forEach(selections, function (cell, idx){
+                var row = [cell.IsProtected,cell.IsCompressed,cell.IsKeyFile,cell.__hpcc_displayName,cell.Owner,cell.Description,cell.NodeGroup,cell.RecordCount,cell.IntSize,cell.Parts,cell.Modified];
+                    container.push(row);
+            });
+
+            arrayUtil.forEach(container, function (header, idx) {
+                dataString = header.join(",");
+                csvContent += dataString + "\n";
+            });
+
+            var download = function(content, fileName, mimeType) {
+            var a = document.createElement('a');
+            mimeType = mimeType || 'application/octet-stream';
+
+            if (navigator.msSaveBlob) { // IE10
+                return navigator.msSaveBlob(new Blob([content], { type: mimeType }), fileName);
+            } else if ('download' in a) {
+                a.href = 'data:' + mimeType + ',' + encodeURIComponent(content);
+                a.setAttribute('download', fileName);
+                document.body.appendChild(a);
+                setTimeout(function() {
+                  a.click();
+                  document.body.removeChild(a);
+                }, 66);
+                return true;
+              } else {
+                var f = document.createElement('iframe');
+                document.body.appendChild(f);
+                f.src = 'data:' + mimeType + ',' + encodeURIComponent(content);
+
+                setTimeout(function() {
+                  document.body.removeChild(f);
+                }, 333);
+                return true;
+              }
+            }
+            download(csvContent,  this.fileName.get("value")+".csv", 'text/csv');
+            this._onDownloadToListCancelDialog();
         },
 
         getTitle: function () {
@@ -573,6 +634,12 @@ define([
             });
             this.workunitsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
+                var selection = context.workunitsGrid.getSelected();
+                if (selection.length > 0) {
+                    context.downloadToList.set("disabled", false);
+                } else {
+                    context.downloadToList.set("disabled", true);
+                }
             });
             this.workunitsGrid.startup();
 
