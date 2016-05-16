@@ -592,10 +592,11 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             IFile *f;
         } autoDisconnector(f, autoDisconnect);
 
-        if (f->exists())
+        offset_t fileSize = f->size();
+        if (fileSize != (offset_t) -1)
         {
             // only check size if specified
-            if ( (size != -1) && !isCompressed && f->size()!=size) // MORE - should be able to do better on compressed you'da thunk
+            if ( (size != -1) && !isCompressed && fileSize != size) // MORE - should be able to do better on compressed you'da thunk
                 return FileSizeMismatch;
             CDateTime mt;
             return (modified.isNull() || (f->getTime(NULL, &mt, NULL) &&  mt.equals(modified, false))) ? FileIsValid : FileDateMismatch;
