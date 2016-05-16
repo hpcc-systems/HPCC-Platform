@@ -15,7 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#ifdef _WIN32
 #pragma warning(disable: 4996)
+#endif
 #include "zcrypt.ipp"
 #include "aes.hpp"
 #include "base64.ipp"

@@ -76,7 +76,7 @@ void LogMsgLogReceiverThread::stop()
 // CLogMsgLinkToChild
 
 CLogMsgLinkToChild::CLogMsgLinkToChild(MPLogId _cid, MPLogId _pid, INode * _childNode, bool isListener, bool _connected)
-    : cid(_cid), pid(_pid), childNode(_childNode), connected(_connected)
+    : childNode(_childNode), cid(_cid), pid(_pid), connected(_connected)
 {
     receiverThread.setown(new LogMsgLogReceiverThread(cid, childNode, isListener));
     receiverThread->start();

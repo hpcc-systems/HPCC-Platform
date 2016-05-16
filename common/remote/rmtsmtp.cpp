@@ -27,7 +27,7 @@
 class CSMTPValidator
 {
 public:
-    CSMTPValidator() : scanlist(false), value(NULL), finger(NULL), label(NULL) {}
+    CSMTPValidator() : value(NULL), finger(NULL), label(NULL), scanlist(false) {}
 
     void validateValue(char const * _value, char const * _label)
     {
