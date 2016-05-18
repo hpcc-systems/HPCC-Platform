@@ -498,6 +498,7 @@ TransferServer::TransferServer(ISocket * _masterSocket)
     compressedInput = false;
     compressOutput = false;
     transferBufferSize = DEFAULT_STD_BUFFER_SIZE;
+    fileUmask = -1;
 }
 
 void TransferServer::sendProgress(OutputProgress & curProgress)
@@ -642,9 +643,16 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
     ForEachItemIn(i1, progress)
         progress.item(i1).deserializeExtra(msg, 1);
 
+    if (msg.remaining())
+        msg.read(fileUmask);
+
     LOG(MCdebugProgress, unknownJob, "throttle(%d), transferBufferSize(%d)", throttleNicSpeed, transferBufferSize);
     PROGLOG("compressedInput(%d), compressedOutput(%d), copyCompressed(%d)", compressedInput?1:0, compressOutput?1:0, copyCompressed?1:0);
     PROGLOG("encrypt(%d), decrypt(%d)", encryptKey.isEmpty()?0:1, decryptKey.isEmpty()?0:1);
+    if (fileUmask != -1)
+        PROGLOG("umask(0%o)", fileUmask);
+    else
+        PROGLOG("umask(default)");
 
     //---Finished deserializing ---
     displayProgress(progress);
@@ -893,6 +901,10 @@ processedProgress:
                     renameDfuTempToFinal(curPartition.outputName);
 
                     OwnedIFile output = createIFile(curPartition.outputName);
+
+                    if (fileUmask != -1)
+                        output->setFilePermissions(~fileUmask&0666);
+
                     if (mirror || replicate)
                     {
                         OwnedIFile input = createIFile(curPartition.inputName);
