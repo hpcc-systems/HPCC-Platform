@@ -75,4 +75,8 @@ target_link_libraries ( graph_lcr
          roxiemem
     )
 
+if (USE_TBBMALLOC)
+   target_link_libraries ( graph_lcr ${TBBMALLOC_LIBRARIES})
+endif()
+
 

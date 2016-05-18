@@ -198,10 +198,6 @@ target_link_libraries ( jlib
         lz4
        )
 
-if (USE_TBBMALLOC)
-   target_link_libraries ( jlib ${TBBMALLOC_LIBRARIES})
-endif()
-
 if ( ${HAVE_LIBDL} )
 target_link_libraries ( jlib dl)
 endif ( ${HAVE_LIBDL} )
