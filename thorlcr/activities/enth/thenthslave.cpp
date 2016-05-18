@@ -109,7 +109,9 @@ public:
 
         // restore original inputStream if lookAhead was installed, to avoid base start spuriously starting previously installed lookahead
         if (originalInputStream)
-            replaceInputStream(0, originalInputStream.getClear());
+        {
+            Owned<IEngineRowStream> lookAhead = replaceInputStream(0, originalInputStream.getClear());
+        }
     }
     virtual bool isGrouped() const override { return false; }
     void getMetaInfo(ThorDataLinkMetaInfo &info)

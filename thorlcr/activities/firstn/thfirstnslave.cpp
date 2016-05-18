@@ -253,7 +253,9 @@ public:
     {
         PARENT::stop();
         if (originalInputStream)
-            replaceInputStream(0, originalInputStream.getClear());
+        {
+            Owned<IEngineRowStream> lookAhead = replaceInputStream(0, originalInputStream.getClear());
+        }
     }
     virtual void abort()
     {
