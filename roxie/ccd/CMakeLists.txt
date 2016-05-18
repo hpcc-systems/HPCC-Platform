@@ -121,4 +121,8 @@ IF (USE_OPENSSL)
     )
 ENDIF()
 
+IF (USE_TBBMALLOC)
+   target_link_libraries ( ccd ${TBBMALLOC_LIBRARIES})
+ENDIF()
+
 
