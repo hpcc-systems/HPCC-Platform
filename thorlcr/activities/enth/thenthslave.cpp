@@ -28,7 +28,7 @@ protected:
     Semaphore finishedSem;
     rowcount_t counter = 0, localRecCount = 0;
     rowcount_t denominator = 0, numerator = 0;
-    IEngineRowStream *originalInputStream = nullptr;
+    Owned<IEngineRowStream> originalInputStream;
 
     bool haveLocalCount() { return RCUNBOUND != localRecCount; }
     inline bool wanted()
@@ -82,8 +82,8 @@ protected:
         else
         {
             localRecCount = RCUNBOUND;
-            IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, originalInputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage());
-            setLookAhead(0, lookAhead); // NB: this is post base start()
+            IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage());
+            originalInputStream.setown(replaceInputStream(0, lookAhead)); // NB: this is post base start()
             lookAhead->start();
         }
     }
@@ -94,11 +94,6 @@ public:
     {
         appendOutputLinked(this);
     }
-    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
-    {
-        PARENT::setInputStream(index, _input, consumerOrdered);
-        originalInputStream = inputStream;
-    }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
@@ -107,6 +102,14 @@ public:
         counter = 0;
         denominator = validRC(helper->getProportionDenominator());
         numerator = validRC(helper->getProportionNumerator());
+    }
+    virtual void stop() override
+    {
+        PARENT::stop();
+
+        // restore original inputStream if lookAhead was installed, to avoid base start spuriously starting previously installed lookahead
+        if (originalInputStream)
+            replaceInputStream(0, originalInputStream.getClear());
     }
     virtual bool isGrouped() const override { return false; }
     void getMetaInfo(ThorDataLinkMetaInfo &info)
