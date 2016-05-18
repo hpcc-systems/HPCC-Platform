@@ -190,6 +190,16 @@ void CSlaveActivity::setInputStream(unsigned index, CThorInput &_input, bool con
     }
 }
 
+IEngineRowStream *CSlaveActivity::replaceInputStream(unsigned index, IEngineRowStream *_inputStream)
+{
+    CThorInput &_input = inputs.item(index);
+    IEngineRowStream *prevInputStream = _input.stream.getClear();
+    _input.stream.setown(_inputStream);
+    if (0 == index)
+        inputStream = _inputStream;
+    return prevInputStream;
+}
+
 void CSlaveActivity::setLookAhead(unsigned index, IStartableEngineRowStream *lookAhead)
 {
     CThorInput &_input = inputs.item(index);

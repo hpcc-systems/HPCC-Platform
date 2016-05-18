@@ -441,6 +441,13 @@
     </xs:attribute>
  </xs:attributeGroup>
  <xs:attributeGroup name="Options">
+    <xs:attribute name="affinity" type="xs:nonNegativeInteger" use="optional" default="0">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>If non-zero, binds the roxie process to use the specified cores only (bitmask)</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="allFilesDynamic" type="xs:boolean" use="optional" default="false">
       <xs:annotation>
         <xs:appinfo>
@@ -476,6 +483,13 @@
           <autogenforwizard>1</autogenforwizard>
           <autogendefaultvalue>false</autogendefaultvalue>
           <autogendefaultformultinode>true</autogendefaultformultinode>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="coresPerQuery" type="xs:nonNegativeInteger" use="optional" default="0">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>If non-zero, binds each incoming query to use the specified number of cores only</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

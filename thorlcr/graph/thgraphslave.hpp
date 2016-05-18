@@ -167,6 +167,7 @@ public:
     virtual void connectInputStreams(bool consumerOrdered);
 
     void setLookAhead(unsigned index, IStartableEngineRowStream *lookAhead);
+    IEngineRowStream *replaceInputStream(unsigned index, IEngineRowStream *_inputStream);
     IThorDataLink *queryOutput(unsigned index) const;
     IThorDataLink *queryInput(unsigned index) const;
     IEngineRowStream *queryInputStream(unsigned index) const;

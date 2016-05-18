@@ -248,27 +248,27 @@ public:
     void printOptions()
     {
         puts("Options:");
-        puts("  --version <version number> : Constrain to interface version\n");
-        puts("  --method <method name>[;<method name>]* : Constrain to list of specific method(s)\n" );
-        puts("  --xslt <xslt file path> : Path to '/xslt/esxdl2xsd.xslt' file to transform EsdlDef to XSD\n" );
-        puts("  --preprocess-output <raw output directory> : Output pre-processed xml file to specified directory before applying XSLT transform\n" );
+        puts("  --version <version number> : Constrain to interface version");
+        puts("  --method <method name>[;<method name>]* : Constrain to list of specific method(s)" );
+        puts("  --xslt <xslt file path> : Path to '/xslt/esxdl2xsd.xslt' file to transform EsdlDef to XSD" );
+        puts("  --preprocess-output <raw output directory> : Output pre-processed xml file to specified directory before applying XSLT transform" );
         puts("  --annotate <all | none> : Flag turning on either all annotations or none. By default annotations are generated " );
         puts("                    for Enumerations. Setting the flag to 'none' will disable even those. Setting it" );
-        puts("                    to 'all' will enable additional annotations such as collapsed, cols, form_ui, html_head and rows.\n");
+        puts("                    to 'all' will enable additional annotations such as collapsed, cols, form_ui, html_head and rows.");
         puts("  --noopt : Turns off the enforcement of 'optional' attributes on elements. If no -noopt is specified then all elements with an 'optional'" );
-        puts("       will be included in the output. By default 'optional' filtering is enforced.\n");
+        puts("       will be included in the output. By default 'optional' filtering is enforced.");
         puts("  -opt,--optional <param value> : Value to use for optional tag filter when gathering dependencies" );
         puts("                       An example: passing 'internal' when some Esdl definition objects have the attribute");
-        puts("                       optional(\"internal\") will ensure they appear in the XSD, otherwise they'd be filtered out\n");
-        puts("  -tns,--target-namespace <target namespace> : The target namespace, passed to the transform via the parameter 'tnsParam'\n" );
+        puts("                       optional(\"internal\") will ensure they appear in the XSD, otherwise they'd be filtered out");
+        puts("  -tns,--target-namespace <target namespace> : The target namespace, passed to the transform via the parameter 'tnsParam'" );
         puts("                            used for the final output of the XSD. If not supplied will default to " );
-        puts("                            http://webservices.seisint.com/<service name>\n" );
-        puts("  -n <int>: Number of times to run transform after loading XSLT. Defaults to 1.\n" );
-        puts("  --show-inheritance : Turns off the collapse feature. Collapsing optimizes the XML output to strip out structures\n" );
-        puts("                        only used for inheritance, and collapses their elements into their child. That simplifies the\n" );
+        puts("                            http://webservices.seisint.com/<service name>" );
+        puts("  -n <int>: Number of times to run transform after loading XSLT. Defaults to 1." );
+        puts("  --show-inheritance : Turns off the collapse feature. Collapsing optimizes the XML output to strip out structures" );
+        puts("                        only used for inheritance, and collapses their elements into their child. That simplifies the" );
         puts("                        stylesheet. By default this option is on.");
-        puts("  --no-arrayof : Supresses the use of the arrrayof element. arrayof optimizes the XML output to include 'ArrayOf...'\n" );
-        puts("                        structure definitions for those EsdlArray elements with no item_tag attribute. Works in conjunction\n" );
+        puts("  --no-arrayof : Supresses the use of the arrrayof element. arrayof optimizes the XML output to include 'ArrayOf...'" );
+        puts("                        structure definitions for those EsdlArray elements with no item_tag attribute. Works in conjunction" );
         puts("                        with an optimized stylesheet that doesn't generate these itself. This defaults to on.");
     }
 
@@ -276,9 +276,9 @@ public:
     {
         puts("Usage:");
         puts("esdl xsd sourcePath serviceName [options]\n" );
-        puts("\nsourcePath must be absolute path to the ESDL Definition file containing the" );
-        puts("EsdlService definition for the service you want to work with.\n" );
-        puts("serviceName EsdlService definition for the service you want to work with.\n" );
+        puts("\nsourcePath - Absolute path to the EXSDL Definition file ( XML generated from ECM )" );
+        puts("               which contains ESDL Service definition.\n" );
+        puts("serviceName  - Name of ESDL Service defined in the given EXSDL file.\n" );
 
         printOptions();
         EsdlConvertCmd::usage();
@@ -574,9 +574,9 @@ public:
     {
         puts("Usage:");
         puts("esdl wsdl sourcePath serviceName [options]\n" );
-        puts("\nsourcePath must be absolute path to the ESDL Definition file containing the" );
-        puts("EsdlService definition for the service you want to work with.\n" );
-        puts("serviceName EsdlService definition for the service you want to work with.\n" );
+        puts("\nsourcePath - Absolute path to the EXSDL Definition file ( XML generated from ECM )" );
+        puts("               which contains ESDL Service definition.\n" );
+        puts("serviceName  - Name of ESDL Service defined in the given EXSDL file.\n" );
 
         printOptions();
         puts("  --wsdladdress  Defines the output WSDL's location address\n");
@@ -766,22 +766,23 @@ public:
     void printOptions()
     {
         puts("Options:");
-        puts("  --version <version number> : Constrain to interface version\n");
-        puts("  --method <method name>[;<method name>]* : Constrain to list of specific method(s)\n" );
-        puts("  --xslt <xslt file path> : Path to xslt files used to transform EsdlDef to Java code\n" );
-        puts("  --preprocess-output <raw output directory> : Output pre-processed xml file to specified directory before applying XSLT transform\n" );
-        puts("  --show-inheritance : Turns off the collapse feature. Collapsing optimizes the XML output to strip out structures\n" );
-        puts("                        only used for inheritance, and collapses their elements into their child. That simplifies the\n" );
+        puts("  --version <version number> : Constrain to interface version");
+        puts("  --method <method name>[;<method name>]* : Constrain to list of specific method(s)" );
+        puts("  --xslt <xslt file path> : Path to xslt files used to transform EsdlDef to Java code" );
+        puts("  --preprocess-output <raw output directory> : Output pre-processed xml file to specified directory before applying XSLT transform" );
+        puts("  --show-inheritance : Turns off the collapse feature. Collapsing optimizes the XML output to strip out structures" );
+        puts("                        only used for inheritance, and collapses their elements into their child. That simplifies the" );
         puts("                        stylesheet. By default this option is on.");
     }
 
     virtual void usage()
     {
         puts("Usage:");
+
         puts("esdl java sourcePath serviceName [options]\n" );
-        puts("\nsourcePath must be absolute path to the ESDL Definition file containing the" );
-        puts("EsdlService definition for the service you want to work with.\n" );
-        puts("serviceName EsdlService definition for the service you want to work with.\n" );
+        puts("\nsourcePath - Absolute path to the EXSDL Definition file ( XML generated from ECM )" );
+        puts("               which contains ESDL Service definition.\n" );
+        puts("serviceName  - Name of ESDL Service defined in the given EXSDL file.\n" );
 
         printOptions();
         EsdlConvertCmd::usage();

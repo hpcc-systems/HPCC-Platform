@@ -335,7 +335,7 @@ private:
     IUserArray m_user_array;
     Monitor m_monitor;
     Owned<IProperties> m_extraparams;
-    CPermissionsCache * m_permissionsCache;
+    Owned<CPermissionsCache> m_permissionsCache;
     bool m_cache_off[RT_SCOPE_MAX];
     bool m_usercache_off;
     bool authenticate(ISecUser* user);

@@ -14,10 +14,10 @@
   <para><emphasis role="bold">Example:</emphasis></para>
 
   <programlisting>[ecl_null(0)] int Age;
-[ecl_null('false')] bool IsMatch;   </programlisting>
+[ecl_null("false")] bool IsMatch;   </programlisting>
 
   <para>Age 0 means there is no Age data for this person. So, if Age is 0, the
-  &lt;Age&gt; tag is not returned. </para>
+  &lt;Age&gt; tag is not returned.</para>
 
   <para>Without this attribute, <emphasis
   role="bold">&lt;Age&gt;0&lt;/Age&gt;</emphasis> would be returned.</para>
