@@ -32,6 +32,9 @@
 //Adding a comment to reference unused parameters also fails to solve it because it ignores references in comments (and a bit ugly)
 //fixing bison to ignore destructor {} for need use is another alternative - but would take a long time to feed into a public build.
 %{
+//The following allows the state table to expand.  It indicates memcpy of the data is valid.
+#define YYSTYPE_IS_TRIVIAL 1
+
 #include "platform.h"
 #include <stdio.h>
 #include <stdlib.h>
