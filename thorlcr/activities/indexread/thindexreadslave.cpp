@@ -127,7 +127,7 @@ protected:
             return row.finalizeRowClear(sz);
         return NULL;
     }
-    IKeyIndex *openKeyPart(CActivityBase *activity, IPartDescriptor &partDesc)
+    IKeyIndex *openKeyPart(IPartDescriptor &partDesc)
     {
         RemoteFilename rfn;
         partDesc.getFilename(0, rfn);
@@ -135,7 +135,7 @@ protected:
         rfn.getPath(filePath);
         unsigned crc=0;
         partDesc.getCrc(crc);
-        Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*activity, partDesc);
+        Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, partDesc);
         return createKeyIndex(filePath.str(), crc, *lfile, false, false);
     }
     const void *nextKey()
@@ -235,7 +235,7 @@ public:
         keyIndexSet.setown(createKeyIndexSet());
         ForEachItemIn(p, partDescs)
         {
-            Owned<IKeyIndex> keyIndex = openKeyPart(this, partDescs.item(p));
+            Owned<IKeyIndex> keyIndex = openKeyPart(partDescs.item(p));
             Owned<IKeyManager> klManager = createKeyManager(keyIndex, fixedDiskRecordSize, NULL);
             keyManagers.append(*klManager.getClear());
             keyIndexSet->addIndex(keyIndex.getClear());
@@ -524,7 +524,7 @@ public:
             keyedLimitCount = 0;
         }
         else
-            eoi = true; // otherwise delayed until calc. in nextRow()
+            eoi = true;
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
@@ -829,7 +829,7 @@ public:
         size32_t sz;
         if (1 == orsz)
         {
-            assertex(sizeof(byte) == choosenLimit);
+            assertex(choosenLimit <= 255);
             byte *dst1 = (byte *)result.ensureCapacity(sizeof(byte),NULL);
             *dst1 = (byte)totalCount;
             sz = sizeof(byte);
