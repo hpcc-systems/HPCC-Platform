@@ -502,14 +502,14 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
           </listitem>
 
           <listitem>
-            <para>Save the file as MathServiceConfig.xml</para>
+            <para>Save the file as MathSvcCfg.xml</para>
           </listitem>
 
           <listitem>
             <para>Bind the service methods to the queries using a the
             configuration XML.</para>
 
-            <programlisting>esdl bind-service myesp 8003 MathService.1 MathService --config MathServiceConfig.xml -s nnn.nnn.nnn.nnn -p 8010
+            <programlisting>esdl bind-service myesp 8003 MathService.1 MathService --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010
 </programlisting>
 
             <para>Where myesp is the name of your ESP process, 8003 is the
