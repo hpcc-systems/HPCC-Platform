@@ -9,31 +9,27 @@
     </indexterm><indexterm>
       <primary>TABLE Function</primary>
     </indexterm>(</emphasis><emphasis>recordset, format</emphasis><emphasis
-  role="bold"> [</emphasis><emphasis>,expression</emphasis><emphasis
-  role="bold"> [</emphasis><emphasis>,</emphasis><emphasis
-  role="bold">FEW<indexterm>
+  role="bold"> [</emphasis><emphasis>, expression</emphasis><emphasis
+  role="bold"> [</emphasis>,<emphasis role="bold">FEW<indexterm>
       <primary>FEW</primary>
     </indexterm> | MANY<indexterm>
       <primary>MANY</primary>
-    </indexterm>] [</emphasis><emphasis>, </emphasis><emphasis
+    </indexterm>] [</emphasis>, <emphasis
   role="bold">UNSORTED<indexterm>
       <primary>UNSORTED</primary>
-    </indexterm>]] [</emphasis><emphasis>,</emphasis><emphasis
-  role="bold">LOCAL<indexterm>
+    </indexterm>]] [</emphasis>, <emphasis role="bold">LOCAL<indexterm>
       <primary>LOCAL</primary>
-    </indexterm>]</emphasis><emphasis role="bold"> [, KEYED<indexterm>
+    </indexterm>] [, KEYED<indexterm>
       <primary>KEYED</primary>
-    </indexterm> ]</emphasis> <emphasis role="bold"> [, MERGE<indexterm>
+    </indexterm> ] [, MERGE<indexterm>
       <primary>MERGE</primary>
-    </indexterm> ] <emphasis role="bold">[</emphasis>,<emphasis
-  role="bold">SKEW<indexterm>
+    </indexterm> ] [, SKEW<indexterm>
       <primary>SKEW</primary>
-    </indexterm>(</emphasis><emphasis>limit</emphasis><emphasis
-  role="bold">[</emphasis><emphasis>, target</emphasis><emphasis role="bold">]
+    </indexterm>(</emphasis><emphasis>limit</emphasis><emphasis role="bold">[</emphasis><emphasis>, target</emphasis><emphasis role="bold">]
   ) [, THRESHOLD<indexterm>
       <primary>THRESHOLD</primary>
     </indexterm>(</emphasis><emphasis>size</emphasis><emphasis role="bold">) ]
-  ]</emphasis>)</emphasis></para>
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -161,6 +157,51 @@
 
             <entry>An integer value indicating the minimum number of bytes for
             a single part. Default is 1GB.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Optional. Specifies the output record order is not significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Specifies the significance of the output record order.</entry>
+          </row>
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Optional. Specifies the input record order is significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Optional. Specifies the input record order is not significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Optional. Try to evaluate this activity in parallel.</entry>
+          </row>
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Optional. Override the algorithm used for this activity.</entry>
+          </row>
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
 
           <row>
