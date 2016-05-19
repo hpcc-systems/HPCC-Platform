@@ -118,6 +118,7 @@ IF (NOT LIBMEMCACHED_FOUND)
         add_dependencies(libmemcached generate-libmemcached)
         add_dependencies(libmemcachedutil generate-libmemcached)
 
+        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libmemcached-${LIBMEMCACHED_VERSION}/libmemcached/.libs\")")
         install(PROGRAMS
             ${CMAKE_CURRENT_BINARY_DIR}/libmemcached-${LIBMEMCACHED_VERSION}/libmemcached/.libs/libmemcached.so
             ${CMAKE_CURRENT_BINARY_DIR}/libmemcached-${LIBMEMCACHED_VERSION}/libmemcached/.libs/libmemcached.so.11
