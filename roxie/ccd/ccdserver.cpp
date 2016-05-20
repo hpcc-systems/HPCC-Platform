@@ -8022,8 +8022,6 @@ public:
         }
         else if (stricmp(algorithmName, "heapsort")==0)
             sortAlgorithm = heapSortAlgorithm; // NOTE - we do allow UNSTABLE('heapsort') in order to facilitate runtime selection. Also explicit selection of heapsort overrides request to spill
-        else if (stricmp(algorithmName, "insertionsort")==0)
-            sortAlgorithm = insertionSortAlgorithm;
         else if (stricmp(algorithmName, "mergesort")==0)
             sortAlgorithm = (sortFlags & TAFspill) ? spillingMergeSortAlgorithm : mergeSortAlgorithm;
         else if (stricmp(algorithmName, "parmergesort")==0)
@@ -27537,7 +27535,6 @@ class CcdServerTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(CcdServerTest);
         CPPUNIT_TEST(testSetup);
         CPPUNIT_TEST(testHeapSort);
-        CPPUNIT_TEST(testInsertionSort);
         CPPUNIT_TEST(testQuickSort);
         CPPUNIT_TEST(testMerge);
         CPPUNIT_TEST(testMergeDedup);
@@ -27555,6 +27552,7 @@ protected:
 
     void testSetup()
     {
+        selfTestMode = true;
         roxiemem::setTotalMemoryLimit(false, true, false, 100 * 1024 * 1024, 0, NULL, NULL);
     }
 
@@ -27731,8 +27729,6 @@ protected:
         sortAlgorithm = NULL;
         if (type==2)
             sortAlgorithm = "heapSort";
-        else if (type == 1)
-            sortAlgorithm = "insertionSort";
         else
             sortAlgorithm = "quickSort";
         DBGLOG("Testing %s activity", sortAlgorithm);
@@ -27841,10 +27837,6 @@ protected:
     {
         testSort(0);
     }
-    void testInsertionSort()
-    {
-        testSort(1);
-    }
     void testHeapSort()
     {
         testSort(2);
@@ -27928,7 +27920,7 @@ protected:
         unsigned start = msTick();
         testSplitActivity(factory, test, test, numOutputs, 0);
         testSplitActivity(factory, test12345, test12345, numOutputs, 0);
-        testSplitActivity(factory, test12345, test12345, numOutputs, 1000000);
+        testSplitActivity(factory, test12345, test12345, numOutputs, 100);
         unsigned elapsed = msTick() - start;
 
         DBGLOG("testSplit %d done in %dms", numOutputs, elapsed);

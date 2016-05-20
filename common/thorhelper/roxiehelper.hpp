@@ -231,7 +231,7 @@ public:
 //Should be implemented in a subsequent pull request, which also uses ALGORITHM('x') instead of requiring STABLE/UNSTABLE
 typedef enum {
     heapSortAlgorithm,                  // heap sort
-    insertionSortAlgorithm,             // insertion sort - purely for comparison
+    insertionSortAlgorithm,             // insertion sort - purely for comparison (no longer supported)
     quickSortAlgorithm,                 // jlib implementation of quicksort
     stableQuickSortAlgorithm,           // jlib version of quick sort that uses an extra array indirect to ensure it is stable
     spillingQuickSortAlgorithm,         // quickSortAlgorithm with the ability to spill
@@ -260,7 +260,6 @@ extern THORHELPER_API ISortAlgorithm *createQuickSortAlgorithm(ICompare *_compar
 extern THORHELPER_API ISortAlgorithm *createStableQuickSortAlgorithm(ICompare *_compare);
 extern THORHELPER_API ISortAlgorithm *createParallelQuickSortAlgorithm(ICompare *_compare);
 extern THORHELPER_API ISortAlgorithm *createParallelStableQuickSortAlgorithm(ICompare *_compare);
-extern THORHELPER_API ISortAlgorithm *createInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId);
 extern THORHELPER_API ISortAlgorithm *createHeapSortAlgorithm(ICompare *_compare);
 extern THORHELPER_API ISortAlgorithm *createSpillingQuickSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable);
 extern THORHELPER_API ISortAlgorithm *createMergeSortAlgorithm(ICompare *_compare);

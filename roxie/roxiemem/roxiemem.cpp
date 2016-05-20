@@ -5542,18 +5542,13 @@ class RoxieMemTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testRoundup);
         CPPUNIT_TEST(testCompressSize);
         CPPUNIT_TEST(testBitmap);
-        CPPUNIT_TEST(testBitmapThreading);
         CPPUNIT_TEST(testAllocSize);
         CPPUNIT_TEST(testHuge);
-        CPPUNIT_TEST(testCas);
         CPPUNIT_TEST(testAll);
-        CPPUNIT_TEST(testCallbacks);
         CPPUNIT_TEST(testRecursiveCallbacks);
-        CPPUNIT_TEST(testCompacting);
         CPPUNIT_TEST(testResize);
         //MORE: The following currently leak pages, so should go last
         CPPUNIT_TEST(testDatamanager);
-        CPPUNIT_TEST(testDatamanagerThreading);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
@@ -5570,11 +5565,11 @@ public:
 protected:
     void testSetup()
     {
-        printf("Heaplet: cacheline(%u) base(%u) fixedbase(%u) fixed(%u) packed(%u) huge(%u)\n",
+        DBGLOG("Heaplet: cacheline(%u) base(%u) fixedbase(%u) fixed(%u) packed(%u) huge(%u)",
                 CACHE_LINE_SIZE, (size32_t)sizeof(Heaplet), (size32_t)sizeof(ChunkedHeaplet), (size32_t)sizeof(FixedSizeHeaplet), (size32_t)sizeof(PackedFixedSizeHeaplet), (size32_t)sizeof(HugeHeaplet));
-        printf("Heap: fixed(%u) packed(%u) huge(%u)\n",
+        DBGLOG("Heap: fixed(%u) packed(%u) huge(%u)",
                 (size32_t)sizeof(CFixedChunkedHeap), (size32_t)sizeof(CPackedChunkingHeap), (size32_t)sizeof(CHugeHeap));
-        printf("IHeap: fixed(%u) directfixed(%u) packed(%u) variable(%u)\n",
+        DBGLOG("IHeap: fixed(%u) directfixed(%u) packed(%u) variable(%u)",
                 (size32_t)sizeof(CRoxieFixedRowHeap), (size32_t)sizeof(CRoxieDirectFixedRowHeap), (size32_t)sizeof(CRoxieDirectPackedRowHeap), (size32_t)sizeof(CRoxieVariableRowHeap));
 
         ASSERT(FixedSizeHeaplet::dataOffset() >= sizeof(FixedSizeHeaplet));
@@ -5645,39 +5640,6 @@ protected:
         dm.allocate()->Release();
         ASSERT(atomic_read(&dataBufferPages)==1);
 
-        dm.cleanUp();
-    }
-
-    void testDatamanagerThreading()
-    {
-        CDataBufferManager dm(DATA_ALIGNMENT_SIZE);
-
-        class casyncfor: public CAsyncFor
-        {
-        public:
-            casyncfor(CDataBufferManager &_dm) : dm(_dm) {}
-
-            void Do(unsigned idx)
-            {
-                for (unsigned j=0; j < 1000; j++)
-                {
-                    DataBuffer *pages[10000];
-                    unsigned i;
-                    for (i = 0; i < 10000; i++)
-                    {
-                        pages[i] = dm.allocate();
-                    }
-                    for (i = 0; i < 10000; i++)
-                    {
-                        pages[i]->Release();
-                    }
-                }
-            }
-        private:
-            CDataBufferManager& dm;
-        } afor(dm);
-        afor.For(5,5);
-        DBGLOG("ok");
         dm.cleanUp();
     }
 
@@ -7178,6 +7140,17 @@ public:
     unsigned locks;
 };
 
+class RoxieMemTimingTests : public RoxieMemTests
+{
+    CPPUNIT_TEST_SUITE( RoxieMemTimingTests );
+        CPPUNIT_TEST(testSetup);
+        CPPUNIT_TEST(testBitmapThreading);
+        CPPUNIT_TEST(testCas);
+        CPPUNIT_TEST(testCallbacks);
+        CPPUNIT_TEST(testCompacting);
+        CPPUNIT_TEST(testCleanup);
+    CPPUNIT_TEST_SUITE_END();
+};
 
 const memsize_t memorySize = 0x60000000;
 class RoxieMemStressTests : public CppUnit::TestFixture
@@ -7189,6 +7162,7 @@ class RoxieMemStressTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testResizeDoubleFragmenting);
     CPPUNIT_TEST(testResizeFragmenting);
     CPPUNIT_TEST(testSequential);
+    CPPUNIT_TEST(testDatamanagerThreading);
     CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
@@ -7372,6 +7346,39 @@ protected:
         ASSERT(requestSize > memorySize/4);
     }
 
+    void testDatamanagerThreading()
+    {
+        CDataBufferManager dm(DATA_ALIGNMENT_SIZE);
+
+        class casyncfor: public CAsyncFor
+        {
+        public:
+            casyncfor(CDataBufferManager &_dm) : dm(_dm) {}
+
+            void Do(unsigned idx)
+            {
+                for (unsigned j=0; j < 1000; j++)
+                {
+                    DataBuffer *pages[1000];
+                    unsigned i;
+                    for (i = 0; i < 1000; i++)
+                    {
+                        pages[i] = dm.allocate();
+                    }
+                    for (i = 0; i < 1000; i++)
+                    {
+                        pages[i]->Release();
+                    }
+                }
+            }
+        private:
+            CDataBufferManager& dm;
+        } afor(dm);
+        afor.For(5,5);
+        DBGLOG("ok");
+        dm.cleanUp();
+    }
+
 
 };
 
@@ -7413,21 +7420,21 @@ protected:
     {
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
         void * huge = rowManager->allocate(hugeAllocSize, 1);
-        ASSERT(rowManager->numPagesAfterCleanup(true)==4097);
+        ASSERT(rowManager->numPagesAfterCleanup(true)==16385);
         ReleaseRoxieRow(huge);
         ASSERT(rowManager->numPagesAfterCleanup(true)==0);
         memsize_t capacity;
         void *huge1 = rowManager->allocate(initialAllocSize, 1);
         rowManager->resizeRow(capacity, huge1, initialAllocSize, hugeAllocSize, 1);
         ASSERT(capacity > hugeAllocSize);
-        ASSERT(rowManager->numPagesAfterCleanup(true)==4097);
+        ASSERT(rowManager->numPagesAfterCleanup(true)==16385);
         ReleaseRoxieRow(huge1);
         ASSERT(rowManager->numPagesAfterCleanup(true)==0);
 
         huge1 = rowManager->allocate(hugeAllocSize/2, 1);
         rowManager->resizeRow(capacity, huge1, hugeAllocSize/2, hugeAllocSize, 1);
         ASSERT(capacity > hugeAllocSize);
-        ASSERT(rowManager->numPagesAfterCleanup(true)==4097);
+        ASSERT(rowManager->numPagesAfterCleanup(true)==16385);
         ReleaseRoxieRow(huge1);
         ASSERT(rowManager->numPagesAfterCleanup(true)==0);
 
@@ -7456,9 +7463,9 @@ static int compareTiming(const void * pLeft, const void * pRight)
 }
 
 
-class RoxieMemTuningTests : public CppUnit::TestFixture
+class RoxieMemTimingTests2 : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE( RoxieMemTuningTests );
+    CPPUNIT_TEST_SUITE( RoxieMemTimingTests2 );
     CPPUNIT_TEST(testSetup);
 #ifdef RUN_SINGLE_TEST
     CPPUNIT_TEST(testOne);
@@ -7471,11 +7478,11 @@ class RoxieMemTuningTests : public CppUnit::TestFixture
     const IContextLogger &logctx;
 
 public:
-    RoxieMemTuningTests() : logctx(queryDummyContextLogger())
+    RoxieMemTimingTests2() : logctx(queryDummyContextLogger())
     {
     }
 
-    ~RoxieMemTuningTests()
+    ~RoxieMemTimingTests2()
     {
     }
 
@@ -7604,14 +7611,16 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTests, "RoxieMemTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTimingTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTimingTests, "RoxieMemTimingTests" );
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemStressTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemStressTests, "RoxieMemStressTests" );
 
-CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTuningTests );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTuningTests, "RoxieMemTuningTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTimingTests2 );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTimingTests2, "RoxieMemTimingTests2" );
 
 #ifdef __64BIT__
-//CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemHugeTests );
+CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemHugeTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemHugeTests, "RoxieMemHugeTests" );
 #endif
 } // namespace roxiemem

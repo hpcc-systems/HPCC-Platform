@@ -89,12 +89,6 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibSemTest, "JlibSemTest" );
 
 class JlibSetTest : public CppUnit::TestFixture
 {
-public:
-    CPPUNIT_TEST_SUITE(JlibSetTest);
-        CPPUNIT_TEST(testBitsetHelpers);
-        CPPUNIT_TEST(testSimple);
-    CPPUNIT_TEST_SUITE_END();
-
 protected:
 
     void testBitsetHelpers()
@@ -161,28 +155,33 @@ protected:
         ASSERT((end-5) == (inclEnd-1));
     }
 
-    void testSet(bool initial)
+    void testSet(bool initial, unsigned passes, bool timed)
     {
         unsigned now = msTick();
         bool setValue = !initial;
         bool clearValue = initial;
         const unsigned numBits = 400;
-        const unsigned passes = 10000;
         for (unsigned pass=0; pass < passes; pass++)
         {
             Owned<IBitSet> bs = createThreadSafeBitSet();
             testSet1(initial, bs, 0, numBits, setValue, clearValue);
         }
-        unsigned elapsed = msTick()-now;
-        fprintf(stdout, "Bit test (%u) time taken = %dms\n", initial, elapsed);
+        if (timed)
+        {
+            unsigned elapsed = msTick()-now;
+            DBGLOG("Bit test (%u) %d passes time taken = %dms", initial, passes, elapsed);
+        }
         now = msTick();
         for (unsigned pass=0; pass < passes; pass++)
         {
             Owned<IBitSet> bs = createBitSet();
             testSet1(initial, bs, 0, numBits, setValue, clearValue);
         }
-        elapsed = msTick()-now;
-        fprintf(stdout, "Bit test [thread-unsafe version] (%u) time taken = %dms\n", initial, elapsed);
+        if (timed)
+        {
+            unsigned elapsed = msTick()-now;
+            DBGLOG("Bit test [thread-unsafe version] (%u) %d passes time taken = %dms", initial, passes, elapsed);
+        }
         now = msTick();
         size32_t bitSetMemSz = getBitSetMemoryRequirement(numBits+5);
         MemoryBuffer mb;
@@ -192,9 +191,44 @@ protected:
             Owned<IBitSet> bs = createBitSet(bitSetMemSz, mem);
             testSet1(initial, bs, 0, numBits, setValue, clearValue);
         }
-        elapsed = msTick()-now;
-        fprintf(stdout, "Bit test [thread-unsafe version, fixed memory] (%u) time taken = %dms\n", initial, elapsed);
+        if (timed)
+        {
+            unsigned elapsed = msTick()-now;
+            DBGLOG("Bit test [thread-unsafe version, fixed memory] (%u) %d passes time taken = %dms\n", initial, passes, elapsed);
+        }
     }
+};
+
+class JlibSetTestQuick : public JlibSetTest
+{
+public:
+    CPPUNIT_TEST_SUITE(JlibSetTestQuick);
+        CPPUNIT_TEST(testBitsetHelpers);
+        CPPUNIT_TEST(testSimple);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testSimple()
+    {
+        testSet(false, 100, false);
+        testSet(true, 100, false);
+    }
+
+};
+
+class JlibSetTestStress : public JlibSetTest
+{
+public:
+    CPPUNIT_TEST_SUITE(JlibSetTestStress);
+        CPPUNIT_TEST(testParallel);
+        CPPUNIT_TEST(testSimple);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testSimple()
+    {
+        testSet(false, 10000, true);
+        testSet(true, 10000, true);
+    }
+protected:
 
     class CBitThread : public CSimpleInterfaceOf<IInterface>, implements IThreaded
     {
@@ -326,34 +360,33 @@ protected:
         fprintf(stdout, "Thread unsafe parallel bit set test (%u) time taken = %dms\n", initial, took);
     }
 
-    void testSimple()
+    void testParallel()
     {
-        testSet(false);
-        testSet(true);
         testSetParallel(false);
         testSetParallel(true);
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( JlibSetTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibSetTest, "JlibSetTest" );
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibSetTestQuick );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibSetTestQuick, "JlibSetTestQuick" );
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibSetTestStress );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibSetTestStress, "JlibSetTestStress" );
 
 /* =========================================================== */
-class JlibFileIOTest : public CppUnit::TestFixture
+class JlibFileIOTestTiming : public CppUnit::TestFixture
 {
+protected:
     unsigned rs, nr10pct, nr150pct;
     char *record;
     StringBuffer tmpfile;
-    StringBuffer server;
 
-    CPPUNIT_TEST_SUITE( JlibFileIOTest );
+    CPPUNIT_TEST_SUITE( JlibFileIOTestTiming );
         CPPUNIT_TEST(testIOSmall);
-        CPPUNIT_TEST(testIORemote);
         CPPUNIT_TEST(testIOLarge);
     CPPUNIT_TEST_SUITE_END();
 
 public:
-    JlibFileIOTest()
+    JlibFileIOTestTiming()
     {
         HardwareInfo hdwInfo;
         getHardwareInfo(hdwInfo);
@@ -367,17 +400,15 @@ public:
         record[rs-1] = '\n';
 
         tmpfile.set("JlibFileIOTest.txt");
-        server.set(".");
-        // server.set("192.168.1.18");
     }
 
-    ~JlibFileIOTest()
+    ~JlibFileIOTestTiming()
     {
         free(record);
     }
 
 protected:
-    void testIO(unsigned nr, SocketEndpoint *ep)
+    void testIO(unsigned nr, const char *server)
     {
         IFile *ifile;
         IFileIO *ifileio;
@@ -394,10 +425,12 @@ protected:
             else
                 fprintf(stdout, "\nFile size: %d (MB) Nocache, ", fsize);
 
-            if (ep != NULL)
+            if (server != NULL)
             {
-                ifile = createRemoteFile(*ep, tmpfile);
-                fprintf(stdout, "Remote: (%s)\n", server.str());
+                SocketEndpoint ep;
+                ep.set(server, 7100);
+                ifile = createRemoteFile(ep, tmpfile);
+                fprintf(stdout, "Remote: (%s)\n", server);
             }
             else
             {
@@ -486,31 +519,37 @@ protected:
         testIO(nr150pct, NULL);
     }
 
-    void testIORemote()
-    {
-        SocketEndpoint ep;
-        ep.set(server, 7100);
-        testIO(nr10pct, &ep);
-    }
 
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileIOTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileIOTest, "JlibFileIOTest" );
+class JlibFileIOTestStress : public JlibFileIOTestTiming
+{
+protected:
+    CPPUNIT_TEST_SUITE( JlibFileIOTestStress );
+        CPPUNIT_TEST(testIORemote);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testIORemote()
+    {
+        const char * server = ".";
+        testIO(nr10pct, server);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileIOTestTiming );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileIOTestTiming, "JlibFileIOTestTiming" );
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileIOTestStress );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileIOTestTiming, "JlibFileIOTestStress" );
 
 /* =========================================================== */
 
-class JlibStringBufferTest : public CppUnit::TestFixture
+class JlibStringBufferTiming : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE( JlibStringBufferTest );
+    CPPUNIT_TEST_SUITE( JlibStringBufferTiming );
         CPPUNIT_TEST(testSwap);
     CPPUNIT_TEST_SUITE_END();
 
 public:
-    JlibStringBufferTest()
-    {
-    }
-
     void testSwap()
     {
         StringBuffer l;
@@ -525,7 +564,7 @@ public:
                 l.swapWith(r);
             }
             cycle_t elapsed = get_cycles_now() - start;
-            fprintf(stdout, "iterations of size %u took %.2f\n", len, (double)cycle_to_nanosec(elapsed) / numIter);
+            DBGLOG("Each iteration of size %u took %.2f nanoseconds", len, (double)cycle_to_nanosec(elapsed) / numIter);
             l.append("a");
             r.append("b");
         }
@@ -533,8 +572,8 @@ public:
 
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( JlibStringBufferTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStringBufferTest, "JlibStringBufferTest" );
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibStringBufferTiming );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStringBufferTiming, "JlibStringBufferTiming" );
 
 
 
@@ -629,9 +668,9 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibQuantileTest, "JlibQuantileTest" );
 
 /* =========================================================== */
 
-class JlibReaderWriterTest : public CppUnit::TestFixture
+class JlibReaderWriterTestTiming : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(JlibReaderWriterTest);
+    CPPUNIT_TEST_SUITE(JlibReaderWriterTestTiming);
     CPPUNIT_TEST(testCombinations);
     CPPUNIT_TEST_SUITE_END();
 
@@ -917,7 +956,7 @@ protected:
     unsigned unitWorkTimeMs;
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(JlibReaderWriterTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibReaderWriterTest, "JlibReaderWriterTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(JlibReaderWriterTestTiming);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibReaderWriterTestTiming, "JlibReaderWriterTestTiming");
 
 #endif // _USE_CPPUNIT
