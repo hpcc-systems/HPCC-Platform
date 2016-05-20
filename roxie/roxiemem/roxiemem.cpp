@@ -4445,15 +4445,16 @@ protected:
 
 class CGlobalRowManager : public CCallbackRowManager
 {
+    const IRowAllocatorCache **slaveAllocatorCaches;
 public:
-    CGlobalRowManager(memsize_t _memLimit, memsize_t _globalLimit, unsigned _numSlaves, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks, bool _outputOOMReports)
-        : CCallbackRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports), numSlaves(_numSlaves)
+    CGlobalRowManager(memsize_t _memLimit, memsize_t _globalLimit, unsigned _numSlaves, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, const IRowAllocatorCache **_slaveAllocatorCaches, bool _ignoreLeaks, bool _outputOOMReports)
+        : CCallbackRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports), numSlaves(_numSlaves), slaveAllocatorCaches(_slaveAllocatorCaches)
     {
         assertex(_globalLimit <= _memLimit);
         globalPageLimit = (unsigned) PAGES(_globalLimit, HEAP_ALIGNMENT_SIZE);
         slaveRowManagers = new CChunkingRowManager * [numSlaves];
         for (unsigned i=0; i < numSlaves; i++)
-            slaveRowManagers[i] = new CSlaveRowManager(i+1, this, _memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports);
+            slaveRowManagers[i] = new CSlaveRowManager(i+1, this, _memLimit, _tl, _logctx, slaveAllocatorCaches ? slaveAllocatorCaches[i] : nullptr, _ignoreLeaks, _outputOOMReports);
     }
     ~CGlobalRowManager()
     {
@@ -5261,12 +5262,12 @@ extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const
     return new CCallbackRowManager(memLimit, tl, logctx, allocatorCache, ignoreLeaks, outputOOMReports);
 }
 
-extern IRowManager *createGlobalRowManager(memsize_t memLimit, memsize_t globalLimit, unsigned numSlaves, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks, bool outputOOMReports)
+extern IRowManager *createGlobalRowManager(memsize_t memLimit, memsize_t globalLimit, unsigned numSlaves, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, const IRowAllocatorCache **slaveAllocatorCaches, bool ignoreLeaks, bool outputOOMReports)
 {
     if (numDirectBuckets == 0)
         throw MakeStringException(ROXIEMM_HEAP_ERROR, "createRowManager() called before setTotalMemoryLimit()");
 
-    return new CGlobalRowManager(memLimit, globalLimit, numSlaves, tl, logctx, allocatorCache, ignoreLeaks, outputOOMReports);
+    return new CGlobalRowManager(memLimit, globalLimit, numSlaves, tl, logctx, allocatorCache, slaveAllocatorCaches, ignoreLeaks, outputOOMReports);
 }
 
 extern void setMemoryStatsInterval(unsigned secs)
@@ -7030,7 +7031,7 @@ protected:
         const memsize_t allMemoryAlloc = allMemory - halfPage;
         IRowManager * * slaveManagers = new IRowManager * [numSlaves];
         SimpleCallbackBlockAllocator * * allocators = new SimpleCallbackBlockAllocator * [numSlaves];
-        Owned<IRowManager> globalManager = createGlobalRowManager(allMemory, allMemory, numSlaves, NULL, logctx, NULL, true, false);
+        Owned<IRowManager> globalManager = createGlobalRowManager(allMemory, allMemory, numSlaves, NULL, logctx, NULL, NULL, true, false);
         for (unsigned i1 = 0; i1 < numSlaves; i1++)
         {
             slaveManagers[i1] = globalManager->querySlaveRowManager(i1);

@@ -161,7 +161,6 @@ interface IThorAllocator : extends IInterface
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId) const = 0;
     virtual roxiemem::IRowManager *queryRowManager() const = 0;
     virtual roxiemem::RoxieHeapFlags queryFlags() const = 0;
-    virtual IContextLogger *queryLoggingContext() const = 0;
     virtual bool queryCrc() const = 0;
     virtual IThorAllocator *getSlaveAllocator(unsigned channel) = 0;
 };

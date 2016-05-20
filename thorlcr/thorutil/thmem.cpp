@@ -2285,52 +2285,35 @@ class CThorAllocator : public CSimpleInterface, implements IThorAllocator, imple
 {
 protected:
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
+    IArrayOf<IRowAllocatorMetaActIdCache> slaveAllocatorMetaCaches;
     Owned<roxiemem::IRowManager> rowManager;
     roxiemem::RoxieHeapFlags defaultFlags;
     IContextLogger *logctx;
     unsigned numChannels;
-    unsigned __int64 channelBits = 0;
+    IArrayOf<CThorAllocator> slaveAllocators;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorAllocator(unsigned memLimitMB, unsigned sharedMemLimitMB, unsigned _numChannels, unsigned memorySpillAtPercentage, IContextLogger &_logctx, roxiemem::RoxieHeapFlags _defaultFlags)
-        : numChannels(_numChannels), logctx(&_logctx), defaultFlags(_defaultFlags)
+    CThorAllocator(unsigned memLimitMB, unsigned sharedMemLimitMB, unsigned _numChannels, unsigned memorySpillAtPercentage, IContextLogger &_logctx, bool crcChecking, roxiemem::RoxieHeapFlags _defaultFlags);
+    CThorAllocator(roxiemem::RoxieHeapFlags _defaultFlags, IContextLogger *_logCtx) : defaultFlags(_defaultFlags), logctx(_logCtx)
     {
-        memsize_t memLimit = ((memsize_t)memLimitMB)*0x100000;
-        memsize_t sharedMemLimit = ((memsize_t)sharedMemLimitMB)*0x100000;
         allocatorMetaCache.setown(createRowAllocatorCache(this));
-        if (numChannels>1)
-            rowManager.setown(roxiemem::createGlobalRowManager(memLimit, sharedMemLimit, numChannels, NULL, *logctx, allocatorMetaCache, false, true));
-        else
-            rowManager.setown(roxiemem::createRowManager(memLimit, NULL, *logctx, allocatorMetaCache, false, true));
-
-        rowManager->setMemoryLimit(memLimit, 0==memorySpillAtPercentage ? 0 : memLimit/100*memorySpillAtPercentage);
-        const bool paranoid = false;
-        if (paranoid)
-        {
-            //you probably want to test these options individually
-            rowManager->setMemoryCallbackThreshold((unsigned)-1);
-            rowManager->setCallbackOnThread(true);
-            rowManager->setMinimizeFootprint(true, true);
-            rowManager->setReleaseWhenModifyCallback(true, true);
-        }
-    }
-    CThorAllocator(CThorAllocator &sharedAllocator, unsigned channel)
-    {
-        allocatorMetaCache.set(sharedAllocator.queryAllocateCache());
-        rowManager.set(sharedAllocator.queryRowManager()->querySlaveRowManager(channel));
-        defaultFlags = sharedAllocator.queryFlags();
-        logctx = sharedAllocator.queryLoggingContext();
         numChannels = 0;
-        channelBits = ((unsigned __int64)(channel+1)) << 32; // channel bits occupy top 4 bytes;
     }
     ~CThorAllocator()
     {
         rowManager.clear();
         allocatorMetaCache.clear();
     }
-    IRowAllocatorMetaActIdCache *queryAllocateCache() const { return allocatorMetaCache; }
+    void setRowManager(roxiemem::IRowManager *_rowManager)
+    {
+        rowManager.set(_rowManager);
+    }
+    IRowAllocatorMetaActIdCache *getAllocatorCache()
+    {
+        return allocatorMetaCache.getLink();
+    }
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
     virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
@@ -2339,23 +2322,22 @@ public:
 // IThorAllocator
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags) const
     {
-        return allocatorMetaCache->ensure(meta, ((unsigned __int64)activityId) | channelBits, flags);
+        return allocatorMetaCache->ensure(meta, activityId, flags);
     }
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId) const
     {
-        return allocatorMetaCache->ensure(meta, ((unsigned __int64)activityId) | channelBits, defaultFlags);
+        return allocatorMetaCache->ensure(meta, activityId, defaultFlags);
     }
     virtual roxiemem::IRowManager *queryRowManager() const
     {
         return rowManager;
     }
     virtual roxiemem::RoxieHeapFlags queryFlags() const { return defaultFlags; }
-    virtual IContextLogger *queryLoggingContext() const { return logctx; }
     virtual bool queryCrc() const { return false; }
     virtual IThorAllocator *getSlaveAllocator(unsigned channel)
     {
         assertex(numChannels>1);
-        return new CThorAllocator(*this, channel);
+        return LINK(&slaveAllocators.item(channel));
     }
 };
 
@@ -2364,10 +2346,11 @@ class CThorCrcCheckingAllocator : public CThorAllocator
 {
 public:
     CThorCrcCheckingAllocator(unsigned memLimitMB, unsigned sharedMemLimitMB, unsigned numChannels, unsigned memorySpillAtPercentage, IContextLogger &logctx, roxiemem::RoxieHeapFlags flags)
-        : CThorAllocator(memLimitMB, sharedMemLimitMB, numChannels, memorySpillAtPercentage, logctx, flags)
+        : CThorAllocator(memLimitMB, sharedMemLimitMB, numChannels, memorySpillAtPercentage, logctx, true, flags)
     {
     }
-    CThorCrcCheckingAllocator(CThorCrcCheckingAllocator &sharedAllocator, unsigned channel) : CThorAllocator(sharedAllocator, channel)
+    CThorCrcCheckingAllocator(roxiemem::RoxieHeapFlags defaultFlags, IContextLogger *logCtx)
+        : CThorAllocator(defaultFlags, logCtx)
     {
     }
 // IThorAllocator
@@ -2375,7 +2358,7 @@ public:
     virtual IThorAllocator *getSlaveAllocator(unsigned channel)
     {
         assertex(numChannels>1);
-        return new CThorCrcCheckingAllocator(*this, channel);
+        return new CThorCrcCheckingAllocator(defaultFlags, logctx);
     }
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
     virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned cacheId, roxiemem::RoxieHeapFlags flags) const
@@ -2383,6 +2366,43 @@ public:
         return createCrcRoxieRowAllocator(cache, *rowManager, meta, activityId, cacheId, flags);
     }
 };
+
+CThorAllocator::CThorAllocator(unsigned memLimitMB, unsigned sharedMemLimitMB, unsigned _numChannels, unsigned memorySpillAtPercentage, IContextLogger &_logctx, bool crcChecking, roxiemem::RoxieHeapFlags _defaultFlags)
+    : numChannels(_numChannels), logctx(&_logctx), defaultFlags(_defaultFlags)
+{
+    memsize_t memLimit = ((memsize_t)memLimitMB)*0x100000;
+    memsize_t sharedMemLimit = ((memsize_t)sharedMemLimitMB)*0x100000;
+    allocatorMetaCache.setown(createRowAllocatorCache(this));
+    if (numChannels>1)
+    {
+        for (unsigned c=0; c<numChannels; c++)
+        {
+            CThorAllocator *slaveAllocator;
+            if (crcChecking)
+                slaveAllocator = new CThorCrcCheckingAllocator(defaultFlags, logctx);
+            else
+                slaveAllocator = new CThorAllocator(defaultFlags, logctx);
+            slaveAllocators.append(*slaveAllocator);
+            slaveAllocatorMetaCaches.append(*slaveAllocator->getAllocatorCache());
+        }
+        rowManager.setown(roxiemem::createGlobalRowManager(memLimit, sharedMemLimit, numChannels, NULL, *logctx, allocatorMetaCache, (const roxiemem::IRowAllocatorCache **)slaveAllocatorMetaCaches.getArray(), false, true));
+        for (unsigned c=0; c<numChannels; c++)
+            slaveAllocators.item(c).setRowManager(rowManager->querySlaveRowManager(c));
+    }
+    else
+        rowManager.setown(roxiemem::createRowManager(memLimit, NULL, *logctx, allocatorMetaCache, false, true));
+
+    rowManager->setMemoryLimit(memLimit, 0==memorySpillAtPercentage ? 0 : memLimit/100*memorySpillAtPercentage);
+    const bool paranoid = false;
+    if (paranoid)
+    {
+        //you probably want to test these options individually
+        rowManager->setMemoryCallbackThreshold((unsigned)-1);
+        rowManager->setCallbackOnThread(true);
+        rowManager->setMinimizeFootprint(true, true);
+        rowManager->setReleaseWhenModifyCallback(true, true);
+    }
+}
 
 
 IThorAllocator *createThorAllocator(unsigned memLimitMB, unsigned sharedMemLimitMB, unsigned numChannels, unsigned memorySpillAtPercentage, IContextLogger &logctx, bool crcChecking, bool usePacked)
@@ -2398,7 +2418,7 @@ IThorAllocator *createThorAllocator(unsigned memLimitMB, unsigned sharedMemLimit
     if (crcChecking)
         return new CThorCrcCheckingAllocator(memLimitMB, sharedMemLimitMB, numChannels, memorySpillAtPercentage, logctx, flags);
     else
-        return new CThorAllocator(memLimitMB, sharedMemLimitMB, numChannels, memorySpillAtPercentage, logctx, flags);
+        return new CThorAllocator(memLimitMB, sharedMemLimitMB, numChannels, memorySpillAtPercentage, logctx, false, flags);
 }
 
 
