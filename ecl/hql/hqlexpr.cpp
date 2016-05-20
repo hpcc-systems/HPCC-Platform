@@ -11186,7 +11186,7 @@ protected:
             }
         case no_case:
             {
-                IHqlExpression * search = expr->queryChild(0);
+                OwnedHqlExpr search = transform(expr->queryChild(0));
                 if (!search->isConstant())
                     break;
                 OwnedHqlExpr folded = foldHqlExpression(search);
@@ -11200,31 +11200,16 @@ protected:
                     if (cur->getOperator() == no_mapto)
                     {
                         OwnedHqlExpr newcond = transform(cur->queryChild(0));
-
-                        if (newcond->isConstant())
-                            newcond.setown(foldHqlExpression(newcond));
-                        IValue * compareValue = newcond->queryValue();
-                        if (!compareValue)
+                        if (!newcond->isConstant())
                             break;
 
-                        if (searchType != newcond->queryType())
-                        {
-                            Owned<ITypeInfo> type = ::getPromotedECLCompareType(searchType, newcond->queryType());
-                            OwnedHqlExpr castSearch = ensureExprType(folded, type);
-                            OwnedHqlExpr castCompare = ensureExprType(newcond, type);
-                            IValue * castSearchValue = castSearch->queryValue();
-                            IValue * castCompareValue = castCompare->queryValue();
-                            if (!castSearchValue || !castCompareValue)
-                                break;
+                        newcond.setown(foldHqlExpression(newcond));
+                        int result;
+                        if (!queryCompareConstantValues(result, folded, newcond))
+                            break;
 
-                            if (castSearchValue->compare(castCompareValue) == 0)
-                                return transform(cur->queryChild(1));
-                        }
-                        else
-                        {
-                            if (searchValue->compare(compareValue) == 0)
-                                return transform(cur->queryChild(1));
-                        }
+                        if (result == 0)
+                            return transform(cur->queryChild(1));
                     }
                     else if (!cur->isAttribute())
                         return transform(cur);
