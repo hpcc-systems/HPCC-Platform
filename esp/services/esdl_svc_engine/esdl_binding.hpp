@@ -197,6 +197,7 @@ private:
             }
             catch (IException *E)
             {
+                DBGLOG("ESDL Binding %s.%s failed to subscribe to DALI (%s)", thisBinding->m_processName.get(),thisBinding->m_bindingName.get(), fullBindingPath.str());
                 // failure to subscribe implies dali is down... is this ok??
                 // Is this bad enough to halt the esp load process??
                 E->Release();
@@ -380,7 +381,7 @@ private:
     void getSoapMessage(StringBuffer& out,StringBuffer& soapresp,const char * starttxt,const char * endtxt);
 
     bool reloadBindingFromDali(const char *binding, const char *process);
-    bool reloadDefinitionsFromDali(IPropertyTree * esdlBndCng);
+    bool reloadDefinitionsFromDali(IPropertyTree * esdlBndCng, StringBuffer & loadedname);
     void saveDESDLState();
 };
 
