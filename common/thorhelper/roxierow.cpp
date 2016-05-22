@@ -388,7 +388,7 @@ struct AllocatorKey
     IOutputMetaData *meta;
     unsigned activityId;
     roxiemem::RoxieHeapFlags flags;
-    AllocatorKey(IOutputMetaData *_meta, unsigned &_activityId, roxiemem::RoxieHeapFlags _flags)
+    AllocatorKey(IOutputMetaData *_meta, unsigned _activityId, roxiemem::RoxieHeapFlags _flags)
         : meta(_meta), activityId(_activityId), flags(_flags)
     {
     }

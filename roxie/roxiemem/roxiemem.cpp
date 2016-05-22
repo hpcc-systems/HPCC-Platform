@@ -4445,16 +4445,15 @@ protected:
 
 class CGlobalRowManager : public CCallbackRowManager
 {
-    const IRowAllocatorCache **slaveAllocatorCaches;
 public:
-    CGlobalRowManager(memsize_t _memLimit, memsize_t _globalLimit, unsigned _numSlaves, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, const IRowAllocatorCache **_slaveAllocatorCaches, bool _ignoreLeaks, bool _outputOOMReports)
-        : CCallbackRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports), numSlaves(_numSlaves), slaveAllocatorCaches(_slaveAllocatorCaches)
+    CGlobalRowManager(memsize_t _memLimit, memsize_t _globalLimit, unsigned _numSlaves, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, const IRowAllocatorCache **slaveAllocatorCaches, bool _ignoreLeaks, bool _outputOOMReports)
+        : CCallbackRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports), numSlaves(_numSlaves)
     {
         assertex(_globalLimit <= _memLimit);
         globalPageLimit = (unsigned) PAGES(_globalLimit, HEAP_ALIGNMENT_SIZE);
         slaveRowManagers = new CChunkingRowManager * [numSlaves];
         for (unsigned i=0; i < numSlaves; i++)
-            slaveRowManagers[i] = new CSlaveRowManager(i+1, this, _memLimit, _tl, _logctx, slaveAllocatorCaches ? slaveAllocatorCaches[i] : nullptr, _ignoreLeaks, _outputOOMReports);
+            slaveRowManagers[i] = new CSlaveRowManager(i+1, this, _memLimit, _tl, _logctx, slaveAllocatorCaches ? slaveAllocatorCaches[i] : _allocatorCache, _ignoreLeaks, _outputOOMReports);
     }
     ~CGlobalRowManager()
     {
