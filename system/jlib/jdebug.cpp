@@ -876,6 +876,11 @@ memsize_t getMapInfo(const char *type)
     return 0; // TODO/UNKNOWN
 }
 
+memsize_t getVMInfo(const char *type)
+{
+    return 0; // TODO/UNKNOWN
+}
+
 void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 {
     // MORE: Might be a better way to get CPU speed (actual) than the one stored in Registry
@@ -935,21 +940,96 @@ static unsigned evalAffinityCpus()
 
 memsize_t getMapInfo(const char *type)
 {
+    // NOTE: 'total' heap value includes Roxiemem allocation, if present
+    enum mapList { HEAP, STACK, SBRK, ANON };
+    enum mapList mapType;
+    if ( streq(type, "heap") )
+        mapType = HEAP;
+    else if ( streq(type, "stack") )
+        mapType = STACK;
+    else if ( streq(type, "sbrk") )
+        mapType = SBRK;
+    else if ( streq(type, "anon") )
+        mapType = ANON;
+    else
+        return 0;
+
     memsize_t ret = 0;
     VStringBuffer procMaps("/proc/%d/maps", GetCurrentProcessId());
-    VStringBuffer typeStr("[%s]", type);
     FILE *diskfp = fopen(procMaps.str(), "r");
     if (!diskfp)
         return false;
     char ln[256];
+
+/*
+ *  exmaple /proc/<pid>/maps format:
+ *  addr_start  -addr_end     perms offset   dev   inode      pathname
+ *  01c3a000-01c5b000         rw-p  00000000 00:00 0          [heap]
+ *  7f3f25217000-7f3f25a40000 rw-p  00000000 00:00 0          [stack:2362]
+ *  7f4020a40000-7f4020a59000 rw-p  00000000 00:00 0
+ *  7f4020a59000-7f4020a5a000 ---p  00000000 00:00 0
+ *  7f4029bd4000-7f4029bf6000 r-xp  00000000 08:01 17576135   /lib/x86_64-linux-gnu/ld-2.15.so
+ */
+
     while (fgets(ln, sizeof(ln), diskfp))
     {
-        if (strstr(ln, typeStr.str()))
+        bool skipline = true;
+        if ( mapType == HEAP || mapType == ANON ) // 'general' heap includes anon mmapped + sbrk
+        {
+            // skip file maps (beginning with /) and all other regions (except [heap if selected)
+            if ( (mapType == HEAP && strstr(ln, "[heap")) || (!strstr(ln, " /") && !strstr(ln, " [")) )
+            {
+                // include only (r)ead + (w)rite and (p)rivate (not shared), skipping e(x)ecutable
+                // and ---p guard regions
+                if ( strstr(ln, " rw-p") )
+                    skipline = false;
+            }
+        }
+        else if ( mapType == STACK )
+        {
+            if ( strstr(ln, "[stack") )
+                skipline = false;
+        }
+        else if ( mapType == SBRK )
+        {
+            if ( strstr(ln, "[heap") )
+                skipline = false;
+        }
+        if ( !skipline )
         {
             unsigned __int64 addrLow, addrHigh;
             if (2 == sscanf(ln, "%16" I64F "x-%16" I64F "x", &addrLow, &addrHigh))
+                ret += (memsize_t)(addrHigh-addrLow);
+        }
+    }
+    fclose(diskfp);
+    return ret;
+}
+
+memsize_t getVMInfo(const char *type)
+{
+    memsize_t ret = 0;
+    VStringBuffer name("%s:", type);
+    VStringBuffer procMaps("/proc/self/status");
+    FILE *diskfp = fopen(procMaps.str(), "r");
+    if (!diskfp)
+        return 0;
+    char ln[256];
+    memsize_t value = 0;
+    char unitStr[256];
+    while (fgets(ln, sizeof(ln), diskfp))
+    {
+        if (!strncmp(ln, name.str(), name.length()))
+        {
+            if (2 == sscanf(&ln[name.length()], "%lu%s", &value, unitStr))
             {
-                ret = (memsize_t)(addrHigh-addrLow);
+                if (!strcasecmp(unitStr, "kB"))
+                    value *= 1024ULL;
+                if (!strcasecmp(unitStr, "mB"))
+                    value *= 1024ULL * 1024ULL;
+                if (!strcasecmp(unitStr, "gB"))
+                    value *= 1024ULL * 1024ULL * 1024ULL;
+                ret = value;
                 break;
             }
         }
@@ -1094,20 +1174,10 @@ public:
 void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
 {
 #ifdef __linux__
-    struct mallinfo mi = mallinfo();
-    static CInt64fix fixuordblks;
-    fixuordblks.set(mi.uordblks);
-    static CInt64fix fixusmblks;
-    fixusmblks.set(mi.usmblks);
-    static CInt64fix fixhblkhd;
-    fixhblkhd.set(mi.hblkhd);
-    static CInt64fix fixarena;
-    fixarena.set(mi.arena);
-
-    __int64 sbrkmem = fixuordblks.get()+fixusmblks.get();
-    __int64 mmapmem = fixhblkhd.get();
-    __int64 arena =  fixarena.get();
-    __int64 total = mmapmem+sbrkmem;
+    __int64 total = getMapInfo("heap");
+    __int64 sbrkmem = getMapInfo("sbrk");
+    __int64 mmapmem = total - sbrkmem;
+    __int64 virttot = getVMInfo("VmData");
     unsigned mu;
     unsigned ma;
     unsigned mt;
@@ -1115,9 +1185,8 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
     unsigned su;
     getMemUsage(mu,ma,mt,st,su);
     unsigned muval = (unsigned)(((__int64)mu+(__int64)su)*100/((__int64)mt+(__int64)st));
-    __int64 proctot = arena+mmapmem;
     if (sizeof(memsize_t)==4) {
-        unsigned muval2 = (proctot*100)/(3*(__int64)0x40000000);
+        unsigned muval2 = (virttot*100)/(3*(__int64)0x40000000);
         if (muval2>muval)
             muval = muval2;
     }
@@ -1126,7 +1195,7 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
 
 
     out.appendf("MU=%3u%% MAL=%" I64F "d MMP=%" I64F "d SBK=%" I64F "d TOT=%uK RAM=%uK SWP=%uK", 
-        muval, total, mmapmem, sbrkmem, (unsigned)(proctot/1024), mu, su);
+        muval, total, mmapmem, sbrkmem, (unsigned)(virttot/1024), mu, su);
 #ifdef _USE_MALLOC_HOOK
     if (totalMem) 
         out.appendf(" TM=%" I64F "d",totalMem);

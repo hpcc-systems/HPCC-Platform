@@ -2431,7 +2431,10 @@ CJobBase::~CJobBase()
     PROGLOG("Roxiemem stats: %s", memStatsStr.str());
     memsize_t heapUsage = getMapInfo("heap");
     if (heapUsage) // if 0, assumed to be unavailable
-        PROGLOG("Heap usage : %" I64F "d bytes", (unsigned __int64)heapUsage);
+    {
+        memsize_t rmtotal = roxiemem::getTotalMemoryLimit();
+        PROGLOG("Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
+    }
 }
 
 CJobChannel &CJobBase::queryJobChannel(unsigned c) const
