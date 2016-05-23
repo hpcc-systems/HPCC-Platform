@@ -3120,6 +3120,9 @@ class BufferedRowCallbackManager
                     return;
                 }
             }
+            /* JCS->GH - since the caller does NOT throw an error if the callback is now found
+             * I don't think this should either..
+             */
             throwUnexpectedX("Removing callback that has not been registered");
         }
         unsigned releaseRows(BufferedRowCallbackManager & manager, unsigned whichSlave, unsigned minSuccess, bool critical)

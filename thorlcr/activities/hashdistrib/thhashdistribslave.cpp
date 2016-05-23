@@ -2642,6 +2642,7 @@ class CBucketHandler : public CSimpleInterface, implements IInterface, implement
     PointerArrayOf<CBucket> _buckets;
     CBucket **buckets;
     mutable rowidx_t peakKeyCount;
+    bool callbacksInstalled = false;
 
     rowidx_t getTotalBucketCount() const
     {
@@ -3260,16 +3261,23 @@ CBucketHandler::CBucketHandler(HashDedupSlaveActivityBase &_owner, IThorRowInter
 
 CBucketHandler::~CBucketHandler()
 {
-    owner.queryRowManager()->removeRowBuffer(this);
-    owner.queryRowManager()->removeRowBuffer(&postSpillFlush);
+    if (callbacksInstalled)
+    {
+        owner.queryRowManager()->removeRowBuffer(this);
+        owner.queryRowManager()->removeRowBuffer(&postSpillFlush);
+    }
     for (unsigned i=0; i<numBuckets; i++)
         ::Release(buckets[i]);
 }
 
 void CBucketHandler::flushBuckets()
 {
-    owner.queryRowManager()->removeRowBuffer(this);
-    owner.queryRowManager()->removeRowBuffer(&postSpillFlush);
+    if (callbacksInstalled)
+    {
+        owner.queryRowManager()->removeRowBuffer(this);
+        owner.queryRowManager()->removeRowBuffer(&postSpillFlush);
+        callbacksInstalled = false;
+    }
     for (unsigned i=0; i<numBuckets; i++)
     {
         CBucket &bucket = *buckets[i];
@@ -3372,6 +3380,7 @@ void CBucketHandler::init(unsigned _numBuckets, IRowStream *keyStream)
     owner.queryRowManager()->addRowBuffer(this);
     // postSpillFlush not needed until after 1 spill event, but not safe to add within callback
     owner.queryRowManager()->addRowBuffer(&postSpillFlush);
+    callbacksInstalled = true;
     if (keyStream)
     {
         loop
