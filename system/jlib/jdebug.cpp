@@ -935,23 +935,34 @@ static unsigned evalAffinityCpus()
 
 memsize_t getMapInfo(const char *type)
 {
+    // NOTE: 'total' heap value includes Roxiemem allocation, if present
     memsize_t ret = 0;
     VStringBuffer procMaps("/proc/%d/maps", GetCurrentProcessId());
-    VStringBuffer typeStr("[%s]", type);
     FILE *diskfp = fopen(procMaps.str(), "r");
     if (!diskfp)
         return false;
     char ln[256];
     while (fgets(ln, sizeof(ln), diskfp))
     {
-        if (strstr(ln, typeStr.str()))
+        bool skipline = true;
+        if ( !strcmp(type, "heap") )
+        {
+            if ( strstr(ln, "[heap]") || (!strstr(ln, " /") && !strstr(ln, " [")) )
+            {
+                if ( strstr(ln, " rw-p") || strstr(ln, " ---p") )
+                    skipline = false;
+            }
+        }
+        else if ( !strcmp(type, "stack") )
+        {
+            if ( strstr(ln, "[stack]") )
+                skipline = false;
+        }
+        if ( !skipline )
         {
             unsigned __int64 addrLow, addrHigh;
             if (2 == sscanf(ln, "%16" I64F "x-%16" I64F "x", &addrLow, &addrHigh))
-            {
-                ret = (memsize_t)(addrHigh-addrLow);
-                break;
-            }
+                ret += (memsize_t)(addrHigh-addrLow);
         }
     }
     fclose(diskfp);
