@@ -1146,9 +1146,9 @@ static void setParallelSyncReleaseGranularity(size_t granularity, unsigned scali
     parallelSyncReleaseGranularity = granularity;
     parallelSyncReleaseThreshold = granularity * scaling;
 }
-#else
-// const static size_t parallelSyncReleaseGranularity = DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY;
-// const static size_t parallelSyncReleaseThreshold = DEFAULT_PARALLEL_SYNC_RELEASE_THRESHOLD;
+#elif defined(PARALLEL_SYNC_RELEASE)
+const static size_t parallelSyncReleaseGranularity = DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY;
+const static size_t parallelSyncReleaseThreshold = DEFAULT_PARALLEL_SYNC_RELEASE_THRESHOLD;
 #endif
 
 

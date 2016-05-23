@@ -3012,7 +3012,7 @@ void rtlStrToEStr(unsigned outlen, char *out, unsigned inlen, const char *in)
         out[i] = codepage[j];
     }
     for (;i<outlen; i++)
-        out[i] = codepage[(unsigned) ' '];
+        out[i] = codepage[(unsigned char) ' '];
 }
 
 //---------------------------------------------------------------------------
