@@ -28,6 +28,8 @@
 
 originalDir=$PWD
 
+hash git 2>/dev/null || { echo >&2 "GIT: git command not found"; exit 4; }
+
 ## Some options can be overridden per workunit, and should accept 0 to mean false
 
 if [ -n "$WU_GIT_VERBOSE" ]; then GIT_VERBOSE=$WU_GIT_VERBOSE ; fi
