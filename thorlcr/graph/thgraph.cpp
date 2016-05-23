@@ -373,7 +373,9 @@ CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml) 
     whichBranch = (unsigned)-1;
     log = true;
     sentActInitData.setown(createThreadSafeBitSet());
-    maxCores = queryXGMML().getPropInt("hint[@name=\"max_cores\"]/@value", queryJob().queryMaxDefaultActivityCores());
+    maxCores = queryXGMML().getPropInt("hint[@name=\"max_cores\"]/@value", 0);
+    if (0 == maxCores)
+        maxCores = queryJob().queryMaxDefaultActivityCores();
     baseHelper.setown(helperFactory());
 }
 
@@ -2394,7 +2396,9 @@ void CJobBase::init()
 
     // global setting default on, can be overridden by #option
     timeActivities = 0 != getWorkUnitValueInt("timeActivities", globals->getPropBool("@timeActivities", true));
-    maxActivityCores = (unsigned)getWorkUnitValueInt("maxActivityCores", globals->getPropInt("@maxActivityCores", getAffinityCpus())); // NB: 0 means system decides
+    maxActivityCores = (unsigned)getWorkUnitValueInt("maxActivityCores", 0); // NB: 0 means system decides
+    if (0 == maxActivityCores)
+        maxActivityCores = getAffinityCpus();
     pausing = false;
     resumed = false;
 
