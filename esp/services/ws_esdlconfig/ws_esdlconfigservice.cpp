@@ -1171,15 +1171,36 @@ void fetchESDLDefinitionFromDaliById(const char *id, StringBuffer & def)
     IPropertyTree * deftree = esdlDefinitions->getPropTree(xpath);
     if(deftree)
         toXML(deftree, def, 0,0);
+    else
+        throw MakeStringException(-1, "Unable to fetch ESDL Service definition from dali: '%s'", id);
 }
 
 bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefinitionRequest&req, IEspGetESDLDefinitionResponse &resp)
 {
     StringBuffer id = req.getId();
     StringBuffer definition;
-    fetchESDLDefinitionFromDaliById(id.toLowerCase(), definition);
-
     resp.setId(id.str());
+
+    try
+    {
+        fetchESDLDefinitionFromDaliById(id.toLowerCase(), definition);
+    }
+    catch(IException* e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+
+        resp.updateStatus().setCode(-1);
+        resp.updateStatus().setDescription(msg.str());
+
+        e->Release();
+        return false;
+    }
+    catch (...)
+    {
+        throw MakeStringException(-1, "Unexpected error while attempting to fetch ESDL definition.");
+    }
+
     resp.setXMLDefinition(definition.str());
 
     return true;
