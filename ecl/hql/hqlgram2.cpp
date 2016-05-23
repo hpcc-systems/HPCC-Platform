@@ -10642,6 +10642,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case LEFT: msg.append("LEFT"); break;
     case LENGTH: msg.append("LENGTH"); break;
     case LIBRARY: msg.append("LIBRARY"); break;
+    case LIKELY: msg.append("LIKELY"); break;
     case LIMIT: msg.append("LIMIT"); break;
     case LINKCOUNTED: msg.append("LINKCOUNTED"); break;
     case LITERAL: msg.append("LITERAL"); break;
@@ -10826,6 +10827,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TYPEOF: msg.append("TYPEOF"); break;
     case UNGROUP: msg.append("UNGROUP"); break;
     case UNICODEORDER: msg.append("UNICODEORDER"); break;
+    case UNLIKELY: msg.append("UNLIKELY"); break;
     case UNORDERED: msg.append("UNORDERED"); break;
     case UNSIGNED: msg.append("UNSIGNED"); break;
     case UNSORTED: msg.append("UNSORTED"); break;
