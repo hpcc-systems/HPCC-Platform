@@ -81,6 +81,14 @@ static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
             return (isFiltered && asSubQuery);
         case no_select:
             return !isTargetSelector(expr);
+        case no_selectnth:
+        {
+            IHqlExpression * ds = expr->queryChild(0);
+            if (!hasSingleRow(ds))
+                return true;
+            expr = ds;
+            break;
+        }
         case no_filter:
             expr = expr->queryChild(0);
             isFiltered = true;
