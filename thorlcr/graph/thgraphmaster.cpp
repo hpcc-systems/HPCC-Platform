@@ -2802,17 +2802,17 @@ void CThorStats::reset()
 
 void CThorStats::calculateSkew()
 {
-    if (max > ctx.querySlaves()) // i.e. if small count, suppress skew stats.
+    unsigned count = counts.ordinality();
+    double _avg = (double)tot/count;
+    if (_avg)
     {
-        unsigned count = counts.ordinality();
-        double _avg = (double)tot/count;
-        if (_avg)
+        if (max > ctx.querySlaves()) // i.e. if small count, suppress skew stats.
         {
             //MORE: Range protection on maxSkew?
             maxSkew = (unsigned)(10000.0 * (((double)max-_avg)/_avg));
             minSkew = (unsigned)(10000.0 * ((_avg-(double)min)/_avg));
-            avg = (unsigned __int64)_avg;
         }
+        avg = (unsigned __int64)_avg;
     }
 }
 
