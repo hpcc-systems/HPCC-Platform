@@ -477,6 +477,7 @@ int main(int argc, const char *argv[])
 #ifndef _DEBUG
     //In release mode exit without calling all the clean up code.
     //It is faster, and it helps avoids potential crashes if there are active objects which depend on objects in file hook dlls.
+    fflush(NULL);
     _exit(exitCode);
 #endif
 
