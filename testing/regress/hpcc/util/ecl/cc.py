@@ -44,7 +44,7 @@ class ECLCC(Shell):
             return repr(err)
 
     def makeArchive(self, ecl):
-        self.addIncludePath(ecl.dir_ec)
+        self.addIncludePath(ecl.dir_inc)
         dirname = ecl.dir_a
         filename = ecl.getArchive()
 

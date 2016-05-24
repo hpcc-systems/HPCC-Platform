@@ -27,7 +27,7 @@ from ..common.error import Error
 from ..util.util import checkClusters, getConfig
 
 class Suite:
-    def __init__(self, clusterName, dir_ec, dir_a, dir_ex, dir_r, logDir, args, isSetup=False,  fileList = None):
+    def __init__(self, clusterName, dir_ec, dir_a, dir_ex, dir_r, logDir, dir_inc, args, isSetup=False,  fileList = None):
         self.clusterName = clusterName
         self.targetName = clusterName
         if isSetup:
@@ -40,6 +40,7 @@ class Suite:
         self.dir_ex = dir_ex
         self.dir_r = dir_r
         self.logDir = logDir
+        self.dir_inc = dir_inc
         self.exclude = []
         self.publish = []
 
@@ -84,7 +85,7 @@ class Suite:
             if file.endswith(".ecl"):
                 ecl = os.path.join(self.dir_ec, file)
                 eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
-                                  self.dir_r,  self.clusterName,   args)
+                                  self.dir_r, self.dir_inc, self.clusterName,   args)
                 if isSetup:
                     skipResult = eclfile.testSkip('setup')
                 else:
@@ -145,7 +146,7 @@ class Suite:
             # generate ECLs to suite
             for file in files:
                 generatedEclFile = ECLFile(basename, self.dir_a, self.dir_ex,
-                                 self.dir_r,  self.clusterName, self.args)
+                                 self.dir_r,  self.dir_inc, self.clusterName, self.args)
 
                 generatedEclFile.setDParameters(file['version'])
                 generatedEclFile.setVersionId(file['id'])
