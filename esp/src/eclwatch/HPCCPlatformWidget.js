@@ -293,10 +293,6 @@ define([
             }
         },
 
-        _onOpenLegacy: function (evt) {
-            this._openNewTab("/?legacy");
-        },
-
         _onOpenResources: function (evt) {
             this._openNewTab("http://hpccsystems.com/download");
         },
