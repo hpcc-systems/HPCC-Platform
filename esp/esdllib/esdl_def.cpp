@@ -974,6 +974,7 @@ public:
 
     virtual const char *queryRequestType(){return queryProp("request_type");}
     virtual const char *queryResponseType(){return queryProp("response_type");}
+    virtual const char *queryMetaData(const char* tag) { return queryProp(tag); }
     virtual const char *queryProductAssociation(){return queryProp("product_");}
     /*{
         String prod(queryProp("productAssociation"));
