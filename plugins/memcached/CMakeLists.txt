@@ -60,6 +60,7 @@ if (MEMCACHED)
         #if we are using generated libmemcached, target appropriate dependencies
         if(MEMCACHED_USE_EXTERNAL_LIBRARY)
             add_dependencies(memcached libmemcached libmemcachedutil)
+            install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libmemcached-${LIBMEMCACHED_VERSION}/libmemcached/.libs\")")
         endif()
         target_link_libraries(
             memcached

@@ -25,7 +25,7 @@
 
 interface IRowAllocatorMetaActIdCache : extends roxiemem::IRowAllocatorCache
 {
-    virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned __int64 activityId, roxiemem::RoxieHeapFlags flags) = 0;
+    virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) = 0;
     virtual unsigned items() const = 0;
 };
 
