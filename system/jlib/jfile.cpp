@@ -37,6 +37,10 @@
 #include <sys/vfs.h>
 #include <sys/sendfile.h>
 #endif
+#if defined (__APPLE__)
+#include <sys/mount.h>
+#undef MIN
+#endif
 
 #include "time.h"
 
@@ -4215,7 +4219,7 @@ extern jlib_decl offset_t getFreeSpace(const char* name)
     }
 
 
-#elif defined (__linux__)
+#elif defined (__linux__) || defined (__APPLE__)
     struct statfs buf;
     int fResult = statfs(name, &buf);
 
