@@ -88,7 +88,7 @@ public:
     CQueryDll(const char *_dllName, ILoadedDllEntry *_dll) : dllName(_dllName), dll(_dll)
     {
         StringBuffer wuXML;
-        if (getEmbeddedWorkUnitXML(dll, wuXML))
+        if (!selfTestMode && getEmbeddedWorkUnitXML(dll, wuXML))
         {
             Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
             wu.setown(localWU->unlock());

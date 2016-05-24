@@ -318,6 +318,57 @@
 
       <para></para>
     </sect1>
+
+    <sect1>
+      <title>Processor Affinity</title>
+
+      <para>Roxie can perform better in some circumstances by using thread
+      affinities to restrict a given query's threads to a subset of the cores
+      on the machine. This is also know as processor affinity or CPU pinning.
+      This is particularly useful on multi-socket (dual CPU) machines.</para>
+
+      <para>This can be set in Configuration Manager using the following
+      options:</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="3">
+            <colspec colwidth="178.45pt" />
+
+            <colspec colwidth="65.60pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>affinity</emphasis></entry>
+
+                <entry>Default: 0</entry>
+
+                <entry>If non-zero, binds the roxie process to use the
+                specified cores only (bitmask)</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>coresPerQuery</emphasis></entry>
+
+                <entry>Default: 0</entry>
+
+                <entry>If non-zero, binds each incoming query to use the
+                specified number of cores only</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>You can override coresPerQuery on a single query by using: </para>
+
+      <para><programlisting>#OPTION('bindCores', N); </programlisting></para>
+
+      <para>where N is the number of cores to use.</para>
+
+      <para>Use a value for coresPerQuery or bindCores that is divisible into
+      the number of cores on each CPU for best results.</para>
+    </sect1>
   </chapter>
 
   <chapter id="Developing_Roxie_Queries">

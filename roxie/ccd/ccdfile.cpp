@@ -2676,6 +2676,9 @@ protected:
 
     void testCopy()
     {
+        remove("test.local");
+        remove("test.remote");
+        remove("test.buddy");
         CRoxieFileCache cache(true);
         StringArray remotes;
         DummyPartDescriptor pdesc;
@@ -2693,7 +2696,8 @@ protected:
 
         // Reading it should read 1
         val = 0;
-        io->read(0, sizeof(int), &val);
+        ssize_t bytesRead = io->read(0, sizeof(int), &val);
+        CPPUNIT_ASSERT(bytesRead==4);
         CPPUNIT_ASSERT(val==1);
 
         // Now create the buddy

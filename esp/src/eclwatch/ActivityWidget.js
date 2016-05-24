@@ -86,51 +86,67 @@ define([
         },
 
         _onClear: function (event, params) {
+            var context = this;
             arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                 if (this.activity.isInstanceOfQueue(item)) {
                     item.clear();
                 }
             }, this);
-            this._onRefresh();
+            setTimeout(function() {
+                context.refreshGrid();
+            }, 100);
         },
 
         _onWUPause: function (event, params) {
+            var context = this;
             arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                 if (this.activity.isInstanceOfWorkunit(item)) {
                     item.pause();
                 }
             }, this);
-            this._onRefresh();
+            setTimeout(function() {
+                context.refreshGrid();
+            }, 100);
         },
 
         _onWUPauseNow: function (event, params) {
+            var context = this;
             arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                 if (this.activity.isInstanceOfWorkunit(item)) {
                     item.pauseNow();
                 }
             }, this);
-            this._onRefresh();
+            setTimeout(function() {
+                context.refreshGrid();
+            }, 100);
         },
 
         _onWUResume: function (event, params) {
+            var context = this;
             arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                 if (this.activity.isInstanceOfWorkunit(item)) {
                     item.resume();
                 }
             }, this);
-            this._onRefresh();
+            setTimeout(function() {
+                context.refreshGrid();
+            }, 100);
         },
 
         _onWUAbort: function (event, params) {
+            var context = this;
             arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                 if (this.activity.isInstanceOfWorkunit(item)) {
                     item.abort();
                 }
             }, this);
-            this._onRefresh();
+            setTimeout(function() {
+                context.refreshGrid();
+            }, 100);
         },
 
         _onWUPriority: function (event, priority) {
+            var context = this;
             arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                 if (this.activity.isInstanceOfWorkunit(item)) {
                     var queue = item.get("ESPQueue");
@@ -139,10 +155,13 @@ define([
                     }
                 }
             }, this);
-            this._onRefresh();
+            setTimeout(function() {
+                context.refreshGrid();
+            }, 100);
         },
 
         _onWUTop: function (event, params) {
+            var context = this;
             var selected = this.grid.getSelected();
             for (var i = selected.length - 1; i >= 0; --i) {
                 var item = selected[i];
@@ -153,10 +172,13 @@ define([
                     }
                 }
             }
-            this._onRefresh();
+            setTimeout(function() {
+                context.refreshGrid();
+            }, 100);
         },
 
         _onWUUp: function (event, params) {
+            var context = this;
             arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                 if (this.activity.isInstanceOfWorkunit(item)) {
                     var queue = item.get("ESPQueue");
@@ -165,10 +187,13 @@ define([
                     }
                 }
             }, this);
-            this._onRefresh();
+            setTimeout(function() {
+                context.refreshGrid();
+            }, 100);
         },
 
         _onWUDown: function (event, params) {
+            var context = this;
             var selected = this.grid.getSelected();
             for (var i = selected.length - 1; i >= 0; --i) {
                 var item = selected[i];
@@ -179,10 +204,13 @@ define([
                     }
                 }
             }
-            this._onRefresh();
+            setTimeout(function() {
+                context.refreshGrid();
+            }, 100);
         },
 
         _onWUBottom: function (event, params) {
+            var context = this;
             arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                 if (this.activity.isInstanceOfWorkunit(item)) {
                     var queue = item.get("ESPQueue");
@@ -191,7 +219,9 @@ define([
                     }
                 }
             }, this);
-            this._onRefresh();
+            setTimeout(function() {
+                context.refreshGrid();
+            }, 100);
         },
 
         doSearch: function (searchText) {

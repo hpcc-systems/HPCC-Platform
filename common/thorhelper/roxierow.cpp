@@ -386,9 +386,9 @@ IEngineRowAllocator * createCrcRoxieRowAllocator(IRowAllocatorMetaActIdCache * c
 struct AllocatorKey
 {
     IOutputMetaData *meta;
-    unsigned __int64 activityId;
+    unsigned activityId;
     roxiemem::RoxieHeapFlags flags;
-    AllocatorKey(IOutputMetaData *_meta, unsigned __int64 &_activityId, roxiemem::RoxieHeapFlags _flags)
+    AllocatorKey(IOutputMetaData *_meta, unsigned _activityId, roxiemem::RoxieHeapFlags _flags)
         : meta(_meta), activityId(_activityId), flags(_flags)
     {
     }
@@ -420,7 +420,7 @@ class CAllocatorCache : public CSimpleInterfaceOf<IRowAllocatorMetaActIdCache>
     Owned<roxiemem::IRowManager> rowManager;
     IRowAllocatorMetaActIdCacheCallback *callback;
 
-    inline CAllocatorCacheItem *lookup(IOutputMetaData *meta, unsigned __int64 activityId, roxiemem::RoxieHeapFlags flags) const
+    inline CAllocatorCacheItem *_lookup(IOutputMetaData *meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
     {
         AllocatorKey key(meta, activityId, flags);
         return cache.find(key);
@@ -430,19 +430,19 @@ public:
     {
     }
 // IRowAllocatorMetaActIdCache
-    virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned __int64 activityId, roxiemem::RoxieHeapFlags flags) override
+    virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags)
     {
         SpinBlock b(allAllocatorsLock);
         loop
         {
-            CAllocatorCacheItem *container = lookup(meta, activityId, flags);
+            CAllocatorCacheItem *container = _lookup(meta, activityId, flags);
             if (container)
             {
                 if (0 == (roxiemem::RHFunique & flags))
                     return LINK(&container->queryElement());
                 // if in cache but unique, reuse allocatorId
                 SpinUnblock b(allAllocatorsLock);
-                return callback->createAllocator(this, meta, (unsigned)(activityId & ACTIVITY_MASK), container->queryAllocatorId(), flags);
+                return callback->createAllocator(this, meta, activityId, container->queryAllocatorId(), flags);
             }
             // NB: a RHFunique allocator, will cause 1st to be added to 'allAllocators'
             // subsequent requests for the same type of unique allocator, will share same allocatorId
@@ -453,7 +453,7 @@ public:
             IEngineRowAllocator *ret;
             {
                 SpinUnblock b(allAllocatorsLock);
-                ret = callback->createAllocator(this, meta, (unsigned)(activityId & ACTIVITY_MASK), allocatorId, flags);
+                ret = callback->createAllocator(this, meta, activityId, allocatorId, flags);
                 assertex(ret);
             }
             if (allocatorId == allAllocators.ordinality())

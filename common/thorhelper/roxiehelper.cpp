@@ -885,141 +885,6 @@ public:
     }
 };
 
-class CInsertionSortAlgorithm : public CSortAlgorithm
-{
-    SortedBlock *curBlock;
-    unsigned blockNo;
-    IArrayOf<SortedBlock> blocks;
-    unsigned activityId;
-    roxiemem::IRowManager *rowManager;
-    ICompare *compare;
-
-    void newBlock()
-    {
-        blocks.append(*curBlock);
-        curBlock = new SortedBlock(blockNo++, rowManager, activityId);
-    }
-
-    inline static int doCompare(SortedBlock &l, SortedBlock &r, ICompare *compare)
-    {
-        return l.compareTo(&r, compare);
-    }
-
-    void makeHeap()
-    {
-        /* Permute blocks to establish the heap property
-           For each element p, the children are p*2+1 and p*2+2 (provided these are in range)
-           The children of p must both be greater than or equal to p
-           The parent of a child c is given by p = (c-1)/2
-        */
-        unsigned i;
-        unsigned n = blocks.length();
-        SortedBlock **s = blocks.getArray();
-        for (i=1; i<n; i++)
-        {
-            SortedBlock * r = s[i];
-            int c = i; /* child */
-            while (c > 0)
-            {
-                int p = (c-1)/2; /* parent */
-                if ( doCompare( blocks.item(c), blocks.item(p), compare ) >= 0 )
-                    break;
-                s[c] = s[p];
-                s[p] = r;
-                c = p;
-            }
-        }
-    }
-
-    void remakeHeap()
-    {
-        /* The row associated with block[0] will have changed
-           This code restores the heap property
-        */
-        unsigned p = 0; /* parent */
-        unsigned n = blocks.length();
-        SortedBlock **s = blocks.getArray();
-        while (1)
-        {
-            unsigned c = p*2 + 1; /* child */
-            if ( c >= n )
-                break;
-            /* Select smaller child */
-            if ( c+1 < n && doCompare( blocks.item(c+1), blocks.item(c), compare ) < 0 ) c += 1;
-            /* If child is greater or equal than parent then we are done */
-            if ( doCompare( blocks.item(c), blocks.item(p), compare ) >= 0 )
-                break;
-            /* Swap parent and child */
-            SortedBlock *r = s[c];
-            s[c] = s[p];
-            s[p] = r;
-            /* child becomes parent */
-            p = c;
-        }
-    }
-
-public:
-    CInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId)
-        : compare(_compare)
-    {
-        rowManager = _rowManager;
-        activityId = _activityId;
-        curBlock = NULL;
-        blockNo = 0;
-    }
-
-    virtual void reset()
-    {
-        blocks.kill();
-        delete curBlock;
-        curBlock = NULL;
-        blockNo = 0;
-    }
-
-    virtual void prepare(IEngineRowStream *input)
-    {
-        blockNo = 0;
-        curBlock = new SortedBlock(blockNo++, rowManager, activityId);
-        loop
-        {
-            const void *next = input->nextRow();
-            if (!next)
-                break;
-            if (!curBlock->insert(next, compare))
-            {
-                newBlock();
-                curBlock->insert(next, compare);
-            }
-        }
-        if (blockNo > 1)
-        {
-            blocks.append(*curBlock);
-            curBlock = NULL;
-            makeHeap();
-        }
-    }
-
-    virtual const void * next()
-    {
-        const void *ret;
-        if (blockNo==1) // single block case..
-        {
-            ret = curBlock->next();
-        }
-        else if (blocks.length())
-        {
-            SortedBlock &top = blocks.item(0);
-            ret = top.next();
-            if (top.eof())
-                blocks.replace(blocks.popGet(), 0);
-            remakeHeap();
-        }
-        else
-            ret = NULL;
-        return ret;
-    }
-};
-
 class CHeapSortAlgorithm : public CSortAlgorithm
 {
     unsigned curIndex;
@@ -1461,11 +1326,6 @@ extern ISortAlgorithm *createTbbStableQuickSortAlgorithm(ICompare *_compare)
     return new CTbbStableQuickSortAlgorithm(_compare);
 }
 
-extern ISortAlgorithm *createInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId)
-{
-    return new CInsertionSortAlgorithm(_compare, _rowManager, _activityId);
-}
-
 extern ISortAlgorithm *createHeapSortAlgorithm(ICompare *_compare)
 {
     return new CHeapSortAlgorithm(_compare);
@@ -1492,8 +1352,6 @@ extern ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm _algorithm, ICompa
     {
     case heapSortAlgorithm:
         return createHeapSortAlgorithm(_compare);
-    case insertionSortAlgorithm:
-        return createInsertionSortAlgorithm(_compare, &_rowManager, _activityId);
     case quickSortAlgorithm:
         return createQuickSortAlgorithm(_compare);
     case stableQuickSortAlgorithm:

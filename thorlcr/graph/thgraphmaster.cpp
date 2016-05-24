@@ -492,7 +492,7 @@ bool CMasterActivity::fireException(IException *_e)
         case TE_LargeAggregateTable:
         {
             if (!notedWarnings->testSet(e->errorCode()))
-                reportExceptionToWorkunit(container.queryJob().queryWorkUnit(), e);
+                CActivityBase::fireException(e);
             return true;
         }
     }
@@ -1894,9 +1894,13 @@ bool CJobMaster::fireException(IException *e)
     switch (action)
     {
         case tea_warning:
+        {
             LOG(MCwarning, thorJob, e);
-            reportExceptionToWorkunit(*workunit, e);
+            ErrorSeverity mappedSeverity = workunit->getWarningSeverity(e->errorCode(), SeverityWarning);
+            if (mappedSeverity != SeverityIgnore)
+                reportExceptionToWorkunit(*workunit, e);
             break;
+        }
         default:
         {
             LOG(MCerror, thorJob, e);
@@ -2139,9 +2143,13 @@ bool CMasterGraph::fireException(IException *e)
     switch (action)
     {
         case tea_warning:
+        {
             LOG(MCwarning, thorJob, e);
-            reportExceptionToWorkunit(job.queryWorkUnit(), e);
+            ErrorSeverity mappedSeverity = job.queryWorkUnit().getWarningSeverity(e->errorCode(), SeverityWarning);
+            if (mappedSeverity != SeverityIgnore)
+                reportExceptionToWorkunit(job.queryWorkUnit(), e);
             break;
+        }
         case tea_abort:
         {
             EXCLOG(e, NULL);
