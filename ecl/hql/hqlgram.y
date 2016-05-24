@@ -6730,25 +6730,25 @@ primexpr1
                          }
     | LIKELY '(' booleanExpr ')'
                         {
-                            parser->normalizeExpression($3);
                             $$.inherit($3);
                             $$.setPosition($1);
                         }
     | LIKELY '(' booleanExpr ',' expression ')'
                         {
-                            parser->normalizeExpression($3);
+                            parser->normalizeExpression($5, type_real, true);
+                            OwnedHqlExpr probability = $5.getExpr();
                             $$.inherit($3);
                             $$.setPosition($1);
                         }
     | UNLIKELY '(' booleanExpr ')'
                         {
-                            parser->normalizeExpression($3);
                             $$.inherit($3);
                             $$.setPosition($1);
                         }
     | UNLIKELY '(' booleanExpr ',' expression ')'
                         {
-                            parser->normalizeExpression($3);
+                            parser->normalizeExpression($5, type_real, true);
+                            OwnedHqlExpr probability = $5.getExpr();
                             $$.inherit($3);
                             $$.setPosition($1);
                         }
