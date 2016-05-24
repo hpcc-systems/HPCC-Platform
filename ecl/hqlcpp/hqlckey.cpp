@@ -197,7 +197,7 @@ void HqlCppTranslator::buildJoinMatchFunction(BuildCtx & ctx, const char * name,
     {
         StringBuffer s;
         BuildCtx matchctx(ctx);
-        matchctx.addQuotedCompound(s.append("virtual bool ").append(name).append("(const void * _left, const void * _right)"));
+        matchctx.addQuotedCompound(s.append("virtual bool ").append(name).append("(const void * _left, const void * _right)" OPTIMIZE_FUNCTION_ATTRIBUTE));
 
         matchctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
         matchctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
