@@ -936,40 +936,59 @@ static unsigned evalAffinityCpus()
 memsize_t getMapInfo(const char *type)
 {
     // NOTE: 'total' heap value includes Roxiemem allocation, if present
+    enum mapList { HEAP, STACK, SBRK, ANON };
+    enum mapList mapType;
+    if ( streq(type, "heap") )
+        mapType = HEAP;
+    else if ( streq(type, "stack") )
+        mapType = STACK;
+    else if ( streq(type, "sbrk") )
+        mapType = SBRK;
+    else if ( streq(type, "anon") )
+        mapType = ANON;
+    else
+        return 0;
+
     memsize_t ret = 0;
     VStringBuffer procMaps("/proc/%d/maps", GetCurrentProcessId());
     FILE *diskfp = fopen(procMaps.str(), "r");
     if (!diskfp)
         return false;
     char ln[256];
+
+/*
+ *  exmaple /proc/<pid>/maps format:
+ *  addr_start  -addr_end     perms offset   dev   inode      pathname
+ *  01c3a000-01c5b000         rw-p  00000000 00:00 0          [heap]
+ *  7f3f25217000-7f3f25a40000 rw-p  00000000 00:00 0          [stack:2362]
+ *  7f4020a40000-7f4020a59000 rw-p  00000000 00:00 0
+ *  7f4020a59000-7f4020a5a000 ---p  00000000 00:00 0
+ *  7f4029bd4000-7f4029bf6000 r-xp  00000000 08:01 17576135   /lib/x86_64-linux-gnu/ld-2.15.so
+ */
+
     while (fgets(ln, sizeof(ln), diskfp))
     {
         bool skipline = true;
-        if ( !strcmp(type, "heap") ) // 'general' heap includes anon mmapped + sbrk
+        if ( mapType == HEAP || mapType == ANON ) // 'general' heap includes anon mmapped + sbrk
         {
-            if ( strstr(ln, "[heap") || (!strstr(ln, " /") && !strstr(ln, " [")) )
+            // skip file maps (beginning with /) and all other regions (except [heap if selected)
+            if ( (mapType == HEAP && strstr(ln, "[heap")) || (!strstr(ln, " /") && !strstr(ln, " [")) )
             {
-                if ( strstr(ln, " rw-p") || strstr(ln, " ---p") )
+                // include only (r)ead + (w)rite and (p)rivate (not shared), skipping e(x)ecutable
+                // and ---p guard regions
+                if ( strstr(ln, " rw-p") )
                     skipline = false;
             }
         }
-        else if ( !strcmp(type, "stack") )
+        else if ( mapType == STACK )
         {
             if ( strstr(ln, "[stack") )
                 skipline = false;
         }
-        else if ( !strcmp(type, "sbrk") )
+        else if ( mapType == SBRK )
         {
             if ( strstr(ln, "[heap") )
                 skipline = false;
-        }
-        else if ( !strcmp(type, "anon") )
-        {
-            if ( (!strstr(ln, " /") && !strstr(ln, " [")) )
-            {
-                if ( strstr(ln, " rw-p") || strstr(ln, " ---p") )
-                    skipline = false;
-            }
         }
         if ( !skipline )
         {

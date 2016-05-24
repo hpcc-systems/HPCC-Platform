@@ -2433,7 +2433,7 @@ CJobBase::~CJobBase()
     if (heapUsage) // if 0, assumed to be unavailable
     {
         memsize_t rmtotal = roxiemem::getTotalMemoryLimit();
-        PROGLOG("Heap usage : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
+        PROGLOG("Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
     }
 }
 
