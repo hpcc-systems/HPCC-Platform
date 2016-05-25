@@ -536,6 +536,8 @@ static const char * eclReserved16[] = { //Compiler directive/hints
     "nothor",
     "pull",
     "sorted",
+    "likely",
+    "unlikely",
     NULL
 };
 

@@ -428,6 +428,7 @@
 #define ERR_DUBIOUS_NAME            2397
 #define ERR_DUPLICATE_FILENAME      2398
 #define ERR_DUPLICATE_SOURCE        2399
+#define ERR_PROBABILITY_RANGE       2400
 
 #define ERR_CPP_COMPILE_ERROR       2999
 

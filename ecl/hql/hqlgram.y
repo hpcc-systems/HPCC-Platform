@@ -274,6 +274,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   LEFT
   LENGTH
   LIBRARY
+  LIKELY
   LIMIT
   LINKCOUNTED
   LITERAL
@@ -456,6 +457,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TYPEOF
   UNICODEORDER
   UNGROUP
+  UNLIKELY
   UNORDERED
   UNSIGNED
   UNSORTED
@@ -6725,6 +6727,42 @@ primexpr1
                             Owned<ITypeInfo> ltype = lexpr->getType();
                             Owned<IHqlExpression> locale = (ltype->getTypeCode() == type_varstring) ? lexpr.getLink() : createValue(no_implicitcast, makeVarStringType(ltype->getStringLen()), lexpr.getLink());
                             $$.setExpr(createValue(no_unicodeorder, makeIntType(4, true), $3.getExpr(), $5.getExpr(), locale.getLink(), $9.getExpr()));
+                         }
+    | LIKELY '(' booleanExpr ')'
+                        {
+                            $$.inherit($3);
+                            $$.setPosition($1);
+                        }
+    | LIKELY '(' booleanExpr ',' expression ')'
+                        {
+                            parser->normalizeExpression($5, type_real, true);
+                            OwnedHqlExpr probability = $5.getExpr();
+                            if (probability->queryValue())
+                            {
+                                double p = probability->queryValue()->getRealValue();
+                                if (p <= 0.0 || p >= 1.0)
+                                    parser->reportError(ERR_PROBABILITY_RANGE, $5, "Probability parameter for LIKELY must be within 0.0 to 1.0 range");
+                            }
+                            $$.inherit($3);
+                            $$.setPosition($1);
+                        }
+    | UNLIKELY '(' booleanExpr ')'
+                        {
+                            $$.inherit($3);
+                            $$.setPosition($1);
+                        }
+    | UNLIKELY '(' booleanExpr ',' expression ')'
+                        {
+                            parser->normalizeExpression($5, type_real, true);
+                            OwnedHqlExpr probability = $5.getExpr();
+                            if (probability->queryValue())
+                            {
+                                double p = probability->queryValue()->getRealValue();
+                                if (p <= 0.0 || p >= 1.0)
+                                    parser->reportError(ERR_PROBABILITY_RANGE, $5, "Probability parameter for UNLIKELY must be within 0.0 to 1.0 range");
+                             }
+                            $$.inherit($3);
+                            $$.setPosition($1);
                         }
     | '[' beginList nonDatasetList ']'
                         {

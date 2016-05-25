@@ -286,8 +286,8 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,nocombine);
     EXPAND_CASE(no,unordered);
     EXPAND_CASE(no,critical);
-    EXPAND_CASE(no,unused30);
-    EXPAND_CASE(no,unused31);
+    EXPAND_CASE(no,likely);
+    EXPAND_CASE(no,unlikely);
     EXPAND_CASE(no,unused32);
     EXPAND_CASE(no,unused33);
     EXPAND_CASE(no,unused34);
