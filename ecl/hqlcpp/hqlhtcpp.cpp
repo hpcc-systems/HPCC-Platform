@@ -5380,7 +5380,7 @@ void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHql
     beginNestedClass(classctx, name, "ICompare");
 
     BuildCtx funcctx(classctx);
-    funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const");
+    funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const" OPTIMIZE_FUNCTION_ATTRIBUTE);
     funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
     funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
@@ -5543,7 +5543,7 @@ void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHql
     beginNestedClass(comparectx, name, "ICompare");
 
     BuildCtx funcctx(comparectx);
-    funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const");
+    funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const" OPTIMIZE_FUNCTION_ATTRIBUTE);
     funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
     funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
@@ -11545,7 +11545,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
         beginNestedClass(classctx, compareName.str(), "ICompare");
 
         BuildCtx funcctx(classctx);
-        funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const");
+        funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const" OPTIMIZE_FUNCTION_ATTRIBUTE);
         funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
         funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
         funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
@@ -17955,6 +17955,25 @@ void HqlCppTranslator::buildWorkflowPersistCheck(BuildCtx & ctx, IHqlExpression 
 
 void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
 {
+    //Generate a #define that can be used to optimize a particular function.
+    BuildCtx optimizectx(*code, includeAtom);
+    if (options.optimizeCriticalFunctions)
+    {
+        switch (options.targetCompiler)
+        {
+        case GccCppCompiler:
+            optimizectx.addQuoted("#define OPTIMIZE __attribute__((optimize(3)))");
+            break;
+        default:
+            optimizectx.addQuoted("#define OPTIMIZE");
+            break;
+        }
+    }
+    else
+    {
+        optimizectx.addQuoted("#define OPTIMIZE");
+    }
+
 
     BuildCtx classctx(*code, goAtom);
     classctx.addQuotedCompoundLiteral("struct MyEclProcess : public EclProcess", ";");
