@@ -145,7 +145,7 @@
 
           <programlisting>sudo service hpcc-init start</programlisting>
 
-          <para>Debian 6 (Squeeze or some Ubuntu flavors):</para>
+          <para>Debian 6 (Squeeze or some Ubuntu versions):</para>
 
           <para><programlisting>sudo /etc/init.d/hpcc-init start</programlisting></para>
         </listitem>
@@ -2731,10 +2731,10 @@ sudo /etc/init.d/hpcc-init -c esp start
 
         <para>There are two HPCC systemd services: hpcc-init and dafilesrv.
         While some hpcc-init systemd services are still developmental, users
-        are can use <emphasis>/etc/init.d/hpcc-init</emphasis> and
+        can use <emphasis>/etc/init.d/hpcc-init</emphasis> and
         <emphasis>/etc/init.d/dafilesrv</emphasis> directly. Invoking these
         services in this way provides status in the same manner as invoking
-        them with a service command does for HPCC processes.</para>
+        them with a service command does for other HPCC processes.</para>
 
         <para>Currently, the hpcc-init system service will only support
         "start", "stop" and "restart" options. The other options, such as
@@ -2788,7 +2788,7 @@ sudo /etc/init.d/hpcc-init -c esp start
               <listitem>
                 <para>Check</para>
 
-                <para>sudo journalctl -u hpcc-init -f</para>
+                <programlisting>sudo journalctl -u hpcc-init -f</programlisting>
               </listitem>
 
               <listitem>
@@ -2818,7 +2818,7 @@ sudo /etc/init.d/hpcc-init -c esp start
               <listitem>
                 <para>Check</para>
 
-                <para>sudo journalctl -u hpcc-init -f</para>
+                <programlisting>sudo journalctl -u hpcc-init -f</programlisting>
               </listitem>
 
               <listitem>
