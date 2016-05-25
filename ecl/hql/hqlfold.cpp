@@ -6354,8 +6354,8 @@ IHqlExpression * CExprFolderTransformer::transformExpanded(IHqlExpression * expr
 
 IHqlExpression * foldHqlExpression(IHqlExpression * expr)
 {
-    Owned<IErrorReceiver> errorProcessor = createNullErrorReceiver();
-    return foldHqlExpression(*errorProcessor, expr);
+    NullErrorReceiver errorProcessor;
+    return foldHqlExpression(errorProcessor, expr);
 }
 
 IHqlExpression * foldHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * expr, ITemplateContext *templateContext, unsigned foldOptions)
@@ -6656,4 +6656,89 @@ extern HQLFOLD_API bool areExclusiveConditions(IHqlExpression * left, IHqlExpres
     }
 
     return false;
+}
+
+
+bool queryCompareConstantValues(int & result, IHqlExpression * left, IHqlExpression * right)
+{
+    IValue * leftValue = left->queryValue();
+    IValue * rightValue = right->queryValue();
+    if (!leftValue || !rightValue)
+        return false;
+
+    ITypeInfo * leftType = left->queryType();
+    ITypeInfo * rightType = right->queryType();
+    if (leftType != rightType)
+    {
+        Owned<ITypeInfo> type = ::getPromotedECLCompareType(leftType, rightType);
+        OwnedHqlExpr castLeft = ensureExprType(left, type);
+        OwnedHqlExpr castRight = ensureExprType(right, type);
+        IValue * castLeftValue = castLeft->queryValue();
+        IValue * castRightValue = castRight->queryValue();
+        if (!castLeftValue || !castRightValue)
+            return false;
+
+        result = castLeftValue->compare(castRightValue);
+        return true;
+    }
+    else
+    {
+        result = leftValue->compare(rightValue);
+        return true;
+    }
+}
+
+IHqlExpression * foldConstantCaseExpr(IHqlExpression * expr)
+{
+    IHqlExpression * search = expr->queryChild(0);
+    if (!search->isConstant())
+        return LINK(expr);
+
+    OwnedHqlExpr foldedSearch = foldHqlExpression(search);
+    ForEachChildFrom(i, expr, 1)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (cur->getOperator() == no_mapto)
+        {
+            IHqlExpression * mapValue = cur->queryChild(0);
+            if (!mapValue->isConstant())
+                return LINK(expr);
+
+            OwnedHqlExpr foldedValue = foldHqlExpression(mapValue);
+            int result;
+            if (!queryCompareConstantValues(result, foldedSearch, foldedValue))
+                return LINK(expr);
+
+            if (result == 0)
+                return LINK(cur->queryChild(1));
+        }
+        else if (!cur->isAttribute())
+            return LINK(cur);
+    }
+    return LINK(expr);
+}
+
+IHqlExpression * foldConstantMapExpr(IHqlExpression * expr)
+{
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (cur->getOperator() == no_mapto)
+        {
+            IHqlExpression * mapValue = cur->queryChild(0);
+            if (!mapValue->isConstant())
+                return LINK(expr);
+
+            OwnedHqlExpr foldedValue = foldHqlExpression(mapValue);
+            IValue * value = foldedValue->queryValue();
+            if (!value)
+                return LINK(expr);
+
+            if (value->getBoolValue())
+                return LINK(cur->queryChild(1));
+        }
+        else if (!cur->isAttribute())
+            return LINK(cur);
+    }
+    return LINK(expr);
 }

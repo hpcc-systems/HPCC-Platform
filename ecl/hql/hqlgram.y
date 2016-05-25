@@ -2511,14 +2511,16 @@ actionStmt
                             HqlExprArray args;
                             $3.unwindCommaList(args);
                             args.append(*$5.getExpr());
-                            $$.setExpr(createValue(no_map, makeVoidType(), args), $1);
+                            OwnedHqlExpr expr = createValue(no_map, makeVoidType(), args);
+                            $$.setExpr(foldConstantMapExpr(expr), $1);
                         }
     | MAP '(' mapActionSpec ')'
                         {
                             HqlExprArray args;
                             $3.unwindCommaList(args);
                             args.append(*createValue(no_null, makeVoidType()));
-                            $$.setExpr(createValue(no_map, makeVoidType(), args), $1);
+                            OwnedHqlExpr expr = createValue(no_map, makeVoidType(), args);
+                            $$.setExpr(foldConstantMapExpr(expr), $1);
                         }
     | CASE '(' expression ',' beginList caseActionSpec ',' action ')'
                         {
@@ -2528,7 +2530,8 @@ actionStmt
                             parser->checkCaseForDuplicates(args, $6);
                             args.add(*$3.getExpr(),0);
                             args.append(*$8.getExpr());
-                            $$.setExpr(createValue(no_case, makeVoidType(), args), $1);
+                            OwnedHqlExpr expr = createValue(no_case, makeVoidType(), args);
+                            $$.setExpr(foldConstantCaseExpr(expr), $1);
                         }
     | CASE '(' expression ',' beginList caseActionSpec ')'
                         {
@@ -2538,7 +2541,8 @@ actionStmt
                             parser->checkCaseForDuplicates(args, $6);
                             args.add(*$3.getExpr(),0);
                             args.append(*createValue(no_null, makeVoidType()));
-                            $$.setExpr(createValue(no_case, makeVoidType(), args), $1);
+                            OwnedHqlExpr expr = createValue(no_case, makeVoidType(), args);
+                            $$.setExpr(foldConstantCaseExpr(expr), $1);
                         }
     | CASE '(' expression ',' beginList action ')'
                         {
@@ -5776,7 +5780,8 @@ primexpr1
                             $3.unwindCommaList(args);
                             ITypeInfo * retType = parser->promoteMapToSameType(args, $5);
                             args.append(*$5.getExpr());
-                            $$.setExpr(createValue(no_map, retType, args));
+                            OwnedHqlExpr expr = createValue(no_map, retType, args);
+                            $$.setExpr(foldConstantMapExpr(expr), $1);
                         }
     | CASE '(' expression ',' beginList caseSpec ',' expression ')'
                         {
@@ -5788,7 +5793,8 @@ primexpr1
                             ITypeInfo * retType = parser->promoteCaseToSameType($3, args, $8);
                             args.add(*$3.getExpr(),0);
                             args.append(*$8.getExpr());
-                            $$.setExpr(createValue(no_case, retType, args));
+                            OwnedHqlExpr expr = createValue(no_case, retType, args);
+                            $$.setExpr(foldConstantCaseExpr(expr), $1);
                         }
     | CASE '(' expression ',' beginList expression ')'
                         {
@@ -7614,8 +7620,8 @@ simpleDictionary
                                 parser->checkRecordTypesMatch(cur, elseDict, $5);
                             }
                             args.append(*elseDict);
-                            $$.setExpr(::createDictionary(no_map, args));
-                            $$.setPosition($1);
+                            OwnedHqlExpr expr = createDictionary(no_map, args);
+                            $$.setExpr(foldConstantMapExpr(expr), $1);
                         }
     | MAP '(' mapDictionarySpec ')'
                         {
@@ -7632,8 +7638,8 @@ simpleDictionary
                                 parser->checkRecordTypesMatch(cur, elseDict, $1);
                             }
                             args.append(*elseDict);
-                            $$.setExpr(::createDictionary(no_map, args));
-                            $$.setPosition($1);
+                            OwnedHqlExpr expr = createDictionary(no_map, args);
+                            $$.setExpr(foldConstantMapExpr(expr), $1);
                         }
     | CASE '(' expression ',' beginList caseDictionarySpec ',' dictionary ')'
                         {
@@ -7649,8 +7655,8 @@ simpleDictionary
                             }
                             args.add(*$3.getExpr(),0);
                             args.append(*elseDict);
-                            $$.setExpr(::createDataset(no_case, args));
-                            $$.setPosition($1);
+                            OwnedHqlExpr expr = createDictionary(no_case, args);
+                            $$.setExpr(foldConstantCaseExpr(expr), $1);
                         }
     | CASE '(' expression ',' beginList caseDictionarySpec ')'
                         {
@@ -7670,8 +7676,8 @@ simpleDictionary
                             }
                             args.add(*$3.getExpr(),0);
                             args.append(*elseDict);
-                            $$.setExpr(::createDictionary(no_case, args));
-                            $$.setPosition($1);
+                            OwnedHqlExpr expr = createDictionary(no_case, args);
+                            $$.setExpr(foldConstantCaseExpr(expr), $1);
                         }
     | CASE '(' expression ',' beginList dictionary ')'
                         {
@@ -9094,8 +9100,8 @@ simpleDataSet
                             $3.unwindCommaList(args);
                             parser->ensureMapToRecordsMatch(elseExpr, args, $5, false);
                             args.append(*elseExpr.getClear());
-                            $$.setExpr(::createDataset(no_map, args));
-                            $$.setPosition($1);
+                            OwnedHqlExpr expr = createDataset(no_map, args);
+                            $$.setExpr(foldConstantMapExpr(expr), $1);
                         }
     | MAP '(' mapDatasetSpec ')'
                         {
@@ -9109,8 +9115,8 @@ simpleDataSet
 
                             parser->ensureMapToRecordsMatch(elseExpr, args, $3, false);
                             args.append(*elseExpr.getClear());
-                            $$.setExpr(::createDataset(no_map, args));
-                            $$.setPosition($1);
+                            OwnedHqlExpr expr = createDataset(no_map, args);
+                            $$.setExpr(foldConstantMapExpr(expr), $1);
                         }
     | CASE '(' expression ',' beginList caseDatasetSpec ',' dataSet ')'
                         {
@@ -9124,8 +9130,8 @@ simpleDataSet
 
                             args.add(*$3.getExpr(),0);
                             args.append(*elseExpr.getClear());
-                            $$.setExpr(::createDataset(no_case, args));
-                            $$.setPosition($1);
+                            OwnedHqlExpr expr = createDataset(no_case, args);
+                            $$.setExpr(foldConstantCaseExpr(expr), $1);
                         }
     | CASE '(' expression ',' beginList caseDatasetSpec ')'
                         {
@@ -9436,8 +9442,8 @@ simpleDataSet
                             parser->ensureMapToRecordsMatch(elseExpr, args, $5, true);
 
                             args.append(*elseExpr.getClear());
-                            $$.setExpr(::createRow(no_map, args));
-                            $$.setPosition($1);
+                            OwnedHqlExpr expr = createRow(no_map, args);
+                            $$.setExpr(foldConstantMapExpr(expr), $1);
                         }
     | CASE '(' expression ',' beginList caseDatarowSpec ',' dataRow ')'
                         {
@@ -9451,7 +9457,8 @@ simpleDataSet
 
                             args.add(*$3.getExpr(),0);
                             args.append(*elseExpr.getClear());
-                            $$.setExpr(::createRow(no_case, args), $1);
+                            OwnedHqlExpr expr = createRow(no_case, args);
+                            $$.setExpr(foldConstantCaseExpr(expr), $1);
                         }
     | WHEN '(' dataSet ',' action sideEffectOptions ')'
                         {

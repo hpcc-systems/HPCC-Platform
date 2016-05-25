@@ -1293,8 +1293,8 @@ IHqlExpression * createImpureOwn(IHqlExpression * expr)
 
 IHqlExpression * getNormalizedFilename(IHqlExpression * filename)
 {
-    Owned<IErrorReceiver> errorProcessor = createNullErrorReceiver();
-    OwnedHqlExpr folded = foldHqlExpression(*errorProcessor, filename, NULL, HFOloseannotations);
+    NullErrorReceiver errorProcessor;
+    OwnedHqlExpr folded = foldHqlExpression(errorProcessor, filename, NULL, HFOloseannotations);
     return lowerCaseHqlExpr(folded);
 }
 
