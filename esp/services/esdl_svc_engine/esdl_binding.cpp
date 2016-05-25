@@ -142,16 +142,21 @@ IPropertyTree * fetchESDLBindingFromStateFile(const char *process, const char *b
     try
     {
         Owned<IPTree> esdlState = createPTreeFromXMLFile(stateFileName);
-        if (!esdlState)
-            throw MakeStringException(-1, "Could not load DESDL binding state from local file: '%s' for ESP binding %s.%s", stateFileName, process, bindingName);
-
-        const char * restoredBindingTS = esdlState->queryProp("@StateSaveTimems");
-
-        fprintf(stdout, "ESDL State restored from local state store: %s created epoch: %s", bindingName, restoredBindingTS);
-
-        return esdlState->getPropTree("EsdlBinding/Binding");
+        if (esdlState)
+        {
+            const char * restoredBindingTS = esdlState->queryProp("@StateSaveTimems");
+            fprintf(stdout, "ESDL State restored from local state store: %s created epoch: %s", bindingName, restoredBindingTS);
+            return esdlState->getPropTree("EsdlBinding/Binding");
+        }
+        else
+        {
+            ESPLOG(LogNormal, "Failed to load DESDL binding state from local file: '%s' for ESP binding %s.%s", stateFileName, process, bindingName);
+        }
     }
-    catch (...){}
+    catch (...)
+    {
+        ESPLOG(LogNormal, "Failed to load DESDL binding state from local file: '%s' for ESP binding %s.%s", stateFileName, process, bindingName);
+    }
 
     return nullptr;
 }
@@ -1003,15 +1008,15 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const
             DBGLOG("ESDL Binding: Could not fetch ESDL binding %s for ESP Process %s", binding, process);
 
         //Subscribe to Dali anyway
-		DBGLOG("ESDL Binding %s is subscribing to all /ESDL/Bindings/Binding dali changes", binding);
-		//Since it seems we cannot subscribe to a specific /ESDL/Bindings/Binding, all bindings have to subscribe to the /ESDL/Bindings branch
-		m_pBindingSubscription.clear();
-		m_pBindingSubscription.setown( new CESDLBindingSubscription(this));
+        DBGLOG("ESDL Binding %s is subscribing to all /ESDL/Bindings/Binding dali changes", binding);
+        //Since it seems we cannot subscribe to a specific /ESDL/Bindings/Binding, all bindings have to subscribe to the /ESDL/Bindings branch
+        m_pBindingSubscription.clear();
+        m_pBindingSubscription.setown( new CESDLBindingSubscription(this));
 
-		DBGLOG("ESDL Binding %s is subscribing to all /ESDL/Bindings/Definition dali changes", binding);
-		//Since it seems we cannot subscribe to a specific /ESDL/Definitions/Definition, all bindings have to subscribe to the /ESDL/Definitions branch
-		m_pDefinitionSubscription.clear();
-		m_pDefinitionSubscription.setown( new CESDLDefinitionSubscription(this));
+        DBGLOG("ESDL Binding %s is subscribing to all /ESDL/Bindings/Definition dali changes", binding);
+        //Since it seems we cannot subscribe to a specific /ESDL/Definitions/Definition, all bindings have to subscribe to the /ESDL/Definitions branch
+        m_pDefinitionSubscription.clear();
+        m_pDefinitionSubscription.setown( new CESDLDefinitionSubscription(this));
 
         StringBuffer xpath;
         xpath.appendf("Software/EspProcess[@name=\"%s\"]/EspBinding[@name=\"%s\"]", process, binding);
