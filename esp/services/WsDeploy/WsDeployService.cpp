@@ -4665,7 +4665,13 @@ bool CWsDeployFileInfo::handleEspServiceBindings(IEspContext &context, IEspHandl
         if (resource)
           xpath.appendf("[@resource='%s']", resource);
 
-        IPropertyTree* pSubType = pEnvRoot->queryPropTree(xpath.str());
+        IPropertyTree* pSubType = nullptr;
+        Owned<IPropertyTreeIterator> iterSubType = pEnvRoot->getElements(xpath.str());
+        ForEach(*iterSubType)
+        {
+             pSubType = &(iterSubType->query());
+             break;
+        }
 
         String subType(xpath.str());
 

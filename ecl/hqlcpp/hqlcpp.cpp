@@ -1781,7 +1781,8 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
         DebugOption(options.alwaysReuseGlobalSpills,"alwaysReuseGlobalSpills",true),
         DebugOption(options.forceAllDatasetsParallel,"forceAllDatasetsParallel",false),  // Purely for regression testing.
-        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsAsErrors",true)
+        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsAsErrors",true),
+        DebugOption(options.optimizeCriticalFunctions,"optimizeCriticalFunctions",true),
     };
 
     //get options values from workunit

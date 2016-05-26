@@ -675,12 +675,15 @@ StatisticKind queryStatisticKind(const char * search)
         return StKindAll;
 
     //Slow - should use a hash table....
-    for (unsigned i=0; i < StMax; i++)
+    for (unsigned variant=0; variant < StNextModifier; variant += StVariantScale)
     {
-        StatisticKind kind = (StatisticKind)i;
-        const char * shortName = queryStatisticName(kind);
-        if (strieq(shortName, search))
-            return kind;
+        for (unsigned i=0; i < StMax; i++)
+        {
+            StatisticKind kind = (StatisticKind)(i+variant);
+            const char * shortName = queryStatisticName(kind);
+            if (shortName && strieq(shortName, search))
+                return kind;
+        }
     }
     return StKindNone;
 }
