@@ -2736,9 +2736,9 @@ sudo /etc/init.d/hpcc-init -c esp start
         services in this way provides status in the same manner as invoking
         them with a service command does for other HPCC processes.</para>
 
-        <para>Currently, the hpcc-init system service will only support
-        "start", "stop" and "restart" options. The other options, such as
-        "status", "-c" are not supported.</para>
+        <para>The hpcc-init system service will only support "start", "stop"
+        and "restart" options. The other options, such as "status", "-c" are
+        not supported.</para>
 
         <para>There are two sets of HPCC systemd service scripts:
         <emphasis>hpcc-init.service/dafilesrv.service</emphasis> and
@@ -2746,25 +2746,40 @@ sudo /etc/init.d/hpcc-init -c esp start
         under /lib/systemd/system.</para>
 
         <para>The first set does not have any output to STDOUT/STDERROR,
-        instead it logs to /var/log/syslog. Users can enter: "journalctl -u
-        &lt;service&gt; -f" to see the output. The second set has the same
-        output to STDOUT/STDERROR as directly invoking
-        /etc/init.d/&lt;hpcc-init|dafilesrv&gt;</para>
+        instead it logs to /var/log/syslog. To view the output:</para>
 
-        <para>User can either use "sudo service &lt;service&gt;
-        &lt;start|stop|restart&gt;" or "sudo systemctl
-        &lt;start|stop|restart&gt; &lt;full service name&gt;". The systemd
-        displays service status in it's own format: "sudo service
-        &lt;service&gt; status" or "sudo systemctl status &lt;full service
-        name&gt;". This is different than the output from
-        "/etc/init.d/hpcc-init status".</para>
+        <programlisting>journalctl -u &lt;service&gt; -f  </programlisting>
+
+        <para>The second set has the same output to STDOUT/STDERROR as
+        directly invoking /etc/init.d/&lt;hpcc-init|dafilesrv&gt;</para>
+
+        <para>Use either: </para>
+
+        <programlisting>sudo service &lt;service&gt; &lt;start|stop|restart&gt;</programlisting>
+
+        <para>or </para>
+
+        <programlisting>sudo systemctl &lt;start|stop|restart&gt; &lt;full_service_name&gt; </programlisting>
+
+        <para>The systemd displays the service status in it's own format.
+        </para>
+
+        <programlisting>sudo service &lt;service&gt; status </programlisting>
+
+        <para>or </para>
+
+        <programlisting>sudo systemctl status &lt;full_service_name&gt; </programlisting>
+
+        <para>These are different than the output from</para>
+
+        <programlisting>/etc/init.d/hpcc-init status</programlisting>
 
         <para>HPCC services started through systemd will be listed as active
         in systemd. They can be listed as "sudo systemctl list-units
         [PATTERN...]". To remove them from the systemd active service list,
-        the user must run the stop service from the "service" or "systemctl"
-        commands even though it is already stopped by directly calling
-        /etc/init.d/&lt;hpcc-init|dafilesrv&gt; stop.</para>
+        you must run the stop service from the "service" or "systemctl"
+        commands (as shown above) even though it is already stopped by
+        directly calling /etc/init.d/&lt;hpcc-init|dafilesrv&gt; stop.</para>
 
         <para>HPCC uninstall will automatically remove HPCC services from
         active list and /etc/systemd/system/ directory.</para>
@@ -2803,7 +2818,7 @@ sudo /etc/init.d/hpcc-init -c esp start
             </orderedlist></para>
 
           <para>To start/stop HPCC with hpcc-init with STDOUT/STDERR output.
-          Get current tty by run "tty". For example, tty -&gt; /dev/pts/1.
+          Get current tty by running "tty". For example, tty -&gt; /dev/pts/1.
           "pts/1" will be used in following commands. <orderedlist>
               <listitem>
                 <para>Start</para>
