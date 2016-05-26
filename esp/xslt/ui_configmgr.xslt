@@ -696,8 +696,7 @@
                                   subi.<xsl:value-of select="name()"/>_required = aS.required;
                                   subi.<xsl:value-of select="name()"/>_onChange = aS.onChange;
                                   subi.<xsl:value-of select="name()"/>_onChangeMsg = aS.onChangeMsg;
-                                  if ("<xsl:value-of select="."/>"!== "")
-                                    subsubTypeKey += "[@" + "<xsl:value-of select="name()"/>" + "='" + "<xsl:value-of select="."/>" + "']";
+                                  subsubTypeKey += "[@" + "<xsl:value-of select="name()"/>" + "='" + "<xsl:value-of select="."/>" + "']";
                                   if (aS.caption)
                                     subi.<xsl:value-of select="name()"/>_caption = aS.caption;
                                 }
