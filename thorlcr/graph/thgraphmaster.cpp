@@ -2017,7 +2017,7 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
                 }
             }
         }
-        Owned<IThorResult> _result = ::createResult(activity, rowIf, false, spillPriority);
+        Owned<IThorResult> _result = ::createResult(graph, activity, id, rowIf, false, spillPriority);
         Owned<IRowWriter> resultWriter = _result->getWriter();
         for (unsigned s=0; s<numSlaves; s++)
         {
@@ -2035,9 +2035,10 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CCollatedResult(CMasterGraph &_graph, CActivityBase &_activity, IThorRowInterfaces *_rowIf, unsigned _id, activity_id _ownerId, unsigned _spillPriority)
-        : graph(_graph), activity(_activity), rowIf(_rowIf), id(_id), ownerId(_ownerId), spillPriority(_spillPriority)
+    CCollatedResult(CMasterGraph &_graph, CActivityBase &_activity, IThorRowInterfaces *_rowIf, unsigned _id, unsigned _spillPriority)
+        : graph(_graph), activity(_activity), rowIf(_rowIf), id(_id), spillPriority(_spillPriority)
     {
+        ownerId = activity.queryId();
         for (unsigned n=0; n<graph.queryJob().querySlaves(); n++)
             results.append(new CThorExpandingRowArray(activity, rowIf));
     }
@@ -2055,40 +2056,43 @@ public:
     }
 
 // IThorResult
-    virtual IRowWriter *getWriter() { throwUnexpected(); }
-    virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count)
-    {
-        throwUnexpected();
-    }
-    virtual IRowStream *getRowStream()
+    virtual IRowWriter *getWriter() override { throwUnexpected(); }
+    virtual IRowStream *getRowStream() override
     {
         ensure();
         return result->getRowStream();
     }
-    virtual IThorRowInterfaces *queryRowInterfaces()
+    virtual IThorRowInterfaces *queryRowInterfaces() override
     {
         return rowIf;
     }
-    virtual CActivityBase *queryActivity()
+    virtual CActivityBase *queryActivity() override
     {
         return &activity;
     }
-    virtual bool isDistributed() const { return false; }
-    virtual void serialize(MemoryBuffer &mb)
+    virtual bool isDistributed() const override { return false; }
+    virtual void serialize(MemoryBuffer &mb) override
     {
         ensure();
         result->serialize(mb);
     }
-    virtual void getLinkedResult(unsigned & count, byte * * & ret)
+    virtual void getLinkedResult(unsigned & count, byte * * & ret) override
     {
         ensure();
         result->getLinkedResult(count, ret);
     }
-    virtual const void * getLinkedRowResult()
+    virtual const void * getLinkedRowResult() override
     {
         ensure();
         return result->getLinkedRowResult();
     }
+    virtual unsigned queryId() const override { return id; }
+    virtual void reset() override
+    {
+        result->reset();
+    }
+    virtual bool isReusable() const { return false; }
+    virtual void setReusable(bool tf) { }
 };
 
 ///////////////////
@@ -2736,26 +2740,27 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
     return true;
 }
 
-IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+class CThorMasterGraphResults : public CThorGraphResults
 {
-    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, results->queryOwnerId(), spillPriority);
-    results->setResult(id, result);
-    return result;
-}
+    CMasterGraph &graph;
+public:
+    CThorMasterGraphResults(CMasterGraph &_graph, unsigned numResults) : CThorGraphResults(_graph, numResults), graph(_graph)
+    {
+    }
+    ~CThorMasterGraphResults()
+    {
+    }
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority) override
+    {
+        Owned<CCollatedResult> result = new CCollatedResult(graph, activity, rowIf, id, spillPriority);
+        setResult(id, result);
+        return result;
+    }
+};
 
-IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorGraphResults *CMasterGraph::createThorGraphResults(unsigned num)
 {
-    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, localResults->queryOwnerId(), spillPriority);
-    localResults->setResult(id, result);
-    return result;
-}
-
-IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
-{
-    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, 0, localResults->queryOwnerId(), spillPriority);
-    unsigned id = graphLoopResults->addResult(result);
-    result->setId(id);
-    return result;
+    return new CThorMasterGraphResults(*this, num);
 }
 
 

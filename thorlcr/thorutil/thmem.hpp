@@ -464,6 +464,7 @@ public:
     inline unsigned queryDefaultMaxSpillCost() const { return CThorExpandingRowArray::queryDefaultMaxSpillCost(); }
     inline rowidx_t queryMaxRows() const { return CThorExpandingRowArray::queryMaxRows(); }
     roxiemem::IRowManager *queryRowManager() const { return CThorExpandingRowArray::queryRowManager(); }
+    void clearRows();
     void kill();
     void compact();
     bool flush();
@@ -549,7 +550,6 @@ public:
     virtual void unlock() const { cs.leave(); }
 
 private:
-    void clearRows();
     const void **getBlock(rowidx_t readRows);
 };
 
@@ -569,6 +569,7 @@ interface IThorRowCollectorCommon : extends IInterface
     virtual void resize(rowidx_t max) = 0;
     virtual void setOptions(unsigned options) = 0;
     virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
+    virtual void reset() = 0;
 };
 
 interface IThorRowLoader : extends IThorRowCollectorCommon
