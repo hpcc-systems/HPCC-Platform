@@ -54,11 +54,12 @@ class ECLFile:
             self.tempFile.close()
             pass
 
-    def __init__(self, ecl, dir_a, dir_ex, dir_r,  cluster, args):
+    def __init__(self, ecl, dir_a, dir_ex, dir_r, dir_inc, cluster, args):
         self.dir_ec = os.path.dirname(ecl)
         self.dir_ex = dir_ex
         self.dir_r = dir_r
         self.dir_a = dir_a
+        self.dir_inc = dir_inc
         self.cluster = cluster;
         self.baseEcl = os.path.basename(ecl)
         self.basename = os.path.splitext(self.baseEcl)[0]

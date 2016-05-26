@@ -79,6 +79,7 @@ class Regression:
         self.dir_a = os.path.join(self.regressionDir, self.config.archiveDir)
         self.dir_r = os.path.join(self.regressionDir, self.config.resultDir)
         self.dir_zap =  os.path.join(self.regressionDir,self.config.zapDir)
+        self.dir_inc =  self.dir_ec
         logging.debug("Suite Dir      : %s", self.suiteDir)
         logging.debug("Regression Dir : %s", self.regressionDir)
         logging.debug("Result Dir     : %s", self.dir_r)
@@ -87,7 +88,7 @@ class Regression:
         logging.debug("Key Dir        : %s", self.dir_ex)
         logging.debug("Archive Dir    : %s", self.dir_a)
         logging.debug("ZAP Dir        : %s", self.dir_zap )
-
+        logging.debug("INC Dir        : %s", self.dir_inc )
 
         numOfThreads=1
         if 'pq' in args:
@@ -130,7 +131,7 @@ class Regression:
         self.createDirectory(self.logDir)
         self.createDirectory(self.dir_zap)
 
-        self.suites[cluster] = Suite(cluster, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir, args, False, fileList)
+        self.suites[cluster] = Suite(cluster, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, False, fileList)
         self.maxtasks = len(self.suites[cluster].getSuite())
 
     def createDirectory(self, dir_n):
@@ -142,9 +143,10 @@ class Regression:
         self.createDirectory(self.dir_a)
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
+        self.createDirectory(self.dir_zap)
         self.setupDir = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.setupDir), True)
         logging.debug("Setup Dir      : %s", self.setupDir)
-        self.setupSuite = Suite(args.target, self.setupDir, self.dir_a, self.dir_ex, self.dir_r, self.logDir, args, True)
+        self.setupSuite = Suite(args.target, self.setupDir, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, True)
         self.maxtasks = len(self.setupSuite.getSuite())
         return self.setupSuite
 
