@@ -603,7 +603,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
         StringBuffer espProcName(req.getEspProcName());
         StringBuffer espBindingName(req.getEspBindingName());
         StringBuffer espPort(req.getEspPort());
-        StringBuffer espServiceName(req.getEsdlServiceName());
+        StringBuffer espServiceName(req.getEspServiceName());
         StringBuffer esdlDefIdSTR(req.getEsdlDefinitionID());
 
         StringBuffer esdlServiceName(req.getEsdlServiceName());

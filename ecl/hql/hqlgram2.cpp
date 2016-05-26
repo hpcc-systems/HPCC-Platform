@@ -10642,6 +10642,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case LEFT: msg.append("LEFT"); break;
     case LENGTH: msg.append("LENGTH"); break;
     case LIBRARY: msg.append("LIBRARY"); break;
+    case LIKELY: msg.append("LIKELY"); break;
     case LIMIT: msg.append("LIMIT"); break;
     case LINKCOUNTED: msg.append("LINKCOUNTED"); break;
     case LITERAL: msg.append("LITERAL"); break;
@@ -10826,6 +10827,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TYPEOF: msg.append("TYPEOF"); break;
     case UNGROUP: msg.append("UNGROUP"); break;
     case UNICODEORDER: msg.append("UNICODEORDER"); break;
+    case UNLIKELY: msg.append("UNLIKELY"); break;
     case UNORDERED: msg.append("UNORDERED"); break;
     case UNSIGNED: msg.append("UNSIGNED"); break;
     case UNSORTED: msg.append("UNSORTED"); break;
@@ -11000,7 +11002,7 @@ void HqlGram::simplifyExpected(int *expected)
                        FAILCODE, FAILMESSAGE, FROMUNICODE, __GROUPED__, ISNULL, ISVALID, XMLDECODE, XMLENCODE, XMLTEXT, XMLUNICODE,
                        MATCHED, MATCHLENGTH, MATCHPOSITION, MATCHTEXT, MATCHUNICODE, MATCHUTF8, NOFOLD, NOHOIST, NOTHOR, OPT, REGEXFIND, REGEXREPLACE, RELATIONSHIP, SEQUENTIAL, SKIP, TOUNICODE, UNICODEORDER, UNSORTED,
                        KEYUNICODE, TOK_TRUE, TOK_FALSE, BOOL_CONST, NOT, EXISTS, WITHIN, LEFT, RIGHT, SELF, '[', HTTPCALL, SOAPCALL, ALL, TOK_ERROR, TOK_CATCH, __COMMON__, __COMPOUND__, RECOVERY, CLUSTERSIZE, CHOOSENALL, BNOT, STEPPED, ECLCRC, NAMEOF,
-                       TOXML, TOJSON, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, 0);
+                       TOXML, TOJSON, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, LIKELY, UNLIKELY, 0);
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
     simplify(expected, DICTIONARY_ID, DICTIONARY_FUNCTION, DICTIONARY, 0);
