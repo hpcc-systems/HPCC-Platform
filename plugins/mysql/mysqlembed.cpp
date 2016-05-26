@@ -1200,19 +1200,19 @@ public:
                             case ParamTypeUInt:
                                 {
                                     unsigned int oval = strtoul(val, nullptr, 10);
-                                    rc = mysql_options(*conn, optDef.option, &oval);
+                                    rc = mysql_options(*conn, optDef.option, (const char *) &oval);
                                     break;
                                 }
                             case ParamTypeULong:
                                 {
                                     unsigned long oval = strtoul(val, nullptr, 10);
-                                    rc = mysql_options(*conn, optDef.option, &oval);
+                                    rc = mysql_options(*conn, optDef.option, (const char *) &oval);
                                     break;
                                 }
                             case ParamTypeBool:
                                 {
                                     my_bool oval = clipStrToBool(val);
-                                    rc = mysql_options(*conn, optDef.option, &oval);
+                                    rc = mysql_options(*conn, optDef.option, (const char *) &oval);
                                     break;
                                 }
                             }
