@@ -343,6 +343,7 @@ unsigned jlib_decl setAllocHook(bool on);  // bwd compat returns unsigned
 extern jlib_decl void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath = NULL, const char *secDiskPath = NULL);
 extern jlib_decl void getProcessTime(UserSystemTime_t & time);
 extern jlib_decl memsize_t getMapInfo(const char *type);
+extern jlib_decl memsize_t getVMInfo(const char *type);
 extern jlib_decl void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed);
 extern jlib_decl void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident);
 extern jlib_decl unsigned getAffinityCpus();
