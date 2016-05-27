@@ -88,6 +88,9 @@ IF (NOT LIBMEMCACHED_FOUND)
             list(GET libmemcached_status 0 status_code)
             list(GET libmemcached_status 1 status_msg)
             if(NOT status_code EQUAL 0)
+                if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libmemcached-${LIBMEMCACHED_VERSION}.tar.gz")
+                    file(REMOVE ${CMAKE_CURRENT_SOURCE_DIR}/libmemcached-${LIBMEMCACHED_VERSION}.tar.gz)
+                endif()
                 message(FATAL_ERROR "Fatal Error: download of ${LIBMEMCACHED_URL} failed
                 status_code: ${status_code}
                 status_msg: ${status_msg}
