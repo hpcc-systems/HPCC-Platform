@@ -538,10 +538,11 @@
           </figure>
 
           <para>Fill in the corresponding values under Description, History,
-          and Timings in the Z.A.P. dialog. Press the <emphasis
-          role="bold">Apply </emphasis>button when finished. The Z.A.P.
-          utililty generates a zip file with all the appropriate information
-          for troubleshooting.</para>
+          and Timings in the Z.A.P. dialog. Optionally you can password
+          protect the ZAP package, and choose to include slave logs. Press the
+          <emphasis role="bold">Apply </emphasis>button when finished. The
+          Z.A.P. utililty generates a zip file with all the appropriate
+          information for troubleshooting.</para>
 
           <para>You can find the generated zip file in your browser's
           designated download directory. You can now send this file to the
