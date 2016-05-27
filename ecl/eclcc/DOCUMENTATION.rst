@@ -69,6 +69,129 @@ In practice the progression is not so clear cut.  There tends to be some overlap
 different stages, and some of them may occur in slightly different orders.  However the order broadly
 holds.
 
+*****************************
+Working on the code generator
+*****************************
+
+The regression suite
+====================
+
+Before any change is accepted for the code generator it is always run against several regression suites to ensure that
+it doesn't introduce any problems, and that the change has the desired effect.  There are several different regression suites:
+
+* testing/regress/ecl  - The run time regression suite.
+* ecl/regress          - a compiler regression suite.  This contains tests that cannot run and error tests.
+* LN private suite     - This contains a large selection (>10Gb) of archived queries.  The contain proprietary code so unfortunately cannot be released as open source.
+
+The ecl/regress directory contains a script 'regress.sh' that is used for running the regression tests.  It should be
+executed in the directory containing the ecl files.  The script generates the c++ code (and workunits) for each of the source
+files to a target directory, and then executes a comparison program to compare the new results with a previous "golden"
+reference set.
+
+Before making any changes to the compiler, a reference set should be created by running the regression script and copying the
+generated files to the reference directory.
+
+Here is a sample command line
+
+``~/dev/hpcc/ecl/regress/regress.sh -t /regress/hpcc -e /home/<user>/buildr/Release/bin/eclcc -I /home/<user>/dev/hpcc/ecl/regress/modules -I /home/<user>/dev/hpcc/plugins/javaembed -I /home/<user>/dev/hpcc/plugins/v8embed -c /regress/hpcc.master -d bcompare``
+
+(A version of this command resides in a shell script in each of my regression suite directories, with the -t and -c options adapted for each suite.)
+
+For a full list of options execute the script with no parameters, or take a look at the script itself. A couple of useful options are:
+
+* The script can be run on a single file by using the -q option.
+
+* The (-e) option selects the path of the eclcc.  This is particularly useful when running from the build
+  directory (see below), or using multiple build directories to compare behaviour between different versions.
+
+We strongly recommend using a comparison program which allows rules to be defined to ignore certain differences (e.g., beyond compare).
+
+Running directly from the build directory
+=========================================
+
+It is much quicker to run eclcc directly from the build directory, rather than deploying a system and running eclcc
+from there.  To do this you need to configure some options that eclcc requires, e.g. where the include files are found.  The
+options can be set by either setting environment variables or by specifiying options in an eclcc.ini
+file.   The following are the names of the different options:
+
++-----------------------+-------------------+
+| Environment flag      | Ini file option   |
++=======================+===================+
+| CL_PATH               | compilerPath      |
++-----------------------+-------------------+
+| ECLCC_LIBRARY_PATH    | libraryPath       |
++-----------------------+-------------------+
+| ECLCC_INCLUDE_PATH    | includePath       |
++-----------------------+-------------------+
+| ECLCC_PLUGIN_PATH     | plugins           |
++-----------------------+-------------------+
+| HPCC_FILEHOOKS_PATH   | filehooks         |
++-----------------------+-------------------+
+| ECLCC_TPL_PATH        | templatePath      |
++-----------------------+-------------------+
+| ECLCC_ECLLIBRARY_PATH | eclLibrariesPath  |
++-----------------------+-------------------+
+| ECLCC_ECLBUNDLE_PATH  | eclBundlesPath    |
++-----------------------+-------------------+
+
+The eclcc.ini can either be a file in the local directory, or specified on the eclcc command line with -specs.
+Including the settings in a local eclcc.ini file also it easy to debug eclcc directly from the build directory
+within the eclipse environment.
+
+Hints and tips
+==============
+
+* Logging
+
+  There is an option for eclcc to output a logging file, and another to specify the level of detail in that logging
+  file.  If the detail level is above 500 then the expresssion tree for the query is output to the logging file after
+  each of the code transformations.  The tracing is very useful for tracking down at which stage inconsistencies are
+  introduced in the expression graph, and also for learning how each transformation affects the query.
+
+  The output format defaults to ECL - which is regenerated from the expression tree.  (This ECL cannot generally be
+  compiled without editing - partly because it contains extra annoations.)   Use either of the following:
+
+  ``eclcc myfile.ecl --logfile myfile.log --logdetail 999``
+
+  ``regress.sh -q myfile.ecl -l myfile.log``
+
+* -ftraceIR
+
+  There is a debug option (-ftraceIR) that generates an intermediate representation of the expression graph rather than
+  regenerating ECL.  The output tends to be less compact and harder to read quickly, but has the advantage of being
+  better structured, and contains more details of the internal representation.  ecl/hql/hqlir.cpp contains
+  more details of the format.
+
+* Adding extra logging into the source code
+
+  If you want to add tracing of expressions at any point in the code generation then adding either of the following
+  calls will include the expression details in the log file:
+
+  ``dbglogExpr(expr); // regenerate the ecl for an expression.  See other functions in ecl/hql/hqlthql.hpp``
+
+  ``EclIR::dbglogIR(expr);  // regenerate the IR for an expression.  See other functions in ecl/hql/hqlir.hpp``
+
+* Logging while debugging
+
+  If you are debugging inside gdb it is often useful to be able to dump out details of an expression.  Calling
+  EclIR:dump_ir(expr); will generate the IR to stdout.
+
+  ``p EclIR::dump_ir(expr)``
+
+  The function can also be used with multiple parameters.  Each expression will be dumped out, but common child nodes
+  will only be generated once.  This can be very useful when trying to determine the difference between two expressions.
+  The quickest way is to call ``EclIR::dump_ir(expr1, expr2)``.  The first difference between the expressions will
+  be the expression that follows the first "return".
+
+* Expression sequence ids.
+
+  Sometimes it can be hard to determine where a particular IHqlExpression node was created.  If that is the case, then
+  defining ``DEBUG_TRACK_INSTANCEID`` (in ecl/hql/hqlexpr.ipp) will add a unique sequence number to each IHqlExpression
+  that is created.  There is also a function checkSeqId() at the start of ecl/hql/hqlexpr.cpp which is called whenever
+  an expression is created, linked, released etc..  Setting a breakpoint in that function can allow you to trace back
+  exactly when and why a particular node was created.
+
+
 ***********
 Expressions
 ***********
