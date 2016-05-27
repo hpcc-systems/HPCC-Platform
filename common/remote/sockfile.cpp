@@ -417,7 +417,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CDafsException(int code,const char *_msg) 
-        : errcode(code), msg(_msg)
+        : msg(_msg), errcode(code)
     {
     };
 
@@ -2683,7 +2683,7 @@ class CAsyncCommandManager
         CAsyncCommandManager &parent;
     public:
         CAsyncJob(CAsyncCommandManager &_parent, const char *_uuid)
-            : parent(_parent), uuid(_uuid)
+            : uuid(_uuid), parent(_parent)
         {
             thread = new cThread(this);
             hash = hashc((const byte *)uuid.get(),uuid.length(),~0U);
@@ -2774,7 +2774,7 @@ class CAsyncCommandManager
                 offset_t &total;
             public:
                 cProgress(CriticalSection &_sect,offset_t &_done,offset_t &_total,CFPmode &_mode)
-                    : sect(_sect), done(_done), total(_total), mode(_mode)
+                    : sect(_sect), mode(_mode), done(_done), total(_total)
                 {
                 }
                 CFPmode onProgress(offset_t sizeDone, offset_t totalSize)
@@ -3391,7 +3391,6 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
 
     class CThrottler
     {
-        CRemoteFileServer &owner;
         Semaphore sem;
         CriticalSection crit, configureCrit;
         StringAttr title;
@@ -3403,7 +3402,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
         unsigned statsIntervalSecs;
 
     public:
-        CThrottler(CRemoteFileServer &_owner, const char *_title) : owner(_owner), title(_title)
+        CThrottler(const char *_title) : title(_title)
         {
             totalThrottleDelay = 0;
             limit = 0;
@@ -3806,7 +3805,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     CRemoteFileServer(unsigned maxThreads, unsigned maxThreadsDelayMs, unsigned maxAsyncCopy)
-        : stdCmdThrottler(*this, "stdCmdThrotlter"), slowCmdThrottler(*this, "slowCmdThrotlter"), asyncCommandManager(maxAsyncCopy)
+        : asyncCommandManager(maxAsyncCopy), stdCmdThrottler("stdCmdThrotlter"), slowCmdThrottler("slowCmdThrotlter")
     {
         lasthandle = 0;
         selecthandler.setown(createSocketSelectHandler(NULL));
@@ -5087,7 +5086,7 @@ public:
         IpAddress ip;
         socket->getPeerAddress(ip);
         byte ipdata[16];
-        size32_t ipds = ip.getNetAddress(sizeof(ipdata),&ipdata);
+        ip.getNetAddress(sizeof(ipdata),&ipdata);
         mergeOnce(oncekey,sizeof(ipdata),&ipdata); // this is clients key
         OnceKey mykey;
         genOnce(mykey);

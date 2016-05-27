@@ -27,7 +27,7 @@
 namespace roxiemem {
 
 RoxieOutputRowArray::RoxieOutputRowArray(IRowManager * _rowManager, rowidx_t initialSize, size32_t _commitDelta, unsigned _allocatorId) :
-    rowManager(_rowManager), commitDelta(_commitDelta), allocatorId(_allocatorId)
+    rowManager(_rowManager), allocatorId(_allocatorId), commitDelta(_commitDelta)
 {
     if (initialSize)
     {

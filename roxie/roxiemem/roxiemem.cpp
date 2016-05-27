@@ -346,6 +346,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
                 heapTotalPages, (unsigned __int64) memsize, heapBase, (unsigned __int64) HEAP_ALIGNMENT_SIZE, heapBitmapSize);
 }
 
+#ifdef _USE_CPPUNIT
 static void adjustHeapSize(unsigned numPages)
 {
     memsize_t bitmapSize = (numPages + UNSIGNED_BITS - 1) / UNSIGNED_BITS;
@@ -355,6 +356,7 @@ static void adjustHeapSize(unsigned numPages)
     heapBitmapSize = (unsigned)bitmapSize;
     heapTotalPages = (unsigned)totalPages;
 }
+#endif
 
 extern void releaseRoxieHeap()
 {
@@ -446,6 +448,7 @@ extern StringBuffer &memstats(StringBuffer &stats)
     return stats.appendf("Heap size %u pages, %u free, largest block %u", heapTotalPages, freePages, maxBlock);
 }
 
+#ifdef _USE_CPPUNIT
 static void dumpHeapState()
 {
     StringBuffer s;
@@ -457,6 +460,7 @@ static void dumpHeapState()
 
     DBGLOG("Heap: %s", s.str());
 }
+#endif
 
 IPerfMonHook *createRoxieMemStatsPerfMonHook(IPerfMonHook *chain)
 {
@@ -741,7 +745,6 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
     unsigned wordOffset = (unsigned) (pageOffset / UNSIGNED_BITS);
     unsigned bitOffset = (unsigned) (pageOffset % UNSIGNED_BITS);
     unsigned mask = 1<<bitOffset;
-    unsigned nextPageOffset = (pageOffset+pages + (UNSIGNED_BITS-1)) / UNSIGNED_BITS;
     char * firstReleaseBlock = NULL;
     char * lastReleaseBlock = NULL;
     {
@@ -840,7 +843,6 @@ static void *subrealloc_aligned(void *ptr, unsigned pages, unsigned newPages)
     //If this function increases the size of the block, it is possible heapHWM could decrease - it will be
     //updated on the next multi-page allocation
     assertex(newPages > 0);
-    unsigned _pages = pages;
     memsize_t offset = (char *)ptr - heapBase;
     memsize_t pageOffset = offset / HEAP_ALIGNMENT_SIZE;
     if (!pages)
@@ -1144,7 +1146,7 @@ static void setParallelSyncReleaseGranularity(size_t granularity, unsigned scali
     parallelSyncReleaseGranularity = granularity;
     parallelSyncReleaseThreshold = granularity * scaling;
 }
-#else
+#elif defined(PARALLEL_SYNC_RELEASE)
 const static size_t parallelSyncReleaseGranularity = DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY;
 const static size_t parallelSyncReleaseThreshold = DEFAULT_PARALLEL_SYNC_RELEASE_THRESHOLD;
 #endif
@@ -1429,7 +1431,7 @@ protected:
     {
         dbgassertex(ptr);
         ptrdiff_t diff = ptr - (char *) this;
-        assert(diff < HEAP_ALIGNMENT_SIZE);
+        assert(diff < (ptrdiff_t) HEAP_ALIGNMENT_SIZE);
         return (unsigned) diff;
     }
 
@@ -2334,7 +2336,7 @@ class CHeap : public CInterface
     friend class HeapCompactState;
 public:
     CHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, unsigned _flags)
-        : logctx(_logctx), rowManager(_rowManager), allocatorCache(_allocatorCache), activeHeaplet(NULL), heaplets(NULL), flags(_flags)
+        : flags(_flags), rowManager(_rowManager), allocatorCache(_allocatorCache), logctx(_logctx)
     {
         atomic_set(&possibleEmptyPages, 0);
         atomic_set(&headMaybeSpace, BLOCKLIST_NULL);
@@ -2749,8 +2751,8 @@ protected:
 
 protected:
     unsigned flags; // before the pointer so it packs better in 64bit.
-    Heaplet * activeHeaplet; // which block is the current candidate for adding rows.
-    Heaplet * heaplets; // the linked list of heaplets for this heap
+    Heaplet * activeHeaplet = nullptr; // which block is the current candidate for adding rows.
+    Heaplet * heaplets = nullptr; // the linked list of heaplets for this heap
     CChunkingRowManager * rowManager;
     const IRowAllocatorCache *allocatorCache;
     const IContextLogger & logctx;
@@ -3119,7 +3121,6 @@ class BufferedRowCallbackManager
             ForEachItemIn(i, callbacks)
             {
                 const CallbackPair * iter = &callbacks.item(i);
-                unsigned curSlave = iter->first;
                 if ((iter->first == searchSlaveId) && (iter->second == searchCallback))
                 {
                     callbacks.remove(i);
@@ -3525,7 +3526,7 @@ protected:
 
 public:
     CChunkingRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks, bool _outputOOMReports)
-        : logctx(_logctx), allocatorCache(_allocatorCache), hugeHeap(this, _logctx, _allocatorCache)
+        : hugeHeap(this, _logctx, _allocatorCache), logctx(_logctx), allocatorCache(_allocatorCache)
     {
         logctx.Link();
         //Use roundup() to calculate the sizes of the different heaps, and double check that the heap mapping
@@ -4083,7 +4084,7 @@ public:
                     //very unusual: another thread may have just released a lot of memory (e.g., it has finished), but
                     //the empty pages haven't been cleaned up
                     releaseEmptyPages(querySlaveId(), true);
-                    if (numHeapPages == atomic_read(&totalHeapPages))
+                    if (numHeapPages == (unsigned) atomic_read(&totalHeapPages))
                     {
                         VStringBuffer msg("Memory limit exceeded: current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
                         logctx.CTXLOG("%s", msg.str());
@@ -4262,7 +4263,6 @@ protected:
     virtual memsize_t compactRows(memsize_t count, const void * * rows)
     {
         HeapCompactState state;
-        bool memoryAvailable = false;
         for (memsize_t i = 0; i < count; i++)
         {
             const void * row = rows[i];
@@ -4369,7 +4369,7 @@ class CCallbackRowManager : public CChunkingRowManager
 public:
 
     CCallbackRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks, bool _outputOOMReports)
-        : callbacks(this), CChunkingRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports)
+        : CChunkingRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports), callbacks(this)
     {
     }
 
@@ -5045,7 +5045,7 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
                         DBGLOG("RoxieMemMgr: DataBufferBottom::allocate() freeing DataBuffers Page - addr=%p", goer);
                     goer->~DataBufferBottom(); 
 #ifdef _DEBUG
-                    memset(goer, 0xcc, HEAP_ALIGNMENT_SIZE);
+                    memset((void *) goer, 0xcc, HEAP_ALIGNMENT_SIZE);
 #endif
                     subfree_aligned(goer, 1);
                     atomic_dec(&dataBufferPages);
