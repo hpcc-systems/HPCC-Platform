@@ -176,6 +176,9 @@ enum StatisticKind
     StCycleSpillElapsedCycles,
     StCycleSortElapsedCycles,
 
+    // Stranding stats - on edge
+    StNumStrands,
+
     StMax,
 
     //For any quantity there is potentially the following variants.

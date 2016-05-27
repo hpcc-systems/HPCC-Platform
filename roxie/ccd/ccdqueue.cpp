@@ -539,7 +539,7 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
 }
 
 
-void SlaveContextLogger::putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed) const
+void SlaveContextLogger::putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed, unsigned strands) const
 {
     if (output && mergeSlaveStatistics)
     {
@@ -549,6 +549,7 @@ void SlaveContextLogger::putStatProcessed(unsigned subGraphId, unsigned actId, u
         buf.append(actId);
         buf.append(idx);
         buf.append(processed);
+        buf.append(strands);
     }
 }
 

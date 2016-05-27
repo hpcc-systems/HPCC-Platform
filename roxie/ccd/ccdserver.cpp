@@ -277,9 +277,9 @@ public:
     {
         return ctx->getLibraryGraph(extra, parentActivity);
     }
-    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed) const
+    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed, unsigned _strands) const
     {
-        ctx->noteProcessed(subgraphId, activityId, _idx, _processed);
+        ctx->noteProcessed(subgraphId, activityId, _idx, _processed, _strands);
     }
     virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
     {
@@ -348,7 +348,7 @@ protected:
 // General activity statistics
 
 static const StatisticsMapping actStatistics(StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
-                                              StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped, StKindNone);
+                                              StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped, StNumStrands, StKindNone);
 static const StatisticsMapping joinStatistics(&actStatistics, StNumAtmostTriggered, StKindNone);
 static const StatisticsMapping keyedJoinStatistics(&joinStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                     StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
@@ -1013,7 +1013,7 @@ public:
         if (ctx)
         {
             if (processed)
-                ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed);
+                ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed, 0);
             ctx->mergeActivityStats(stats, factory->querySubgraphId(), activityId, totalCycles, localCycles);
         }
         basehelper.Release();
@@ -1672,6 +1672,18 @@ public:
           strandOptions(_strandOptions, ctx)
     {
         active = 0;
+    }
+
+    ~CRoxieServerStrandedActivity()
+    {
+        if (strands.ordinality() > 1)
+        {
+            if (factory && !debugging)
+                factory->noteProcessed(0, processed);
+            if (ctx)
+                ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed, strands.ordinality());
+            processed = 0;  // To avoid reprocessing in base destructor
+        }
     }
 
     virtual void onCreate(IHThorArg *_colocalArg)
@@ -4655,13 +4667,15 @@ public:
                                     buf.read(childId);
                                     if (*logInfo == LOG_CHILDCOUNT)
                                     {
-                                        unsigned childProcessed;
                                         unsigned idx;
-                                        buf.read(childProcessed);
+                                        unsigned childProcessed;
+                                        unsigned childStrands;
                                         buf.read(idx);
+                                        buf.read(childProcessed);
+                                        buf.read(childStrands);
                                         if (traceLevel > 5)
-                                            activity.queryLogCtx().CTXLOG("Processing ChildCount %d idx %d for child %d subgraph %d", childProcessed, idx, childId, graphId);
-                                        activity.queryContext()->noteProcessed(graphId, childId, idx, childProcessed);
+                                            activity.queryLogCtx().CTXLOG("Processing ChildCount %d idx %d strands %d for child %d subgraph %d", childProcessed, idx, childStrands, childId, graphId);
+                                        activity.queryContext()->noteProcessed(graphId, childId, idx, childProcessed, childStrands);
                                     }
                                     else
                                     {
@@ -8555,7 +8569,7 @@ public:
             {
                 parent->factory->noteProcessed(oid, processed);
                 if (parent->ctx)
-                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed);
+                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed, 0);
             }
         }
 
@@ -15695,7 +15709,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
             {
                 parent->factory->noteProcessed(oid, processed);
                 if (parent->ctx)
-                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed);
+                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed, 0);
             }
         }
 
