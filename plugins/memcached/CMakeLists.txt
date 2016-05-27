@@ -14,7 +14,7 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: memcached
+# Component: memcachedplugin
 
 #####################################################
 # Description:
@@ -22,7 +22,7 @@
 #    Cmake Input File for memcached
 #####################################################
 
-project( memcached )
+project( memcachedplugin )
 
 if (MEMCACHED)
     if(NOT DEFINED LIBMEMCACHED_MINVERSION)
@@ -50,26 +50,26 @@ if (MEMCACHED)
         #All lesser versions explicitly include <tr1/cinttypes> which does not.
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
 
-        HPCC_ADD_LIBRARY(memcached SHARED ${SRCS})
+        HPCC_ADD_LIBRARY(memcachedplugin SHARED ${SRCS})
         if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
             message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
         elseif(NOT APPLE)
-            set_target_properties(memcached PROPERTIES NO_SONAME 1)
+            set_target_properties(memcachedplugin PROPERTIES NO_SONAME 1)
         endif()
 
         #if we are using generated libmemcached, target appropriate dependencies
         if(MEMCACHED_USE_EXTERNAL_LIBRARY)
-            add_dependencies(memcached libmemcached libmemcachedutil)
+            add_dependencies(memcachedplugin libmemcached libmemcachedutil)
             install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libmemcached-${LIBMEMCACHED_VERSION}/libmemcached/.libs\")")
         endif()
         target_link_libraries(
-            memcached
+            memcachedplugin
             eclrtl
             jlib
             ${LIBMEMCACHED_LIBRARIES})
 
         install(
-            TARGETS memcached
+            TARGETS memcachedplugin
             DESTINATION plugins)
     endif()
 endif()
