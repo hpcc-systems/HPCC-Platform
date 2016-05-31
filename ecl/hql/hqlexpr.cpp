@@ -1665,6 +1665,7 @@ bool checkConstant(node_operator op)
     case no_loopcounter:
     case no_sequence:
     case no_table:
+    case no_delayedselect:
         return false;
     // following are currently not implemented in the const folder - can enable if they are.
     case no_global:
