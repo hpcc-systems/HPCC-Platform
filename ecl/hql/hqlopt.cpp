@@ -497,6 +497,12 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateUnsharedDataset(IHqlExpression
     case no_fetch:
     case no_transformebcdic:
     case no_transformascii:
+        if (expr->hasAttribute(_countProject_Atom))
+        {
+            //Cannot remove a sort before a count project - because subsequent code may be aggregating or filtering
+            //on fields that contain values derived from the COUNTER
+            return LINK(expr);
+        }
         if (childIsSimpleCount && !isPureActivity(expr))
             childIsSimpleCount = false;
         break;
