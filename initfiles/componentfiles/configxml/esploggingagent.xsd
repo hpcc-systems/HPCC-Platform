@@ -107,12 +107,21 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="type" type="xs:string" use="optional">
+            <xs:attribute name="type" use="optional">
               <xs:annotation>
                 <xs:appinfo>
                   <colIndex>2</colIndex>
                 </xs:appinfo>
               </xs:annotation>
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:enumeration value="ESPContext"/>
+                  <xs:enumeration value="UserContext"/>
+                  <xs:enumeration value="UserRequest"/>
+                  <xs:enumeration value="UserResponse"/>
+                  <xs:enumeration value="BackEndResponse"/>
+                 </xs:restriction>
+               </xs:simpleType>              
             </xs:attribute>
           </xs:complexType>
         </xs:element>
