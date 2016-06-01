@@ -8,7 +8,7 @@
       <primary>CATCH</primary>
     </indexterm><indexterm>
       <primary>CATCH Function</primary>
-    </indexterm>(</emphasis> <emphasis>recset, action</emphasis><emphasis
+    </indexterm>(</emphasis> <emphasis>recset, action</emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis><emphasis
   role="bold"> );</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -35,6 +35,51 @@
             <entry><emphasis>action</emphasis></entry>
 
             <entry>One of the three valid actions below.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Optional. Specifies the output record order is not significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Specifies the significance of the output record order.</entry>
+          </row>
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Optional. Specifies the input record order is significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Optional. Specifies the input record order is not significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Optional. Try to evaluate this activity in parallel.</entry>
+          </row>
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Optional. Override the algorithm used for this activity.</entry>
+          </row>
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
 
           <row>

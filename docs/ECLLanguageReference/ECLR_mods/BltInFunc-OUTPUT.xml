@@ -17,7 +17,7 @@
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold">
   NOXPATH<indexterm>
       <primary>NOXPATH</primary>
-    </indexterm> ] );</emphasis></para>
+    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -31,7 +31,7 @@
   role="bold">[</emphasis><emphasis>csvfileoptions </emphasis><emphasis
   role="bold"> ] </emphasis><emphasis
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] );</emphasis></para>
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -45,7 +45,7 @@
   role="bold">[</emphasis><emphasis>xmlfileoptions </emphasis><emphasis
   role="bold"> ] </emphasis><emphasis
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] );</emphasis></para>
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -59,7 +59,7 @@
   role="bold">[</emphasis><emphasis>jsonfileoptions </emphasis><emphasis
   role="bold"> ] </emphasis><emphasis
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] );</emphasis></para>
+  ] <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -69,7 +69,7 @@
       <primary>PIPE</primary>
     </indexterm>(</emphasis><emphasis> pipeoptions </emphasis><emphasis
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] );</emphasis></para>
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -85,7 +85,7 @@
       <primary>ALL</primary>
     </indexterm>] </emphasis><emphasis
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] );</emphasis></para>
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> expression
@@ -93,7 +93,7 @@
   role="bold"> NAMED(</emphasis><emphasis> name </emphasis><emphasis
   role="bold">) ] </emphasis><emphasis
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] );</emphasis></para>
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> recordset
@@ -101,7 +101,7 @@
       <primary>THOR</primary>
     </indexterm> </emphasis><emphasis
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] );</emphasis></para>
+  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -165,6 +165,51 @@
             used instead. This allows control of whether XPATHs are used for
             output, so that XPATHs that were meant only for xml or json input
             can be ignored for output.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Optional. Specifies the output record order is not significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Specifies the significance of the output record order.</entry>
+          </row>
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Optional. Specifies the input record order is significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Optional. Specifies the input record order is not significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Optional. Try to evaluate this activity in parallel.</entry>
+          </row>
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Optional. Override the algorithm used for this activity.</entry>
+          </row>
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
           </row>
 
           <row>
