@@ -24,6 +24,7 @@ define([
     "dojo/date",
     "dojo/on",
     "dojo/topic",
+    "dojo/aspect",
 
     "dijit/registry",
     "dijit/Menu",
@@ -56,7 +57,7 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, date, on, topic,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, date, on, topic, aspect,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 selector,
                 _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget,
@@ -455,6 +456,13 @@ define([
             });
             this.workunitsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
+            });
+
+            aspect.after(this.workunitsGrid, 'gotoPage', function (promise, args) {
+                promise.then(function () {
+                    args[0] > 1 ? context._idleWatcher.stop() : context._idleWatcher.start()
+                });
+                return promise;
             });
             this.workunitsGrid.startup();
         },
