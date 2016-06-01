@@ -8,8 +8,8 @@
       <primary>Record Set Operators</primary>
     </indexterm></title>
 
-  <para>The following record set operators are supported (both require that
-  the files were created using identical RECORD structures<indexterm>
+  <para>The following record set operators are supported (all require that the
+  files were created using identical RECORD structures<indexterm>
       <primary>RECORD structure</primary>
     </indexterm>):</para>
 
@@ -28,16 +28,16 @@
         </row>
 
         <row>
-          <entry>-</entry>
-
-          <entry>Subtract records from a file</entry>
-        </row>
-
-        <row>
           <entry>&amp;</entry>
 
           <entry>Append all records from both files, maintaining record order
           on each node</entry>
+        </row>
+
+        <row>
+          <entry>-</entry>
+
+          <entry>Subtract records from a file</entry>
         </row>
       </tbody>
     </tgroup>
@@ -56,11 +56,148 @@ SecondRecSet := DATASET([{5, 'FIVE'}, {6, 'SIX'}, {7, 'SEVEN'}, {8, 'EIGHT'}], M
 ExcludeThese := SecondRecSet(Num &gt; 6);
 
 WholeRecSet := FirstRecSet + SecondRecSet;
-ResultSet:= WholeRecSet-ExcludeThese;
+ResultSet   := WholeRecSet-ExcludeThese;
 
 OUTPUT (WholeRecSet);
 OUTPUT(ResultSet);
 </programlisting>
 
-  <para></para>
+  <sect2 id="Prefix_Append_Operator">
+    <title>Prefix Append Operator</title>
+
+    <para><emphasis role="bold">(+)
+    (</emphasis><emphasis>ds_list</emphasis><emphasis role="bold">)
+    [</emphasis><emphasis>, options</emphasis><emphasis role="bold">]
+    )</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="92.05pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">(+)</emphasis></entry>
+
+            <entry>The prefix append operator.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>ds_list</emphasis></entry>
+
+            <entry>A comma-delimited list of record sets to append (two or
+            more). All the record sets must have identical RECORD
+            structures.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>options</emphasis></entry>
+
+            <entry>Optional. A comma-delimited list of options from the list
+            below.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>The prefix append operator <emphasis>(+)</emphasis> provides more
+    flexibility than the simple infix operators described above. It allows
+    hints and other options to be associated with the operator. Similar syntax
+    will be added in a future change for other infix operators.</para>
+
+    <para>The following <emphasis>options</emphasis> may be used:</para>
+
+    <para><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
+    <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
+    [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+    role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+    </emphasis><emphasis role="bold">) ]</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="92.05pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Optional. Specifies the output record order is not
+            significant.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Specifies the significance of the output record
+            order.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>When False, specifies the output record order is not
+            significant. When True, specifies the default output record
+            order.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Optional. Specifies the input record order is
+            significant.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Optional. Specifies the input record order is not
+            significant.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Optional. Try to evaluate this activity in
+            parallel.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Optional. Try to evaluate this activity using
+            <emphasis>numthreads</emphasis> threads.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Optional. Override the algorithm used for this
+            activity.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>The algorithm to use for this activity. Must be from the
+            list of supported algorithms for the SORT function's STABLE and
+            UNSTABLE options.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Example:</para>
+
+    <programlisting>ds_1 := (+)(ds1, ds2, UNORDERED);
+  //equivalent to: ds := ds1 + ds2;        
+  
+ds_2 := (+)(ds1, ds2);
+  //equivalent to: ds := ds1 &amp; ds2;                
+
+ds_3 := (+)(ds1, ds2, ds3);
+  //multiple file appends are supported</programlisting>
+  </sect2>
 </sect1>
