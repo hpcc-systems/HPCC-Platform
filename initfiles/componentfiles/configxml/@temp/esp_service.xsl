@@ -497,13 +497,19 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
             <xsl:when test="$serviceType='WsAttributes'">
                 <!--Note that plugins.xsl already validated that @eclServer is specified-->
                 <xsl:variable name="eclServerNode" select="/Environment/Software/EclServerProcess[@name=current()/@eclServer]"/>
-                <xsl:variable name="mySqlServer" select="string($eclServerNode/@MySQL)"/>
-                 <xsl:if test="$mySqlServer = ''">
+                <xsl:variable name="mySqlServerName" select="string($eclServerNode/@MySQL)"/>
+                 <xsl:if test="$mySqlServerName = ''">
                     <xsl:message terminate="yes">WsAttributes: No MySQL server is defined for the specified ECL server!</xsl:message>
                 </xsl:if>
-                <xsl:variable name="mySqlServerComputer" select="/Environment/Software/MySQLProcess[@name=$mySqlServer]/@computer"/>
-                <xsl:variable name="mySqlServerIP" select="/Environment/Hardware/Computer[@name=$mySqlServerComputer]/@netAddress"/>
-                <xsl:if test="string($mySqlServerComputer) = '' or string($mySqlServerIP) = ''">
+                <xsl:variable name="mySqlServer" select="/Environment/Software/MySQLProcess[@name=$mySqlServerName]"/>
+                <xsl:variable name="mySqlServerComputer" select="$mySqlServer/@computer"/>
+                <xsl:variable name="mySqlServerHost">
+                    <xsl:choose>
+                        <xsl:when test="$mySqlServerComputer = ''"><xsl:value-of select="$mySqlServer/@host"/></xsl:when>
+                        <xsl:otherwise><xsl:value-of select="/Environment/Hardware/Computer[@name=$mySqlServerComputer]/@netAddress"/></xsl:otherwise>
+                    </xsl:choose>
+                </xsl:variable>
+                <xsl:if test="string($mySqlServerHost) = ''">
                     <xsl:message terminate="yes">Invalid MySQL server specified for WsAttributes service</xsl:message>
                 </xsl:if>
                 <xsl:if test="string($eclServerNode/@dbUser) = '' or string($eclServerNode/@dbPassword) = ''">
@@ -512,7 +518,7 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                 <xsl:if test="string($eclServerNode/@repository) = ''">
                     <xsl:message terminate="yes">WsAttributes: No repository specified for the specified ECL server!</xsl:message>
                 </xsl:if>
-                <Mysql server="{$mySqlServerIP}" repository="{$eclServerNode/@repository}" user="{$eclServerNode/@dbUser}" password="{$eclServerNode/@dbPassword}" poolSize="{@poolSize}" waitTimeout="{@waitTimeout}"/>
+                <Mysql server="{$mySqlServerHost}" port="{$mySqlServer/@port}" repository="{$eclServerNode/@repository}" user="{$eclServerNode/@dbUser}" password="{$eclServerNode/@dbPassword}" poolSize="{@poolSize}" waitTimeout="{@waitTimeout}"/>
                 <xsl:if test="string(@viewTimeout) != ''">
                     <ViewTimeout>
                         <xsl:value-of select="@viewTimeout"/>
