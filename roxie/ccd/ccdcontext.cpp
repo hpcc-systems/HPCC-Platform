@@ -2414,10 +2414,10 @@ public:
         throwUnexpected();
     }
 
-    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed) const
+    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed, unsigned _strands) const
     {
         const SlaveContextLogger &slaveLogCtx = static_cast<const SlaveContextLogger &>(logctx);
-        slaveLogCtx.putStatProcessed(subgraphId, activityId, _idx, _processed);
+        slaveLogCtx.putStatProcessed(subgraphId, activityId, _idx, _processed, _strands);
     }
 
     virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
@@ -2761,7 +2761,7 @@ public:
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
     }
 
-    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed) const
+    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed, unsigned _strands) const
     {
         if (_processed)
         {
@@ -2770,6 +2770,8 @@ public:
                 IStatisticGatherer & builder = graphStats->queryStatsBuilder();
                 StatsSubgraphScope graphScope(builder, subgraphId);
                 StatsEdgeScope scope(builder, activityId, _idx);
+                if (_strands)
+                    builder.addStatistic(StNumStrands, _strands);
                 builder.addStatistic(StNumRowsProcessed, _processed);
                 builder.addStatistic(StNumStarted, 1);
                 builder.addStatistic(StNumStopped, 1);
