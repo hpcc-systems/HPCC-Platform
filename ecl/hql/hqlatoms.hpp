@@ -57,6 +57,7 @@ extern HQL_API IIdAtom * loadId;
 extern HQL_API IIdAtom * macroId;
 extern HQL_API IIdAtom * maxLengthId;
 extern HQL_API IIdAtom * maxSizeId;
+extern HQL_API IIdAtom * __optionsId;
 extern HQL_API IIdAtom * outputId;
 extern HQL_API IIdAtom * physicalLengthId;
 extern HQL_API IIdAtom * selfId;

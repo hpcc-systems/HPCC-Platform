@@ -6216,18 +6216,85 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
 
     HqlExprArray funcdefArgs;
     funcdefArgs.append(*LINK(newBody));
-    unwindChildren(funcdefArgs, newFuncDef, 1);
-    OwnedHqlExpr namedFuncDef = newFuncDef->clone(funcdefArgs);
-    inheritDependencies(namedFuncDef);
 
-    if (ecl->getOperator() == no_embedbody)
+    if (ecl->getOperator() == no_embedbody && ecl->hasAttribute(languageAtom))
+    {
+        IHqlExpression * outofline = newFuncDef->queryChild(0);
+        IHqlExpression * formals = newFuncDef->queryChild(1);
+        IHqlExpression * defaults = newFuncDef->queryChild(2);
+        assertex(outofline->getOperator() == no_outofline);
+        IHqlExpression * bodyCode = outofline->queryChild(0);
+        HqlExprArray attrArgs;
+        ForEachChild(idx, bodyCode)
+        {
+            IHqlExpression *child = bodyCode->queryChild(idx);
+            if (child->isAttribute() && child->queryName() != languageAtom && child->queryName() != importAtom)
+            {
+                StringBuffer attrParam;
+                if (attrArgs.ordinality())
+                    attrParam.append(",");
+                attrParam.append(child->queryName());
+
+                IHqlExpression * value = child->queryChild(0);
+                if (value)
+                    attrParam.append("=");
+                attrArgs.append(*createConstant(attrParam));
+                if (value)
+                    attrArgs.append(*ensureExprType(value, unknownStringType));
+            }
+        }
+        OwnedHqlExpr folded;
+        if (attrArgs.length())
+        {
+            OwnedHqlExpr concat = createUnbalanced(no_concat, unknownStringType, attrArgs);
+            OwnedHqlExpr cast = ensureExprType(concat, unknownVarStringType);
+
+            // It's not legal to use parameters in the options, since it becomes ambiguous whether they should be bound to embed variables or not.
+            // Check that they didn't and give a sensible error message
+            OwnedHqlExpr boundCast = replaceInlineParameters(newFuncDef, cast);
+            if (cast != boundCast)
+                throwError(HQLERR_EmbedParamNotSupportedInOptions);
+
+            folded.setown(foldHqlExpression(cast));
+        }
+        else
+            folded.setown(createConstant(""));
+
+        HqlExprArray newFormals;
+        unwindChildren(newFormals, formals);
+        HqlExprArray attrs;
+        attrs.append(*createAttribute(_hidden_Atom));
+        newFormals.append(*createParameter(__optionsId, newFormals.length(), LINK(unknownVarStringType), attrs));
+
+        HqlExprArray newDefaults;
+        if (defaults)
+            unwindChildren(newDefaults, defaults, 0);
+        while (newDefaults.length() < formals->numChildren())
+            newDefaults.append(*createOmittedValue());
+        newDefaults.append(*folded.getClear());
+
+        funcdefArgs.append(*formals->clone(newFormals));
+        funcdefArgs.append(*createValueSafe(no_sortlist, makeSortListType(NULL), newDefaults));
+        unwindChildren(funcdefArgs, newFuncDef, 3);
+        OwnedHqlExpr namedFuncDef = newFuncDef->clone(funcdefArgs);
+        inheritDependencies(namedFuncDef);
         return namedFuncDef.getClear();
+    }
+    else
+    {
+        unwindChildren(funcdefArgs, newFuncDef, 1);
+        OwnedHqlExpr namedFuncDef = newFuncDef->clone(funcdefArgs);
+        inheritDependencies(namedFuncDef);
 
-    WorkflowItem * item = new WorkflowItem(namedFuncDef);
-    workflowOut->append(*item);
-    OwnedHqlExpr external = createExternalFuncdefFromInternal(namedFuncDef);
-    copyDependencies(queryBodyExtra(namedFuncDef), queryBodyExtra(external));
-    return external.getClear();
+        if (ecl->getOperator() == no_embedbody)
+            return namedFuncDef.getClear();
+
+        WorkflowItem * item = new WorkflowItem(namedFuncDef);
+        workflowOut->append(*item);
+        OwnedHqlExpr external = createExternalFuncdefFromInternal(namedFuncDef);
+        copyDependencies(queryBodyExtra(namedFuncDef), queryBodyExtra(external));
+        return external.getClear();
+    }
 }
 
 IHqlExpression * WorkflowTransformer::transformInternalCall(IHqlExpression * transformed)
@@ -6237,6 +6304,18 @@ IHqlExpression * WorkflowTransformer::transformInternalCall(IHqlExpression * tra
 
     HqlExprArray parameters;
     unwindChildren(parameters, transformed);
+
+    IHqlExpression * body = newFuncDef->queryChild(0);
+    if (body && body->getOperator() == no_outofline)
+    {
+        IHqlExpression * ecl = body->queryChild(0);
+        if (ecl->getOperator() == no_embedbody && ecl->hasAttribute(languageAtom))
+        {
+            // Copy the new default value into the end of the parameters array
+            parameters.append(*LINK(newFuncDef->queryChild(2)->queryChild(parameters.length())));
+        }
+    }
+
     OwnedHqlExpr rebound = createReboundFunction(newFuncDef, parameters);
     inheritDependencies(rebound);
     copyDependencies(queryBodyExtra(newFuncDef), queryBodyExtra(rebound));

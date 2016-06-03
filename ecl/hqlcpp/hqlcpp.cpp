@@ -11618,7 +11618,7 @@ static IHqlExpression *createActualFromFormal(IHqlExpression *param)
     return bound.getTranslatedExpr();
 }
 
-static IHqlExpression * replaceInlineParameters(IHqlExpression * funcdef, IHqlExpression * expr)
+IHqlExpression * replaceInlineParameters(IHqlExpression * funcdef, IHqlExpression * expr)
 {
     IHqlExpression * body = funcdef->queryChild(0);
     assertex(!body->hasAttribute(oldSetFormatAtom));
@@ -11768,40 +11768,20 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     createParam.append(isImport ? "EFimport" : "EFembed");
     if (returnType->getTypeCode()==type_void)
         createParam.append("|EFnoreturn");
-    if (formals->numChildren()==0)
+
+    IHqlExpression *optionsParam = nullptr;
+    if (formals->numChildren())
+    {
+        optionsParam = formals->queryChild(formals->numChildren()-1);
+        if (optionsParam->queryId() != __optionsId)
+            optionsParam = nullptr;
+    }
+    if (formals->numChildren()==(optionsParam ? 1 : 0))
         createParam.append("|EFnoparams");
 
-    HqlExprArray attrArgs;
-    ForEachChild(idx, bodyCode)
+    if (optionsParam)
     {
-        IHqlExpression *child = bodyCode->queryChild(idx);
-        if (child->isAttribute() && child->queryName() != languageAtom && child->queryName() != importAtom)
-        {
-            StringBuffer attrParam;
-            if (attrArgs.ordinality())
-                attrParam.append(",");
-            attrParam.append(child->queryName());
-
-            IHqlExpression * value = child->queryChild(0);
-            if (value)
-                attrParam.append("=");
-            attrArgs.append(*createConstant(attrParam));
-            if (value)
-                attrArgs.append(*ensureExprType(value, unknownStringType));
-        }
-    }
-    if (attrArgs.length())
-    {
-        OwnedHqlExpr concat = createUnbalanced(no_concat, unknownStringType, attrArgs);
-        OwnedHqlExpr cast = ensureExprType(concat, unknownVarStringType);
-
-        // It's not legal to use parameters in the options, since it becomes ambiguous whether they should be bound to embed variables or not.
-        // Check that they didn't and give a sensible error message
-        OwnedHqlExpr boundCast = replaceInlineParameters(funcdef, cast);
-        if (cast != boundCast)
-            throwError(HQLERR_EmbedParamNotSupportedInOptions);
-
-        OwnedHqlExpr folded = foldHqlExpression(cast);
+        OwnedHqlExpr folded = createActualFromFormal(optionsParam);
         CHqlBoundExpr bound;
         buildExpr(funcctx, folded, bound);
         createParam.append(",");
@@ -11819,9 +11799,11 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
     ForEachChild(i, formals)
     {
+        IHqlExpression * param = formals->queryChild(i);
+        if (param == optionsParam)
+            continue;
         HqlExprArray args;
         args.append(*LINK(ctxVar));
-        IHqlExpression * param = formals->queryChild(i);
         ITypeInfo *paramType = param->queryType();
         IIdAtom * paramId = param->queryId();
         const char * paramNameText = str(paramId);
@@ -11976,7 +11958,9 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
 
         IHqlExpression *languageAttr = bodyCode->queryAttribute(languageAtom);
         if (languageAttr)
+        {
             buildScriptFunctionDefinition(funcctx, funcdef, proto);
+        }
         else
         {
             bool isInline = bodyCode->hasAttribute(inlineAtom);
