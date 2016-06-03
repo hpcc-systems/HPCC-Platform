@@ -146,5 +146,6 @@ extern HQLCPP_API IHqlExpression * createTranslated(IHqlExpression * expr);
 extern HQLCPP_API IHqlExpression * createTranslatedOwned(IHqlExpression * expr);
 extern HQLCPP_API IHqlExpression * createTranslated(IHqlExpression * expr, IHqlExpression * length);
 extern HQLCPP_API IHqlExpression * getSimplifyCompareArg(IHqlExpression * expr);
+extern HQLCPP_API IHqlExpression * replaceInlineParameters(IHqlExpression * funcdef, IHqlExpression * expr);
 
 #endif

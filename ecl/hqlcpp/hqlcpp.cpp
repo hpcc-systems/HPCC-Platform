@@ -11618,7 +11618,7 @@ static IHqlExpression *createActualFromFormal(IHqlExpression *param)
     return bound.getTranslatedExpr();
 }
 
-static IHqlExpression * replaceInlineParameters(IHqlExpression * funcdef, IHqlExpression * expr)
+IHqlExpression * replaceInlineParameters(IHqlExpression * funcdef, IHqlExpression * expr)
 {
     IHqlExpression * body = funcdef->queryChild(0);
     assertex(!body->hasAttribute(oldSetFormatAtom));
@@ -11767,40 +11767,19 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     createParam.append(isImport ? "EFimport" : "EFembed");
     if (returnType->getTypeCode()==type_void)
         createParam.append("|EFnoreturn");
-    if (formals->numChildren()==0)
+
+    IHqlExpression *optionsParam = nullptr;
+    if (formals->numChildren())
+    {
+        optionsParam = formals->queryChild(formals->numChildren()-1);
+        assertex(streq(str(optionsParam->queryId()), "__options"));
+    }
+    if (formals->numChildren()==(optionsParam ? 1 : 0))
         createParam.append("|EFnoparams");
 
-    HqlExprArray attrArgs;
-    ForEachChild(idx, bodyCode)
+    if (optionsParam)
     {
-        IHqlExpression *child = bodyCode->queryChild(idx);
-        if (child->isAttribute() && child->queryName() != languageAtom && child->queryName() != importAtom)
-        {
-            StringBuffer attrParam;
-            if (attrArgs.ordinality())
-                attrParam.append(",");
-            attrParam.append(child->queryName());
-
-            IHqlExpression * value = child->queryChild(0);
-            if (value)
-                attrParam.append("=");
-            attrArgs.append(*createConstant(attrParam));
-            if (value)
-                attrArgs.append(*ensureExprType(value, unknownStringType));
-        }
-    }
-    if (attrArgs.length())
-    {
-        OwnedHqlExpr concat = createUnbalanced(no_concat, unknownStringType, attrArgs);
-        OwnedHqlExpr cast = ensureExprType(concat, unknownVarStringType);
-
-        // It's not legal to use parameters in the options, since it becomes ambiguous whether they should be bound to embed variables or not.
-        // Check that they didn't and give a sensible error message
-        OwnedHqlExpr boundCast = replaceInlineParameters(funcdef, cast);
-        if (cast != boundCast)
-            throwError(HQLERR_EmbedParamNotSupportedInOptions);
-
-        OwnedHqlExpr folded = foldHqlExpression(cast);
+        OwnedHqlExpr folded = createActualFromFormal(optionsParam);
         CHqlBoundExpr bound;
         buildExpr(funcctx, folded, bound);
         createParam.append(",");
@@ -11821,73 +11800,76 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         HqlExprArray args;
         args.append(*LINK(ctxVar));
         IHqlExpression * param = formals->queryChild(i);
-        ITypeInfo *paramType = param->queryType();
-        IIdAtom * paramId = param->queryId();
-        const char * paramNameText = str(paramId);
-        if (!options.preserveCaseExternalParameter)
-            paramNameText = str(lower(paramId));
-        args.append(*createConstant(paramNameText));
-        IIdAtom * bindFunc;
-        switch (paramType->getTypeCode())
+        if (param != optionsParam)
         {
-        case type_int:
-            if (paramType->getSize()<8)
+            ITypeInfo *paramType = param->queryType();
+            IIdAtom * paramId = param->queryId();
+            const char * paramNameText = str(paramId);
+            if (!options.preserveCaseExternalParameter)
+                paramNameText = str(lower(paramId));
+            args.append(*createConstant(paramNameText));
+            IIdAtom * bindFunc;
+            switch (paramType->getTypeCode())
             {
-                bindFunc = paramType->isSigned() ? bindSignedSizeParamId : bindUnsignedSizeParamId;
-                args.append(*createIntConstant(paramType->getSize()));
+            case type_int:
+                if (paramType->getSize()<8)
+                {
+                    bindFunc = paramType->isSigned() ? bindSignedSizeParamId : bindUnsignedSizeParamId;
+                    args.append(*createIntConstant(paramType->getSize()));
+                }
+                else
+                    bindFunc = paramType->isSigned() ? bindSignedParamId : bindUnsignedParamId;
+                break;
+            case type_varstring:
+                bindFunc = bindVStringParamId;
+                break;
+            case type_string:
+                bindFunc = bindStringParamId;
+                break;
+            case type_real:
+                if (paramType->getSize()==4)
+                    bindFunc = bindFloatParamId;
+                else
+                    bindFunc = bindRealParamId;
+                break;
+            case type_boolean:
+                bindFunc = bindBooleanParamId;
+                break;
+            case type_utf8:
+                bindFunc = bindUtf8ParamId;
+                break;
+            case type_unicode:
+                bindFunc = bindUnicodeParamId;
+                break;
+            case type_data:
+                bindFunc = bindDataParamId;
+                break;
+            case type_row:
+                bindFunc = bindRowParamId;
+                break;
+            case type_table:
+            case type_groupedtable:
+                bindFunc = bindDatasetParamId;
+                break;
+            case type_set:
+            {
+                bindFunc = bindSetParamId;
+                ITypeInfo *childType = paramType->queryChildType();
+                type_t typeCode = childType->getTypeCode();
+                if (childType->isInteger() && !childType->isSigned())
+                    typeCode = type_unsigned;
+                args.append(*createIntConstant(typeCode));
+                args.append(*createIntConstant(childType->getSize()));
+                break;
             }
-            else
-                bindFunc = paramType->isSigned() ? bindSignedParamId : bindUnsignedParamId;
-            break;
-        case type_varstring:
-            bindFunc = bindVStringParamId;
-            break;
-        case type_string:
-            bindFunc = bindStringParamId;
-            break;
-        case type_real:
-            if (paramType->getSize()==4)
-                bindFunc = bindFloatParamId;
-            else
-                bindFunc = bindRealParamId;
-            break;
-        case type_boolean:
-            bindFunc = bindBooleanParamId;
-            break;
-        case type_utf8:
-            bindFunc = bindUtf8ParamId;
-            break;
-        case type_unicode:
-            bindFunc = bindUnicodeParamId;
-            break;
-        case type_data:
-            bindFunc = bindDataParamId;
-            break;
-        case type_row:
-            bindFunc = bindRowParamId;
-            break;
-        case type_table:
-        case type_groupedtable:
-            bindFunc = bindDatasetParamId;
-            break;
-        case type_set:
-        {
-            bindFunc = bindSetParamId;
-            ITypeInfo *childType = paramType->queryChildType();
-            type_t typeCode = childType->getTypeCode();
-            if (childType->isInteger() && !childType->isSigned())
-                typeCode = type_unsigned;
-            args.append(*createIntConstant(typeCode));
-            args.append(*createIntConstant(childType->getSize()));
-            break;
+            default:
+                StringBuffer typeText;
+                getFriendlyTypeStr(paramType, typeText);
+                throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
+            }
+            args.append(*createActualFromFormal(param));
+            buildFunctionCall(funcctx, bindFunc, args);
         }
-        default:
-            StringBuffer typeText;
-            getFriendlyTypeStr(paramType, typeText);
-            throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
-        }
-        args.append(*createActualFromFormal(param));
-        buildFunctionCall(funcctx, bindFunc, args);
     }
     funcctx.addQuotedLiteral("__ctx->callFunction();");
     IIdAtom * returnFunc;
@@ -11975,7 +11957,9 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
 
         IHqlExpression *languageAttr = bodyCode->queryAttribute(languageAtom);
         if (languageAttr)
+        {
             buildScriptFunctionDefinition(funcctx, funcdef, proto);
+        }
         else
         {
             bool isInline = bodyCode->hasAttribute(inlineAtom);
