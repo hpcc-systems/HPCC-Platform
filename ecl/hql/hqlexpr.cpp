@@ -125,6 +125,203 @@ static int checkSeqId(unsigned __int64 seqid, unsigned why)
 
 #define STDIO_BUFFSIZE 0x10000     // 64K
 
+//---------------------------------------------------------------------------------------------------------------------
+
+/*
+
+There is a general issue with ECL (and other functional/declarative languages) about what to do with impure functions.
+Generally it is assumed that expressions can be evaluated on demand, evaluated more than once, not evaluated,
+evaluated in a different place, and that it will not affect the result of the query.  There are some expressions
+that don't follow those rules and cause problems.
+The following aims to describe the issues, and formalize the behaviour@
+
+Different impure modifiers
+- VOLATILE indicates that an expression may return a different value each time it is called.
+  E.g.,  RANDOM(), msTick()
+  Because volatile expressions return a different value each time, by default they are tagged as context
+  sensitive - to try and ensure they are evaluated in the same place as they were used in the source code.  So
+  volatile is expanded as two separate modifiers - NODUPLICATE and CONTEXT
+- CONTEXT indicates the value returned depends on the context (but is non-volatile within that context)
+  E.g., std.system.thorlib.node(), XMLTEXT
+- THROWS indicates an expression might throw an exception.
+  IF (cond, value, FAIL)
+- SKIPS indicates an expression may cause a transform to skip.
+- COSTLY The operation is expensive, so should not be duplicated.
+  E.g., Some PIPE/SOAPCALLs, external function calls.
+  A first step towards introducing a cost() function - where costly = cost(+inf)
+- EFFECT indicates the expression may have a side-effect.  The side-effect is tied to the expression that it is
+  associated with.  This only really has implications for ordering, which we currently make no guarantees about.
+
+Pseudo modifier:
+- once [ Implies pure,fold(false) ]
+- action indicates the expression performs a specific (costly?) action.  Equivalent to COSTLY+EFFECT
+- volatile.  Really a combination of NODUPLICATE and CONTEXT
+
+What decisions do the flags affect?
+
+canRemoveEvaluation()   - Is it ok to not evaluate an expression?
+canReduceEvaluations()  - Is it possible to reduce the number of times something is evaluated?
+canDuplicateExpr()      - Whether an expression can be duplicated.
+canChangeContext()      - Whether an expression can be moved to a different context.
+canRemoveGuard()        - Is it ok to evaluate this expression without any surrounding conditions?
+isVolatile()            - Whether an expression always generates the same value. (E.g., for matching distributions)
+canBeCommonedUp()       - Is it ok to evaluate two instances of the same expression only once?
+canBeReordered()        - Is it possible to reorder evaluation?
+
+How do these decisions relate to the modifiers?
+
+canRemoveEvaluation()
+- the whole system is based around lazy evaluation.  Nothing restricts an expressions from not being evaluated.
+
+canReduceNumberEvaluations()
+- noduplicate... yes
+  Say you have a counter which is assigned to rows in a dataset, and one row is then selected.  If only that single row
+  is calculated you will get a different result.  However lazy evaluation should ensure that is ok, just unexpected.
+  The context may also require checking for duplication if the dataset is shared...
+- otherwise - yes.
+  i.e. *all* expressions are lazy - there are no guarantees that an expression will be evaluated.
+
+canDuplicateExpr()
+- noduplicate - no since that will introduce an inconsistency.  This means volatile rows can only be selected
+  from a dataset if it is the only use of the dataset.
+- context - yes if same context.
+- throws - yes
+- skips - yes
+- costly - no
+- effect - yes
+
+canChangeContext/canHoist
+- noduplicate - yes.  (volatile would also set context, implying no since that may change the number of times something is executed).
+- context - no
+- throws - safer to say no.  What if it causes something to fail because of early evaluation?
+           Better would be to allow it, but only report the error if it is actually used.  This has implications for
+           the way results are stored in the workunit, and the implementation of the engines.
+- skips - no (but skips doesn't percolate outside a transform)
+- costly - yes if unconditional. no if conditional - we don't want it evaluated unnecessarily.
+- effect - yes - it is the expression that is important.
+
+canRemoveGuard (make something unconditional that was conditional)
+- noduplicate - possibly/yes.  It would be better to always evaluate than to evaluate multiple times.  The context is handled separately.
+- context - yes.
+- throws - no since it causes failures that wouldn't otherwise occur
+- skips - no, it could records to be lost.
+- costly - no by definition.
+- effect - yes.
+
+isVolatile()
+- Only set if the expression is volatile.  Equivalent to !canDuplicateExpr()
+
+canBeCommonedUpBetweenContexts()
+- noduplicate - This is explicitly managed by ensuring each volatile expression has a unique attribute associated with it.
+  It means that different instances of a volatile expression in different transforms must have different ids
+  so that combining transforms doesn't cause them to be combined.
+- context - ?no.  The same value evaluated in a different context will give a different value.
+- throws - yes
+- skips - yes
+- costly - yes.
+- effect - yes
+
+canCombineTransforms(a,b)
+- all - yes
+- provided volatile expressions are unique there shouldn't be any problems combining them.
+- still need to be careful about SKIPs having a different meaning in the combined transform.
+
+canBeReordered()
+ - we currently make no guarantees about the order that expressions are evaluated in, other than with
+   the SEQUENTIAL keyword, and implicit ordering of rows supplied to APPLY/OUTPUT.  Restricting the order would
+   cause significant issues with optimization (e.g., executing on multiple nodes, or strands within a channel). It
+   would require something similar to Haskell monads to impose some global ordering.
+
+Reducing the context dependency of expressions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The operator no_within(expression, context) has the effect of removing all the context-dependent attributes, and adds
+any dependencies from the context instead.  (Any explicit dependencies of the expression are also kept.)
+Note:  WITHIN can only be used to *reduce* the context-dependency.
+
+RANDOM() WITHIN {LEFT} - indicate the context for calling random.
+
+What should be the scope/extent of their effects?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Theoretically, each of these "impure" attributes are inherited by any expression that uses them.  However that can
+be too conservative, so the following limits are placed on their scope:
+
+noduplicate - always
+context     - always, except for within().  ?possibly not outside a transform, or dataset/action excluding its inputs.
+costly      - always
+action
+throwscalar - not outside transform/filter
+throwds     - not outside transform.  Not outside the action (e.g., output) that consumes it.
+skip        - no outside transform
+
+
+**************** THIS NEEDS MORE THOUGHT WORK - probably inspired from the examples *************************
+
+- A sink (e.g., OUTPUT), row selector ([]), or scalar aggregate (e.g., count(ds)) that is applied to a noduplicate dataset isn't itself noduplicate.
+- A sink (e.g., output) applied to a volatile expression isn't itself volatile.
+- An aggregate is not volatile if the scalar argument is volatile
+- Attributes are not volatile if their arguments are
+- ??? An activity that contains a volatile scalar item isn't itself volatile?  E.g., ds(id != RANDOM()).  I'm not convinced.
+
+For example this means IF(cond, ds, FAIL) will be context dependent.  But the activity (e.g, OUTPUT) that is based on it is not.  The entire OUTPUT could be evaluated elsewhere (e.g., in a parent context) if there are no other dependencies on the context.
+
+I would be inclined to use the same rule for context sensitive expressions and exceptions.
+
+Essentially the rule is:
+- the impure flags are not inherited from a transform
+- actions and attributes inherit no impure flags.  (They could possibly have them set explicitly.)
+
+What makes a unique volatile instance?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Each instance in the original ECL source code creates a unique instance.
+- Each expansion of a macro counts as new source instance.
+- A call to a function containing a volatile should not create new instances.
+- It is possible to mark functions as volatile, so that each call creates a new unique instance of
+  any volatiles within it.
+
+So RANDOM() - RANDOM() should evaluate two random numbers,
+and x:= RANDOM(); x - x; should always evaluate to 0.
+
+So unique volatile identifiers are added to
+- volatile builtin operators (e.g, RANDOM())
+- volatile c++ functions
+- volatile external functions
+and contained volatile modifiers are made unique if a functional definition is specified as volatile.
+
+Modifiers on external functions and beginc++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- pure
+- action
+- costly
+- once = pure, runtime only
+- volatile = nodup, context
+- nomove = context dependent
+- context(xxx)?
+- fail
+
+Context Dependent:
+~~~~~~~~~~~~~~~~~~
+There are several different flags to indicate context dependent:
+
+HEFgraphDependent - loop counter (?) graph result, (parameter!) - should probably use a pseudo table
+HEFcontainsNlpText - should use a pseudo table
+HEFcontainsXmlText - should use a pseudo table
+HEFcontainsSkip
+HEFcontainsCounter  - should use a pseudo table
+HEFtransformDependent - SELF, count(group)
+HEFtranslated
+HEFonFailDependent - FAILCODE/FAILMESSAGE
+HEFcontextDependentException - fields, pure virtual  [nohoist?]
+HEFoldthrows - legacy and should be killed
+
+Other related syntax
+~~~~~~~~~~~~~~~~~~~~
+PURE(expression) - treat an expression as pure - probably superseded with WITHIN {}
+*/
+
+//---------------------------------------------------------------------------------------------------------------------
+
 class HqlExprCache : public JavaHashTableOf<IHqlExpression>
 {
 public:

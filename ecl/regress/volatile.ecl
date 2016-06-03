@@ -36,7 +36,7 @@ now := Debug.msTick();
 output(startTime*startTime-now*now);
 
 
-nowTime() := define Debug.msTick();
+nowTime() volatile := define Debug.msTick();
 
 //Evaluate nowTime twice
 output(startTime*startTime-nowTime()*nowTime());

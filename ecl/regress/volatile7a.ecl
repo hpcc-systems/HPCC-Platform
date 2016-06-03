@@ -16,31 +16,26 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-import Std.System.Debug;
+unsigned4 nextSequence() := BEGINC++
+#option volatile
+static unsigned mySequence = 0;
+return ++mySequence;
+ENDC++;
 
-//You cannot extract the nth element from an inline dataset, otherwise comparing the values will give you different results.
-ds1 := dataset([1, 2, 3, random(), random(), 6], { unsigned id; });
+r := {unsigned id};
+r2 := {DATASET(R) children};
 
-output(ds1[3].id);
-output(ds1);
+ds := dataset(10, transform(r, SELF.id := nextSequence()));
 
+ds2(unsigned base) := DATASET(100, transform({ unsigned id }, SELF.id := COUNTER + base));
 
-// You cannot duplicate a row that is volatile
+r2 t1(r l) := TRANSFORM
+    value := RANDOM();
+    self.children := ds2(value + l.id);
+END;
 
-row1 := DATASET(ROW(TRANSFORM({unsigned id}, SELF.id := RANDOM())));
-output(normalize(row1, 10, transform(LEFT)));
+p := PROJECT(ds, t1(LEFT));
 
-// Merging an input project with a join could cause issues
+summary := TABLE(NOFOLD(p), { unsigned delta := MAX(children, id) - MIN(children, id); });
 
-ds2 := DATASET('x', { unsigned id1 }, THOR);
-p2 := PROJECT(ds2, TRANSFORM({ unsigned id1, unsigned id2 }, SELF.id2 := RANDOM(), SELF := LEFT));
-
-
-ds3 := DATASET('y', { unsigned id1, unsigned id2 }, THOR);
-
-output(JOIN(p2, ds3, LEFT.id1 = RIGHT.id1 AND LEFT.id2 = RIGHT.id2, LOOKUP));
-
-//Resourcing must never clone a volatile activity
-ds4 := dataset([1, random(), random(), 6], { unsigned id; });
-output(sort(ds4, id));
-output(sort(ds4, -id));
+output(count(summary(delta = 99)) != 10);
