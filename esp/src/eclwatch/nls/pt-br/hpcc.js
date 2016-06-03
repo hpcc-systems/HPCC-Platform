@@ -547,7 +547,7 @@
     title_ActiveGroupPermissions: "Permissão de Grupo Ativo",
     title_ActivePermissions: "Permissão Ativo",
     title_AvailableGroupPermissions: "Permissão de Grupos Disponiveis",
-    title_AvailablePermissions: "Permissão Disponiveis"
+    title_AvailablePermissions: "Permissão Disponiveis",
     title_ClusterInfo: "grupos",
     title_CodeGeneratorPermissions: "Permissões de Gerador de Código",
     title_DFUQuery: "Arquivos Lógicos",
