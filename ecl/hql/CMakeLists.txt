@@ -105,6 +105,7 @@ include_directories (
          ./../../system/jlib 
          ./../../ecl/hql 
          ./../../testing/unittests
+         ./../../system/security/zcrypt
     )
 
 if (WIN32)
@@ -144,4 +145,9 @@ target_link_libraries ( hql
          ${CPPUNIT_LIBRARIES}
     )
 
-
+IF (USE_ZLIB)
+    target_link_libraries ( hql
+        ${ZLIB_LIBRARIES}
+        zcrypt
+    )
+ENDIF()

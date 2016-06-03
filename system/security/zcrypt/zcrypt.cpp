@@ -1166,3 +1166,18 @@ void gunzip(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput
         throwGZipException("decompression", ret);
     }
 }
+
+bool isgzipped(const byte * content, size_t length)
+{
+    if (length < 2)
+        return false;
+    return (content[0] == 0x1f) && (content[1] == 0x8b);
+}
+
+void removeZipExtension(StringBuffer & target, const char * source)
+{
+    target.set(source);
+    const char * extension = strrchr(target.str(), '.');
+    if (extension && streq(extension, ".gz"))
+        target.remove(extension-target.str(), 3);
+}

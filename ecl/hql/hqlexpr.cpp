@@ -50,6 +50,10 @@
 #include "hqldesc.hpp"
 #include "hqlir.hpp"
 
+#ifdef _USE_ZLIB
+#include "zcrypt.hpp"
+#endif
+
 //This nearly works - but there are still some examples which have problems - primarily libraries, old parameter syntax, enums and other issues.
 
 //#define ANNOTATE_EXPR_POSITION
@@ -7590,6 +7594,18 @@ bool CFileContents::preloadFromFile()
         sizeRead += rd;
         mb.setLength(sizeRead);
     } while (rd);
+
+#ifdef _USE_ZLIB
+    byte * contents = static_cast<byte *>(mb.bufferBase());
+    if (isgzipped(contents, sizeRead))
+    {
+        StringBuffer decoded;
+        gunzip(contents, sizeRead, decoded);
+        size_t decodedLength = (size_t)decoded.length();
+        mb.setBuffer(decodedLength, (void*)decoded.detach(), true);
+    }
+#endif
+
     ensureUtf8(mb);
     setContentsOwn(mb);
     return true;
@@ -7630,11 +7646,21 @@ void CFileContents::ensureLoaded()
     buffer.ensureCapacity(sizeToRead+1);
     byte * contents = static_cast<byte *>(buffer.reserve(sizeToRead));
     size32_t sizeRead = io->read(0, sizeToRead, contents);
-    ensureUtf8(buffer);
-    setContentsOwn(buffer);
-
     if (sizeRead != sizeToRead)
         throw MakeStringException(1, "File %s only read %u of %u bytes", file->queryFilename(), sizeRead, sizeToRead);
+
+#ifdef _USE_ZLIB
+    if (isgzipped(contents, sizeToRead))
+    {
+        StringBuffer decoded;
+        gunzip(contents, sizeToRead, decoded);
+        size_t decodedLength = (size_t)decoded.length();
+        buffer.setBuffer(decodedLength, (void*)decoded.detach(), true);
+    }
+#endif
+
+    ensureUtf8(buffer);
+    setContentsOwn(buffer);
 }
 
 CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath, bool _isSigned)
