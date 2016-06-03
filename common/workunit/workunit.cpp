@@ -5225,7 +5225,12 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     p->setPropBool("@cloneable", true);
     p->setPropBool("@isClone", true);
     resetWorkflow();  // the source Workflow section may have had some parts already executed...
-    // resetResults(); // probably should be resetting the results as well... rather than waiting for the rerun to overwrite them
+    Owned<IPropertyTreeIterator> results = p->getElements("Results/Result");
+    ForEach(*results)
+    {
+        CLocalWUResult result(LINK(&results->query()));
+        result.setResultStatus(ResultStatusUndefined);
+    }
 }
 
 bool CLocalWorkUnit::hasDebugValue(const char *propname) const
@@ -7760,7 +7765,14 @@ void CLocalWUResult::setResultStatus(WUResultStatus status)
 {
     setEnum(p, "@status", status, resultStatuses);
     if (status==ResultStatusUndefined)
+    {
         p->removeProp("Value");
+        p->removeProp("totalRowCount");
+        p->removeProp("rowCount");
+        p->removeProp("@format");
+        p->removeProp("@tempFileNmae");
+        p->removeProp("logicalName");
+    }
 }
 
 void CLocalWUResult::setResultName(const char *s)
