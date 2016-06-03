@@ -60,6 +60,7 @@ protected:
     IKeyManager *currentManager = nullptr;
     Owned<IKeyManager> keyMergerManager;
     Owned<IKeyIndexSet> keyIndexSet;
+    bool keyMergerInUse = false;
 
     class TransformCallback : public CSimpleInterface, implements IThorIndexCallback 
     {
@@ -107,16 +108,18 @@ protected:
         helper->createSegmentMonitors(currentManager);
         currentManager->finishSegmentMonitors();
         currentManager->reset();
+        keyMergerInUse = (manager == keyMergerManager);
     }
     void clearManager()
     {
         if (currentManager)
         {
             callback.clearManager();
-            if (keyMergerManager)
+            if (keyMergerInUse)
                 keyMergerManager->reset(); // JCSMORE - not entirely sure why necessary, if not done, resetPending is false. Should releaseSegmentMonitors() handle?
             currentManager->releaseSegmentMonitors();
             currentManager = nullptr;
+            keyMergerInUse = false;
         }
     }
     const void *createKeyedLimitOnFailRow()
@@ -175,7 +178,7 @@ public:
         fixedDiskRecordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta()->getFixedSize(); // 0 if variable and unused
         reInit = 0 != (helper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
-    rowcount_t getCount(const rowcount_t &keyedLimit)
+    rowcount_t getCount(const rowcount_t keyedLimit, bool hard)
     {
         if (0 == partDescs.ordinality())
             return 0;
@@ -185,7 +188,10 @@ public:
         {
             IKeyManager &keyManager = keyManagers.item(p);
             setManager(&keyManager);
-            count += keyManager.checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
+            if (hard) // checkCount checks hard key count only.
+                count += keyManager.checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
+            else
+                count += keyManager.getCount();
             noteStats(keyManager.querySeeks(), keyManager.queryScans());
             if (count > keyedLimit)
                 break;
@@ -261,6 +267,7 @@ public:
     virtual void reset() override
     {
         PARENT::reset();
+        currentKM = 0;
         clearManager();
     }
     void serializeStats(MemoryBuffer &mb)
@@ -514,7 +521,7 @@ public:
             if ((keyedLimit != RCMAX && (keyedLimitSkips || (helper->getFlags() & TIRcountkeyedlimit) != 0)))
             {
                 IKeyManager *_currentManager = currentManager;
-                keyedLimitCount = getCount(keyedLimit);
+                keyedLimitCount = getCount(keyedLimit, true);
                 setManager(_currentManager);
             }
         }
@@ -637,7 +644,7 @@ class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, implements
     typedef CIndexReadSlaveBase PARENT;
 
     IHThorIndexGroupAggregateArg *helper;
-    bool gathered, eoi, merging;
+    bool gathered, merging;
     Owned<RowAggregator> localAggTable;
     memsize_t maxMem;
     Owned<IHashDistributor> distributor;
@@ -670,7 +677,7 @@ public:
         PARENT::start();
         localAggTable.setown(new RowAggregator(*helper, *helper));
         localAggTable->start(queryRowAllocator());
-        gathered = eoi = false;
+        gathered = false;
     }
 // IRowStream
     CATCH_NEXTROW()
@@ -738,11 +745,11 @@ class CIndexCountSlaveActivity : public CIndexReadSlaveBase
 {
     typedef CIndexReadSlaveBase PARENT;
 
-    bool eoi;
     IHThorIndexCountArg *helper;
     rowcount_t choosenLimit = 0;
     rowcount_t preknownTotalCount = 0;
     bool totalCountKnown = false;
+    bool done = false;
 
 public:
     CIndexCountSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
@@ -764,22 +771,22 @@ public:
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
         choosenLimit = (rowcount_t)helper->getChooseNLimit();
-        eoi = false;
         if (!helper->canMatchAny())
         {
             totalCountKnown = true;
             preknownTotalCount = 0;
         }
+        done = false;
     }
 
 // IRowStream
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (eoi)
+        if (done)
             return NULL;
+        done = true;
         rowcount_t totalCount = 0;
-        eoi = true;
         if (totalCountKnown)
         {
             totalCount = preknownTotalCount;
@@ -812,7 +819,7 @@ public:
                 }
             }
             else
-                getCount(totalCount);
+                totalCount = getCount(choosenLimit, false);
             if (!container.queryLocalOrGrouped())
             {
                 sendPartialCount(*this, totalCount);
@@ -921,16 +928,8 @@ public:
         expanding = false;
         keyedProcessed = 0;
         keyedLimitCount = RCMAX;
-        currentKM = 0;
         if (keyedLimit != RCMAX && (helper->getFlags() & TIRcountkeyedlimit) != 0)
-            keyedLimitCount = getCount(keyedLimit);
-        if (partDescs.ordinality())
-        {
-            eoi = false;
-            setManager(&keyManagers.item(0));
-        }
-        else
-            eoi = true;
+            keyedLimitCount = getCount(keyedLimit, true);
     }
 
 // IRowStream
@@ -1031,7 +1030,8 @@ class CIndexAggregateSlaveActivity : public CIndexReadSlaveBase
 {
     typedef CIndexReadSlaveBase PARENT;
 
-    bool hadElement;
+    bool hadElement = false;
+    bool done = false;
     IHThorIndexAggregateArg *helper;
     CPartialResultAggregator aggregator;
 
@@ -1058,15 +1058,16 @@ public:
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
         hadElement = false;
+        done = false;
     }
 
 // IRowStream
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (eoi)
-            return NULL;
-        eoi = true;
+        if (done)
+            return nullptr;
+        done = true;
 
         RtlDynamicRowBuilder row(allocator);
         helper->clearAggregate(row);
@@ -1103,7 +1104,7 @@ public:
                     return ret.getClear();
                 }
             }
-            return NULL;
+            return nullptr;
         }
     }  
 };
