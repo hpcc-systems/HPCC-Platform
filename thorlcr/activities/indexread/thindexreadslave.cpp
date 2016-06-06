@@ -648,6 +648,7 @@ class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, implements
     Owned<RowAggregator> localAggTable;
     memsize_t maxMem;
     Owned<IHashDistributor> distributor;
+    bool done = false;
 
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
@@ -678,12 +679,13 @@ public:
         localAggTable.setown(new RowAggregator(*helper, *helper));
         localAggTable->start(queryRowAllocator());
         gathered = false;
+        done = false;
     }
 // IRowStream
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (eoi) 
+        if (done)
             return NULL;
         if (!gathered)
         {
@@ -724,7 +726,7 @@ public:
             dataLinkIncrement();
             return next->finalizeRowClear();
         }
-        eoi = true;
+        done = true;
         return NULL;
     }
     virtual void abort()
