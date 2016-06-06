@@ -1205,8 +1205,12 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 }
                 for (unsigned index = firstArg; index < numArgs; index++)
                 {
-                    if (index != firstArg) out.append(',');
-                    generateExprCpp(expr->queryChild(index));
+                    IHqlExpression * cur = expr->queryChild(index);
+                    if (!cur->isAttribute())
+                    {
+                        if (index != firstArg) out.append(',');
+                        generateExprCpp(cur);
+                    }
                 }
                 out.append(')');
                 break;

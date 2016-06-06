@@ -112,6 +112,8 @@ enum
     HEFunbound                  = 0x00000010,
     HEFinternalSelect          = 0x00000020,
     HEFcontainsDatasetAliasLocally= 0x00000040,
+
+//impure properties (see head of hqlexpr.cpp for detailed discussion)
     HEFvolatile                 = 0x00000080,           // value changes each time it is called - e.g., RANDOM()
     HEFcontextDependentException= 0x00000100,           // depends on the context, but not known how
     HEFcostly                   = 0x00000200,           // an expensive operation
@@ -1705,6 +1707,7 @@ inline bool containsCounter(IHqlExpression * expr)      { return (expr->getInfoF
 inline bool isCountProject(IHqlExpression * expr)       { return expr->hasAttribute(_countProject_Atom); }
 inline bool containsSkip(IHqlExpression * expr)         { return (expr->getInfoFlags() & (HEFcontainsSkip)) != 0; }
 inline bool containsSelf(IHqlExpression * expr)         { return (expr->getInfoFlags2() & (HEF2containsSelf)) != 0; }
+
 inline bool isContextDependentExceptGraph(IHqlExpression * expr)    
                                                         { return (expr->getInfoFlags() & (HEFcontextDependent & ~HEFgraphDependent)) != 0; }
 inline bool isGraphDependent(IHqlExpression * expr)     { return (expr->getInfoFlags() & HEFgraphDependent) != 0; }
