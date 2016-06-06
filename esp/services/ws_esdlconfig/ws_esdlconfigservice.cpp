@@ -963,7 +963,7 @@ IPropertyTree * CWsESDLConfigEx::getBindingTree(const char * espProcName, const 
 
 int CWsESDLConfigEx::getBindingXML(const char * espProcName, const char * espBindingName, StringBuffer & bindingXml, StringBuffer & msg)
 {
-    IPropertyTree * esdlBinding = getBindingTree(espProcName, espBindingName, msg);
+    Owned<IPropertyTree> esdlBinding = getBindingTree(espProcName, espBindingName, msg);
     if (esdlBinding)
     {
         toXML(esdlBinding, bindingXml, 0,0);
@@ -1095,11 +1095,11 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                     Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
 
                     IPropertyTree & cur = iter->query();
-                    IArrayOf<IEspAttribute> iespattributes;
+                    IArrayOf<IEspNamedValue> iespattributes;
                     Owned<IAttributeIterator> attributes = cur.getAttributes();
                     ForEach(*attributes)
                     {
-                        Owned<IEspAttribute> iespattribute = createAttribute("","");
+                        Owned<IEspNamedValue> iespattribute = createNamedValue("","");
                         const char * attname = attributes->queryName()+1;
                         if (stricmp(attname, "name")==0)
                         {
@@ -1107,7 +1107,7 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                         }
                         else
                         {
-                            iespattribute->setName(attributes->queryName()+1);// queryName() has a leading @, hence the +1
+                            iespattribute->setName(attributes->queryName()+1);
                             iespattribute->setValue(attributes->queryValue());
                             iespattributes.append(*iespattribute.getClear());
                         }
@@ -1118,20 +1118,19 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
 
                 msg.appendf("\nFetched ESDL Biding Configuration for %d methods.", iesmethods.length());
                 if (req.getIncludeInterfaceDefinition())
-				{
-					StringBuffer definition;
-					try
-					{
-						fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
-					}
-					catch (...)
-					{
-						msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
-					}
-
-					resp.updateESDLBinding().updateDefinition().setInterface(definition.str());
-					msg.append("\nFetched ESDL Biding definition.");
-				}
+                {
+                    StringBuffer definition;
+                    try
+                    {
+                        fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
+                        resp.updateESDLBinding().updateDefinition().setInterface(definition.str());
+                        msg.append("\nFetched ESDL Biding definition.");
+                    }
+                    catch (...)
+                    {
+                        msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
+                    }
+                }
                 resp.updateESDLBinding().updateConfiguration().setMethods(iesmethods);
                 resp.updateStatus().setCode(0);
             }

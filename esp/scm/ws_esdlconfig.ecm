@@ -2,6 +2,8 @@
 HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems®.
 ############################################################################## */
 
+EspInclude(common);
+
 ESPrequest EchoRequest
 {
     string Request;
@@ -119,16 +121,10 @@ ESPstruct ESDLDefinition
     [min_ver("1.1")] String Interface;
 };
 
-ESPStruct Attribute
-{
-	String Name;
-	String Value;
-};
-
 ESPStruct MethodConfig
 {
 	String Name;
-	ESParray<ESPStruct Attribute, Attribute> Attributes;
+	ESParray<ESPstruct NamedValue, Attribute> Attributes;
 };
 
 ESPStruct ESDLConfiguration
@@ -148,7 +144,7 @@ ESPresponse [exceptions_inline] GetESDLBindingResponse
     string EspProcName;   //Name of ESP Process
     string BindingName;
     string EspPort;
-    [max_ver("1.1")] String ConfigXML;
+    [depr_var("1.1")] String ConfigXML;
     [min_ver("1.1")] ESPStruct ESDLBindingContents ESDLBinding;
     ESPstruct BaseESDLStatus status;
 };
