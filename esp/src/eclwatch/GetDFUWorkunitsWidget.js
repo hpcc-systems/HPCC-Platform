@@ -118,6 +118,7 @@ define([
                 if (i == 0) {
                     firstTab = tab;
                 }
+                this.workunitsGrid.deselect(selections[i]);
             }
             if (firstTab) {
                 this.selectChild(firstTab);
@@ -377,12 +378,14 @@ define([
                 if (context._onRowDblClick) {
                     var item = context.workunitsGrid.row(evt).data;
                     context._onRowDblClick(item.ID);
+                    context.workunitsGrid.deselect(item);
                 }
             });
             this.workunitsGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.workunitsGrid.row(evt).data;
                     context._onRowDblClick(item.ID);
+                    context.workunitsGrid.deselect(item);
                 }
             });
             this.workunitsGrid.on(".dgrid-row:contextmenu", function (evt) {

@@ -86,6 +86,7 @@ define([
                 if (!firstTab && tab) {
                     firstTab = tab;
                 }
+                this.grid.deselect(selections[i]);
             }
             if (firstTab) {
                 this.selectChild(firstTab);
@@ -94,6 +95,7 @@ define([
 
         _onRowDblClick: function (row, params) {
             var tab = this.ensurePane(row, params);
+            this.grid.deselect(row);
             if (tab) {
                 this.selectChild(tab);
             }
@@ -136,12 +138,14 @@ define([
                 if (context._onRowDblClick) {
                     var row = context.grid.row(evt).data;
                     context._onRowDblClick(row);
+                    context.grid.deselect(row);
                 }
             });
             this.grid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onRowDblClick) {
                     var row = context.grid.row(evt).data;
                     context._onRowDblClick(row);
+                    context.grid.deselect(row);
                 }
             });
             this.grid.onSelectionChanged(function (event) {

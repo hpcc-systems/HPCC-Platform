@@ -508,12 +508,14 @@ define([
                 if (context._onGroupsRowDblClick) {
                     var item = context.groupsGrid.row(evt).data;
                     context._onGroupsRowDblClick(item.name);
+                    context.groupsGrid.deselect(item);
                 }
             });
             this.groupsGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onGroupsRowDblClick) {
                     var item = context.groupsGrid.row(evt).data;
                     context._onGroupsRowDblClick(item.name);
+                    context.groupsGrid.deselect(item);
                 }
             });
             this.groupsGrid.onSelectionChanged(function (event) {
@@ -608,12 +610,14 @@ define([
                 if (context._onUsersRowDblClick) {
                     var item = context.usersGrid.row(evt).data;
                     context._onUsersRowDblClick(item.username,item.fullname,item.passwordexpiration);
+                    context.usersGrid.deselect(item);
                 }
             });
             this.usersGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onUsersRowDblClick) {
                     var item = context.usersGrid.row(evt).data;
                     context._onUsersRowDblClick(item.username,item.fullname,item.passwordexpiration);
+                    context.usersGrid.deselect(item);
                 }
             });
             this.usersGrid.onSelectionChanged(function (event) {
@@ -735,12 +739,14 @@ define([
                 if (context._onPermissionsRowDblClick) {
                     var item = context.permissionsGrid.row(evt).data;
                     context._onPermissionsRowDblClick(item.__hpcc_parent.basedn, item.__hpcc_parent.rtype, item.__hpcc_parent.rtitle, item.name, item.DisplayName);
+                    context.permissionsGrid.deselect(item);
                 }
             });
             this.permissionsGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onPermissionsRowDblClick) {
                     var item = context.permissionsGrid.row(evt).data;
                     context._onPermissionsRowDblClick(item.__hpcc_parent.basedn, item.__hpcc_parent.rtype, item.__hpcc_parent.rtitle, item.name, item.DisplayName);
+                    context.permissionsGrid.deselect(item);
                 }
             });
             this.permissionsGrid.onSelectionChanged(function (event) {
