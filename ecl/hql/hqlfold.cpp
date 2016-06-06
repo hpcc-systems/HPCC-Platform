@@ -5500,6 +5500,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
         }
     case no_loop:
     case no_graphloop:
+    case no_keyeddistribute:
         //Safer to do nothing...
         break;
     case no_select:

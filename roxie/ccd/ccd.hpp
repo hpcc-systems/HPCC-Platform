@@ -720,7 +720,7 @@ public:
     SlaveContextLogger();
     SlaveContextLogger(IRoxieQueryPacket *packet);
     void set(IRoxieQueryPacket *packet);
-    void putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed) const;
+    void putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed, unsigned strands) const;
     void putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const;
     void flush();
     inline bool queryDebuggerActive() const { return debuggerActive; }
