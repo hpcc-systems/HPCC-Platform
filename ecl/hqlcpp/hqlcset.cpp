@@ -1394,25 +1394,16 @@ IHqlExpression * GeneralSetCursor::createDatasetSelect(IHqlExpression * indexExp
 
 void GeneralSetCursor::buildExprSelect(BuildCtx & ctx, IHqlExpression * indexExpr, CHqlBoundExpr & tgt)
 {
-    if (indexExpr->hasAttribute(noBoundCheckAtom))
-    {
-        if (indexExpr->hasAttribute(forceAllCheckAtom))
-            checkNotAll(ctx);
+    buildExprOrAssignSelect(ctx, nullptr, indexExpr, &tgt);
+}
 
-        OwnedHqlExpr dsIndexExpr = createDatasetSelect(indexExpr);
-        dsCursor->buildSelectNth(ctx, dsIndexExpr);
-        OwnedHqlExpr select = createSelectExpr(LINK(dsIndexExpr), LINK(element));
-        translator.buildExpr(ctx, select, tgt);
-    }
-    else
-    {
-        translator.buildTempExpr(ctx, indexExpr, tgt);
-    }
+void GeneralSetCursor::buildAssignSelect(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * indexExpr)
+{
+    buildExprOrAssignSelect(ctx, &target, indexExpr, NULL);
 }
 
 
-
-void GeneralSetCursor::buildAssignSelect(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * indexExpr)
+void GeneralSetCursor::buildExprOrAssignSelect(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * indexExpr, CHqlBoundExpr * tgt)
 {
     if (!indexExpr->hasAttribute(noBoundCheckAtom) || indexExpr->hasAttribute(forceAllCheckAtom))
         checkNotAll(ctx);
@@ -1424,24 +1415,24 @@ void GeneralSetCursor::buildAssignSelect(BuildCtx & ctx, const CHqlBoundTarget &
     {
         OwnedHqlExpr select = createSelectExpr(LINK(dsIndexExpr), LINK(element));
         if (!cursor->isConditional())
-            translator.buildExprAssign(ctx, target, select);
+            translator.buildExprOrAssign(ctx, target, select, tgt);
         else
         {
             // if (row) tgt = x else tgt = dft;
             BuildCtx subctx(ctx);
             IHqlStmt * e = subctx.addFilter(cursor->queryBound());
             cursor->setConditional(false);  // yuk!
-            translator.buildExprAssign(subctx, target, select);
+            translator.buildExprOrAssign(subctx, target, select, tgt);
             cursor->setConditional(true);
             subctx.selectElse(e);
             OwnedHqlExpr null = getOutOfRangeValue(indexExpr);
-            translator.buildExprAssign(subctx, target, null);
+            translator.buildExprOrAssign(subctx, target, null, tgt);
         }
     }
     else
     {
         OwnedHqlExpr null = getOutOfRangeValue(indexExpr);
-        translator.buildExprAssign(ctx, target, null);
+        translator.buildExprOrAssign(ctx, target, null, tgt);
     }
 }
 
