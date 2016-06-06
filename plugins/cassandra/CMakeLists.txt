@@ -71,6 +71,7 @@ if(USE_CASSANDRA OR CASSANDRAEMBED)
   add_dependencies(cassandra libuv)
   set(CMAKE_CXX_FLAGS "${_SAVE_CMAKE_CXX_FLAGS}")
 
+  install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/cassandra\")")
   if(APPLE)
     install(
       FILES ${PROJECT_BINARY_DIR}/libuv.dylib
@@ -117,8 +118,6 @@ endif()
           set_target_properties(cassandraembed PROPERTIES NO_SONAME 1)
         endif()
       endif()
-
-      install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/cassandra\")")
 
       install(
         TARGETS cassandraembed
