@@ -964,6 +964,7 @@ UPDATE              { RETURNSYM(UPDATE); }
 USE                 { RETURNSYM(USE); }
 VALIDATE            { RETURNSYM(VALIDATE); }
 VIRTUAL             { RETURNSYM(VIRTUAL); }
+VOLATILE            { RETURNSYM(VOLATILE); }
 WAIT                { RETURNSYM(WAIT); }
 WARNING             { RETURNSYM(TOK_WARNING); }
 WHEN                { RETURNSYM(WHEN); }

@@ -6224,6 +6224,7 @@ IHqlExpression *HqlGram::bindParameters(const attribute & errpos, IHqlExpression
             }
             else
             {
+                //Binding an external, outofline or beginc++ function
                 bool expandCall = insideTemplateFunction() ? false : expandCallsWhenBound;
                 // do the actual binding
                 return createBoundFunction(this, function, actuals, lookupCtx.functionCache, expandCall);

@@ -1561,7 +1561,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             bool first = true;
             while(IHqlExpression *kid = expr->queryChild(idx))
             {
-                bool isHidden = false;
+                bool isHidden = !expandProcessed && kid->isAttribute();
                 if (formals && !expandProcessed)
                 {
                     IHqlExpression *formal = formals->queryChild(idx);

@@ -470,6 +470,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   VALIDATE
   VARIANCE
   VIRTUAL
+  VOLATILE
   WAIT
   TOK_WARNING
   WHEN
