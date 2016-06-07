@@ -4,7 +4,7 @@
 <sect1 id="CassandraWUStorage">
   <title>Using Cassandra for Workunit Storage</title>
 
-  <para>Beginning version version 6.0.0, you can configure your system to use
+  <para>Beginning with version 6.0.0, you can configure your system to use
   Apache <trademark>Cassandra</trademark> database for Workunit storage.
   Apache’s Cassandra NoSQL data store is a software framework that supports
   data-intensive distributed applications under a free license.</para>
@@ -276,12 +276,12 @@
 
                 <para><variablelist>
                     <varlistentry>
-                      <term>Note: User and password are only needed if your
-                      Cassandra server is configured to require
-                      credentials.</term>
+                      <term>Note: </term>
 
                       <listitem>
-                        <para></para>
+                        <para>User and password are only needed if your
+                        Cassandra server is configured to require
+                        credentials.</para>
                       </listitem>
                     </varlistentry>
                   </variablelist></para>
