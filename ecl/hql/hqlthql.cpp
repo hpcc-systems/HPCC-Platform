@@ -711,6 +711,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
 #ifdef SHOWCONTEXTDETAIL
             s.append('[');
             unsigned flags = expr->getInfoFlags();
+            if (flags & HEFnoduplicate) s.append('V');
             if (flags & HEFgraphDependent) s.append('G');
             if (flags & HEFcontainsSkip) s.append('S');
             if (flags & HEFcontainsCounter) s.append('C');

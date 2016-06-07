@@ -3423,7 +3423,7 @@ void CHqlExpression::initFlagsBeforeOperands()
         break;
     case no_random:
         infoFlags2 &= ~(HEF2constant);
-        infoFlags |= HEFvolatile;
+        infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
         break;
     case no_wait:
         infoFlags2 |= HEF2globalAction;
@@ -3602,7 +3602,7 @@ void CHqlExpression::updateFlagsAfterOperands()
     switch (op)
     {
     case no_pure:
-        infoFlags &= ~(HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip);
+        infoFlags &= ~(HEFnoduplicate|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip);
         break;
     case no_record:
         {
@@ -3754,7 +3754,7 @@ void CHqlExpression::updateFlagsAfterOperands()
             infoFlags2 |= HEF2constant;
             IAtom * name = queryName();
             if (name == _volatileId_Atom)
-                infoFlags |= HEFvolatile;
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
             break;
         }
     case no_newxmlparse:
@@ -3791,13 +3791,13 @@ void CHqlExpression::updateFlagsAfterOperands()
             if (name == onFailAtom)
                 infoFlags &= ~(HEFonFailDependent|HEFcontainsSkip); // ONFAIL(SKIP) - skip shouldn't extend any further
             else if (name == _volatileId_Atom)
-                infoFlags |= HEFvolatile;
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
             infoFlags &= ~(HEFthrowscalar|HEFthrowds|HEFoldthrows);
             break;
         }
     case no_clustersize:
         //wrong, but improves the generated code
-        infoFlags |= HEFvolatile;
+        infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
         break;
     case no_type:
         {
@@ -3857,7 +3857,7 @@ void CHqlExpression::updateFlagsAfterOperands()
                 if (bodycode->getOperator() == no_embedbody)
                 {
                     if (bodycode->queryAttribute(actionAtom))
-                        infoFlags |= HEFvolatile;
+                        infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
                 }
             }
             else
@@ -3868,13 +3868,13 @@ void CHqlExpression::updateFlagsAfterOperands()
     case no_getresult:
         {
             if (false && matchesConstantValue(queryAttributeChild(this, sequenceAtom, 0), ResultSequenceOnce))
-                infoFlags |= HEFvolatile;
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
             break;
         }
     case no_embedbody:
         {
             if (queryAttribute(actionAtom))
-                infoFlags |= HEFvolatile;
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
             break;
         }
     }
@@ -4134,6 +4134,17 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     unsigned childFlags = child.getInfoFlags();
     unsigned childFlags2 = child.getInfoFlags2();
     node_operator childOp = child.getOperator();
+
+    const unsigned contextFlags = HEFcontextDependentException|HEFthrowscalar|HEFthrowds;
+    if (childFlags & contextFlags)
+    {
+        if (isDataset() || isAction())
+        {
+            if (!child.isDataset() && !child.isAction())
+                childFlags &= ~contextFlags;
+        }
+    }
+
     switch (op)
     {
     case no_keyindex:
@@ -4198,7 +4209,7 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     {
     case no_transform:
     case no_newtransform:
-        childFlags &= ~(HEFtransformDependent|HEFcontainsSkip|HEFthrowscalar|HEFthrowds);
+        childFlags &= ~(HEFcontextDependentException|HEFtransformDependent|HEFcontainsSkip|HEFthrowscalar|HEFthrowds);
         break;
     }
 
@@ -9944,7 +9955,7 @@ IHqlExpression * CHqlScopeParameter::lookupSymbol(IIdAtom * searchName, unsigned
 //==============================================================================================================
 
 CHqlDelayedScope::CHqlDelayedScope(HqlExprArray &_ownedOperands)
- : CHqlExpressionWithTables(no_delayedscope)
+ : CHqlExpressionWithTables(no_delayedscope), type(nullptr)
 {
     setOperands(_ownedOperands); // after type is initialized
     type = queryChild(0)->queryType();
@@ -10329,16 +10340,17 @@ CHqlExternalCall::CHqlExternalCall(IHqlExpression * _funcdef, ITypeInfo * _type,
         impureFlags |= HEFcontextDependentException;
     if (body->hasAttribute(costlyAtom))
         impureFlags |= HEFcostly;
+    if (body->hasAttribute(_noDuplicate_Atom))
+        impureFlags |= HEFnoduplicate;
 
     if (isVolatileFuncdef(funcdef))
-        impureFlags |= HEFvolatile;
+        impureFlags |= (HEFnoduplicate|HEFcontextDependentException);
     //Once aren't really pure, but are as far as the code generator is concerned.  Split into more flags if it becomes an issue.
     if (!body->hasAttribute(pureAtom) && !body->hasAttribute(onceAtom))
     {
-        infoFlags |= (HEFvolatile);
+        infoFlags |= (HEFnoduplicate);
     }
 
-#if 0
     if (body->hasAttribute(ctxmethodAtom))
     {
         StringBuffer entrypoint;
@@ -10350,10 +10362,9 @@ CHqlExternalCall::CHqlExternalCall(IHqlExpression * _funcdef, ITypeInfo * _type,
         }
         if (streq(entrypoint.str(), "getPlatform"))
         {
-            //impureFlags |= HEFvolatile;
+            //impureFlags |= (HEFvolatilevalue|HEFcontextDependentException);
         }
     }
-#endif
 
     infoFlags |= impureFlags;
     
@@ -12548,11 +12559,12 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
     HqlExprArray attrs;
     unwindChildren(attrs, body, 1);
 
-    if (body->isPure())
-        attrs.append(*createAttribute(pureAtom));
-    if (body->getInfoFlags() & HEFaction)
-        attrs.append(*createAttribute(actionAtom));
-    if (body->getInfoFlags() & HEFcontextDependentException)
+    //This should mirror the code in CHqlExternalCall::CHqlExternalCall
+    unsigned impureFlags = body->getInfoFlags();
+    if (impureFlags & (HEFthrowds|HEFthrowscalar))
+        attrs.append(*createAttribute(failAtom));
+
+    if (impureFlags & HEFcontextDependentException)
         attrs.append(*createAttribute(contextSensitiveAtom));
     if (functionBodyUsesContext(body))
         attrs.append(*LINK(cachedContextAttribute));
@@ -12560,6 +12572,21 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
     IHqlExpression *child = body->queryChild(0);
     if (child && child->getOperator()==no_embedbody)
         unwindAttribute(attrs, child, inlineAtom);
+
+    if (impureFlags & HEFcostly)
+        attrs.append(*createAttribute(costlyAtom));
+
+    if (impureFlags & HEFnoduplicate)
+        attrs.append(*createAttribute(_noDuplicate_Atom));
+
+    if (impureFlags & HEFaction)
+        attrs.append(*createAttribute(actionAtom));
+
+    if (impureFlags & HEFcontainsNlpText)
+        attrs.append(*createAttribute(userMatchFunctionAtom));
+
+    if (!(impureFlags & HEFimpure))// && attrs.empty())
+        attrs.append(*createAttribute(pureAtom));
 
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryId(), LINK(returnType), attrs);
@@ -15512,7 +15539,7 @@ bool isContextDependent(IHqlExpression * expr, bool ignoreFailures, bool ignoreG
 
 bool isPureCanSkip(IHqlExpression * expr)
 {
-    return (expr->getInfoFlags() & (HEFvolatile|HEFaction|HEFthrowscalar|HEFthrowds)) == 0; 
+    return (expr->getInfoFlags() & (HEFnoduplicate|HEFaction|HEFthrowscalar|HEFthrowds)) == 0;
 }
 
 bool hasSideEffects(IHqlExpression * expr)

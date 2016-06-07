@@ -114,7 +114,7 @@ enum
     HEFcontainsDatasetAliasLocally= 0x00000040,
 
 //impure properties (see head of hqlexpr.cpp for detailed discussion)
-    HEFvolatile                 = 0x00000080,           // value changes each time it is called - e.g., RANDOM()
+    HEFnoduplicate              = 0x00000080,           // value changes each time it is called - e.g., RANDOM()
     HEFcontextDependentException= 0x00000100,           // depends on the context, but not known how
     HEFcostly                   = 0x00000200,           // an expensive operation
     HEFaction                   = 0x00000400,           // an action, or something that can have a side-effect.  Not convinced this is needed
@@ -158,7 +158,7 @@ enum
 
     HEFintersectionFlags        = (0),
     HEFunionFlags               = (HEFunbound|HEFfunctionOfGroupAggregate|
-                                   HEFvolatile|HEFcontextDependentException|HEFcostly|HEFaction|HEFthrowscalar|HEFthrowds|HEFoldthrows|
+                                   HEFnoduplicate|HEFcontextDependentException|HEFcostly|HEFaction|HEFthrowscalar|HEFthrowds|HEFoldthrows|
                                    HEFonFailDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector|HEFcontainsDataset|
                                    HEFtranslated|HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFtransformDependent|
                                    HEFcontainsSkip|HEFcontainsCounter|HEFassertkeyed|HEFcontainsAlias|HEFcontainsAliasLocally|
@@ -166,7 +166,7 @@ enum
 
     HEFcontextDependentNoThrow  = (HEFcontextDependent & ~(HEFthrowscalar|HEFthrowds|HEFoldthrows)),
     HEFcontextDependentDataset  = (HEFcontextDependent & ~(HEFthrowscalar)),
-    HEFimpure                   = (HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip),
+    HEFimpure                   = (HEFnoduplicate|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip),
 };
 
 //NB: increase the member variable if it grows 
@@ -1670,11 +1670,11 @@ extern HQL_API IHqlExpression * queryNewSelectAttrExpr();
 
 //The following functions deal with the different aspects of impure functions - volatile,costly,throw,skip,...
 
-inline bool isVolatile(IHqlExpression * expr)           { return (expr->getInfoFlags() & HEFvolatile) != 0; }
+inline bool isVolatile(IHqlExpression * expr)           { return (expr->getInfoFlags() & HEFnoduplicate) != 0; }
 //Is it ok to duplicate the evaluation of this expression in another context?
-inline bool canDuplicateExpr(IHqlExpression * expr)      { return (expr->getInfoFlags() & (HEFvolatile|HEFcostly)) == 0; }
+inline bool canDuplicateExpr(IHqlExpression * expr)      { return (expr->getInfoFlags() & (HEFnoduplicate|HEFcostly)) == 0; }
 //Is it legal to evaluate this expression in a different context - e.g, in a parent instead of child query
-inline bool canChangeContext(IHqlExpression * expr)     { return (expr->getInfoFlags() & (HEFvolatile|HEFcontextDependent|HEFthrow|HEFcontainsSkip|HEFcostly)) == 0; }
+inline bool canChangeContext(IHqlExpression * expr)     { return (expr->getInfoFlags() & (HEFcontextDependent|HEFthrow|HEFcontainsSkip|HEFcostly)) == 0; }
 //Is it ok to convert a conditional expression to an unconditional expression?
 inline bool canRemoveGuard(IHqlExpression * expr)       { return (expr->getInfoFlags() & (HEFthrow|HEFcontainsSkip|HEFcostly)) == 0; }
 //Is it legal to reuse the value created in another context for this expression?
