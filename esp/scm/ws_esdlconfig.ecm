@@ -2,6 +2,8 @@
 HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems®.
 ############################################################################## */
 
+EspInclude(common);
+
 ESPrequest EchoRequest
 {
     string Request;
@@ -101,6 +103,39 @@ ESPrequest GetESDLBindingRequest
     string EspBindingName;
     string EspPort;       //Name + port = service
     string EsdlBindingId; //espprocname.espbinding
+    [min_ver("1.1")] bool IncludeInterfaceDefinition;
+};
+
+ESPstruct ESDLBinding
+{
+    string EspProcess;
+    string EspBinding;
+    string Id;
+};
+
+ESPstruct ESDLDefinition
+{
+    String Name;
+    int Seq;
+    String Id;
+    [min_ver("1.1")] String Interface;
+};
+
+ESPStruct MethodConfig
+{
+	String Name;
+	ESParray<ESPstruct NamedValue, Attribute> Attributes;
+};
+
+ESPStruct ESDLConfiguration
+{
+	ESParray<ESPStruct MethodConfig, Method> Methods;
+};
+
+ESPStruct ESDLBindingContents
+{
+	ESPStruct ESDLDefinition Definition;
+	ESPStruct ESDLConfiguration Configuration;
 };
 
 ESPresponse [exceptions_inline] GetESDLBindingResponse
@@ -109,7 +144,8 @@ ESPresponse [exceptions_inline] GetESDLBindingResponse
     string EspProcName;   //Name of ESP Process
     string BindingName;
     string EspPort;
-    string ConfigXML;
+    [depr_var("1.1")] String ConfigXML;
+    [min_ver("1.1")] ESPStruct ESDLBindingContents ESDLBinding;
     ESPstruct BaseESDLStatus status;
 };
 
@@ -137,20 +173,6 @@ ESPrequest ListESDLDefinitionsRequest
 {
 };
 
-ESPstruct ESDLBinding
-{
-    string EspProcess;
-    string EspBinding;
-    string Id;
-};
-
-ESPstruct ESDLDefinition
-{
-    string Name;
-    int Seq;
-    string Id;
-};
-
 ESPresponse [exceptions_inline] ListESDLDefinitionsResponse
 {
     ESParray<ESPstruct ESDLDefinition, Definition> Definitions;
@@ -166,7 +188,7 @@ ESPresponse [exceptions_inline] ListESDLBindingsResponse
     ESParray<ESPstruct ESDLBinding, Binding> Bindings;
 };
 
-ESPservice [version("1.0"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
+ESPservice [version("1.1"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod PublishESDLDefinition(PublishESDLDefinitionRequest, PublishESDLDefinitionResponse);
