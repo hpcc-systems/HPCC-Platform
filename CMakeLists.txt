@@ -69,6 +69,9 @@ include(${HPCC_SOURCE_DIR}/version.cmake)
 if(NOT BUILD_LEVEL)
     set(BUILD_LEVEL "COMMUNITY")
 endif(NOT BUILD_LEVEL)
+if ("${BUILD_LEVEL}" STREQUAL "COMMUNITY")
+    set ( HPCC_PROJECT_ABBR  "CC")
+endif()
 
 ###
 ## Config Block
