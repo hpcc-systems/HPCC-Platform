@@ -4,8 +4,8 @@
 <chapter id="configure-and-deploy-security-manager-plugin">
   <title role="nbrk">Configure and Deploy the Security Manager Plug-in</title>
 
-  <para>The following sections detail the process of how to configure your
-  HPCC system to use the Security Manager Plug-in.</para>
+  <para>The following sections detail the process of configuring your HPCC
+  system to use the Security Manager Plug-in.</para>
 
   <sect1 id="how-to-configure-an-existing-security-manager-plugin">
     <title>How to Configure a Security Manager Plug-in</title>
