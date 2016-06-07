@@ -181,7 +181,7 @@ class jlib_decl CThreadedPersistent : public CInterface
     Owned<IException> exception;
     IThreaded *owner;
     Semaphore sem, joinSem;
-    atomic_t state;
+    std::atomic_uint state;
     bool halt;
     enum ThreadStates { s_ready, s_running, s_joining };
 

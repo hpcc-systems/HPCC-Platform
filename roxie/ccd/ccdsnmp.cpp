@@ -127,6 +127,31 @@ public:
     }
 };
 
+class RelaxedAtomicMetric : public CInterface, implements INamedMetric
+{
+    RelaxedAtomic<unsigned> &counter;
+    const bool cumulative;
+public:
+    IMPLEMENT_IINTERFACE;
+    RelaxedAtomicMetric(RelaxedAtomic<unsigned> &_counter, bool _cumulative)
+    : counter(_counter), cumulative(_cumulative)
+    {
+    }
+    virtual long getValue()
+    {
+        return counter.load();
+    }
+    virtual bool isCumulative()
+    {
+        return cumulative;
+    }
+    virtual void resetValue()
+    {
+        if (cumulative)
+            counter.store(0);
+    }
+};
+
 class CounterMetric : public CInterface, implements INamedMetric
 {
 protected:
@@ -359,6 +384,7 @@ public:
     void resetMetrics();
 
     void doAddMetric(atomic_t &counter, const char *name, unsigned interval);
+    void doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval);
     void doAddMetric(unsigned &counter, const char *name, unsigned interval);
     void doAddMetric(INamedMetric *n, const char *name, unsigned interval);
     void doAddMetric(AccessorFunction function, const char *name, unsigned interval);
@@ -471,6 +497,11 @@ CRoxieMetricsManager::CRoxieMetricsManager()
 void CRoxieMetricsManager::doAddMetric(atomic_t &counter, const char *name, unsigned interval)
 {
     doAddMetric(new AtomicMetric(counter, interval != 0), name, interval);
+}
+
+void CRoxieMetricsManager::doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval)
+{
+    doAddMetric(new RelaxedAtomicMetric(counter, interval != 0), name, interval);
 }
 
 void CRoxieMetricsManager::doAddMetric(unsigned &counter, const char *name, unsigned interval)

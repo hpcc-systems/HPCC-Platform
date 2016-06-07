@@ -391,7 +391,7 @@ bool CppCompiler::compile()
     bool ret = false;
     Semaphore finishedCompiling;
     int numSubmitted = 0;
-    atomic_set(&numFailed, 0);
+    numFailed.store(0);
 
     ForEachItemIn(i0, allSources)
     {
@@ -421,7 +421,7 @@ bool CppCompiler::compile()
             finishedCompiling.wait();
     }
 
-    if (atomic_read(&numFailed) > 0)
+    if (numFailed > 0)
         ret = false;
     else if (!onlyCompile && !precompileHeader)
         ret = doLink();
@@ -920,7 +920,7 @@ public:
         handle = 0;
 
         if (!success || aborted)
-            atomic_inc(&compiler->numFailed);
+            compiler->numFailed++;
         params->finishedCompiling.signal();
         return;
     }
