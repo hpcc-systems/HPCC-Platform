@@ -2232,12 +2232,8 @@ protected:
             if (getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER)) // for testing only (force to disk, as if spilt)
                 channelDistributor.spill(false);
 
-            Owned<IRowStream> distChannelStream;
-            if (!rhsCollated) // there may be some more undistributed rows
-            {
-                distChannelStream.setown(rhsDistributor->connect(queryRowInterfaces(rightITDL), right.getClear(), rightHash, NULL));
-                channelDistributor.processDistRight(distChannelStream);
-            }
+            Owned<IRowStream> distChannelStream = rhsDistributor->connect(queryRowInterfaces(rightITDL), right.getClear(), rightHash, NULL);
+            channelDistributor.processDistRight(distChannelStream);
             stream.setown(channelDistributor.getStream(&rhs));
         }
         catch (IException *e)
