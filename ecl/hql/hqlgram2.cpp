@@ -907,6 +907,15 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
 {
     HqlExprArray args;
     embedText->unwindList(args, no_comma);
+    Linked<ITypeInfo> type = current_type;
+    if (!type)
+        type.setown(makeVoidType());
+
+    if (type->getTypeCode() == type_record)
+        type.setown(makeRowType(LINK(type)));
+
+    IHqlExpression * record = queryOriginalRecord(type);
+
     if (language)
     {
         IHqlScope *pluginScope = language->queryScope();
@@ -926,19 +935,21 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
             // MORE - create an expression that calls it, and const fold it, I guess....
         }
         args.append(*createExprAttribute(languageAtom, getEmbedContextFunc.getClear()));
+        StringBuffer text;
+        embedText->queryValue()->getStringValue(text);
+        if (strstr(text, "OUTPUTFIELDS()"))
+        {
+            if (!record)
+                reportError(ERR_EMBEDPROJECT_INVALID, errpos, "OUTPUTFIELDS() should only be used when returning a record type");
+            if (!isSimpleRecord(record))
+                reportError(ERR_EMBEDPROJECT_INVALID, errpos, "OUTPUTFIELDS() requires a simple output record (no nested records or IFBLOCKs)");
+            args.append(*getProjectedAttr());
+        }
     }
     if (!checkAllowed(errpos, "cpp", "Embedded code"))
         args.append(*createExprAttribute(_disallowed_Atom));
     if (attribs)
         attribs->unwindList(args, no_comma);
-    Linked<ITypeInfo> type = current_type;
-    if (!type)
-        type.setown(makeVoidType());
-
-    if (type->getTypeCode() == type_record)
-        type.setown(makeRowType(LINK(type)));
-
-    IHqlExpression * record = queryOriginalRecord(type);
     OwnedHqlExpr result;
     if (record)
     {

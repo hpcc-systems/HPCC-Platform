@@ -69,7 +69,15 @@ initializeUtf8() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
 ENDEMBED;
 
 dataset(childrec) testMySQLDS() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
-  SELECT * from tbl1;
+  SELECT OUTPUTFIELDS() from tbl1;
+ENDEMBED;
+
+dataset(childrec) testMySQLDS2() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  SELECT OUTPUTFIELDS()  from tbl1;
+ENDEMBED;
+
+dataset(childrec) testMySQLDS3() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  SELECT OUTPUTFIELDS()   from tbl1;
 ENDEMBED;
 
 childrec testMySQLRow() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
@@ -146,6 +154,8 @@ sequential (
   initializeUtf8(),
   PARALLEL (
   OUTPUT(testMySQLDS()),
+  COUNT(testMySQLDS2()),
+  OUTPUT(testMySQLDS3(), {name}),
   OUTPUT(testMySQLRow().name),
   OUTPUT(testMySQLParms('name1', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße')),
   OUTPUT(testMySQLString()),

@@ -53,6 +53,7 @@ static IHqlExpression * cacheAlignedAttr;
 static IHqlExpression * cacheEmbeddedAttr;
 static IHqlExpression * cacheInlineAttr;
 static IHqlExpression * cacheLinkCountedAttr;
+static IHqlExpression * cacheProjectedAttr;
 static IHqlExpression * cacheReferenceAttr;
 static IHqlExpression * cacheStreamedAttr;
 static IHqlExpression * cacheUnadornedAttr;
@@ -82,6 +83,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     cacheEmbeddedAttr = createAttribute(embeddedAtom);
     cacheInlineAttr = createAttribute(inlineAtom);
     cacheLinkCountedAttr = createAttribute(_linkCounted_Atom);
+    cacheProjectedAttr = createAttribute(_projected_Atom);
     cacheReferenceAttr = createAttribute(referenceAtom);
     cacheStreamedAttr = createAttribute(streamedAtom);
     cacheUnadornedAttr = createAttribute(_propUnadorned_Atom);
@@ -109,6 +111,7 @@ MODULE_EXIT()
     cacheEmbeddedAttr->Release();
     cacheInlineAttr->Release();
     cacheLinkCountedAttr->Release();
+    cacheProjectedAttr->Release();
     cacheReferenceAttr->Release();
     cacheStreamedAttr->Release();
     cacheUnadornedAttr->Release();
@@ -212,9 +215,17 @@ extern HQL_API IHqlExpression * queryLinkCountedAttr()
 {
     return cacheLinkCountedAttr;
 }
+extern HQL_API IHqlExpression * queryProjectedAttr()
+{
+    return cacheProjectedAttr;
+}
 extern HQL_API IHqlExpression * getLinkCountedAttr()
 {
     return LINK(cacheLinkCountedAttr);
+}
+extern HQL_API IHqlExpression * getProjectedAttr()
+{
+    return LINK(cacheProjectedAttr);
 }
 extern HQL_API IHqlExpression * getStreamedAttr()
 {
@@ -2244,6 +2255,21 @@ unsigned isEmptyRecord(IHqlExpression * record)
     return true;
 }
 
+unsigned isSimpleRecord(IHqlExpression * record)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_field:
+            break;
+        default:
+            return false;
+        }
+    }
+    return record->numChildren()>0;
+}
 
 bool isTrivialSelectN(IHqlExpression * expr)
 {
@@ -5550,6 +5576,23 @@ bool isConstantDictionary(IHqlExpression * expr)
     IHqlExpression * dataset = expr->queryChild(0);
     if (dataset->getOperator() == no_inlinetable)
         return isConstantDataset(dataset);
+    return false;
+}
+
+bool isProjectableCall(IHqlExpression *expr)
+{
+    if (expr->getOperator() != no_call)
+        return false;
+    IHqlExpression * funcdef = expr->queryBody()->queryFunctionDefinition();
+    assertex(funcdef);
+    IHqlExpression * body = funcdef->queryChild(0);
+    assertex(body);
+    if ((funcdef->getOperator() == no_funcdef) && (body->getOperator() == no_outofline))
+    {
+        IHqlExpression * bodycode = body->queryChild(0);
+        if (bodycode->getOperator() == no_embedbody && bodycode->hasAttribute(_projected_Atom))
+            return true;
+    }
     return false;
 }
 

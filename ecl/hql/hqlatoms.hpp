@@ -332,6 +332,7 @@ extern HQL_API IAtom * prefetchAtom;
 extern HQL_API IAtom * preloadAtom;
 extern HQL_API IAtom * priorityAtom;
 extern HQL_API IAtom * privateAtom;
+extern HQL_API IAtom * _projected_Atom;
 extern HQL_API IAtom * _propAligned_Atom;
 extern HQL_API IAtom * _propRecordCount_Atom;
 extern HQL_API IAtom * _propSize_Atom;
