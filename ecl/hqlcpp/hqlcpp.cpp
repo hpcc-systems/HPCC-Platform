@@ -11772,7 +11772,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     if (formals->numChildren())
     {
         optionsParam = formals->queryChild(formals->numChildren()-1);
-        assertex(streq(str(optionsParam->queryId()), "__options"));
+        assertex(optionsParam->queryId()==__optionsId);
     }
     if (formals->numChildren()==(optionsParam ? 1 : 0))
         createParam.append("|EFnoparams");
@@ -11797,79 +11797,78 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
     ForEachChild(i, formals)
     {
+        IHqlExpression * param = formals->queryChild(i);
+        if (param == optionsParam)
+            continue;
         HqlExprArray args;
         args.append(*LINK(ctxVar));
-        IHqlExpression * param = formals->queryChild(i);
-        if (param != optionsParam)
+        ITypeInfo *paramType = param->queryType();
+        IIdAtom * paramId = param->queryId();
+        const char * paramNameText = str(paramId);
+        if (!options.preserveCaseExternalParameter)
+            paramNameText = str(lower(paramId));
+        args.append(*createConstant(paramNameText));
+        IIdAtom * bindFunc;
+        switch (paramType->getTypeCode())
         {
-            ITypeInfo *paramType = param->queryType();
-            IIdAtom * paramId = param->queryId();
-            const char * paramNameText = str(paramId);
-            if (!options.preserveCaseExternalParameter)
-                paramNameText = str(lower(paramId));
-            args.append(*createConstant(paramNameText));
-            IIdAtom * bindFunc;
-            switch (paramType->getTypeCode())
+        case type_int:
+            if (paramType->getSize()<8)
             {
-            case type_int:
-                if (paramType->getSize()<8)
-                {
-                    bindFunc = paramType->isSigned() ? bindSignedSizeParamId : bindUnsignedSizeParamId;
-                    args.append(*createIntConstant(paramType->getSize()));
-                }
-                else
-                    bindFunc = paramType->isSigned() ? bindSignedParamId : bindUnsignedParamId;
-                break;
-            case type_varstring:
-                bindFunc = bindVStringParamId;
-                break;
-            case type_string:
-                bindFunc = bindStringParamId;
-                break;
-            case type_real:
-                if (paramType->getSize()==4)
-                    bindFunc = bindFloatParamId;
-                else
-                    bindFunc = bindRealParamId;
-                break;
-            case type_boolean:
-                bindFunc = bindBooleanParamId;
-                break;
-            case type_utf8:
-                bindFunc = bindUtf8ParamId;
-                break;
-            case type_unicode:
-                bindFunc = bindUnicodeParamId;
-                break;
-            case type_data:
-                bindFunc = bindDataParamId;
-                break;
-            case type_row:
-                bindFunc = bindRowParamId;
-                break;
-            case type_table:
-            case type_groupedtable:
-                bindFunc = bindDatasetParamId;
-                break;
-            case type_set:
-            {
-                bindFunc = bindSetParamId;
-                ITypeInfo *childType = paramType->queryChildType();
-                type_t typeCode = childType->getTypeCode();
-                if (childType->isInteger() && !childType->isSigned())
-                    typeCode = type_unsigned;
-                args.append(*createIntConstant(typeCode));
-                args.append(*createIntConstant(childType->getSize()));
-                break;
+                bindFunc = paramType->isSigned() ? bindSignedSizeParamId : bindUnsignedSizeParamId;
+                args.append(*createIntConstant(paramType->getSize()));
             }
-            default:
-                StringBuffer typeText;
-                getFriendlyTypeStr(paramType, typeText);
-                throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
-            }
-            args.append(*createActualFromFormal(param));
-            buildFunctionCall(funcctx, bindFunc, args);
+            else
+                bindFunc = paramType->isSigned() ? bindSignedParamId : bindUnsignedParamId;
+            break;
+        case type_varstring:
+            bindFunc = bindVStringParamId;
+            break;
+        case type_string:
+            bindFunc = bindStringParamId;
+            break;
+        case type_real:
+            if (paramType->getSize()==4)
+                bindFunc = bindFloatParamId;
+            else
+                bindFunc = bindRealParamId;
+            break;
+        case type_boolean:
+            bindFunc = bindBooleanParamId;
+            break;
+        case type_utf8:
+            bindFunc = bindUtf8ParamId;
+            break;
+        case type_unicode:
+            bindFunc = bindUnicodeParamId;
+            break;
+        case type_data:
+            bindFunc = bindDataParamId;
+            break;
+        case type_row:
+            bindFunc = bindRowParamId;
+            break;
+        case type_table:
+        case type_groupedtable:
+            bindFunc = bindDatasetParamId;
+            break;
+        case type_set:
+        {
+            bindFunc = bindSetParamId;
+            ITypeInfo *childType = paramType->queryChildType();
+            type_t typeCode = childType->getTypeCode();
+            if (childType->isInteger() && !childType->isSigned())
+                typeCode = type_unsigned;
+            args.append(*createIntConstant(typeCode));
+            args.append(*createIntConstant(childType->getSize()));
+            break;
         }
+        default:
+            StringBuffer typeText;
+            getFriendlyTypeStr(paramType, typeText);
+            throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
+        }
+        args.append(*createActualFromFormal(param));
+        buildFunctionCall(funcctx, bindFunc, args);
     }
     funcctx.addQuotedLiteral("__ctx->callFunction();");
     IIdAtom * returnFunc;

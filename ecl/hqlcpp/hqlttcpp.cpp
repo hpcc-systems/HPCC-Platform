@@ -6269,8 +6269,8 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
             folded.setown(createConstant(""));
         HqlExprArray newFormals;
         HqlExprArray attrs;
-        unwindChildren(newFormals, formals, 0);
-        newFormals.append(*createParameter(createIdAtom("__options"), newFormals.length(), LINK(unknownVarStringType), attrs));
+        unwindChildren(newFormals, formals);
+        newFormals.append(*createParameter(__optionsId, newFormals.length(), LINK(unknownVarStringType), attrs));
 
         HqlExprArray newDefaults;
         if (defaults)
