@@ -465,7 +465,10 @@ bool CseSpotter::checkPotentialCSE(IHqlExpression * expr, CseSpotterInfo * extra
     if (extra->alreadyAliased)
         return false;
 
-    if (!expr->isPure() || !canCreateTemporary(expr))
+    if (!expr->isPure())
+        return false;
+
+    if (!canCreateTemporary(expr))
         return false;
 
     if (invariantSelector && exprReferencesDataset(expr, invariantSelector))
@@ -1223,10 +1226,12 @@ static bool canHoistInvariant(IHqlExpression * expr)
         if ((expr->getOperator() != no_alias) || expr->hasAttribute(globalAtom))
             return false;
     }
+
     if (!expr->isPure())
         return false;
     if (expr->isFunction())
         return false;
+
     switch (expr->getOperator())
     {
     case no_list:
