@@ -1021,11 +1021,15 @@ public:
     }
     virtual bool checkConnection()
     {
-        return client->checkConnection();
+        if (client)
+            return client->checkConnection();
+        else
+            return true;
     }
     virtual void sendHeartBeat()
     {
-        client->sendHeartBeat(logctx);
+        if (client)
+            client->sendHeartBeat(logctx);
     }
     virtual SafeSocket *querySafeSocket()
     {
