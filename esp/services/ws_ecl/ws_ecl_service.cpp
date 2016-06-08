@@ -204,7 +204,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         throw MakeStringException(-1, "ESP Process %s not configured", process);
 
     auth_method.set(prc->queryProp("Authentication/@method"));
-    portal_URL.set(prc->queryProp("@protalurl"));
+    portal_URL.set(prc->queryProp("@portalurl"));
 
     StringBuffer daliAddress;
     const char *daliServers = prc->queryProp("@daliServers");
