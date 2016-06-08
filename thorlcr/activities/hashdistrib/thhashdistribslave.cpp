@@ -1813,7 +1813,7 @@ public:
         if (hasbuf[target]&&(waiting[target]!=TAG_NULL))
         {
 #ifdef TRACE_MP
-            ActPrintLog("HDIST MP dosend(%d,%d)",i,bufs[target].length());
+            ActPrintLog("HDIST MP dosend(%d,%d)",target,bufs[target].length());
 #endif
             size32_t sz = bufs[target].length();
             // TBD compress here?
