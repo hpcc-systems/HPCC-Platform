@@ -79,6 +79,10 @@ D1 := STD.Date.FromStringToDate('19720607', '%Y%m%d');
     //D1 contains 19720607
 D2 := STD.Date.FromStringToDate('19720007', '%Y%m%d');
     //D2 contains 0
+D3 := STD.Date.FromStringToDate('4/29/1974', '%m/%d/%Y');
+    //D3 contains 19740429
+D4:= STD.Date.FromStringToDate('29/4/1974', '%d/%m/%Y');
+    //D4 contains 19740429
  </programlisting>
 
   <para></para>
