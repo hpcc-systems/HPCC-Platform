@@ -30,6 +30,7 @@ class CHttpClientContext : public CInterface, implements IHttpClientContext
 private:
     Owned<ISecureSocketContext> m_ssctx;
     Owned<IPropertyTree> m_config;
+    CriticalSection m_sscrit;
 
 #ifdef COOKIE_HANDLING
     ReadWriteLock m_rwlock;
