@@ -1302,6 +1302,7 @@ public:
     }
     virtual size32_t getTransformResult(ARowBuilder & rowBuilder)
     {
+        lazyExecute();
         if (!stmtInfo->next())
             typeError("row", NULL);
         MySQLRowBuilder mysqlRowBuilder(stmtInfo->queryResultBindings());
