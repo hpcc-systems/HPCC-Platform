@@ -31,7 +31,6 @@
 #include <dllserver.hpp>
 #include <thorplugin.hpp>
 
-static unsigned traceLevel;
 static StringAttr dllPath;
 Owned<IPropertyTree> globals;
 
@@ -451,8 +450,7 @@ public:
     }
     virtual void main()
     {
-        if (traceLevel)
-            DBGLOG("Compile request processing for workunit %s", wuid.get());
+        DBGLOG("Compile request processing for workunit %s", wuid.get());
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         workunit.setown(factory->updateWorkUnit(wuid.get()));
         if (!workunit)
@@ -697,8 +695,6 @@ void openLogFile()
     envGetConfigurationDirectory("log","eclccserver",globals->queryProp("@name"),logname);
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logname.str(), "eclccserver");
     lf->beginLogging();
-    if (traceLevel)
-        PROGLOG("Logging to %s", lf->queryAliasFileSpec());
 }
 
 //=========================================================================================
