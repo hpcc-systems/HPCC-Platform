@@ -24,8 +24,11 @@ myServer := 'localhost' : stored('myServer');
 myUser := 'rchapman' : stored('myUser');
 myDb := 'test' : stored('myDb');
 
-childrec := RECORD
-   string name,
+stringrec := RECORD
+   string name
+END;
+
+childrec := RECORD(stringrec)
    integer4 value { default(99999) },
    boolean boolval { default(true) },
    real8 r8 {default(99.99)},
@@ -33,13 +36,12 @@ childrec := RECORD
    DATA d {default (D'999999')},
    DECIMAL10_2 ddd {default(9.99)},
    UTF8 u1 {default(U'9999 ß')},
-   UNICODE8 u2 {default(U'9999 ßßßß')},
+   record
+     UNICODE8 u2 {default(U'9999 ßßßß')},
+   end;
    STRING19 dt {default('1963-11-22 12:30:00')},
 END;
 
-stringrec := RECORD
-   string name
-END;
 
 stringrec extractName(childrec l) := TRANSFORM
   SELF := l;
@@ -73,7 +75,7 @@ dataset(childrec) testMySQLDS() := EMBED(mysql : server(myServer),user(myUser),d
 ENDEMBED;
 
 dataset(childrec) testMySQLDS2() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
-  SELECT OUTPUTFIELDS()  from tbl1;
+  SELECT OUTPUTFIELDS() from tbl1 where u1='Straße';
 ENDEMBED;
 
 dataset(childrec) testMySQLDS3() := EMBED(mysql : server(myServer),user(myUser),database(myDB))

@@ -11820,26 +11820,20 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         StringBuffer fieldlist;
         IHqlExpression *outRec = bodyCode->queryChild(1);
         assertex(outRec->queryRecordType());
-        ForEachChild(idx, outRec)
+        HqlExprArray fields;
+        getSimpleFields(fields, outRec);
+        ForEachItemIn(idx, fields)
         {
-            IHqlExpression * cur = outRec->queryChild(idx);
-            switch (cur->getOperator())
-            {
-            case no_field:
-                {
-                    IIdAtom *fieldName = cur->queryId();
-                    fieldlist.append(',').append(fieldName->queryStr());
-                    break;
-                }
-            default:
-                UNIMPLEMENTED;
-            }
+            IIdAtom *fieldName = fields.item(idx).queryId();
+            assertex(fieldName);
+            fieldlist.append(',').append(fieldName->queryStr());
         }
         assertex(fieldlist.length());
         StringBuffer origBody;
-        bodyCode->queryChild(0)->queryValue()->getStringValue(origBody);
+        IValue *origValue = bodyCode->queryChild(0)->queryValue();
+        origValue->getUTF8Value(origBody);
         origBody.replaceString("OUTPUTFIELDS()", fieldlist+1);
-        scriptArgs.append(*createConstant(origBody.str()));  // MORE - original was likely unicode - does this matter?
+        scriptArgs.append(*createConstant(createUtf8Value(origBody.length(), origBody.str(), makeUtf8Type(UNKNOWN_LENGTH, NULL))));
     }
     else
     {

@@ -92,6 +92,8 @@ extern HQL_API unsigned getFieldCount(IHqlExpression * expr);
 extern HQL_API unsigned getFlatFieldCount(IHqlExpression * expr);
 extern HQL_API unsigned isEmptyRecord(IHqlExpression * record);
 extern HQL_API unsigned isSimpleRecord(IHqlExpression * record);
+extern HQL_API void getSimpleFields(HqlExprArray &out, IHqlExpression *record);
+
 extern HQL_API bool isTrivialSelectN(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int64 topNlimit);

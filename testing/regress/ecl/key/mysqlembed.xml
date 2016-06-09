@@ -5,7 +5,7 @@
  <Row><name>utf8test</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2><dt>2019-02-01 23:59:59</dt></Row>
 </Dataset>
 <Dataset name='Result 2'>
- <Row><Result_2>4</Result_2></Row>
+ <Row><Result_2>2</Result_2></Row>
 </Dataset>
 <Dataset name='Result 3'>
  <Row><name>name1</name></Row>

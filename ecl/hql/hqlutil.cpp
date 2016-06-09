@@ -2184,7 +2184,6 @@ unsigned getFieldCount(IHqlExpression * expr)
     }
 }
 
-
 IHqlExpression * queryChildActivity(IHqlExpression * expr, unsigned index)
 {
     unsigned firstActivityIndex = 0;
@@ -2255,6 +2254,47 @@ unsigned isEmptyRecord(IHqlExpression * record)
     return true;
 }
 
+void getSimpleFields(HqlExprArray &out, IHqlExpression *record)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_attr:
+        case no_attr_expr:
+            break;
+        case no_field:
+            switch (cur->queryType()->getTypeCode())
+            {
+            case type_record:
+            case type_row:
+                {
+                    IHqlExpression *nested = cur->queryRecord();
+                    if (nested)
+                        getSimpleFields(out, nested);
+                    break;
+                }
+            case type_table:
+            case type_groupedtable:
+            case type_alien:
+            case type_any:
+            case type_dictionary:
+                throwUnexpected();
+            default:
+                out.append(*LINK(cur));
+                break;
+            }
+            break;
+        case no_record:
+            getSimpleFields(out, cur);
+            break;
+        default:
+            throwUnexpected();
+        }
+    }
+}
+
 unsigned isSimpleRecord(IHqlExpression * record)
 {
     ForEachChild(i, record)
@@ -2262,7 +2302,31 @@ unsigned isSimpleRecord(IHqlExpression * record)
         IHqlExpression * cur = record->queryChild(i);
         switch (cur->getOperator())
         {
+        case no_attr:
+        case no_attr_expr:
+            break;
         case no_field:
+            switch (cur->queryType()->getTypeCode())
+            {
+            case type_record:
+            case type_row:
+                {
+                    IHqlExpression *nested = cur->queryRecord();
+                    if (nested && !isSimpleRecord(nested))
+                        return false;
+                    break;
+                }
+            case type_table:
+            case type_groupedtable:
+            case type_alien:
+            case type_any:
+            case type_dictionary:
+                return false;
+            }
+            break;
+        case no_record:
+            if (!isSimpleRecord(cur))
+                return false;
             break;
         default:
             return false;
