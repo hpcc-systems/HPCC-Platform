@@ -1445,8 +1445,7 @@ public:
     {
         if (nextParam != stmtInfo->queryInputBindings().numColumns())
             failx("Not enough parameters supplied (%d parameters supplied, but statement has %d bound columns)", nextParam, stmtInfo->queryInputBindings().numColumns());
-        if (!stmtInfo->hasResult())
-            lazyExecute();
+        // We actually do the execute later, when the result is fetched
     }
 protected:
     void lazyExecute()
@@ -1460,7 +1459,7 @@ protected:
     {
         if (!stmtInfo->hasResult() || stmtInfo->queryResultBindings().numColumns() != 1)
             typeError("scalar", NULL);
-        lazyExecute(); // MORE this seems wrong to me  - or at least needs to check not already executed
+        lazyExecute();
         if (!stmtInfo->next())
             typeError("scalar", NULL);
         return stmtInfo->queryResultBindings().queryColumn(0, NULL);
