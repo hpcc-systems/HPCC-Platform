@@ -604,7 +604,7 @@ void CThreadedPersistent::start()
 bool CThreadedPersistent::join(unsigned timeout)
 {
     unsigned expected = s_running;
-    if (!state.compare_exchange_strong(expected, s_joining))
+    if (state.compare_exchange_strong(expected, s_joining))
     {
         if (!joinSem.wait(timeout))
         {
