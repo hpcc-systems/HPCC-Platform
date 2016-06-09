@@ -58,6 +58,7 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
 
     if(url != NULL && Utils::strncasecmp(url, "HTTPS://", 8) == 0)
     {
+        CriticalBlock b(m_sscrit);
         if(m_ssctx.get() == NULL)
         {
             if(m_config.get() == NULL)
@@ -751,10 +752,12 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
     return 0;
 }
 
+static Owned<CHttpClientContext> theHttpClientContext;
+static CriticalSection httpCrit;
+
 IHttpClientContext* getHttpClientContext()
 {
-    static Owned<CHttpClientContext> theHttpClientContext;
-
+    CriticalBlock b(httpCrit);
     if(theHttpClientContext.get() == NULL)
     {
         theHttpClientContext.setown(new CHttpClientContext());
