@@ -1006,6 +1006,26 @@ memsize_t getMapInfo(const char *type)
     return ret;
 }
 
+static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
+{
+    size32_t len = strlen(prefix);
+    if (strncmp(prefix, line, len)==0)
+    {
+        char * tail = NULL;
+        value = strtol(line+len, &tail, 10);
+        while (isspace(*tail))
+            tail++;
+        if (strncmp(tail, "kB", 2) == 0)
+            value *= 0x400;
+        else if (strncmp(tail, "mB", 2) == 0)
+            value *= 0x100000;
+        else if (strncmp(tail, "gB", 2) == 0)
+            value *= 0x40000000;
+        return true;
+    }
+    return false;
+}
+
 memsize_t getVMInfo(const char *type)
 {
     memsize_t ret = 0;
@@ -1015,24 +1035,10 @@ memsize_t getVMInfo(const char *type)
     if (!diskfp)
         return 0;
     char ln[256];
-    memsize_t value = 0;
-    char unitStr[256];
     while (fgets(ln, sizeof(ln), diskfp))
     {
-        if (!strncmp(ln, name.str(), name.length()))
-        {
-            if (2 == sscanf(&ln[name.length()], "%lu%s", &value, unitStr))
-            {
-                if (!strcasecmp(unitStr, "kB"))
-                    value *= 1024ULL;
-                if (!strcasecmp(unitStr, "mB"))
-                    value *= 1024ULL * 1024ULL;
-                if (!strcasecmp(unitStr, "gB"))
-                    value *= 1024ULL * 1024ULL * 1024ULL;
-                ret = value;
-                break;
-            }
-        }
+        if (matchExtract(name.str(), ln, ret))
+            break;
     }
     fclose(diskfp);
     return ret;
@@ -1264,24 +1270,6 @@ void clearAffinityCache()
     cachedNumCpus.store(0, std::memory_order_release);
 }
 
-
-static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
-{
-    size32_t len = strlen(prefix);
-    if (strncmp(prefix, line, len)==0)
-    {
-        char * tail = NULL;
-        value = strtol(line+len, &tail, 10);
-        while (isspace(*tail))
-            tail++;
-        if (strncmp(tail, "kB", 2) == 0)
-            value *= 0x400;
-        else if (strncmp(tail, "mB", 2) == 0)
-            value *= 0x100000;
-        return true;
-    }
-    return false;
-}
 
 void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident)
 {
