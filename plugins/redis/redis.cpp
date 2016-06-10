@@ -308,7 +308,7 @@ void Connection::redisConnect()
         unsigned timeStillLeft = timeLeft();
         if (timeStillLeft == 0)
             rtlFail(0, "Redis Plugin: ERROR - function timed out internally.");
-        struct timeval to = { timeStillLeft/1000, (timeStillLeft%1000)*1000 };
+        struct timeval to = { (time_t) (timeStillLeft/1000), (suseconds_t) ((timeStillLeft%1000)*1000) };
         context = ::redisConnectWithTimeout(ip.str(), port, to);
     }
     assertConnection("connection");
@@ -354,7 +354,7 @@ void * Connection::redisCommand(const char * format, ...)
 }
 int Connection::setTimeout(unsigned _timeout)
 {
-    struct timeval to = { _timeout/1000, (_timeout%1000)*1000 };
+    struct timeval to = { (time_t) (_timeout/1000), (suseconds_t) ((_timeout%1000)*1000) };
     if (!context)
         return REDIS_ERR;
     return ::redisSetTimeout(context, to);//NOTE: ::redisSetTimeout sets the socket timeout and therefore 0 => forever
