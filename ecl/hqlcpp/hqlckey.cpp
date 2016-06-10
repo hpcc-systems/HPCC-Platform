@@ -367,6 +367,8 @@ IHqlExpression * KeyedJoinInfo::querySimplifiedKey(IHqlExpression * expr)
         case no_forcegraph:
         case no_nocombine:
         case no_unordered:
+        case no_likely:
+        case no_unlikely:
             break;
         case no_newkeyindex:
             return LINK(expr);

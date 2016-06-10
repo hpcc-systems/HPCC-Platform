@@ -107,6 +107,8 @@ static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
         case no_preservemeta:
         case no_unordered:
         case no_nofold:
+        case no_likely:
+        case no_unlikely:
         case no_nohoist:
         case no_nocombine:
         case no_section:

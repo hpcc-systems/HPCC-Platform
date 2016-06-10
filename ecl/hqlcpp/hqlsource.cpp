@@ -205,6 +205,8 @@ bool isSimpleSource(IHqlExpression * expr)
         case no_nohoist:
         case no_nocombine:
         case no_dataset_alias:
+        case no_likely:
+        case no_unlikely:
             break;
         default:
             return false;
@@ -976,6 +978,8 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     case no_nohoist:
     case no_nocombine:
     case no_dataset_alias:
+    case no_likely:
+    case no_unlikely:
         break;
     case no_preload:
         isPreloaded = true;
