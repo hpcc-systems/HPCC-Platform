@@ -1108,9 +1108,8 @@ static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigne
         memfd = open("/proc/meminfo",O_RDONLY);
     if (memfd==-1)
         return;
-    lseek(memfd, 0L, 0);
-    char buf[1024];
-    size32_t l = read(memfd, buf, sizeof(buf)-1);
+    char buf[2048];
+    size32_t l = pread(memfd, buf, sizeof(buf)-1, 0L);
     if ((int)l<=0)
         return;
     buf[l] = 0;
@@ -1302,10 +1301,8 @@ void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident)
         memfd = open("/proc/self/status",O_RDONLY);
     if (memfd==-1)
         return;
-    lseek(memfd, 0L, 0);
-
     char buf[2048];
-    size32_t l = read(memfd, buf, sizeof(buf)-1);
+    size32_t l = pread(memfd, buf, sizeof(buf)-1, 0L);
     if ((int)l<=0)
         return;
     buf[l] = 0;
