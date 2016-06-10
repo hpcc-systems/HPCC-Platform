@@ -43,6 +43,7 @@
 #include "jmisc.hpp"
 #include "jexcept.hpp"
 #include "hqlerrors.hpp"
+#include "jutil.hpp"
 
 #include "hqlgram.hpp"
 #include "hqlfold.hpp"
@@ -372,6 +373,16 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   QUANTILE
   QUOTE
   RANDOM
+  MINSTD_RAND0
+  MINSTD_RAND
+  MT19937
+  RANLUX24_BASE
+  RANLUX48_BASE
+  UNIFORM
+  BINOMIAL
+  NEGATIVE_BINOMIAL
+  GEOMETRIC
+  POISSON
   RANGE
   RANK
   RANKED
@@ -5948,6 +5959,10 @@ primexpr1
     | RANDOM '(' ')'
                         {
                             $$.setExpr(createValue(no_random, LINK(parser->uint4Type), parser->createUniqueId()));
+                        }
+    | RANDOM '(' pseudo_random_number_engine ',' pseudo_random_number_distribution ')'
+                        {
+                            $$.setExpr(createValue(no_random, makeIntType(4, true), $3.getExpr(), $5.getExpr()));
                         }
     | ROUND '(' expression ')'
                         {
@@ -12690,6 +12705,54 @@ featureModifiers
                         {
                             parser->reportWarning(CategorySyntax, SeverityError, WRN_FEATURE_NOT_REPEAT, $1.pos, "Curly brackets are not used for repeats - they are reserved for future functionality");
                             $$.setExpr($2.getExpr());
+                        }
+    ;
+pseudo_random_number_engine
+    : MINSTD_RAND0      {
+                            $$.setExpr(createConstant(IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::MINSTD_RAND0));
+                        }
+    | MINSTD_RAND       {
+                            $$.setExpr(createConstant(IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::MINSTD_RAND));
+                        }
+    | MT19937           {
+                            $$.setExpr(createConstant(IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::MT19937));
+                        }
+    | RANLUX24_BASE     {
+                            $$.setExpr(createConstant(IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::RANLUX24_BASE));
+                        }
+    | RANLUX48_BASE     {
+                            $$.setExpr(createConstant(IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::RANLUX48_BASE));
+                        }
+    ;
+
+pseudo_random_number_distribution
+    : UNIFORM ',' expression ',' expression
+                        {
+                            parser->normalizeExpression($3, type_int, false);
+                            parser->normalizeExpression($5, type_int, false);
+                            $$.setExpr(createAttribute(distributionUniformAtom, $3.getExpr(), $5.getExpr()));
+                        }
+    | BINOMIAL ',' expression ',' expression
+                        {
+                            parser->normalizeExpression($3, type_real, false);
+                            parser->normalizeExpression($5, type_int, false);
+                            $$.setExpr(createAttribute(distributionBinomialAtom, $3.getExpr(), $5.getExpr()));
+                        }
+    | NEGATIVE_BINOMIAL ',' expression',' expression
+                        {
+                            parser->normalizeExpression($3, type_real, false);
+                            parser->normalizeExpression($5, type_int, false);
+                            $$.setExpr(createAttribute(distributionNegativeBinomialAtom, $3.getExpr(), $5.getExpr()));
+                        }
+    | GEOMETRIC ',' expression
+                        {
+                            parser->normalizeExpression($3, type_real, false);
+                            $$.setExpr(createAttribute(distributionGeometricAtom, $3.getExpr()));
+                        }
+    | POISSON ',' expression
+                        {
+                            parser->normalizeExpression($3, type_real, false);
+                            $$.setExpr(createAttribute(distributionPoissonAtom, $3.getExpr()));
                         }
     ;
 

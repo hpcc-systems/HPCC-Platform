@@ -48,15 +48,20 @@
 IRandomNumberGenerator * random_;
 static CriticalSection random_Sect;
 
+IPseudoRandomNumberGenerator *pseudo_random_;
+static CriticalSection pseudo_random_Sect[IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::NUMBER_OF_ENGINES];
+
 MODULE_INIT(INIT_PRIORITY_ECLRTL_ECLRTL)
 {
     random_ = createRandomNumberGenerator();
     random_->seed((unsigned)get_cycles_now());
+    pseudo_random_ = createPseudoRandomNumberGenerator();
     return true;
 }
 MODULE_EXIT()
 {
     random_->Release();
+    pseudo_random_->Release();
 }
 
 //=============================================================================
@@ -3762,6 +3767,50 @@ void rtlSeedRandom(unsigned value)
     random_->seed(value);
 }
 
+unsigned rtlPseudoRandomNumberBinomialDistribution(unsigned engine, double probablity, unsigned upper_bound)
+{
+    if (engine >= IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::NUMBER_OF_ENGINES)
+        return rtlRandom(); // Unknown engine, so just use default
+
+    CriticalBlock block(pseudo_random_Sect[engine]);
+    return pseudo_random_->nextBinomial(static_cast<IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine>(engine), probablity, upper_bound);
+}
+
+unsigned rtlPseudoRandomNumberNegativeBinomialDistribution(unsigned engine,  double probablity, unsigned upper_bound)
+{
+    if (engine >= IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::NUMBER_OF_ENGINES)
+        return rtlRandom(); // Unknown engine, so just use default
+
+    CriticalBlock block(pseudo_random_Sect[engine]);
+    return pseudo_random_->nextNegativeBinomial(static_cast<IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine>(engine), probablity, upper_bound);
+}
+
+unsigned rtlPseudoRandomNumberGeometricDistribution(unsigned engine, double probablity)
+{
+    if (engine >= IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::NUMBER_OF_ENGINES)
+        return rtlRandom(); // Unknown engine, so just use default
+
+    CriticalBlock block(pseudo_random_Sect[engine]);
+    return pseudo_random_->nextGeometric(static_cast<IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine>(engine), probablity);
+}
+
+unsigned rtlPseudoRandomNumberPoissonDistribution(unsigned engine, double mean)
+{
+    if (engine >= IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::NUMBER_OF_ENGINES)
+        return rtlRandom(); // Unknown engine, so just use default
+
+    CriticalBlock block(pseudo_random_Sect[engine]);
+    return pseudo_random_->nextPoisson(static_cast<IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine>(engine), mean);
+}
+
+unsigned rtlPseudoRandomNumberUniformDistribution(unsigned engine, unsigned lower_bound, unsigned upper_bound)
+{
+    if (engine >= IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::NUMBER_OF_ENGINES)
+        return rtlRandom(); // Unknown engine, so just use default
+
+    CriticalBlock block(pseudo_random_Sect[engine]);
+    return pseudo_random_->nextUniform(static_cast<IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine>(engine), lower_bound, upper_bound);
+}
 
 // These are all useful functions for testing - not really designed for other people to use them...
 

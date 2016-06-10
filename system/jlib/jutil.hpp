@@ -116,6 +116,33 @@ interface IRandomNumberGenerator: public IInterface
 
 extern jlib_decl IRandomNumberGenerator *createRandomNumberGenerator();
 
+interface IPseudoRandomNumberGenerator: public IInterface
+{
+    enum ePseudoRandomNumberEngine { MINSTD_RAND0,      // "Minimal standard"
+                                     MINSTD_RAND,       // Newer "Minimal standard"
+                                     MT19937,           // 32-bit Mersenne Twister
+                                     RANLUX24_BASE,     // Subtract with carry 24
+                                     RANLUX48_BASE,     // Subtract with carry 48
+                                     NUMBER_OF_ENGINES  // Keep this last
+                                   };
+
+    enum ePseudoRandomNumberDistribution {  UNIFORM_DISTRIBUTION,           // uniform_int_distribution
+                                            BINOMIAL_DISTRIBUTION,          // binomial_distribution
+                                            NEGATIVE_BINOMIAL_DISTRIBUTION, // negative_binomial_distribution
+                                            GEOMETRIC_DISTRIBUTION,         // geometric_distribution
+                                            POISSON_DISTRIBUTION,           // poisson_distribution
+                                         };
+
+    virtual unsigned nextUniform(enum ePseudoRandomNumberEngine engine, unsigned int lower_bound = 0, unsigned int upper_bound = UINT_MAX) = 0;
+    virtual unsigned nextBinomial(enum ePseudoRandomNumberEngine engine, double probability, unsigned int upper_bound = UINT_MAX) = 0;
+    virtual unsigned nextNegativeBinomial(enum ePseudoRandomNumberEngine engine, double probability, unsigned int upper_bound = UINT_MAX) = 0;
+    virtual unsigned nextGeometric(enum ePseudoRandomNumberEngine engine, double probability) = 0;
+    virtual unsigned nextPoisson(enum ePseudoRandomNumberEngine engine, double mean) = 0;
+};
+
+extern jlib_decl IPseudoRandomNumberGenerator *createPseudoRandomNumberGenerator();
+
+
 #ifdef WIN32
 
 // Reentrant version of the rand() function for use with multithreaded applications.
