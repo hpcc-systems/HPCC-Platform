@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,24 +14,31 @@
 #    limitations under the License.
 ################################################################################
 
-add_subdirectory(system)
 
-set(
-    SRCS
-    Audit.ecl
-    BundleBase.ecl
-    Date.ecl
-    File.ecl
-    Metaphone3.ecl
-    Metaphone.ecl
-    Str.ecl
-    Uni.ecl
-    PseudoRandom.ecl
-    PseudoRandomEngines.ecl
+# Component: pseudorandomlib
+#####################################################
+# Description:
+# ------------
+#    Cmake Input File for pseudorandomlib
+#####################################################
+
+project( pseudorandomlib )
+
+set (    SRCS
+         pseudorandomlib.cpp
     )
 
-foreach(module ${SRCS})
-    SIGN_MODULE(${module})
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${module} DESTINATION share/ecllibrary/std COMPONENT Runtime)
-endforeach()
-  
+include_directories (
+         ./../../system/include
+         ./../../system/jlib
+    )
+
+ADD_DEFINITIONS ( -DPSEUDO_RANDOMLIB_EXPORTS -D_USRDLL )
+
+HPCC_ADD_LIBRARY( pseudorandomlib SHARED ${SRCS} )
+install ( TARGETS pseudorandomlib DESTINATION plugins )
+target_link_libraries(
+	pseudorandomlib
+        jlib
+)
+
