@@ -4406,7 +4406,7 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, BuildCtx & declareCtx, CHql
         }
     }
 
-    typemod_t modifier = (&ctx != &declareCtx) ? typemod_member : typemod_none;
+    typemod_t modifier = !ctx.isSameLocation(declareCtx) ? typemod_member : typemod_none;
     OwnedITypeInfo type = makeModifier(expr->getType(), modifier);
     BuildCtx subctx(ctx);
     switch (type->getTypeCode())
