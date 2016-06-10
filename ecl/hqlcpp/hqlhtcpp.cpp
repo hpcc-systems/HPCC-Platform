@@ -17961,9 +17961,11 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
     {
         switch (options.targetCompiler)
         {
+#ifndef __APPLE__
         case GccCppCompiler:
             optimizectx.addQuoted("#define OPTIMIZE __attribute__((optimize(3)))");
             break;
+#endif
         default:
             optimizectx.addQuoted("#define OPTIMIZE");
             break;

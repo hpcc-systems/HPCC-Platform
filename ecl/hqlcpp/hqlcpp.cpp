@@ -11735,6 +11735,7 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
                 "#pragma GCC diagnostic ignored \"-Wall\"\n"
                 "#pragma GCC diagnostic ignored \"-Wextra\"\n"
                 "#pragma GCC diagnostic ignored \"-Wunused-variable\"\n"  // Some variants of gcc seem to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
+                "#pragma GCC diagnostic ignored \"-Wparentheses\"\n"      // Some variants of gcc seem to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
                 "#endif\n");
     }
     if (location)
