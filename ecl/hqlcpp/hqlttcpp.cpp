@@ -7541,6 +7541,9 @@ bool ScalarGlobalTransformer::isComplex(IHqlExpression * expr, bool checkGlobal)
         if (!expr->queryChild(1)->queryValue())
             return true;
         break;
+    case no_likely:
+    case no_unlikely:
+        break;
     default:
         if (expr->isConstant())
             return false;
