@@ -6374,7 +6374,8 @@ primexpr1
     | KEYUNICODE '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_unicode, false);
-                            $$.setExpr(createValue(no_keyunicode, makeDataType(UNKNOWN_LENGTH), $3.getExpr(), createConstant(str($3.queryExprType()->queryLocale())), createConstant(3)));
+                            const char * locale = str($3.queryExprType()->queryLocale());
+                            $$.setExpr(createValue(no_keyunicode, makeDataType(UNKNOWN_LENGTH), $3.getExpr(), createConstant(locale), createConstant(3)));
                         }
     | KEYUNICODE '(' expression ',' expression ')'
                         {
@@ -6390,7 +6391,8 @@ primexpr1
                         {
                             parser->normalizeExpression($3, type_unicode, false);
                             parser->normalizeExpression($6, type_int, false);
-                            $$.setExpr(createValue(no_keyunicode, makeDataType(UNKNOWN_LENGTH), $3.getExpr(), createConstant(str($3.queryExprType()->queryLocale())), $6.getExpr()));
+                            const char * locale = str($3.queryExprType()->queryLocale());
+                            $$.setExpr(createValue(no_keyunicode, makeDataType(UNKNOWN_LENGTH), $3.getExpr(), createConstant(locale), $6.getExpr()));
                         }
     | KEYUNICODE '(' expression ',' expression ',' expression ')'
                         {
