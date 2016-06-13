@@ -669,6 +669,17 @@ bool BuildCtx::hasAssociation(HqlExprAssociation & search, bool unconditional)
 }
 
 
+bool BuildCtx::isSameLocation(const BuildCtx & other) const
+{
+    if (this == &other)
+        return true;
+    if (curStmts != other.curStmts)
+        return false;
+    if (nextPriority != other.nextPriority)
+        return false;
+    return true;
+}
+
 bool BuildCtx::isOuterContext() const
 {
     HqlStmts * searchStmts = curStmts;
