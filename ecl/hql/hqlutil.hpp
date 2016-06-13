@@ -91,6 +91,9 @@ extern HQL_API bool hasActiveTopDataset(IHqlExpression * expr);
 extern HQL_API unsigned getFieldCount(IHqlExpression * expr);
 extern HQL_API unsigned getFlatFieldCount(IHqlExpression * expr);
 extern HQL_API unsigned isEmptyRecord(IHqlExpression * record);
+extern HQL_API unsigned isSimpleRecord(IHqlExpression * record);
+extern HQL_API void getSimpleFields(HqlExprArray &out, IHqlExpression *record);
+
 extern HQL_API bool isTrivialSelectN(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int64 topNlimit);
@@ -197,6 +200,8 @@ extern HQL_API bool isSimpleTransform(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryUncastExpr(IHqlExpression * expr);
 extern HQL_API bool areConstant(const HqlExprArray & args);
 extern HQL_API bool getFoldedConstantText(StringBuffer& ret, IHqlExpression * expr);
+
+extern HQL_API bool isProjectableCall(IHqlExpression *expr);
 
 extern HQL_API IHqlExpression * createTransformForField(IHqlExpression * field, IHqlExpression * value);
 extern HQL_API IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldType);
@@ -596,6 +601,7 @@ extern HQL_API IHqlExpression * queryDefaultMaxRecordLengthExpr();
 extern HQL_API IHqlExpression * getFixedSizeAttr(unsigned size);
 extern HQL_API IHqlExpression * queryAlignedAttr();
 extern HQL_API IHqlExpression * queryLinkCountedAttr();
+extern HQL_API IHqlExpression * queryProjectedAttr();
 extern HQL_API IHqlExpression * queryUnadornedAttr();
 extern HQL_API IHqlExpression * queryNlpParsePseudoTable();
 extern HQL_API IHqlExpression * queryXmlParsePseudoTable();
@@ -606,6 +612,7 @@ extern HQL_API IHqlExpression * getInlineAttr();
 extern HQL_API IHqlExpression * getReferenceAttr();
 
 extern HQL_API IHqlExpression * getLinkCountedAttr();
+extern HQL_API IHqlExpression * getProjectedAttr();
 extern HQL_API IHqlExpression * getStreamedAttr();
 
 extern HQL_API IHqlExpression * getGlobalSequenceNumber();

@@ -907,6 +907,19 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
 {
     HqlExprArray args;
     embedText->unwindList(args, no_comma);
+    Linked<ITypeInfo> type = current_type;
+    if (!type)
+        type.setown(makeVoidType());
+
+    if (type->getTypeCode() == type_record)
+        type.setown(makeRowType(LINK(type)));
+
+    IHqlExpression * record = queryOriginalRecord(type);
+
+    if (!checkAllowed(errpos, "cpp", "Embedded code"))
+        args.append(*createExprAttribute(_disallowed_Atom));
+    if (attribs)
+        attribs->unwindList(args, no_comma);
     if (language)
     {
         IHqlScope *pluginScope = language->queryScope();
@@ -926,19 +939,38 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
             // MORE - create an expression that calls it, and const fold it, I guess....
         }
         args.append(*createExprAttribute(languageAtom, getEmbedContextFunc.getClear()));
+        IHqlExpression *projectedAttr = queryAttribute(projectedAtom, args);
+        if (projectedAttr)
+        {
+            IHqlExpression *projectedSearch = projectedAttr->queryChild(0);
+            if (!projectedSearch || !isStringType(projectedSearch->queryType()))
+                reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED attribute requires a string parameter");
+            else
+            {
+                IValue *projectedSearchValue = projectedSearch->queryValue();
+                if (!projectedSearchValue )
+                {
+                    // To relax this we'd need to pass the value as a hidden parameter as we do for the other options and the embed text,
+                    // But I really can't see it being useful
+                    reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED attribute requires a constant string parameter");
+                }
+                IValue *queryText = embedText->queryValue();
+                if (queryText)
+                {
+                    StringBuffer origQueryText;
+                    queryText->getUTF8Value(origQueryText);
+                    StringBuffer search;
+                    projectedSearchValue->getUTF8Value(search);
+                    if (!strstr(origQueryText, search))
+                        reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED attribute value %s does not appear in the embed text", search.str());
+                }
+            }
+            if (!record)
+                reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED should only be used when returning a record type");
+            else if (!isSimpleRecord(record))
+                reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED requires a simple output record (no nested records or IFBLOCKs)");
+        }
     }
-    if (!checkAllowed(errpos, "cpp", "Embedded code"))
-        args.append(*createExprAttribute(_disallowed_Atom));
-    if (attribs)
-        attribs->unwindList(args, no_comma);
-    Linked<ITypeInfo> type = current_type;
-    if (!type)
-        type.setown(makeVoidType());
-
-    if (type->getTypeCode() == type_record)
-        type.setown(makeRowType(LINK(type)));
-
-    IHqlExpression * record = queryOriginalRecord(type);
     OwnedHqlExpr result;
     if (record)
     {

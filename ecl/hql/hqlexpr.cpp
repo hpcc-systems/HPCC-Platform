@@ -2710,6 +2710,7 @@ IHqlExpression * queryNewColumnProvider(IHqlExpression * expr)
     switch (op)
     {
     case no_alias:
+    case no_call:
         return expr->queryRecord();
     case no_createrow:
     case no_typetransfer:
@@ -15060,6 +15061,10 @@ extern HQL_API bool hasUnknownTransform(IHqlExpression * expr)
     case no_aggregate:
         if (expr->hasAttribute(mergeTransformAtom))
             return true;
+        break;
+    case no_call:
+        if (isProjectableCall(expr))
+            return false;
         break;
     case no_inlinetable:
         {
