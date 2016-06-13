@@ -2174,11 +2174,30 @@ FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext * ctx,c
     if (ep.isNull())
         throw MakeStringException(-1,"fsMoveExternalFile: Cannot resolve location %s",location);
     CDfsLogicalFileName from;
-    from.setExternal(location,frompath);
+    try
+    {
+        from.setExternal(location,frompath);
+        checkExternalFileRights(ctx,from,true,true);
+    }
+    catch(IException* e)
+    {
+        StringBuffer s("MoveExternalFile Warning: source file name '");
+        s.append(frompath).append ("' is not a valid logical name.");
+        WUmessage(ctx,SeverityWarning, nullptr, s.str());
+    }
     CDfsLogicalFileName to;
-    to.setExternal(location,topath);
-    checkExternalFileRights(ctx,from,true,true);
-    checkExternalFileRights(ctx,to,false,true);
+    try
+    {
+        to.setExternal(location,topath);
+        checkExternalFileRights(ctx,to,false,true);
+    }
+    catch(IException* e)
+    {
+        StringBuffer s("MoveExternalFile Warning: target file name '");
+        s.append(topath).append("' is not a valid logical name. ");
+        WUmessage(ctx,SeverityWarning, nullptr, s.str());
+    }
+
     RemoteFilename fromrfn;
     fromrfn.setPath(ep,frompath);
     RemoteFilename torfn;
