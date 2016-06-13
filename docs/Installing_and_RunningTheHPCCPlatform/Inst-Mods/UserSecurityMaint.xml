@@ -90,9 +90,9 @@
       <listitem>
         <para><emphasis
         role="bold">http://nnn.nnn.nnn.nnn:pppp</emphasis><emphasis
-        role="bold">(where nnn.nnn.nnn.nnn is your ESP Server’s IP Address and
-        pppp is the port. The default port is 8010)<emphasis>.
-        </emphasis></emphasis>For example: http://10.150.51.27:8010/.</para>
+        role="bold"> (where nnn.nnn.nnn.nnn is your ESP Server’s IP Address
+        and pppp is the port. The default port is 8010)<emphasis>.
+        </emphasis></emphasis></para>
       </listitem>
     </itemizedlist>
 
@@ -182,7 +182,9 @@
 
           <listitem>
             <para>Verify the password expiration date, or if password is set
-            to expire.</para>
+            to expire. </para>
+
+            <para>You can also change your password here, if desired. </para>
           </listitem>
         </orderedlist></para>
     </sect3>
@@ -190,18 +192,18 @@
     <sect3 id="UsingSecurity_SettingAndModifyingUserPermissions" role="brk">
       <title>Setting and modifying user permissions</title>
 
-      <para>Access to ECL Watch and its features is controlled using a login
-      and password. The <emphasis role="bold">Users</emphasis> area enables
-      you to control who has access to ECL Watch and the features of your HPCC
-      System to which they have access. Permissions can be set for users based
-      on their individual needs and users can also be added to groups which
-      have already been set up. Use the <emphasis role="bold">Users</emphasis>
-      menu item to:</para>
+      <para>In a security-enabled environment, access to ECL Watch and its
+      features is controlled using a login and password. The <emphasis
+      role="bold">Users</emphasis> area enables you to control who has access
+      to ECL Watch and the features of your HPCC System to which they have
+      access. Permissions can be set for users based on their individual needs
+      and users can also be added to groups which have already been set up.
+      Use the <emphasis role="bold">Users</emphasis> menu item to:</para>
 
       <itemizedlist>
         <listitem>
           <para>Add a new user (<emphasis role="bold">note</emphasis>: the
-          username cannot be changed)</para>
+          Username cannot be changed)</para>
         </listitem>
 
         <listitem>
@@ -225,10 +227,8 @@
     <sect3 id="Adding_Users" role="brk">
       <title>Adding and editing users</title>
 
-      <!--***Conditional changes for New ECLWatch 5-14::NEED TO RE-VAMP all steps as needed***-->
-
-      <para>To access the permissions page click on the<emphasis role="bold">
-      Operations</emphasis> icon, then click the <emphasis
+      <para>To access the user administration sections click on the<emphasis
+      role="bold"> Operations</emphasis> icon, then click the <emphasis
       role="bold">Security</emphasis> link from the navigation sub-menu. Click
       on the <emphasis role="bold">Users</emphasis> tab to add or edit
       users.</para>
@@ -256,7 +256,7 @@
           <listitem>
             <para>Enter a <emphasis role="bold">Username</emphasis>.</para>
 
-            <para>This is the login name for using ECL Watch, ECL IDE, WsECL,
+            <para>This is the login name to use ECL Watch, ECL IDE, WsECL,
             etc.</para>
           </listitem>
 
@@ -272,15 +272,26 @@
           <listitem>
             <para>Enter a <emphasis role="bold">Password</emphasis> for the
             user and then confirm it in the <emphasis role="bold">Retype
-            Password</emphasis> field.</para>
+            Password</emphasis> field. </para>
+
+            <para><variablelist>
+                <varlistentry>
+                  <term>NOTE: </term>
+
+                  <listitem>
+                    <para>The password must conform to the policy of your
+                    security manager server. </para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
           </listitem>
 
           <listitem>
             <para>Press the <emphasis role="bold">Add</emphasis>
             button.</para>
 
-            <para>Confirmation of the user request opens a new tab where you
-            can verify the user's information.</para>
+            <para>A successful addition opens a new tab where you can verify
+            the new user's information.</para>
           </listitem>
 
           <listitem>
@@ -309,22 +320,19 @@
           </listitem>
 
           <listitem>
-            <para>Select the user (or users) to modify. Check the box next to
-            the Username to select.</para>
+            <para>Select the user (or users) to modify. Click on the <emphasis
+            role="bold">Username</emphasis> link to open the users' details
+            tab.</para>
 
-            <para>This enables the Users action buttons.</para>
-          </listitem>
+            <para>To select multiple users, check the box next to the Username
+            to select. This enables the Users action buttons. Press the
+            <emphasis role="bold">Open</emphasis> action button.</para>
 
-          <listitem>
-            <!--NOTE: UPdate this image***-->
+            <para><graphic fileref="../../images/Perm008.jpg" />A tab opens
+            for each user selected. On each user's tab there are several
+            sub-tabs.</para>
 
-            <para>Press the <emphasis role="bold">Open</emphasis> action
-            button. <graphic fileref="../../images/Perm008.jpg" /></para>
-
-            <para>A tab opens for each user selected. On that tab there are
-            three sub-tabs.</para>
-
-            <para>The user details are on the <emphasis
+            <para>The user's details are on the <emphasis
             role="bold">Summary</emphasis> tab.</para>
           </listitem>
 
@@ -332,15 +340,23 @@
             <para>Modify the user's details as required (if more than one user
             selected, repeat for each user).</para>
 
-            <para><emphasis role="bold">Note</emphasis>: The <emphasis
-            role="bold">Username</emphasis> cannot be changed.</para>
+            <variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>The <emphasis role="bold">Username</emphasis> cannot
+                  be changed.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
           </listitem>
 
           <listitem>
             <para>Press the <emphasis role="bold">Save</emphasis>
             button.</para>
 
-            <para>Confirmation message displays.</para>
+            <para>A confirmation message displays.</para>
           </listitem>
         </orderedlist>
       </sect4>
@@ -361,25 +377,27 @@
           </listitem>
 
           <listitem>
-            <para>Select the user (or users) to modify. Check the box next to
-            the Username.</para>
+            <para>Select the user (or users) to modify. Click on the <emphasis
+            role="bold">Username</emphasis> link to open the users' details
+            tab.</para>
 
-            <para>This enables the user action buttons.</para>
-          </listitem>
+            <para>To select multiple users, check the box next to the Username
+            to select. This enables the Users action buttons. Press the
+            <emphasis role="bold">Open</emphasis> action button.</para>
 
-          <listitem>
-            <para>Press the <emphasis role="bold">Open</emphasis> action
-            button. <graphic fileref="../../images/Perm008.jpg" /></para>
+            <para><graphic fileref="../../images/Perm008.jpg" />A tab opens
+            for each user selected. On each user's tab there are several
+            sub-tabs.</para>
 
-            <para>A new tab opens for each user selected. On that tab there
-            are three sub-tabs.</para>
+            <para>The user's details are on the <emphasis
+            role="bold">Summary</emphasis> tab.</para>
           </listitem>
 
           <listitem>
             <para>Click on the tab for the user to modify (if more than one
             user selected, repeat for each user).</para>
 
-            <para>On the user's tab there are three sub-tabs. <graphic
+            <para>On the user's tab there are several sub-tabs. <graphic
             fileref="../../images/Perm009.jpg" /></para>
 
             <para>Click on the <emphasis role="bold">Member Of</emphasis>
@@ -390,10 +408,7 @@
             <para>On the <emphasis role="bold">Member Of</emphasis> tab for
             that user, a list of the available groups display.</para>
 
-            <para>There is a check in the box next to each group that user
-            belongs to.</para>
-
-            <para>To add that user to a group, check the box next to the
+            <para>To add the user to the group, check the box next to the
             desired group.</para>
           </listitem>
 
@@ -424,27 +439,27 @@
           </listitem>
 
           <listitem>
-            <para>Select the user (or users) to promote. Check the box next to
-            the Username to select.</para>
+            <para>Select the user (or users) to promote. Click on the
+            <emphasis role="bold">Username</emphasis> link to open the users'
+            details tab.</para>
 
-            <para>This enables the Users action buttons.</para>
-          </listitem>
+            <para>To select multiple users, check the box next to the Username
+            to select. This enables the Users action buttons. Press the
+            <emphasis role="bold">Open</emphasis> action button.</para>
 
-          <listitem>
-            <!--NOTE: UPdate this image***-->
+            <para><graphic fileref="../../images/Perm008.jpg" />A tab opens
+            for each user selected. On each user's tab there are several
+            sub-tabs.</para>
 
-            <para>Press the <emphasis role="bold">Open</emphasis> action
-            button. <graphic fileref="../../images/Perm008.jpg" /></para>
-
-            <para>A tab opens for each user selected. On that tab there are
-            three sub-tabs.</para>
+            <para>The user's details are on the <emphasis
+            role="bold">Summary</emphasis> tab.</para>
           </listitem>
 
           <listitem>
             <para>Click on the tab for the user to modify (if more than one
             user selected, repeat for each user).</para>
 
-            <para>On the user's tab there are three sub-tabs.</para>
+            <para>On the user's tab there are several sub-tabs.</para>
 
             <para>Click on the <emphasis role="bold">Member Of</emphasis>
             sub-tab. <graphic fileref="../../images/Perm016.jpg" /></para>
@@ -461,7 +476,7 @@
                   <listitem>
                     <para>The name of the default Administrator group could
                     vary. For example, in Active Directory, it is
-                    "Administrators", in LDAP it is "Directory
+                    "Administrators", in OpenLDAP it is "Directory
                     Administrators".</para>
                   </listitem>
                 </varlistentry>
@@ -478,7 +493,7 @@
       <sect4 id="UsingSecurity_DeleteUserFromGroup">
         <title>To delete a user from a group:</title>
 
-        <para>To delete a user you must have Administrator level
+        <para>To delete a user from a group you must have Administrator level
         access.</para>
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
@@ -494,19 +509,24 @@
             </listitem>
 
             <listitem>
-              <para>Select the user (or users) to modify. Check the box next
-              to the Username.</para>
+              <para>Select the user (or users) to remove. Click on the
+              <emphasis role="bold">Username</emphasis> link to open the
+              users' details tabs.</para>
 
-              <para>This enables the user action buttons. Press the <emphasis
-              role="bold">Edit</emphasis> action button to modify settings for
-              that user.</para>
+              <para>To select multiple users, check the box next to the
+              Username to select. This enables the Users action buttons. Press
+              the <emphasis role="bold">Open</emphasis> action button.</para>
+
+              <para><graphic fileref="../../images/Perm008.jpg" />A tab opens
+              for each user selected. On each user's tab there are several
+              sub-tabs.</para>
             </listitem>
 
             <listitem>
-              <para>Click on the tab for the user to modify (if multiple users
+              <para>Click on the tab of the user to modify (if multiple users
               selected, repeat for each user).</para>
 
-              <para>On the user's tab there are three sub-tabs. <graphic
+              <para>On the user's tab there are several sub-tabs. <graphic
               fileref="../../images/Perm009.jpg" /></para>
 
               <para>Click on the <emphasis role="bold">Member Of</emphasis>
@@ -546,21 +566,24 @@
           </listitem>
 
           <listitem>
-            <para>Select the user (or users) to modify. Check the box next to
-            the Username to select.</para>
+            <para>Select the user (or users) to modify. Click on the <emphasis
+            role="bold">Username</emphasis> link to open the users' details
+            tab.</para>
 
-            <para>This enables the Users action buttons.</para>
-          </listitem>
-
-          <listitem>
-            <para>Press the <emphasis role="bold">Open</emphasis> action
-            button. <graphic fileref="../../images/Perm008.jpg" /></para>
+            <para>To select multiple users, check the box next to the Username
+            to select. This enables the Users action buttons. Press the
+            <emphasis role="bold">Open</emphasis> action button. <graphic
+            fileref="../../images/Perm008.jpg" /></para>
 
             <para>A tab opens for each user selected. On that tab there are
-            three sub-tabs.</para>
+            several sub-tabs.</para>
 
             <para>The user details are on the <emphasis
             role="bold">Summary</emphasis> tab.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the Summary tab.</para>
           </listitem>
 
           <listitem>
@@ -607,7 +630,7 @@
             </listitem>
 
             <listitem>
-              <para>Press the <emphasis role="bold">Delete</emphasis>
+              <para>Press the <emphasis role="bold">Delete</emphasis> action
               button.</para>
 
               <para>Confirmation displays.</para>
@@ -643,34 +666,42 @@
           </listitem>
 
           <listitem>
-            <para>Select the user (or users) to modify. Check the box next to
-            the Username to select.</para>
+            <para>Select the user (or users) to modify. Click on the <emphasis
+            role="bold">Username</emphasis> link to open the users' details
+            tab.</para>
 
-            <para>This enables the Users action buttons.</para>
+            <para>To select multiple users, check the box next to the Username
+            to select. This enables the Users action buttons. Press the
+            <emphasis role="bold">Open</emphasis> action button.</para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Open</emphasis>
-            button.</para>
-          </listitem>
-
-          <listitem>
-            <para>Click on the tab for the username to modify (if multiple
+            <para>Click on the tab of the username to modify (if multiple
             users selected, repeat for each user).</para>
 
-            <para>On the user's tab there are three sub-tabs. <graphic
+            <para>On the user's tab there are several sub-tabs. <graphic
             fileref="../../images/Perm010.jpg" /></para>
 
-            <para>Click on the <emphasis role="bold">User
-            Permissions</emphasis> sub-tab to modify that user's
+            <para>Click on the <emphasis role="bold">Active
+            Permissions</emphasis> sub-tab to view the user's current
             permissions.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the <emphasis role="bold">Available
+            Permissions</emphasis> tab to see all the sets of permissions that
+            are available to apply to that user.</para>
+
+            <para>When you select permissions from the Available Permissions
+            tab, they display and can be set in the Active Permissions
+            tab.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
             <para>Click on the arrow next to the resource to display the
-            permissions for that resource. <graphic
+            permissions that can be set for that resource. <graphic
             fileref="../../images/Perm011.jpg" vendor="eclwatchSS" /></para>
 
             <para>The list of permission groups currently set for this user
@@ -792,11 +823,37 @@
             </listitem>
 
             <listitem>
+              <para>Enter the fully qualified Distinguished Name for the owner
+              of the group <emphasis role="bold">Managed By</emphasis>
+              field.</para>
+            </listitem>
+
+            <listitem>
+              <para>Enter a description of the group. (optional)</para>
+            </listitem>
+
+            <listitem>
               <para>Press the <emphasis role="bold">Add</emphasis>
               button.</para>
 
-              <para>This opens a <emphasis role="bold">Summary</emphasis> tab
-              for this new group.</para>
+              <para>This opens a new tab for the group and several sub
+              tabs</para>
+
+              <para>The <emphasis role="bold">Summary</emphasis> sub-tab
+              displays the group name.</para>
+
+              <para>The <emphasis role="bold">Members</emphasis> tab displays
+              the list of users, check the box next to each user to add to the
+              group.</para>
+
+              <para>The <emphasis role="bold">Active Group
+              Permissions</emphasis> tab displays the permissions applied to
+              the group.</para>
+
+              <para>The <emphasis role="bold">Available Group
+              Permissions</emphasis> tab displays all the available
+              permissions, selecting from the Available Permissions applies
+              them to the Active Group Permissions.</para>
 
               <para>You can set the permissions and add members to this group
               from the respective sub-tabs on that group tab.</para>
@@ -855,15 +912,16 @@
             </listitem>
 
             <listitem>
-              <para>Press <emphasis role="bold">Edit</emphasis> action
+              <para>Press <emphasis role="bold">Open</emphasis> action
               button.</para>
 
               <para>This opens a new tab for the group.</para>
 
-              <para>Three sub-tabs display: <emphasis
+              <para>The sub-tabs display: <emphasis
               role="bold">Summary</emphasis>, <emphasis
-              role="bold">Members</emphasis>, and <emphasis role="bold">Group
-              Permissions</emphasis>.</para>
+              role="bold">Members</emphasis>, <emphasis role="bold">Active
+              Group Permissions</emphasis>, and <emphasis
+              role="bold">Available Group Permissions</emphasis>.</para>
             </listitem>
 
             <listitem>
@@ -876,8 +934,8 @@
             </listitem>
 
             <listitem>
-              <para>Check the box(es) to the left for all the users you want
-              to add to the group.</para>
+              <para>Check the box(es) to the left of the users you want to add
+              to the group.</para>
             </listitem>
 
             <listitem>
@@ -910,10 +968,11 @@
 
               <para>This opens a new tab for the group.</para>
 
-              <para>The Groups tab has three sub-tabs: <emphasis
+              <para>The Groups tab has several sub-tabs: <emphasis
               role="bold">Summary</emphasis>, <emphasis
-              role="bold">Members</emphasis>, and <emphasis role="bold">Group
-              Permissions</emphasis>.</para>
+              role="bold">Members</emphasis>, <emphasis role="bold">Active
+              Group Permissions</emphasis> and <emphasis role="bold">
+              Available Group Permissions</emphasis>.</para>
             </listitem>
 
             <listitem>
@@ -989,21 +1048,27 @@
             <para>This opens a new tab for the group. <graphic
             fileref="../../images/Perm010b.jpg" vendor="eclwatchSS" /></para>
 
-            <para>The group tab displays three sub-tabs: <emphasis
+            <para>The group tab displays the sub-tabs: <emphasis
             role="bold">Summary</emphasis>, <emphasis
-            role="bold">Members</emphasis>, and <emphasis role="bold">Group
+            role="bold">Members</emphasis>, <emphasis role="bold">Active Group
+            Permissions</emphasis> and <emphasis role="bold">Available Group
             Permissions</emphasis>.</para>
           </listitem>
 
           <listitem>
-            <para>Select the <emphasis role="bold">Group Permissions
-            </emphasis>tab.</para>
+            <para>Select the <emphasis role="bold">Available Group Permissions
+            </emphasis>sub-tab. This displays all the available permission
+            resources.</para>
           </listitem>
 
           <listitem>
-            <para>Click on the arrow to the left of the resource to display
-            the permissions for that resource. The permission groups currently
-            set for this group and the inherited ones display.</para>
+            <para>Click on the arrow to the left of the <emphasis
+            role="bold">Resource</emphasis> to expand and expose the
+            permission sets for the resources.</para>
+
+            <para><graphic fileref="../../images/Perm011b.jpg"
+            vendor="eclwatchSS" />The groups permission resources
+            display.</para>
           </listitem>
 
           <listitem>
@@ -1060,6 +1125,8 @@
   <sect2 id="Feature_Access">
     <title>Feature level access control</title>
 
+    <!--Following section addressd in H14895-->
+
     <para>Access to the feature permissions is available through ECL Watch. To
     modify feature permissions you must have Administrator level access. To
     access the feature permissions click on the <emphasis
@@ -1088,6 +1155,8 @@
 
   <sect2 id="Feature_Resources" role="brk">
     <title>Feature resources</title>
+
+    <!--Following section addressd in H14895-->
 
     <para>There are three types of features for which you can set up access
     control in HPCC. Access to features of the HPCC system is controlled by

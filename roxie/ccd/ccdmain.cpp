@@ -794,7 +794,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         memoryStatsInterval = topology->getPropInt("@memoryStatsInterval", 60);
         roxiemem::setMemoryStatsInterval(memoryStatsInterval);
         pingInterval = topology->getPropInt("@pingInterval", 0);
-        socketCheckInterval = topology->getPropInt("@socketCheckInterval", 5000);
+        socketCheckInterval = topology->getPropInt("@socketCheckInterval", runOnce ? 0 : 5000);
         memsize_t totalMemoryLimit = (memsize_t) topology->getPropInt64("@totalMemoryLimit", 0);
         bool allowHugePages = topology->getPropBool("@heapUseHugePages", false);
         bool allowTransparentHugePages = topology->getPropBool("@heapUseTransparentHugePages", true);

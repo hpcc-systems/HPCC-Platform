@@ -1006,6 +1006,26 @@ memsize_t getMapInfo(const char *type)
     return ret;
 }
 
+static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
+{
+    size32_t len = strlen(prefix);
+    if (strncmp(prefix, line, len)==0)
+    {
+        char * tail = NULL;
+        value = strtol(line+len, &tail, 10);
+        while (isspace(*tail))
+            tail++;
+        if (strncmp(tail, "kB", 2) == 0)
+            value *= 0x400;
+        else if (strncmp(tail, "mB", 2) == 0)
+            value *= 0x100000;
+        else if (strncmp(tail, "gB", 2) == 0)
+            value *= 0x40000000;
+        return true;
+    }
+    return false;
+}
+
 memsize_t getVMInfo(const char *type)
 {
     memsize_t ret = 0;
@@ -1015,24 +1035,10 @@ memsize_t getVMInfo(const char *type)
     if (!diskfp)
         return 0;
     char ln[256];
-    memsize_t value = 0;
-    char unitStr[256];
     while (fgets(ln, sizeof(ln), diskfp))
     {
-        if (!strncmp(ln, name.str(), name.length()))
-        {
-            if (2 == sscanf(&ln[name.length()], "%lu%s", &value, unitStr))
-            {
-                if (!strcasecmp(unitStr, "kB"))
-                    value *= 1024ULL;
-                if (!strcasecmp(unitStr, "mB"))
-                    value *= 1024ULL * 1024ULL;
-                if (!strcasecmp(unitStr, "gB"))
-                    value *= 1024ULL * 1024ULL * 1024ULL;
-                ret = value;
-                break;
-            }
-        }
+        if (matchExtract(name.str(), ln, ret))
+            break;
     }
     fclose(diskfp);
     return ret;
@@ -1108,9 +1114,8 @@ static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigne
         memfd = open("/proc/meminfo",O_RDONLY);
     if (memfd==-1)
         return;
-    lseek(memfd, 0L, 0);
-    char buf[1024];
-    size32_t l = read(memfd, buf, sizeof(buf)-1);
+    char buf[2048];
+    size32_t l = pread(memfd, buf, sizeof(buf)-1, 0L);
     if ((int)l<=0)
         return;
     buf[l] = 0;
@@ -1265,24 +1270,6 @@ void clearAffinityCache()
 }
 
 
-static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
-{
-    size32_t len = strlen(prefix);
-    if (strncmp(prefix, line, len)==0)
-    {
-        char * tail = NULL;
-        value = strtol(line+len, &tail, 10);
-        while (isspace(*tail))
-            tail++;
-        if (strncmp(tail, "kB", 2) == 0)
-            value *= 0x400;
-        else if (strncmp(tail, "mB", 2) == 0)
-            value *= 0x100000;
-        return true;
-    }
-    return false;
-}
-
 void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident)
 {
     peakVm = 0;
@@ -1302,10 +1289,8 @@ void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident)
         memfd = open("/proc/self/status",O_RDONLY);
     if (memfd==-1)
         return;
-    lseek(memfd, 0L, 0);
-
     char buf[2048];
-    size32_t l = read(memfd, buf, sizeof(buf)-1);
+    size32_t l = pread(memfd, buf, sizeof(buf)-1, 0L);
     if ((int)l<=0)
         return;
     buf[l] = 0;

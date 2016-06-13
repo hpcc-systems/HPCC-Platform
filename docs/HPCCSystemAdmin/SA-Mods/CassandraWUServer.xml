@@ -4,7 +4,7 @@
 <sect1 id="CassandraWUStorage">
   <title>Using Cassandra for Workunit Storage</title>
 
-  <para>Beginning version version 6.0.0, you can configure your system to use
+  <para>Beginning with version 6.0.0, you can configure your system to use
   Apache <trademark>Cassandra</trademark> database for Workunit storage.
   Apache’s Cassandra NoSQL data store is a software framework that supports
   data-intensive distributed applications under a free license.</para>
@@ -26,7 +26,7 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="300pt" />
+          <colspec />
 
           <colspec />
 
@@ -122,7 +122,7 @@
         </listitem>
 
         <listitem>
-          <para>Make sure Cassandra is running. </para>
+          <para>Make sure Cassandra is running.</para>
 
           <para>Once you have configured your HPCC Platform to use Cassandra
           for Workunit storage, you must make sure Cassandra is running before
@@ -276,12 +276,12 @@
 
                 <para><variablelist>
                     <varlistentry>
-                      <term>Note: User and password are only needed if your
-                      Cassandra server is configured to require
-                      credentials.</term>
+                      <term>Note: </term>
 
                       <listitem>
-                        <para></para>
+                        <para>User and password are only needed if your
+                        Cassandra server is configured to require
+                        credentials.</para>
                       </listitem>
                     </varlistentry>
                   </variablelist></para>

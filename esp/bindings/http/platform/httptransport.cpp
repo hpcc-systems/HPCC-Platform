@@ -1005,7 +1005,7 @@ void CHttpMessage::addHeader(const char* headername, const char* headerval)
 
 StringBuffer& CHttpMessage::getHeader(const char* headername, StringBuffer& headerval)
 {
-    if(headername == NULL || strlen(headername) == 0)
+    if(headername == NULL || *headername == '\0')
         return headerval;
 
     ForEachItemIn(x, m_headers)
@@ -1017,7 +1017,7 @@ StringBuffer& CHttpMessage::getHeader(const char* headername, StringBuffer& head
         if(colon == NULL)
             continue;
         unsigned len = colon - header;
-        if((strlen(headername) == len) && (strncmp(headername, header, len) == 0))
+        if((strlen(headername) == len) && (strnicmp(headername, header, len) == 0))
         {
             headerval.append(colon + 2);
             break;
