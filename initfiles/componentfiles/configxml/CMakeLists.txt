@@ -22,8 +22,9 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/ftslave_linux.xsd.in ${CMAKE_CURRENT_
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/roxie.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/roxie.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/thor.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/thor.xsd)
 
-if ( "${HPCC_PROJECT}" STREQUAL "community" )
-    configure_file("buildsetCC.xml.in" "buildset.xml")
+if("${HPCC_PROJECT_ABBR}" STREQUAL "CC")
+    configure_file("buildset${HPCC_PROJECT_ABBR}.xml.in" "buildset.xml")
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/buildset.xml DESTINATION componentfiles/configxml COMPONENT Runtime)
 endif()
 
 FOREACH( iFILES
@@ -34,7 +35,6 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_BINARY_DIR}/ftslave_linux.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/roxie.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/thor.xsd
-    ${CMAKE_CURRENT_BINARY_DIR}/buildset.xml
     ${CMAKE_CURRENT_SOURCE_DIR}/thor.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/setvars_linux.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/custom_plugin.xsd

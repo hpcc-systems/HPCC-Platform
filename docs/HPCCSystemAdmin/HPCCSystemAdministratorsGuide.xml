@@ -1768,7 +1768,12 @@ heapUseTransparentHugePages</programlisting>
       </sect2>
     </sect1>
 
-    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+     <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
+                xpointer="Capacity_Planning"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+ 
+
+     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="Sample_Sizings"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>

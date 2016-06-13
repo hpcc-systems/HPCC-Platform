@@ -404,23 +404,19 @@
             </listitem>
 
             <listitem>
-              <para>64-bit RedHat Enterprise 5</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit RedHat Enterprise 6</para>
-            </listitem>
-
-            <listitem>
               <para>64-bit Ubuntu 12.04 (LTS)</para>
             </listitem>
 
             <listitem>
-              <para>64-bit Ubuntu 13.10</para>
+              <para>64-bit Ubuntu 14.04 (LTS)</para>
             </listitem>
 
             <listitem>
-              <para>64-bit Ubuntu 14.04 (LTS)</para>
+              <para>64-bit Ubuntu 15.10</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit Ubuntu 16.04 (LTS)</para>
             </listitem>
           </itemizedlist></para>
       </sect2>
