@@ -34,7 +34,18 @@ define([
             responseQualifier: "WUShowScheduledResponse.Workunits.ScheduledWU",
             idProperty: "Wuid"
     });
+    var EventScheduleStore = declare([ESPRequest.Store], {
+          service: "WsWorkunits",
+          action: "WUShowScheduled",
+          responseQualifier: "WUShowScheduledResponse.Workunits.ScheduledWU",
+          idProperty: "calculatedID",
 
+      preProcessRow: function (row) {
+          lang.mixin(row, {
+              calculatedID: row.Wuid + row.EventText
+          });
+      }
+  });
     return {
         States: {
             0: "unknown",
@@ -54,6 +65,7 @@ define([
             14: "paused",
             999: "not found"
         },
+
 
         WUCreate: function (params) {
             return ESPRequest.send("WsWorkunits", "WUCreate", params).then(function (response) {

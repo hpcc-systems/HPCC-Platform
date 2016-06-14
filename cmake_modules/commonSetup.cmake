@@ -92,6 +92,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(GENERATE_COVERAGE_INFO "Generate coverage info for gcov" OFF)
   option(USE_SIGNED_CHAR "Build system with default char type is signed" OFF)
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
+  option(USE_MYSQL "Enable mysql support" ON)
   # Generates code that is more efficient, but will cause problems if target platforms do not support it.
   if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     option(USE_INLINE_TSC "Inline calls to read TSC (time stamp counter)" ON)
