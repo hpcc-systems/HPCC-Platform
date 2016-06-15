@@ -988,7 +988,7 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
         return;
 
     excsignal = 0;
-#ifdef NO_LINUX_SEH
+#if defined(NO_LINUX_SEH) && !defined(SA_RESETHAND)
     signal(SIGSEGV, SIG_DFL);
     signal(SIGBUS, SIG_DFL);
     signal(SIGILL, SIG_DFL);
@@ -1191,8 +1191,8 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     PROGLOG( "ThreadList:\n%s",getThreadList(threadlist).str());
     queryLogMsgManager()->flushQueue(10*1000);
 
+    // MCK - really should not return after recv'ing any of these signals
 
-    
 #ifndef NO_LINUX_SEH
     void (* _P)() = throwSigSegV;
     uc->uc_mcontext.gregs[REG_ESP]-=4;
@@ -1205,10 +1205,8 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     {
         if ( SEHHandler->fireException(new CSEHException(signum,s.str())) )
             return;
-        else
-            kill(getpid(), SIGABRT);
     }
-
+    raise(signum);
 #endif
     nested--;
 }
@@ -1265,7 +1263,11 @@ void jlib_decl enableSEHtoExceptionMapping()
     sigset_t blockset;
     sigemptyset(&blockset);
     act.sa_mask = blockset;
+#if defined(SA_RESETHAND)
+    act.sa_flags = SA_SIGINFO | SA_RESETHAND;
+#else
     act.sa_flags = SA_SIGINFO;
+#endif
     act.sa_sigaction = &excsighandler; 
     sigaction(SIGSEGV, &act, NULL);
     sigaction(SIGILL, &act, NULL);
