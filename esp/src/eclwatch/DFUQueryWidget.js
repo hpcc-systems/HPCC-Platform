@@ -69,6 +69,7 @@ define([
     "dijit/form/DropDownButton",
     "dijit/form/Select",
     "dijit/form/CheckBox",
+    "dijit/form/RadioButton",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
@@ -104,6 +105,9 @@ define([
             this.desprayForm = registry.byId(this.id + "DesprayForm");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
             this.desprayTooltiopDialog = registry.byId(this.id + "DesprayTooltipDialog");
+            this.addToSuperfileTargetName = registry.byId(this.id + "AddToSuperfileTargetName")
+            this.createNewSuperRadio = registry.byId(this.id + "CreateNewSuperRadio");
+            this.addToSuperfileTargetAppendRadio = registry.byId(this.id + "AddToSuperfileTargetAppend");
             var context = this;
             var origOnOpen = this.desprayTooltiopDialog.onOpen;
             this.desprayTooltiopDialog.onOpen = function () {
@@ -363,6 +367,18 @@ define([
                             Exceptions: [{ Source: context.i18n.TooManyFiles, Message: context.i18n.TheReturnedResults + ": " + response.DFUQueryResponse.NumFiles + ", " + context.i18n.RepresentsASubset }]
                         });
                     }
+                }
+            });
+
+            this.createNewSuperRadio.on('change', function (value) {
+                if (value) {
+                    context.addToSuperfileTargetAppendRadio.set("checked", false);
+                }
+            });
+
+            this.addToSuperfileTargetAppendRadio.on('change', function (value) {
+                if (value) {
+                    context.createNewSuperRadio.set("checked", false);
                 }
             });
         },

@@ -1,8 +1,6 @@
 define({root:
 ({
     Abort: "Abort",
-    AbortedBy: "Aborted by",
-    AbortedTime: "Aborted time",
     About: "About",
     AboutGraphControl: "About Graph Control",
     AboutHPCCSystemsGraphControl: "About HPCC Systems® Graph Control",
@@ -23,6 +21,7 @@ define({root:
     AdditionalResources: "Additional Resources",
     AddProcessMap: "Add Package Map",
     AddToSuperfile: "Add To Superfile",
+    AddToExistingSuperfile: "Add to an existing superfile",
     AddUser: "Add User",
     Advanced: "Advanced",
     All: "All",
@@ -78,7 +77,8 @@ define({root:
     ContentType: "Content Type",
     Copy: "Copy",
     Count: "Count",
-    Created: "Created",
+    CreateANewFile: "Create a new superfile",
+    Created: "Created",    
     ClearPermissionsCache: "Clear Permissions Cache",
     ClearPermissionsCacheConfirm: "Are you sure you want to clear the DALI and ESP permissions caches? Running workunit performance might degrade significantly until the caches have been refreshed.",
     ClonedWUID: "Cloned WUID",
