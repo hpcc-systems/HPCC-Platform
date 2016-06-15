@@ -396,8 +396,10 @@
       <sect2 id="cluster_Info" role="brk">
         <title>Cluster Information</title>
 
-        <para>You can access more information about your clusters from the
-        main Activity tab. Select the target cluster from the main <emphasis
+        <para>You can access more information about your Thor clusters from
+        the main Activity tab. </para>
+
+        <para>Select the target cluster from the main <emphasis
         role="bold">Activity</emphasis> tab, by checking the box next to it.
         <figure>
             <title>Open Cluster</title>
@@ -440,6 +442,9 @@
         that cluster. There are three tabs on that cluster group tab. The
         <emphasis role="bold">Summary</emphasis> tab provides a snapshot of
         that group.</para>
+
+        <para>Alternatively you can click the link on the cluster name to
+        examine. </para>
 
         <sect3 id="ClusterUsageTab">
           <title>The Cluster Usage Tab</title>
