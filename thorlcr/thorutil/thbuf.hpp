@@ -85,6 +85,7 @@ extern graph_decl ISharedSmartBuffer *createSharedSmartDiskBuffer(CActivityBase 
 interface IRowWriterMultiReader : extends IRowWriter
 {
     virtual IRowStream *getReader() = 0;
+    virtual void reset() = 0;
 };
 
 extern graph_decl IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IThorRowInterfaces *rowif, bool grouped, bool shared=false, unsigned spillPriority=SPILL_PRIORITY_OVERFLOWABLE_BUFFER);

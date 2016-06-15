@@ -1218,19 +1218,16 @@ void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
 class CThorSlaveGraphResults : public CThorGraphResults
 {
     CSlaveGraph &graph;
-    IArrayOf<IThorResult> globalResults;
+    IPointerArrayOf<IThorResult> globalResults;
     PointerArrayOf<CriticalSection> globalResultCrits;
-    void ensureAtLeastGlobals(unsigned id)
-    {
-        while (globalResults.ordinality() < id)
-        {
-            globalResults.append(*new CThorUninitializedGraphResults(globalResults.ordinality()));
-            globalResultCrits.append(new CriticalSection);
-        }
-    }
 public:
-    CThorSlaveGraphResults(CSlaveGraph &_graph,unsigned numResults) : CThorGraphResults(numResults), graph(_graph)
+    CThorSlaveGraphResults(CSlaveGraph &_graph, unsigned numResults) : CThorGraphResults(_graph, numResults), graph(_graph)
     {
+        while (numResults--)
+        {
+            globalResults.append(nullptr);
+            globalResultCrits.append(nullptr);
+        }
     }
     ~CThorSlaveGraphResults()
     {
@@ -1239,30 +1236,37 @@ public:
     virtual void clear()
     {
         CriticalBlock procedure(cs);
-        results.kill();
-        globalResults.kill();
-        ForEachItemIn(i, globalResultCrits)
-            delete globalResultCrits.item(i);
-        globalResultCrits.kill();
+        CThorGraphResults::doClear();
+        if (globalResults.ordinality())
+        {
+            globalResults.kill();
+            ForEachItemIn(i, globalResultCrits)
+                delete globalResultCrits.item(i);
+            globalResultCrits.kill();
+        }
     }
     IThorResult *getResult(unsigned id, bool distributed)
     {
-        Linked<IThorResult> result;
+        IThorResult *result;
         {
             CriticalBlock procedure(cs);
-            ensureAtLeast(id+1);
-
-            result.set(&results.item(id));
+            if (id >= results.ordinality())
+                return new CThorUninitializedGraphResult(id); // hopefully the exception not the rule!
+            result = results.item(id);
+            if (nullptr == result)
+                return new CThorUninitializedGraphResult(id); // hopefully the exception not the rule!
             if (!distributed || !result->isDistributed())
-                return result.getClear();
-            ensureAtLeastGlobals(id+1);
+                return LINK(result);
+            if (nullptr == globalResultCrits.item(id))
+                globalResultCrits.replace(new CriticalSection, id);
         }
         CriticalBlock b(*globalResultCrits.item(id)); // block other global requests for this result
-        IThorResult *globalResult = &globalResults.item(id);
-        if (!QUERYINTERFACE(globalResult, CThorUninitializedGraphResults))
+        IThorResult *globalResult = globalResults.item(id);
+        if (globalResult)
             return LINK(globalResult);
-        Owned<IThorResult> gr = graph.getGlobalResult(*result->queryActivity(), result->queryRowInterfaces(), ownerId, id);
-        globalResults.replace(*gr.getLink(), id);
+        CActivityBase *activity = result->queryActivity();
+        Owned<IThorResult> gr = graph.getGlobalResult(*activity, result->queryRowInterfaces(), activity->queryId(), id);
+        globalResults.replace(gr.getLink(), id);
         return gr.getClear();
     }
 };
@@ -1287,7 +1291,7 @@ IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IThorRowInter
     if (!queryJobChannel().queryJobComm().send(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
         throwUnexpected();
 
-    Owned<IThorResult> result = ::createResult(activity, rowIf, false);
+    Owned<IThorResult> result = ::createResult(*this, activity, id, rowIf, false);
     Owned<IRowWriter> resultWriter = result->getWriter();
 
     MemoryBuffer mb;

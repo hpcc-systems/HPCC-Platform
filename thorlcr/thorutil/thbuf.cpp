@@ -643,20 +643,24 @@ public:
         writer.clear();
         collector.clear();
     }
-
 // IRowWriterMultiReader
-    virtual IRowStream *getReader()
+    virtual IRowStream *getReader() override
     {
         flush();
         return collector->getStream(shared);
     }
+    virtual void reset() override
+    {
+        eoi = false;
+        collector->reset(); // for next time
+    }
 // IRowWriter
-    virtual void putRow(const void *row)
+    virtual void putRow(const void *row) override
     {
         assertex(!eoi);
         writer->putRow(row);
     }
-    virtual void flush()
+    virtual void flush() override
     {
         eoi = true;
     }

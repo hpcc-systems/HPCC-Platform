@@ -270,44 +270,68 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
         offset_t outputOffset;
         Owned<IRowStream> spillStream;
         Linked<CSharedSpillableRowSet> owner;
+
+        rowidx_t numReadRows, granularity;
+        const void **readRows;
+        bool eos = false;
+
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
         CStream(CSharedSpillableRowSet &_owner) : owner(&_owner)
         {
-            pos = 0;
+            pos = numReadRows = 0;
             outputOffset = (offset_t)-1;
+            granularity = 500; // JCSMORE - rows
+            // a small amount of rows to read from swappable rows
+            readRows = static_cast<const void * *>(owner->rowIf->queryRowManager()->allocate(granularity * sizeof(void*), owner->activity.queryContainer().queryId(), owner->rows.queryDefaultMaxSpillCost()));
             owner->rows.registerWriteCallback(*this); // NB: CStream constructor called within rows lock
         }
         ~CStream()
         {
             spillStream.clear(); // NB: clear stream 1st
+            roxiemem::ReleaseRoxieRowRange(readRows, pos, numReadRows);
+            ReleaseThorRow(readRows);
             owner->rows.safeUnregisterWriteCallback(*this);
             owner.clear();
         }
     // IRowStream
         virtual const void *nextRow()
         {
+            if (eos)
+                return nullptr;
             if (spillStream)
                 return spillStream->nextRow();
-            CRowsLockBlock block(*owner);
-            if (owner->spillFile) // i.e. has spilt
+            if (pos == numReadRows)
             {
-                block.clearCB = true;
-                assertex(((offset_t)-1) != outputOffset);
-                unsigned rwFlags = DEFAULT_RWFLAGS;
-                if (owner->preserveNulls)
-                    rwFlags |= rw_grouped;
-                spillStream.setown(::createRowStreamEx(owner->spillFile, owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, rwFlags));
-                owner->rows.unregisterWriteCallback(*this); // no longer needed
-                return spillStream->nextRow();
+                CRowsLockBlock block(*owner);
+                if (owner->spillFile)
+                {
+                    block.clearCB = true;
+                    assertex(((offset_t)-1) != outputOffset);
+                    unsigned rwFlags = DEFAULT_RWFLAGS;
+                    if (owner->preserveNulls)
+                        rwFlags |= rw_grouped;
+                    spillStream.setown(::createRowStreamEx(owner->spillFile, owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, rwFlags));
+                    owner->rows.unregisterWriteCallback(*this); // no longer needed
+                    return spillStream->nextRow();
+                }
+                rowidx_t available = owner->rows.numCommitted();
+                if (0 == available)
+                {
+                    eos = true;
+                    return nullptr;
+                }
+                rowidx_t fetch = (available >= granularity) ? granularity : available;
+                // consume 'fetch' rows
+                owner->rows.readBlock(readRows, fetch);
+                numReadRows = fetch;
+                pos = 0;
             }
-            else if (pos == owner->rows.numCommitted())
-            {
-                owner->rows.unregisterWriteCallback(*this); // no longer needed
-                return NULL;
-            }
-            return owner->rows.get(pos++);
+            const void *row = readRows[pos];
+            readRows[pos] = NULL;
+            ++pos;
+            return row;
         }
         virtual void stop()
         {
@@ -990,8 +1014,9 @@ IRowStream *CThorExpandingRowArray::createRowStream(rowidx_t start, rowidx_t num
         lastRow = ordinality();
     else
         lastRow = start+num;
-
-    if (streamOwns)
+    if (start == lastRow)
+        return createNullRowStream();
+    else if (streamOwns)
         return new CRowOwningStream(*this, start, lastRow);
     else
         return new CStream(*this, start, lastRow);
@@ -1768,9 +1793,10 @@ protected:
         else
             return createConcatRowStream(instrms.ordinality(),instrms.getArray());
     }
-    void reset()
+    virtual void reset()
     {
-        spillableRows.kill();
+        spillableRows.clearRows();
+        spillableRowSet.clear();
         spillFiles.kill();
         totalRows = 0;
         overflowCount = outStreams = 0;
@@ -1985,6 +2011,7 @@ public:
     virtual void resize(rowidx_t max) { CThorRowCollectorBase::resize(max); }
     virtual void setOptions(unsigned options)  { CThorRowCollectorBase::setOptions(options); }
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return CThorRowCollectorBase::getStatistic(kind); }
+    virtual void reset() override { CThorRowCollectorBase::reset(); }
 // IThorRowLoader
     virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping, CThorExpandingRowArray *allMemRows, memsize_t *memUsage, bool doReset)
     {
@@ -2038,6 +2065,7 @@ public:
     virtual void resize(rowidx_t max) { CThorRowCollectorBase::resize(max); }
     virtual void setOptions(unsigned options) { CThorRowCollectorBase::setOptions(options); }
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return CThorRowCollectorBase::getStatistic(kind); }
+    virtual void reset() override { CThorRowCollectorBase::reset(); }
 // IThorRowCollector
     virtual IRowWriter *getWriter()
     {
@@ -2065,10 +2093,6 @@ public:
             }
         };
         return new CWriter(this);
-    }
-    virtual void reset()
-    {
-        CThorRowCollectorBase::reset();
     }
     virtual IRowStream *getStream(bool shared, CThorExpandingRowArray *allMemRows)
     {
