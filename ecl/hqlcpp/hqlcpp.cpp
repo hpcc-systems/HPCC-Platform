@@ -11795,7 +11795,31 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
 
     HqlExprArray scriptArgs;
     scriptArgs.append(*LINK(ctxVar));
-    scriptArgs.append(*LINK(bodyCode->queryChild(0)));
+    if (bodyCode->hasAttribute(_projected_Atom))
+    {
+        // Generate the field list from the output record
+        StringBuffer fieldlist;
+        IHqlExpression *outRec = bodyCode->queryChild(1);
+        assertex(outRec->queryRecordType());
+        HqlExprArray fields;
+        getSimpleFields(fields, outRec);
+        ForEachItemIn(idx, fields)
+        {
+            IIdAtom *fieldName = fields.item(idx).queryId();
+            assertex(fieldName);
+            fieldlist.append(',').append(fieldName->queryStr());
+        }
+        assertex(fieldlist.length());
+        StringBuffer origBody;
+        IValue *origValue = bodyCode->queryChild(0)->queryValue();
+        origValue->getUTF8Value(origBody);
+        origBody.replaceString("OUTPUTFIELDS()", fieldlist+1);
+        scriptArgs.append(*createConstant(createUtf8Value(origBody.length(), origBody.str(), makeUtf8Type(UNKNOWN_LENGTH, NULL))));
+    }
+    else
+    {
+        scriptArgs.append(*LINK(bodyCode->queryChild(0)));
+    }
     buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
     ForEachChild(i, formals)
     {

@@ -328,6 +328,7 @@ IAtom * prefetchAtom;
 IAtom * preloadAtom;
 IAtom * priorityAtom;
 IAtom * privateAtom;
+IAtom * _projected_Atom;
 IAtom * _propAligned_Atom;
 IAtom * _propRecordCount_Atom;
 IAtom * _propSize_Atom;
@@ -771,6 +772,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(preload);
     MAKEATOM(priority);
     MAKEATOM(private);
+    MAKESYSATOM(projected);
     MAKESYSATOM(propAligned);
     MAKESYSATOM(propRecordCount);
     MAKESYSATOM(propSize);
