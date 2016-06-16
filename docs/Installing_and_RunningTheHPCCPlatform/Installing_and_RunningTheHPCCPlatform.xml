@@ -2753,20 +2753,20 @@ sudo /etc/init.d/hpcc-init -c esp start
         <para>The second set has the same output to STDOUT/STDERROR as
         directly invoking /etc/init.d/&lt;hpcc-init|dafilesrv&gt;</para>
 
-        <para>Use either: </para>
+        <para>Use either:</para>
 
         <programlisting>sudo service &lt;service&gt; &lt;start|stop|restart&gt;</programlisting>
 
-        <para>or </para>
+        <para>or</para>
 
         <programlisting>sudo systemctl &lt;start|stop|restart&gt; &lt;full_service_name&gt; </programlisting>
 
-        <para>The systemd displays the service status in it's own format.
-        </para>
+        <para>The systemd displays the service status in it's own
+        format.</para>
 
         <programlisting>sudo service &lt;service&gt; status </programlisting>
 
-        <para>or </para>
+        <para>or</para>
 
         <programlisting>sudo systemctl status &lt;full_service_name&gt; </programlisting>
 
@@ -2784,7 +2784,7 @@ sudo /etc/init.d/hpcc-init -c esp start
         <para>HPCC uninstall will automatically remove HPCC services from
         active list and /etc/systemd/system/ directory.</para>
 
-        <sect3>
+        <sect3 id="hpcc-init_sysd_svc_usage">
           <title id="hpcc_systemd_usage">hpcc-init systemd service
           usage</title>
 
