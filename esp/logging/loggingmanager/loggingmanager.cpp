@@ -116,6 +116,7 @@ bool CLoggingManager::updateLog(const char* option, IEspContext& espContext, IPr
         const char* userId = espContext.queryUserId();
         if (userId && *userId)
             espContextTree->addProp("UserName", userId);
+        espContextTree->addPropInt64("ResponseTime", (__int64)(msTick()-espContext.queryCreationTime())/1000);
 
         Owned<IEspUpdateLogRequestWrap> req =  new CUpdateLogRequestWrap(NULL, option, espContextTree.getClear(), LINK(userContext), LINK(userRequest),
             backEndResp, userResp);
