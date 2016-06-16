@@ -1884,8 +1884,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_fromxml:
     case no_fromjson:
     case no_dataset_from_transform:
-    case no_likely:
-    case no_unlikely:
         return childdataset_none;
     case no_group:
     case no_grouped:
@@ -2500,8 +2498,6 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_spill:
     case no_writespill:
     case no_throughaggregate:
-    case no_likely:
-    case no_unlikely:
     case no_limit:
     case no_catchds:
     case no_compound_fetch:
@@ -10918,8 +10914,6 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
     case no_colon:
     case no_globalscope:
     case no_thisnode:
-    case no_likely:
-    case no_unlikely:
         type.set(parms.item(0).queryType());
         break;
     default:

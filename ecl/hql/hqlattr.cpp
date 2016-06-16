@@ -2945,8 +2945,6 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_param:
     case no_anon:
     case no_nofold:             // assume nothing - to stop subsequent optimizations
-    case no_likely:
-    case no_unlikely:
     case no_delayedselect:
     case no_unboundselect:
     case no_internalselect:

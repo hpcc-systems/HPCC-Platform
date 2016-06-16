@@ -2246,8 +2246,6 @@ IHqlExpression * CTreeOptimizer::queryMoveKeyedExpr(IHqlExpression * transformed
     case no_forcegraph:
     case no_nocombine:
     case no_filter:
-    case no_likely:
-    case no_unlikely:
         {
             OwnedHqlExpr newChild = queryMoveKeyedExpr(child);
             if (newChild)

@@ -6618,8 +6618,6 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_thisnode:
             case no_forcegraph:
             case no_keyed:
-            case no_likely:
-            case no_unlikely:
                 result = buildCachedActivity(ctx, expr->queryChild(0));
                 break;
             case no_dataset_alias:
@@ -18952,8 +18950,6 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_sectioninput:
     case no_forcegraph:
     case no_nofold:
-    case no_likely:
-    case no_unlikely:
     case no_nohoist:
     case no_nocombine:
     case no_actionlist:

@@ -4769,6 +4769,8 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             for (unsigned idx = 1; idx < num; idx++)
             {
                 IHqlExpression * cur = expr->queryChild(idx);
+                if (cur->getOperator() == no_likely)
+                    cur = cur->queryChild(0);
                 IValue * value = cur->queryValue();
                 if (value)
                 {
@@ -5590,10 +5592,6 @@ IHqlExpression * CExprFolderTransformer::createTransformed(IHqlExpression * expr
     node_operator op = expr->getOperator();
     switch (op)
     {
-    case no_likely:
-    case no_unlikely:
-        dft.set(expr->queryChild(0));
-        break;
     case no_alias:
         {
             OwnedHqlExpr folded = transform(expr->queryChild(0));
