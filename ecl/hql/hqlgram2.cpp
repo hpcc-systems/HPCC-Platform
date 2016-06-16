@@ -943,7 +943,7 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         if (projectedAttr)
         {
             IHqlExpression *projectedSearch = projectedAttr->queryChild(0);
-            if (!projectedSearch || !isStringType(projectedSearch->queryType()))
+            if (!projectedSearch || !(isStringType(projectedSearch->queryType()) || isUnicodeType(projectedSearch->queryType())))
                 reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED attribute requires a string parameter");
             else
             {

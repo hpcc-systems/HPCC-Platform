@@ -6200,6 +6200,11 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     return getValue.getClear();
 }
 
+static bool isInternalEmbedAttr(IAtom *name)
+{
+    return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom ||name == importAtom;
+}
+
 IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression * newFuncDef)
 {
     IHqlExpression * body = newFuncDef->queryChild(0);
@@ -6236,13 +6241,7 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
         ForEachChild(idx, bodyCode)
         {
             IHqlExpression *child = bodyCode->queryChild(idx);
-            if (child->isAttribute() &&
-                child->queryName() != languageAtom &&
-                child->queryName() != projectedAtom &&
-                child->queryName() != streamedAtom &&
-                child->queryName() != _linkCounted_Atom &&
-                child->queryName() != importAtom
-               )
+            if (child->isAttribute() && !isInternalEmbedAttr(child->queryName()))
             {
                 StringBuffer attrParam;
                 if (attrArgs.ordinality())

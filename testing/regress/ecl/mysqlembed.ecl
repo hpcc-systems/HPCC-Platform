@@ -70,17 +70,17 @@ initializeUtf8() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   INSERT INTO tbl1 values ('utf8test', 1, 1, 1.2, 3.4, 'aa55aa55', 1234567.89, 'Straße', 'Straße', '2019-02-01 23:59:59');
 ENDEMBED;
 
-dataset(childrec) testMySQLDS() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
-  SELECT OUTPUTFIELDS() from tbl1;
+dataset(childrec) testMySQLDS() := EMBED(mysql : server(myServer),user(myUser),database(myDB),PROJECTED('OUTPUTFIELDS'))
+  SELECT OUTPUTFIELDS from tbl1;
 ENDEMBED;
 
-dataset(childrec) testMySQLDS2() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
-  SELECT OUTPUTFIELDS() from tbl1 where u1='Straße';
+dataset(childrec) testMySQLDS2() := EMBED(mysql : server(myServer),user(myUser),database(myDB),PROJECTED('[]'))
+  SELECT [] from tbl1 where u1='Straße';
 ENDEMBED;
 
-ds3query := 'SELECT ** FROM tbl1;' : STORED('ds3query');
+ds3query := u'SELECT ** FROM tbl1;' : STORED('ds3query');
 
-dataset(childrec) testMySQLDS3() := EMBED(mysql, ds3query : server(myServer),user(myUser),database(myDB),PROJECTED('**'));
+dataset(childrec) testMySQLDS3() := EMBED(mysql, ds3query : server(myServer),user(myUser),database(myDB),PROJECTED(u'**'));
 
 childrec testMySQLRow() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   SELECT * from tbl1 LIMIT 1;
