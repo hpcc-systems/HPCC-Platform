@@ -38,7 +38,6 @@ public:
     virtual const char *queryValue() const;
 };
 
-
 class CLocalWUStatistic : public CInterface, implements IConstWUStatistic
 {
     Owned<IPropertyTree> p;
@@ -306,6 +305,8 @@ public:
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all);
     virtual IPropertyTree *queryPTree() const;
     virtual unsigned queryFileUsage(const char *filename) const;
+    virtual IConstWUFileUsageIterator * getFieldUsage() const;
+
     virtual bool getCloneable() const;
     virtual IUserDescriptor * queryUserDescriptor() const;
     virtual unsigned getCodeVersion() const;
@@ -382,6 +383,7 @@ public:
     virtual IWUResult * updateVariableByName(const char * name);
     void addFile(const char *fileName, StringArray *clusters, unsigned usageCount, WUFileKind fileKind, const char *graphOwner);
     void noteFileRead(IDistributedFile *file);
+    void noteFieldUsage(IPropertyTree * usage);
     void releaseFile(const char *fileName);
     void resetBeforeGeneration();
     void deleteTempFiles(const char *graph, bool deleteOwned, bool deleteJobOwned);

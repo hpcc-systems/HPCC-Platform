@@ -6078,7 +6078,7 @@ IPropertyTree * HqlCppTranslator::gatherFieldUsage(const char * variant, const I
     trackedSources.sort(compareTrackedSourceByName);
     ForEachItemIn(i, trackedSources)
     {
-        IPropertyTree * next = trackedSources.item(i).createReport(options.reportFieldUsage, exclude);
+        IPropertyTree * next = trackedSources.item(i).createReport(options.reportFieldUsage || options.recordFieldUsage, exclude);
         if (next)
             sources->addPropTree(next->queryName(), next);
     }
@@ -6088,7 +6088,7 @@ IPropertyTree * HqlCppTranslator::gatherFieldUsage(const char * variant, const I
 
 SourceFieldUsage * HqlCppTranslator::querySourceFieldUsage(IHqlExpression * expr)
 {
-    if (!(options.reportFieldUsage || options.reportFileUsage) || !expr)
+    if (!(options.reportFieldUsage || options.recordFieldUsage || options.reportFileUsage) || !expr)
         return NULL;
 
     if (expr->hasAttribute(_spill_Atom) || expr->hasAttribute(jobTempAtom))
@@ -6145,6 +6145,11 @@ void HqlCppTranslator::generateStatistics(const char * targetDir, const char * v
     {
         Owned<IPropertyTree> sources = gatherFieldUsage(variant, NULL);
         writeFieldUsage(targetDir, sources, NULL);
+    }
+    else if (options.recordFieldUsage && trackedSources.ordinality()) // to enable column-level security
+    {
+        Owned<IPropertyTree> sources = gatherFieldUsage(variant, NULL);
+        wu()->noteFieldUsage(LINK(sources));
     }
 }
 

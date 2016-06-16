@@ -1758,6 +1758,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.implicitGroupHashDedup,"implicitGroupHashDedup",false),
         DebugOption(options.reportFieldUsage,"reportFieldUsage",false),
         DebugOption(options.reportFileUsage,"reportFileUsage",false),
+        DebugOption(options.recordFieldUsage,"recordFieldUsage",false),
         DebugOption(options.subsortLocalJoinConditions,"subsortLocalJoinConditions",false),
         DebugOption(options.projectNestedTables,"projectNestedTables",true),
         DebugOption(options.showSeqInGraph,"showSeqInGraph",false),  // For tracking down why projects are not commoned up
