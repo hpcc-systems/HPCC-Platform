@@ -32,9 +32,14 @@ define([
             service: "WsWorkunits",
             action: "WUShowScheduled",
             responseQualifier: "WUShowScheduledResponse.Workunits.ScheduledWU",
-            idProperty: "Wuid"
-    });
+            idProperty: "calculatedID",
 
+        preProcessRow: function (row) {
+            lang.mixin(row, {
+                calculatedID: row.Wuid + row.EventText
+            });
+        }
+    });
     return {
         States: {
             0: "unknown",

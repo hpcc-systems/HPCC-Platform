@@ -460,6 +460,7 @@ public:
                                     msg.append((rank_t)0); // JCSMORE - not sure why this would ever happen
                                 }
                             }
+                            job->reportGraphEnd(gid);
                         }
                         else
                         {

@@ -378,7 +378,6 @@ public:
     virtual void start() override;
     virtual void abort(IException *e) override;
     virtual void done() override;
-    virtual void end() override;
     virtual IThorGraphResults *createThorGraphResults(unsigned num);
 
 // IExceptionHandler
@@ -416,6 +415,7 @@ public:
 
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing);
     ISlaveWatchdog *queryProgressHandler() { return watchdog; }
+    void reportGraphEnd(graph_id gid);
 
     virtual mptag_t deserializeMPTag(MemoryBuffer &mb);
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const;

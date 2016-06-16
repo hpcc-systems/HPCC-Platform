@@ -197,10 +197,10 @@ class RegressMain:
 
         # Process config parameter
         self.config = Config(self.args.config).configObj
-        setConfig(self.config)
-        if 'server' in self.args:
+        if ('server' in self.args) and (self.args.server != None):
             self.config.set('espIp',  self.args.server)
             pass
+        setConfig(self.config)
 
         # Process target parameter
         self.targetClusters = []
