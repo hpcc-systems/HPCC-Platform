@@ -5332,8 +5332,6 @@ public:
     IFileDescriptor *getFileDescriptor(const char *clustername)
     {
         CriticalBlock block (sect);
-        if (subfiles.ordinality()==1)
-            return subfiles.item(0).getFileDescriptor(clustername);
         // superfiles assume consistant replication & compression
         UnsignedArray subcounts;  
         bool mixedwidth = false;
