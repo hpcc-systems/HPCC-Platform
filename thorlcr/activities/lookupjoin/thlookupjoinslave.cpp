@@ -808,7 +808,6 @@ class CInMemJoinBase : public CSlaveActivity, public CAllOrLookupHelper<HELPER>,
     Owned<IException> leftexception;
 
     bool eos, eog, someSinceEog;
-    SpinLock rHSRowSpinLock;
 
 protected:
     typedef CAllOrLookupHelper<HELPER> HELPERBASE;
@@ -909,7 +908,7 @@ protected:
         }
     } *rowProcessor;
 
-    CriticalSection rHSRowLock;
+    CriticalSection rhsRowLock;
     Owned<CBroadcaster> broadcaster;
     CBroadcaster *channel0Broadcaster;
     CriticalSection *broadcastLock;
@@ -1058,7 +1057,7 @@ protected:
          * if it never spills, but will make flushing non-locals simpler if spilling occurs.
          */
         CThorSpillableRowArray &rows = *rhsSlaveRows.item(slave);
-        CThorExpandingRowArray rHSInRowsTemp(*this, sharedRightRowInterfaces);
+        CThorExpandingRowArray rhsInRowsTemp(*this, sharedRightRowInterfaces);
         CThorExpandingRowArray pending(*this, sharedRightRowInterfaces);
         RtlDynamicRowBuilder rowBuilder(rightAllocator); // NB: rightAllocator is the shared allocator
         CThorStreamDeserializerSource memDeserializer(mb.length(), mb.toByteArray());
@@ -1069,14 +1068,14 @@ protected:
             if (pending.ordinality() >= 100)
             {
                 // NB: If spilt, addRHSRows will filter out non-locals
-                if (!addRHSRows(rows, pending, rHSInRowsTemp)) // NB: in SMART case, must succeed
+                if (!addRHSRows(rows, pending, rhsInRowsTemp)) // NB: in SMART case, must succeed
                     throw MakeActivityException(this, 0, "Out of memory: Unable to add any more rows to RHS");
             }
         }
         if (pending.ordinality())
         {
             // NB: If spilt, addRHSRows will filter out non-locals
-            if (!addRHSRows(rows, pending, rHSInRowsTemp)) // NB: in SMART case, must succeed
+            if (!addRHSRows(rows, pending, rhsInRowsTemp)) // NB: in SMART case, must succeed
                 throw MakeActivityException(this, 0, "Out of memory: Unable to add any more rows to RHS");
         }
     }
@@ -1084,7 +1083,7 @@ protected:
     {
         Owned<CSendItem> sendItem = broadcaster->newSendItem(bcast_send);
         MemoryBuffer mb;
-        CThorExpandingRowArray rHSInRowsTemp(*this, sharedRightRowInterfaces);
+        CThorExpandingRowArray rhsInRowsTemp(*this, sharedRightRowInterfaces);
         CThorExpandingRowArray pending(*this, sharedRightRowInterfaces);
         try
         {
@@ -1111,7 +1110,7 @@ protected:
                         pending.append(row.getClear());
                     if (pending.ordinality() >= 100)
                     {
-                        if (!channels[0]->addRHSRows(mySlaveNum, pending, rHSInRowsTemp)) // may cause broadcaster to be told to stop (for isStopping() to become true)
+                        if (!channels[0]->addRHSRows(mySlaveNum, pending, rhsInRowsTemp)) // may cause broadcaster to be told to stop (for isStopping() to become true)
                             throw MakeActivityException(this, 0, "Out of memory: Unable to add any more rows to RHS");
                     }
                     if (channel0Broadcaster->stopRequested())
@@ -1119,7 +1118,7 @@ protected:
                 }
                 if (pending.ordinality())
                 {
-                    if (!channels[0]->addRHSRows(mySlaveNum, pending, rHSInRowsTemp)) // may cause broadcaster to be told to stop (for isStopping() to become true)
+                    if (!channels[0]->addRHSRows(mySlaveNum, pending, rhsInRowsTemp)) // may cause broadcaster to be told to stop (for isStopping() to become true)
                         throw MakeActivityException(this, 0, "Out of memory: Unable to add any more rows to RHS");
                 }
                 if (0 == mb.length()) // will always be true if numNodes = 1
@@ -1570,14 +1569,14 @@ public:
         }
         return (rowidx_t)rhsRows;
     }
-    bool addRHSRows(unsigned slave, CThorExpandingRowArray &inRows, CThorExpandingRowArray &rHSInRowsTemp)
+    bool addRHSRows(unsigned slave, CThorExpandingRowArray &inRows, CThorExpandingRowArray &rhsInRowsTemp)
     {
         CThorSpillableRowArray &rows = *rhsSlaveRows.item(slave);
-        return addRHSRows(rows, inRows, rHSInRowsTemp);
+        return addRHSRows(rows, inRows, rhsInRowsTemp);
     }
-    virtual bool addRHSRows(CThorSpillableRowArray &rhsRows, CThorExpandingRowArray &inRows, CThorExpandingRowArray &rHSInRowsTemp)
+    virtual bool addRHSRows(CThorSpillableRowArray &rhsRows, CThorExpandingRowArray &inRows, CThorExpandingRowArray &rhsInRowsTemp)
     {
-        CriticalBlock b(rHSRowLock);
+        CriticalBlock b(rhsRowLock);
         return rhsRows.appendRows(inRows, true);
     }
 
@@ -1693,7 +1692,7 @@ protected:
     using PARENT::tableProxy;
     using PARENT::gatheredRHSNodeStreams;
     using PARENT::queryInput;
-    using PARENT::rHSRowLock;
+    using PARENT::rhsRowLock;
 
     IHash *leftHash, *rightHash;
     ICompare *compareRight, *compareLeftRight;
@@ -1959,7 +1958,7 @@ protected:
              */
             CThorExpandingRowArray temp(*this);
             rightCollector.transferRowsOut(temp);
-            uniqueKeys = marker.calculate(rhs, compareRight, false);
+            uniqueKeys = marker.calculate(temp, compareRight, false);
             rightCollector.transferRowsIn(temp);
         }
         if (!setupHT(uniqueKeys)) // could cause spilling
@@ -2268,7 +2267,7 @@ protected:
             exception.setown(e);
         }
 
-        /* Now that channel distribution done, remove it's roxiemem memory callback
+        /* Now that channel distribution done, remove its roxiemem memory callback
          * but allow collector return to continue to spill if there's memory pressure.
          */
         channelCollector.setown(channelDistributor.getCollector());
@@ -2727,15 +2726,15 @@ public:
         rows.clearRows();
         return localRows.ordinality();
     }
-    virtual bool addRHSRows(CThorSpillableRowArray &rhsRows, CThorExpandingRowArray &inRows, CThorExpandingRowArray &rHSInRowsTemp)
+    virtual bool addRHSRows(CThorSpillableRowArray &rhsRows, CThorExpandingRowArray &inRows, CThorExpandingRowArray &rhsInRowsTemp)
     {
-        dbgassertex(0 == rHSInRowsTemp.ordinality());
+        dbgassertex(0 == rhsInRowsTemp.ordinality());
         if (hasFailedOverToLocal())
         {
-            if (0 == keepLocal(inRows, rHSInRowsTemp))
+            if (0 == keepLocal(inRows, rhsInRowsTemp))
                 return true;
         }
-        CriticalBlock b(rHSRowLock);
+        CriticalBlock b(rhsRowLock);
         /* NB: If PARENT::addRHSRows fails, it will cause clearAllNonLocalRows() to have been triggered and failedOverToLocal to be set
          * When all is done, a last pass is needed to clear out non-locals
          */
@@ -2744,14 +2743,14 @@ public:
             /* Tried to do outside crit above, but if empty, and now overflow, need to inside
              * Will be one off if at all
              */
-            if (0 == rHSInRowsTemp.ordinality())
+            if (0 == rhsInRowsTemp.ordinality())
             {
-                if (0 == keepLocal(inRows, rHSInRowsTemp))
+                if (0 == keepLocal(inRows, rhsInRowsTemp))
                     return true;
             }
-            overflowWriteCount += rHSInRowsTemp.ordinality();
-            ForEachItemIn(r, rHSInRowsTemp)
-                overflowWriteStream->putRow(rHSInRowsTemp.getClear(r));
+            overflowWriteCount += rhsInRowsTemp.ordinality();
+            ForEachItemIn(r, rhsInRowsTemp)
+                overflowWriteStream->putRow(rhsInRowsTemp.getClear(r));
             return true;
         }
         if (hasFailedOverToLocal())
@@ -2759,12 +2758,12 @@ public:
             /* Tried to do outside crit above, but hasFailedOverToLocal() could be true, since gaining lock
              * Will be one off if at all
              */
-            if (0 == rHSInRowsTemp.ordinality())
+            if (0 == rhsInRowsTemp.ordinality())
             {
-                if (0 == keepLocal(inRows, rHSInRowsTemp))
+                if (0 == keepLocal(inRows, rhsInRowsTemp))
                     return true;
             }
-            if (rhsRows.appendRows(rHSInRowsTemp, true))
+            if (rhsRows.appendRows(rhsInRowsTemp, true))
                 return true;
         }
         else
@@ -2773,11 +2772,11 @@ public:
                 return true;
             dbgassertex(hasFailedOverToLocal());
 
-            if (0 == keepLocal(inRows, rHSInRowsTemp))
+            if (0 == keepLocal(inRows, rhsInRowsTemp))
                 return true;
 
             // keep it only if it hashes to my node
-            if (rhsRows.appendRows(rHSInRowsTemp, true))
+            if (rhsRows.appendRows(rhsInRowsTemp, true))
                 return true;
         }
         /* Could OOM whilst still failing over to local lookup again, dealing with last row, or trailing
@@ -2799,9 +2798,9 @@ public:
         overflowWriteFile.setown(new CFileOwner(iFile.getLink()));
         overflowWriteStream.setown(createRowWriter(iFile, queryRowInterfaces(rightITDL), rwFlags));
 
-        overflowWriteCount += rHSInRowsTemp.ordinality();
-        ForEachItemIn(r, rHSInRowsTemp)
-            overflowWriteStream->putRow(rHSInRowsTemp.getClear(r));
+        overflowWriteCount += rhsInRowsTemp.ordinality();
+        ForEachItemIn(r, rhsInRowsTemp)
+            overflowWriteStream->putRow(rhsInRowsTemp.getClear(r));
         return true;
     }
 };
