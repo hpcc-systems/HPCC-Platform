@@ -1085,7 +1085,8 @@ protected:
         Owned<CSendItem> sendItem = broadcaster->newSendItem(bcast_send);
         MemoryBuffer mb;
         CThorExpandingRowArray rHSInRowsTemp(*this, sharedRightRowInterfaces);
-        CThorExpandingRowArray pending(*this, sharedRightRowInterfaces);        try
+        CThorExpandingRowArray pending(*this, sharedRightRowInterfaces);
+        try
         {
             CMemoryRowSerializer mbser(mb);
             while (!abortSoon)
