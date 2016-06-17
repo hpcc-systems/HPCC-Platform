@@ -908,41 +908,45 @@ StringBuffer & StringBuffer::replace(char oldChar, char newChar)
     return *this;
 }
 
-// this method will replace all occurrances of "oldStr" with "newStr"
-StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newStr)
+// Copy source to result, replacing all occurrences of "oldStr" with "newStr"
+StringBuffer &replaceString(StringBuffer & result, size32_t lenSource, const char *source, size32_t lenOldStr, const char* oldStr, size32_t lenNewStr, const char* newStr)
 {
-    if (curLen)
+    if (lenSource)
     {
-        const char* s = str();  // get null terminated version of the string
-        int left = length();
-        int oldStr_len = (size32_t)strlen(oldStr);
-
-        StringBuffer tempbuff;
-
-        while (left >= oldStr_len)
+        size32_t left = lenSource;
+        while (left >= lenOldStr)
         {
-            if ( memcmp(s, oldStr, oldStr_len) == 0)
+            if (memcmp(source, oldStr, lenOldStr)==0)
             {
-                tempbuff.append(newStr);
-                s += oldStr_len;
-                left -= oldStr_len;
+                result.append(lenNewStr, newStr);
+                source += lenOldStr;
+                left -= lenOldStr;
             }
             else
             {
-                tempbuff.append(*s);
-                s++;
+                result.append(*source);
+                source++;
                 left--;
             }
         }
 
         // there are no more possible replacements, make sure we keep the end of the original buffer
-        tempbuff.append(s);
-        
-        //*this = tempbuff;
-        swapWith(tempbuff);
-        
+        result.append(left, source);
     }
+    return result;
+}
 
+// this method will replace all occurrences of "oldStr" with "newStr"
+StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newStr)
+{
+    if (curLen)
+    {
+        StringBuffer temp;
+        size32_t oldlen = oldStr ? strlen(oldStr) : 0;
+        size32_t newlen = newStr ? strlen(newStr) : 0;
+        ::replaceString(temp, curLen, buffer, oldlen, oldStr, newlen, newStr);
+        swapWith(temp);
+    }
     return *this;
 }
 

@@ -275,4 +275,23 @@ class InternalStatisticsTest : public CppUnit::TestFixture
 CPPUNIT_TEST_SUITE_REGISTRATION( InternalStatisticsTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( InternalStatisticsTest, "StatisticsTest" );
 
+//MORE: This can't be included in jlib because of the dll dependency
+class StringBufferTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( StringBufferTest  );
+        CPPUNIT_TEST(testReplace);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testReplace()
+    {
+        StringBuffer r ("1 bb c");
+        r.replaceString(" ", "x");
+        ASSERT(streq(r, "1xbbxc"));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( StringBufferTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( StringBufferTest, "StringBufferTest" );
+
+
 #endif // _USE_CPPUNIT

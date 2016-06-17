@@ -5305,10 +5305,7 @@ void rtlAddExceptionTag(StringBuffer & errorText, const char * tag, const char *
 void rtlSubstituteEmbeddedScript(size32_t &__lenResult, char * &__result, size32_t scriptChars, const char *script, size32_t outFieldsChars, const char *outFields, size32_t searchChars, const char *search)
 {
     StringBuffer result;
-    result.append(rtlUtf8Size(scriptChars, script), script);
-    StringBuffer outFieldsX(rtlUtf8Size(outFieldsChars, outFields), outFields);
-    StringBuffer searchX(rtlUtf8Size(searchChars, search), search);
-    result.replaceString(searchX.str(), outFieldsX.str());
+    ::replaceString(result, rtlUtf8Size(scriptChars, script), script, rtlUtf8Size(searchChars, search), search, rtlUtf8Size(outFieldsChars, outFields), outFields);
     __lenResult = result.length();
     __result = result.detach();
 }
