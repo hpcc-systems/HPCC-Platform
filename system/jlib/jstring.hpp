@@ -401,6 +401,8 @@ extern jlib_decl void decodeXML(ISimpleReadStream &in, StringBuffer &out, unsign
 extern jlib_decl int utf8CharLen(unsigned char ch);
 extern jlib_decl int utf8CharLen(const unsigned char *ch, unsigned maxsize = (unsigned)-1);
 
+extern jlib_decl StringBuffer &replaceString(StringBuffer & result, size32_t lenSource, const char *source, size32_t lenOldStr, const char* oldStr, size32_t lenNewStr, const char* newStr);
+
 inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flags=false, unsigned len=(unsigned)-1)
 {
     return encodeXML(x, ret, flags, len, true);
