@@ -2138,6 +2138,13 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
             getRecordCountText(text, dataset);
             addAttribute("predictedCount", text);
         }
+
+        if (options.addLikelihoodToGraph && kind==TAKfilter)
+        {
+            StringBuffer text;
+            getLikelihoodText(text,dataset);
+            addAttribute("matchLikelihood", text);
+        }
     }
 
     processAnnotations(dataset);

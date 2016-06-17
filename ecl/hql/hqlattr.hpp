@@ -76,7 +76,7 @@ extern HQL_API ITypeInfo * setLinkCountedAttr(ITypeInfo * _type, bool setValue);
 extern HQL_API ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue);
 extern HQL_API bool isSmallGrouping(IHqlExpression * sortlist);
 extern HQL_API void getRecordCountText(StringBuffer & result, IHqlExpression * expr);
-
+extern HQL_API void getLikelihoodText(StringBuffer & result, IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryRecordCountInfo(IHqlExpression * expr);
 extern HQL_API IHqlExpression * getRecordCountInfo(IHqlExpression * expr);
 extern HQL_API bool hasNoMoreRowsThan(IHqlExpression * expr, __int64 limit);
