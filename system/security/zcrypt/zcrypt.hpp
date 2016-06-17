@@ -100,5 +100,7 @@ typedef unsigned char byte;
 ZCRYPT_API char* gzip( const char* inputBuffer, unsigned int inputSize,
     unsigned int* outlen, int compressionLevel=GZ_DEFAULT_COMPRESSION);
 ZCRYPT_API void gunzip(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput);
+ZCRYPT_API bool isgzipped(const byte* content, size_t length);
+ZCRYPT_API void removeZipExtension(StringBuffer & target, const char * source);
 
 #endif
