@@ -59,14 +59,14 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
-static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
+__declspec(noreturn) static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 
 static void UNSUPPORTED(const char *feature)
 {
     throw MakeStringException(-1, "UNSUPPORTED feature: %s not supported in v8embed plugin", feature);
 }
 
-static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));
+__declspec(noreturn) static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));
 
 static void typeError(const char *expected, const RtlFieldInfo *field)
 {
