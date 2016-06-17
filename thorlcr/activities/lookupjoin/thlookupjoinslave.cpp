@@ -1939,7 +1939,7 @@ protected:
     {
         try
         {
-            if (!marker.init(rhs.ordinality(), queryRowManager()))
+            if (!marker.init(rightCollector.numRows(), queryRowManager()))
                 return false;
         }
         catch (IException *e)
@@ -1948,7 +1948,6 @@ protected:
             e->Release();
             return false;
         }
-        // Either was already sorted, or rowLoader->load() sorted on transfer out to rhs
 
         rowidx_t uniqueKeys = 0;
         {
@@ -2132,7 +2131,11 @@ protected:
         {
             const void *next = right->nextRow();
             if (!next)
-                break;
+            {
+                next = right->nextRow();
+                if (!next)
+                    break;
+            }
             writer->putRow(next);
         }
         return channelCollector.getClear();
@@ -2416,9 +2419,9 @@ protected:
                 }
                 ICompare *cmp = helper->isRightAlreadyLocallySorted() ? NULL : compareRight;
                 rightCollector.setown(handleLocalRHS(right, cmp));
-                rightStream.setown(rightCollector->getStream(&rhs));
-                if (rightStream)
+                if (rightCollector->hasSpilt())
                 {
+                    rightStream.setown(rightCollector->getStream());
                     ActPrintLog("Local SMART JOIN spilt to disk. Failing over to regular local join");
                     setFailoverToStandard(true);
                 }
@@ -2435,7 +2438,7 @@ protected:
                         marker.reset();
                     if (!prepareLocalHT(marker, *rightCollector)) // can cause others to spill, but must not be allowed to spill channel rows I'm working on.
                         ActPrintLog("Out of memory trying to prepare [LOCAL] hashtable for a SMART join (%" RIPF "d rows), will now failover to a std hash join", rhs.ordinality());
-                    rightStream.setown(rightCollector->getStream(&rhs));
+                    rightStream.setown(rightCollector->getStream(false, &rhs));
                 }
             }
             if (rightStream)
