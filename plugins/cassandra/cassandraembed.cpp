@@ -591,7 +591,7 @@ static const char *getTypeName(CassValueType type)
     default: return "UNKNOWN";
     }
 }
-static void typeError(const char *expected, const CassValue *value, const RtlFieldInfo *field) __attribute__((noreturn));
+__declspec(noreturn) static void typeError(const char *expected, const CassValue *value, const RtlFieldInfo *field) __attribute__((noreturn));
 
 static void typeError(const char *expected, const CassValue *value, const RtlFieldInfo *field)
 {

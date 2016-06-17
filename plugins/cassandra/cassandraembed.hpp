@@ -20,9 +20,9 @@
 
 namespace cassandraembed {
 
-extern void UNSUPPORTED(const char *feature) __attribute__((noreturn));
-extern void failx(const char *msg, ...) __attribute__((noreturn))  __attribute__((format(printf, 1, 2)));
-extern void fail(const char *msg) __attribute__((noreturn));
+__declspec(noreturn) extern void UNSUPPORTED(const char *feature) __attribute__((noreturn));
+__declspec(noreturn) extern void failx(const char *msg, ...) __attribute__((format(printf, 1, 2), noreturn));
+__declspec(noreturn) extern void fail(const char *msg) __attribute__((noreturn));
 extern void check(CassError rc);
 extern bool isInteger(const CassValueType t);
 extern bool isString(CassValueType t);
