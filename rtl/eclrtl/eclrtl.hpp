@@ -838,4 +838,6 @@ interface IEmbedContext : extends IInterface
 
 typedef IEmbedContext * (* GetEmbedContextFunction)();
 
+ECLRTL_API void rtlSubstituteEmbeddedScript(size32_t &__lenResult, char * &__result, size32_t scriptChars, const char *script, size32_t outFieldsChars, const char *outFields, size32_t searchChars, const char *search);
+
 #endif

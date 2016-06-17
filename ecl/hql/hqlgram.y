@@ -1085,12 +1085,13 @@ embedBody
                             OwnedHqlExpr embedText = $2.getExpr();
                             $$.setExpr(parser->processEmbedBody($2, embedText, NULL, attrs), $1);
                         }
-    | EMBED '(' abstractModule ',' expression ')'
+    | EMBED '(' abstractModule ',' expression attribs ')'
                         {
-                            parser->normalizeExpression($5, type_stringorunicode, true);
+                            parser->normalizeExpression($5, type_stringorunicode, false);
                             OwnedHqlExpr language = $3.getExpr();
                             OwnedHqlExpr embedText = $5.getExpr();
-                            $$.setExpr(parser->processEmbedBody($5, embedText, language, NULL), $1);
+                            OwnedHqlExpr attribs = $6.getExpr();
+                            $$.setExpr(parser->processEmbedBody($5, embedText, language, attribs), $1);
                         }
     | IMPORT '(' abstractModule ',' expression attribs ')'
                         {

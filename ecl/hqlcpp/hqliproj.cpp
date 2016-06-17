@@ -421,14 +421,14 @@ IHqlExpression * UsedFieldSet::createRowTransform(IHqlExpression * row, const Us
 }
 
 
-void UsedFieldSet::calcFinalRecord(bool canPack, bool ignoreIfEmpty)
+void UsedFieldSet::calcFinalRecord(bool canPack, bool ignoreIfEmpty, bool disallowEmpty)
 {
     assertex(originalFields);
     if (finalRecord)
         return;
 
     ForEachItemIn(i1, nested)
-        nested.item(i1).used.calcFinalRecord(canPack, true);
+        nested.item(i1).used.calcFinalRecord(canPack, true, false);
 
     IHqlExpression * originalRecord = queryOriginalRecord();
     if (checkAllFieldsUsed())
@@ -479,7 +479,10 @@ void UsedFieldSet::calcFinalRecord(bool canPack, bool ignoreIfEmpty)
     {
         if (ignoreIfEmpty)
             return;
-        recordFields.append(*createAttribute(_nonEmpty_Atom));
+        if (disallowEmpty)
+            recordFields.append(*LINK(queryOriginalRecord()->queryChild(0)));
+        else
+            recordFields.append(*createAttribute(_nonEmpty_Atom));
     }
 
     finalRecord.setown(createRecord(recordFields));
@@ -1085,13 +1088,13 @@ IHqlExpression * ComplexImplicitProjectInfo::createOutputProject(IHqlExpression 
 }
 
 
-void ComplexImplicitProjectInfo::finalizeOutputRecord()
+void ComplexImplicitProjectInfo::finalizeOutputRecord(bool disallowEmpty)
 {
     //MORE: Create them in the same order as the original record + don't change if numOutputFields = numOriginalOutputFields
     if (!queryOutputRecord())
     {
         bool canPack = (safeToReorderOutput() && okToOptimize());
-        outputFields.calcFinalRecord(canPack, false);
+        outputFields.calcFinalRecord(canPack, false, disallowEmpty);
     }
 }
 
@@ -1595,6 +1598,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
         case IterateTransformActivity:
         case DenormalizeActivity:
         case CreateRecordSourceActivity:
+        case CreateNonEmptyRecordSourceActivity:
             if (hasUnknownTransform(expr))
                 complexExtra->preventOptimization();
             break;
@@ -1615,6 +1619,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
         case CompoundActivity:
         case CompoundableActivity:
         case CreateRecordSourceActivity:
+        case CreateNonEmptyRecordSourceActivity:
         case AnyTypeActivity:
             break;
         case RollupTransformActivity:
@@ -2169,7 +2174,12 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_call:
     case no_externalcall:
         if (hasActivityType(expr))
-            return SourceActivity;
+        {
+            if (isProjectableCall(expr))
+                return CreateNonEmptyRecordSourceActivity;
+            else
+                return SourceActivity;
+        }
         //MORE: What about parameters??
         return NonActivity;
     case no_commonspill:
@@ -2423,7 +2433,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
         {
             //output will now be whatever fields are required by the output fields.
             //input will be the same as the output fields, since it is just a wrapper node.
-            extra->finalizeOutputRecord();
+            extra->finalizeOutputRecord(false);
             //MORE: Not sure this is neededextra->leftFieldsRequired.clone(extra->outputFields);
             extra->insertProject = true;
             assertex(extra->inputs.ordinality() == 0);
@@ -2437,14 +2447,15 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                 extra->inputs.item(0).stopOptimizeCompound(true);
 
             if (extra->okToOptimize())
-                extra->finalizeOutputRecord();
+                extra->finalizeOutputRecord(false);
             break;
         }
+    case CreateNonEmptyRecordSourceActivity:
     case CreateRecordSourceActivity:
     case AnyTypeActivity:
         {
             if (extra->okToOptimize())
-                extra->finalizeOutputRecord();
+                extra->finalizeOutputRecord(extra->activityKind() == CreateNonEmptyRecordSourceActivity);
             break;
         }
     case PassThroughActivity:
@@ -2880,6 +2891,43 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
             }
             break;
         }
+    case CreateNonEmptyRecordSourceActivity:
+        {
+            assertex(expr->getOperator() == no_call);
+            //Always reduce things that create a new record so they only project the fields they need to
+            if (complexExtra->outputChanged())
+            {
+                HqlExprArray args;
+                IHqlExpression * funcdef = expr->queryBody()->queryFunctionDefinition();
+                assertex(funcdef);
+                IHqlExpression * body = funcdef->queryChild(0);
+                assertex(body);
+                if ((funcdef->getOperator() == no_funcdef) && (body->getOperator() == no_outofline))
+                {
+                    IHqlExpression * bodycode = body->queryChild(0);
+                    if (bodycode->getOperator() == no_embedbody)
+                    {
+                        OwnedHqlExpr newBodyCode = replaceChild(bodycode, 1, complexExtra->queryOutputRecord());
+                        OwnedHqlExpr newBody = replaceChild(body, 0, newBodyCode);
+                        OwnedHqlExpr newFuncdef = replaceChild(funcdef, 0, newBody);
+                        unwindChildren(args, expr, 0);
+                        transformed.setown(createBoundFunction(NULL, newFuncdef, args, NULL, DEFAULT_EXPAND_CALL));
+
+                        logChange("Auto project embed", expr, complexExtra->outputFields);
+                        return transformed.getClear();
+                    }
+                }
+                throwUnexpected();
+                break;
+            }
+            else
+            {
+                transformed.setown(createParentTransformed(expr));
+                //MORE: Need to replace left/right with their transformed varieties because the record may have changed format
+                transformed.setown(updateSelectors(transformed, expr));
+            }
+            break;
+        }
     case CompoundActivity:
         {
             transformed.setown(createParentTransformed(expr));
@@ -3028,8 +3076,9 @@ void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
     case CompoundActivity:
     case CompoundableActivity:
     case CreateRecordSourceActivity:
+    case CreateNonEmptyRecordSourceActivity:
     case AnyTypeActivity:
-        extra->finalizeOutputRecord();
+        extra->finalizeOutputRecord(extra->activityKind() == CreateNonEmptyRecordSourceActivity);
         break;
     case DenormalizeActivity:
     case RollupTransformActivity:
@@ -3047,7 +3096,7 @@ void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
                 extra->fieldsToBlank.getText(fieldText);
                 DBGLOG("ImplicitProject: Fields %s for %s not required by outputs - so blank in transform", fieldText.str(), opString);
             }
-            extra->finalizeOutputRecord();
+            extra->finalizeOutputRecord(false);
             break;
         }
     case FixedInputActivity:
@@ -3074,7 +3123,7 @@ void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
                         ComplexImplicitProjectInfo & cur = extra->inputs.item(i2);
                         extra->outputFields.intersectFields(cur.outputFields);
                     }
-                    extra->finalizeOutputRecord();
+                    extra->finalizeOutputRecord(false);
                     anyProjected = true;
                     break;
                 }
@@ -3090,7 +3139,7 @@ void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
         if (extra->insertProject && requiresFewerFields(extra->leftFieldsRequired, extra->inputs.item(0)))
         {
             extra->outputFields.set(extra->leftFieldsRequired);
-            extra->finalizeOutputRecord();
+            extra->finalizeOutputRecord(false);
         }
         else
             extra->setMatchingOutput(&extra->inputs.item(0));
