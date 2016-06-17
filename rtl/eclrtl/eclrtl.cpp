@@ -5306,7 +5306,7 @@ void rtlSubstituteEmbeddedScript(size32_t &__lenResult, char * &__result, size32
 {
     StringBuffer result;
     ::replaceString(result, rtlUtf8Size(scriptChars, script), script, rtlUtf8Size(searchChars, search), search, rtlUtf8Size(outFieldsChars, outFields), outFields);
-    __lenResult = rtlUtf8Length(result.length(), result.str());
+    __lenResult = result.lengthUtf8();
     __result = result.detach();
 }
 

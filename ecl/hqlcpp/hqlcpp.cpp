@@ -11847,7 +11847,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
             substValue->getUTF8Value(search);
             rtlDataAttr result;
             unsigned resultLen;
-            rtlSubstituteEmbeddedScript(resultLen, result.refstr(), rtlUtf8Length(origBody.length(), origBody.str()), origBody.str(), rtlUtf8Length(fieldlist.length()-1, fieldlist.str()+1), fieldlist.str()+1, rtlUtf8Length(search.length(), search.str()), search.str());
+            rtlSubstituteEmbeddedScript(resultLen, result.refstr(), origBody.lengthUtf8(), origBody.str(), fieldlist.lengthUtf8()-1, fieldlist.str()+1, search.lengthUtf8(), search.str());
             scriptArgs.append(*createConstant(createUtf8Value(resultLen, result.getstr(), makeUtf8Type(resultLen, NULL))));
         }
     }

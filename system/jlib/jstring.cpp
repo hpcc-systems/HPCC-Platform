@@ -33,6 +33,7 @@
 #include "jfile.hpp"
 #include "jdebug.hpp"
 #include "jutil.hpp"
+#include "junicode.hpp"
 
 #define DOUBLE_FORMAT   "%.16g"
 #define FLOAT_FORMAT    "%.7g"
@@ -498,6 +499,14 @@ void StringBuffer::setLength(unsigned len)
         ensureCapacity(len-curLen);
     }
     curLen = len;
+}
+
+size32_t StringBuffer::lengthUtf8() const
+{
+    size32_t chars = 0;
+    for (unsigned offset=0; offset < curLen; offset += readUtf8Size(buffer+offset))
+        chars++;
+    return chars;
 }
 
 char * StringBuffer::reserve(size32_t size)
