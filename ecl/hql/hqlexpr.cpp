@@ -3279,8 +3279,6 @@ void CHqlExpression::initFlagsBeforeOperands()
     case no_sectioninput:
     case no_wuid:
     case no_getenv:
-    case no_likely:
-    case no_unlikely:
         infoFlags2 &= ~HEF2constant;
         break;
     case no_counter:
