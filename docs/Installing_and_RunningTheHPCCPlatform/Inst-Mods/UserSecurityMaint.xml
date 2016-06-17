@@ -182,9 +182,9 @@
 
           <listitem>
             <para>Verify the password expiration date, or if password is set
-            to expire. </para>
+            to expire.</para>
 
-            <para>You can also change your password here, if desired. </para>
+            <para>You can also change your password here, if desired.</para>
           </listitem>
         </orderedlist></para>
     </sect3>
@@ -272,15 +272,15 @@
           <listitem>
             <para>Enter a <emphasis role="bold">Password</emphasis> for the
             user and then confirm it in the <emphasis role="bold">Retype
-            Password</emphasis> field. </para>
+            Password</emphasis> field.</para>
 
             <para><variablelist>
                 <varlistentry>
-                  <term>NOTE: </term>
+                  <term>NOTE:</term>
 
                   <listitem>
                     <para>The password must conform to the policy of your
-                    security manager server. </para>
+                    security manager server.</para>
                   </listitem>
                 </varlistentry>
               </variablelist></para>
@@ -1125,17 +1125,17 @@
   <sect2 id="Feature_Access">
     <title>Feature level access control</title>
 
-    <!--Following section addressd in H14895-->
-
-    <para>Access to the feature permissions is available through ECL Watch. To
-    modify feature permissions you must have Administrator level access. To
-    access the feature permissions click on the <emphasis
+    <para>Access to the feature permissions is available through ECL Watch. In
+    order to modify feature permissions you must have Administrator level
+    access. To access the feature permissions click on the <emphasis
     role="bold">Operations</emphasis> icon, then click the <emphasis
     role="bold">Security</emphasis> link from the navigation sub-menu.
     <graphic fileref="../../images/Perm005.jpg" vendor="eclwatchSS" /></para>
 
-    <para>Use the feature level controls on the<emphasis role="bold">
-    Permissions</emphasis> tab to:</para>
+    <para>To use the feature level controls, apply the feature resource from
+    the<emphasis role="bold"> Available Permissions</emphasis> tab to the
+    <emphasis role="bold">Active Permissions</emphasis> for users and groups.
+    Using the feature level controls allow you to:</para>
 
     <itemizedlist>
       <listitem>
@@ -1156,26 +1156,23 @@
   <sect2 id="Feature_Resources" role="brk">
     <title>Feature resources</title>
 
-    <!--Following section addressd in H14895-->
-
-    <para>There are three types of features for which you can set up access
-    control in HPCC. Access to features of the HPCC system is controlled by
-    via the <emphasis role="bold">ESP Features for SMC</emphasis> category.
-    Access to features of WsECL web service are controlled by the <emphasis
-    role="bold">ESP Features for WsEclAccess</emphasis> category. Access to
-    features of the ECLDirect web service are controlled by the <emphasis
-    role="bold">ESP Features for EclDirectAccess</emphasis> category. <graphic
+    <para>There are several features for which you can set up access control
+    in HPCC. Access to features of the HPCC system is controlled by via the
+    <emphasis role="bold">ESP Features for SMC</emphasis> category. <graphic
     fileref="../../images/Perm006.jpg" vendor="eclwatchSS" /></para>
 
-    <para>These features are listed as <emphasis
-    role="bold">Resources</emphasis> when setting permissions using ECL
-    Watch.</para>
+    <para>The available features are listed under the <emphasis
+    role="bold">Permissions</emphasis> tab. You can view and gain access to
+    the feature controls from here. However, the feature controls must be
+    applied to users, or to groups. If you click on the feature name link, a
+    tab opens that displays the users and groups where those feature
+    permissions are applied.</para>
 
     <para>ECL Watch feature permission settings that are not listed are not
     relevant and should not be used.</para>
 
-    <sect3 id="ModifyPermissionsFeatureResource">
-      <title>Modify permissions for a feature resource:</title>
+    <sect3 id="ApplyPermissionsFeatureResource">
+      <title>Apply permissions for a feature resource:</title>
 
       <para>To use the feature permissions, you must apply them to a user or
       group(s). To access the feature permissions click on the <emphasis
@@ -1184,13 +1181,6 @@
       sub-menu.</para>
 
       <orderedlist>
-        <listitem>
-          <para>Click the <emphasis role="bold">Permissions</emphasis>
-          tab.</para>
-
-          <para>The resources are listed.</para>
-        </listitem>
-
         <listitem>
           <para>Identify the user(s) or group(s) which you want to modify the
           feature permissions.</para>
@@ -1209,8 +1199,8 @@
         </listitem>
 
         <listitem>
-          <para>Click the <emphasis role="bold">User Permissions</emphasis>
-          sub-tab.</para>
+          <para>Click the <emphasis role="bold">Available
+          Permissions</emphasis> sub-tab.</para>
         </listitem>
 
         <listitem>
@@ -1241,434 +1231,376 @@
       </orderedlist>
     </sect3>
 
-    <sect3 id="FeaturePermissions">
-      <title>Feature Permissions</title>
+    <sect3 id="FeaturePermissions" role="brk">
+      <title>SMC Feature Permissions</title>
 
-      <para>The following sections show the level of access required to be
-      able to use ECL Watch features:</para>
+      <para>The following table describes the level of access required to be
+      able to use these HPCC ECL Watch features.</para>
+
+      <para><informaltable>
+          <tgroup cols="3">
+            <colspec colwidth="145pt" />
+
+            <colspec />
+
+            <colspec colwidth="85pt" />
+
+            <thead>
+              <row>
+                <entry>Name</entry>
+
+                <entry>Description</entry>
+
+                <entry>Access</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>ClusterTopologyAccess</entry>
+
+                <entry>Access to Cluster Topology</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access to log files.</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>ConfigAccess</entry>
+
+                <entry>Access to super computer environment
+                (deprecated)</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry>DfuAccess</entry>
+
+                <entry>Access to DFU Logical Files</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Delete Files, add to superfiles, and remove from
+                superfiles</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry>DfuExceptions</entry>
+
+                <entry>Access to DFU Exceptions</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry>DfuWorkunitsAccess</entry>
+
+                <entry>Access to View DFU Workunits</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access to Create, Delete, Update, Submit, and Abort DFU
+                Workunits</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry>DfuXrefAccess</entry>
+
+                <entry>Access to DFU XREF</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Clean directory</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Make changes and generate XREF Reports</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>EclDirectAccess</entry>
+
+                <entry>Access to ECL direct service.</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>ESDLConfigAccess</entry>
+
+                <entry>ESDL Config Access</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Publish ESDL definition and ESDL binding, configure
+                ESDL binding method.</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Delete ESDL definitions, delete ESDL bindings.</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>ExecuteAccess</entry>
+
+                <entry>Access to Remote Execution in ECL Watch
+                (deprecated)</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>FileDesprayAccess</entry>
+
+                <entry>Allows a user to despray logical files.</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry>FileDkcAccess</entry>
+
+                <entry>Access to dkcing of key files (deprecated)</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry>FileIOAccess</entry>
+
+                <entry>Access to read files in Drop zone</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access to write to files in Drop zone</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry>FileScopeAccess</entry>
+
+                <entry>Allows access to query, set, modify, and delete File
+                Scope Permissions</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>FileSprayAccess</entry>
+
+                <entry>Access to Spraying and Copying</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Rename, spray, copy, and replicate files</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Delete from Drop zone</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>MachineInfoAccess</entry>
+
+                <entry>Access to machine/Preflight Information</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry>MetricsAccess</entry>
+
+                <entry>Access to SNMP Metrics Information (Roxie
+                Metrics)</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry>OthersWorkunitsAccess</entry>
+
+                <entry>Access to View Other User's Workunits</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access to Modify or Resubmit User's Workunits</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access to Delete Other User's Workunits</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>OwnWorkunitsAccess</entry>
+
+                <entry>Access to View Own Workunit</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access to Create or Modify Own Workunit</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access to Delete Own Workunits</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>RoxieControlAccess</entry>
+
+                <entry>Access to Roxie control commands</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry>SmcAccess</entry>
+
+                <entry>Access to ECL Watch (SMC Service)</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry>ThorQueueAccess</entry>
+
+                <entry>Access to Thor Job Queue Control</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>WsEclAccess</entry>
+
+                <entry>Access to WS ECL service</entry>
+
+                <entry>Full</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para></para>
 
       <sect4 id="FeaturePermissions_Login">
-        <title>Login</title>
-
-        <para>SMCAccess is required by all users to be able to successfully
-        login to ECL Watch. <informaltable>
-            <tgroup cols="3">
-              <colspec colwidth="155pt" />
-
-              <colspec />
-
-              <colspec colwidth="85pt" />
-
-              <thead>
-                <row>
-                  <entry>Name</entry>
-
-                  <entry>Description</entry>
-
-                  <entry>Access</entry>
-                </row>
-              </thead>
-
-              <tbody>
-                <row>
-                  <entry>SmcAccess</entry>
-
-                  <entry>Root Access to SMC Service</entry>
-
-                  <entry>Read</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable></para>
-      </sect4>
-
-      <sect4 id="FeaturePermissions_Cluster">
-        <title>Clusters</title>
-
-        <para>Users may be given access to the thor queue which can be
-        manipulated by promoting/demoting queued workunits according to
-        priority. The thor queue can also be paused or cleared and users can
-        view thor usage statistics.</para>
-
-        <para>From this page, users can also click on workunit IDs to view
-        details about the workunit. Depending on the level of access given,
-        they can view, modify and delete their own, or others
-        workunits.</para>
-
-        <para><informaltable>
-            <tgroup cols="3">
-              <colspec colwidth="155pt" />
-
-              <colspec />
-
-              <colspec colwidth="85pt" />
-
-              <thead>
-                <row>
-                  <entry>Name</entry>
-
-                  <entry>Description</entry>
-
-                  <entry>Access</entry>
-                </row>
-              </thead>
-
-              <tbody>
-                <row>
-                  <entry>ThorQueueAccess</entry>
-
-                  <entry>Access to Thor Job Queue Control</entry>
-
-                  <entry>Full</entry>
-                </row>
-
-                <row>
-                  <entry>RoxieControlAccess</entry>
-
-                  <entry>Access to Roxie Process Cluster Control</entry>
-
-                  <entry>Full</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable></para>
-      </sect4>
-
-      <sect4 id="FeaturePermissions_ECLWorkunits">
-        <title>ECL Workunits</title>
-
-        <para>Workunits can also be viewed using this feature of ECL Watch.
-        The contents of the workunits list reflects whether a user has the
-        permission to view their own and others workunits.<informaltable>
-            <tgroup cols="3">
-              <colspec colwidth="155pt" />
-
-              <colspec />
-
-              <colspec colwidth="85pt" />
-
-              <thead>
-                <row>
-                  <entry>Name</entry>
-
-                  <entry>Description</entry>
-
-                  <entry>Access</entry>
-                </row>
-              </thead>
-
-              <tbody>
-                <row>
-                  <entry>OwnWorkunitsAccess</entry>
-
-                  <entry>Access to View Own Workunit</entry>
-
-                  <entry>Read</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Access to Create or Modify Own Workunit</entry>
-
-                  <entry>Write</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Access to Delete Own Workunits</entry>
-
-                  <entry>Full</entry>
-                </row>
-
-                <row>
-                  <entry>OtherWorkunitsAccess</entry>
-
-                  <entry>Access to View Other User's Workunits</entry>
-
-                  <entry>Read</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Access to Modify or Resubmit User's Workunits</entry>
-
-                  <entry>Write</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Access to Delete Other User's Workunits</entry>
-
-                  <entry>Full</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable></para>
-      </sect4>
-
-      <sect4 id="FeaturePermissions_Topology">
-        <title>Topology</title>
-
-        <para>This section shows details about the clusters and other HPCC
-        System components. Preflight provides diagnostic information including
-        disc space, CPU usage and access to logs as well as the ability to
-        swap faulty nodes out of the cluster. <informaltable>
-            <tgroup cols="3">
-              <colspec colwidth="155pt" />
-
-              <colspec />
-
-              <colspec colwidth="85pt" />
-
-              <thead>
-                <row>
-                  <entry>Name</entry>
-
-                  <entry>Description</entry>
-
-                  <entry>Access</entry>
-                </row>
-              </thead>
-
-              <tbody>
-                <row>
-                  <entry>ClusterTopologyAccess</entry>
-
-                  <entry>Access to Cluster Topology</entry>
-
-                  <entry>Read</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Set Machine Status</entry>
-
-                  <entry>Write</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Swap Node</entry>
-
-                  <entry>Full</entry>
-                </row>
-
-                <row>
-                  <entry>MachineInfoAccess</entry>
-
-                  <entry>Access to machine/Preflight Information</entry>
-
-                  <entry>Read</entry>
-                </row>
-
-                <row>
-                  <entry>MetricsAccess</entry>
-
-                  <entry>Access to SNMP Metrics Information (Roxie
-                  Metrics)</entry>
-
-                  <entry>Read</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable></para>
-      </sect4>
-
-      <sect4 id="FeaturePermissions_DFUWorkunits">
-        <title>DFU Workunits</title>
-
-        <para>A user must have permission to view DFU Workunits and requires
-        other permissions to be able to manipulate them.<informaltable>
-            <tgroup cols="3">
-              <colspec colwidth="155pt" />
-
-              <colspec />
-
-              <colspec colwidth="85pt" />
-
-              <thead>
-                <row>
-                  <entry>Name</entry>
-
-                  <entry>Description</entry>
-
-                  <entry>Access</entry>
-                </row>
-              </thead>
-
-              <tbody>
-                <row>
-                  <entry>DfuWorkunitsAccess</entry>
-
-                  <entry>Access to View DFU Workunits</entry>
-
-                  <entry>Read</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Access to Create, Delete, Update, Submit, and Abort
-                  DFU Workunits</entry>
-
-                  <entry>Write</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable></para>
+        <title>Some Feature Permissions Notes</title>
+
+        <itemizedlist>
+          <listitem>
+            <para>SMCAccess is required to be able to successfully login to
+            ECL Watch.</para>
+          </listitem>
+
+          <listitem>
+            <para>ThorQueueAccess allows you to manipulate the queue by
+            promoting/demoting queued workunits according to priority.</para>
+          </listitem>
+
+          <listitem>
+            <para>ThorQueueAccess also allows you to pause or clear the Thor
+            queue. You can also view Thor usage statistics.</para>
+          </listitem>
+
+          <listitem>
+            <para>Depending on the level of access the user has, they can
+            view, modify, and delete their own, or others workunits. This is
+            OwnWorkunitsAccess, and OthersWorkunitsAccess respectively.</para>
+          </listitem>
+
+          <listitem>
+            <para>DfuWorkunitsAccess permissions allow users to view and/or
+            manipulate DFU Workunits.</para>
+          </listitem>
+
+          <listitem>
+            <para>Users need permission to see files on the dropzone and also
+            to put files there. They need further permissions to be able to
+            spray and copy files from the dropzone to their cluster and also
+            to despray files from the cluster back to the dropzone.</para>
+          </listitem>
+        </itemizedlist>
       </sect4>
 
       <sect4 id="FeaturePermissions_DFUFiles">
-        <title>DFU Files</title>
-
-        <para>Users need permission to see files on the dropzone and also to
-        put files there. They need further permissions to be able to spray and
-        copy files from the dropzone to their cluster and also to despray
-        files from the cluster back to the dropzone.</para>
+        <title>DFU Xref</title>
 
         <para>XREF is used for monitoring files on the cluster(s). Reports
         generated show where housekeeping is required on the cluster(s) and
-        users require additional permission to use this feature.
-        <informaltable>
-            <tgroup cols="3">
-              <colspec colwidth="155pt" />
-
-              <colspec />
-
-              <colspec colwidth="85pt" />
-
-              <thead>
-                <row>
-                  <entry>Name</entry>
-
-                  <entry>Description</entry>
-
-                  <entry>Access</entry>
-                </row>
-              </thead>
-
-              <tbody>
-                <row>
-                  <entry>DfuAccess</entry>
-
-                  <entry>Access to DFU Logical Files</entry>
-
-                  <entry>Read</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Delete Files, add to superfiles</entry>
-
-                  <entry>Write</entry>
-                </row>
-
-                <row>
-                  <entry>DfuExceptions</entry>
-
-                  <entry>Access to DFU Exceptions</entry>
-
-                  <entry>Read</entry>
-                </row>
-
-                <row>
-                  <entry>DfuWorkunitsAccess</entry>
-
-                  <entry>Access to View DFU Workunits</entry>
-
-                  <entry>Read</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Access to Create, Delete, Update, Submit, and Abort
-                  DFU Workunits</entry>
-
-                  <entry>Write</entry>
-                </row>
-
-                <row>
-                  <entry>DfuXrefAccess</entry>
-
-                  <entry>Access to DFU XREF</entry>
-
-                  <entry>Read</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Clean directory</entry>
-
-                  <entry>Write</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Make changes and generate XREF Reports</entry>
-
-                  <entry>Full</entry>
-                </row>
-
-                <row>
-                  <entry>FileDesprayAccess</entry>
-
-                  <entry>Access to De-Spraying Files</entry>
-
-                  <entry>Write</entry>
-                </row>
-
-                <row>
-                  <entry>FileSprayAccess</entry>
-
-                  <entry>Access to Spraying and Copying</entry>
-
-                  <entry>Read</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Rename files</entry>
-
-                  <entry>Write</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Delete from Drop zone</entry>
-
-                  <entry>Full</entry>
-                </row>
-
-                <row>
-                  <entry>FileIO</entry>
-
-                  <entry>Access to read files in Drop zone</entry>
-
-                  <entry>Read</entry>
-                </row>
-
-                <row>
-                  <entry></entry>
-
-                  <entry>Access to write to files in Drop zone</entry>
-
-                  <entry>Write</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable></para>
+        users require additional permission to use this feature.</para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
@@ -1691,41 +1623,6 @@
             </tbody>
           </tgroup>
         </informaltable>
-      </sect4>
-
-      <sect4 id="FeaturePermissions_RoxieQueries">
-        <title>Roxie Queries</title>
-
-        <para>Additional permission is required to view roxie queries in ECL
-        Watch.<informaltable>
-            <tgroup cols="3">
-              <colspec colwidth="155pt" />
-
-              <colspec />
-
-              <colspec colwidth="85pt" />
-
-              <thead>
-                <row>
-                  <entry>Name</entry>
-
-                  <entry>Description</entry>
-
-                  <entry>Access</entry>
-                </row>
-              </thead>
-
-              <tbody>
-                <row>
-                  <entry>RoxieQueryAccess</entry>
-
-                  <entry>Access to Roxie Queries</entry>
-
-                  <entry>Read</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable></para>
       </sect4>
 
       <sect4 id="FeaturePermissions_UserPermissions">
