@@ -15294,6 +15294,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFilter(BuildCtx & ctx, IHqlExp
 
         bindTableCursor(funcctx, dataset, "self");
         buildReturn(funcctx, cond);
+
+        if (options.addLikelihoodToGraph)
+        {
+            double likelihood = queryLikelihood(cond);
+            if (isKnownLikelihood(likelihood))
+            {
+                StringBuffer text;
+                likelihood *= 100;
+                text.setf("%3.2f%%", likelihood);
+                instance->addAttribute("matchLikelihood", text);
+            }
+        }
     }
 
     if (invariant)

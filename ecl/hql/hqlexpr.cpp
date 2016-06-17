@@ -165,6 +165,11 @@ static IHqlExpression * cachedLocalAttribute;
 static IHqlExpression * cachedContextAttribute;
 static IHqlExpression * constantTrue;
 static IHqlExpression * constantFalse;
+static IHqlExpression * constantLikelihoodUnknown;
+static IHqlExpression * constantLikelihoodLikely;
+static IHqlExpression * constantLikelihoodUnlikely;
+static IHqlExpression * constantLikelihoodTrue;
+static IHqlExpression * constantLikelihoodFalse;
 static IHqlExpression * defaultSelectorSequenceExpr;
 static IHqlExpression * dummyVirtualSeq;
 static IHqlExpression * newSelectAttrExpr;
@@ -246,6 +251,11 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     cachedContextAttribute = createAttribute(contextAtom);
     constantTrue = createConstant(createBoolValue(true));
     constantFalse = createConstant(createBoolValue(false));
+    constantLikelihoodUnknown = createConstant(createRealValue(-1.0,8));
+    constantLikelihoodLikely = createConstant(createRealValue(0.99,8));
+    constantLikelihoodUnlikely = createConstant(createRealValue(0.01,8));
+    constantLikelihoodTrue = createConstant(createRealValue(1.0,8));
+    constantLikelihoodFalse = createConstant(createRealValue(0.0,8));
     defaultSelectorSequenceExpr = createAttribute(_selectorSequence_Atom);
     dummyVirtualSeq =  createSequence(no_attr, makeNullType(), _virtualSeq_Atom, 0);
     newSelectAttrExpr = createExprAttribute(newAtom);
@@ -276,6 +286,11 @@ MODULE_EXIT()
     defaultSelectorSequenceExpr->Release();
     constantFalse->Release();
     constantTrue->Release();
+    constantLikelihoodUnknown->Release();
+    constantLikelihoodLikely->Release();
+    constantLikelihoodUnlikely->Release();
+    constantLikelihoodTrue->Release();
+    constantLikelihoodFalse->Release();
     blank->Release();
     cachedContextAttribute->Release();
     cachedLocalAttribute->Release();
@@ -12157,6 +12172,27 @@ extern IHqlExpression *createConstant(const char *constant)
 extern IHqlExpression *createConstant(IValue * constant)
 {
     return CHqlConstant::makeConstant(constant);
+}
+
+extern IHqlExpression *queryConstantLikelihoodUnknown()
+{
+    return constantLikelihoodUnknown;
+}
+extern IHqlExpression *queryConstantLikelihoodLikely()
+{
+    return constantLikelihoodLikely;
+}
+extern IHqlExpression *queryConstantLikelihoodUnlikely()
+{
+    return constantLikelihoodUnlikely;
+}
+extern IHqlExpression *queryConstantLikelihoodTrue()
+{
+    return constantLikelihoodTrue;
+}
+extern IHqlExpression *queryConstantLikelihoodFalse()
+{
+    return constantLikelihoodFalse;
 }
 
 //This is called by the code generator when it needs to make an explicit call to an internal function, with arguments already translated.
