@@ -1420,7 +1420,13 @@ void Connection::unlock(ICodeContext * ctx, const char * key)
         readReplyAndAssertWithCmdMsg(reply.get(), "manual unlock", key);//DEL reply
         readReplyAndAssertWithCmdMsg(reply.get(), "manual unlock", key);//EXEC reply
     }
-    //If the above is aborted, let the lock expire.
+    else
+    {
+        reply->setClear(redisCommand("UNWATCH"));
+        //Close connection upon failing to UNWATCH.
+        if (!reply->query() || (reply->query()->type != REDIS_REPLY_STATUS) || (strcmp(reply->query()->str, "OK") != 0))
+            freeContext();
+    }
 }
 void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAttr * retVal, const char * password, unsigned expire)
 {
