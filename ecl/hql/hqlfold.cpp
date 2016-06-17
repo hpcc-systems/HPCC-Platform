@@ -5179,6 +5179,14 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             return removeParentNode(expr);
         }
         break;
+    case no_likely:
+    case no_unlikely:
+        {
+            IHqlExpression * child = expr->queryChild(0);
+            if (child->queryValue())
+                return LINK(child);
+            break;
+        }
     }
 
     return LINK(expr);
@@ -6068,6 +6076,8 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_dataset_alias:
     case no_createdictionary:
     case no_nocombine:
+    case no_likely:
+    case no_unlikely:
         exprMapping.set(gatherConstants(expr->queryChild(0)));
         break;
     case no_normalizegroup:

@@ -6742,7 +6742,7 @@ primexpr1
                          }
     | LIKELY '(' booleanExpr ')'
                         {
-                            $$.inherit($3);
+                            $$.setExpr(createValue(no_likely, makeBoolType(), $3.getExpr()));
                             $$.setPosition($1);
                         }
     | LIKELY '(' booleanExpr ',' expression ')'
@@ -6755,25 +6755,12 @@ primexpr1
                                 if (p <= 0.0 || p >= 1.0)
                                     parser->reportError(ERR_PROBABILITY_RANGE, $5, "Probability parameter for LIKELY must be within 0.0 to 1.0 range");
                             }
-                            $$.inherit($3);
+                            $$.setExpr(createValue(no_likely, makeBoolType(), $3.getExpr(), probability.getClear()));
                             $$.setPosition($1);
                         }
     | UNLIKELY '(' booleanExpr ')'
                         {
-                            $$.inherit($3);
-                            $$.setPosition($1);
-                        }
-    | UNLIKELY '(' booleanExpr ',' expression ')'
-                        {
-                            parser->normalizeExpression($5, type_real, true);
-                            OwnedHqlExpr probability = $5.getExpr();
-                            if (probability->queryValue())
-                            {
-                                double p = probability->queryValue()->getRealValue();
-                                if (p <= 0.0 || p >= 1.0)
-                                    parser->reportError(ERR_PROBABILITY_RANGE, $5, "Probability parameter for UNLIKELY must be within 0.0 to 1.0 range");
-                             }
-                            $$.inherit($3);
+                            $$.setExpr(createValue(no_unlikely, makeBoolType(), $3.getExpr()));
                             $$.setPosition($1);
                         }
     | '[' beginList nonDatasetList ']'
