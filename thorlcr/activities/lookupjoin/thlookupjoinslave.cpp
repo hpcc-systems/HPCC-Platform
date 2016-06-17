@@ -2129,7 +2129,11 @@ protected:
         {
             const void *next = right->nextRow();
             if (!next)
-                break;
+            {
+                next = right->nextRow();
+                if (!next)
+                    break;
+            }
             writer->putRow(next);
         }
         return channelCollector.getClear();
