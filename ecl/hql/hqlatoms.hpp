@@ -337,6 +337,7 @@ extern HQL_API IAtom * priorityAtom;
 extern HQL_API IAtom * privateAtom;
 extern HQL_API IAtom * projectedAtom;
 extern HQL_API IAtom * _propAligned_Atom;
+extern HQL_API IAtom * _propLikelihood_Atom;
 extern HQL_API IAtom * _propRecordCount_Atom;
 extern HQL_API IAtom * _propSize_Atom;
 extern HQL_API IAtom * _propUnadorned_Atom;

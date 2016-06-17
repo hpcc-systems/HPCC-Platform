@@ -332,6 +332,7 @@ IAtom * priorityAtom;
 IAtom * privateAtom;
 IAtom * projectedAtom;
 IAtom * _propAligned_Atom;
+IAtom * _propLikelihood_Atom;
 IAtom * _propRecordCount_Atom;
 IAtom * _propSize_Atom;
 IAtom * _propUnadorned_Atom;
@@ -778,6 +779,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(private);
     MAKEATOM(projected);
     MAKESYSATOM(propAligned);
+    MAKESYSATOM(propLikelihood);
     MAKESYSATOM(propRecordCount);
     MAKESYSATOM(propSize);
     MAKESYSATOM(propUnadorned);

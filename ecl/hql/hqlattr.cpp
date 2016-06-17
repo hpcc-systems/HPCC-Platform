@@ -3776,6 +3776,92 @@ ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue)
     }
 }
 
+//---------------------------------------------------------------------------------
+enum LikelihoodType
+{
+    LikelihoodUnknown,
+    LikelihoodUnlikely,
+    LikelihoodLikely,
+    LikelihoodGivenValue
+};
+
+void getLikelihoodText(StringBuffer & result, IHqlExpression * expr)
+{
+    IHqlExpression * likelihoodExpr = expr->queryProperty(EPlikelihood);
+
+    enum LikelihoodType LikelihoodType = likelihoodExpr ? ((enum LikelihoodType) getIntValue(likelihoodExpr->queryChild(0))) : LikelihoodUnknown;
+    switch(LikelihoodType)
+    {
+    case LikelihoodLikely:
+        result.set("LIKELY");
+        break;
+    case LikelihoodUnlikely:
+        result.set("UNLIKELY");
+        break;
+    case LikelihoodGivenValue:
+    {
+        IValue * value = likelihoodExpr->queryChild(1)->queryValue();
+        if (value)
+        {
+            double probability = value->getRealValue();
+            probability *= 100;
+            result.setf("%3.2f%%", probability);
+            break;
+        } // else drop-through
+    }
+    case LikelihoodUnknown:
+    default:
+        result.set("UNKNOWN");
+    }
+}
+
+static IHqlExpression * evaluatePropLikelihood(IHqlExpression * expr)
+{
+    if (expr->getOperator() != no_filter)
+        return NULL;
+
+    IHqlExpression * filterCondition = expr->queryChild(1);
+    if (filterCondition->queryType()->getTypeCode() != type_boolean)
+        return NULL;
+
+    LikelihoodType likelihoodType;
+    switch(filterCondition->getOperator())
+    {
+    case no_likely:
+        if (expr->numChildren() > 1)
+            likelihoodType = LikelihoodGivenValue;
+        else
+            likelihoodType = LikelihoodLikely;
+        break;
+    case no_nofold:
+        {
+            IHqlExpression * child = filterCondition->queryChild(0);
+            IValue * boolValue = child->queryValue();
+            if ( !boolValue )
+                return NULL;
+            if (boolValue->getBoolValue())
+                likelihoodType = LikelihoodLikely;
+            else
+                likelihoodType = LikelihoodUnlikely;
+        }
+        break;
+    case no_unlikely:
+        likelihoodType = LikelihoodUnlikely;
+        break;
+    default:
+        likelihoodType = LikelihoodUnknown;
+        break;
+    }
+
+    OwnedHqlExpr likelihoodExpr;
+    if (likelihoodType == LikelihoodGivenValue)
+        likelihoodExpr.setown(createExprAttribute(_propLikelihood_Atom, makeConstant(LikelihoodGivenValue), LINK(filterCondition->queryChild(1))));
+    else
+        likelihoodExpr.setown(createExprAttribute(_propLikelihood_Atom, makeConstant(likelihoodType)));
+
+    meta.addProperty(expr, EPlikelihood, likelihoodExpr);
+    return likelihoodExpr;
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -3864,6 +3950,8 @@ IHqlExpression * CHqlExpression::queryProperty(ExprPropKind kind)
         return evalautePropUnadorned(this);
     case EPlocationIndependent:
         return evalautePropLocationIndependent(this);
+    case EPlikelihood:
+        return evaluatePropLikelihood(this);
     }
     return NULL;
 }

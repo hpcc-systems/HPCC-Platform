@@ -789,7 +789,8 @@ enum ExprPropKind
     EPunadorned,
     EPlocationIndependent,
     EPmeta,
-    EPmax
+    EPmax,
+    EPlikelihood
 };
 
 
