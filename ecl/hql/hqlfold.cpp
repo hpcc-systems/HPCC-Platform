@@ -4769,8 +4769,6 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             for (unsigned idx = 1; idx < num; idx++)
             {
                 IHqlExpression * cur = expr->queryChild(idx);
-                if (cur->getOperator() == no_likely)
-                    cur = cur->queryChild(0);
                 IValue * value = cur->queryValue();
                 if (value)
                 {
