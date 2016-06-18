@@ -42,8 +42,26 @@ interface IXmlWriterExt : extends IXmlWriter
     virtual IXmlWriterExt & clear() = 0;
     virtual size32_t length() const = 0;
     virtual const char *str() const = 0;
-    virtual void rewindTo(unsigned int prevlen) = 0;
+    virtual IInterface *saveLocation() const = 0;
+    virtual void rewindTo(IInterface *location) = 0;
     virtual void outputNumericString(const char *field, const char *fieldname) = 0;
+};
+
+class thorhelper_decl CommonXmlPosition : public CInterface, implements IInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CommonXmlPosition(size32_t _pos, unsigned _indent, unsigned _nestLimit, bool _tagClosed, bool _needDelimiter) :
+        pos(_pos), indent(_indent), nestLimit(_nestLimit), tagClosed(_tagClosed), needDelimiter(_needDelimiter)
+    {}
+
+public:
+    size32_t pos = 0;
+    unsigned indent = 0;
+    unsigned nestLimit = 0;
+    bool tagClosed = false;
+    bool needDelimiter = false;
 };
 
 class thorhelper_decl CommonXmlWriter : public CInterface, implements IXmlWriterExt
@@ -82,12 +100,28 @@ public:
     virtual IXmlWriterExt & clear();
     virtual unsigned length() const                                 { return out.length(); }
     virtual const char * str() const                                { return out.str(); }
-    virtual void rewindTo(unsigned int prevlen)
+    virtual IInterface *saveLocation() const
     {
         if (flusher)
             throwUnexpected();
 
-        if (prevlen < out.length()) out.setLength(prevlen);
+        return new CommonXmlPosition(length(), indent, nestLimit, tagClosed, false);
+    }
+    virtual void rewindTo(IInterface *saved)
+    {
+        if (flusher)
+            throwUnexpected();
+
+        CommonXmlPosition *position = dynamic_cast<CommonXmlPosition *>(saved);
+        if (!position)
+            return;
+        if (position->pos < out.length())
+        {
+            out.setLength(position->pos);
+            tagClosed = position->tagClosed;
+            indent = position->indent;
+            nestLimit = position->nestLimit;
+        }
     }
 
     virtual void outputNumericString(const char *field, const char *fieldname)
@@ -156,6 +190,29 @@ public:
     virtual unsigned length() const                                 { return out.length(); }
     virtual const char * str() const                                { return out.str(); }
     virtual void rewindTo(unsigned int prevlen)                     { if (prevlen < out.length()) out.setLength(prevlen); }
+    virtual IInterface *saveLocation() const
+    {
+        if (flusher)
+            throwUnexpected();
+
+        return new CommonXmlPosition(length(), indent, nestLimit, false, needDelimiter);
+    }
+    virtual void rewindTo(IInterface *saved)
+    {
+        if (flusher)
+            throwUnexpected();
+
+        CommonXmlPosition *position = dynamic_cast<CommonXmlPosition *>(saved);
+        if (!position)
+            return;
+        if (position->pos < out.length())
+        {
+            out.setLength(position->pos);
+            needDelimiter = position->needDelimiter;
+            indent = position->indent;
+            nestLimit = position->nestLimit;
+        }
+    }
 
     void outputBeginRoot(){out.append('{');}
     void outputEndRoot(){out.append('}');}
