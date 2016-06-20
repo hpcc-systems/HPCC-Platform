@@ -72,6 +72,7 @@ define({root:
     Configuration: "Configuration",
     ConfirmPassword: "Confirm Password",
     ConfirmRemoval: "Are you sure you want to do this?",
+    ContactAdmin: "If you wish to rename this group, please contact your LDAP admin.",
     Content: "Content",
     Contents: "Contents",
     ContentType: "Content Type",
