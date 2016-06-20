@@ -1456,7 +1456,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 for (unsigned idx = 0; idx < kids; idx++)
                 {
                     IHqlExpression *child = expr->queryChild(idx);
-                    if (!child->isAttribute())
+                    if (expandProcessed || !child->isAttribute())
                     {
                         if (!first)
                             s.append(", ");

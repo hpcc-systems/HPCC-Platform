@@ -150,7 +150,8 @@ Different impure modifiers
   E.g., Some PIPE/SOAPCALLs, external function calls.
   A first step towards introducing a cost() function - where costly = cost(+inf)
 - EFFECT indicates the expression may have a side-effect.  The side-effect is tied to the expression that it is
-  associated with.  This only really has implications for ordering, which we currently make no guarantees about.
+  associated with.  It would have implications for ordering, which we currently make no guarantees about.  Also,
+  EVALUATE(EFFECT) should be forced to evaluate, rather than being optimized away.
 
 Pseudo modifier:
 - once [ Implies pure,fold(false) ]
@@ -10280,7 +10281,7 @@ IHqlExpression *CHqlSequence::clone(HqlExprArray &newkids)
 
 StringBuffer &CHqlSequence::toString(StringBuffer &ret)
 {
-    return ret.append(name);
+    return ret.append(name).append(":").append(seq);
 }
 
 //==============================================================================================================
@@ -10351,6 +10352,7 @@ CHqlExternalCall::CHqlExternalCall(IHqlExpression * _funcdef, ITypeInfo * _type,
         infoFlags |= (HEFnoduplicate);
     }
 
+    //Special case built in context functions for backward compatibility
     if (body->hasAttribute(ctxmethodAtom))
     {
         StringBuffer entrypoint;
@@ -11657,8 +11659,6 @@ IHqlExpression * ParameterBindTransformer::createExpandedCall(IHqlExpression * c
 {
     HqlExprArray actuals;
     unwindChildren(actuals, call);
-    while (actuals.ordinality() && actuals.tos().isAttribute())
-        actuals.pop();
 
     IHqlExpression * funcdef = call->queryBody()->queryFunctionDefinition();
     return createExpandedCall(funcdef, actuals);

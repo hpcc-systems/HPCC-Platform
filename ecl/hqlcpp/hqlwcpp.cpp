@@ -1191,24 +1191,26 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 else
                     out.append(str(funcdef->queryBody()->queryId()));
                 out.append('(');
+
+                bool needComma = false;
                 if (functionBodyUsesContext(props))
                 {
                     out.append("ctx");
-                    if (numArgs)
-                        out.append(',');
+                    needComma = true;
                 }
                 else if (props->hasAttribute(globalContextAtom))
                 {
                     out.append("gctx");
-                    if (numArgs)
-                        out.append(',');
+                    needComma = true;
                 }
                 for (unsigned index = firstArg; index < numArgs; index++)
                 {
                     IHqlExpression * cur = expr->queryChild(index);
                     if (!cur->isAttribute())
                     {
-                        if (index != firstArg) out.append(',');
+                        if (needComma)
+                            out.append(',');
+                        needComma = true;
                         generateExprCpp(cur);
                     }
                 }

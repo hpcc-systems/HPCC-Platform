@@ -3994,6 +3994,7 @@ functionModifiers
     :                   {   $$.setNullExpr(); }
     | VOLATILE          {   $$.setExpr(createAttribute(volatileAtom), $1); }
     ;
+
 service
     : startService funcDefs END
                         {
