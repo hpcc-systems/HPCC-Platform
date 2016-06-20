@@ -2066,8 +2066,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
             return SourceActivity;
         }
     case no_newkeyindex:
-        //Not compoundable for the moment - because it causes problems with assertwild(all, <old-expression>)
-        return SourceActivity;//CompoundableActivity;
+        return CompoundableActivity;
     case no_compound_diskread:
     case no_compound_disknormalize:
     case no_compound_indexread:
