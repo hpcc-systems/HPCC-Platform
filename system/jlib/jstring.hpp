@@ -49,6 +49,7 @@ public:
     inline bool     isEmpty() const                     { return (curLen == 0); }
     void            setLength(unsigned len);
     inline void     ensureCapacity(unsigned max)        { if (maxLen <= curLen + max) _realloc(curLen + max); }
+    size32_t        lengthUtf8() const;
 
     StringBuffer &  append(char value);
     StringBuffer &  append(unsigned char value);
