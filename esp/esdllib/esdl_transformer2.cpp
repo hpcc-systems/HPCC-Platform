@@ -724,7 +724,7 @@ void Esdl2Array::process(Esdl2TransformerContext &ctx, IPropertyTree *pt, const 
             {
                 ctx.writer->outputEndArray(item_tag.get());
                 ctx.writer->outputEndNested(tagname); //we need to close out the nested area first
-                ctx.writer->rewindTo(prevlen); //rewind
+                ctx.writer->rewindToAndEnsureTagClosure(prevlen); //rewind
             }
             else
             {
@@ -801,7 +801,7 @@ void Esdl2Array::process(Esdl2TransformerContext &ctx, const char *out_name, Esd
         {
             ctx.writer->outputEndArray(item_tag.get());
             ctx.writer->outputEndNested(xml_tag.get()); // we need to close out this section first
-            ctx.writer->rewindTo(prevlen); //rewind
+            ctx.writer->rewindToAndEnsureTagClosure(prevlen); //rewind
         }
         else
         {
@@ -907,7 +907,7 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, IPropertyTree *pt, const
                 if (ctx.writer->length() == curlen) //nothing was added, empty content, remove open tag
                 {
                     ctx.writer->outputEndNested(out_name); //we need to close out current section first
-                    ctx.writer->rewindTo(prevlen); //rewind
+                    ctx.writer->rewindToAndEnsureTagClosure(prevlen); //rewind
                 }
                 else
                     ctx.writer->outputEndNested(out_name);
@@ -1019,7 +1019,7 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
                                 {
                                     ESDL_DBG("Taking out data for DataFor '%s' from out buffer", chd.queryDataFor()->queryName());
                                     local.setDataFor(chd.queryDataFor()->queryName(), ctx.writer->str()+len);
-                                    ctx.writer->rewindTo(len);
+                                    ctx.writer->rewindToAndEnsureTagClosure(len);
                                 }
                             }
 
@@ -1055,7 +1055,7 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
                 if (ctx.writer->length() == curlen) //nothing was added, empty content, remove open tag
                 {
                     ctx.writer->outputEndNested(out_name); //we need to close out current section first
-                    ctx.writer->rewindTo(prevlen); //rewind
+                    ctx.writer->rewindToAndEnsureTagClosure(prevlen); //rewind
                 }
                 else
                 {

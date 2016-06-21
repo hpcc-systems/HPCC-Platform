@@ -2086,6 +2086,8 @@ public:
         //needs to be a no-op because it is used, but the way its used to trim empty xml sections I think we're fairly safe.
         //revisit cleaning up any empty objects later.
     }
+    virtual void rewindToAndEnsureTagClosure(unsigned int prevlen) {}
+
     inline IEsdlDefStruct *queryCurrentEsdlStruct()
     {
         if (!defStack.length() || !defStack.tos().defType)

@@ -43,6 +43,7 @@ interface IXmlWriterExt : extends IXmlWriter
     virtual size32_t length() const = 0;
     virtual const char *str() const = 0;
     virtual void rewindTo(unsigned int prevlen) = 0;
+    virtual void rewindToAndEnsureTagClosure(unsigned int prevlen) = 0;
     virtual void outputNumericString(const char *field, const char *fieldname) = 0;
 };
 
@@ -89,7 +90,20 @@ public:
 
         if (prevlen < out.length()) out.setLength(prevlen);
     }
+    virtual void rewindToAndEnsureTagClosure(unsigned int prevlen)
+    {
+        rewindTo(prevlen);
 
+        int index = 1;
+        while(out.charAt(prevlen-index) == ' ' || out.charAt(prevlen-index) == '\n' || out.charAt(prevlen-index) == '\r' || out.charAt(prevlen-index) == '\t')
+            index++;
+
+        if (out.charAt(prevlen-index) != '>')
+        {
+            tagClosed = false; // since the buffer was rewound, we no longer know if the tag was closed
+            closeTag();
+        }
+    }
     virtual void outputNumericString(const char *field, const char *fieldname)
     {
         outputCString(field, fieldname);
@@ -156,6 +170,7 @@ public:
     virtual unsigned length() const                                 { return out.length(); }
     virtual const char * str() const                                { return out.str(); }
     virtual void rewindTo(unsigned int prevlen)                     { if (prevlen < out.length()) out.setLength(prevlen); }
+    virtual void rewindToAndEnsureTagClosure(unsigned int prevlen)      { rewindTo(prevlen); }
 
     void outputBeginRoot(){out.append('{');}
     void outputEndRoot(){out.append('}');}
