@@ -32,7 +32,7 @@ allPeople := DATASET([ {1,'Fred','Smith'},
                        {3,'Jane','Smith'}],Layout_Person);
 
 //  Outputs  ---
-output(allPeople, , '~persons', OVERWRITE);
+setup := output(allPeople, , '~persons', OVERWRITE);
 
 import * from lib_fileservices;
 
@@ -81,9 +81,9 @@ c0 := CATCH(NOFOLD(p0), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c0);
+    o0 := output(c0);
 #else
-    output(c0, {result});
+    o0 := output(c0, {result});
 #end
 
 
@@ -99,9 +99,9 @@ c1 := CATCH(NOFOLD(p1), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c1);
+    o1 := output(c1);
 #else
-    output(c1, {result});
+    o1 := output(c1, {result});
 #end
 
 
@@ -118,9 +118,9 @@ c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c2);
+    o2 := output(c2);
 #else
-    output(c2, {result});
+    o2 := output(c2, {result});
 #end
 
 
@@ -137,9 +137,9 @@ c3 := CATCH(NOFOLD(p3), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c3);
+    o3 := output(c3);
 #else
-    output(c3, {result});
+    o3 := output(c3, {result});
 #end
 
 
@@ -156,9 +156,9 @@ c4 := CATCH(NOFOLD(p4), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c4);
+    o4 := output(c4);
 #else
-    output(c4, {result});
+    o4 := output(c4, {result});
 #end
 
 
@@ -175,9 +175,9 @@ c5 := CATCH(NOFOLD(p5), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c5);
+    o5 := output(c5);
 #else
-    output(c5, {result});
+    o5 := output(c5, {result});
 #end
 
 
@@ -194,9 +194,9 @@ c6 := CATCH(NOFOLD(p6), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c6);
+    o6 := output(c6);
 #else
-    output(c6, {result});
+    o6 := output(c6, {result});
 #end
 
 
@@ -213,9 +213,9 @@ c7 := CATCH(NOFOLD(p7), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c7);
+    o7 := output(c7);
 #else
-    output(c7, {result});
+    o7 := output(c7, {result});
 #end
 
 
@@ -234,7 +234,22 @@ c8 := CATCH(NOFOLD(p8), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c8);
+    o8 := output(c8);
 #else
-    output(c8, {result});
+    o8 := output(c8, {result});
 #end
+
+SEQUENTIAL(
+  setup,
+  PARALLEL(
+    o0,
+    o1,
+    o2,
+    o3,
+    o4,
+    o5,
+    o6,
+    o7,
+    o8
+  )
+);
