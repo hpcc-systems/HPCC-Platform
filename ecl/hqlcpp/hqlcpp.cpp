@@ -659,6 +659,14 @@ IHqlExpression * adjustIndexBaseToOne(IHqlExpression * index)
 
 IHqlExpression * adjustBoundIntegerValues(IHqlExpression * left, IHqlExpression * right, bool subtract)
 {
+    if (!left)
+    {
+        if (!subtract)
+            return LINK(right);
+        else
+            return getNegative(right);
+    }
+
     assertex(queryUnqualifiedType(left->queryType()) == queryUnqualifiedType(right->queryType()));
     if (canOptimizeAdjust(left))
     {

@@ -3097,6 +3097,14 @@ bool hasNoMoreRowsThan(IHqlExpression * expr, __int64 limit)
     return getIntValue(info.max, limit+1) <= limit;
 }
 
+IHqlExpression * queryFixedRowCount(IHqlExpression * expr)
+{
+    HqlRowCountInfo info;
+    retrieveRowInformation(info, expr);
+    if (info.min == info.max)
+        return LINK(info.min);
+    return NULL;
+}
 
 // Functions for testing whether 
 

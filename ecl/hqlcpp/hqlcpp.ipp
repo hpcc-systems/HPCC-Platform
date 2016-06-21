@@ -1545,7 +1545,8 @@ public:
     void doBuildFilterAndRange(BuildCtx & ctx, unsigned first, unsigned last, HqlExprArray & conds);
     void doBuildFilterToTarget(BuildCtx & ctx, const CHqlBoundTarget & isOk, HqlExprArray & conds, bool invert);
     void doBuildFilterNextAndRange(BuildCtx & ctx, unsigned & curIndex, unsigned maxIterations, HqlExprArray & conds);
-    bool canBuildOptimizedCount(BuildCtx & ctx, IHqlExpression * dataset, CHqlBoundExpr & tgt);
+    bool canBuildOptimizedCount(BuildCtx & ctx, IHqlExpression * dataset, CHqlBoundExpr & tgt, node_operator aggOp);
+    void setBoundCount(CHqlBoundExpr & tgt, const CHqlBoundExpr & src, node_operator aggOp);
     bool canEvaluateInContext(BuildCtx & ctx, IHqlExpression * expr);
     void gatherActiveCursors(BuildCtx & ctx, HqlExprCopyArray & activeRows);
 

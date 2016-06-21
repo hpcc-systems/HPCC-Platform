@@ -450,6 +450,9 @@ bool alwaysEvaluatesToBound(IHqlExpression * expr)
     case no_workunit_dataset:
     case no_activetable:
         return !hasStreamedModifier(expr->queryType());
+    case no_null:
+    case no_rows:
+        return true;
     case no_temptable:
         //MORE! when we have constant datasets
     default:
