@@ -457,7 +457,6 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
 
     errorDisabled = false;
     setIdUnknown(false);
-    m_maxErrorsAllowed = DEFAULT_MAX_ERRORS;
     sortDepth = 0;
     serviceScope.clear();
 
@@ -3065,7 +3064,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
             reportError(ERR_EXPECTED, errpos, "Missing END in FORWARD module definition");
             abortParsing();
             return;
-        case COMPLEX_MACRO: 
+        case COMPLEX_MACRO:
         case MACRO:
         case SIMPLE_TYPE:
         case CPPBODY:
@@ -6047,14 +6046,8 @@ void HqlGram::report(IError* error)
         else
         {
             errorHandler->report(error);
-
-            if (getMaxErrorsAllowed()>0 && errorHandler->errCount() >= getMaxErrorsAllowed())
-            {
-                errorHandler->reportError(ERR_ERROR_TOOMANY,"Too many errors; parsing aborted",error->getFilename(),error->getLine(),error->getColumn(),error->getPosition());
-                abortParsing();
-            }
+            checkErrorCountAndAbort();
         }
-
         reportMacroExpansionPosition(error, lexObject);
     }
 }
@@ -11050,8 +11043,38 @@ void HqlGram::simplifyExpected(int *expected)
     simplify(expected, END, '}', 0);
 }
 
+bool HqlGram::exceedsMaxCompileErrors()
+{
+    unsigned errorCount = errorHandler ? errorHandler->errCount() : 0;
+    return errorCount >= getMaxCompileErrors();
+}
+
+bool HqlGram::checkErrorCountAndAbort()
+{
+    if (isAborting())
+        return true;
+
+    if (exceedsMaxCompileErrors())
+    {
+        reportTooManyErrors();
+        abortParsing();
+        return true;
+    }
+    return false;
+}
+
+void HqlGram::reportTooManyErrors()
+{
+    if (errorHandler && !errorDisabled)
+    {
+        StringBuffer msg("Too many errors");
+        msg.append(" (max = ").append(getMaxCompileErrors()).append("); Aborting...");
+        errorHandler->reportError(ERR_ERROR_TOOMANY, msg.str(), str(lexObject->queryActualSourcePath()), lexObject->getActualLineNo(), lexObject->getActualColumn(), lexObject->get_yyPosition());
+    }
+}
+
 void HqlGram::syntaxError(const char *s, int token, int *expected)
-{ 
+{
     if (errorDisabled || !s || !errorHandler)
         return;
 

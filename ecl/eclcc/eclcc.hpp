@@ -93,6 +93,7 @@ const char * const helpText[] = {
     "!   -m            Enable leak checking",
 #endif
     "    --nosourcepath Compile as if the source came from stdin",
+    "!   --maxErrors=<n> Limit the number of errors, aborting on the nth (default = 5)",
 #ifndef _WIN32
     "!   -pch          Generate precompiled header for eclinclude4.hpp",
 #endif

@@ -92,7 +92,7 @@ inline int eclyylex(attribute * yylval, HqlGram* parser, const short int * yyssp
 
 
 static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int token);
-#define eclyyerror(parser, s)       eclsyntaxerror(parser, s, yystate, yychar)
+#define eclyyerror(parser, s) eclsyntaxerror(parser, s, yystate, yychar); if (parser->unsuppressImmediateSyntaxErrors()) yyerrok; if (parser->checkErrorCountAndAbort()) YYABORT;
 #define ignoreBisonWarning(x)
 #define ignoreBisonWarnings2(x,y)
 #define ignoreBisonWarnings3(x,y,z)
@@ -105,9 +105,9 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
 /* remember to add any new tokens to the error reporter and lexer too! */
 /* If they clash with other #defines etc then use TOK_ as a prefix */
 
-// NB: Very occassionally the same keyword in the source (e.g., MERGE, PARTITION may return a different token
+// NB: Very occasionally the same keyword in the source (e.g., MERGE, PARTITION may return a different token
 // (MERGE_ATTR, PARTITION_ATTR) depending on the context it is used in.  This is because there would be a s/r
-// error, so the _ATTR form is only allowed in the situations where the attibute is valid - enabled by a
+// error, so the _ATTR form is only allowed in the situations where the attribute is valid - enabled by a
 // call to enableAttributes() from a production in the grammar.
 
   ABS
