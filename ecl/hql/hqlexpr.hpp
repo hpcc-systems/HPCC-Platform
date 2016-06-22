@@ -789,6 +789,7 @@ enum ExprPropKind
     EPunadorned,
     EPlocationIndependent,
     EPmeta,
+    EPlikelihood,
     EPmax
 };
 
@@ -1344,6 +1345,11 @@ extern HQL_API IHqlExpression* createValue(node_operator op, ITypeInfo *type, Hq
 extern HQL_API IHqlExpression* createValue(node_operator op, HqlExprArray& operands);
 extern HQL_API IHqlExpression *createValue(node_operator op, IHqlExpression *p1);
 extern HQL_API IHqlExpression* createConstant(int ival);
+extern HQL_API IHqlExpression *queryConstantLikelihoodUnknown();
+extern HQL_API IHqlExpression *queryConstantLikelihoodLikely();
+extern HQL_API IHqlExpression *queryConstantLikelihoodUnlikely();
+extern HQL_API IHqlExpression *queryConstantLikelihoodTrue();
+extern HQL_API IHqlExpression *queryConstantLikelihoodFalse();
 extern HQL_API IHqlExpression* createBoolExpr(node_operator op, HqlExprArray& operands);
 extern HQL_API IHqlExpression* createSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs, bool isNew);
 inline IHqlExpression* createSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs) { return createSelectExpr(lhs, rhs, false); }

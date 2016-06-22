@@ -3776,6 +3776,48 @@ ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue)
     }
 }
 
+//---------------------------------------------------------------------------------
+IHqlExpression * queryLikelihoodExpr(IHqlExpression * expr)
+{
+    IInterface * match = meta.queryExistingProperty(expr, EPlikelihood);
+    if (match)
+        return static_cast<IHqlExpression *>(match);
+
+    LinkedHqlExpr likelihoodExpr;
+    switch(expr->getOperator())
+    {
+    case no_likely:
+        if (expr->numChildren() > 1)
+            likelihoodExpr.set(expr->queryChild(1));
+        else
+            likelihoodExpr.set(queryConstantLikelihoodLikely());
+        break;
+    case no_unlikely:
+        likelihoodExpr.set(queryConstantLikelihoodUnlikely());
+        break;
+    case no_alias:
+    case no_nofold:
+        likelihoodExpr.set(queryLikelihoodExpr(expr->queryChild(0)));
+        break;
+    case no_constant:
+        if (expr->queryValue()->getBoolValue())
+            likelihoodExpr.set(queryConstantLikelihoodTrue());
+        else
+            likelihoodExpr.set(queryConstantLikelihoodFalse());
+        break;
+    default:
+        likelihoodExpr.set(queryConstantLikelihoodUnknown());
+        break;
+    }
+    meta.addProperty(expr, EPlikelihood, likelihoodExpr);
+    return likelihoodExpr;
+}
+
+double queryLikelihood(IHqlExpression * expr)
+{
+    IHqlExpression * likelihoodExpr = queryLikelihoodExpr(expr);
+    return likelihoodExpr->queryValue()->getRealValue();
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 

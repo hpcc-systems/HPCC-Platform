@@ -1783,6 +1783,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.forceAllDatasetsParallel,"forceAllDatasetsParallel",false),  // Purely for regression testing.
         DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsAsErrors",true),
         DebugOption(options.optimizeCriticalFunctions,"optimizeCriticalFunctions",true),
+        DebugOption(options.addLikelihoodToGraph,"addLikelihoodToGraph", true),
     };
 
     //get options values from workunit

@@ -22,7 +22,7 @@ filtered1 := person( LIKELY(xpos < 1000) );
 filter2 := filtered1( LIKELY(per_last_name = 'Hawthorn', 0.5) ) ;
 filter3 := filtered1( LIKELY(per_last_name = 'Hawthorn', 0.99) ) ;
 filter4 := filtered1( UNLIKELY(per_last_name != 'Drimbad' AND per_sex = 'F' ) );
-filter5 := filtered1( UNLIKELY(per_last_name = 'Drimbad', 0.5 ) );
+filter5 := filtered1( UNLIKELY(per_last_name = 'Drimbad') );
 
 output(filter2,,'tst_likely.d01');
 output(filter3,,'tst_likely.d02');
