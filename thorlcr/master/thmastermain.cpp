@@ -550,6 +550,8 @@ int main( int argc, char *argv[]  )
     const char *thorname = NULL;
     StringBuffer nodeGroup, logUrl;
     Owned<IPerfMonHook> perfmonhook;
+    unsigned slavesPerNode = 1;
+    unsigned channelsPerSlave = 1;
 
     ILogMsgHandler *logHandler;
     try
@@ -605,8 +607,8 @@ int main( int argc, char *argv[]  )
             nodeGroup.append(thorname);
             globals->setProp("@nodeGroup", thorname);
         }
-        unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
-        unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+        slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+        channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
         unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
         Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
@@ -780,6 +782,22 @@ int main( int argc, char *argv[]  )
 
         if (registry->connect())
         {
+            if (channelsPerSlave > 1)
+            {
+                for (unsigned s=0; s<slavesPerNode; s++)
+                {
+                    StringBuffer slaveStr;
+                    for (unsigned c=0; c<channelsPerSlave; c++)
+                    {
+                        unsigned o = s + (c * slavesPerNode);
+                        if (c)
+                            slaveStr.append(",");
+                        slaveStr.append(o+1);
+                    }
+                    PROGLOG("Slave log %u contains virtual slaves: %s", s+1, slaveStr.str());
+                }
+            }
+
             PROGLOG("verifying mp connection to rest of cluster");
             if (!queryNodeComm().verifyAll())
                 ERRLOG("Failed to connect to all nodes");
