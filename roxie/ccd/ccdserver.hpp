@@ -181,6 +181,8 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual ThorActivityKind getKind() const = 0;
     virtual const IRoxieContextLogger &queryLogCtx() const = 0;
     virtual void mergeStats(MemoryBuffer &stats) = 0;
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
+    virtual IRoxieServerActivity * queryChildActivity(unsigned activityId) = 0;
 };
 
 interface IRoxieServerActivityFactory : extends IActivityFactory

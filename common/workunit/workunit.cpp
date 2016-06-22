@@ -285,6 +285,9 @@ protected:
                 tag = "node";
                 id += strlen(SubGraphScopePrefix);
                 break;
+            case SSTfunction:
+                //MORE:Should function scopes be included in the graph scope somehow, and if so how?
+                continue;
             default:
                 throwUnexpected();
             }

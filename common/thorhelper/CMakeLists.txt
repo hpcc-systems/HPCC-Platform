@@ -36,6 +36,7 @@ set (    SRCS
          thorpipe.cpp 
          thorrparse.cpp 
          thorsoapcall.cpp 
+         thorstats.cpp
          thorstep.cpp 
          thorstep2.cpp 
          thorstrand.cpp
@@ -57,6 +58,7 @@ set (    SRCS
          thorpipe.hpp 
          thorrparse.hpp 
          thorsoapcall.hpp 
+         thorstats.hpp
          thorstep.hpp 
          thorstrand.hpp
          thorxmlread.hpp 

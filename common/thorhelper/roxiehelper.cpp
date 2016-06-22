@@ -2723,3 +2723,14 @@ void HttpHelper::parseURL()
         return;
     parseHttpParameterString(parameters, ++finger);
 }
+
+//=====================================================================================================================
+
+class NullSectionTimer : public CSimpleInterfaceOf<ISectionTimer>
+{
+    virtual unsigned __int64 getStartCycles() { return 0; }
+    virtual void noteSectionTime(unsigned __int64 startCycles) {}
+};
+
+static NullSectionTimer nullSectionTimer;
+ISectionTimer * queryNullSectionTimer() { return &nullSectionTimer; }

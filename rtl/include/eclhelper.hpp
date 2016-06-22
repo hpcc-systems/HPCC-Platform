@@ -536,6 +536,12 @@ interface IThorChildGraph : public IInterface
     virtual IEclGraphResults * evaluate(unsigned parentExtractSize, const byte * parentExtract) = 0;
 };
 
+interface ISectionTimer : public IInterface
+{
+    virtual unsigned __int64 getStartCycles() = 0;
+    virtual void noteSectionTime(unsigned __int64 startCycles) = 0;
+};
+
 //NB: New methods must always be added at the end of this interface to retain backward compatibility
 interface IContextLogger;
 interface IDebuggableContext;
@@ -647,6 +653,7 @@ interface ICodeContext : public IResourceContext
     virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
     virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
     virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) = 0;
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
 };
 
 

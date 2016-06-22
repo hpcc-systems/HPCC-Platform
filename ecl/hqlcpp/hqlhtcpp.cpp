@@ -17841,6 +17841,44 @@ void HqlCppTranslator::doBuildExprRegexFindSet(BuildCtx & ctx, IHqlExpression * 
 }
 
 //---------------------------------------------------------------------------
+
+void HqlCppTranslator::buildStartTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, CHqlBoundExpr & boundStart, const char * name)
+{
+    BuildCtx * initCtx = &ctx;
+    BuildCtx * declareCtx = &ctx;
+    getInvariantMemberContext(ctx, &declareCtx, &initCtx, true, false);
+
+    Owned<ITypeInfo> timerType = makePointerType(makeClassType("ISectionTimer"));
+    OwnedHqlExpr timer = declareCtx->getTempDeclare(timerType, NULL);
+    boundTimer.expr.set(timer);
+
+    unsigned activityId = 0;
+    ActivityInstance * activity = queryCurrentActivity(ctx);
+    if (activity)
+        activityId = activity->activityId;
+
+    HqlExprArray registerArgs;
+    registerArgs.append(*getSizetConstant(activityId));
+    registerArgs.append(*createConstant(name));
+    OwnedHqlExpr call = bindFunctionCall(registerTimerId, registerArgs);
+    initCtx->addAssign(timer, call);
+
+    HqlExprArray nowArgs;
+    nowArgs.append(*boundTimer.getTranslatedExpr());
+    OwnedHqlExpr now = bindFunctionCall(getStartCyclesId, nowArgs);
+    buildTempExpr(ctx, now, boundStart);
+}
+
+void HqlCppTranslator::buildStopTimer(BuildCtx & ctx, const CHqlBoundExpr & boundTimer, const CHqlBoundExpr & boundStart)
+{
+    HqlExprArray nowArgs;
+    nowArgs.append(*boundTimer.getTranslatedExpr());
+    nowArgs.append(*boundStart.getTranslatedExpr());
+    OwnedHqlExpr done = bindFunctionCall(noteSectionTimeId, nowArgs);
+    buildStmt(ctx, done);
+}
+
+//---------------------------------------------------------------------------
 //-- no_null [DATASET] --
 
 ABoundActivity * HqlCppTranslator::doBuildActivityNull(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)

@@ -509,6 +509,10 @@ public:
 
     unsigned __int64 queryStopAfter() { return stopAfter; }
 
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
+    {
+        return queryNullSectionTimer();
+    }
 
 //New workflow interface
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }

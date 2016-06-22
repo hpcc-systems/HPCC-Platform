@@ -31,6 +31,7 @@
 static CriticalSection statsNameCs;
 static StringBuffer statisticsComponentName;
 static StatisticCreatorType statisticsComponentType = SCTunknown;
+const static unsigned currentStatisticsVersion = 1;
 
 StatisticCreatorType queryStatisticsComponentType()
 {
@@ -65,7 +66,7 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 // Textual forms of the different enumerations, first items are for none and all.
 static const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", NULL };
 static const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
-static const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", NULL };
+static const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", NULL };
 
 static unsigned matchString(const char * const * names, const char * search)
 {
@@ -481,14 +482,14 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
     BASE_TAGS(x, y) \
     "@TimeDelta" # y
 
-#define CORESTAT(x, y, m)     St##x##y, m, { NAMES(x, y) }, { TAGS(x, y) }
+#define CORESTAT(x, y, m)     St##x##y, m, St##x##y, { NAMES(x, y) }, { TAGS(x, y) }
 #define STAT(x, y, m)         CORESTAT(x, y, m)
 
 //--------------------------------------------------------------------------------------------------------------------
 
 //These are the macros to use to define the different entries in the stats meta table
 #define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
-#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, { TIMENAMES(When, y) }, { TIMETAGS(When, y) }
+#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, St##When##y, { TIMENAMES(When, y) }, { TIMETAGS(When, y) }
 #define NUMSTAT(y) STAT(Num, y, SMeasureCount)
 #define SIZESTAT(y) STAT(Size, y, SMeasureSize)
 #define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
@@ -496,7 +497,7 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 #define NODESTAT(y) STAT(Node, y, SMeasureNode)
 #define PERSTAT(y) STAT(Per, y, SMeasurePercent)
 #define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4)
-#define CYCLESTAT(y) STAT(Cycle, y, SMeasureCycle)
+#define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, St##Time##y, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -505,14 +506,15 @@ class StatisticMeta
 public:
     StatisticKind kind;
     StatisticMeasure measure;
+    StatisticKind serializeKind;
     const char * names[StNextModifier/StVariantScale];
     const char * tags[StNextModifier/StVariantScale];
 };
 
 //The order of entries in this table must match the order in the enumeration
 static const StatisticMeta statsMetaData[StMax] = {
-    { StKindNone, SMeasureNone, { "none" }, { "@none" } },
-    { StKindAll, SMeasureAll, { "all" }, { "@all" } },
+    { StKindNone, SMeasureNone, StKindNone, { "none" }, { "@none" } },
+    { StKindAll, SMeasureAll, StKindAll, { "all" }, { "@all" } },
     { WHENSTAT(GraphStarted) },
     { WHENSTAT(GraphFinished) },
     { WHENSTAT(FirstRow) },
@@ -569,8 +571,8 @@ static const StatisticMeta statsMetaData[StMax] = {
     { TIMESTAT(DiskWriteIO) },
     { SIZESTAT(DiskRead) },
     { SIZESTAT(DiskWrite) },
-    { CYCLESTAT(DiskReadIOCycles) },
-    { CYCLESTAT(DiskWriteIOCycles) },
+    { CYCLESTAT(DiskReadIO) },
+    { CYCLESTAT(DiskWriteIO) },
     { NUMSTAT(DiskReads) },
     { NUMSTAT(DiskWrites) },
     { NUMSTAT(Spills) },
@@ -579,9 +581,13 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(Groups) },
     { NUMSTAT(GroupMax) },
     { SIZESTAT(SpillFile) },
-    { CYCLESTAT(SpillElapsedCycles) },
-    { CYCLESTAT(SortElapsedCycles) },
+    { CYCLESTAT(SpillElapsed) },
+    { CYCLESTAT(SortElapsed) },
     { NUMSTAT(Strands) },
+    { CYCLESTAT(TotalExecute) },
+    { NUMSTAT(Executions) },
+    { TIMESTAT(TotalNested) },
+    { CYCLESTAT(LocalExecute) },
 };
 
 
@@ -646,6 +652,15 @@ unsigned __int64 convertMeasure(StatisticKind from, StatisticKind to, unsigned _
     return convertMeasure(queryMeasure(from), queryMeasure(to), value);
 }
 
+
+StatisticKind querySerializedKind(StatisticKind kind)
+{
+    StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
+    if (rawkind >= StMax)
+        return kind;
+    StatisticKind serialKind = statsMetaData[rawkind].serializeKind;
+    return (StatisticKind)(serialKind | (kind & ~StKindMask));
+}
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -790,17 +805,20 @@ static int compareUnsigned(unsigned const * left, unsigned const * right)
 
 StatisticsMapping::StatisticsMapping(StatisticKind kind, ...)
 {
-    indexToKind.append(kind);
-    va_list args;
-    va_start(args, kind);
-    for (;;)
+    if (kind != StKindNone)
     {
-        unsigned next  = va_arg(args, unsigned);
-        if (!next)
-            break;
-        indexToKind.appendUniq(next);
+        indexToKind.append(kind);
+        va_list args;
+        va_start(args, kind);
+        for (;;)
+        {
+            unsigned next  = va_arg(args, unsigned);
+            if (!next)
+                break;
+            indexToKind.appendUniq(next);
+        }
+        va_end(args);
     }
-    va_end(args);
     createMappings();
 }
 
@@ -885,7 +903,10 @@ public:
         out.append((unsigned)kind);
         out.append(value);
     }
-
+    StringBuffer & toXML(StringBuffer &out) const
+    {
+        return out.append("  <Stat name=\"").append(queryStatisticName(kind)).append("\" value=\"").append(value).append("\"/>\n");
+    }
 public:
     StatisticKind kind;
     unsigned __int64 value;
@@ -905,19 +926,28 @@ StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
         return out.append(ActivityScopePrefix).append(id);
     case SSTedge:
         return out.append(EdgeScopePrefix).append(id).append("_").append(extra);
+    case SSTfunction:
+        return out.append(FunctionScopePrefix).append(name);
     default:
         throwUnexpected();
+        break;
     }
 }
 
 unsigned StatsScopeId::getHash() const
 {
-    return hashc((const byte *)&id, sizeof(id), (unsigned)scopeType);
+    switch (scopeType)
+    {
+    case SSTfunction:
+        return hashc((const byte *)name.get(), strlen(name), (unsigned)scopeType);
+    default:
+        return hashc((const byte *)&id, sizeof(id), (unsigned)scopeType);
+    }
 }
 
 bool StatsScopeId::matches(const StatsScopeId & other) const
 {
-    return (scopeType == other.scopeType) && (id == other.id) && (extra == other.extra);
+    return (scopeType == other.scopeType) && (id == other.id) && (extra == other.extra) && strsame(name, other.name);
 }
 
 unsigned StatsScopeId::queryActivity() const
@@ -948,8 +978,12 @@ void StatsScopeId::deserialize(MemoryBuffer & in, unsigned version)
         in.read(id);
         in.read(extra);
         break;
+    case SSTfunction:
+        in.read(name);
+        break;
     default:
         throwUnexpected();
+        break;
     }
 }
 
@@ -967,8 +1001,12 @@ void StatsScopeId::serialize(MemoryBuffer & out) const
         out.append(id);
         out.append(extra);
         break;
+    case SSTfunction:
+        out.append(name);
+        break;
     default:
         throwUnexpected();
+        break;
     }
 }
 
@@ -994,6 +1032,8 @@ bool StatsScopeId::setScopeText(const char * text)
             return false;
         setEdgeId(atoi(text + CONST_STRLEN(EdgeScopePrefix)), atoi(underscore+1));
     }
+    else if (MATCHES_CONST_PREFIX(text, FunctionScopePrefix))
+        setFunctionId(text+CONST_STRLEN(FunctionScopePrefix));
     else
         return false;
 
@@ -1011,6 +1051,11 @@ void StatsScopeId::setEdgeId(unsigned _id, unsigned _output)
 void StatsScopeId::setSubgraphId(unsigned _id)
 {
     setId(SSTsubgraph, _id);
+}
+void StatsScopeId::setFunctionId(const char * _name)
+{
+    scopeType = SSTfunction;
+    name.set(_name);
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -1073,6 +1118,8 @@ public:
     }
 
     virtual byte getCollectionType() const { return SCintermediate; }
+
+    StringBuffer &toXML(StringBuffer &out) const;
 
 //interface IStatisticCollection:
     virtual StatisticScopeType queryScopeType() const
@@ -1230,6 +1277,25 @@ private:
     StatsArray stats;
 };
 
+StringBuffer &CStatisticCollection::toXML(StringBuffer &out) const
+{
+    out.append("<Scope id=\"");
+    id.getScopeText(out).append("\">\n");
+    if (stats.ordinality())
+    {
+        out.append(" <Stats>");
+        ForEachItemIn(i, stats)
+            stats.item(i).toXML(out);
+        out.append(" </Stats>\n");
+    }
+
+    SuperHashIteratorOf<CStatisticCollection> iter(children, false);
+    for (iter.first(); iter.isValid(); iter.next())
+        iter.query().toXML(out);
+    out.append("</Scope>\n");
+    return out;
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 void CollectionHashTable::onAdd(void *et)
@@ -1310,7 +1376,6 @@ public:
 
 void serializeStatisticCollection(MemoryBuffer & out, IStatisticCollection * collection)
 {
-    unsigned currentStatisticsVersion = 1;
     out.append(currentStatisticsVersion);
     collection->serialize(out);
 }
@@ -1410,6 +1475,20 @@ void CRuntimeStatistic::merge(unsigned __int64 otherValue, StatsMergeAction merg
     value = mergeStatisticValue(value, otherValue, mergeAction);
 }
 
+//--------------------------------------------------------------------------------------------------------------------
+
+CRuntimeStatisticCollection::~CRuntimeStatisticCollection()
+{
+    delete [] values;
+    delete nested;
+}
+
+void CRuntimeStatisticCollection::ensureNested()
+{
+    if (!nested)
+        nested = new CNestedRuntimeStatisticMap;
+}
+
 void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & other)
 {
     ForEachItemIn(i, other)
@@ -1419,11 +1498,22 @@ void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & othe
         if (value)
             mergeStatistic(kind, other.getStatisticValue(kind));
     }
+    if (other.nested)
+    {
+        ensureNested();
+        nested->merge(*other.nested);
+    }
 }
 
 void CRuntimeStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __int64 value)
 {
     queryStatistic(kind).merge(value, queryMergeMode(kind));
+}
+
+CRuntimeStatisticCollection & CRuntimeStatisticCollection::registerNested(const StatsScopeId & scope, const StatisticsMapping & mapping)
+{
+    ensureNested();
+    return nested->addNested(scope, mapping);
 }
 
 void CRuntimeStatisticCollection::rollupStatistics(unsigned numTargets, IContextLogger * const * targets) const
@@ -1449,11 +1539,17 @@ void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) 
         if (value)
         {
             StatisticKind kind = getKind(i);
-            StatsMergeAction mergeAction = queryMergeMode(kind);
-            target.updateStatistic(kind, values[i].get(), mergeAction);
+            StatisticKind serialKind= querySerializedKind(kind);
+            if (kind != serialKind)
+                value = convertMeasure(kind, serialKind, value);
+
+            StatsMergeAction mergeAction = queryMergeMode(serialKind);
+            target.updateStatistic(serialKind, value, mergeAction);
         }
     }
     reportIgnoredStats();
+    if (nested)
+        nested->recordStatistics(target);
 }
 
 void CRuntimeStatisticCollection::reportIgnoredStats() const
@@ -1474,6 +1570,8 @@ StringBuffer & CRuntimeStatisticCollection::toXML(StringBuffer &str) const
             str.appendf("<%s>%" I64F "d</%s>", name, value, name);
         }
     }
+    if (nested)
+        nested->toXML(str);
     return str;
 }
 
@@ -1490,6 +1588,8 @@ StringBuffer & CRuntimeStatisticCollection::toStr(StringBuffer &str) const
             formatStatistic(str, value, kind);
         }
     }
+    if (nested)
+        nested->toStr(str);
     return str;
 }
 
@@ -1505,6 +1605,13 @@ void CRuntimeStatisticCollection::deserialize(MemoryBuffer& in)
         StatisticKind kind = (StatisticKind)kindVal;
         setStatistic(kind, value);
     }
+    bool hasNested;
+    in.read(hasNested);
+    if (hasNested)
+    {
+        ensureNested();
+        nested->deserializeMerge(in);
+    }
 }
 
 void CRuntimeStatisticCollection::deserializeMerge(MemoryBuffer& in)
@@ -1519,6 +1626,13 @@ void CRuntimeStatisticCollection::deserializeMerge(MemoryBuffer& in)
         StatisticKind kind = (StatisticKind)kindVal;
         StatsMergeAction mergeAction = queryMergeMode(kind);
         mergeStatistic(kind, value, mergeAction);
+    }
+    bool hasNested;
+    in.read(hasNested);
+    if (hasNested)
+    {
+        ensureNested();
+        nested->deserializeMerge(in);
     }
 }
 
@@ -1537,13 +1651,152 @@ bool CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
         unsigned __int64 value = values[i2].get();
         if (value)
         {
-            out.appendPacked((unsigned)mapping.getKind(i2));
+            StatisticKind kind = mapping.getKind(i2);
+            StatisticKind serialKind= querySerializedKind(kind);
+            if (kind != serialKind)
+                value = convertMeasure(kind, serialKind, value);
+
+            out.appendPacked((unsigned)serialKind);
             out.appendPacked(value);
         }
     }
-    return numValid != 0;
+
+    bool nonEmpty = (numValid != 0);
+    out.append(nested != nullptr);
+    if (nested)
+    {
+        if (nested->serialize(out))
+            nonEmpty = true;
+    }
+    return nonEmpty;
 }
 
+
+//---------------------------------------------------
+
+bool CNestedRuntimeStatisticCollection::matches(const StatsScopeId & otherScope) const
+{
+    return scope.matches(otherScope);
+}
+
+//NOTE: When deserializing, the scope is deserialized by the caller, and the correct target selected
+//which is why there is no corresponding deserialize() method
+bool CNestedRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
+{
+    scope.serialize(out);
+    return CRuntimeStatisticCollection::serialize(out);
+}
+
+void CNestedRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) const
+{
+    target.beginScope(scope);
+    CRuntimeStatisticCollection::recordStatistics(target);
+    target.endScope();
+}
+
+StringBuffer & CNestedRuntimeStatisticCollection::toStr(StringBuffer &str) const
+{
+    str.append("{Scope ");
+    scope.getScopeText(str).newline();
+    CRuntimeStatisticCollection::toStr(str);
+    return str.append("}").newline();
+}
+
+StringBuffer & CNestedRuntimeStatisticCollection::toXML(StringBuffer &str) const
+{
+    str.append("<Scope id=\"");
+    scope.getScopeText(str).append("\">");
+    CRuntimeStatisticCollection::toXML(str);
+    return str.append("</Scope>");
+}
+
+//---------------------------------------------------
+
+CRuntimeStatisticCollection & CNestedRuntimeStatisticMap::addNested(const StatsScopeId & scope, const StatisticsMapping & mapping)
+{
+    ForEachItemIn(i, map)
+    {
+        CNestedRuntimeStatisticCollection & cur = map.item(i);
+        if (cur.matches(scope))
+            return cur;
+    }
+    CNestedRuntimeStatisticCollection * stats = new CNestedRuntimeStatisticCollection(scope, mapping);
+    map.append(*stats);
+    return *stats;
+}
+
+
+void CNestedRuntimeStatisticMap::deserialize(MemoryBuffer& in)
+{
+    unsigned numItems;
+    in.readPacked(numItems);
+    for (unsigned i=0; i < numItems; i++)
+    {
+        StatsScopeId scope;
+        scope.deserialize(in, currentStatisticsVersion);
+
+        //Use allStatistics as the default mapping if it hasn't already been added.
+        CRuntimeStatisticCollection & child = addNested(scope, allStatistics);
+        child.deserialize(in);
+    }
+}
+
+void CNestedRuntimeStatisticMap::deserializeMerge(MemoryBuffer& in)
+{
+    unsigned numItems;
+    in.readPacked(numItems);
+    for (unsigned i=0; i < numItems; i++)
+    {
+        StatsScopeId scope;
+        scope.deserialize(in, currentStatisticsVersion);
+
+        //Use allStatistics as the default mapping if it hasn't already been added.
+        CRuntimeStatisticCollection & child = addNested(scope, allStatistics);
+        child.deserializeMerge(in);
+    }
+}
+
+void CNestedRuntimeStatisticMap::merge(const CNestedRuntimeStatisticMap & other)
+{
+    ForEachItemIn(i, other.map)
+    {
+        CNestedRuntimeStatisticCollection & cur = other.map.item(i);
+        CRuntimeStatisticCollection & target = addNested(cur.scope, cur.queryMapping());
+        target.merge(cur);
+    }
+}
+
+bool CNestedRuntimeStatisticMap::serialize(MemoryBuffer& out) const
+{
+    out.appendPacked(map.ordinality());
+    bool nonEmpty = false;
+    ForEachItemIn(i, map)
+    {
+        if (map.item(i).serialize(out))
+            nonEmpty = true;
+    }
+    return nonEmpty;
+}
+
+void CNestedRuntimeStatisticMap::recordStatistics(IStatisticGatherer & target) const
+{
+    ForEachItemIn(i, map)
+        map.item(i).recordStatistics(target);
+}
+
+StringBuffer & CNestedRuntimeStatisticMap::toStr(StringBuffer &str) const
+{
+    ForEachItemIn(i, map)
+        map.item(i).toStr(str);
+    return str;
+}
+
+StringBuffer & CNestedRuntimeStatisticMap::toXML(StringBuffer &str) const
+{
+    ForEachItemIn(i, map)
+        map.item(i).toXML(str);
+    return str;
+}
 
 //---------------------------------------------------
 

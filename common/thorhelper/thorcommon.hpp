@@ -569,6 +569,10 @@ public:
     {
         return ctx->updateWorkUnit();
     }
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
+    {
+        return ctx->registerTimer(activityId, name);
+    }
 protected:
     ICodeContext * ctx;
 };

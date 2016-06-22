@@ -1571,6 +1571,9 @@ public:
     IHqlExpression * getFirstCharacter(IHqlExpression * source);
     bool hasAddress(BuildCtx & ctx, IHqlExpression * expr);
 
+    void buildStartTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, CHqlBoundExpr & boundStart, const char * name);
+    void buildStopTimer(BuildCtx & ctx, const CHqlBoundExpr & boundTimer, const CHqlBoundExpr & boundStart);
+
     IHqlExpression * convertOrToAnd(IHqlExpression * expr);
     bool childrenRequireTemp(BuildCtx & ctx, IHqlExpression * expr, bool includeChildren);
     bool requiresTemp(BuildCtx & ctx, IHqlExpression * expr, bool includeChildren);

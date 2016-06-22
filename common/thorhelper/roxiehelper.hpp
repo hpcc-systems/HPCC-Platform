@@ -487,4 +487,6 @@ THORHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const cha
 THORHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in);
 THORHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally, bool ignoreForeignPrefix);
 
+THORHELPER_API ISectionTimer * queryNullSectionTimer();
+
 #endif // ROXIEHELPER_HPP
