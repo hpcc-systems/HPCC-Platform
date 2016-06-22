@@ -3805,6 +3805,47 @@ IHqlExpression * queryLikelihoodExpr(IHqlExpression * expr)
         else
             likelihoodExpr.set(queryConstantLikelihoodFalse());
         break;
+    case no_and:
+        {
+            double p1 = queryLikelihood(expr->queryChild(0));
+            if (isKnownLikelihood(p1))
+            {
+                double p2 = queryLikelihood(expr->queryChild(1));
+                if (isKnownLikelihood(p2))
+                {
+                    likelihoodExpr.set(createConstant(createRealValue(p1*p2,8)));
+                    break;
+                }
+            }
+            likelihoodExpr.set(queryConstantLikelihoodUnknown());
+            break;
+        }
+    case no_or:
+        {
+            double p1 = queryLikelihood(expr->queryChild(0));
+            if (isKnownLikelihood(p1))
+            {
+                double p2 = queryLikelihood(expr->queryChild(1));
+                if (isKnownLikelihood(p2))
+                {
+                    likelihoodExpr.set(createConstant(createRealValue(p1+p2-p1*p2,8)));
+                    break;
+                }
+            }
+            likelihoodExpr.set(queryConstantLikelihoodUnknown());
+            break;
+        }
+    case no_not:
+        {
+            double p1 = queryLikelihood(expr->queryChild(0));
+            if (isKnownLikelihood(p1))
+            {
+                likelihoodExpr.set(createConstant(createRealValue(1.0-p1,8)));
+                break;
+            }
+            likelihoodExpr.set(queryConstantLikelihoodUnknown());
+            break;
+        }
     default:
         likelihoodExpr.set(queryConstantLikelihoodUnknown());
         break;
