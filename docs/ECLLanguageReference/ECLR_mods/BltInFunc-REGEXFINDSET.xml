@@ -47,7 +47,7 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">REGEXFIND </emphasis>function uses the
+  <para>The <emphasis role="bold">REGEXFINDSET </emphasis>function uses the
   <emphasis>regex<indexterm>
       <primary>regex</primary>
     </indexterm></emphasis> to parse through the <emphasis>text</emphasis> and
