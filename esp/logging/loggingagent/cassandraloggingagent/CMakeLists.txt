@@ -33,7 +33,6 @@ include_directories (
      ${HPCC_SOURCE_DIR}/roxie/roxiemem
      ${HPCC_SOURCE_DIR}/common/deftype
      ${HPCC_SOURCE_DIR}/common/environment
-     ${HPCC_SOURCE_DIR}/plugins/cassandra/libuv/include
      ${HPCC_SOURCE_DIR}/plugins/cassandra/cpp-driver/include
      ${HPCC_SOURCE_DIR}/plugins/cassandra
      ${HPCC_SOURCE_DIR}/esp/platform
@@ -45,7 +44,6 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL  -DMYSQLLOGGINGLISTENER_EXPORTS -DMYSQLLOGAGENT_EXPORTS )
 
 set ( SRCS
-    ${HPCC_SOURCE_DIR}/plugins/cassandra/cassandraembed.cpp
     cassandralogagent.cpp
 )
 
@@ -54,6 +52,7 @@ HPCC_ADD_LIBRARY( cassandralogagent SHARED ${SRCS} )
 install ( TARGETS cassandralogagent RUNTIME DESTINATION bin LIBRARY DESTINATION lib )
 add_dependencies (cassandralogagent espscm)
 target_link_libraries ( cassandralogagent
+    cassandraembed
     cassandra
     eclrtl
     esphttp
