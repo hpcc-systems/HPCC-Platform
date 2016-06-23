@@ -2081,9 +2081,10 @@ public:
     {
         throwUnexpected();
     }
-    virtual void rewindTo(unsigned int prevlen)
+    virtual IInterface *saveLocation() const {return nullptr;}
+    virtual void rewindTo(IInterface *loc)
     {
-        //needs to be a no-op because it is used, but the way its used to trim empty xml sections I think we're fairly safe.
+        //needs to be a no-op because it is  used, but the way its used to trim empty xml sections I think we're fairly safe.
         //revisit cleaning up any empty objects later.
     }
     inline IEsdlDefStruct *queryCurrentEsdlStruct()

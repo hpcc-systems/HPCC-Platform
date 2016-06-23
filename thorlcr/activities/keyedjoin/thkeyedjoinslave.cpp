@@ -1572,7 +1572,8 @@ public:
         groupsPendsNoted = fetchReadBack = groupPendsEnded = doneGroupsDeQueued = wroteToFetchPipe = groupsComplete = 0;
 #endif
         inputHelper = NULL;
-        preserveGroups = preserveOrder = eos = false;
+        preserveGroups = preserveOrder = false;
+        eos = true; // keep as true until started.
         resultDistStream = NULL;
         tlkKeySet.setown(createKeyIndexSet());
         partKeySet.setown(createKeyIndexSet());

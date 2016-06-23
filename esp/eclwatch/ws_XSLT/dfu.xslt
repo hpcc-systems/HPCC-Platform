@@ -706,7 +706,14 @@
               </xsl:choose>
             </td>
             <td>
-                    <xsl:value-of select="Description"/>
+                <xsl:choose>
+                    <xsl:when test="string-length(Description) > 12">
+                        <xsl:value-of select="substring(Description, 1, 12)"/>...
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="Description"/>
+                    </xsl:otherwise>
+                </xsl:choose>
             </td>
             <td>
                     <xsl:value-of select="Totalsize"/>
