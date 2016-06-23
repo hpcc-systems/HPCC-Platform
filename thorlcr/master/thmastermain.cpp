@@ -550,7 +550,6 @@ int main( int argc, char *argv[]  )
     const char *thorname = NULL;
     StringBuffer nodeGroup, logUrl;
     Owned<IPerfMonHook> perfmonhook;
-    unsigned slavesPerNode = 1;
     unsigned channelsPerSlave = 1;
 
     ILogMsgHandler *logHandler;
@@ -607,7 +606,7 @@ int main( int argc, char *argv[]  )
             nodeGroup.append(thorname);
             globals->setProp("@nodeGroup", thorname);
         }
-        slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+        unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
         channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
         unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
@@ -782,20 +781,23 @@ int main( int argc, char *argv[]  )
 
         if (registry->connect())
         {
-            if (channelsPerSlave > 1)
+            unsigned totSlaveProcs = queryNodeClusterWidth();
+            for (unsigned s=0; s<totSlaveProcs; s++)
             {
-                for (unsigned s=0; s<slavesPerNode; s++)
+                StringBuffer slaveStr;
+                for (unsigned c=0; c<channelsPerSlave; c++)
                 {
-                    StringBuffer slaveStr;
-                    for (unsigned c=0; c<channelsPerSlave; c++)
-                    {
-                        unsigned o = s + (c * slavesPerNode);
-                        if (c)
-                            slaveStr.append(",");
-                        slaveStr.append(o+1);
-                    }
-                    PROGLOG("Slave log %u contains virtual slaves: %s", s+1, slaveStr.str());
+                    unsigned o = s + (c * totSlaveProcs);
+                    if (c)
+                        slaveStr.append(",");
+                    slaveStr.append(o+1);
                 }
+                StringBuffer virtStr;
+                if (channelsPerSlave>1)
+                    virtStr.append("virtual slaves:");
+                else
+                    virtStr.append("slave:");
+                PROGLOG("Slave log %u contains %s %s", s+1, virtStr.str(), slaveStr.str());
             }
 
             PROGLOG("verifying mp connection to rest of cluster");

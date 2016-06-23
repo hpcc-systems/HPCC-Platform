@@ -100,7 +100,6 @@ class CJobListener : public CSimpleInterface
     OwningStringSuperHashTableOf<CJobSlave> jobs;
     CFifoFileCache querySoCache; // used to mirror master cache
     IArrayOf<IMPServer> mpServers;
-    unsigned slavesPerNode;
     unsigned channelsPerSlave;
 
     class CThreadExceptionCatcher : implements IExceptionHandler
@@ -162,7 +161,6 @@ public:
     CJobListener(bool &_stopped) : stopped(_stopped), excptHandler(*this)
     {
         stopped = true;
-        slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
         channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", 200);
         mpServers.append(* getMPServer());
@@ -185,6 +183,23 @@ public:
     }
     virtual void main()
     {
+        rank_t slaveProc = queryNodeGroup().rank()-1;
+        unsigned totSlaveProcs = queryNodeClusterWidth();
+        StringBuffer slaveStr;
+        for (unsigned c=0; c<channelsPerSlave; c++)
+        {
+            unsigned o = slaveProc + (c * totSlaveProcs);
+            if (c)
+                slaveStr.append(",");
+            slaveStr.append(o+1);
+        }
+        StringBuffer virtStr;
+        if (channelsPerSlave>1)
+            virtStr.append("virtual slaves:");
+        else
+            virtStr.append("slave:");
+        PROGLOG("Slave log %u contains %s %s", slaveProc+1, virtStr.str(), slaveStr.str());
+
         if (channelsPerSlave>1)
         {
             class CVerifyThread : public CInterface, implements IThreaded
@@ -211,17 +226,6 @@ public:
                         PROGLOG("verified mp connection to rest of slaves");
                 }
             };
-            rank_t slaveProc = queryNodeGroup().rank()-1;
-            StringBuffer slaveStr;
-            for (unsigned c=0; c<channelsPerSlave; c++)
-            {
-                unsigned o = slaveProc + (c * slavesPerNode);
-                if (c)
-                    slaveStr.append(",");
-                slaveStr.append(o+1);
-            }
-            PROGLOG("Slave log %u contains virtual slaves: %s", slaveProc+1, slaveStr.str());
-
             CIArrayOf<CInterface> verifyThreads;
             for (unsigned c=0; c<channelsPerSlave; c++)
                 verifyThreads.append(*new CVerifyThread(*this, c));
