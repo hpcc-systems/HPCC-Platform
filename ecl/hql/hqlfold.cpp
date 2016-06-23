@@ -36,6 +36,10 @@
 #include "hqlfold.hpp"
 #include "hqlthql.hpp"
 
+#ifdef __APPLE__
+#include <dlfcn.h>
+#endif
+
 //#define LOG_ALL_FOLDING
 
 //---------------------------------------------------------------------------
@@ -662,6 +666,20 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
     IHqlExpression *body = funcdef->queryChild(0);
 
     // Get the handle to the library and procedure.
+#ifdef __APPLE__
+    StringBuffer fullLibraryPath;
+    // OSX is not good at finding eclrtl. This hack is a workaround
+    if (streq(library, "libeclrtl.dylib"))
+    {
+        Dl_info info;
+        if (dladdr((const void *) rtlStrToUInt4, &info))  // Any function in eclrtl would do...
+        {
+            fullLibraryPath.set(info.dli_fname);
+            library = fullLibraryPath.str();
+        }
+    }
+#endif
+
     HINSTANCE hDLL=LoadSharedObject(library, false, false);
     if (!LoadSucceeded(hDLL))
     {
