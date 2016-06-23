@@ -1931,10 +1931,10 @@ public:
     CLocalWUFileUsage(IPropertyTree& _p) { p.setown(&_p); }
 
     virtual IStringVal & getName(IStringVal & ret) const { ret.set(p->queryProp("@name")); return ret; }
-    virtual IStringVal & getType(IStringVal & ret) const { ret.set(p->queryName()); return ret; }
+    virtual IStringVal & getType(IStringVal & ret) const { ret.set(p->queryProp("@type")); return ret; }
     virtual unsigned getNumFields() const { return p->getPropInt("@numFields"); }
     virtual unsigned getNumFieldsUsed() const { return p->getPropInt("@numFieldsUsed"); }
-    virtual IConstWUFieldUsageIterator * getFields() const { return new CConstWUFieldUsageIterator(p->getElements("field")); }
+    virtual IConstWUFieldUsageIterator * getFields() const { return new CConstWUFieldUsageIterator(p->getElements("fields/field")); }
 };
 
 class CConstWUFileUsageIterator : public CInterface, implements IConstWUFileUsageIterator

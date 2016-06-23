@@ -344,6 +344,7 @@ static IPropertyTree * addSelect(IPropertyTree * xml, IHqlExpression * expr, boo
     Owned<IPropertyTree> field = createPTree(isUsed ? "field" : "unused");
     field->setProp("@name", text.str());
     const char * tag = field->queryName();
+    xml = ensurePTree(xml, "fields");
     return xml->addPropTree(tag, field.getClear());
 }
 
@@ -416,8 +417,9 @@ IPropertyTree * SourceFieldUsage::createReport(bool includeFieldDetail, const IP
             return NULL;
     }
 
-    Owned<IPropertyTree> entry = createPTree(type);
+    Owned<IPropertyTree> entry = createPTree("datasource");
     entry->setProp("@name", nameText);
+    entry->setProp("@type", type);
 
     unsigned numFields = 0;
     unsigned numFieldsUsed = 0;
