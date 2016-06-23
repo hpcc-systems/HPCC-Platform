@@ -28,7 +28,7 @@ project(cassandraembed)
 # When there is (and the distros catch up) we may want to add them as dependencies here
 # until then, we build the required libraries from source
 # Build libuv, required by the cassandra driver but not available on all distros
-if(USE_CASSANDRA OR CASSANDRAEMBED)
+if(USE_CASSANDRA)
   if(APPLE)
     add_custom_command(
       OUTPUT ${PROJECT_BINARY_DIR}/libuv.dylib
@@ -83,62 +83,57 @@ if(USE_CASSANDRA OR CASSANDRAEMBED)
       DESTINATION ${LIB_DIR}
       COMPONENT Runtime)
   endif()
-endif()
 
-  if(CASSANDRAEMBED)
-    ADD_PLUGIN(cassandraembed)
-    if(MAKE_CASSANDRAEMBED)
+  ADD_PLUGIN(cassandraembed)
 
-      set(
-        SRCS
-        cassandraembed.cpp
-        cassandrawu.cpp)
+  set(
+    SRCS
+    cassandraembed.cpp
+    cassandrawu.cpp)
 
-      include_directories(
-        ./../../system/include
-        ./../../rtl/eclrtl
-        ./../../roxie/roxiemem
-        ./../../rtl/include
-        ./../../rtl/nbcd
-        ./../../common/deftype
-        ./../../common/workunit
-        ./../../system/jlib
-        ./../../system/security/shared 
-        ./../../system/mp
-        ./../../dali/base 
-        ./cpp-driver/include)
+  include_directories(
+    ./../../system/include
+    ./../../rtl/eclrtl
+    ./../../roxie/roxiemem
+    ./../../rtl/include
+    ./../../rtl/nbcd
+    ./../../common/deftype
+    ./../../common/workunit
+    ./../../system/jlib
+    ./../../system/security/shared 
+    ./../../system/mp
+    ./../../dali/base 
+    ./cpp-driver/include)
 
-      add_definitions(-D_USRDLL -DCASSANDRAEMBED_EXPORTS)
+  add_definitions(-D_USRDLL -DCASSANDRAEMBED_EXPORTS)
 
-      HPCC_ADD_LIBRARY(cassandraembed SHARED ${SRCS})
-      if(NOT FORCE_WORKUNITS_TO_CASSANDRA)
-        if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
-          message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-        elseif(NOT APPLE)
-          set_target_properties(cassandraembed PROPERTIES NO_SONAME 1)
-        endif()
-      endif()
-
-      install(
-        TARGETS cassandraembed
-        DESTINATION plugins
-        COMPONENT Runtime )
-
-      install(
-        TARGETS cassandraembed
-        DESTINATION ${LIB_DIR}
-        COMPONENT Runtime )
-
-      target_link_libraries(
-        cassandraembed
-        cassandra
-        eclrtl
-        roxiemem
-        dalibase
-        workunit
-        jlib)
+  HPCC_ADD_LIBRARY(cassandraembed SHARED ${SRCS})
+  if(NOT FORCE_WORKUNITS_TO_CASSANDRA)
+    if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
+      message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
+    elseif(NOT APPLE)
+      set_target_properties(cassandraembed PROPERTIES NO_SONAME 1)
     endif()
   endif()
+
+  install(
+    TARGETS cassandraembed
+    DESTINATION plugins
+    COMPONENT Runtime )
+
+  install(
+    TARGETS cassandraembed
+    DESTINATION ${LIB_DIR}
+    COMPONENT Runtime )
+
+  target_link_libraries(
+    cassandraembed
+    cassandra
+    eclrtl
+    roxiemem
+    dalibase
+    workunit
+    jlib)
 
   if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
@@ -146,3 +141,4 @@ endif()
       DESTINATION plugins
       COMPONENT Runtime)
   endif()
+endif(USE_CASSANDRA)
