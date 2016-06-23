@@ -1,6 +1,8 @@
 define({root:
 ({
     Abort: "Abort",
+    AbortedBy: "Aborted by",
+    AbortedTime: "Aborted time",
     About: "About",
     AboutGraphControl: "About Graph Control",
     AboutHPCCSystemsGraphControl: "About HPCC Systems® Graph Control",
