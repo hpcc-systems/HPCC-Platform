@@ -524,8 +524,15 @@ IHqlExpression * NewProjectMapper2::recursiveExpandSelect(IHqlExpression * expr,
         unsigned match = targets.find(*plain);
         if (match == NotFound)
         {
-            if (ignoreMissingFields)
-                return LINK(expr);
+            /*
+             * Sometimes the implicit project code will remove fields that are used in WILD() expressions.  This creates an inconsistency
+             * in the graph - a reference to a field that doesn't exist in the output of the previous expression.  If we are expanding
+             * a selector reference, and it isn't found in the input's dataset, assume it has been projected out, and remap it to the
+             * parent dataset.  (If this is wrong it will trigger an internal error later on.)
+             */
+            if (insideSelectorReference)
+                return createSelectExpr(LINK(newDataset), LINK(expr->queryChild(1)));
+
 #if 0
             dbglogExpr(plain.get());
             ForEachItemIn(i, targets)
@@ -588,6 +595,19 @@ IHqlExpression * NewProjectMapper2::doExpandFields(IHqlExpression * expr, IHqlEx
     case no_field:
     case no_record:
         ret = LINK(expr);
+        break;
+    case no_attr_expr:
+        if (expr->queryName() == _selectors_Atom)
+        {
+            if (!insideSelectorReference)
+            {
+                //Process any child no_selects so that missing entries are not fatal.
+                insideSelectorReference = true;
+                ret = doExpandFields(expr, oldDataset, newDataset, oldParent);
+                insideSelectorReference = false;
+                return ret;
+            }
+        }
         break;
     case no_activerow:
         {
