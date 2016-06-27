@@ -2096,7 +2096,7 @@ static void lockWuid(Owned<IRemoteConnection> &connection, const char *wuid)
 {
     VStringBuffer wuRoot("/WorkUnitLocks/%s", wuid);
     if (connection)
-        connection->changeMode(RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT); // Would it ever be anything else?
+        connection->changeMode(RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT); // Would it ever be anything else?
     else
         connection.setown(querySDS().connect(wuRoot.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
     if (!connection)
@@ -2121,7 +2121,7 @@ public:
 
     virtual void forceReload()
     {
-        synchronized sync(locked); // protect locked workunits (uncommited writes) from reload
+        synchronized sync(locked); // protect locked workunits (uncommitted writes) from reload
         loadPTree(sessionCache->cassandraToWorkunitXML(queryWuid()));
         memset(childLoaded, 0, sizeof(childLoaded));
         allDirty = false;
