@@ -27,11 +27,14 @@ person := dataset('person', person_layout, thor);
 isLessXpos1000 := LIKELY(person.xpos < 1000, 0.1);
 isIdLess4 := LIKELY(person.person_id < 4,0.2);
 filtered0 := person( LIKELY(isLessXpos1000, 0.2) );
-filtered1 :=  person( isLessXpos1000 AND isIdLess4 );
-filtered2 :=  person( isLessXpos1000 OR isIdLess4 );
-filtered3 :=  person( NOT isLessXpos1000 );
+filtered1 := person( isLessXpos1000 AND isIdLess4 );
+filtered2 := person( isLessXpos1000 OR isIdLess4 );
+filtered3 := person( NOT isLessXpos1000 );
+filtered4 := person( LIKELY(TRUE) );
 
+output(filtered0,,'tst_likely2.d00');
 output(filtered1,,'tst_likely2.d01');
 output(filtered2,,'tst_likely2.d02');
 output(filtered3,,'tst_likely2.d03');
+output(filtered4,,'tst_likely2.d04');
 

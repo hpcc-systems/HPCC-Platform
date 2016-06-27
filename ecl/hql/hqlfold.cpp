@@ -5183,12 +5183,14 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
     case no_unlikely:
         {
             IHqlExpression * child = expr->queryChild(0);
-
-            if (child->getOperator()==no_likely || child->getOperator()==no_unlikely)
-                return createValue(op, expr->getType(), LINK(child->queryChild(0)));
-            else
-                if (child->queryValue())
-                    return LINK(child);
+            switch(child->getOperator())
+            {
+            case no_likely:
+            case no_unlikely:
+                return replaceChild(expr, 0, child->queryChild(0));
+            case no_constant:
+                return LINK(child);
+            }
             break;
         }
     }
