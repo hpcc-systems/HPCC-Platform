@@ -2655,6 +2655,15 @@ public:
         CPersistedWorkUnit::clearExceptions();
     }
 
+    virtual IPropertyTree *getUnpackedTree(bool includeProgress) const
+    {
+        // If anyone wants the whole ptree, we'd better make sure we have fully loaded it...
+        CriticalBlock b(crit);
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
+            checkChildLoaded(**table);
+        return CPersistedWorkUnit::getUnpackedTree(includeProgress);
+    }
+
     virtual IPropertyTree *queryPTree() const
     {
         // If anyone wants the whole ptree, we'd better make sure we have fully loaded it...
