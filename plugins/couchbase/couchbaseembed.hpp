@@ -40,7 +40,7 @@
 #include "jptree.hpp"
 #include "tokenserialization.hpp"
 #include "rtlds_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "roxiemem.hpp"
 
 
@@ -60,7 +60,7 @@ namespace couchbaseembed
 
     static void typeError(const char *expected, const RtlFieldInfo *field)
     {
-        typeError(expected, field ? field->name->queryStr() : nullptr);
+        typeError(expected, field ? field->name : nullptr);
     }
 
     static int getNumFields(const RtlTypeInfo *record)

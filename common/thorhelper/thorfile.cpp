@@ -22,7 +22,7 @@
 #include "eclhelper.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 
 namespace thorfile {

@@ -25,7 +25,7 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlembed.hpp"
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
@@ -591,7 +591,7 @@ static void typeError(const char *expected, const CassValue *value, const RtlFie
 {
     VStringBuffer msg("cassandra: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", str(field->name));
+        msg.appendf(" for field %s", field->name);
     if (value)
         msg.appendf(", received %s", getTypeName(cass_value_type(value)));
     rtlFail(0, msg.str());
@@ -982,7 +982,7 @@ protected:
         else
             ret = cass_row_get_column(stmtInfo->queryRow(), colIdx++);
         if (!ret)
-            failx("Too many fields in ECL output row, reading field %s", str(field->name));
+            failx("Too many fields in ECL output row, reading field %s", field->name);
         return ret;
     }
     const CassandraStatementInfo *stmtInfo;
@@ -1169,14 +1169,14 @@ protected:
     inline unsigned checkNextParam(const RtlFieldInfo * field)
     {
         if (logctx.queryTraceLevel() > 4)
-            logctx.CTXLOG("Binding %s to %d", str(field->name), thisParam);
+            logctx.CTXLOG("Binding %s to %d", field->name, thisParam);
         return thisParam++;
     }
     inline void checkBind(CassError rc, const RtlFieldInfo * field)
     {
         if (rc != CASS_OK)
         {
-            failx("While binding parameter %s: %s", str(field->name), cass_error_desc(rc));
+            failx("While binding parameter %s: %s", field->name, cass_error_desc(rc));
         }
     }
     const RtlTypeInfo *typeInfo;

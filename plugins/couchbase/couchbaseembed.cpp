@@ -166,7 +166,7 @@ namespace couchbaseembed
 
     void bindStringParam(unsigned len, const char *value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             size32_t utf8chars;
@@ -182,7 +182,7 @@ namespace couchbaseembed
 
     void bindBoolParam(bool value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             StringBuffer serialized;
@@ -199,7 +199,7 @@ namespace couchbaseembed
 
     void bindDataParam(unsigned len, const void *value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             size32_t bytes;
@@ -216,7 +216,7 @@ namespace couchbaseembed
 
     void bindIntParam(__int64 value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             StringBuffer serialized;
@@ -233,7 +233,7 @@ namespace couchbaseembed
 
     void bindUIntParam(unsigned __int64 value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             StringBuffer serialized;
@@ -250,7 +250,7 @@ namespace couchbaseembed
 
     void bindRealParam(double value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             StringBuffer serialized;
@@ -266,7 +266,7 @@ namespace couchbaseembed
 
     void bindUnicodeParam(unsigned chars, const UChar *value, const RtlFieldInfo * field, Couchbase::QueryCommand * pQcmd)
     {
-        VStringBuffer cbPlaceholder("$%s", field->name->queryStr());
+        VStringBuffer cbPlaceholder("$%s", field->name);
         if (pQcmd)
         {
             size32_t utf8chars;
@@ -357,7 +357,7 @@ namespace couchbaseembed
     unsigned CouchbaseRecordBinder::checkNextParam(const RtlFieldInfo * field)
     {
        if (logctx.queryTraceLevel() > 4)
-           logctx.CTXLOG("Binding %s to %d", str(field->name), thisParam);
+           logctx.CTXLOG("Binding %s to %d", field->name, thisParam);
        return thisParam++;
     }
 
@@ -909,7 +909,7 @@ namespace couchbaseembed
         */
 
         if (getNumFields(field->type->queryChildType()) > 0)
-            m_oNestedField.set(m_oResultRow->queryBranch(field->name->queryStr()));
+            m_oNestedField.set(m_oResultRow->queryBranch(field->name));
     }
 
     void CouchbaseRowBuilder::processBeginRow(const RtlFieldInfo * field)
@@ -941,7 +941,7 @@ namespace couchbaseembed
         if (!m_oResultRow)
             failx("Missing result row data");
 
-        const char * fieldname = field->name->queryStr();
+        const char * fieldname = field->name;
         if (!fieldname || !*fieldname)
             failx("Missing result column metadata (name)");
 
