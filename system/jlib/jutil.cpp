@@ -814,20 +814,18 @@ public:
         return ret;
     }
 
-} RandomMain; 
+};
 
-static CriticalSection gobalRandomSect;
+thread_local Owned<IRandomNumberGenerator> RandomMain = createRandomNumberGenerator();
 
 unsigned getRandom()
 {
-    CriticalBlock block(gobalRandomSect); // this is a shame but it is not thread-safe without
-    return RandomMain.next();
+    return RandomMain->next();
 }
 
 void seedRandom(unsigned seed)
 {
-    CriticalBlock block(gobalRandomSect); 
-    RandomMain.seed(seed);
+    RandomMain->seed(seed);
 }
 
 IRandomNumberGenerator *createRandomNumberGenerator()
@@ -847,181 +845,119 @@ public:
         std::seed_seq seeds{rd(), rd(), rd(), rd(), rd()};
         seeds.generate(sequence.begin(), sequence.end());
         auto seedIter = sequence.begin();
-        m_pMinStd_Rand0     = new std::minstd_rand0(*seedIter);
-        m_pMinStd_Rand      = new std::minstd_rand(*(++seedIter));
-        m_pMT19937          = new std::mt19937(*(++seedIter));
-        m_pRANLUX24_Base    = new std::ranlux24_base(*(++seedIter));
-        m_pRANLUX48_Base    = new std::ranlux48_base(*(++seedIter));
+        pMinStd_Rand0     = new std::minstd_rand0(*seedIter);
+        pMinStd_Rand      = new std::minstd_rand(*(++seedIter));
+        pMT19937          = new std::mt19937(*(++seedIter));
+        pRANLUX24_Base    = new std::ranlux24_base(*(++seedIter));
+        pRANLUX48_Base    = new std::ranlux48_base(*(++seedIter));
     }
 
     virtual ~CPseudoRandomNumberGenerator()
     {
-        delete m_pMinStd_Rand0;
-        delete m_pMinStd_Rand;
-        delete m_pMT19937;
-        delete m_pRANLUX24_Base;
-        delete m_pRANLUX48_Base;
+        delete pMinStd_Rand0;
+        delete pMinStd_Rand;
+        delete pMT19937;
+        delete pRANLUX24_Base;
+        delete pRANLUX48_Base;
+    }
+
+    template<class D>
+    unsigned next(enum ePseudoRandomNumberEngine engine, D &d)
+    {
+        switch(engine)
+        {
+        case(MINSTD_RAND):
+            return (d)(*pMinStd_Rand);
+        case(MT19937):
+            return (d)(*pMT19937);
+        case(RANLUX24_BASE):
+            return (d)(*pRANLUX24_Base);
+        case(RANLUX48_BASE):
+            return (d)(*pRANLUX48_Base);
+        case(MINSTD_RAND0):
+        default:
+            return (d)(*pMinStd_Rand0);
+        }
     }
 
     unsigned nextUniform(enum ePseudoRandomNumberEngine engine, unsigned int lower_bound, unsigned int upper_bound)
     {
         std::pair<unsigned, unsigned> _pair(lower_bound, upper_bound);
-        auto iter = m_UniformDistributionMap.find(_pair);
+        auto iter = uniformDistributionMap.find(_pair);
 
-        if (iter == m_UniformDistributionMap.end())
+        if (iter == uniformDistributionMap.end())
         {
             std::uniform_int_distribution<unsigned int> distribution(lower_bound, upper_bound);
-            iter = m_UniformDistributionMap.insert(std::move(std::pair<decltype(_pair),decltype(distribution)>(_pair, distribution))).first;
+            iter = uniformDistributionMap.insert(std::move(std::pair<decltype(_pair),decltype(distribution)>(_pair, distribution))).first;
         }
-
-        switch(engine)
-        {
-        case(MINSTD_RAND0):
-            return (iter->second)(*m_pMinStd_Rand0);
-        case(MINSTD_RAND):
-            return (iter->second)(*m_pMinStd_Rand);
-        case(MT19937):
-            return (iter->second)(*m_pMT19937);
-        case(RANLUX24_BASE):
-            return (iter->second)(*m_pRANLUX24_Base);
-        case(RANLUX48_BASE):
-            return (iter->second)(*m_pRANLUX48_Base);
-        }
-        return 0;
+        return next(engine, iter->second);
     }
 
     unsigned nextBinomial(enum ePseudoRandomNumberEngine engine, double probability, unsigned int upper_bound)
     {
         std::pair<double, unsigned> _pair(probability, upper_bound);
-        auto iter = m_BinomialDistributionMap.find(_pair);
+        auto iter = binomialDistributionMap.find(_pair);
 
-        if (iter == m_BinomialDistributionMap.end())
+        if (iter == binomialDistributionMap.end())
         {
             std::binomial_distribution<unsigned int> distribution(upper_bound, probability);
-            iter = m_BinomialDistributionMap.insert(std::move(std::pair<decltype(_pair),decltype(distribution)>(_pair, distribution))).first;
+            iter = binomialDistributionMap.insert(std::move(std::pair<decltype(_pair),decltype(distribution)>(_pair, distribution))).first;
         }
-
-        switch(engine)
-        {
-        case(MINSTD_RAND0):
-            return (iter->second)(*m_pMinStd_Rand0);
-        case(MINSTD_RAND):
-            return (iter->second)(*m_pMinStd_Rand);
-        case(MT19937):
-            return (iter->second)(*m_pMT19937);
-        case(RANLUX24_BASE):
-            return (iter->second)(*m_pRANLUX24_Base);
-        case(RANLUX48_BASE):
-            return (iter->second)(*m_pRANLUX48_Base);
-        }
-        return 0;
+        return next(engine, iter->second);
     }
 
     unsigned nextNegativeBinomial(enum ePseudoRandomNumberEngine engine, double probability, unsigned int upper_bound)
     {
         std::pair<double, unsigned> _pair(probability, upper_bound);
-        auto iter = m_NegativeBinomialDistributionMap.find(_pair);
+        auto iter = negativeBinomialDistributionMap.find(_pair);
 
-        if (iter == m_NegativeBinomialDistributionMap.end())
+        if (iter == negativeBinomialDistributionMap.end())
         {
             std::negative_binomial_distribution<unsigned int> distribution(upper_bound, probability);
-            iter = m_NegativeBinomialDistributionMap.insert(std::move(std::pair<decltype(_pair),decltype(distribution)>(_pair, distribution))).first;
+            iter = negativeBinomialDistributionMap.insert(std::move(std::pair<decltype(_pair),decltype(distribution)>(_pair, distribution))).first;
         }
-
-        switch(engine)
-        {
-        case(MINSTD_RAND0):
-            return (iter->second)(*m_pMinStd_Rand0);
-        case(MINSTD_RAND):
-            return (iter->second)(*m_pMinStd_Rand);
-        case(MT19937):
-            return (iter->second)(*m_pMT19937);
-        case(RANLUX24_BASE):
-            return (iter->second)(*m_pRANLUX24_Base);
-        case(RANLUX48_BASE):
-            return (iter->second)(*m_pRANLUX48_Base);
-        }
-        return 0;
+        return next(engine, iter->second);
     }
 
     unsigned nextGeometric(enum ePseudoRandomNumberEngine engine, double probability)
     {
-        auto iter = m_GeometricDistributionMap.find(probability);
+        auto iter = geometricDistributionMap.find(probability);
 
-        if (iter == m_GeometricDistributionMap.end())
+        if (iter == geometricDistributionMap.end())
         {
             std::geometric_distribution<unsigned> distribution(probability);
-            iter = m_GeometricDistributionMap.insert(std::move(std::pair<double,decltype(distribution)>(probability, distribution))).first;
+            iter = geometricDistributionMap.insert(std::move(std::pair<double,decltype(distribution)>(probability, distribution))).first;
         }
-
-        switch(engine)
-        {
-        case(MINSTD_RAND0):
-            return (iter->second)(*m_pMinStd_Rand0);
-        case(MINSTD_RAND):
-            return (iter->second)(*m_pMinStd_Rand);
-        case(MT19937):
-            return (iter->second)(*m_pMT19937);
-        case(RANLUX24_BASE):
-            return (iter->second)(*m_pRANLUX24_Base);
-        case(RANLUX48_BASE):
-            return (iter->second)(*m_pRANLUX48_Base);
-        }
-        return 0;
+        return next(engine, iter->second);
     }
 
     unsigned nextPoisson(enum ePseudoRandomNumberEngine engine, double mean)
     {
-        auto iter = m_PoissonDistributionMap.find(mean);
+        auto iter = poissonDistributionMap.find(mean);
 
-        if (iter == m_PoissonDistributionMap.end())
+        if (iter == poissonDistributionMap.end())
         {
             std::poisson_distribution<unsigned> distribution(mean);
-            iter = m_PoissonDistributionMap.insert(std::move(std::pair<double,decltype(distribution)>(mean, distribution))).first;
+            iter = poissonDistributionMap.insert(std::move(std::pair<double,decltype(distribution)>(mean, distribution))).first;
         }
-
-        switch(engine)
-        {
-        case(MINSTD_RAND0):
-            return (iter->second)(*m_pMinStd_Rand0);
-        case(MINSTD_RAND):
-            return (iter->second)(*m_pMinStd_Rand);
-        case(MT19937):
-            return (iter->second)(*m_pMT19937);
-        case(RANLUX24_BASE):
-            return (iter->second)(*m_pRANLUX24_Base);
-        case(RANLUX48_BASE):
-            return (iter->second)(*m_pRANLUX48_Base);
-        }
-        return 0;
+        return next(engine, iter->second);
     }
 
 private:
 
     // Pseudo-Random Number Engines
-    std::minstd_rand0   *m_pMinStd_Rand0;
-    std::minstd_rand    *m_pMinStd_Rand;
-    std::mt19937        *m_pMT19937;
-    std::ranlux24_base  *m_pRANLUX24_Base;
-    std::ranlux48_base  *m_pRANLUX48_Base;
-
-    // Uniform Distributions
-    std::uniform_int_distribution<unsigned>         *m_pUniformIntDistribution;
-
-    // Bernoulli Distributions
-    std::binomial_distribution<unsigned>            *m_pBinomialDistribution;
-    std::negative_binomial_distribution<unsigned>   *m_pNegativeBinomialDistribution;
-    std::geometric_distribution<unsigned>           *m_pGeometricDistribution;
-
-    // Poisson distributions
-    std::poisson_distribution<unsigned>             *m_pPoissonDistribution;
+    std::minstd_rand0   *pMinStd_Rand0;
+    std::minstd_rand    *pMinStd_Rand;
+    std::mt19937        *pMT19937;
+    std::ranlux24_base  *pRANLUX24_Base;
+    std::ranlux48_base  *pRANLUX48_Base;
 
     // Containers for distributions maps
-    std::map<std::pair<unsigned, unsigned>, std::uniform_int_distribution<unsigned>>        m_UniformDistributionMap;
-    std::map<std::pair<unsigned, double>, std::binomial_distribution<unsigned>>             m_BinomialDistributionMap;
-    std::map<std::pair<unsigned, double>, std::negative_binomial_distribution<unsigned>>    m_NegativeBinomialDistributionMap;
-    std::map<double, std::geometric_distribution<unsigned>>                                 m_GeometricDistributionMap;
-    std::map<double, std::poisson_distribution<unsigned>>                                   m_PoissonDistributionMap;
+    std::map<std::pair<unsigned, unsigned>, std::uniform_int_distribution<unsigned>>        uniformDistributionMap;
+    std::map<std::pair<unsigned, double>, std::binomial_distribution<unsigned>>             binomialDistributionMap;
+    std::map<std::pair<unsigned, double>, std::negative_binomial_distribution<unsigned>>    negativeBinomialDistributionMap;
+    std::map<double, std::geometric_distribution<unsigned>>                                 geometricDistributionMap;
+    std::map<double, std::poisson_distribution<unsigned>>                                   poissonDistributionMap;
 };
 
 IPseudoRandomNumberGenerator *createPseudoRandomNumberGenerator()

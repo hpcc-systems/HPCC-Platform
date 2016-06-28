@@ -5960,7 +5960,11 @@ primexpr1
                         {
                             $$.setExpr(createValue(no_random, LINK(parser->uint4Type), parser->createUniqueId()));
                         }
-    | RANDOM '(' pseudo_random_number_engine ',' pseudo_random_number_distribution ')'
+    | RANDOM '(' pseudo_random_number_distribution ')'
+                        {
+                            $$.setExpr(createValue(no_random, makeIntType(4, true), $3.getExpr(), createConstant(IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine::MINSTD_RAND0)));
+                        }
+    | RANDOM '(' pseudo_random_number_distribution ',' pseudo_random_number_engine ')'
                         {
                             $$.setExpr(createValue(no_random, makeIntType(4, true), $3.getExpr(), $5.getExpr()));
                         }

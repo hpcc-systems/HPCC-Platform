@@ -3587,32 +3587,35 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         {
             if (foldOptions & (HFOfoldimpure|HFOforcefold))
             {
-                if (expr->queryChild(0)->queryValue() == nullptr)
+                if (expr->queryChild(0)->numChildren() == 0)
                     return createConstant(expr->queryType()->castFrom(true, (__int64)rtlRandom()));
 
-                if (expr->queryChild(1)->queryName() == distributionUniformAtom)
+                if (!expr->isConstant())
+                    break;
+
+                if (expr->queryChild(0)->queryName() == distributionUniformAtom)
                     return createConstant(expr->queryType()->castFrom(true, (__int64)rtlPseudoRandomNumberUniformDistribution(
-                                                                          expr->queryChild(0)->queryValue()->getIntValue(),
-                                                                          expr->queryChild(1)->queryChild(0)->queryValue()->getIntValue(),
-                                                                          expr->queryChild(1)->queryChild(1)->queryValue()->getIntValue())));
-                else if (expr->queryChild(1)->queryName() == distributionBinomialAtom)
+                                                                          expr->queryChild(1)->queryValue()->getIntValue(),
+                                                                          expr->queryChild(0)->queryChild(0)->queryValue()->getIntValue(),
+                                                                          expr->queryChild(0)->queryChild(1)->queryValue()->getIntValue())));
+                else if (expr->queryChild(0)->queryName() == distributionBinomialAtom)
                     return createConstant(expr->queryType()->castFrom(true, (__int64)rtlPseudoRandomNumberBinomialDistribution(
-                                                                          expr->queryChild(0)->queryValue()->getIntValue(),
-                                                                          expr->queryChild(1)->queryChild(0)->queryValue()->getRealValue(),
-                                                                          expr->queryChild(1)->queryChild(1)->queryValue()->getIntValue())));
-                else if (expr->queryChild(1)->queryName() == distributionNegativeBinomialAtom)
+                                                                          expr->queryChild(1)->queryValue()->getIntValue(),
+                                                                          expr->queryChild(0)->queryChild(0)->queryValue()->getRealValue(),
+                                                                          expr->queryChild(0)->queryChild(1)->queryValue()->getIntValue())));
+                else if (expr->queryChild(0)->queryName() == distributionNegativeBinomialAtom)
                     return createConstant(expr->queryType()->castFrom(true, (__int64)rtlPseudoRandomNumberNegativeBinomialDistribution(
-                                                                          expr->queryChild(0)->queryValue()->getIntValue(),
-                                                                          expr->queryChild(1)->queryChild(0)->queryValue()->getRealValue(),
-                                                                          expr->queryChild(1)->queryChild(1)->queryValue()->getIntValue())));
-                else if (expr->queryChild(1)->queryName() == distributionGeometricAtom)
+                                                                          expr->queryChild(1)->queryValue()->getIntValue(),
+                                                                          expr->queryChild(0)->queryChild(0)->queryValue()->getRealValue(),
+                                                                          expr->queryChild(0)->queryChild(1)->queryValue()->getIntValue())));
+                else if (expr->queryChild(0)->queryName() == distributionGeometricAtom)
                     return createConstant(expr->queryType()->castFrom(true, (__int64)rtlPseudoRandomNumberGeometricDistribution(
-                                                                              expr->queryChild(0)->queryValue()->getIntValue(),
-                                                                              expr->queryChild(1)->queryChild(0)->queryValue()->getRealValue())));
-                else if (expr->queryChild(1)->queryName() == distributionPoissonAtom)
+                                                                              expr->queryChild(1)->queryValue()->getIntValue(),
+                                                                              expr->queryChild(0)->queryChild(0)->queryValue()->getRealValue())));
+                else if (expr->queryChild(0)->queryName() == distributionPoissonAtom)
                     return createConstant(expr->queryType()->castFrom(true, (__int64)rtlPseudoRandomNumberPoissonDistribution(
-                                                                          expr->queryChild(0)->queryValue()->getIntValue(),
-                                                                          expr->queryChild(1)->queryChild(0)->queryValue()->getRealValue())));
+                                                                          expr->queryChild(1)->queryValue()->getIntValue(),
+                                                                          expr->queryChild(0)->queryChild(0)->queryValue()->getRealValue())));
             }
         }
         break;

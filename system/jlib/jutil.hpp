@@ -118,12 +118,12 @@ extern jlib_decl IRandomNumberGenerator *createRandomNumberGenerator();
 
 interface IPseudoRandomNumberGenerator: public IInterface
 {
-    enum ePseudoRandomNumberEngine { MINSTD_RAND0,      // "Minimal standard"
-                                     MINSTD_RAND,       // Newer "Minimal standard"
-                                     MT19937,           // 32-bit Mersenne Twister
-                                     RANLUX24_BASE,     // Subtract with carry 24
-                                     RANLUX48_BASE,     // Subtract with carry 48
-                                     NUMBER_OF_ENGINES  // Keep this last
+    enum ePseudoRandomNumberEngine { MINSTD_RAND0,          // "Minimal standard"
+                                     MINSTD_RAND,           // Newer "Minimal standard"
+                                     MT19937,               // 32-bit Mersenne Twister
+                                     RANLUX24_BASE,         // Subtract with carry 24
+                                     RANLUX48_BASE,         // Subtract with carry 48
+                                     NUMBER_OF_ENGINES      // Keep this last
                                    };
 
     enum ePseudoRandomNumberDistribution {  UNIFORM_DISTRIBUTION,           // uniform_int_distribution

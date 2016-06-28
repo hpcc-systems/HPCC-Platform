@@ -3125,23 +3125,23 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         return;
     case no_random:
     {
-        if (expr->queryChild(0)->queryValue() == nullptr)
+        if (expr->queryChild(0)->numChildren() == 0)
         {
             doBuildExprSysFunc(ctx, expr, tgt, rtlRandomId);
             return;
         }
         IIdAtom *func = nullptr;
 
-        if (expr->queryChild(1)->queryName() == distributionUniformAtom)
-                func = rtlPseudoRandomNumberUniformDistributionId;
-        else if (expr->queryChild(1)->queryName() == distributionBinomialAtom)
-                func = rtlPseudoRandomNumberBinomialDistributionId;
-        else if (expr->queryChild(1)->queryName() == distributionNegativeBinomialAtom)
-                func = rtlPseudoRandomNumberNegativeBinomialDistributionId;
-        else if (expr->queryChild(1)->queryName() == distributionGeometricAtom)
-                func = rtlPseudoRandomNumberGeometricDistributionId;
-        else if (expr->queryChild(1)->queryName() == distributionPoissonAtom)
-                func = rtlPseudoRandomNumberPoissonDistributionId;
+        if (expr->queryChild(0)->queryName() == distributionUniformAtom)
+            func = rtlPseudoRandomNumberUniformDistributionId;
+        else if (expr->queryChild(0)->queryName() == distributionBinomialAtom)
+            func = rtlPseudoRandomNumberBinomialDistributionId;
+        else if (expr->queryChild(0)->queryName() == distributionNegativeBinomialAtom)
+            func = rtlPseudoRandomNumberNegativeBinomialDistributionId;
+        else if (expr->queryChild(0)->queryName() == distributionGeometricAtom)
+            func = rtlPseudoRandomNumberGeometricDistributionId;
+        else if (expr->queryChild(0)->queryName() == distributionPoissonAtom)
+            func = rtlPseudoRandomNumberPoissonDistributionId;
 
         doBuildExprPseudoRandomFunc(ctx, expr, tgt, func);
         return;
@@ -9616,11 +9616,11 @@ void HqlCppTranslator::doBuildExprSysFunc(BuildCtx & ctx, IHqlExpression * expr,
 void HqlCppTranslator::doBuildExprPseudoRandomFunc(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, IIdAtom * funcName)
 {
     HqlExprArray args;
-    args.append(*LINK(expr->queryChild(0)));
+    args.append(*LINK(expr->queryChild(1)));
 
-    ForEachChild(i, expr->queryChild(1))
+    ForEachChild(i, expr->queryChild(0))
     {
-        IHqlExpression * cur = expr->queryChild(1)->queryChild(i);
+        IHqlExpression * cur = expr->queryChild(0)->queryChild(i);
         if (!cur->isAttribute())
             args.append(*LINK(cur));
     }
