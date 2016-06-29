@@ -4887,7 +4887,8 @@ const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state
                 }
                 return ret;
             }
-            dbgassertex((chunkedFinger->numChunks() == maxChunksPerPage()) || (chunkedFinger->numChunks() == 0));
+
+            //heaplet was either empty or full (it may no longer be full if another thread has freed a row)
             finger = getNext(finger);
 
             //Check if we have looped all the way around
