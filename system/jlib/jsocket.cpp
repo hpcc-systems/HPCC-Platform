@@ -78,6 +78,7 @@
 //  Centos 5.x bug - epoll.h does not define but its in the kernel
 #   define EPOLLRDHUP 0x2000
 #  endif
+#  define MAX_RET_EVENTS  5000 // max events returned from epoll_wait() call
 # endif
 #endif
 
@@ -3772,33 +3773,28 @@ public:
         }
         else if (rc>0)
             PROGLOG("CSocketBaseThread: select handle %d selected(2) %d",sock,rc);
+        return true;
 #else
         struct pollfd fds[1];
         fds[0].fd = sock;
         fds[0].events = POLLIN | POLLOUT;
         fds[0].revents = 0;
         int rc = ::poll(fds, 1, 0);
-        if (rc<0)
-        {
-            StringBuffer sockstr;
-            const char *tracename = sockstr.append((unsigned)sock).str();
-            LOGERR2(ERRNO(),3,"CSocketBaseThread poll handle");
-            return false;
-        }
+        if (rc==0)
+            return true;
         else if (rc>0)
         {
-            if (fds[0].revents & POLLNVAL)
+            if ( !(fds[0].revents & POLLNVAL) )
             {
-                StringBuffer sockstr;
-                const char *tracename = sockstr.append((unsigned)sock).str();
-                LOGERR2(ERRNO(),3,"CSocketBaseThread poll handle");
-                return false;
+                PROGLOG("CSocketBaseThread: poll handle %d selected(2) %d",sock,rc);
+                return true;
             }
-            else
-                PROGLOG("CSocketBaseThread: select handle %d selected(2) %d",sock,rc);
         }
+        StringBuffer sockstr;
+        const char *tracename = sockstr.append((unsigned)sock).str();
+        LOGERR2(ERRNO(),3,"CSocketBaseThread poll handle");
+        return false;
 #endif
-        return true;
     }
 
     virtual void closedummy() = 0;
@@ -4398,7 +4394,6 @@ class CSocketEpollThread: public CSocketBaseThread
     SelectItem *sidummy;
     SelectItemArrayP items;
     struct epoll_event *epevents;
-    unsigned max_ret_events;
 
     void epoll_op(int efd, int op, SelectItem *si, unsigned int event_mask)
     {
@@ -4512,7 +4507,6 @@ public:
         validateerrcount = 0;
         offset = 0;
         selecttrace = trc;
-        max_ret_events = 5000;
         epfd = ::epoll_create1(EPOLL_CLOEXEC);
         if (epfd < 0) {
           int err = ERRNO();
@@ -4523,7 +4517,7 @@ public:
         DBGLOG("CSocketEpollThread: creating epoll fd %d", epfd );
 # endif
         try {
-            epevents = new struct epoll_event[max_ret_events];
+            epevents = new struct epoll_event[MAX_RET_EVENTS];
         } catch (const std::bad_alloc &e) {
             int err = ERRNO();
             LOGERR(err,1,"epevents alloc()");
@@ -4639,8 +4633,10 @@ public:
         if (terminating)
             return false;
         CriticalBlock block(sect);
-        if (sock==NULL) { // wait until no changes outstanding
-            while (selectvarschange) {
+        if (sock==NULL)
+        { // wait until no changes outstanding
+            while (selectvarschange)
+            {
                 waitingchange++;
                 CriticalUnblock unblock(sect);
                 waitingchangesem.wait();
@@ -4735,7 +4731,7 @@ public:
                     continue;
                 }
 
-                int n = ::epoll_wait(epfd, epevents, max_ret_events, 1000);
+                int n = ::epoll_wait(epfd, epevents, MAX_RET_EVENTS, 1000);
 
 # ifdef EPOLLTRACE
                 if(n > 0)
