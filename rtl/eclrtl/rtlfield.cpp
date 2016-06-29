@@ -150,9 +150,21 @@ size32_t RtlBoolTypeInfo::toXML(const byte * self, const byte * selfrow, const R
     return sizeof(bool);
 }
 
+void RtlBoolTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    const bool * cast = static_cast<const bool *>(ptr);
+    rtlBoolToStrX(resultLen, result, *cast);
+}
+
+__int64 RtlBoolTypeInfo::getInt(const void * ptr) const
+{
+    const bool * cast = static_cast<const bool *>(ptr);
+    return (__int64)*cast;
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
-double RtlRealTypeInfo::value(const byte * self) const
+double RtlRealTypeInfo::value(const void * self) const
 {
     if (length == 4)
         return *(const float *)self;
@@ -184,6 +196,18 @@ size32_t RtlRealTypeInfo::toXML(const byte * self, const byte * selfrow, const R
     return length;
 }
 
+void RtlRealTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    double num = value(ptr);
+    rtlRealToStrX(resultLen, result,  num);
+}
+
+__int64 RtlRealTypeInfo::getInt(const void * ptr) const
+{
+    double num = value(ptr);
+    return (__int64)num;
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlIntTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -211,6 +235,22 @@ size32_t RtlIntTypeInfo::toXML(const byte * self, const byte * selfrow, const Rt
     else
         target.outputInt(rtlReadInt(self, length), length, queryScalarXPath(field));
     return length;
+}
+
+void RtlIntTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    if (isUnsigned())
+        rtlUInt8ToStrX(resultLen, result,  rtlReadUInt(ptr, length));
+    else
+        rtlInt8ToStrX(resultLen, result,  rtlReadInt(ptr, length));
+}
+
+__int64 RtlIntTypeInfo::getInt(const void * ptr) const
+{
+    if (isUnsigned())
+         return rtlReadUInt(ptr, length);
+    else
+        return rtlReadInt(ptr, length);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -241,6 +281,22 @@ size32_t RtlSwapIntTypeInfo::toXML(const byte * self, const byte * selfrow, cons
     else
         target.outputInt(rtlReadSwapInt(self, length), length, queryScalarXPath(field));
     return length;
+}
+
+void RtlSwapIntTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    if (isUnsigned())
+        rtlUInt8ToStrX(resultLen, result,  rtlReadSwapUInt(ptr, length));
+    else
+        rtlInt8ToStrX(resultLen, result,  rtlReadSwapInt(ptr, length));
+}
+
+__int64 RtlSwapIntTypeInfo::getInt(const void * ptr) const
+{
+    if (isUnsigned())
+        return rtlReadUInt(ptr, length);
+    else
+        return rtlReadInt(ptr, length);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -277,6 +333,22 @@ size32_t RtlPackedIntTypeInfo::toXML(const byte * self, const byte * selfrow, co
     else
         target.outputInt(rtlGetPackedSigned(self), fieldsize, queryScalarXPath(field));
     return fieldsize;
+}
+
+void RtlPackedIntTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    if (isUnsigned())
+        rtlUInt8ToStrX(resultLen, result,  rtlGetPackedUnsigned(ptr));
+    else
+        rtlInt8ToStrX(resultLen, result,  rtlGetPackedSigned(ptr));
+}
+
+__int64 RtlPackedIntTypeInfo::getInt(const void * ptr) const
+{
+    if (isUnsigned())
+        return rtlGetPackedUnsigned(ptr);
+    else
+        return rtlGetPackedSigned(ptr);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -383,6 +455,28 @@ size32_t RtlStringTypeInfo::toXML(const byte * self, const byte * selfrow, const
     return thisSize;
 }
 
+void RtlStringTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    if (isFixedSize())
+    {
+        return rtlStrToUtf8X(resultLen, result, length, (const char *)ptr);
+    }
+    else
+    {
+        size32_t len = rtlReadUInt4(ptr);
+        return rtlStrToUtf8X(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+    }
+}
+
+__int64 RtlStringTypeInfo::getInt(const void * ptr) const
+{
+    //Utf8 output is the same as string output, so avoid the intermediate translation
+    if (isFixedSize())
+        return rtlStrToInt8(length, (const char *)ptr);
+    size32_t len = rtlReadUInt4(ptr);
+    return rtlStrToInt8(len, (const char *)ptr + sizeof(size32_t));
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlDataTypeInfo::size(const byte * self, const byte * selfrow) const 
@@ -456,6 +550,28 @@ size32_t RtlDataTypeInfo::toXML(const byte * self, const byte * selfrow, const R
 
     target.outputData(thisLength, str, queryScalarXPath(field));
     return thisSize;
+}
+
+void RtlDataTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    if (isFixedSize())
+    {
+        return rtlStrToUtf8X(resultLen, result, length, (const char *)ptr);
+    }
+    else
+    {
+        size32_t len = rtlReadUInt4(ptr);
+        return rtlStrToUtf8X(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+    }
+}
+
+__int64 RtlDataTypeInfo::getInt(const void * ptr) const
+{
+    //Utf8 output is the same as string output, so avoid the intermediate translation
+    if (isFixedSize())
+        return rtlStrToInt8(length, (const char *)ptr);
+    size32_t len = rtlReadUInt4(ptr);
+    return rtlStrToInt8(len, (const char *)ptr + sizeof(size32_t));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -539,6 +655,18 @@ size32_t RtlVarStringTypeInfo::toXML(const byte * self, const byte * selfrow, co
     return thisSize;
 }
 
+void RtlVarStringTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    const char * str = (const char *)ptr;
+    return rtlStrToUtf8X(resultLen, result, strlen(str), str);
+}
+
+__int64 RtlVarStringTypeInfo::getInt(const void * ptr) const
+{
+    const char * str = (const char *)ptr;
+    return rtlVStrToInt8(str);
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlQStringTypeInfo::size(const byte * self, const byte * selfrow) const 
@@ -616,6 +744,28 @@ size32_t RtlQStringTypeInfo::toXML(const byte * self, const byte * selfrow, cons
     return thisSize;
 }
 
+void RtlQStringTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    //NOTE: QStrings cannot contain non-string characters, so converting to str is the same as utf8
+    if (isFixedSize())
+    {
+        return rtlQStrToStrX(resultLen, result, length, (const char *)ptr);
+    }
+    else
+    {
+        size32_t len = rtlReadUInt4(ptr);
+        return rtlQStrToStrX(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+    }
+}
+
+__int64 RtlQStringTypeInfo::getInt(const void * ptr) const
+{
+    size32_t lenTemp;
+    rtlDataAttr temp;
+    getUtf8(lenTemp, temp.refstr(), ptr);
+    return rtlStrToInt8(lenTemp, temp.getstr());
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlDecimalTypeInfo::calcSize() const
@@ -664,6 +814,26 @@ size32_t RtlDecimalTypeInfo::toXML(const byte * self, const byte * selfrow, cons
     return thisSize;
 }
 
+void RtlDecimalTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    Decimal temp;
+    if (isUnsigned())
+        temp.setDecimal(length, getDecimalPrecision(), ptr);
+    else
+        temp.setUDecimal(length, getDecimalPrecision(), ptr);
+    temp.getStringX(resultLen, result);
+}
+
+__int64 RtlDecimalTypeInfo::getInt(const void * ptr) const
+{
+    Decimal temp;
+    if (isUnsigned())
+        temp.setDecimal(length, getDecimalPrecision(), ptr);
+    else
+        temp.setUDecimal(length, getDecimalPrecision(), ptr);
+    return temp.getInt64();
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlCharTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -693,6 +863,18 @@ size32_t RtlCharTypeInfo::toXML(const byte * self, const byte * selfrow, const R
         c = *str;
     target.outputString(1, &c, queryScalarXPath(field));
     return 1;
+}
+
+void RtlCharTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    const char * str = (const char *)ptr;
+    return rtlStrToUtf8X(resultLen, result, 1, str);
+}
+
+__int64 RtlCharTypeInfo::getInt(const void * ptr) const
+{
+    const char * str = (const char *)ptr;
+    return rtlStrToInt8(1, str);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -772,6 +954,30 @@ size32_t RtlUnicodeTypeInfo::toXML(const byte * self, const byte * selfrow, cons
     return thisSize;
 }
 
+void RtlUnicodeTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    if (isFixedSize())
+    {
+        return rtlUnicodeToUtf8X(resultLen, result, length, (const UChar *)ptr);
+    }
+    else
+    {
+        size32_t len = rtlReadUInt4(ptr);
+        const char * str = (const char *)ptr + sizeof(size32_t);
+        return rtlUnicodeToUtf8X(resultLen, result, len, (const UChar *)str);
+    }
+}
+
+__int64 RtlUnicodeTypeInfo::getInt(const void * ptr) const
+{
+    //Utf8 output is the same as string output, so avoid the intermediate translation
+    if (isFixedSize())
+        return rtlUnicodeToInt8(length, (const UChar *)ptr);
+    size32_t len = rtlReadUInt4(ptr);
+    const char * str = (const char *)ptr + sizeof(size32_t);
+    return rtlUnicodeToInt8(len, (const UChar *)str);
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlVarUnicodeTypeInfo::size(const byte * self, const byte * selfrow) const 
@@ -836,6 +1042,18 @@ size32_t RtlVarUnicodeTypeInfo::toXML(const byte * self, const byte * selfrow, c
     return thisSize;
 }
 
+void RtlVarUnicodeTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    const UChar * str = (const UChar *)ptr;
+    rtlUnicodeToUtf8X(resultLen, result, rtlUnicodeStrlen(str), str);
+}
+
+__int64 RtlVarUnicodeTypeInfo::getInt(const void * ptr) const
+{
+    const UChar * str = (const UChar *)ptr;
+    return rtlUnicodeToInt8(rtlUnicodeStrlen(str), str);
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlUtf8TypeInfo::size(const byte * self, const byte * selfrow) const 
@@ -880,6 +1098,28 @@ size32_t RtlUtf8TypeInfo::toXML(const byte * self, const byte * selfrow, const R
 
     target.outputUtf8(thisLength, str, queryScalarXPath(field));
     return thisSize;
+}
+
+void RtlUtf8TypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    if (isFixedSize())
+    {
+        rtlUtf8ToUtf8X(resultLen, result, length, (const char *)ptr);
+    }
+    else
+    {
+        size32_t len = rtlReadUInt4(ptr);
+        rtlUtf8ToUtf8X(resultLen, result, len, (const char *)ptr + sizeof(size32_t));
+    }
+}
+
+__int64 RtlUtf8TypeInfo::getInt(const void * ptr) const
+{
+    //Utf8 output is the same as string output, so avoid the intermediate translation
+    if (isFixedSize())
+        return rtlUtf8ToInt(length, (const char *)ptr);
+    size32_t len = rtlReadUInt4(ptr);
+    return rtlUtf8ToInt(len, (const char *)ptr + sizeof(size32_t));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -981,6 +1221,34 @@ size32_t RtlRecordTypeInfo::build(ARowBuilder &builder, size32_t offset, const R
     offset = buildFields(fields, builder, offset, source);
     source.processEndRow(field);
     return offset;
+}
+
+void RtlRecordTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    //MORE: Should this fail instead?
+    resultLen = 0;
+    result = nullptr;
+}
+
+__int64 RtlRecordTypeInfo::getInt(const void * ptr) const
+{
+    //MORE: Should this fail instead?
+    return 0;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+void RtlCompoundTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    //MORE: Should this fail instead?
+    resultLen = 0;
+    result = nullptr;
+}
+
+__int64 RtlCompoundTypeInfo::getInt(const void * ptr) const
+{
+    //MORE: Should this fail instead?
+    return 0;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -1377,9 +1645,23 @@ size32_t RtlIfBlockTypeInfo::toXML(const byte * self, const byte * selfrow, cons
     return 0;
 }
 
+void RtlIfBlockTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    //MORE: Should this fail instead?
+    resultLen = 0;
+    result = nullptr;
+}
+
+__int64 RtlIfBlockTypeInfo::getInt(const void * ptr) const
+{
+    //MORE: Should this fail instead?
+    return 0;
+}
+
+
 //-------------------------------------------------------------------------------------------------------------------
 
-__int64 RtlBitfieldTypeInfo::signedValue(const byte * self) const
+__int64 RtlBitfieldTypeInfo::signedValue(const void * self) const
 {
     __int64 value = rtlReadInt(self, getBitfieldIntSize());
     unsigned shift = getBitfieldShift();
@@ -1390,7 +1672,7 @@ __int64 RtlBitfieldTypeInfo::signedValue(const byte * self) const
 }
 
 
-unsigned __int64 RtlBitfieldTypeInfo::unsignedValue(const byte * self) const
+unsigned __int64 RtlBitfieldTypeInfo::unsignedValue(const void * self) const
 {
     unsigned __int64 value = rtlReadUInt(self, getBitfieldIntSize());
     unsigned shift = getBitfieldShift();
@@ -1430,6 +1712,22 @@ size32_t RtlBitfieldTypeInfo::toXML(const byte * self, const byte * selfrow, con
     return 0;
 }
 
+void RtlBitfieldTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    if (isUnsigned())
+        rtlUInt8ToStrX(resultLen, result,  unsignedValue(ptr));
+    else
+        rtlInt8ToStrX(resultLen, result,  signedValue(ptr));
+}
+
+__int64 RtlBitfieldTypeInfo::getInt(const void * ptr) const
+{
+    if (isUnsigned())
+        return (__int64)unsignedValue(ptr);
+    else
+        return signedValue(ptr);
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlUnimplementedTypeInfo::size(const byte * self, const byte * selfrow) const 
@@ -1447,6 +1745,19 @@ size32_t RtlUnimplementedTypeInfo::process(const byte * self, const byte * selfr
 size32_t RtlUnimplementedTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
     rtlFailUnexpected();
+    return 0;
+}
+
+void RtlUnimplementedTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    //MORE: Should this fail instead?
+    resultLen = 0;
+    result = nullptr;
+}
+
+__int64 RtlUnimplementedTypeInfo::getInt(const void * ptr) const
+{
+    //MORE: Should this fail instead?
     return 0;
 }
 
