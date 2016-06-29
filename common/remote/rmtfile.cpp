@@ -568,17 +568,6 @@ void setDaliServixSocketCaching(bool set)
     clientSetDaliServixSocketCaching(set);
 }
 
-void cacheFileConnect(IFile *file,unsigned timeout)
-{
-    RemoteFilename rfn;
-    rfn.setRemotePath(file->queryFilename());
-    if (!rfn.isLocal()&&!rfn.isNull()) {
-        SocketEndpoint ep = rfn.queryEndpoint();
-        if (ep.port)
-            clientCacheFileConnect(ep,timeout);
-    }
-}
-
 void disconnectRemoteFile(IFile *file)
 {
     clientDisconnectRemoteFile(file);
@@ -629,7 +618,7 @@ class CScriptThread : public Thread
 public:
     IMPLEMENT_IINTERFACE;
     CScriptThread(SocketEndpoint &_ep,const char *_script)
-        : ep(_ep), script(_script)
+        : script(_script), ep(_ep)
     {
         ok = false;
     }
@@ -695,8 +684,9 @@ unsigned validateNodes(const SocketEndpointArray &epso,const char *dataDir, cons
         unsigned scripttimeout;
 public:
         casyncfor(const SocketEndpointArray &_eps,const IPointerArrayOf<ISocket> &_sockets,const char *_dataDir,const char *_mirrorDir,bool _chkv, const char *_script, unsigned _scripttimeout, const char *_filename,SocketEndpointArray &_failures, StringArray &_failedmessages,UnsignedArray &_failedcodes,CriticalSection &_sect)
-            : eps(_eps), sockets(_sockets), dataDir(_dataDir), mirrorDir(_mirrorDir),
-              failures(_failures), failedmessages(_failedmessages), failedcodes(_failedcodes), sect(_sect)
+            : eps(_eps), sockets(_sockets), failures(_failures),
+              failedmessages(_failedmessages), failedcodes(_failedcodes), sect(_sect),
+              dataDir(_dataDir), mirrorDir(_mirrorDir)
         { 
             chkv = _chkv;
             filename = _filename;

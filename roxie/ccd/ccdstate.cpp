@@ -36,6 +36,7 @@
 #include "eclrtl.hpp"
 #include "dafdesc.hpp"
 #include "dautils.hpp"
+#include "rmtfile.hpp"
 
 #include "pkgimpl.hpp"
 #include "roxiehelper.hpp"
@@ -1353,25 +1354,30 @@ public:
         return true;
     }
 
-    void getStats(const char *queryId, const char *action, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const
+    bool getStats(const char *queryId, const char *action, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
         CriticalBlock b2(updateCrit);
-        Owned<IQueryFactory> query = serverManager->getQuery(queryId, NULL, logctx);
-        if (query)
+        if (serverManager->isActive())
         {
-            StringBuffer freply;
-            serverManager->getStats(queryId, graphName, freply, logctx);
-            Owned<IPropertyTree> stats = createPTreeFromXMLString(freply.str());
-            for (unsigned channel = 0; channel < numChannels; channel++)
-                if (slaveManagers->item(channel))
-                {
-                    StringBuffer sreply;
-                    slaveManagers->item(channel)->getStats(queryId, graphName, sreply, logctx);
-                    Owned<IPropertyTree> cstats = createPTreeFromXMLString(sreply.str());
-                    mergeStats(stats, cstats, 1);
-                }
-            toXML(stats, reply);
+            Owned<IQueryFactory> query = serverManager->getQuery(queryId, NULL, logctx);
+            if (query)
+            {
+                StringBuffer freply;
+                serverManager->getStats(queryId, graphName, freply, logctx);
+                Owned<IPropertyTree> stats = createPTreeFromXMLString(freply.str());
+                for (unsigned channel = 0; channel < numChannels; channel++)
+                    if (slaveManagers->item(channel))
+                    {
+                        StringBuffer sreply;
+                        slaveManagers->item(channel)->getStats(queryId, graphName, sreply, logctx);
+                        Owned<IPropertyTree> cstats = createPTreeFromXMLString(sreply.str());
+                        mergeStats(stats, cstats, 1);
+                    }
+                toXML(stats, reply);
+                return true;
+            }
         }
+        return false;
     }
     void getActivityMetrics(StringBuffer &reply) const
     {
@@ -1659,7 +1665,8 @@ public:
     {
         ForEachItemIn(idx, allQueryPackages)
         {
-            allQueryPackages.item(idx).getStats(id, action, graphName, reply, logctx);
+            if (allQueryPackages.item(idx).getStats(id, action, graphName, reply, logctx))
+               return;
         }
     }
 
@@ -2101,6 +2108,7 @@ private:
             {
                 dafilesrvLookupTimeout = control->getPropInt("@val", 10000);
                 topology->setPropInt("@dafilesrvLookupTimeout", dafilesrvLookupTimeout);
+                setRemoteFileTimeouts(dafilesrvLookupTimeout, 0);
             }
             else if (stricmp(queryName, "control:defaultConcatPreload")==0)
             {
@@ -2994,27 +3002,22 @@ void mergeNode(IPropertyTree *s1, IPropertyTree *s2, unsigned level)
 void mergeStats(IPropertyTree *s1, IPropertyTree *s2, unsigned level)
 {
     MergeInfo & mi = mergeTable[level];
-    Owned<IPropertyTreeIterator> elems = s1->getElements(mi.element);
-    ForEach(*elems)
-    {
-        IPropertyTree &e1 = elems->query();
-        StringBuffer xpath;
-        if (mi.attribute)
-            xpath.appendf("%s[%s='%s']", mi.element, mi.attribute, e1.queryProp(mi.attribute));
-        else
-            xpath.append(mi.element);
-        IPropertyTree *e2 = s2->queryPropTree(xpath.str());
-        if (e2)
-        {
-            mi.f(&e1, e2, level+1);
-            s2->removeTree(e2);
-        }
-    }
-    elems.setown(s2->getElements(mi.element));
+    Owned<IPropertyTreeIterator> elems = s2->getElements(mi.element);
     ForEach(*elems)
     {
         IPropertyTree &e2 = elems->query();
-        s1->addPropTree(mi.element, LINK(&e2));
+        StringBuffer xpath;
+        if (mi.attribute)
+            xpath.appendf("%s[%s='%s']", mi.element, mi.attribute, e2.queryProp(mi.attribute));
+        else
+            xpath.append(mi.element);
+        IPropertyTree *e1 = s1->queryPropTree(xpath.str());
+        if (e1)
+        {
+            mi.f(e1, &e2, level+1);
+        }
+        else
+            s1->addPropTree(mi.element, LINK(&e2));
     }
 }
 
@@ -3259,7 +3262,8 @@ static const char *expected =
 class MergeStatsTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( MergeStatsTest );
-        CPPUNIT_TEST(test1);
+    CPPUNIT_TEST(test1);
+    // CPPUNIT_TEST(test2);  Handy for debugging problem cases...
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -3273,6 +3277,33 @@ protected:
         toXML(p1, s1);
         toXML(e, s2);
         CPPUNIT_ASSERT(strcmp(s1, s2)==0);
+    }
+    void test2()
+    {
+        Owned<IPropertyTree> mergedReply = createPTree("Merged");
+        Owned<IPropertyTree> p1 = createPTreeFromXMLFile("stats1.xml");
+        Owned<IPropertyTreeIterator> meat = p1->getElements("Endpoint");
+        ForEach(*meat)
+        {
+            if (mergedReply)
+            {
+                mergeStats(mergedReply, &meat->query());
+            }
+        }
+        Owned<IPropertyTree> p2 = createPTreeFromXMLFile("stats2.xml");
+        meat.setown(p2->getElements("Endpoint"));
+        ForEach(*meat)
+        {
+            if (mergedReply)
+            {
+                mergeStats(mergedReply, &meat->query());
+            }
+        }
+        StringBuffer s1;
+        toXML(mergedReply, s1);
+        //toXML(e, s2);
+        //CPPUNIT_ASSERT(strcmp(s1, s2)==0);
+        printf("%s", s1.str());
     }
 
 };

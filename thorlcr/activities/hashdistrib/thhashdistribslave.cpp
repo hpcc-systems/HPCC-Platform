@@ -452,7 +452,7 @@ protected:
 
         CDistributorBase &owner;
         mutable CriticalSection activeWritersLock;
-        mutable SpinLock totalSzLock;
+        mutable SpinLock totalSzLock; // MORE: Could possibly use an atomic to reduce the scope of this spin lock
         SpinLock doDedupLock;
         IPointerArrayOf<CSendBucket> buckets;
         UnsignedArray candidates;
@@ -533,8 +533,8 @@ protected:
         }
         void decTotal(size32_t sz)
         {
-            SpinBlock b(totalSzLock);
             HDSendPrintLog2("decTotal - %d", sz);
+            SpinBlock b(totalSzLock);
             totalSz -= sz;
             if (sz && senderFull)
             {
@@ -1505,6 +1505,7 @@ class CRowPullDistributor: public CDistributorBase
     Semaphore selfready;
     Semaphore selfdone;
     bool stopping;
+    bool stopped = true;
 
     class cTxThread: public Thread
     {
@@ -1812,7 +1813,7 @@ public:
         if (hasbuf[target]&&(waiting[target]!=TAG_NULL))
         {
 #ifdef TRACE_MP
-            ActPrintLog("HDIST MP dosend(%d,%d)",i,bufs[target].length());
+            ActPrintLog("HDIST MP dosend(%d,%d)",target,bufs[target].length());
 #endif
             size32_t sz = bufs[target].length();
             // TBD compress here?
@@ -1871,6 +1872,7 @@ public:
     void startTX()
     {
         clean();
+        stopped = false;
         stopping = false;
         txthread = new cTxThread(*this);
         txthread->start();
@@ -1888,6 +1890,9 @@ public:
     }
     void stop()
     {
+        if (stopped)
+            return;
+        stopped = true;
         selfdone.wait();
         if (txthread)
         {
@@ -1957,6 +1962,7 @@ public:
     HashDistributeSlaveBase(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
+        appendOutputLinked(this);
     }
     ~HashDistributeSlaveBase()
     {
@@ -1970,7 +1976,6 @@ public:
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        appendOutputLinked(this);
         mptag = container.queryJobChannel().deserializeMPTag(data);
         ActPrintLog("HASHDISTRIB: %sinit tag %d",mergecmp?"merge, ":"",(int)mptag);
 
@@ -1985,7 +1990,7 @@ public:
         CriticalBlock block(stopsect);  // can be called async by distribute
         if (!inputstopped)
         {
-            PARENT::stop();
+            PARENT::stopInput(0);
             inputstopped = true;
         }
     }
@@ -1998,6 +2003,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+        inputstopped = false;
         eofin = false;
         instrm.set(inputStream);
         if (setupDist)
@@ -2018,6 +2024,7 @@ public:
         }
         stopInput();
         instrm.clear();
+        dataLinkStop();
     }
     virtual void kill() override
     {
@@ -2385,7 +2392,7 @@ public:
         if (lookup)
             delete lookup;
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         HashDistributeSlaveBase::init(data, slaveData);
 
@@ -2396,9 +2403,8 @@ public:
         Owned<IFileIO> iFileIO = createIFileI((size32_t)tlkSz, data.readDirect((size32_t)tlkSz));
 
         // NB: this TLK is an in-memory TLK serialized from the master - the name is for tracing by the key code only
-        OwnedRoxieString indexFileName(helper->getIndexFileName());
-        StringBuffer name(indexFileName);
-        name.append("_tlk");
+        VStringBuffer name("index");
+        name.append(queryId()).append("_tlk");
         lookup = new CKeyLookup(*this, helper, createKeyIndex(name.str(), 0, *iFileIO, true, false)); // MORE - crc is not 0...
         ihash = lookup;
     }
@@ -2636,6 +2642,7 @@ class CBucketHandler : public CSimpleInterface, implements IInterface, implement
     PointerArrayOf<CBucket> _buckets;
     CBucket **buckets;
     mutable rowidx_t peakKeyCount;
+    bool callbacksInstalled = false;
 
     rowidx_t getTotalBucketCount() const
     {
@@ -2809,26 +2816,25 @@ public:
     HashDedupSlaveActivityBase(CGraphElementBase *_container, bool _local)
         : CSlaveActivity(_container), local(_local)
     {
+        helper = (IHThorHashDedupArg *)queryHelper();
         initialNumBuckets = 0;
         inputstopped = eos = lastEog = extractKey = local = isVariable = grouped = false;
-        helper = NULL;
         iHash = iKeyHash = NULL;
         iCompare = rowKeyCompare = NULL;
         keyRowInterfaces = NULL;
         hashTables = NULL;
         numHashTables = initialNumBuckets = 0;
         roxiemem::RoxieHeapFlags allocFlags = roxiemem::RHFnone;
+        appendOutputLinked(this);
     }
     ~HashDedupSlaveActivityBase()
     {
         for (unsigned i=0; i<numHashTables; i++)
             ::Release(hashTables[i]);
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        helper = (IHThorHashDedupArg *)queryHelper();
         iHash = helper->queryHash();
-        appendOutputLinked(this);
         iCompare = helper->queryCompare();
 
         // JCSMORE - really should ask / lookup what flags the allocator created for extractKey has...
@@ -2866,7 +2872,7 @@ public:
         }
         grouped = container.queryGrouped();
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
@@ -3255,16 +3261,23 @@ CBucketHandler::CBucketHandler(HashDedupSlaveActivityBase &_owner, IThorRowInter
 
 CBucketHandler::~CBucketHandler()
 {
-    owner.queryRowManager()->removeRowBuffer(this);
-    owner.queryRowManager()->removeRowBuffer(&postSpillFlush);
+    if (callbacksInstalled)
+    {
+        owner.queryRowManager()->removeRowBuffer(this);
+        owner.queryRowManager()->removeRowBuffer(&postSpillFlush);
+    }
     for (unsigned i=0; i<numBuckets; i++)
         ::Release(buckets[i]);
 }
 
 void CBucketHandler::flushBuckets()
 {
-    owner.queryRowManager()->removeRowBuffer(this);
-    owner.queryRowManager()->removeRowBuffer(&postSpillFlush);
+    if (callbacksInstalled)
+    {
+        owner.queryRowManager()->removeRowBuffer(this);
+        owner.queryRowManager()->removeRowBuffer(&postSpillFlush);
+        callbacksInstalled = false;
+    }
     for (unsigned i=0; i<numBuckets; i++)
     {
         CBucket &bucket = *buckets[i];
@@ -3367,6 +3380,7 @@ void CBucketHandler::init(unsigned _numBuckets, IRowStream *keyStream)
     owner.queryRowManager()->addRowBuffer(this);
     // postSpillFlush not needed until after 1 spill event, but not safe to add within callback
     owner.queryRowManager()->addRowBuffer(&postSpillFlush);
+    callbacksInstalled = true;
     if (keyStream)
     {
         loop
@@ -3423,8 +3437,6 @@ bool CBucketHandler::addRow(const void *row)
 class LocalHashDedupSlaveActivity : public HashDedupSlaveActivityBase
 {
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     LocalHashDedupSlaveActivity(CGraphElementBase *container)
         : HashDedupSlaveActivityBase(container, true)
     {
@@ -3449,8 +3461,6 @@ class GlobalHashDedupSlaveActivity : public HashDedupSlaveActivityBase, implemen
     Owned<IRowStream> instrm;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     GlobalHashDedupSlaveActivity(CGraphElementBase *container)
         : HashDedupSlaveActivityBase(container, false)
     {
@@ -3478,7 +3488,7 @@ public:
         mptag = container.queryJobChannel().deserializeMPTag(data);
         distributor = createHashDistributor(this, queryJobChannel().queryJobComm(), mptag, true, this);
     }
-    virtual void start()
+    virtual void start() override
     {
         HashDedupSlaveActivityBase::start();
         ActivityTimer s(totalCycles, timeActivities);
@@ -3486,7 +3496,7 @@ public:
         instrm.setown(distributor->connect(myRowIf, distInput, iHash, iCompare));
         distInput = instrm.get();
     }
-    virtual void stop()
+    virtual void stop() override
     {
         ActPrintLog("stopping");
         if (instrm)
@@ -3494,8 +3504,11 @@ public:
             instrm->stop();
             instrm.clear();
         }
-        distributor->disconnect(true);
-        distributor->join();
+        if (distributor)
+        {
+            distributor->disconnect(true);
+            distributor->join();
+        }
         stopInput();
     }
     virtual void abort()
@@ -3541,15 +3554,13 @@ class HashJoinSlaveActivity : public CSlaveActivity, implements IStopInput
     Owned<IHashDistributor> lhsDistributor, rhsDistributor;
 
 public:
-
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     HashJoinSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
         lhsProgressCount = rhsProgressCount = 0;
         mptag = TAG_NULL;
         mptag2 = TAG_NULL;
+        appendOutputLinked(this);
     }
     ~HashJoinSlaveActivity()
     {
@@ -3560,7 +3571,6 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         joinargs = (IHThorHashJoinArg *)queryHelper();
-        appendOutputLinked(this);
         mptag = container.queryJobChannel().deserializeMPTag(data);
         mptag2 = container.queryJobChannel().deserializeMPTag(data);
         ActPrintLog("HASHJOIN: init tags %d,%d",(int)mptag,(int)mptag2);
@@ -3654,8 +3664,11 @@ public:
         ActPrintLog("HASHJOIN: stopping");
         stopInputL();
         stopInputR();
-        lhsProgressCount = joinhelper->getLhsProgress();
-        rhsProgressCount = joinhelper->getRhsProgress();
+        if (joinhelper)
+        {
+            lhsProgressCount = joinhelper->getLhsProgress();
+            rhsProgressCount = joinhelper->getRhsProgress();
+        }
         strmL.clear();
         strmR.clear();
         {
@@ -3881,19 +3894,16 @@ class CHashAggregateSlave : public CSlaveActivity, implements IHThorRowAggregato
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CHashAggregateSlave(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
+        helper = static_cast <IHThorHashAggregateArg *> (queryHelper());
         mptag = TAG_NULL;
         eos = true;
+        appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
     {
-        helper = static_cast <IHThorHashAggregateArg *> (queryHelper());
-        appendOutputLinked(this);
-
         if (!container.queryLocalOrGrouped())
         {
             mptag = container.queryJobChannel().deserializeMPTag(data);
@@ -3919,7 +3929,8 @@ public:
     virtual void stop()
     {
         ActPrintLog("HASHAGGREGATE: stopping");
-        localAggTable->reset();
+        if (localAggTable)
+            localAggTable->reset();
         PARENT::stop();
     }
     virtual void abort()
@@ -3974,17 +3985,12 @@ class CHashDistributeSlavedActivity : public CSlaveActivity
     unsigned myNode, nodes;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CHashDistributeSlavedActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
         ihash = distribargs->queryHash();
         myNode = queryJobChannel().queryMyRank()-1;
         nodes = container.queryJob().querySlaves();
-    }
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
-    {
         appendOutputLinked(this);
     }
     virtual void start() override

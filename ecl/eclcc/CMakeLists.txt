@@ -41,6 +41,7 @@ include_directories (
          ./../../rtl/include 
          ./../../system/jlib 
          ./../../common/remote
+         ./../../system/security/zcrypt
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -65,3 +66,9 @@ target_link_libraries ( eclcc
          hqlcpp
     )
 
+IF (USE_ZLIB)
+    target_link_libraries ( eclcc
+        ${ZLIB_LIBRARIES}
+        zcrypt
+    )
+ENDIF()

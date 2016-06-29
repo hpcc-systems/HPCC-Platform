@@ -1,5 +1,7 @@
 %{
+#ifdef _WIN32
 #pragma warning(disable:4786)
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>

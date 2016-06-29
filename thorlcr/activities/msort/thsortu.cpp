@@ -2016,7 +2016,9 @@ IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IT
     IJoinHelper *jhelper = new CJoinHelper(activity, helper, rowIf);
     if (!parallelmatch||helper->getKeepLimit()||((helper->getJoinFlags()&JFslidingmatch)!=0)) // currently don't support betweenjoin or keep and multicore
         return jhelper;
-    unsigned numthreads = activity.getOptInt(THOROPT_JOINHELPER_THREADS, getAffinityCpus());
+    unsigned numthreads = activity.getOptInt(THOROPT_JOINHELPER_THREADS, 0);
+    if (0 == numthreads)
+        numthreads = activity.queryMaxCores();
     ActPrintLog(&activity, "Join helper using %d threads", numthreads);
     if (unsortedoutput)
         return new CMultiCoreUnorderedJoinHelper(activity, numthreads, false, jhelper, helper, rowIf);
@@ -2035,7 +2037,9 @@ IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper
     IJoinHelper *jhelper = new SelfJoinHelper(activity, helper, rowIf);
     if (!parallelmatch||helper->getKeepLimit()||((helper->getJoinFlags()&JFslidingmatch)!=0)) // currently don't support betweenjoin or keep and multicore
         return jhelper;
-    unsigned numthreads = activity.getOptInt(THOROPT_JOINHELPER_THREADS, getAffinityCpus());
+    unsigned numthreads = activity.getOptInt(THOROPT_JOINHELPER_THREADS, 0);
+    if (0 == numthreads)
+        numthreads = activity.queryMaxCores();
     ActPrintLog(&activity, "Self join helper using %d threads", numthreads);
     if (unsortedoutput)
         return new CMultiCoreUnorderedJoinHelper(activity, numthreads, true, jhelper, helper, rowIf);

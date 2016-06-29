@@ -151,6 +151,7 @@ public:
     }
 };
 
+#if 0
 class PacketHeaderV6 : public PacketHeader
 {
     unsigned senderex[4];                                                   // 32
@@ -165,7 +166,7 @@ class PacketHeaderV6 : public PacketHeader
     }
 
 };
-    
+#endif
 
 unsigned PacketHeader::nextseq=0;
 unsigned PacketHeader::lasttick=0;
@@ -435,7 +436,7 @@ public:
         ::Release(listensock);
     }
     int run();
-    void start(unsigned short port);
+    void startPort(unsigned short port);
     void stop()
     {
         if (running) {
@@ -1395,7 +1396,6 @@ class CMPPacketReader: public CInterface, public ISocketSelectNotify
     CMessageBuffer *activemsg;
     byte * activeptr;
     size32_t remaining;
-    byte *dataptr;
     CMPChannel *parent;
     CriticalSection sect;
 public:
@@ -1692,7 +1692,6 @@ bool CMPChannel::send(MemoryBuffer &mb, mptag_t tag, mptag_t replytag, CTimeMon 
     // note must not adjust mb
     assertex(tag!=TAG_NULL);
     assertex(tm.timeout);
-    const byte *msg = (const byte *)mb.toByteArray();
     size32_t msgsize = mb.length();
     PacketHeader hdr(msgsize+sizeof(PacketHeader),localep,remoteep,tag,replytag);
     if (closed||(reply&&!isConnected())) {  // flag error if has been disconnected
@@ -1908,7 +1907,7 @@ void CMPConnectThread::checkSelfDestruct(void *p,size32_t sz)
 
 }
 
-void CMPConnectThread::start(unsigned short port)
+void CMPConnectThread::startPort(unsigned short port)
 {
     if (!listensock)
         listensock = ISocket::create(port, mpSoMaxConn);
@@ -2327,7 +2326,7 @@ unsigned CMPServer::probe(const SocketEndpoint *ep, mptag_t tag,CTimeMon &tm,Soc
 
 void CMPServer::start()
 {
-    connectthread->start(getPort());    
+    connectthread->startPort(getPort());
 }
 
 void CMPServer::stop()
@@ -2421,7 +2420,6 @@ public:
     {
         if (!dst)
             return false;
-        size32_t msgsize = mbuf.length();
         if (dst->equals(queryMyNode())) {
             CMessageBuffer *msg = new CMessageBuffer();
             mptag_t reply = mbuf.getReplyTag();

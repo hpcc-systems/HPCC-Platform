@@ -5,8 +5,9 @@
   <title>Configuring HPCC for Authentication</title>
 
   <para>This section details the steps to configure your HPCC platform to use
-  authentication. There are two ways to use authentication with your HPCC
-  system: simple htpasswd authentication or LDAP.</para>
+  authentication. There are currently a few ways to use authentication with
+  your HPCC system: simple htpasswd authentication, LDAP, or another plug-in
+  security method.</para>
 
   <para>The htpasswd authentication method is basic password authentication.
   It only grants or denies access to a user, based upon MD5 encrypted password
@@ -123,6 +124,67 @@
 
       <orderedlist continuation="continues">
         <listitem>
+          <para>Create an instance of the <emphasis role="bold">Security
+          Manager</emphasis> Plug-in: <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Right-click on Navigator Pane on the left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select <emphasis role="bold">New
+                Components</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para>Select the <emphasis
+                role="bold">htpasswdsecmgr</emphasis> component</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Configure the htpasswd plug-in<figure>
+              <title>Security Mgr Configuration page</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/SECM_001.jpg"
+                             vendor="configmgrSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <orderedlist numeration="loweralpha">
+            <listitem>
+              <para>Enter the location of the Htpasswd file containing the
+              username and password on the Linux file system for the value of
+              <emphasis role="bold">htpasswdFile</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">InstanceFactoryName</emphasis> is
+              the name of the security manager factory function, implemented
+              in the security library. The default is "createInstance". For
+              implementing Htpasswd, leave the default.</para>
+            </listitem>
+
+            <listitem>
+              <para>Provide a library name value for <emphasis
+              role="bold">libName</emphasis>. For Htpasswd, use <emphasis
+              role="blue">libhtpasswdSecurity.so</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Provide an instance <emphasis role="bold">name</emphasis>
+              for the name value. For example, <emphasis
+              role="blue">htpasswdsecmgr</emphasis>.</para>
+            </listitem>
+          </orderedlist>
+        </listitem>
+
+        <listitem>
           <para>Select <emphasis role="bold">Esp - myesp</emphasis> in the
           Navigator panel on the left hand side.</para>
 
@@ -141,37 +203,56 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
+          <para>Associate the Security Manager Plug-in with the ESP binding(s)
+          <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Click on the target <emphasis role="bold">Esp</emphasis>
+                in the Navigator Pane on the left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the<emphasis role="bold"> ESP</emphasis>
+                <emphasis role="bold">Service bindings</emphasis> tab</para>
+              </listitem>
+
+              <listitem>
+                <para>On the target binding(s) select the appropriate
+                securityMgrPlugin instance from the drop list. <graphic
+                fileref="../../images/SECM_004.jpg"
+                vendor="configmgrSS" /></para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>Select the security Plugin for each service that requires a
+          security manager.</para>
+
+          <para>For example, in the above image, select <emphasis
+          role="blue">htpasswdsecmgr</emphasis> for the smc service. Then,
+          select it for ws_ecl and every other service that you want to use
+          htpassword security.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
           <para>Select the <emphasis role="bold">Authentication</emphasis>
           tab<graphic fileref="../../images/gs-ht01.jpg"
           vendor="configmgrSS" /></para>
         </listitem>
 
         <listitem>
-          <para>Select the <emphasis role="bold">htpasswd File</emphasis>
-          entry, set the value option to the location of the htpasswd
-          file.</para>
-
-          <para>If the file does not already exist you must create one, see
-          the following section <emphasis>User administration with
-          htpasswd</emphasis>.</para>
-        </listitem>
-
-        <listitem>
-          <para>Select the <emphasis role="bold">method</emphasis>
-          entry.</para>
-        </listitem>
-
-        <listitem>
           <?dbfo keep-together="always"?>
 
           <para>Click on the value column drop list to display the choices for
-          method. <graphic fileref="../../images/gs-ht02.jpg"
-          vendor="configmgrSS" /></para>
+          <emphasis role="bold">method</emphasis>. <graphic
+          fileref="../../images/gs-ht02.jpg" vendor="configmgrSS" /></para>
         </listitem>
 
         <listitem>
-          <para>Choose <emphasis role="bluebold">htpasswd</emphasis> from the
-          drop list.</para>
+          <para>Choose <emphasis role="bluebold">secmgrPlugin</emphasis> from
+          the drop list.</para>
         </listitem>
 
         <listitem>
@@ -184,12 +265,13 @@
       <title>User administration with htpasswd</title>
 
       <para>Users and passwords are kept in the htpasswd file. The htpasswd
-      file needs to exist on the ESP Node that you have enabled
-      authentication. HPCC only recognizes MD5 encrypted passwords.</para>
+      file must exist on the ESP Node where you have enabled authentication.
+      HPCC only recognizes MD5 encrypted passwords.</para>
 
       <para>The default location is: <emphasis
       role="bold">/etc/HPCCSystems/.htpasswd</emphasis> on the ESP node that
-      has been configured to authenticate, but it is configurable.</para>
+      has been configured to authenticate, but it is configurable from the
+      Htpasswd Security Manager as outlined above (step 9).</para>
 
       <para>You can use the htpasswd utility to create the .htpasswd file to
       administer users.</para>
@@ -211,9 +293,9 @@
     <para>This section contains the information to install and implement LDAP
     based authentication. LDAP Authentication provides the most options for
     securing your system, or parts of your system. In addition to these
-    configuration settings you must run the <emphasis
-    role="bold">initldap</emphasis> utility to create the appropriate OUs and
-    the default HPCC Admin user on your LDAP server.</para>
+    configuration settings you should run the <emphasis
+    role="bold">initldap</emphasis> utility to create the required default
+    HPCC Admin user on your LDAP server.</para>
 
     <!--***Note: (9/2014) Adding Documentation for initLdap.*** -->
 
@@ -381,27 +463,36 @@
             </tgroup>
           </informaltable></para>
       </listitem>
+    </orderedlist>
 
+    <?hard-pagebreak ?>
+
+    <orderedlist continuation="continues" numeration="arabic">
       <listitem>
-        <?dbfo keep-together="always"?>
-
         <para>Fill in the <emphasis role="bold">LDAP Server Process</emphasis>
         properties:</para>
 
-        <para><graphic fileref="../../images/LDAP_004.jpg"
-        vendor="configmgrSS" /><orderedlist numeration="loweralpha">
+        <para><orderedlist numeration="loweralpha">
             <listitem>
+              <?dbfo keep-together="always"?>
+
               <para>On the <emphasis role="bold">Instances</emphasis> tab,
               Right-click on the table on the right hand side, choose
               <emphasis role="bold">Add Instances…</emphasis></para>
+
+              <para><graphic fileref="../../images/LDAP_008.jpg"
+              vendor="configmgrSS" /></para>
 
               <para>The <emphasis role="bold">Select computers</emphasis>
               dialog appears.</para>
             </listitem>
 
             <listitem>
-              <para>Select the computer to use by checking the box next to
-              it.</para>
+              <?dbfo keep-together="always"?>
+
+              <para>Select the computer to use by checking the box next to it.
+              <graphic fileref="../../images/LDAP_009.jpg"
+              vendor="configmgrSS" /></para>
 
               <para>This is the computer you added in the <emphasis
               role="bold">Hardware</emphasis> / <emphasis role="bold">Add New
@@ -414,14 +505,20 @@
             </listitem>
 
             <listitem>
+              <?dbfo keep-together="always"?>
+
               <para>Fill in the <emphasis role="bold">Attributes</emphasis>
               tab with the appropriate settings from your existing LDAP
-              Server.</para>
+              Server. <graphic fileref="../../images/LDAP_010.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
 
             <listitem>
+              <?dbfo keep-together="always"?>
+
               <para>Choose the LDAP server type from the serverType attribute
-              drop box.</para>
+              drop box. <graphic fileref="../../images/LDAP_004.jpg"
+              vendor="configmgrSS" /></para>
 
               <para><variablelist>
                   <varlistentry>
@@ -472,20 +569,20 @@
         <para><orderedlist numeration="loweralpha">
             <listitem>
               <para>Change the <emphasis role="bold">ldapAuthMethod</emphasis>
-              to <emphasis role="blue">simple.</emphasis></para>
+              to <emphasis role="blue">kerberos.</emphasis></para>
             </listitem>
 
             <listitem>
               <para>Change the <emphasis
               role="bold">ldapConnections</emphasis> to the number appropriate
-              for your system (100 is for example only, may not be necessary
-              in your environment).</para>
+              for your system (10 is for example only, may not be necessary in
+              your environment).</para>
             </listitem>
 
             <listitem>
-              <para>Change <emphasis role="bold">ldapServer</emphasis> value
-              to the name you gave your ldapServer, for example: <emphasis
-              role="blue">ldapserver.</emphasis></para>
+              <para>Select the <emphasis role="bold">ldapServer</emphasis>
+              component that you added earlier from the drop list, for
+              example: <emphasis role="blue">ldapserver. </emphasis></para>
             </listitem>
 
             <listitem>
@@ -494,10 +591,10 @@
             </listitem>
 
             <listitem>
-              <para>For the ESP Service bindings, add the <emphasis
+              <para>Select the ESP Service bindings tab. Verify that your LDAP
+              settings appear in the <emphasis
               role="bold">resourcesBasedn</emphasis> and <emphasis
-              role="bold">workunitsBasedn</emphasis> to match your LDAP server
-              settings.</para>
+              role="bold">workunitsBasedn</emphasis></para>
             </listitem>
 
             <listitem>
@@ -508,6 +605,10 @@
 
       <listitem>
         <?dbfo keep-together="always"?>
+
+        <para>To enable the file scope permissions, configure security for the
+        Dali Server. If you are not interested in file scope permissions you
+        can skip this step.</para>
 
         <para>In the Navigator pane, click on the <emphasis role="bold">Dali
         Server – mydali </emphasis><graphic
@@ -530,12 +631,17 @@
               <para>Change the LDAP values as appropriate to match the
               settings in your LDAP server.</para>
 
-              <para>For example: change the <emphasis
+              <para>For example, change the <emphasis
               role="bold">ldapServer</emphasis> to the value you gave your
               LDAP Server, in our example it is:
               <emphasis>ldapserver.</emphasis></para>
 
               <para>Confirm the change when prompted.</para>
+
+              <para>The <emphasis role="bold">filesDefaultUser</emphasis> is
+              an LDAP Admin account used to access the LDAP server, the
+              <emphasis role="bold">filesDefaultPassword</emphasis> is the
+              password for that account.</para>
             </listitem>
 
             <listitem>

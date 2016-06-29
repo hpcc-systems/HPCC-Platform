@@ -14,7 +14,7 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: memcached
+# Component: memcachedplugin
 
 #####################################################
 # Description:
@@ -22,11 +22,15 @@
 #    Cmake Input File for memcached
 #####################################################
 
-project( memcached )
+project( memcachedplugin )
 
 if (MEMCACHED)
-    ADD_PLUGIN(memcached PACKAGES LIBMEMCACHED MINVERSION 1.0.10)
+    if(NOT DEFINED LIBMEMCACHED_MINVERSION)
+        set(LIBMEMCACHED_MINVERSION "1.0.10")
+    endif()
+    ADD_PLUGIN(memcached PACKAGES LIBMEMCACHED MINVERSION ${LIBMEMCACHED_MINVERSION})
     if(MAKE_MEMCACHED)
+
         set(
             SRCS
             memcachedplugin.hpp
@@ -46,26 +50,31 @@ if (MEMCACHED)
         #All lesser versions explicitly include <tr1/cinttypes> which does not.
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
 
-        HPCC_ADD_LIBRARY(memcached SHARED ${SRCS})
+        HPCC_ADD_LIBRARY(memcachedplugin SHARED ${SRCS})
         if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
             message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
         elseif(NOT APPLE)
-            set_target_properties(memcached PROPERTIES NO_SONAME 1)
+            set_target_properties(memcachedplugin PROPERTIES NO_SONAME 1)
         endif()
 
-        install(
-            TARGETS memcached
-            DESTINATION plugins)
-
+        #if we are using generated libmemcached, target appropriate dependencies
+        if(MEMCACHED_USE_EXTERNAL_LIBRARY)
+            add_dependencies(memcachedplugin libmemcached libmemcachedutil)
+            install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libmemcached-${LIBMEMCACHED_VERSION}/libmemcached/.libs\")")
+        endif()
         target_link_libraries(
-            memcached
+            memcachedplugin
             eclrtl
             jlib
             ${LIBMEMCACHED_LIBRARIES})
+
+        install(
+            TARGETS memcachedplugin
+            DESTINATION plugins)
     endif()
 endif()
 
-if(PLATFORM)
+if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_memcached.ecllib
         DESTINATION plugins

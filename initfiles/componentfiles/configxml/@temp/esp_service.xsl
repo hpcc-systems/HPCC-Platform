@@ -205,13 +205,11 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                     <xsl:copy-of select="$bindingNode/@resourcesBasedn"/>
                     <xsl:copy-of select="$bindingNode/@workunitsBasedn"/>
                     <xsl:copy-of select="$bindingNode/@serverType"/>
-                    <xsl:for-each select="$bindingNode/Authenticate[@path='/']">
+                    <xsl:for-each select="$bindingNode/Authenticate">
                         <Location path="/" resource="{@resource}" required="{@access}" description="{@description}"/>
                     </xsl:for-each>
                     <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
-                        <xsl:if test="@service=$service">
                             <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
-                        </xsl:if>
                     </xsl:for-each>
                 </Authenticate>
             </xsl:when>

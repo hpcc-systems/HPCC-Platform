@@ -233,7 +233,6 @@ void CSlaveMessageHandler::main()
                         assertex(element);
                         try
                         {
-                            element->deserializeStartContext(msg);
                             element->doCreateActivity(parentExtractSz, parentExtract);
                         }
                         catch (IException *e)
@@ -493,7 +492,7 @@ bool CMasterActivity::fireException(IException *_e)
         case TE_LargeAggregateTable:
         {
             if (!notedWarnings->testSet(e->errorCode()))
-                reportExceptionToWorkunit(container.queryJob().queryWorkUnit(), e);
+                CActivityBase::fireException(e);
             return true;
         }
     }
@@ -548,7 +547,6 @@ void CMasterActivity::done()
 
 CMasterGraphElement::CMasterGraphElement(CGraphBase &_owner, IPropertyTree &_xgmml) : CGraphElementBase(_owner, _xgmml)
 {
-    sentCreateCtx = false;
 }
 
 bool CMasterGraphElement::checkUpdate()
@@ -609,11 +607,13 @@ bool CMasterGraphElement::checkUpdate()
 
 void CMasterGraphElement::initActivity()
 {
-    CriticalBlock b(crit);
-    bool first = (NULL == queryActivity());
     CGraphElementBase::initActivity();
-    if (first || queryActivity()->needReInit())
+    if (!initialized || queryActivity()->needReInit())
+    {
         ((CMasterActivity *)queryActivity())->init();
+        initialized = true;
+    }
+    owner->setInitialized();
 }
 
 void CMasterGraphElement::doCreateActivity(size32_t parentExtractSz, const byte *parentExtract)
@@ -1894,9 +1894,13 @@ bool CJobMaster::fireException(IException *e)
     switch (action)
     {
         case tea_warning:
+        {
             LOG(MCwarning, thorJob, e);
-            reportExceptionToWorkunit(*workunit, e);
+            ErrorSeverity mappedSeverity = workunit->getWarningSeverity(e->errorCode(), SeverityWarning);
+            if (mappedSeverity != SeverityIgnore)
+                reportExceptionToWorkunit(*workunit, e);
             break;
+        }
         default:
         {
             LOG(MCerror, thorJob, e);
@@ -2139,9 +2143,13 @@ bool CMasterGraph::fireException(IException *e)
     switch (action)
     {
         case tea_warning:
+        {
             LOG(MCwarning, thorJob, e);
-            reportExceptionToWorkunit(job.queryWorkUnit(), e);
+            ErrorSeverity mappedSeverity = job.queryWorkUnit().getWarningSeverity(e->errorCode(), SeverityWarning);
+            if (mappedSeverity != SeverityIgnore)
+                reportExceptionToWorkunit(job.queryWorkUnit(), e);
             break;
+        }
         case tea_abort:
         {
             EXCLOG(e, NULL);
@@ -2210,18 +2218,6 @@ void CMasterGraph::abort(IException *e)
     }
 }
 
-void CMasterGraph::serializeCreateContexts(MemoryBuffer &mb)
-{
-    CGraphBase::serializeCreateContexts(mb);
-    Owned<IThorActivityIterator> iter = getIterator();
-    ForEach (*iter)
-    {
-        CMasterGraphElement &element = (CMasterGraphElement &)iter->query();
-        if (reinit || !element.sentCreateCtx)
-            element.sentCreateCtx = true;
-    }
-}
-
 bool CMasterGraph::serializeActivityInitData(unsigned slave, MemoryBuffer &mb, IThorActivityIterator &iter)
 {
     CriticalBlock b(createdCrit);
@@ -2272,64 +2268,22 @@ bool CMasterGraph::prepare(size32_t parentExtractSz, const byte *parentExtract, 
     return true;
 }
 
-void CMasterGraph::create(size32_t parentExtractSz, const byte *parentExtract)
+void CMasterGraph::execute(size32_t _parentExtractSz, const byte *parentExtract, bool checkDependencies, bool async)
 {
-    {
-        CriticalBlock b(createdCrit);
-        CGraphBase::create(parentExtractSz, parentExtract);
-    }
-    if (!aborted)
-    {
-        if (!queryOwner()) // owning graph sends query+child graphs
-        {
-            jobM->sendQuery(); // if not previously sent
-            if (globals->getPropBool("@watchdogProgressEnabled"))
-                queryJobManager().queryDeMonServer()->startGraph(this);
-            sendGraph(); // sends child graphs at same time
-        }
-        else
-        {
-            if (isGlobal())
-            {
-                ForEachItemIn(i, ifs)
-                {
-                    CGraphElementBase &ifElem = ifs.item(i);
-                    if (ifElem.newWhichBranch)
-                    {
-                        ifElem.newWhichBranch = false;
-                        sentInitData = false; // force re-request of create data.
-                        break;
-                    }
-                }
-                CMessageBuffer msg;
-                if (reinit || !sentInitData)
-                {
-                    sentInitData = true;
-                    serializeCreateContexts(msg);
-                }
-                else
-                    msg.append((unsigned)0);
-                try
-                {
-                    jobM->broadcast(queryJobChannel().queryJobComm(), msg, mpTag, LONGTIMEOUT, "serializeCreateContexts", &bcastMsgHandler);
-                }
-                catch (IException *e)
-                {
-                    GraphPrintLog(e, "Aborting graph create(2)");
-                    if (abortException)
-                    {
-                        e->Release();
-                        throw LINK(abortException);
-                    }
-                    throw;
-                }
-            }
-        }
-    }
+    if (isComplete())
+        return;
+    if (!queryOwner()) // owning graph sends query+child graphs
+        jobM->sendQuery(); // if not previously sent
+    CGraphBase::execute(parentExtractSz, parentExtract, checkDependencies, async);
 }
 
 void CMasterGraph::start()
 {
+    if (!queryOwner())
+    {
+        if (globals->getPropBool("@watchdogProgressEnabled"))
+            queryJobManager().queryDeMonServer()->startGraph(this);
+    }
     Owned<IThorActivityIterator> iter = getConnectedIterator();
     ForEach (*iter)
         iter->query().queryActivity()->startProcess();
@@ -2415,7 +2369,6 @@ void CMasterGraph::sendActivityInitData()
 void CMasterGraph::serializeGraphInit(MemoryBuffer &mb)
 {
     mb.append(graphId);
-    mb.append(reinit);
     serializeMPtag(mb, mpTag);
     mb.append((int)startBarrierTag);
     mb.append((int)waitBarrierTag);
@@ -2447,6 +2400,39 @@ void CMasterGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentE
     }
     if (isComplete())
         return;
+    if (!sentGlobalInit)
+    {
+        sentGlobalInit = true;
+        if (!queryOwner())
+            sendGraph();
+        else
+        {
+            if (isGlobal())
+            {
+                CMessageBuffer msg;
+                serializeCreateContexts(msg);
+                try
+                {
+                    jobM->broadcast(queryJobChannel().queryJobComm(), msg, mpTag, LONGTIMEOUT, "serializeCreateContexts", &bcastMsgHandler);
+                }
+                catch (IException *e)
+                {
+                    GraphPrintLog(e, "Aborting graph create(2)");
+                    if (abortException)
+                    {
+                        e->Release();
+                        throw LINK(abortException);
+                    }
+                    throw;
+                }
+            }
+        }
+    }
+    if (syncInitData())
+    {
+        sendActivityInitData(); // has to be done at least once
+        // NB: At this point, on the slaves, the graphs will start
+    }
     fatalHandler.clear();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));
     CGraphBase::executeSubGraph(parentExtractSz, parentExtract);
@@ -2483,7 +2469,6 @@ void CMasterGraph::sendGraph()
     CMessageBuffer msg;
     msg.append(GraphInit);
     msg.append(job.queryKey());
-    msg.append(queryGraphId());
     if (TAG_NULL == executeReplyTag)
         executeReplyTag = jobM->allocateMPTag();
     serializeMPtag(msg, executeReplyTag);
@@ -2509,31 +2494,7 @@ void CMasterGraph::sendGraph()
 
 bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
 {
-    started = true;
     GraphPrintLog("Processing graph");
-    if (!sentStartCtx || reinit)
-    {
-        sentStartCtx = true;
-        CMessageBuffer msg;
-        serializeStartContexts(msg);
-        try
-        {
-            jobM->broadcast(queryJobChannel().queryJobComm(), msg, mpTag, LONGTIMEOUT, "startCtx", NULL, true);
-        }
-        catch (IException *e)
-        {
-            GraphPrintLog(e, "Aborting preStart");
-            if (abortException)
-            {
-                e->Release();
-                throw LINK(abortException);
-            }
-            throw;
-        }
-    }
-
-    if (syncInitData())
-        sendActivityInitData(); // has to be done at least once
     CGraphBase::preStart(parentExtractSz, parentExtract);
     if (isGlobal())
     {
@@ -2738,7 +2699,6 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
                     element->onCreate();
                     element->initActivity();
                     activity = (CMasterActivity *)element->queryActivity();
-                    created = true; // means some activities created within this graph
                 }
                 catch (IException *_e)
                 {
@@ -2842,17 +2802,17 @@ void CThorStats::reset()
 
 void CThorStats::calculateSkew()
 {
-    if (max > ctx.querySlaves()) // i.e. if small count, suppress skew stats.
+    unsigned count = counts.ordinality();
+    double _avg = (double)tot/count;
+    if (_avg)
     {
-        unsigned count = counts.ordinality();
-        double _avg = (double)tot/count;
-        if (_avg)
+        if (max > ctx.querySlaves()) // i.e. if small count, suppress skew stats.
         {
             //MORE: Range protection on maxSkew?
             maxSkew = (unsigned)(10000.0 * (((double)max-_avg)/_avg));
             minSkew = (unsigned)(10000.0 * ((_avg-(double)min)/_avg));
-            avg = (unsigned __int64)_avg;
         }
+        avg = (unsigned __int64)_avg;
     }
 }
 

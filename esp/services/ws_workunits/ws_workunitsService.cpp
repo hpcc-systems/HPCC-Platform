@@ -214,7 +214,7 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                             wu->setState(WUStateAborted);
                         }
                         else
-                            secAbortWorkUnit(wuid, *context.querySecManager(), *context.queryUser());
+                            abortWorkUnit(wuid, context.querySecManager(), context.queryUser());
                         AuditSystemAccess(context.queryUserId(), true, "Aborted %s", wuid);
                     }
                     break;
@@ -1155,7 +1155,7 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
                 throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "Workunit %s cannot be deleted.", wuid.str());
             break;
         default:
-            secAbortWorkUnit(wuid.str(), *context.querySecManager(), *context.queryUser());
+            abortWorkUnit(wuid.str(), context.querySecManager(), context.queryUser());
             if (!factory->deleteWorkUnit(wuid.str()))
             {
                 throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT,
@@ -4320,10 +4320,17 @@ void CWsWorkunitsEx::createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<
     StringBuffer sb;
     sb.append("Workunit:     ").append(cwu->queryWuid()).append("\r\n");
     sb.append("User:         ").append(cwu->queryUser()).append("\r\n");
-    sb.append("Build Version:").append(req.getBuildVersion()).append("\r\n");
+    sb.append("Build Version:").append(getBuildVersion()).append("\r\n");
     sb.append("Cluster:      ").append(cwu->queryClusterName()).append("\r\n");
     if (req.getESPIPAddress())
         sb.append("ESP:          ").append(req.getESPIPAddress()).append("\r\n");
+    else
+    {
+        StringBuffer EspIP;
+        IpAddress ipaddr = queryHostIP();
+        ipaddr.getIpText(EspIP);
+        sb.append("ESP:          ").append(EspIP.str()).append("\r\n");
+    }
     if (req.getThorIPAddress())
         sb.append("Thor:         ").append(req.getThorIPAddress()).append("\r\n");
     //Exceptions/Warnings/Info

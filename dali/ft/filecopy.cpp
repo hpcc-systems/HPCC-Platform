@@ -78,6 +78,7 @@
 #define ANtransferBufferSize "@transferBufferSize"
 #define ANencryptKey        "@encryptKey"
 #define ANdecryptKey        "@decryptKey"
+#define ANumask             "@umask"
 
 #define PNpartition         "partition"
 #define PNprogress          "progress"
@@ -369,6 +370,9 @@ bool FileTransferThread::performTransfer()
             progress.item(i2).serializeExtra(msg, 1);
 
         //NB: Any extra data must be appended at the end...
+
+        msg.append(sprayer.fileUmask);
+
         if (!catchWriteBuffer(socket, msg))
             throwError1(RFSERR_TimeoutWaitConnect, url.str());
 
@@ -592,6 +596,24 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     encryptKey.set(options->queryProp(ANencryptKey));
     decryptKey.set(options->queryProp(ANdecryptKey));
 
+    fileUmask = -1;
+    const char *umaskStr = options->queryProp(ANumask);
+    if (umaskStr)
+    {
+        char *eptr = NULL;
+        errno = 0;
+        fileUmask = (int)strtol(umaskStr, &eptr, 8);
+        if (errno || *eptr != '\0')
+        {
+            LOG(MCdebugInfo, job, "Invalid umask value <%s> ignored", umaskStr);
+            fileUmask = -1;
+        }
+        else
+        {
+            // never strip off owner
+            fileUmask &= 077;
+        }
+    }
 }
 
 
@@ -816,25 +838,6 @@ void FileSprayer::beforeTransfer()
         checker.For(targets.ordinality(), 25, true, true);
     }
 
-    int umask = -1;
-    if (options->hasProp("@umask"))
-    {
-        StringBuffer umaskStr;
-        options->getProp("@umask", umaskStr);
-        errno = 0;
-        umask = (int)strtol(umaskStr.str(), NULL, 8);
-        if (errno)
-        {
-            LOG(MCdebugInfo, job, "Invalid umask value <%s> ignored", umaskStr.str());
-            umask = -1;
-        }
-        else
-        {
-            // never strip off owner
-            umask &= 077;
-        }
-    }
-
     if (!isRecovering && !usePullOperation())
     {
         try {
@@ -852,8 +855,8 @@ void FileSprayer::beforeTransfer()
                     if (!dir->exists())
                     {
                         dir->createDirectory();
-                        if (umask != -1)
-                            dir->setFilePermissions(~umask&0777);
+                        if (fileUmask != -1)
+                            dir->setFilePermissions(~fileUmask&0777);
                     }
                 }
             }
@@ -892,8 +895,8 @@ void FileSprayer::beforeTransfer()
                     remote.getPath(name);
                     throwError1(DFTERR_CouldNotCreateOutput, name.str());
                 }
-                if (umask != -1)
-                    file->setFilePermissions(~umask&0666);
+                if (fileUmask != -1)
+                    file->setFilePermissions(~fileUmask&0666);
                 //Create the headers on the utf files.
                 unsigned headerSize = getHeaderSize(tgtFormat.type);
                 if (headerSize)
@@ -1224,6 +1227,8 @@ void FileSprayer::calculateSprayPartition()
                 distributedTarget->setECL(recStru.str());
         }
     }
+    if (compressedInput && compressOutput && streq(encryptKey.str(),decryptKey.str()))
+        copyCompressed = true;
 
 }
 
@@ -2623,6 +2628,54 @@ void FileSprayer::setTarget(IDistributedFile * target)
     }
 }
 
+void FileSprayer::checkTargetPath(RemoteFilename & filename)
+{
+    StringBuffer targetFilePath;
+    filename.getLocalPath(targetFilePath);
+    const char * ptargetFilePath = targetFilePath.str();
+
+    if (filename.queryIP().isLoopBack())
+        throwError1(DFTERR_LocalhostAddressUsed, ptargetFilePath);
+
+#ifdef _DEBUG
+    LOG(MCdebugInfo, unknownJob, "Target file path is '%s'", targetFilePath.str());
+#endif
+
+    const char pathSep = filename.getPathSeparator();
+    const char dotString[]    = {pathSep, '.', pathSep, '\0'};
+    const char dotDotString[] = {pathSep, '.', '.', pathSep, '\0'};
+
+    const char * isDotString = strstr(ptargetFilePath, dotString);
+    const char * isDotDotString = strstr(ptargetFilePath, dotDotString);
+    if ((isDotDotString != nullptr) || (isDotString != nullptr))
+        throwError3(DFTERR_InvalidTargetPath, ptargetFilePath, dotDotString, dotString);
+
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    if (factory)
+    {
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        if (env)
+        {
+            StringBuffer netaddress;
+            filename.queryIP().getIpText(netaddress);
+
+            Owned<IConstDropZoneInfo> targetDropZone = env->getDropZoneByAddressPath(netaddress.str(), ptargetFilePath);
+            if (!targetDropZone)
+                LOG(MCdebugInfo, unknownJob, "No matching drop zone path to target file path: '%s'", targetFilePath.str());
+        }
+    }
+}
+
+void FileSprayer::checkTarget(IFileDescriptor * target)
+{
+    unsigned numParts = target->numParts();
+    RemoteFilename filename;
+    for (unsigned idx=0; idx < numParts; idx++)
+    {
+        target->getFilename(idx, 0, filename);
+        checkTargetPath(filename);
+    }
+}
 
 void FileSprayer::setTarget(IFileDescriptor * target, unsigned copy)
 {
@@ -2988,7 +3041,7 @@ void FileSprayer::updateTargetProperties()
 
             partCRC.addChildCRC(curProgress.outputLength, curProgress.outputCRC, false);
             totalCRC.addChildCRC(curProgress.outputLength, curProgress.outputCRC, false);
-            offset_t physPartLength = curProgress.outputLength;
+
             if (copyCompressed) {
                 FilePartInfo & curSource = sources.item(cur.whichInput);
                 partLength = curSource.size;
@@ -3042,20 +3095,17 @@ void FileSprayer::updateTargetProperties()
                 }
                 else if (compressOutput || copyCompressed)
                     curProps.setPropInt(FAcrc, (int)COMPRESSEDFILECRC);
-                if (copyCompressed) // don't know if just compress
-                {
-                    curProps.setPropInt64(FAcompressedSize, physPartLength);
-                    totalCompressedSize += physPartLength;
-                }
-
 
                 curProps.setPropInt64(FAsize, partLength);
 
                 if (compressOutput)
                 {
                     curProps.setPropInt64(FAcompressedSize, curProgress.compressedPartSize);
-
                     totalCompressedSize += curProgress.compressedPartSize;
+                } else if (copyCompressed)
+                {
+                    curProps.setPropInt64(FAcompressedSize, curProgress.outputLength);
+                    totalCompressedSize += curProgress.outputLength;
                 }
 
                 TargetLocation & curTarget = targets.item(cur.whichOutput);
@@ -3114,7 +3164,7 @@ void FileSprayer::updateTargetProperties()
             gotrc = true;
         }
 
-        if (sameSizeHeaderFooter)
+        if (sameSizeHeaderFooter && ((srcFormat.markup == FMTjson ) || (srcFormat.markup == FMTxml)))
         {
             curProps.setPropInt64(FPheaderLength, headerSize);
             curProps.setPropInt64(FPfooterLength, footerSize);
@@ -3136,11 +3186,15 @@ void FileSprayer::updateTargetProperties()
                      ((stricmp(aname,FArecordCount)==0)&&!gotrc) ||
                      ((stricmp(aname,"@blockCompressed")==0)&&copyCompressed) ||
                      ((stricmp(aname,"@rowCompressed")==0)&&copyCompressed)||
-                     (stricmp(aname,"@local")==0)
+                     (stricmp(aname,"@local")==0)||
+                     (stricmp(aname,"@recordCount")==0)
                      )
                     )
                     curProps.setProp(aname,aiter->queryValue());
             }
+
+            // Keep source kind
+            curProps.setProp("@kind", srcAttr->queryProp("@kind"));
 
             // and simple (top level) elements
             Owned<IPropertyTreeIterator> iter = srcAttr->getElements("*");

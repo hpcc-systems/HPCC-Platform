@@ -69,6 +69,15 @@ void checkUseEspOrDaliIP(SocketEndpoint &ep, const char *ip, const char *esp)
         ep.ipset(esp);
 }
 
+void ensureInputString(const char* input, bool lowerCase, StringBuffer& inputStr, int code, const char* msg)
+{
+    inputStr.set(input).trim();
+    if (inputStr.isEmpty())
+        throw MakeStringException(code, "%s", msg);
+    if (lowerCase)
+        inputStr.toLowerCase();
+}
+
 static IClientWsWorkunits *ensureWsWorkunitsClient(IClientWsWorkunits *ws, IEspContext *ctx, const char *netAddress)
 {
     if (ws)
@@ -2695,4 +2704,33 @@ IPropertyTree* CWsWorkunitsEx::sendControlQuery(IEspContext& context, const char
 
     Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), timeout);
     return sendRoxieControlQuery(sock, query, timeout);
+}
+
+bool CWsWorkunitsEx::onWUUpdateQueryEntry(IEspContext& context, IEspWUUpdateQueryEntryRequest& req, IEspWUUpdateQueryEntryResponse& resp)
+{
+    try
+    {
+        StringBuffer querySetName, query;
+        ensureInputString(req.getQuerySet(), true, querySetName, ECLWATCH_QUERYSET_NOT_FOUND, "Query Set not specified");
+        ensureInputString(req.getQueryId(), true, query, ECLWATCH_QUERYID_NOT_FOUND, "Query not specified");
+
+        Owned<IPropertyTree> querySet = getQueryRegistry(querySetName.str(), true);
+        if (!querySet)
+            throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Queryset %s not found", querySetName.str());
+        VStringBuffer xpath("Query[@id=\"%s\"]", query.str());
+        IPropertyTree *tree = querySet->queryPropTree(xpath);
+        if (!tree)
+            throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Query %s not found", query.str());
+
+        StringBuffer comment = req.getComment();
+        if (comment.isEmpty())
+            tree->removeProp("@comment");
+        else
+            tree->setProp("@comment", comment.str());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
 }

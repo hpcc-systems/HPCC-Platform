@@ -103,7 +103,13 @@ if(KAFKA)
             DESTINATION plugins)
 
         install(
-            FILES ${LIBRDKAFKA_LIB} ${LIBRDKAFKA_LIB_REAL} ${LIBRDKAFKACPP_LIB} ${LIBRDKAFKACPP_LIB_REAL}
+            FILES ${LIBRDKAFKA_LIB_REAL} ${LIBRDKAFKACPP_LIB_REAL}
+            DESTINATION ${LIB_DIR}
+            PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+            COMPONENT Runtime)
+
+        install(
+            FILES ${LIBRDKAFKA_LIB} ${LIBRDKAFKACPP_LIB}
             DESTINATION ${LIB_DIR}
             COMPONENT Runtime)
 
@@ -117,7 +123,7 @@ if(KAFKA)
     endif()
 endif()
 
-if(PLATFORM)
+if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/kafka.ecllib
         DESTINATION plugins

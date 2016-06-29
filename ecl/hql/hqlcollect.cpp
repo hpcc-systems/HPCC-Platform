@@ -25,6 +25,10 @@
 #include "hqlexpr.hpp"
 #include "hqlerrors.hpp"
 
+#ifdef _USE_ZLIB
+#include "zcrypt.hpp"
+#endif
+
 inline bool isNullOrBlank(const char * s) { return !s || !*s; }
 
 //DLLs should call CPluginCtx to manage memory
@@ -209,7 +213,14 @@ public:
 
 EclSourceType getEclSourceType(const char * tailname)
 {
-    const char *ext = strrchr(tailname, '.');
+    StringBuffer temp;
+#ifdef _USE_ZLIB
+    removeZipExtension(temp, tailname);
+#else
+    temp.append(tailname);
+#endif
+
+    const char *ext = strrchr(temp.str(), '.');
     if (!ext)
         return ESTnone;
     if (stricmp(ext, ".eclmod")==0 || stricmp(ext, ".hql")==0)
@@ -226,18 +237,24 @@ EclSourceType getEclSourceType(const char * tailname)
 static IIdAtom * deriveEclName(const char * filename)
 {
     if (!filename)
-        return NULL;
+        return nullptr;
 
-    const char * tailname = pathTail(filename);
-    const char *ext = strrchr(tailname, '.');
+    StringBuffer tailname;
+#ifdef _USE_ZLIB
+    removeZipExtension(tailname, pathTail(filename));
+#else
+    tailname.append(pathTail(filename));
+#endif
+
+    const char * ext = strrchr(tailname.str(), '.');
     IIdAtom * id;
     if (ext)
-        id = createIdAtom(tailname, ext-tailname);
+        id = createIdAtom(tailname.str(), ext-tailname.str());
     else
-        id = createIdAtom(tailname);
+        id = createIdAtom(tailname.str());
 
     if (!isCIdentifier(str(id)))
-        return NULL;
+        return nullptr;
     return id;
 }
 

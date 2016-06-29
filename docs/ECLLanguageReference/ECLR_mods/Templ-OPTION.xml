@@ -477,6 +477,125 @@
 
               <entry>Number of records to limit to</entry>
             </row>
+
+            <row>
+              <entry><emphasis>divideByZero</emphasis></entry>
+
+              <entry>Default zero</entry>
+
+              <entry>'zero' evaluates to 0, the default behavior. 'fail'
+              causes the job to fail and report a division by zero error.
+              'nan' (only currently supported for real numbers) creates a
+              quiet NaN, which will propagate through any real expressions it
+              is used in. You can use NOT ISVALID(x) to test if the value is a
+              NaN. Integer and decimal division by zero continue to return
+              0.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>outputLimitMb</emphasis></entry>
+
+              <entry>Default 10 [MB]</entry>
+
+              <entry>Limit of output to a workunit in MB.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>maxCsvRowSizeMb</emphasis></entry>
+
+              <entry>Default 10 [MB]</entry>
+
+              <entry>Upper limit of a CSV line read in MB.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>compressInternalSpills</emphasis></entry>
+
+              <entry>Default true</entry>
+
+              <entry>Compress internal spills. (e.g., spills created by
+              lookahead or sort gathering).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>hdCompressorType</emphasis></entry>
+
+              <entry>Default 'FLZ'</entry>
+
+              <entry>Distribute compressor to use.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>hdCompressorOptions</emphasis></entry>
+
+              <entry>Default ''</entry>
+
+              <entry>Distribute compressor options (e.g., AES key)</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>splitterSpill</emphasis></entry>
+
+              <entry>Default -1</entry>
+
+              <entry>Integer value to indicate whether to force splitters to
+              spill or not. [1 = force spill | 0 = force in memory | -1 =
+              adhere to helper setting ]</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>loopMaxEmpty</emphasis></entry>
+
+              <entry>Default 1000</entry>
+
+              <entry>Max # of iterations that LOOP can cycle through without
+              results before reporting an error</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>smallSortThreshold</emphasis></entry>
+
+              <entry>Default 0 (disabled)</entry>
+
+              <entry>If estimated size is below this threshold in bytes, a
+              minisort approach should be used.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>sort_max_deviance</emphasis></entry>
+
+              <entry>Default 10 [MB]</entry>
+
+              <entry>Max (byte) variance allowed during sort
+              partitioning</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>joinHelperThreads</emphasis></entry>
+
+              <entry>Default = same as number of cores</entry>
+
+              <entry>Number of threads to use in threaded variety of join
+              helper</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>bindCores</emphasis></entry>
+
+              <entry>Default = 0</entry>
+
+              <entry>For Roxie queries. If non-zero, binds the query to only
+              use the specified number of cores. This overrides the value set
+              for coresPerQuery in Roxie configuration. <indexterm>
+                  <primary>Roxie processor affinity</primary>
+                </indexterm><indexterm>
+                  <primary>Roxie CPU pinning</primary>
+                </indexterm><indexterm>
+                  <primary>CPU pinning</primary>
+                </indexterm><indexterm>
+                  <primary>processor affinity</primary>
+                </indexterm></entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
@@ -953,8 +1072,8 @@
 
               <entry>Default: 3 for roxie, else 0</entry>
 
-              <entry>Set the C++ compiler optimization level (optimizations can cause the compiler
-              to take a lot longer).</entry>
+              <entry>Set the C++ compiler optimization level (optimizations
+              can cause the compiler to take a lot longer).</entry>
             </row>
 
             <row>

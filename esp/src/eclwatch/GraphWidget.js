@@ -134,7 +134,7 @@ define([
             }, this);
             if (formatTime) {
                 arrayUtil.forEach(target, function (column, idx) {
-                    if (column.label.indexOf("Time") === 0 || column.label.indexOf("Size")) {
+                    if (column.label.indexOf("Time") === 0 || column.label.indexOf("Size") === 0 || column.label.indexOf("Skew") === 0) {
                         column.formatter = function (_id, row) {
                             return row["_" + column.field] || "";
                         }
@@ -432,6 +432,14 @@ define([
                     this.isIE11 = true;
                 }
                 this.graphViewHistory = new GraphViewHistory(this);
+                this._options = {};
+            },
+
+            option: function (key, _) {
+                if (arguments.length < 1) throw Error("Invalid Call:  option");
+                if (arguments.length === 1) return this._options[key];
+                this._options[key] = _ instanceof Array ? _.length > 0 : _;
+                return this;
             },
 
             _onClickRefresh: function () {
@@ -477,7 +485,7 @@ define([
             _onRefreshScope: function () {
                 var graphView = this.getCurrentGraphView();
                 if (graphView) {
-                    var depth = this.depth.get("value");
+                    var depth = this.getDepth();
                     var distance = this.distance.get("value");
                     graphView = graphView.changeScope(depth, distance, this.option("subgraph"), this.option("vhidespills"));
                     graphView.navigateTo(this, true);
@@ -488,7 +496,7 @@ define([
                 var graphView = this.getCurrentGraphView();
                 if (graphView) {
                     var rootItems = this.getSelectionAsGlobalID();
-                    var depth = this.depth.get("value");
+                    var depth = this.getDepth();
                     var distance = this.distance.get("value");
                     graphView = graphView.changeRootItems(rootItems, depth, distance, this.option("subgraph"), this.option("vhidespills"));
                     graphView.navigateTo(this);
@@ -709,6 +717,13 @@ define([
 
             getXGMML: function () {
                 return this.xgmml;
+            },
+
+            getDepth: function () {
+                if (this._depthDisabled) {
+                    return 999;
+                }
+                return this.depth.get("value");
             },
 
             localLayout: function(callback) {
@@ -946,7 +961,10 @@ define([
 
             getLocalisedXGMML: function (selectedItems, depth, distance, hideSpills) {
                 if (this.hasPlugin()) {
-                    return this._plugin.getLocalisedXGMML(selectedItems, depth, distance, hideSpills);
+                    if (this._plugin.getLocalisedXGMML2) {
+                        return this._plugin.getLocalisedXGMML2(selectedItems, depth, distance, hideSpills);
+                    }
+                    return this._plugin.getLocalisedXGMML(selectedItems, depth, distance);
                 }
                 return null;
             },
@@ -1267,16 +1285,16 @@ define([
             },
 
             refreshRootState: function (selectedGlobalIDs) {
-                var depthDisabled = false;
+                this._depthDisabled = false;
                 var distanceDisabled = false;
                 if (selectedGlobalIDs) {
                     var typeSummary = this.getTypeSummary(selectedGlobalIDs);
-                    depthDisabled = !selectedGlobalIDs.length || !(typeSummary.Graph || typeSummary.Cluster);
+                    this._depthDisabled = !selectedGlobalIDs.length || !(typeSummary.Graph || typeSummary.Cluster);
                     distanceDisabled = !(typeSummary.Vertex || typeSummary.Edge);
                 }
-                depthDisabled = depthDisabled || (this.hasOptions() && !this.option("subgraph"))
+                this._depthDisabled = this._depthDisabled || (this.hasOptions() && !this.option("subgraph"))
 
-                this.setDisabled(this.id + "Depth", depthDisabled);
+                this.setDisabled(this.id + "Depth", this._depthDisabled);
                 this.setDisabled(this.id + "Distance", distanceDisabled);
                 this.setDisabled(this.id + "OptionsDropDown", !this.hasOptions());
             }

@@ -18,6 +18,11 @@
 #include "caching.hpp"
 #include "jtime.hpp"
 
+//define a container for multiple instances of a security manager cache
+typedef map<string, CPermissionsCache*> MapCache;
+static CriticalSection mapCacheCS;//guards modifications to the cache map
+static MapCache g_mapCache;
+
 /**********************************************************
  *     CResPermissionsCache                               *
  *     (used by CPermissionsCache defined below)          *
@@ -73,8 +78,9 @@ int CResPermissionsCache::lookup( IArrayOf<ISecResource>& resources, bool* pFoun
             *pFound++ = false;
             continue;
         }
-        //DBGLOG("CACHE: Looking up %s:%s", m_user.c_str(), resource);
-
+#ifdef _DEBUG
+        DBGLOG("CACHE: CResPermissionsCache Looking up resource(%d of %d) %s:%s", i, nresources, m_user.c_str(), resource);
+#endif
         MapResAccess::iterator it = m_resAccessMap.find(SecCacheKeyEntry(resource, secResource.getResourceType()));
         if (it != m_resAccessMap.end())//exists in cache
         {
@@ -93,6 +99,9 @@ int CResPermissionsCache::lookup( IArrayOf<ISecResource>& resources, bool* pFoun
                 else
                 {
                     secResource.copy(resParamCacheEntry.second);
+#ifdef _DEBUG
+                    DBGLOG("CACHE: CResPermissionsCache FoundA %s:%s=>%d", m_user.c_str(), resource, ((ISecResource*)resParamCacheEntry.second)->getAccessFlags());
+#endif
                     *pFound++ = true;
                     nFound++;
                 }
@@ -100,7 +109,9 @@ int CResPermissionsCache::lookup( IArrayOf<ISecResource>& resources, bool* pFoun
             else
             {
                 secResource.copy(resParamCacheEntry.second);
-                //DBGLOG("CACHE: Found %s:%s=>%d", m_user.c_str(), resource, resParamCacheEntry.second);
+#ifdef _DEBUG
+                DBGLOG("CACHE: CResPermissionsCache FoundB %s:%s=>%d", m_user.c_str(), resource, ((ISecResource*)resParamCacheEntry.second)->getAccessFlags());
+#endif
                 *pFound++ = true;
                 nFound++;
             }
@@ -154,7 +165,9 @@ void CResPermissionsCache::add( IArrayOf<ISecResource>& resources )
             }
             m_resAccessMap.erase(SecCacheKeyEntry(resource, resourcetype));
         }
-        //DBGLOG("CACHE: Adding %s:%s(%d)", m_user.c_str(), resource, permissions);
+#ifdef _DEBUG
+        DBGLOG("CACHE: CResPermissionsCache Adding %s:%s(%d)", m_user.c_str(), resource, permissions);
+#endif
         m_resAccessMap.insert( pair<SecCacheKeyEntry, ResPermCacheEntry>(SecCacheKeyEntry(resource, resourcetype),  ResPermCacheEntry(tstamp, secResource->clone())));
         m_timestampMap.insert( pair<time_t, SecCacheKeyEntry>(tstamp, SecCacheKeyEntry(resource, resourcetype)));
     }
@@ -202,17 +215,21 @@ void CResPermissionsCache::remove(SecResourceType rtype, const char* resourcenam
 
 CPermissionsCache::~CPermissionsCache()
 {
+    if (!m_secMgrClass.isEmpty())
+    {
+        CriticalBlock block(mapCacheCS);
+        g_mapCache.erase(m_secMgrClass.str());
+    }
     flush();
 }
 
 int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resources, 
                             bool* pFound)
 {
-    synchronized block(m_cachemonitor);
     const char* userId = sec_user.getName();
     int nFound;
+    ReadLockBlock readLock(m_resPermCacheRWLock);
     MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( userId ); 
-
     if (i != m_resPermissionsMap.end())
     {
         CResPermissionsCache* pResPermissionsCache = (*i).second;
@@ -222,9 +239,11 @@ int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resou
     {
         nFound = 0;
         memset(pFound, 0, sizeof(bool)*resources.ordinality());
-        //DBGLOG("CACHE: Looking up %s:*", userId);
     }
 
+#ifdef _DEBUG
+    DBGLOG("CACHE: CPermissionsCache Looked up resources for %s:*, found %d of %d matches", userId, nFound, resources.ordinality());
+#endif
     return nFound;
 }
 
@@ -232,37 +251,46 @@ int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resou
 
 void CPermissionsCache::add( ISecUser& sec_user, IArrayOf<ISecResource>& resources )
 {
-    synchronized block(m_cachemonitor);
     const char* user = sec_user.getName();
+    WriteLockBlock writeLock(m_resPermCacheRWLock);
     MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( user ); 
     CResPermissionsCache* pResPermissionsCache;
 
     if (i == m_resPermissionsMap.end())
     {
-        //DBGLOG("CACHE: Adding cache for %s", user);
+#ifdef _DEBUG
+        DBGLOG("CACHE: CPermissionsCache Adding resources to cache for new user %s", user);
+#endif
         pResPermissionsCache = new CResPermissionsCache(this, user);
         m_resPermissionsMap.insert(pair<string, CResPermissionsCache*>(user, pResPermissionsCache));
     }
     else
+    {
+#ifdef _DEBUG
+        DBGLOG("CACHE: CPermissionsCache Adding resources to cache for existing user %s", user);
+#endif
         pResPermissionsCache = (*i).second;
-
+    }
     pResPermissionsCache->add( resources );
 }
 
 void CPermissionsCache::removePermissions( ISecUser& sec_user)
 {
-    synchronized block(m_cachemonitor);
     const char* user = sec_user.getName();
     if(user != NULL && *user != '\0')
     {
+#ifdef _DEBUG
+        DBGLOG("CACHE: CPermissionsCache Removing permissions for user %s", user);
+#endif
+        WriteLockBlock writeLock(m_resPermCacheRWLock);
         m_resPermissionsMap.erase(user); 
     }
 }
 
 void CPermissionsCache::remove(SecResourceType rtype, const char* resourcename)
 {
-    synchronized block(m_cachemonitor);
     MapResPermissionsCache::const_iterator i;
+    WriteLockBlock writeLock(m_resPermCacheRWLock);
     MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end(); 
 
     for (i = m_resPermissionsMap.begin(); i != iEnd; i++)
@@ -281,9 +309,9 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
     if(!username || !*username)
         return false;
 
-    synchronized block(m_userCacheMonitor); 
-
     string key(username);
+    ReadLockBlock readLock(m_userCacheRWLock );
+
     MapUserCache::iterator it = m_userCache.find(key);
     if (it == m_userCache.end())
         return false;
@@ -307,6 +335,9 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
         md5_string(pw, md5pbuf);
         if(strcmp(cachedpw, md5pbuf.str()) == 0)
         {
+#ifdef _DEBUG
+            DBGLOG("CACHE: CPermissionsCache Found validated user %s", username);
+#endif
             // Copy cached user to the sec_user structure, but still keep the original clear text password.
             user->queryUser()->copyTo(sec_user);
             sec_user.credentials().setPassword(pw.str());
@@ -322,6 +353,7 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
 
     return false;
 }
+
 ISecUser* CPermissionsCache::getCachedUser( ISecUser& sec_user)
 {
     if(!isCacheEnabled())
@@ -331,15 +363,15 @@ ISecUser* CPermissionsCache::getCachedUser( ISecUser& sec_user)
     if(!username || !*username)
         return NULL;
 
-    synchronized block(m_userCacheMonitor); 
-
     string key(username);
+    ReadLockBlock readLock(m_userCacheRWLock );
     MapUserCache::iterator it = m_userCache.find(key);
     if (it == m_userCache.end())
         return NULL;
     CachedUser* user = (CachedUser*)(it->second);
     return LINK(user->queryUser());
 }
+
 void CPermissionsCache::add(ISecUser& sec_user)
 {
     if(!isCacheEnabled())
@@ -349,8 +381,8 @@ void CPermissionsCache::add(ISecUser& sec_user)
     if(!username || !*username)
         return;
     
-    synchronized block(m_userCacheMonitor);     
     string key(username);
+    WriteLockBlock writeLock(m_userCacheRWLock );
     MapUserCache::iterator it = m_userCache.find(key);
     CachedUser* user = NULL;
     if (it != m_userCache.end())
@@ -359,6 +391,9 @@ void CPermissionsCache::add(ISecUser& sec_user)
         m_userCache.erase(username);
         delete user;
     }
+#ifdef _DEBUG
+    DBGLOG("CACHE: CPermissionsCache Adding cached user %s", username);
+#endif
     m_userCache[username] = new CachedUser(sec_user.clone());
 }
 
@@ -367,21 +402,24 @@ void CPermissionsCache::removeFromUserCache(ISecUser& sec_user)
     const char* username = sec_user.getName();
     if(username && *username)
     {
-        synchronized block(m_userCacheMonitor);
         string key(username);
+        WriteLockBlock writeLock(m_userCacheRWLock );
         MapUserCache::iterator it = m_userCache.find(key);
         if (it != m_userCache.end())
         {
             CachedUser* user = (CachedUser*)(it->second);
             m_userCache.erase(username);
             delete user;
+#ifdef _DEBUG
+            DBGLOG("CACHE: CPermissionsCache Removing cached user %s", username);
+#endif
         }
     }
 }
 
 bool CPermissionsCache::addManagedFileScopes(IArrayOf<ISecResource>& scopes)
 {
-    synchronized block(m_managedFileScopesCacheMonitor);
+    WriteLockBlock writeLock(m_scopesRWLock);
     ForEachItemIn(x, scopes)
     {
         ISecResource* scope = &scopes.item(x);
@@ -407,7 +445,7 @@ bool CPermissionsCache::addManagedFileScopes(IArrayOf<ISecResource>& scopes)
 
 inline void CPermissionsCache::removeManagedFileScopes(IArrayOf<ISecResource>& scopes)
 {
-    synchronized block(m_managedFileScopesCacheMonitor);
+    WriteLockBlock writeLock(m_scopesRWLock);
     ForEachItemIn(x, scopes)
     {
         ISecResource* scope = &scopes.item(x);
@@ -428,7 +466,7 @@ inline void CPermissionsCache::removeManagedFileScopes(IArrayOf<ISecResource>& s
 
 inline void CPermissionsCache::removeAllManagedFileScopes()
 {
-    synchronized block(m_managedFileScopesCacheMonitor);
+    WriteLockBlock writeLock(m_scopesRWLock);
     map<string, ISecResource*>::const_iterator cit;
     map<string, ISecResource*>::const_iterator iEnd = m_managedFileScopesMap.end();
 
@@ -496,11 +534,11 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
         }
         scopes.append(scope.str());
     }
-    synchronized block(m_managedFileScopesCacheMonitor);
+
     ISecResource *matchedRes = NULL;
     ISecResource *res = NULL;
     bool isManaged = false;
-
+    ReadLockBlock readLock(m_scopesRWLock);
     for(unsigned i = 0; i < scopes.length(); i++)
     {
         const char* scope = scopes.item(i);
@@ -579,7 +617,7 @@ int CPermissionsCache::queryDefaultPermission(ISecUser& user)
 void CPermissionsCache::flush()
 {
     {
-        synchronized block(m_cachemonitor);
+        WriteLockBlock writeLock(m_resPermCacheRWLock);
         MapResPermissionsCache::const_iterator i;
         MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end();
         for (i = m_resPermissionsMap.begin(); i != iEnd; i++)
@@ -587,7 +625,7 @@ void CPermissionsCache::flush()
         m_resPermissionsMap.clear();
     }
     {
-        synchronized block(m_userCacheMonitor);
+        WriteLockBlock writeLock(m_userCacheRWLock );
         MapUserCache::const_iterator ui;
         MapUserCache::const_iterator uiEnd = m_userCache.end();
         for (ui = m_userCache.begin(); ui != uiEnd; ui++)
@@ -596,4 +634,23 @@ void CPermissionsCache::flush()
     }
     m_lastManagedFileScopesRefresh = 0;
     m_defaultPermission = SecAccess_Unknown;//trigger refresh
+}
+
+CPermissionsCache* CPermissionsCache::getInstance(const char * _secMgrClass)
+{
+    const char * secMgrClass = (_secMgrClass != nullptr  &&  *_secMgrClass) ? _secMgrClass : "genericSecMgrClass";
+
+    CriticalBlock block(mapCacheCS);
+    MapCache::iterator it = g_mapCache.find(secMgrClass);
+    if (it != g_mapCache.end())//exists in cache
+    {
+        LINK((*it).second);
+        return (*it).second;
+    }
+    else
+    {
+        CPermissionsCache * instance = new CPermissionsCache(_secMgrClass);
+        g_mapCache.insert(pair<string, CPermissionsCache*>(secMgrClass, instance));
+        return instance;
+    }
 }

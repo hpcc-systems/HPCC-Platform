@@ -32,7 +32,7 @@ from ..regression.suite import Suite
 from ..util.ecl.cc import ECLCC
 from ..util.ecl.command import ECLcmd
 from ..util.expandcheck import ExpandCheck
-from ..util.util import getConfig, queryWuid,  abortWorkunit, getVersionNumbers
+from ..util.util import getConfig, queryWuid,  abortWorkunit, getVersionNumbers, createZAP
 
 
 class Regression:
@@ -78,6 +78,8 @@ class Regression:
         self.dir_ex = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.keyDir), True)
         self.dir_a = os.path.join(self.regressionDir, self.config.archiveDir)
         self.dir_r = os.path.join(self.regressionDir, self.config.resultDir)
+        self.dir_zap =  os.path.join(self.regressionDir,self.config.zapDir)
+        self.dir_inc =  self.dir_ec
         logging.debug("Suite Dir      : %s", self.suiteDir)
         logging.debug("Regression Dir : %s", self.regressionDir)
         logging.debug("Result Dir     : %s", self.dir_r)
@@ -85,7 +87,8 @@ class Regression:
         logging.debug("ECL Dir        : %s", self.dir_ec)
         logging.debug("Key Dir        : %s", self.dir_ex)
         logging.debug("Archive Dir    : %s", self.dir_a)
-
+        logging.debug("ZAP Dir        : %s", self.dir_zap )
+        logging.debug("INC Dir        : %s", self.dir_inc )
 
         numOfThreads=1
         if 'pq' in args:
@@ -126,8 +129,9 @@ class Regression:
         self.createDirectory(self.dir_a)
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
+        self.createDirectory(self.dir_zap)
 
-        self.suites[cluster] = Suite(cluster, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir, args, False, fileList)
+        self.suites[cluster] = Suite(cluster, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, False, fileList)
         self.maxtasks = len(self.suites[cluster].getSuite())
 
     def createDirectory(self, dir_n):
@@ -139,9 +143,10 @@ class Regression:
         self.createDirectory(self.dir_a)
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
+        self.createDirectory(self.dir_zap)
         self.setupDir = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.setupDir), True)
         logging.debug("Setup Dir      : %s", self.setupDir)
-        self.setupSuite = Suite(args.target, self.setupDir, self.dir_a, self.dir_ex, self.dir_r, self.logDir, args, True)
+        self.setupSuite = Suite(args.target, self.setupDir, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, True)
         self.maxtasks = len(self.setupSuite.getSuite())
         return self.setupSuite
 
@@ -348,7 +353,7 @@ class Regression:
             sleepTime = defSleepTime
             if self.timeouts[threadId] >= 0:
                 self.loggermutex.acquire()
-                logging.debug("%3d. timeout counter:%d" % (cnt, self.timeouts[threadId]),  extra={'taskId':cnt})
+                logging.debug("%3d. timeout counter:%d (%d)" % (cnt, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
                 self.loggermutex.release()
                 sleepTime = defSleepTime
             if self.timeouts[threadId] == 0:
@@ -496,12 +501,14 @@ class Regression:
                     res = eclCmd.runCmd("publish", cluster, query, report[0],
                                       server=self.config.espIp,
                                       username=self.config.username,
-                                      password=self.config.password)
+                                      password=self.config.password, 
+                                      retryCount=self.config.maxAttemptCount)
                 else:
                     res = eclCmd.runCmd("run", cluster, query, report[0],
                                       server=self.config.espIp,
                                       username=self.config.username,
-                                      password=self.config.password)
+                                      password=self.config.password, 
+                                      retryCount=self.config.maxAttemptCount)
             except Error as e:
                 logging.debug("Exception raised:'%s'"  % ( str(e)),  extra={'taskId':cnt})
                 res = False
@@ -541,6 +548,8 @@ class Regression:
             else:
                 logging.error("%3d. Fail %s (%d sec)" % (cnt, wuid,  elapsTime),  extra={'taskId':cnt})
                 logging.error("%3d. URL %s" %  (cnt,url),  extra={'taskId':cnt})
+                zapRes = createZAP(wuid,  cnt)
+                logging.error("%3d. Zipped Analysis Package: %s" %  (cnt, zapRes),  extra={'taskId':cnt})
         self.loggermutex.release()
         query.setElapsTime(elapsTime)
         self.exitmutexes[th].release()

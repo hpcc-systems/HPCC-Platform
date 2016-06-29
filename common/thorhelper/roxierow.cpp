@@ -388,7 +388,7 @@ struct AllocatorKey
     IOutputMetaData *meta;
     unsigned activityId;
     roxiemem::RoxieHeapFlags flags;
-    AllocatorKey(IOutputMetaData *_meta, unsigned &_activityId, roxiemem::RoxieHeapFlags _flags)
+    AllocatorKey(IOutputMetaData *_meta, unsigned _activityId, roxiemem::RoxieHeapFlags _flags)
         : meta(_meta), activityId(_activityId), flags(_flags)
     {
     }
@@ -412,7 +412,7 @@ public:
     unsigned queryAllocatorId() const { return allocatorId; }
 };
 
-class CAllocatorCache : public CSimpleInterface, implements IRowAllocatorMetaActIdCache
+class CAllocatorCache : public CSimpleInterfaceOf<IRowAllocatorMetaActIdCache>
 {
     OwningSimpleHashTableOf<CAllocatorCacheItem, AllocatorKey> cache;
     IArrayOf<IEngineRowAllocator> allAllocators;
@@ -426,20 +426,10 @@ class CAllocatorCache : public CSimpleInterface, implements IRowAllocatorMetaAct
         return cache.find(key);
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CAllocatorCache(IRowAllocatorMetaActIdCacheCallback *_callback) : callback(_callback)
     {
     }
 // IRowAllocatorMetaActIdCache
-    inline IEngineRowAllocator *lookup(IOutputMetaData *meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
-    {
-        SpinBlock b(allAllocatorsLock);
-        CAllocatorCacheItem *container = _lookup(meta, activityId, flags);
-        if (!container)
-            return NULL;
-        return &container->queryElement();
-    }
     virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags)
     {
         SpinBlock b(allAllocatorsLock);

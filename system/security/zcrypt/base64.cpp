@@ -98,7 +98,7 @@ ZBuffer& base64_decode(int inlen, const char *in, ZBuffer& data)
     {
         for(int i = 0; i < 64; ++i)
         {
-            BASE64_dec[BASE64_enc[i]] = i;
+            BASE64_dec[(unsigned char) BASE64_enc[i]] = i;
         }
 
         initialized = true;

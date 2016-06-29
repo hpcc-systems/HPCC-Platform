@@ -17,8 +17,11 @@
                     <div id="${id}Abort" data-dojo-attach-event="onClick:_onAbort" data-dojo-type="dijit.form.Button">${i18n.Abort}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Recover" data-dojo-attach-event="onClick:_onRecover" data-dojo-type="dijit.form.Button">${i18n.Recover}</div>
+                    <div data-dojo-props="connectId:'${id}Recover',position:['above']" data-dojo-type="dijit.Tooltip">${i18n.RecoverTooltip}</div>
                     <div id="${id}Resubmit" data-dojo-attach-event="onClick:_onResubmit" data-dojo-type="dijit.form.Button">${i18n.Resubmit}</div>
+                    <div data-dojo-props="connectId:'${id}Resubmit',position:['above']" data-dojo-type="dijit.Tooltip">${i18n.ResubmitTooltip}</div>
                     <div id="${id}Clone" data-dojo-attach-event="onClick:_onClone" data-dojo-type="dijit.form.Button">${i18n.Clone}</div>
+                    <div data-dojo-props="connectId:'${id}Clone',position:['above']" data-dojo-type="dijit.Tooltip">${i18n.CloneTooltip}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Publish" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Publish}</span>
@@ -115,6 +118,14 @@
                                 <label class="Prompt" for="${id}TotalClusterTime">${i18n.TotalClusterTime}:</label>
                                 <div id="${id}TotalClusterTime"></div>
                             </li>
+                            <li>
+                                <label class="Prompt" for="${id}AbortBy">${i18n.AbortedBy}:</label>
+                                <div id="${id}AbortBy"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="${id}AbortTime">${i18n.AbortedTime}:</label>
+                                <div id="${id}AbortTime"></div>
+                            </li>
                         </ul>
                     </form>
                 </div>
@@ -156,9 +167,12 @@
                 <input id="${id}WarnHistory" title="${i18n.History}:" name="WhatChanged" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
                 <input id="${id}WarnTimings" title="${i18n.Timings}:" name="WhereSlow" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
                 <input id="${id}Password" title="${i18n.PasswordOpenZAP}:" name="Password" cols="22" colspan="2" type="password" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                <input id="${id}IncludeSlaveLogsCheckbox" title="${i18n.IncludeSlaveLogs}:" name="IncludeThorSlaveLog" cols="22" colspan="2" type="checkbox" data-dojo-type="dijit.form.CheckBox" />
             </div>
-            <button id="${id}onZapSubmit" data-dojo-attach-event="onClick:_onCancelDialog" class="bottomFormButtons" type="submit" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
-            <button class="bottomFormButtons" data-dojo-attach-event="onClick:_onCancelDialog" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
+            <div style="margin-top:20px;">
+                <button id="${id}onZapSubmit" data-dojo-attach-event="onClick:_onCancelDialog" class="bottomFormButtons" type="submit" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
+                <button class="bottomFormButtons" data-dojo-attach-event="onClick:_onCancelDialog" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
+            </div>
         </form>
     </div>
 </div>

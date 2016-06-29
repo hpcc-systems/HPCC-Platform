@@ -781,6 +781,10 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REGEXFINDSET.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REGEXREPLACE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -913,6 +917,9 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-UNICODEORDER.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-UNORDERED.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 

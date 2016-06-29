@@ -326,12 +326,20 @@ define([
 
         addSubgraph: function (subgraph) {
             subgraph.__hpcc_parent = this;
-            this.__hpcc_subgraphs.push(subgraph);
+            if (!arrayUtil.some(this.__hpcc_subgraphs, function (subgraph2) {
+                return subgraph === subgraph2;
+            })) {
+                this.__hpcc_subgraphs.push(subgraph);
+            }
         },
 
         addVertex: function (vertex) {
             vertex.__hpcc_parent = this;
-            this.__hpcc_vertices.push(vertex);
+            if (!arrayUtil.some(this.__hpcc_vertices, function (vertex2) {
+                return vertex === vertex2;
+            })) {
+                this.__hpcc_vertices.push(vertex);
+            }
         },
 
         removeVertex: function (vertex) {
@@ -342,7 +350,11 @@ define([
 
         addEdge: function (edge) {
             edge.__hpcc_parent = this;
-            this.__hpcc_edges.push(edge);
+            if (!arrayUtil.some(this.__hpcc_edges, function (edge2) {
+                return edge === edge2;
+            })) {
+                this.__hpcc_edges.push(edge);
+            }
         },
 
         removeEdge: function (edge) {
@@ -605,6 +617,9 @@ define([
                                 } else if (name.indexOf("Size") === 0) {
                                     retVal["_" + name] = value;
                                     retVal[name] = "" + Utility.espSize2Bytes(value);
+                                } else if (name.indexOf("Skew") === 0) {
+                                    retVal["_" + name] = value;
+                                    retVal[name] = "" + Utility.espSkew2Number(value);
                                 } else {
                                     retVal[name] = value;
                                 }

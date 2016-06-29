@@ -100,20 +100,15 @@
                     <div id="${id}AddtoDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.AddToSuperfile}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}AddToSuperfileForm" style="width:480px" onsubmit="return false;" data-dojo-type="dijit.form.Form" >
+                            <div id="${id}AddToSuperfileForm" style="width:680px" onsubmit="return false;" data-dojo-type="dijit.form.Form" >
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Target}</legend>
-                                    <div class="dijitDialogPaneContentArea" data-dojo-props="cols:1" data-dojo-type="hpcc.TableContainer">
-                                        <input id="${id}AddToSuperfileTargetName" name="Superfile" title="${i18n.SuperFile}:" style="width:100%;" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}CreateNewSuperRadio" title="${i18n.CreateANewFile}" checked="true" data-dojo-type="dijit.form.RadioButton"></input>
+                                        <input id="${id}AddToSuperfileTargetName" style="width:100%;" name="Superfile" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input id="${id}AddToSuperfileTargetAppend" name="ExistingFile" title="${i18n.AddToExistingSuperfile}" data-dojo-type="dijit.form.RadioButton"></input>
                                     </div>
-                                    <div id="${id}AddToSuperfileGrid" data-dojo-type="SelectionGridWidget">
-                                    </div>
-                                </div>
-                                <div data-dojo-type="dijit.Fieldset">
-                                    <legend>${i18n.Options}</legend>
-                                    <div class="dijitDialogPaneContentArea" data-dojo-props="cols:1" data-dojo-type="hpcc.TableContainer">
-                                        <input id="${id}AddToSuperfileTargetAppend" name="ExistingFile" title="${i18n.Append}:" data-dojo-type="dijit.form.CheckBox" />
-                                    </div>
+                                    <div id="${id}AddToSuperfileGrid" data-dojo-type="SelectionGridWidget"></div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
                                     <button type="submit" data-dojo-attach-event="onClick:_onAddToSuperfileOk" data-dojo-type="dijit.form.Button">${i18n.Add}</button>
@@ -130,7 +125,7 @@
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}DesprayTargetSelect" title="${i18n.DropZone}:" name="destGroup" style="width: 100%;" data-dojo-type="TargetSelectWidget" />
                                         <input id="${id}DesprayTargetIPAddress" title="${i18n.IPAddress}:" name="destIP" style="width: 100%;" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
-                                        <input id="${id}DesprayTargetPath" title="${i18n.Path}:" name="destPath" required="false" style="width: 100%;" data-dojo-props="trim: true, readonly: true" data-dojo-type="TargetComboBoxWidget" />
+                                        <input id="${id}DesprayTargetPath" title="${i18n.Path}:" name="destPath" required="false" style="width: 100%;" data-dojo-props="trim: true, readonly: false" data-dojo-type="TargetComboBoxWidget" />
                                         <input id="${id}DesprayTargetSplitPrefix" title="${i18n.SplitPrefix}:" name="splitprefix" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
                                     </div>
                                     <div id="${id}DesprayGrid" data-dojo-type="SelectionGridWidget">

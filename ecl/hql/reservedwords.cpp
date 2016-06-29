@@ -369,6 +369,7 @@ static const char * eclReserved12[] = {//Attributes
     "lookup",
     "lzw",
     "many",
+    "noconst",
     "noroot",
     "noscan",
     "notrim",
@@ -486,6 +487,7 @@ static const char * eclReserved15[] = { //Actions and statements
     "build",
     "buildindex",
     "checkpoint",
+    "critical",
     "cron",
     "define",
     "deprecated",
@@ -534,6 +536,8 @@ static const char * eclReserved16[] = { //Compiler directive/hints
     "nothor",
     "pull",
     "sorted",
+    "likely",
+    "unlikely",
     NULL
 };
 

@@ -391,11 +391,10 @@ public:
     };
 
 public:
-    bool needTransform, unsorted, countSent;
-    rowcount_t limit;
-    rowcount_t stopAfter;
-    IRowStream *out;
-    size32_t maxrecsize;
+    bool needTransform = false, unsorted = false, countSent = false;
+    rowcount_t limit = 0;
+    rowcount_t stopAfter = 0;
+    IRowStream *out = nullptr;
 
     IHThorDiskReadArg *helper;
 
@@ -405,13 +404,7 @@ public:
         unsorted = 0 != (TDRunsorted & helper->getFlags());
         grouped = 0 != (TDXgrouped & helper->getFlags());
         needTransform = segMonitors.length() || helper->needTransform();
-        out = NULL;
-        countSent = false;
-        if (helper->getFlags() & TDRlimitskips)
-            limit = RCMAX;
-        else
-            limit = (rowcount_t)helper->getRowLimit();
-        stopAfter = (rowcount_t)helper->getChooseNLimit();
+        appendOutputLinked(this);
     }
     ~CDiskReadSlaveActivity()
     {
@@ -443,9 +436,6 @@ public:
                 unsorted = false;
             }
         }
-
-        appendOutputLinked(this);
-
     }
     virtual void kill()
     {
@@ -477,6 +467,11 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         CDiskReadSlaveActivityRecord::start();
+        if (helper->getFlags() & TDRlimitskips)
+            limit = RCMAX;
+        else
+            limit = (rowcount_t)helper->getRowLimit();
+        stopAfter = (rowcount_t)helper->getChooseNLimit();
         out = createSequentialPartHandler(partHandler, partDescs, grouped); // **
     }
     virtual bool isGrouped() const override { return grouped; }
@@ -531,6 +526,8 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
 
     class CNormalizePartHandler : public CDiskRecordPartHandler
     {
+        typedef CDiskRecordPartHandler PARENT;
+
         RtlDynamicRowBuilder outBuilder;
         CDiskNormalizeSlave &activity;
         const void * nextrow;
@@ -542,34 +539,39 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
         {
             nextrow = NULL;
         }
-
-        ~CNormalizePartHandler()
+        virtual void close(CRC32 &fileCRC) override
         {
             if (nextrow)
-                CDiskRecordPartHandler::prefetchDone();
+                prefetchDone();
+            PARENT::close(fileCRC);
         }
-
-        const void *nextRow()
+        const void *nextRow() override
         {
             // logic here is a bit obscure
-            if (eoi || activity.queryAbortSoon()) {
+            if (eoi || activity.queryAbortSoon())
+            {
                 eoi = true;
                 return NULL;
             }
-            loop {
-                if (nextrow) {
-                    while (activity.helper->next()) {
+            loop
+            {
+                if (nextrow)
+                {
+                    while (activity.helper->next())
+                    {
                         size32_t sz = activity.helper->transform(outBuilder.ensureRow());
                         if (sz) 
                             return outBuilder.finalizeRowClear(sz);
                     }
-                    CDiskRecordPartHandler::prefetchDone();
+                    prefetchDone();
                 }
-                nextrow = CDiskRecordPartHandler::prefetchRow();
+                nextrow = prefetchRow();
                 if (!nextrow)
                     break;
-                if (activity.segMonitorsMatch(nextrow)) {
-                    if (activity.helper->first(nextrow)) {
+                if (activity.segMonitorsMatch(nextrow))
+                {
+                    if (activity.helper->first(nextrow))
+                    {
                         size32_t sz = activity.helper->transform(outBuilder.ensureRow());
                         if (sz) 
                             return outBuilder.finalizeRowClear(sz);
@@ -577,7 +579,7 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
                     }
                 }
                 nextrow = NULL;
-                CDiskRecordPartHandler::prefetchDone();
+                prefetchDone();
             }
             eoi = true;
             return NULL;
@@ -586,21 +588,16 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
     };
 
     IHThorDiskNormalizeArg *helper;
-    rowcount_t limit;
-    rowcount_t stopAfter;
-    IRowStream *out;
+    rowcount_t limit = 0;
+    rowcount_t stopAfter = 0;
+    IRowStream *out = nullptr;
 
 public:
     CDiskNormalizeSlave(CGraphElementBase *_container) 
         : CDiskReadSlaveActivityRecord(_container)
     {
         helper = (IHThorDiskNormalizeArg *)queryHelper();
-        if (helper->getFlags() & TDRlimitskips)
-            limit = RCMAX;
-        else
-            limit = (rowcount_t)helper->getRowLimit();
-        stopAfter = (rowcount_t)helper->getChooseNLimit();
-        out = NULL;
+        appendOutputLinked(this);
     }
     ~CDiskNormalizeSlave()
     {
@@ -611,7 +608,6 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         CDiskReadSlaveActivityRecord::init(data, slaveData);
-        appendOutputLinked(this);
         partHandler.setown(new CNormalizePartHandler(*this));
     }
 
@@ -632,6 +628,11 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         CDiskReadSlaveActivityRecord::start();
+        if (helper->getFlags() & TDRlimitskips)
+            limit = RCMAX;
+        else
+            limit = (rowcount_t)helper->getRowLimit();
+        stopAfter = (rowcount_t)helper->getChooseNLimit();
         out = createSequentialPartHandler(partHandler, partDescs, false);
     }
     virtual bool isGrouped() const override { return false; }
@@ -727,6 +728,7 @@ public:
         helper = (IHThorDiskAggregateArg *)queryHelper();
         eoi = false;
         allocator.set(queryRowAllocator());
+        appendOutputLinked(this);
     }
 
 // IThorSlaveActivity
@@ -735,7 +737,6 @@ public:
         CDiskReadSlaveActivityRecord::init(data, slaveData);
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJobChannel().deserializeMPTag(data);
-        appendOutputLinked(this);
         partHandler.setown(new CDiskSimplePartHandler(*this));
     }
     virtual void abort()
@@ -834,18 +835,14 @@ class CDiskCountSlave : public CDiskReadSlaveActivityRecord
     typedef CDiskReadSlaveActivityRecord PARENT;
 
     IHThorDiskCountArg *helper;
-    rowcount_t stopAfter, preknownTotalCount;
-    bool eoi, totalCountKnown;
+    rowcount_t stopAfter = 0, preknownTotalCount = 0;
+    bool eoi = false, totalCountKnown = false;
 
 public:
     CDiskCountSlave(CGraphElementBase *_container) : CDiskReadSlaveActivityRecord(_container)
     {
         helper = (IHThorDiskCountArg *)queryHelper();
-        totalCountKnown = eoi = false;
-        preknownTotalCount = 0;
-        mpTag = TAG_NULL;
-        stopAfter = (rowcount_t)helper->getChooseNLimit();
-        totalCountKnown = false;
+        appendOutputLinked(this);
     }
 
 // IThorSlaveActivity
@@ -856,7 +853,6 @@ public:
             mpTag = container.queryJobChannel().deserializeMPTag(data);
         data.read(totalCountKnown);
         data.read(preknownTotalCount);
-        appendOutputLinked(this);
         partHandler.setown(new CDiskSimplePartHandler(*this));
     }
     virtual void abort()
@@ -878,6 +874,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         CDiskReadSlaveActivityRecord::start();
+        stopAfter = (rowcount_t)helper->getChooseNLimit();
         eoi = false;
         if (!helper->canMatchAny())
         {
@@ -969,6 +966,7 @@ public:
     {
         helper = (IHThorDiskGroupAggregateArg *)queryHelper();
         merging = false;
+        appendOutputLinked(this);
     }
 
 // IHThorGroupAggregateCallback
@@ -981,7 +979,6 @@ public:
     {
         CDiskReadSlaveActivityRecord::init(data, slaveData);
         mpTag = container.queryJobChannel().deserializeMPTag(data);
-        appendOutputLinked(this);
         partHandler.setown(new CDiskSimplePartHandler(*this));
         allocator.set(queryRowAllocator());
     }

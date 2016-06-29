@@ -277,9 +277,9 @@ public:
     {
         return ctx->getLibraryGraph(extra, parentActivity);
     }
-    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed) const
+    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed, unsigned _strands) const
     {
-        ctx->noteProcessed(subgraphId, activityId, _idx, _processed);
+        ctx->noteProcessed(subgraphId, activityId, _idx, _processed, _strands);
     }
     virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
     {
@@ -348,7 +348,7 @@ protected:
 // General activity statistics
 
 static const StatisticsMapping actStatistics(StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
-                                              StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped, StKindNone);
+                                              StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped, StNumStrands, StKindNone);
 static const StatisticsMapping joinStatistics(&actStatistics, StNumAtmostTriggered, StKindNone);
 static const StatisticsMapping keyedJoinStatistics(&joinStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                     StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
@@ -1013,7 +1013,7 @@ public:
         if (ctx)
         {
             if (processed)
-                ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed);
+                ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed, 0);
             ctx->mergeActivityStats(stats, factory->querySubgraphId(), activityId, totalCycles, localCycles);
         }
         basehelper.Release();
@@ -1674,6 +1674,18 @@ public:
         active = 0;
     }
 
+    ~CRoxieServerStrandedActivity()
+    {
+        if (strands.ordinality() > 1)
+        {
+            if (factory && !debugging)
+                factory->noteProcessed(0, processed);
+            if (ctx)
+                ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed, strands.ordinality());
+            processed = 0;  // To avoid reprocessing in base destructor
+        }
+    }
+
     virtual void onCreate(IHThorArg *_colocalArg)
     {
         CRoxieServerActivity::_onCreate(_colocalArg, strands.ordinality());
@@ -1834,7 +1846,10 @@ protected:
     void onStartStrands()
     {
         ForEachItemIn(idx, strands)
+        {
             strands.item(idx).start();
+            active++;
+        }
     }
 };
 
@@ -4652,13 +4667,15 @@ public:
                                     buf.read(childId);
                                     if (*logInfo == LOG_CHILDCOUNT)
                                     {
-                                        unsigned childProcessed;
                                         unsigned idx;
-                                        buf.read(childProcessed);
+                                        unsigned childProcessed;
+                                        unsigned childStrands;
                                         buf.read(idx);
+                                        buf.read(childProcessed);
+                                        buf.read(childStrands);
                                         if (traceLevel > 5)
-                                            activity.queryLogCtx().CTXLOG("Processing ChildCount %d idx %d for child %d subgraph %d", childProcessed, idx, childId, graphId);
-                                        activity.queryContext()->noteProcessed(graphId, childId, idx, childProcessed);
+                                            activity.queryLogCtx().CTXLOG("Processing ChildCount %d idx %d strands %d for child %d subgraph %d", childProcessed, idx, childStrands, childId, graphId);
+                                        activity.queryContext()->noteProcessed(graphId, childId, idx, childProcessed, childStrands);
                                     }
                                     else
                                     {
@@ -8019,8 +8036,6 @@ public:
         }
         else if (stricmp(algorithmName, "heapsort")==0)
             sortAlgorithm = heapSortAlgorithm; // NOTE - we do allow UNSTABLE('heapsort') in order to facilitate runtime selection. Also explicit selection of heapsort overrides request to spill
-        else if (stricmp(algorithmName, "insertionsort")==0)
-            sortAlgorithm = insertionSortAlgorithm;
         else if (stricmp(algorithmName, "mergesort")==0)
             sortAlgorithm = (sortFlags & TAFspill) ? spillingMergeSortAlgorithm : mergeSortAlgorithm;
         else if (stricmp(algorithmName, "parmergesort")==0)
@@ -8554,7 +8569,7 @@ public:
             {
                 parent->factory->noteProcessed(oid, processed);
                 if (parent->ctx)
-                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed);
+                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed, 0);
             }
         }
 
@@ -15694,7 +15709,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
             {
                 parent->factory->noteProcessed(oid, processed);
                 if (parent->ctx)
-                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed);
+                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed, 0);
             }
         }
 
@@ -17738,14 +17753,18 @@ public:
                         eof = true;
                     }
                 }
-                
+
                 if (group.isItem(rightIndex))
                 {
                     const void * rhs = group.item(rightIndex++);
                     if(helper.match(lhs, rhs))
                     {
                         const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL);
-                        return ret;
+                        if(ret)
+                        {
+                            processed++;
+                            return ret;
+                        }
                     }
                 }
             }
@@ -18387,7 +18406,10 @@ private:
                             break;
                         ret = joinRecords(left, right, ++joinCounter);
                         if(ret)
+                        {
+                            processed++;
                             break;
+                        }
                     }
                     right = getRightNext();
                     ret = NULL;
@@ -27527,7 +27549,6 @@ class CcdServerTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(CcdServerTest);
         CPPUNIT_TEST(testSetup);
         CPPUNIT_TEST(testHeapSort);
-        CPPUNIT_TEST(testInsertionSort);
         CPPUNIT_TEST(testQuickSort);
         CPPUNIT_TEST(testMerge);
         CPPUNIT_TEST(testMergeDedup);
@@ -27545,6 +27566,7 @@ protected:
 
     void testSetup()
     {
+        selfTestMode = true;
         roxiemem::setTotalMemoryLimit(false, true, false, 100 * 1024 * 1024, 0, NULL, NULL);
     }
 
@@ -27721,8 +27743,6 @@ protected:
         sortAlgorithm = NULL;
         if (type==2)
             sortAlgorithm = "heapSort";
-        else if (type == 1)
-            sortAlgorithm = "insertionSort";
         else
             sortAlgorithm = "quickSort";
         DBGLOG("Testing %s activity", sortAlgorithm);
@@ -27831,10 +27851,6 @@ protected:
     {
         testSort(0);
     }
-    void testInsertionSort()
-    {
-        testSort(1);
-    }
     void testHeapSort()
     {
         testSort(2);
@@ -27918,7 +27934,7 @@ protected:
         unsigned start = msTick();
         testSplitActivity(factory, test, test, numOutputs, 0);
         testSplitActivity(factory, test12345, test12345, numOutputs, 0);
-        testSplitActivity(factory, test12345, test12345, numOutputs, 1000000);
+        testSplitActivity(factory, test12345, test12345, numOutputs, 100);
         unsigned elapsed = msTick() - start;
 
         DBGLOG("testSplit %d done in %dms", numOutputs, elapsed);

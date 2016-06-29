@@ -42,7 +42,7 @@ protected:
 class LogMsgLogReceiverThread : public LogMsgReceiverThread
 {
 public:
-    LogMsgLogReceiverThread(MPLogId _cid, INode * _child, bool _isListener) : LogMsgReceiverThread("LogMsgLogReceiver"), cid(_cid), childNode(_child), isListener(_isListener) {}
+    LogMsgLogReceiverThread(MPLogId _cid, INode * _child, bool _isListener) : LogMsgReceiverThread("LogMsgLogReceiver"), childNode(_child), cid(_cid), isListener(_isListener) {}
     int                       run();
     void                      stop();
 private:
@@ -135,7 +135,7 @@ private:
 class LinkToParentLogMsgHandler : public CInterface, implements ILogMsgHandler
 {
 public:
-    LinkToParentLogMsgHandler(MPLogId _cid, MPLogId _pid, INode * _parentNode, bool _connected) : cid(_cid), pid(_pid), parentNode(_parentNode), receiverThread(new LogMsgFilterReceiverThread(_pid, _parentNode)), connected(_connected) { receiverThread->setHandler(this); }
+    LinkToParentLogMsgHandler(MPLogId _cid, MPLogId _pid, INode * _parentNode, bool _connected) : parentNode(_parentNode), cid(_cid), pid(_pid), receiverThread(new LogMsgFilterReceiverThread(_pid, _parentNode)), connected(_connected) { receiverThread->setHandler(this); }
     ~LinkToParentLogMsgHandler() { if(connected) disconnect(); receiverThread->stop(); }
     IMPLEMENT_IINTERFACE;
     void                      handleMessage(LogMsg const & msg) const;

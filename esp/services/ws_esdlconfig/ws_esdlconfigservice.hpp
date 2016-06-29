@@ -46,6 +46,7 @@ public:
     static void addESDLDefinition(IPropertyTree * queryRegistry, const char * name, IPropertyTree * definitionInfo, StringBuffer &newId, unsigned &newSeq, const char *userid, bool deleteprev);
     static int publishESDLMethod(const char * espProcName, const char * espBindingName, const char * srvDefId, const char * methodName, IPropertyTree * attributesTree, bool readonly, StringBuffer & message);
     static int getBindingXML(const char * espProcName, const char * espBindingName, StringBuffer & bindingXml, StringBuffer & msg);
+    static IPropertyTree * getBindingTree(const char * espProcName, const char * espBindingName, StringBuffer & msg);
 
     bool onGetESDLBinding(IEspContext &context, IEspGetESDLBindingRequest &req, IEspGetESDLBindingResponse &resp);
     bool onEcho(IEspContext &context, IEspEchoRequest &req, IEspEchoResponse &resp);

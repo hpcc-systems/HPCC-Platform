@@ -554,6 +554,7 @@ public:
     bool match(IpAddress &peer, const char *query, bool isBlind, bool &access, StringBuffer &errMsg, int &errCode)
     {
         {
+            //MORE: This could use a regex class that is thread safe and remove this spin lock
             SpinBlock b(crappyUnsafeRegexLock);
             if (!queries.find(query))
                 return false;
@@ -962,7 +963,7 @@ public:
         UNIMPLEMENTED;
     }
 
-    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned priority, unsigned memused, unsigned slavesReplyLen, bool continuationNeeded)
+    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, bool continuationNeeded)
     {
     }
 
@@ -1017,7 +1018,7 @@ public:
                     try
                     {
                         queue.setown(createJobQueue(queueNames.str()));
-                        queue->connect();
+                        queue->connect(false);
                         daliHelper->noteQueuesRunning(queueNames.str());
                         while (running && daliHelper->connected())
                         {
@@ -1432,7 +1433,7 @@ public:
     {
         return queryFactory ? queryFactory->queryOptions().priority : (unsigned) -2;
     }
-    void noteQueryStats(bool failed, unsigned elapsedTime, unsigned priority)
+    void noteQueryStats(bool failed, unsigned elapsedTime)
     {
         Owned <IJlibDateTime> now = createDateTimeNow();
         unsigned y,mo,d,h,m,s,n;
@@ -1441,7 +1442,7 @@ public:
         lastQueryTime = h*10000 + m * 100 + s;
         lastQueryDate = y*10000 + mo * 100 + d;
 
-        switch(priority)
+        switch(getQueryPriority())
         {
         case 0: loQueryStats.noteQuery(failed, elapsedTime); break;
         case 1: hiQueryStats.noteQuery(failed, elapsedTime); break;
@@ -1450,9 +1451,9 @@ public:
         }
         combinedQueryStats.noteQuery(failed, elapsedTime);
     }
-    void noteQuery(const char *peer, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut, unsigned priority, bool continuationNeeded)
+    void noteQuery(const char *peer, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut, bool continuationNeeded)
     {
-        noteQueryStats(failed, elapsed, priority);
+        noteQueryStats(failed, elapsed);
         if (queryFactory)
         {
             queryFactory->noteQuery(startTime, failed, elapsed, memused, slavesReplyLen, bytesOut);
@@ -1464,7 +1465,7 @@ public:
             {
                 StringBuffer s;
                 logctx->getStats(s);
-                logctx->CTXLOG("COMPLETE: %s %s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid.get(), peer, elapsed, memused, priority, slavesReplyLen, bytesOut, continuationNeeded, s.str());
+                logctx->CTXLOG("COMPLETE: %s %s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid.get(), peer, elapsed, memused, getQueryPriority(), slavesReplyLen, bytesOut, continuationNeeded, s.str());
             }
         }
     }
@@ -1729,10 +1730,10 @@ public:
         roxieMsgCtx->ensureDebugCommandHandler().doDebugCommand(msg, &roxieMsgCtx->ensureDebuggerContext(uid), out);
     }
 
-    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned priority, unsigned memused, unsigned slavesReplyLen, bool continuationNeeded)
+    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, bool continuationNeeded)
     {
         RoxieProtocolMsgContext *roxieMsgCtx = checkGetRoxieMsgContext(msgctx);
-        roxieMsgCtx->noteQuery(peer, failed, elapsed, memused, slavesReplyLen, bytesOut, priority, continuationNeeded);
+        roxieMsgCtx->noteQuery(peer, failed, elapsed, memused, slavesReplyLen, bytesOut, continuationNeeded);
     }
 
 };

@@ -22,6 +22,7 @@ lesser version will result in an exception, normally indicating that either a gi
 plugin functions will not work when setting with an expiration for a version less than 2.6.12. In addition, whilst it is possible to use `Expire` with a version less than
 2.1.3 it is not advised due to [the change in its semantics](http://redis.io/commands/expire).
 
+*Note:* The minimum version requirement for the API hiredis to allow for redis connections to be cached is 0.13.0.
 
 Getting started
 ---------------
@@ -53,42 +54,47 @@ Here is a list of the core plugin **functions**.
 
 ###Set
 ```
-SetUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetString(  CONST VARSTRING key, CONST STRING value,  CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetBoolean( CONST VARSTRING key, BOOLEAN value,       CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetReal(    CONST VARSTRING key, REAL value,          CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetInteger( CONST VARSTRING key, INTEGER value,       CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetUnsigned(CONST VARSTRING key, UNSIGNED value,      CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-SetData(    CONST VARSTRING key, CONST DATA value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+SetUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+SetString(  CONST VARSTRING key, CONST STRING value,  CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+SetUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+SetBoolean( CONST VARSTRING key, BOOLEAN value,       CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+SetReal(    CONST VARSTRING key, REAL value,          CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+SetInteger( CONST VARSTRING key, INTEGER value,       CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+SetUnsigned(CONST VARSTRING key, UNSIGNED value,      CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+SetData(    CONST VARSTRING key, CONST DATA value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
 ```
 
 ###Get
 ```
-INTEGER8   GetInteger(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-UNSIGNED8 GetUnsigned(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-STRING      GetString(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-UNICODE    GetUnicode(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-UTF8          GetUtf8(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-BOOLEAN    GetBoolean(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-REAL          GetReal(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-DATA          GetData(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+INTEGER8   GetInteger(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+UNSIGNED8 GetUnsigned(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+STRING      GetString(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+UNICODE    GetUnicode(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+UTF8          GetUtf8(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+BOOLEAN    GetBoolean(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+REAL          GetReal(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+DATA          GetData(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+```
+
+###Numeric
+```
+INTEGER8 INCRBY(CONST VARSTRING key, INTEGER8 value = 1, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
 ```
 
 ###Utility
 ```
 BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-FlushDB(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-Delete(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-Persist(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-Expire(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
-INTEGER DBSize(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000)
+FlushDB(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+Delete(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+Persist(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+Expire(CONST VARSTRING key, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
+INTEGER DBSize(CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE)
 ```
 
 ###PUB-SUB
 ```
-UNSIGNED Publish(CONST VARSTRING keyOrChannel, CONST STRING message, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE)
-STRING Subscribe(CONST VARSTRING keyOrChannel, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE)
+UNSIGNED Publish(CONST VARSTRING keyOrChannel, CONST STRING message, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE, BOOLEAN cacheConnections = TRUE)
+STRING Subscribe(CONST VARSTRING keyOrChannel, CONST VARSTRING options, INTEGER4 database = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN lockedKey = FALSE, BOOLEAN cacheConnections = TRUE)
 ```
 
 The core points to note here are:
@@ -104,12 +110,38 @@ The core points to note here are:
    this is used in the encoding of the lock and channel. Please note however that the redis pub-sub paradigm is actually irrespective of database.
    * *c.f.* redis documentation for the following - [Exists](http://redis.io/commands/exists), [FlushDB](http://redis.io/commands/flushdb), [Delete](http://redis.io/commands/del), [Persist](http://redis.io/commands/persist), [Expire](http://redis.io/commands/expire), [DBSize](http://redis.io/commands/dbsize), [Publish](http://redis.io/commands/publish), & [Subscribe](http://redis.io/commands/subscribe).
 
+###Connection Caching
+
+To prevent unnecessary opening and closing of connections between subsequent functions calls, these connections are cached and reused. This is only true if the said connection
+is free of errors, otherwise it is closed and a new one opened. There are three cached instances per thread, storing a single connection for subscriptions, publishes, and then one
+for everything else. The caching of connections is only possible for versions of hiredis greater than the minimum version noted in the section **Installation and Dependencies**.
+The caching can be turned **ON** and **OFF** on a per function basis using the `cacheConnections` boolean passed as a function parameter.
+In addition, the following system environment setting `HPCC_REDIS_PLUGIN_CONNECTION_CACHING_LEVEL` can be set to:
+
+   * `0` - force any & all caching **OFF**
+   * `1` - allow caching of connections **(default)**.
+   * `2` - force any & all caching **ON**.
+   * `< 0 and < 2` - undefined.
+
+This environment variable must be set for the user group **hpcc** and can be done by editing /etc/profile (service restart required). 
+
+Regarding the caching of connections used purely for subscriptions, it is essential that they are successfully unsubscribed before being reused. Such an attempt to unsubscribe
+and confirm this, is limited in effort to do so, otherwise giving up and simply closing the connection and opening a new one. To aid in the tuning of this for both payload
+and system/network constraints, the following three system environment settings exist:
+
+   * `HPCC_REDIS_PLUGIN_CACHE_SUB_CONNECTIONS` - turn the caching of subscription connections **ON** or **OFF**. **Default = ON**
+   * `HPCC_REDIS_PLUGIN_UNSUBSCRIBE_READ_ATTEMPTS` - the maximum number of socket reads to attempt to receive the required unsubscribe confirmation before giving up. **Default = 2**.
+   * `HPCC_REDIS_PLUGIN_UNSUBSCRIBE_TIMEOUT` - the timeout value (ms) used for such socket reads. **Default = 100**.
+
+*Note:* For further implementation details refer to the comment associated with the definition of SubConnection::unsubscribe(...) in HPCC-Platform/plugins/redis/redis.cpp.
+
 ###The redisServer MODULE
-To avoid the cumbersome and unnecessary need to constantly pass `options` and `password` with each function call, the module `redisServer` can be imported to effectively 
-*wrap* the above functions.
+To avoid the cumbersome and unnecessary need to constantly pass `options`,
+`password`, `timeout`, and `cacheConnections` with each function call,
+the module `redisServer` can be imported to effectively *wrap* the above functions.
 ```
 IMPORT redisServer FROM lib_redis;
-myRedis := redisServer('--SERVER=127.0.0.1:6379', 'foobared');
+myRedis := redisServer('--SERVER=127.0.0.1:6379', 'foobared', 2000, FALSE);
 myRedis.SetString('myKey', 'supercalifragilisticexpialidocious');
 myRedis.GetString('myKey');
 ```

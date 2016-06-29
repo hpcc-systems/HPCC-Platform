@@ -36,6 +36,7 @@
 #endif
 
 #define MAX_RECORD_SIZE     4096                // default value
+#define OPTIMIZE_FUNCTION_ATTRIBUTE " OPTIMIZE"
 
 enum GraphLocalisation {
     GraphNeverAccess,  // This variant of an activity never accesses the parent
@@ -764,6 +765,10 @@ struct HqlCppOptions
     bool                optimizeSortAllFields;
     bool                optimizeSortAllFieldsStrict;
     bool                alwaysReuseGlobalSpills;
+    bool                forceAllDatasetsParallel;
+    bool                embeddedWarningsAsErrors;
+    bool                optimizeCriticalFunctions;
+    bool                addLikelihoodToGraph;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

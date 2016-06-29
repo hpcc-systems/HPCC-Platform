@@ -907,6 +907,19 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
 {
     HqlExprArray args;
     embedText->unwindList(args, no_comma);
+    Linked<ITypeInfo> type = current_type;
+    if (!type)
+        type.setown(makeVoidType());
+
+    if (type->getTypeCode() == type_record)
+        type.setown(makeRowType(LINK(type)));
+
+    IHqlExpression * record = queryOriginalRecord(type);
+
+    if (!checkAllowed(errpos, "cpp", "Embedded code"))
+        args.append(*createExprAttribute(_disallowed_Atom));
+    if (attribs)
+        attribs->unwindList(args, no_comma);
     if (language)
     {
         IHqlScope *pluginScope = language->queryScope();
@@ -926,19 +939,38 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
             // MORE - create an expression that calls it, and const fold it, I guess....
         }
         args.append(*createExprAttribute(languageAtom, getEmbedContextFunc.getClear()));
+        IHqlExpression *projectedAttr = queryAttribute(projectedAtom, args);
+        if (projectedAttr)
+        {
+            IHqlExpression *projectedSearch = projectedAttr->queryChild(0);
+            if (!projectedSearch || !(isStringType(projectedSearch->queryType()) || isUnicodeType(projectedSearch->queryType())))
+                reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED attribute requires a string parameter");
+            else
+            {
+                IValue *projectedSearchValue = projectedSearch->queryValue();
+                if (!projectedSearchValue )
+                {
+                    // To relax this we'd need to pass the value as a hidden parameter as we do for the other options and the embed text,
+                    // But I really can't see it being useful
+                    reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED attribute requires a constant string parameter");
+                }
+                IValue *queryText = embedText->queryValue();
+                if (queryText)
+                {
+                    StringBuffer origQueryText;
+                    queryText->getUTF8Value(origQueryText);
+                    StringBuffer search;
+                    projectedSearchValue->getUTF8Value(search);
+                    if (!strstr(origQueryText, search))
+                        reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED attribute value %s does not appear in the embed text", search.str());
+                }
+            }
+            if (!record)
+                reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED should only be used when returning a record type");
+            else if (!isSimpleRecord(record))
+                reportError(ERR_EMBEDPROJECT_INVALID, errpos, "PROJECTED requires a simple output record (no nested records or IFBLOCKs)");
+        }
     }
-    if (!checkAllowed(errpos, "cpp", "Embedded code"))
-        args.append(*createExprAttribute(_disallowed_Atom));
-    if (attribs)
-        attribs->unwindList(args, no_comma);
-    Linked<ITypeInfo> type = current_type;
-    if (!type)
-        type.setown(makeVoidType());
-
-    if (type->getTypeCode() == type_record)
-        type.setown(makeRowType(LINK(type)));
-
-    IHqlExpression * record = queryOriginalRecord(type);
     OwnedHqlExpr result;
     if (record)
     {
@@ -10642,6 +10674,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case LEFT: msg.append("LEFT"); break;
     case LENGTH: msg.append("LENGTH"); break;
     case LIBRARY: msg.append("LIBRARY"); break;
+    case LIKELY: msg.append("LIKELY"); break;
     case LIMIT: msg.append("LIMIT"); break;
     case LINKCOUNTED: msg.append("LINKCOUNTED"); break;
     case LITERAL: msg.append("LITERAL"); break;
@@ -10682,6 +10715,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case NOBOUNDCHECK: msg.append("NOBOUNDCHECK"); break;
     case NOCASE: msg.append("NOCASE"); break;
     case NOCOMBINE: msg.append("NOCOMBINE"); break;
+    case NOCONST: msg.append("NOCONST"); break;
     case NOFOLD: msg.append("NOFOLD"); break;
     case NOHOIST: msg.append("NOHOIST"); break;
     case NOLOCAL: msg.append("NOLOCAL"); break;
@@ -10825,6 +10859,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TYPEOF: msg.append("TYPEOF"); break;
     case UNGROUP: msg.append("UNGROUP"); break;
     case UNICODEORDER: msg.append("UNICODEORDER"); break;
+    case UNLIKELY: msg.append("UNLIKELY"); break;
     case UNORDERED: msg.append("UNORDERED"); break;
     case UNSIGNED: msg.append("UNSIGNED"); break;
     case UNSORTED: msg.append("UNSORTED"); break;
@@ -10999,7 +11034,7 @@ void HqlGram::simplifyExpected(int *expected)
                        FAILCODE, FAILMESSAGE, FROMUNICODE, __GROUPED__, ISNULL, ISVALID, XMLDECODE, XMLENCODE, XMLTEXT, XMLUNICODE,
                        MATCHED, MATCHLENGTH, MATCHPOSITION, MATCHTEXT, MATCHUNICODE, MATCHUTF8, NOFOLD, NOHOIST, NOTHOR, OPT, REGEXFIND, REGEXREPLACE, RELATIONSHIP, SEQUENTIAL, SKIP, TOUNICODE, UNICODEORDER, UNSORTED,
                        KEYUNICODE, TOK_TRUE, TOK_FALSE, BOOL_CONST, NOT, EXISTS, WITHIN, LEFT, RIGHT, SELF, '[', HTTPCALL, SOAPCALL, ALL, TOK_ERROR, TOK_CATCH, __COMMON__, __COMPOUND__, RECOVERY, CLUSTERSIZE, CHOOSENALL, BNOT, STEPPED, ECLCRC, NAMEOF,
-                       TOXML, TOJSON, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, 0);
+                       TOXML, TOJSON, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, LIKELY, UNLIKELY, 0);
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
     simplify(expected, DICTIONARY_ID, DICTIONARY_FUNCTION, DICTIONARY, 0);

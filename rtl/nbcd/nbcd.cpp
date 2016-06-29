@@ -151,7 +151,7 @@ Decimal & Decimal::divide(const Decimal & other)
 
     int nd1 = hi1+1-lo1;
     int nd2 = hi2+1-lo2;
-    int hi = (hi1-hi2)+zeroDigit;
+    int hi = (hi1-hi2)+zeroDigit; // how many digits will there be in the result
     int iters = hi+1;
     if (hi < 0)
     {
@@ -168,9 +168,9 @@ Decimal & Decimal::divide(const Decimal & other)
     lsb = 0;
     msb = hi >= maxDigits ? maxDigits-1 : hi;
 
-    const byte spare = 2;
+    const byte spare = 3;
     byte temp[maxDigits*2 + 3];
-    unsigned numeratorDigits = hi + 1 + nd2;
+    unsigned numeratorDigits = (hi + 1) + nd2;
     memset(temp, 0, numeratorDigits+spare);             // ensure two zero in msb, and below lsb.  Also 2 zeros for looking 2 bytes ahead..
 
     byte * numerator = temp+spare;
@@ -227,6 +227,38 @@ Decimal & Decimal::divide(const Decimal & other)
             digits[iter] = q;
     }
     //MORE: This should really calculate the next digit, and conditionally round the least significant digit.
+    if (true)
+    {
+        //The following guess for q is never too small, may be 1 too large
+        byte * curNumerator = numerator-1;
+        unsigned numerator012 = curNumerator[nd2] * 100 + curNumerator[nd2-1] * 10 + curNumerator[nd2-2];
+        unsigned q = numerator012 / divisor01;
+        if (q == 5)
+        {
+            unsigned carry = 0;
+            for (int i = 0; i < nd2; i++)
+            {
+                int next = 90 + curNumerator[i] - divisor[i] * q - carry;
+                carry = 9 - next / 10;
+            }
+            carry -= curNumerator[nd2];
+            if (carry)
+                q--;
+        }
+
+        if (q >= 5)
+        {
+            for (int roundDigit=0; roundDigit < iters; roundDigit++)
+            {
+                unsigned next = digits[roundDigit]+1;
+                if (next == 10)
+                    next = 0;
+                digits[roundDigit] = next;
+                if (next != 0)
+                    break;
+            }
+        }
+    }
 
     negative ^= other.negative;
     return *this;
@@ -305,19 +337,29 @@ Decimal & Decimal::multiply(const Decimal & other)
         }
     }
 
-    //Now copy the results, taking cary of the carries 
+    //Now copy the results, taking care of the carries
     unsigned carry = 0;
     int j;
     for (j = low1+low2 - zeroDigit; j < lowt; j++)
-        carry = (temp[j+zeroDigit]+carry)/10;
+    {
+        unsigned next = temp[j+zeroDigit]+carry;
+        //Round the least significant digit
+        if (j+1 == lowt)
+            next += 5;
+        carry = next / 10;
+    }
+
     for (j = lowt; j <= hight; j++)
     {
         div_t next = div(temp[j+zeroDigit]+carry, 10);
         digits[j] = next.rem;
         carry = next.quot;
     }
-    if ((hight < maxDigits-1) && (carry != 0))
+    while ((hight < maxDigits-1) && (carry != 0))
+    {
         digits[++hight] = carry % 10;
+        carry = carry / 10;
+    }
 
     lsb = lowt;
     msb = hight;

@@ -256,20 +256,20 @@ protected:
     Owned<IThorBoundLoopGraph> loopGraph; // really only here as master and slave derivatives set/use
     MemoryBuffer createCtxMb, startCtxMb;
     bool haveCreateCtx, haveStartCtx;
+    unsigned maxCores;
 
 public:
     IMPLEMENT_IINTERFACE;
 
     const void *queryFindParam() const { return &queryId(); } // for SimpleHashTableOf
 
-    bool alreadyUpdated, hasNullInput, newWhichBranch;
+    bool alreadyUpdated;
     EclHelperFactory helperFactory;
 
     CIOConnectionArray inputs, outputs, connectedInputs, connectedOutputs;
 
     CGraphArray associatedChildGraphs;
     unsigned whichBranch;
-    Owned<IBitSet> whichBranchBitSet;
     Owned<IBitSet> sentActInitData;
 
     CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml);
@@ -337,10 +337,10 @@ public:
         return NULL;
     }
     IHThorArg *queryHelper() const { return baseHelper; }
+    unsigned queryMaxCores() const { return maxCores; }
 
     IPropertyTree &queryXGMML() const { return *xgmml; }
     const activity_id &queryOwnerId() const { return ownerId; }
-    void createActivity(size32_t parentExtractSz, const byte *parentExtract);
 //
     const ThorActivityKind getKind() const { return kind; }
     const activity_id &queryId() const { return id; }
@@ -349,9 +349,9 @@ public:
         dst.append(eclText.get());
         return dst;
     }
-    virtual bool prepareContext(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async);
+    virtual bool prepareContext(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async, bool connectOnly);
+    CActivityBase *queryActivity() { return activity; }
 //
-    virtual CActivityBase *queryActivity(bool checkNull=false) { return activity; }
     virtual void initActivity();
     virtual CActivityBase *factory(ThorActivityKind kind) { assertex(false); return NULL; }
     virtual CActivityBase *factory() { return factory(getKind()); }
@@ -435,6 +435,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
     CGraphTable childGraphsTable;
     CGraphArrayCopy childGraphs;
     Owned<IGraphTempHandler> tmpHandler;
+    bool initialized = false;
 
     void clean();
 
@@ -540,12 +541,10 @@ protected:
     Owned<IThorGraphResults> localResults, graphLoopResults;
     CGraphBase *owner, *parent;
     Owned<IException> abortException;
-    CGraphElementArrayCopy ifs;
     Owned<IPropertyTree> node;
     IBarrier *startBarrier, *waitBarrier, *doneBarrier;
     mptag_t mpTag, startBarrierTag, waitBarrierTag, doneBarrierTag;
-    bool created, connected, started, aborted, graphDone, prepared, sequential;
-    bool reinit, sentInitData, sentStartCtx;
+    bool connected, started, aborted, graphDone, prepared, sequential;
     CJobBase &job;
     CJobChannel &jobChannel;
     graph_id graphId;
@@ -554,6 +553,7 @@ protected:
     MemoryBuffer parentExtractMb; // retain copy, used if slave transmits to master (child graph 1st time initialization of global graph)
     unsigned counter;
     CReplyCancelHandler graphCancelHandler;
+    bool loopBodySubgraph;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -566,6 +566,7 @@ public:
     const void *queryFindParam() const { return &queryGraphId(); } // for SimpleHashTableOf
 
     virtual void init() { }
+    void onCreate();
     void GraphPrintLog(const char *msg, ...) __attribute__((format(printf, 2, 3)));
     void GraphPrintLog(IException *e, const char *msg, ...) __attribute__((format(printf, 3, 4)));
     void GraphPrintLog(IException *e);
@@ -579,13 +580,15 @@ public:
     CGraphBase *queryParent() { return parent?parent:this; }
     IMPServer &queryMPServer() const;
     bool syncInitData();
+    inline void setInitialized() { initialized = true; }
+    inline bool isInitialized() const { return initialized; }
     bool isComplete() const { return complete; }
     bool isPrepared() const { return prepared; }
     bool isGlobal() const { return global; }
-    bool isCreated() const { return created; }
     bool isStarted() const { return started; }
     bool isLocalOnly() const; // this graph and all upstream dependencies
     bool isLocalChild() const { return localChild; }
+    bool isLoopSubGraph() const { return loopBodySubgraph; }
     void setCompleteEx(bool tf=true) { complete = tf; }
     void setGlobal(bool tf) { global = tf; }
     void setLogging(bool tf);
@@ -620,7 +623,7 @@ public:
     {
         return new CGraphElementIterator(containers);
     }
-    IThorActivityIterator *getConnectedIterator();
+    IThorActivityIterator *getConnectedIterator(bool branchOnConditional=true);
     IThorActivityIterator *getSinkIterator() const
     {
         return new CGraphElementArrayIterator(activeSinks);
@@ -690,7 +693,6 @@ public:
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract);
     virtual bool serializeStats(MemoryBuffer &mb) { return false; }
     virtual bool prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async);
-    virtual void create(size32_t parentExtractSz, const byte *parentExtract);
     virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract);
     virtual void start() = 0;
     virtual bool wait(unsigned timeout);
@@ -763,7 +765,6 @@ protected:
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     Owned<IContextLogger> logctx;
     Owned<IPerfMonHook> perfmonhook;
-    size32_t oldNodeCacheMem;
     CIArrayOf<CJobChannel> jobChannels;
     OwnedMalloc<unsigned> jobChannelSlaveNumbers;
     OwnedMalloc<unsigned> jobSlaveChannelNum;
@@ -935,7 +936,7 @@ public:
     void wait();
     ITimeReporter &queryTimeReporter() { return *timeReporter; }
     virtual CGraphBase *createGraph() = 0;
-    void startGraph(CGraphBase &graph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract);
+    void startGraph(CGraphBase &graph, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract);
     INode *queryMyNode();
     unsigned queryChannel() const { return channel; }
     bool isPrimary() const { return 0 == channel; }
@@ -1004,7 +1005,6 @@ protected:
     size32_t parentExtractSz;
     const byte *parentExtract;
     bool receiving, cancelledReceive, reInit;
-    unsigned maxCores; // NB: only used by acts that sort at the moment
     Owned<IThorGraphResults> ownedResults; // NB: probably only to be used by loop results
 
 public:
@@ -1031,7 +1031,7 @@ public:
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
     bool firstNode() { return 1 == container.queryJobChannel().queryMyRank(); }
     bool lastNode() { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }
-    unsigned queryMaxCores() const { return maxCores; }
+    unsigned queryMaxCores() const { return container.queryMaxCores(); }
     IThorRowInterfaces *getRowInterfaces();
     IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
 

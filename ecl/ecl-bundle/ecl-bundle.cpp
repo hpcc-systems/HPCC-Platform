@@ -42,7 +42,7 @@
 
 
 static bool optVerbose;
-
+static StringBuffer eclccpath;
 
 /*
  * Version comparison code.
@@ -112,8 +112,26 @@ unsigned doPipeCommand(StringBuffer &output, const char *cmd, const char *args, 
     }
     unsigned ret = runExternalCommand(output, runcmd, input);
     if (optVerbose && (ret > 0))
-        printf("%s return code was %d", cmd, ret);
+        printf("%s return code was %d\n", cmd, ret);
     return ret;
+}
+
+static const char *queryEclccPath()
+{
+    if (!eclccpath.length())
+    {
+        const char *envpath = getenv("ECLCC_PATH");
+        if (envpath)
+            eclccpath.append(envpath);
+        else
+        {
+            splitDirTail(queryCurrentProcessPath(), eclccpath);
+            eclccpath.append("eclcc");
+        }
+        if (optVerbose)
+            printf("Using eclcc path %s\n", eclccpath.str());
+    }
+    return eclccpath.str();
 }
 
 static bool platformVersionDone = false;
@@ -124,7 +142,7 @@ static const char *queryPlatformVersion()
     if (!platformVersionDone)
     {
         StringBuffer output;
-        doPipeCommand(output, "eclcc", "--nologfile --version", NULL);
+        doPipeCommand(output, queryEclccPath(), "--nologfile --version", NULL);
         RegExpr re("_[0-9]+[.][0-9]+[.][0-9]+");
         const char *found = re.find(output);
         if (!found)
@@ -133,6 +151,7 @@ static const char *queryPlatformVersion()
     }
     return platformVersion.str();
 }
+
 
 static void extractValueFromEnvOutput(StringBuffer &path, const char *specs, const char *name)
 {
@@ -354,7 +373,7 @@ public:
                                     " [ (UTF8) COUNT(b.authors) ] + B.authors + "
                                     " [ (UTF8) COUNT(B.dependsOn) ] + B.dependsOn + "
                                     " [ (UTF8) #IFDEFINED(B.platformVersion, '')]", bundleName.str());
-            if (doPipeCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
+            if (doPipeCommand(output, queryEclccPath(), eclOpts.str(), bundleCmd) > 0)
                 throw MakeStringException(0, "%s cannot be parsed as a bundle\n", bundle);
             // output should contain [ 'name', 'version', etc ... ]
             if (optVerbose)
@@ -485,7 +504,7 @@ public:
                                 "#END\n"
                 , cleanName.str());
         StringBuffer output;
-        if (doPipeCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
+        if (doPipeCommand(output, queryEclccPath(), eclOpts.str(), bundleCmd) > 0)
         {
             printf("%s\n", output.str());
             printf("%s selftests cannot be compiled\n", cleanName.str());
@@ -962,7 +981,9 @@ protected:
     void getCompilerPaths()
     {
         StringBuffer output;
-        doPipeCommand(output, "eclcc", "--nologfile -showpaths", NULL);
+        unsigned retCode = doPipeCommand(output, queryEclccPath(), "--nologfile -showpaths", NULL);
+        if (retCode == START_FAILURE)
+            throw makeStringExceptionV(0, "FATAL: Could not locate eclcc command");
         extractValueFromEnvOutput(bundlePath, output, ECLCC_ECLBUNDLE_PATH);
         extractValueFromEnvOutput(hooksPath, output, HPCC_FILEHOOKS_PATH);
     }

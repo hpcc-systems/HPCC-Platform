@@ -81,6 +81,14 @@ static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
             return (isFiltered && asSubQuery);
         case no_select:
             return !isTargetSelector(expr);
+        case no_selectnth:
+        {
+            IHqlExpression * ds = expr->queryChild(0);
+            if (!hasSingleRow(ds))
+                return true;
+            expr = ds;
+            break;
+        }
         case no_filter:
             expr = expr->queryChild(0);
             isFiltered = true;
@@ -827,6 +835,10 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
     //MORE: This should probably be cached in the extra info & recursed more correctly
     node_operator op = expr->getOperator();
     ITypeInfo * type = expr->queryType();
+
+    IHqlExpression * parallel = expr->queryAttribute(parallelAtom);
+    if (parallel && getIntValue(parallel->queryChild(0), 0) != 1)
+        return OptionYes;
 
     switch (op)
     {
@@ -5596,6 +5608,18 @@ void intersectDependencies(UnsignedArray & target, UnsignedArray const & d1, Uns
     }
 }
 
+static IHqlExpression * createResultsAttribute(const HqlExprArray & results)
+{
+    HqlExprArray globalResults;
+    ForEachItemIn(i, results)
+    {
+        IHqlExpression & cur = results.item(i);
+        //Only include global results - it may be possible to have a result read in a child query, from a workunit with an unknown wuid.
+        if (cur.isIndependentOfScope())
+            globalResults.append(OLINK(cur));
+    }
+    return createExprAttribute(_results_Atom, globalResults);
+}
 
 //------------------------------------------------------------------------
 
@@ -6078,7 +6102,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             inheritDependencies(&checkArgs.item(0));
             if (dependencies.resultsRead.ordinality())
             {
-                checkArgs.append(*createExprAttribute(_results_Atom, dependencies.resultsRead));
+                checkArgs.append(*createResultsAttribute(dependencies.resultsRead));
                 inheritDependencies(&checkArgs.item(1));
             }
             checkArgs.append(*createAttribute(_codehash_Atom, LINK(codehash)));
@@ -6176,6 +6200,11 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     return getValue.getClear();
 }
 
+static bool isInternalEmbedAttr(IAtom *name)
+{
+    return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom ||name == importAtom;
+}
+
 IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression * newFuncDef)
 {
     IHqlExpression * body = newFuncDef->queryChild(0);
@@ -6190,12 +6219,8 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
         funcname.append("_").append(newFuncDef->queryName()).toLowerCase();
     OwnedHqlExpr funcNameExpr = createConstant(funcname);
 
-    IHqlExpression * formals = newFuncDef->queryChild(1);
-    OwnedHqlExpr newFormals = mapInternalFunctionParameters(formals);
-
     HqlExprArray bodyArgs;
-    bodyArgs.append(*replaceParameters(ecl, formals, newFormals));
-    unwindChildren(bodyArgs, body, 1);
+    unwindChildren(bodyArgs, body, 0);
     bodyArgs.append(*createLocalAttribute());
     bodyArgs.append(*createExprAttribute(entrypointAtom, LINK(funcNameExpr)));
     OwnedHqlExpr newBody = body->clone(bodyArgs);
@@ -6204,19 +6229,92 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
 
     HqlExprArray funcdefArgs;
     funcdefArgs.append(*LINK(newBody));
-    funcdefArgs.append(*LINK(newFormals));
-    unwindChildren(funcdefArgs, newFuncDef, 2);
-    OwnedHqlExpr namedFuncDef = newFuncDef->clone(funcdefArgs);
-    inheritDependencies(namedFuncDef);
 
-    if (ecl->getOperator() == no_embedbody)
+    if (ecl->getOperator() == no_embedbody && ecl->hasAttribute(languageAtom))
+    {
+        IHqlExpression * outofline = newFuncDef->queryChild(0);
+        IHqlExpression * formals = newFuncDef->queryChild(1);
+        IHqlExpression * defaults = newFuncDef->queryChild(2);
+        assertex(outofline->getOperator() == no_outofline);
+        IHqlExpression * bodyCode = outofline->queryChild(0);
+        HqlExprArray attrArgs;
+        ForEachChild(idx, bodyCode)
+        {
+            IHqlExpression *child = bodyCode->queryChild(idx);
+            if (child->isAttribute() && !isInternalEmbedAttr(child->queryName()))
+            {
+                StringBuffer attrParam;
+                if (attrArgs.ordinality())
+                    attrParam.append(",");
+                attrParam.append(child->queryName());
+
+                IHqlExpression * value = child->queryChild(0);
+                if (value)
+                    attrParam.append("=");
+                attrArgs.append(*createConstant(attrParam));
+                if (value)
+                    attrArgs.append(*ensureExprType(value, unknownStringType));
+            }
+        }
+        OwnedHqlExpr folded;
+        if (attrArgs.length())
+        {
+            OwnedHqlExpr concat = createUnbalanced(no_concat, unknownStringType, attrArgs);
+            OwnedHqlExpr cast = ensureExprType(concat, unknownVarStringType);
+
+            // It's not legal to use parameters in the options, since it becomes ambiguous whether they should be bound to embed variables or not.
+            // Check that they didn't and give a sensible error message
+            OwnedHqlExpr boundCast = replaceInlineParameters(newFuncDef, cast);
+            if (cast != boundCast)
+                throwError(HQLERR_EmbedParamNotSupportedInOptions);
+
+            folded.setown(foldHqlExpression(cast));
+        }
+        else
+            folded.setown(createConstant(""));
+
+        HqlExprArray newFormals;
+        unwindChildren(newFormals, formals);
+        HqlExprArray attrs;
+        attrs.append(*createAttribute(_hidden_Atom));
+        newFormals.append(*createParameter(__optionsId, newFormals.length(), LINK(unknownVarStringType), attrs));
+
+        HqlExprArray newDefaults;
+        if (defaults)
+            unwindChildren(newDefaults, defaults, 0);
+        while (newDefaults.length() < formals->numChildren())
+            newDefaults.append(*createOmittedValue());
+        newDefaults.append(*folded.getClear());
+
+        IHqlExpression *query = bodyCode->queryChild(0);
+        if (!query->queryValue())
+        {
+            newFormals.append(*createParameter(__queryId, newFormals.length(), LINK(unknownUtf8Type), attrs));
+            newDefaults.append(*LINK(query));
+        }
+
+        funcdefArgs.append(*formals->clone(newFormals));
+        funcdefArgs.append(*createValueSafe(no_sortlist, makeSortListType(NULL), newDefaults));
+        unwindChildren(funcdefArgs, newFuncDef, 3);
+        OwnedHqlExpr namedFuncDef = newFuncDef->clone(funcdefArgs);
+        inheritDependencies(namedFuncDef);
         return namedFuncDef.getClear();
+    }
+    else
+    {
+        unwindChildren(funcdefArgs, newFuncDef, 1);
+        OwnedHqlExpr namedFuncDef = newFuncDef->clone(funcdefArgs);
+        inheritDependencies(namedFuncDef);
 
-    WorkflowItem * item = new WorkflowItem(namedFuncDef);
-    workflowOut->append(*item);
-    OwnedHqlExpr external = createExternalFuncdefFromInternal(namedFuncDef);
-    copyDependencies(queryBodyExtra(namedFuncDef), queryBodyExtra(external));
-    return external.getClear();
+        if (ecl->getOperator() == no_embedbody)
+            return namedFuncDef.getClear();
+
+        WorkflowItem * item = new WorkflowItem(namedFuncDef);
+        workflowOut->append(*item);
+        OwnedHqlExpr external = createExternalFuncdefFromInternal(namedFuncDef);
+        copyDependencies(queryBodyExtra(namedFuncDef), queryBodyExtra(external));
+        return external.getClear();
+    }
 }
 
 IHqlExpression * WorkflowTransformer::transformInternalCall(IHqlExpression * transformed)
@@ -6226,6 +6324,21 @@ IHqlExpression * WorkflowTransformer::transformInternalCall(IHqlExpression * tra
 
     HqlExprArray parameters;
     unwindChildren(parameters, transformed);
+
+    IHqlExpression * body = newFuncDef->queryChild(0);
+    if (body && body->getOperator() == no_outofline)
+    {
+        IHqlExpression * ecl = body->queryChild(0);
+        if (ecl->getOperator() == no_embedbody && ecl->hasAttribute(languageAtom))
+        {
+            // Copy the new default value(s) into the end of the parameters array
+            IHqlExpression *formals = newFuncDef->queryChild(1);
+            IHqlExpression *defaults = newFuncDef->queryChild(2);
+            while (parameters.length() < formals->numChildren())
+                parameters.append(*LINK(defaults->queryChild(parameters.length())));
+        }
+    }
+
     OwnedHqlExpr rebound = createReboundFunction(newFuncDef, parameters);
     inheritDependencies(rebound);
     copyDependencies(queryBodyExtra(newFuncDef), queryBodyExtra(rebound));
@@ -6329,7 +6442,7 @@ IHqlExpression * WorkflowTransformer::createTransformed(IHqlExpression * expr)
                         updateArgs.append(*attr.getClear());
                 }
                 if (dependencies.resultsRead.ordinality())
-                    updateArgs.append(*createExprAttribute(_results_Atom, dependencies.resultsRead));
+                    updateArgs.append(*createResultsAttribute(dependencies.resultsRead));
 
                 HqlExprArray args;
                 unwindChildren(args, transformed);
@@ -7521,6 +7634,9 @@ bool ScalarGlobalTransformer::isComplex(IHqlExpression * expr, bool checkGlobal)
         //single character substring - don't create separate items just for this, since likely to have many of them.
         if (!expr->queryChild(1)->queryValue())
             return true;
+        break;
+    case no_likely:
+    case no_unlikely:
         break;
     default:
         if (expr->isConstant())
@@ -10790,6 +10906,7 @@ HqlTreeNormalizer::HqlTreeNormalizer(HqlCppTranslator & _translator) : NewHqlTra
     options.constantFoldNormalize = translatorOptions.constantFoldNormalize;
     options.allowActivityForKeyedJoin = translatorOptions.allowActivityForKeyedJoin;
     options.implicitSubSort = translatorOptions.implicitBuildIndexSubSort;
+    options.forceAllDatasetsParallel = translatorOptions.forceAllDatasetsParallel;
     errorProcessor = &translator.queryErrorProcessor();
     nextSequenceValue = 1;
 }
@@ -11854,6 +11971,29 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
         if (body == transformedBody)
             return LINK(expr);
         return expr->cloneAnnotation(transformedBody);
+    }
+
+    //This option is purely for regression testing, to ensure attributes are not lost, and no infinite recursion occurs.
+    if (options.forceAllDatasetsParallel)
+    {
+        if (expr->isDataset() && !expr->hasAttribute(parallelAtom))
+        {
+            switch (op)
+            {
+            case no_colon:
+            case no_rows:
+            case no_select:
+            case no_call:
+            case no_externalcall:
+            case no_matchattr:
+                break;
+            default:
+                {
+                    OwnedHqlExpr parallel = appendAttribute(expr, parallelAtom);
+                    return transform(parallel);
+                }
+            }
+        }
     }
 
     //MORE: Types of all pattern attributes should also be normalized.  Currently they aren't which causes discrepancies between types

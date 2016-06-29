@@ -19,7 +19,6 @@
 
 #include "jlib.hpp"
 #include "jlog.hpp"
-#include "jmalloc.hpp"
 #include "jmutex.hpp"
 #include "jcrc.hpp"
 #include "thexception.hpp"

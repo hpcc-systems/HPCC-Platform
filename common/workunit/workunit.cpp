@@ -140,17 +140,16 @@ static bool checkWuSecAccess(IConstWorkUnit &cw, ISecManager *secmgr, ISecUser *
 }
 static bool checkWuSecAccess(const char *wuid, ISecManager *secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
 {
-    StringBuffer wuRoot;
-    Owned<IRemoteConnection> conn = querySDS().connect(getXPath(wuRoot, wuid).str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-    if (conn)
+    if (!secmgr || !secuser)
+        return true;
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+    bool ret=secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, cw->queryWuScope())>=required;
+    if (!ret && (log || excpt))
     {
-        Owned<IPropertyTree> ptree=conn->getRoot();
-        return checkWuScopeSecAccess(ptree->queryProp("@scope"), secmgr, secuser, required, action, excpt, log);
+        wuAccessError(secuser->getName(), action, cw->queryWuScope(), cw->queryWuid(), excpt, log);
     }
-
-    if (log || excpt)
-        wuAccessError(secuser ? secuser->getName() : NULL, action, "Unknown", NULL, excpt, log);
-    return false;
+    return ret;
 }
 
 void doDescheduleWorkkunit(char const * wuid)
@@ -1425,6 +1424,10 @@ public:
             { return c->updateStats(graphName, creatorType, creator, subgraph); }
     virtual void clearGraphProgress() const
             { c->clearGraphProgress(); }
+    virtual IStringVal & getAbortBy(IStringVal & str) const
+            { return c->getAbortBy(str); }
+    virtual unsigned __int64 getAbortTimeStamp() const
+            { return c->getAbortTimeStamp(); }
 
 
     virtual void clearExceptions()
@@ -1483,6 +1486,8 @@ public:
             { c->setTracingValue(propname, value); }
     virtual void setTracingValueInt(const char * propname, int value)
             { c->setTracingValueInt(propname, value); }
+    virtual void setTracingValueInt64(const char * propname, __int64 value)
+            { c->setTracingValueInt64(propname, value); }
     virtual void setUser(const char * value)
             { c->setUser(value); }
     virtual void setWuScope(const char * value)
@@ -3108,7 +3113,16 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
                 SocketEndpoint targetDali = queryCoven().queryGroup().queryNode(0).endpoint();
                 IPropertyTree *daliInfo = findDaliProcess(env->queryRoot(), targetDali);
                 if (daliInfo)
-                    pluginInfo = daliInfo->queryPropTree("Plugin[@type='WorkunitServer']");
+                {
+                    const char *daliName = daliInfo->queryProp("@name");
+                    if (daliName)
+                    {
+                        VStringBuffer xpath("Software/DaliServerPlugin[@type='WorkunitServer'][@daliServers='%s']", daliName);
+                        pluginInfo = env->queryRoot()->queryPropTree(xpath);
+                    }
+                    if (!pluginInfo)
+                        pluginInfo = daliInfo->queryPropTree("Plugin[@type='WorkunitServer']");  // Compatibility with early betas of 6.0 ...
+                }
             }
             if (pluginInfo && !forceDali)
                 factory.setown( (IWorkUnitFactory *) loadPlugin(pluginInfo));
@@ -5211,7 +5225,12 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     p->setPropBool("@cloneable", true);
     p->setPropBool("@isClone", true);
     resetWorkflow();  // the source Workflow section may have had some parts already executed...
-    // resetResults(); // probably should be resetting the results as well... rather than waiting for the rerun to overwrite them
+    Owned<IPropertyTreeIterator> results = p->getElements("Results/Result");
+    ForEach(*results)
+    {
+        CLocalWUResult result(LINK(&results->query()));
+        result.setResultStatus(ResultStatusUndefined);
+    }
 }
 
 bool CLocalWorkUnit::hasDebugValue(const char *propname) const
@@ -5383,6 +5402,13 @@ void CLocalWorkUnit::setTracingValueInt(const char *propname, int value)
     CriticalBlock block(crit);
     StringBuffer prop("Tracing/");
     p->setPropInt(prop.append(propname).str(), value); 
+}
+
+void CLocalWorkUnit::setTracingValueInt64(const char *propname, __int64 value)
+{
+    CriticalBlock block(crit);
+    VStringBuffer prop("Tracing/%s", propname);
+    p->setPropInt64(prop.str(), value);
 }
 
 IConstWUQuery* CLocalWorkUnit::getQuery() const
@@ -7739,7 +7765,14 @@ void CLocalWUResult::setResultStatus(WUResultStatus status)
 {
     setEnum(p, "@status", status, resultStatuses);
     if (status==ResultStatusUndefined)
+    {
         p->removeProp("Value");
+        p->removeProp("totalRowCount");
+        p->removeProp("rowCount");
+        p->removeProp("@format");
+        p->removeProp("@tempFileNmae");
+        p->removeProp("logicalName");
+    }
 }
 
 void CLocalWUResult::setResultName(const char *s)
@@ -8785,8 +8818,19 @@ extern WORKUNIT_API void secSubmitWorkUnit(const char *wuid, ISecManager &secmgr
 
 extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr, ISecUser &secuser)
 {
-    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Write, "Submit", true, true))
-        abortWorkUnit(wuid);
+    if (!checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Write, "Submit", true, true))
+        return;
+
+    abortWorkUnit(wuid);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+    if(!cw)
+        return;
+
+    WorkunitUpdate wu(&cw->lock());
+    const char *abortBy = secuser.getName();
+    if (abortBy && *abortBy)
+        wu->setTracingValue("AbortBy", abortBy);
+    wu->setTracingValueInt64("AbortTimeStamp", getTimeStampNowValue());
 }
 
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
@@ -9074,6 +9118,19 @@ unsigned CLocalWorkUnit::addLocalFileUpload(LocalFileUploadType type, char const
     Owned<CLocalFileUpload> upload = new CLocalFileUpload(id, type, source, destination, eventTag);
     s->addPropTree("LocalFileUpload", upload->getTree());
     return id;
+}
+
+IStringVal & CLocalWorkUnit::getAbortBy(IStringVal & str) const
+{
+    CriticalBlock block(crit);
+    str.set(p->queryProp("Tracing/AbortBy"));
+    return str;
+}
+
+unsigned __int64 CLocalWorkUnit::getAbortTimeStamp() const
+{
+    CriticalBlock block(crit);
+    return p->getPropInt64("Tracing/AbortTimeStamp", 0);
 }
 
 #if 0

@@ -294,11 +294,13 @@ void CESPServerLoggingAgent::filterLogContent(IEspUpdateLogRequestWrap* req)
     const char* logContent = req->getUpdateLogRequest();
     Owned<IPropertyTree> updateLogRequestTree = createPTree("UpdateLogRequest");
 
+    StringBuffer source;
     if (groupFilters.length() < 1)
     {//No filter
         if (logContent && *logContent)
         {
             Owned<IPropertyTree> pTree = createPTreeFromXMLString(logContent);
+            source = pTree->queryProp("Source");
             updateLogRequestTree->addPropTree(pTree->queryName(), LINK(pTree));
         }
         else
@@ -310,6 +312,7 @@ void CESPServerLoggingAgent::filterLogContent(IEspUpdateLogRequestWrap* req)
             const char* backEndResp = req->getBackEndResponse();
             if (!espContext && !userContext && !userRequest && (!userResp || !*userResp) && (!backEndResp || !*backEndResp))
                 throw MakeStringException(EspLoggingErrors::UpdateLogFailed, "Failed to read log content");
+            source = userContext->queryProp("Source");
 
             StringBuffer espContextXML, userContextXML, userRequestXML;
             IPropertyTree* logContentTree = ensurePTree(updateLogRequestTree, "LogContent");
@@ -344,6 +347,7 @@ void CESPServerLoggingAgent::filterLogContent(IEspUpdateLogRequestWrap* req)
         if (logContent && *logContent)
         {
             Owned<IPropertyTree> originalContentTree = createPTreeFromXMLString(logContent);
+            source = originalContentTree->queryProp("Source");
             filterLogContentTree(groupFilters.item(0).getFilters(), originalContentTree, logContentTree, logContentEmpty);
         }
         else
@@ -354,7 +358,10 @@ void CESPServerLoggingAgent::filterLogContent(IEspUpdateLogRequestWrap* req)
                 if (group == ESPLCGESPContext)
                     originalContentTree.setown(req->getESPContext());
                 else if (group == ESPLCGUserContext)
+                {
                     originalContentTree.setown(req->getUserContext());
+                    source = originalContentTree->queryProp("Source");
+                }
                 else if (group == ESPLCGUserReq)
                     originalContentTree.setown(req->getUserRequest());
                 else //group = ESPLCGUserResp
@@ -401,6 +408,9 @@ void CESPServerLoggingAgent::filterLogContent(IEspUpdateLogRequestWrap* req)
         if (logContentEmpty)
             throw MakeStringException(EspLoggingErrors::UpdateLogFailed, "Failed to read log content");
     }
+    if (!source.isEmpty())
+        updateLogRequestTree->addProp("LogContent/Source", source.str());
+
     const char* option = req->getOption();
     if (option && *option)
         updateLogRequestTree->addProp("Option", option);

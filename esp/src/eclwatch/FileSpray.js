@@ -196,7 +196,7 @@ define([
             6: "finished",
             7: "monitoring",
             8: "aborting",
-            999: "deleted"
+            999: "not found"
         },
 
         isComplete: function (state) {
@@ -317,6 +317,9 @@ define([
         Despray: function (params) {
             return ESPRequest.send("FileSpray", "Despray", params);
         },
+        Replicate: function (params) {
+          return ESPRequest.send("FileSpray", "Replicate", params);  
+        },
         Copy: function (params) {
             return ESPRequest.send("FileSpray", "Copy", params);
         },
@@ -333,7 +336,7 @@ define([
                                     result: {
                                         Wuid: params.request.Wuid,
                                         State: 999,
-                                        StateMessage: "deleted"
+                                        StateMessage: "not found"
                                     }
                                 }
                             });

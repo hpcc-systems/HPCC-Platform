@@ -62,7 +62,7 @@ if(MYSQLEMBED)
     endif()
 endif()
 
-if(PLATFORM)
+if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/mysql.ecllib
         DESTINATION plugins

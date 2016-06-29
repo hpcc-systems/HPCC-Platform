@@ -191,7 +191,7 @@ public:
         inputProgress.setown(new ProgressInfo(queryJob()));
         reInit = 0 != (indexBaseHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
-    virtual void init()
+    virtual void init() override
     {
         CMasterActivity::init();
         nofilter = false;
@@ -318,7 +318,7 @@ public:
     {
         helper = (IHThorIndexReadArg *)queryHelper();
     }
-    virtual void init()
+    virtual void init() override
     {
         CIndexReadBase::init();
         if (!container.queryLocalOrGrouped())
@@ -353,6 +353,10 @@ public:
         helper = (IHThorIndexCountArg *)queryHelper();
         totalCount = 0;
         totalCountKnown = false;
+    }
+    virtual void init() override
+    {
+        CIndexReadBase::init();
         if (!container.queryLocalOrGrouped())
         {
             if (helper->canMatchAny())

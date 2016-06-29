@@ -39,10 +39,10 @@ public:
           keepLimit(0), skip(0), sample(0), traceEnabled(false)
     {
         helper = (IHThorTraceArg *) queryHelper();
+        appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        appendOutputLinked(this);
         traceEnabled = getOptBool(THOROPT_TRACE_ENABLED, false);
     }
     virtual void start() override

@@ -534,9 +534,15 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     m_ldap_client.setown(ldap_client);
     m_pp.setown(pp);
     int cachetimeout = cfg->getPropInt("@cacheTimeout", 5);
-    m_permissionsCache.setCacheTimeout( 60 * cachetimeout);
-    m_permissionsCache.setTransactionalEnabled(true);
-    m_permissionsCache.setSecManager(this);
+
+    if (cfg->getPropBool("@sharedCache", true))
+        m_permissionsCache.setown(CPermissionsCache::getInstance(cfg->queryProp("@name")));
+    else
+        m_permissionsCache.setown(new CPermissionsCache());
+
+    m_permissionsCache->setCacheTimeout( 60 * cachetimeout);
+    m_permissionsCache->setTransactionalEnabled(true);
+    m_permissionsCache->setSecManager(this);
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
 };
 
@@ -584,7 +590,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     if(user->getAuthenticateStatus() == AS_AUTHENTICATED)
         return true;
 
-    if(m_permissionsCache.isCacheEnabled() && !m_usercache_off && m_permissionsCache.lookup(*user))
+    if(m_permissionsCache->isCacheEnabled() && !m_usercache_off && m_permissionsCache->lookup(*user))
     {
         user->setAuthenticateStatus(AS_AUTHENTICATED);
         return true;
@@ -593,8 +599,8 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     bool ok = m_ldap_client->authenticate(*user);
     if(ok)
     {
-        if(m_permissionsCache.isCacheEnabled() && !m_usercache_off)
-            m_permissionsCache.add(*user);
+        if(m_permissionsCache->isCacheEnabled() && !m_usercache_off)
+            m_permissionsCache->add(*user);
 
         user->setAuthenticateStatus(AS_AUTHENTICATED);
     }
@@ -628,10 +634,10 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
     bool rc;
 
     time_t tctime = getThreadCreateTime();
-    if ((m_permissionsCache.isCacheEnabled() || (m_permissionsCache.isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
+    if ((m_permissionsCache->isCacheEnabled() || (m_permissionsCache->isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
     {
         bool* cached_found = (bool*)alloca(nResources*sizeof(bool));
-        int nFound = m_permissionsCache.lookup(sec_user, rlist, cached_found);
+        int nFound = m_permissionsCache->lookup(sec_user, rlist, cached_found);
         if (nFound < nResources)
         {
             IArrayOf<ISecResource> rlist2;
@@ -649,7 +655,7 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
 
             rc = m_ldap_client->authorize(rtype, sec_user, rlist2);
             if (rc)
-                m_permissionsCache.add(sec_user, rlist2);
+                m_permissionsCache->add(sec_user, rlist2);
         }
         else
             rc = true;  
@@ -703,10 +709,10 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
     bool rc;
 
     time_t tctime = getThreadCreateTime();
-    if ((m_permissionsCache.isCacheEnabled() || (m_permissionsCache.isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
+    if ((m_permissionsCache->isCacheEnabled() || (m_permissionsCache->isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
     {
         bool* cached_found = (bool*)alloca(nResources*sizeof(bool));
-        int nFound = m_permissionsCache.lookup(sec_user, rlist, cached_found);
+        int nFound = m_permissionsCache->lookup(sec_user, rlist, cached_found);
         if (nFound < nResources)
         {
             IArrayOf<ISecResource> rlist2;
@@ -724,7 +730,7 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
 
             rc = m_ldap_client->authorize(rtype, sec_user, rlist2);
             if (rc)
-                m_permissionsCache.add(sec_user, rlist2);
+                m_permissionsCache->add(sec_user, rlist2);
         }
         else
             rc = true;  
@@ -780,10 +786,10 @@ int CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser & user, co
     bool ok = false;
 
     time_t tctime = getThreadCreateTime();
-    if ((m_permissionsCache.isCacheEnabled() || (m_permissionsCache.isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
+    if ((m_permissionsCache->isCacheEnabled() || (m_permissionsCache->isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
     {
         bool* cached_found = (bool*)alloca(nResources*sizeof(bool));
-        int nFound = m_permissionsCache.lookup(user, rlist, cached_found);
+        int nFound = m_permissionsCache->lookup(user, rlist, cached_found);
         if (nFound < nResources)
         {
             IArrayOf<ISecResource> rlist2;
@@ -801,7 +807,7 @@ int CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser & user, co
 
             ok = m_ldap_client->authorize(rtype, user, rlist2);
             if (ok)
-                m_permissionsCache.add(user, rlist2);
+                m_permissionsCache->add(user, rlist2);
         }
         else
             ok = true;  
@@ -830,14 +836,14 @@ int CLdapSecManager::authorizeFileScope(ISecUser & user, const char * filescope)
         return SecAccess_Full;
 
     StringBuffer managedFilescope;
-    if(m_permissionsCache.isCacheEnabled() && !m_usercache_off)
+    if(m_permissionsCache->isCacheEnabled() && !m_usercache_off)
     {
         int accessFlags;
         //See if file scope in question is managed by LDAP permissions.
         //  If not, return default file permission (dont call out to LDAP)
         //  If is, look in cache for permission of longest matching managed scope strings. If found return that permission (no call to LDAP),
         //  otherwise a call to LDAP "authorizeFileScope" is necessary, specifying the longest matching managed scope string
-        bool gotPerms = m_permissionsCache.queryPermsManagedFileScope(user, filescope, managedFilescope, &accessFlags);
+        bool gotPerms = m_permissionsCache->queryPermsManagedFileScope(user, filescope, managedFilescope, &accessFlags);
         if (gotPerms)
             return accessFlags;
     }
@@ -1114,9 +1120,9 @@ bool CLdapSecManager::updateUserPassword(ISecUser& user, const char* newPassword
 
     //Update password if authenticated
     bool ok = m_ldap_client->updateUserPassword(user, newPassword, currPassword);
-    if(ok && m_permissionsCache.isCacheEnabled() && !m_usercache_off)
+    if(ok && m_permissionsCache->isCacheEnabled() && !m_usercache_off)
     {
-        m_permissionsCache.removeFromUserCache(user);
+        m_permissionsCache->removeFromUserCache(user);
     }
     return ok;
 }
@@ -1124,8 +1130,8 @@ bool CLdapSecManager::updateUserPassword(ISecUser& user, const char* newPassword
 bool CLdapSecManager::updateUser(const char* type, ISecUser& user)
 {
     bool ok = m_ldap_client->updateUser(type, user);
-    if(ok && m_permissionsCache.isCacheEnabled() && !m_usercache_off)
-        m_permissionsCache.removeFromUserCache(user);
+    if(ok && m_permissionsCache->isCacheEnabled() && !m_usercache_off)
+        m_permissionsCache->removeFromUserCache(user);
 
     return ok;
 }
@@ -1197,8 +1203,8 @@ void CLdapSecManager::deleteResource(SecResourceType rtype, const char * name, c
     m_ldap_client->deleteResource(rtype, name, basedn);
 
     time_t tctime = getThreadCreateTime();
-    if ((m_permissionsCache.isCacheEnabled() || (m_permissionsCache.isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
-        m_permissionsCache.remove(rtype, name);
+    if ((m_permissionsCache->isCacheEnabled() || (m_permissionsCache->isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
+        m_permissionsCache->remove(rtype, name);
 }
 
 void CLdapSecManager::renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn)
@@ -1206,8 +1212,8 @@ void CLdapSecManager::renameResource(SecResourceType rtype, const char * oldname
     m_ldap_client->renameResource(rtype, oldname, newname, basedn);
 
     time_t tctime = getThreadCreateTime();
-    if ((m_permissionsCache.isCacheEnabled() || (m_permissionsCache.isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
-        m_permissionsCache.remove(rtype, oldname);
+    if ((m_permissionsCache->isCacheEnabled() || (m_permissionsCache->isTransactionalEnabled() && tctime > 0)) && (!m_cache_off[rtype]))
+        m_permissionsCache->remove(rtype, oldname);
 }
 
 void CLdapSecManager::copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn)
@@ -1285,7 +1291,7 @@ int CLdapSecManager::queryDefaultPermission(ISecUser& user)
 
 bool CLdapSecManager::clearPermissionsCache(ISecUser& user)
 {
-    if(m_permissionsCache.isCacheEnabled())
+    if(m_permissionsCache->isCacheEnabled())
     {
         if (!authenticate(&user))
         {
@@ -1297,7 +1303,7 @@ bool CLdapSecManager::clearPermissionsCache(ISecUser& user)
             PROGLOG("User %s denied, only a superuser can clear permissions cache", user.getName());
             return false;
         }
-        m_permissionsCache.flush();
+        m_permissionsCache->flush();
     }
     return true;
 }

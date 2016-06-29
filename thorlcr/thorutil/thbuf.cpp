@@ -434,7 +434,7 @@ class CSmartRowInMemoryBuffer: public CSimpleInterface, implements ISmartRowBuff
     IThorRowInterfaces *rowIf;
     ThorRowQueue *in;
     size32_t insz;
-    SpinLock lock;
+    SpinLock lock; // MORE: This lock is held for quite long periods.  I suspect it could be significantly optimized.
     bool waitingin;
     Semaphore waitinsem;
     bool waitingout;
@@ -1767,6 +1767,7 @@ public:
 // ISharedWriteBuffer impl.
     virtual IRowWriter *getWriter()
     {
+        CThorArrayLockBlock block(rows);
         ++numWriters;
         return new CAWriter(*this);
     }

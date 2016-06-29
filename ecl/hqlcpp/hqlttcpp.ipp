@@ -1231,6 +1231,7 @@ protected:
         bool constantFoldNormalize;
         bool allowActivityForKeyedJoin;
         bool implicitSubSort;
+        bool forceAllDatasetsParallel;
     } options;
     unsigned nextSequenceValue;
     bool seenForceLocal;

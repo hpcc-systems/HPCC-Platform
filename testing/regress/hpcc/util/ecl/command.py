@@ -39,7 +39,9 @@ class ECLcmd(Shell):
         args.append('-fpickBestEngine=false')
         args.append('--target=' + cluster)
         args.append('--cluster=' + cluster)
-        args.append('--wait='+str(eclfile.getTimeout()*1000))
+        
+        retryCount = int(kwargs.pop('retryCount',  1))
+        args.append('--wait='+str(retryCount * eclfile.getTimeout() * 1000))  # ms
 
         server = kwargs.pop('server', False)
         if server:
@@ -157,7 +159,7 @@ class ECLcmd(Shell):
                     test = True
                 elif (res['state'] == 'failed') and (('error' in data) or ('exception' in data.lower())):
                     eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
-                    eclfile.diff += data
+                    eclfile.diff += repr(data)
                     test = False
                 else:
                     test = eclfile.testResults()

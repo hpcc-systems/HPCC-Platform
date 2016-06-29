@@ -439,9 +439,10 @@ void dispFDesc(IFileDescriptor *fdesc)
 
 // ================================================================================== UNIT TESTS
 
-class CDaliTests : public CppUnit::TestFixture
+class CDaliTestsStress : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE( CDaliTests );
+    CPPUNIT_TEST_SUITE( CDaliTestsStress );
+        CPPUNIT_TEST(testInit);
         CPPUNIT_TEST(testDFS);
 //        CPPUNIT_TEST(testReadAllSDS); // Ignoring this test; See comments below
         CPPUNIT_TEST(testSDSRW);
@@ -691,14 +692,17 @@ class CDaliTests : public CppUnit::TestFixture
     const IContextLogger &logctx;
 
 public:
-    CDaliTests() : logctx(queryDummyContextLogger()) {
-        init();
+    CDaliTestsStress() : logctx(queryDummyContextLogger()) {
     }
 
-    ~CDaliTests() {
+    ~CDaliTestsStress() {
         destroy();
     }
 
+    void testInit()
+    {
+        init();
+    }
     void testSDSRW()
     {
         Owned<IPropertyTree> ref = createPTree("DAREGRESS");
@@ -2361,8 +2365,8 @@ public:
 
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( CDaliTests );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliTests, "Dali" );
+CPPUNIT_TEST_SUITE_REGISTRATION( CDaliTestsStress );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliTestsStress, "Dali" );
 
 class CDaliUtils : public CppUnit::TestFixture
 {

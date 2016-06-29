@@ -28,9 +28,6 @@ public:
     explicit CFilterSlaveActivityBase(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -58,27 +55,36 @@ class CFilterSlaveActivity : public CFilterSlaveActivityBase, public CThorSteppa
 
     IHThorFilterArg *helper;
     unsigned matched;
+
 public:
     CFilterSlaveActivity(CGraphElementBase *container)
         : CFilterSlaveActivityBase(container), CThorSteppable(this)
     {
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        PARENT::init(data,slaveData);
         helper = static_cast <IHThorFilterArg *> (queryHelper());
     }
-    void start()
+    virtual void start() override
     {   
         ActivityTimer s(totalCycles, timeActivities);
         matched = 0;
-        abortSoon = !helper->canMatchAny();
-        PARENT::start();
+        if (helper->canMatchAny())
+            PARENT::start();
+        else
+        {
+            dataLinkStart();
+            abortSoon = true;
+            stop();
+        }
+    }
+    virtual void stop() override
+    {
+        if (!queryInputStopped(0))
+            PARENT::stop();
+        // else already stopped
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        while(!abortSoon)
+        while (!abortSoon)
         {
             OwnedConstThorRow row = inputStream->nextRow();
             if (!row)
@@ -92,7 +98,7 @@ public:
                 if (!row)
                     break;
             }
-            if(helper->isValid(row))
+            if (helper->isValid(row))
             {
                 matched++;
                 anyThisGroup = true;
@@ -100,9 +106,9 @@ public:
                 return row.getClear();
             }
         }
-        return NULL;
+        return nullptr;
     }
-    const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
+    virtual const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) override
     {
         try { return nextRowGENoCatch(seek, numFields, wasCompleteMatch, stepExtra); }
         CATCH_NEXTROWX_CATCH;
@@ -140,11 +146,11 @@ public:
         }
         return NULL;
     }
-    bool gatherConjunctions(ISteppedConjunctionCollector &collector) 
+    virtual bool gatherConjunctions(ISteppedConjunctionCollector &collector) override
     { 
         return input->gatherConjunctions(collector); 
     }
-    void resetEOF() 
+    virtual void resetEOF() override
     { 
         abortSoon = !helper->canMatchAny();
         anyThisGroup = false;
@@ -170,19 +176,25 @@ public:
     CFilterProjectSlaveActivity(CGraphElementBase *container) 
         : CFilterSlaveActivityBase(container)
     {
+        helper = static_cast <IHThorFilterProjectArg *> (queryHelper());
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         PARENT::init(data,slaveData);
-        helper = static_cast <IHThorFilterProjectArg *> (queryHelper());
         allocator.set(queryRowAllocator());
     }
-    void start()
+    virtual void start() override
     {   
         ActivityTimer s(totalCycles, timeActivities);
-        abortSoon = !helper->canMatchAny();
         recordCount = 0;
-        PARENT::start();
+        if (helper->canMatchAny())
+            PARENT::start();
+        else
+        {
+            dataLinkStart();
+            abortSoon = true;
+            stopInput(0);
+        }
     }
     CATCH_NEXTROW()
     {
@@ -242,8 +254,8 @@ class CFilterGroupSlaveActivity : public CFilterSlaveActivityBase, public CThorS
 public:
     CFilterGroupSlaveActivity(CGraphElementBase *container) : CFilterSlaveActivityBase(container), CThorSteppable(this)
     {
+        helper = (IHThorFilterGroupArg *)queryHelper();
         groupLoader.setown(createThorRowLoader(*this, NULL, stableSort_none, rc_allMem));
-        helper = NULL;
         spillCompInfo = 0x0;
         if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
         {
@@ -252,16 +264,17 @@ public:
             setCompFlag(compType, spillCompInfo);
         }
     }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        PARENT::init(data,slaveData);
-        helper = (IHThorFilterGroupArg *)queryHelper();
-    }
     virtual void start() override
     {   
         ActivityTimer s(totalCycles, timeActivities);
-        abortSoon = !helper->canMatchAny();
-        PARENT::start();
+        if (helper->canMatchAny())
+            PARENT::start();
+        else
+        {
+            dataLinkStart();
+            abortSoon = true;
+            stopInput(0);
+        }
     }
     CATCH_NEXTROW()
     {

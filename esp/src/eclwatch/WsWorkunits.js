@@ -32,9 +32,14 @@ define([
             service: "WsWorkunits",
             action: "WUShowScheduled",
             responseQualifier: "WUShowScheduledResponse.Workunits.ScheduledWU",
-            idProperty: "Wuid"
-    });
+            idProperty: "calculatedID",
 
+        preProcessRow: function (row) {
+            lang.mixin(row, {
+                calculatedID: row.Wuid + row.EventText
+            });
+        }
+    });
     return {
         States: {
             0: "unknown",
@@ -52,7 +57,7 @@ define([
             12: "debugging",
             13: "debug_running",
             14: "paused",
-            999: "deleted"
+            999: "not found"
         },
 
         WUCreate: function (params) {
@@ -172,7 +177,7 @@ define([
                                         ECLWorkunit: [{
                                             Wuid: params.request.Wuid,
                                             StateID: 999,
-                                            State: "deleted"
+                                            State: "not found"
                                         }]
                                     }
                                 }
@@ -194,7 +199,7 @@ define([
                                     Workunit: {
                                         Wuid: params.request.Wuid,
                                         StateID: 999,
-                                        State: "deleted"
+                                        State: "not found"
                                     }
                                 }
                             });
@@ -250,7 +255,7 @@ define([
                                 var wu = wuMap[item.Wuid];
                                 if (actionType === "delete" && item.Result === "Success") {
                                     wu.set("StateID", 999);
-                                    wu.set("State", "deleted");
+                                    wu.set("State", "not found");
                                 } else if (wu.refresh) {
                                     wu.refresh();
                                 }

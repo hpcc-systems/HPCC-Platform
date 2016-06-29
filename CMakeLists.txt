@@ -1,3 +1,4 @@
+###############################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,6 +69,9 @@ include(${HPCC_SOURCE_DIR}/version.cmake)
 if(NOT BUILD_LEVEL)
     set(BUILD_LEVEL "COMMUNITY")
 endif(NOT BUILD_LEVEL)
+if ("${BUILD_LEVEL}" STREQUAL "COMMUNITY")
+    set ( HPCC_PROJECT_ABBR  "CC")
+endif()
 
 ###
 ## Config Block
@@ -126,6 +130,7 @@ if ( PLUGIN )
     HPCC_ADD_SUBDIRECTORY (plugins/kafka "KAFKA")
     HPCC_ADD_SUBDIRECTORY (plugins/sqlite3 "SQLITE3EMBED")
     HPCC_ADD_SUBDIRECTORY (plugins/mysql "MYSQLEMBED")
+    HPCC_ADD_SUBDIRECTORY (plugins/exampleplugin "EXAMPLEPLUGIN")
 elseif ( NOT MAKE_DOCS_ONLY )
     HPCC_ADD_SUBDIRECTORY (initfiles)
     HPCC_ADD_SUBDIRECTORY (tools)
@@ -156,7 +161,24 @@ endif(APPLE OR WIN32)
 ###
 ## CPack install and packaging setup.
 ###
-include(InstallRequiredSystemLibraries)
+if ( WIN32 )
+    set ( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE )
+    include(InstallRequiredSystemLibraries)
+    if (MSVC14)
+        find_file(MSVC14_REDIST "vcredist_${CMAKE_MSVC_ARCH}.exe" HINTS ${MSVC14_REDIST_DIR}/1033 )
+        if (EXISTS "${MSVC14_REDIST}")
+            install ( PROGRAMS ${MSVC14_REDIST} DESTINATION tmp )
+            get_filename_component(MSVC14_REDIST_NAME ${MSVC14_REDIST} NAME)
+            list ( APPEND CPACK_NSIS_EXTRA_INSTALL_COMMANDS " 
+                ExecWait '$INSTDIR\\\\tmp\\\\${MSVC14_REDIST_NAME} /S'
+            ")
+        else ()
+            MESSAGE(WARNING "-- Unable to locate vcredist_x86.exe")
+        endif ()
+    else ()
+        MESSAGE(WARNING "-- Unknown compiler version")
+    endif ()
+endif ()
 
 set(VER_SEPARATOR "-")
 if("${stagever}" MATCHES "^rc[0-9]+$")
@@ -188,11 +210,18 @@ if(TOP_LEVEL_PROJECT)
     set(CPACK_PACKAGE_VENDOR "HPCC Systems®")
     set(CPACK_PACKAGE_VENDOR_WITHOUT_TRADEMARK "HPCC Systems")
 
-    if(${ARCH64BIT} EQUAL 1)
-        set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
-    else(${ARCH64BIT} EQUAL 1)
-        set(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
-    endif(${ARCH64BIT} EQUAL 1)
+    if(WIN32)
+        if(${ARCH64BIT} EQUAL 1)
+            set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
+        else(${ARCH64BIT} EQUAL 1)
+            set(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
+        endif(${ARCH64BIT} EQUAL 1)
+    else(WIN32)
+        set(CPACK_RPM_PACKAGE_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
+        if("${CPACK_RPM_PACKAGE_ARCHITECTURE}" STREQUAL "i686")
+            set(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
+        endif()
+    endif(WIN32)
 
     set(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${CPACK_RPM_PACKAGE_ARCHITECTURE}")
     if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
@@ -309,9 +338,10 @@ if(TOP_LEVEL_PROJECT)
             if(CLIENTTOOLS_ONLY)
                 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
 "${CMAKE_CURRENT_BINARY_DIR}/clienttools/install/postinst;${CMAKE_CURRENT_BINARY_DIR}/clienttools/install/prerm; ${CMAKE_CURRENT_BINARY_DIR}/clienttools/install/postrm")
-            else(CLIENTTOOLS_ONLY)
-                set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst;${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm;${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm")
             endif(CLIENTTOOLS_ONLY)
+            if(PLATFORM)
+                set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst;${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm;${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm")
+            endif(PLATFORM)
 
             # Standard sections values:
             # https://www.debian.org/doc/debian-policy/ch-archive.html/#s-subsections
@@ -330,14 +360,15 @@ if(TOP_LEVEL_PROJECT)
                 set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/clienttools/install/postrm")
                 set(CPACK_RPM_PACKAGE_GROUP "development/libraries")
                 set(CPACK_RPM_PACKAGE_SUMMARY "HPCC Systems® Client Tools.")
-            else(CLIENTTOOLS_ONLY)
+            endif()
+            if(PLATFORM)
                 set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst")
                 set(CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm")
                 set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm")
                 # Standard group names: http://fedoraroject.org/wiki/RPMGroups
                 set(CPACK_RPM_PACKAGE_GROUP "development/system")
                 set(CPACK_RPM_PACKAGE_SUMMARY "${PACKAGE_FILE_NAME_PREFIX}")
-            endif(CLIENTTOOLS_ONLY)
+            endif() 
         else()
             message("WARNING: Unsupported package ${packageManagement}.")
         endif ()

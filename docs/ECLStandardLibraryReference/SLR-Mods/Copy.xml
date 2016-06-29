@@ -13,7 +13,7 @@
     </indexterm>(</emphasis> <emphasis> logicalname,
   destinationGroup</emphasis> <emphasis role="bold">, </emphasis>
   <emphasis>destinationLogicalname, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis>,scrDali</emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>,sourceDali</emphasis> <emphasis role="bold">]
   [</emphasis> <emphasis>,timeout</emphasis> <emphasis role="bold">]
   [</emphasis> <emphasis>,espserverIPport </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
@@ -24,7 +24,7 @@
   <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
   <emphasis role="bold">] [</emphasis> <emphasis>,forcePush</emphasis>
   <emphasis role="bold">] [</emphasis>
-  <emphasis>,transferBufferSize</emphasis> <emphasis role="bold">] 
+  <emphasis>,transferBufferSize</emphasis> <emphasis role="bold">]
   [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
   role="bold">]);</emphasis></para>
 
@@ -38,8 +38,8 @@
     </indexterm>(</emphasis> <emphasis> logicalname,
   destinationGroup</emphasis> <emphasis role="bold">,</emphasis> <emphasis
   role="bold"> </emphasis> <emphasis>destinationLogicalname, </emphasis>
-  <emphasis role="bold"> [</emphasis> <emphasis>,scrDali</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,timeout</emphasis> <emphasis
+  <emphasis role="bold"> [</emphasis> <emphasis>,sourceDali</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>,timeout</emphasis> <emphasis
   role="bold">] [</emphasis> <emphasis>,espserverIPport </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
   <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
@@ -49,8 +49,8 @@
   <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
   <emphasis role="bold">] [</emphasis> <emphasis>,forcePush</emphasis>
   <emphasis role="bold">] [</emphasis>
-  <emphasis>,transferBufferSize</emphasis> 
-  <emphasis role="bold">] [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
+  <emphasis>,transferBufferSize</emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
   role="bold">]);</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -82,7 +82,7 @@
         </row>
 
         <row>
-          <entry><emphasis>srcDali</emphasis></entry>
+          <entry><emphasis>sourceDali</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the IP and Port
           of the Dali containing the file to copy. If omitted, the default is

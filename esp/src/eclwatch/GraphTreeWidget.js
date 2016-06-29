@@ -223,7 +223,7 @@ define([
         _initTree: function () {
             this.treeStore = this.global.createTreeStore();
             this.treeGrid = new declare([ESPUtil.Grid(false, true)])({
-                treeDepth: this.main.depth.get("value"),
+                treeDepth: this.main.getDepth(),
                 store: this.treeStore
             }, this.id + "TreeGrid");
             this._initItemGrid(this.treeGrid);
@@ -300,7 +300,7 @@ define([
         },
 
         _onTreeRefresh: function () {
-            this.treeGrid.set("treeDepth", this.main.depth.get("value"));
+            this.treeGrid.set("treeDepth", this.main.getDepth());
             this.treeGrid.refresh();
         },
 
@@ -664,6 +664,7 @@ define([
             this.widget.ActivityMetric.set("options", arrayUtil.map(arrayUtil.filter(columns, function (col, idx) {
                 return col.label.indexOf("Time") === 0 ||
                         col.label.indexOf("Size") === 0 ||
+                        col.label.indexOf("Skew") === 0 ||
                         col.label.indexOf("Num") === 0;
             }), function (col, idx) {
                 return {
@@ -671,6 +672,13 @@ define([
                     value: col.label,
                     selected: col.label === "TimeMaxLocalExecute"
                 };
+            }).sort(function (l, r) {
+                if (l.label < r.label) {
+                    return -1;
+                } else if (l.label > r.label) {
+                    return 1;
+                }
+                return 0;
             }));
             this.widget.ActivitiesTreeMap.setActivities(vertices, true);
             this.widget.ActivityMetric.set("value", "TimeMaxLocalExecute");
@@ -779,7 +787,7 @@ define([
         },
 
         setMainRootItems: function (globalIDs) {
-            var graphView = this.global.getGraphView(globalIDs, this.main.depth.get("value"), this.main.distance.get("value"), this.main.option("subgraph"), this.main.option("vhidespills"));
+            var graphView = this.global.getGraphView(globalIDs, this.main.getDepth(), this.main.distance.get("value"), this.main.option("subgraph"), this.main.option("vhidespills"));
             return graphView.navigateTo(this.main);
         },
 

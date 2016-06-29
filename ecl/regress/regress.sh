@@ -38,7 +38,7 @@ eclcc=
 diff=
 query=
 valgrind=
-np=`grep -c processor /proc/cpuinfo`
+np=`getconf _NPROCESSORS_ONLN`
 export ECLCC_ECLINCLUDE_PATH=
 
 ## Get cmd line options (overrite default args)
@@ -128,8 +128,10 @@ if [[ $eclcc != '' ]]; then
     echo "ECLCC=$eclcc" >> Makefile
     echo "TARGET=$target_dir" >> Makefile
     echo "FILES=\$(shell echo *.ecl*)" >> Makefile
-    echo "LOGS_=\$(FILES:%.ecl=\$(TARGET)/%.ecl.log)" >> Makefile
-    echo "LOGS=\$(LOGS_:%.eclxml=\$(TARGET)/%.eclxml.log)" >> Makefile
+    echo "LOGS0=\$(FILES:%.ecl=\$(TARGET)/%.ecl.log)" >> Makefile
+    echo "LOGS1=\$(LOGS0:%.ecl.gz=\$(TARGET)/%.ecl.log)" >> Makefile
+    echo "LOGS2=\$(LOGS1:%.eclxml.gz=\$(TARGET)/%.eclxml.log)" >> Makefile
+    echo "LOGS=\$(LOGS2:%.eclxml=\$(TARGET)/%.eclxml.log)" >> Makefile
     echo >> Makefile
     echo "all: \$(LOGS)" >> Makefile
     echo >> Makefile
@@ -139,7 +141,13 @@ if [[ $eclcc != '' ]]; then
     echo "\$(TARGET)/%.ecl.log: %.ecl" >> Makefile
     echo -e "\t\$(ECLCC) \$(FLAGS) $^" >> Makefile
     echo >> Makefile
+    echo "\$(TARGET)/%.ecl.log: %.ecl.gz" >> Makefile
+    echo -e "\t\$(ECLCC) \$(FLAGS) $^" >> Makefile
+    echo >> Makefile
     echo "\$(TARGET)/%.eclxml.log: %.eclxml" >> Makefile
+    echo -e "\t\$(ECLCC) \$(FLAGS) $^" >> Makefile
+    echo >> Makefile
+    echo "\$(TARGET)/%.eclxml.log: %.eclxml.gz" >> Makefile
     echo -e "\t\$(ECLCC) \$(FLAGS) $^" >> Makefile
 
     if [[ $query != '' ]]; then

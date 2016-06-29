@@ -41,14 +41,14 @@ public:
     CWuidReadSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container)
     {
+        helper = (IHThorWorkunitReadArg *)queryHelper();
         replyTag = queryMPServer().createReplyTag();
         replyStream.setown(createMemoryBufferSerialStream(masterReplyMsg));
         rowSource.setStream(replyStream);
+        appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        appendOutputLinked(this);
-        helper = (IHThorWorkunitReadArg *)queryHelper();
         grouped = helper->queryOutputMeta()->isGrouped();
     } 
     virtual void start() override

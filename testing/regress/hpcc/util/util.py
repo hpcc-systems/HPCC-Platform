@@ -138,6 +138,54 @@ def abortWorkunit(wuid):
     state=shell.command(cmd, *defaults)(*args)
     return state
 
+def createZAP(wuid,  taskId):
+    retVal = 'Error in create ZAP'
+    # http://localhost:8010/WsWorkunits/WUCreateZAPInfo?Wuid=<wuid>&ProblemDescription=<problem_description>
+    host = "http://"+gConfig.espIp+gConfig.espSocket+"/WsWorkunits/WUCreateZAPInfo?Wuid="+wuid+"&ProblemDescription=\"Failed+in+OBT\""
+    logging.debug("%3d. createZAP(%s, host :'%s')",  taskId,  wuid, host)
+
+    state = 'OK'
+    try:
+        response_stream = urllib2.urlopen(host)
+        respHeaders=str(response_stream.info()).replace('\r','').split('\n')
+        response = response_stream.read()
+        logging.debug("%3d. createZAP(%s) -> headers: '%s', response: '%s'\n",  taskId,  wuid, respHeaders,  response)
+
+        zapFilename = ''
+        for headerIndex in range(len(respHeaders)):
+            if respHeaders[headerIndex].startswith('Content-disposition'):
+                items = respHeaders[headerIndex].split(';')
+                if len(items) == 2 and ('filename=' in items[1]):
+                    zapFilename = items[1].replace('filename=', '')
+
+        if zapFilename == '':
+            retVal = response
+            logging.debug("%3d. No zap file name in the response!",  taskId)
+        else:
+            zapFilename = os.path.join(os.path.expanduser(gConfig.regressionDir), gConfig.zapDir)+'/'+ zapFilename
+            logging.debug("%3d. zap file name:'%s'",  taskId,  zapFilename)
+            zapFile = open(zapFilename, "w");
+            zapFile.write(response)
+            zapFile.close()
+            retVal = zapFilename + " created."
+
+    except KeyError as ke:
+        state = "Key error:"+ke.str()
+
+    except urllib2.HTTPError as ex:
+        state = "HTTP Error: "+ str(ex.reason)
+
+    except urllib2.URLError as ex:
+        state = "URL Error: "+ str(ex.reason)
+
+    except Exception as ex:
+        state = "Unable to query "+ str(ex.reason)
+
+    finally:
+        logging.debug("%3d. %s in createZAP(%s)",  taskId,  state,  wuid)
+
+    return retVal
+
 import subprocess
 
 def getRealIPAddress():

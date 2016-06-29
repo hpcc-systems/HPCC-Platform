@@ -18,7 +18,7 @@
 #ifndef _CACHING_HPP__
 #define _CACHING_HPP__
 #pragma warning(disable:4786)
- 
+
 #include "jliball.hpp"
 #include "seclib.hpp"
 #undef new
@@ -39,10 +39,10 @@ using std::string;
 
 typedef pair<time_t, ISecResource*> ResPermCacheEntry;
 typedef pair<string, SecResourceType> SecCacheKeyEntry;
-//this a cache for a given user that stores permissions for individual resources 
-//along with their timestamps when they were fetched.  The cache is periodically 
+//this a cache for a given user that stores permissions for individual resources
+//along with their timestamps when they were fetched.  The cache is periodically
 //cleaned up to remove stale (older than 5 minutes) entries - triggered by a lookup
-//itself.  Note that each user has an instance of this cache, which is stored in 
+//itself.  Note that each user has an instance of this cache, which is stored in
 //another map (CPermissionsCache) as defined below.
 //
 //
@@ -134,18 +134,27 @@ public:
 
 // main cache that stores all user-specific caches (defined by CResPermissionsCache above)
 //
-class CPermissionsCache
+class CPermissionsCache : public CInterface, implements IInterface
 {
 public:
-    CPermissionsCache()
-    { 
+    IMPLEMENT_IINTERFACE
+
+    CPermissionsCache(const char * _secMgrClass = nullptr)
+    {
         m_cacheTimeout = 300;
         m_transactionalEnabled = false;
         m_secMgr = NULL;
         m_lastManagedFileScopesRefresh = 0;
         m_defaultPermission = SecAccess_Unknown;
+        m_secMgrClass.set(_secMgrClass);
     }
+
     virtual ~CPermissionsCache();
+
+    //Returns an owned reference to a shared cache of a given Sec Mgr class type.
+    //Call this method with a unique class string ("LDAP", "MyOtherSecMgr")
+    //to create a cache shared amongst security managers of the same class
+    static CPermissionsCache* getInstance(const char * _secMgrClass);
 
     //finds cached permissions for a number of resources and sets them in
     //and also returns status in the boolean array passed in
@@ -181,21 +190,21 @@ private:
     typedef std::map<string, CResPermissionsCache*> MapResPermissionsCache;
     typedef std::map<string, CachedUser*> MapUserCache;
 
-    CPermissionsCache(const CPermissionsCache&);
-
     MapResPermissionsCache m_resPermissionsMap;  //user specific resource permissions cache
-    Monitor m_cachemonitor;                               //for thread safety
+    mutable ReadWriteLock m_resPermCacheRWLock; //guards m_resPermissionsMap
+
     int m_cacheTimeout; //cleanup cycle period
     bool m_transactionalEnabled;
 
     MapUserCache m_userCache;
-    Monitor m_userCacheMonitor;
+    mutable ReadWriteLock m_userCacheRWLock;    //guards m_userCache
 
+    StringAttr                  m_secMgrClass;
 
     //Managed File Scope support
     int                         m_defaultPermission;
     map<string, ISecResource*>  m_managedFileScopesMap;
-    Monitor                     m_managedFileScopesCacheMonitor;
+    mutable ReadWriteLock       m_scopesRWLock;//guards m_managedFileScopesMap
     ISecManager *               m_secMgr;
     time_t                      m_lastManagedFileScopesRefresh;
 };

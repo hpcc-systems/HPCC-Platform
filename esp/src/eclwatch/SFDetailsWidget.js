@@ -76,6 +76,7 @@ define([
             this.inherited(arguments);
             this.summaryWidget = registry.byId(this.id + "_Summary");
             this.deleteBtn = registry.byId(this.id + "Delete");
+            this.removeBtn = registry.byId(this.id + "Remove");
         },
 
         startup: function (args) {
@@ -87,6 +88,13 @@ define([
         _onRefresh: function (event) {
             this.logicalFile.refresh();
         },
+
+        _onSubFileRefresh: function (event) {
+            this.subfilesGrid.set("query", {
+                Name: "*"
+            });
+        },
+
         _onSave: function (event) {
             var context = this;
             this.logicalFile.save(dom.byId(context.id + "Description").value);
@@ -97,7 +105,10 @@ define([
             }
         },
         _onRemove: function (event) {
-            this.logicalFile.removeSubfiles(this.subfilesGrid.getSelected());
+            if (confirm(this.i18n.RemoveSubfiles2)) {
+                this.logicalFile.removeSubfiles(this.subfilesGrid.getSelected());
+                this._onSubFileRefresh();
+            }
         },
         _onOpen: function (event) {
             var selections = this.subfilesGrid.getSelected();
@@ -232,11 +243,13 @@ define([
             });
             this.subfilesGrid.on("dgrid-select", function (evt) {
                 context.deleteBtn.set("disabled", true);
+                context.removeBtn.set("disabled", false);
             });
             this.subfilesGrid.on("dgrid-deselect", function (evt) {
                 var selections = context.subfilesGrid.getSelected();
                 if (selections.length === 0) {
                     context.deleteBtn.set("disabled", false);
+                    context.removeBtn.set("disabled", true);
                 }
             });
             this.subfilesGrid.on(".dgrid-row:dblclick", function (evt) {
@@ -314,7 +327,7 @@ define([
                     id: id,
                     title: params.Name,
                     closable: true,
-                    delayWidget: "LFDetailsWidget",
+                    delayWidget: params.isSuperfile ? "SFDetailsWidget" : "LFDetailsWidget",
                     _hpccParams: {
                         NodeGroup: params.NodeGroup,
                         Name: params.Name

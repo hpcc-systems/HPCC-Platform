@@ -40,16 +40,11 @@ class CKeyPatchSlave : public ProcessSlaveActivity
 public:
     CKeyPatchSlave(CGraphElementBase *container) : ProcessSlaveActivity(container)
     {
-        helper = NULL;
+        helper = (IHThorKeyPatchArg *)queryHelper();
         tlk = copyTlk = false;
     }
-    ~CKeyPatchSlave()
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-    }
-
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        helper = (IHThorKeyPatchArg *)queryHelper();
         bool active;
         data.read(active);
         if (!active)
@@ -73,6 +68,11 @@ public:
                     copyTlk = true;
             }
         }
+    }
+    virtual void process()
+    {
+        processed = THORDATALINK_STARTED;
+        if (abortSoon) return;
 
         StringBuffer originalFilePart, patchFilePart;
         OwnedRoxieString originalName(helper->getOriginalName());
@@ -101,11 +101,6 @@ public:
                 tlkPatchApplicator.setown(createKeyDiffApplicator(patchFilePart.str(), originalFilePart.str(), tmp.str(), NULL, true, true));
             }
         }
-    }
-    virtual void process()
-    {
-        processed = THORDATALINK_STARTED;
-        if (abortSoon) return;
         try
         {
             patchApplictor->run();

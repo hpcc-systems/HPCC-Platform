@@ -88,4 +88,19 @@ ZCRYPT_API IZDecryptor* createZDecryptor(const char* privatekey, const char* pas
 ZCRYPT_API void releaseIZ(IZInterface* iz);
 }
 
+// the following GZ_* values map to corresponding Z_* values defined in zlib.h
+#define GZ_BEST_SPEED             1
+#define GZ_BEST_COMPRESSION       9
+#define GZ_DEFAULT_COMPRESSION  (-1)
+
+class StringBuffer;
+typedef unsigned char byte;
+
+// Compress a character buffer using zlib in gzip format with given compression level
+ZCRYPT_API char* gzip( const char* inputBuffer, unsigned int inputSize,
+    unsigned int* outlen, int compressionLevel=GZ_DEFAULT_COMPRESSION);
+ZCRYPT_API void gunzip(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput);
+ZCRYPT_API bool isgzipped(const byte* content, size_t length);
+ZCRYPT_API void removeZipExtension(StringBuffer & target, const char * source);
+
 #endif

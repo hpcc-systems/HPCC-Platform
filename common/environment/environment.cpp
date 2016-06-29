@@ -31,10 +31,73 @@
 #include "dalienv.hpp"
 
 #define SDS_LOCK_TIMEOUT  30000
-
+#define DEFAULT_DROPZONE_INDEX      1
+#define DROPZONE_BY_MACHINE_SUFFIX  "-dropzoneByMachine-"
+#define DROPZONE_SUFFIX             "dropzone-"
+#define MACHINE_PREFIX              "machine-"
+#define NUMBER_OF_DROPZONES_SUFFIX  "-numberOfDropZones"
 
 static int environmentTraceLevel = 1;
 static Owned <IConstEnvironment> cache;
+
+class CLocalEnvironment;
+
+class CConstMachineInfoIterator : public  CSimpleInterfaceOf<IConstMachineInfoIterator>
+{
+public:
+    CConstMachineInfoIterator();
+
+    virtual bool first() override;
+    virtual bool next() override;
+    virtual bool isValid() override;
+    virtual IConstMachineInfo & query() override;
+    virtual unsigned count() const override;
+
+protected:
+    IConstMachineInfo * curr = nullptr;
+    Owned<CLocalEnvironment> constEnv;
+    unsigned index = 1;
+    unsigned maxIndex = 0;
+};
+
+class CConstDropZoneInfoIterator : public CSimpleInterfaceOf<IConstDropZoneInfoIterator>
+{
+public:
+    CConstDropZoneInfoIterator();
+
+    virtual bool first() override;
+    virtual bool next() override;
+    virtual bool isValid() override;
+    virtual IConstDropZoneInfo & query() override;
+    virtual unsigned count() const override;
+
+protected:
+    IConstDropZoneInfo * curr = nullptr;
+    Owned<CLocalEnvironment> constEnv;
+    unsigned index = 1;
+    unsigned maxIndex = 0;
+};
+
+class CConstDropZoneIteratorByComputer : public CSimpleInterfaceOf<IConstDropZoneInfoIterator>
+{
+public:
+    CConstDropZoneIteratorByComputer(const char * computer);
+
+    virtual bool first() override;
+    virtual bool next() override;
+    virtual bool isValid() override;
+    virtual IConstDropZoneInfo & query() override;
+    virtual unsigned count() const override;
+
+protected:
+    StringBuffer computerName;
+    IConstDropZoneInfo * curr = nullptr;
+    Owned<CLocalEnvironment> constEnv;
+    unsigned index = 1;
+    unsigned maxIndex = 0;
+};
+
+//==========================================================================================
 
 class CConstInstanceInfo;
 
@@ -48,18 +111,22 @@ private:
     mutable Mutex safeCache;
     mutable bool dropZoneCacheBuilt;
     mutable bool machineCacheBuilt;
-   StringBuffer xPath;
+    StringBuffer xPath;
+    Owned<IPropertyTree> numOfDropzonesByComputer;
+    mutable unsigned numOfMachines;
+    mutable unsigned numOfDropZones;
 
 
     IConstEnvBase * getCache(const char *path) const;
     void setCache(const char *path, IConstEnvBase *value) const;
     void buildMachineCache() const;
     void buildDropZoneCache() const;
+    void init();
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CLocalEnvironment(IRemoteConnection *_conn, IPropertyTree *x=NULL, const char* path="Environment");
+    CLocalEnvironment(IRemoteConnection *_conn, IPropertyTree *x=nullptr, const char* path="Environment");
     CLocalEnvironment(const char* path="config.xml");
     virtual ~CLocalEnvironment();
 
@@ -69,7 +136,7 @@ public:
     virtual IEnvironment& lock() const;
     virtual IConstDomainInfo * getDomain(const char * name) const;
     virtual IConstMachineInfo * getMachine(const char * name) const;
-    virtual IConstMachineInfo * getMachineByAddress(const char * name) const;
+    virtual IConstMachineInfo * getMachineByAddress(const char * machineIp) const;
     virtual IConstMachineInfo * getMachineForLocalHost() const;
     virtual IConstDropZoneInfo * getDropZone(const char * name) const;
     virtual IConstDropZoneInfo * getDropZoneByComputer(const char * computer) const;
@@ -86,71 +153,94 @@ public:
     void unlockRemote();
     virtual bool isConstEnvironment() const { return true; }
     virtual void clearCache();
-   
+
+    virtual IConstMachineInfoIterator * getMachineIterator() const;
+
+    virtual IConstDropZoneInfo * getDropZoneByComputer(const char * computer, const char * dzname) const;
+    virtual IConstDropZoneInfoIterator * getDropZoneIteratorByComputer(const char * computer) const;
+    virtual IConstDropZoneInfo * getDropZoneByAddressPath(const char * netaddress, const char *targetPath) const;
+
+    virtual IConstDropZoneInfoIterator * getDropZoneIterator() const;
+
+    unsigned getNumberOfMachines() const { buildMachineCache(); return numOfMachines; }
+    IConstMachineInfo * getMachineByIndex(unsigned index) const;
+
+    unsigned getNumberOfDropZonesByComputer(const char * computer) const
+    {
+        buildDropZoneCache();
+        StringBuffer xpath("@");
+        xpath.append(computer).append(NUMBER_OF_DROPZONES_SUFFIX);
+        unsigned numOfDropZoneByComputer = numOfDropzonesByComputer->getPropInt(xpath, -1);
+        return (numOfDropZoneByComputer != -1 ? numOfDropZoneByComputer : 0);
+    }
+    IConstDropZoneInfo * getDropZoneByComputerByIndex(const char * computer, unsigned index) const;
+
+    unsigned getNumberOfDropZones() const { buildDropZoneCache(); return numOfDropZones; }
+    IConstDropZoneInfo * getDropZoneByIndex(unsigned index) const;
 };
 
 class CLockedEnvironment : public CInterface, implements IEnvironment
 {
 public:
-   //note that order of construction/destruction is important
+    //note that order of construction/destruction is important
     Owned<CLocalEnvironment> c;
     Owned<CLocalEnvironment> env;
     Owned<CLocalEnvironment> constEnv;
 
     IMPLEMENT_IINTERFACE;
     CLockedEnvironment(CLocalEnvironment *_c)
-   {
-      Owned<IRemoteConnection> connection = _c->getConnection();
+    {
+        Owned<IRemoteConnection> connection = _c->getConnection();
 
-      if (connection)
-      {
-         constEnv.set(_c); //save original constant environment
+        if (connection)
+        {
+            constEnv.set(_c); //save original constant environment
 
-         //we only wish to allow one party to allow updating the environment.
-         //
-         //create a new /NewEnvironment subtree, locked for read/write access for self and entire subtree; delete on disconnect
-         //
-         StringBuffer newName("/New");
-         newName.append(constEnv->getPath());
+            //we only wish to allow one party to allow updating the environment.
+            //
+            //create a new /NewEnvironment subtree, locked for read/write access for self and entire subtree; delete on disconnect
+            //
+            StringBuffer newName("/New");
+            newName.append(constEnv->getPath());
 
-         const unsigned int mode = RTM_CREATE | RTM_CREATE_QUERY | RTM_LOCK_READ | RTM_LOCK_WRITE | 
+            const unsigned int mode = RTM_CREATE | RTM_CREATE_QUERY | RTM_LOCK_READ | RTM_LOCK_WRITE |
                                    RTM_LOCK_SUB | RTM_DELETE_ON_DISCONNECT;
-          Owned<IRemoteConnection> conn = querySDS().connect(newName.str(), myProcessSession(), mode, SDS_LOCK_TIMEOUT);
+            Owned<IRemoteConnection> conn = querySDS().connect(newName.str(), myProcessSession(), mode, SDS_LOCK_TIMEOUT);
 
-          if (conn == NULL)
-         {
-              if (environmentTraceLevel > 0)
-                  PrintLog("Failed to create locked environment %s", newName.str());
+            if (conn == nullptr)
+            {
+                if (environmentTraceLevel > 0)
+                    PrintLog("Failed to create locked environment %s", newName.str());
 
-              throw MakeStringException(-1, "Failed to get a lock on environment /%s", newName.str());
-         }
+                throw MakeStringException(-1, "Failed to get a lock on environment /%s", newName.str());
+            }
 
-         //save the locked environment
-         env.setown(new CLocalEnvironment(conn, NULL, newName.str()));
+            //save the locked environment
+            env.setown(new CLocalEnvironment(conn, nullptr, newName.str()));
 
-         //get a lock on the const environment
-         const unsigned int mode2 = RTM_CREATE_QUERY | RTM_LOCK_READ | RTM_LOCK_WRITE | RTM_LOCK_SUB;
-          Owned<IRemoteConnection> conn2 = querySDS().connect(constEnv->getPath(), myProcessSession(), mode2, SDS_LOCK_TIMEOUT);
+            //get a lock on the const environment
+            const unsigned int mode2 = RTM_CREATE_QUERY | RTM_LOCK_READ | RTM_LOCK_WRITE | RTM_LOCK_SUB;
+            Owned<IRemoteConnection> conn2 = querySDS().connect(constEnv->getPath(), myProcessSession(), mode2, SDS_LOCK_TIMEOUT);
 
-          if (conn2 == NULL)
-         {
-              if (environmentTraceLevel > 0)
-                  PrintLog("Failed to lock environment %s", constEnv->getPath());
+            if (conn2 == nullptr)
+            {
+                if (environmentTraceLevel > 0)
+                    PrintLog("Failed to lock environment %s", constEnv->getPath());
 
-              throw MakeStringException(-1, "Failed to get a lock on environment /%s", constEnv->getPath());
-         }
+                throw MakeStringException(-1, "Failed to get a lock on environment /%s", constEnv->getPath());
+            }
 
-         //copy const environment to our member environment
-         Owned<IPropertyTree> pSrc = conn2->getRoot();
-         c.setown( new CLocalEnvironment(NULL, createPTreeFromIPT(pSrc)));
-         conn2->rollback();
-      }
-      else
-      {
-         c.set(_c);
-      }
+            //copy const environment to our member environment
+            Owned<IPropertyTree> pSrc = conn2->getRoot();
+            c.setown( new CLocalEnvironment(nullptr, createPTreeFromIPT(pSrc)));
+            conn2->rollback();
+        }
+        else
+        {
+            c.set(_c);
+        }
 
-   }
+    }
     virtual ~CLockedEnvironment()
     {
     }
@@ -160,15 +250,13 @@ public:
     virtual IStringVal & getXML(IStringVal & str) const
             { return c->getXML(str); }
     virtual IPropertyTree & getPTree() const
-   { 
-       return c->getPTree();
-   }
+            { return c->getPTree(); }
     virtual IConstDomainInfo * getDomain(const char * name) const
             { return c->getDomain(name); }
     virtual IConstMachineInfo * getMachine(const char * name) const
             { return c->getMachine(name); }
-    virtual IConstMachineInfo * getMachineByAddress(const char * name) const
-            { return c->getMachineByAddress(name); }
+    virtual IConstMachineInfo * getMachineByAddress(const char * machineIp) const
+            { return c->getMachineByAddress(machineIp); }
     virtual IConstMachineInfo * getMachineForLocalHost() const
             { return c->getMachineForLocalHost(); }
     virtual IConstDropZoneInfo * getDropZone(const char * name) const
@@ -182,8 +270,8 @@ public:
     virtual IConstComputerTypeInfo * getComputerType(const char * name) const
             { return c->getComputerType(name); }
 
-   virtual IEnvironment & lock() const
-         { ((CInterface*)this)->Link(); return *(IEnvironment*)this; }
+    virtual IEnvironment & lock() const
+            { ((CInterface*)this)->Link(); return *(IEnvironment*)this; }
     virtual void commit();
     virtual void rollback();
     virtual void setXML(const char * pstr)
@@ -193,78 +281,88 @@ public:
     virtual bool isConstEnvironment() const { return false; }
     virtual void clearCache() { c->clearCache(); }
 
+    virtual IConstMachineInfoIterator * getMachineIterator() const
+            { return c->getMachineIterator(); }
+    virtual IConstDropZoneInfo * getDropZoneByComputer(const char * computer, const char * dzname) const
+            { return c->getDropZoneByComputer(computer, dzname); }
+    virtual IConstDropZoneInfoIterator * getDropZoneIteratorByComputer(const char * computer) const
+            { return c->getDropZoneIteratorByComputer(computer); }
+    virtual IConstDropZoneInfo * getDropZoneByAddressPath(const char * netaddress, const char *targetPath) const
+            { return c->getDropZoneByAddressPath(netaddress, targetPath); }
+    virtual IConstDropZoneInfoIterator * getDropZoneIterator() const
+            { return c->getDropZoneIterator(); }
 };
 
 void CLockedEnvironment::commit()
 {
-   if (constEnv)
-   {
-      //get a lock on const environment momentarily
-      const unsigned int mode2 = RTM_CREATE_QUERY | RTM_LOCK_READ | RTM_LOCK_WRITE | RTM_LOCK_SUB;
-       Owned<IRemoteConnection> conn2 = querySDS().connect(constEnv->getPath(), myProcessSession(), mode2, SDS_LOCK_TIMEOUT);
+    if (constEnv)
+    {
+        //get a lock on const environment momentarily
+        const unsigned int mode2 = RTM_CREATE_QUERY | RTM_LOCK_READ | RTM_LOCK_WRITE | RTM_LOCK_SUB;
+        Owned<IRemoteConnection> conn2 = querySDS().connect(constEnv->getPath(), myProcessSession(), mode2, SDS_LOCK_TIMEOUT);
 
-       if (conn2 == NULL)
-      {
-           if (environmentTraceLevel > 0)
-               PrintLog("Failed to lock environment %s", constEnv->getPath());
+        if (conn2 == nullptr)
+        {
+            if (environmentTraceLevel > 0)
+                PrintLog("Failed to lock environment %s", constEnv->getPath());
 
-           throw MakeStringException(-1, "Failed to get a lock on environment /%s", constEnv->getPath());
-      }
+            throw MakeStringException(-1, "Failed to get a lock on environment /%s", constEnv->getPath());
+        }
 
-      //copy locked environment to const environment
-      Owned<IPropertyTree> pSrc = &getPTree();
-      Owned<IPropertyTree> pDst = conn2->queryRoot()->getBranch(NULL);
+        //copy locked environment to const environment
+        Owned<IPropertyTree> pSrc = &getPTree();
+        Owned<IPropertyTree> pDst = conn2->queryRoot()->getBranch(nullptr);
 
-      // JCS - I think it could (and would be more efficient if it had kept the original read lock connection to Env
-      //     - instead of using NewEnv as lock point, still work on copy, then changeMode of original connect
-      //     - as opposed to current scheme, where it recoonects in write mode and has to lazy fetch original env to update.
+        // JCS - I think it could (and would be more efficient if it had kept the original read lock connection to Env
+        //     - instead of using NewEnv as lock point, still work on copy, then changeMode of original connect
+        //     - as opposed to current scheme, where it recoonects in write mode and has to lazy fetch original env to update.
 
-      // ensures pDst is equal to pSrc, whilst minimizing changes to pDst
+        // ensures pDst is equal to pSrc, whilst minimizing changes to pDst
       
-      try { synchronizePTree(pDst, pSrc); }
-      catch (IException *) { conn2->rollback(); throw; }
-      conn2->commit();
-   }
-   else
-   {
-       Owned<IRemoteConnection> conn = c->getConnection();
-      conn->commit();
-   }
+        try { synchronizePTree(pDst, pSrc); }
+        catch (IException *) { conn2->rollback(); throw; }
+        conn2->commit();
+    }
+    else
+    {
+        Owned<IRemoteConnection> conn = c->getConnection();
+        conn->commit();
+    }
 }
 
 void CLockedEnvironment::rollback()
 {
-   if (constEnv)
-   {
-      //get a lock on const environment momentarily
-      const unsigned int mode2 = RTM_CREATE_QUERY | RTM_LOCK_READ | RTM_LOCK_WRITE | RTM_LOCK_SUB;
-       Owned<IRemoteConnection> conn2 = querySDS().connect(constEnv->getPath(), myProcessSession(), mode2, SDS_LOCK_TIMEOUT);
+    if (constEnv)
+    {
+        //get a lock on const environment momentarily
+        const unsigned int mode2 = RTM_CREATE_QUERY | RTM_LOCK_READ | RTM_LOCK_WRITE | RTM_LOCK_SUB;
+        Owned<IRemoteConnection> conn2 = querySDS().connect(constEnv->getPath(), myProcessSession(), mode2, SDS_LOCK_TIMEOUT);
 
-       if (conn2 == NULL)
-      {
-           if (environmentTraceLevel > 0)
-               PrintLog("Failed to lock environment %s", constEnv->getPath());
+        if (conn2 == nullptr)
+        {
+            if (environmentTraceLevel > 0)
+                PrintLog("Failed to lock environment %s", constEnv->getPath());
 
-           throw MakeStringException(-1, "Failed to get a lock on environment /%s", constEnv->getPath());
-      }
+            throw MakeStringException(-1, "Failed to get a lock on environment /%s", constEnv->getPath());
+        }
 
-      //copy const environment to locked environment (as it stands now) again losing any changes we made
-      Owned<IPropertyTree> pSrc = conn2->getRoot();
-      Owned<IPropertyTree> pDst = &getPTree();
+        //copy const environment to locked environment (as it stands now) again losing any changes we made
+        Owned<IPropertyTree> pSrc = conn2->getRoot();
+        Owned<IPropertyTree> pDst = &getPTree();
 
-      pDst->removeTree( pDst->queryPropTree("Hardware") );
-      pDst->removeTree( pDst->queryPropTree("Software") );
-      pDst->removeTree( pDst->queryPropTree("Programs") );
-      pDst->removeTree( pDst->queryPropTree("Data") );
+        pDst->removeTree( pDst->queryPropTree("Hardware") );
+        pDst->removeTree( pDst->queryPropTree("Software") );
+        pDst->removeTree( pDst->queryPropTree("Programs") );
+        pDst->removeTree( pDst->queryPropTree("Data") );
 
-      mergePTree(pDst, pSrc);
-      conn2->rollback();
-   }
-   else
-   {
-       Owned<IRemoteConnection> conn = c->getConnection();
-      conn->rollback();
-   }
+        mergePTree(pDst, pSrc);
+        conn2->rollback();
+    }
+    else
+    {
+        Owned<IRemoteConnection> conn = c->getConnection();
+        conn->rollback();
+    }
 }
 
 //==========================================================================================
@@ -275,13 +373,13 @@ void CLockedEnvironment::rollback()
 class CSdsSubscription : public CInterface, implements ISDSSubscription
 {
 public:
-   CSdsSubscription()
-   { 
-      m_constEnvUpdated = false;
+    CSdsSubscription()
+    {
+        m_constEnvUpdated = false;
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-      sub_id = envFactory->subscribe(this);
-   }
-   virtual ~CSdsSubscription() 
+        sub_id = envFactory->subscribe(this);
+    }
+    virtual ~CSdsSubscription()
     {
         /* note that ideally, we would make this class automatically 
            unsubscribe in this destructor.  However, underlying dali client 
@@ -291,9 +389,9 @@ public:
             the environment which unsubscribes during close down. */
     }
 
-   void unsubscribe() 
-    { 
-      synchronized block(m_mutexEnv);
+    void unsubscribe()
+    {
+        synchronized block(m_mutexEnv);
         if (sub_id) 
         { 
             Owned<IEnvironmentFactory> m_envFactory = getEnvironmentFactory();
@@ -301,36 +399,36 @@ public:
             sub_id = 0; 
         } 
     }
-   IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE;
 
-   //another client (like configenv) may have updated the environment and we got notified
-   //(thanks to our subscription) but don't just reload it yet since this notification is sent on 
-   //another thread asynchronously and we may be actively working with the old environment.  Just
-   //invoke handleEnvironmentChange() when we are ready to invalidate cache in environment factory.
-   //
-    void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=NULL)
-   {
-      DBGLOG("Environment was updated by another client of Dali server.  Invalidating cache.\n");
-      synchronized block(m_mutexEnv);
-      m_constEnvUpdated = true;
-   }
+    //another client (like configenv) may have updated the environment and we got notified
+    //(thanks to our subscription) but don't just reload it yet since this notification is sent on
+    //another thread asynchronously and we may be actively working with the old environment.  Just
+    //invoke handleEnvironmentChange() when we are ready to invalidate cache in environment factory.
+    //
+    void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=nullptr)
+    {
+        DBGLOG("Environment was updated by another client of Dali server.  Invalidating cache.\n");
+        synchronized block(m_mutexEnv);
+        m_constEnvUpdated = true;
+    }
 
-   void handleEnvironmentChange()
-   { 
-      synchronized block(m_mutexEnv);
-      if (m_constEnvUpdated)
-      {
+    void handleEnvironmentChange()
+    {
+        synchronized block(m_mutexEnv);
+        if (m_constEnvUpdated)
+        {
             Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-         constEnv->clearCache();
-         m_constEnvUpdated = false;
-      }
-   }
+            Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+            constEnv->clearCache();
+            m_constEnvUpdated = false;
+        }
+    }
 
 private:
-   SubscriptionId sub_id;
-   Mutex  m_mutexEnv;
-   bool   m_constEnvUpdated;
+    SubscriptionId sub_id;
+    Mutex  m_mutexEnv;
+    bool   m_constEnvUpdated;
 };
 
 //==========================================================================================
@@ -380,14 +478,14 @@ public:
     virtual IEnvironment * loadLocalEnvironmentFile(const char * filename)
     {
         Owned<IPropertyTree> ptree = createPTreeFromXMLFile(filename);
-        Owned<CLocalEnvironment> pLocalEnv = new CLocalEnvironment(NULL, ptree);
+        Owned<CLocalEnvironment> pLocalEnv = new CLocalEnvironment(nullptr, ptree);
         return new CLockedEnvironment(pLocalEnv);
     }
 
     virtual IEnvironment * loadLocalEnvironment(const char * xml)
     {
         Owned<IPropertyTree> ptree = createPTreeFromXMLString(xml);
-        Owned<CLocalEnvironment> pLocalEnv = new CLocalEnvironment(NULL, ptree);
+        Owned<CLocalEnvironment> pLocalEnv = new CLocalEnvironment(nullptr, ptree);
         return new CLockedEnvironment(pLocalEnv);
     }
 
@@ -417,17 +515,17 @@ public:
             querySDS().unsubscribe( copySubIDs.item(i) );
     }
 
-   virtual SubscriptionId subscribe(ISDSSubscription* pSubHandler)
-   {
+    virtual SubscriptionId subscribe(ISDSSubscription* pSubHandler)
+    {
         SubscriptionId sub_id = querySDS().subscribe("/Environment", *pSubHandler);
 
         synchronized procedure(mutex);
         subIDs.append(sub_id);
         return sub_id;
-   }
+    }
          
-   virtual void unsubscribe(SubscriptionId sub_id)
-   {
+    virtual void unsubscribe(SubscriptionId sub_id)
+    {
         synchronized procedure(mutex);
 
         aindex_t i = subIDs.find(sub_id);
@@ -436,15 +534,15 @@ public:
             querySDS().unsubscribe(sub_id); 
             subIDs.remove(i);
         }
-   }
+    }
 
-   virtual void validateCache()
-   {
+    virtual void validateCache()
+    {
         if (!subscription)
             subscription.setown( new CSdsSubscription() );
       
         subscription->handleEnvironmentChange();
-   }
+    }
 
 private:
     IRemoteConnection* connect(const char *xpath, unsigned flags)
@@ -453,7 +551,7 @@ private:
     }
 };
 
-static CEnvironmentFactory *factory=NULL;
+static CEnvironmentFactory *factory=nullptr;
 
 void CEnvironmentFactory::clientShutdown()
 {
@@ -516,7 +614,7 @@ public:
     IMPLEMENT_ICONSTENVBASE;
     CConstDomainInfo(CLocalEnvironment *env, IPropertyTree *root) : CConstEnvBase(env, root) {}
 
-   virtual void getAccountInfo(IStringVal &name, IStringVal &pw) const
+    virtual void getAccountInfo(IStringVal &name, IStringVal &pw) const
     {
         if (root->hasProp("@username"))
             name.set(root->queryProp("@username"));
@@ -532,8 +630,8 @@ public:
             pw.clear();
     }
 
-   virtual void getSnmpSecurityString(IStringVal & securityString) const
-   {
+    virtual void getSnmpSecurityString(IStringVal & securityString) const
+    {
         if (root->hasProp("@snmpSecurityString"))
         {
             StringBuffer sec_string;
@@ -542,7 +640,7 @@ public:
         }
         else
             securityString.set("");
-   }
+    }
 
     virtual void getSSHAccountInfo(IStringVal &name, IStringVal &sshKeyFile, IStringVal& sshKeyPassphrase) const
     {
@@ -606,7 +704,7 @@ mapOsEnums OperatingSystems[] = {
     { MachineOsW2K, "W2K" },
     { MachineOsSolaris, "solaris" },
     { MachineOsLinux, "linux" },
-    { MachineOsSize, NULL }
+    { MachineOsSize, nullptr }
 };
 
 mapStateEnums MachineStates[] = {
@@ -751,23 +849,26 @@ public:
             return false;
         char psep; 
         bool appendexe;
-        switch (machine->getOS()) {
-        case MachineOsSolaris:
-        case MachineOsLinux:
-            psep = '/';
-            appendexe = false;
-            break;
-        default:
-            psep = '\\';
-            appendexe = true;
+        switch (machine->getOS())
+        {
+            case MachineOsSolaris:
+            case MachineOsLinux:
+                psep = '/';
+                appendexe = false;
+                break;
+            default:
+                psep = '\\';
+                appendexe = true;
         }
         StringBuffer tmp;
-        const char *program = useprog?root->queryProp("@program"):NULL; // if program specified assume absolute 
-        if (!program||!*program) {
+        const char *program = useprog?root->queryProp("@program"):nullptr; // if program specified assume absolute
+        if (!program||!*program)
+        {
             SCMStringBuffer ep;
             machine->getNetAddress(ep);
             const char *dir = root->queryProp("@directory");
-            if (dir) {
+            if (dir)
+            {
                 if (isPathSepChar(*dir))
                     dir++;
                 if (!*dir)
@@ -885,7 +986,7 @@ public:
                 }
             }
         }
-        return NULL;
+        return nullptr;
     }
 };
 #endif
@@ -894,41 +995,48 @@ public:
 
 CLocalEnvironment::CLocalEnvironment(const char* environmentFile) 
 {
-   if (environmentFile && *environmentFile)
-   {
-       IPropertyTree* root = createPTreeFromXMLFile(environmentFile);
-       if (root)
-           p.set(root);
-   }
+    if (environmentFile && *environmentFile)
+    {
+        IPropertyTree* root = createPTreeFromXMLFile(environmentFile);
+        if (root)
+            p.set(root);
+    }
 
-   machineCacheBuilt = false;
-   dropZoneCacheBuilt = false;
+    init();
 }
 
-CLocalEnvironment::CLocalEnvironment(IRemoteConnection *_conn, IPropertyTree* root/*=NULL*/, 
+CLocalEnvironment::CLocalEnvironment(IRemoteConnection *_conn, IPropertyTree* root/*=nullptr*/,
                                      const char* path/*="/Environment"*/) 
                                      : xPath(path)
 {
-   conn.set(_conn);
+    conn.set(_conn);
 
-   if (root)
-       p.set(root);
-   else
-      p.setown(conn->getRoot());
+    if (root)
+        p.set(root);
+    else
+        p.setown(conn->getRoot());
 
+    init();
+}
+
+void CLocalEnvironment::init()
+{
     machineCacheBuilt = false;
     dropZoneCacheBuilt = false;
+    numOfMachines = 0;
+    numOfDropZones = 0;
+    numOfDropzonesByComputer.setown(createPTree("computers"));
 }
 
 CLocalEnvironment::~CLocalEnvironment()
 {
-   if (conn)
-      conn->rollback(); 
+    if (conn)
+        conn->rollback();
 }
 
 IEnvironment& CLocalEnvironment::lock() const
 {
-   return *new CLockedEnvironment((CLocalEnvironment*)this);
+    return *new CLockedEnvironment((CLocalEnvironment*)this);
 }
 
 IStringVal & CLocalEnvironment::getName(IStringVal & str) const
@@ -970,7 +1078,7 @@ void CLocalEnvironment::setCache(const char *path, IConstEnvBase *value) const
 IConstDomainInfo * CLocalEnvironment::getDomain(const char * name) const
 {
     if (!name)
-        return NULL;
+        return nullptr;
     StringBuffer xpath;
     xpath.appendf("Hardware/Domain[@name=\"%s\"]", name);
     synchronized procedure(safeCache);
@@ -979,7 +1087,7 @@ IConstDomainInfo * CLocalEnvironment::getDomain(const char * name) const
     {
         IPropertyTree *d = p->queryPropTree(xpath.str());
         if (!d)
-            return NULL;
+            return nullptr;
         cached = new CConstDomainInfo((CLocalEnvironment *) this, d);
         setCache(xpath.str(), cached);
     }
@@ -1002,19 +1110,24 @@ void CLocalEnvironment::buildMachineCache() const
                 Owned<IConstEnvBase> cached = new CConstMachineInfo((CLocalEnvironment *) this, &it->query());
                 cache.setValue(x.str(), cached);
             }
-            name = it->query().queryProp("@netAddress");
-            if (name)
+            const char * netAddress = it->query().queryProp("@netAddress");
+            if (netAddress)
             {
                 StringBuffer x("Hardware/Computer[@netAddress=\"");
-                x.append(name).append("\"]");
+                x.append(netAddress).append("\"]");
                 Owned<IConstEnvBase> cached = new CConstMachineInfo((CLocalEnvironment *) this, &it->query());
                 cache.setValue(x.str(), cached);
 
                 IpAddress ip;
-                ip.ipset(name);
+                ip.ipset(netAddress);
                 if (ip.isLocal())
                     cache.setValue("Hardware/Computer[@netAddress=\".\"]", cached);
             }
+            numOfMachines++;
+            StringBuffer x("Hardware/Computer[@id=\"");
+            x.append(MACHINE_PREFIX).append(numOfMachines).append("\"]");
+            Owned<IConstEnvBase> cached = new CConstMachineInfo((CLocalEnvironment *) this, &it->query());
+            cache.setValue(x.str(), cached);
         }
         machineCacheBuilt = true;
     }
@@ -1036,14 +1149,34 @@ void CLocalEnvironment::buildDropZoneCache() const
                 Owned<IConstEnvBase> cached = new CConstDropZoneInfo((CLocalEnvironment *) this, &it->query());
                 cache.setValue(x.str(), cached);
             }
-            name = it->query().queryProp("@computer");
-            if (name)
+            const char * computer = it->query().queryProp("@computer");
+            if (computer)
             {
+                StringBuffer xpath("@");
+                xpath.append(computer).append(NUMBER_OF_DROPZONES_SUFFIX);
+                unsigned numOfDropZoneByComputer = numOfDropzonesByComputer->getPropInt(xpath, -1);
+                if (numOfDropZoneByComputer == -1)
+                {
+                    numOfDropZoneByComputer = 0;
+                    numOfDropzonesByComputer->addPropInt(xpath, numOfDropZoneByComputer );
+                }
+                numOfDropZoneByComputer++;
+                numOfDropzonesByComputer->setPropInt(xpath, numOfDropZoneByComputer);
+
                 StringBuffer x("Software/DropZone[@computer=\"");
-                x.append(name).append("\"]");
+                x.append(computer);
+                x.append(DROPZONE_BY_MACHINE_SUFFIX).append(numOfDropZoneByComputer);
+                x.append("\"]");
+
                 Owned<IConstEnvBase> cached = new CConstDropZoneInfo((CLocalEnvironment *) this, &it->query());
                 cache.setValue(x.str(), cached);
             }
+
+            numOfDropZones++;
+            StringBuffer x("Software/DropZone[@id=\"");
+            x.append(DROPZONE_SUFFIX).append(numOfDropZones).append("\"]");
+            Owned<IConstEnvBase> cached = new CConstDropZoneInfo((CLocalEnvironment *) this, &it->query());
+            cache.setValue(x.str(), cached);
         }
         dropZoneCacheBuilt = true;
     }
@@ -1052,7 +1185,7 @@ void CLocalEnvironment::buildDropZoneCache() const
 IConstComputerTypeInfo * CLocalEnvironment::getComputerType(const char * name) const
 {
     if (!name)
-        return NULL;
+        return nullptr;
     StringBuffer xpath;
     xpath.appendf("Hardware/ComputerType[@name=\"%s\"]", name);
     synchronized procedure(safeCache);
@@ -1061,7 +1194,7 @@ IConstComputerTypeInfo * CLocalEnvironment::getComputerType(const char * name) c
     {
         IPropertyTree *d = p->queryPropTree(xpath.str());
         if (!d)
-            return NULL;
+            return nullptr;
         cached = new CConstComputerTypeInfo((CLocalEnvironment *) this, d);
         setCache(xpath.str(), cached);
     }
@@ -1071,7 +1204,7 @@ IConstComputerTypeInfo * CLocalEnvironment::getComputerType(const char * name) c
 IConstMachineInfo * CLocalEnvironment::getMachine(const char * name) const
 {
     if (!name)
-        return NULL;
+        return nullptr;
     buildMachineCache();
     StringBuffer xpath;
     xpath.appendf("Hardware/Computer[@name=\"%s\"]", name);
@@ -1081,46 +1214,50 @@ IConstMachineInfo * CLocalEnvironment::getMachine(const char * name) const
     {
         IPropertyTree *d = p->queryPropTree(xpath.str());
         if (!d)
-            return NULL;
+            return nullptr;
         cached = new CConstMachineInfo((CLocalEnvironment *) this, d);
         setCache(xpath.str(), cached);
     }
     return (CConstMachineInfo *) cached;
 }
 
-IConstMachineInfo * CLocalEnvironment::getMachineByAddress(const char * name) const
+IConstMachineInfo * CLocalEnvironment::getMachineByAddress(const char * machineIp) const
 {
-    if (!name)
-        return NULL;
+    if (!machineIp)
+        return nullptr;
     buildMachineCache();
     Owned<IPropertyTreeIterator> iter;
     StringBuffer xpath;
-    xpath.appendf("Hardware/Computer[@netAddress=\"%s\"]", name);
+    xpath.appendf("Hardware/Computer[@netAddress=\"%s\"]", machineIp);
     synchronized procedure(safeCache);
     IConstEnvBase *cached = getCache(xpath.str());
     if (!cached)
     {
         IPropertyTree *d = p->queryPropTree(xpath.str());
-        if (!d) {
+        if (!d)
+        {
             // I suspect not in the original spirit of this but look for resolved IP
             Owned<IPropertyTreeIterator> iter = p->getElements("Hardware/Computer");
             IpAddress ip;
-            ip.ipset(name);
-            ForEach(*iter) {
+            ip.ipset(machineIp);
+            ForEach(*iter)
+            {
                 IPropertyTree &computer = iter->query();
                 IpAddress ip2;
                 const char *ips = computer.queryProp("@netAddress");
-                if (ips&&*ips) {
+                if (ips&&*ips)
+                {
                     ip2.ipset(ips);
-                    if (ip.ipequals(ip2)) {
+                    if (ip.ipequals(ip2))
+                    {
                         d = &computer;
                         break;
                     }
                 }
             }
         }
-        if (!d) 
-            return NULL;
+        if (!d)
+            return nullptr;
         StringBuffer xpath1;
         xpath1.appendf("Hardware/Computer[@name=\"%s\"]", d->queryProp("@name"));
         cached = getCache(xpath1.str());
@@ -1134,6 +1271,21 @@ IConstMachineInfo * CLocalEnvironment::getMachineByAddress(const char * name) co
     return (CConstMachineInfo *) cached;
 }
 
+IConstMachineInfo * CLocalEnvironment::getMachineByIndex(unsigned index) const
+{
+    if (!numOfMachines || (index == 0))
+        return nullptr;
+
+    buildMachineCache();
+    if (index > numOfMachines)
+        return nullptr;
+
+    StringBuffer xpath("Hardware/Computer[@id=\"");
+    xpath.append(MACHINE_PREFIX).append(index).append("\"]");
+    synchronized procedure(safeCache);
+    return (IConstMachineInfo *) getCache(xpath.str());
+}
+
 IConstMachineInfo * CLocalEnvironment::getMachineForLocalHost() const
 {
     buildMachineCache();
@@ -1144,7 +1296,7 @@ IConstMachineInfo * CLocalEnvironment::getMachineForLocalHost() const
 IConstDropZoneInfo * CLocalEnvironment::getDropZone(const char * name) const
 {
     if (!name)
-        return NULL;
+        return nullptr;
     buildDropZoneCache();
     VStringBuffer xpath("Software/DropZone[@name=\"%s\"]", name);
     synchronized procedure(safeCache);
@@ -1155,12 +1307,70 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZone(const char * name) const
 IConstDropZoneInfo * CLocalEnvironment::getDropZoneByComputer(const char * computer) const
 {
     if (!computer)
-        return NULL;
+        return nullptr;
     buildDropZoneCache();
-    VStringBuffer xpath("Software/DropZone[@computer=\"%s\"]", computer);
+
+    StringBuffer x("@");
+    x.append(computer).append(NUMBER_OF_DROPZONES_SUFFIX);
+    unsigned numOfDropZoneByComputer = numOfDropzonesByComputer->getPropInt(x, -1);
+    if (numOfDropZoneByComputer == -1)
+        return nullptr;
+
+    StringBuffer xpath("Software/DropZone[@computer=\"");
+    xpath.append(computer);
+    xpath.append(DROPZONE_BY_MACHINE_SUFFIX).append(DEFAULT_DROPZONE_INDEX);
+    xpath.append("\"]");
+
     synchronized procedure(safeCache);
     return (CConstDropZoneInfo *) getCache(xpath.str());
 }
+
+IConstDropZoneInfo * CLocalEnvironment::getDropZoneByComputer(const char * computer, const char * dzname) const
+{
+    IConstDropZoneInfo * dzInfo = getDropZone(dzname);
+    if (!dzInfo)
+        return nullptr;
+
+    SCMStringBuffer cachedComputer;
+    dzInfo->getComputerName(cachedComputer);
+
+    if (!streq(computer, cachedComputer.str()))
+        return nullptr;
+
+    return dzInfo;
+
+}
+
+IConstDropZoneInfo * CLocalEnvironment::getDropZoneByComputerByIndex(const char * computer, unsigned index) const
+{
+    if (!computer || (index == 0))
+        return nullptr;
+
+    buildDropZoneCache();
+    if (index > getNumberOfDropZonesByComputer(computer))
+        return nullptr;
+
+    StringBuffer xpath("Software/DropZone[@computer=\"");
+    xpath.append(computer).append(DROPZONE_BY_MACHINE_SUFFIX).append(index).append("\"]");
+    synchronized procedure(safeCache);
+    return (CConstDropZoneInfo *) getCache(xpath.str());
+}
+
+IConstDropZoneInfo * CLocalEnvironment::getDropZoneByIndex(unsigned index) const
+{
+    if (!numOfDropZones || (index == 0))
+        return nullptr;
+
+    buildDropZoneCache();
+    if (index > numOfDropZones)
+        return nullptr;
+
+    StringBuffer xpath("Software/DropZone[@id=\"");
+    xpath.append(DROPZONE_SUFFIX).append(index).append("\"]");
+    synchronized procedure(safeCache);
+    return (CConstDropZoneInfo *) getCache(xpath.str());
+}
+
 
 IConstInstanceInfo * CLocalEnvironment::getInstance(const char *type, const char *version, const char *domain) const
 {
@@ -1190,7 +1400,7 @@ IConstInstanceInfo * CLocalEnvironment::getInstance(const char *type, const char
             }
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 
@@ -1221,7 +1431,7 @@ CConstInstanceInfo * CLocalEnvironment::getInstanceByIP(const char *type, const 
                 return inst.getClear();
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 
@@ -1231,13 +1441,13 @@ void CLocalEnvironment::unlockRemote()
     conn->commit(true);
     conn->changeMode(0, SDS_LOCK_TIMEOUT);
 #else
-   if (conn)
-   {
-       synchronized procedure(safeCache);
-       p.clear();
-       conn.setown(querySDS().connect(xPath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT));
-       p.setown(conn->getRoot());
-   }
+    if (conn)
+    {
+        synchronized procedure(safeCache);
+        p.clear();
+        conn.setown(querySDS().connect(xPath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT));
+        p.setown(conn->getRoot());
+    }
 #endif
 }
 
@@ -1269,7 +1479,7 @@ bool CLocalEnvironment::getRunInfo(IStringVal & path, IStringVal & dir, const ch
 {
     try
     {
-//      PrintLog("getExecutablePath %s %s %s", tag, version, machineaddr);
+        // PrintLog("getExecutablePath %s %s %s", tag, version, machineaddr);
 
         // first see if local machine with deployed on
         SocketEndpoint ep(machineaddr);
@@ -1279,11 +1489,13 @@ bool CLocalEnvironment::getRunInfo(IStringVal & path, IStringVal & dir, const ch
         {
             StringAttr testpath;
             StringAttrAdaptor teststrval(testpath);
-            if (ipinstance->doGetRunInfo(teststrval,dir,defprogname,false)) { // this returns full string
+            if (ipinstance->doGetRunInfo(teststrval,dir,defprogname,false))
+            { // this returns full string
                 RemoteFilename rfn;
                 rfn.setRemotePath(testpath.get());
                 Owned<IFile> file = createIFile(rfn); 
-                if (file->exists()) {
+                if (file->exists())
+                {
                     StringBuffer tmp;
                     rfn.getLocalPath(tmp);
                     path.set(tmp.str());
@@ -1330,18 +1542,216 @@ bool CLocalEnvironment::getRunInfo(IStringVal & path, IStringVal & dir, const ch
 void CLocalEnvironment::clearCache()
 {
     synchronized procedure(safeCache);
-    if (conn) {
+    if (conn)
+    {
         p.clear();
         conn->reload();
         p.setown(conn->getRoot());
     }
     cache.kill();
-    machineCacheBuilt = false;
-    dropZoneCacheBuilt = false;
+    numOfDropzonesByComputer.clear();
+    init();
     resetPasswordsFromSDS();
 }
 
+IConstDropZoneInfo * CLocalEnvironment::getDropZoneByAddressPath(const char * netaddress, const char *targetFilePath) const
+{
+    IConstDropZoneInfo * retVal = nullptr;
+
+    Owned<IConstMachineInfo> machineInfo = getMachineByAddress(netaddress);
+    if (!machineInfo)
+        return retVal;
+
+    SCMStringBuffer machineName;
+    machineInfo->getName(machineName);
+    const char * pmachineName = machineName.str();
+    Owned<IConstDropZoneInfoIterator> zoneIt= getDropZoneIteratorByComputer(pmachineName);
+#ifdef _DEBUG
+    LOG(MCdebugInfo, unknownJob, "Check remote drop zones (%d) by iterator on '%s':", zoneIt->count(), pmachineName);
+#endif
+
+    SCMStringBuffer dropzonePath;
+    const char * pdropzonePath = nullptr;
+    unsigned dropzonePathLen = _MAX_PATH + 1;
+
+    ForEach(*zoneIt)
+    {
+        SCMStringBuffer dropZoneDir;
+        zoneIt->query().getDirectory(dropZoneDir);
+        StringBuffer fullDropZoneDir(dropZoneDir.str());
+        addPathSepChar(fullDropZoneDir);
+        const char * pdropzoneDir = fullDropZoneDir.str();
+
+        // Check target file path starts with this Drop zone path
+        // the drop zone paths can be nested (nothing forbids it) like
+        // dz1: /a/b/c/d
+        // dz2: /a/b/c
+        // dz3: /a/b
+        // check all and select the shortest
+
+        if (strncmp(pdropzoneDir, targetFilePath, strlen(pdropzoneDir)) == 0)
+        {
+            if (dropzonePathLen > strlen(pdropzoneDir))
+            {
+                dropzonePathLen = strlen(pdropzoneDir);
+                dropzonePath.set(pdropzoneDir);
+                pdropzonePath = dropzonePath.str();
+                retVal = &zoneIt->query();
+            }
+        }
+    }
+    return retVal;
+}
+
+IConstDropZoneInfoIterator * CLocalEnvironment::getDropZoneIteratorByComputer(const char * computer) const
+{
+    return new CConstDropZoneIteratorByComputer(computer);
+}
+
+IConstDropZoneInfoIterator * CLocalEnvironment::getDropZoneIterator() const
+{
+    return new CConstDropZoneInfoIterator();
+}
+
+IConstMachineInfoIterator * CLocalEnvironment::getMachineIterator() const
+{
+    return new CConstMachineInfoIterator();
+}
+
 //==========================================================================================
+// Iterators implementation
+
+CConstMachineInfoIterator::CConstMachineInfoIterator()
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    constEnv.setown((CLocalEnvironment *)factory->openEnvironment());
+    maxIndex = constEnv->getNumberOfMachines();
+}
+
+bool CConstMachineInfoIterator::first()
+{
+    index = 1;
+    curr = constEnv->getMachineByIndex(index);
+    return (curr != nullptr);
+}
+bool CConstMachineInfoIterator::next()
+{
+    if (index < maxIndex)
+    {
+        index++;
+        curr = constEnv->getMachineByIndex(index);
+    }
+    else
+        curr = nullptr;
+
+    return (curr ? true : false);
+}
+
+bool CConstMachineInfoIterator::isValid()
+{
+    return curr != nullptr;
+}
+
+IConstMachineInfo & CConstMachineInfoIterator::query()
+{
+    return *curr;
+}
+
+unsigned CConstMachineInfoIterator::count() const
+{
+    return maxIndex;
+}
+
+//--------------------------------------------------
+
+CConstDropZoneIteratorByComputer::CConstDropZoneIteratorByComputer(const char * computer)
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    constEnv.setown((CLocalEnvironment *)factory->openEnvironment());
+    computerName.set(computer);
+    maxIndex = constEnv->getNumberOfDropZonesByComputer(computer);
+}
+
+bool CConstDropZoneIteratorByComputer::first()
+{
+    index = 1;
+    curr = constEnv->getDropZoneByComputerByIndex(computerName.str(), index);
+    return (curr != nullptr);
+}
+bool CConstDropZoneIteratorByComputer::next()
+{
+    if (index < maxIndex)
+    {
+        index++;
+        curr = constEnv->getDropZoneByComputerByIndex(computerName.str(), index);
+    }
+    else
+        curr = nullptr;
+
+    return (curr ? true : false);
+}
+
+bool CConstDropZoneIteratorByComputer::isValid()
+{
+    return curr != nullptr;
+}
+
+IConstDropZoneInfo & CConstDropZoneIteratorByComputer::query()
+{
+    return *curr;
+}
+
+unsigned CConstDropZoneIteratorByComputer::count() const
+{
+    return maxIndex;
+}
+
+//--------------------------------------------------
+
+CConstDropZoneInfoIterator::CConstDropZoneInfoIterator()
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    constEnv.setown((CLocalEnvironment *)factory->openEnvironment());
+    maxIndex = constEnv->getNumberOfDropZones();
+}
+
+bool CConstDropZoneInfoIterator::first()
+{
+    index = 1;
+    curr = constEnv->getDropZoneByIndex(index);
+    return (curr != nullptr);
+}
+
+bool CConstDropZoneInfoIterator::next()
+{
+    if (index < maxIndex)
+    {
+        index++;
+        curr = constEnv->getDropZoneByIndex(index);
+    }
+    else
+        curr = nullptr;
+
+    return (curr ? true : false);
+}
+
+bool CConstDropZoneInfoIterator::isValid()
+{
+    return curr != nullptr;
+}
+
+IConstDropZoneInfo & CConstDropZoneInfoIterator::query()
+{
+    return *curr;
+}
+
+unsigned CConstDropZoneInfoIterator::count() const
+{
+    return maxIndex;
+}
+
+//==========================================================================================
+
 
 static CriticalSection getEnvSect;
 
@@ -1367,7 +1777,7 @@ extern ENVIRONMENT_API void closeEnvironment()
             CriticalBlock block(getEnvSect);
 
             pFactory = factory;
-            factory = NULL;
+            factory = nullptr;
         }
         clearPasswordsFromSDS();
         if (pFactory)

@@ -1086,6 +1086,19 @@ margin-left:-20px;
     fill: white;
 }
 
+.claro .graph_Graph .graphVertex .common_Menu {
+    visibility:hidden;
+}
+
+.claro .graph_Graph .graphVertex > .subgraph .title rect {
+    fill: #dcf1ff;
+    border-bottom-width:0px;
+}
+
+.claro .graph_Graph .graphVertex > .subgraph .title text {
+    fill: black;
+}
+
 .claro .graph_Graph .graphVertex > .subgraph rect {
     fill: none;
 }
@@ -1134,4 +1147,10 @@ margin-left:-20px;
     text-align: left;
     overflow: hidden;
     width: 80px;
+}
+
+.dojoxUploaderFileListHeader th {
+    background-color:#eee;
+    padding:3px;
+    text-align: left;
 }

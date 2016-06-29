@@ -51,7 +51,7 @@
 
 #include "portlist.h"
 
-static SpinLock * cvtLock;
+static NonReentrantSpinLock * cvtLock;
 
 #ifdef _WIN32
 static IRandomNumberGenerator * protectedGenerator;
@@ -66,7 +66,7 @@ mach_timebase_info_data_t timebase_info  = { 1,1 };
 
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
-    cvtLock = new SpinLock;
+    cvtLock = new NonReentrantSpinLock;
 #ifdef _WIN32
     protectedGenerator = createRandomNumberGenerator();
     protectedGeneratorCs = new CriticalSection;
@@ -95,7 +95,7 @@ bool safe_ecvt(size_t len, char * buffer, double value, int numDigits, int * dec
 #ifdef _WIN32
     return _ecvt_s(buffer, len, value, numDigits, decimal, sign) == 0;
 #else
-    SpinBlock block(*cvtLock);
+    NonReentrantSpinBlock block(*cvtLock);
     const char * result = ecvt(value, numDigits, decimal, sign);
     if (!result)
         return false;
@@ -109,7 +109,7 @@ bool safe_fcvt(size_t len, char * buffer, double value, int numPlaces, int * dec
 #ifdef _WIN32
     return _fcvt_s(buffer, len, value, numPlaces, decimal, sign) == 0;
 #else
-    SpinBlock block(*cvtLock);
+    NonReentrantSpinBlock block(*cvtLock);
     const char * result = fcvt(value, numPlaces, decimal, sign);
     if (!result)
         return false;
@@ -500,7 +500,7 @@ void SharedObject::unload()
 
 IPluggableFactory *loadPlugin(const IPropertyTree *pluginInfo)
 {
-    const char *pluginName = pluginInfo->queryProp("@name");
+    const char *pluginName = pluginInfo->queryProp("@pluginName");
     const char *entrypoint = pluginInfo->queryProp("@entrypoint");
     if (!pluginName || !entrypoint)
         throw makeStringException(0, "Plugin information missing plugin name or entrypoint");
@@ -1299,21 +1299,20 @@ bool JBASE64_Decode(size32_t length, const char *incs, StringBuffer &out)
     return fullQuartetDecoded;
 }
 
+static const char enc32[33] =
+           "abcdefghijklmnopqrstuvwxyz"
+           "234567";
 static inline void encode5_32(const byte *in,StringBuffer &out)
 {
     // 5 bytes in 8 out
-    static const char enc[33] =  
-               "abcdefghijklmnopqrstuvwxyz"
-               "234567";
-
-    out.append(enc[(in[0] >> 3)]);
-    out.append(enc[((in[0] & 0x07) << 2) | (in[1] >> 6)]);
-    out.append(enc[(in[1] >> 1) & 0x1f]);
-    out.append(enc[((in[1] & 0x01) << 4) | (in[2] >> 4)]);
-    out.append(enc[((in[2] & 0x0f) << 1) | (in[3] >> 7)]);
-    out.append(enc[(in[3] >> 2) & 0x1f]);
-    out.append(enc[((in[3] & 0x03) << 3) | (in[4] >> 5)]);
-    out.append(enc[in[4] & 0x1f]);
+    out.append(enc32[(in[0] >> 3)]);
+    out.append(enc32[((in[0] & 0x07) << 2) | (in[1] >> 6)]);
+    out.append(enc32[(in[1] >> 1) & 0x1f]);
+    out.append(enc32[((in[1] & 0x01) << 4) | (in[2] >> 4)]);
+    out.append(enc32[((in[2] & 0x0f) << 1) | (in[3] >> 7)]);
+    out.append(enc32[(in[3] >> 2) & 0x1f]);
+    out.append(enc32[((in[3] & 0x03) << 3) | (in[4] >> 5)]);
+    out.append(enc32[in[4] & 0x1f]);
 }
 
 void JBASE32_Encode(const char *in,StringBuffer &out)
@@ -1914,8 +1913,6 @@ class CLinuxAuthenticatedUser: public CInterface, implements IAuthenticatedUser
     gid_t gid;
     uid_t saveuid;
     gid_t savegid;
-    int saveegrplen;
-    gid_t *saveegrp;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1996,28 +1993,29 @@ extern jlib_decl IAtom * deserializeAtom(MemoryBuffer & source)
 
 //==============================================================
 
+static const char enc64[65] =
+           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+           "abcdefghijklmnopqrstuvwxyz"
+           "0123456789-_";
+
 static inline void encode3_64(byte *in,StringBuffer &out)
 {
     // 3 bytes in 4 out
-    static const char enc[65] =  
-               "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-               "abcdefghijklmnopqrstuvwxyz"
-               "0123456789-_";
-    out.append(enc[in[0]>>2]);
-    out.append(enc[((in[0] << 4) & 0x30) | (in[1] >> 4)]);
-    out.append(enc[((in[1] << 2)  & 0x3c) | (in[2] >> 6)]);
-    out.append(enc[in[2] & 0x3f]);
+    out.append(enc64[in[0]>>2]);
+    out.append(enc64[((in[0] << 4) & 0x30) | (in[1] >> 4)]);
+    out.append(enc64[((in[1] << 2)  & 0x3c) | (in[2] >> 6)]);
+    out.append(enc64[in[2] & 0x3f]);
 }
 
 
 
 
+static NonReentrantSpinLock lock;
+static unsigned uuidbin[5] = {0,0,0,0,0};
 StringBuffer &genUUID(StringBuffer &out, bool nocase)
 { // returns a 24 char UUID for nocase=false or 32 char for nocase=true
-    static NonReentrantSpinLock lock;
     lock.enter();
     // could be quicker using statics
-    static unsigned uuidbin[5] = {0,0,0,0,0};
     if (uuidbin[0]==0) {
         queryHostIP().getNetAddress(sizeof(uuidbin[0]),uuidbin);
         uuidbin[1] = (unsigned)GetCurrentProcessId();
@@ -2319,17 +2317,16 @@ IPropertyTree *getHPCCEnvironment(const char *configFileName)
     return NULL;
 }
 
+static CriticalSection securitySettingsCrit;
+static bool useSSL = false;
+static StringAttr certificate;
+static StringAttr privateKey;
+static bool retrieved = false;
 jlib_decl bool querySecuritySettings(bool *          _useSSL,
                                      unsigned short *_port,
                                      const char * *  _certificate,
                                      const char * *  _privateKey)
 {
-    static CriticalSection securitySettingsCrit;
-    static bool useSSL = false;
-    static StringAttr certificate;
-    static StringAttr privateKey;
-    static bool retrieved = false;
-
     if (!retrieved)
     {
         CriticalBlock b(securitySettingsCrit);
@@ -2521,10 +2518,10 @@ bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,co
     return true;
 }
 
+static CriticalSection sect;
+static StringAttr processPath;
 const char * queryCurrentProcessPath()
 {
-    static CriticalSection sect;
-    static StringAttr processPath;
     CriticalBlock block(sect);
     if (processPath.isEmpty()) 
     {

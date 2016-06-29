@@ -335,7 +335,14 @@ define([
                             column = {
                                 label: name,
                                 field: prefix + name,
-                                width: this.extractWidth(type, name) * 9
+                                width: this.extractWidth(type, name) * 9,
+                                formatter: function (cell, row) {
+                                    switch (typeof cell) {
+                                        case "string":
+                                            return cell.replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
+                                    }
+                                    return cell;
+                                }
                             };
                         }
                     } else if (children) {

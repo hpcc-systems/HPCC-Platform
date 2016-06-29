@@ -25,27 +25,49 @@
 interface ISharedSmartBuffer;
 class NSplitterSlaveActivity;
 
-class CSplitterOutputBase : public CSimpleInterfaceOf<IStartableEngineRowStream>, public COutputTiming
-{
-public:
-// IEngineRowStream
-    virtual void resetEOF() { throwUnexpected(); }
-};
-
-class CSplitterOutput : public CSplitterOutputBase
+class CSplitterOutput : public CSimpleInterfaceOf<IStartableEngineRowStream>, public CEdgeProgress, public COutputTiming, implements IThorDataLink
 {
     NSplitterSlaveActivity &activity;
     Semaphore writeBlockSem;
+    bool started = false, stopped = false;
 
-    unsigned output;
-    rowcount_t rec, max;
+    unsigned outIdx;
+    rowcount_t rec = 0, max = 0;
 
 public:
-    CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned output);
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IStartableEngineRowStream>);
 
+    CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned outIdx);
+
+    void reset()
+    {
+        started = stopped = false;
+        rec = max = 0;
+    }
+    inline bool isStopped() const { return stopped; }
+
+// IThorDataLink impl.
+    virtual CSlaveActivity *queryFromActivity() override;
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override;
+    virtual void dataLinkSerialize(MemoryBuffer &mb) const override { CEdgeProgress::dataLinkSerialize(mb); }
+    virtual rowcount_t getProgressCount() const override { return CEdgeProgress::getCount(); }
+    virtual bool isGrouped() const override;
+    virtual IOutputMetaData * queryOutputMeta() const override;
+    virtual bool isInputOrdered(bool consumerOrdered) const override;
+    virtual void setOutputStream(unsigned index, IEngineRowStream *stream) override;
+    virtual IStrandJunction *getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override;
+    virtual unsigned __int64 queryTotalCycles() const override { return COutputTiming::queryTotalCycles(); }
+    virtual unsigned __int64 queryEndCycles() const { return COutputTiming::queryEndCycles(); }
+    virtual void debugRequest(MemoryBuffer &mb) override;
+// Stepping methods
+    virtual IInputSteppingMeta *querySteppingMeta() { return nullptr; }
+    virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
+
+// IStartableEngineRowStream
     virtual void start() override;
     virtual void stop() override;
     virtual const void *nextRow() override;
+    virtual void resetEOF() { throwUnexpected(); }
 };
 
 
@@ -57,20 +79,19 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
 {
     typedef CSlaveActivity PARENT;
 
-    bool spill;
-    bool eofHit;
-    bool inputsConfigured;
-    bool writeBlocked, pagedOut;
+    bool spill = false;
+    bool eofHit = false;
+    bool writeBlocked = false, pagedOut = false;
     CriticalSection startLock, writeAheadCrit;
     PointerArrayOf<Semaphore> stalledWriters;
-    unsigned nstopped;
-    rowcount_t recsReady;
-    Owned<IException> startException, writeAheadException;
+    unsigned stoppedOutputs = 0;
+    unsigned activeOutputs = 0;
+    rowcount_t recsReady = 0;
+    Owned<IException> writeAheadException;
     Owned<ISharedSmartBuffer> smartBuf;
     bool inputPrepared = false;
     bool inputConnected = false;
-    IPointerArrayOf<IThorDataLinkExt> delayInputsList;
-
+    unsigned remainingOutputs = 0;
 
     // NB: CWriter only used by 'balanced' splitter, which blocks write when too far ahead
     class CWriter : public CSimpleInterface, IThreaded
@@ -107,105 +128,6 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
             }
         }
     } writer;
-    class CNullInput : public CSplitterOutputBase
-    {
-    public:
-        virtual void start() override { throwUnexpected(); }
-        virtual const void *nextRow() override { throwUnexpected(); return NULL; }
-        virtual void stop() override { throwUnexpected(); }
-    };
-    class CInputWrapper : public CSplitterOutputBase
-    {
-        IRowStream *inputStream = nullptr;
-        NSplitterSlaveActivity &activity;
-
-    public:
-        CInputWrapper(NSplitterSlaveActivity &_activity) : activity(_activity) { }
-        virtual void start() override
-        {
-            activity.start();
-            inputStream = activity.inputStream;
-        }
-        virtual const void *nextRow() override
-        {
-            ActivityTimer t(totalCycles, activity.queryTimeActivities());
-            return inputStream->nextRow();
-        }
-        virtual void stop() override { activity.stop(); }
-    };
-    class CDelayedInput : public CSimpleInterfaceOf<IThorDataLinkExt>, public CEdgeProgress, implements IEngineRowStream
-    {
-        Owned<CSplitterOutputBase> inputStream;
-        Linked<NSplitterSlaveActivity> activity;
-        mutable SpinLock processActiveLock;
-        unsigned outputIdx = 0;
-
-    public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IThorDataLinkExt>);
-
-        CDelayedInput(NSplitterSlaveActivity &_activity) : CEdgeProgress(&_activity), activity(&_activity) { }
-        void setInput(CSplitterOutputBase *_inputStream)
-        {
-            SpinBlock b(processActiveLock);
-            inputStream.setown(_inputStream);
-        }
-        const void *nextRow()
-        {
-            OwnedConstThorRow row = inputStream->nextRow();
-            if (row)
-                dataLinkIncrement();
-            return row.getClear();
-        }
-        void stop()
-        {
-            inputStream->stop();
-            dataLinkStop();
-        }
-        void resetEOF()
-        {
-            inputStream->resetEOF();
-        }
-    // IThorDataLink impl.
-        virtual void start()
-        {
-            activity->ensureInputsConfigured();
-            inputStream->start();
-            dataLinkStart();
-        }
-        virtual CSlaveActivity *queryFromActivity() override { return activity; }
-        virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override { activity->getMetaInfo(info); }
-        virtual void dataLinkSerialize(MemoryBuffer &mb) const { CEdgeProgress::dataLinkSerialize(mb); }
-        virtual bool isGrouped() const { return activity->isGrouped(); }
-        virtual IOutputMetaData * queryOutputMeta() const { return activity->queryOutputMeta(); }
-        virtual unsigned queryOutputIdx() const { return outputIdx; }
-        virtual bool isInputOrdered(bool consumerOrdered) const { return activity->isInputOrdered(consumerOrdered); }
-        virtual void setOutputStream(unsigned index, IEngineRowStream *stream) { activity->setOutputStream(index, stream); }
-        virtual IStrandJunction *getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
-        {
-            activity->connectInput(consumerOrdered);
-            streams.append(this);
-            return NULL;
-        }
-        virtual unsigned __int64 queryTotalCycles() const override
-        {
-            SpinBlock b(processActiveLock);
-            if (!inputStream)
-                return 0;
-            return inputStream->queryTotalCycles();
-        }
-        virtual unsigned __int64 queryEndCycles() const
-        {
-            SpinBlock b(processActiveLock);
-            return inputStream->queryEndCycles();
-        }
-        virtual void debugRequest(MemoryBuffer &mb) { activity->debugRequest(mb); }
-    // Stepping methods
-        virtual IInputSteppingMeta *querySteppingMeta() { return NULL; }
-        virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
-    // IThorDataLinkExt
-        virtual void setOutputIdx(unsigned idx) override { outputIdx = idx; }
-    };
-
     void connectInput(bool consumerOrdered)
     {
         CriticalBlock block(startLock);
@@ -217,87 +139,31 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         }
     }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
-    NSplitterSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container), writer(*this)
+    NSplitterSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), writer(*this)
     {
-        spill = false;
-        nstopped = 0;
-        eofHit = inputsConfigured = writeBlocked = pagedOut = false;
-        recsReady = 0;
+        activeOutputs = container.getOutputs();
+        ActPrintLog("Number of connected outputs: %u", activeOutputs);
+        ForEachItemIn(o, container.outputs)
+            appendOutput(new CSplitterOutput(*this, o));
     }
-    virtual ~NSplitterSlaveActivity()
+    virtual void reset() override
     {
-        delayInputsList.kill();
-    }
-    void ensureInputsConfigured()
-    {
-        CriticalBlock block(startLock);
-        if (inputsConfigured)
-            return;
-        inputsConfigured = true;
-        unsigned noutputs = container.connectedOutputs.getCount();
-        ActPrintLog("Number of connected outputs: %d", noutputs);
-        if (1 == noutputs)
-        {
-            CIOConnection *io = NULL;
-            ForEachItemIn(o, container.connectedOutputs)
-            {
-                io = container.connectedOutputs.item(o);
-                if (io)
-                    break;
-            }
-            assertex(io);
-            ForEachItemIn(o2, delayInputsList)
-            {
-                CDelayedInput *delayedInput = (CDelayedInput *)delayInputsList.item(o2);
-                if (o2 == o)
-                    delayedInput->setInput(new CInputWrapper(*this));
-                else
-                    delayedInput->setInput(new CNullInput());
-            }
-        }
-        else
-        {
-            ForEachItemIn(o, delayInputsList)
-            {
-                CDelayedInput *delayedInput = (CDelayedInput *)delayInputsList.item(o);
-                if (NULL != container.connectedOutputs.queryItem(o))
-                    delayedInput->setInput(new CSplitterOutput(*this, o));
-                else
-                    delayedInput->setInput(new CNullInput());
-            }
-        }
-    }
-    void reset()
-    {
-        CSlaveActivity::reset();
-        nstopped = 0;
+        PARENT::reset();
+        stoppedOutputs = 0;
         eofHit = false;
         inputPrepared = false;
-        inputConnected = false;
         recsReady = 0;
         writeBlocked = false;
         stalledWriters.kill();
-        if (inputsConfigured)
+        ForEachItemIn(o, outputs)
         {
-            // ensure old inputs cleared, to avoid being reused before re-setup on subsequent executions
-            ForEachItemIn(o, delayInputsList)
-            {
-                CDelayedInput *delayedInput = (CDelayedInput *)delayInputsList.item(o);
-                delayedInput->setInput(NULL);
-            }
-            inputsConfigured = false;
+            CSplitterOutput *output = (CSplitterOutput *)outputs.item(o);
+            if (output)
+                output->reset();
         }
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        ForEachItemIn(o, container.outputs)
-        {
-            Owned<CDelayedInput> delayedInput = new CDelayedInput(*this);
-            delayInputsList.append(delayedInput.getLink());
-            appendOutput(delayedInput.getClear());
-        }
         IHThorSplitArg *helper = (IHThorSplitArg *)queryHelper();
         int dV = getOptInt(THOROPT_SPLITTER_SPILL, -1);
         if (-1 == dV)
@@ -305,52 +171,57 @@ public:
         else
             spill = dV>0;
     }
-    void prepareInput(unsigned output)
+    bool prepareInput()
     {
         CriticalBlock block(startLock);
         if (!inputPrepared)
         {
             inputPrepared = true;
-            try
+            PARENT::start();
+            remainingOutputs = activeOutputs;
+            ForEachItemIn(o, outputs)
             {
-                PARENT::start();
-                nstopped = container.connectedOutputs.getCount();
-                if (smartBuf)
-                    smartBuf->reset();
+                CSplitterOutput *output = (CSplitterOutput *)outputs.item(o);
+                if (output && output->isStopped())
+                    --remainingOutputs;
+            }
+            assertex(remainingOutputs); // must be >=1, as this output (outIdx) has invoked prepareInput
+            if (1 == remainingOutputs)
+                return false;
+            if (smartBuf)
+                smartBuf->reset();
+            else
+            {
+                if (spill)
+                {
+                    StringBuffer tempname;
+                    GetTempName(tempname, "nsplit", true); // use alt temp dir
+                    smartBuf.setown(createSharedSmartDiskBuffer(this, tempname.str(), activeOutputs, queryRowInterfaces(input), &container.queryJob().queryIDiskUsage()));
+                    ActPrintLog("Using temp spill file: %s", tempname.str());
+                }
                 else
                 {
-                    if (spill)
-                    {
-                        StringBuffer tempname;
-                        GetTempName(tempname,"nsplit",true); // use alt temp dir
-                        smartBuf.setown(createSharedSmartDiskBuffer(this, tempname.str(), outputs.ordinality(), queryRowInterfaces(input), &container.queryJob().queryIDiskUsage()));
-                        ActPrintLog("Using temp spill file: %s", tempname.str());
-                    }
-                    else
-                    {
-                        ActPrintLog("Spill is 'balanced'");
-                        smartBuf.setown(createSharedSmartMemBuffer(this, outputs.ordinality(), queryRowInterfaces(input), NSPLITTER_SPILL_BUFFER_SIZE));
-                    }
-                    // mark any unconnected outputs of smartBuf as already stopped.
-                    ForEachItemIn(o, outputs)
-                    {
-                        IThorDataLink *delayedInput = outputs.item(o);
-                        if (NULL == container.connectedOutputs.queryItem(o))
-                            smartBuf->queryOutput(o)->stop();
-                    }
+                    ActPrintLog("Spill is 'balanced'");
+                    smartBuf.setown(createSharedSmartMemBuffer(this, activeOutputs, queryRowInterfaces(input), NSPLITTER_SPILL_BUFFER_SIZE));
                 }
-                if (!spill)
-                    writer.start(); // writer keeps writing ahead as much as possible, the readahead impl. will block when has too much
+                // mark any outputs already stopped
+                ForEachItemIn(o, outputs)
+                {
+                    CSplitterOutput *output = (CSplitterOutput *)outputs.item(o);
+                    if (output && output->isStopped())
+                        smartBuf->queryOutput(o)->stop();
+                }
             }
-            catch (IException *e)
-            {
-                startException.setown(e); 
-            }
+            if (!spill)
+                writer.start(); // writer keeps writing ahead as much as possible, the readahead impl. will block when has too much
         }
+        return true;
     }
-    inline const void *nextRow(unsigned output)
+    inline const void *nextRow(unsigned outIdx)
     {
-        OwnedConstThorRow row = smartBuf->queryOutput(output)->nextRow(); // will block until available
+        if (1 == remainingOutputs) // will be true, if only 1 input connect, or only 1 input was active (others stopped) when it started reading
+            return inputStream->nextRow();
+        OwnedConstThorRow row = smartBuf->queryOutput(outIdx)->nextRow(); // will block until available
         if (writeAheadException)
             throw LINK(writeAheadException);
         return row.getClear();
@@ -376,6 +247,10 @@ public:
                 break;
         }
         ActivityTimer t(totalCycles, queryTimeActivities());
+        if (!prepareInput()) // returns true, if
+        {
+            return RCMAX; // signals to requester that you are the only output
+        }
         pagedOut = false;
         OwnedConstThorRow row;
         loop
@@ -390,7 +265,7 @@ public:
                     row.setown(inputStream->nextRow());
                     if (row)
                     {
-                        smartBuf->putRow(NULL, this); // may call blocked() (see ISharedSmartBufferCallback impl. below)
+                        smartBuf->putRow(nullptr, this); // may call blocked() (see ISharedSmartBufferCallback impl. below)
                         ++recsReady;
                     }
                 }
@@ -408,9 +283,18 @@ public:
         }
         return recsReady;
     }
-    void inputStopped()
+    void inputStopped(unsigned outIdx)
     {
-        if (nstopped && --nstopped==0) 
+        CriticalBlock block(startLock);
+        if (smartBuf)
+        {
+            /* If no output has started reading (nextRow()), then it will not have been prepared
+             * If only 1 output is left, it will bypass the smart buffer when it starts.
+             */
+            smartBuf->queryOutput(outIdx)->stop();
+        }
+        ++stoppedOutputs;
+        if (stoppedOutputs == activeOutputs)
         {
             writer.stop();
             PARENT::stop();
@@ -441,20 +325,24 @@ public:
         }
     }
 
-// IThorDataLink (for output 0)
+// IEngineRowStream
+    virtual const void *nextRow() override
+    {
+        ActivityTimer t(totalCycles, queryTimeActivities());
+        return inputStream->nextRow();
+    }
+    virtual void stop() override{ inputStream->stop(); }
+
+// IThorDataLink (if single output connected)
+    virtual IStrandJunction *getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
+    {
+        connectInput(consumerOrdered);
+        streams.append(this);
+        return nullptr;
+    }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         calcMetaInfoSize(info, queryInput(0));
-    }
-    virtual unsigned __int64 queryTotalCycles() const override
-    {
-        unsigned __int64 _totalCycles = PARENT::queryTotalCycles(); // more() time
-        ForEachItemIn(o, outputs)
-        {
-            IThorDataLink *delayedInput = outputs.item(o);
-            _totalCycles += delayedInput->queryTotalCycles();
-        }
-        return _totalCycles;
     }
 
 friend class CInputWrapper;
@@ -465,37 +353,82 @@ friend class CWriter;
 //
 // CSplitterOutput
 //
-CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned _output)
-   : activity(_activity), output(_output)
+
+CSlaveActivity *CSplitterOutput::queryFromActivity()
 {
-    rec = max = 0;
+    return &activity;
+}
+
+void CSplitterOutput::getMetaInfo(ThorDataLinkMetaInfo &info)
+{
+    activity.getMetaInfo(info);
+}
+
+bool CSplitterOutput::isGrouped() const
+{
+    return activity.isGrouped();
+}
+
+IOutputMetaData *CSplitterOutput::queryOutputMeta() const
+{
+    return activity.queryOutputMeta();
+}
+bool CSplitterOutput::isInputOrdered(bool consumerOrdered) const
+{
+    return activity.isInputOrdered(consumerOrdered);
+
+}
+void CSplitterOutput::setOutputStream(unsigned index, IEngineRowStream *stream)
+{
+    activity.setOutputStream(index, stream);
+}
+
+IStrandJunction *CSplitterOutput::getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
+{
+    activity.connectInput(consumerOrdered);
+    streams.append(this);
+    return nullptr;
+}
+
+void CSplitterOutput::debugRequest(MemoryBuffer &mb)
+{
+    activity.debugRequest(mb);
+}
+
+
+CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned _outIdx)
+   : CEdgeProgress(&_activity, _outIdx), activity(_activity), outIdx(_outIdx)
+{
 }
 
 // IStartableEngineRowStream
 void CSplitterOutput::start()
 {
     ActivityTimer s(totalCycles, activity.queryTimeActivities());
-    rec = max = 0;
-    activity.prepareInput(output);
-    if (activity.startException)
-        throw LINK(activity.startException);
+    started = true;
+    dataLinkStart();
 }
 
 // IEngineRowStream
 void CSplitterOutput::stop()
 { 
-    CriticalBlock block(activity.startLock);
-    activity.smartBuf->queryOutput(output)->stop();
-    activity.inputStopped();
+    stopped = true;
+    activity.inputStopped(outIdx);
+    dataLinkStop();
 }
 
 const void *CSplitterOutput::nextRow()
 {
     if (rec == max)
+    {
         max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem);
+        // NB: if this is sole input that actually started, writeahead will have returned RCMAX and calls to activity.nextRow will go directly to splitter input
+    }
     ActivityTimer t(totalCycles, activity.queryTimeActivities());
-    const void *row = activity.nextRow(output); // pass ptr to max if need more
+    const void *row = activity.nextRow(outIdx); // pass ptr to max if need more
     ++rec;
+    if (row)
+        dataLinkIncrement();
     return row;
 }
 

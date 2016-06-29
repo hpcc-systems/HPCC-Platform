@@ -441,6 +441,13 @@
     </xs:attribute>
  </xs:attributeGroup>
  <xs:attributeGroup name="Options">
+    <xs:attribute name="affinity" type="xs:nonNegativeInteger" use="optional" default="0">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>If non-zero, binds the roxie process to use the specified cores only (bitmask)</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="allFilesDynamic" type="xs:boolean" use="optional" default="false">
       <xs:annotation>
         <xs:appinfo>
@@ -479,10 +486,10 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="crcResources" type="xs:boolean" use="optional" default="false">
+    <xs:attribute name="coresPerQuery" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Performs Cyclic Redundancy Check and/or other validity checks on resource files at startup.</tooltip>
+          <tooltip>If non-zero, binds each incoming query to use the specified number of cores only</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
@@ -696,6 +703,13 @@
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Evaluate : ONCE sections of queries at query load time</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="prestartSlaveThreads" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Prestart slave worker threads at startup</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

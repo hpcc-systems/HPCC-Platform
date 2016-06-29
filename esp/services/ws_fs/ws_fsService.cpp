@@ -1921,6 +1921,8 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         destination->getClusterPartDiskMapSpec(gName.str(), mspec);
         mspec.setDefaultBaseDir(defaultFolder.str());
         mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
+        if (!req.getReplicate())
+            mspec.defaultCopies = DFD_NoCopies;
         destination->setClusterPartDiskMapSpec(gName.str(), mspec);
 
         int repo = req.getReplicateOffset();
@@ -2101,6 +2103,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         destination->getClusterPartDiskMapSpec(gName.str(), mspec);
         mspec.setDefaultBaseDir(defaultFolder.str());
         mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
+        if (!req.getReplicate())
+            mspec.defaultCopies = DFD_NoCopies;
         destination->setClusterPartDiskMapSpec(gName.str(), mspec);
         const char * encryptkey = req.getEncrypt();
         if(req.getCompress()||(encryptkey&&*encryptkey))
@@ -2214,32 +2218,39 @@ void CFileSprayEx::getDropZoneInfoByIP(const char* ip, const char* destFileIn, S
     if (!env)
         return;
 
-    Owned<IConstMachineInfo> machine = env->getMachineByAddress(ip);
-    if (!machine)
-    {
-        IpAddress ipAddr;
-        ipAddr.ipset(ip);
-        if (!ipAddr.isLocal())
-            return;
-        machine.setown(env->getMachineForLocalHost());
-        if (!machine)
-            return;
-    }
-    SCMStringBuffer computer, directory, maskBuf;
-    machine->getName(computer);
-    if (!computer.length())
-        return;
-
-    Owned<IConstDropZoneInfo> dropZone = env->getDropZoneByComputer(computer.str());
-    if (!dropZone)
-        return;
-    dropZone->getDirectory(directory);
+    SCMStringBuffer directory;
+    Owned<IConstDropZoneInfo> dropZone;
 
     StringBuffer destFile;
     if (isAbsolutePath(destFileIn))
+    {
         destFile.set(destFileIn);
+        dropZone.setown(env->getDropZoneByAddressPath(ip, destFile.str()));
+        if (!dropZone)
+            return;
+        dropZone->getDirectory(directory);
+    }
     else
     {
+        SCMStringBuffer computer;
+        Owned<IConstMachineInfo> machine = env->getMachineByAddress(ip);
+        if (!machine)
+        {
+            IpAddress ipAddr;
+            ipAddr.ipset(ip);
+            if (!ipAddr.isLocal())
+                return;
+            machine.setown(env->getMachineForLocalHost());
+            if (!machine)
+                return;
+        }
+        machine->getName(computer);
+        if (!computer.length())
+            return;
+        dropZone.setown(env->getDropZoneByComputer(computer.str()));
+        if (!dropZone)
+            return;
+        dropZone->getDirectory(directory);
         destFile.set(directory.str());
         if (destFile.length())
             addPathSepChar(destFile);
@@ -2248,6 +2259,7 @@ void CFileSprayEx::getDropZoneInfoByIP(const char* ip, const char* destFileIn, S
     destFileOut.set(destFile.str());
     if ((destFile.length() >= directory.length()) && !strnicmp(destFile.str(), directory.str(), directory.length()))
     {
+        SCMStringBuffer maskBuf;
         dropZone->getUMask(maskBuf);
         if (maskBuf.length())
             mask.set(maskBuf.str());
@@ -2530,6 +2542,8 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             wuFSpecDest->getClusterPartDiskMapSpec(destNodeGroup.str(), mspec);
             mspec.setDefaultBaseDir(defaultFolder.str());
             mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
+            if (!req.getReplicate())
+                mspec.defaultCopies = DFD_NoCopies;
             wuFSpecDest->setClusterPartDiskMapSpec(destNodeGroup.str(), mspec);
         }
 

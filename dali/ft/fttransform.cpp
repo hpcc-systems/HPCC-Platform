@@ -498,6 +498,7 @@ TransferServer::TransferServer(ISocket * _masterSocket)
     compressedInput = false;
     compressOutput = false;
     transferBufferSize = DEFAULT_STD_BUFFER_SIZE;
+    fileUmask = -1;
 }
 
 void TransferServer::sendProgress(OutputProgress & curProgress)
@@ -642,9 +643,16 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
     ForEachItemIn(i1, progress)
         progress.item(i1).deserializeExtra(msg, 1);
 
+    if (msg.remaining())
+        msg.read(fileUmask);
+
     LOG(MCdebugProgress, unknownJob, "throttle(%d), transferBufferSize(%d)", throttleNicSpeed, transferBufferSize);
     PROGLOG("compressedInput(%d), compressedOutput(%d), copyCompressed(%d)", compressedInput?1:0, compressOutput?1:0, copyCompressed?1:0);
     PROGLOG("encrypt(%d), decrypt(%d)", encryptKey.isEmpty()?0:1, decryptKey.isEmpty()?0:1);
+    if (fileUmask != -1)
+        PROGLOG("umask(0%o)", fileUmask);
+    else
+        PROGLOG("umask(default)");
 
     //---Finished deserializing ---
     displayProgress(progress);
@@ -669,7 +677,10 @@ void TransferServer::transferChunk(unsigned chunkIndex)
     PartitionPoint & curPartition = partition.item(chunkIndex);
     OutputProgress & curProgress = progress.item(chunkIndex);
 
-    LOG(MCdebugProgress, unknownJob, "Begin to transfer chunk %d: Start at length %" I64F "d", chunkIndex, curProgress.inputLength);
+    StringBuffer targetPath;
+    curPartition.outputName.getPath(targetPath);
+    LOG(MCdebugProgress, unknownJob, "Begin to transfer chunk %d (offset: %" I64F "d, size: %" I64F "d) to target:'%s' (offset: %" I64F "d, size: %" I64F "d) ",
+                        chunkIndex, curPartition.inputOffset, curPartition.inputLength, targetPath.str(), curPartition.outputOffset, curPartition.outputLength);
     const unsigned __int64 startOutOffset = out->tell();
     if (startOutOffset != curPartition.outputOffset+curProgress.outputLength)
         throwError4(DFTERR_OutputOffsetMismatch, out->tell(), curPartition.outputOffset+curProgress.outputLength, "start", chunkIndex);
@@ -890,6 +901,10 @@ processedProgress:
                     renameDfuTempToFinal(curPartition.outputName);
 
                     OwnedIFile output = createIFile(curPartition.outputName);
+
+                    if (fileUmask != -1)
+                        output->setFilePermissions(~fileUmask&0666);
+
                     if (mirror || replicate)
                     {
                         OwnedIFile input = createIFile(curPartition.inputName);

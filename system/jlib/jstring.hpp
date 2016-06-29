@@ -38,6 +38,7 @@ public:
     StringBuffer();
     StringBuffer(String & value);
     StringBuffer(const char *value);
+    StringBuffer(StringBuffer && value);
     StringBuffer(unsigned len, const char *value);
     StringBuffer(const StringBuffer & value);
     StringBuffer(bool useInternal);
@@ -48,6 +49,7 @@ public:
     inline bool     isEmpty() const                     { return (curLen == 0); }
     void            setLength(unsigned len);
     inline void     ensureCapacity(unsigned max)        { if (maxLen <= curLen + max) _realloc(curLen + max); }
+    size32_t        lengthUtf8() const;
 
     StringBuffer &  append(char value);
     StringBuffer &  append(unsigned char value);
@@ -131,6 +133,7 @@ public:
     {
         return clear().append(value.str());
     }
+    StringBuffer& operator=(StringBuffer&& value);
 
     StringBuffer &  appendlong(long value);
     StringBuffer &  appendulong(unsigned long value);
@@ -180,6 +183,7 @@ public:
 
     virtual const char * str() const { return s.str(); };
     virtual void set(const char *val) { s.clear().append(val); };
+    virtual void set(StringBuffer &&str) { s.swapWith(str); }
     virtual void clear() { s.clear(); };
     virtual void setLen(const char *val, unsigned length) { s.clear().append(length, val); };
     virtual unsigned length() const { return s.length(); };
@@ -249,6 +253,8 @@ public:
     StringAttr(const char * _text, unsigned _len);
     StringAttr(const char * _text);
     StringAttr(const StringAttr & src);
+    StringAttr(StringAttr && src);
+    StringAttr& operator = (StringAttr && from);
     inline ~StringAttr(void) { free(text); }
     
     inline operator const char * () const       { return text; }
@@ -395,6 +401,8 @@ extern jlib_decl void decodeXML(ISimpleReadStream &in, StringBuffer &out, unsign
 
 extern jlib_decl int utf8CharLen(unsigned char ch);
 extern jlib_decl int utf8CharLen(const unsigned char *ch, unsigned maxsize = (unsigned)-1);
+
+extern jlib_decl StringBuffer &replaceString(StringBuffer & result, size32_t lenSource, const char *source, size32_t lenOldStr, const char* oldStr, size32_t lenNewStr, const char* newStr);
 
 inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flags=false, unsigned len=(unsigned)-1)
 {

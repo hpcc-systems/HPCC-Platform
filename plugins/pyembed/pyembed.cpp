@@ -511,7 +511,7 @@ static int countFields(const RtlFieldInfo * const * fields)
 
 // Conversions from Python objects to ECL data
 
-static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));
+__declspec(noreturn) static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));
 
 static void typeError(const char *expected, const RtlFieldInfo *field)
 {
@@ -1378,7 +1378,7 @@ public:
         addArg(name, vval);
         rtlFree(unicode);
     }
-    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, const void *setData)
     {
         if (isAll)
             rtlFail(0, "pyembed: Cannot pass ALL");

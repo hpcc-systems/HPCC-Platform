@@ -76,17 +76,15 @@ public:
 class HQL_API UniqueSequenceCounter
 {
 public:
-    inline UniqueSequenceCounter() { value = 0; }
+    inline UniqueSequenceCounter() : value(1) {}
 
     inline unique_id_t next() 
-    { 
-        SpinBlock block(lock);
-        return ++value; 
+    {
+        return value.fetch_add(1, std::memory_order_relaxed);
     }
 
 protected:
-    unique_id_t value;
-    SpinLock lock;
+    std::atomic<unique_id_t> value;
 };
 
 
@@ -358,8 +356,8 @@ enum node_operator : unsigned short {
         no_nocombine,
         no_unordered,
         no_critical,
-    no_unused30,
-    no_unused31,
+        no_likely,
+        no_unlikely,
     no_unused32,
     no_unused33,
     no_unused34,
@@ -791,6 +789,7 @@ enum ExprPropKind
     EPunadorned,
     EPlocationIndependent,
     EPmeta,
+    EPlikelihood,
     EPmax
 };
 
@@ -1346,6 +1345,11 @@ extern HQL_API IHqlExpression* createValue(node_operator op, ITypeInfo *type, Hq
 extern HQL_API IHqlExpression* createValue(node_operator op, HqlExprArray& operands);
 extern HQL_API IHqlExpression *createValue(node_operator op, IHqlExpression *p1);
 extern HQL_API IHqlExpression* createConstant(int ival);
+extern HQL_API IHqlExpression *queryConstantLikelihoodUnknown();
+extern HQL_API IHqlExpression *queryConstantLikelihoodLikely();
+extern HQL_API IHqlExpression *queryConstantLikelihoodUnlikely();
+extern HQL_API IHqlExpression *queryConstantLikelihoodTrue();
+extern HQL_API IHqlExpression *queryConstantLikelihoodFalse();
 extern HQL_API IHqlExpression* createBoolExpr(node_operator op, HqlExprArray& operands);
 extern HQL_API IHqlExpression* createSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs, bool isNew);
 inline IHqlExpression* createSelectExpr(IHqlExpression * lhs, IHqlExpression * rhs) { return createSelectExpr(lhs, rhs, false); }

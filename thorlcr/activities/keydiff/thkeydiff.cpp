@@ -37,7 +37,7 @@ class CKeyDiffMaster : public CMasterActivity
 public:
     CKeyDiffMaster(CMasterGraphElement *info) : CMasterActivity(info)
     {
-        helper = NULL;
+        helper = (IHThorKeyDiffArg *)queryHelper();
         local = false;
         width = 0;
         copyTlk = globals->getPropBool("@diffCopyTlk", true); // because tlk can have meta data and diff/patch does not support
@@ -45,7 +45,6 @@ public:
     virtual void init()
     {
         CMasterActivity::init();
-        helper = (IHThorKeyDiffArg *)queryHelper();
         OwnedRoxieString originalHelperName(helper->getOriginalName());
         OwnedRoxieString updatedHelperName(helper->getUpdatedName());
         OwnedRoxieString outputHelperName(helper->getOutputName());
@@ -175,7 +174,7 @@ public:
         container.queryTempHandler()->registerFile(outputName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
         Owned<IDistributedFile> patchFile;
         // set part sizes etc
-        queryThorFileManager().publish(container.queryJob(), outputName, *patchDesc, &patchFile, 0, false);
+        queryThorFileManager().publish(container.queryJob(), outputName, *patchDesc, &patchFile);
         try { // set file size
             if (patchFile) {
                 __int64 fs = patchFile->getFileSize(true,false);

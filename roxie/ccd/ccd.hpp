@@ -61,7 +61,6 @@ void joinMulticastChannel(unsigned channel);
 extern unsigned channels[MAX_CLUSTER_SIZE];     // list of all channel numbers for this node
 extern unsigned channelCount;                   // number of channels this node is doing
 extern unsigned subChannels[MAX_CLUSTER_SIZE];  // maps channel numbers to subChannels for this node
-extern bool suspendedChannels[MAX_CLUSTER_SIZE];// indicates suspended channels for this node
 extern unsigned numSlaves[MAX_CLUSTER_SIZE];    // number of slaves listening on this channel
 extern unsigned replicationLevel[MAX_CLUSTER_SIZE];  // Which copy of the data this channel uses on this slave
 
@@ -127,7 +126,7 @@ public:
     inline bool isHighPriority() const { return (activityId & ROXIE_PRIORITY_MASK) == ROXIE_HIGH_PRIORITY; }
     inline bool isSLAPriority() const { return (activityId & ROXIE_PRIORITY_MASK) == ROXIE_SLA_PRIORITY; }
 
-    inline RemoteActivityId(unsigned _activityId, hash64_t _queryHash) 
+    inline RemoteActivityId(unsigned _activityId, hash64_t _queryHash)
         : activityId(_activityId), queryHash(_queryHash)
     {
     }
@@ -329,7 +328,6 @@ extern IProperties *targetAliases;
 
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
-extern bool crcResources;
 extern bool logFullQueries;
 extern bool blindLogging;
 extern bool debugPermitted;
@@ -369,6 +367,7 @@ extern unsigned minFilesOpen[2];
 extern unsigned maxFilesOpen[2];
 extern unsigned restarts;
 extern bool checkCompleted;
+extern bool prestartSlaveThreads;
 extern unsigned preabortKeyedJoinsThreshold;
 extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
@@ -721,7 +720,7 @@ public:
     SlaveContextLogger();
     SlaveContextLogger(IRoxieQueryPacket *packet);
     void set(IRoxieQueryPacket *packet);
-    void putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed) const;
+    void putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed, unsigned strands) const;
     void putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const;
     void flush();
     inline bool queryDebuggerActive() const { return debuggerActive; }

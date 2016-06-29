@@ -199,7 +199,6 @@
 #define ERR_ASSERT_WRONGSCOPING     2131 /* Incorrect assertion scoping */
 #define ERR_ASSERT_BOOLEXPECTED     2132 /* Assertion must be boolean */
 #define ERR_SCOPE_USEDATASETINEXPR  2133 /* Use dataset in expression without proper context */
-#define ERR_FETCH_NON_DATASET       2134 /* Parameter to fetch isn't a dataset */
 
 #define ERR_MODIFIER_ILLCOMB        2141 /* Illegal combination of modifiers */
 #define ERR_EXPORTSHARECONFLICT     2142 /* EXPORT and SHARED cannot be specified together */
@@ -429,6 +428,8 @@
 #define ERR_DUBIOUS_NAME            2397
 #define ERR_DUPLICATE_FILENAME      2398
 #define ERR_DUPLICATE_SOURCE        2399
+#define ERR_PROBABILITY_RANGE       2400
+#define ERR_EMBEDPROJECT_INVALID    2401
 
 #define ERR_CPP_COMPILE_ERROR       2999
 

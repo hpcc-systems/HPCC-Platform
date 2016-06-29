@@ -1780,6 +1780,10 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeSortAllFields,"optimizeSortAllFields",true),
         DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
         DebugOption(options.alwaysReuseGlobalSpills,"alwaysReuseGlobalSpills",true),
+        DebugOption(options.forceAllDatasetsParallel,"forceAllDatasetsParallel",false),  // Purely for regression testing.
+        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsAsErrors",true),
+        DebugOption(options.optimizeCriticalFunctions,"optimizeCriticalFunctions",true),
+        DebugOption(options.addLikelihoodToGraph,"addLikelihoodToGraph", true),
     };
 
     //get options values from workunit
@@ -2408,6 +2412,8 @@ void HqlCppTranslator::buildExprAssign(BuildCtx & ctx, const CHqlBoundTarget & t
     case no_sectioninput:
     case no_forcegraph:
     case no_nocombine:
+    case no_likely:
+    case no_unlikely:
         buildExprAssign(ctx, target, expr->queryChild(0));
         break;
     case no_realformat:
@@ -3279,6 +3285,8 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_pure:
     case no_forcegraph:
     case no_nocombine:
+    case no_likely:
+    case no_unlikely:
         buildExpr(ctx, expr->queryChild(0), tgt);
         return;
     case no_band:
@@ -3663,6 +3671,8 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_sectioninput:
     case no_forcegraph:
     case no_nocombine:
+    case no_likely:
+    case no_unlikely:
         buildStmt(ctx, expr->queryChild(0));
         return;
     case no_null:
@@ -4403,7 +4413,7 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, BuildCtx & declareCtx, CHql
         }
     }
 
-    typemod_t modifier = (&ctx != &declareCtx) ? typemod_member : typemod_none;
+    typemod_t modifier = !ctx.isSameLocation(declareCtx) ? typemod_member : typemod_none;
     OwnedITypeInfo type = makeModifier(expr->getType(), modifier);
     BuildCtx subctx(ctx);
     switch (type->getTypeCode())
@@ -7384,7 +7394,8 @@ bool HqlCppTranslator::ifRequiresAssignment(BuildCtx & ctx, IHqlExpression * exp
         return true;
     if (trueExpr->queryType() != falseExpr->queryType() && isStringType(expr->queryType()))
         return true;
-    if (expr->queryType()->getTypeCode() == type_decimal)
+    type_t tc = expr->queryType()->getTypeCode();
+    if ((tc == type_decimal) || (tc == type_data))
         return true;
     return false;
 }
@@ -11614,7 +11625,7 @@ static IHqlExpression *createActualFromFormal(IHqlExpression *param)
     return bound.getTranslatedExpr();
 }
 
-static IHqlExpression * replaceInlineParameters(IHqlExpression * funcdef, IHqlExpression * expr)
+IHqlExpression * replaceInlineParameters(IHqlExpression * funcdef, IHqlExpression * expr)
 {
     IHqlExpression * body = funcdef->queryChild(0);
     assertex(!body->hasAttribute(oldSetFormatAtom));
@@ -11713,17 +11724,27 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
         startLine += memcount(body-start, start, '\n');
     }
 
-    funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
-            "#pragma GCC diagnostic error \"-Wall\"\n"
-            "#pragma GCC diagnostic error \"-Wextra\"\n"
-            "#pragma GCC diagnostic ignored \"-Wunused-parameter\"\n"  // Generated prototype tends to include ctx that is often not used
-            "#endif\n");
+    BuildCtx outerctx(funcctx);
+    if (options.embeddedWarningsAsErrors)
+    {
+        funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+                "#pragma GCC diagnostic error \"-Wall\"\n"
+                "#pragma GCC diagnostic error \"-Wextra\"\n"
+                "#pragma GCC diagnostic ignored \"-Wunused-parameter\"\n"  // Generated prototype tends to include ctx that is often not used
+                "#endif\n");
+    }
 
-    funcctx.addQuotedCompound(proto, "\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
-            "#pragma GCC diagnostic ignored \"-Wall\"\n"
-            "#pragma GCC diagnostic ignored \"-Wextra\"\n"
-            "#pragma GCC diagnostic ignored \"-Wunused-variable\"\n"  // Some variants of gcc seemt to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
-            "#endif\n");
+    funcctx.addQuotedCompound(proto);
+
+    if (options.embeddedWarningsAsErrors)
+    {
+        outerctx.addQuoted("\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+                "#pragma GCC diagnostic ignored \"-Wall\"\n"
+                "#pragma GCC diagnostic ignored \"-Wextra\"\n"
+                "#pragma GCC diagnostic ignored \"-Wunused-variable\"\n"  // Some variants of gcc seem to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
+                "#pragma GCC diagnostic ignored \"-Wparentheses\"\n"      // Some variants of gcc seem to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
+                "#endif\n");
+    }
     if (location)
         funcctx.addLine(locationFilename, startLine);
     funcctx.addQuoted(body);
@@ -11754,40 +11775,26 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     createParam.append(isImport ? "EFimport" : "EFembed");
     if (returnType->getTypeCode()==type_void)
         createParam.append("|EFnoreturn");
-    if (formals->numChildren()==0)
+
+    IHqlExpression *optionsParam = nullptr;
+    IHqlExpression *queryParam = nullptr;
+    unsigned numRealParams = 0;
+    ForEachChild(formalIdx, formals)
+    {
+        IHqlExpression *formal = formals->queryChild(formalIdx);
+        if (formal->queryId()==__optionsId)
+            optionsParam = formal;
+        else if (formal->queryId()==__queryId)
+            queryParam = formal;
+        else
+            numRealParams++;
+    }
+    if (!numRealParams)
         createParam.append("|EFnoparams");
 
-    HqlExprArray attrArgs;
-    ForEachChild(idx, bodyCode)
+    if (optionsParam)
     {
-        IHqlExpression *child = bodyCode->queryChild(idx);
-        if (child->isAttribute() && child->queryName() != languageAtom && child->queryName() != importAtom)
-        {
-            StringBuffer attrParam;
-            if (attrArgs.ordinality())
-                attrParam.append(",");
-            attrParam.append(child->queryName());
-
-            IHqlExpression * value = child->queryChild(0);
-            if (value)
-                attrParam.append("=");
-            attrArgs.append(*createConstant(attrParam));
-            if (value)
-                attrArgs.append(*ensureExprType(value, unknownStringType));
-        }
-    }
-    if (attrArgs.length())
-    {
-        OwnedHqlExpr concat = createUnbalanced(no_concat, unknownStringType, attrArgs);
-        OwnedHqlExpr cast = ensureExprType(concat, unknownVarStringType);
-
-        // It's not legal to use parameters in the options, since it becomes ambiguous whether they should be bound to embed variables or not.
-        // Check that they didn't and give a sensible error message
-        OwnedHqlExpr boundCast = replaceInlineParameters(funcdef, cast);
-        if (cast != boundCast)
-            throwError(HQLERR_EmbedParamNotSupportedInOptions);
-
-        OwnedHqlExpr folded = foldHqlExpression(cast);
+        OwnedHqlExpr folded = createActualFromFormal(optionsParam);
         CHqlBoundExpr bound;
         buildExpr(funcctx, folded, bound);
         createParam.append(",");
@@ -11801,13 +11808,68 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
 
     HqlExprArray scriptArgs;
     scriptArgs.append(*LINK(ctxVar));
-    scriptArgs.append(*LINK(bodyCode->queryChild(0)));
+    if (bodyCode->hasAttribute(projectedAtom))
+    {
+        assertex(!isImport);
+        // Generate the field list from the output record
+        StringBuffer fieldlist;
+        IHqlExpression *outRec = bodyCode->queryChild(1);
+        assertex(outRec->queryRecordType());
+        HqlExprArray fields;
+        getSimpleFields(fields, outRec);
+        ForEachItemIn(idx, fields)
+        {
+            IIdAtom *fieldName = fields.item(idx).queryId();
+            assertex(fieldName);
+            fieldlist.append(',').append(fieldName->queryStr());
+        }
+        assertex(fieldlist.length());
+        LinkedHqlExpr substSearch = queryAttributeChild(bodyCode, projectedAtom, 0);
+        assertex (substSearch);
+        IValue *substValue = substSearch->queryValue();
+        if (queryParam || !substValue)
+        {
+            HqlExprArray args;
+            if (queryParam)
+                args.append(*createActualFromFormal(queryParam));
+            else
+                args.append(*LINK(bodyCode->queryChild(0)));
+            args.append(*createConstant(createUtf8Value(fieldlist.length()-1, fieldlist+1, makeUtf8Type(UNKNOWN_LENGTH, NULL))));
+            args.append(*LINK(substSearch));
+            scriptArgs.append(*bindFunctionCall(substituteEmbeddedScriptId, args,makeUtf8Type(UNKNOWN_LENGTH, NULL)));
+        }
+        else
+        {
+            IValue *query = bodyCode->queryChild(0)->queryValue();
+            assertex(query);
+            StringBuffer origBody;
+            query->getUTF8Value(origBody);
+            StringBuffer search;
+            substValue->getUTF8Value(search);
+            rtlDataAttr result;
+            unsigned resultLen;
+            rtlSubstituteEmbeddedScript(resultLen, result.refstr(), origBody.lengthUtf8(), origBody.str(), fieldlist.lengthUtf8()-1, fieldlist.str()+1, search.lengthUtf8(), search.str());
+            scriptArgs.append(*createConstant(createUtf8Value(resultLen, result.getstr(), makeUtf8Type(resultLen, NULL))));
+        }
+    }
+    else
+    {
+        if (queryParam)
+        {
+            OwnedHqlExpr query = createActualFromFormal(queryParam);
+            scriptArgs.append(*query.getClear());
+        }
+        else
+            scriptArgs.append(*LINK(bodyCode->queryChild(0)));
+    }
     buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
     ForEachChild(i, formals)
     {
+        IHqlExpression * param = formals->queryChild(i);
+        if (param == optionsParam || param==queryParam)
+            continue;
         HqlExprArray args;
         args.append(*LINK(ctxVar));
-        IHqlExpression * param = formals->queryChild(i);
         ITypeInfo *paramType = param->queryType();
         IIdAtom * paramId = param->queryId();
         const char * paramNameText = str(paramId);
@@ -11962,7 +12024,9 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
 
         IHqlExpression *languageAttr = bodyCode->queryAttribute(languageAtom);
         if (languageAttr)
+        {
             buildScriptFunctionDefinition(funcctx, funcdef, proto);
+        }
         else
         {
             bool isInline = bodyCode->hasAttribute(inlineAtom);

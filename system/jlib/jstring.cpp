@@ -33,6 +33,7 @@
 #include "jfile.hpp"
 #include "jdebug.hpp"
 #include "jutil.hpp"
+#include "junicode.hpp"
 
 #define DOUBLE_FORMAT   "%.16g"
 #define FLOAT_FORMAT    "%.7g"
@@ -91,6 +92,12 @@ StringBuffer::StringBuffer(const StringBuffer & value)
 {
     init();
     append(value);
+}
+
+StringBuffer::StringBuffer(StringBuffer && value)
+{
+    init();
+    swapWith(value);
 }
 
 StringBuffer::StringBuffer(bool useInternal)
@@ -492,6 +499,14 @@ void StringBuffer::setLength(unsigned len)
         ensureCapacity(len-curLen);
     }
     curLen = len;
+}
+
+size32_t StringBuffer::lengthUtf8() const
+{
+    size32_t chars = 0;
+    for (unsigned offset=0; offset < curLen; offset += readUtf8Size(buffer+offset))
+        chars++;
+    return chars;
 }
 
 char * StringBuffer::reserve(size32_t size)
@@ -902,41 +917,45 @@ StringBuffer & StringBuffer::replace(char oldChar, char newChar)
     return *this;
 }
 
-// this method will replace all occurrances of "oldStr" with "newStr"
-StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newStr)
+// Copy source to result, replacing all occurrences of "oldStr" with "newStr"
+StringBuffer &replaceString(StringBuffer & result, size32_t lenSource, const char *source, size32_t lenOldStr, const char* oldStr, size32_t lenNewStr, const char* newStr)
 {
-    if (curLen)
+    if (lenSource)
     {
-        const char* s = str();  // get null terminated version of the string
-        int left = length();
-        int oldStr_len = (size32_t)strlen(oldStr);
-
-        StringBuffer tempbuff;
-
-        while (left >= oldStr_len)
+        size32_t left = lenSource;
+        while (left >= lenOldStr)
         {
-            if ( memcmp(s, oldStr, oldStr_len) == 0)
+            if (memcmp(source, oldStr, lenOldStr)==0)
             {
-                tempbuff.append(newStr);
-                s += oldStr_len;
-                left -= oldStr_len;
+                result.append(lenNewStr, newStr);
+                source += lenOldStr;
+                left -= lenOldStr;
             }
             else
             {
-                tempbuff.append(*s);
-                s++;
+                result.append(*source);
+                source++;
                 left--;
             }
         }
 
         // there are no more possible replacements, make sure we keep the end of the original buffer
-        tempbuff.append(s);
-        
-        //*this = tempbuff;
-        swapWith(tempbuff);
-        
+        result.append(left, source);
     }
+    return result;
+}
 
+// this method will replace all occurrences of "oldStr" with "newStr"
+StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newStr)
+{
+    if (curLen)
+    {
+        StringBuffer temp;
+        size32_t oldlen = oldStr ? strlen(oldStr) : 0;
+        size32_t newlen = newStr ? strlen(newStr) : 0;
+        ::replaceString(temp, curLen, buffer, oldlen, oldStr, newlen, newStr);
+        swapWith(temp);
+    }
     return *this;
 }
 
@@ -1279,6 +1298,20 @@ StringAttr::StringAttr(const StringAttr & src)
 {
     text = NULL;
     set(src.get());
+}
+
+StringAttr::StringAttr(StringAttr && src)
+{
+    text = src.text;
+    src.text = nullptr;
+}
+
+StringAttr& StringAttr::operator = (StringAttr && from)
+{
+    char *temp = text;
+    text = from.text;
+    from.text = temp;
+    return *this;
 }
 
 void StringAttr::set(const char * _text)
@@ -2481,4 +2514,10 @@ const char * nullText(const char * text)
 {
     if (text) return text;
     return "(null)";
+}
+
+StringBuffer& StringBuffer::operator=(StringBuffer&& value)
+{
+    swapWith(value);
+    return *this;
 }

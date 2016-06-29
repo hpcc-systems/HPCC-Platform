@@ -27,16 +27,12 @@ class CCatchSlaveActivityBase : public CSlaveActivity
     typedef CSlaveActivity PARENT;
 protected:
     IHThorCatchArg *helper;
-    bool eos;
+    bool eos = false;
 
 public:
     CCatchSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
         helper = static_cast <IHThorCatchArg *> (queryHelper());
-        eos = false;
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -151,7 +147,7 @@ class CSkipCatchSlaveActivity : public CCatchSlaveActivityBase
 {
     bool gathered, global, grouped, running;
     Owned<IBarrier> barrier;
-    Owned<IRowStream> inputStream;
+    Owned<IRowStream> gatheredInputStream;
 
     bool gather()
     {
@@ -174,7 +170,7 @@ class CSkipCatchSlaveActivity : public CCatchSlaveActivityBase
                 overflowBuf->putRow(row.getClear());
             }
             overflowBuf->flush();
-            inputStream.setown(overflowBuf->getReader()); 
+            gatheredInputStream.setown(overflowBuf->getReader());
         }
         catch (IException *)
         {
@@ -196,7 +192,7 @@ public:
     {
         global = !container->queryLocalOrGrouped();
     }
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {
         CCatchSlaveActivityBase::init(data, slaveData);
         if (global)
@@ -205,7 +201,7 @@ public:
             barrier.setown(container.queryJobChannel().createBarrier(barrierTag));
         }
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         CCatchSlaveActivityBase::start();
@@ -251,15 +247,11 @@ public:
                 return NULL;
             }
         }
-        OwnedConstThorRow row(inputStream->nextRow());
+        OwnedConstThorRow row(gatheredInputStream->nextRow());
         if (!row)
             return NULL;
         dataLinkIncrement();
         return row.getClear();
-    }
-    virtual void stop()
-    {
-        CCatchSlaveActivityBase::stop();
     }
     virtual void abort()
     {

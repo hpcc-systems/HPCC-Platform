@@ -210,6 +210,8 @@ public:
     }
     virtual offset_t size()
     {
+        if (!isExisting)
+            return (offset_t) -1;
         return fileSize;
     }
 
@@ -285,7 +287,7 @@ static IFile *createGitFile(const char *gitFileName)
         return file.getClear();
     }
     else
-        return new GitRepositoryFile(gitFileName, 0, false, false);
+        return new GitRepositoryFile(gitFileName, (offset_t) -1, false, false);
 }
 
 class GitRepositoryDirectoryIterator : public CInterface, implements IDirectoryIterator

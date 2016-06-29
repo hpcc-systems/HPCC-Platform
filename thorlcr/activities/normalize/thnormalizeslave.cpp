@@ -42,11 +42,11 @@ public:
     NormalizeSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container)
     {
+        helper = static_cast <IHThorNormalizeArg *> (queryHelper());
+        appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        appendOutputLinked(this);
-        helper = static_cast <IHThorNormalizeArg *> (queryHelper());
         allocator.set(queryRowAllocator());
     }
     virtual void start() override
@@ -116,13 +116,12 @@ public:
     CNormalizeChildSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container)
     { 
+        helper = static_cast <IHThorNormalizeChildArg *> (queryHelper());
+        appendOutputLinked(this);
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        appendOutputLinked(this);
-        helper = static_cast <IHThorNormalizeChildArg *> (queryHelper());
-
         cursor = helper->queryIterator();
         allocator.set(queryRowAllocator());
     }
@@ -209,13 +208,10 @@ public:
     CNormalizeLinkedChildSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container)
     { 
+        helper = static_cast <IHThorNormalizeLinkedChildArg *> (queryHelper());
+        appendOutputLinked(this);
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        appendOutputLinked(this);
-        helper = static_cast <IHThorNormalizeLinkedChildArg *> (queryHelper());
-    }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);

@@ -230,17 +230,10 @@ void CDiskReadSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDat
     if (parts)
     {
         deserializePartFileDescriptors(data, partDescs);
-        unsigned encryptedKeyLen;
-        void *encryptedKey;
-        helper->getEncryptKey(encryptedKeyLen, encryptedKey);
-        if (0 != encryptedKeyLen) 
-        {
-            bool dfsEncrypted = partDescs.item(0).queryOwner().queryProperties().getPropBool("@encrypted");
-            if (dfsEncrypted) // otherwise ignore (warning issued by master)
-                eexp.setown(createAESExpander256(encryptedKeyLen, encryptedKey));
-            memset(encryptedKey, 0, encryptedKeyLen);
-            free(encryptedKey);
-        }
+
+        // put temp files in individual slave temp dirs (incl port)
+        if ((helper->getFlags() & TDXtemporary) && (!container.queryJob().queryUseCheckpoints()))
+            partDescs.item(0).queryOwner().setDefaultDir(queryTempDir());
     }
 }
 
@@ -254,6 +247,17 @@ void CDiskReadSlaveActivityBase::start()
     PARENT::start();
     markStart = true;
     diskProgress = 0;
+    unsigned encryptedKeyLen;
+    void *encryptedKey;
+    helper->getEncryptKey(encryptedKeyLen, encryptedKey);
+    if (0 != encryptedKeyLen)
+    {
+        bool dfsEncrypted = partDescs.item(0).queryOwner().queryProperties().getPropBool("@encrypted");
+        if (dfsEncrypted) // otherwise ignore (warning issued by master)
+            eexp.setown(createAESExpander256(encryptedKeyLen, encryptedKey));
+        memset(encryptedKey, 0, encryptedKeyLen);
+        free(encryptedKey);
+    }
 }
 
 void CDiskReadSlaveActivityBase::kill()
@@ -452,6 +456,7 @@ void CDiskWriteSlaveActivityBase::close()
 CDiskWriteSlaveActivityBase::CDiskWriteSlaveActivityBase(CGraphElementBase *container)
 : ProcessSlaveActivity(container), fileStats(diskWriteRemoteStatistics)
 {
+    diskHelperBase = static_cast <IHThorDiskWriteArg *> (queryHelper());
     grouped = false;
     compress = calcFileCrc = false;
     uncompressedBytesWritten = 0;
@@ -462,8 +467,6 @@ CDiskWriteSlaveActivityBase::CDiskWriteSlaveActivityBase(CGraphElementBase *cont
 
 void CDiskWriteSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveData)
 {
-    diskHelperBase = static_cast <IHThorDiskWriteArg *> (queryHelper());
-
     StringAttr logicalFilename;
     data.read(logicalFilename);
     dlfn.set(logicalFilename);
@@ -477,6 +480,11 @@ void CDiskWriteSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDa
             fileCRC.reset(~crc);
     }
     partDesc.setown(deserializePartFileDescriptor(data));
+
+    // put temp files in individual slave temp dirs (incl port)
+    if ((diskHelperBase->getFlags() & TDXtemporary) && (!container.queryJob().queryUseCheckpoints()))
+        partDesc->queryOwner().setDefaultDir(queryTempDir());
+
     if (dlfn.isExternal())
     {
         mpTag = container.queryJobChannel().deserializeMPTag(data);
@@ -485,16 +493,6 @@ void CDiskWriteSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDa
     }
     if (0 != (diskHelperBase->getFlags() & TDXgrouped))
         grouped = true;
-    compress = partDesc->queryOwner().isCompressed();
-    void *ekey;
-    size32_t ekeylen;
-    diskHelperBase->getEncryptKey(ekeylen,ekey);
-    if (ekeylen!=0) {
-        ecomp.setown(createAESCompressor256(ekeylen,ekey));
-        memset(ekey,0,ekeylen);
-        free(ekey);
-        compress = true;
-    }
 }
 
 void CDiskWriteSlaveActivityBase::abort()
@@ -533,6 +531,17 @@ void CDiskWriteSlaveActivityBase::kill()
 
 void CDiskWriteSlaveActivityBase::process()
 {
+    compress = partDesc->queryOwner().isCompressed();
+    void *ekey;
+    size32_t ekeylen;
+    diskHelperBase->getEncryptKey(ekeylen,ekey);
+    if (ekeylen!=0)
+    {
+        ecomp.setown(createAESCompressor256(ekeylen,ekey));
+        memset(ekey,0,ekeylen);
+        free(ekey);
+        compress = true;
+    }
     calcFileCrc = false;
     uncompressedBytesWritten = 0;
     replicateDone = 0;

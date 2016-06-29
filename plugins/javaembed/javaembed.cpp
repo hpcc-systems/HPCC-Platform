@@ -63,7 +63,7 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
-static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
+__declspec(noreturn) static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 
 static void UNSUPPORTED(const char *feature)
 {
@@ -2081,9 +2081,10 @@ public:
     {
         throwUnexpected();
     }
-    virtual void rewindTo(unsigned int prevlen)
+    virtual IInterface *saveLocation() const {return nullptr;}
+    virtual void rewindTo(IInterface *loc)
     {
-        //needs to be a no-op because it is used, but the way its used to trim empty xml sections I think we're fairly safe.
+        //needs to be a no-op because it is  used, but the way its used to trim empty xml sections I think we're fairly safe.
         //revisit cleaning up any empty objects later.
     }
     inline IEsdlDefStruct *queryCurrentEsdlStruct()
@@ -2720,7 +2721,7 @@ public:
         }
         addArg(v);
     }
-    virtual void bindSetParam(const char *name, int _elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    virtual void bindSetParam(const char *name, int _elemType, size32_t elemSize, bool isAll, size32_t totalBytes, const void *setData)
     {
         jvalue v;
         if (*argsig != '[')
@@ -3031,7 +3032,7 @@ protected:
     jobject instance; //instance of service object to call methods on
 private:
 
-    void typeError(const char *ECLtype) __attribute__((noreturn))
+    __declspec(noreturn) void typeError(const char *ECLtype) __attribute__((noreturn))
     {
         const char *javaType;
         int javaLen = 0;

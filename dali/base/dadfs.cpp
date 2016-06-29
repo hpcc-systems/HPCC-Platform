@@ -8228,13 +8228,13 @@ void CDistributedFileDirectory::addEntry(CDfsLogicalFileName &dlfn,IPropertyTree
     IPropertyTree *prev = getNamedPropTree(sroot,superfile?queryDfsXmlBranchName(DXB_SuperFile):queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
     if (!prev) // check super/file doesn't exist
         prev = getNamedPropTree(sroot,superfile?queryDfsXmlBranchName(DXB_File):queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false);
-    if (prev!=NULL) {
+    if (prev!=nullptr)
+    {
         prev->Release();
         root->Release();
         if (ignoreexists)
             return;
-        IDFS_Exception *e = new CDFS_Exception(DFSERR_LogicalNameAlreadyExists,dlfn.get());
-        throw e;
+        throw new CDFS_Exception(DFSERR_LogicalNameAlreadyExists,dlfn.get());
     }
     root->setProp("@name",tail.str());
     root->setProp("OrigName",dlfn.get());

@@ -79,12 +79,13 @@ private:
 #endif
         sorter->Gather(::queryRowInterfaces(input), inputStream, compare, NULL, NULL, keyserializer, NULL, false, isUnstable(), abortSoon, NULL);
         PARENT::stop();
-        if(abortSoon)
+        if (abortSoon)
         {
             barrier->cancel();
             return NULL;
         }
-        if (!barrier->wait(false)) {
+        if (!barrier->wait(false))
+        {
             Sleep(1000); // let original error through
             throw MakeThorException(TE_BarrierAborted,"SELFJOIN: Barrier Aborted");
         }
@@ -102,6 +103,7 @@ public:
     SelfJoinSlaveActivity(CGraphElementBase *_container, bool _isLocal, bool _isLightweight)
         : CSlaveActivity(_container), spillStats(spillStatistics)
     {
+        helper = static_cast <IHThorJoinArg *> (queryHelper());
         isLocal = _isLocal||_isLightweight;
         isLightweight = _isLightweight;
         portbase = 0;
@@ -109,6 +111,7 @@ public:
         keyserializer = NULL;
         inputStopped = false;
         mpTagRPC = TAG_NULL;
+        appendOutputLinked(this);
     }
 
     ~SelfJoinSlaveActivity()
@@ -120,7 +123,6 @@ public:
 // IThorSlaveActivity
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {       
-        appendOutputLinked(this);
         if(!isLocal)
         {
             mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
@@ -131,7 +133,6 @@ public:
             sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
             server.serialize(slaveData);
         }
-        helper = static_cast <IHThorJoinArg *> (queryHelper());
         compare = helper->queryCompareLeft();                   // NB not CompareLeftRight
         keyserializer = helper->querySerializeLeft();           // hopefully never need right
         if(isLightweight) 
@@ -141,9 +142,9 @@ public:
         else
             ActPrintLog("SELFJOIN: GLOBAL");
     }
-    virtual void reset()
+    virtual void reset() override
     {
-        CSlaveActivity::reset();
+        PARENT::reset();
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
         if (!isLocal && TAG_NULL != mpTagRPC)
             sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
@@ -187,7 +188,7 @@ public:
     }
     virtual void stop() override
     {
-        if(!isLocal)
+        if (!isLocal)
         {
             barrier->wait(false);
             sorter->stopMerge();
@@ -196,8 +197,11 @@ public:
             CriticalBlock b(joinHelperCrit);
             joinhelper.clear();
         }
-        strm->stop();
-        strm.clear();
+        if (strm)
+        {
+            strm->stop();
+            strm.clear();
+        }
         PARENT::stop();
     }
     

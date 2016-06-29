@@ -108,5 +108,7 @@ REGEXFIND(searchpattern, search, 2); //returns '14'
 REGEXFIND(searchpattern, search, 3); //returns '1998'
 </programlisting>
 
-  <para>See Also: <link linkend="PARSE">PARSE</link>, <link linkend="REGEXREPLACE">REGEXREPLACE</link></para>
+  <para>See Also: <link linkend="PARSE">PARSE</link>, <link
+  linkend="REGEXFINDSET">REGEXFINDSET</link>, <link
+  linkend="REGEXREPLACE">REGEXREPLACE</link></para>
 </sect1>

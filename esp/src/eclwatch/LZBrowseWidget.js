@@ -461,7 +461,7 @@ define([
                 SprayTargets: true
             });
             this.sprayJsonDestinationSelect.init({
-                Groups: true
+                SprayTargets: true
             });
             this.sprayVariableDestinationSelect.init({
                 SprayTargets: true

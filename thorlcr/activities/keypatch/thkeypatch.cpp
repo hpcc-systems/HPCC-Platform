@@ -37,14 +37,13 @@ class CKeyPatchMaster : public CMasterActivity
 public:
     CKeyPatchMaster(CMasterGraphElement *info) : CMasterActivity(info)
     {
-        helper = NULL;
+        helper = (IHThorKeyPatchArg *)queryHelper();
         local = false;
         width = 0;
     }
     virtual void init()
     {
         CMasterActivity::init();
-        helper = (IHThorKeyPatchArg *)queryHelper();
         OwnedRoxieString originalHelperName(helper->getOriginalName());
         OwnedRoxieString patchHelperName(helper->getPatchName());
         OwnedRoxieString outputHelperName(helper->getOutputName());

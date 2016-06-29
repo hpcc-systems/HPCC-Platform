@@ -30,6 +30,10 @@
 
 #ifndef _WIN32
 #include <sys/mman.h>
+# if defined(__linux__)
+   // MADV_HUGEPAGE on CentOS
+#  include <linux/mman.h>
+# endif
 #endif
 
 #if defined(_USE_TBB)
@@ -342,6 +346,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
                 heapTotalPages, (unsigned __int64) memsize, heapBase, (unsigned __int64) HEAP_ALIGNMENT_SIZE, heapBitmapSize);
 }
 
+#ifdef _USE_CPPUNIT
 static void adjustHeapSize(unsigned numPages)
 {
     memsize_t bitmapSize = (numPages + UNSIGNED_BITS - 1) / UNSIGNED_BITS;
@@ -351,6 +356,7 @@ static void adjustHeapSize(unsigned numPages)
     heapBitmapSize = (unsigned)bitmapSize;
     heapTotalPages = (unsigned)totalPages;
 }
+#endif
 
 extern void releaseRoxieHeap()
 {
@@ -442,6 +448,7 @@ extern StringBuffer &memstats(StringBuffer &stats)
     return stats.appendf("Heap size %u pages, %u free, largest block %u", heapTotalPages, freePages, maxBlock);
 }
 
+#ifdef _USE_CPPUNIT
 static void dumpHeapState()
 {
     StringBuffer s;
@@ -453,6 +460,7 @@ static void dumpHeapState()
 
     DBGLOG("Heap: %s", s.str());
 }
+#endif
 
 IPerfMonHook *createRoxieMemStatsPerfMonHook(IPerfMonHook *chain)
 {
@@ -737,7 +745,6 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
     unsigned wordOffset = (unsigned) (pageOffset / UNSIGNED_BITS);
     unsigned bitOffset = (unsigned) (pageOffset % UNSIGNED_BITS);
     unsigned mask = 1<<bitOffset;
-    unsigned nextPageOffset = (pageOffset+pages + (UNSIGNED_BITS-1)) / UNSIGNED_BITS;
     char * firstReleaseBlock = NULL;
     char * lastReleaseBlock = NULL;
     {
@@ -836,7 +843,6 @@ static void *subrealloc_aligned(void *ptr, unsigned pages, unsigned newPages)
     //If this function increases the size of the block, it is possible heapHWM could decrease - it will be
     //updated on the next multi-page allocation
     assertex(newPages > 0);
-    unsigned _pages = pages;
     memsize_t offset = (char *)ptr - heapBase;
     memsize_t pageOffset = offset / HEAP_ALIGNMENT_SIZE;
     if (!pages)
@@ -1033,6 +1039,12 @@ static inline bool isValidRoxiePtr(const void *_ptr)
     return ptr >= heapBase && ptr < heapEnd;
 }
 
+inline static HeapletBase *findBase(const void *ptr)
+{
+    return (HeapletBase *) ((memsize_t) ptr & HEAP_ALIGNMENT_MASK);
+}
+
+
 void HeapletBase::release(const void *ptr)
 {
     if (isValidRoxiePtr(ptr))
@@ -1134,7 +1146,7 @@ static void setParallelSyncReleaseGranularity(size_t granularity, unsigned scali
     parallelSyncReleaseGranularity = granularity;
     parallelSyncReleaseThreshold = granularity * scaling;
 }
-#else
+#elif defined(PARALLEL_SYNC_RELEASE)
 const static size_t parallelSyncReleaseGranularity = DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY;
 const static size_t parallelSyncReleaseThreshold = DEFAULT_PARALLEL_SYNC_RELEASE_THRESHOLD;
 #endif
@@ -1419,7 +1431,7 @@ protected:
     {
         dbgassertex(ptr);
         ptrdiff_t diff = ptr - (char *) this;
-        assert(diff < HEAP_ALIGNMENT_SIZE);
+        assert(diff < (ptrdiff_t) HEAP_ALIGNMENT_SIZE);
         return (unsigned) diff;
     }
 
@@ -2259,6 +2271,7 @@ public:
         : CRoxieFixedRowHeapBase(_rowManager, _allocatorId, _flags), heap(_heap)
     {
     }
+    ~CRoxieDirectFixedRowHeap();
 
     virtual void *allocate();
 
@@ -2279,6 +2292,7 @@ public:
         : CRoxieFixedRowHeapBase(_rowManager, _allocatorId, _flags), heap(_heap)
     {
     }
+    ~CRoxieDirectPackedRowHeap();
 
     virtual void *allocate();
 
@@ -2322,7 +2336,7 @@ class CHeap : public CInterface
     friend class HeapCompactState;
 public:
     CHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, unsigned _flags)
-        : logctx(_logctx), rowManager(_rowManager), allocatorCache(_allocatorCache), activeHeaplet(NULL), heaplets(NULL), flags(_flags)
+        : flags(_flags), rowManager(_rowManager), allocatorCache(_allocatorCache), logctx(_logctx)
     {
         atomic_set(&possibleEmptyPages, 0);
         atomic_set(&headMaybeSpace, BLOCKLIST_NULL);
@@ -2569,6 +2583,9 @@ public:
         if (atomic_read(&possibleEmptyPages) == 0)
             return 0;
 
+        if (flags & RHForphaned)
+            forceFreeAll = true;
+
         //You will get a false positive if possibleEmptyPages is set while walking the active page list, but that
         //only mean the list is walked more than it needs to be.
         atomic_set(&possibleEmptyPages, 0);
@@ -2734,8 +2751,8 @@ protected:
 
 protected:
     unsigned flags; // before the pointer so it packs better in 64bit.
-    Heaplet * activeHeaplet; // which block is the current candidate for adding rows.
-    Heaplet * heaplets; // the linked list of heaplets for this heap
+    Heaplet * activeHeaplet = nullptr; // which block is the current candidate for adding rows.
+    Heaplet * heaplets = nullptr; // the linked list of heaplets for this heap
     CChunkingRowManager * rowManager;
     const IRowAllocatorCache *allocatorCache;
     const IContextLogger & logctx;
@@ -2823,6 +2840,13 @@ public:
     const void * compactRow(const void * ptr, HeapCompactState & state);
 
     inline unsigned maxChunksPerPage() const { return chunksPerPage; }
+
+    //No longer any external references to a unique heap.  Mark so it can be cleaned up early.
+    void noteOrphaned()
+    {
+        dbgassertex(flags & RHFunique);
+        flags |= RHForphaned;
+    }
 
 
 protected:
@@ -3097,14 +3121,13 @@ class BufferedRowCallbackManager
             ForEachItemIn(i, callbacks)
             {
                 const CallbackPair * iter = &callbacks.item(i);
-                unsigned curSlave = iter->first;
                 if ((iter->first == searchSlaveId) && (iter->second == searchCallback))
                 {
                     callbacks.remove(i);
                     return;
                 }
             }
-            throwUnexpectedX("Removing callback that has not been registered");
+            //Silently ignore removing a callback that hasn't been registered
         }
         unsigned releaseRows(BufferedRowCallbackManager & manager, unsigned whichSlave, unsigned minSuccess, bool critical)
         {
@@ -3473,7 +3496,7 @@ private:
     CIArrayOf<CFixedChunkedHeap> normalHeaps;
     CHugeHeap hugeHeap;
     ITimeLimiter *timeLimit;
-    DataBufferBase *activeBuffs;
+    DataBuffer *activeBuffs;
     const IContextLogger &logctx;
     unsigned peakPages;
     unsigned dataBuffs;
@@ -3503,7 +3526,7 @@ protected:
 
 public:
     CChunkingRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks, bool _outputOOMReports)
-        : logctx(_logctx), allocatorCache(_allocatorCache), hugeHeap(this, _logctx, _allocatorCache)
+        : hugeHeap(this, _logctx, _allocatorCache), logctx(_logctx), allocatorCache(_allocatorCache)
     {
         logctx.Link();
         //Use roundup() to calculate the sizes of the different heaps, and double check that the heap mapping
@@ -3571,10 +3594,10 @@ public:
                 fixedRowHeaps.item(i).clearRowManager();
         }
 
-        DataBufferBase *dfinger = activeBuffs;
+        DataBuffer *dfinger = activeBuffs;
         while (dfinger)
         {
-            DataBufferBase *next = dfinger->next;
+            DataBuffer *next = dfinger->next;
             if (memTraceLevel >= 2 && dfinger->queryCount()!=1)
                 logctx.CTXLOG("RoxieMemMgr: Memory leak: %d records remain linked in active dataBuffer list - addr=%p rowMgr=%p", 
                         dfinger->queryCount()-1, dfinger, this);
@@ -3692,7 +3715,7 @@ public:
         Owned<IActivityMemoryUsageMap> map = getActivityUsage();
 
         NonReentrantSpinBlock block(peakSpinLock);
-        peakUsageMap.setown(map.getClear());
+        peakUsageMap.swap(map);
     }
 
     //MORE: inline??
@@ -3785,7 +3808,8 @@ public:
         catch (IException *e)
         {
             EXCLOG(e, "CChunkingRowManager::allocate(memsize_t _size, unsigned activityId, unsigned maxSpillCost)");
-            doOomReport();
+            if (maxSpillCost == SpillAllCost)
+                doOomReport();
             throw;
         }
     }
@@ -3891,7 +3915,8 @@ public:
             catch (IException *e)
             {
                 EXCLOG(e, "CChunkingRowManager::resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback)");
-                doOomReport();
+                if (maxSpillCost == SpillAllCost)
+                    doOomReport();
                 throw;
             }
         }
@@ -3935,15 +3960,15 @@ public:
                     dataBuff, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this);
 
         dataBuff->Link();
-        DataBufferBase *last = NULL;
+        DataBuffer *last = NULL;
         bool needCheck;
         {
             CriticalBlock b(activeBufferCS);
-            DataBufferBase *finger = activeBuffs;
+            DataBuffer *finger = activeBuffs;
             while (finger && atomic_read(&possibleGoers))
             {
                 // MORE - if we get a load of data in and none out this can start to bog down...
-                DataBufferBase *next = finger->next;
+                DataBuffer *next = finger->next;
                 if (finger->queryCount()==1)
                 {
                     if (memTraceLevel >= 4)
@@ -4059,7 +4084,7 @@ public:
                     //very unusual: another thread may have just released a lot of memory (e.g., it has finished), but
                     //the empty pages haven't been cleaned up
                     releaseEmptyPages(querySlaveId(), true);
-                    if (numHeapPages == atomic_read(&totalHeapPages))
+                    if (numHeapPages == (unsigned) atomic_read(&totalHeapPages))
                     {
                         VStringBuffer msg("Memory limit exceeded: current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
                         logctx.CTXLOG("%s", msg.str());
@@ -4238,7 +4263,6 @@ protected:
     virtual memsize_t compactRows(memsize_t count, const void * * rows)
     {
         HeapCompactState state;
-        bool memoryAvailable = false;
         for (memsize_t i = 0; i < count; i++)
         {
             const void * row = rows[i];
@@ -4345,7 +4369,7 @@ class CCallbackRowManager : public CChunkingRowManager
 public:
 
     CCallbackRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks, bool _outputOOMReports)
-        : callbacks(this), CChunkingRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports)
+        : CChunkingRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports), callbacks(this)
     {
     }
 
@@ -4428,14 +4452,14 @@ protected:
 class CGlobalRowManager : public CCallbackRowManager
 {
 public:
-    CGlobalRowManager(memsize_t _memLimit, memsize_t _globalLimit, unsigned _numSlaves, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks, bool _outputOOMReports)
+    CGlobalRowManager(memsize_t _memLimit, memsize_t _globalLimit, unsigned _numSlaves, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, const IRowAllocatorCache **slaveAllocatorCaches, bool _ignoreLeaks, bool _outputOOMReports)
         : CCallbackRowManager(_memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports), numSlaves(_numSlaves)
     {
         assertex(_globalLimit <= _memLimit);
         globalPageLimit = (unsigned) PAGES(_globalLimit, HEAP_ALIGNMENT_SIZE);
         slaveRowManagers = new CChunkingRowManager * [numSlaves];
         for (unsigned i=0; i < numSlaves; i++)
-            slaveRowManagers[i] = new CSlaveRowManager(i+1, this, _memLimit, _tl, _logctx, _allocatorCache, _ignoreLeaks, _outputOOMReports);
+            slaveRowManagers[i] = new CSlaveRowManager(i+1, this, _memLimit, _tl, _logctx, slaveAllocatorCaches ? slaveAllocatorCaches[i] : _allocatorCache, _ignoreLeaks, _outputOOMReports);
     }
     ~CGlobalRowManager()
     {
@@ -4566,6 +4590,18 @@ void * CRoxieFixedRowHeap::allocate()
 void * CRoxieDirectFixedRowHeap::allocate()
 {
     return heap->allocate(allocatorId);
+}
+
+CRoxieDirectFixedRowHeap::~CRoxieDirectFixedRowHeap()
+{
+    if (heap && (flags & RHFunique))
+        heap->noteOrphaned();
+}
+
+CRoxieDirectPackedRowHeap::~CRoxieDirectPackedRowHeap()
+{
+    if (heap && (flags & RHFunique))
+        heap->noteOrphaned();
 }
 
 void * CRoxieDirectPackedRowHeap::allocate()
@@ -4849,7 +4885,7 @@ const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state
                 //since we know what all blocks before this must be filled.
                 state.next = finger;
 
-                HeapletBase *srcBase = HeapletBase::findBase(ptr);
+                HeapletBase *srcBase = findBase(ptr);
                 if (srcBase->isEmpty())
                 {
                     state.numPagesEmptied++;
@@ -4908,29 +4944,10 @@ void * CPackedChunkingHeap::allocate()
 //================================================================================
 // Buffer manager - blocked 
 
-void DataBufferBase::noteReleased(const void *ptr)
-{
-    //The link counter is shared by all the rows that are contained in this DataBuffer
-    if (atomic_dec_and_test(&count))
-        released();
-}
-
-void DataBufferBase::noteLinked(const void *ptr)
-{
-    atomic_inc(&count);
-}
-
-bool DataBufferBase::_isShared(const void *ptr) const
-{
-    // Because the link counter is shared you cannot know if an individual pointer is shared
-    throwUnexpected();
-    return true;
-}
-
-void DataBufferBase::Release()
+void DataBuffer::Release()
 {
     if (atomic_read(&count)==2 && mgr)
-        mgr->noteDataBuffReleased((DataBuffer*) this);
+        mgr->noteDataBuffReleased(this);
     if (atomic_dec_and_test(&count)) released(); 
 }
 
@@ -4943,7 +4960,7 @@ void DataBuffer::released()
         DBGLOG("RoxieMemMgr: DataBuffer::released() releasing DataBuffer - addr=%p", this);
     atomic_dec(&dataBuffersActive);
     bottom->addToFreeChain(this);
-    HeapletBase::release(bottom);
+    bottom->Release();
 }
 
 bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
@@ -4962,16 +4979,26 @@ bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
     }
 }
 
-memsize_t DataBuffer::_capacity() const { throwUnexpected(); }
-void DataBuffer::_setDestructorFlag(const void *ptr) { throwUnexpected(); }
+void DataBuffer::noteReleased(const void *ptr)
+{
+    //The link counter is shared by all the rows that are contained in this DataBuffer
+    if (atomic_dec_and_test(&count))
+        released();
+}
+
+void DataBuffer::noteLinked(const void *ptr)
+{
+    atomic_inc(&count);
+}
 
 class CDataBufferManager : public CInterface, implements IDataBufferManager
 {
     friend class DataBufferBottom;
     CriticalSection crit;
-    char *curBlock;
-    char *nextAddr;
+    DataBufferBottom *curBlock;
     DataBufferBottom *freeChain;
+    char * nextBase = nullptr;
+    size32_t nextOffset = 0; // offset within a page
     atomic_t freePending;
 
     void unlink(DataBufferBottom *goer)
@@ -4990,10 +5017,10 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
             if (freeChain == goer)
                 freeChain = goer->nextBottom;
         }
-        if ((char *) goer==curBlock)
+        if (goer==curBlock)
         {
             curBlock = NULL;
-            nextAddr = NULL;
+            nextBase = NULL;
             assertex(!"ERROR: heap block freed too many times!");
         }
     }
@@ -5018,7 +5045,7 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
                         DBGLOG("RoxieMemMgr: DataBufferBottom::allocate() freeing DataBuffers Page - addr=%p", goer);
                     goer->~DataBufferBottom(); 
 #ifdef _DEBUG
-                    memset(goer, 0xcc, HEAP_ALIGNMENT_SIZE);
+                    memset((void *) goer, 0xcc, HEAP_ALIGNMENT_SIZE);
 #endif
                     subfree_aligned(goer, 1);
                     atomic_dec(&dataBufferPages);
@@ -5038,7 +5065,6 @@ public:
     {
         assertex(size==DATA_ALIGNMENT_SIZE);
         curBlock = NULL;
-        nextAddr = NULL;
         freeChain = NULL;
         atomic_set(&freePending, 0);
     }
@@ -5048,7 +5074,7 @@ public:
         CriticalBlock b(crit);
 
         if (memTraceLevel >= 5)
-            DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() curBlock=%p nextAddr=%p", curBlock, nextAddr);
+            DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() curBlock=%p nextAddr=%p:%x", curBlock, nextBase, nextOffset);
 
         if (atomic_cas(&freePending, 0, 1))
             freeUnused();
@@ -5057,32 +5083,33 @@ public:
         {
             if (curBlock)
             {
-                DataBufferBottom *bottom = (DataBufferBottom *) curBlock;
+                DataBufferBottom *bottom = curBlock;
                 CriticalBlock c(bottom->crit);
                 if (bottom->freeChain)
                 {
                     atomic_inc(&dataBuffersActive);
-                    HeapletBase::link(curBlock);
-                    DataBufferBase *x = bottom->freeChain;
+                    curBlock->Link();
+                    DataBuffer *x = bottom->freeChain;
                     bottom->freeChain = x->next;
                     x->next = NULL;
                     if (memTraceLevel >= 4)
                         DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() reallocated DataBuffer - addr=%p", x);
                     return ::new(x) DataBuffer();
                 }
-                else if ((memsize_t)(nextAddr - curBlock) <= HEAP_ALIGNMENT_SIZE-DATA_ALIGNMENT_SIZE)
+                else if (nextOffset < HEAP_ALIGNMENT_SIZE) // Is there any space in the current block (it must be a whole block)
                 {
                     atomic_inc(&dataBuffersActive);
-                    HeapletBase::link(curBlock);
-                    DataBuffer *x = ::new(nextAddr) DataBuffer();
-                    nextAddr += DATA_ALIGNMENT_SIZE;
-                    if (nextAddr - curBlock == HEAP_ALIGNMENT_SIZE)
+                    curBlock->Link();
+                    DataBuffer *x = ::new(nextBase+nextOffset) DataBuffer();
+                    nextOffset += DATA_ALIGNMENT_SIZE;
+                    if (nextOffset == HEAP_ALIGNMENT_SIZE)
                     {
                         // MORE: May want to delete this "if" logic !!
                         //       and let it be handled in the similar logic of "else" part below.
-                        HeapletBase::release(curBlock);
+                        curBlock->Release();
                         curBlock = NULL;
-                        nextAddr = NULL;
+                        nextBase = NULL;
+                        //nextOffset = 0 - not needed since only used if curBlock is set
                     }
                     if (memTraceLevel >= 4)
                         DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() allocated DataBuffer - addr=%p", x);
@@ -5090,9 +5117,10 @@ public:
                 }
                 else
                 {
-                    HeapletBase::release(curBlock);
+                    curBlock->Release();
                     curBlock = NULL;
-                    nextAddr = NULL;
+                    nextBase = NULL;
+                    //nextOffset = 0 - not needed since only used if curBlock is set
                 }
             }
             // see if a previous block that is waiting to be freed has any on its free chain
@@ -5104,15 +5132,16 @@ public:
                     CriticalBlock c(finger->crit);
                     if (finger->freeChain)
                     {
-                        HeapletBase::link(finger); // Link once for the reference we save in curBlock
-                                                   // Release (to dec ref count) when no more free blocks in the page
+                        finger->Link(); // Link once for the reference we save in curBlock
+                                        // Release (to dec ref count) when no more free blocks in the page
                         if (finger->isAlive())
                         {
-                            curBlock = (char *) finger;
-                            nextAddr = curBlock + HEAP_ALIGNMENT_SIZE;
+                            curBlock = finger;
+                            nextBase = nullptr; // should never be accessed
+                            nextOffset = HEAP_ALIGNMENT_SIZE; // only use the free chain to allocate
                             atomic_inc(&dataBuffersActive);
-                            HeapletBase::link(finger); // and once for the value we are about to return
-                            DataBufferBase *x = finger->freeChain;
+                            finger->Link(); // and once for the value we are about to return
+                            DataBuffer *x = finger->freeChain;
                             finger->freeChain = x->next;
                             x->next = NULL;
                             if (memTraceLevel >= 4)
@@ -5125,13 +5154,14 @@ public:
                         break;
                 }
             }
-            curBlock = nextAddr = (char *) suballoc_aligned(1, false);
+            nextBase = (char *)suballoc_aligned(1, false);
+            nextOffset = DATA_ALIGNMENT_SIZE;
+            curBlock = (DataBufferBottom *)nextBase;
             atomic_inc(&dataBufferPages);
             assertex(curBlock);
             if (memTraceLevel >= 3)
                     DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() allocated new DataBuffers Page - addr=%p", curBlock);
-            freeChain = ::new(nextAddr) DataBufferBottom(this, freeChain);   // we never allocate the lowest one in the heap - used just for refcounting the rest
-            nextAddr += DATA_ALIGNMENT_SIZE;
+            freeChain = ::new(curBlock) DataBufferBottom(this, freeChain);   // we never allocate the lowest one in the heap - used just for refcounting the rest
         }
     }
 
@@ -5168,11 +5198,17 @@ DataBufferBottom::DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom 
     freeChain = NULL;
 }
 
-void DataBufferBottom::addToFreeChain(DataBufferBase * buffer)
+void DataBufferBottom::addToFreeChain(DataBuffer * buffer)
 {
     CriticalBlock b(crit);
     buffer->next = freeChain;
     freeChain = buffer;
+}
+
+void DataBufferBottom::Release()
+{
+    if (atomic_dec_and_test(&count))
+        released();
 }
 
 void DataBufferBottom::released()
@@ -5188,29 +5224,24 @@ void DataBufferBottom::released()
 
 void DataBufferBottom::noteReleased(const void *ptr)
 {
-    HeapletBase * base = realBase(ptr);
-    if (base == this)
-        DataBufferBase::noteReleased(ptr);
-    else
-        base->noteReleased(ptr);
+    DataBuffer * buffer = queryDataBuffer(ptr);
+    assertex(buffer);
+    buffer->noteReleased(ptr);
 }
 
 void DataBufferBottom::noteLinked(const void *ptr)
 {
-    HeapletBase * base = realBase(ptr);
-    if (base == this)
-        DataBufferBase::noteLinked(ptr);
-    else
-        base->noteLinked(ptr);
+    DataBuffer * buffer = queryDataBuffer(ptr);
+    assertex(buffer);
+    return buffer->noteLinked(ptr);
 }
 
 bool DataBufferBottom::_isShared(const void *ptr) const
 {
-    HeapletBase * base = realBase(ptr);
-    if (base == this)
-        return DataBufferBase::_isShared(ptr);
-    else
-        return base->_isShared(ptr);
+    DataBuffer * buffer = queryDataBuffer(ptr);
+    assertex(buffer);
+    // Because the link counter is shared assume all pointers are shared
+    return true;
 }
 
 memsize_t DataBufferBottom::_capacity() const { throwUnexpected(); }
@@ -5231,12 +5262,12 @@ extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const
     return new CCallbackRowManager(memLimit, tl, logctx, allocatorCache, ignoreLeaks, outputOOMReports);
 }
 
-extern IRowManager *createGlobalRowManager(memsize_t memLimit, memsize_t globalLimit, unsigned numSlaves, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks, bool outputOOMReports)
+extern IRowManager *createGlobalRowManager(memsize_t memLimit, memsize_t globalLimit, unsigned numSlaves, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, const IRowAllocatorCache **slaveAllocatorCaches, bool ignoreLeaks, bool outputOOMReports)
 {
     if (numDirectBuckets == 0)
         throw MakeStringException(ROXIEMM_HEAP_ERROR, "createRowManager() called before setTotalMemoryLimit()");
 
-    return new CGlobalRowManager(memLimit, globalLimit, numSlaves, tl, logctx, allocatorCache, ignoreLeaks, outputOOMReports);
+    return new CGlobalRowManager(memLimit, globalLimit, numSlaves, tl, logctx, allocatorCache, slaveAllocatorCaches, ignoreLeaks, outputOOMReports);
 }
 
 extern void setMemoryStatsInterval(unsigned secs)
@@ -5297,6 +5328,9 @@ extern void setDataAlignmentSize(unsigned size)
 {
     if (memTraceLevel >= 3) 
         DBGLOG("RoxieMemMgr: setDataAlignmentSize to %u", size); 
+
+    if ((size == 0) || ((HEAP_ALIGNMENT_SIZE % size) != 0))
+        throw MakeStringException(ROXIEMM_INVALID_MEMORY_ALIGNMENT, "setDataAlignmentSize %u must be a factor of %u", size, (unsigned)HEAP_ALIGNMENT_SIZE);
 
     if (size==0x400 || size==0x2000)
         DATA_ALIGNMENT_SIZE = size;
@@ -5512,18 +5546,13 @@ class RoxieMemTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testRoundup);
         CPPUNIT_TEST(testCompressSize);
         CPPUNIT_TEST(testBitmap);
-        CPPUNIT_TEST(testBitmapThreading);
         CPPUNIT_TEST(testAllocSize);
         CPPUNIT_TEST(testHuge);
-        CPPUNIT_TEST(testCas);
         CPPUNIT_TEST(testAll);
-        CPPUNIT_TEST(testCallbacks);
         CPPUNIT_TEST(testRecursiveCallbacks);
-        CPPUNIT_TEST(testCompacting);
         CPPUNIT_TEST(testResize);
         //MORE: The following currently leak pages, so should go last
         CPPUNIT_TEST(testDatamanager);
-        CPPUNIT_TEST(testDatamanagerThreading);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
@@ -5540,11 +5569,11 @@ public:
 protected:
     void testSetup()
     {
-        printf("Heaplet: cacheline(%u) base(%u) fixedbase(%u) fixed(%u) packed(%u) huge(%u)\n",
+        DBGLOG("Heaplet: cacheline(%u) base(%u) fixedbase(%u) fixed(%u) packed(%u) huge(%u)",
                 CACHE_LINE_SIZE, (size32_t)sizeof(Heaplet), (size32_t)sizeof(ChunkedHeaplet), (size32_t)sizeof(FixedSizeHeaplet), (size32_t)sizeof(PackedFixedSizeHeaplet), (size32_t)sizeof(HugeHeaplet));
-        printf("Heap: fixed(%u) packed(%u) huge(%u)\n",
+        DBGLOG("Heap: fixed(%u) packed(%u) huge(%u)",
                 (size32_t)sizeof(CFixedChunkedHeap), (size32_t)sizeof(CPackedChunkingHeap), (size32_t)sizeof(CHugeHeap));
-        printf("IHeap: fixed(%u) directfixed(%u) packed(%u) variable(%u)\n",
+        DBGLOG("IHeap: fixed(%u) directfixed(%u) packed(%u) variable(%u)",
                 (size32_t)sizeof(CRoxieFixedRowHeap), (size32_t)sizeof(CRoxieDirectFixedRowHeap), (size32_t)sizeof(CRoxieDirectPackedRowHeap), (size32_t)sizeof(CRoxieVariableRowHeap));
 
         ASSERT(FixedSizeHeaplet::dataOffset() >= sizeof(FixedSizeHeaplet));
@@ -5615,39 +5644,6 @@ protected:
         dm.allocate()->Release();
         ASSERT(atomic_read(&dataBufferPages)==1);
 
-        dm.cleanUp();
-    }
-
-    void testDatamanagerThreading()
-    {
-        CDataBufferManager dm(DATA_ALIGNMENT_SIZE);
-
-        class casyncfor: public CAsyncFor
-        {
-        public:
-            casyncfor(CDataBufferManager &_dm) : dm(_dm) {}
-
-            void Do(unsigned idx)
-            {
-                for (unsigned j=0; j < 1000; j++)
-                {
-                    DataBuffer *pages[10000];
-                    unsigned i;
-                    for (i = 0; i < 10000; i++)
-                    {
-                        pages[i] = dm.allocate();
-                    }
-                    for (i = 0; i < 10000; i++)
-                    {
-                        pages[i]->Release();
-                    }
-                }
-            }
-        private:
-            CDataBufferManager& dm;
-        } afor(dm);
-        afor.For(5,5);
-        DBGLOG("ok");
         dm.cleanUp();
     }
 
@@ -7000,7 +6996,7 @@ protected:
         const memsize_t allMemoryAlloc = allMemory - halfPage;
         IRowManager * * slaveManagers = new IRowManager * [numSlaves];
         SimpleCallbackBlockAllocator * * allocators = new SimpleCallbackBlockAllocator * [numSlaves];
-        Owned<IRowManager> globalManager = createGlobalRowManager(allMemory, allMemory, numSlaves, NULL, logctx, NULL, true, false);
+        Owned<IRowManager> globalManager = createGlobalRowManager(allMemory, allMemory, numSlaves, NULL, logctx, NULL, NULL, true, false);
         for (unsigned i1 = 0; i1 < numSlaves; i1++)
         {
             slaveManagers[i1] = globalManager->querySlaveRowManager(i1);
@@ -7148,6 +7144,17 @@ public:
     unsigned locks;
 };
 
+class RoxieMemTimingTests : public RoxieMemTests
+{
+    CPPUNIT_TEST_SUITE( RoxieMemTimingTests );
+        CPPUNIT_TEST(testSetup);
+        CPPUNIT_TEST(testBitmapThreading);
+        CPPUNIT_TEST(testCas);
+        CPPUNIT_TEST(testCallbacks);
+        CPPUNIT_TEST(testCompacting);
+        CPPUNIT_TEST(testCleanup);
+    CPPUNIT_TEST_SUITE_END();
+};
 
 const memsize_t memorySize = 0x60000000;
 class RoxieMemStressTests : public CppUnit::TestFixture
@@ -7159,6 +7166,7 @@ class RoxieMemStressTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testResizeDoubleFragmenting);
     CPPUNIT_TEST(testResizeFragmenting);
     CPPUNIT_TEST(testSequential);
+    CPPUNIT_TEST(testDatamanagerThreading);
     CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
@@ -7342,6 +7350,39 @@ protected:
         ASSERT(requestSize > memorySize/4);
     }
 
+    void testDatamanagerThreading()
+    {
+        CDataBufferManager dm(DATA_ALIGNMENT_SIZE);
+
+        class casyncfor: public CAsyncFor
+        {
+        public:
+            casyncfor(CDataBufferManager &_dm) : dm(_dm) {}
+
+            void Do(unsigned idx)
+            {
+                for (unsigned j=0; j < 1000; j++)
+                {
+                    DataBuffer *pages[1000];
+                    unsigned i;
+                    for (i = 0; i < 1000; i++)
+                    {
+                        pages[i] = dm.allocate();
+                    }
+                    for (i = 0; i < 1000; i++)
+                    {
+                        pages[i]->Release();
+                    }
+                }
+            }
+        private:
+            CDataBufferManager& dm;
+        } afor(dm);
+        afor.For(5,5);
+        DBGLOG("ok");
+        dm.cleanUp();
+    }
+
 
 };
 
@@ -7383,21 +7424,21 @@ protected:
     {
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
         void * huge = rowManager->allocate(hugeAllocSize, 1);
-        ASSERT(rowManager->numPagesAfterCleanup(true)==4097);
+        ASSERT(rowManager->numPagesAfterCleanup(true)==16385);
         ReleaseRoxieRow(huge);
         ASSERT(rowManager->numPagesAfterCleanup(true)==0);
         memsize_t capacity;
         void *huge1 = rowManager->allocate(initialAllocSize, 1);
         rowManager->resizeRow(capacity, huge1, initialAllocSize, hugeAllocSize, 1);
         ASSERT(capacity > hugeAllocSize);
-        ASSERT(rowManager->numPagesAfterCleanup(true)==4097);
+        ASSERT(rowManager->numPagesAfterCleanup(true)==16385);
         ReleaseRoxieRow(huge1);
         ASSERT(rowManager->numPagesAfterCleanup(true)==0);
 
         huge1 = rowManager->allocate(hugeAllocSize/2, 1);
         rowManager->resizeRow(capacity, huge1, hugeAllocSize/2, hugeAllocSize, 1);
         ASSERT(capacity > hugeAllocSize);
-        ASSERT(rowManager->numPagesAfterCleanup(true)==4097);
+        ASSERT(rowManager->numPagesAfterCleanup(true)==16385);
         ReleaseRoxieRow(huge1);
         ASSERT(rowManager->numPagesAfterCleanup(true)==0);
 
@@ -7426,9 +7467,9 @@ static int compareTiming(const void * pLeft, const void * pRight)
 }
 
 
-class RoxieMemTuningTests : public CppUnit::TestFixture
+class RoxieMemTimingTests2 : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE( RoxieMemTuningTests );
+    CPPUNIT_TEST_SUITE( RoxieMemTimingTests2 );
     CPPUNIT_TEST(testSetup);
 #ifdef RUN_SINGLE_TEST
     CPPUNIT_TEST(testOne);
@@ -7441,11 +7482,11 @@ class RoxieMemTuningTests : public CppUnit::TestFixture
     const IContextLogger &logctx;
 
 public:
-    RoxieMemTuningTests() : logctx(queryDummyContextLogger())
+    RoxieMemTimingTests2() : logctx(queryDummyContextLogger())
     {
     }
 
-    ~RoxieMemTuningTests()
+    ~RoxieMemTimingTests2()
     {
     }
 
@@ -7574,14 +7615,16 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTests, "RoxieMemTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTimingTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTimingTests, "RoxieMemTimingTests" );
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemStressTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemStressTests, "RoxieMemStressTests" );
 
-CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTuningTests );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTuningTests, "RoxieMemTuningTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTimingTests2 );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTimingTests2, "RoxieMemTimingTests2" );
 
 #ifdef __64BIT__
-//CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemHugeTests );
+CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemHugeTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemHugeTests, "RoxieMemHugeTests" );
 #endif
 } // namespace roxiemem

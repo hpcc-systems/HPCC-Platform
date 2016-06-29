@@ -127,6 +127,31 @@ public:
     }
 };
 
+class RelaxedAtomicMetric : public CInterface, implements INamedMetric
+{
+    RelaxedAtomic<unsigned> &counter;
+    const bool cumulative;
+public:
+    IMPLEMENT_IINTERFACE;
+    RelaxedAtomicMetric(RelaxedAtomic<unsigned> &_counter, bool _cumulative)
+    : counter(_counter), cumulative(_cumulative)
+    {
+    }
+    virtual long getValue()
+    {
+        return counter.load();
+    }
+    virtual bool isCumulative()
+    {
+        return cumulative;
+    }
+    virtual void resetValue()
+    {
+        if (cumulative)
+            counter.store(0);
+    }
+};
+
 class CounterMetric : public CInterface, implements INamedMetric
 {
 protected:
@@ -359,6 +384,7 @@ public:
     void resetMetrics();
 
     void doAddMetric(atomic_t &counter, const char *name, unsigned interval);
+    void doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval);
     void doAddMetric(unsigned &counter, const char *name, unsigned interval);
     void doAddMetric(INamedMetric *n, const char *name, unsigned interval);
     void doAddMetric(AccessorFunction function, const char *name, unsigned interval);
@@ -471,6 +497,11 @@ CRoxieMetricsManager::CRoxieMetricsManager()
 void CRoxieMetricsManager::doAddMetric(atomic_t &counter, const char *name, unsigned interval)
 {
     doAddMetric(new AtomicMetric(counter, interval != 0), name, interval);
+}
+
+void CRoxieMetricsManager::doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval)
+{
+    doAddMetric(new RelaxedAtomicMetric(counter, interval != 0), name, interval);
 }
 
 void CRoxieMetricsManager::doAddMetric(unsigned &counter, const char *name, unsigned interval)
@@ -852,7 +883,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
     CIArrayOf<QueryStatsAggregateRecord> aggregated; // stored with most recent first
     unsigned expirySeconds;  // time to keep exact info (rather than just aggregated)
     StringAttr queryName;
-    SpinLock lock;
+    SpinLock lock; // MORE: This could be held this for a while.  Is this significant?  Should it be a CriticalSection?
 
     QueryStatsAggregateRecord &findAggregate(time_t startTime)
     {
@@ -908,8 +939,9 @@ public:
     CQueryStatsAggregator(const char *_queryName, unsigned _expirySeconds)
         : queryName(_queryName)
     {
-        SpinBlock b(queryStatsCrit);
         expirySeconds = _expirySeconds;
+
+        SpinBlock b(queryStatsCrit); // protect the global list
         queryStatsAggregators.append(*LINK(this));
     }
     ~CQueryStatsAggregator()
@@ -1010,7 +1042,7 @@ public:
 
 CIArrayOf<CQueryStatsAggregator> CQueryStatsAggregator::queryStatsAggregators;
 CQueryStatsAggregator CQueryStatsAggregator::globalStatsAggregator(NULL, SLOT_LENGTH);
-SpinLock CQueryStatsAggregator::queryStatsCrit;
+SpinLock CQueryStatsAggregator::queryStatsCrit; //MORE: Should probably be a critical section
 
 IQueryStatsAggregator *queryGlobalQueryStatsAggregator()
 {

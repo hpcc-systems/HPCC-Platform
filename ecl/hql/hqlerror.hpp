@@ -60,6 +60,12 @@ private:
 
 //---------------------------------------------------------------------------------------------------------------------
 
+class HQL_API NullErrorReceiver : public ErrorReceiverSink
+{
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
 class IndirectErrorReceiver : public CInterfaceOf<IErrorReceiver>
 {
 public:

@@ -1021,11 +1021,15 @@ public:
     }
     virtual bool checkConnection()
     {
-        return client->checkConnection();
+        if (client)
+            return client->checkConnection();
+        else
+            return true;
     }
     virtual void sendHeartBeat()
     {
-        client->sendHeartBeat(logctx);
+        if (client)
+            client->sendHeartBeat(logctx);
     }
     virtual SafeSocket *querySafeSocket()
     {
@@ -1652,8 +1656,19 @@ readAnother:
         }
 
         bool isHTTP = httpHelper.isHttp();
-        TextMarkupFormat mlResponseFmt = isHTTP ? httpHelper.queryResponseMlFormat() : MarkupFmt_XML;
-        TextMarkupFormat mlRequestFmt = isHTTP ? httpHelper.queryRequestMlFormat() : MarkupFmt_XML;
+
+        TextMarkupFormat mlResponseFmt = MarkupFmt_Unknown;
+        TextMarkupFormat mlRequestFmt = MarkupFmt_Unknown;
+        if (!isStatus)
+        {
+            if (!isHTTP)
+                mlResponseFmt = mlRequestFmt = MarkupFmt_XML;
+            else
+            {
+                mlResponseFmt = httpHelper.queryResponseMlFormat();
+                mlRequestFmt = httpHelper.queryRequestMlFormat();
+            }
+        }
 
         bool failed = false;
         bool isRequest = false;
@@ -1936,6 +1951,7 @@ readAnother:
         }
         unsigned bytesOut = client? client->bytesOut() : 0;
         unsigned elapsed = msTick() - qstart;
+        sink->noteQuery(msgctx.get(), peerStr, failed, bytesOut, elapsed,  memused, slavesReplyLen, continuationNeeded);
         if (continuationNeeded)
         {
             rawText.clear();

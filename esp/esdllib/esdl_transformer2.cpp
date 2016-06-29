@@ -703,7 +703,7 @@ void Esdl2Array::process(Esdl2TransformerContext &ctx, IPropertyTree *pt, const 
         const char *tagname = queryOutputName(ctx);
         if (pt->hasChildren())
         {
-            int prevlen = ctx.writer->length();
+            Owned<IInterface> prevLocation = ctx.writer->saveLocation();
 
             ctx.writer->outputBeginNested(tagname, true);
             ctx.writer->outputBeginArray(item_tag.get());
@@ -724,7 +724,7 @@ void Esdl2Array::process(Esdl2TransformerContext &ctx, IPropertyTree *pt, const 
             {
                 ctx.writer->outputEndArray(item_tag.get());
                 ctx.writer->outputEndNested(tagname); //we need to close out the nested area first
-                ctx.writer->rewindTo(prevlen); //rewind
+                ctx.writer->rewindTo(prevLocation); //rewind
             }
             else
             {
@@ -773,7 +773,7 @@ void Esdl2Array::process(Esdl2TransformerContext &ctx, const char *out_name, Esd
     }
     else
     {
-        int prevlen = ctx.writer->length();
+        Owned<IInterface> prevLocation = ctx.writer->saveLocation();
         ctx.writer->outputBeginNested(xml_tag.get(), true);
         ctx.writer->outputBeginArray(item_tag.get());
         int curlen = ctx.writer->length();
@@ -801,7 +801,7 @@ void Esdl2Array::process(Esdl2TransformerContext &ctx, const char *out_name, Esd
         {
             ctx.writer->outputEndArray(item_tag.get());
             ctx.writer->outputEndNested(xml_tag.get()); // we need to close out this section first
-            ctx.writer->rewindTo(prevlen); //rewind
+            ctx.writer->rewindTo(prevLocation); //rewind
         }
         else
         {
@@ -878,7 +878,7 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, IPropertyTree *pt, const
 
     if (checkVersion(ctx))
     {
-        unsigned prevlen = ctx.writer->length();
+        Owned<IInterface> prevLocation = ctx.writer->saveLocation();
         if (out_name && *out_name) {
             if (!might_skip_root || !ctx.skip_root)
                 ctx.writer->outputBeginNested(out_name, true);
@@ -907,7 +907,7 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, IPropertyTree *pt, const
                 if (ctx.writer->length() == curlen) //nothing was added, empty content, remove open tag
                 {
                     ctx.writer->outputEndNested(out_name); //we need to close out current section first
-                    ctx.writer->rewindTo(prevlen); //rewind
+                    ctx.writer->rewindTo(prevLocation); //rewind
                 }
                 else
                     ctx.writer->outputEndNested(out_name);
@@ -924,8 +924,8 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
         ctx.xppp->skipSubTree();
     else
     {
-        unsigned prevlen = ctx.writer->length();
-        unsigned curlen = prevlen;
+        Owned<IInterface> prevLocation = ctx.writer->saveLocation();
+        unsigned curlen = ctx.writer->length();
 
         if (out_name && *out_name)
         {
@@ -1007,6 +1007,7 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
                             Esdl2Base& chd = *child;
 
                             unsigned len = ctx.writer->length();
+                            Owned<IInterface> location = ctx.writer->saveLocation();
                             local.dataForProcessed = false;
 
                             chd.process(ctx, NULL, &local);
@@ -1019,7 +1020,7 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
                                 {
                                     ESDL_DBG("Taking out data for DataFor '%s' from out buffer", chd.queryDataFor()->queryName());
                                     local.setDataFor(chd.queryDataFor()->queryName(), ctx.writer->str()+len);
-                                    ctx.writer->rewindTo(len);
+                                    ctx.writer->rewindTo(location);
                                 }
                             }
 
@@ -1055,7 +1056,7 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
                 if (ctx.writer->length() == curlen) //nothing was added, empty content, remove open tag
                 {
                     ctx.writer->outputEndNested(out_name); //we need to close out current section first
-                    ctx.writer->rewindTo(prevlen); //rewind
+                    ctx.writer->rewindTo(prevLocation); //rewind
                 }
                 else
                 {

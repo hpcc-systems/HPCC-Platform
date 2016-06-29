@@ -30,7 +30,7 @@ ENDC++;
 
 integer4 mkRandom3 :=
 BEGINC++
-#option action
+    #option action
 return rtlRandom();
 ENDC++;
 

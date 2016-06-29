@@ -15,7 +15,7 @@
 ################################################################################
 
 
-# - Try to find the TBB compression library
+# - Try to find the TBB library
 # Once done this will define
 #
 #  TBB_FOUND - system has the TBB library

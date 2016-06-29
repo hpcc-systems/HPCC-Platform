@@ -417,7 +417,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CDafsException(int code,const char *_msg) 
-        : errcode(code), msg(_msg)
+        : msg(_msg), errcode(code)
     {
     };
 
@@ -2010,58 +2010,6 @@ public:
     }
 };
 
-void clientCacheFileConnect(SocketEndpoint &_ep,unsigned timeout)
-{
-    if (!timeout) {
-        SocketEndpoint ep(_ep);
-        setDafsEndpointPort(ep);
-        Owned<CRemoteFile> cfile = new CRemoteFile(ep, "null");
-        cfile->connect();
-        return; // frees file and adds its socket to cache
-    }
-    // timeout needed so start a thread (that may become orphaned)
-    class cThread: public Thread
-    {
-        SocketEndpoint ep;
-    public:
-        cThread(SocketEndpoint &_ep)
-            : Thread("cacheFileConnect")
-        {
-            ep = _ep;
-        }
-        int run()
-        {
-            try {
-                clientCacheFileConnect(ep,0);
-            }
-            catch (IException *e) {
-                CriticalBlock block(sect);
-                except.setown(e);
-            }
-            return 0;
-        }
-        Owned<IException> except;
-        CriticalSection sect;
-        
-    } *thread;
-    thread = new cThread(_ep);
-    thread->start();
-    IException *e =NULL;
-    if (!thread->join(timeout)) {
-        StringBuffer msg("Timed out connecting to ");
-        _ep.getUrlStr(msg);
-        e =  createDafsException(RFSERR_AuthenticateFailed,msg.str());
-    }
-    {
-        CriticalBlock block(thread->sect);
-        if (!e&&thread->except) 
-            e = thread->except.getClear();
-    }
-    thread->Release();
-    if (e)
-        throw e;
-}
-
 void clientAddSocketToCache(SocketEndpoint &ep,ISocket *socket)
 {
     CriticalBlock block(CConnectionTable::crit); 
@@ -2735,7 +2683,7 @@ class CAsyncCommandManager
         CAsyncCommandManager &parent;
     public:
         CAsyncJob(CAsyncCommandManager &_parent, const char *_uuid)
-            : parent(_parent), uuid(_uuid)
+            : uuid(_uuid), parent(_parent)
         {
             thread = new cThread(this);
             hash = hashc((const byte *)uuid.get(),uuid.length(),~0U);
@@ -2826,7 +2774,7 @@ class CAsyncCommandManager
                 offset_t &total;
             public:
                 cProgress(CriticalSection &_sect,offset_t &_done,offset_t &_total,CFPmode &_mode)
-                    : sect(_sect), done(_done), total(_total), mode(_mode)
+                    : sect(_sect), mode(_mode), done(_done), total(_total)
                 {
                 }
                 CFPmode onProgress(offset_t sizeDone, offset_t totalSize)
@@ -3443,7 +3391,6 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
 
     class CThrottler
     {
-        CRemoteFileServer &owner;
         Semaphore sem;
         CriticalSection crit, configureCrit;
         StringAttr title;
@@ -3455,7 +3402,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
         unsigned statsIntervalSecs;
 
     public:
-        CThrottler(CRemoteFileServer &_owner, const char *_title) : owner(_owner), title(_title)
+        CThrottler(const char *_title) : title(_title)
         {
             totalThrottleDelay = 0;
             limit = 0;
@@ -3858,7 +3805,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     CRemoteFileServer(unsigned maxThreads, unsigned maxThreadsDelayMs, unsigned maxAsyncCopy)
-        : stdCmdThrottler(*this, "stdCmdThrotlter"), slowCmdThrottler(*this, "slowCmdThrotlter"), asyncCommandManager(maxAsyncCopy)
+        : asyncCommandManager(maxAsyncCopy), stdCmdThrottler("stdCmdThrotlter"), slowCmdThrottler("slowCmdThrotlter")
     {
         lasthandle = 0;
         selecthandler.setown(createSocketSelectHandler(NULL));
@@ -5139,7 +5086,7 @@ public:
         IpAddress ip;
         socket->getPeerAddress(ip);
         byte ipdata[16];
-        size32_t ipds = ip.getNetAddress(sizeof(ipdata),&ipdata);
+        ip.getNetAddress(sizeof(ipdata),&ipdata);
         mergeOnce(oncekey,sizeof(ipdata),&ipdata); // this is clients key
         OnceKey mykey;
         genOnce(mykey);

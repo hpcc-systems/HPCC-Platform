@@ -30,7 +30,13 @@
                   </xs:appinfo>
                 </xs:annotation>
                 <xs:complexType>
-                  <xs:attribute name="name" type="xs:string" use="required" default="">
+                <!--DocAutoBuildCode-->
+                    <xs:annotation>
+		       <xs:appinfo>
+		          <docid>MyWS2-T01</docid>
+		       </xs:appinfo>
+		    </xs:annotation>
+           <xs:attribute name="name" type="xs:string" use="required" default="">
                     <xs:annotation>
                       <xs:appinfo>
                         <viewType>hidden</viewType>
@@ -76,6 +82,12 @@
                   </xs:appinfo>
                 </xs:annotation>
                 <xs:complexType>
+                <!--DocAutoBuildCode-->
+                 <xs:annotation>
+	           <xs:appinfo>
+                    <docid>MyWS2-T02</docid>
+	           </xs:appinfo>
+                 </xs:annotation>
                   <xs:attribute name="name" type="topologyClusterType" use="required">
 	                <xs:annotation>
 	                  <xs:appinfo>
@@ -86,6 +98,12 @@
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
+            <!--DocAutoBuildCode-->
+                <xs:annotation>
+	          <xs:appinfo>
+                    <docid>MyWS2-T03</docid>
+	          </xs:appinfo>
+	        </xs:annotation>
             <xs:attribute name="build" type="buildType" use="required">
                 <xs:annotation>
                     <xs:appinfo>

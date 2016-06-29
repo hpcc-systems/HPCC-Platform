@@ -696,8 +696,8 @@ ECLRTL_API void rtlCreateUnicodeRangeHigh(size32_t & outlen, UChar * & out, unsi
 
 ECLRTL_API unsigned rtlCountRows(size32_t len, const void * data, IRecordSize * rs);
 ECLRTL_API unsigned rtlCountToSize(unsigned count, const void * data, IRecordSize * rs);
-ECLRTL_API void rtlSetToSetX(bool & outIsAll, size32_t & outLen, void * & outData, bool inIsAll, size32_t inLen, void * inData);
-ECLRTL_API void rtlAppendSetX(bool & outIsAll, size32_t & outLen, void * & outData, bool leftIsAll, size32_t leftLen, void * leftData, bool rightIsAll, size32_t rightLen, void * rightData);
+ECLRTL_API void rtlSetToSetX(bool & outIsAll, size32_t & outLen, void * & outData, bool inIsAll, size32_t inLen, const void * inData);
+ECLRTL_API void rtlAppendSetX(bool & outIsAll, size32_t & outLen, void * & outData, bool leftIsAll, size32_t leftLen, const void * leftData, bool rightIsAll, size32_t rightLen, const void * rightData);
 
 // rtlCodepageConvert uses a target buffer provided by the user (and returns the length actually used)
 // rtlCodepageConvertX allocates the target buffer itself (user must free)
@@ -790,7 +790,7 @@ interface IEmbedFunctionContext : extends IInterface
     virtual void bindUTF8Param(const char *name, size32_t chars, const char *val) = 0;
     virtual void bindUnicodeParam(const char *name, size32_t chars, const UChar *val) = 0;
 
-    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData) = 0;
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, const void *setData) = 0;
 
     virtual bool getBooleanResult() = 0;
     virtual void getDataResult(size32_t &len, void * &result) = 0;
@@ -837,5 +837,7 @@ interface IEmbedContext : extends IInterface
 };
 
 typedef IEmbedContext * (* GetEmbedContextFunction)();
+
+ECLRTL_API void rtlSubstituteEmbeddedScript(size32_t &__lenResult, char * &__result, size32_t scriptChars, const char *script, size32_t outFieldsChars, const char *outFields, size32_t searchChars, const char *search);
 
 #endif

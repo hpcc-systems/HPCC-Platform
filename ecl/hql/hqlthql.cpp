@@ -453,16 +453,22 @@ StringBuffer &HqltHql::callEclFunction(StringBuffer &s, IHqlExpression * expr, b
 
     s.append('(');
     unsigned numParameters = formals->numChildren();
+    bool first = true;
     for (unsigned idx = 0; idx < numParameters; idx++)
     {
-        if (idx)
-            s.append(", ");
-        
-        if(funcdef->isNamedSymbol())
+        if (expandProcessed || !formals->queryChild(idx)->hasAttribute(_hidden_Atom))
         {
-            IHqlExpression * param = expr->queryAnnotationParameter(idx);
-            if(param)
-                toECL(param, s, false, inType);
+            if (first)
+                first = false;
+            else
+                s.append(", ");
+
+            if(funcdef->isNamedSymbol())
+            {
+                IHqlExpression * param = expr->queryAnnotationParameter(idx);
+                if(param)
+                    toECL(param, s, false, inType);
+            }
         }
     }
     s.append(')');
@@ -1547,16 +1553,29 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 name.append('.');
                 lookupSymbolName(expr, name);
             }
-
+            IHqlExpression *funcdef = (no==no_externalcall) ?  expr->queryBody()->queryExternalDefinition() : expr->queryBody()->queryFunctionDefinition();
+            IHqlExpression *formals = funcdef ? funcdef->queryChild(1) : nullptr;
             s.append(name);
             s.append('(');
             unsigned idx = 0;
+            bool first = true;
             while(IHqlExpression *kid = expr->queryChild(idx))
             {
-                if (idx)
-                    s.append(", ");
+                bool isHidden = false;
+                if (formals && !expandProcessed)
+                {
+                    IHqlExpression *formal = formals->queryChild(idx);
+                    isHidden = formal && formal->hasAttribute(_hidden_Atom);
+                }
+                if (!isHidden)
+                {
+                    if (first)
+                        first = false;
+                    else
+                        s.append(", ");
+                    toECL(kid, s, kid->getPrecedence() < 0, inType);
+                }
                 idx++;
-                toECL(kid, s, kid->getPrecedence() < 0, inType);
             }
             s.append(')');
             break;
@@ -3017,13 +3036,18 @@ void HqltHql::doFunctionDefinition(StringBuffer & newdef, IHqlExpression * funcd
     newdef.append(name).append('(');
 
     IHqlExpression * formals = funcdef->queryChild(1);
+    bool first = true;
     ForEachChild(idx, formals)
     {
-        if (idx > 0)
-            newdef.append(", ");
-
         IHqlExpression * curParam = formals->queryChild(idx);
-        toECL(curParam, newdef, false, hasNamedSymbol(curParam) ? inType : true); 
+        if (expandProcessed || !curParam->hasAttribute(_hidden_Atom))
+        {
+            if (first)
+                first = false;
+            else
+                newdef.append(", ");
+            toECL(curParam, newdef, false, hasNamedSymbol(curParam) ? inType : true);
+        }
     }
     newdef.append(')');
 

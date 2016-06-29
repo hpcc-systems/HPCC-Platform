@@ -47,12 +47,15 @@
 
   <para>The <emphasis role="bold">FileExists </emphasis>function returns TRUE
   if the specified <emphasis>filename</emphasis> is present in the Distributed
-  File Utility (DFU) and is not a SuperFile (use the STD.File.SuperFileExists
-  function to detect their presence or absence). If
-  <emphasis>physicalcheck</emphasis> is set to TRUE, then the file’s physical
-  presence on disk is also checked.</para>
+  File Utility (DFU). If <emphasis>physicalcheck</emphasis> is set to TRUE,
+  then the file’s physical presence on disk is also checked.</para>
 
   <para>Example:</para>
 
   <programlisting format="linespecific">A := STD.File.FileExists('~CLASS::RT::IN::People');</programlisting>
+
+  <para></para>
+
+  <para>See Also: <link
+  linkend="SuperFileExists">SuperFileExists</link></para>
 </sect1>

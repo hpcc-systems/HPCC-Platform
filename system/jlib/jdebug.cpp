@@ -300,7 +300,7 @@ double getCycleToNanoScale()
 
 #else
 
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
 static bool useRDTSC = _USE_RDTSC;
 #endif
 static double cycleToNanoScale;
@@ -309,9 +309,6 @@ static double cycleToMilliScale;
 
 void calibrate_timing()
 {
-    cycleToNanoScale = 1.0;
-    cycleToMicroScale = 1.0;
-    cycleToMilliScale = 1.0;
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
     if (useRDTSC) {
         unsigned long eax;
@@ -334,6 +331,9 @@ void calibrate_timing()
         if ((edx&0x10)==0)
             useRDTSC = false;
     }
+#endif
+
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC) {
         unsigned startu = usTick();
         cycle_t start = getTSC();
@@ -358,6 +358,8 @@ void calibrate_timing()
     }
 #endif
     cycleToNanoScale = 1.0;
+    cycleToMicroScale = 1.0;
+    cycleToMilliScale = 1.0;
 }
 
 
@@ -367,7 +369,7 @@ static bool use_gettimeofday=false;
 #endif
 cycle_t jlib_decl get_cycles_now()
 {
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC)
         return getTSC();
 #endif
@@ -390,19 +392,19 @@ cycle_t jlib_decl get_cycles_now()
 
 __int64 jlib_decl cycle_to_nanosec(cycle_t cycles)
 {
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC)
         return (__int64)((double)cycles * cycleToNanoScale);
+#endif
 #ifdef __APPLE__
     return cycles * (uint64_t) timebase_info.numer / (uint64_t)timebase_info.denom;
-#endif
 #endif
     return cycles;
 }
 
 __int64 jlib_decl cycle_to_microsec(cycle_t cycles)
 {
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC)
         return (__int64)((double)cycles * cycleToMicroScale);
 #endif
@@ -411,7 +413,7 @@ __int64 jlib_decl cycle_to_microsec(cycle_t cycles)
 
 __int64 jlib_decl cycle_to_millisec(cycle_t cycles)
 {
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC)
         return (__int64)((double)cycles * cycleToMilliScale);
 #endif
@@ -420,7 +422,7 @@ __int64 jlib_decl cycle_to_millisec(cycle_t cycles)
 
 cycle_t nanosec_to_cycle(__int64 ns)
 {
-#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+#if defined(HAS_GOOD_CYCLE_COUNTER)
     if (useRDTSC)
         return (__int64)((double)ns / cycleToNanoScale);
 #endif
@@ -874,6 +876,11 @@ memsize_t getMapInfo(const char *type)
     return 0; // TODO/UNKNOWN
 }
 
+memsize_t getVMInfo(const char *type)
+{
+    return 0; // TODO/UNKNOWN
+}
+
 void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 {
     // MORE: Might be a better way to get CPU speed (actual) than the one stored in Registry
@@ -933,24 +940,105 @@ static unsigned evalAffinityCpus()
 
 memsize_t getMapInfo(const char *type)
 {
+    // NOTE: 'total' heap value includes Roxiemem allocation, if present
+    enum mapList { HEAP, STACK, SBRK, ANON };
+    enum mapList mapType;
+    if ( streq(type, "heap") )
+        mapType = HEAP;
+    else if ( streq(type, "stack") )
+        mapType = STACK;
+    else if ( streq(type, "sbrk") )
+        mapType = SBRK;
+    else if ( streq(type, "anon") )
+        mapType = ANON;
+    else
+        return 0;
+
     memsize_t ret = 0;
     VStringBuffer procMaps("/proc/%d/maps", GetCurrentProcessId());
-    VStringBuffer typeStr("[%s]", type);
     FILE *diskfp = fopen(procMaps.str(), "r");
     if (!diskfp)
         return false;
     char ln[256];
+
+/*
+ *  exmaple /proc/<pid>/maps format:
+ *  addr_start  -addr_end     perms offset   dev   inode      pathname
+ *  01c3a000-01c5b000         rw-p  00000000 00:00 0          [heap]
+ *  7f3f25217000-7f3f25a40000 rw-p  00000000 00:00 0          [stack:2362]
+ *  7f4020a40000-7f4020a59000 rw-p  00000000 00:00 0
+ *  7f4020a59000-7f4020a5a000 ---p  00000000 00:00 0
+ *  7f4029bd4000-7f4029bf6000 r-xp  00000000 08:01 17576135   /lib/x86_64-linux-gnu/ld-2.15.so
+ */
+
     while (fgets(ln, sizeof(ln), diskfp))
     {
-        if (strstr(ln, typeStr.str()))
+        bool skipline = true;
+        if ( mapType == HEAP || mapType == ANON ) // 'general' heap includes anon mmapped + sbrk
+        {
+            // skip file maps (beginning with /) and all other regions (except [heap if selected)
+            if ( (mapType == HEAP && strstr(ln, "[heap")) || (!strstr(ln, " /") && !strstr(ln, " [")) )
+            {
+                // include only (r)ead + (w)rite and (p)rivate (not shared), skipping e(x)ecutable
+                // and ---p guard regions
+                if ( strstr(ln, " rw-p") )
+                    skipline = false;
+            }
+        }
+        else if ( mapType == STACK )
+        {
+            if ( strstr(ln, "[stack") )
+                skipline = false;
+        }
+        else if ( mapType == SBRK )
+        {
+            if ( strstr(ln, "[heap") )
+                skipline = false;
+        }
+        if ( !skipline )
         {
             unsigned __int64 addrLow, addrHigh;
             if (2 == sscanf(ln, "%16" I64F "x-%16" I64F "x", &addrLow, &addrHigh))
-            {
-                ret = (memsize_t)(addrHigh-addrLow);
-                break;
-            }
+                ret += (memsize_t)(addrHigh-addrLow);
         }
+    }
+    fclose(diskfp);
+    return ret;
+}
+
+static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
+{
+    size32_t len = strlen(prefix);
+    if (strncmp(prefix, line, len)==0)
+    {
+        char * tail = NULL;
+        value = strtol(line+len, &tail, 10);
+        while (isspace(*tail))
+            tail++;
+        if (strncmp(tail, "kB", 2) == 0)
+            value *= 0x400;
+        else if (strncmp(tail, "mB", 2) == 0)
+            value *= 0x100000;
+        else if (strncmp(tail, "gB", 2) == 0)
+            value *= 0x40000000;
+        return true;
+    }
+    return false;
+}
+
+memsize_t getVMInfo(const char *type)
+{
+    memsize_t ret = 0;
+    VStringBuffer name("%s:", type);
+    VStringBuffer procMaps("/proc/self/status");
+    FILE *diskfp = fopen(procMaps.str(), "r");
+    if (!diskfp)
+        return 0;
+    char ln[256];
+    while (fgets(ln, sizeof(ln), diskfp))
+    {
+        if (matchExtract(name.str(), ln, ret))
+            break;
     }
     fclose(diskfp);
     return ret;
@@ -1026,9 +1114,8 @@ static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigne
         memfd = open("/proc/meminfo",O_RDONLY);
     if (memfd==-1)
         return;
-    lseek(memfd, 0L, 0);
-    char buf[1024];
-    size32_t l = read(memfd, buf, sizeof(buf)-1);
+    char buf[2048];
+    size32_t l = pread(memfd, buf, sizeof(buf)-1, 0L);
     if ((int)l<=0)
         return;
     buf[l] = 0;
@@ -1092,20 +1179,10 @@ public:
 void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
 {
 #ifdef __linux__
-    struct mallinfo mi = mallinfo();
-    static CInt64fix fixuordblks;
-    fixuordblks.set(mi.uordblks);
-    static CInt64fix fixusmblks;
-    fixusmblks.set(mi.usmblks);
-    static CInt64fix fixhblkhd;
-    fixhblkhd.set(mi.hblkhd);
-    static CInt64fix fixarena;
-    fixarena.set(mi.arena);
-
-    __int64 sbrkmem = fixuordblks.get()+fixusmblks.get();
-    __int64 mmapmem = fixhblkhd.get();
-    __int64 arena =  fixarena.get();
-    __int64 total = mmapmem+sbrkmem;
+    __int64 total = getMapInfo("heap");
+    __int64 sbrkmem = getMapInfo("sbrk");
+    __int64 mmapmem = total - sbrkmem;
+    __int64 virttot = getVMInfo("VmData");
     unsigned mu;
     unsigned ma;
     unsigned mt;
@@ -1113,9 +1190,8 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
     unsigned su;
     getMemUsage(mu,ma,mt,st,su);
     unsigned muval = (unsigned)(((__int64)mu+(__int64)su)*100/((__int64)mt+(__int64)st));
-    __int64 proctot = arena+mmapmem;
     if (sizeof(memsize_t)==4) {
-        unsigned muval2 = (proctot*100)/(3*(__int64)0x40000000);
+        unsigned muval2 = (virttot*100)/(3*(__int64)0x40000000);
         if (muval2>muval)
             muval = muval2;
     }
@@ -1124,7 +1200,7 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
 
 
     out.appendf("MU=%3u%% MAL=%" I64F "d MMP=%" I64F "d SBK=%" I64F "d TOT=%uK RAM=%uK SWP=%uK", 
-        muval, total, mmapmem, sbrkmem, (unsigned)(proctot/1024), mu, su);
+        muval, total, mmapmem, sbrkmem, (unsigned)(virttot/1024), mu, su);
 #ifdef _USE_MALLOC_HOOK
     if (totalMem) 
         out.appendf(" TM=%" I64F "d",totalMem);
@@ -1194,24 +1270,6 @@ void clearAffinityCache()
 }
 
 
-static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
-{
-    size32_t len = strlen(prefix);
-    if (strncmp(prefix, line, len)==0)
-    {
-        char * tail = NULL;
-        value = strtol(line+len, &tail, 10);
-        while (isspace(*tail))
-            tail++;
-        if (strncmp(tail, "kB", 2) == 0)
-            value *= 0x400;
-        else if (strncmp(tail, "mB", 2) == 0)
-            value *= 0x100000;
-        return true;
-    }
-    return false;
-}
-
 void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident)
 {
     peakVm = 0;
@@ -1231,10 +1289,8 @@ void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident)
         memfd = open("/proc/self/status",O_RDONLY);
     if (memfd==-1)
         return;
-    lseek(memfd, 0L, 0);
-
     char buf[2048];
-    size32_t l = read(memfd, buf, sizeof(buf)-1);
+    size32_t l = pread(memfd, buf, sizeof(buf)-1, 0L);
     if ((int)l<=0)
         return;
     buf[l] = 0;

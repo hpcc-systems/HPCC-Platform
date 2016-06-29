@@ -57,6 +57,10 @@
 #include <cppunit/ui/text/TestRunner.h>
 #endif
 
+#ifdef _USE_ZLIB
+#include "zcrypt.hpp"
+#endif
+
 //#define TEST_LEGACY_DEPENDENCY_CODE
 
 #define INIFILE "eclcc.ini"
@@ -260,10 +264,11 @@ public:
         optOnlyCompile = false;
         optBatchMode = false;
         optSaveQueryText = false;
+        optSaveQueryArchive = false;
         optGenerateHeader = false;
         optShowPaths = false;
         optNoSourcePath = false;
-        optTargetClusterType = HThorCluster;
+        optTargetClusterType = RoxieCluster;
         optTargetCompiler = DEFAULT_COMPILER;
         optThreads = 0;
         optLogDetail = 0;
@@ -383,6 +388,7 @@ protected:
     bool optShared;
     bool optOnlyCompile;
     bool optSaveQueryText;
+    bool optSaveQueryArchive;
     bool optLegacyImport;
     bool optLegacyWhen;
     bool optGenerateHeader;
@@ -480,6 +486,7 @@ int main(int argc, const char *argv[])
 #ifndef _DEBUG
     //In release mode exit without calling all the clean up code.
     //It is faster, and it helps avoids potential crashes if there are active objects which depend on objects in file hook dlls.
+    fflush(NULL);
     _exit(exitCode);
 #endif
 
@@ -873,7 +880,14 @@ void EclCC::getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver 
 
 static bool convertPathToModule(StringBuffer & out, const char * filename)
 {
-    const char * dot = strrchr(filename, '.');
+    StringBuffer temp;
+#ifdef _USE_ZLIB
+    removeZipExtension(temp, filename);
+#else
+    temp.append(filename);
+#endif
+
+    const char * dot = strrchr(temp.str(), '.');
     if (dot)
     {
         if (!strieq(dot, ".ecl") && !strieq(dot, ".hql") && !strieq(dot, ".eclmod") && !strieq(dot, ".eclattr"))
@@ -882,7 +896,7 @@ static bool convertPathToModule(StringBuffer & out, const char * filename)
     else
         return false;
 
-    const unsigned copyLen = dot-filename;
+    const unsigned copyLen = dot-temp.str();
     if (copyLen == 0)
         return false;
 
@@ -1246,11 +1260,19 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         return;
     }
 
-    if (instance.archive)
+    if (optArchive || optGenerateDepend)
         return;
 
     if (syntaxChecking || optGenerateMeta || optEvaluateResult)
         return;
+
+    if (optSaveQueryArchive && instance.wu)
+    {
+        Owned<IWUQuery> q = instance.wu->updateQuery();
+        StringBuffer buf;
+        toXML(instance.archive, buf);
+        q->setQueryText(buf);
+    }
 
     StringBuffer targetFilename;
     const char * outputFilename = instance.outputFilename;
@@ -1458,7 +1480,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     Owned<ISourcePath> sourcePath = optNoSourcePath ? NULL : createSourcePath(curFilename);
     Owned<IFileContents> queryText = createFileContentsFromFile(curFilename, sourcePath, false);
     const char * queryTxt = queryText->getText();
-    if (optArchive || optGenerateDepend)
+    if (optArchive || optGenerateDepend || optSaveQueryArchive)
         instance.archive.setown(createAttributeArchive());
 
     instance.wu.setown(createLocalWorkUnit(NULL));
@@ -1656,7 +1678,8 @@ void EclCC::generateOutput(EclCompileInstance & instance)
             ForEachItemIn(i, resourceManifestFiles)
                 addManifestResourcesToArchive(instance.archive, resourceManifestFiles.item(i));
 
-            outputXmlToOutputFile(instance, instance.archive);
+            if (optArchive)
+                outputXmlToOutputFile(instance, instance.archive);
         }
     }
 
@@ -2068,6 +2091,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optSaveQueryText, "-q"))
+        {
+        }
+        else if (iter.matchFlag(optSaveQueryArchive, "-qa"))
         {
         }
         else if (iter.matchFlag(optNoCompile, "-S"))

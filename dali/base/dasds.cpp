@@ -1040,6 +1040,12 @@ class CBackupHandler : public CInterface, implements IThreaded
     CTimeMon warningTime;
     unsigned recentTimeThrottled;
     unsigned lastNumWarnItems;
+    IPropertyTree &config;
+
+    const unsigned defaultFreeQueueLimit = 50;
+    const unsigned defaultLargeWarningThreshold = 50;
+    const unsigned defaultSoftQueueLimit = 200;
+    const unsigned defaultSoftQueueLimitDelay = 200;
 
     BackupQueueItem *getFreeItem()
     {
@@ -1159,18 +1165,18 @@ class CBackupHandler : public CInterface, implements IThreaded
     }
 
 public:
-    CBackupHandler() : threaded("CBackupHandler")
+    CBackupHandler(IPropertyTree &_config) : config(_config), threaded("CBackupHandler")
     {
         currentEdition = (unsigned)-1;
         addWaiting = waiting = async = false;
         aborted = true;
         throttleCounter = 0;
-        freeQueueLimit = 10;
-        largeWarningThreshold = 50;
-        softQueueLimit = 200;
-        softQueueLimitDelay = 200;
         recentTimeThrottled = 0;
         lastNumWarnItems = 0;
+        freeQueueLimit = config.getPropInt("@backupFreeQueueLimit", defaultFreeQueueLimit);
+        largeWarningThreshold = config.getPropInt("@backupLargeWarningThreshold", defaultLargeWarningThreshold);
+        softQueueLimit = config.getPropInt("@backupSoftQueueLimit", defaultSoftQueueLimit);
+        softQueueLimitDelay = config.getPropInt("@backupSoftQueueLimitDelay", defaultSoftQueueLimitDelay);
     }
     ~CBackupHandler()
     {
@@ -5720,7 +5726,7 @@ IStoreHelper *createStoreHelper(const char *storeName, const char *location, con
 #endif
 
 CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const char *_dataPath) 
-    : coven(_coven), config(_config), server(*this), dataPath(_dataPath)
+    : coven(_coven), config(_config), server(*this), dataPath(_dataPath), backupHandler(_config)
 {
     config.Link();
     restartOnError = config.getPropBool("@restartOnUnhandled");
@@ -6014,13 +6020,19 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             assertex(thisDali);
             IPropertyTree *thisDaliInfo = findDaliProcess(envTree, thisDali->queryMyNode()->endpoint());
             assertex(thisDaliInfo);
-            Owned<IPropertyTreeIterator> plugins = thisDaliInfo->getElements("Plugin");
-            ForEach(*plugins)
+
+            const char *daliName = thisDaliInfo->queryProp("@name");
+            if (daliName)
             {
-                Owned<IPluggableFactory> factory = loadPlugin(&plugins->query());
-                assertex (factory);
-                if (!factory->initializeStore())
-                    throw MakeStringException(0, "Failed to initialize plugin store '%s'", plugins->query().queryProp("@name"));
+                VStringBuffer xpath("Software/DaliServerPlugin[@daliServers='%s']", daliName);
+                Owned<IPropertyTreeIterator> plugins = envTree->getElements(xpath);
+                ForEach(*plugins)
+                {
+                    Owned<IPluggableFactory> factory = loadPlugin(&plugins->query());
+                    assertex (factory);
+                    if (!factory->initializeStore())
+                        throw MakeStringException(0, "Failed to initialize plugin store '%s'", plugins->query().queryProp("@type"));
+                }
             }
 
             oldEnvironment.setown(root->getPropTree("Environment"));

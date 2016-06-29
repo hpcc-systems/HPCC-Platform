@@ -1529,7 +1529,7 @@ BoundRow * HqlCppTranslator::declareStaticRow(BuildCtx & ctx, IHqlExpression * e
     if (maxRecordSize > options.maxLocalRowSize)
         getInvariantMemberContext(ctx, &declarectx, NULL, false, false);
 
-    if (declarectx != &ctx)
+    if (!declarectx->isSameLocation(ctx))
         rowType.setown(makeModifier(rowType.getClear(), typemod_member, NULL));
     else
         declarectx->setNextPriority(BuildCtx::OutermostScopePrio);
@@ -1552,7 +1552,7 @@ BoundRow * HqlCppTranslator::declareTempRow(BuildCtx & ctx, BuildCtx & codectx, 
     bool createRowDynamically = tempRowRequiresFinalize(record) || (maxRecordSize > options.maxLocalRowSize);
     if (createRowDynamically)
     {
-        return declareLinkedRow(ctx, expr, &ctx != &codectx);
+        return declareLinkedRow(ctx, expr, !ctx.isSameLocation(codectx));
     }
     else
     {
@@ -5251,7 +5251,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
         if (options.spotCSE)
             cseValue.setown(spotScalarCSE(cseValue, NULL, queryOptions().spotCseInIfDatasetConditions));
 
-        if ((retType == type_set) && isComplexSet(resultType, false) && castValue->getOperator() == no_list && !isNullList(castValue))
+        if ((retType == type_set) && isComplexSet(resultType, castValue->isConstant()) && castValue->getOperator() == no_list && !isNullList(castValue))
         {
             CHqlBoundTarget tempTarget;
             createTempFor(ctx, resultType, tempTarget, typemod_none, FormatBlockedDataset);
@@ -5380,7 +5380,7 @@ void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHql
     beginNestedClass(classctx, name, "ICompare");
 
     BuildCtx funcctx(classctx);
-    funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const");
+    funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const" OPTIMIZE_FUNCTION_ATTRIBUTE);
     funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
     funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
@@ -5543,7 +5543,7 @@ void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHql
     beginNestedClass(comparectx, name, "ICompare");
 
     BuildCtx funcctx(comparectx);
-    funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const");
+    funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const" OPTIMIZE_FUNCTION_ATTRIBUTE);
     funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
     funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
@@ -8368,7 +8368,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRegroup(BuildCtx & ctx, IHqlEx
     ForEachItemIn(idx, inExprs)
     {
         IHqlExpression & cur = inExprs.item(idx);
-        bound.append(*buildCachedActivity(ctx, &cur));
+        if (!cur.isAttribute())
+            bound.append(*buildCachedActivity(ctx, &cur));
     }
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKregroup, expr, "Regroup");
@@ -9179,6 +9180,8 @@ unsigned HqlCppTranslator::doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpressi
         subGraph->setPropBool("@child", true);
     if (expr->hasAttribute(sequentialAtom))
         subGraph->setPropBool("@sequential", true);
+    if (kind == SubGraphLoop)
+        subGraph->setPropBool("@loopBody", true);
 
     if (insideChildOrLoopGraph(ctx))
     {
@@ -11542,7 +11545,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
         beginNestedClass(classctx, compareName.str(), "ICompare");
 
         BuildCtx funcctx(classctx);
-        funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const");
+        funcctx.addQuotedCompoundLiteral("virtual int docompare(const void * _left, const void * _right) const" OPTIMIZE_FUNCTION_ATTRIBUTE);
         funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
         funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
         funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
@@ -13819,7 +13822,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLinkedRawChildDataset(BuildCtx
 
     buildInstancePrefix(instance);
 
-    OwnedHqlExpr value = expr->isDatarow() ? createDatasetFromRow(LINK(expr)) : LINK(expr);
+    OwnedHqlExpr nonparallel = removeAttribute(expr, parallelAtom);
+    OwnedHqlExpr value = expr->isDatarow() ? createDatasetFromRow(nonparallel.getClear()) : nonparallel.getClear();
     BuildCtx * declarectx;
     BuildCtx * callctx;
     instance->evalContext->getInvariantMemberContext(NULL, &declarectx, &callctx, false, true);     // possibly should sometimes generate in onCreate(), if can evaluate in parent
@@ -15290,6 +15294,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFilter(BuildCtx & ctx, IHqlExp
 
         bindTableCursor(funcctx, dataset, "self");
         buildReturn(funcctx, cond);
+
+        if (options.addLikelihoodToGraph)
+        {
+            double likelihood = queryLikelihood(cond);
+            if (isKnownLikelihood(likelihood))
+            {
+                StringBuffer text;
+                likelihood *= 100;
+                text.setf("%3.2f%%", likelihood);
+                instance->addAttribute("matchLikelihood", text);
+            }
+        }
     }
 
     if (invariant)
@@ -16294,7 +16310,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChoose(BuildCtx & ctx, IHqlExp
 
     CIArrayOf<ABoundActivity> inputs;
     ForEachChildFrom(i, expr, 1)
-        inputs.append(*getConditionalActivity(ctx, expr->queryChild(i), isChild));
+    {
+        IHqlExpression * cur = queryRealChild(expr, i);
+        if (cur)
+            inputs.append(*getConditionalActivity(ctx, cur, isChild));
+    }
 
     OwnedHqlExpr branch = adjustValue(expr->queryChild(0), -1);
     return doBuildActivityChoose(ctx, expr, branch, inputs, isRoot);
@@ -17947,6 +17967,27 @@ void HqlCppTranslator::buildWorkflowPersistCheck(BuildCtx & ctx, IHqlExpression 
 
 void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
 {
+    //Generate a #define that can be used to optimize a particular function.
+    BuildCtx optimizectx(*code, includeAtom);
+    if (options.optimizeCriticalFunctions)
+    {
+        switch (options.targetCompiler)
+        {
+#ifndef __APPLE__
+        case GccCppCompiler:
+            optimizectx.addQuoted("#define OPTIMIZE __attribute__((optimize(3)))");
+            break;
+#endif
+        default:
+            optimizectx.addQuoted("#define OPTIMIZE");
+            break;
+        }
+    }
+    else
+    {
+        optimizectx.addQuoted("#define OPTIMIZE");
+    }
+
 
     BuildCtx classctx(*code, goAtom);
     classctx.addQuotedCompoundLiteral("struct MyEclProcess : public EclProcess", ";");

@@ -4015,12 +4015,27 @@ void MonitorExtractor::buildKeySegmentInExpr(BuildMonitorState & buildState, Key
             if (compare)
                 translator.buildFilter(subctx, compare);
 
-            OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
-
             HqlExprArray args;
             args.append(*LINK(targetVar));
-            args.append(*LINK(address));
-            args.append(*LINK(address));
+            unsigned srcSize = normalized->queryType()->getSize();
+            if (srcSize < curSize)
+            {
+                OwnedHqlExpr lengthExpr = getSizetConstant(srcSize);
+                OwnedHqlExpr rangeLower = getRangeLimit(fieldType, lengthExpr, normalized, -1);
+                OwnedHqlExpr rangeUpper = getRangeLimit(fieldType, lengthExpr, normalized, +1);
+
+                CHqlBoundExpr boundLower, boundUpper;
+                translator.buildExpr(subctx, rangeLower, boundLower);
+                translator.buildExpr(subctx, rangeUpper, boundUpper);
+                args.append(*getPointer(boundLower.expr));
+                args.append(*getPointer(boundUpper.expr));
+            }
+            else
+            {
+                OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
+                args.append(*LINK(address));
+                args.append(*LINK(address));
+            }
             translator.callProcedure(subctx, func, args);
         }
     }
@@ -5005,6 +5020,7 @@ IHqlExpression * MonitorExtractor::castToFieldAndBack(IHqlExpression * left, IHq
                 return LINK(right);
             return ensureExprType(right, leftType);
         }
+    case no_substring:
     case no_add:
     case no_sub:
         return castToFieldAndBack(left->queryChild(0), right);
@@ -5051,6 +5067,12 @@ IHqlExpression * MonitorExtractor::invertTransforms(IHqlExpression * left, IHqlE
             OwnedHqlExpr adjusted = createValue(op == no_sub ? no_add : no_sub, right->getType(), LINK(right), LINK(left->queryChild(1)));
             return invertTransforms(left->queryChild(0), adjusted);
         }
+     case no_substring:
+         {
+             assertex(right->getOperator() != no_list);
+
+             return invertTransforms(left->queryChild(0), right);
+         }
     default:
         UNIMPLEMENTED;
     }
@@ -5138,6 +5160,27 @@ IHqlExpression * MonitorExtractor::isKeyableFilter(IHqlExpression * left, IHqlEx
             reason.set(KFRnokey);
         return NULL;
 
+    case no_substring:
+        {
+            IHqlExpression * range = left->queryChild(1);
+            if (range->getOperator() == no_rangeto)
+            {
+                IValue *end = range->queryChild(0)->queryValue();
+                if (!end)
+                    break;
+                return isKeyableFilter(left->queryChild(0), right, duplicate, compareOp, reason, keyedKind);
+            }
+            else if (range->getOperator() == no_range)
+            {
+                IValue *start = range->queryChild(0)->queryValue();
+                IValue *end = range->queryChild(1)->queryValue();
+                if (!start || !end || start->getIntValue() != 1)
+                    break;
+                return isKeyableFilter(left->queryChild(0), right, duplicate, compareOp, reason, keyedKind);
+            }
+            reason.set(KFRtoocomplex, right);
+            return NULL;
+        }
     case no_add:
     case no_sub:
         if (isIndexInvariant(left->queryChild(1)))
@@ -7251,6 +7294,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFetch(BuildCtx & ctx, IHqlExpr
 {
     IHqlExpression *fetch = queryFetch(expr);
     IHqlExpression *tableExpr = queryPhysicalRootTable(fetch->queryChild(0));
+    if (!tableExpr)
+        throwError(HQLERR_FetchNonDiskfile);
     FetchBuilder info(*this, tableExpr, tableExpr->queryChild(0), expr);
     info.gatherVirtualFields(false, true);//?needToSerializeRecord(mode)
 

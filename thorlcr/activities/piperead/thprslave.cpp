@@ -189,6 +189,8 @@ public:
     CPipeReadSlaveActivity(CGraphElementBase *_container) 
         : CPipeSlaveBase(_container)
     {
+        helper = static_cast <IHThorPipeReadArg *> (queryHelper());
+        appendOutputLinked(this);
     }
     CATCH_NEXTROW()
     {   
@@ -229,26 +231,19 @@ public:
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        helper = static_cast <IHThorPipeReadArg *> (queryHelper());
         flags = helper->getPipeFlags();
         needTransform = false;
 
-        IThorRowInterfaces *_inrowif;
         if (needTransform)
-        {
-            inrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(),queryId(),queryCodeContext()));
-            _inrowif = inrowif;
-        }
-        else
-            _inrowif = this;
-        OwnedRoxieString xmlIteratorPath(helper->getXmlIteratorPath());
-        readTransformer.setown(createReadRowStream(_inrowif->queryRowAllocator(), _inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIteratorPath, flags));
-        appendOutputLinked(this);
+            inrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(), queryId(), queryCodeContext()));
     }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+        OwnedRoxieString xmlIteratorPath(helper->getXmlIteratorPath());
+        IThorRowInterfaces *_inrowif = needTransform ? inrowif.get() : this;
+        readTransformer.setown(createReadRowStream(_inrowif->queryRowAllocator(), _inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIteratorPath, flags));
         eof = false;
         OwnedRoxieString pipeProgram(helper->getPipeProgram());
         openPipe(pipeProgram, "PIPEREAD");
@@ -342,8 +337,10 @@ public:
     CPipeThroughSlaveActivity(CGraphElementBase *_container)
         : CPipeSlaveBase(_container)
     {
+        helper = static_cast <IHThorPipeThroughArg *> (queryHelper());
         pipeWriter = NULL;
         grouped = false;
+        appendOutputLinked(this);
     }
     ~CPipeThroughSlaveActivity()
     {
@@ -351,21 +348,18 @@ public:
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        helper = static_cast <IHThorPipeThroughArg *> (queryHelper());
         flags = helper->getPipeFlags();
         recreate = helper->recreateEachRow();
         grouped = 0 != (flags & TPFgroupeachrow);
-
-        OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
-        readTransformer.setown(createReadRowStream(queryRowAllocator(), queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIterator, flags));
-        readTransformer->setStream(pipeStream); // NB the pipe process stream is provided to pipeStream after pipe->run()
-
-        appendOutputLinked(this);
     }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+        OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
+        readTransformer.setown(createReadRowStream(queryRowAllocator(), queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIterator, flags));
+        readTransformer->setStream(pipeStream); // NB the pipe process stream is provided to pipeStream after pipe->run()
+
         eof = anyThisGroup = inputExhausted = false;
         firstRead = true;
 

@@ -293,12 +293,20 @@ define([
             }
         },
 
-        _onOpenLegacy: function (evt) {
-            this._openNewTab("/?legacy");
-        },
-
         _onOpenResources: function (evt) {
             this._openNewTab("http://hpccsystems.com/download");
+        },
+
+        _onOpenJira: function (evt) {
+            this._openNewTab("https://track.hpccsystems.com/issues");
+        },
+
+        _onOpenForums: function (evt) {
+            this._openNewTab("https://hpccsystems.com/bb/");
+        },
+
+        _onOpenRedBook: function (evt) {
+            this._openNewTab("https://wiki.hpccsystems.com/x/fYAb");
         },
 
         _onOpenReleaseNotes: function (evt) {

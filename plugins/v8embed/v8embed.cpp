@@ -59,14 +59,14 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
-static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
+__declspec(noreturn) static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 
 static void UNSUPPORTED(const char *feature)
 {
     throw MakeStringException(-1, "UNSUPPORTED feature: %s not supported in v8embed plugin", feature);
 }
 
-static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));
+__declspec(noreturn) static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));
 
 static void typeError(const char *expected, const RtlFieldInfo *field)
 {
@@ -539,7 +539,7 @@ public:
         v8::HandleScope handle_scope;
         context->Global()->Set(v8::String::New(name), v8::String::New(val, chars));
     }
-    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, const void *setData)
     {
         if (isAll)
             rtlFail(0, "v8embed: Cannot pass ALL");

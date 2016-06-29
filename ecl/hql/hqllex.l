@@ -771,6 +771,7 @@ LAST                { RETURNSYM(LAST); }
 LEFT                { RETURNSYM(LEFT); }
 LENGTH              { RETURNSYM(LENGTH); }
 LIBRARY             { RETURNSYM(LIBRARY); }
+LIKELY              { RETURNSYM(LIKELY); }
 LIMIT               { RETURNSYM(LIMIT); }
 LINKCOUNTED         { RETURNSYM(LINKCOUNTED); }
 _LINKCOUNTED_       { RETURNSYM(LINKCOUNTED); }
@@ -811,6 +812,7 @@ NAMESPACE           { RETURNSYM(NAMESPACE); }
 NOBOUNDCHECK        { RETURNSYM(NOBOUNDCHECK); }
 NOCASE              { RETURNSYM(NOCASE); }
 NOCOMBINE           { RETURNSYM(NOCOMBINE); }
+NOCONST             { RETURNSYM(NOCONST); }
 NOFOLD              { RETURNSYM(NOFOLD); }
 NOHOIST             { RETURNSYM(NOHOIST); }
 NOLOCAL             { RETURNSYM(NOLOCAL); }
@@ -954,6 +956,7 @@ TYPE                { RETURNSYM(TYPE); }
 TYPEOF              { RETURNSYM(TYPEOF); }
 UNICODEORDER        { RETURNSYM(UNICODEORDER); }
 UNGROUP             { RETURNSYM(UNGROUP); }
+UNLIKELY            { RETURNSYM(UNLIKELY); }
 UNORDERED           { RETURNSYM(UNORDERED); }
 UNSORTED            { RETURNSYM(UNSORTED); }
 UNSTABLE            { RETURNSYM(UNSTABLE); }
@@ -1644,6 +1647,7 @@ FUNCTIONMACRO|MACRO {
 
 (u|U)(8)?\'([^'\r\n\\]|\\[^\r\n])*' {
                         int oldColumn = lexer->yyColumn; // in order to point out the exact position, old col needs to be saved.
+                        int oldPosition = lexer->yyPosition;
                         setupdatepos;
                         StringBuffer msg;
                         bool utf8 = false;
@@ -1656,10 +1660,10 @@ FUNCTIONMACRO|MACRO {
                         unsigned ep;
                         if(!lexer->checkUnicodeLiteral(CUR_TOKEN_TEXT + start, CUR_TOKEN_LENGTH - (start+1), ep, msg))
                         {
-                            lexer->yyColumn = oldColumn + ep + start;
-                            returnToken.setPosition(lexer->yyLineNo, lexer->yyColumn, lexer->yyPosition, lexer->querySourcePath());
+                            int delta = ep + start;
+                            returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                             lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
-                            returnToken.setPosition(lexer->yyLineNo, oldColumn, lexer->yyPosition, lexer->querySourcePath());
+                            returnToken.setPosition(lexer->yyLineNo, oldColumn, oldPosition, lexer->querySourcePath());
                         }
 
                         size32_t size = CUR_TOKEN_LENGTH - (start+1);
@@ -1678,8 +1682,9 @@ FUNCTIONMACRO|MACRO {
                     }
                         
 
-(d|D|q|Q|v|V)?\'([^'\r\n\\]|\\[^\r\n])*\' { 
-                        int oldColumn = lexer->yyColumn; // in order to point out the exact position, old col needs to be saved.
+(d|D|q|Q|v|V)?\'([^'\r\n\\]|\\[^\r\n])*\' {
+                        int oldColumn = lexer->yyColumn;
+                        int oldPosition = lexer->yyPosition;
                         setupdatepos; 
                         MemoryAttr tempBuff;
                         char *b = (char *)tempBuff.allocate(CUR_TOKEN_LENGTH); // Escape sequence can only make is shorter...
@@ -1699,21 +1704,19 @@ FUNCTIONMACRO|MACRO {
                         for (finger++; finger[1]; finger++)
                         {
                             unsigned char next = *finger;
+                            size32_t delta = (size32_t)(finger-CUR_TOKEN_TEXT);
                             if (next == '\\')
                             {
                                 next = finger[1];
                                 if (finger[2]==0)  // finger[1] must be '.
                                 {
                                     assertex(false);
-
-                                    lexer->yyColumn = oldColumn + (size32_t)(finger-CUR_TOKEN_TEXT);
-                                    returnToken.setPosition(lexer->yyLineNo, lexer->yyColumn, lexer->yyPosition, lexer->querySourcePath());
+                                    returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                     StringBuffer msg("Can not terminate a string with escape char '\\': ");
                                     msg.append(CUR_TOKEN_TEXT);
                                     lexer->reportError(returnToken, RRR_ESCAPE_ENDWITHSLASH, "%s", msg.str());
                                     if (lexer->isAborting())
                                         return EOF;
-                                    returnToken.setPosition(lexer->yyLineNo, oldColumn, lexer->yyPosition, lexer->querySourcePath());
                                 }
                                 else if (next == '\'' || next == '\\' || next == '?' || next == '"') 
                                 {
@@ -1768,18 +1771,17 @@ FUNCTIONMACRO|MACRO {
                                     }
                                     if(count != 3)
                                     {
-                                        lexer->yyColumn = oldColumn + (size32_t)(finger+count+1-CUR_TOKEN_TEXT);
-                                        returnToken.setPosition(lexer->yyLineNo, lexer->yyColumn, lexer->yyPosition, lexer->querySourcePath());
+                                        returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                         StringBuffer msg;
                                         msg.append("3-digit numeric escape sequence contained non-octal digit: ").append(next);
                                         lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
                                         if (lexer->isAborting())
                                             return EOF;
-                                        returnToken.setPosition(lexer->yyLineNo, oldColumn, lexer->yyPosition, lexer->querySourcePath());
                                     }
                                     *bf++ = value;
                                     if(!(isValidAsciiLikeCharacter(value) || (tc == type_data)))
                                     {
+                                        returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                         lexer->reportWarning(CategoryCast, returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
                                         if (lexer->isAborting())
                                             return EOF;
@@ -1789,28 +1791,22 @@ FUNCTIONMACRO|MACRO {
                                 }
                                 else
                                 {
-                                    lexer->yyColumn = oldColumn + (size32_t)(finger-CUR_TOKEN_TEXT);
-                                    returnToken.setPosition(lexer->yyLineNo, lexer->yyColumn, lexer->yyPosition, lexer->querySourcePath());
                                     StringBuffer msg;
                                     msg.append("Unrecognized escape sequence: ");
                                     msg.append("\\").append(finger[1]);
+                                    returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                     lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
                                     if (lexer->isAborting())
                                         return EOF;
-
-                                    returnToken.setPosition(lexer->yyLineNo, oldColumn, lexer->yyPosition, lexer->querySourcePath());
                                 }
                                 *bf++ = next;
                             }
                             else if (next == '\'')
                             {
-                                lexer->yyColumn = oldColumn + (size32_t)(finger-CUR_TOKEN_TEXT);
-                                returnToken.setPosition(lexer->yyLineNo, lexer->yyColumn, lexer->yyPosition, lexer->querySourcePath());
+                                returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                 lexer->reportError(returnToken, ERR_STRING_NEEDESCAPE,"' needs to be escaped by \\ inside string");
                                 if (lexer->isAborting())
                                     return EOF;
-
-                                returnToken.setPosition(lexer->yyLineNo, oldColumn, lexer->yyPosition, lexer->querySourcePath());
                             }
                             else if (next >= 128)
                             {
@@ -1821,6 +1817,7 @@ FUNCTIONMACRO|MACRO {
                                 {
                                     //This really has to be an error, otherwise it will work most of the time, but will then sometimes fail
                                     //because two characters > 128 are next to each other.
+                                    returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                     lexer->reportError(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not legal UTF-8");
                                     if (lexer->isAborting())
                                         return EOF;
@@ -1828,9 +1825,12 @@ FUNCTIONMACRO|MACRO {
                                 }
                                 else
                                 {
-                                    finger += extraCharsRead;
                                     if (*bf == ASCII_LIKE_SUBS_CHAR)
+                                    {
+                                        returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                         lexer->reportWarning(CategoryCast, returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE ", try using a unicode constant");
+                                    }
+                                    finger += extraCharsRead;
                                 }
                                 bf++;
                             }
@@ -1839,12 +1839,14 @@ FUNCTIONMACRO|MACRO {
                                 *bf++ = next;
                                 if(!(isValidAsciiLikeCharacter(next) || (tc == type_data)))
                                 {
+                                    returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                     lexer->reportError(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
                                     if (lexer->isAborting())
                                         return EOF;
                                 }
                             }
                         }
+                        returnToken.setPosition(lexer->yyLineNo, oldColumn, oldPosition, lexer->querySourcePath());
                         switch (tc)
                         {
                         case type_qstring:

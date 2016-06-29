@@ -161,7 +161,6 @@ interface IThorAllocator : extends IInterface
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId) const = 0;
     virtual roxiemem::IRowManager *queryRowManager() const = 0;
     virtual roxiemem::RoxieHeapFlags queryFlags() const = 0;
-    virtual IContextLogger *queryLoggingContext() const = 0;
     virtual bool queryCrc() const = 0;
     virtual IThorAllocator *getSlaveAllocator(unsigned channel) = 0;
 };
@@ -290,7 +289,7 @@ protected:
     StableSortFlag stableSort;
     rowidx_t maxRows;  // Number of rows that can fit in the allocated memory.
     rowidx_t numRows;  // High water mark of rows added
-    unsigned defaultMaxSpillCost;
+    unsigned defaultMaxSpillCost = roxiemem::SpillAllCost;
 
     const void *allocateRowTable(rowidx_t num);
     const void *allocateRowTable(rowidx_t num, unsigned maxSpillCost);
@@ -414,33 +413,7 @@ class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray, implem
     rowidx_t commitRows;  // can only be updated by writing thread within a critical section
     mutable CriticalSection cs;
     ICopyArrayOf<IWritePosCallback> writeCallbacks;
-    CriticalSection shrinkingCrit;
-    enum ResizeState { resize_nop, resize_shrinking, resize_resizing };
-    std::atomic<ResizeState> resizing;
 
-    class CToggleResizingState
-    {
-        ResizeState state;
-        std::atomic<ResizeState> &resizing;
-    public:
-        CToggleResizingState(std::atomic<ResizeState> &_resizing) : resizing(_resizing)
-        {
-            state = resize_nop;
-        }
-        ~CToggleResizingState()
-        {
-            if (state != resize_nop)
-                verify(resizing.compare_exchange_strong(state, resize_nop));
-        }
-        bool tryState(ResizeState newState)
-        {
-            ResizeState expected = resize_nop;
-            if (!resizing.compare_exchange_strong(expected, newState))
-                return false;
-            state = newState;
-            return true;
-        }
-    };
     void initCommon();
     bool _flush(bool force);
     void doFlush();
@@ -557,7 +530,7 @@ private:
 
 enum RowCollectorSpillFlags { rc_mixed, rc_allMem, rc_allDisk, rc_allDiskOrAllMem };
 enum RowCollectorOptionFlags { rcflag_noAllInMemSort=0x01 };
-interface IThorRowCollectorCommon : extends IInterface
+interface IThorRowCollectorCommon : extends IInterface, extends IThorArrayLock
 {
     virtual rowcount_t numRows() const = 0;
     virtual unsigned numOverflows() const = 0;
@@ -570,6 +543,7 @@ interface IThorRowCollectorCommon : extends IInterface
     virtual void resize(rowidx_t max) = 0;
     virtual void setOptions(unsigned options) = 0;
     virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
+    virtual bool hasSpilt() const = 0; // equivalent to numOverlows() >= 1
 };
 
 interface IThorRowLoader : extends IThorRowCollectorCommon

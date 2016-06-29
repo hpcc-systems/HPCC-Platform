@@ -53,7 +53,7 @@ cd "$TOOLSDIR"
 if which node >/dev/null; then
     node ../../dojo/dojo.js baseUrl=../../dojo load=build --profile "$PROFILE" --releaseDir "$DISTDIR" ${*:2}
 else
-    echoerr "ERROR:  node.js is required to build - see https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager"
+    echoerr "ERROR:  node.js is required to build - see https://nodejs.org/en/download/package-manager/"
     exit 1
 fi
 

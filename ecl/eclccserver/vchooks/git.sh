@@ -28,6 +28,8 @@
 
 originalDir=$PWD
 
+hash git 2>/dev/null || { echo >&2 "GIT: git command not found"; exit 4; }
+
 ## Some options can be overridden per workunit, and should accept 0 to mean false
 
 if [ -n "$WU_GIT_VERBOSE" ]; then GIT_VERBOSE=$WU_GIT_VERBOSE ; fi
@@ -51,11 +53,11 @@ function fetch_repo {
     fi
 
     if [ -n "$wu_git_branch" ]; then
-        if [ -z "$git_branch_locked" ]; then
+        if [ -z "$git_branch_locked" -o "$git_branch_locked" == "0" ]; then
+            git_branch=$wu_git_branch
+        else
             echo "GIT: Overriding branch is not allowed" 1>&2
             exit 2
-        else
-            git_branch=$wu_git_branch
         fi
     fi
 
@@ -134,7 +136,7 @@ function fetch_repo {
         echo "Failed to run git rev-parse $git_branch" 1>&2
         exit 2
     fi
-    export GIT_INCLUDE_PATH="${GIT_INCLUDE_PATH} -I${git_directory}/{$last_commit}/ -a${repo}_commit=${last_commit}"
+    export GIT_INCLUDE_PATH="${GIT_INCLUDE_PATH} -I${git_directory}/{$last_commit}/ -a${repo}_commit=${last_commit} -a${repo}_branch=${git_branch} -qa"
 }
 
 repositories=(${GIT_REPOSITORIES//:/ })

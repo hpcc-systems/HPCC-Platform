@@ -204,6 +204,7 @@ public:
             limit = RCMAX;
         else
             limit = (rowcount_t)helper->getRowLimit();  
+        appendOutputLinked(this);
     }
     ~CXmlReadSlaveActivity()
     {
@@ -213,7 +214,6 @@ public:
     {
         CDiskReadSlaveActivityBase::init(data, slaveData);
         partHandler.setown(new CXmlPartHandler(*this,queryRowAllocator()));
-        appendOutputLinked(this);
     }
     virtual void kill()
     {

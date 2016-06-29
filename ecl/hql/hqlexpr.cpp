@@ -50,6 +50,10 @@
 #include "hqldesc.hpp"
 #include "hqlir.hpp"
 
+#ifdef _USE_ZLIB
+#include "zcrypt.hpp"
+#endif
+
 //This nearly works - but there are still some examples which have problems - primarily libraries, old parameter syntax, enums and other issues.
 
 //#define ANNOTATE_EXPR_POSITION
@@ -161,6 +165,11 @@ static IHqlExpression * cachedLocalAttribute;
 static IHqlExpression * cachedContextAttribute;
 static IHqlExpression * constantTrue;
 static IHqlExpression * constantFalse;
+static IHqlExpression * constantLikelihoodUnknown;
+static IHqlExpression * constantLikelihoodLikely;
+static IHqlExpression * constantLikelihoodUnlikely;
+static IHqlExpression * constantLikelihoodTrue;
+static IHqlExpression * constantLikelihoodFalse;
 static IHqlExpression * defaultSelectorSequenceExpr;
 static IHqlExpression * dummyVirtualSeq;
 static IHqlExpression * newSelectAttrExpr;
@@ -242,6 +251,11 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     cachedContextAttribute = createAttribute(contextAtom);
     constantTrue = createConstant(createBoolValue(true));
     constantFalse = createConstant(createBoolValue(false));
+    constantLikelihoodUnknown = createConstant(createRealValue(-1.0,8));
+    constantLikelihoodLikely = createConstant(createRealValue(0.99,8));
+    constantLikelihoodUnlikely = createConstant(createRealValue(0.01,8));
+    constantLikelihoodTrue = createConstant(createRealValue(1.0,8));
+    constantLikelihoodFalse = createConstant(createRealValue(0.0,8));
     defaultSelectorSequenceExpr = createAttribute(_selectorSequence_Atom);
     dummyVirtualSeq =  createSequence(no_attr, makeNullType(), _virtualSeq_Atom, 0);
     newSelectAttrExpr = createExprAttribute(newAtom);
@@ -272,6 +286,11 @@ MODULE_EXIT()
     defaultSelectorSequenceExpr->Release();
     constantFalse->Release();
     constantTrue->Release();
+    constantLikelihoodUnknown->Release();
+    constantLikelihoodLikely->Release();
+    constantLikelihoodUnlikely->Release();
+    constantLikelihoodTrue->Release();
+    constantLikelihoodFalse->Release();
     blank->Release();
     cachedContextAttribute->Release();
     cachedLocalAttribute->Release();
@@ -1192,6 +1211,8 @@ const char *getOpString(node_operator op)
     case no_event: return "no_event";
     case no_persist: return "PERSIST";
     case no_critical: return "CRITICAL";
+    case no_likely: return "LIKELY";
+    case no_unlikely: return "UNLIKELY";
     case no_omitted: return "no_omitted";
     case no_setconditioncode: return "no_setconditioncode";
     case no_selectfields: return "no_selectfields";
@@ -1524,7 +1545,7 @@ const char *getOpString(node_operator op)
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
+    case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
     case no_unused80:
@@ -1663,6 +1684,7 @@ bool checkConstant(node_operator op)
     case no_loopcounter:
     case no_sequence:
     case no_table:
+    case no_delayedselect:
         return false;
     // following are currently not implemented in the const folder - can enable if they are.
     case no_global:
@@ -2707,6 +2729,7 @@ IHqlExpression * queryNewColumnProvider(IHqlExpression * expr)
     switch (op)
     {
     case no_alias:
+    case no_call:
         return expr->queryRecord();
     case no_createrow:
     case no_typetransfer:
@@ -7588,6 +7611,18 @@ bool CFileContents::preloadFromFile()
         sizeRead += rd;
         mb.setLength(sizeRead);
     } while (rd);
+
+#ifdef _USE_ZLIB
+    byte * contents = static_cast<byte *>(mb.bufferBase());
+    if (isgzipped(contents, sizeRead))
+    {
+        StringBuffer decoded;
+        gunzip(contents, sizeRead, decoded);
+        size_t decodedLength = (size_t)decoded.length();
+        mb.setBuffer(decodedLength, (void*)decoded.detach(), true);
+    }
+#endif
+
     ensureUtf8(mb);
     setContentsOwn(mb);
     return true;
@@ -7628,11 +7663,21 @@ void CFileContents::ensureLoaded()
     buffer.ensureCapacity(sizeToRead+1);
     byte * contents = static_cast<byte *>(buffer.reserve(sizeToRead));
     size32_t sizeRead = io->read(0, sizeToRead, contents);
-    ensureUtf8(buffer);
-    setContentsOwn(buffer);
-
     if (sizeRead != sizeToRead)
         throw MakeStringException(1, "File %s only read %u of %u bytes", file->queryFilename(), sizeRead, sizeToRead);
+
+#ifdef _USE_ZLIB
+    if (isgzipped(contents, sizeToRead))
+    {
+        StringBuffer decoded;
+        gunzip(contents, sizeToRead, decoded);
+        size_t decodedLength = (size_t)decoded.length();
+        buffer.setBuffer(decodedLength, (void*)decoded.detach(), true);
+    }
+#endif
+
+    ensureUtf8(buffer);
+    setContentsOwn(buffer);
 }
 
 CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath, bool _isSigned)
@@ -11186,7 +11231,7 @@ protected:
             }
         case no_case:
             {
-                IHqlExpression * search = expr->queryChild(0);
+                OwnedHqlExpr search = transform(expr->queryChild(0));
                 if (!search->isConstant())
                     break;
                 OwnedHqlExpr folded = foldHqlExpression(search);
@@ -11200,31 +11245,16 @@ protected:
                     if (cur->getOperator() == no_mapto)
                     {
                         OwnedHqlExpr newcond = transform(cur->queryChild(0));
-
-                        if (newcond->isConstant())
-                            newcond.setown(foldHqlExpression(newcond));
-                        IValue * compareValue = newcond->queryValue();
-                        if (!compareValue)
+                        if (!newcond->isConstant())
                             break;
 
-                        if (searchType != newcond->queryType())
-                        {
-                            Owned<ITypeInfo> type = ::getPromotedECLCompareType(searchType, newcond->queryType());
-                            OwnedHqlExpr castSearch = ensureExprType(folded, type);
-                            OwnedHqlExpr castCompare = ensureExprType(newcond, type);
-                            IValue * castSearchValue = castSearch->queryValue();
-                            IValue * castCompareValue = castCompare->queryValue();
-                            if (!castSearchValue || !castCompareValue)
-                                break;
+                        newcond.setown(foldHqlExpression(newcond));
+                        int result;
+                        if (!queryCompareConstantValues(result, folded, newcond))
+                            break;
 
-                            if (castSearchValue->compare(castCompareValue) == 0)
-                                return transform(cur->queryChild(1));
-                        }
-                        else
-                        {
-                            if (searchValue->compare(compareValue) == 0)
-                                return transform(cur->queryChild(1));
-                        }
+                        if (result == 0)
+                            return transform(cur->queryChild(1));
                     }
                     else if (!cur->isAttribute())
                         return transform(cur);
@@ -12142,6 +12172,27 @@ extern IHqlExpression *createConstant(const char *constant)
 extern IHqlExpression *createConstant(IValue * constant)
 {
     return CHqlConstant::makeConstant(constant);
+}
+
+extern IHqlExpression *queryConstantLikelihoodUnknown()
+{
+    return constantLikelihoodUnknown;
+}
+extern IHqlExpression *queryConstantLikelihoodLikely()
+{
+    return constantLikelihoodLikely;
+}
+extern IHqlExpression *queryConstantLikelihoodUnlikely()
+{
+    return constantLikelihoodUnlikely;
+}
+extern IHqlExpression *queryConstantLikelihoodTrue()
+{
+    return constantLikelihoodTrue;
+}
+extern IHqlExpression *queryConstantLikelihoodFalse()
+{
+    return constantLikelihoodFalse;
 }
 
 //This is called by the code generator when it needs to make an explicit call to an internal function, with arguments already translated.
@@ -15072,6 +15123,10 @@ extern HQL_API bool hasUnknownTransform(IHqlExpression * expr)
     case no_aggregate:
         if (expr->hasAttribute(mergeTransformAtom))
             return true;
+        break;
+    case no_call:
+        if (isProjectableCall(expr))
+            return false;
         break;
     case no_inlinetable:
         {

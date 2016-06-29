@@ -27,7 +27,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, implements ILookAheadStop
     rowcount_t lookaheadN, N, startN;
     bool createDefaultIfFail;
     IHThorSelectNArg *helper;
-    SpinLock spin;
+    SpinLock spin; // MORE: Remove this and use an atomic variable for lookaheadN
 
     void initN()
     {
@@ -63,12 +63,12 @@ class CSelectNthSlaveActivity : public CSlaveActivity, implements ILookAheadStop
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CSelectNthSlaveActivity(CGraphElementBase *_container, bool _isLocal) : CSlaveActivity(_container)
     {
+        helper = static_cast <IHThorSelectNArg *> (queryHelper());
         isLocal = _isLocal;
         createDefaultIfFail = isLocal || lastNode();
+        appendOutputLinked(this);
     }
 
 // IThorSlaveActivity overloaded methods
@@ -76,8 +76,6 @@ public:
     {
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJobChannel().deserializeMPTag(data);
-        appendOutputLinked(this);
-        helper = static_cast <IHThorSelectNArg *> (queryHelper());
     }
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {

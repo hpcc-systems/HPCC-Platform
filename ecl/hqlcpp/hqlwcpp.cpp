@@ -312,13 +312,13 @@ unsigned getPrecedence(IHqlExpression * expr)
         case no_eq: case no_ne:
             return 9;
         case no_band:
-            return 8;
+            return 6;  // Really 8, but generating extra parens for expressions with mixed & and | helps reduce compiler warnings
         case no_bxor:
-            return 7;
+            return 6;  // Really 7, but generating extra parens for expressions with mixed & and | helps reduce compiler warnings
         case no_bor:
             return 6;
         case no_and:
-            return 5;
+            return 4;  // Really 5, but generating extra parens for expressions with mixed && and || helps reduce compiler warnings
         case no_or:
             return 4;
         case no_if:
@@ -804,7 +804,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
     paramNameText.append(paramName).toLowerCase();
 
     bool isOut = false;
-    bool isConst = false;
+    bool isConst = true;
     unsigned maxAttr = param->numChildren();
     unsigned attrIdx;
     for (attrIdx = 0; attrIdx < maxAttr; attrIdx++)
@@ -812,8 +812,8 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
         IHqlExpression * attr = param->queryChild(attrIdx);
         if (attr->isAttribute())
         {
-            if (attr->queryName() == constAtom)
-                isConst = true;
+            if (attr->queryName() == noConstAtom)
+                isConst = false;
             else if (attr->queryName() == outAtom)
                 isOut = true;
         }
@@ -892,14 +892,19 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
     case type_dictionary:
     case type_table:
     case type_groupedtable:
-        if (isConst)
-            out.append("const ");
         if (hasStreamedModifier(paramType))
             out.append("IRowStream *");
         else if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
+        {
+            //At some point in the future this should change to "const byte * const *"
             out.append("byte * *");
+        }
         else
+        {
+            if (isConst)
+                out.append("const ");
             out.append("void *");
+        }
         if (isOut)
             out.append(" &");
         break;
@@ -950,10 +955,13 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
         }
         // Other set types just fall through and will be treated like other types.
     case type_qstring: case type_string: case type_varstring: case type_data:
+    case type_utf8: case type_unicode: case type_varunicode:
+    case type_row:
+        if (isConst)
+            out.append("const ");
+        /* no break */
     default:
         {
-            if (isConst)
-                out.append("const ");
             Owned<ITypeInfo> argType = LINK(paramType);
             if (argType->getTypeCode() == type_function)
                 argType.setown(makePointerType(LINK(argType)));

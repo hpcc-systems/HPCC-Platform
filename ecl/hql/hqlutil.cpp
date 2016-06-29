@@ -53,6 +53,7 @@ static IHqlExpression * cacheAlignedAttr;
 static IHqlExpression * cacheEmbeddedAttr;
 static IHqlExpression * cacheInlineAttr;
 static IHqlExpression * cacheLinkCountedAttr;
+static IHqlExpression * cacheProjectedAttr;
 static IHqlExpression * cacheReferenceAttr;
 static IHqlExpression * cacheStreamedAttr;
 static IHqlExpression * cacheUnadornedAttr;
@@ -82,6 +83,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     cacheEmbeddedAttr = createAttribute(embeddedAtom);
     cacheInlineAttr = createAttribute(inlineAtom);
     cacheLinkCountedAttr = createAttribute(_linkCounted_Atom);
+    cacheProjectedAttr = createAttribute(projectedAtom);
     cacheReferenceAttr = createAttribute(referenceAtom);
     cacheStreamedAttr = createAttribute(streamedAtom);
     cacheUnadornedAttr = createAttribute(_propUnadorned_Atom);
@@ -109,6 +111,7 @@ MODULE_EXIT()
     cacheEmbeddedAttr->Release();
     cacheInlineAttr->Release();
     cacheLinkCountedAttr->Release();
+    cacheProjectedAttr->Release();
     cacheReferenceAttr->Release();
     cacheStreamedAttr->Release();
     cacheUnadornedAttr->Release();
@@ -212,9 +215,17 @@ extern HQL_API IHqlExpression * queryLinkCountedAttr()
 {
     return cacheLinkCountedAttr;
 }
+extern HQL_API IHqlExpression * queryProjectedAttr()
+{
+    return cacheProjectedAttr;
+}
 extern HQL_API IHqlExpression * getLinkCountedAttr()
 {
     return LINK(cacheLinkCountedAttr);
+}
+extern HQL_API IHqlExpression * getProjectedAttr()
+{
+    return LINK(cacheProjectedAttr);
 }
 extern HQL_API IHqlExpression * getStreamedAttr()
 {
@@ -540,6 +551,18 @@ IHqlExpression * queryLastNonAttribute(IHqlExpression * expr)
             return cur;
     }
     return NULL;
+}
+
+extern HQL_API unsigned numNonAttributes(IHqlExpression * expr)
+{
+    unsigned max = expr->numChildren();
+    while (max--)
+    {
+        IHqlExpression * cur = expr->queryChild(max);
+        if (!cur->isAttribute())
+            return max+1;
+    }
+    return 0;
 }
 
 void expandRecord(HqlExprArray & selects, IHqlExpression * selector, IHqlExpression * expr)
@@ -1281,8 +1304,8 @@ IHqlExpression * createImpureOwn(IHqlExpression * expr)
 
 IHqlExpression * getNormalizedFilename(IHqlExpression * filename)
 {
-    Owned<IErrorReceiver> errorProcessor = createNullErrorReceiver();
-    OwnedHqlExpr folded = foldHqlExpression(*errorProcessor, filename, NULL, HFOloseannotations);
+    NullErrorReceiver errorProcessor;
+    OwnedHqlExpr folded = foldHqlExpression(errorProcessor, filename, NULL, HFOloseannotations);
     return lowerCaseHqlExpr(folded);
 }
 
@@ -2161,7 +2184,6 @@ unsigned getFieldCount(IHqlExpression * expr)
     }
 }
 
-
 IHqlExpression * queryChildActivity(IHqlExpression * expr, unsigned index)
 {
     unsigned firstActivityIndex = 0;
@@ -2232,6 +2254,86 @@ unsigned isEmptyRecord(IHqlExpression * record)
     return true;
 }
 
+void getSimpleFields(HqlExprArray &out, IHqlExpression *record)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_attr:
+        case no_attr_expr:
+            break;
+        case no_field:
+            switch (cur->queryType()->getTypeCode())
+            {
+            case type_record:
+            case type_row:
+                {
+                    IHqlExpression *nested = cur->queryRecord();
+                    if (nested)
+                        getSimpleFields(out, nested);
+                    break;
+                }
+            case type_table:
+            case type_groupedtable:
+            case type_alien:
+            case type_any:
+            case type_dictionary:
+                throwUnexpected();
+            default:
+                out.append(*LINK(cur));
+                break;
+            }
+            break;
+        case no_record:
+            getSimpleFields(out, cur);
+            break;
+        default:
+            throwUnexpected();
+        }
+    }
+}
+
+unsigned isSimpleRecord(IHqlExpression * record)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_attr:
+        case no_attr_expr:
+            break;
+        case no_field:
+            switch (cur->queryType()->getTypeCode())
+            {
+            case type_record:
+            case type_row:
+                {
+                    IHqlExpression *nested = cur->queryRecord();
+                    if (nested && !isSimpleRecord(nested))
+                        return false;
+                    break;
+                }
+            case type_table:
+            case type_groupedtable:
+            case type_alien:
+            case type_any:
+            case type_dictionary:
+                return false;
+            }
+            break;
+        case no_record:
+            if (!isSimpleRecord(cur))
+                return false;
+            break;
+        default:
+            return false;
+        }
+    }
+    return record->numChildren()>0;
+}
 
 bool isTrivialSelectN(IHqlExpression * expr)
 {
@@ -2431,7 +2533,7 @@ void DependenciesUsed::addResultRead(IHqlExpression * wuid, IHqlExpression * seq
     if (!isGraphResult)
         if (!seq || !seq->queryValue())
             return;         //Can be called in parser when no sequence has been allocated
-    OwnedHqlExpr result = createAttribute(resultAtom, LINK(seq), LINK(name), LINK(wuid));
+    OwnedHqlExpr result = createExprAttribute(resultAtom, LINK(seq), LINK(name), LINK(wuid));
     if (resultsWritten.find(*result) == NotFound)
         appendUniqueExpr(resultsRead, LINK(result));
 }
@@ -2441,7 +2543,7 @@ void DependenciesUsed::addResultWrite(IHqlExpression * seq, IHqlExpression * nam
     if (!isGraphResult)
         if (!seq || !seq->queryValue())
             return;         //Can be called in parser when no sequence has been allocated
-    OwnedHqlExpr result = createAttribute(resultAtom, LINK(seq), LINK(name));
+    OwnedHqlExpr result = createExprAttribute(resultAtom, LINK(seq), LINK(name));
     if (appendUniqueExpr(resultsWritten, LINK(result)))
         if (resultsRead.contains(*result))
             noteInconsistency(result);
@@ -5541,6 +5643,23 @@ bool isConstantDictionary(IHqlExpression * expr)
     return false;
 }
 
+bool isProjectableCall(IHqlExpression *expr)
+{
+    if (expr->getOperator() != no_call)
+        return false;
+    IHqlExpression * funcdef = expr->queryBody()->queryFunctionDefinition();
+    assertex(funcdef);
+    IHqlExpression * body = funcdef->queryChild(0);
+    assertex(body);
+    if ((funcdef->getOperator() == no_funcdef) && (body->getOperator() == no_outofline))
+    {
+        IHqlExpression * bodycode = body->queryChild(0);
+        if (bodycode->getOperator() == no_embedbody && bodycode->hasAttribute(projectedAtom))
+            return true;
+    }
+    return false;
+}
+
 inline bool iseol(char c) { return c == '\r' || c == '\n'; }
 
 static unsigned skipSpace(unsigned start, unsigned len, const char * buffer)
@@ -5650,7 +5769,9 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
     unsigned prev = '\n';
     for (unsigned i=0; i < lenBuffer; i++)
     {
-        switch (buffer[i])
+        unsigned next = buffer[i];
+        bool ignore = false;
+        switch (next)
         {
         case '*':
             if ('/' == prev) // Ignore directives in multi-line comments
@@ -5659,6 +5780,7 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
                 while (i < lenBuffer && ('*' != buffer[i-1] || '/' != buffer[i])) 
                     ++i;
             }
+            next = ' '; // treat as whitespace
             break;
         case '/':
             if ('/' == prev) // Ignore directives in single line comments
@@ -5667,9 +5789,10 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
                 while (i < lenBuffer && !iseol(buffer[i]))
                     ++i;
             }
+            next = '\n';
             break;
         case ' ': case '\t':
-            // allow whitespace in front of #option
+            ignore = true; // allow whitespace in front of #option
             break;
         case '#':
             if (prev == '\n')
@@ -5709,7 +5832,8 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
                 }
             }
         }
-        prev = buffer[i];
+        if (!ignore)
+            prev = next;
     }
     return attrs.getClear();
 }
@@ -7381,7 +7505,7 @@ public:
             ITypeInfo *paramType = param->queryType();
 
             bool isOut = param->hasAttribute(outAtom);
-            bool isConst = param->hasAttribute(constAtom);
+            bool isConst = !param->hasAttribute(noConstAtom);
 
             if (isOut)
                 mangled.append("R");
@@ -7629,7 +7753,7 @@ public:
             ITypeInfo *paramType = param->queryType();
 
             bool isOut = param->hasAttribute(outAtom);
-            bool isConst = param->hasAttribute(constAtom);
+            bool isConst = !param->hasAttribute(noConstAtom);
 
             if (isOut)
                 appendRef(mangled, false);

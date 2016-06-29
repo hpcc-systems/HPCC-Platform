@@ -78,6 +78,7 @@ void CDistributedFileSystem::exportFile(IDistributedFile * from, IFileDescriptor
     sprayer->setAbort(abort);
     sprayer->setPartFilter(filter);
     sprayer->setSource(from);
+    sprayer->checkTarget(to);
     sprayer->setTarget(to);
     sprayer->spray();
 }

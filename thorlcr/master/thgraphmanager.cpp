@@ -567,7 +567,7 @@ void CJobManager::run()
                         {
                             if (!jobQConnected)
                             {
-                                jobq->connect();
+                                jobq->connect(true);
                                 jobQConnected = true;
                             }
                             // NB: this is expecting to get an item without delay, timeout JIC.
@@ -613,7 +613,7 @@ void CJobManager::run()
             {
                 if (!jobQConnected)
                 {
-                    jobq->connect();
+                    jobq->connect(true);
                     jobQConnected = true;
                 }
                 IJobQueueItem *_item;
@@ -966,7 +966,14 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
         aborting = 2;
         LOG(MCdebugProgress, thorJob, "aborting any current active job");
         if (jM)
+        {
+            if (!e)
+            {
+                _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
+                e = _e;
+            }
             jM->fireException(e);
+        }
         if (errCode == TEC_Clean)
         {
             LOG(MCdebugProgress, thorJob, "Removing sentinel upon normal shutdown");

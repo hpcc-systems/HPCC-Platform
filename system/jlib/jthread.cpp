@@ -544,10 +544,9 @@ StringBuffer &getThreadName(int thandle,unsigned tid,StringBuffer &name)
 
 // CThreadedPersistent
 
-CThreadedPersistent::CThreadedPersistent(const char *name, IThreaded *_owner) : athread(*this, name), owner(_owner)
+CThreadedPersistent::CThreadedPersistent(const char *name, IThreaded *_owner) : athread(*this, name), owner(_owner), state(s_ready)
 {
     halt = false;
-    atomic_set(&state, s_ready);
     athread.start();
 }
 
@@ -579,15 +578,20 @@ void CThreadedPersistent::main()
             joinSem.signal(); // leave in running state, signal to join to handle
             continue;
         }
-        if (!atomic_cas(&state, s_ready, s_running))
-            if (atomic_cas(&state, s_ready, s_joining))
+        unsigned expected = s_running;
+        if (!state.compare_exchange_strong(expected, s_ready))
+        {
+            expected = s_joining;
+            if (state.compare_exchange_strong(expected, s_ready))
                 joinSem.signal();
+        }
     }
 }
 
 void CThreadedPersistent::start()
 {
-    if (!atomic_cas(&state, s_running, s_ready))
+    unsigned expected = s_ready;
+    if (!state.compare_exchange_strong(expected, s_running))
     {
         VStringBuffer msg("CThreadedPersistent::start(%s) - not ready", athread.getName());
         WARNLOG("%s", msg.str());
@@ -599,11 +603,13 @@ void CThreadedPersistent::start()
 
 bool CThreadedPersistent::join(unsigned timeout)
 {
-    if (atomic_cas(&state, s_joining, s_running))
+    unsigned expected = s_running;
+    if (state.compare_exchange_strong(expected, s_joining))
     {
         if (!joinSem.wait(timeout))
         {
-            if (atomic_cas(&state, s_running, s_joining)) // if still joining, restore running state 
+            unsigned expected = s_joining;
+            if (state.compare_exchange_strong(expected, s_running)) // if still joining, restore running state
                 return false;
             // if here, main() set s_ready after timeout and has or will signal
             if (!joinSem.wait(60000)) // should be instant
@@ -614,7 +620,8 @@ bool CThreadedPersistent::join(unsigned timeout)
         {
             // switch back to ready state and throw
             Owned<IException> e = exception.getClear();
-            if (!atomic_cas(&state, s_ready, s_joining))
+            unsigned expected = s_joining;
+            if (!state.compare_exchange_strong(expected, s_ready))
                 throwUnexpected();
             throw e.getClear();
         }
@@ -634,7 +641,6 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
     }
     Mutex errmutex;
     Semaphore ready;
-    Semaphore finished;
     IException *e=NULL;
     Owned<IShuffledIterator> shuffler;
     if (shuffled) {
@@ -665,13 +671,12 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
         public:
             Mutex *errmutex;
             Semaphore &ready;
-            Semaphore &finished;
             int timeout;
             IException *&erre;
             unsigned idx;
             CAsyncFor *self;
-            cdothread(CAsyncFor *_self,unsigned _idx,Semaphore &_ready,Semaphore &_finished,Mutex *_errmutex,IException *&_e)
-                : Thread("CAsyncFor"),ready(_ready),finished(_finished),erre(_e)
+            cdothread(CAsyncFor *_self,unsigned _idx,Semaphore &_ready,Mutex *_errmutex,IException *&_e)
+                : Thread("CAsyncFor"),ready(_ready),erre(_e)
             {
                 errmutex =_errmutex;
                 idx = _idx;
@@ -699,7 +704,6 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 }
 #endif
                 ready.signal();
-                finished.signal();
                 return 0;
             }
         };
@@ -707,14 +711,19 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             maxatonce = num;
         for (i=0;(i<num)&&(i<maxatonce);i++)
             ready.signal();
+        IArrayOf<Thread> started;
+        started.ensure(num);
         for (i=0;i<num;i++) {
             ready.wait();
             if (abortFollowingException && e) break;
-            Thread *thread = new cdothread(this,shuffled?shuffler->lookup(i):i,ready,finished,&errmutex,e);
-            thread->startRelease();
+            Owned<Thread> thread = new cdothread(this,shuffled?shuffler->lookup(i):i,ready,&errmutex,e);
+            thread->start();
+            started.append(*thread.getClear());
         }
-        while (i--) 
-            finished.wait();
+        ForEachItemIn(idx, started)
+        {
+            started.item(idx).join();
+        }
     }
     if (e)
         throw e;
@@ -777,7 +786,7 @@ protected: friend class CPooledThreadWrapper;
     unsigned targetpoolsize;
     unsigned delay;
     Semaphore availsem;
-    atomic_t numrunning;
+    std::atomic_uint numrunning{0};
     virtual void notifyStarted(CPooledThreadWrapper *item)=0;
     virtual bool notifyStopped(CPooledThreadWrapper *item)=0;
 };
@@ -820,12 +829,12 @@ public:
         PooledThreadHandle ret=handle;
         handle = 0;
         if (ret) // JCSMORE - I can't see how handle can not be set if here..
-            atomic_dec(&parent.numrunning);
+            parent.numrunning--;
         return ret;
     }
     void markStarted()
     {
-        atomic_inc(&parent.numrunning);
+        parent.numrunning++;
     }
 
     int run()
@@ -1014,7 +1023,6 @@ public:
         stacksize = _stacksize;
         timeoutOnRelease = _timeoutOnRelease;
         targetpoolsize = _targetpoolsize?_targetpoolsize:defaultmax;
-        atomic_set(&numrunning,0);
         traceStartDelayPeriod = 0;
         startsInPeriod = 0;
         startDelayInPeriod = 0;
@@ -1202,7 +1210,7 @@ public:
 
     unsigned runningCount()
     {
-        return (unsigned)atomic_read(&numrunning);
+        return numrunning;
     }
 
     void notifyStarted(CPooledThreadWrapper *item)
@@ -1690,6 +1698,7 @@ static unsigned dowaitpid(HANDLE pid, int mode)
     return 0;
 }
 
+static CriticalSection runsect; // single thread process start to avoid forked handle open/closes interleaving
 class CLinuxPipeProcess: public CInterface, implements IPipeProcess
 {
 
@@ -1897,6 +1906,13 @@ public:
         if (haserror)
             if (::pipe(errpipe)==-1)
                 throw makeOsException(errno);
+
+        /* NB: Important to call splitargs (which calls malloc) before the fork()
+         * and not in the child process. Because performing malloc in the child
+         * process, which then calls exec() can cause problems for TBB malloc proxy.
+         */
+        unsigned argc;
+        char **argv=splitargs(prog,argc);
         loop
         {
             pipeProcess = (HANDLE)fork();
@@ -1939,8 +1955,6 @@ public:
                 close(errpipe[1]);
             }
 
-            unsigned argc;
-            char **argv=splitargs(prog,argc);
             if (dir.get()) {
                 if (chdir(dir) == -1)
                     throw MakeStringException(-1, "CLinuxPipeProcess::run: could not change dir to %s", dir.get());
@@ -1952,6 +1966,7 @@ public:
             execvp(argv[0],argv);
             _exit(START_FAILURE);    // must be _exit!!     
         }
+        free(argv);
         if (hasinput) 
             close(inpipe[0]);
         if (hasoutput) 
@@ -1969,7 +1984,6 @@ public:
 
     bool run(const char *_title,const char *_prog,const char *_dir,bool _hasinput,bool _hasoutput, bool _haserror, size32_t stderrbufsize, bool _newProcessGroup)
     {
-        static CriticalSection runsect; // single thread process start to avoid forked handle open/closes interleaving
         CriticalBlock runblock(runsect);
         kill();
         CriticalBlock block(sect); 

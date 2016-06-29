@@ -28,12 +28,12 @@ public:
     GroupAggregateSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container)
     { 
+        helper = static_cast <IHThorAggregateArg *> (queryHelper());
+        appendOutputLinked(this);
     }
 
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        appendOutputLinked(this);
-        helper = static_cast <IHThorAggregateArg *> (queryHelper());
     }
 
     virtual void start() override

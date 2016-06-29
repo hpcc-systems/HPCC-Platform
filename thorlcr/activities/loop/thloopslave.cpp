@@ -80,10 +80,10 @@ public:
     {
         mpTag = TAG_NULL;
         maxEmptyLoopIterations = getOptUInt(THOROPT_LOOP_MAX_EMPTY, 1000);
+        appendOutputLinked(this);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        appendOutputLinked(this);
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJobChannel().deserializeMPTag(data);
         global = !queryContainer().queryLoopGraph()->queryGraph()->isLocalOnly();
@@ -210,14 +210,14 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
                     exception.setown(e);
             }
         }
-        virtual const void *nextRow()
+        virtual const void *nextRow() override
         {
             OwnedConstThorRow row = smartbuf->nextRow();
             if (exception)
                 throw exception.getClear();
             return row.getClear();
         }
-        virtual void stop()
+        virtual void stop() override
         {
             /* NB: signals wants to stop and discards further rows coming out of loop,
              * but reader thread keeps looping, until finishedLooping=true.
@@ -423,9 +423,10 @@ public:
     {
         return nextRowFeeder->nextRow();
     }
-    virtual void stop()
+    virtual void stop() override
     {
-        nextRowFeeder->stop(); // NB: This will block if this slave's loop hasn't hit eof, it will continue looping until 'finishedLooping'
+        if (nextRowFeeder)
+            nextRowFeeder->stop(); // NB: This will block if this slave's loop hasn't hit eof, it will continue looping until 'finishedLooping'
     }
 };
 
@@ -527,10 +528,10 @@ public:
         helper = (IHThorLocalResultReadArg *)queryHelper();
         curRow = 0;
         replyTag = queryMPServer().createReplyTag();
+        appendOutputLinked(this);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        appendOutputLinked(this);
         assertex(container.queryResultsGraph());
     }
     virtual void start()
@@ -608,10 +609,10 @@ public:
     CLocalResultSpillActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorLocalResultSpillArg *)queryHelper();
+        appendOutputLinked(this);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        appendOutputLinked(this);
         mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
     virtual void start()
@@ -790,64 +791,158 @@ class CConditionalActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
-    IThorDataLink *selectedInput = NULL;
-    IEngineRowStream *selectInputStream = NULL;
+    IThorDataLink *selectedItdl = nullptr;
+    IEngineRowStream *selectedInputStream = nullptr;
+
+protected:
+    unsigned branch = (unsigned)-1;
+
 public:
     CConditionalActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         appendOutputLinked(this);
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        selectedInput = container.whichBranch>=inputs.ordinality() ? NULL : queryInput(container.whichBranch);
-        selectInputStream = NULL;
-        if (selectedInput)
+        ForEachItemIn(i, inputs)
         {
-            startInput(container.whichBranch);
-            selectInputStream = queryInputStream(container.whichBranch);
+            if (i != branch)
+                stopInput(i);
+        }
+        if (queryInput(branch))
+        {
+            startInput(branch);
+            CThorInput &selectedInput = inputs.item(branch);
+            selectedItdl = selectedInput.itdl;
+            selectedInputStream = selectedInput.stream;
         }
         dataLinkStart();
     }
-    virtual void stop()
+    virtual void stop() override
     {
-        if (selectInputStream)
-            stopInput(container.whichBranch);
+        if ((branch>0) && queryInput(branch)) // branch 0 stopped by PARENT::stop
+            stopInput(branch);
+        selectedInputStream = NULL;
         abortSoon = true;
-        dataLinkStop();
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (abortSoon)
-            return NULL;
-        if (!selectedInput)
-            return NULL;
-
-        OwnedConstThorRow ret = selectInputStream->nextRow();
+            return nullptr;
+        if (!selectedInputStream)
+            return nullptr;
+        OwnedConstThorRow ret = selectedInputStream->nextRow();
         if (ret)
             dataLinkIncrement();
         return ret.getClear();
     }
-    virtual bool isGrouped() const override { return selectedInput?selectedInput->isGrouped():false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual bool isGrouped() const override { return container.queryGrouped(); }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
     }
 };
 
+class CIfConditionalActivity : public CConditionalActivity
+{
+    typedef CConditionalActivity PARENT;
+
+    IHThorIfArg *helper;
+public:
+    CIfConditionalActivity(CGraphElementBase *_container) : CConditionalActivity(_container)
+    {
+        helper = (IHThorIfArg *)baseHelper.get();
+    }
+    virtual void start() override
+    {
+        ActivityTimer s(totalCycles, timeActivities);
+        branch = helper->getCondition() ? 0 : 1;
+        PARENT::start();
+    }
+};
+
 activityslaves_decl CActivityBase *createIfSlave(CGraphElementBase *container)
 {
-    return new CConditionalActivity(container);
+    return new CIfConditionalActivity(container);
 }
+
+class CCaseConditionalActivity : public CConditionalActivity
+{
+    typedef CConditionalActivity PARENT;
+
+    IHThorCaseArg *helper;
+public:
+    CCaseConditionalActivity(CGraphElementBase *_container) : CConditionalActivity(_container)
+    {
+        helper = (IHThorCaseArg *)baseHelper.get();
+    }
+    virtual void start() override
+    {
+        ActivityTimer s(totalCycles, timeActivities);
+        branch = helper->getBranch();
+        if (branch >= queryNumInputs())
+            branch = queryNumInputs() - 1;
+        PARENT::start();
+    }
+};
 
 activityslaves_decl CActivityBase *createCaseSlave(CGraphElementBase *container)
 {
-    return new CConditionalActivity(container);
+    return new CCaseConditionalActivity(container);
 }
+
+class CIfActionActivity : public ProcessSlaveActivity
+{
+    typedef ProcessSlaveActivity PARENT;
+
+    bool cond = false;
+    IHThorIfArg *helper;
+
+public:
+    CIfActionActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
+    {
+        helper = (IHThorIfArg *)baseHelper.get();
+    }
+    // IThorSlaveProcess overloaded methods
+    virtual void process() override
+    {
+        processed = THORDATALINK_STARTED;
+        ActivityTimer t(totalCycles, timeActivities);
+        cond = helper->getCondition();
+        if (cond)
+        {
+            if (inputs.item(1).itdl)
+                stopInput(1); // Note: stopping unused branches early helps us avoid buffering splits too long.
+            startInput(0);
+        }
+        else
+        {
+            stopInput(0); // Note: stopping unused branches early helps us avoid buffering splits too long.
+            if (inputs.item(1).itdl)
+                startInput(1);
+        }
+    }
+    virtual void endProcess() override
+    {
+        if (processed & THORDATALINK_STARTED)
+        {
+            if (cond)
+                stopInput(0);
+            else
+                stopInput(1);
+            processed |= THORDATALINK_STOPPED;
+        }
+    }
+};
+
+activityslaves_decl CActivityBase *createIfActionSlave(CGraphElementBase *container)
+{
+    return new CIfActionActivity(container);
+}
+
 
 
 //////////// NewChild acts - move somewhere else..
@@ -864,11 +959,11 @@ public:
     CChildNormalizeSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorChildNormalizeArg *)queryHelper();
+        appendOutputLinked(this);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         allocator.set(queryRowAllocator());
-        appendOutputLinked(this);
     }
     virtual void start()
     {
@@ -936,9 +1031,6 @@ public:
     CChildAggregateSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorChildAggregateArg *)queryHelper();
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         appendOutputLinked(this);
     }
     virtual void start()
@@ -987,13 +1079,13 @@ public:
     CChildGroupAggregateActivitySlave(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorChildGroupAggregateArg *)queryHelper();
+        appendOutputLinked(this);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         allocator.set(queryRowAllocator());
-        appendOutputLinked(this);
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
@@ -1001,10 +1093,6 @@ public:
         aggregated.clear();
         aggregated.setown(new RowAggregator(*helper, *helper));
         aggregated->start(queryRowAllocator());
-    }
-    virtual void stop()
-    {
-        PARENT::stop();
     }
     CATCH_NEXTROW()
     {
@@ -1060,12 +1148,12 @@ public:
     CChildThroughNormalizeSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), nextOutput(NULL)
     {
         helper = (IHThorChildThroughNormalizeArg *)queryHelper();
+        appendOutputLinked(this);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         allocator.set(queryRowAllocator());
         nextOutput.setAllocator(allocator);
-        appendOutputLinked(this);
     }
     virtual void start()
     {
@@ -1139,9 +1227,6 @@ public:
     CGraphLoopResultReadSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container)
     {
         helper = (IHThorGraphLoopResultReadArg *)queryHelper();
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         appendOutputLinked(this);
     }
     virtual void kill()

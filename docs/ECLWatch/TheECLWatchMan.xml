@@ -1177,11 +1177,11 @@
   <chapter id="Plug-Ins_for_ECLWatch">
     <title>Plug-ins</title>
 
-    <para>You can add functionality to ECL Watch with plug-ins. You can
-    integrate certain plug-ins into the ECL Watch interface. After you install
-    an approved plug-in, the plug-in icon displays in the navigation bar at
-    the top of the ECL Watch page. Click on the plug-in icon to view the
-    plug-ins page in ECL Watch. <figure>
+    <para>You can add functionality to ECL Watch by installing plug-ins. These
+    plug-ins are designed to integrate into the ECL Watch interface. After you
+    install an approved plug-in, the plug-in icon displays in the navigation
+    bar at the top of the ECL Watch page to provide access to the plug-in(s).
+    Click on the plug-in icon to view the plug-ins page in ECL Watch. <figure>
         <title>ECL Watch Plug-in icon</title>
 
         <mediaobject>
@@ -1263,6 +1263,10 @@
         Reporting</emphasis> manual.</para>
       </sect2>
     </sect1>
+
+    <xi:include href="HPCCMonitoring/MonRep-Mods/NagiosInECLWa.xml"
+                xpointer="Nagios_in_ECLWatch"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Account_Info">

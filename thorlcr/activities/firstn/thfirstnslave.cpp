@@ -44,18 +44,15 @@ public:
     {
         stopped = true;
         helper = (IHThorFirstNArg *)container.queryHelper();
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         appendOutputLinked(this);
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
         stopped = false;
     }
-    virtual void stop()
+    virtual void stop() override
     {
         if (!stopped)
         {
@@ -216,6 +213,7 @@ class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNot
     rowcount_t maxres, skipped, totallimit;
     bool firstget;
     ThorDataLinkMetaInfo inputMeta;
+    Owned<IEngineRowStream> originalInputStream;
 
 protected:
     virtual void doStop()
@@ -229,21 +227,12 @@ public:
     CFirstNSlaveGlobal(CGraphElementBase *container) : CFirstNSlaveBase(container)
     {
     }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         PARENT::init(data, slaveData);
         mpTag = container.queryJobChannel().deserializeMPTag(data);
     }
-    virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
-    {
-        PARENT::setInputStream(index, _input, consumerOrdered);
-        totallimit = (rowcount_t)helper->getLimit();
-        rowcount_t _skipCount = validRC(helper->numToSkip()); // max
-        rowcount_t maxRead = (totallimit>(RCUNBOUND-_skipCount))?RCUNBOUND:totallimit+_skipCount;
-        setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), FIRSTN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false,
-                                          maxRead, this, &container.queryJob().queryIDiskUsage())); // if a very large limit don't bother truncating
-    }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start(); // adds to totalTime (common to local and global firstn)
@@ -252,6 +241,21 @@ public:
         skipped = 0;
         firstget = true;
         input->getMetaInfo(inputMeta);
+        totallimit = (rowcount_t)helper->getLimit();
+        rowcount_t _skipCount = validRC(helper->numToSkip()); // max
+        rowcount_t maxRead = (totallimit>(RCUNBOUND-_skipCount))?RCUNBOUND:totallimit+_skipCount;
+        IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), FIRSTN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false,
+                                                                              maxRead, this, &container.queryJob().queryIDiskUsage()); // if a very large limit don't bother truncating
+        originalInputStream.setown(replaceInputStream(0, lookAhead));
+        lookAhead->start();
+    }
+    virtual void stop() override
+    {
+        PARENT::stop();
+        if (originalInputStream)
+        {
+            Owned<IEngineRowStream> lookAhead = replaceInputStream(0, originalInputStream.getClear());
+        }
     }
     virtual void abort()
     {
@@ -357,13 +361,13 @@ public:
     }
 
     virtual bool isGrouped() const override { return false; } // need to do different if is!
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         PARENT::getMetaInfo(info);
         info.canBufferInput = true;
     }
 // ILookAheadStopNotify
-    virtual void onInputFinished(rowcount_t count)  // count is the total read from input (including skipped)
+    virtual void onInputFinished(rowcount_t count) override // count is the total read from input (including skipped)
     {
         // sneaky short circuit
         {

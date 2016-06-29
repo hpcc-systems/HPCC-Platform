@@ -46,6 +46,7 @@
 #else
 #define HEAP_ALIGNMENT_SIZE 0x40000                             // 256kb heaplets
 #endif
+#define HEAP_PAGE_OFFSET_MASK (HEAP_ALIGNMENT_SIZE-1)
 #define HEAP_ALIGNMENT_MASK ((~(HEAP_ALIGNMENT_SIZE)) + 1)
 #define ACTIVITY_MASK   0x00ffffff                              // must be > HEAP_ALIGNMENT_SIZE
 #define ACTIVITY_MAGIC  0xac000000                              // We use the top 8 bits of the activityId field (which overlays the freechain relative pointers) to detect invalid frees
@@ -141,11 +142,6 @@ protected:
     virtual void _internalFreeNoDestructor(const void *ptr) = 0;
 
 public:
-    inline static HeapletBase *findBase(const void *ptr)
-    {
-        return (HeapletBase *) ((memsize_t) ptr & HEAP_ALIGNMENT_MASK);
-    }
-
     inline bool isAlive() const
     {
         return atomic_read(&count) < DEAD_PSEUDO_COUNT;        //only safe if Link() is called first
@@ -195,71 +191,40 @@ class DataBuffer;
 interface IDataBufferManager;
 interface IRowManager;
 
-class roxiemem_decl DataBufferBase : public HeapletBase
+class roxiemem_decl DataBuffer
 {
     friend class CDataBufferManager;
     friend class CChunkingRowManager;
-    friend class DataBufferBottom;
-protected:
-    //Called when the last reference to this item is Released() - the object will be reused or freed later
-    virtual void released() = 0;
-    DataBufferBase()
-    {
-        next = NULL;
-        mgr = NULL;
-    }
-    inline DataBufferBase *realBase(const void *ptr, memsize_t mask) const
-    {
-        return (DataBufferBase *) ((memsize_t) ptr & mask);
-    }
-    inline DataBufferBase *realBase(const void *ptr) const { return realBase(ptr, DATA_ALIGNMENT_MASK); }
-
-public:
-    // Link and release are used to keep count of the references to the buffers.
-    void Link() 
-    { 
-        atomic_inc(&count); 
-    }
-    void Release();
-
-    //These functions are called on rows allocated within the DataBuffers
-    //They are called on DataBuffferBottom which maps them to the correct DataBuffer using realBase()
-    virtual void noteReleased(const void *ptr);
-    virtual void noteLinked(const void *ptr);
-    virtual bool _isShared(const void *ptr) const;
-
-protected:
-    DataBufferBase *next;   // Used when chaining them together in rowMgr
-    IRowManager *mgr;
-};
-
-
-class roxiemem_decl DataBuffer : public DataBufferBase
-{
-    friend class CDataBufferManager;
 private:
-    virtual void released();
-    virtual memsize_t _capacity() const;
-    virtual void _setDestructorFlag(const void *ptr);
-    virtual bool _hasDestructor(const void *ptr) const { return false; }
-    virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
-    virtual const void * _compactRow(const void * ptr, HeapCompactState & state) { return ptr; }
-    virtual void _internalFreeNoDestructor(const void *ptr) { throwUnexpected(); }
+    void released();
+
 protected:
     DataBuffer()
     {
-        msgNext = NULL;
+        atomic_set(&count,1);  // Starts off active
     }
 public:
-    DataBuffer *msgNext;    // Next databuffer in same slave message
-    virtual bool attachToRowMgr(IRowManager *rowMgr);
+    void Link() { atomic_inc(&count); }
+    void Release();
+    inline unsigned queryCount() const
+    {
+        return atomic_read(&count);
+    }
+    void noteReleased(const void *ptr);
+    void noteLinked(const void *ptr);
+public:
+    atomic_t count;
+    IRowManager *mgr = nullptr;
+    DataBuffer *next = nullptr;   // Used when chaining them together in rowMgr
+    DataBuffer *msgNext = nullptr;    // Next databuffer in same slave message
+    bool attachToRowMgr(IRowManager *rowMgr);
     char data[1]; // actually DATA_PAYLOAD
 };
 
 #define DATA_PAYLOAD (roxiemem::DATA_ALIGNMENT_SIZE - sizeof(roxiemem::DataBuffer)) // actually should be offsetof(DataBuffer, data)
 
 class CDataBufferManager;
-class roxiemem_decl DataBufferBottom : public DataBufferBase
+class roxiemem_decl DataBufferBottom : public HeapletBase
 {
 private:
     friend class CDataBufferManager;
@@ -267,10 +232,11 @@ private:
     atomic_t okToFree;
     DataBufferBottom *nextBottom;   // Used when chaining them together in CDataBufferManager 
     DataBufferBottom *prevBottom;   // Used when chaining them together in CDataBufferManager 
-    DataBufferBase *freeChain;
+    DataBuffer *freeChain;
     CriticalSection crit;
 
-    virtual void released();
+    void released();
+
     virtual void noteReleased(const void *ptr);
     virtual bool _isShared(const void *ptr) const;
     virtual memsize_t _capacity() const;
@@ -281,10 +247,19 @@ private:
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state) { return ptr; }
     virtual void _internalFreeNoDestructor(const void *ptr) { throwUnexpected(); }
 
+    inline DataBuffer * queryDataBuffer(const void *ptr) const
+    {
+        if ((((memsize_t)ptr) & HEAP_PAGE_OFFSET_MASK) == 0)
+            return NULL;
+        return (DataBuffer *) ((memsize_t) ptr & DATA_ALIGNMENT_MASK);
+    }
+
 public:
     DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain);
 
-    void addToFreeChain(DataBufferBase * buffer);
+    void addToFreeChain(DataBuffer * buffer);
+    void Link() { atomic_inc(&count); }
+    void Release();
 };
 
 //Actions applied to roxie rows
@@ -424,6 +399,9 @@ enum RoxieHeapFlags
     RHFunique           = 0x0004,  // create a separate fixed size allocator
     RHFoldfixed         = 0x0008,  // Don't create a special fixed size heap for this
     RHFvariable         = 0x0010,  // only used for tracing
+
+    //internal flags
+    RHForphaned         = 0x80000000,   // heap will no longer be used, can be deleted
 };
 
 //This interface is here to allow atomic updates to allocations when they are being resized.  There are a few complications:
@@ -508,7 +486,7 @@ interface IActivityMemoryUsageMap : public IInterface
 };
 
 extern roxiemem_decl IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks = false, bool outputOOMReports = false);
-extern roxiemem_decl IRowManager *createGlobalRowManager(memsize_t memLimit, memsize_t globalLimit, unsigned numSlaves, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks, bool outputOOMReports);
+extern roxiemem_decl IRowManager *createGlobalRowManager(memsize_t memLimit, memsize_t globalLimit, unsigned numSlaves, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, const IRowAllocatorCache **slaveAllocatorCaches, bool ignoreLeaks, bool outputOOMReports);
 
 // Fixed size aggregated link-counted zero-overhead data Buffer manager
 

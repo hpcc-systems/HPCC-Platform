@@ -92,6 +92,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(GENERATE_COVERAGE_INFO "Generate coverage info for gcov" OFF)
   option(USE_SIGNED_CHAR "Build system with default char type is signed" OFF)
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
+  option(USE_MYSQL "Enable mysql support" ON)
   # Generates code that is more efficient, but will cause problems if target platforms do not support it.
   if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     option(USE_INLINE_TSC "Inline calls to read TSC (time stamp counter)" ON)
@@ -109,11 +110,14 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(JAVAEMBED "Create a package with ONLY the javaembed plugin" OFF)
   option(SQLITE3EMBED "Create a package with ONLY the sqlite3embed plugin" OFF)
   option(KAFKA "Create a package with ONLY the kafkaembed plugin" OFF)
+  #"cmake -DEXAMPLEPLUGIN=ON <path-to/HPCC-Platform/>" will configure the plugin makefiles to be built with "make".
+  option(EXAMPLEPLUGIN "Create a package with ONLY the exampleplugin plugin" OFF)
 
   if (APPLE OR WIN32)
       option(USE_TBB "Enable Threading Building Block support" OFF)
   else()
       option(USE_TBB "Enable Threading Building Block support" ON)
+      option(USE_TBBMALLOC "Enable Threading Building Block scalable allocator proxy support" ON)
   endif()
 
   option(LOGGING_SERVICE "Configure use of logging service" ON)
@@ -122,7 +126,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
 
     if(REMBED OR V8EMBED OR MEMCACHED OR PYEMBED OR REDIS OR JAVAEMBED OR MYSQLEMBED
-        OR SQLITE3EMBED OR KAFKA)
+        OR SQLITE3EMBED OR KAFKA OR EXAMPLEPLUGIN)
         set(PLUGIN ON)
         set(CLIENTTOOLS OFF)
         set(PLATFORM OFF)
@@ -193,6 +197,13 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
             set(pluginname "kafka")
         endif()
     endif()
+    if(EXAMPLEPLUGIN)
+        if(DEFINED pluginname)
+            message(FATAL_ERROR "Cannot enable exampleplugin, already declared ${pluginname}")
+        else()
+           set(pluginname "exampleplugin")
+        endif()
+    endif()
 
   if ( USE_XALAN AND USE_LIBXSLT )
       set(USE_LIBXSLT OFF)
@@ -230,6 +241,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         set(JAVAEMBED ON)
         set(SQLITE3EMBED ON)
         set(KAFKA ON)
+        set(EXAMPLEPLUGIN ON)
     endif()
 
   option(PORTALURL "Set url to hpccsystems portal download page")
@@ -397,11 +409,15 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       endif ()
     endif ()
     if (CMAKE_COMPILER_IS_CLANGXX)
-      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Werror=logical-op-parentheses -Werror=bool-conversions -Werror=return-type -Werror=comment")
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=logical-op-parentheses -Werror=bool-conversions -Werror=return-type -Werror=comment")
+      if (APPLE)
+        SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+        SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+      endif ()
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror=bitwise-op-parentheses -Werror=tautological-compare")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wno-switch-enum -Wno-format-zero-length -Wno-switch")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Qunused-arguments")  # Silence messages about pthread not being used when linking...
-      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wno-inconsistent-missing-override")   # Until we fix them all, whcih would be a huge task...      
+      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wno-inconsistent-missing-override -Wno-unknown-warning-option")  # Until we fix them all, whcih would be a huge task...
       if (CLANG_VERSION VERSION_GREATER 3.6 OR CLANG_VERSION VERSION_EQUAL 3.6 OR APPLE_CLANG_VERSION VERSION_GREATER 6.0)
         SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pointer-bool-conversion")
       endif()
@@ -850,6 +866,16 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         set(TBB_INCLUDE_DIR "")
       endif(USE_TBB)
 
+      if(USE_TBBMALLOC)
+        find_package(TBBMALLOC)
+        if (TBBMALLOC_FOUND)
+          add_definitions (-D_USE_TBBMALLOC)
+        else()
+            message(WARNING "Optional TBBMALLOC requested, but missing")
+            set(USE_TBBMALLOC OFF)
+        endif()
+      endif(USE_TBBMALLOC)
+
   ENDIF()
   ###########################################################################
   ###
@@ -947,7 +973,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     else()
       add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${module}
-        COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/${module} ${CMAKE_CURRENT_BINARY_DIR}/${module}
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${module} ${CMAKE_CURRENT_BINARY_DIR}/${module}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Adding unsigned ${module} to project"
         VERBATIM

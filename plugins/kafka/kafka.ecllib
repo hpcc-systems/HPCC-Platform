@@ -50,7 +50,7 @@ END;
  *                          you should pass an empty string; OPTIONAL,
  *                          defaulting to 'localhost'
  */
-EXPORT Publisher(VARSTRING topic, VARSTRING brokers = 'localhost') := MODULE
+EXPORT KafkaPublisher(VARSTRING topic, VARSTRING brokers = 'localhost') := MODULE
 
     /**
      * Get the number of partitions currently set up for this topic
@@ -94,7 +94,7 @@ END;
  *                          (see https://kafka.apache.org/documentation.html#introduction);
  *                          OPTIONAL, defaults to 'hpcc'
  */
-EXPORT Consumer(VARSTRING topic, VARSTRING brokers = 'localhost', VARSTRING consumerGroup = 'hpcc') := MODULE
+EXPORT KafkaConsumer(VARSTRING topic, VARSTRING brokers = 'localhost', VARSTRING consumerGroup = 'hpcc') := MODULE
 
     /**
      * Get the number of partitions currently set up for this topic

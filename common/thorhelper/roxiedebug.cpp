@@ -711,8 +711,7 @@ void CBreakpointInfo::serialize(MemoryBuffer &to) const
     }
 }
 
-SpinLock CBreakpointInfo::UIDlock;
-unsigned CBreakpointInfo::nextUIDvalue;
+std::atomic<unsigned> CBreakpointInfo::nextUIDvalue;
 
 unsigned CBreakpointInfo::queryUID() const
 {

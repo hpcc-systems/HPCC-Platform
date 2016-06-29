@@ -90,7 +90,7 @@ interface IJobQueue: extends IJobQueueConst
     virtual void enqueueAfter(IJobQueueItem *qitem,const char *prevwuid)=0;
 
 // dequeueing
-    virtual void connect(bool validateitemsessions=true)=0;     // must be called before dequeueing
+    virtual void connect(bool validateitemsessions)=0;     // must be called before dequeueing
                                                                 // validateitemsessions ensures that all queue items have running session
     virtual IJobQueueItem *dequeue(unsigned timeout=INFINITE)=0;
     virtual IJobQueueItem *prioDequeue(int minprio,unsigned timeout=INFINITE)=0;

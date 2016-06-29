@@ -32,9 +32,10 @@ protected:
 public:
     BaseChooseSetsActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-        helper = NULL;
+        helper = static_cast <IHThorChooseSetsArg *> (queryHelper());
         done = false;
         tallies = NULL;
+        appendOutputLinked(this);
     }
     ~BaseChooseSetsActivity()
     {
@@ -44,8 +45,6 @@ public:
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {
         mpTag = container.queryJobChannel().deserializeMPTag(data);
-        appendOutputLinked(this);
-        helper = static_cast <IHThorChooseSetsArg *> (queryHelper());
     }
     virtual void start() override
     {
@@ -255,12 +254,13 @@ public:
 
     ChooseSetsPlusActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-        helper = NULL;
+        helper = static_cast <IHThorChooseSetsExArg *> (queryHelper());
         counts = NULL;
         priorCounts = NULL;
         totalCounts = NULL;
         limits = NULL;
         inputCounter.setown(new CInputCounter(*this));
+        appendOutputLinked(this);
     }
     ~ChooseSetsPlusActivity()
     {
@@ -273,8 +273,6 @@ public:
     {
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJobChannel().deserializeMPTag(data);
-        appendOutputLinked(this);
-        helper = static_cast <IHThorChooseSetsExArg *> (queryHelper());
     }
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {

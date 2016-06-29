@@ -68,7 +68,7 @@
                                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}DesprayTargetSelect" title="${i18n.DropZone}:" name="destGroup" colspan="2" style="width: 100%;" data-dojo-type="TargetSelectWidget" />
                                         <input id="${id}DesprayTargetIPAddress" title="${i18n.IPAddress}:" name="destIP" colspan="2" required="true" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
-                                        <input id="${id}DesprayTargetPath" title="${i18n.Path}:" name="destPath" colspan="2" required="true" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="TargetComboBoxWidget" />
+                                        <input id="${id}DesprayTargetPath" title="${i18n.Path}:" name="destPath" colspan="2" required="false" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="TargetComboBoxWidget" />
                                         <input id="${id}DesprayTargetName" title="${i18n.TargetName}:" colspan="2" required="true" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
                                         <input id="${id}DesprayTargetSplitPrefix" title="${i18n.SplitPrefix}:" name="splitprefix" colspan="2" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
                                     </div>
@@ -82,6 +82,25 @@
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
                                     <button type="submit" data-dojo-attach-event="onClick:_onDesprayOk" data-dojo-type="dijit.form.Button">${i18n.Despray}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}ReplicateDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.Replicate}</span>
+                        <div id="${id}ReplicateTooltipDialog" data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}ReplicateForm" style="width: 460px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Replicate}</legend>
+                                    <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}ReplicateSourceLogicalFile" title="${i18n.SourceLogicalFile}:" name="sourceLogicalName" colspan="2" required="true" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input id="${id}ReplicateOffset" title="${i18n.ReplicateOffset}:" name="replicateOffset" colspan="2" required="false" value="1" style="width: 100%;" data-dojo-type="dijit.form.NumberTextBox" />
+                                        <input id="${id}ReplicateCluster" title="${i18n.Cluster}:" name="cluster" colspan="2" style="width: 100%;" data-dojo-type="TargetSelectWidget" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onReplicateOk" data-dojo-type="dijit.form.Button">${i18n.Replicate}</button>
                                 </div>
                             </div>
                         </div>
@@ -128,10 +147,6 @@
                                 <div id="${id}Filesize"></div>
                             </li>
                             <li>
-                                <label for="${id}ActualSize">${i18n.ActualSize}: </label>
-                                <div id="${id}ActualSize"></div>
-                            </li>
-                            <li>
                                 <label for="${id}CompressedFileSize">${i18n.CompressedFileSize}: </label>
                                 <div id="${id}CompressedFileSize"></div>
                             </li>
@@ -154,6 +169,10 @@
                             <li>
                                 <label for="${id}RecordCount">${i18n.RecordCount}: </label>
                                 <div id="${id}RecordCount"></div>
+                            </li>
+                            <li>
+                                <label for="${id}IsCompressed">${i18n.IsCompressed}: </label>
+                                <div id="${id}IsCompressed"></div>
                             </li>
                             <li>
                                 <label for="${id}DFUFilePartsOnClusters">${i18n.IsReplicated}: </label>

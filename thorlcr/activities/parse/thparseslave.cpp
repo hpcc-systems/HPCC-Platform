@@ -43,14 +43,13 @@ class CParseSlaveActivity : public CSlaveActivity, implements IMatchedAction
     Owned<IEngineRowAllocator> allocator;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
-
     CParseSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
+        helper = (IHThorParseArg *)queryHelper();
         anyThisGroup = false;
         curSearchTextLen = 0;
         curSearchText = NULL;
-
+        appendOutputLinked(this);
     }
     ~CParseSlaveActivity()
     {
@@ -59,18 +58,16 @@ public:
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        appendOutputLinked(this);
-        helper = (IHThorParseArg *)queryHelper();
         algorithm.setown(createThorParser(queryCodeContext(), *helper));
         parser.setown(algorithm->createParser(queryCodeContext(), (unsigned)container.queryId(), helper->queryHelper(), helper));
         rowIter = parser->queryResultIter();
-        rowIter->first();
         allocator.set(queryRowAllocator());
     } 
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
+        rowIter->first();
     }
     void processRecord(const void * in)
     {
