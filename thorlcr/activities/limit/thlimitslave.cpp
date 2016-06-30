@@ -46,7 +46,7 @@ public:
     CLimitSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorLimitArg *)queryHelper();
-        resultSent = container.queryLocal(); // i.e. local, so don't send result to master
+        resultSent = true; // unless started suppress result send
         eos = stopped = anyThisGroup = eogNext = false;
         rowLimit = RCMAX;
         appendOutputLinked(this);
