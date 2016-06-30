@@ -7,6 +7,8 @@
 #include "esdlcomp.h"
 #include "esdlgram.h"
 
+#define register
+
 extern YYSTYPE yylval;
 extern unsigned linenum;
 
@@ -139,7 +141,6 @@ L?\"([^"\\\n]|{esc})*\" {
     {
         char *sval = (char *) malloc(yyleng+1);
 
-        char *thestr=(char*)yytext;
         strncpy(sval, (char *)yytext, yyleng);
         sval[yyleng]=0;
         yylval.setVal(sval);

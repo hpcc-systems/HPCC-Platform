@@ -3776,11 +3776,95 @@ ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue)
     }
 }
 
+//---------------------------------------------------------------------------------
+IHqlExpression * queryLikelihoodExpr(IHqlExpression * expr)
+{
+    IInterface * match = meta.queryExistingProperty(expr, EPlikelihood);
+    if (match)
+        return static_cast<IHqlExpression *>(match);
+
+    LinkedHqlExpr likelihoodExpr;
+    switch(expr->getOperator())
+    {
+    case no_likely:
+        if (expr->numChildren() > 1)
+            likelihoodExpr.set(expr->queryChild(1));
+        else
+            likelihoodExpr.set(queryConstantLikelihoodLikely());
+        break;
+    case no_unlikely:
+        likelihoodExpr.set(queryConstantLikelihoodUnlikely());
+        break;
+    case no_alias:
+    case no_nofold:
+        likelihoodExpr.set(queryLikelihoodExpr(expr->queryChild(0)));
+        break;
+    case no_constant:
+        if (expr->queryValue()->getBoolValue())
+            likelihoodExpr.set(queryConstantLikelihoodTrue());
+        else
+            likelihoodExpr.set(queryConstantLikelihoodFalse());
+        break;
+    case no_and:
+        {
+            double p1 = queryLikelihood(expr->queryChild(0));
+            if (isKnownLikelihood(p1))
+            {
+                double p2 = queryLikelihood(expr->queryChild(1));
+                if (isKnownLikelihood(p2))
+                {
+                    likelihoodExpr.set(createConstant(createRealValue(p1*p2,8)));
+                    break;
+                }
+            }
+            likelihoodExpr.set(queryConstantLikelihoodUnknown());
+            break;
+        }
+    case no_or:
+        {
+            double p1 = queryLikelihood(expr->queryChild(0));
+            if (isKnownLikelihood(p1))
+            {
+                double p2 = queryLikelihood(expr->queryChild(1));
+                if (isKnownLikelihood(p2))
+                {
+                    likelihoodExpr.set(createConstant(createRealValue(p1+p2-p1*p2,8)));
+                    break;
+                }
+            }
+            likelihoodExpr.set(queryConstantLikelihoodUnknown());
+            break;
+        }
+    case no_not:
+        {
+            double p1 = queryLikelihood(expr->queryChild(0));
+            if (isKnownLikelihood(p1))
+            {
+                likelihoodExpr.set(createConstant(createRealValue(1.0-p1,8)));
+                break;
+            }
+            likelihoodExpr.set(queryConstantLikelihoodUnknown());
+            break;
+        }
+    default:
+        likelihoodExpr.set(queryConstantLikelihoodUnknown());
+        break;
+    }
+    meta.addProperty(expr, EPlikelihood, likelihoodExpr);
+    return likelihoodExpr;
+}
+
+double queryLikelihood(IHqlExpression * expr)
+{
+    IHqlExpression * likelihoodExpr = queryLikelihoodExpr(expr);
+    return likelihoodExpr->queryValue()->getRealValue();
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
 IInterface * CHqlExpression::queryExistingProperty(ExprPropKind propKind) const
 {
+    //If this was used significantly in a multi threaded environment then reduce the work in the spinblock
     SpinBlock block(*propertyLock);
     CHqlDynamicProperty * cur = attributes;
     while (cur)

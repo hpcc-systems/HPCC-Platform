@@ -1313,8 +1313,8 @@ CKeyIndex::CKeyIndex(int _iD, const char *_name) : name(_name)
     keyHdr = NULL;
     rootNode = NULL;
     cachedBlobNodePos = 0;
-    atomic_set(&keySeeks, 0);
-    atomic_set(&keyScans, 0);
+    keySeeks.store(0);
+    keyScans.store(0);
     latestGetNodeOffset = 0;
 }
 
@@ -1390,7 +1390,7 @@ CMemKeyIndex::CMemKeyIndex(int _iD, IMemoryMappedFile *_io, const char *_name, b
 
 CJHTreeNode *CMemKeyIndex::loadNode(offset_t pos)
 {
-    atomic_inc(&nodesLoaded);
+    nodesLoaded++;
     if (pos + keyHdr->getNodeSize() > io->fileSize())
     {
         IException *E = MakeStringException(errno, "Error reading node at position %" I64F "x past EOF", pos); 
@@ -1416,7 +1416,7 @@ CDiskKeyIndex::CDiskKeyIndex(int _iD, IFileIO *_io, const char *_name, bool isTL
 
 CJHTreeNode *CDiskKeyIndex::loadNode(offset_t pos) 
 {
-    atomic_inc(&nodesLoaded);
+    nodesLoaded++;
     unsigned nodeSize = keyHdr->getNodeSize();
     MemoryAttr ma;
     char *nodeData = (char *) ma.allocate(nodeSize);
@@ -1670,7 +1670,7 @@ bool CKeyCursor::next(char *dst)
         return first(dst);
     else
     {
-        atomic_inc(&key.keyScans);
+        key.keyScans++;
         if (!node->getValueAt( ++nodeKey, dst))
         {
             offset_t rsib = node->getRightSib();
@@ -1697,7 +1697,7 @@ bool CKeyCursor::prev(char *dst)
         return last(dst); // Note - this used to say First - surely a typo
     else
     {
-        atomic_inc(&key.keyScans);
+        key.keyScans++;
         if (!nodeKey)
         {
             offset_t lsib = node->getLeftSib();
@@ -1739,7 +1739,7 @@ unsigned __int64 CKeyCursor::getSequence()
 
 bool CKeyCursor::first(char *dst)
 {
-    atomic_inc(&key.keySeeks);
+    key.keySeeks++;
     node.setown(locateFirstNode());
     nodeKey = 0;
     return node->getValueAt(nodeKey, dst);
@@ -1747,7 +1747,7 @@ bool CKeyCursor::first(char *dst)
 
 bool CKeyCursor::last(char *dst)
 {
-    atomic_inc(&key.keySeeks);
+    key.keySeeks++;
     node.setown(locateLastNode());
     nodeKey = node->getNumKeys()-1;
     return node->getValueAt( nodeKey, dst );
@@ -1755,7 +1755,7 @@ bool CKeyCursor::last(char *dst)
 
 bool CKeyCursor::gtEqual(const char *src, char *dst, bool seekForward)
 {
-    atomic_inc(&key.keySeeks);
+    key.keySeeks++;
     unsigned lwm = 0;
     if (seekForward && node)
     {
@@ -1828,7 +1828,7 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, bool seekForward)
 
 bool CKeyCursor::ltEqual(const char *src, char *dst, bool seekForward)
 {
-    atomic_inc(&key.keySeeks);
+    key.keySeeks++;
     unsigned lwm = 0;
     if (seekForward && node)
     {
@@ -2117,9 +2117,9 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             CJHTreeNode *cacheNode = preloadCache.query(key);
             if (cacheNode)
             {
-                atomic_inc(&cacheHits);
+                cacheHits++;
                 if (ctx) ctx->noteStatistic(StNumPreloadCacheHits, 1);
-                atomic_inc(&preloadCacheHits);
+                preloadCacheHits++;
                 return LINK(cacheNode);
             }
         }
@@ -2128,9 +2128,9 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             CJHTreeNode *cacheNode = nodeCache.query(key);
             if (cacheNode)
             {
-                atomic_inc(&cacheHits);
+                cacheHits++;
                 if (ctx) ctx->noteStatistic(StNumNodeCacheHits, 1);
-                atomic_inc(&nodeCacheHits);
+                nodeCacheHits++;
                 return LINK(cacheNode);
             }
         }
@@ -2139,9 +2139,9 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             CJHTreeNode *cacheNode = leafCache.query(key);
             if (cacheNode)
             {
-                atomic_inc(&cacheHits);
+                cacheHits++;
                 if (ctx) ctx->noteStatistic(StNumLeafCacheHits, 1);
-                atomic_inc(&leafCacheHits);
+                leafCacheHits++;
                 return LINK(cacheNode);
             }
         }
@@ -2150,9 +2150,9 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             CJHTreeNode *cacheNode = blobCache.query(key);
             if (cacheNode)
             {
-                atomic_inc(&cacheHits);
+                cacheHits++;
                 if (ctx) ctx->noteStatistic(StNumBlobCacheHits, 1);
-                atomic_inc(&blobCacheHits);
+                blobCacheHits++;
                 return LINK(cacheNode);
             }
         }
@@ -2161,7 +2161,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             CriticalUnblock block(lock);
             node = keyIndex->loadNode(pos);  // NOTE - don't want cache locked while we load!
         }
-        atomic_inc(&cacheAdds);
+        cacheAdds++;
         if (node->isBlob())
         {
             if (cacheBlobs)
@@ -2170,13 +2170,13 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
                 if (cacheNode)
                 {
                     ::Release(node);
-                    atomic_inc(&cacheHits);
+                    cacheHits++;
                     if (ctx) ctx->noteStatistic(StNumBlobCacheHits, 1);
-                    atomic_inc(&blobCacheHits);
+                    blobCacheHits++;
                     return LINK(cacheNode);
                 }
                 if (ctx) ctx->noteStatistic(StNumBlobCacheAdds, 1);
-                atomic_inc(&blobCacheAdds);
+                blobCacheAdds++;
                 blobCache.add(key, *LINK(node));
             }
         }
@@ -2188,13 +2188,13 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
                 if (cacheNode)
                 {
                     ::Release(node);
-                    atomic_inc(&cacheHits);
+                    cacheHits++;
                     if (ctx) ctx->noteStatistic(StNumLeafCacheHits, 1);
-                    atomic_inc(&leafCacheHits);
+                    leafCacheHits++;
                     return LINK(cacheNode);
                 }
                 if (ctx) ctx->noteStatistic(StNumLeafCacheAdds, 1);
-                atomic_inc(&leafCacheAdds);
+                leafCacheAdds++;
                 leafCache.add(key, *LINK(node));
             }
         }
@@ -2206,13 +2206,13 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
                 if (cacheNode)
                 {
                     ::Release(node);
-                    atomic_inc(&cacheHits);
+                    cacheHits++;
                     if (ctx) ctx->noteStatistic(StNumNodeCacheHits, 1);
-                    atomic_inc(&nodeCacheHits);
+                    nodeCacheHits++;
                     return LINK(cacheNode);
                 }
                 if (ctx) ctx->noteStatistic(StNumNodeCacheAdds, 1);
-                atomic_inc(&nodeCacheAdds);
+                nodeCacheAdds++;
                 nodeCache.add(key, *LINK(node));
             }
         }
@@ -2229,9 +2229,9 @@ void CNodeCache::preload(CJHTreeNode *node, int iD, offset_t pos, IContextLogger
     CJHTreeNode *cacheNode = preloadCache.query(key);
     if (!cacheNode)
     {
-        atomic_inc(&cacheAdds);
+        cacheAdds++;
         if (ctx) ctx->noteStatistic(StNumPreloadCacheAdds, 1);
-        atomic_inc(&preloadCacheAdds);
+        preloadCacheAdds++;
         preloadCache.add(key, *LINK(node));
     }
 }
@@ -2243,31 +2243,31 @@ bool CNodeCache::isPreloaded(int iD, offset_t pos)
     return NULL != preloadCache.query(key);
 }
 
-atomic_t cacheAdds;
-atomic_t cacheHits;
-atomic_t nodesLoaded;
-atomic_t blobCacheHits;
-atomic_t blobCacheAdds;
-atomic_t leafCacheHits;
-atomic_t leafCacheAdds;
-atomic_t nodeCacheHits;
-atomic_t nodeCacheAdds;
-atomic_t preloadCacheHits;
-atomic_t preloadCacheAdds;
+RelaxedAtomic<unsigned> cacheAdds;
+RelaxedAtomic<unsigned> cacheHits;
+RelaxedAtomic<unsigned> nodesLoaded;
+RelaxedAtomic<unsigned> blobCacheHits;
+RelaxedAtomic<unsigned> blobCacheAdds;
+RelaxedAtomic<unsigned> leafCacheHits;
+RelaxedAtomic<unsigned> leafCacheAdds;
+RelaxedAtomic<unsigned> nodeCacheHits;
+RelaxedAtomic<unsigned> nodeCacheAdds;
+RelaxedAtomic<unsigned> preloadCacheHits;
+RelaxedAtomic<unsigned> preloadCacheAdds;
 
 void clearNodeStats()
 {
-    atomic_set(&cacheAdds, 0);
-    atomic_set(&cacheHits, 0);
-    atomic_set(&nodesLoaded, 0);
-    atomic_set(&blobCacheHits, 0);
-    atomic_set(&blobCacheAdds, 0);
-    atomic_set(&leafCacheHits, 0);
-    atomic_set(&leafCacheAdds, 0);
-    atomic_set(&nodeCacheHits, 0);
-    atomic_set(&nodeCacheAdds, 0);
-    atomic_set(&preloadCacheHits, 0);
-    atomic_set(&preloadCacheAdds, 0);
+    cacheAdds.store(0);
+    cacheHits.store(0);
+    nodesLoaded.store(0);
+    blobCacheHits.store(0);
+    blobCacheAdds.store(0);
+    leafCacheHits.store(0);
+    leafCacheAdds.store(0);
+    nodeCacheHits.store(0);
+    nodeCacheAdds.store(0);
+    preloadCacheHits.store(0);
+    preloadCacheAdds.store(0);
 }
 
 //------------------------------------------------------------------------------------------------

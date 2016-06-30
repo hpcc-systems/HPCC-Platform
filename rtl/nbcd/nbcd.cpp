@@ -248,7 +248,7 @@ Decimal & Decimal::divide(const Decimal & other)
 
         if (q >= 5)
         {
-            for (unsigned roundDigit=0; roundDigit < iters; roundDigit++)
+            for (int roundDigit=0; roundDigit < iters; roundDigit++)
             {
                 unsigned next = digits[roundDigit]+1;
                 if (next == 10)

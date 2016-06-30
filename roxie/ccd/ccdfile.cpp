@@ -86,7 +86,6 @@ protected:
     bool remote;
     offset_t fileSize;
     CDateTime fileDate;
-    unsigned crc;
     unsigned lastAccess;
     bool copying;
     bool isCompressed;
@@ -100,8 +99,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, unsigned _crc, bool _isCompressed)
-        : logical(_logical), fileSize(size), crc(_crc), isCompressed(_isCompressed), fileStats(diskLocalStatistics)
+    CLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed)
+        : logical(_logical), fileSize(size), isCompressed(_isCompressed), fileStats(diskLocalStatistics)
     {
         fileDate.set(_date);
         currentIdx = 0;
@@ -245,7 +244,7 @@ public:
                         throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Pretending to fail on an open");
 #endif
                     IFile *f = &sources.item(currentIdx);
-                    fileStatus = queryFileCache().fileUpToDate(f, fileSize, fileDate, crc, isCompressed, false);
+                    fileStatus = queryFileCache().fileUpToDate(f, fileSize, fileDate, isCompressed, false);
                     if (fileStatus == FileIsValid)
                     {
                         if (isCompressed)
@@ -281,10 +280,6 @@ public:
 
                         case FileSizeMismatch:
                             filesTried.append(": FileSizeMismatch");
-                            break;
-
-                        case FileCRCMismatch:
-                            filesTried.append(": FileCRCMismatch");
                             break;
 
                         case FileDateMismatch:
@@ -405,7 +400,7 @@ public:
             filesTried.appendf(" %s", sourceName);
             try
             {
-                if (queryFileCache().fileUpToDate(&sources.item(currentIdx), fileSize, fileDate, crc, isCompressed) == FileIsValid)
+                if (queryFileCache().fileUpToDate(&sources.item(currentIdx), fileSize, fileDate, isCompressed) == FileIsValid)
                 {
                     StringBuffer source_drive;
                     splitFilename(sourceName, &source_drive, NULL, NULL, NULL);
@@ -585,7 +580,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
     Semaphore bctStarted;
     Semaphore hctStarted;
 
-    RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, unsigned crc, bool isCompressed, bool autoDisconnect=true)
+    RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, bool isCompressed, bool autoDisconnect=true)
     {
         // Ensure that SockFile does not keep these sockets open (or we will run out)
         class AutoDisconnector
@@ -597,22 +592,12 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             IFile *f;
         } autoDisconnector(f, autoDisconnect);
 
-        if (f->exists())
+        offset_t fileSize = f->size();
+        if (fileSize != (offset_t) -1)
         {
             // only check size if specified
-            if ( (size != -1) && !isCompressed && f->size()!=size) // MORE - should be able to do better on compressed you'da thunk
+            if ( (size != -1) && !isCompressed && fileSize != size) // MORE - should be able to do better on compressed you'da thunk
                 return FileSizeMismatch;
-
-            if (crc > 0)
-            {
-                // if a crc is specified let's check it
-                unsigned file_crc = f->getCRC();
-                if (file_crc && crc != file_crc)  // for remote files crc_file can fail, even if the file is valid
-                {
-                    DBGLOG("FAILED CRC Check");
-                    return FileCRCMismatch;
-                }
-            }
             CDateTime mt;
             return (modified.isNull() || (f->getTime(NULL, &mt, NULL) &&  mt.equals(modified, false))) ? FileIsValid : FileDateMismatch;
         }
@@ -623,12 +608,12 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
     ILazyFileIO *openFile(const char *lfn, unsigned partNo, const char *localLocation,
                            IPartDescriptor *pdesc,
                            const StringArray &remoteLocationInfo,
-                           offset_t size, const CDateTime &modified, unsigned crc)
+                           offset_t size, const CDateTime &modified)
     {
         Owned<IFile> local = createIFile(localLocation);
         bool isCompressed = testMode ? false : pdesc->queryOwner().isCompressed();
-        Owned<CLazyFileIO> ret = new CLazyFileIO(local.getLink(), size, modified, crc, isCompressed);
-        RoxieFileStatus fileStatus = fileUpToDate(local, size, modified, crc, isCompressed);
+        Owned<CLazyFileIO> ret = new CLazyFileIO(local.getLink(), size, modified, isCompressed);
+        RoxieFileStatus fileStatus = fileUpToDate(local, size, modified, isCompressed);
         if (fileStatus == FileIsValid)
         {
             ret->addSource(local.getLink());
@@ -652,7 +637,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                 {
                     const char *remoteName = localLocations.item(roxie_idx);
                     Owned<IFile> remote = createIFile(remoteName);
-                    RoxieFileStatus status = fileUpToDate(remote, size, modified, crc, isCompressed);
+                    RoxieFileStatus status = fileUpToDate(remote, size, modified, isCompressed);
                     if (status==FileIsValid)
                     {
                         if (miscDebugTraceLevel > 5)
@@ -689,7 +674,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                         Owned<IFile> remote = createIFile(remoteName);
                         if (traceLevel > 5)
                             DBGLOG("checking remote location %s", remoteName);
-                        RoxieFileStatus status = fileUpToDate(remote, size, modified, crc, isCompressed);
+                        RoxieFileStatus status = fileUpToDate(remote, size, modified, isCompressed);
                         if (status==FileIsValid)
                         {
                             if (miscDebugTraceLevel > 5)
@@ -1114,9 +1099,6 @@ public:
         IPropertyTree &partProps = pdesc->queryProperties();
         offset_t dfsSize = partProps.getPropInt64("@size", -1);
         bool local = partProps.getPropBool("@local");
-        unsigned crc;
-        if (!crcResources || !pdesc->getCrc(crc))
-            crc = 0;
         CDateTime dfsDate;
         if (checkFileDate)
         {
@@ -1175,7 +1157,7 @@ public:
                     return f.getClear();
             }
 
-            ret.setown(openFile(lfn, partNo, localLocation, pdesc, deployedLocationInfo, dfsSize, dfsDate, crc));
+            ret.setown(openFile(lfn, partNo, localLocation, pdesc, deployedLocationInfo, dfsSize, dfsDate));
 
             if (startFileCopy)
             {
@@ -1203,7 +1185,6 @@ public:
                     }
                 }
             }
-
             if (!lazyOpen)
                 ret->checkOpen();
         }
@@ -2710,7 +2691,7 @@ protected:
         CPPUNIT_ASSERT(wrote==sizeof(int));
         close(f);
 
-        Owned<ILazyFileIO> io = cache.openFile("test.local", 0, "test.local", NULL, remotes, sizeof(int), dummy, 0);
+        Owned<ILazyFileIO> io = cache.openFile("test.local", 0, "test.local", NULL, remotes, sizeof(int), dummy);
         CPPUNIT_ASSERT(io != NULL);
 
         // Reading it should read 1

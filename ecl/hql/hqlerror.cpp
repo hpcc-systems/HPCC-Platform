@@ -240,11 +240,6 @@ IErrorReceiver * createThrowingErrorReceiver()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class HQL_API NullErrorReceiver : public ErrorReceiverSink
-{
-public:
-};
-
 IErrorReceiver * createNullErrorReceiver()
 {
     return new NullErrorReceiver;

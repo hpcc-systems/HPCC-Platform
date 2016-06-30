@@ -403,7 +403,7 @@ public:
         {
             uerr = U_ZERO_ERROR;
             int32_t start = matcher->start(uerr);
-            if (start==_srcLen) break;
+            if ((size32_t) start==_srcLen) break;
             int32_t end = matcher->end(uerr);
             int32_t numUChars = end - start;
 

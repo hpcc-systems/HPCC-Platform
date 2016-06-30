@@ -117,14 +117,14 @@ protected:
     IFSHmode            sharemode;
     IFOmode             openmode;
     IFEflags            extraFlags;
-    atomic_t            bytesRead;
-    atomic_t            bytesWritten;
-    std::atomic<cycle_t> ioReadCycles;
-    std::atomic<cycle_t> ioWriteCycles;
-    std::atomic<__uint64> ioReadBytes;
-    std::atomic<__uint64> ioWriteBytes;
-    std::atomic<__uint64> ioReads;
-    std::atomic<__uint64> ioWrites;
+    RelaxedAtomic<cycle_t> ioReadCycles;
+    RelaxedAtomic<cycle_t> ioWriteCycles;
+    RelaxedAtomic<__uint64> ioReadBytes;
+    RelaxedAtomic<__uint64> ioWriteBytes;
+    RelaxedAtomic<__uint64> ioReads;
+    RelaxedAtomic<__uint64> ioWrites;
+    RelaxedAtomic<unsigned> unflushedReadBytes; // more: If this recorded flushedReadBytes it could have a slightly lower overhead
+    RelaxedAtomic<unsigned> unflushedWriteBytes;
 private:
     void setPos(offset_t pos);
 

@@ -137,11 +137,9 @@ private:
 
     Owned<IRowMatcher> rowMatcher;
 
-    static SpinLock UIDlock;
-    static unsigned nextUIDvalue;
+    static std::atomic<unsigned> nextUIDvalue;
     static inline unsigned nextUID()
     {
-        SpinBlock b(UIDlock);
         return ++nextUIDvalue;
     }
 

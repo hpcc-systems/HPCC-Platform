@@ -61,7 +61,6 @@ void joinMulticastChannel(unsigned channel);
 extern unsigned channels[MAX_CLUSTER_SIZE];     // list of all channel numbers for this node
 extern unsigned channelCount;                   // number of channels this node is doing
 extern unsigned subChannels[MAX_CLUSTER_SIZE];  // maps channel numbers to subChannels for this node
-extern bool suspendedChannels[MAX_CLUSTER_SIZE];// indicates suspended channels for this node
 extern unsigned numSlaves[MAX_CLUSTER_SIZE];    // number of slaves listening on this channel
 extern unsigned replicationLevel[MAX_CLUSTER_SIZE];  // Which copy of the data this channel uses on this slave
 
@@ -329,7 +328,6 @@ extern IProperties *targetAliases;
 
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
-extern bool crcResources;
 extern bool logFullQueries;
 extern bool blindLogging;
 extern bool debugPermitted;
@@ -369,6 +367,7 @@ extern unsigned minFilesOpen[2];
 extern unsigned maxFilesOpen[2];
 extern unsigned restarts;
 extern bool checkCompleted;
+extern bool prestartSlaveThreads;
 extern unsigned preabortKeyedJoinsThreshold;
 extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;

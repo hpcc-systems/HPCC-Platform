@@ -1770,21 +1770,21 @@ unsigned __int64 CFileIO::getStatistic(StatisticKind kind)
     switch (kind)
     {
     case StCycleDiskReadIOCycles:
-        return ioReadCycles.load(std::memory_order_relaxed);
+        return ioReadCycles.load();
     case StCycleDiskWriteIOCycles:
-        return ioWriteCycles.load(std::memory_order_relaxed);
+        return ioWriteCycles.load();
     case StTimeDiskReadIO:
-        return cycle_to_nanosec(ioReadCycles.load(std::memory_order_relaxed));
+        return cycle_to_nanosec(ioReadCycles.load());
     case StTimeDiskWriteIO:
-        return cycle_to_nanosec(ioWriteCycles.load(std::memory_order_relaxed));
+        return cycle_to_nanosec(ioWriteCycles.load());
     case StSizeDiskRead:
-        return ioReadBytes.load(std::memory_order_relaxed);
+        return ioReadBytes.load();
     case StSizeDiskWrite:
-        return ioWriteBytes.load(std::memory_order_relaxed);
+        return ioWriteBytes.load();
     case StNumDiskReads:
-        return ioReads.load(std::memory_order_relaxed);
+        return ioReads.load();
     case StNumDiskWrites:
-        return ioWrites.load(std::memory_order_relaxed);
+        return ioWrites.load();
     }
     return 0;
 }
@@ -1794,7 +1794,7 @@ unsigned __int64 CFileIO::getStatistic(StatisticKind kind)
 //-- Windows implementation -------------------------------------------------
 
 CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
-    : ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0)
+    : ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0), unflushedReadBytes(0), unflushedWriteBytes(0)
 {
     assertex(handle != NULLFILE);
     throwOnError = false;
@@ -1805,8 +1805,6 @@ CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags
     if (extraFlags & IFEnocache)
         if (!isPCFlushAllowed())
             extraFlags = static_cast<IFEflags>(extraFlags & ~IFEnocache);
-    atomic_set(&bytesRead, 0);
-    atomic_set(&bytesWritten, 0);
 }
 
 CFileIO::~CFileIO()
@@ -1907,8 +1905,7 @@ void CFileIO::setSize(offset_t pos)
 
 // More errorno checking TBD
 CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
-    : ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0)
-
+    : ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0), unflushedReadBytes(0), unflushedWriteBytes(0)
 {
     assertex(handle != NULLFILE);
     throwOnError = false;
@@ -1919,8 +1916,6 @@ CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags
     if (extraFlags & IFEnocache)
         if (!isPCFlushAllowed())
             extraFlags = static_cast<IFEflags>(extraFlags & ~IFEnocache);
-    atomic_set(&bytesRead, 0);
-    atomic_set(&bytesWritten, 0);
 #ifdef CFILEIOTRACE
     DBGLOG("CFileIO::CfileIO(%d,%d,%d,%d)", handle, _openmode, _sharemode, _extraFlags);
 #endif
@@ -2003,9 +1998,9 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 
     if ( (extraFlags & IFEnocache) && (ret > 0) )
     {
-        if (atomic_add_and_read(&bytesRead, ret) >= PGCFLUSH_BLKSIZE)
+        if (unflushedReadBytes.add_fetch(ret) >= PGCFLUSH_BLKSIZE)
         {
-            atomic_set(&bytesRead, 0);
+            unflushedReadBytes.store(0);
 #ifdef POSIX_FADV_DONTNEED
             posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
 #endif
@@ -2046,9 +2041,9 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
         throw makeOsException(DISK_FULL_EXCEPTION_CODE, "CFileIO::write");
     if ( (extraFlags & IFEnocache) && (ret > 0) )
     {
-        if (atomic_add_and_read(&bytesWritten, ret) >= PGCFLUSH_BLKSIZE)
+        if (unflushedWriteBytes.add_fetch(ret) >= PGCFLUSH_BLKSIZE)
         {
-            atomic_set(&bytesWritten, 0);
+            unflushedWriteBytes.store(0);
             // [possibly] non-blocking request to write-out dirty pages
             sync_file_region(file, 0, 0);
 #ifdef POSIX_FADV_DONTNEED

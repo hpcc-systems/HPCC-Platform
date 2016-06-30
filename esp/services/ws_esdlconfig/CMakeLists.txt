@@ -27,6 +27,7 @@ project( ws_esdlconfig )
 include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 set (    SRCS
+         ${ESPSCM_GENERATED_DIR}/common_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_esdlconfig_esp.cpp
          ws_esdlconfigplugin.cpp
          ws_esdlconfigservice.cpp

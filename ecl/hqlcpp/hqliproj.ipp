@@ -46,6 +46,7 @@ enum ProjectExprKind
                                         //in output (not nesc evaluated in the input)
     SinkActivity,                       // a sink, but that doesn't necessarily use all input fields.
     CreateRecordSourceActivity,         // a source activity containing a transform i.e., inline table
+    CreateNonEmptyRecordSourceActivity, // as above but can't handle empty output record
     ComplexNonActivity,                 
     AnyTypeActivity,                    // can be created any type.
 };
@@ -128,7 +129,7 @@ public:
     int compareOrder(IHqlExpression * left, IHqlExpression * right) const;
     void createDifference(const UsedFieldSet & left, const UsedFieldSet & right);
     IHqlExpression * createFilteredTransform(IHqlExpression * transform, const UsedFieldSet * exceptions) const;
-    void calcFinalRecord(bool canPack, bool ignoreIfEmpty);
+    void calcFinalRecord(bool canPack, bool ignoreIfEmpty, bool disallowEmpty);
     NestedField * findNested(IHqlExpression * field) const;
     NestedField * findNestedByName(IHqlExpression * field) const;
     void gatherTransformValuesUsed(HqlExprArray * selfSelects, HqlExprArray * parentSelects, HqlExprArray * values, IHqlExpression * selector, IHqlExpression * transform);
@@ -299,7 +300,7 @@ public:
 
     void addAllOutputs();
     IHqlExpression * createOutputProject(IHqlExpression * ds);
-    void finalizeOutputRecord();
+    void finalizeOutputRecord(bool disallowEmpty);
     void inheritRequiredFields(const UsedFieldSet & requiredList);
     bool safeToReorderInput();
     bool safeToReorderOutput();

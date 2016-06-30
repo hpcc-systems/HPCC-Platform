@@ -567,7 +567,7 @@ void CJobManager::run()
                         {
                             if (!jobQConnected)
                             {
-                                jobq->connect();
+                                jobq->connect(true);
                                 jobQConnected = true;
                             }
                             // NB: this is expecting to get an item without delay, timeout JIC.
@@ -613,7 +613,7 @@ void CJobManager::run()
             {
                 if (!jobQConnected)
                 {
-                    jobq->connect();
+                    jobq->connect(true);
                     jobQConnected = true;
                 }
                 IJobQueueItem *_item;

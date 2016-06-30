@@ -35,7 +35,7 @@
 #define EXPORT
 #endif
 
-static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
+__declspec(noreturn) static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 
 static void UNSUPPORTED(const char *feature)
 {
@@ -88,7 +88,7 @@ public:
 
 // Conversions from SqLite3 values to ECL data
 
-static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));
+__declspec(noreturn) static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));
 
 static void typeError(const char *expected, const RtlFieldInfo *field)
 {

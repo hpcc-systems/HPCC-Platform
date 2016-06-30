@@ -57,6 +57,10 @@
 #include <cppunit/ui/text/TestRunner.h>
 #endif
 
+#ifdef _USE_ZLIB
+#include "zcrypt.hpp"
+#endif
+
 //#define TEST_LEGACY_DEPENDENCY_CODE
 
 #define INIFILE "eclcc.ini"
@@ -876,7 +880,14 @@ void EclCC::getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver 
 
 static bool convertPathToModule(StringBuffer & out, const char * filename)
 {
-    const char * dot = strrchr(filename, '.');
+    StringBuffer temp;
+#ifdef _USE_ZLIB
+    removeZipExtension(temp, filename);
+#else
+    temp.append(filename);
+#endif
+
+    const char * dot = strrchr(temp.str(), '.');
     if (dot)
     {
         if (!strieq(dot, ".ecl") && !strieq(dot, ".hql") && !strieq(dot, ".eclmod") && !strieq(dot, ".eclattr"))
@@ -885,7 +896,7 @@ static bool convertPathToModule(StringBuffer & out, const char * filename)
     else
         return false;
 
-    const unsigned copyLen = dot-filename;
+    const unsigned copyLen = dot-temp.str();
     if (copyLen == 0)
         return false;
 

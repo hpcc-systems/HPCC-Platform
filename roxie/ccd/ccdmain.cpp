@@ -55,6 +55,7 @@ unsigned highTimeout = 2000;
 unsigned slaTimeout = 2000;
 unsigned numServerThreads = 30;
 unsigned numSlaveThreads = 30;
+bool prestartSlaveThreads = false;
 unsigned numRequestArrayThreads = 5;
 unsigned headRegionSize;
 unsigned ccdMulticastPort;
@@ -95,7 +96,6 @@ IProperties *targetAliases;
 
 bool allFilesDynamic;
 bool lockSuperFiles;
-bool crcResources;
 bool useRemoteResources;
 bool checkFileDate;
 bool lazyOpen;
@@ -700,7 +700,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         initIbytiDelay = topology->getPropInt("@initIbytiDelay", 50);
         allFilesDynamic = topology->getPropBool("@allFilesDynamic", false);
         lockSuperFiles = topology->getPropBool("@lockSuperFiles", false);
-        crcResources = topology->getPropBool("@crcResources", false);
         ignoreOrphans = topology->getPropBool("@ignoreOrphans", true);
         chunkingHeap = topology->getPropBool("@chunkingHeap", true);
         readTimeout = topology->getPropInt("@readTimeout", 300);
@@ -762,6 +761,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         maxLockAttempts = topology->getPropInt("@maxLockAttempts", 5);
         enableHeartBeat = topology->getPropBool("@enableHeartBeat", true);
         checkCompleted = topology->getPropBool("@checkCompleted", true);
+        prestartSlaveThreads = topology->getPropBool("@prestartSlaveThreads", false);
         preabortKeyedJoinsThreshold = topology->getPropInt("@preabortKeyedJoinsThreshold", 100);
         preabortIndexReadsThreshold = topology->getPropInt("@preabortIndexReadsThreshold", 100);
         defaultMemoryLimit = (memsize_t) topology->getPropInt64("@defaultMemoryLimit", 0);

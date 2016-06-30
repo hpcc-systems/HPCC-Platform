@@ -21,11 +21,13 @@
 #define __JMUTEX__
 
 #include <assert.h>
+#include <atomic>
 #include "jiface.hpp"
 #include "jsem.hpp"
 
 extern jlib_decl void ThreadYield();
 extern jlib_decl void spinUntilReady(atomic_t &value);
+extern jlib_decl void spinUntilReady(std::atomic_uint &value);
 
 
 #ifdef _DEBUG
@@ -39,7 +41,7 @@ extern jlib_decl void spinUntilReady(atomic_t &value);
 #endif
 
 
-#if (_WIN32 || ((__GNUC__ < 4 || (__GNUC_MINOR__ < 1 && __GNUC__ == 4)) || (!defined(__x86_64__) && !defined(__i386__))))
+#ifdef _WIN32
 #define NRESPINLOCK_USE_SPINLOCK
 #endif
 
@@ -373,21 +375,18 @@ public:
 
 class jlib_decl  SpinLock
 {
-    atomic_t value;
-    unsigned nesting;           // not volatile since it is only accessed by one thread at a time
-    struct { volatile ThreadId tid; } owner;
-    inline SpinLock(SpinLock & value __attribute__((unused))) { assert(false); } // dummy to prevent inadvetant use as block
+    std::atomic_uint value{false};  // Use an atomic_uint rather than a bool because it is more efficient on power8
+    unsigned nesting = 0;           // This is not atomic since it is only accessed by one thread at a time
+    std::atomic<ThreadId> owner{0};
+    inline SpinLock(SpinLock & value __attribute__((unused))) = delete; // to prevent inadvertent use as block
 public:
-    inline SpinLock()       
+    inline SpinLock()
     {   
-        owner.tid = 0;
-        nesting = 0;
-        atomic_set(&value, 0); 
     }
 #ifdef _DEBUG
     ~SpinLock()             
     { 
-        if (atomic_read(&value))
+        if (value)
             printf("Warning - Owned Spinlock destroyed"); // can't use PrintLog here!
     }
 #endif
@@ -403,16 +402,17 @@ public:
             assertex(!"SpinLock enter on SCHED_RR thread");
         }
 #endif
-        if (self==owner.tid) {          // this is atomic   
-#ifdef _DEBUG
-            assertex(atomic_read(&value));
-#endif      
+        //owner can only match if it was set on this thread.  Therefore the load can be relaxed since single threaded
+        //code is always sequentially consistent.
+        if (self==owner.load(std::memory_order_relaxed))
+        {
+            dbgassertex(value);
             nesting++;
             return;
         }
-        while (unlikely(!atomic_acquire(&value)))
+        while (unlikely(value.exchange(true, std::memory_order_acquire)))
             spinUntilReady(value);
-        owner.tid = self;
+        owner.store(self, std::memory_order_relaxed);
     }
     inline void leave()
     {
@@ -420,8 +420,8 @@ public:
         //it, so no need for a synchronized access
         if (nesting == 0)
         {
-            owner.tid = 0;
-            atomic_release(&value);
+            owner.store(0, std::memory_order_relaxed);
+            value.store(false, std::memory_order_release);
         }
         else
             nesting--;
@@ -457,28 +457,26 @@ class jlib_decl NonReentrantSpinLock: public SpinLock
 #ifdef _DEBUG
 class jlib_decl NonReentrantSpinLock
 {
-    atomic_t value;
-    struct { volatile ThreadId tid; } owner; // atomic
-    inline NonReentrantSpinLock(NonReentrantSpinLock & value __attribute__((unused))) { assert(false); } // dummy to prevent inadvertent use as block
+    std::atomic_uint value;
+    std::atomic<ThreadId> owner;
+    inline NonReentrantSpinLock(NonReentrantSpinLock & value __attribute__((unused))) = delete; // to prevent inadvertent use as block
 public:
-    inline NonReentrantSpinLock()       
+    inline NonReentrantSpinLock() : value(false), owner(0)
     {
-        owner.tid = 0;
-        atomic_set(&value, 0); 
     }
     inline void enter()       
     { 
         ThreadId self = GetCurrentThreadId(); 
-        assertex(self!=owner.tid); // check for reentrancy
-        while (unlikely(!atomic_acquire(&value)))
+        assertex(self!=owner.load(std::memory_order_relaxed)); // check for reentrancy
+        while (unlikely(value.exchange(true, std::memory_order_acquire)))
             spinUntilReady(value);
-        owner.tid = self;
+        owner.store(self, std::memory_order_relaxed);
     }
     inline void leave()
     { 
-        assertex(GetCurrentThreadId()==owner.tid); // check for spurious leave
-        owner.tid = 0;
-        atomic_release(&value);
+        assertex(GetCurrentThreadId()==owner.load(std::memory_order_relaxed)); // check for spurious leave
+        owner.store(0, std::memory_order_relaxed);
+        value.store(false, std::memory_order_release);
     }
 };
 
@@ -486,21 +484,20 @@ public:
 
 class jlib_decl  NonReentrantSpinLock
 {
-    atomic_t value;
-    inline NonReentrantSpinLock(NonReentrantSpinLock & value __attribute__((unused))) { assert(false); } // dummy to prevent inadvertent use as block
+    std::atomic_uint value;
+    inline NonReentrantSpinLock(NonReentrantSpinLock & value __attribute__((unused))) = delete; // to prevent inadvertent use as block
 public:
-    inline NonReentrantSpinLock()       
+    inline NonReentrantSpinLock() : value(false)
     {   
-        atomic_set(&value, 0); 
     }
     inline void enter()       
     { 
-        while (unlikely(!atomic_acquire(&value)))
+        while (unlikely(value.exchange(true, std::memory_order_acquire)))
             spinUntilReady(value);
     }
     inline void leave()
     { 
-        atomic_release(&value);
+        value.store(false, std::memory_order_release);
     }
 };
 #endif

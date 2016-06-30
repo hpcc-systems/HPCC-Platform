@@ -81,6 +81,14 @@ static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
             return (isFiltered && asSubQuery);
         case no_select:
             return !isTargetSelector(expr);
+        case no_selectnth:
+        {
+            IHqlExpression * ds = expr->queryChild(0);
+            if (!hasSingleRow(ds))
+                return true;
+            expr = ds;
+            break;
+        }
         case no_filter:
             expr = expr->queryChild(0);
             isFiltered = true;
@@ -6192,6 +6200,11 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     return getValue.getClear();
 }
 
+static bool isInternalEmbedAttr(IAtom *name)
+{
+    return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom ||name == importAtom;
+}
+
 IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression * newFuncDef)
 {
     IHqlExpression * body = newFuncDef->queryChild(0);
@@ -6228,7 +6241,7 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
         ForEachChild(idx, bodyCode)
         {
             IHqlExpression *child = bodyCode->queryChild(idx);
-            if (child->isAttribute() && child->queryName() != languageAtom && child->queryName() != importAtom)
+            if (child->isAttribute() && !isInternalEmbedAttr(child->queryName()))
             {
                 StringBuffer attrParam;
                 if (attrArgs.ordinality())
@@ -6273,6 +6286,13 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
             newDefaults.append(*createOmittedValue());
         newDefaults.append(*folded.getClear());
 
+        IHqlExpression *query = bodyCode->queryChild(0);
+        if (!query->queryValue())
+        {
+            newFormals.append(*createParameter(__queryId, newFormals.length(), LINK(unknownUtf8Type), attrs));
+            newDefaults.append(*LINK(query));
+        }
+
         funcdefArgs.append(*formals->clone(newFormals));
         funcdefArgs.append(*createValueSafe(no_sortlist, makeSortListType(NULL), newDefaults));
         unwindChildren(funcdefArgs, newFuncDef, 3);
@@ -6311,8 +6331,11 @@ IHqlExpression * WorkflowTransformer::transformInternalCall(IHqlExpression * tra
         IHqlExpression * ecl = body->queryChild(0);
         if (ecl->getOperator() == no_embedbody && ecl->hasAttribute(languageAtom))
         {
-            // Copy the new default value into the end of the parameters array
-            parameters.append(*LINK(newFuncDef->queryChild(2)->queryChild(parameters.length())));
+            // Copy the new default value(s) into the end of the parameters array
+            IHqlExpression *formals = newFuncDef->queryChild(1);
+            IHqlExpression *defaults = newFuncDef->queryChild(2);
+            while (parameters.length() < formals->numChildren())
+                parameters.append(*LINK(defaults->queryChild(parameters.length())));
         }
     }
 
@@ -7611,6 +7634,9 @@ bool ScalarGlobalTransformer::isComplex(IHqlExpression * expr, bool checkGlobal)
         //single character substring - don't create separate items just for this, since likely to have many of them.
         if (!expr->queryChild(1)->queryValue())
             return true;
+        break;
+    case no_likely:
+    case no_unlikely:
         break;
     default:
         if (expr->isConstant())

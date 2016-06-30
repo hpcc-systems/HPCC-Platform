@@ -20,6 +20,8 @@
 #define JATOMIC_HPP
 #include "platform.h"
 
+#include <atomic>
+
 #ifdef _WIN32
 inline static void spinPause() { YieldProcessor(); }
 #elif defined(_ARCH_X86_64_) || defined(_ARCH_X86_)
@@ -39,6 +41,41 @@ inline static void spinPause() { } // MORE: Is there an equivalent?
 #else
 inline static void spinPause() { }
 #endif
+
+template <typename T>
+auto add_fetch(T & value, decltype(value.load()) delta, std::memory_order order = std::memory_order_seq_cst)  -> decltype(value.load()) { return value.fetch_add(delta, order) + delta; }
+template <typename T>
+auto sub_fetch(T & value, decltype(value.load()) delta, std::memory_order order = std::memory_order_seq_cst)  -> decltype(value.load()) { return value.fetch_sub(delta, order) - delta; }
+
+//Use this class for stats which are gathered, but the values read from other threads do not need to be synchronized
+//NOTE: Counts will never be lost, but the values read from another thread may be inconsistent.
+//E.g., thread 1 updates x than y, thread 2 may read an updated value of y, but an old value of x.
+template <typename T>
+class RelaxedAtomic : public std::atomic<T>
+{
+public:
+    typedef std::atomic<T> BASE;
+    RelaxedAtomic() noexcept = default;
+    constexpr RelaxedAtomic(T _value) noexcept : BASE(_value) { }
+    ~RelaxedAtomic() noexcept = default;
+    RelaxedAtomic(const RelaxedAtomic&) = delete;
+    RelaxedAtomic& operator=(const RelaxedAtomic&) = delete;
+
+    operator T() const noexcept { return load(); }
+    T operator=(T _value) noexcept { store(_value); return _value; }
+    T operator++() noexcept { return BASE::fetch_add(1, std::memory_order_relaxed)+1; }  // ++x
+    T operator--() noexcept { return BASE::fetch_sub(1, std::memory_order_relaxed)-1; }  // --x
+    T operator++(int) noexcept { return BASE::fetch_add(1, std::memory_order_relaxed); } // x++
+    T operator--(int) noexcept { return BASE::fetch_sub(1, std::memory_order_relaxed); } // x--
+
+    void store(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { BASE::store(_value, order); }
+    T load(std::memory_order order = std::memory_order_relaxed) const noexcept { return BASE::load(order); }
+    T exchange(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return BASE::exchange(_value, order); }
+    T fetch_add(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return BASE::fetch_add(_value, order); }
+    T fetch_sub(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return BASE::fetch_add(_value, order); }
+    T add_fetch(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return ::add_fetch(*this, _value, order); }
+    T sub_fetch(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return ::sub_fetch(*this, _value, order); }
+};
 
 #ifdef _WIN32
 

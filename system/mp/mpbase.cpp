@@ -216,8 +216,6 @@ public:
             }
             if (r2==0)
                 return GRdisjoint;
-            bool notin1=false;
-            bool notin2=false;
             bool somematch=false;
             if (r1==r2) { // check for identical
                 r=r1;
@@ -698,7 +696,7 @@ IGroup *createIGroup(const char *endpointlist,unsigned short defport)
     if (oldform) {
         SocketListParser list(endpointlist);
         SocketEndpointArray eparray;
-        unsigned n = list.getSockets(eparray,defport);
+        list.getSockets(eparray,defport);
         return createIGroup(eparray);
     }
     return CGroup::fromText(endpointlist,defport);

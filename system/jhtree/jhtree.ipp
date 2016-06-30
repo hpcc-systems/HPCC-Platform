@@ -81,8 +81,8 @@ protected:
     CKeyHdr *keyHdr;
     CNodeCache *cache;
     CJHTreeNode *rootNode;
-    atomic_t keySeeks;
-    atomic_t keyScans;
+    RelaxedAtomic<unsigned> keySeeks;
+    RelaxedAtomic<unsigned> keyScans;
     offset_t latestGetNodeOffset;
 
     CJHTreeNode *loadNode(char *nodeData, offset_t pos, bool needsCopy);
@@ -113,11 +113,11 @@ public:
 
     virtual unsigned numParts() { return 1; }
     virtual IKeyIndex *queryPart(unsigned idx) { return idx ? NULL : this; }
-    virtual unsigned queryScans() { return atomic_read(&keyScans); }
-    virtual unsigned querySeeks() { return atomic_read(&keySeeks); }
+    virtual unsigned queryScans() { return keyScans; }
+    virtual unsigned querySeeks() { return keySeeks; }
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize);
     virtual offset_t queryBlobHead() { return keyHdr->getHdrStruct()->blobHead; }
-    virtual void resetCounts() { atomic_set(&keyScans, 0); atomic_set(&keySeeks, 0); }
+    virtual void resetCounts() { keyScans.store(0); keySeeks.store(0); }
     virtual offset_t queryLatestGetNodeOffset() const { return latestGetNodeOffset; }
     virtual offset_t queryMetadataHead();
     virtual IPropertyTree * getMetadata();

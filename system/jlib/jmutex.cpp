@@ -450,3 +450,17 @@ void spinUntilReady(atomic_t &value)
         }
     }
 }
+
+void spinUntilReady(std::atomic_uint &value)
+{
+    unsigned i = 0;
+    const unsigned maxSpins = 10;
+    while (value.load(std::memory_order_relaxed))
+    {
+        if (i++ == maxSpins)
+        {
+            i = 0;
+            ThreadYield();
+        }
+    }
+}

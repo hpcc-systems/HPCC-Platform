@@ -63,7 +63,7 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
-static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
+__declspec(noreturn) static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 
 static void UNSUPPORTED(const char *feature)
 {
@@ -3032,7 +3032,7 @@ protected:
     jobject instance; //instance of service object to call methods on
 private:
 
-    void typeError(const char *ECLtype) __attribute__((noreturn))
+    __declspec(noreturn) void typeError(const char *ECLtype) __attribute__((noreturn))
     {
         const char *javaType;
         int javaLen = 0;

@@ -768,6 +768,7 @@ struct HqlCppOptions
     bool                forceAllDatasetsParallel;
     bool                embeddedWarningsAsErrors;
     bool                optimizeCriticalFunctions;
+    bool                addLikelihoodToGraph;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

@@ -452,7 +452,7 @@ protected:
 
         CDistributorBase &owner;
         mutable CriticalSection activeWritersLock;
-        mutable SpinLock totalSzLock;
+        mutable SpinLock totalSzLock; // MORE: Could possibly use an atomic to reduce the scope of this spin lock
         SpinLock doDedupLock;
         IPointerArrayOf<CSendBucket> buckets;
         UnsignedArray candidates;
@@ -533,8 +533,8 @@ protected:
         }
         void decTotal(size32_t sz)
         {
-            SpinBlock b(totalSzLock);
             HDSendPrintLog2("decTotal - %d", sz);
+            SpinBlock b(totalSzLock);
             totalSz -= sz;
             if (sz && senderFull)
             {

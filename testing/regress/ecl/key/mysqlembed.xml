@@ -5,43 +5,52 @@
  <Row><name>utf8test</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2><dt>2019-02-01 23:59:59</dt></Row>
 </Dataset>
 <Dataset name='Result 2'>
- <Row><Result_2>name1</Result_2></Row>
+ <Row><Result_2>2</Result_2></Row>
 </Dataset>
 <Dataset name='Result 3'>
- <Row><name>name1</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2><dt>1963-11-22 12:30:00</dt></Row>
+ <Row><name>name1</name></Row>
+ <Row><name>name2</name></Row>
+ <Row><name>nulls</name></Row>
+ <Row><name>utf8test</name></Row>
 </Dataset>
 <Dataset name='Result 4'>
- <Row><Result_4>utf8test</Result_4></Row>
+ <Row><Result_4>name1</Result_4></Row>
 </Dataset>
 <Dataset name='Result 5'>
- <Row><name>utf8test</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2><dt>2019-02-01 23:59:59</dt></Row>
+ <Row><name>name1</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2><dt>1963-11-22 12:30:00</dt></Row>
 </Dataset>
 <Dataset name='Result 6'>
+ <Row><Result_6>utf8test</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><name>utf8test</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2><dt>2019-02-01 23:59:59</dt></Row>
+</Dataset>
+<Dataset name='Result 8'>
  <Row><name>name1</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2><dt>1963-11-22 12:30:00</dt></Row>
  <Row><name>name2</name><value>2</value><boolval>false</boolval><r8>5.6</r8><r4>7.800000190734863</r4><d>3030</d><ddd>-1234567.89</ddd><u1>là</u1><u2>là      </u2><dt>2015-12-25 01:23:45</dt></Row>
 </Dataset>
-<Dataset name='Result 7'>
- <Row><Result_7>4</Result_7></Row>
-</Dataset>
-<Dataset name='Result 8'>
- <Row><Result_8>true</Result_8></Row>
-</Dataset>
 <Dataset name='Result 9'>
- <Row><Result_9>5.6</Result_9></Row>
+ <Row><Result_9>4</Result_9></Row>
 </Dataset>
 <Dataset name='Result 10'>
- <Row><Result_10>7.800000190734863</Result_10></Row>
+ <Row><Result_10>true</Result_10></Row>
 </Dataset>
 <Dataset name='Result 11'>
- <Row><Result_11>6161353561613535</Result_11></Row>
+ <Row><Result_11>5.6</Result_11></Row>
 </Dataset>
 <Dataset name='Result 12'>
- <Row><Result_12>Straße</Result_12></Row>
+ <Row><Result_12>7.800000190734863</Result_12></Row>
 </Dataset>
 <Dataset name='Result 13'>
- <Row><Result_13>Straße  </Result_13></Row>
+ <Row><Result_13>6161353561613535</Result_13></Row>
 </Dataset>
 <Dataset name='Result 14'>
+ <Row><Result_14>Straße</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>Straße  </Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
  <Row><dt1>19631122123000</dt1><dt2>1963-11-22 12:30:00</dt2></Row>
  <Row><dt1>20151225012345</dt1><dt2>2015-12-25 01:23:45</dt2></Row>
  <Row><dt1>0</dt1><dt2>                   </dt2></Row>

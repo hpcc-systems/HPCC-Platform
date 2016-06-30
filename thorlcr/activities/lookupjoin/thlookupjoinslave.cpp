@@ -566,6 +566,8 @@ class CMarker
 
     rowidx_t getMore(rowidx_t &startRow) // NB: returns end row #
     {
+        //NOTE: If we could guarantee that nextChunkStartRow could not overflow then the spin lock could be replaced
+        //with a atomic fetch_add().
         NonReentrantSpinBlock block(lock);
         if (nextChunkStartRow == rowCount)
             return 0;

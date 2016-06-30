@@ -15,7 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#ifdef _WIN32
 #pragma warning(disable:4786)
+#endif
 
 #include "esdl_utils.hpp"
 
@@ -1108,7 +1110,6 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const cha
     splitFilename(sourceFile, &prot, &srcDir, &name, &ext);
 
     filename = strdup(sourceFile);
-    size_t l = strlen(filename);
 
     yyin = fopen(sourceFile, "rt");
     if (!yyin)

@@ -23,6 +23,7 @@ ESPStruct LogItem
 
 ESPrequest [] GetTransactionSeedRequest
 {
+    string Application;
 };
 
 ESPresponse [exceptions_inline] LoggingServiceResponse

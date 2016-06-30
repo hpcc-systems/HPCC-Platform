@@ -216,7 +216,7 @@ class CDFUengine: public CInterface, implements IDFUengine
         int run()
         {
             try {
-                queue->connect();
+                queue->connect(false);
             }
             catch (IException *e) {
                 EXCLOG(e, "DFURUN Server Connect queue: ");

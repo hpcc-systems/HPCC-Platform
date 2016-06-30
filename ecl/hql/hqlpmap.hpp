@@ -32,7 +32,7 @@ class TableProjectMapper;
 class HQL_API NewProjectMapper2 : public CInterface
 {
 public:
-    NewProjectMapper2() { ignoreMissingFields = false; mapping = NULL; matchedAll = true; expandCallback = NULL; }
+    NewProjectMapper2() { mapping = NULL; matchedAll = true; expandCallback = NULL; }
 
     //if newDataset is NULL, the mapping stored in the transform is returned unchanged (useful for seeing if filters can move over joins)
     IHqlExpression * expandFields(IHqlExpression * expr, IHqlExpression * oldDataset, IHqlExpression * newDataset, IHqlExpression * mapperParent, IExpandCallback * _expandCallback = NULL);
@@ -44,7 +44,6 @@ public:
     void initSelf(IHqlExpression * dataset);
     bool isMappingKnown();
     inline IHqlExpression * querySelf() { return self; }
-    void setIgnoreMissing() { ignoreMissingFields = true; }
     void setMapping(IHqlExpression * mapping);
     void setUnknownMapping();
 
@@ -83,7 +82,7 @@ private:
     CIArrayOf<NewProjectMapper2> children;
     OwnedHqlExpr self;
     IHqlExpression * mapping;
-    bool ignoreMissingFields;
+    bool insideSelectorReference = false;
     //Following are only set when expanding/contracting
     bool matchedAll;
     IExpandCallback * expandCallback;

@@ -35,57 +35,10 @@
 #include "thdiskbaseslave.ipp"
 #include "thindexreadslave.ipp"
 
-static IKeyManager *getKeyManager(IKeyIndex *keyIndex, IHThorIndexReadBaseArg *helper, size32_t fixedDiskRecordSize)
-{
-    Owned<IKeyManager> klManager = createKeyManager(keyIndex, fixedDiskRecordSize, NULL);
-    helper->createSegmentMonitors(klManager);
-    klManager->finishSegmentMonitors();
-    klManager->reset();
-    return klManager.getClear();
-}
-
-static IKeyIndex *openKeyPart(CActivityBase *activity, IPartDescriptor &partDesc)
-{
-    RemoteFilename rfn;
-    partDesc.getFilename(0, rfn);
-    StringBuffer filePath;
-    rfn.getPath(filePath);
-    unsigned crc=0;
-    partDesc.getCrc(crc);
-    Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*activity, partDesc);
-    return createKeyIndex(filePath.str(), crc, *lfile, false, false);
-}
-
-
-
-class CIndexReadSlaveBase;
-class CIndexPartHandlerHelper
-{
-protected:
-    CIndexReadSlaveBase &activity;
-    Linked<IPartDescriptor> partDesc;
-    Owned<IKeyIndex> keyIndex;
-    Owned<IKeyManager> klManager;
-    MemoryAttr keybuf;
-    size32_t recSize;
-    bool eoi;
-
-public:
-    CIndexPartHandlerHelper(CIndexReadSlaveBase &_activity);
-    rowcount_t getCount(const rowcount_t &keyedLimit);
-    const void *nextKey();  // NB not link counted row
-    const void *getKeyPtr(); // nor this
-
-    void setPart(IPartDescriptor *_partDesc, unsigned partNoSerialized);
-
-    void reset();
-
-friend class CIndexReadSlaveBase;
-};
-
 enum AdditionStats { AS_Seeks, AS_Scans };
 class CIndexReadSlaveBase : public CSlaveActivity
 {
+    typedef CSlaveActivity PARENT;
 protected:
     StringAttr logicalFilename;
     IArrayOf<IPartDescriptor> partDescs;
@@ -94,13 +47,20 @@ protected:
     Owned<IEngineRowAllocator> allocator;
     Owned<IOutputRowDeserializer> deserializer;
     Owned<IOutputRowSerializer> serializer;
-    bool localKey;
-    __int64 lastSeeks, lastScans;
+    bool localKey = false;
+    __int64 lastSeeks = 0, lastScans = 0;
     UInt64Array _statsArr;
-    SpinLock statLock;
-    unsigned __int64 *statsArr;
-    size32_t fixedDiskRecordSize;
-    rowcount_t progress;
+    SpinLock statLock;  // MORE: Can this be avoided by passing in the delta?
+    unsigned __int64 *statsArr = nullptr;
+    size32_t fixedDiskRecordSize = 0;
+    rowcount_t progress = 0;
+    unsigned currentKM = 0;
+    bool eoi = false;
+    IArrayOf<IKeyManager> keyManagers;
+    IKeyManager *currentManager = nullptr;
+    Owned<IKeyManager> keyMergerManager;
+    Owned<IKeyIndexSet> keyIndexSet;
+    bool keyMergerInUse = false;
 
     class TransformCallback : public CSimpleInterface, implements IThorIndexCallback 
     {
@@ -141,8 +101,26 @@ protected:
     virtual bool keyed() { return false; }
     void setManager(IKeyManager *manager)
     {
+        clearManager();
+        currentManager = manager;
         callback.setManager(manager);
         resetLastStats();
+        helper->createSegmentMonitors(currentManager);
+        currentManager->finishSegmentMonitors();
+        currentManager->reset();
+        keyMergerInUse = (manager == keyMergerManager);
+    }
+    void clearManager()
+    {
+        if (currentManager)
+        {
+            callback.clearManager();
+            if (keyMergerInUse)
+                keyMergerManager->reset(); // JCSMORE - not entirely sure why necessary, if not done, resetPending is false. Should releaseSegmentMonitors() handle?
+            currentManager->releaseSegmentMonitors();
+            currentManager = nullptr;
+            keyMergerInUse = false;
+        }
     }
     const void *createKeyedLimitOnFailRow()
     {
@@ -152,16 +130,74 @@ protected:
             return row.finalizeRowClear(sz);
         return NULL;
     }
-
+    IKeyIndex *openKeyPart(IPartDescriptor &partDesc)
+    {
+        RemoteFilename rfn;
+        partDesc.getFilename(0, rfn);
+        StringBuffer filePath;
+        rfn.getPath(filePath);
+        unsigned crc=0;
+        partDesc.getCrc(crc);
+        Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, partDesc);
+        return createKeyIndex(filePath.str(), crc, *lfile, false, false);
+    }
+    const void *nextKey()
+    {
+        if (eoi)
+            return nullptr;
+        const void *ret = nullptr;
+        dbgassertex(currentManager);
+        loop
+        {
+            if (currentManager->lookup(true))
+            {
+                noteStats(currentManager->querySeeks(), currentManager->queryScans());
+                ret = (const void *)currentManager->queryKeyBuffer(callback.getFPosRef());
+            }
+            if (ret || keyMergerManager)
+                break;
+            ++currentKM;
+            if (currentKM >= keyManagers.ordinality())
+                break;
+            else
+                setManager(&keyManagers.item(currentKM));
+        }
+        if (NULL == ret || keyed())
+        {
+            eoi = true;
+            return nullptr;
+        }
+        return ret;
+    }
 public:
     CIndexReadSlaveBase(CGraphElementBase *container) 
         : CSlaveActivity(container)
     {
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
-        localKey = false;
+        limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(helper->selectInterface(TAIsourcelimittransformextra_1));
         fixedDiskRecordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta()->getFixedSize(); // 0 if variable and unused
-        progress = 0;
         reInit = 0 != (helper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
+    }
+    rowcount_t getCount(const rowcount_t keyedLimit, bool hard)
+    {
+        if (0 == partDescs.ordinality())
+            return 0;
+        // Note - don't use merger's count - it doesn't work
+        unsigned __int64 count = 0;
+        for (unsigned p=0; p<partDescs.ordinality(); p++)
+        {
+            IKeyManager &keyManager = keyManagers.item(p);
+            setManager(&keyManager);
+            if (hard) // checkCount checks hard key count only.
+                count += keyManager.checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
+            else
+                count += keyManager.getCount();
+            noteStats(keyManager.querySeeks(), keyManager.queryScans());
+            if (count > keyedLimit)
+                break;
+        }
+        clearManager();
+        return (rowcount_t)count;
     }
     rowcount_t sendGetCount(rowcount_t count)
     {
@@ -173,11 +209,6 @@ public:
     inline void resetLastStats()
     {
         lastSeeks = lastScans = 0;
-    }
-    inline void incScan()
-    {
-        SpinBlock b(statLock);
-        lastScans++;
     }
     inline void noteStats(unsigned seeks, unsigned scans)
     {
@@ -202,12 +233,42 @@ public:
         allocator.set(queryRowAllocator());
         deserializer.set(queryRowDeserializer());
         serializer.set(queryRowSerializer());
-        limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(helper->selectInterface(TAIsourcelimittransformextra_1));
         helper->setCallback(&callback);
         _statsArr.append(0);
         _statsArr.append(0);
         statsArr = _statsArr.getArray();
         lastSeeks = lastScans = 0;
+        keyIndexSet.setown(createKeyIndexSet());
+        ForEachItemIn(p, partDescs)
+        {
+            Owned<IKeyIndex> keyIndex = openKeyPart(partDescs.item(p));
+            Owned<IKeyManager> klManager = createKeyManager(keyIndex, fixedDiskRecordSize, NULL);
+            keyManagers.append(*klManager.getClear());
+            keyIndexSet->addIndex(keyIndex.getClear());
+        }
+    }
+    // IThorDataLink
+    virtual void start() override
+    {
+        ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
+
+        eoi = false;
+        if (partDescs.ordinality())
+        {
+            if (keyMergerManager)
+                setManager(keyMergerManager);
+            else
+                setManager(&keyManagers.item(0));
+        }
+        else
+            eoi = true;
+    }
+    virtual void reset() override
+    {
+        PARENT::reset();
+        currentKM = 0;
+        clearManager();
     }
     void serializeStats(MemoryBuffer &mb)
     {
@@ -216,74 +277,6 @@ public:
         ForEachItemIn(s, _statsArr)
             mb.append(_statsArr.item(s));
     }
-
-friend class CIndexPartHandlerHelper;
-};
-
-CIndexPartHandlerHelper::CIndexPartHandlerHelper(CIndexReadSlaveBase &_activity) 
-    : activity(_activity)
-{
-    eoi = false;
-    recSize = 0;
-}
-
-rowcount_t CIndexPartHandlerHelper::getCount(const rowcount_t &keyedLimit)
-{
-    assertex(partDesc);
-    unsigned __int64 count = klManager->checkCount(keyedLimit);
-    assertex(count == (rowcount_t)count);
-    activity.noteStats(klManager->querySeeks(), klManager->queryScans());
-    klManager->reset();
-    activity.resetLastStats();
-    return (rowcount_t)count;
-}
-
-void CIndexPartHandlerHelper::setPart(IPartDescriptor *_partDesc, unsigned partNoSerialized)
-{
-    reset();
-    partDesc.set(_partDesc);
-    keyIndex.setown(openKeyPart(&activity, *partDesc));
-    recSize = keyIndex->keySize(); 
-    klManager.setown(getKeyManager(keyIndex, activity.helper, activity.fixedDiskRecordSize));
-    activity.setManager(klManager);
-}
-
-const void *CIndexPartHandlerHelper::nextKey()
-{
-    if (klManager->lookup(true))
-    {
-        activity.noteStats(klManager->querySeeks(), klManager->queryScans());
-        return (const void *)klManager->queryKeyBuffer(activity.callback.getFPosRef());
-    }
-    return NULL;
-}
-
-const void *CIndexPartHandlerHelper::getKeyPtr()
-{
-    if (eoi) 
-        return NULL; 
-    const void *r = nextKey();
-    if (NULL == r || activity.keyed())
-        return NULL;
-    return r;
-}
-
-void CIndexPartHandlerHelper::reset()
-{
-    activity.callback.clearManager();
-    if (klManager.get())
-    {
-        klManager->releaseSegmentMonitors();
-        klManager.clear();
-    }
-    keyIndex.clear();
-    partDesc.clear();
-}
-
-
-interface IRowStreamStepping : extends IRowStream
-{
-    virtual const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) = 0;
 };
 
 class CIndexReadSlaveActivity : public CIndexReadSlaveBase
@@ -291,229 +284,122 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
     typedef CIndexReadSlaveBase PARENT;
 
     IHThorIndexReadArg *helper;
-    rowcount_t rowLimit, stopAfter;
-    bool keyedLimitSkips, first, eoi, needTransform, optimizeSteppedPostFilter, steppingEnabled;
-    Owned<IRowStreamStepping> out;
-    rowcount_t keyedLimit, helperKeyedLimit;
-    rowcount_t keyedLimitCount;
-    unsigned keyedProcessed;
+    rowcount_t rowLimit = RCMAX, stopAfter = 0;
+    bool keyedLimitSkips = false, first = false, needTransform = false, optimizeSteppedPostFilter = false, steppingEnabled = false;
+    rowcount_t keyedLimit = RCMAX, helperKeyedLimit = RCMAX;
+    rowcount_t keyedLimitCount = RCMAX;
+    unsigned keyedProcessed = 0;
     ISteppingMeta *rawMeta;
     ISteppingMeta *projectedMeta;
     IInputSteppingMeta *inputStepping;
     IRangeCompare *stepCompare;
     IHThorSteppedSourceExtra *steppedExtra;
     CSteppingMeta steppingMeta;
-    size32_t seekGEOffset;
     UnsignedArray seekSizes;
+    size32_t seekGEOffset = 0;
 
-    class CIndexReadHelper : public CSimpleInterface, implements IRowStreamStepping
+    const void *getNextRow()
     {
-        CIndexReadSlaveActivity &activity;
-    protected:
-        Owned<IKeyManager> klManager;
-        MemoryAttr keybuf;
-
-        unsigned currentPart;
-        bool merger;
-        size32_t recSize;
-        bool eoi;
-    public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-        CIndexReadHelper(CIndexReadSlaveActivity &_activity) : activity(_activity)
+        RtlDynamicRowBuilder ret(allocator);
+        loop
         {
-            eoi = false;
-            recSize = 0;
-            currentPart = 0;
-            merger = false;
-            init();
-        }
-        void init()
-        {
-            Owned<IKeyIndex> keyIndex;
-            if (activity.seekGEOffset || activity.localKey)
+            const void *r = nextKey();
+            if (!r)
+                break;
+            if (needTransform)
             {
-                Owned<IKeyIndexSet> keyIndexSet = createKeyIndexSet();
-                ForEachItemIn(p, activity.partDescs)
+                size32_t sz = helper->transform(ret, r);
+                if (sz)
                 {
-                    keyIndex.setown(openKeyPart(&activity, activity.partDescs.item(p)));
-                    keyIndexSet->addIndex(keyIndex.getClear());
-                }
-                klManager.setown(createKeyMerger(keyIndexSet, activity.fixedDiskRecordSize, activity.seekGEOffset, NULL));
-                merger = true;
-            }
-            else
-            {
-                keyIndex.setown(openKeyPart(&activity, activity.partDescs.item(0)));
-                klManager.setown(createKeyManager(keyIndex, activity.fixedDiskRecordSize, NULL));
-            }
-            activity.helper->createSegmentMonitors(klManager);
-            klManager->finishSegmentMonitors();
-            klManager->reset();
-            activity.setManager(klManager);
-            activity.resetLastStats();
-        }
-        rowcount_t getCount(const rowcount_t &keyedLimit)
-        {
-            unsigned __int64 count = 0;
-            // Note - don't use merger's count - it doesn't work
-            ForEachItemIn(p, activity.partDescs)
-            {
-                activity.callback.clearManager();
-                klManager->releaseSegmentMonitors();
-                Owned<IKeyIndex> keyIndex = openKeyPart(&activity, activity.partDescs.item(p));
-                klManager.setown(getKeyManager(keyIndex, activity.helper, activity.fixedDiskRecordSize));
-                activity.setManager(klManager);
-                count += klManager->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
-                activity.noteStats(klManager->querySeeks(), klManager->queryScans());
-                if (count > keyedLimit)
-                    break;
-            }
-            activity.callback.clearManager();
-            klManager->releaseSegmentMonitors();
-            init();
-            return (rowcount_t)count;
-        }
-        const void *nextKey()
-        {
-            if (eoi) 
-                return NULL;
-            const void *ret = NULL;
-            loop
-            {
-                if (klManager->lookup(true))
-                {
-                    activity.noteStats(klManager->querySeeks(), klManager->queryScans());
-                    ret = (const void *)klManager->queryKeyBuffer(activity.callback.getFPosRef());
-                }
-                if (ret || merger)
-                    break;
-                ++currentPart;
-                if (currentPart >= activity.partDescs.ordinality())
-                    break;
-                else
-                {
-                    activity.callback.clearManager();
-                    klManager->releaseSegmentMonitors();
-                    Owned<IKeyIndex> keyIndex = openKeyPart(&activity, activity.partDescs.item(currentPart));
-                    klManager.setown(getKeyManager(keyIndex, activity.helper, activity.fixedDiskRecordSize));
-                    activity.setManager(klManager);
-                }
-            }
-            if (NULL == ret || activity.keyed())
-            {
-                eoi = true;
-                return NULL;
-            }
-            return ret;
-        }
-        const void *nextKeyGE(const void *seek, unsigned numFields)
-        {
-            assertex(merger);
-            const byte *rawSeek = (const byte *)seek + activity.seekGEOffset;
-            unsigned seekSize = activity.seekSizes.item(numFields-1);
-            if (activity.projectedMeta)
-            {
-                byte *temp = (byte *) alloca(seekSize);
-                //GH: Is it overkill to use a builder as the target here??
-                RtlStaticRowBuilder tempBuilder(temp - activity.seekGEOffset, activity.seekGEOffset+seekSize);
-                activity.helper->mapOutputToInput(tempBuilder, seek, numFields); // NOTE - weird interface to mapOutputToInput means that it STARTS writing at seekGEOffset...
-                rawSeek = (byte *)temp;
-            }
-            if (!klManager->lookupSkip(rawSeek, activity.seekGEOffset, seekSize))
-                return NULL;
-            activity.noteStats(klManager->querySeeks(), klManager->queryScans());
-            const byte *row = klManager->queryKeyBuffer(activity.callback.getFPosRef());
-#ifdef _DEBUG
-            if (memcmp(row + activity.seekGEOffset, rawSeek, seekSize) < 0)
-                assertex("smart seek failure");
-#endif
-            if (activity.keyed())
-            {
-                eoi = true;
-                return NULL;
-            }
-            return row;
-        }
-// IRowStreamStepping impl.
-        virtual void stop()
-        {
-            klManager.clear();
-        }
-        virtual const void *nextRow()
-        {
-            RtlDynamicRowBuilder ret(activity.allocator);
-            loop
-            {
-                const void *r = nextKey();
-                if (!r)
-                    break;
-                if (activity.needTransform)
-                {
-                    size32_t sz = activity.helper->transform(ret, r);
-                    if (sz)
-                    {
-                        activity.callback.finishedRow();
-                        return ret.finalizeRowClear(sz);
-                    }
-                }
-                else
-                {
-                    size32_t sz = activity.queryRowMetaData()->getRecordSize(r);
-                    memcpy(ret.ensureCapacity(sz, NULL), r, sz);
+                    callback.finishedRow();
                     return ret.finalizeRowClear(sz);
                 }
             }
+            else
+            {
+                size32_t sz = queryRowMetaData()->getRecordSize(r);
+                memcpy(ret.ensureCapacity(sz, NULL), r, sz);
+                return ret.finalizeRowClear(sz);
+            }
+        }
+        return nullptr;
+    }
+    const void *nextKeyGE(const void *seek, unsigned numFields)
+    {
+        assertex(keyMergerManager.get());
+        const byte *rawSeek = (const byte *)seek + seekGEOffset;
+        unsigned seekSize = seekSizes.item(numFields-1);
+        if (projectedMeta)
+        {
+            byte *temp = (byte *) alloca(seekSize);
+            //GH: Is it overkill to use a builder as the target here??
+            RtlStaticRowBuilder tempBuilder(temp - seekGEOffset, seekGEOffset+seekSize);
+            helper->mapOutputToInput(tempBuilder, seek, numFields); // NOTE - weird interface to mapOutputToInput means that it STARTS writing at seekGEOffset...
+            rawSeek = (byte *)temp;
+        }
+        if (!currentManager->lookupSkip(rawSeek, seekGEOffset, seekSize))
+            return NULL;
+        noteStats(currentManager->querySeeks(), currentManager->queryScans());
+        const byte *row = currentManager->queryKeyBuffer(callback.getFPosRef());
+#ifdef _DEBUG
+        if (memcmp(row + seekGEOffset, rawSeek, seekSize) < 0)
+            assertex("smart seek failure");
+#endif
+        if (keyed())
+        {
+            eoi = true;
             return NULL;
         }
-        virtual const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
+        return row;
+    }
+    const void *getNextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
+    {
+        RtlDynamicRowBuilder ret(allocator);
+        size32_t seekSize = seekSizes.item(numFields-1);
+        loop
         {
-            RtlDynamicRowBuilder ret(activity.allocator);
-            size32_t seekSize = activity.seekSizes.item(numFields-1);
-            loop
-            {
-                const void *r = nextKeyGE(seek, numFields);
-                if (!r)
-                    break;
+            const void *r = nextKeyGE(seek, numFields);
+            if (!r)
+                break;
 #ifdef _DEBUG
-                if (seek && memcmp((byte *)r + activity.seekGEOffset, seek, seekSize) < 0)
-                    assertex(!"smart seek failure");
+            if (seek && memcmp((byte *)r + seekGEOffset, seek, seekSize) < 0)
+                assertex(!"smart seek failure");
 #endif
-                if (activity.needTransform)
+            if (needTransform)
+            {
+                size32_t sz = helper->transform(ret, r);
+                if (sz)
                 {
-                    size32_t sz = activity.helper->transform(ret, r);
-                    if (sz)
+                    callback.finishedRow();
+                    return ret.finalizeRowClear(sz);
+                }
+                else
+                {
+                    if (optimizeSteppedPostFilter && stepExtra.returnMismatches())
                     {
-                        activity.callback.finishedRow();
-                        return ret.finalizeRowClear(sz);
-                    }
-                    else
-                    {
-                        if (activity.optimizeSteppedPostFilter && stepExtra.returnMismatches())
+                        if (memcmp(ret.getSelf() + seekGEOffset, seek, seekSize) != 0)
                         {
-                            if (memcmp(ret.getSelf() + activity.seekGEOffset, seek, seekSize) != 0)
+                            size32_t sz = helper->unfilteredTransform(ret, r);
+                            if (sz)
                             {
-                                size32_t sz = activity.helper->unfilteredTransform(ret, r);
-                                if (sz)
-                                {
-                                    wasCompleteMatch = false;
-                                    activity.callback.finishedRow();
-                                    return ret.finalizeRowClear(sz);
-                                }
+                                wasCompleteMatch = false;
+                                callback.finishedRow();
+                                return ret.finalizeRowClear(sz);
                             }
                         }
                     }
                 }
-                else
-                {
-                    size32_t sz = activity.queryRowMetaData()->getRecordSize(r);
-                    memcpy(ret.ensureCapacity(sz, NULL), r, sz);
-                    return ret.finalizeRowClear(sz);
-                }
             }
-            return NULL;
+            else
+            {
+                size32_t sz = queryRowMetaData()->getRecordSize(r);
+                memcpy(ret.ensureCapacity(sz, NULL), r, sz);
+                return ret.finalizeRowClear(sz);
+            }
         }
-    };
+        return nullptr;
+    }
+
     const void *checkLimit(bool &limitHit)
     {
         limitHit = false;
@@ -553,20 +439,11 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
 public:
     CIndexReadSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
-        keyedLimitSkips = false;
-        first = true;
-        eoi = false;
-        helperKeyedLimit = keyedLimit = RCMAX;
-        keyedLimitCount = RCMAX;
-        keyedProcessed = 0;
         helper = (IHThorIndexReadArg *)queryContainer().queryHelper();
-        stopAfter = 0;
-        needTransform = false;
         rawMeta = helper->queryRawSteppingMeta();
         projectedMeta = helper->queryProjectedSteppingMeta();
         steppedExtra = static_cast<IHThorSteppedSourceExtra *>(helper->selectInterface(TAIsteppedsourceextra_1));
         optimizeSteppedPostFilter = (helper->getFlags() & TIRunfilteredtransform) != 0;
-        seekGEOffset = 0;
         steppingEnabled = 0 != container.queryJob().getWorkUnitValueInt("steppingEnabled", 0);
         if (rawMeta)
         {
@@ -580,10 +457,6 @@ public:
                 seekSizes.append(seekSizes.item(i-1) + fields[i].size);
         }
         appendOutputLinked(this);
-    }
-    ~CIndexReadSlaveActivity()
-    {
-        out.clear();
     }
     virtual bool keyed()
     {
@@ -600,7 +473,7 @@ public:
     }
 
 // IThorSlaveActivity
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         CIndexReadSlaveBase::init(data, slaveData);
 
@@ -612,10 +485,12 @@ public:
             else
                 steppingMeta.init(rawMeta, hasPostFilter);
         }
+        if ((seekGEOffset || localKey))
+            keyMergerManager.setown(createKeyMerger(keyIndexSet, fixedDiskRecordSize, seekGEOffset, NULL));
     }
 
 // IThorDataLink
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
@@ -635,27 +510,30 @@ public:
         }
 
         first = true;
-        eoi = false;
         keyedLimit = helperKeyedLimit;
         keyedLimitCount = RCMAX;
         keyedProcessed = 0;
         if (steppedExtra)
             steppingMeta.setExtra(steppedExtra);
 
-        if (partDescs.ordinality())
+        if (currentManager)
         {
-            Owned<CIndexReadHelper> indexReadHelper = new CIndexReadHelper(*this);
             if ((keyedLimit != RCMAX && (keyedLimitSkips || (helper->getFlags() & TIRcountkeyedlimit) != 0)))
-                keyedLimitCount = indexReadHelper->getCount(keyedLimit);
-            eoi = false;
-            out.setown(indexReadHelper.getClear());
+            {
+                IKeyManager *_currentManager = currentManager;
+                keyedLimitCount = getCount(keyedLimit, true);
+                setManager(_currentManager);
+            }
         }
         else if ((keyedLimit != RCMAX && (keyedLimitSkips || (helper->getFlags() & TIRcountkeyedlimit) != 0)))
-            keyedLimitCount = 0;            
+        {
+            eoi = false;
+            keyedLimitCount = 0;
+        }
         else
-            eoi = true; // otherwise delayed until calc. in nextRow()
+            eoi = true;
     }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.isSource = true;
@@ -664,7 +542,7 @@ public:
     virtual bool isGrouped() const override { return false; }
 
 // IRowStream
-    virtual void stop()
+    virtual void stop() override
     {
         if (RCMAX != keyedLimit)
         {
@@ -672,19 +550,14 @@ public:
             if (keyedLimitCount > keyedLimit)
                 helper->onKeyedLimitExceeded(); // should throw exception
         }
-        if (out)
-        {
-            callback.clearManager();
-            out->stop();
-            out.clear();
-        }
+        clearManager();
         PARENT::stop();
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (eoi) 
-            return NULL;
+            return nullptr;
         if (RCMAX != keyedLimitCount)
         {
             bool limitHit;
@@ -694,13 +567,13 @@ public:
                 eoi = true;
                 return limitRow.getClear();
             }
-            if (!out)
+            if (0 == partDescs.ordinality())
             {
                 eoi = true;
-                return NULL;
+                return nullptr;
             }
         }
-        OwnedConstThorRow row = out->nextRow();
+        OwnedConstThorRow row = getNextRow();
         if (row)
         {
             ++progress;
@@ -708,15 +581,15 @@ public:
             {
                 helper->onLimitExceeded(); // should throw exception
                 eoi = true;
-                return NULL;
+                return nullptr;
             }
             dataLinkIncrement();
             return row.getClear();
         }
         eoi = true;
-        return NULL;
+        return nullptr;
     }
-    const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
+    const void *nextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) override
     {
         try { return nextRowGENoCatch(seek, numFields, wasCompleteMatch, stepExtra); }
         CATCH_NEXTROWX_CATCH;
@@ -724,7 +597,7 @@ public:
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
         if (eoi) 
-            return NULL;
+            return nullptr;
         if (RCMAX != keyedLimitCount)
         {
             bool limitHit;
@@ -732,7 +605,7 @@ public:
             if (limitHit)
                 return limitRow.getClear();
         }
-        OwnedConstThorRow row = out->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+        OwnedConstThorRow row = getNextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (row)
         {
             ++progress;
@@ -746,15 +619,15 @@ public:
             return row.getClear();
         }
         eoi = true;
-        return NULL;
+        return nullptr;
     }
     IInputSteppingMeta *querySteppingMeta()
     {
         if (rawMeta && steppingEnabled && (0 == (helper->getFlags() & (TIRlimitskips|TIRlimitcreates|TIRkeyedlimitskips|TIRkeyedlimitcreates))))
             return &steppingMeta;
-        return NULL;
+        return nullptr;
     }
-  
+
 friend class CIndexReadHelper;
 };
 
@@ -771,10 +644,11 @@ class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, implements
     typedef CIndexReadSlaveBase PARENT;
 
     IHThorIndexGroupAggregateArg *helper;
-    bool gathered, eoi, merging;
+    bool gathered, merging;
     Owned<RowAggregator> localAggTable;
     memsize_t maxMem;
     Owned<IHashDistributor> distributor;
+    bool done = false;
 
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
@@ -804,13 +678,14 @@ public:
         PARENT::start();
         localAggTable.setown(new RowAggregator(*helper, *helper));
         localAggTable->start(queryRowAllocator());
-        gathered = eoi = false;
+        gathered = false;
+        done = false;
     }
 // IRowStream
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (eoi) 
+        if (done)
             return NULL;
         if (!gathered)
         {
@@ -819,18 +694,16 @@ public:
             {
                 ForEachItemIn(p, partDescs)
                 {
-                    IPartDescriptor &partDesc = partDescs.item(p);
-                    Owned<IKeyIndex> keyIndex = openKeyPart(this, partDesc);
-                    Owned<IKeyManager> klManager = getKeyManager(keyIndex, helper, fixedDiskRecordSize);
-                    setManager(klManager);
-                    while (klManager->lookup(true))
+                    IKeyManager &keyManager = keyManagers.item(p);
+                    setManager(&keyManager);
+                    while (keyManager.lookup(true))
                     {
                         ++progress;
-                        noteStats(klManager->querySeeks(), klManager->queryScans());
-                        helper->processRow(klManager->queryKeyBuffer(callback.getFPosRef()), this);
+                        noteStats(keyManager.querySeeks(), keyManager.queryScans());
+                        helper->processRow(keyManager.queryKeyBuffer(callback.getFPosRef()), this);
                         callback.finishedRow();
                     }
-                    callback.clearManager();
+                    clearManager();
                 }
                 ActPrintLog("INDEXGROUPAGGREGATE: Local aggregate table contains %d entries", localAggTable->elementCount());
                 if (!container.queryLocal() && container.queryJob().querySlaves()>1)
@@ -846,14 +719,14 @@ public:
                     throw e;
                 throw checkAndCreateOOMContextException(this, e, "aggregating using hash table", localAggTable->elementCount(), helper->queryDiskRecordSize(), NULL);
             }
-        }       
+        }
         Owned<AggregateRowBuilder> next = localAggTable->nextResult();
         if (next)
         {
             dataLinkIncrement();
             return next->finalizeRowClear();
         }
-        eoi = true;
+        done = true;
         return NULL;
     }
     virtual void abort()
@@ -874,11 +747,11 @@ class CIndexCountSlaveActivity : public CIndexReadSlaveBase
 {
     typedef CIndexReadSlaveBase PARENT;
 
-    bool eoi;
     IHThorIndexCountArg *helper;
     rowcount_t choosenLimit = 0;
     rowcount_t preknownTotalCount = 0;
     bool totalCountKnown = false;
+    bool done = false;
 
 public:
     CIndexCountSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
@@ -900,22 +773,22 @@ public:
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
         choosenLimit = (rowcount_t)helper->getChooseNLimit();
-        eoi = false;
         if (!helper->canMatchAny())
         {
             totalCountKnown = true;
             preknownTotalCount = 0;
         }
+        done = false;
     }
 
 // IRowStream
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (eoi)
+        if (done)
             return NULL;
+        done = true;
         rowcount_t totalCount = 0;
-        eoi = true;
         if (totalCountKnown)
         {
             totalCount = preknownTotalCount;
@@ -924,33 +797,31 @@ public:
         }
         else
         {
-            ForEachItemIn(p, partDescs)
+            if (helper->hasFilter())
             {
-                IPartDescriptor &partDesc = partDescs.item(p);
-                Owned<IKeyIndex> keyIndex = openKeyPart(this, partDesc);
-                Owned<IKeyManager> klManager = getKeyManager(keyIndex, helper, fixedDiskRecordSize);
-                setManager(klManager);
-                if (helper->hasFilter())
+                ForEachItemIn(p, partDescs)
                 {
+                    IKeyManager &keyManager = keyManagers.item(p);
+                    setManager(&keyManager);
                     loop
                     {
-                        bool l = klManager->lookup(true);
-                        noteStats(klManager->querySeeks(), klManager->queryScans());
+                        bool l = keyManager.lookup(true);
+                        noteStats(keyManager.querySeeks(), keyManager.queryScans());
                         if (!l)
                             break;
                         ++progress;
-                        totalCount += helper->numValid(klManager->queryKeyBuffer(callback.getFPosRef()));
+                        totalCount += helper->numValid(keyManager.queryKeyBuffer(callback.getFPosRef()));
                         callback.finishedRow();
                         if ((totalCount > choosenLimit))
                             break;
                     }
+                    clearManager();
+                    if ((totalCount > choosenLimit))
+                        break;
                 }
-                else
-                    totalCount += (rowcount_t)klManager->getCount();
-                callback.clearManager();
-                if ((totalCount > choosenLimit))
-                    break;
             }
+            else
+                totalCount = getCount(choosenLimit, false);
             if (!container.queryLocalOrGrouped())
             {
                 sendPartialCount(*this, totalCount);
@@ -967,7 +838,7 @@ public:
         size32_t sz;
         if (1 == orsz)
         {
-            assertex(sizeof(byte) == choosenLimit);
+            assertex(choosenLimit <= 255);
             byte *dst1 = (byte *)result.ensureCapacity(sizeof(byte),NULL);
             *dst1 = (byte)totalCount;
             sz = sizeof(byte);
@@ -999,11 +870,9 @@ class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase
 {
     typedef CIndexReadSlaveBase PARENT;
 
-    bool eoi, expanding;
+    bool expanding = false;
     IHThorIndexNormalizeArg *helper;
-    rowcount_t keyedLimit, rowLimit, stopAfter, keyedProcessed, keyedLimitCount;
-    unsigned currentPart;
-    CIndexPartHandlerHelper partHelper;
+    rowcount_t keyedLimit = RCMAX, rowLimit = RCMAX, stopAfter = 0, keyedProcessed = 0, keyedLimitCount = RCMAX;
 
     const void * createNextRow()
     {
@@ -1021,13 +890,13 @@ class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase
     }
 
 public:
-    CIndexNormalizeSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container), partHelper(*this)
+    CIndexNormalizeSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
         helper = (IHThorIndexNormalizeArg *)container.queryHelper();
         appendOutputLinked(this);
     }
 
-    virtual bool keyed()
+    virtual bool keyed() override
     {
         ++keyedProcessed;
         if (keyedLimit == RCMAX)
@@ -1042,7 +911,7 @@ public:
     }
 
 // IThorDataLink
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.isSource = true;
@@ -1061,24 +930,8 @@ public:
         expanding = false;
         keyedProcessed = 0;
         keyedLimitCount = RCMAX;
-        currentPart = 0;
         if (keyedLimit != RCMAX && (helper->getFlags() & TIRcountkeyedlimit) != 0)
-        {
-            keyedLimitCount = 0;
-            ForEachItemIn(p, partDescs)
-            {
-                partHelper.setPart(&partDescs.item(p), p);
-                keyedLimitCount += partHelper.getCount(keyedLimit);
-                if (keyedLimitCount > keyedLimit) break;
-            }
-        }
-        if (partDescs.ordinality())
-        {
-            eoi = false;
-            partHelper.setPart(&partDescs.item(0), 0);
-        }
-        else
-            eoi = true;
+            keyedLimitCount = getCount(keyedLimit, true);
     }
 
 // IRowStream
@@ -1092,17 +945,16 @@ public:
         }
         PARENT::stop();
     }
-
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
         if (eoi)
-            return NULL;
+            return nullptr;
 
         rowcount_t c = getDataLinkCount();
         if ((stopAfter && c==stopAfter)) // NB: only slave limiter, global performed in chained choosen activity
-            return NULL;
-            
+            return nullptr;
+
         if (RCMAX != keyedLimitCount)
         {
             if (keyedLimitCount <= keyedLimit)
@@ -1126,7 +978,7 @@ public:
                     else
                         helper->onKeyedLimitExceeded(); // should throw exception
                 }
-                return NULL;
+                return nullptr;
             }
             keyedLimit = RCMAX; // don't check again [ during get() / stop() ]
             keyedLimitCount = RCMAX;
@@ -1151,7 +1003,7 @@ public:
             loop
             {
                 callback.finishedRow();
-                const void *rec = partHelper.nextKey();
+                const void *rec = nextKey();
                 if (rec)
                 {
                     ++progress;
@@ -1166,14 +1018,8 @@ public:
                 }
                 else
                 {
-                    partHelper.reset();
-                    ++currentPart;
-                    if (currentPart >= partDescs.ordinality())
-                    {
-                        eoi = true;
-                        return NULL;
-                    }
-                    partHelper.setPart(&partDescs.item(currentPart), currentPart);
+                    eoi = true;
+                    return nullptr;
                 }
             }
         }
@@ -1186,34 +1032,14 @@ class CIndexAggregateSlaveActivity : public CIndexReadSlaveBase
 {
     typedef CIndexReadSlaveBase PARENT;
 
-    bool eoi, hadElement;
+    bool hadElement = false;
+    bool done = false;
     IHThorIndexAggregateArg *helper;
-    CIndexPartHandlerHelper partHelper;
-    unsigned partn;
     CPartialResultAggregator aggregator;
 
-    const void *nextKey()
-    {
-        loop
-        {
-            const void *r = partHelper.nextKey();
-            if (r)
-            {
-                ++progress;
-                return r;
-            }
-            else
-            {
-                ++partn;
-                if (partn>=partDescs.ordinality())
-                    return NULL;
-                partHelper.setPart(&partDescs.item(partn), partn);
-            }
-        }
-    }
 public:
     CIndexAggregateSlaveActivity(CGraphElementBase *_container) 
-        : CIndexReadSlaveBase(_container), partHelper(*this), aggregator(*this)
+        : CIndexReadSlaveBase(_container), aggregator(*this)
     {
         helper = (IHThorIndexAggregateArg *)container.queryHelper();
         appendOutputLinked(this);
@@ -1233,32 +1059,28 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
-        eoi = hadElement = false;
-        partn = 0;
+        hadElement = false;
+        done = false;
     }
 
 // IRowStream
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (eoi)
-            return NULL;
-        eoi = true;
+        if (done)
+            return nullptr;
+        done = true;
 
         RtlDynamicRowBuilder row(allocator);
         helper->clearAggregate(row);
-        if (partDescs.ordinality())
+        loop
         {
-            partHelper.setPart(&partDescs.item(0), 0);
-            loop
-            {
-                const void *r = nextKey();
-                if (!r) 
-                    break;
-                hadElement = true;
-                helper->processRow(row, r);
-                callback.finishedRow();
-            }
+            const void *r = nextKey();
+            if (!r)
+                break;
+            hadElement = true;
+            helper->processRow(row, r);
+            callback.finishedRow();
         }
         if (container.queryLocalOrGrouped())
         {
@@ -1284,7 +1106,7 @@ public:
                     return ret.getClear();
                 }
             }
-            return NULL;
+            return nullptr;
         }
     }  
 };
