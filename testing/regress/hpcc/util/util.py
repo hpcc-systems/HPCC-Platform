@@ -140,8 +140,8 @@ def abortWorkunit(wuid):
 
 def createZAP(wuid,  taskId):
     retVal = 'Error in create ZAP'
-    # http://localhost:8010/WsWorkunits/WUCreateZAPInfo?Wuid=<wuid>&ProblemDescription=<problem_description>
-    host = "http://"+gConfig.espIp+gConfig.espSocket+"/WsWorkunits/WUCreateZAPInfo?Wuid="+wuid+"&ProblemDescription=\"Failed+in+OBT\""
+    # http://localhost:8010/WsWorkunits/WUCreateZAPInfo?Wuid=<wuid>&ProblemDescription=<problem_description>&IncludeThorSlaveLog="on"
+    host = "http://"+gConfig.espIp+gConfig.espSocket+"/WsWorkunits/WUCreateZAPInfo?Wuid="+wuid+"&ProblemDescription=\"Failed+in+OBT\"&IncludeThorSlaveLog=on"
     logging.debug("%3d. createZAP(%s, host :'%s')",  taskId,  wuid, host)
 
     state = 'OK'
