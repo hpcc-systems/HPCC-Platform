@@ -88,8 +88,11 @@ public:
     }
     virtual void stop() override
     {
-        if (global)
-            putNext(NULL);
+        if (hasStarted())
+        {
+            if (global)
+                putNext(NULL);
+        }
         PARENT::stop();
     }
     virtual bool isGrouped() const override { return false; }

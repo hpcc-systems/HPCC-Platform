@@ -83,8 +83,7 @@ public:
     {
         out.clear();
         PARENT::stop();
-
-        //Critical block
+        if (hasStarted())
         {
             CriticalBlock block(statsCs);
             mergeStats(spillStats, iLoader);

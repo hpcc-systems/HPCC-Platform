@@ -1001,7 +1001,7 @@ class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase
 
     bool eoi, expanding;
     IHThorIndexNormalizeArg *helper;
-    rowcount_t keyedLimit, rowLimit, stopAfter, keyedProcessed, keyedLimitCount;
+    rowcount_t keyedLimit = RCMAX, rowLimit, stopAfter, keyedProcessed, keyedLimitCount;
     unsigned currentPart;
     CIndexPartHandlerHelper partHelper;
 

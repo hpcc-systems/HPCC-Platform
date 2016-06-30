@@ -425,8 +425,11 @@ public:
     }
     virtual void stop()
     {
-        sendRemainingHeaderLines();
-        out.clear();
+        if (hasStarted())
+        {
+            sendRemainingHeaderLines();
+            out.clear();
+        }
         PARENT::stop();
     }
     void abort()
