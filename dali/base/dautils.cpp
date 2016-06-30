@@ -379,10 +379,12 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         }
         c = *++s;
     }
-    bool isext = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
-    if (!isext && !allowWild && wilddetected)
+    //bool isext = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
+    //if (!isext && !allowWild && wilddetected)
+    if (!allowWild && wilddetected)
         throw MakeStringException(-1, "Wildcards not allowed in filename (%s)", name);
-    if (!isext&&ct&&(ct-name>=1)) // trailing @
+    //if (!isext&&ct&&(ct-name>=1)) // trailing @
+    if (ct&&(ct-name>=1)) // trailing @
     {
         if ((ct[1]=='@')||(ct[1]=='^')) // escape
         {
@@ -410,7 +412,8 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         {
             normalizeScope(name, name, s-name, str, strict);
             bool isForeign = 0 == stricmp(str.str(),FOREIGN_SCOPE);
-            if (isext || isForeign) // normalize node
+            //if (isext || isForeign) // normalize node
+            if (isForeign) // normalize node
             {
                 const char *s1 = s+2;
                 const char *ns1 = strstr(s1,"::");
@@ -427,19 +430,19 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                     {
                         ep.getUrlStr(str.append("::"));
                         s = ns1;
-                        if (isext)
-                        {
-                            external = true;
-                            if (s[2]=='>')
-                            {
-                                str.append("::");
-                                tailpos = str.length();
-                                str.append(s+2);
-                                res.set(str);
-                                return;
-                            }
-                        }
-                        else
+//                        if (isext)
+//                        {
+//                            external = true;
+//                            if (s[2]=='>')
+//                            {
+//                                str.append("::");
+//                                tailpos = str.length();
+//                                str.append(s+2);
+//                                res.set(str);
+//                                return;
+//                            }
+//                        }
+//                        else
                         {
                             dbgassertex(isForeign);
                             localpos = str.length()+2;
@@ -472,7 +475,26 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
     str.toLowerCase();
     res.set(str);
 }
-
+// Ad-hoc function to check EP
+bool checkEp(const char *name)
+{
+    bool retVal = false;
+    const char *s=strstr(name,"::");
+    if (s)
+    {
+        const char *s1 = s+2;
+        const char *ns1 = strstr(s1,"::");
+        if (ns1)
+        {
+            StringBuffer nodename;
+            nodename.append(ns1-s1,s1);
+            SocketEndpoint ep(nodename.str());
+            if (!ep.isNull())
+                retVal = true;
+        }
+    }
+    return retVal;
+}
 
 void CDfsLogicalFileName::set(const char *name, bool removeForeign)
 {
@@ -515,7 +537,12 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign)
         lfn.set(full);
         return;
     }
-    normalizeName(name, lfn, false);
+    external = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
+    if (external && checkEp(name))
+        // TODO Should check the name is a valid OS filename
+        lfn.set(name);
+    else
+        normalizeName(name, lfn, false);
     if (removeForeign)
     {
         StringAttr _lfn = get(true);
