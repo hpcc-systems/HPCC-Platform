@@ -160,7 +160,8 @@ class CDedupRollupBaseActivity : public CSlaveActivity, implements IStopInput
     Linked<IThorRowInterfaces> rowif;
 
 protected:
-    bool eogNext, eos;
+    bool eogNext;
+    bool eos = true; // until started
     bool global;
     bool groupOp;
     OwnedConstThorRow kept;

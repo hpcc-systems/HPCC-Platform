@@ -34,7 +34,7 @@ class CLoopSlaveActivityBase : public CSlaveActivity
 
 protected:
     bool global;
-    bool sentEndLooping;
+    bool sentEndLooping = true;
     unsigned maxIterations;
     unsigned loopCounter;
     rtlRowBuilder extractBuilder;

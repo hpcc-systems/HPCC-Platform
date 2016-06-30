@@ -2060,12 +2060,15 @@ public:
     }
     virtual void stop()
     {
-        if (fetchHandler)
-            fetchHandler->stop(true);
-        if (!eos)
+        if (hasStarted())
         {
-            eos = true;
-            resultDistStream->stop();
+            if (fetchHandler)
+                fetchHandler->stop(true);
+            if (!eos)
+            {
+                eos = true;
+                resultDistStream->stop();
+            }
         }
         stopInput();
 #ifdef TRACE_JOINGROUPS
