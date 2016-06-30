@@ -188,19 +188,22 @@ public:
     }
     virtual void stop() override
     {
-        if (!isLocal)
+        if (hasStarted())
         {
-            barrier->wait(false);
-            sorter->stopMerge();
-        }
-        {
-            CriticalBlock b(joinHelperCrit);
-            joinhelper.clear();
-        }
-        if (strm)
-        {
-            strm->stop();
-            strm.clear();
+            if (!isLocal)
+            {
+                barrier->wait(false);
+                sorter->stopMerge();
+            }
+            {
+                CriticalBlock b(joinHelperCrit);
+                joinhelper.clear();
+            }
+            if (strm)
+            {
+                strm->stop();
+                strm.clear();
+            }
         }
         PARENT::stop();
     }

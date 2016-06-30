@@ -189,7 +189,7 @@ class CEnthSlaveActivity : public BaseEnthActivity
 
     Semaphore prevRecCountSem;
     rowcount_t prevRecCount;
-    bool first;
+    bool first = false; // until start
 
     void sendCount(rowcount_t count)
     {

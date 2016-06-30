@@ -250,8 +250,11 @@ public:
     }
     virtual void stop() override
     {
-        readTrailing();
-        verifyPipe();
+        if (hasStarted())
+        {
+            readTrailing();
+            verifyPipe();
+        }
         PARENT::stop();
     }
     virtual void abort()
@@ -444,6 +447,11 @@ public:
     }
     virtual void stop() override
     {
+        if (!hasStarted())
+        {
+            PARENT::stop();
+            return;
+        }
         abortSoon = true;
         readTrailing();
         if (recreate)
@@ -455,7 +463,6 @@ public:
             throw wrexc.getClear();
         if (retcode!=0 && !(flags & TPFnofail))
             throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d", retcode);
-        PARENT::stop();
     }
     virtual void kill()
     {
