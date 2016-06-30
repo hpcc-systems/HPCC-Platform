@@ -1236,6 +1236,8 @@ CThorSpillableRowArray::CThorSpillableRowArray(CActivityBase &activity)
     : CThorExpandingRowArray(activity)
 {
     initCommon();
+    commitDelta = CommitStep;
+    throwOnOom = false;
 }
 
 CThorSpillableRowArray::CThorSpillableRowArray(CActivityBase &activity, IThorRowInterfaces *rowIf, bool allowNulls, StableSortFlag stableSort, rowidx_t initialSize, size32_t _commitDelta)

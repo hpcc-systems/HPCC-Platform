@@ -183,6 +183,23 @@ public:
     }
     virtual void main()
     {
+        rank_t slaveProc = queryNodeGroup().rank()-1;
+        unsigned totSlaveProcs = queryNodeClusterWidth();
+        StringBuffer slaveStr;
+        for (unsigned c=0; c<channelsPerSlave; c++)
+        {
+            unsigned o = slaveProc + (c * totSlaveProcs);
+            if (c)
+                slaveStr.append(",");
+            slaveStr.append(o+1);
+        }
+        StringBuffer virtStr;
+        if (channelsPerSlave>1)
+            virtStr.append("virtual slaves:");
+        else
+            virtStr.append("slave:");
+        PROGLOG("Slave log %u contains %s %s", slaveProc+1, virtStr.str(), slaveStr.str());
+
         if (channelsPerSlave>1)
         {
             class CVerifyThread : public CInterface, implements IThreaded
