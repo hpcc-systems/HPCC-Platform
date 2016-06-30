@@ -3081,6 +3081,7 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
             return (info->queryTransformed() == NULL);
     }
     bool isFiltered = false;
+    double filterLikelihood = 1.0;
     bool isProcessed = false;
     loop
     {
@@ -3098,7 +3099,7 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
                 //This is only executed for hthor/thor.  Roxie has used expandRatherThanSplit().
                 //We need to balance the saving from reading reduced data in the other branches with the cost of
                 //writing the spill file to disk.
-                if (isFiltered && (numExternalUses >= options->filteredSpillThreshold))
+                if (isFiltered && numExternalUses >= options->filteredSpillThreshold)
                     return false;
                 IHqlExpression * mode = expr->queryChild(2);
                 switch (mode->getOperator())
@@ -3106,10 +3107,37 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
                 case no_thor: case no_flat:
                     //MORE: The following is possibly better - but roxie should be able to read from non spill data files in child queries fine
                     //if ((options->targetClusterType == RoxieCluster) && linkedFromChild)) return false;
-                    return true;
+                    break;
                 default:
                     return false;
                 }
+                if (isFiltered)
+                {
+                    if (isKnownLikelihood(filterLikelihood))
+                    {
+                        // Calculation of when to spill/not spill:
+                        //    Where :
+                        //      r = cost(read), w = cost(write), f = cost(filter),
+                        //      n = number uses, p = probability of filter(likelihood)
+                        //
+                        //    Cost of using spill files:
+                        //      = r + f + pw + npr
+                        //      = r + rp + npr          (assuming w~=r and f~=0)
+                        //
+                        //    Cost of not spilling (expanding)
+                        //     = n(r+f)
+                        //     = nr                     (assuming f~=0)
+                        //
+                        // Spill when "cost of using spill files" < "cost of not spilling (expanding)"
+                        //     r + rp + npr < nr
+                        // Which simplifies to :
+                        //     p < (n - 1) / (n +1)
+                        if (filterLikelihood < (double)(numUses-1)/(numUses+1))
+                            return false;
+                        return true;
+                    }
+                }
+                return true;
             }
         case no_stepped:
             return true;
@@ -3192,9 +3220,22 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
             expr = expr->queryChild(0);
             break;
         case no_filter:
-            isFiltered = true;
-            expr = expr->queryChild(0);
-            break;
+            {
+                if (isKnownLikelihood(filterLikelihood))
+                {
+                    double likelihood = queryActivityLikelihood(expr);
+                    if (isKnownLikelihood(likelihood))
+                        // Combine the likelihood of the 2 filter conditions
+                        // N.B. this only works if the filter probability are independent
+                        filterLikelihood *= likelihood;
+                    else
+                        // One of the filter probability is unknown, so the overall probability is unknown
+                        setUnknownLikelihood(filterLikelihood);
+                }
+                isFiltered = true;
+                expr = expr->queryChild(0);
+                break;
+            }
         case no_select:
             {
                 if (options->targetClusterType == RoxieCluster)
@@ -3219,8 +3260,14 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
                     return (info->queryTransformed() == NULL);
                 if (info->numExternalUses)
                 {
-                    if (isFiltered && (numExternalUses >= options->filteredSpillThreshold))
-                        return false;
+                    if (isFiltered)
+                    {
+                        if (numExternalUses >= options->filteredSpillThreshold)
+                            return false;
+                        if (isKnownLikelihood(filterLikelihood) &&
+                            (filterLikelihood < (double)(numUses-1)/(numUses+1)))
+                            return false;
+                    }
                     return true;
                 }
             }
