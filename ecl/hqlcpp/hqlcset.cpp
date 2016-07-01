@@ -1414,20 +1414,8 @@ void GeneralSetCursor::buildExprOrAssignSelect(BuildCtx & ctx, const CHqlBoundTa
     if (cursor)
     {
         OwnedHqlExpr select = createSelectExpr(LINK(dsIndexExpr), LINK(element));
-        if (!cursor->isConditional())
-            translator.buildExprOrAssign(ctx, target, select, tgt);
-        else
-        {
-            // if (row) tgt = x else tgt = dft;
-            BuildCtx subctx(ctx);
-            IHqlStmt * e = subctx.addFilter(cursor->queryBound());
-            cursor->setConditional(false);  // yuk!
-            translator.buildExprOrAssign(subctx, target, select, tgt);
-            cursor->setConditional(true);
-            subctx.selectElse(e);
-            OwnedHqlExpr null = getOutOfRangeValue(indexExpr);
-            translator.buildExprOrAssign(subctx, target, null, tgt);
-        }
+        assertex(!cursor->isConditional());
+        translator.buildExprOrAssign(ctx, target, select, tgt);
     }
     else
     {
