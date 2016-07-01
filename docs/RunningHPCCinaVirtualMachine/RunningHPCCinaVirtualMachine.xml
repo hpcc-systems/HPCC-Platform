@@ -123,7 +123,7 @@
       <itemizedlist>
         <listitem>
           <para>A personal computer running Windows XP, Vista, Windows 7
-          (either 32- or 64-bit)</para>
+          (either 32- or 64-bit) or newer.</para>
         </listitem>
 
         <listitem>
@@ -154,6 +154,10 @@
 
       <para>Users should have familiarity with installing and running Windows
       applications.</para>
+
+      <para>To run HPCC in a virtual machine, hardware virtualization must be
+      enabled in the BIOS of your machine. This setting may be called VT-x or
+      AMD-V.</para>
     </sect1>
   </chapter>
 
@@ -636,9 +640,10 @@
         </listitem>
 
         <listitem>
-          <para>Enter the IP Address shown in <xref linkend="welcometovm" />
-          for the server in the <emphasis role="bold">Server </emphasis>box
-          (as shown in <xref linkend="Preferences" />) and press the <emphasis
+          <para>Enter the IP Address shown in the <link
+          linkend="vbox_welcome">Virtual Box welcome screen</link> for the
+          server in the <emphasis role="bold">Server </emphasis>box (as shown
+          in <xref linkend="Preferences" />) and press the <emphasis
           role="bold">OK</emphasis> button.</para>
 
           <para><figure id="Preferences">
@@ -734,10 +739,11 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Enter the IP Address shown in <xref linkend="welcometovm" />
-          for the server in the <emphasis role="bold">Server</emphasis> box
-          (as shown in <xref linkend="Preferences2" />) and press the
-          <emphasis role="bold">OK</emphasis> button.</para>
+          <para>Enter the IP Address shown in <link
+          linkend="vbox_welcome">Virtual Box welcome screen</link> for the
+          server in the <emphasis role="bold">Server</emphasis> box (as shown
+          in <xref linkend="Preferences2" />) and press the <emphasis
+          role="bold">OK</emphasis> button.</para>
 
           <para><figure id="Preferences2">
               <title>ECL IDE Preferences</title>
@@ -1691,10 +1697,10 @@ OUTPUT(ValidWords)
         <orderedlist>
           <listitem>
             <para>In your browser, go to the <emphasis role="bold">ECL
-            Watch</emphasis> URL displayed (circled in red) in <xref
-            linkend="welcometovm" />. For example,
-            http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is your Virtual
-            Machine's IP address.</para>
+            Watch</emphasis> URL displayed (circled in red) in <link
+            linkend="vbox_welcome">Virtual Box welcome screen</link>. For
+            example, http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is
+            your Virtual Machine's IP address.</para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
