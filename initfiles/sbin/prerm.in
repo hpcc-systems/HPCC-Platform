@@ -28,7 +28,7 @@ fi
 # Stop all services before cleaning up
 ######################################
 /etc/init.d/hpcc-init stop
-if [ -f "${PID_DIR}/mydafilesrv.pid" ]; then
+if /etc/init.d/dafilesrv status >/dev/null 2>&1; then
     /etc/init.d/dafilesrv stop
 fi
 
