@@ -1365,7 +1365,7 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
                     //child contexts.
                     //Need to add these fields to the extract record, and do the assignments at the point of call
                     Owned<ITypeInfo> fieldType = makeRowReferenceType(cur.queryDataset());
-                    if (hasOutOfLineModifier(bound->queryType()))
+                    if (hasOutOfLineModifier(bound->queryType()) && !hasLinkCountedModifier(fieldType))
                         fieldType.setown(makeAttributeModifier(LINK(fieldType), getLinkCountedAttr()));
                     expandedAlias.setown(serialization->createField(NULL, fieldType));
                     OwnedHqlExpr castSource = createValue(no_implicitcast, LINK(fieldType), LINK(bound));
