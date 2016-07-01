@@ -12189,7 +12189,8 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
         {
             mb.reset();
             mb.read(numfiles);
-            mb.read(allMatchingFilesReceived);
+            if (queryDaliServerVersion().compare("6.0") >= 0)
+                mb.read(allMatchingFilesReceived);
 
             return next();
         }
@@ -12259,7 +12260,8 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
 
     unsigned numfiles;
     mb.read(numfiles);
-    mb.read(allMatchingFilesReceived);
+    if (queryDaliServerVersion().compare("6.0") >= 0)
+        mb.read(allMatchingFilesReceived);
     return deserializeFileAttrIterator(mb, localFilters, localFilterBuf);
 }
 
