@@ -12103,12 +12103,13 @@ extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild)
     return DFUQResultFieldNames[feild];
 }
 
-IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultField* localFilters, const char* localFilterBuf)
+IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned numFiles, DFUQResultField* localFilters, const char* localFilterBuf)
 {
     class CFileAttrIterator: public CInterface, implements IPropertyTreeIterator
     {
         Owned<IPropertyTree> cur;
         StringArray fileNodeGroups;
+        unsigned fileDataStart;
 
         void setFileNodeGroup(IPropertyTree *attr, const char* group, StringArray& nodeGroupFilter)
         {
@@ -12216,12 +12217,17 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
         bool allMatchingFilesReceived;
         StringArray nodeGroupFilter;
 
+        CFileAttrIterator(MemoryBuffer &_mb, unsigned _numfiles) : numfiles(_numfiles)
+        {
+            /* not particuarly nice, but buffer contains extra meta info ahead of serialized file info
+             * record position to rewind to, if iterator reused.
+             */
+            fileDataStart = _mb.getPos();
+            mb.swapWith(_mb);
+        }
         bool first()
         {
-            mb.reset();
-            mb.read(numfiles);
-            mb.read(allMatchingFilesReceived);
-
+            mb.reset(fileDataStart);
             return next();
         }
 
@@ -12268,8 +12274,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
             }
         }
 
-    } *fai = new CFileAttrIterator;
-    mb.swapWith(fai->mb);
+    } *fai = new CFileAttrIterator(mb, numFiles);
     fai->setLocalFilters(localFilters, localFilterBuf);
     return fai;
 }
@@ -12300,7 +12305,7 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
         allMatchingFilesReceived = true; // din't know any better
     else
         mb.read(allMatchingFilesReceived);
-    return deserializeFileAttrIterator(mb, localFilters, localFilterBuf);
+    return deserializeFileAttrIterator(mb, numfiles, localFilters, localFilterBuf);
 }
 
 IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
