@@ -263,7 +263,7 @@ public:
                             ActPrintLog("JOIN barrier.2 raised");
                             imaster->SortDone();
                             // NB on the cosort should use same serializer as sort (but in fact it only gets used when 0 rows on primary side)
-                            imaster->SortSetup(secondaryRowIf, secondaryCompare, primaryKeySerializer, true, false, NULL, NULL); //serializers OK
+                            imaster->SortSetup(secondaryRowIf, secondaryCompare, primaryKeySerializer, true, false, NULL, primaryRowIf); //serializers OK
                             ActPrintLog("JOIN waiting for barrier.3");
                             if (barrier->wait(false)) // local sort complete
                             {
