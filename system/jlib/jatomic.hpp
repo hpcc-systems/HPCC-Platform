@@ -77,6 +77,43 @@ public:
     T sub_fetch(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return ::sub_fetch(*this, _value, order); }
 };
 
+//Currently compare_exchange_weak in gcc forces a write to memory which is painful in highly contended situations.  The
+//See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66867 for some details.  Marked as fixed for gcc 7.
+//The symbol HAS_EFFICIENT_CAS should be defined if this bug is fixed, and/or there is no fallback implementation (e.g., windows)
+#if defined(_WIN32)
+#define HAS_EFFICIENT_CAS
+#endif
+
+#if defined(HAS_EFFICIENT_CAS)
+
+template <typename x>
+bool compare_exchange_efficient(x & value, decltype(value.load()) & expected, decltype(value.load()) desired, std::memory_order order = std::memory_order_seq_cst)
+{
+    return value.compare_exchange_weak(expected, desired, order);
+}
+
+template <typename x>
+bool compare_exchange_efficient(x & value, decltype(value.load()) & expected, decltype(value.load()) desired, std::memory_order successOrder = std::memory_order_seq_cst, std::memory_order failureOrder = std::memory_order_seq_cst)
+{
+    return value.compare_exchange_weak(expected, desired, successOrder, failureOrder);
+}
+#else
+template <typename x>
+//If HAS_EFFICIENT_CAS is not defined, the expected value is not updated => expected is not a reference
+bool compare_exchange_efficient(x & value, decltype(value.load()) expected, decltype(value.load()) desired, std::memory_order order = std::memory_order_seq_cst)
+{
+    decltype(value.load()) * nastyCast = reinterpret_cast<decltype(value.load()) *>(&value);
+    return __sync_bool_compare_and_swap(nastyCast, expected, desired);
+}
+
+template <typename x>
+bool compare_exchange_efficient(x & value, decltype(value.load()) expected, decltype(value.load()) desired, std::memory_order successOrder = std::memory_order_seq_cst, std::memory_order failureOrder = std::memory_order_seq_cst)
+{
+    decltype(value.load()) * nastyCast = reinterpret_cast<decltype(value.load()) *>(&value);
+    return __sync_bool_compare_and_swap(nastyCast, expected, desired);
+}
+#endif
+
 #ifdef _WIN32
 
 #include <intrin.h>
