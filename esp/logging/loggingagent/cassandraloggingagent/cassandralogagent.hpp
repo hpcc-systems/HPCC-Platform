@@ -17,8 +17,8 @@
 
 #pragma warning (disable : 4786)
 
-#ifndef _CASSABDRALOGAGENT_HPP__
-#define _CASSABDRALOGAGENT_HPP__
+#ifndef _CASSANDRALOGAGENT_HPP__
+#define _CASSANDRALOGAGENT_HPP__
 
 #include "jmisc.hpp"
 #include "eclhelper.hpp"
@@ -31,13 +31,13 @@
 using namespace cassandraembed;
 
 #ifdef WIN32
-    #ifdef CASSABDRALOGAGENT_EXPORTS
-        #define CASSABDRALOGAGENT_API __declspec(dllexport)
+    #ifdef CASSANDRALOGAGENT_EXPORTS
+        #define CASSANDRALOGAGENT_API __declspec(dllexport)
     #else
-        #define CASSABDRALOGAGENT_API __declspec(dllimport)
+        #define CASSANDRALOGAGENT_API __declspec(dllimport)
     #endif
 #else
-    #define CASSABDRALOGAGENT_API
+    #define CASSANDRALOGAGENT_API
 #endif
 
 class CCassandraLogAgent : public CInterface, implements IEspLogAgent
@@ -80,4 +80,4 @@ public:
     virtual void filterLogContent(IEspUpdateLogRequestWrap* req);
 };
 
-#endif //_CASSABDRALOGAGENT_HPP__
+#endif //_CASSANDRALOGAGENT_HPP__
