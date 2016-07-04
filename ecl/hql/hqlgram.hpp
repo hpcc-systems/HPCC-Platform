@@ -784,7 +784,15 @@ protected:
     void disableError() { errorDisabled = true; }
     void enableError() { errorDisabled = false; }
     void abortParsing();
-    bool isAborting() { return errorDisabled || aborting || lookupCtx.isAborting(); }
+    bool checkAborting()
+    {
+        if (lookupCtx.isAborting())
+        {
+            abortParsing();//Ensure a consistent abort by propagating the aborting state.
+            return true;
+        }
+        return false;
+    }
 
     IIdAtom * fieldMapTo(IHqlExpression* expr, IIdAtom * name);
     IIdAtom * fieldMapFrom(IHqlExpression* expr, IIdAtom * name);
@@ -919,7 +927,6 @@ protected:
     ConstPointerArray validAttributesStack;
     unsigned minimumScopeIndex;
     const TokenMap * pendingAttributes;
-    bool aborting;
 
     void setIdUnknown(bool expected) { expectedUnknownId = expected; }
     bool getIdUnknown() { return expectedUnknownId; }
@@ -1146,7 +1153,7 @@ class HqlLex
         inline ISourcePath * querySourcePath() const { return sourcePath; }
 
         bool isMacroActive(IHqlExpression *expr);
-        bool isAborting();
+        bool checkAborting();
         void pushMacro(IHqlExpression *expr);
         void pushText(IFileContents * text, int startLineNo, int startColumn);
         void pushText(const char *s, int startLineNo, int startColumn);
