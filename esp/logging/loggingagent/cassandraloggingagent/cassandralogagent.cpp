@@ -559,7 +559,7 @@ unsigned CCassandraLogAgent::executeSimpleSelectStatement(const char* st, unsign
 
 extern "C"
 {
-CASSABDRALOGAGENT_API IEspLogAgent* newLoggingAgent()
+CASSANDRALOGAGENT_API IEspLogAgent* newLoggingAgent()
 {
     return new CCassandraLogAgent();
 }
