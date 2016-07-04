@@ -28,9 +28,7 @@ fi
 # Stop all services before cleaning up
 ######################################
 /etc/init.d/hpcc-init stop
-if [ -f "${PID_DIR}/mydafilesrv.pid" ]; then
-    /etc/init.d/dafilesrv stop
-fi
+/etc/init.d/dafilesrv stop
 
 # Remove edits from /etc files
 ##############################
