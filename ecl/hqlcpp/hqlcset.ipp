@@ -189,6 +189,7 @@ public:
     virtual void buildIterateClass(BuildCtx & ctx, CHqlBoundExpr & tgt);
     virtual void buildExprSelect(BuildCtx & ctx, IHqlExpression * indexExpr, CHqlBoundExpr & tgt);
     virtual void buildAssignSelect(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * indexExpr);
+    virtual void buildExprOrAssignSelect(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * indexExpr, CHqlBoundExpr * tgt);
     virtual bool isSingleValued();
 
 protected:
