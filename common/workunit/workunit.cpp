@@ -485,7 +485,10 @@ public:
             return false;
         ensureUniqueStatistic();
         if (!firstSubGraph())
-            return false;
+        {
+            if (!nextGraph())
+                return false;
+        }
 
         valid = true;
         return true;
