@@ -71,8 +71,8 @@
 
 //=========================================================================================
 
-//The following flag could be used not free items to speed up closedown
-static bool optDebugMemLeak = false;
+//The following flag is used to speed up closedown by not freeing items
+static bool optReleaseAllMemory = false;
 
 #if defined(_WIN32) && defined(_DEBUG)
 static HANDLE leakHandle;
@@ -374,11 +374,13 @@ protected:
     bool logTimings;
     bool optArchive;
     bool optCheckEclVersion;
+    bool optDebugMemLeak = false;
     bool optEvaluateResult;
     bool optGenerateMeta;
     bool optGenerateDepend;
     bool optIncludeMeta;
     bool optKeywords;
+    bool optLeakCheck = false;
     bool optWorkUnit;
     bool optNoCompile;
     bool optNoLogFile;
@@ -483,12 +485,13 @@ int main(int argc, const char *argv[])
 
     unsigned exitCode = doMain(argc, argv);
 
-#ifndef _DEBUG
-    //In release mode exit without calling all the clean up code.
-    //It is faster, and it helps avoids potential crashes if there are active objects which depend on objects in file hook dlls.
-    fflush(NULL);
-    _exit(exitCode);
-#endif
+    if (!optReleaseAllMemory)
+    {
+        //In release mode exit without calling all the clean up code.
+        //It is faster, and it helps avoids potential crashes if there are active objects which depend on objects in file hook dlls.
+        fflush(NULL);
+        _exit(exitCode);
+    }
 
     releaseAtoms();
     ClearTypeCache();   // Clear this cache before the file hooks are unloaded
@@ -2027,6 +2030,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optKeywords, "--keywords"))
         {
         }
+        else if (iter.matchFlag(optLeakCheck, "--leakcheck"))
+        {
+        }
         else if (iter.matchFlag(tempArg, "-L"))
         {
             libraryPaths.append(tempArg);
@@ -2205,6 +2211,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
     if (optArchive || optWorkUnit || optGenerateMeta || optGenerateDepend || optShowPaths)
         optNoCompile = true;
 
+    optReleaseAllMemory = optDebugMemLeak || optLeakCheck;
     loadManifestOptions();
 
     if (inputFileNames.ordinality() == 0 && !optKeywords)
