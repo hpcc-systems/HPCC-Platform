@@ -67,6 +67,7 @@ if(USE_CASSANDRA)
   if(NOT WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-nonliteral") # Work around cassandra build error
   endif()
+  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cpp-driver/cmake/modules/")
   add_subdirectory(cpp-driver ${PROJECT_BINARY_DIR}/cassandra)
   add_dependencies(cassandra libuv)
   set(CMAKE_CXX_FLAGS "${_SAVE_CMAKE_CXX_FLAGS}")
