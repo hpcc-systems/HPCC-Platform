@@ -12109,7 +12109,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
     {
         Owned<IPropertyTree> cur;
         StringArray fileNodeGroups;
-        unsigned fileDataStart;
+        size32_t fileDataStart;
 
         void setFileNodeGroup(IPropertyTree *attr, const char* group, StringArray& nodeGroupFilter)
         {
@@ -12214,7 +12214,6 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
         IMPLEMENT_IINTERFACE;
         MemoryBuffer mb;
         unsigned numfiles;
-        bool allMatchingFilesReceived;
         StringArray nodeGroupFilter;
 
         CFileAttrIterator(MemoryBuffer &_mb, unsigned _numfiles) : numfiles(_numfiles)
@@ -12302,7 +12301,7 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
     unsigned numfiles;
     mb.read(numfiles);
     if (legacy)
-        allMatchingFilesReceived = true; // din't know any better
+        allMatchingFilesReceived = true; // don't know any better
     else
         mb.read(allMatchingFilesReceived);
     return deserializeFileAttrIterator(mb, numfiles, localFilters, localFilterBuf);
