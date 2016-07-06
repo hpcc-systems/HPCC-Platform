@@ -21,6 +21,7 @@
 #include "jexcept.hpp"
 #include "hql.hpp"
 
+#define DEFAULT_MAX_ERRORS 5
 #define HQLERR_ErrorAlreadyReported             4799            // special case...
 
 interface IWorkUnit;

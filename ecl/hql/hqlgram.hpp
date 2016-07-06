@@ -31,7 +31,6 @@
 
 #include "hqlxmldb.hpp"
 
-#define DEFAULT_MAX_ERRORS 100
 #define EXPORT_FLAG 1
 #define VIRTUAL_FLAG 2
 #define SHARED_FLAG 4
@@ -411,7 +410,6 @@ public:
     IHqlScope * queryGlobalScope();
 
     bool canFollowCurrentState(int tok, const short * yyps);
-    void syntaxError(const char *s, int token, int *expected);
     int mapToken(int lexToken) const;
     IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
     IHqlExpression *lookupSymbol(IHqlScope * scope, IIdAtom * name);
@@ -578,6 +576,18 @@ public:
     IHqlExpression * nextEnumValue();
 
 // Error handling
+    void syntaxError(const char *s, int token, int *expected);
+    bool checkErrorCountAndAbort();
+    bool exceedsMaxCompileErrors();
+    unsigned getMaxCompileErrors()
+    {
+        return lookupCtx.queryParseContext().maxErrors;
+    }
+    bool unsuppressImmediateSyntaxErrors()
+    {
+        return lookupCtx.queryParseContext().unsuppressImmediateSyntaxErrors;
+    }
+    void reportTooManyErrors();
     void doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
     void reportError(int errNo, const attribute& a, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
@@ -691,8 +701,6 @@ public:
     IHqlExpression * processIfProduction(attribute & condAttr, attribute & trueAttr, attribute * falseAttr);
 
     IHqlExpression * createSymbolFromValue(IHqlExpression * primaryExpr, IHqlExpression * value);
-    unsigned getMaxErrorsAllowed() { return m_maxErrorsAllowed; }
-    void setMaxErrorsAllowed(unsigned n) { m_maxErrorsAllowed = n; } 
     void setAssociateWarnings(bool value) { associateWarnings = value; }
     IHqlExpression* clearFieldMap(IHqlExpression* expr);
     void setExpectedAttribute(IIdAtom * _expectedAttribute)             { expectedAttribute = _expectedAttribute; current_id = _expectedAttribute; }
@@ -753,7 +761,6 @@ protected:
 
     void canNotAssignTypeError(ITypeInfo* expected, ITypeInfo* given, const attribute& errpos);
     void canNotAssignTypeWarn(ITypeInfo* expected, ITypeInfo* given, const attribute& errpos);
-    void abortParsing();
     bool isExceptionalCase(attribute& defineid, attribute& object, attribute& failure);
     void checkSvcAttrNoValue(IHqlExpression* attr, const attribute& errpos);
     void checkFormals(IIdAtom * name, HqlExprArray & parms, HqlExprArray & defaults, attribute& object);
@@ -776,7 +783,17 @@ protected:
 
     void disableError() { errorDisabled = true; }
     void enableError() { errorDisabled = false; }
-    bool isAborting() { return errorDisabled; }
+    void abortParsing();
+    bool checkAborting()
+    {
+        if (lookupCtx.isAborting())
+        {
+            abortParsing();//Ensure a consistent abort by propagating the aborting state.
+            return true;
+        }
+        return false;
+    }
+
     IIdAtom * fieldMapTo(IHqlExpression* expr, IIdAtom * name);
     IIdAtom * fieldMapFrom(IHqlExpression* expr, IIdAtom * name);
     bool requireLateBind(IHqlExpression* funcdef, const HqlExprArray & actuals);
@@ -854,7 +871,6 @@ protected:
     bool isQuery;
     bool parseConstantText;
     bool expandingMacroPosition;
-    unsigned m_maxErrorsAllowed;
     bool inSignedModule;
 
     IErrorArray pendingWarnings;
@@ -911,7 +927,6 @@ protected:
     ConstPointerArray validAttributesStack;
     unsigned minimumScopeIndex;
     const TokenMap * pendingAttributes;
-    bool aborting;
 
     void setIdUnknown(bool expected) { expectedUnknownId = expected; }
     bool getIdUnknown() { return expectedUnknownId; }
@@ -1138,7 +1153,7 @@ class HqlLex
         inline ISourcePath * querySourcePath() const { return sourcePath; }
 
         bool isMacroActive(IHqlExpression *expr);
-        bool isAborting();
+        bool checkAborting();
         void pushMacro(IHqlExpression *expr);
         void pushText(IFileContents * text, int startLineNo, int startColumn);
         void pushText(const char *s, int startLineNo, int startColumn);

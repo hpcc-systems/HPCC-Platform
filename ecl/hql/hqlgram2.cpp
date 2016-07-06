@@ -430,7 +430,6 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
 
     outerScopeAccessDepth = 0;
     inType = false;
-    aborting = lookupCtx.isAborting();
     errorHandler = NULL;
     moduleName = NULL;
     resolveSymbols = true;
@@ -455,9 +454,8 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     fieldMapUsed = false;
     associateWarnings = true;
 
-    errorDisabled = false;
+    errorDisabled = lookupCtx.isAborting();//NOTE: If in an aborting state, disable future error reports.
     setIdUnknown(false);
-    m_maxErrorsAllowed = DEFAULT_MAX_ERRORS;
     sortDepth = 0;
     serviceScope.clear();
 
@@ -484,7 +482,7 @@ HqlGram::~HqlGram()
 
 int HqlGram::yyLex(attribute * yylval, const short * activeState)
 {
-    if (aborting) return 0;
+    if (checkAborting()) return 0;
     return lexObject->yyLex(*yylval, resolveSymbols, activeState);
 }
 
@@ -3065,7 +3063,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
             reportError(ERR_EXPECTED, errpos, "Missing END in FORWARD module definition");
             abortParsing();
             return;
-        case COMPLEX_MACRO: 
+        case COMPLEX_MACRO:
         case MACRO:
         case SIMPLE_TYPE:
         case CPPBODY:
@@ -3391,8 +3389,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
         return NULL;
 
     //Check periodically if parsing a referenced identifier has caused the compile to abort.
-    if (lookupCtx.isAborting())
-        aborting = true;
+    checkAborting();//NOTE: checkAborting() checks whether the parseContext is aborting and implicitly propagates this state, thus consistently triggering the parser to abort.
 
     try
     {
@@ -3556,7 +3553,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
     }
     catch(IError* error)
     {
-        if(errorHandler && !errorDisabled)
+        if(errorHandler && !errorDisabled && !checkAborting())
             errorHandler->report(error);
         error->Release();
         // recover: to avoid reload the definition again and again
@@ -6029,7 +6026,7 @@ void HqlGram::exportMappings(IWorkUnit * wu) const
 
 void HqlGram::report(IError* error)
 {
-    if (errorHandler && !errorDisabled)
+    if (errorHandler && !errorDisabled && !checkAborting())
     {
         //Severity of warnings are not mapped here.  Fatal errors are reported directly.  Others are delayed
         //(and may possibly be disabled by local onWarnings etc.)
@@ -6047,12 +6044,7 @@ void HqlGram::report(IError* error)
         else
         {
             errorHandler->report(error);
-
-            if (getMaxErrorsAllowed()>0 && errorHandler->errCount() >= getMaxErrorsAllowed())
-            {
-                errorHandler->reportError(ERR_ERROR_TOOMANY,"Too many errors; parsing aborted",error->getFilename(),error->getLine(),error->getColumn(),error->getPosition());
-                abortParsing();
-            }
+            checkErrorCountAndAbort();
         }
 
         reportMacroExpansionPosition(error, lexObject);
@@ -11050,9 +11042,39 @@ void HqlGram::simplifyExpected(int *expected)
     simplify(expected, END, '}', 0);
 }
 
+bool HqlGram::exceedsMaxCompileErrors()
+{
+    unsigned errorCount = errorHandler ? errorHandler->errCount() : 0;
+    return errorCount >= getMaxCompileErrors();
+}
+
+bool HqlGram::checkErrorCountAndAbort()
+{
+    if (checkAborting())
+        return true;
+
+    if (exceedsMaxCompileErrors())
+    {
+        reportTooManyErrors();
+        abortParsing();
+        return true;
+    }
+    return false;
+}
+
+void HqlGram::reportTooManyErrors()
+{
+    if (errorHandler && !errorDisabled && !checkAborting())
+    {
+        StringBuffer msg("Too many errors");
+        msg.append(" (max = ").append(getMaxCompileErrors()).append("); Aborting...");
+        errorHandler->reportError(ERR_ERROR_TOOMANY, msg.str(), str(lexObject->queryActualSourcePath()), lexObject->getActualLineNo(), lexObject->getActualColumn(), lexObject->get_yyPosition());
+    }
+}
+
 void HqlGram::syntaxError(const char *s, int token, int *expected)
-{ 
-    if (errorDisabled || !s || !errorHandler)
+{
+    if (errorDisabled || !s || !errorHandler || checkAborting())
         return;
 
     int lineno = lexObject->getActualLineNo();
@@ -11165,10 +11187,8 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
 
 void HqlGram::abortParsing()
 {
-    // disable more error report
-    disableError();
     lookupCtx.setAborting();
-    aborting = true;
+    disableError();//NOTE: aborting the parser may not be immediate, disable future errors to aid the illusion of aborting.
 }
 
 IHqlExpression * HqlGram::createCheckMatchAttr(attribute & attr, type_t tc)
