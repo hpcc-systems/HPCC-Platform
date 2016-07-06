@@ -191,20 +191,20 @@ private:
     typedef std::map<string, CachedUser*> MapUserCache;
 
     MapResPermissionsCache m_resPermissionsMap;  //user specific resource permissions cache
-    mutable ReadWriteLock m_resPermCacheRWLock; //guards m_resPermissionsMap
+    mutable CriticalSection m_resPermCacheLock; //guards m_resPermissionsMap - DO NOT use RW lock as the lookup modifies the cache to remove expired entries
 
     int m_cacheTimeout; //cleanup cycle period
     bool m_transactionalEnabled;
 
     MapUserCache m_userCache;
-    mutable ReadWriteLock m_userCacheRWLock;    //guards m_userCache
+    mutable CriticalSection m_userCacheLock;    //guards m_userCache - DO NOT use RW lock as the lookup modifies the cache to remove expired entries
 
     StringAttr                  m_secMgrClass;
 
     //Managed File Scope support
     int                         m_defaultPermission;
     map<string, ISecResource*>  m_managedFileScopesMap;
-    mutable ReadWriteLock       m_scopesRWLock;//guards m_managedFileScopesMap
+    mutable CriticalSection     m_scopesLock;  //guards m_managedFileScopesMap
     ISecManager *               m_secMgr;
     time_t                      m_lastManagedFileScopesRefresh;
 };
