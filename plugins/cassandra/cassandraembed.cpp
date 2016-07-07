@@ -1639,7 +1639,15 @@ public:
         }
         else
             numElems = totalBytes / elemSize;
-        CassandraCollection collection(cass_collection_new(CASS_COLLECTION_TYPE_SET, numElems));
+
+        // We don't know whether the corresponding field in Cassandra is a list or a set. Try binding a dummy list to tell which.
+        Owned<CassandraCollection> collection;
+        CassandraCollection temp(cass_collection_new(CASS_COLLECTION_TYPE_LIST, 0));
+        if (cass_statement_bind_collection(stmtInfo->queryStatement(), nextParam, temp) == CASS_OK)
+            collection.setown(new CassandraCollection(cass_collection_new(CASS_COLLECTION_TYPE_LIST, numElems)));
+        else
+            collection.setown(new CassandraCollection(cass_collection_new(CASS_COLLECTION_TYPE_SET, numElems)));
+
         while (inData < endData)
         {
             size32_t thisSize = elemSize;
@@ -1648,9 +1656,9 @@ public:
             {
             case type_int:
                 if (elemSize > 4)
-                    rc = cass_collection_append_int64(collection, rtlReadInt(inData, elemSize));
+                    rc = cass_collection_append_int64(*collection, rtlReadInt(inData, elemSize));
                 else
-                    rc = cass_collection_append_int32(collection, rtlReadInt(inData, elemSize));
+                    rc = cass_collection_append_int32(*collection, rtlReadInt(inData, elemSize));
                 break;
             case type_unsigned:
                 UNSUPPORTED("UNSIGNED columns");
@@ -1663,7 +1671,7 @@ public:
                 size32_t utf8chars;
                 rtlDataAttr utfText;
                 rtlStrToUtf8X(utf8chars, utfText.refstr(), numChars, (const char *) inData);
-                rc = cass_collection_append_string_n(collection, utfText.getstr(), rtlUtf8Size(utf8chars, utfText.getstr()));
+                rc = cass_collection_append_string_n(*collection, utfText.getstr(), rtlUtf8Size(utf8chars, utfText.getstr()));
                 break;
             }
             case type_string:
@@ -1676,18 +1684,18 @@ public:
                 size32_t utf8chars;
                 rtlDataAttr utfText;
                 rtlStrToUtf8X(utf8chars, utfText.refstr(), thisSize, (const char *) inData);
-                rc = cass_collection_append_string_n(collection, utfText.getstr(), rtlUtf8Size(utf8chars, utfText.getstr()));
+                rc = cass_collection_append_string_n(*collection, utfText.getstr(), rtlUtf8Size(utf8chars, utfText.getstr()));
                 break;
             }
             case type_real:
                 if (elemSize == sizeof(double))
-                    rc = cass_collection_append_double(collection, * (double *) inData);
+                    rc = cass_collection_append_double(*collection, * (double *) inData);
                 else
-                    rc = cass_collection_append_float(collection, * (float *) inData);
+                    rc = cass_collection_append_float(*collection, * (float *) inData);
                 break;
             case type_boolean:
                 assertex(elemSize == sizeof(bool));
-                rc = cass_collection_append_bool(collection, *(bool*)inData ? cass_true : cass_false);
+                rc = cass_collection_append_bool(*collection, *(bool*)inData ? cass_true : cass_false);
                 break;
             case type_unicode:
             {
@@ -1700,7 +1708,7 @@ public:
                 rtlDataAttr unicode;
                 rtlUnicodeToUtf8X(unicodeChars, unicode.refstr(), thisSize / sizeof(UChar), (const UChar *) inData);
                 size32_t sizeBytes = rtlUtf8Size(unicodeChars, unicode.getstr());
-                rc = cass_collection_append_string_n(collection, unicode.getstr(), sizeBytes);
+                rc = cass_collection_append_string_n(*collection, unicode.getstr(), sizeBytes);
                 break;
             }
             case type_utf8:
@@ -1709,7 +1717,7 @@ public:
                 size32_t numChars = * (size32_t *) inData;
                 inData += sizeof(size32_t);
                 thisSize = rtlUtf8Size(numChars, inData);
-                rc = cass_collection_append_string_n(collection, (const char *) inData, thisSize);
+                rc = cass_collection_append_string_n(*collection, (const char *) inData, thisSize);
                 break;
             }
             case type_data:
@@ -1718,7 +1726,7 @@ public:
                     thisSize = * (size32_t *) inData;
                     inData += sizeof(size32_t);
                 }
-                rc = cass_collection_append_bytes(collection, (const cass_byte_t*) inData, thisSize);
+                rc = cass_collection_append_bytes(*collection, (const cass_byte_t*) inData, thisSize);
                 break;
             }
             checkBind(rc, name);
@@ -1726,7 +1734,7 @@ public:
         }
         checkBind(cass_statement_bind_collection(stmtInfo->queryStatement(),
                                                  checkNextParam(name),
-                                                 collection),
+                                                 *collection),
                   name);
     }
     virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
