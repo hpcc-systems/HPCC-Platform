@@ -769,7 +769,7 @@ class CNWaySelectActivity : public CSlaveActivity, public CThorSteppable
     IHThorNWaySelectArg *helper;
     IThorDataLink *selectedInputITDL = nullptr;
     IEngineRowStream *selectedStream = nullptr;
-    Owned<IStrandJunction> selectedJunction;
+    IStrandJunction *selectedJunction = nullptr;
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
@@ -782,11 +782,10 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
 
-        PARENT::start();
-
         unsigned whichInput = helper->getInputIndex();
-        selectedInputITDL = NULL;
-        selectedStream = NULL;
+        selectedInputITDL = nullptr;
+        selectedStream = nullptr;
+        selectedJunction = nullptr;
         if (whichInput--)
         {
             ForEachItemIn(i, inputs)
@@ -795,20 +794,36 @@ public:
                 IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(cur);
                 if (nWayInput)
                 {
+                    cur->start();
                     unsigned numRealInputs = nWayInput->numConcreteOutputs();
                     if (whichInput < numRealInputs)
                     {
                         selectedInputITDL = nWayInput->queryConcreteInput(whichInput);
-                        selectedStream = connectSingleStream(*this, selectedInputITDL, 0, selectedJunction, true);  // Should this be passing whichInput??
+                        selectedStream = nWayInput->queryConcreteInputStream(whichInput);
+                        selectedJunction = nWayInput->queryConcreteInputJunction(whichInput);
                         break;
                     }
                     whichInput -= numRealInputs;
                 }
+                else
+                {
+                    if (whichInput == 0)
+                    {
+                        selectedInputITDL = cur;
+                        selectedStream = queryInputStream(i);
+                        selectedJunction = queryInputJunction(i);
+                        break;
+                    }
+                    whichInput -= 1;
+                }
+                if (selectedInputITDL)
+                    break;
             }
         }
         if (selectedInputITDL)
             selectedInputITDL->start();
         startJunction(selectedJunction);
+        dataLinkStart();
     }
     virtual void stop() override
     {
@@ -877,6 +892,8 @@ class CThorNWayInputSlaveActivity : public CSlaveActivity, implements IThorNWayI
 {
     IHThorNWayInputArg *helper;
     PointerArrayOf<IThorDataLink> selectedInputs;
+    PointerArrayOf<IEngineRowStream> selectedInputStreams;
+    PointerArrayOf<IStrandJunction> selectedInputJunctions;
     bool grouped;
 
 public:
@@ -896,10 +913,16 @@ public:
         rtlDataAttr selection;
         helper->getInputSelection(selectionIsAll, selectionLen, selection.refdata());
         selectedInputs.kill();
+        selectedInputStreams.kill();
+        selectedInputJunctions.kill();
         if (selectionIsAll)
         {
             ForEachItemIn(i, inputs)
+            {
                 selectedInputs.append(queryInput(i));
+                selectedInputStreams.append(queryInputStream(i));
+                selectedInputJunctions.append(queryInputJunction(i));
+            }
         }
         else
         {
@@ -918,6 +941,8 @@ public:
                     throw MakeStringException(100, "Index %d in RANGE selection list is out of range", nextIndex);
 
                 selectedInputs.append(queryInput(nextIndex-1));
+                selectedInputStreams.append(queryInputStream(nextIndex-1));
+                selectedInputJunctions.append(queryInputJunction(nextIndex-1));
             }
         }
         // NB: Whatever pulls this IThorNWayInput, starts and stops the selectedInputs
@@ -945,6 +970,18 @@ public:
     {
         if (selectedInputs.isItem(idx))
             return selectedInputs.item(idx);
+        return NULL;
+    }
+    virtual IEngineRowStream *queryConcreteInputStream(unsigned idx) const
+    {
+        if (selectedInputStreams.isItem(idx))
+            return selectedInputStreams.item(idx);
+        return NULL;
+    }
+    virtual IStrandJunction *queryConcreteInputJunction(unsigned idx) const
+    {
+        if (selectedInputJunctions.isItem(idx))
+            return selectedInputJunctions.item(idx);
         return NULL;
     }
 };
