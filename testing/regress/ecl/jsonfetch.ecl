@@ -69,6 +69,6 @@ BUILD(dsJsonFetchWithPos, {surname, RecPtr}, 'REGRESS::TEMP::jsonfetch.json.inde
 
 jsonFetchIndex := INDEX(dsJsonFetchWithPos, {surname, RecPtr}, DYNAMIC('REGRESS::TEMP::jsonfetch.json.index'));
 
-fetcheddata := LIMIT(FETCH(dsJsonFetchWithPos, jsonFetchIndex(surname = 'Mitchell'), RIGHT.RecPtr), 10);
+fetcheddata := LIMIT(SORT(FETCH(dsJsonFetchWithPos, jsonFetchIndex(surname = 'Mitchell'), RIGHT.RecPtr), RECORD), 10);
 fetchednopos := project(fetcheddata, personRecord); //don't output positions
 output(fetchednopos, named('fetched'));

@@ -68,6 +68,6 @@ BUILD(xmlWithPos, {surname, RecPtr}, 'REGRESS::TEMP::xmlfetch2.xml.index', OVERW
 
 xmlIndex := INDEX(xmlWithPos, {surname, RecPtr}, DYNAMIC('REGRESS::TEMP::xmlfetch2.xml.index'));
 
-fetcheddata := LIMIT(FETCH(xmlWithPos, xmlIndex(surname = 'Mitchell'), RIGHT.RecPtr), 10);
+fetcheddata := LIMIT(SORT(FETCH(xmlWithPos, xmlIndex(surname = 'Mitchell'), RIGHT.RecPtr), RECORD), 10);
 fetchednopos := project(fetcheddata, personRecord); //don't output positions
 output(fetchednopos, named('fetched'));
