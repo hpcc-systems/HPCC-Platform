@@ -6179,6 +6179,10 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
 
     OwnedHqlExpr call = bindTranslatedFunctionCall(funcdef, args);
 
+    CHqlBoundExpr boundTimer, boundStart;
+    if (external->hasAttribute(timeAtom))
+        buildStartTimer(ctx, boundTimer, boundStart, str(external->queryId()));
+
     //either copy the integral value across, or a var string to fixed string
     if (returnMustAssign)
     {
@@ -6216,6 +6220,9 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     //Old style row target where the row is passed in as a parameter
     if (resultRow)
         finalizeTempRow(ctx, resultRow, resultRowBuilder);
+
+    if (external->hasAttribute(timeAtom))
+        buildStopTimer(ctx, boundTimer, boundStart);
 
     if (returnByReference)
         ctx.associateExpr(expr, localBound);

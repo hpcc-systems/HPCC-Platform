@@ -886,6 +886,9 @@ const char * cppSystemText[]  = {
     "   compileEmbeddedScript(const utf8 script) : method,entrypoint='compileEmbeddedScript';",
     "   utf8 substituteEmbeddedScript(const utf8 script, const utf8 fields, const utf8 substitute) : eclrtl,include,pure,entrypoint='rtlSubstituteEmbeddedScript';",
     "   import(const utf8 script) : method,entrypoint='importFunction';",
+    "   varstring registerTimer(unsigned4 id, const varstring name) : ctxmethod;",
+    "   unsigned8 getStartCycles() : method;",
+    "   noteSectionTime(unsigned8 started) : method;",
     "   END;",
     NULL };
 

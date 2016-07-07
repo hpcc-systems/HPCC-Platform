@@ -418,6 +418,7 @@ IAtom * terminateAtom;
 IAtom * terminatorAtom;
 IAtom * thorAtom;
 IAtom * thresholdAtom;
+IAtom * timeAtom;
 IAtom * timeoutAtom;
 IAtom * timeLimitAtom;
 IAtom * timestampAtom;
@@ -863,6 +864,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(escape);
     MAKEATOM(thor);
     MAKEATOM(threshold);
+    MAKEATOM(time);
     MAKEATOM(timeout);
     MAKEATOM(timeLimit);
     MAKEATOM(timestamp);

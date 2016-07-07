@@ -1778,7 +1778,7 @@ protected:
             virtual IEngineContext *queryEngineContext() { return NULL; }
             virtual char *getDaliServers() { throwUnexpected(); }
             virtual IWorkUnit* updateWorkUnit() const { throwUnexpected(); }
-
+            virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) { throwUnexpected(); }
         } ctx;
 
         size32_t lenResult;
