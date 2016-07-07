@@ -114,6 +114,22 @@ public:
         else
             return in->queryConcreteInput(idx);
     }
+    virtual IEngineRowStream *queryConcreteInputStream(unsigned idx)
+    {
+        // MORE - not sure what is right here!
+        if (in->queryConcreteInput(idx) == in)
+        {
+            assertex(idx==0);
+            return this;
+        }
+        else
+            return in->queryConcreteInputStream(idx);
+    }
+    virtual IStrandJunction *queryConcreteInputJunction(unsigned idx) const
+    {
+        // MORE - not sure what is right here!
+        return in->queryConcreteInputJunction(idx);
+    }
     virtual IRoxieServerActivity *queryActivity()
     {
         return in->queryActivity();
