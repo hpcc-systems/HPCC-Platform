@@ -116,7 +116,7 @@ public:
         {
             if (threadCached || globalCached)
             {
-                Owned<MySQLConnection> cacheEntry = new MySQLConnection(*this);. // Note - takes ownership of this->cacheOptions and this->conn
+                Owned<MySQLConnection> cacheEntry = new MySQLConnection(*this); // Note - takes ownership of this->cacheOptions and this->conn
                 cacheOptions = NULL;
                 conn = NULL;
                 if (threadCached)
