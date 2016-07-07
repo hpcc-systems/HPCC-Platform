@@ -93,26 +93,121 @@ static void fail(const char *message)
 
 // Wrappers to MySQL structures that require corresponding releases
 
+class MySQLConnection;
+
+static __thread MySQLConnection *threadCachedConnection = nullptr;
+
+#define MAX_GLOBAL_CACHE 10
+
 class MySQLConnection : public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    MySQLConnection(MYSQL *_conn) : conn(_conn)
+    MySQLConnection(MYSQL *_conn, const char *_cacheOptions, bool _threadCached, bool _globalCached) : conn(_conn), threadCached(_threadCached), globalCached(_globalCached)
     {
+        if (_cacheOptions && (threadCached || globalCached))
+            cacheOptions = strdup(_cacheOptions);
+        else
+            cacheOptions = nullptr;
     }
     ~MySQLConnection()
     {
         if (conn)
-            mysql_close(conn);
+        {
+            if (threadCached || globalCached)
+            {
+                Owned<MySQLConnection> cacheEntry = new MySQLConnection(*this);. // Note - takes ownership of this->cacheOptions and this->conn
+                cacheOptions = NULL;
+                conn = NULL;
+                if (threadCached)
+                    setThreadCache(cacheEntry.getLink());
+                else // globalCached
+                {
+                    CriticalBlock b(globalCacheCrit);
+                    if (globalCachedConnections.length()==MAX_GLOBAL_CACHE)
+                    {
+                        MySQLConnection &goer = globalCachedConnections.popGet();
+                        goer.globalCached = false;  // Make sure we don't recache it!
+                        goer.Release();
+                    }
+                    globalCachedConnections.add(*cacheEntry.getClear(), 0);
+                }
+            }
+            else
+            {
+                mysql_close(conn);
+                free((char *) cacheOptions);
+            }
+        }
     }
     inline operator MYSQL *() const
     {
         return conn;
     }
+    inline bool matches (const char *_options)
+    {
+        return _options && cacheOptions && streq(_options, cacheOptions);
+    }
+
+    static MySQLConnection *findCachedConnection(const char *options, bool threadCache, bool globalCache)
+    {
+        if (threadCache)
+        {
+            if (threadCachedConnection && threadCachedConnection->matches(options))
+            {
+                MySQLConnection *ret = threadCachedConnection;
+                threadCachedConnection = nullptr;
+                return ret;
+            }
+        }
+        else if (globalCache)
+        {
+            CriticalBlock b(globalCacheCrit);
+            ForEachItemIn(idx, globalCachedConnections)
+            {
+                MySQLConnection &cached = globalCachedConnections.item(idx);
+                if (cached.matches(options))
+                {
+                    globalCachedConnections.remove(idx, true);
+                    return &cached;
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    static void clearThreadCache()
+    {
+        ::Release(threadCachedConnection);
+        threadCachedConnection = NULL;
+    }
+
+    static void setThreadCache(MySQLConnection *connection)
+    {
+        clearThreadCache();
+        threadCachedConnection = connection;
+    }
+
 private:
-    MySQLConnection(const MySQLConnection &);
+    MySQLConnection(const MySQLConnection &from)
+    {
+        conn = from.conn;  // Taking over ownership
+        cacheOptions = from.cacheOptions;  // Taking over ownership
+        threadCached = from.threadCached;
+        globalCached = from.globalCached;
+    }
+
+    static CIArrayOf<MySQLConnection> globalCachedConnections;
+    static CriticalSection globalCacheCrit;
+
     MYSQL *conn;
+    const char *cacheOptions;  // Not done as a StringAttr, in order to avoid reallocation when recaching after use (see copy constructor above)
+    bool threadCached;
+    bool globalCached;
 };
+
+CIArrayOf<MySQLConnection> MySQLConnection::globalCachedConnections;
+CriticalSection MySQLConnection::globalCacheCrit;
 
 class MySQLResult : public CInterface
 {
@@ -962,21 +1057,6 @@ protected:
 // Each call to a MySQL function will use a new MySQLEmbedFunctionContext object
 
 static __thread ThreadTermFunc threadHookChain;
-static __thread MySQLConnection *cachedConnection = NULL;
-static __thread const char *cachedOptions = NULL;
-
-static bool cachedConnectionMatches(const char *options)
-{
-    return streq(options, cachedOptions);
-}
-
-static void clearCache()
-{
-    ::Release(cachedConnection);
-    cachedConnection = NULL;
-    free((void *) cachedOptions);
-    cachedOptions = NULL;
-}
 
 static bool mysqlInitialized = false;
 static __thread bool mysqlThreadInitialized = false;
@@ -984,7 +1064,7 @@ static CriticalSection initCrit;
 
 static void terminateMySqlThread()
 {
-    clearCache();
+    MySQLConnection::clearThreadCache();
     mysql_thread_end();
     mysqlThreadInitialized = false;  // In case it was a threadpool thread...
     if (threadHookChain)
@@ -1010,13 +1090,6 @@ static void initializeMySqlThread()
         threadHookChain = addThreadTermFunc(terminateMySqlThread);
         mysqlThreadInitialized = true;
     }
-}
-
-static void cacheConnection(MySQLConnection *connection, const char *options)
-{
-    clearCache();
-    cachedOptions = strdup(options);
-    cachedConnection = LINK(connection);
 }
 
 enum MySQLOptionParamType
@@ -1123,7 +1196,8 @@ public:
         const char *password = "";
         const char *database = "";
         bool hasMySQLOpt = false;
-        bool caching = true;
+        bool threadCache = false;
+        bool globalCache = true;
         unsigned port = 0;
         StringArray opts;
         opts.appendList(options, ",");
@@ -1146,7 +1220,19 @@ public:
                 else if (stricmp(optName, "database")==0)
                     database = val;
                 else if (stricmp(optName, "cache")==0)
-                    caching = clipStrToBool(val);
+                {
+                    if (clipStrToBool(val) || strieq(val, "thread"))
+                    {
+                        threadCache = true;
+                        globalCache = false;
+                    }
+                    else if (strieq(val, "global"))
+                        globalCache = true;
+                    else if (strieq(val, "none") || strieq(val, "false") || strieq(val, "off") || strieq(val, "0"))
+                        globalCache = false;
+                    else
+                        failx("Unknown cache option %s", val);
+                }
                 else if (strnicmp(optName, "MYSQL_", 6)==0)
                     hasMySQLOpt = true;
                 else
@@ -1154,18 +1240,11 @@ public:
             }
         }
         initializeMySqlThread();
-        if (caching && cachedConnection && cachedConnectionMatches(options))
+        conn.setown(MySQLConnection::findCachedConnection(options, threadCache, globalCache));
+        if (!conn)
         {
-            conn.set(cachedConnection);
-        }
-        else
-        {
-            if (cachedConnection)
-            {
-                ::Release(cachedConnection);
-                cachedConnection = NULL;
-            }
-            conn.setown(new MySQLConnection(mysql_init(NULL)));
+            MySQLConnection::clearThreadCache();
+            conn.setown(new MySQLConnection(mysql_init(NULL), options, threadCache, globalCache));
             if (hasMySQLOpt)
             {
                 ForEachItemIn(idx, opts)
@@ -1224,10 +1303,6 @@ public:
             }
             if (!mysql_real_connect(*conn, server, user, password, database, port, NULL, 0))
                 failx("Failed to connect (%s)", mysql_error(*conn));
-            if (caching)
-            {
-                cacheConnection(conn, options);
-            }
         }
     }
     virtual bool getBooleanResult()
