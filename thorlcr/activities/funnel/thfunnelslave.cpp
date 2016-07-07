@@ -767,7 +767,7 @@ class CNWaySelectActivity : public CSlaveActivity, public CThorSteppable
     typedef CSlaveActivity PARENT;
 
     IHThorNWaySelectArg *helper;
-    IThorDataLink *selectedInputITDL = nullptr;
+    IThorDataLink *selectedInput = nullptr;
     IEngineRowStream *selectedStream = nullptr;
     IStrandJunction *selectedJunction = nullptr;
 public:
@@ -783,45 +783,45 @@ public:
         ActivityTimer s(totalCycles, timeActivities);
 
         unsigned whichInput = helper->getInputIndex();
-        selectedInputITDL = nullptr;
+        selectedInput = nullptr;
         selectedStream = nullptr;
         selectedJunction = nullptr;
         if (whichInput--)
         {
             ForEachItemIn(i, inputs)
             {
-                IThorDataLink *cur = queryInput(i);
-                IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(cur);
+                IThorDataLink *curInput = queryInput(i);
+                IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(curInput);
                 if (nWayInput)
                 {
-                    cur->start();
-                    unsigned numRealInputs = nWayInput->numConcreteOutputs();
-                    if (whichInput < numRealInputs)
+                    curInput->start();
+                    unsigned numOutputs = nWayInput->numConcreteOutputs();
+                    if (whichInput < numOutputs)
                     {
-                        selectedInputITDL = nWayInput->queryConcreteInput(whichInput);
-                        selectedStream = nWayInput->queryConcreteInputStream(whichInput);
-                        selectedJunction = nWayInput->queryConcreteInputJunction(whichInput);
+                        selectedInput = nWayInput->queryConcreteOutput(whichInput);
+                        selectedStream = nWayInput->queryConcreteOutputStream(whichInput);
+                        selectedJunction = nWayInput->queryConcreteOutputJunction(whichInput);
                         break;
                     }
-                    whichInput -= numRealInputs;
+                    whichInput -= numOutputs;
                 }
                 else
                 {
                     if (whichInput == 0)
                     {
-                        selectedInputITDL = cur;
+                        selectedInput = curInput;
                         selectedStream = queryInputStream(i);
                         selectedJunction = queryInputJunction(i);
                         break;
                     }
                     whichInput -= 1;
                 }
-                if (selectedInputITDL)
+                if (selectedInput)
                     break;
             }
         }
-        if (selectedInputITDL)
-            selectedInputITDL->start();
+        if (selectedInput)
+            selectedInput->start();
         startJunction(selectedJunction);
         dataLinkStart();
     }
@@ -845,7 +845,7 @@ public:
     { 
         if (!selectedStream)
             return false;
-        return selectedInputITDL->gatherConjunctions(collector);
+        return selectedInput->gatherConjunctions(collector);
     }
     virtual void resetEOF()
     { 
@@ -868,11 +868,11 @@ public:
     {
         initMetaInfo(info);
         if (selectedStream)
-            calcMetaInfoSize(info, selectedInputITDL);
+            calcMetaInfoSize(info, selectedInput);
         else if (!hasStarted())
             info.canStall = true; // unkwown if !started
     }
-    virtual bool isGrouped() const override { return selectedInputITDL ? selectedInputITDL->isGrouped() : false; }
+    virtual bool isGrouped() const override { return selectedInput ? selectedInput->isGrouped() : false; }
 // steppable
     virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) override
     {
@@ -881,8 +881,8 @@ public:
     }
     virtual IInputSteppingMeta *querySteppingMeta()
     {
-        if (selectedInputITDL)
-            return selectedInputITDL->querySteppingMeta();
+        if (selectedInput)
+            return selectedInput->querySteppingMeta();
         return NULL;
     }
 };
@@ -915,6 +915,11 @@ public:
         selectedInputs.kill();
         selectedInputStreams.kill();
         selectedInputJunctions.kill();
+
+        /* NB: all input streams have been connected and because NWayInput does not support handling multiple streams.
+         * i.e. not a CThorStrandedActivity, will use base getOutputStreams implementation and ensure single streams are created.
+         * To allow NWay activities to handle stranding would need handle at getOutputStreams level and conditional produce junctions if mismatched # of output streams
+         */
         if (selectionIsAll)
         {
             ForEachItemIn(i, inputs)
@@ -945,7 +950,7 @@ public:
                 selectedInputJunctions.append(queryInputJunction(nextIndex-1));
             }
         }
-        // NB: Whatever pulls this IThorNWayInput, starts and stops the selectedInputs
+        // NB: Whatever pulls this IThorNWayInput, starts and stops the selectedInputs and selectedInputJunctions
     }
     virtual void stop() override
     {
@@ -966,19 +971,19 @@ public:
     {
         return selectedInputs.ordinality();
     }
-    virtual IThorDataLink *queryConcreteInput(unsigned idx) const
+    virtual IThorDataLink *queryConcreteOutput(unsigned idx) const
     {
         if (selectedInputs.isItem(idx))
             return selectedInputs.item(idx);
         return NULL;
     }
-    virtual IEngineRowStream *queryConcreteInputStream(unsigned idx) const
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) const
     {
-        if (selectedInputStreams.isItem(idx))
-            return selectedInputStreams.item(idx);
+        if (selectedInputStreams.isItem(whichInput))
+            return selectedInputStreams.item(whichInput);
         return NULL;
     }
-    virtual IStrandJunction *queryConcreteInputJunction(unsigned idx) const
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const
     {
         if (selectedInputJunctions.isItem(idx))
             return selectedInputJunctions.item(idx);
