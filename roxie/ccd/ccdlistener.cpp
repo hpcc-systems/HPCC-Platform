@@ -21,6 +21,7 @@
 #include "jregexp.hpp"
 
 #include "wujobq.hpp"
+#include "thorplugin.hpp"
 
 #include "ccd.hpp"
 #include "ccdcontext.hpp"
@@ -960,7 +961,9 @@ public:
 
     virtual void runOnce(const char *query)
     {
-        UNIMPLEMENTED;
+        Owned<IPooledThread> worker = createNew();
+        worker->init((void *) query);
+        worker->main();
     }
 
     virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, bool continuationNeeded)
@@ -1142,22 +1145,42 @@ public:
 
     virtual void main()
     {
-        Owned <IRoxieDaliHelper> daliHelper = connectToDali();
-        Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid.get(), NULL);
+        assertex(wuid.length());
+        bool standalone = *wuid.str()=='-';
+        Owned<IRoxieDaliHelper> daliHelper;
+        Owned<IConstWorkUnit> wu;
+        Owned<const IQueryDll> dll;
+        if (standalone)
+        {
+            Owned<ILoadedDllEntry> standAloneDll = createExeDllEntry(wuid.get()+1);
+            StringBuffer wuXML;
+            if (getEmbeddedWorkUnitXML(standAloneDll, wuXML))
+            {
+                wu.setown(createLocalWorkUnit(wuXML));
+                dll.setown(createExeQueryDll(wuid.get()+1));
+            }
+        }
+        else
+        {
+            daliHelper.setown(connectToDali());
+            wu.setown(daliHelper->attachWorkunit(wuid.get(), NULL));
+        }
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         Owned<IQueryFactory> queryFactory;
         try
         {
             checkWorkunitVersionConsistency(wu);
-            daliHelper->noteWorkunitRunning(wuid.get(), true);
+            if (daliHelper)
+                daliHelper->noteWorkunitRunning(wuid.get(), true);
             if (!wu)
                 throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
-            queryFactory.setown(createServerQueryFactoryFromWu(wu));
+            queryFactory.setown(createServerQueryFactoryFromWu(wu, dll));
         }
         catch (IException *E)
         {
             reportException(wu, E, *logctx);
-            daliHelper->noteWorkunitRunning(wuid.get(), false);
+            if (daliHelper)
+                daliHelper->noteWorkunitRunning(wuid.get(), false);
             throw;
         }
 #ifndef _DEBUG
@@ -1171,7 +1194,14 @@ public:
         doMain(wu, queryFactory, *logctx);
         sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
         queryFactory.clear();
-        daliHelper->noteWorkunitRunning(wuid.get(), false);
+        if (daliHelper)
+            daliHelper->noteWorkunitRunning(wuid.get(), false);
+        if (standalone && traceLevel)
+        {
+            StringBuffer wuXML;
+            exportWorkUnitToXML(wu, wuXML, true, true, true);
+            DBGLOG("%s", wuXML.str());
+        }
         clearKeyStoreCache(false);   // Bit of a kludge - cache should really be smarter
     }
 

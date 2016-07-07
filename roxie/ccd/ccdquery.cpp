@@ -1679,9 +1679,11 @@ extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *
         return new CRoxieServerQueryFactory(id, NULL, dynamic_cast<const IRoxiePackage&>(package), hashValue, NULL, isDynamic);
 }
 
-extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu)
+extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu, const IQueryDll *_dll)
 {
-    Owned<const IQueryDll> dll = createWuQueryDll(wu);
+    Linked<const IQueryDll> dll = _dll;
+    if (!dll)
+        dll.setown(createWuQueryDll(wu));
     if (!dll)
         return NULL;
     return createServerQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), NULL, true, false); // MORE - if use a constant for id might cache better?

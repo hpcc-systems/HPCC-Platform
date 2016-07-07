@@ -1028,31 +1028,49 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         Owned<IHpccProtocolPluginContext> protocolCtx = new CHpccProtocolPluginCtx();
         if (runOnce)
         {
-            Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(protocolCtx, NULL);
-            Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(getNodeAddress(myNodeIndex), 0, 1, false), 0, 0, NULL);
-            try
+            if (globals->hasProp("-wu"))
             {
-                const char *format = globals->queryProp("format");
-                if (!format)
+                Owned<IHpccProtocolListener> roxieServer = createRoxieWorkUnitListener(1, false);
+                try
                 {
-                    if (globals->hasProp("-xml"))
-                        format = "xml";
-                    else if (globals->hasProp("-csv"))
-                        format = "csv";
-                    else if (globals->hasProp("-raw"))
-                        format = "raw";
-                    else
-                        format = "ascii";
+                    VStringBuffer x("-%s", argv[0]);
+                    roxieServer->runOnce(x);
+                    fflush(stdout);  // in windows if output is redirected results don't appear without flushing
                 }
-                StringBuffer query;
-                query.appendf("<roxie format='%s'/>", format);
-                roxieServer->runOnce(query.str()); // MORE - should use the wu listener instead I suspect
-                fflush(stdout);  // in windows if output is redirected results don't appear without flushing
+                catch (IException *E)
+                {
+                    EXCLOG(E);
+                    E->Release();
+                }
             }
-            catch (IException *E)
+            else
             {
-                EXCLOG(E);
-                E->Release();
+                Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(protocolCtx, NULL);
+                Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(getNodeAddress(myNodeIndex), 0, 1, false), 0, 0, NULL);
+                try
+                {
+                    const char *format = globals->queryProp("format");
+                    if (!format)
+                    {
+                        if (globals->hasProp("-xml"))
+                            format = "xml";
+                        else if (globals->hasProp("-csv"))
+                            format = "csv";
+                        else if (globals->hasProp("-raw"))
+                            format = "raw";
+                        else
+                            format = "ascii";
+                    }
+                    StringBuffer query;
+                    query.appendf("<roxie format='%s'/>", format);
+                    roxieServer->runOnce(query.str()); // MORE - should use the wu listener instead I suspect
+                    fflush(stdout);  // in windows if output is redirected results don't appear without flushing
+                }
+                catch (IException *E)
+                {
+                    EXCLOG(E);
+                    E->Release();
+                }
             }
         }
         else
