@@ -196,7 +196,8 @@ enum StatisticKind
     StNodeMin                           = 0x70000,  // the node containing the minimum
     StNodeMax                           = 0x80000,  // the node containing the maximum
     StDeltaX                            = 0x90000,  // a difference in the value of X
-    StNextModifier                      = 0xa0000,
+    StStdDevX                           = 0xa0000,  // standard deviation in the value of X
+    StNextModifier                      = 0xb0000,
 
 };
 

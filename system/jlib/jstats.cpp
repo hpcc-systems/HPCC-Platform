@@ -23,6 +23,7 @@
 #include "jlog.hpp"
 #include "jregexp.hpp"
 #include "jfile.hpp"
+#include <math.h>
 
 #ifdef _WIN32
 #include <sys/timeb.h>
@@ -454,11 +455,14 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 
 #define NAMES(x, y) \
     BASE_NAMES(x, y) \
-    #x "Delta" # y
+    #x "Delta" # y, \
+    #x "StdDev" #y,
 
-#define TIMENAMES(x, y) \
+
+#define WHENNAMES(x, y) \
     BASE_NAMES(x, y) \
-    "TimeDelta" # y
+    "TimeDelta" # y, \
+    "TimeStdDev" # y,
 
 #define BASE_TAGS(x, y) \
     "@" #x "Min" # y,  \
@@ -474,13 +478,15 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 #define TAGS(x, y) \
     "@" #x #y, \
     BASE_TAGS(x, y) \
-    "@" #x "Delta" # y
+    "@" #x "Delta" # y, \
+    "@" #x "StdDev" # y,
 
 //Define the tags for time items.
-#define TIMETAGS(x, y) \
+#define WHENTAGS(x, y) \
     "@" #x #y, \
     BASE_TAGS(x, y) \
-    "@TimeDelta" # y
+    "@TimeDelta" # y, \
+    "@TimeStdDev" # y,
 
 #define CORESTAT(x, y, m)     St##x##y, m, St##x##y, { NAMES(x, y) }, { TAGS(x, y) }
 #define STAT(x, y, m)         CORESTAT(x, y, m)
@@ -489,7 +495,7 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 
 //These are the macros to use to define the different entries in the stats meta table
 #define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
-#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, St##When##y, { TIMENAMES(When, y) }, { TIMETAGS(When, y) }
+#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
 #define NUMSTAT(y) STAT(Num, y, SMeasureCount)
 #define SIZESTAT(y) STAT(Size, y, SMeasureSize)
 #define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
@@ -607,6 +613,7 @@ StatisticMeasure queryMeasure(StatisticKind kind)
     case StNodeMax:
         return SMeasureNode;
     case StDeltaX:
+    case StStdDevX:
         {
             StatisticMeasure measure = queryMeasure((StatisticKind)(kind & StKindMask));
             switch (measure)
@@ -1471,6 +1478,84 @@ extern IStatisticGatherer * createStatisticsGatherer(StatisticCreatorType creato
 
 //--------------------------------------------------------------------------------------------------------------------
 
+extern IPropertyTree * selectTreeStat(IPropertyTree *node, const char *statName, const char *statType)
+{
+    StringBuffer xpath;
+    xpath.appendf("att[@name='%s']", statName);
+    IPropertyTree *att = node->queryPropTree(xpath.str());
+    if (!att)
+    {
+        att = node->addPropTree("att", createPTree());
+        att->setProp("@name", statName);
+        att->setProp("@type", statType);
+    }
+    return att;
+}
+
+extern void putStatsTreeValue(IPropertyTree *node, const char *statName, const char *statType, unsigned __int64 val)
+{
+    if (val)
+        selectTreeStat(node, statName, statType)->setPropInt64("@value", val);
+}
+
+class TreeNodeStatisticGatherer : public CInterfaceOf<IStatisticGatherer>
+{
+public:
+    TreeNodeStatisticGatherer(IPropertyTree & root) : node(&root) {}
+
+    virtual void beginScope(const StatsScopeId & id)
+    {
+        StringBuffer temp;
+        id.getScopeText(temp);
+        beginScope(temp.str());
+    }
+    virtual void beginSubGraphScope(unsigned id) { throwUnexpected(); }
+    virtual void beginActivityScope(unsigned id) { throwUnexpected(); }
+    virtual void beginEdgeScope(unsigned id, unsigned oid) { throwUnexpected(); }
+    virtual void endScope()
+    { 
+        node = &stack.popGet();
+    }
+    virtual void addStatistic(StatisticKind kind, unsigned __int64 value)
+    {
+        putStatsTreeValue(node, queryStatisticName(kind), "sum", value);
+    }
+
+    virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
+    {
+        if (value)
+        {
+            IPropertyTree * stat = selectTreeStat(node, queryStatisticName(kind), "sum");
+            unsigned __int64 newValue = mergeStatisticValue(stat->getPropInt64("@value"), value, mergeAction);
+            stat->setPropInt64("@value", newValue);
+        }
+    }
+
+    virtual IStatisticCollection * getResult() { throwUnexpected(); }
+
+protected:
+    void beginScope(const char * id)
+    {
+        stack.append(*node);
+
+        StringBuffer xpath;
+        xpath.appendf("scope[@name='%s']", id);
+        IPropertyTree *att = node->queryPropTree(xpath.str());
+        if (!att)
+        {
+            att = node->addPropTree("scope", createPTree());
+            att->setProp("@name", id);
+        }
+        node = att;
+    }
+
+protected:
+    IPropertyTree * node;
+    ICopyArrayOf<IPropertyTree> stack;
+};
+
+//--------------------------------------------------------------------------------------------------------------------
+
 void CRuntimeStatistic::merge(unsigned __int64 otherValue, StatsMergeAction mergeAction)
 {
     value = mergeStatisticValue(value, otherValue, mergeAction);
@@ -1514,7 +1599,7 @@ void CRuntimeStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __
 CRuntimeStatisticCollection & CRuntimeStatisticCollection::registerNested(const StatsScopeId & scope, const StatisticsMapping & mapping)
 {
     ensureNested();
-    return nested->addNested(scope, mapping);
+    return nested->addNested(scope, mapping).queryStats();
 }
 
 void CRuntimeStatisticCollection::rollupStatistics(unsigned numTargets, IContextLogger * const * targets) const
@@ -1637,6 +1722,12 @@ void CRuntimeStatisticCollection::deserializeMerge(MemoryBuffer& in)
     }
 }
 
+void CRuntimeStatisticCollection::getNodeProgressInfo(IPropertyTree &node) const
+{
+    TreeNodeStatisticGatherer gatherer(node);
+    recordStatistics(gatherer);
+}
+
 bool CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
 {
     unsigned numValid = 0;
@@ -1673,6 +1764,114 @@ bool CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
 }
 
 
+//---------------------------------------------------------------------------------------------------------------------
+
+void CRuntimeSummaryStatisticCollection::DerivedStats::mergeStatistic(unsigned __int64 value, unsigned node)
+{
+    if (count == 0)
+    {
+        min = value;
+        max = value;
+        minNode = node;
+        maxNode = node;
+    }
+    else
+    {
+        if (value < min)
+        {
+            min = value;
+            minNode = node;
+        }
+        if (value > max)
+        {
+            max = value;
+            maxNode = node;
+        }
+    }
+    count++;
+    double dvalue = (double)value;
+    sumSquares += dvalue * dvalue;
+}
+
+CRuntimeSummaryStatisticCollection::CRuntimeSummaryStatisticCollection(const StatisticsMapping & _mapping) : CRuntimeStatisticCollection(_mapping)
+{
+    derived = new DerivedStats[ordinality()+1];
+}
+
+CRuntimeSummaryStatisticCollection::~CRuntimeSummaryStatisticCollection()
+{
+    delete[] derived;
+}
+
+void CRuntimeSummaryStatisticCollection::ensureNested()
+{
+    if (!nested)
+        nested = new CNestedSummaryRuntimeStatisticMap;
+}
+
+void CRuntimeSummaryStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __int64 value)
+{
+    CRuntimeStatisticCollection::mergeStatistic(kind, value);
+    unsigned index = queryMapping().getIndex(kind);
+    derived[index].mergeStatistic(value, 0);
+}
+
+void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & target) const
+{
+    CRuntimeStatisticCollection::recordStatistics(target);
+    for (unsigned i = 0; i < ordinality(); i++)
+    {
+        DerivedStats & cur = derived[i];
+        if (cur.count)
+        {
+            StatisticKind kind = getKind(i);
+            StatisticKind serialKind= querySerializedKind(kind);
+
+            unsigned __int64 minValue = convertMeasure(kind, serialKind, cur.min);
+            unsigned __int64 maxValue = convertMeasure(kind, serialKind, cur.max);
+            if (minValue != maxValue)
+            {
+                double sum = (double)convertMeasure(kind, serialKind, values[i].get());
+                //Sum of squares needs to be translated twice
+                double sumSquares = (double)convertMeasure(kind, serialKind, convertMeasure(kind, serialKind, cur.sumSquares));
+                double mean = (double)(sum / cur.count);
+                double variance = (sumSquares - sum * mean) / cur.count;
+                double stdDev = sqrt(variance);
+                double maxSkew = (10000.0 * ((maxValue-mean)/mean));
+                double minSkew = (10000.0 * ((mean-minValue)/mean));
+
+                target.addStatistic((StatisticKind)(serialKind|StMinX), minValue);
+                target.addStatistic((StatisticKind)(serialKind|StMaxX), maxValue);
+                target.addStatistic((StatisticKind)(serialKind|StAvgX), (unsigned __int64)mean);
+                target.addStatistic((StatisticKind)(serialKind|StDeltaX), maxValue-minValue);
+                target.addStatistic((StatisticKind)(serialKind|StStdDevX), (unsigned __int64)stdDev);
+                target.addStatistic((StatisticKind)(serialKind|StSkewMin), (unsigned __int64)minSkew);
+                target.addStatistic((StatisticKind)(serialKind|StSkewMax), (unsigned __int64)maxSkew);
+                if (cur.minNode != cur.maxNode)
+                {
+                    target.addStatistic((StatisticKind)(serialKind|StNodeMin), cur.minNode);
+                    target.addStatistic((StatisticKind)(serialKind|StNodeMax), cur.maxNode);
+                }
+            }
+        }
+    }
+}
+
+bool CRuntimeSummaryStatisticCollection::serialize(MemoryBuffer & out) const
+{
+    UNIMPLEMENTED; // NB: Need to convert sum squares twice.
+}
+
+void CRuntimeSummaryStatisticCollection::deserialize(MemoryBuffer & in)
+{
+    UNIMPLEMENTED;
+}
+
+void CRuntimeSummaryStatisticCollection::deserializeMerge(MemoryBuffer& in)
+{
+    UNIMPLEMENTED;
+}
+
 //---------------------------------------------------
 
 bool CNestedRuntimeStatisticCollection::matches(const StatsScopeId & otherScope) const
@@ -1681,17 +1880,32 @@ bool CNestedRuntimeStatisticCollection::matches(const StatsScopeId & otherScope)
 }
 
 //NOTE: When deserializing, the scope is deserialized by the caller, and the correct target selected
-//which is why there is no corresponding deserialize() method
+//which is why there is no corresponding deserialize() ofthe scope at this point
+void CNestedRuntimeStatisticCollection::deserialize(MemoryBuffer & in)
+{
+    stats->deserialize(in);
+}
+
+void CNestedRuntimeStatisticCollection::deserializeMerge(MemoryBuffer& in)
+{
+    stats->deserialize(in);
+}
+
+void CNestedRuntimeStatisticCollection::merge(const CNestedRuntimeStatisticCollection & other)
+{
+    stats->merge(other.queryStats());
+}
+
 bool CNestedRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
 {
     scope.serialize(out);
-    return CRuntimeStatisticCollection::serialize(out);
+    return stats->serialize(out);
 }
 
 void CNestedRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) const
 {
     target.beginScope(scope);
-    CRuntimeStatisticCollection::recordStatistics(target);
+    stats->recordStatistics(target);
     target.endScope();
 }
 
@@ -1699,7 +1913,7 @@ StringBuffer & CNestedRuntimeStatisticCollection::toStr(StringBuffer &str) const
 {
     str.append(' ');
     scope.getScopeText(str).append("={");
-    CRuntimeStatisticCollection::toStr(str);
+    stats->toStr(str);
     return str.append(" }");
 }
 
@@ -1707,13 +1921,13 @@ StringBuffer & CNestedRuntimeStatisticCollection::toXML(StringBuffer &str) const
 {
     str.append("<Scope id=\"");
     scope.getScopeText(str).append("\">");
-    CRuntimeStatisticCollection::toXML(str);
+    stats->toXML(str);
     return str.append("</Scope>");
 }
 
 //---------------------------------------------------
 
-CRuntimeStatisticCollection & CNestedRuntimeStatisticMap::addNested(const StatsScopeId & scope, const StatisticsMapping & mapping)
+CNestedRuntimeStatisticCollection & CNestedRuntimeStatisticMap::addNested(const StatsScopeId & scope, const StatisticsMapping & mapping)
 {
     ForEachItemIn(i, map)
     {
@@ -1721,7 +1935,7 @@ CRuntimeStatisticCollection & CNestedRuntimeStatisticMap::addNested(const StatsS
         if (cur.matches(scope))
             return cur;
     }
-    CNestedRuntimeStatisticCollection * stats = new CNestedRuntimeStatisticCollection(scope, mapping);
+    CNestedRuntimeStatisticCollection * stats = new CNestedRuntimeStatisticCollection(scope, createStats(mapping));
     map.append(*stats);
     return *stats;
 }
@@ -1737,7 +1951,7 @@ void CNestedRuntimeStatisticMap::deserialize(MemoryBuffer& in)
         scope.deserialize(in, currentStatisticsVersion);
 
         //Use allStatistics as the default mapping if it hasn't already been added.
-        CRuntimeStatisticCollection & child = addNested(scope, allStatistics);
+        CNestedRuntimeStatisticCollection & child = addNested(scope, allStatistics);
         child.deserialize(in);
     }
 }
@@ -1752,7 +1966,7 @@ void CNestedRuntimeStatisticMap::deserializeMerge(MemoryBuffer& in)
         scope.deserialize(in, currentStatisticsVersion);
 
         //Use allStatistics as the default mapping if it hasn't already been added.
-        CRuntimeStatisticCollection & child = addNested(scope, allStatistics);
+        CNestedRuntimeStatisticCollection & child = addNested(scope, allStatistics);
         child.deserializeMerge(in);
     }
 }
@@ -1762,7 +1976,7 @@ void CNestedRuntimeStatisticMap::merge(const CNestedRuntimeStatisticMap & other)
     ForEachItemIn(i, other.map)
     {
         CNestedRuntimeStatisticCollection & cur = other.map.item(i);
-        CRuntimeStatisticCollection & target = addNested(cur.scope, cur.queryMapping());
+        CNestedRuntimeStatisticCollection & target = addNested(cur.scope, cur.queryMapping());
         target.merge(cur);
     }
 }
@@ -1797,6 +2011,16 @@ StringBuffer & CNestedRuntimeStatisticMap::toXML(StringBuffer &str) const
     ForEachItemIn(i, map)
         map.item(i).toXML(str);
     return str;
+}
+
+CRuntimeStatisticCollection * CNestedRuntimeStatisticMap::createStats(const StatisticsMapping & mapping)
+{
+    return new CRuntimeStatisticCollection(mapping);
+}
+
+CRuntimeStatisticCollection * CNestedSummaryRuntimeStatisticMap::createStats(const StatisticsMapping & mapping)
+{
+    return new CRuntimeSummaryStatisticCollection(mapping);
 }
 
 //---------------------------------------------------
