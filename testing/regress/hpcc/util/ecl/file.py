@@ -24,6 +24,7 @@ import traceback
 import re
 import tempfile
 import xml.etree.ElementTree as ET
+import unicodedata
 
 from ...util.util import isPositiveIntNum, getConfig
 
@@ -426,7 +427,13 @@ class ECLFile:
             logging.debug("%3d. diffLines: " + diffLines,  self.taskId )
             if len(diffLines) > 0:
                 self.diff += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())
-                self.diff += diffLines
+                logging.debug( "type(diffLines) is %s: ",  repr(type(diffLines)), extra={'taskId':self.taskId})
+                if type(diffLines) == type(u' '):
+                    diffLines = unicodedata.normalize('NFKD', diffLines).encode('ascii','ignore').replace('\'','').replace('\\u', '\\\\u')
+                    diffLines = repr(diffLines)
+                else:
+                    diffLines = repr(diffLines)
+                self.diff += str(diffLines)
             logging.debug("%3d. self.diff: '" + self.diff +"'",  self.taskId )
         except Exception as e:
             logging.debug( e, extra={'taskId':self.taskId})
