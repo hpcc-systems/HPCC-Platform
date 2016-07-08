@@ -32,7 +32,7 @@
 
 #define STANDARD_CONFIG_BACKUPDIR CONFIG_DIR"/backup"
 #define STANDARD_CONFIG_SOURCEDIR CONFIG_DIR
-#define STANDARD_CONFIG_STAGED_PATH "/etc/HPCCSystems/environment.xml"
+#define STANDARD_CONFIG_STAGED_PATH CONFIG_DIR "/" ENV_XML_FILE
 
 #define DEFAULT_DIRECTORIES "<Directories name=\"" DIR_NAME "\">\
       <Category dir=\"" EXEC_PREFIX "/log/[NAME]/[INST]\" name=\"log\"/>\
