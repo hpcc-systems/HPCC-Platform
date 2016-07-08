@@ -83,6 +83,8 @@ interface IThorNWayInput
 {
     virtual unsigned numConcreteOutputs() const = 0;
     virtual IThorDataLink *queryConcreteInput(unsigned idx) const = 0;
+    virtual IEngineRowStream *queryConcreteInputStream(unsigned idx) const = 0;
+    virtual IStrandJunction *queryConcreteInputJunction(unsigned idx) const = 0;
 };
 
 
@@ -92,16 +94,12 @@ class CThorNarySlaveActivity : public CSlaveActivity
     
 protected:
     PointerArrayOf<IThorDataLink> expandedInputs;
-    Owned<IStrandJunction> *expandedJunctions = nullptr;
     PointerArrayOf<IEngineRowStream> expandedStreams;
+    PointerArrayOf<IStrandJunction> expandedJunctions;
 
 public:
     CThorNarySlaveActivity(CGraphElementBase *container) : CSlaveActivity(container)
     {
-    }
-    ~CThorNarySlaveActivity()
-    {
-        delete [] expandedJunctions;
     }
     virtual void start() override
     {
@@ -112,24 +110,29 @@ public:
             IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(cur);
             if (nWayInput)
             {
+                cur->start();
                 unsigned numRealInputs = nWayInput->numConcreteOutputs();
                 for (unsigned i=0; i < numRealInputs; i++)
                 {
                     IThorDataLink *curReal = nWayInput->queryConcreteInput(i);
+                    IEngineRowStream *curRealStream = nWayInput->queryConcreteInputStream(i);
+                    IStrandJunction *curRealJunction = nWayInput->queryConcreteInputJunction(i);
                     expandedInputs.append(curReal);
+                    expandedStreams.append(curRealStream);
+                    expandedJunctions.append(curRealJunction);
                 }
             }
             else
+            {
                 expandedInputs.append(cur);
+                expandedStreams.append(queryInputStream(i));
+                expandedJunctions.append(queryInputJunction(i));
+            }
         }
         ForEachItemIn(ei, expandedInputs)
             expandedInputs.item(ei)->start();
-        expandedJunctions = new Owned<IStrandJunction> [expandedInputs.ordinality()];
         ForEachItemIn(idx, expandedInputs)
-        {
-            expandedStreams.append(connectSingleStream(*this, expandedInputs.item(idx), 0, expandedJunctions[idx], true));  // MORE - is the index 0 right?
-            startJunction(expandedJunctions[idx]);
-        }
+            startJunction(expandedJunctions.item(idx));
         dataLinkStart();
     }
     void stop()
@@ -137,11 +140,10 @@ public:
         ForEachItemIn(ei, expandedStreams)
             expandedStreams.item(ei)->stop();
         ForEachItemIn(idx, expandedInputs)
-            resetJunction(expandedJunctions[idx]);
+            resetJunction(expandedJunctions.item(idx));
         expandedInputs.kill();
         expandedStreams.kill();
-        delete [] expandedJunctions;
-        expandedJunctions = nullptr;
+        expandedJunctions.kill();
     }
 };
 
