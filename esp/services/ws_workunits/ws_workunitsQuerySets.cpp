@@ -1605,7 +1605,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     if (!query)
     {
         DBGLOG("No matching Query");
-        return false;
+        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND,"No matching query for query ID %s.", queryId);
     }
 
     const char* queryName = query->queryProp("@name");
