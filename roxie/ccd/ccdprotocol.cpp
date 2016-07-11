@@ -76,7 +76,7 @@ public:
     ProtocolListener(IHpccProtocolMsgSink *_sink) : Thread("RoxieListener")
     {
         running = false;
-        sink.set(dynamic_cast<IHpccNativeProtocolMsgSink*>(_sink));
+        sink.setown(dynamic_cast<IHpccNativeProtocolMsgSink*>(_sink));
     }
     virtual IHpccProtocolMsgSink *queryMsgSink()
     {
