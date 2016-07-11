@@ -23,6 +23,9 @@ multiPart := #IFDEFINED(root.multiPart, false);
 
 //--- end of version configuration ---
 
+//nothor
+//Stepped Thor support
+
 import $.Setup;
 import $.Setup.TS;
 wordIndex := Setup.Files(multiPart, false).getWordIndex();
