@@ -554,10 +554,18 @@ startCmd() {
 stop_component() {
     printf "Stopping %-21s" "${compName}... "
 
+    if [ ! -d ${compPath} ] ; then
+        log_success_msg
+        return 0;
+    fi
     cd ${compPath}
+    if [ $? -ne 0 ] ; then
+        log_failure_msg
+        return 1;
+    fi
 
     if [[ -e "${PIDPATH}" ]]; then
-        stopcmd="${START_STOP_DAEMON} -K -p ${PIDPATH} >> tmp.txt 2>&1"
+        stopcmd="${START_STOP_DAEMON} -K -p ${PIDPATH}"
         log "$stopcmd"
         eval $stopcmd
 
@@ -597,8 +605,8 @@ start_component() {
     logDir=$log/${compName}
 
     if [ ! -d $logDir ]; then
-        mkdir -p $logDir >> tmp.txt 2>&1
-        chown -c $user:$group $logDir >> /dev/null 2>&1
+        mkdir -p $logDir || return 1
+        chown $user:$group $logDir || return 1
     fi
 
     # Creating Runtime
@@ -610,7 +618,7 @@ start_component() {
 
     if [ ${runSetupOnly} -ne 1 ]
     then
-        cd ${compPath} >>/dev/null 2>&1
+        cd ${compPath} || return 1
         startCmd ${compName} 0
         STAT=$?
     fi
