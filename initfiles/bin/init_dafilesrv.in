@@ -24,9 +24,8 @@ else
 fi
 shift
 
-PATH_PRE=$(type -path hpcc_setenv)
-source ${PATH_PRE}
-PID_NAME="$PID/$(basename $PWD).pid"
+source ${INSTALL_DIR}/sbin/hpcc_setenv
+PID_NAME="${PID_DIR}/$(basename $PWD).pid"
 source ${INSTALL_DIR}/etc/init.d/hpcc_common
 
 # this must match jsocket hard limit
@@ -47,7 +46,7 @@ killed()
         log "could not kill $component"
     else
         log "$component Stopped"
-        unlock /var/lock/HPCCSystems/$component/${component}.lock
+        unlock ${LOCK_DIR}/$component/${component}.lock
     fi
     exit 255
 }

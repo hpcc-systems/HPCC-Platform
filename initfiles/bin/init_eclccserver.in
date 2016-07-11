@@ -15,48 +15,47 @@
 #    limitations under the License.
 ################################################################################
 
+###<REPLACE>###
 
-PATH_PRE=$(type -path hpcc_setenv)
-source ${PATH_PRE}
-PID_NAME="$PID/$(basename $PWD).pid"
+source ${INSTALL_DIR}/sbin/hpcc_setenv
+PID_NAME="${PID_DIR}/$(basename $PWD).pid"
 source ${INSTALL_DIR}/etc/init.d/hpcc_common
 
 component=$(basename $PWD)
 export logfile="${LOG_DIR}/${component}/init_${component}_$(date +%Y_%m_%d_%H_%M_%S).log"
 
-export SENTINEL="configesp.sentinel"
-log "Removing ---> ${SENTINEL}"
+export SENTINEL="eclccserver.sentinel"
+log "Removing $SENTINEL"
 rm -f ${SENTINEL}
 
 killed()
 {
-    log "attempting to kill $component"
-    kill_process ${PID_NAME} configesp 3 ${SENTINEL}
+    kill_process ${PID_NAME} eclccserver 3 ${SENTINEL}
     if [[ $? -eq 1 ]]; then
         log "could not kill $component"
     else
-        log "Stopped $component"
-        unlock /var/lock/HPCCSystems/$component/${component}.lock
+        log "$component Stopped"
+        unlock ${LOCK_DIR}/$component/${component}.lock
     fi
     exit 255
 }
 
 trap "killed" SIGINT SIGTERM SIGKILL
-log "calling configesp 1>/dev/null 2>/dev/null"
-nohup configesp 1>/dev/null 2>/dev/null &
+log "Calling eclccserver 1>/dev/null 2>/dev/null &"
+eclccserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
-log "removing $PID_NAME"
+log "Removing $PID_NAME"
 rm $PID_NAME
 
 while [[ -e ${SENTINEL} ]]; do
     sleep 5
     if [[ -e ${SENTINEL} ]]; then
-        log "calling configesp 1>/dev/null 2>/dev/null"
-        nohup configesp 1>/dev/null 2>/dev/null &
+        log "Calling eclccserver 1>/dev/null 2>/dev/null &"
+        eclccserver 1>/dev/null 2>/dev/null & 
         echo $! > $PID_NAME
         wait
-        log "removing $PID_NAME"
+        log "Removing $PID_NAME"
         rm $PID_NAME
     fi
 done

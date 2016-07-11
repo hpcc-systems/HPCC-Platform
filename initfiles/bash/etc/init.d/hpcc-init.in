@@ -331,18 +331,18 @@ unset IFS
 if [ ! -z "${compDafilesrv}" ];then
     case "$1" in
         start)
-            /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+            ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
             if [ $? -ne 0 ];then
               log "--------------------------"
               log "${compDafilesrv} ---> ${cmd}"
-              /etc/init.d/dafilesrv $1 2>/dev/null
+              ${INIT_PATH}/dafilesrv $1 2>/dev/null
             else
               log  "Dependent service dafilesrv, ${compDafilesrv} is already running."
               echo "Dependent service dafilesrv, ${compDafilesrv} is already running."
             fi
             ;;
         status|setup)
-            /etc/init.d/dafilesrv ${1} 2>/dev/null
+            ${INIT_PATH}/dafilesrv ${1} 2>/dev/null
             ;;
         stop|restart)
             ;;
@@ -387,11 +387,11 @@ if [ ${cmd} = "restart" ] && [ "${isComp}" -eq 0 ]; then
     echo "Starting the entire System"
     echo "***************************************************"
     cmd=start
-    /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+    ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
     if [ $? -ne 0 ];then
         log "--------------------------"
         log "${compDafilesrv} ---> ${cmd}"
-        /etc/init.d/dafilesrv $1 2>/dev/null
+        ${INIT_PATH}/dafilesrv $1 2>/dev/null
     fi
 
     statForStart=0
@@ -450,7 +450,7 @@ done
 
 if [ "$cmd" = "stop" ] && [ -n "$compDafilesrv" ]
 then
-    /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+    ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
     if [ $? -ne 0 ];then
       log  "Service dafilesrv, ${compDafilesrv} is already stopped."
       echo "Service dafilesrv, ${compDafilesrv} is already stopped."

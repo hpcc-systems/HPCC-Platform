@@ -15,36 +15,35 @@
 #    limitations under the License.
 ################################################################################
 
-PATH_PRE=$(type -path hpcc_setenv)
-source ${PATH_PRE}
-PID_NAME="$PID/$(basename $PWD).pid"
+###<REPLACE>###
 
-INSTALL_DIR="$(dirname ${PATH_PRE})/.."
-source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+source ${INSTALL_DIR}/sbin/hpcc_setenv
+PID_NAME="${PID_DIR}/$(basename $PWD).pid"
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
 
 component=$(basename $PWD)
 export logfile="${LOG_DIR}/${component}/init_${component}_$(date +%Y_%m_%d_%H_%M_%S).log"
 
-export SENTINEL="saserver.sentinel"
-log "Removing $SENTINEL"
+export SENTINEL="dfuserver.sentinel"
+log "Removing ${SENTINEL}"
 rm -f ${SENTINEL}
 
 killed()
 {
     log "Attempting to kill $component"
-    kill_process ${PID_NAME} saserver 3 ${SENTINEL}
+    kill_process ${PID_NAME} dfuserver 15 ${SENTINEL}
     if [[ $? -eq 1 ]]; then
         log "could not kill $component"
     else
         log "$component Stopped"
-        unlock /var/lock/HPCCSystems/$component/${component}.lock
+        unlock ${LOCK_DIR}/$component/${component}.lock
     fi
     exit 255
 }
 
 trap "killed" SIGINT SIGTERM SIGKILL
-log "Calling saserver 1>/dev/null 2>/dev/null &"
-saserver 1>/dev/null 2>/dev/null &
+log "Calling dfuserver 1>/dev/null 2>/dev/null &"
+dfuserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 log "Removing $PID_NAME"
@@ -53,8 +52,8 @@ rm $PID_NAME
 while [[ -e ${SENTINEL} ]]; do
     sleep 5
     if [[ -e ${SENTINEL} ]]; then
-        log "Calling saserver 1>/dev/null 2>/dev/null &"
-        saserver 1>/dev/null 2>/dev/null &
+        log "Calling dfuserver 1>/dev/null 2>/dev/null &"
+        dfuserver 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait
         log "Removing $PID_NAME"
