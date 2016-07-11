@@ -113,6 +113,7 @@ public:
                 helper->queryCompareLeftRight(),
                 NULL,helper->querySerialize(),
                 NULL,
+                NULL,
                 false,
                 isUnstable(),
                 abortSoon,

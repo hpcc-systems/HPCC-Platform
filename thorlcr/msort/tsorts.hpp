@@ -42,6 +42,7 @@ public:
         ICompare *icollate,
         ICompare *icollateupper,
         ISortKeySerializer *keyserializer, 
+        ICompare *primaryCompare,
         const void *partitionrow, 
         bool nosort, 
         bool unstable, 
