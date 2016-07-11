@@ -1696,10 +1696,10 @@ void CNestedRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & ta
 
 StringBuffer & CNestedRuntimeStatisticCollection::toStr(StringBuffer &str) const
 {
-    str.append("{Scope ");
-    scope.getScopeText(str).newline();
+    str.append(' ');
+    scope.getScopeText(str).append("={");
     CRuntimeStatisticCollection::toStr(str);
-    return str.append("}").newline();
+    return str.append(" }");
 }
 
 StringBuffer & CNestedRuntimeStatisticCollection::toXML(StringBuffer &str) const

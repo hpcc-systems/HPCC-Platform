@@ -1975,7 +1975,21 @@ public:
     }
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
     {
-        return queryNullSectionTimer();
+        if (activityId && graph)
+        {
+            IRoxieServerActivity *act = graph->queryActivity(activityId);
+            if (act)
+                return act->registerTimer(activityId, name);
+        }
+        CriticalBlock b(contextCrit);
+        ISectionTimer *timer = functionTimers.getValue(name);
+        if (!timer)
+        {
+            timer = ThorSectionTimer::createTimer(globalStats, name);
+            functionTimers.setValue(name, timer);
+            timer->Release(); // Value returned is not linked
+        }
+        return timer;
     }
 
 protected:
@@ -2381,6 +2395,7 @@ public:
     {
         // NOTE: This is needed to ensure that owned activities are destroyed BEFORE I am,
         // to avoid pure virtual calls when they come to call noteProcessed()
+        logctx.mergeStats(globalStats);
         childGraphs.releaseAll();
     }
 
@@ -3548,26 +3563,6 @@ public:
     IUserDescriptor *queryUserDescriptor()
     {
         return NULL; // TBD - Richard, where do user credentials for a roxie query come from
-    }
-
-    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
-    {
-        if (activityId)
-        {
-            IRoxieServerActivity *act = graph->queryActivity(activityId);
-            if (act)
-                return act->registerTimer(activityId, name);
-        }
-
-        CriticalBlock b(contextCrit);
-        ISectionTimer *timer = functionTimers.getValue(name);
-        if (!timer)
-        {
-            timer = ThorSectionTimer::createTimer(globalStats, name);
-            functionTimers.setValue(name, timer);
-            timer->Release(); // Value returned is not linked
-        }
-        return timer;
     }
 
     virtual bool isResult(const char * name, unsigned sequence)
