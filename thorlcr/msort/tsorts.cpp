@@ -1177,6 +1177,7 @@ public:
         ICompare *_primarySecondaryCompare,
         ICompare *_primarySecondaryUpperCompare,
         ISortKeySerializer *_keyserializer,
+        ICompare *primaryCompare, // needed if no key serializer
         const void *_partitionrow,
         bool _nosort,
         bool _unstable,
@@ -1219,7 +1220,7 @@ public:
             ActPrintLog(activity, "No key serializer");
             keyIf.set(auxrowif);
             rowToKeySerializer.set(keyIf->queryRowSerializer());
-            keyRowCompare = rowCompare;
+            keyRowCompare = primaryCompare ? primaryCompare : rowCompare;
         }
         nosort = _nosort;
         if (nosort)
