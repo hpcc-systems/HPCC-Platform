@@ -2907,7 +2907,7 @@ public:
                 {
                     unknownAttributes.append(getEnumText(subfmt,workunitSortFields));
                     if (subfmt==WUSFtotalthortime)
-                        sortorder = (WUSortField) (sortorder | WUSFnumeric);
+                        sortorder = (WUSortField) (sortorder & ~WUSFnumeric);
                 }
                 else
                 {
@@ -2921,6 +2921,8 @@ public:
                 fv = fv + strlen(fv)+1;
             }
         }
+        if ((sortorder&0xff)==WUSFtotalthortime)
+            sortorder = (WUSortField) (sortorder & ~WUSFnumeric);
         query.insert(0, namefilter.get());
         if (sortorder)
         {
