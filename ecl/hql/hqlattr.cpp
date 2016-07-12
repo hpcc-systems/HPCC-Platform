@@ -2223,7 +2223,7 @@ struct HqlRowCountInfo
 public:
     HqlRowCountInfo() { setUnknown(RCMnone); }
 
-    void applyChoosen(__int64 limit, bool isLocal);
+    void applyChoosen(IHqlExpression * limitExpr, __int64 limit, bool isLocal);
     void combineAlternatives(const HqlRowCountInfo & other);
     void combineBoth(const HqlRowCountInfo & other);
     bool extractHint(IHqlExpression * hint);
@@ -2232,7 +2232,9 @@ public:
     void scaleFixed(__int64 scale);
     void scaleRange(__int64 scale);
     void setMin(__int64 n) { min.setown(makeConstant(n)); }
+    void setMin(IHqlExpression * value) { min.set(value); }
     void setN(__int64 n);
+    void setN(IHqlExpression * value);
     void setRange(__int64 low, __int64 high);
     void setUnknown(RowCountMagnitude _magnitude);
     void setMaxMagnitude(RowCountMagnitude _magnitude)
@@ -2279,14 +2281,19 @@ public:
 };
 
 
-void HqlRowCountInfo::applyChoosen(__int64 limit, bool isLocal)
+void HqlRowCountInfo::applyChoosen(IHqlExpression * limitExpr, __int64 limit, bool isLocal)
 {
     if (getMin() > limit)
-        min.setown(makeConstant(limit));
+        min.set(limitExpr);
 
     __int64 maxLimit = isLocal ? RCclusterSizeEstimate*limit : limit;
     if (getIntValue(max, maxLimit+1) > maxLimit)
-        max.setown(makeConstant(maxLimit));
+    {
+        if (isLocal)
+            max.setown(makeConstant(maxLimit));
+        else
+            max.set(limitExpr);
+    }
     RowCountMagnitude newMagnitude = getRowCountMagnitude(maxLimit);
     if (magnitude > newMagnitude)
         magnitude = newMagnitude;
@@ -2335,7 +2342,7 @@ bool HqlRowCountInfo::extractHint(IHqlExpression * hint)
     switch (arg->getOperator())
     {
     case no_constant:
-        setN(getIntValue(arg));
+        setN(arg);
         return true;
     case no_rangeto:
         setRange(0, getIntValue(arg->queryChild(0)));
@@ -2369,7 +2376,7 @@ bool HqlRowCountInfo::extractHint(IHqlExpression * hint)
 void HqlRowCountInfo::getText(StringBuffer & text) const
 {
     min->queryValue()->generateECL(text);
-    if (min != max)
+    if (getMin() != getIntValue(max, -1))
     {
         text.append("..");
         if (max->queryValue())
@@ -2421,6 +2428,13 @@ void HqlRowCountInfo::setN(__int64 n)
     setMin(n);
     max.set(min);
     magnitude = getRowCountMagnitude(n);
+}
+
+void HqlRowCountInfo::setN(IHqlExpression * value)
+{
+    min.set(value);
+    max.set(min);
+    magnitude = getRowCountMagnitude(getIntValue(value));
 }
 
 
@@ -2550,9 +2564,10 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
         {
             retrieveRowInformation(info, ds);
 
-            __int64 limit = getIntValue(expr->queryChild(1), 0);
+            IHqlExpression * limitExpr = expr->queryChild(1);
+            __int64 limit = getIntValue(limitExpr, 0);
             if ((limit != 0) && !isGrouped(expr))
-                info.applyChoosen(limit, isLocalActivity(expr));
+                info.applyChoosen(limitExpr, limit, isLocalActivity(expr));
             else
                 info.limitMin(limit);
             break;
@@ -2684,7 +2699,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
                 IHqlExpression * maxCount = queryAttributeChild(expr, maxCountAtom, 0);
                 IHqlExpression * aveCount = queryAttributeChild(expr, aveAtom, 0);
                 if (count)
-                    info.setN(getIntValue(count));
+                    info.setN(count);
                 else if (maxCount)
                     info.setRange(0, getIntValue(maxCount));
                 else if (aveCount)
@@ -2744,10 +2759,10 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
                     if (expr->hasAttribute(localAtom))
                     {
                         info.setUnknown(RCMdisk);
-                        info.setMin(maxCount);
+                        info.setMin(count);
                     }
                     else
-                        info.setN(maxCount);
+                        info.setN(count);
                 }
             }
             else
@@ -2759,7 +2774,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
         info.setN(expr->isDatarow() ? 1 : 0);
         break;
     case no_fail:
-        info.setN(0);
+        info.setN(I64C(0));
         break;
     case no_if:
         {
@@ -2813,11 +2828,12 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
         {
             retrieveRowInformation(info, ds);
 
-            __int64 choosenLimit = getIntValue(expr->queryChild(1), 0);
+            IHqlExpression * limitExpr = expr->queryChild(1);
+            __int64 choosenLimit = getIntValue(limitExpr, 0);
             if (choosenLimit == CHOOSEN_ALL_LIMIT)
                 info.limitMin(0);   // play safe - could be clever if second value is constant, and min/max known.
             else if ((choosenLimit != 0) && !isGrouped(expr))
-                info.applyChoosen(choosenLimit, isLocalActivity(expr));
+                info.applyChoosen(limitExpr, choosenLimit, isLocalActivity(expr));
             else
                 info.limitMin(choosenLimit);
         }
@@ -2847,9 +2863,10 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
         {
             retrieveRowInformation(info, ds);
 
-            __int64 choosenLimit = getIntValue(expr->queryChild(2), 0);
+            IHqlExpression * limitExpr = expr->queryChild(2);
+            __int64 choosenLimit = getIntValue(limitExpr, 0);
             if ((choosenLimit > 0) && !isGrouped(expr))
-                info.applyChoosen(choosenLimit, isLocalActivity(expr));
+                info.applyChoosen(limitExpr, choosenLimit, isLocalActivity(expr));
             else
                 info.limitMin(choosenLimit);
         }
@@ -2991,7 +3008,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
             if (dft)
                 retrieveRowInformation(info, dft);
             else
-                info.setN(0);
+                info.setN(I64C(0));
 
             ForEachChildFrom(i2, expr, start)
             {

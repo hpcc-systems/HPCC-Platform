@@ -1884,7 +1884,7 @@ FUNCTIONMACRO|MACRO {
                         msg.append("\"");
                         lexer->reportError(returnToken, ERR_STRING_UNENDED, "%s", msg.str());
                         // recovery 
-                        returnToken.setExpr(createConstant(""));
+                        returnToken.setExpr(createBlankString());
                         return STRING_CONST;                        
                     }
 
@@ -1892,7 +1892,7 @@ FUNCTIONMACRO|MACRO {
                         /* error pattern */
                         setupdatepos;
                         lexer->reportError(returnToken, ERR_STRING_ILLDELIMITER, "\" is not legal string delimiter; use ' instead");
-                        returnToken.setExpr(createConstant(""));
+                        returnToken.setExpr(createBlankString());
                         return STRING_CONST;
                     }
 [xX]\'{hexpairs}\'  { 

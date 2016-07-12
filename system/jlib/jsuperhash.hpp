@@ -49,7 +49,7 @@ public:
     void             releaseAll(); // like kill(), but does not resize the table
 
 #ifdef TRACE_HASH
-    void dumpStats();
+    void dumpStats() const;
 #endif
 
 protected:

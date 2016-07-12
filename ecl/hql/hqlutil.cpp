@@ -4452,7 +4452,7 @@ IHqlExpression * getFailMessage(IHqlExpression * failExpr, bool nullIfOmitted)
     }
     if (nullIfOmitted)
         return NULL;
-    return createConstant("");
+    return createBlankString();
 }
 
 int compareAtoms(IInterface * const * pleft, IInterface * const * pright)

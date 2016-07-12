@@ -316,6 +316,7 @@ public:
 public:
     inline void doSetTransformExtra(IInterface * x, unsigned depthMask);
     inline void resetTransformExtra(IInterface * _extra, unsigned depth);
+    inline unsigned queryHash() const { return hashcode; }
 };
 
 //The following couple of classes are here primarily to save memory.  

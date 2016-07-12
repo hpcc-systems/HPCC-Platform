@@ -4363,7 +4363,7 @@ ITypeInfo * HqlGram::queryElementType(const attribute & errpos, IHqlExpression *
 void HqlGram::setDefaultString(attribute &a)
 {
     a.release();
-    a.setExpr(createConstant(""));
+    a.setExpr(createBlankString());
 }
 
 void HqlGram::ensureString(attribute &a)
@@ -11600,7 +11600,7 @@ void HqlGram::beginRecord()
     pushRecord(r); 
     LinkedHqlExpr locale = queryDefaultLocale();
     if (!locale)
-        locale.setown(createConstant(""));
+        locale.setown(createBlankString());
     pushLocale(locale.getClear());
 }
 

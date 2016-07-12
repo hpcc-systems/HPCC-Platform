@@ -69,6 +69,7 @@
 //#define GATHER_LINK_STATS
 //#define VERIFY_EXPR_INTEGRITY
 //#define CHECK_RECORD_CONSISTENCY
+//#define GATHER_COMMON_STATS
 
 // To debug a symbol in the C++ generated code, use SEARCH_NAME*
 // and set a breakpoint on debugMatchedName() below
@@ -323,17 +324,22 @@ PURE(expression) - treat an expression as pure - probably superseded with WITHIN
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class HqlExprCache : public JavaHashTableOf<IHqlExpression>
+class HqlExprCache : public JavaHashTableOf<CHqlExpression>
 {
 public:
-    HqlExprCache() : JavaHashTableOf<IHqlExpression>(false) {}
+    HqlExprCache() : JavaHashTableOf<CHqlExpression>(false) {}
 
 protected:
+    virtual unsigned getHashFromElement(const void * et) const
+    {
+        return static_cast<const CHqlExpression *>(et)->queryHash();
+    }
+
     virtual bool matchesFindParam(const void * _element, const void * _key, unsigned fphash) const
     { 
-        const IHqlExpression * element = static_cast<const IHqlExpression *>(_element);
-        const IHqlExpression * key = static_cast<const IHqlExpression *>(_key);
-        return (element->getHash() == fphash) && element->equals(*key);
+        const CHqlExpression * element = static_cast<const CHqlExpression *>(_element);
+        const CHqlExpression * key = static_cast<const CHqlExpression *>(_key);
+        return (element->queryHash() == fphash) && element->equals(*key);
     }
 
     virtual unsigned getTableLimit(unsigned max)
@@ -368,6 +374,7 @@ static IHqlExpression * constantLikelihoodLikely;
 static IHqlExpression * constantLikelihoodUnlikely;
 static IHqlExpression * constantLikelihoodTrue;
 static IHqlExpression * constantLikelihoodFalse;
+static IHqlExpression * constantBlankString;
 static IHqlExpression * defaultSelectorSequenceExpr;
 static IHqlExpression * dummyVirtualSeq;
 static IHqlExpression * newSelectAttrExpr;
@@ -454,6 +461,7 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     constantLikelihoodUnlikely = createConstant(createRealValue(0.01,8));
     constantLikelihoodTrue = createConstant(createRealValue(1.0,8));
     constantLikelihoodFalse = createConstant(createRealValue(0.0,8));
+    constantBlankString = createConstant(LINK(blank));
     defaultSelectorSequenceExpr = createAttribute(_selectorSequence_Atom);
     dummyVirtualSeq =  createSequence(no_attr, makeNullType(), _virtualSeq_Atom, 0);
     newSelectAttrExpr = createExprAttribute(newAtom);
@@ -489,6 +497,7 @@ MODULE_EXIT()
     constantLikelihoodUnlikely->Release();
     constantLikelihoodTrue->Release();
     constantLikelihoodFalse->Release();
+    constantBlankString->Release();
     blank->Release();
     cachedContextAttribute->Release();
     cachedLocalAttribute->Release();
@@ -4815,7 +4824,9 @@ IHqlExpression * CHqlExpression::commonUpExpression()
     {
         commonUpCount[statOp]++;
         if (match != this)
+        {
             commonUpClash[statOp]++;
+        }
     }
 #endif
     Release();
@@ -12440,6 +12451,11 @@ extern IHqlExpression *createConstant(bool constant)
     if (constant)
         return LINK(constantTrue);
     return LINK(constantFalse);
+}
+
+extern IHqlExpression *createBlankString()
+{
+    return LINK(constantBlankString);
 }
 
 extern IHqlExpression *createConstant(__int64 constant)

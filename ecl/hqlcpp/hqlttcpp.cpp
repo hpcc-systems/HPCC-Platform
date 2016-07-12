@@ -6271,7 +6271,7 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
             folded.setown(foldHqlExpression(cast));
         }
         else
-            folded.setown(createConstant(""));
+            folded.setown(createBlankString());
 
         HqlExprArray newFormals;
         unwindChildren(newFormals, formals);
