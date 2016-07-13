@@ -92,6 +92,7 @@ source  ${INSTALL_DIR}/etc/init.d/export-path
 
 export logfile=${LOG_DIR}/hpcc-init.log
 
+createDir ${LOG_DIR}
 [ ! -e ${logfile}  ] && touch $logfile
 
 ## Debug variable allowing verbose debug output
@@ -117,7 +118,6 @@ bin_path=${path}/bin
 source ${configgen_path}/hpcc_setenv
 
 which_service
-get_commondirs
 
 log "--------------------------"
 log "--------------------------"
@@ -142,7 +142,6 @@ chown -cR $user:$group ${home}/${user} 1>/dev/null 2>/dev/null
 
 basepath=`pwd`
 
-validate_configuration
 COMPS=$(${configgen_path}/configgen -env ${envfile} -list)
 if [[ $rc -ne 0 ]]; then
     log "hpcc-init: failure to build COMPS from configgen call"
@@ -318,14 +317,16 @@ esac
 
 log "Attempting to execute ${cmd} argument on specified components"
 
-unset IFS
 
 # Create dropzone on a full system start
-if [ ${cmd} = "start" ] || [ "${cmd}" = "restart" ]; then
+if [ "${cmd}" = "start" ] || [ "${cmd}" = "restart" ]; then
+    validate_configuration
+    get_commondirs
     log "Creating dropzone"
     create_dropzone
 fi
 
+unset IFS
 #Before we start/stop any component we should check dafilesrv.
 if [ ! -z "${compDafilesrv}" ];then
     case "$1" in
