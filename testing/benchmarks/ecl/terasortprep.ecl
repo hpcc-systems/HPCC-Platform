@@ -17,6 +17,9 @@
 
 IMPORT Std.System.thorlib;
 
+#option('crcReadEnabled', false);
+#option('crcWriteEnabled', false);
+
 // Generate standard terasort datafile (minutesort format)
 
 unsigned8 totalrecs := 1000*1000*1000*1000/100;
