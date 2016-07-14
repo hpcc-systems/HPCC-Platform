@@ -1683,6 +1683,7 @@ inline bool isContextDependentExceptGraph(IHqlExpression * expr)
 inline bool isGraphDependent(IHqlExpression * expr)     { return (expr->getInfoFlags() & HEFgraphDependent) != 0; }
 inline bool containsTranslated(IHqlExpression * expr)   { return (expr->getInfoFlags() & (HEFtranslated)) != 0; }
 inline bool containsSideEffects(IHqlExpression * expr)  { return (expr->getInfoFlags() & (HEFaction|HEFthrowscalar|HEFthrowds)) != 0; }
+inline bool containsThrow(IHqlExpression * expr)        { return (expr->getInfoFlags() & (HEFthrowscalar|HEFthrowds)) != 0; }
 inline bool containsInternalSelect(IHqlExpression * expr)  { return (expr->getInfoFlags() & (HEFinternalSelect)) != 0; }
 inline bool containsThisNode(IHqlExpression * expr)     { return (expr->getInfoFlags() & (HEFcontainsThisNode)) != 0; }
 inline bool usesRuntimeContext(IHqlExpression * expr)   { return (expr->getInfoFlags() & (HEFaccessRuntimeContext)) != 0; }
