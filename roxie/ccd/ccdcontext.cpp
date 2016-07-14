@@ -2663,6 +2663,7 @@ protected:
         isBlocked = false;
         isNative = true;
         sendHeartBeats = false;
+        trim = false;
 
         lastSocketCheckTime = startTime;
         lastHeartBeat = startTime;
@@ -2761,6 +2762,8 @@ public:
         isNative = (flags & HPCC_PROTOCOL_NATIVE);
         isRaw = (flags & HPCC_PROTOCOL_NATIVE_RAW);
         isBlocked = (flags & HPCC_PROTOCOL_BLOCKED);
+        trim = (flags & HPCC_PROTOCOL_TRIM);
+
         xmlStoredDatasetReadFlags = _xmlReadFlags;
         sendHeartBeats = enableHeartBeat && isRaw && isBlocked && options.priority==0;
 

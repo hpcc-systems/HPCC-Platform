@@ -162,6 +162,10 @@
                           path="FileDkcAccess"
                           resource="FileDkcAccess"
                           service="ws_fs"/>
+     <AuthenticateFeature description="Access to upload files to dropzone"
+                          path="FileUploadAccess"
+                          resource="FileUploadAccess"
+                          service="ws_fs" />
      <AuthenticateFeature description="Access to files in dropzone"
                           path="FileIOAccess"
                           resource="FileIOAccess"

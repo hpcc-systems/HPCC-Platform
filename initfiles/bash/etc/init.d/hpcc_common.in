@@ -89,6 +89,7 @@ dir.parser() {
         if [ $# -lt 1 ]; then
             [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
         fi
+        OIFS=${IFS}
         IFS=$'\n' && cmp=( $@ )
         cmp=( ${cmp[*]/#/dir_} )
         cmp=( ${cmp[*]/=/= dirItem=} )
@@ -98,6 +99,7 @@ dir.parser() {
         for i in ${!dir_*}; do
             dirArray=( ${dirArray[@]} $i )
         done
+        IFS=${OIFS}
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 0
 }
 
@@ -273,7 +275,7 @@ set_componentvars() {
 
 validate_configuration() {
     if ! validation_error=$(${configgen_path}/configgen -env ${envfile} -validateonly 2>&1); then
-        log  "get_commondirs(): validation failure ${envfile}"
+        log  "validate_configuration(): validation failure ${envfile}"
         log  "${validation_error}"
         echo -e "\033[31merror\033[0m: configgen xml validation failure"
         exit 1
@@ -282,7 +284,6 @@ validate_configuration() {
 
 get_commondirs() {
     componentFile="${path}/componentfiles/configxml"
-    validate_configuration
     DIRS=$(${configgen_path}/configgen -env ${envfile} -id ${componentFile} -listcommondirs)
     rc=$?
     if [[ $rc -ne 0 ]]; then
@@ -299,7 +300,6 @@ configGenCmd() {
     # Creating logfiles for component
     logDir=$log/${compName}
 
-    validate_configuration
     configcmd="${configgen_path}/configgen -env ${envfile} -od ${runtime} -id ${componentFile} -c ${compName}"
     log "$configcmd"
     if [ "$(whoami)" != "${user}" ]; then
@@ -369,6 +369,7 @@ createRuntime() {
     chown -c $user:$group "$lock/$compName"  1> /dev/null 2>/dev/null
     chown -c $user:$group "$log/$compName"  1> /dev/null 2>/dev/null
     chown -c $user:$group "$compPath"  1> /dev/null 2>/dev/null
+
     dir.getByName data
     chown -c $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
     dir.getByName data2
@@ -696,7 +697,8 @@ setup_component() {
 }
 
 create_dropzone() {
-    validate_configuration
+    OIFS=${IFS}
+    unset IFS
     dropzones=$(${configgen_path}/configgen -env ${envfile} -listdirs)
     rc=$?
     if [[ $rc -ne 0 ]]; then
@@ -712,6 +714,7 @@ create_dropzone() {
             chmod 777 $D > /dev/null 2>&1
         fi
     done
+    IFS=${OIFS}
 }
 
 check_user(){

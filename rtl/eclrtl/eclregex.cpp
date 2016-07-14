@@ -344,7 +344,7 @@ public:
         else
             pattern = RegexPattern::compile(_UregExp, UREGEX_CASE_INSENSITIVE, uperr, uerr);
 
-        matcher = pattern->matcher(uerr);
+        matcher = pattern ? pattern->matcher(uerr) : NULL;
         if (U_FAILURE(uerr))
         {
             char * expAscii;
@@ -357,8 +357,8 @@ public:
             rtlFree(expAscii);
             delete matcher;
             delete pattern;
-            matcher = 0;
-            pattern = 0;
+            matcher = NULL;
+            pattern = NULL;
             rtlFail(0, msg.c_str());  //throws
         }
     }

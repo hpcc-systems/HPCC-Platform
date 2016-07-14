@@ -171,6 +171,7 @@ public:
     IThorDataLink *queryOutput(unsigned index) const;
     IThorDataLink *queryInput(unsigned index) const;
     IEngineRowStream *queryInputStream(unsigned index) const;
+    IStrandJunction *queryInputJunction(unsigned index) const;
     IEngineRowStream *queryOutputStream(unsigned index) const;
     inline bool queryInputStarted(unsigned input) const { return inputs.item(input).isStarted(); }
     inline bool queryInputStopped(unsigned input) const { return inputs.item(input).isStopped(); }

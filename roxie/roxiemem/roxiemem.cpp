@@ -132,6 +132,7 @@ static bool heapNotifyUnusedEachFree = true;
 static bool heapNotifyUnusedEachBlock = false;
 static unsigned __int64 lastStatsCycles;
 static unsigned __int64 statsCyclesInterval;
+static std::atomic<unsigned> activeRowManagers;
 
 static unsigned heapAllocated;
 static std::atomic_uint dataBufferPages;
@@ -549,14 +550,14 @@ static StringBuffer &memmap(StringBuffer &stats)
 
 static void throwHeapExhausted(unsigned allocatorId, unsigned pages)
 {
-    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u", allocatorId, heapTotalPages, pages);
+    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u active(%u) heap(%u/%u)", allocatorId, heapTotalPages, pages, activeRowManagers.load(), heapAllocated, heapTotalPages);
     DBGLOG("%s", msg.str());
     throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
 
 static void throwHeapExhausted(unsigned allocatorId, unsigned newPages, unsigned oldPages)
 {
-    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u, had %u", allocatorId, heapTotalPages, newPages, oldPages);
+    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u, had %u active(%u) heap(%u/%u)", allocatorId, heapTotalPages, newPages, oldPages, activeRowManagers.load(), heapAllocated, heapTotalPages);
     DBGLOG("%s", msg.str());
     throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
@@ -3548,7 +3549,6 @@ void initAllocSizeMappings(const unsigned * sizes)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static std::atomic<unsigned> activeRowManagers;
 class CChunkingRowManager : public CRowManager
 {
     friend class CRoxieFixedRowHeap;
@@ -4152,7 +4152,7 @@ public:
                     releaseEmptyPages(querySlaveId(), true);
                     if (numHeapPages == totalHeapPages.load(std::memory_order_relaxed))
                     {
-                        VStringBuffer msg("Memory limit exceeded: current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
+                        VStringBuffer msg("Memory limit exceeded: current %u, requested %u, limit %u active(%u) heap(%u/%u)", pageCount, numRequested, pageLimit, activeRowManagers.load(), heapAllocated, heapTotalPages);
                         logctx.CTXLOG("%s", msg.str());
 
                         //Avoid a stack trace if the allocation is optional

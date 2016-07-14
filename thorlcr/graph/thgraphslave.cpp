@@ -251,6 +251,12 @@ IEngineRowStream *CSlaveActivity::queryInputStream(unsigned index) const
     return inputs.item(index).stream;
 }
 
+IStrandJunction *CSlaveActivity::queryInputJunction(unsigned index) const
+{
+    if (index>=inputs.ordinality()) return nullptr;
+    return inputs.item(index).junction;
+}
+
 IEngineRowStream *CSlaveActivity::queryOutputStream(unsigned index) const
 {
     if (index>=outputStreams.ordinality()) return nullptr;

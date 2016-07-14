@@ -22,8 +22,6 @@ source ${PATH_PRE}
 INSTALL_DIR=$(dirname ${PATH_PRE})/..
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 component=$(basename $PWD)
-dir.getByName lock
-lock="$dir_return"
 
 PID_NAME="$PID/${component}.pid"
 
@@ -80,7 +78,7 @@ kill_slaves()
             FRUNSSH_RC=$?
             if [[ ${FRUNSSH_RC} -gt 0 ]]; then
                 log "Error ${FRUNSSH_RC} in frunssh"
-                log "Please check $(dirname ${LOG_DIR})/frunssh for more details"
+                log "Please check ${LOG_DIR}/frunssh for more details"
                 # clean up any slaves it was able to reach
                 log "Stopping ${component}"
                 kill_process ${PID_NAME} thormaster_${component} 30
@@ -140,7 +138,7 @@ while [[ 1 ]]; do
         FRUNSSH_RC=$?
         if [[ ${FRUNSSH_RC} -gt 0 ]]; then
             log "Error ${FRUNSSH_RC} in frunssh"
-            log "Please check $(dirname ${LOG_DIR})/frunssh for more details"
+            log "Please check ${LOG_DIR}/frunssh for more details"
             # clean up any slaves it was able to reach
             killed
         fi

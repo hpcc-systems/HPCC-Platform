@@ -26,6 +26,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/esp/esdllib
     ${HPCC_SOURCE_DIR}/system/jlib
     ${HPCC_SOURCE_DIR}/system/security/shared
+    ${HPCC_SOURCE_DIR}/rtl/eclrtl
     ${HPCC_SOURCE_DIR}/rtl/include #IXMLWriter
     ${HPCC_SOURCE_DIR}/common/thorhelper #JSONWRITER
 )
