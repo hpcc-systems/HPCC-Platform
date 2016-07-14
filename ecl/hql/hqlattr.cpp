@@ -1335,6 +1335,9 @@ HqlCachedPropertyTransformer::HqlCachedPropertyTransformer(HqlTransformerInfo & 
 
 IHqlExpression * HqlCachedPropertyTransformer::transform(IHqlExpression * expr)
 {
+    if (expr != expr->queryBody())
+        return QuickHqlTransformer::transform(expr);
+
     IInterface * match = meta.queryExistingProperty(expr, propKind);
     if (match)
         return static_cast<IHqlExpression *>(LINK(match));
@@ -1343,6 +1346,11 @@ IHqlExpression * HqlCachedPropertyTransformer::transform(IHqlExpression * expr)
 
     if (transformed != expr)
     {
+        //Very unusual - e.g., no_delayedselect
+        IHqlExpression * body = transformed->queryBody();
+        if (transformed != body)
+            transformed.set(body);
+
         //Tag serialized form so don't re-evaluate
         meta.addProperty(transformed, propKind, transformed);
     }
@@ -3802,12 +3810,15 @@ ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue)
 }
 
 //---------------------------------------------------------------------------------
-IHqlExpression * queryLikelihoodExpr(IHqlExpression * expr)
-{
-    IInterface * match = meta.queryExistingProperty(expr, EPlikelihood);
-    if (match)
-        return static_cast<IHqlExpression *>(match);
 
+inline IHqlExpression * queryLikelihoodExpr(IHqlExpression * expr)
+{
+    return expr->queryProperty(EPlikelihood);
+}
+
+
+IHqlExpression * evaluateLikelihood(IHqlExpression * expr)
+{
     LinkedHqlExpr likelihoodExpr;
     switch(expr->getOperator())
     {
@@ -3881,7 +3892,7 @@ IHqlExpression * queryLikelihoodExpr(IHqlExpression * expr)
 
 double queryLikelihood(IHqlExpression * expr)
 {
-    IHqlExpression * likelihoodExpr = queryLikelihoodExpr(expr);
+    IHqlExpression * likelihoodExpr = expr->queryProperty(EPlikelihood);
     return likelihoodExpr->queryValue()->getRealValue();
 }
 
@@ -3910,7 +3921,7 @@ double queryActivityLikelihood(IHqlExpression * expr)
 }
 //---------------------------------------------------------------------------------------------------------------------
 
-IInterface * CHqlExpression::queryExistingProperty(ExprPropKind propKind) const
+IInterface * CHqlRealExpression::queryExistingProperty(ExprPropKind propKind) const
 {
     //If this was used significantly in a multi threaded environment then reduce the work in the spinblock
     SpinBlock block(*propertyLock);
@@ -3922,14 +3933,14 @@ IInterface * CHqlExpression::queryExistingProperty(ExprPropKind propKind) const
             IInterface * value = cur->value;
             if (value)
                 return value;
-            return static_cast<IHqlExpression *>(const_cast<CHqlExpression *>(this));
+            return static_cast<IHqlExpression *>(const_cast<CHqlRealExpression *>(this));
         }
         cur = cur->next;
     }
     return NULL;
 }
 
-void CHqlExpression::addProperty(ExprPropKind kind, IInterface * value)
+void CHqlRealExpression::addProperty(ExprPropKind kind, IInterface * value)
 {
     if (value == static_cast<IHqlExpression *>(this))
         value = NULL;
@@ -3956,7 +3967,7 @@ void CHqlDataset::addProperty(ExprPropKind kind, IInterface * value)
             metaProperty.set(value);
     }
     else
-        CHqlExpression::addProperty(kind, value);
+        CHqlRealExpression::addProperty(kind, value);
 
 }
 
@@ -3968,12 +3979,12 @@ IInterface * CHqlDataset::queryExistingProperty(ExprPropKind kind) const
         return metaProperty;
     }
 
-    return CHqlExpression::queryExistingProperty(kind);
+    return CHqlRealExpression::queryExistingProperty(kind);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 
-IHqlExpression * CHqlExpression::queryProperty(ExprPropKind kind)
+IHqlExpression * CHqlRealExpression::queryProperty(ExprPropKind kind)
 {
     IInterface * match = queryExistingProperty(kind);
     if (match)
@@ -3995,6 +4006,8 @@ IHqlExpression * CHqlExpression::queryProperty(ExprPropKind kind)
         return evalautePropUnadorned(this);
     case EPlocationIndependent:
         return evalautePropLocationIndependent(this);
+    case EPlikelihood:
+        return evaluateLikelihood(this);
     }
     return NULL;
 }

@@ -55,7 +55,7 @@ class CHqlExprMeta;
 
 class HQL_API CHqlDynamicProperty
 {
-    friend class CHqlExpression;
+    friend class CHqlRealExpression;
 public:
     inline CHqlDynamicProperty(ExprPropKind _kind, IInterface *_value)
         : kind(_kind), value(_value)
@@ -170,7 +170,6 @@ protected:
     unsigned short infoFlags2;
     transformdepth_t transformDepth[NUM_PARALLEL_TRANSFORMS];           // 1 byte
 
-    CHqlDynamicProperty * attributes;
     HqlExprArray operands;
 
 #ifdef DEBUG_TRACK_INSTANCEID
@@ -184,6 +183,8 @@ protected:
 
     //protected virtual members not in public interface
     virtual void sethash();
+    virtual void addProperty(ExprPropKind kind, IInterface * value) = 0;
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const = 0;
 
 protected:
     inline bool constant() const { return (infoFlags2 & HEF2constant) != 0; }
@@ -222,9 +223,6 @@ protected:
     virtual unsigned getCachedEclCRC();
     void setInitialHash(unsigned typeHash);
 
-    virtual void addProperty(ExprPropKind kind, IInterface * value);
-    virtual IInterface * queryExistingProperty(ExprPropKind kind) const;
-
 public:
 #if (defined(GATHER_LINK_STATS) || defined(DEBUG_TRACK_INSTANCEID))
     virtual void Link(void) const;
@@ -242,7 +240,6 @@ public:
     virtual IHqlScope *queryScope();
     virtual IHqlSimpleScope *querySimpleScope();
     virtual IHqlExpression *queryAttribute(IAtom * propName) const;
-    virtual IHqlExpression *queryProperty(ExprPropKind kind);
     virtual IHqlExpression *queryFunctionDefinition() const { return NULL; };
     virtual IHqlExpression *queryExternalDefinition() const { return NULL; };
     virtual unsigned getInfoFlags() const { return infoFlags; }
@@ -319,6 +316,21 @@ public:
     inline unsigned queryHash() const { return hashcode; }
 };
 
+class HQL_API CHqlRealExpression : public CHqlExpression
+{
+public:
+    inline CHqlRealExpression(node_operator op) : CHqlExpression(op) {}
+    ~CHqlRealExpression();
+
+    //virtual because some specialist properties are stored differently in derived classes
+    virtual IHqlExpression *queryProperty(ExprPropKind kind);
+    virtual void addProperty(ExprPropKind kind, IInterface * value) override;
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const override;
+
+protected:
+    CHqlDynamicProperty * attributes = nullptr;
+};
+
 //The following couple of classes are here primarily to save memory.  
 //It is preferrable not to artificially introduce extra classes, but one representative large example has
 //12M+ instances, and not including the tables/type save 16 and 8 bytes each.  That quickly becomes a significant
@@ -329,10 +341,10 @@ public:
 //If any more class splitting is contemplated it would be worth revisiting in terms of policies.
 
 //This class calculates which tables the expression references to ensure it is evaluated in the correct conext.
-class HQL_API CHqlExpressionWithTables : public CHqlExpression
+class HQL_API CHqlExpressionWithTables : public CHqlRealExpression
 {
 public:
-    inline CHqlExpressionWithTables(node_operator op) : CHqlExpression(op) {}
+    inline CHqlExpressionWithTables(node_operator op) : CHqlRealExpression(op) {}
 
     virtual bool isIndependentOfScope();
     virtual bool isIndependentOfScopeIgnoringInputs();
@@ -397,7 +409,7 @@ public:
 };
 
 
-class CHqlSelectBaseExpression : public CHqlExpression
+class CHqlSelectBaseExpression : public CHqlRealExpression
 {
 public:
     static IHqlExpression * makeSelectExpression(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr);
@@ -582,6 +594,9 @@ public:
     virtual bool                equals(const IHqlExpression & other) const;
     virtual IHqlExpression *queryBody(bool singleLevel = false);
     virtual IHqlExpression * queryAnnotationParameter(unsigned i) const;
+
+    virtual void addProperty(ExprPropKind kind, IInterface * value) override;
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const override;
 };
 
 
@@ -1317,7 +1332,7 @@ protected:
     virtual void sethash();
 };
 
-class CHqlConstant : public CHqlExpression
+class CHqlConstant : public CHqlRealExpression
 {
 protected:
     IValue *val;
@@ -1528,7 +1543,7 @@ protected:
     IHqlScope * typeScope;
 };
 
-class CHqlVariable : public CHqlExpression
+class CHqlVariable : public CHqlRealExpression
 {
 protected:
     StringAttr name;
@@ -1719,8 +1734,8 @@ public:
     bool equals(const IHqlExpression & r) const;
     virtual IHqlExpression *clone(HqlExprArray &newkids);
 
-    virtual void addProperty(ExprPropKind kind, IInterface * value);
-    virtual IInterface * queryExistingProperty(ExprPropKind kind) const;
+    virtual void addProperty(ExprPropKind kind, IInterface * value) override;
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const override;
 
 protected:
     IHqlDataset *rootTable;

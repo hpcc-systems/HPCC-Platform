@@ -3361,7 +3361,6 @@ CHqlExpression::CHqlExpression(node_operator _op)
     }
     hashcode = 0;
     cachedCRC = 0;
-    attributes = NULL;
 
     initFlagsBeforeOperands();
 
@@ -4250,7 +4249,6 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
 CHqlExpression::~CHqlExpression()
 {
 //  DBGLOG("%lx: Destroy", (unsigned)(IHqlExpression *)this);
-    delete attributes;
 }
 
 IHqlScope * CHqlExpression::queryScope() 
@@ -4873,6 +4871,14 @@ void displayHqlCacheStats()
     }
 #endif
 }
+
+//--------------------------------------------------------------------------------------------------------------
+
+CHqlRealExpression::~CHqlRealExpression()
+{
+    delete attributes;
+}
+
 //--------------------------------------------------------------------------------------------------------------
 
 CHqlExpressionWithType::CHqlExpressionWithType(node_operator _op, ITypeInfo * _type, HqlExprArray & _ownedOperands)
@@ -5838,7 +5844,7 @@ void CHqlExpressionWithTables::gatherTablesUsed(CUsedTablesBuilder & used)
 //==============================================================================================================
 
 CHqlSelectBaseExpression::CHqlSelectBaseExpression()
-: CHqlExpression(no_select)
+: CHqlRealExpression(no_select)
 {
 }
 
@@ -6019,7 +6025,7 @@ void CHqlSelectExpression::calcNormalized()
 
 //==============================================================================================================
 
-CHqlConstant::CHqlConstant(IValue *_val) : CHqlExpression(no_constant)
+CHqlConstant::CHqlConstant(IValue *_val) : CHqlRealExpression(no_constant)
 {
     val = _val;
     infoFlags |= (HEFhasunadorned|HEFgatheredNew);
@@ -7028,6 +7034,16 @@ IHqlExpression *CHqlAnnotation::queryChild(unsigned idx) const
 IHqlExpression *CHqlAnnotation::queryAttribute(IAtom * propname) const
 {
     return body->queryAttribute(propname);
+}
+
+void CHqlAnnotation::addProperty(ExprPropKind kind, IInterface * value)
+{
+    throwUnexpected();
+}
+
+IInterface * CHqlAnnotation::queryExistingProperty(ExprPropKind kind) const
+{
+    throwUnexpected();
 }
 
 IHqlExpression * CHqlAnnotation::queryAnnotationParameter(unsigned idx) const
@@ -10073,7 +10089,7 @@ IHqlExpression * createDelayedScope(IHqlExpression * expr)
 }
 
 //==============================================================================================================
-CHqlVariable::CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _type) : CHqlExpression(_op)
+CHqlVariable::CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _type) : CHqlRealExpression(_op)
 {
 #ifdef SEARCH_NAME1
     if (strcmp(_name, SEARCH_NAME1) == 0)
