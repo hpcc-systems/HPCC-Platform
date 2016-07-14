@@ -205,7 +205,7 @@ CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_conta
     crcCheckCompressed = getOptBool(THOROPT_READCOMPRESSED_CRC, false);
     markStart = gotMeta = false;
     if (globals->hasProp("Debug/@fileCrcDisabled"))
-        checkFileCrc = globals->getPropBool("Debug/@fileCrcDisabled");
+        checkFileCrc = !globals->getPropBool("Debug/@fileCrcDisabled");
     else
         checkFileCrc = getOptBool(THOROPT_READ_CRC, true);
 }
