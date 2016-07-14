@@ -21,8 +21,6 @@ PID_NAME="$PID/$(basename $PWD).pid"
 source ${INSTALL_DIR}/etc/init.d/hpcc_common
 
 component=$(basename $PWD)
-dir.getByName lock
-lock="$dir_return"
 export logfile="${LOG_DIR}/${component}/init_${component}_$(date +%Y_%m_%d_%H_%M_%S).log"
 
 export SENTINEL="dfuserver.sentinel"

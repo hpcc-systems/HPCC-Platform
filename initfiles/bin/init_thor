@@ -22,8 +22,6 @@ source ${PATH_PRE}
 INSTALL_DIR=$(dirname ${PATH_PRE})/..
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 component=$(basename $PWD)
-dir.getByName lock
-lock="$dir_return"
 
 PID_NAME="$PID/${component}.pid"
 

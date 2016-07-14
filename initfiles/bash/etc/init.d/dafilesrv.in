@@ -71,9 +71,9 @@ bin_path=${INSTALL_DIR}/bin
 component=""
 runSetupOnly=0
 source ${configgen_path}/hpcc_setenv
+createDir ${LOG_DIR}
 
 which_service
-get_commondirs
 
 #Check for existance of user
 check_user ${user}
@@ -92,7 +92,6 @@ if [ $? -ne 1 ];then
 fi
 
 
-validate_configuration
 COMPS=$(${configgen_path}/configgen -env ${envfile} -ip "127.0.0.1" -list)
 if [[ $rc -ne 0 ]]; then
     log "hpcc-init: failure to build COMPS from configgen call"
@@ -147,6 +146,9 @@ case "$arg" in
         ;;
 esac
 
+if [ "${cmd}" = "start" ] || [ "${cmd}" = "restart" ]; then
+    validate_configuration
+fi
 
 unset IFS
 
