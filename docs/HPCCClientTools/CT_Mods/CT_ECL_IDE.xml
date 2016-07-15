@@ -1421,7 +1421,7 @@
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="3">
-              <colspec colwidth="90pt" />
+              <colspec colwidth="181pt" />
 
               <colspec colwidth="95.00pt" />
 
@@ -1433,8 +1433,43 @@
 
                   <entry><emphasis role="bold">Submit</emphasis></entry>
 
-                  <entry>Submits the ECL code in the active Builder window.
-                  CTRL-ENTER</entry>
+                  <entry>Submits the ECL code to be compiled and executed on
+                  the target cluster.</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="../../images/IDE03.jpg" /></entry>
+
+                  <entry><emphasis role="bold">Submit drop
+                  list</emphasis></entry>
+
+                  <entry>Choose from Submit, Submit Selected, Compile, or
+                  Debug <itemizedlist>
+                      <listitem>
+                        <para><emphasis role="bold">Submit </emphasis>-
+                        submits the ECL code to be compiled and executed on
+                        the target cluster.</para>
+                      </listitem>
+
+                      <listitem>
+                        <para><emphasis role="bold">Submit Selected
+                        </emphasis>- submits the selected code segment to be
+                        compiled and executed on the target cluster.</para>
+                      </listitem>
+
+                      <listitem>
+                        <para><emphasis role="bold">Compile</emphasis> -
+                        compiles but does not execute the ECL. Allows the
+                        workunit to be published for later execution.</para>
+                      </listitem>
+
+                      <listitem>
+                        <para><emphasis role="bold">Debug</emphasis> - Submits
+                        hThor and Roxie ECL code to the compiler and opens a
+                        debugger window. See <link linkend="ECL_Debugger">ECL
+                        Debugger</link> section for more information.</para>
+                      </listitem>
+                    </itemizedlist></entry>
                 </row>
 
                 <row>
@@ -2233,7 +2268,7 @@
           </emphasis>for a Pop-up menu containing options which are available
           depending on whether you have a folder or ECL file selected.</para>
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+          <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="130.40pt" />
 
@@ -2671,6 +2706,32 @@ ENDMACRO;
         by submitting the ECL code.</para>
 
         <para><graphic fileref="../../images/CT49.jpg" /></para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Submit</emphasis> submits the ECL code
+            to be compiled and executed on the target cluster. Press the arrow
+            on the submit button to display other options. </para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Submit Selected</emphasis> submits
+            only the selected ECL code for execution.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Compile</emphasis> compiles but does
+            not execute the ECL. This allows the workunit to be published for
+            later execution.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Debug</emphasis> submits hThor or
+            Roxie ECL code to the compiler and opens a debugger window. See
+            <link linkend="ECL_Debugger">ECL Debugger</link> section for more
+            information.</para>
+          </listitem>
+        </itemizedlist>
 
         <para>The <emphasis role="bold">More</emphasis> button displays
         advanced options. See the Advanced Builder Window Options section
