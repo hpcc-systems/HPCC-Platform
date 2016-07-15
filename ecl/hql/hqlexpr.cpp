@@ -14302,7 +14302,9 @@ extern HQL_API void lockTransformMutex()
 {
 #if NUM_PARALLEL_TRANSFORMS==1
     assertex(transformMutex);
+#ifdef HQLEXPR_MULTI_THREADED
     transformMutex->lock();
+#endif
 #else
     assertex(transformCS);
     ensureThreadExtraIndex();
@@ -14316,7 +14318,9 @@ extern HQL_API void unlockTransformMutex()
     TransformTrackingInfo * state = &transformExtraState[threadActiveExtraIndex];
     state->unlock();
 #if NUM_PARALLEL_TRANSFORMS==1
+#ifdef HQLEXPR_MULTI_THREADED
     transformMutex->unlock();
+#endif
 #else
     if (state->curTransformDepth == 0)
         releaseExtraIndex();
