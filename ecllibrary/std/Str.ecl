@@ -377,6 +377,20 @@ EXPORT ExcludeLastWord(STRING text) := lib_stringlib.Stringlib.StringExcludeLast
 
 EXPORT ExcludeNthWord(STRING text, UNSIGNED2 n) := lib_stringlib.Stringlib.StringExcludeNthWord(text, n);
 
+/**
+ * Tests if the search string contains the supplied word as a whole word.
+ *
+ * @param src           The string that is being tested.
+ * @param word          The word to be searched for.
+ * @param ignore_case   Whether to ignore differences in case between characters.
+ */
+
+EXPORT BOOLEAN FindWord(STRING src, STRING word, BOOLEAN ignore_case=FALSE) := FUNCTION
+   return IF (ignore_case,
+              REGEXFIND('\\b'+word+'\\b', src, NOCASE),
+              REGEXFIND('\\b'+word+'\\b', src));
+END;
+
 /*
  * Returns a string containing text repeated n times.
  *
