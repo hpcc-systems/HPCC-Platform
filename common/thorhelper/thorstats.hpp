@@ -20,10 +20,11 @@
 #ifndef THORSTATS_HPP
 #define THORSTATS_HPP
 
+#include "thorhelper.hpp"
 #include "eclhelper.hpp"
 #include "jstats.h"
 
-class ThorSectionTimer : public CSimpleInterfaceOf<ISectionTimer>
+class THORHELPER_API ThorSectionTimer : public CSimpleInterfaceOf<ISectionTimer>
 {
 public:
     static ThorSectionTimer * createTimer(CRuntimeStatisticCollection & _stats, const char * _name);
