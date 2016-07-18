@@ -19,6 +19,9 @@
 
 #option('THOR_ROWCRC', 0); // don't need individual row CRCs
 
+#option('crcReadEnabled', false);
+#option('crcWriteEnabled', false);
+
 rec := record
      string10  key;
      string10  seq;
