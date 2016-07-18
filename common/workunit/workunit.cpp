@@ -1400,6 +1400,8 @@ public:
             { return c->queryFileUsage(filename); }
     virtual IConstWUFileUsageIterator * getFieldUsage() const
             { return c->getFieldUsage(); }
+    virtual bool getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const
+            { return c->getFieldUsageArray(filenames, columnnames, clusterName); }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const
             { return c->getTimeScheduled(val); }
     virtual unsigned getDebugAgentListenerPort() const
@@ -6430,7 +6432,78 @@ unsigned CLocalWorkUnit::queryFileUsage(const char *fileName) const
 IConstWUFileUsageIterator * CLocalWorkUnit::getFieldUsage() const
 {
     CriticalBlock block(crit);
-    return new CConstWUFileUsageIterator(p->getElements("usedsources/*"));
+    IPropertyTree* fieldUsageTree = p->queryPropTree("usedsources");
+
+    if (!fieldUsageTree)
+        return NULL;
+
+    IPropertyTreeIterator* iter = fieldUsageTree->getElements("*");
+    return new CConstWUFileUsageIterator(iter);
+}
+
+bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const
+{
+    bool scopeLoaded = false;
+    SCMStringBuffer defaultScope;
+
+    Owned<IConstWUFileUsageIterator> files = getFieldUsage();
+
+    if (!files)
+        return false; // this query was not compiled with recordFieldUsage option.
+
+    ForEach(*files)
+    {    
+        Owned<IConstWUFileUsage> file = files->get();
+
+        SCMStringBuffer filename;
+        file->getName(filename);
+
+        // filename cannot be empty
+        if (filename.length() < 3)
+            throw MakeStringException(WUERR_InvalidFieldUsage, "Invalid FieldUsage found in WU. Cannot enforce view security.");
+
+        // Filenames in field usage are surrounded with single quotes ('filename').
+        // Need to remove surrounding single quotes quickly using memcpy.
+        char* cleanFilename = new char[filename.length()-1];
+        memcpy(cleanFilename, filename.str()+1, filename.length()-2);
+        cleanFilename[filename.length()-2] = '\0';
+        filename.set(cleanFilename); 
+        delete[] cleanFilename;
+
+        // When a filename doesn't start with a tilde (~), it means scope is omitted and is relying on a default scope.
+        // We need to load a default scope from config and prefix the filename with it.
+        if (filename.str()[0] != '~')
+        {
+            // loading a default scope from config is expensive, and should be only done once and be reused later.
+            if (!scopeLoaded)
+            {
+                Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
+                if (!clusterInfo)
+                    throw MakeStringException(WUERR_InvalidCluster, "Unknown cluster %s", clusterName);
+                clusterInfo->getScope(defaultScope);
+                scopeLoaded = true;
+            }
+
+            StringBuffer normalizedFilename(defaultScope.str());
+            normalizedFilename.append(filename.str());
+
+            filename.set(normalizedFilename);
+        }
+
+        Owned<IConstWUFieldUsageIterator> fields = file->getFields();
+        ForEach(*fields)
+        {    
+            Owned<IConstWUFieldUsage> field = fields->get();
+
+            SCMStringBuffer columnname;
+            field->getName(columnname);
+
+            filenames.append(filename.str());
+            columnnames.append(columnname.str());
+        }
+    }
+
+    return true;
 }
 
 IPropertyTree *CLocalWorkUnit::getDiskUsageStats()

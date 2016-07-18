@@ -6141,12 +6141,13 @@ void HqlCppTranslator::writeFieldUsage(const char * targetDir, IPropertyTree * s
 
 void HqlCppTranslator::generateStatistics(const char * targetDir, const char * variant)
 {
-    if ((options.reportFieldUsage || options.reportFileUsage) && trackedSources.ordinality())
+    if (options.reportFieldUsage || options.reportFileUsage)
     {
         Owned<IPropertyTree> sources = gatherFieldUsage(variant, NULL);
         writeFieldUsage(targetDir, sources, NULL);
     }
-    else if (options.recordFieldUsage && trackedSources.ordinality()) // to enable column-level security
+    
+    if (options.recordFieldUsage)
     {
         Owned<IPropertyTree> sources = gatherFieldUsage(variant, NULL);
         wu()->noteFieldUsage(LINK(sources));

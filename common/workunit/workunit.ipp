@@ -306,6 +306,7 @@ public:
     virtual IPropertyTree *queryPTree() const;
     virtual unsigned queryFileUsage(const char *filename) const;
     virtual IConstWUFileUsageIterator * getFieldUsage() const;
+    virtual bool getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const;
 
     virtual bool getCloneable() const;
     virtual IUserDescriptor * queryUserDescriptor() const;

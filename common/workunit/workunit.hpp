@@ -1059,6 +1059,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual void subscribe(WUSubscribeOptions options) = 0;
     virtual unsigned queryFileUsage(const char * filename) const = 0;
     virtual IConstWUFileUsageIterator * getFieldUsage() const = 0;
+    virtual bool getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const = 0;
 
     virtual unsigned getCodeVersion() const = 0;
     virtual unsigned getWuidVersion() const  = 0;
