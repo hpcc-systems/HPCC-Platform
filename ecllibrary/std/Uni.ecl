@@ -70,6 +70,20 @@ EXPORT UNSIGNED4 Find(unicode src, unicode sought, unsigned4 instance) :=
     lib_unicodelib.UnicodeLib.UnicodeFind(src, sought, instance);
 
 /**
+ * Tests if the search string contains the supplied word as a whole word.
+ *
+ * @param src           The string that is being tested.
+ * @param word          The word to be searched for.
+ * @param ignore_case   Whether to ignore differences in case between characters.
+ */
+
+EXPORT BOOLEAN FindWord(UNICODE src, UNICODE word, BOOLEAN ignore_case=FALSE) := FUNCTION
+   return IF (ignore_case,
+              REGEXFIND(u'\\b'+word+u'\\b', src, NOCASE),
+              REGEXFIND(u'\\b'+word+u'\\b', src));
+END;
+
+/**
  * Returns the character position of the nth match of the search string with the first string.
  * If no match is found the attribute returns 0.
  * If an instance is omitted the position of the first instance is returned.
