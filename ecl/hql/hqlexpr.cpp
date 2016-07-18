@@ -3360,45 +3360,8 @@ CHqlExpression::CHqlExpression(node_operator _op)
         transformDepth[i] = 0;
     }
     hashcode = 0;
-    cachedCRC = 0;
-
-    initFlagsBeforeOperands();
 
     CHECK_EXPR_SEQID(0);
-}
-
-void CHqlExpression::appendOperands(IHqlExpression * arg0, ...)
-{
-    if (!arg0)
-        return;
-
-    unsigned numArgs = 1;
-    va_list argscount;
-    va_start(argscount, arg0);
-    for (;;)
-    {
-        IHqlExpression *parm = va_arg(argscount, IHqlExpression *);
-        if (!parm)
-            break;
-        numArgs++;
-    }
-    va_end(argscount);
-
-    operands.ensure(numArgs);
-    doAppendOperand(*arg0);
-    va_list args;
-    va_start(args, arg0);
-    for (;;)
-    {
-        IHqlExpression *parm = va_arg(args, IHqlExpression *);
-        if (!parm)
-            break;
-#ifdef _DEBUG
-        assertex(QUERYINTERFACE(parm, IHqlExpression));
-#endif
-        doAppendOperand(*parm);
-    }
-    va_end(args);
 }
 
 IIdAtom * CHqlExpression::queryId() const
@@ -3407,18 +3370,491 @@ IIdAtom * CHqlExpression::queryId() const
     return NULL;
 }
 
-void CHqlExpression::setOperands(HqlExprArray & _ownedOperands)
+//Can be called from updateFlagsAfterOperands to help track down inconsistencies
+static bool verifyTransform(IHqlExpression * record, IHqlExpression * expr)
 {
-    unsigned max = _ownedOperands.ordinality();
-    if (max)
+    ForEachChild(i, expr)
     {
-        operands.swapWith(_ownedOperands);
-        for (unsigned i=0; i < max; i++)
-            onAppendOperand(operands.item(i), i);
+        IHqlExpression * cur = expr->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_assignall:
+            if (!verifyTransform(record, cur))
+                return false;
+            break;
+        case no_assign:
+            {
+                IHqlExpression * lhs = cur->queryChild(0);
+                if (lhs->getOperator() == no_select)
+                {
+                    if ((lhs->queryChild(0)->getOperator() == no_select) &&
+                        (lhs->queryChild(0)->queryChild(0)->getOperator() == no_self))
+                        return false;
+
+                    IHqlExpression * field = lhs->queryChild(1);
+                    OwnedHqlExpr match = record->querySimpleScope()->lookupSymbol(field->queryId());
+                    if (match != field)
+                        return false;
+                }
+                break;
+            }
+            break;
+        }
+    }
+    return true;
+}
+
+
+CHqlExpression::~CHqlExpression()
+{
+//  DBGLOG("%lx: Destroy", (unsigned)(IHqlExpression *)this);
+}
+
+IHqlScope * CHqlExpression::queryScope()
+{
+    //better, especially in cascaded error situations..
+    if (op == no_compound)
+        return queryChild(1)->queryScope();
+    return NULL;
+}
+
+IHqlSimpleScope * CHqlExpression::querySimpleScope()
+{
+    if (op == no_compound)
+        return queryChild(1)->querySimpleScope();
+    return NULL;
+}
+
+#define HASHFIELD(p) hashcode = hashvalue(p, hashcode)
+
+void CHqlExpression::setInitialHash(unsigned typeHash)
+{
+    hashcode = op+typeHash;
+    unsigned kids = operands.ordinality();
+    if (kids)
+        hashcode = hashc((const unsigned char *)operands.getArray(), kids * sizeof(IHqlExpression *), hashcode);
+}
+
+void CHqlExpression::sethash()
+{
+    // In 64-bit, just use bottom 32-bits of the ptr for the hash
+    setInitialHash((unsigned) (memsize_t) queryType());
+}
+
+IHqlExpression *CHqlExpression::closeExpr()
+{
+    assertex(!isExprClosed());   // closeExpr() shouldn't be called twice
+    sethash();
+    return commonUpExpression();
+}
+
+IHqlScope * closeScope(IHqlScope * scope)
+{
+    IHqlExpression * expr = queryExpression(scope);
+    return expr->closeExpr()->queryScope();
+}
+
+bool getAttribute(IHqlExpression * expr, IAtom * propname, StringBuffer &ret)
+{
+    IHqlExpression* match = expr->queryAttribute(propname);
+    if (match)
+    {
+        IHqlExpression * value = match->queryChild(0);
+        if (value)
+            value->queryValue()->getStringValue(ret);
+        return true;
+    }
+    return false;
+}
+
+unsigned CHqlExpression::getSymbolFlags() const
+{
+    throwUnexpected();
+    return 0;
+}
+
+IHqlExpression *CHqlExpression::queryChild(unsigned idx) const
+{
+    if (operands.isItem(idx))
+        return &operands.item(idx);
+    else
+        return NULL;
+}
+
+unsigned CHqlExpression::numChildren() const
+{
+    return operands.length();
+}
+
+inline bool matchesTypeCode(ITypeInfo * type, type_t search)
+{
+    loop
+    {
+        if (!type)
+            return false;
+
+        type_t tc = type->getTypeCode();
+        if (tc == search)
+            return true;
+        if (tc != type_function)
+            return false;
+        type = type->queryChildType();
     }
 }
 
-void CHqlExpression::initFlagsBeforeOperands()
+
+bool CHqlExpression::isBoolean()
+{
+    return matchesTypeCode(queryType(), type_boolean);
+}
+
+bool CHqlExpression::isDataset()
+{
+    ITypeInfo * cur = queryType();
+    loop
+    {
+        if (!cur)
+            return false;
+
+        switch(cur->getTypeCode())
+        {
+        case type_groupedtable:
+        case type_table:
+            return true;
+        case type_function:
+            cur = cur->queryChildType();
+            break;
+        default:
+            return false;
+        }
+    }
+}
+
+bool CHqlExpression::isDictionary()
+{
+    return matchesTypeCode(queryType(), type_dictionary);
+}
+
+bool CHqlExpression::isDatarow()
+{
+    return matchesTypeCode(queryType(), type_row);
+}
+
+bool CHqlExpression:: isFunction()
+{
+    ITypeInfo * thisType = queryType();
+    return thisType && thisType->getTypeCode() == type_function;
+}
+
+bool CHqlExpression::isMacro()
+{
+    switch (op)
+    {
+    case no_macro:
+        return true;
+    case no_funcdef:
+        return queryChild(0)->isMacro();
+    }
+    return false;
+}
+
+bool CHqlExpression::isRecord()
+{
+    return matchesTypeCode(queryType(), type_record);
+}
+
+bool CHqlExpression::isAction()
+{
+    return matchesTypeCode(queryType(), type_void);
+}
+
+bool CHqlExpression::isTransform()
+{
+    return matchesTypeCode(queryType(), type_transform);
+}
+
+bool CHqlExpression::isScope()
+{
+    return matchesTypeCode(queryType(), type_scope);
+}
+
+bool CHqlExpression::isField()
+{
+    return op == no_field;
+}
+
+bool CHqlExpression::isType()
+{
+    switch(op)
+    {
+    case no_type:
+        return true;
+    case no_funcdef:
+        return queryChild(0)->isType();
+    default:
+        return false;
+    }
+}
+
+bool CHqlExpression::isList()
+{
+    return matchesTypeCode(queryType(), type_set);
+}
+
+bool CHqlExpression::isAggregate()
+{
+    //This is only used for HOLe processing - I'm not sure how much sense it really makes.
+    switch(op)
+    {
+    case NO_AGGREGATE:
+    case NO_AGGREGATEGROUP:
+    case no_distribution:
+
+
+    case no_selectnth:
+    case no_evaluate:
+        return true;
+    case no_select:
+        return (queryChild(0)->getOperator() == no_selectnth);
+    default:
+        return false;
+    }
+}
+
+StringBuffer &CHqlExpression::toString(StringBuffer &ret)
+{
+#ifdef TRACE_THIS
+    ret.appendf("[%lx]", this);
+#endif
+    ret.appendf("%s", getOpString(op));
+    return ret;
+}
+
+
+void CHqlExpression::unwindList(HqlExprArray &dst, node_operator u_op)
+{
+    if (op==u_op)
+    {
+        ForEachChild(idx, this)
+            queryChild(idx)->unwindList(dst, u_op);
+    }
+    else
+    {
+        Link();
+        dst.append((IHqlExpression &)*this);
+    }
+}
+
+ITypeInfo *CHqlExpression::queryRecordType()
+{
+    return ::queryRecordType(queryType());
+}
+
+IHqlExpression *CHqlExpression::queryRecord()
+{
+    ITypeInfo *t = queryRecordType();
+    if (t)
+        return queryExpression(t);
+    return NULL;
+}
+
+//== Commoning up code.... ==
+#if (defined(GATHER_LINK_STATS) || defined(DEBUG_TRACK_INSTANCEID))
+void CHqlExpression::Link(void) const
+{
+#ifdef GATHER_LINK_STATS
+    numLinks++;
+    if (insideCreate)
+        numCreateLinks++;
+#endif
+    Parent::Link();
+    CHECK_EXPR_SEQID(1);
+}
+
+bool CHqlExpression::Release(void) const
+{
+#ifdef GATHER_LINK_STATS
+    numReleases++;
+    if (insideCreate)
+        numCreateReleases++;
+#endif
+    CHECK_EXPR_SEQID(2);
+    return Parent::Release();
+}
+#endif
+
+
+void CHqlExpression::beforeDispose()
+{
+    CHECK_EXPR_SEQID(3);
+#ifdef CONSISTENCY_CHECK
+    if (hashcode)
+    {
+        unsigned oldhash = hashcode;
+        sethash();
+        assertex(hashcode == oldhash);
+    }
+    assertex(equals(*this));
+#endif
+    if (observed)
+    {
+#ifdef HQLEXPR_MULTI_THREADED
+        CriticalBlock block(*exprCacheCS);
+#endif
+        if (observed)
+            exprCache->removeExact(this);
+    }
+    assertex(!(observed));
+}
+
+
+unsigned CHqlExpression::getHash() const
+{
+    return hashcode;
+}
+
+
+void CHqlExpression::addObserver(IObserver & observer)
+{
+    assertex(!(observed));
+    assert(&observer == exprCache);
+    observed = true;
+}
+
+void CHqlExpression::removeObserver(IObserver & observer)
+{
+    assertex(observed);
+    assert(&observer == exprCache);
+    observed = false;
+}
+
+
+IHqlExpression * CHqlExpression::commonUpExpression()
+{
+    switch (op)
+    {
+        //I'm still not completely convinced that commoning up parameters doesn't cause problems.
+        //e.g. if a parameter from one function is passed into another.  Don't common up for the moment....
+        //And parameter index must include all parameters in enclosing scopes as well.
+    case no_uncommoned_comma:
+        return this;
+    case no_service:
+        return this;
+    case no_privatescope:
+    case no_mergedscope:
+        return this;
+    case no_remotescope:
+        if (isAnnotation())
+            return this;
+        throwUnexpectedOp(op);
+    }
+
+    IHqlExpression * match;
+    {
+#ifdef HQLEXPR_MULTI_THREADED
+        CriticalBlock block(*exprCacheCS);
+#endif
+        match = exprCache->addOrFind(*this);
+#ifndef GATHER_COMMON_STATS
+        if (match == this)
+            return this;
+#endif
+        match->Link();
+        if (!static_cast<CHqlExpression *>(match)->isAlive())
+        {
+            exprCache->replace(*this);
+#ifndef GATHER_COMMON_STATS
+            return this;
+#endif
+            Link();
+            match = this;
+        }
+    }
+
+#ifdef GATHER_COMMON_STATS
+    node_operator statOp = op;
+
+    if (isAnnotation())
+    {
+        annotate_kind  kind = getAnnotationKind();
+        commonUpAnnCount[kind]++;
+        if (match != this)
+            commonUpAnnClash[kind]++;
+    }
+    else
+    {
+        commonUpCount[statOp]++;
+        if (match != this)
+        {
+            commonUpClash[statOp]++;
+        }
+    }
+#endif
+    Release();
+    return match;
+}
+
+IHqlExpression * CHqlExpression::calcNormalizedSelector() const
+{
+    IHqlExpression * left = &operands.item(0);
+    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
+    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasAttribute(newAtom)))
+    {
+        HqlExprArray args;
+        appendArray(args, operands);
+        args.replace(*LINK(normalizedLeft), 0);
+        removeAttribute(args, newAtom);
+        return doCreateSelectExpr(args);
+    }
+    return NULL;
+}
+
+void displayHqlCacheStats()
+{
+#if 0
+    static HqlExprCopyArray prev;
+    DBGLOG("CachedItems = %d", exprCache->count());
+    exprCache->dumpStats();
+    JavaHashIteratorOf<IHqlExpression> iter(*exprCache, false);
+    ForEach(iter)
+    {
+        IHqlExpression & ret = iter.query();
+        if (!prev.contains(ret))
+        {
+            StringBuffer s;
+            processedTreeToECL(&ret, s);
+            DBGLOG("%p: %s", &ret, s.str());
+        }
+    }
+
+    prev.kill();
+    ForEach(iter)
+    {
+        prev.append(iter.query());
+    }
+#endif
+}
+
+//--------------------------------------------------------------------------------------------------------------
+
+CHqlRealExpression::CHqlRealExpression(node_operator op) : CHqlExpression(op)
+{
+    cachedCRC = 0;
+    initFlagsBeforeOperands();
+}
+
+CHqlRealExpression::~CHqlRealExpression()
+{
+    delete attributes;
+}
+
+IHqlExpression *CHqlRealExpression::closeExpr()
+{
+    updateFlagsAfterOperands();
+    return CHqlExpression::closeExpr();
+}
+
+void CHqlRealExpression::initFlagsBeforeOperands()
 {
     //NB: The following code is not allowed to access queryType()!
     infoFlags = 0;
@@ -3464,9 +3900,9 @@ void CHqlExpression::initFlagsBeforeOperands()
     case no_output:
     case no_setresult:
     case no_extractresult:
-        // don't mark as impure because temporary results don't get commoned up.  Need another flag to mean has side-effects, 
+        // don't mark as impure because temporary results don't get commoned up.  Need another flag to mean has side-effects,
         // but can be commoned up because repeating it will have the same effect.
-        infoFlags2 &= ~(HEF2constant);      
+        infoFlags2 &= ~(HEF2constant);
         break;
     case no_skip:
         infoFlags |= HEFcontainsSkip;
@@ -3570,42 +4006,7 @@ void CHqlExpression::initFlagsBeforeOperands()
     }
 }
 
-//Can be called from updateFlagsAfterOperands to help track down inconsistencies
-static bool verifyTransform(IHqlExpression * record, IHqlExpression * expr)
-{
-    ForEachChild(i, expr)
-    {
-        IHqlExpression * cur = expr->queryChild(i);
-        switch (cur->getOperator())
-        {
-        case no_assignall:
-            if (!verifyTransform(record, cur))
-                return false;
-            break;
-        case no_assign:
-            {
-                IHqlExpression * lhs = cur->queryChild(0);
-                if (lhs->getOperator() == no_select)
-                {
-                    if ((lhs->queryChild(0)->getOperator() == no_select) &&
-                        (lhs->queryChild(0)->queryChild(0)->getOperator() == no_self))
-                        return false;
-
-                    IHqlExpression * field = lhs->queryChild(1);
-                    OwnedHqlExpr match = record->querySimpleScope()->lookupSymbol(field->queryId());
-                    if (match != field)
-                        return false;
-                }
-                break;
-            }
-            break;
-        }
-    }
-    return true;
-}
-
-
-void CHqlExpression::updateFlagsAfterOperands()
+void CHqlRealExpression::updateFlagsAfterOperands()
 {
 //  DBGLOG("%p: Create(%s) type = %lx", (unsigned)(IHqlExpression *)this, getOpString(op), (unsigned)type);
     switch (op)
@@ -3622,7 +4023,7 @@ void CHqlExpression::updateFlagsAfterOperands()
                 IHqlExpression * cur = queryChild(idx);
                 if (cur->getOperator() == no_field)
                 {
-                    //MORE: Should cope with 
+                    //MORE: Should cope with
                     IHqlExpression * value = cur->queryChild(0);
                     if (value && value->isGroupAggregateFunction())
                     {
@@ -4136,7 +4537,21 @@ switch (op)
 }
 
 
-void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOperand)
+bool CHqlRealExpression::isConstant()
+{
+    return constant();
+}
+
+IHqlExpression *CHqlRealExpression::addOperand(IHqlExpression * child)
+{
+    //Forward scopes are never commoned up, and are shared as a side-effect of keeping references to their owner
+    assertex (!IsShared() || (op == no_forwardscope));
+    assertex (!isExprClosed());
+    doAppendOperand(*child);
+    return this;
+}
+
+void CHqlRealExpression::onAppendOperand(IHqlExpression & child, unsigned whichOperand)
 {
     //MORE: All methods that use flags updated here need to be overridden in CHqlNamedExpr()
     bool updateFlags = true;
@@ -4199,7 +4614,7 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
         {
             switch (childOp)
             {
-            case no_field: 
+            case no_field:
             case no_ifblock:
             case no_record:
             case no_attr:
@@ -4224,10 +4639,6 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
 
     if (updateFlags)
     {
-
-        //These are cleared if not set in the child.
-        infoFlags &= (childFlags | ~(HEFintersectionFlags));
-
         //These are set if set in the child
         infoFlags |= (childFlags & HEFunionFlags);
 
@@ -4246,47 +4657,94 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
 #endif
 }
 
-CHqlExpression::~CHqlExpression()
+void CHqlRealExpression::appendOperands(IHqlExpression * arg0, ...)
 {
-//  DBGLOG("%lx: Destroy", (unsigned)(IHqlExpression *)this);
+    if (!arg0)
+        return;
+
+    unsigned numArgs = 1;
+    va_list argscount;
+    va_start(argscount, arg0);
+    for (;;)
+    {
+        IHqlExpression *parm = va_arg(argscount, IHqlExpression *);
+        if (!parm)
+            break;
+        numArgs++;
+    }
+    va_end(argscount);
+
+    operands.ensure(numArgs);
+    doAppendOperand(*arg0);
+    va_list args;
+    va_start(args, arg0);
+    for (;;)
+    {
+        IHqlExpression *parm = va_arg(args, IHqlExpression *);
+        if (!parm)
+            break;
+#ifdef _DEBUG
+        assertex(QUERYINTERFACE(parm, IHqlExpression));
+#endif
+        doAppendOperand(*parm);
+    }
+    va_end(args);
 }
 
-IHqlScope * CHqlExpression::queryScope() 
+void CHqlRealExpression::setOperands(HqlExprArray & _ownedOperands)
 {
-    //better, especially in cascaded error situations..
-    if (op == no_compound)
-        return queryChild(1)->queryScope();
-    return NULL; 
+    unsigned max = _ownedOperands.ordinality();
+    if (max)
+    {
+        operands.swapWith(_ownedOperands);
+        for (unsigned i=0; i < max; i++)
+            onAppendOperand(operands.item(i), i);
+    }
 }
 
-IHqlSimpleScope * CHqlExpression::querySimpleScope() 
-{ 
-    if (op == no_compound)
-        return queryChild(1)->querySimpleScope();
-    return NULL; 
-}
-
-#define HASHFIELD(p) hashcode = hashvalue(p, hashcode)
-
-void CHqlExpression::setInitialHash(unsigned typeHash)
+bool CHqlRealExpression::equals(const IHqlExpression & other) const
 {
-    hashcode = op+typeHash;
-    unsigned kids = operands.ordinality();
-    if (kids)
-        hashcode = hashc((const unsigned char *)operands.getArray(), kids * sizeof(IHqlExpression *), hashcode);
+    if (!isAlive()) return false;
+#ifndef CONSISTENCY_CHECK
+    if (this == &other)
+        return true;
+#endif
+    if (other.isAnnotation())
+        return false;
+    if (op != other.getOperator())
+        return false;
+    switch (op)
+    {
+    case no_record:
+    case no_type:
+    case no_scope:
+    case no_service:
+    case no_virtualscope:
+    case no_concretescope:
+    case no_libraryscope:
+    case no_libraryscopeinstance:
+        break;
+    default:
+        if (queryType() != other.queryType())
+            return false;
+        break;
+    }
+    unsigned kids = other.numChildren();
+    if (kids != operands.ordinality())
+        return false;
+    for (unsigned kid = 0; kid < kids; kid++)
+    {
+        if (&operands.item(kid) != other.queryChild(kid))
+            return false;
+    }
+    return true;
 }
 
-void CHqlExpression::sethash()
-{
-    // In 64-bit, just use bottom 32-bits of the ptr for the hash
-    setInitialHash((unsigned) (memsize_t) queryType());
-}
-
-unsigned CHqlExpression::getCachedEclCRC()
+unsigned CHqlRealExpression::getCachedEclCRC()
 {
     if (cachedCRC)
         return cachedCRC;
-    
+
     unsigned crc = op;
     switch (op)
     {
@@ -4377,7 +4835,7 @@ unsigned CHqlExpression::getCachedEclCRC()
     case no_libraryscopeinstance:
         {
             IHqlExpression * scopeFunc = queryDefinition();
-            IHqlExpression * moduleExpr = scopeFunc->queryChild(0); 
+            IHqlExpression * moduleExpr = scopeFunc->queryChild(0);
             crc ^= moduleExpr->getCachedEclCRC();
             break;
         }
@@ -4413,470 +4871,15 @@ unsigned CHqlExpression::getCachedEclCRC()
 }
 
 
-bool CHqlExpression::equals(const IHqlExpression & other) const
+IHqlExpression *CHqlRealExpression::queryAttribute(IAtom * propname) const
 {
-    if (!isAlive()) return false;
-#ifndef CONSISTENCY_CHECK
-    if (this == &other)
-        return true;
-#endif
-    if (other.isAnnotation())
-        return false;
-    if (op != other.getOperator())
-        return false;
-    switch (op)
+    ForEachItemIn(i, operands)
     {
-    case no_record:
-    case no_type:
-    case no_scope:
-    case no_service:
-    case no_virtualscope:
-    case no_concretescope:
-    case no_libraryscope:
-    case no_libraryscopeinstance:
-        break;
-    default:
-        if (queryType() != other.queryType())
-            return false;
-        break;
-    }
-    unsigned kids = other.numChildren();
-    if (kids != numChildren())
-        return false;
-    for (unsigned kid = 0; kid < kids; kid++)
-    {
-        if (queryChild(kid) != other.queryChild(kid))
-            return false;
-    }
-    return true;
-}
-
-IHqlExpression *CHqlExpression::closeExpr()
-{
-    assertex(!isExprClosed());   // closeExpr() shouldn't be called twice
-    updateFlagsAfterOperands();
-    sethash();
-    return commonUpExpression();
-}
-
-IHqlScope * closeScope(IHqlScope * scope)
-{
-    IHqlExpression * expr = queryExpression(scope);
-    return expr->closeExpr()->queryScope();
-}
-
-bool getAttribute(IHqlExpression * expr, IAtom * propname, StringBuffer &ret)
-{
-    IHqlExpression* match = expr->queryAttribute(propname);
-    if (match)
-    {
-        IHqlExpression * value = match->queryChild(0);
-        if (value)
-            value->queryValue()->getStringValue(ret);
-        return true;
-    }
-    return false;
-}
-
-IHqlExpression *CHqlExpression::queryAttribute(IAtom * propname) const
-{
-    unsigned kids = numChildren();
-    for (unsigned i = 0; i < kids; i++)
-    {
-        IHqlExpression *kid = queryChild(i);
-        if (kid->isAttribute() && kid->queryName()==propname)
-            return kid;
+        IHqlExpression &kid = operands.item(i);
+        if (kid.isAttribute() && kid.queryName()==propname)
+            return &kid;
     }
     return NULL;
-}
-
-unsigned CHqlExpression::getSymbolFlags() const
-{
-    throwUnexpected();
-    return 0;
-}
-
-IHqlExpression *CHqlExpression::queryChild(unsigned idx) const
-{
-    if (operands.isItem(idx))
-        return &operands.item(idx);
-    else
-        return NULL;
-}
-
-unsigned CHqlExpression::numChildren() const
-{
-    return operands.length();
-}
-
-IHqlExpression *CHqlExpression::addOperand(IHqlExpression * child)
-{
-    //Forward scopes are never commoned up, and are shared as a side-effect of keeping references to their owner
-    assertex (!IsShared() || (op == no_forwardscope));
-    assertex (!isExprClosed());
-    doAppendOperand(*child);
-    return this;
-}
-
-inline bool matchesTypeCode(ITypeInfo * type, type_t search)
-{
-    loop
-    {
-        if (!type)
-            return false;
-
-        type_t tc = type->getTypeCode();
-        if (tc == search)
-            return true;
-        if (tc != type_function)
-            return false;
-        type = type->queryChildType();
-    }
-}
-
-
-bool CHqlExpression::isBoolean() 
-{
-    return matchesTypeCode(queryType(), type_boolean);
-}
-
-bool CHqlExpression::isConstant() 
-{
-    return constant();
-}
-
-bool CHqlExpression::isDataset() 
-{
-    ITypeInfo * cur = queryType();
-    loop
-    {
-        if (!cur)
-            return false;
-
-        switch(cur->getTypeCode())
-        {
-        case type_groupedtable:
-        case type_table:
-            return true;
-        case type_function:
-            cur = cur->queryChildType();
-            break;
-        default:
-            return false;
-        }
-    }
-}
-
-bool CHqlExpression::isDictionary()
-{
-    return matchesTypeCode(queryType(), type_dictionary);
-}
-
-bool CHqlExpression::isDatarow() 
-{
-    return matchesTypeCode(queryType(), type_row);
-}
-
-bool CHqlExpression:: isFunction() 
-{ 
-    ITypeInfo * thisType = queryType();
-    return thisType && thisType->getTypeCode() == type_function;
-} 
-
-bool CHqlExpression::isMacro() 
-{ 
-    switch (op)
-    {
-    case no_macro:
-        return true;
-    case no_funcdef:
-        return queryChild(0)->isMacro();
-    }
-    return false;
-} 
-
-bool CHqlExpression::isRecord() 
-{
-    return matchesTypeCode(queryType(), type_record);
-}
- 
-bool CHqlExpression::isAction() 
-{
-    return matchesTypeCode(queryType(), type_void);
-}
-
-bool CHqlExpression::isTransform() 
-{
-    return matchesTypeCode(queryType(), type_transform);
-}
-
-bool CHqlExpression::isScope() 
-{
-    return matchesTypeCode(queryType(), type_scope);
-}
-
-bool CHqlExpression::isField() 
-{
-    return op == no_field;
-}
-
-bool CHqlExpression::isType() 
-{
-    switch(op)
-    {
-    case no_type:
-        return true;
-    case no_funcdef:
-        return queryChild(0)->isType();
-    default:
-        return false;
-    }
-}
-
-bool CHqlExpression::isList() 
-{
-    return matchesTypeCode(queryType(), type_set);
-}
-
-bool CHqlExpression::isAggregate()
-{
-    //This is only used for HOLe processing - I'm not sure how much sense it really makes.
-    switch(op)
-    {
-    case NO_AGGREGATE:
-    case NO_AGGREGATEGROUP:
-    case no_distribution:
-
-
-    case no_selectnth:
-    case no_evaluate:
-        return true;
-    case no_select:
-        return (queryChild(0)->getOperator() == no_selectnth);
-    default:
-        return false;
-    }
-}
-
-StringBuffer &CHqlExpression::toString(StringBuffer &ret)
-{
-#ifdef TRACE_THIS
-    ret.appendf("[%lx]", this);
-#endif
-    ret.appendf("%s", getOpString(op));
-    return ret;
-}
-
-
-void CHqlExpression::unwindList(HqlExprArray &dst, node_operator u_op)
-{
-    if (op==u_op)
-    {
-        ForEachChild(idx, this)
-            queryChild(idx)->unwindList(dst, u_op);
-    }
-    else
-    {
-        Link();
-        dst.append((IHqlExpression &)*this);
-    }
-}
-
-ITypeInfo *CHqlExpression::queryRecordType()
-{
-    return ::queryRecordType(queryType());
-}
-
-IHqlExpression *CHqlExpression::queryRecord()
-{
-    ITypeInfo *t = queryRecordType();
-    if (t)
-        return queryExpression(t);
-    return NULL;
-}
-
-//== Commoning up code.... ==
-#if (defined(GATHER_LINK_STATS) || defined(DEBUG_TRACK_INSTANCEID))
-void CHqlExpression::Link(void) const
-{ 
-#ifdef GATHER_LINK_STATS
-    numLinks++;
-    if (insideCreate)
-        numCreateLinks++;
-#endif
-    Parent::Link();
-    CHECK_EXPR_SEQID(1);
-}
-
-bool CHqlExpression::Release(void) const
-{ 
-#ifdef GATHER_LINK_STATS
-    numReleases++;
-    if (insideCreate)
-        numCreateReleases++;
-#endif
-    CHECK_EXPR_SEQID(2);
-    return Parent::Release();
-}
-#endif
-
-
-void CHqlExpression::beforeDispose()
-{
-    CHECK_EXPR_SEQID(3);
-#ifdef CONSISTENCY_CHECK
-    if (hashcode)
-    {
-        unsigned oldhash = hashcode;
-        sethash();
-        assertex(hashcode == oldhash);
-    }
-    assertex(equals(*this));
-#endif
-    if (infoFlags & HEFobserved)
-    {
-#ifdef HQLEXPR_MULTI_THREADED
-        CriticalBlock block(*exprCacheCS);
-#endif
-        if (infoFlags & HEFobserved)
-            exprCache->removeExact(this);
-    }
-    assertex(!(infoFlags & HEFobserved));
-}
-
-
-unsigned CHqlExpression::getHash() const                
-{ 
-    return hashcode; 
-}
-
-
-void CHqlExpression::addObserver(IObserver & observer)
-{
-    assertex(!(infoFlags & HEFobserved));
-    assert(&observer == exprCache);
-    infoFlags |= HEFobserved;
-}
-
-void CHqlExpression::removeObserver(IObserver & observer)
-{
-    assertex((infoFlags & HEFobserved));
-    assert(&observer == exprCache);
-    infoFlags &= ~HEFobserved;
-}
-
-
-IHqlExpression * CHqlExpression::commonUpExpression()
-{
-    switch (op)
-    {
-        //I'm still not completely convinced that commoning up parameters doesn't cause problems.
-        //e.g. if a parameter from one function is passed into another.  Don't common up for the moment....
-        //And parameter index must include all parameters in enclosing scopes as well.
-    case no_uncommoned_comma:
-        return this;
-    case no_service:
-        return this;
-    case no_privatescope:
-    case no_mergedscope:
-        return this;
-    case no_remotescope:
-        if (isAnnotation())
-            return this;
-        throwUnexpectedOp(op);
-    }
-
-    IHqlExpression * match;
-    {
-#ifdef HQLEXPR_MULTI_THREADED
-        CriticalBlock block(*exprCacheCS);
-#endif
-        match = exprCache->addOrFind(*this);
-#ifndef GATHER_COMMON_STATS
-        if (match == this)
-            return this;
-#endif
-        match->Link();
-        if (!static_cast<CHqlExpression *>(match)->isAlive())
-        {
-            exprCache->replace(*this);
-#ifndef GATHER_COMMON_STATS
-            return this;
-#endif
-            Link();
-            match = this;
-        }
-    }
-
-#ifdef GATHER_COMMON_STATS
-    node_operator statOp = op;
-
-    if (isAnnotation())
-    {
-        annotate_kind  kind = getAnnotationKind();
-        commonUpAnnCount[kind]++;
-        if (match != this)
-            commonUpAnnClash[kind]++;
-    }
-    else
-    {
-        commonUpCount[statOp]++;
-        if (match != this)
-        {
-            commonUpClash[statOp]++;
-        }
-    }
-#endif
-    Release();
-    return match;
-}
-
-IHqlExpression * CHqlExpression::calcNormalizedSelector() const
-{
-    IHqlExpression * left = &operands.item(0);
-    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
-    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasAttribute(newAtom)))
-    {
-        HqlExprArray args;
-        appendArray(args, operands);
-        args.replace(*LINK(normalizedLeft), 0);
-        removeAttribute(args, newAtom);
-        return doCreateSelectExpr(args);
-    }
-    return NULL;
-}
-
-void displayHqlCacheStats()
-{
-#if 0
-    static HqlExprCopyArray prev;
-    DBGLOG("CachedItems = %d", exprCache->count());
-    exprCache->dumpStats();
-    JavaHashIteratorOf<IHqlExpression> iter(*exprCache, false);
-    ForEach(iter)
-    {
-        IHqlExpression & ret = iter.query();
-        if (!prev.contains(ret))
-        {
-            StringBuffer s;
-            processedTreeToECL(&ret, s);
-            DBGLOG("%p: %s", &ret, s.str());
-        }
-    }
-
-    prev.kill();
-    ForEach(iter)
-    {
-        prev.append(iter.query());
-    }
-#endif
-}
-
-//--------------------------------------------------------------------------------------------------------------
-
-CHqlRealExpression::~CHqlRealExpression()
-{
-    delete attributes;
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -5009,7 +5012,7 @@ IHqlExpression *CHqlNamedExpression::clone(HqlExprArray &newkids)
 
 bool CHqlNamedExpression::equals(const IHqlExpression & r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlExpressionWithType::equals(r))
     {
         if (queryName() == r.queryName())
             return true;
@@ -5879,7 +5882,7 @@ void CHqlSelectBaseExpression::setOperands(IHqlExpression * left, IHqlExpression
 void CHqlSelectBaseExpression::setOperands(HqlExprArray & _ownedOperands)
 {
     //base setOperands() already processes things in the correct order
-    CHqlExpression::setOperands(_ownedOperands);
+    CHqlRealExpression::setOperands(_ownedOperands);
 }
 
 IHqlExpression * CHqlSelectBaseExpression::clone(HqlExprArray &newkids)
@@ -6156,7 +6159,7 @@ void CHqlField::onCreateField()
 
 bool CHqlField::equals(const IHqlExpression & r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlExpressionWithType::equals(r))
     {
         if (id == r.queryId())
             return true;
@@ -6491,7 +6494,7 @@ CHqlDataset::~CHqlDataset()
 
 bool CHqlDataset::equals(const IHqlExpression & r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlExpressionWithType::equals(r))
     {
         const CHqlDataset & other = (const CHqlDataset &)r;
         //No need to check name - since it is purely derived from one of the arguments
@@ -6764,7 +6767,7 @@ CHqlRecord::CHqlRecord(HqlExprArray &operands) : CHqlExpressionWithTables(no_rec
 
 bool CHqlRecord::equals(const IHqlExpression & r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlExpressionWithTables::equals(r))
     {
         return true;
     }
@@ -6800,7 +6803,7 @@ unsigned CHqlRecord::getAlignment()
 
 IHqlExpression *CHqlRecord::addOperand(IHqlExpression *field)
 {
-    CHqlExpression::addOperand(field);
+    CHqlRealExpression::addOperand(field);
     insertSymbols(field);
     return this;
 }
@@ -7333,8 +7336,6 @@ CHqlSymbolAnnotation::CHqlSymbolAnnotation(IIdAtom * _id, IIdAtom * _moduleId, I
     symbolFlags = _symbolFlags;
     moduleId = _moduleId;
     funcdef = _funcdef;
-    if (funcdef && containsInternalSelect(funcdef))
-        infoFlags |= HEFinternalSelect;
 }
 
 void CHqlSymbolAnnotation::sethash()
@@ -8692,7 +8693,7 @@ void CHqlLocalScope::sethash()
 
 bool CHqlLocalScope::equals(const IHqlExpression &r) const
 {
-    if (!CHqlExpression::equals(r))
+    if (!CHqlScope::equals(r))
         return false;
 
     if (!scopesEqual(this, const_cast<IHqlExpression &>(r).queryScope()))
@@ -8970,7 +8971,8 @@ IHqlExpression * createLibraryInstance(IHqlExpression * scopeFunction, HqlExprAr
 
 bool CHqlLibraryInstance::equals(const IHqlExpression & other) const
 {
-    if (!CHqlExpression::equals(other))
+    //NB: Do not call CHqlScopeExpression::equals since that returns true if the pointers match
+    if (!CHqlRealExpression::equals(other))
         return false;
     if (queryExternalDefinition() != other.queryExternalDefinition())
         return false;
@@ -9351,7 +9353,7 @@ void CHqlVirtualScope::sethash()
 
 bool CHqlVirtualScope::equals(const IHqlExpression &r) const
 {
-    if (!CHqlExpression::equals(r))
+    if (!CHqlScope::equals(r))
         return false;
 
     if (!scopesEqual(this, const_cast<IHqlExpression &>(r).queryScope()))
@@ -9832,7 +9834,7 @@ CHqlParameter::~CHqlParameter()
 
 bool CHqlParameter::equals(const IHqlExpression & _other) const
 {
-    if (!CHqlExpression::equals(_other))
+    if (!CHqlExpressionWithType::equals(_other))
         return false;
     const CHqlParameter & other = static_cast<const CHqlParameter &>(_other);
     if (uid != other.uid)
@@ -9919,7 +9921,7 @@ bool CHqlScopeParameter::assignableFrom(ITypeInfo * source)
 
 bool CHqlScopeParameter::equals(const IHqlExpression & _other) const
 {
-    if (!CHqlExpression::equals(_other))
+    if (!CHqlScope::equals(_other))
         return false;
     const CHqlScopeParameter & other = static_cast<const CHqlScopeParameter &>(_other);
     if (uid != other.uid)
@@ -10130,7 +10132,7 @@ CHqlVariable *CHqlVariable::makeVariable(node_operator op, const char * name, IT
 
 bool CHqlVariable::equals(const IHqlExpression & r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlRealExpression::equals(r))
     {
         dbgassertex(QUERYINTERFACE(&r, const CHqlVariable) == (const CHqlVariable *) &r);
         const CHqlVariable *c = static_cast<const CHqlVariable *>(&r);
@@ -10172,7 +10174,7 @@ CHqlAttribute *CHqlAttribute::makeAttribute(node_operator op, IAtom * name)
 
 bool CHqlAttribute::equals(const IHqlExpression &r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlExpressionWithTables::equals(r))
         return name==r.queryName();
     return false;
 }
@@ -10234,7 +10236,7 @@ CHqlUnknown *CHqlUnknown::makeUnknown(node_operator _op, ITypeInfo * _type, IAto
 
 bool CHqlUnknown::equals(const IHqlExpression &r) const
 {
-    if (CHqlExpression::equals(r) && name==r.queryName())
+    if (CHqlExpressionWithType::equals(r) && name==r.queryName())
     {
         const CHqlUnknown * other = dynamic_cast<const CHqlUnknown *>(&r);
         if (other && (extra == other->extra))
@@ -10284,7 +10286,7 @@ CHqlSequence *CHqlSequence::makeSequence(node_operator _op, ITypeInfo * _type, I
 
 bool CHqlSequence::equals(const IHqlExpression &r) const
 {
-    if (CHqlExpression::equals(r) && name==r.queryName())
+    if (CHqlExpressionWithType::equals(r) && name==r.queryName())
     {
         const CHqlSequence * other = dynamic_cast<const CHqlSequence *>(&r);
         if (other && (seq == other->seq))
@@ -10419,7 +10421,7 @@ bool CHqlExternalCall::equals(const IHqlExpression & other) const
 {
     if (this == &other)
         return true;
-    if (!CHqlExpression::equals(other))
+    if (!CHqlExpressionWithType::equals(other))
         return false;
     if (queryExternalDefinition() != other.queryExternalDefinition())
         return false;
@@ -10478,7 +10480,7 @@ CHqlDelayedCall::CHqlDelayedCall(IHqlExpression * _param, ITypeInfo * _type, Hql
 
 bool CHqlDelayedCall::equals(const IHqlExpression & _other) const
 {
-    if (!CHqlExpression::equals(_other))
+    if (!CHqlExpressionWithType::equals(_other))
         return false;
 
     const CHqlDelayedCall & other = static_cast<const CHqlDelayedCall &>(_other);
@@ -10617,7 +10619,7 @@ ITypeInfo * CHqlAlienType::getType()
 
 bool CHqlAlienType::equals(const IHqlExpression &r) const
 {
-    if (!CHqlExpression::equals(r))
+    if (!CHqlExpressionWithTables::equals(r))
         return false;
     //hack
     return scopesEqual(scope, const_cast<IHqlExpression &>(r).queryScope());
@@ -10764,7 +10766,7 @@ CHqlEnumType::~CHqlEnumType()
 
 bool CHqlEnumType::equals(const IHqlExpression &r) const
 {
-    if (!CHqlExpression::equals(r))
+    if (!CHqlExpressionWithType::equals(r))
         return false;
 
     return scopesEqual(scope, const_cast<IHqlExpression &>(r).queryScope());
@@ -14599,11 +14601,23 @@ bool isNewSelector(IHqlExpression * expr)
     if (expr->hasAttribute(newAtom))
         return true;
     IHqlExpression * ds = expr->queryChild(0);
-    while ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
+    while (ds->getOperator() == no_select)
     {
+        type_t tc = ds->queryType()->getTypeCode();
+        switch (tc)
+        {
+        case type_groupedtable:
+        case type_table:
+        case type_dictionary:
+            return false;
+        case type_row:
+            break;
+        default:
+            throwUnexpected();
+            return false;
+        }
         if (ds->hasAttribute(newAtom))
             return true;
-        assertex(ds->isDatarow());
         ds = ds->queryChild(0);
     }
     return false;
