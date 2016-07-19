@@ -346,7 +346,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
     // NB: If !strict(default) allows spaces to exist either side of scopes (no idea why would want to permit that, but preserving for bwrd compat.)
     StringBuffer str;
     StringBuffer nametmp;
-    const char *ct = NULL;    
+    const char *ct = nullptr;
     bool wilddetected = false;
     if ('~' == *name) // allowed 1 leading ~
     {
@@ -361,7 +361,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         switch (c)
         {
             case '@': ct = s; break;
-            case ':': ct = NULL; break;
+            case ':': ct = nullptr; break;
             case '?':
             case '*': wilddetected = true; break;
             case '~':
@@ -379,11 +379,8 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         }
         c = *++s;
     }
-    //bool isext = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
-    //if (!isext && !allowWild && wilddetected)
     if (!allowWild && wilddetected)
         throw MakeStringException(-1, "Wildcards not allowed in filename (%s)", name);
-    //if (!isext&&ct&&(ct-name>=1)) // trailing @
     if (ct&&(ct-name>=1)) // trailing @
     {
         if ((ct[1]=='@')||(ct[1]=='^')) // escape
@@ -412,12 +409,11 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         {
             normalizeScope(name, name, s-name, str, strict);
             bool isForeign = 0 == stricmp(str.str(),FOREIGN_SCOPE);
-            //if (isext || isForeign) // normalize node
             if (isForeign) // normalize node
             {
                 const char *s1 = s+2;
                 const char *ns1 = strstr(s1,"::");
-                if (ns1) // TBD accept groupname here (in the case of isext)
+                if (ns1)
                 {
                     if (!strict)
                         skipSp(s1);
@@ -430,23 +426,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                     {
                         ep.getUrlStr(str.append("::"));
                         s = ns1;
-//                        if (isext)
-//                        {
-//                            external = true;
-//                            if (s[2]=='>')
-//                            {
-//                                str.append("::");
-//                                tailpos = str.length();
-//                                str.append(s+2);
-//                                res.set(str);
-//                                return;
-//                            }
-//                        }
-//                        else
-                        {
-                            dbgassertex(isForeign);
-                            localpos = str.length()+2;
-                        }
+                        localpos = str.length()+2;
                     }
                 }
             }
@@ -469,28 +449,34 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
     }
     str.append("::");
     tailpos = str.length();
-    if (strstr(s,"::")!=NULL)
+    if (strstr(s,"::")!=nullptr)
         ERRLOG("Tail contains '::'!");
     normalizeScope(name, s, strlen(name)-(s-name), str, strict);
     str.toLowerCase();
     res.set(str);
 }
-// Ad-hoc function to check EP
-bool checkEp(const char *name)
+
+bool isExternalFile(const char *name)
 {
-    bool retVal = false;
+    // TODO Should check the name is a valid OS filename
+    if ('~' == *name) // allowed 1 leading ~
+        name++;
+
+    bool retVal = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
     const char *s=strstr(name,"::");
-    if (s)
+    if (retVal && s)
     {
         const char *s1 = s+2;
         const char *ns1 = strstr(s1,"::");
-        if (ns1)
+        if (!ns1)
+            retVal = false;
+        else
         {
             StringBuffer nodename;
             nodename.append(ns1-s1,s1);
             SocketEndpoint ep(nodename.str());
-            if (!ep.isNull())
-                retVal = true;
+            if (ep.isNull())
+                retVal = false;
         }
     }
     return retVal;
@@ -502,7 +488,7 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign)
     if (!name)
         return;
     skipSp(name);
-    if (allowospath&&(isAbsolutePath(name)||(stdIoHandle(name)>=0)||(strstr(name,"::")==NULL)))
+    if (allowospath&&(isAbsolutePath(name)||(stdIoHandle(name)>=0)||(strstr(name,"::")==nullptr)))
     {
         RemoteFilename rfn;
         rfn.setRemotePath(name);
@@ -537,10 +523,15 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign)
         lfn.set(full);
         return;
     }
-    external = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
-    if (external && checkEp(name))
-        // TODO Should check the name is a valid OS filename
+    if (isExternalFile(name))
+    {
         lfn.set(name);
+        lfn.toLowerCase();
+        const char *ns1 = strstr(name,"::>");
+        if (ns1)
+            tailpos = ns1 - name + 2;
+        external = true;
+    }
     else
         normalizeName(name, lfn, false);
     if (removeForeign)
