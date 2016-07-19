@@ -1788,7 +1788,16 @@ void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char
     if (optNodes)
         throw makeStringException(1, "Numa node list not yet supported");
 
-    unsigned numNumaNodes = numa_max_node()+1;
+    unsigned numaMap[NUMA_NUM_NODES];
+    unsigned numNumaNodes = 0;
+    for (unsigned i=0; i<=numa_max_node(); i++)
+    {
+        if (numa_bitmask_isbitset(numa_all_nodes_ptr, i))
+        {
+            numaMap[numNumaNodes] = i;
+            numNumaNodes++;
+        }
+    }
     if (numNumaNodes <= 1)
         return;
 
@@ -1797,20 +1806,20 @@ void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char
 
 #if defined(LIBNUMA_API_VERSION) && (LIBNUMA_API_VERSION>=2)
     struct bitmask * cpus = numa_allocate_cpumask();
-    numa_node_to_cpus(curNode, cpus);
+    numa_node_to_cpus(numaMap[curNode], cpus);
     bool ok = (numa_sched_setaffinity(0, cpus) == 0);
     numa_bitmask_free(cpus);
 #else
     cpu_set_t cpus;
     CPU_ZERO(&cpus);
-    numa_node_to_cpus(curNode, (unsigned long *) &cpus, sizeof (cpus));
+    numa_node_to_cpus(numaMap[curNode], (unsigned long *) &cpus, sizeof (cpus));
     bool ok = sched_setaffinity (0, sizeof(cpus), &cpus) != 0;
 #endif
 
     if (!ok)
-        throw makeStringExceptionV(1, "Failed to set affinity for node %u", curNode);
+        throw makeStringExceptionV(1, "Failed to set affinity to numa node %u (id:%u)", curNode, numaMap[curNode]);
 
-    DBGLOG("Process bound to numa node %u of %u", curNode, numNumaNodes);
+    DBGLOG("Process bound to numa node %u (id:%u) of %u", curNode, numaMap[curNode], numNumaNodes);
 #endif
     clearAffinityCache();
 }
@@ -1820,7 +1829,12 @@ void bindMemoryToLocalNodes()
 #if defined(LIBNUMA_API_VERSION) && (LIBNUMA_API_VERSION>=2)
     numa_set_bind_policy(1);
 
-    unsigned numNumaNodes = numa_max_node() + 1;
+    unsigned numNumaNodes = 0;
+    for (unsigned i=0; i<=numa_max_node(); i++)
+    {
+        if (numa_bitmask_isbitset(numa_all_nodes_ptr, i))
+            numNumaNodes++;
+    }
     if (numNumaNodes <= 1)
         return;
     struct bitmask *nodes = numa_get_run_node_mask();
