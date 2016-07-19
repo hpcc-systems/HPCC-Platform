@@ -20,14 +20,10 @@
 
 #include "jcomp.hpp"
 
-#ifdef _WIN32
 #ifdef DEFTYPE_EXPORTS
-#define DEFTYPE_API __declspec(dllexport)
+#define DEFTYPE_API DECL_EXPORT
 #else
-#define DEFTYPE_API __declspec(dllimport)
-#endif
-#else
-#define DEFTYPE_API
+#define DEFTYPE_API DECL_IMPORT
 #endif
 
 #define CHEAP_UCHAR_DEF

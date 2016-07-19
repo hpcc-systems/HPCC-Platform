@@ -49,17 +49,7 @@ extern "C"
 
     ESP_FACTORY IEspProtocol * esp_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
     {
-        if (streq(type, "http_protocol"))
-            return new CHttpProtocol;
-        else if(streq(type, "secure_http_protocol"))
-        {
-            IPropertyTree *sslSettings;
-            sslSettings = cfg->getPropTree(StringBuffer("Software/EspProcess[@name=\"").append(process).append("\"]").append("/EspProtocol[@name=\"").append(name).append("\"]").str());
-            if(sslSettings != NULL)
-                return new CSecureHttpProtocol(sslSettings);
-        }
-
-        return NULL;
+        return http_protocol_factory(name, type, cfg, process);
     }
 
 };

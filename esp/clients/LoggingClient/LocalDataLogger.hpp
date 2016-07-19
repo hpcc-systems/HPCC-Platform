@@ -22,14 +22,10 @@
 #ifndef _LocalDataLogger_HPP__
 #define _LocalDataLogger_HPP__
 
-#ifdef _WIN32
-    #ifdef LOGGINGCLIENT_EXPORTS
-        #define WSLOGThread_API __declspec(dllexport)
-    #else
-        #define WSLOGThread_API __declspec(dllimport)
-    #endif
+#ifdef LOGGINGCLIENT_EXPORTS
+    #define WSLOGThread_API DECL_EXPORT
 #else
-    #define WSLOGThread_API
+    #define WSLOGThread_API DECL_IMPORT
 #endif
 
 #include "jiface.hpp"

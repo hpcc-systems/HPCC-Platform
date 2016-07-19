@@ -20,15 +20,11 @@
 
 #ifndef LDAPSECURITY_API
 
-#ifdef _WIN32
-    #ifndef LDAPSECURITY_EXPORTS
-        #define LDAPSECURITY_API __declspec(dllimport)
-    #else
-        #define LDAPSECURITY_API __declspec(dllexport)
-    #endif //LDAPSECURITY_EXPORTS
+#ifndef LDAPSECURITY_EXPORTS
+    #define LDAPSECURITY_API DECL_IMPORT
 #else
-    #define LDAPSECURITY_API
-#endif //_WIN32
+    #define LDAPSECURITY_API DECL_EXPORT
+#endif //LDAPSECURITY_EXPORTS
 
 #endif 
 

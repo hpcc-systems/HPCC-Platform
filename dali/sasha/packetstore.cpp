@@ -1,4 +1,4 @@
-#define sa_decl __declspec(dllexport)
+#define sa_decl DECL_EXPORT
 #include "platform.h"
 #include "jlib.hpp"
 #include "jsuperhash.hpp"

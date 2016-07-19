@@ -21,11 +21,13 @@
 #include "dasds.hpp"
 #include "workunit.hpp"
 
+/* NB: Some of the classes in this file are also used from casandrawu - which means they all need WORKUNIT_API */
+
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
 #define WUID_VERSION 2 // recorded in each wuid created, useful for bkwd compat. checks
 #define GLOBAL_WORKUNIT "global"
 
-class CLocalWUAppValue : implements IConstWUAppValue, public CInterface
+class WORKUNIT_API CLocalWUAppValue : implements IConstWUAppValue, public CInterface
 {
     Owned<IPropertyTree> p;
     StringAttr prop;
@@ -39,7 +41,7 @@ public:
 };
 
 
-class CLocalWUStatistic : implements IConstWUStatistic, public CInterface
+class WORKUNIT_API CLocalWUStatistic : implements IConstWUStatistic, public CInterface
 {
     Owned<IPropertyTree> p;
 public:
@@ -63,7 +65,7 @@ public:
     virtual bool matches(const IStatisticsFilter * filter) const;
 };
 
-class CLocalWULegacyTiming : implements IConstWUStatistic, public CInterface
+class WORKUNIT_API CLocalWULegacyTiming : implements IConstWUStatistic, public CInterface
 {
     Owned<IPropertyTree> p;
 public:
@@ -164,7 +166,7 @@ template <>  struct CachedTags<CLocalWUAppValue, IConstWUAppValue>
 
 //==========================================================================================
 
-class CLocalWorkUnit : implements IWorkUnit , implements IExtendedWUInterface, public CInterface
+class WORKUNIT_API CLocalWorkUnit : implements IWorkUnit , implements IExtendedWUInterface, public CInterface
 {
     friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs, bool includeProgress, bool hidePasswords);
     friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs, bool includeProgress, bool hidePasswords);
@@ -570,7 +572,7 @@ protected:
     virtual void _loadExceptions() const;
 };
 
-class CPersistedWorkUnit : public CLocalWorkUnit, implements IWorkUnitSubscriber
+class WORKUNIT_API CPersistedWorkUnit : public CLocalWorkUnit, implements IWorkUnitSubscriber
 {
 public:
     CPersistedWorkUnit(ISecManager *secmgr, ISecUser *secuser) : CLocalWorkUnit(secmgr, secuser)
@@ -588,7 +590,7 @@ protected:
     mutable bool abortState;
 };
 
-class CWorkUnitFactory : implements IWorkUnitFactory, public CInterface
+class WORKUNIT_API CWorkUnitFactory : implements IWorkUnitFactory, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -639,7 +641,7 @@ protected:
     virtual bool _restoreWorkUnit(IPTree *pt, const char *wuid) = 0;
 };
 
-class CLocalWUGraph : implements IConstWUGraph, public CInterface
+class WORKUNIT_API CLocalWUGraph : implements IConstWUGraph, public CInterface
 {
     const CLocalWorkUnit &owner;
     Owned<IPropertyTree> p;
@@ -668,7 +670,7 @@ public:
     void setXGMMLTree(IPropertyTree * tree);
 };
 
-class CWuGraphStats : public CInterfaceOf<IWUGraphStats>
+class WORKUNIT_API CWuGraphStats : public CInterfaceOf<IWUGraphStats>
 {
 public:
     CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id);
@@ -682,7 +684,7 @@ protected:
     unsigned id;
 };
 
-class CWorkUnitWatcher : public CInterface, implements IWorkUnitWatcher, implements ISDSSubscription
+class WORKUNIT_API CWorkUnitWatcher : public CInterface, implements IWorkUnitWatcher, implements ISDSSubscription
 {
 protected:
     CriticalSection crit;

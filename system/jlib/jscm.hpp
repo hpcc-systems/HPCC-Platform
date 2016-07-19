@@ -25,22 +25,15 @@
 
 #ifdef _MSC_VER
  #define interface    struct __declspec(novtable)
- #ifdef JLIB_EXPORTS
-  #define jlib_decl __declspec(dllexport)
-  #define jlib_thrown_decl __declspec(dllexport)
- #else
-  #define jlib_decl __declspec(dllimport)
-  #define jlib_thrown_decl __declspec(dllimport)
- #endif
 #else
  #define interface    struct
- #if __GNUC__ >= 4
-  #define jlib_decl  __attribute__ ((visibility("default")))
-  #define jlib_thrown_decl __attribute__ ((visibility("default")))
- #else
-  #define jlib_decl
-  #define jlib_thrown_decl
- #endif
+#endif
+#ifdef JLIB_EXPORTS
+ #define jlib_decl DECL_EXPORT
+ #define jlib_thrown_decl DECL_EXPORT
+#else
+ #define jlib_decl DECL_IMPORT
+ #define jlib_thrown_decl DECL_IMPORT
 #endif
 
 interface IInterface

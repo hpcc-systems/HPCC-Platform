@@ -18,14 +18,10 @@
 #ifndef THORXMLWRITE_HPP
 #define THORXMLWRITE_HPP
 
-#ifdef _WIN32
- #ifdef THORHELPER_EXPORTS
-  #define thorhelper_decl __declspec(dllexport)
- #else
-  #define thorhelper_decl __declspec(dllimport)
- #endif
+#ifdef THORHELPER_EXPORTS
+ #define thorhelper_decl DECL_EXPORT
 #else
- #define thorhelper_decl
+ #define thorhelper_decl DECL_IMPORT
 #endif
 
 #include "eclhelper.hpp"

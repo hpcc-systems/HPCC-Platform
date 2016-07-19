@@ -16,15 +16,12 @@
 ############################################################################## */
 
 #pragma warning (disable : 4786)
-#ifdef _WIN32
-    #ifdef LOGGINGCLIENT_EXPORTS
-        #define WSLOG_API __declspec(dllexport)
-    #else
-        #define WSLOG_API __declspec(dllimport)
-    #endif
+#ifdef LOGGINGCLIENT_EXPORTS
+    #define WSLOG_API DECL_EXPORT
 #else
-    #define WSLOG_API
+    #define WSLOG_API DECL_IMPORT
 #endif
+
 #include "jliball.hpp"
 #include "esploggingservice.hpp"
 #include "esploggingservice_esp.ipp"

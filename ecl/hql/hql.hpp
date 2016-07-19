@@ -17,15 +17,12 @@
 #ifndef _HQL_INCL
 #define _HQL_INCL
  
-#ifdef _WIN32
 #ifdef HQL_EXPORTS
-#define HQL_API __declspec(dllexport)
+#define HQL_API DECL_EXPORT
 #else
-#define HQL_API __declspec(dllimport)
+#define HQL_API DECL_IMPORT
 #endif
-#else
-#define HQL_API
-#endif
+
 #include "hqlatoms.hpp"
 #include "build-config.h"
 

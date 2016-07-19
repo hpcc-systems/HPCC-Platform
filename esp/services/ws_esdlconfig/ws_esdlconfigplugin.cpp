@@ -18,11 +18,7 @@
 #pragma warning (disable : 4786)
 
 #ifndef WsESDLConfig_API
-#ifdef _WIN32
-#define WsESDLConfig_API __declspec(dllexport)
-#else
-#define WsESDLConfig_API
-#endif //_WIN32
+#define WsESDLConfig_API DECL_EXPORT
 #endif //WsESDLConfig_API
 
 #include "ws_esdlconfig_esp.ipp"
@@ -51,8 +47,6 @@ ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type
     return NULL;
 }
 
-
-
 ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
     if (strcmp(type, "ws_esdlconfigSoapBinding")==0)
@@ -70,21 +64,7 @@ ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* t
 
 ESP_FACTORY IEspProtocol * esp_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-    if (strcmp(type, "http_protocol")==0)
-    {
-        return new CHttpProtocol;
-    }
-    else if(strcmp(type, "secure_http_protocol") == 0)
-    {
-        IPropertyTree *sslSettings;
-        sslSettings = cfg->getPropTree(StringBuffer("Software/EspProcess[@name=\"").append(process).append("\"]").append("/EspProtocol[@name=\"").append(name).append("\"]").str());
-        if(sslSettings != NULL)
-        {
-            return new CSecureHttpProtocol(sslSettings);
-        }
-    }
-
-    return NULL;
+    return http_protocol_factory(name, type, cfg, process);
 }
 
 };

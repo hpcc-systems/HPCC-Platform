@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define FILESERVICES_CALL _cdecl
-#ifdef FILESERVICES_EXPORTS
-#define FILESERVICES_API __declspec(dllexport)
-#else
-#define FILESERVICES_API __declspec(dllimport)
-#endif
 #else
 #define FILESERVICES_CALL
-#define FILESERVICES_API
+#endif
+
+#ifdef FILESERVICES_EXPORTS
+#define FILESERVICES_API DECL_EXPORT
+#else
+#define FILESERVICES_API DECL_IMPORT
 #endif
 
 #include "hqlplugins.hpp"

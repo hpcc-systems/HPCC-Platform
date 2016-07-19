@@ -18,14 +18,10 @@
 #ifndef _KEYDIFF_INCL
 #define _KEYDIFF_INCL
 
-#ifdef _WIN32
 #ifdef JHTREE_EXPORTS
-#define jhtree_decl __declspec(dllexport)
+#define jhtree_decl DECL_EXPORT
 #else
-#define jhtree_decl __declspec(dllimport)
-#endif
-#else
-#define jhtree_decl
+#define jhtree_decl DECL_IMPORT
 #endif
 
 #include "jstring.hpp"

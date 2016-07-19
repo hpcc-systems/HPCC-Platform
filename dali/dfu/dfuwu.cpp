@@ -24,7 +24,7 @@
 #include "jencrypt.hpp"
 
 #ifndef dfuwu_decl
-#define dfuwu_decl __declspec(dllexport)
+#define dfuwu_decl DECL_EXPORT
 #endif
 
 

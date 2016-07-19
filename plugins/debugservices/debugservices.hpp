@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define DEBUGSERVICES_CALL _cdecl
-#ifdef DEBUGSERVICES_EXPORTS
-#define DEBUGSERVICES_API __declspec(dllexport)
-#else
-#define DEBUGSERVICES_API __declspec(dllimport)
-#endif
 #else
 #define DEBUGSERVICES_CALL
-#define DEBUGSERVICES_API
+#endif
+
+#ifdef DEBUGSERVICES_EXPORTS
+#define DEBUGSERVICES_API DECL_EXPORT
+#else
+#define DEBUGSERVICES_API DECL_IMPORT
 #endif
 
 #include "hqlplugins.hpp"

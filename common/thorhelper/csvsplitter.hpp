@@ -18,14 +18,10 @@
 #ifndef CSVSPLITTER_INCL
 #define CSVSPLITTER_INCL
 
-#ifdef _WIN32
- #ifdef THORHELPER_EXPORTS
-  #define THORHELPER_API __declspec(dllexport)
- #else
-  #define THORHELPER_API __declspec(dllimport)
- #endif
+#ifdef THORHELPER_EXPORTS
+#define THORHELPER_API DECL_EXPORT
 #else
- #define THORHELPER_API
+#define THORHELPER_API DECL_IMPORT
 #endif
 
 #include "jregexp.hpp"

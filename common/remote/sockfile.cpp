@@ -491,7 +491,7 @@ static void mergeOnce(OnceKey &key,size32_t sz,const void *data)
 
 //---------------------------------------------------------------------------
 
-class CDafsException: public IDAFS_Exception, public CInterface
+class DECL_EXCEPTION CDafsException: public IDAFS_Exception, public CInterface
 {
     int     errcode;
     StringAttr msg;

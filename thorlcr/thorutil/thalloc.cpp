@@ -42,11 +42,7 @@ inline size32_t pow2roundupmin1k(size32_t sz)
 }
 
 
-interface ICRCException : extends IException
-{
-};
-
-class CCRCException : public CSimpleInterface, implements ICRCException
+class DECL_EXCEPTION CCRCException : public CSimpleInterface, implements IException
 {
 private:
     const void *ptr;

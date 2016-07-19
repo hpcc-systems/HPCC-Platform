@@ -25,14 +25,10 @@
 #include "logthread.hpp"
 #include "loggingmanager.h"
 
-#ifdef WIN32
-    #ifdef LOGGINGMANAGER_EXPORTS
-        #define LOGGINGMANAGER_API __declspec(dllexport)
-    #else
-        #define LOGGINGMANAGER_API __declspec(dllimport)
-    #endif
+#ifdef LOGGINGMANAGER_EXPORTS
+    #define LOGGINGMANAGER_API DECL_EXPORT
 #else
-    #define LOGGINGMANAGER_API
+    #define LOGGINGMANAGER_API DECL_IMPORT
 #endif
 
 

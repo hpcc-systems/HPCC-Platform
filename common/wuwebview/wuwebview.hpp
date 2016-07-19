@@ -18,14 +18,10 @@
 #ifndef WUWEBVIEW_INCL
 #define WUWEBVIEW_INCL
 
-#ifdef _WIN32
-    #ifdef WUWEBVIEW_EXPORTS
-        #define WUWEBVIEW_API __declspec(dllexport)
-    #else
-        #define WUWEBVIEW_API __declspec(dllimport)
-    #endif
+#ifdef WUWEBVIEW_EXPORTS
+    #define WUWEBVIEW_API DECL_EXPORT
 #else
-    #define WUWEBVIEW_API
+    #define WUWEBVIEW_API DECL_IMPORT
 #endif
 
 #define WWV_OMIT_XML_DECLARATION        0x0001

@@ -18,14 +18,10 @@
 #ifndef _NBCD_
 #define _NBCD_
 
-#ifdef _WIN32
- #ifdef NBCD_EXPORTS
-  #define nbcd_decl __declspec(dllexport)
- #else
-  #define nbcd_decl __declspec(dllimport)
- #endif
+#ifdef NBCD_EXPORTS
+ #define nbcd_decl DECL_EXPORT
 #else
- #define nbcd_decl
+ #define nbcd_decl DECL_IMPORT
 #endif
 
 #define DECIMAL_OVERLOAD

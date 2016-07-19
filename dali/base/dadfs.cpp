@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#define da_decl __declspec(dllexport)
+#define da_decl DECL_EXPORT
 #include "platform.h"
 #include "jlib.hpp"
 #include "jfile.hpp"
@@ -219,7 +219,7 @@ inline void LOGFDESC(const char *title,IFileDescriptor *fdesc)
 }
 
 
-class CDFS_Exception: implements IDFS_Exception, public CInterface
+class DECL_EXCEPTION CDFS_Exception: implements IDFS_Exception, public CInterface
 {
     int errcode;
     StringAttr errstr;

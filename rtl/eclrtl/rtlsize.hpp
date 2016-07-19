@@ -18,14 +18,10 @@
 #ifndef hosize_incl
 #define hosize_incl
 
-#ifdef _WIN32
 #ifdef ECLRTL_EXPORTS
-#define ECLRTL_API __declspec(dllexport)
+#define ECLRTL_API DECL_EXPORT
 #else
-#define ECLRTL_API __declspec(dllimport)
-#endif
-#else
-#define ECLRTL_API
+#define ECLRTL_API DECL_IMPORT
 #endif
 #include "rtltype.hpp"
 

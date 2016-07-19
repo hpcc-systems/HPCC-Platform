@@ -55,23 +55,17 @@ include_directories (
 
 
 ADD_DEFINITIONS( -D_LIB )
+ADD_DEFINITIONS( -DTHORSORT_EXPORTS )
 
-if (WIN32)
-    HPCC_ADD_LIBRARY( thorsort_lcr STATIC ${SRCS} )
-    add_dependencies( thorsort_lcr
-             jlib
-        )
-else ()
-    HPCC_ADD_LIBRARY( thorsort_lcr SHARED ${SRCS} )
-    install ( TARGETS thorsort_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-    target_link_libraries ( thorsort_lcr
-         jlib
-         eclrtl
-         thorhelper
-         mp
-         dalibase
-         graph_lcr
-         roxiemem
-    )
-endif (WIN32)
+HPCC_ADD_LIBRARY( thorsort_lcr SHARED ${SRCS} )
+install ( TARGETS thorsort_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+target_link_libraries ( thorsort_lcr
+        jlib
+        eclrtl
+        thorhelper
+        mp
+        dalibase
+        graph_lcr
+        roxiemem
+)
 

@@ -17,12 +17,10 @@
 #ifndef __HQLCATOM_HPP_
 #define __HQLCATOM_HPP_
 
-#ifdef _WIN32
 #ifdef HQLCPP_EXPORTS
-#define HQLCPP_API __declspec(dllexport)
+#define HQLCPP_API DECL_EXPORT
 #else
-#define HQLCPP_API __declspec(dllimport)
-#endif
+#define HQLCPP_API DECL_IMPORT
 #endif
 
 extern IAtom * _accessedFromChild_Atom;

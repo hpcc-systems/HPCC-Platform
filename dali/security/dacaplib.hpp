@@ -35,7 +35,7 @@ extern  unsigned importDaliCapabilityXML_basic(const char *filename);
 #endif
 
 #ifndef dacaplib_decl
-#define dacaplib_decl __declspec(dllimport)
+#define dacaplib_decl DECL_IMPORT
 #endif
 
 

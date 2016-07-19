@@ -21,18 +21,9 @@
 //SCM Interfaces
 #include "esp.hpp"
 
-
 #ifndef ESP_BUILTIN
-#ifdef _WIN32
-#define ESP_FACTORY __declspec(dllexport)
+#define ESP_FACTORY DECL_EXPORT
 #endif
-#endif
-
-#ifndef ESP_FACTORY
-#define ESP_FACTORY
-#endif
-
-
 
 typedef IEspService * (*esp_service_factory_t)(const char *name,  const char* type, IPropertyTree* cfg, const char *process);
 typedef IEspRpcBinding * (*esp_binding_factory_t)(const char *name,  const char* type, IPropertyTree* cfg, const char *process);

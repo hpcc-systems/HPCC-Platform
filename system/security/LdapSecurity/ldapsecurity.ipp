@@ -31,7 +31,13 @@
 #endif
 #include "seclib.hpp"
 
-class CLdapSecUser : implements ISecUser, implements ISecCredentials, public CInterface
+#ifndef LDAPSECURITY_EXPORTS
+    #define LDAPSECURITY_API DECL_IMPORT
+#else
+    #define LDAPSECURITY_API DECL_EXPORT
+#endif
+
+class LDAPSECURITY_API CLdapSecUser : implements ISecUser, implements ISecCredentials, public CInterface
 {
 private:
     StringAttr   m_realm;
@@ -321,7 +327,7 @@ public:
     }
 };
 
-class CLdapSecManager : implements ISecManager, public CInterface
+class LDAPSECURITY_API CLdapSecManager : implements ISecManager, public CInterface
 {
 private:
     Owned<ILdapClient> m_ldap_client;

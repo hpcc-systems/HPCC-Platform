@@ -18,10 +18,6 @@
 #ifndef _HTTPBINDING_HPP__
 #define _HTTPBINDING_HPP__
 
-#ifndef esp_http_decl
-    #define esp_http_decl
-#endif
-
 #include "http/platform/httptransport.ipp"
 
 #include "bindutil.hpp"

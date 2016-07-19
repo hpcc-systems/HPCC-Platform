@@ -57,7 +57,7 @@ inline void HRPCtrace(const char *, ...) {}
 #endif
 
 
-class HRPCException: public IHRPC_Exception, public CInterface
+class DECL_EXCEPTION HRPCException: public IHRPC_Exception, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -142,7 +142,7 @@ IHRPC_Exception *MakeHRPCexception(int code,IException *e)
     return new HRPCException(code,e);
 }
 
-class CRemoteException: implements IRemoteException, public CInterface
+class DECL_EXCEPTION CRemoteException: implements IRemoteException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

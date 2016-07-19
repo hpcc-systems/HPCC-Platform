@@ -20,7 +20,7 @@
 
 /*#ifndef ESP_BUILTIN
 #ifdef _WIN32
-#define ESP_CONTEXT_API __declspec(dllexport)
+#define ESP_CONTEXT_API DECL_EXPORT
 #endif
 #endif
 

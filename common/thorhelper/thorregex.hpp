@@ -18,14 +18,10 @@
 #ifndef __THORRREGEX_HPP_
 #define __THORRREGEX_HPP_
 
-#ifdef _WIN32
- #ifdef THORHELPER_EXPORTS
-  #define THORHELPER_API __declspec(dllexport)
- #else
-  #define THORHELPER_API __declspec(dllimport)
- #endif
+#ifdef THORHELPER_EXPORTS
+ #define THORHELPER_API DECL_EXPORT
 #else
- #define THORHELPER_API
+ #define THORHELPER_API DECL_IMPORT
 #endif
 
 #define RegexSpecialMask                    0xF0000000

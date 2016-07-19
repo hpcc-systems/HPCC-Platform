@@ -56,8 +56,6 @@ ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type
     }
    return NULL;
 }
- 
-   
 
 ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
@@ -74,33 +72,9 @@ ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* t
    return NULL;
 }
 
-
-
 ESP_FACTORY IEspProtocol * esp_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-    if (strcmp(type, "http_protocol")==0)
-    {
-        return new CHttpProtocol;
-    }
-    else if(strcmp(type, "secure_http_protocol") == 0)
-    {
-        IPropertyTree *sslSettings;
-        sslSettings = cfg->getPropTree(StringBuffer("Software/EspProcess[@name=\"").append(process).append("\"]").append("/EspProtocol[@name=\"").append(name).append("\"]").str());
-        if(sslSettings != NULL)
-        {
-            return new CSecureHttpProtocol(sslSettings);
-        }
-        else
-        {
-            throw MakeStringException(-1, "can't find ssl settings in the config file");
-        }
-    }
-    else
-    {
-        throw MakeStringException(-1, "Unknown protocol %s", name);
-    }
-
-    return NULL;
+    return http_protocol_factory(name, type, cfg, process);
 }
 
 };

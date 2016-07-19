@@ -20,14 +20,10 @@
 
 #include "jiface.hpp"
 
-#ifdef WIN32
-    #ifdef WINREMOTE_EXPORTS
-        #define WINREMOTE_API __declspec(dllexport)
-    #else
-        #define WINREMOTE_API __declspec(dllimport)
-    #endif
+#ifdef WINREMOTE_EXPORTS
+    #define WINREMOTE_API DECL_EXPORT
 #else
-    #define WINREMOTE_API
+    #define WINREMOTE_API DECL_IMPORT
 #endif
 
 interface IRemoteOutput : extends IInterface

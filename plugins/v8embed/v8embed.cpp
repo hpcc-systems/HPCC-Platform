@@ -29,19 +29,13 @@
 #include "roxiemem.hpp"
 #include <vector>
 
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT
-#endif
-
 static const char * compatibleVersions[] = {
     "V8 JavaScript Embed Helper 1.0.0",
     NULL };
 
 static const char *version = "V8 JavaScript Embed Helper 1.0.0";
 
-extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
+extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
@@ -964,12 +958,12 @@ public:
 } theEmbedContext;
 
 
-extern IEmbedContext* getEmbedContext()
+extern DECL_EXPORT IEmbedContext* getEmbedContext()
 {
     return LINK(&theEmbedContext);
 }
 
-extern bool syntaxCheck(const char *script)
+extern DECL_EXPORT bool syntaxCheck(const char *script)
 {
     return true; // MORE
 }

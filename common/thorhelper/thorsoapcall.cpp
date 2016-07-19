@@ -48,7 +48,7 @@ unsigned soapTraceLevel = 1;
 #define WSCBUFFERSIZE 0x10000
 #define MAXWSCTHREADS 50    //Max Web Service Call Threads
 
-interface IReceivedRoxieException : extends IException
+interface DECL_EXCEPTION IReceivedRoxieException : extends IException
 {
 public:
     virtual const void *errorRow() = 0;
@@ -56,7 +56,7 @@ public:
 
 #define EXCEPTION_PREFIX "ReceivedRoxieException:"
 
-class ReceivedRoxieException: public IReceivedRoxieException, public CInterface
+class DECL_EXCEPTION ReceivedRoxieException: public IReceivedRoxieException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

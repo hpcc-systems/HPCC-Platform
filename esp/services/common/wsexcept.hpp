@@ -20,12 +20,8 @@
 
 #include "jexcept.hpp"
 
-#ifdef _WIN32
- #ifdef ESDLLIB_EXPORTS
-  #define esdl_decl __declspec(dllexport)
- #else
-  #define esdl_decl
- #endif
+#ifdef ESDLLIB_EXPORTS
+ #define esdl_decl DECL_EXPORT
 #else
  #define esdl_decl
 #endif
@@ -35,7 +31,7 @@ typedef enum
     WSERR_NOERR=-1,WSERR_CLIENT, WSERR_SERVER, WSERR_VERSION, WSERR_MUSTUNDERSTAND
 } WsErrorType;
 
-interface IWsException : extends IException
+interface esdl_decl IWsException : extends IException
 {
    //convenience methods for handling this as an array
    virtual aindex_t ordinality() const = 0;

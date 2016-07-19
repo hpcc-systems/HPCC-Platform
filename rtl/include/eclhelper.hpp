@@ -2895,14 +2895,10 @@ protected:
     Owned<IColumnProvider> cur;
 };
 
-#ifdef _WIN32
 #ifdef STARTQUERY_EXPORTS
-#define STARTQUERY_API __declspec(dllexport)
+#define STARTQUERY_API DECL_EXPORT
 #else
-#define STARTQUERY_API __declspec(dllimport)
-#endif
-#else
-#define STARTQUERY_API
+#define STARTQUERY_API DECL_IMPORT
 #endif
 
 int STARTQUERY_API start_query(int argc, const char *argv[]);

@@ -20,7 +20,7 @@
 #include "thirdparty.h"
 #include "portlist.h"
 #include "jlib.hpp"
-#include "jlog.ipp"
+#include "jlog.hpp"
 #include "jptree.hpp"
 #include "jmisc.hpp"
 

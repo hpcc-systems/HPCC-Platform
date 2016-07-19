@@ -21,6 +21,12 @@
 //Jlib
 #include "jsocket.hpp"
 
+#ifdef ESPHTTP_EXPORTS
+    #define esp_http_decl DECL_EXPORT
+#else
+    #define esp_http_decl DECL_IMPORT
+#endif
+
 //ESP Bindings
 #include "http/platform/httptransport.hpp"
 
@@ -48,7 +54,7 @@ enum MessageLogFlag
     LOGCONTENT = 2
 };
 
-class CHttpMessage : implements IHttpMessage, public CInterface
+class esp_http_decl CHttpMessage : implements IHttpMessage, public CInterface
 {
 protected:
     ISocket&     m_socket;
@@ -279,7 +285,7 @@ typedef enum sub_service_
 
 const char* getSubServiceDesc(sub_service stype);
 
-class CHttpRequest : public CHttpMessage
+class esp_http_decl CHttpRequest : public CHttpMessage
 {
 private:
     StringAttr    m_httpMethod;
@@ -339,7 +345,7 @@ public:
     virtual void readUploadFileContent(StringArray& fileNames, StringArray& files);
 };
 
-class CHttpResponse : public CHttpMessage
+class esp_http_decl CHttpResponse : public CHttpMessage
 {
 private:
     StringAttr  m_status;

@@ -101,7 +101,7 @@ protected:
   cycle_t         start_time;
 };
 
-interface IEspHttpException : extends IException
+interface BINDUTIL_EXPORT IEspHttpException : extends IException
 {
     virtual const char* getHttpStatus() = 0;
 };

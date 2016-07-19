@@ -22,7 +22,7 @@
 #define MPBASE_HPP
 
 #ifndef mp_decl
-#define mp_decl __declspec(dllimport)
+#define mp_decl DECL_IMPORT
 #endif
 
 #include "jutil.hpp"
@@ -142,7 +142,7 @@ extern mp_decl void initMyNode(unsigned short port);
 
 // Exceptions
 
-interface IMP_Exception: extends IException
+interface mp_decl IMP_Exception: extends IException
 {
     virtual const SocketEndpoint &queryEndpoint() const = 0;
 };

@@ -3846,7 +3846,7 @@ unsigned rtlDelayReturn(unsigned value, unsigned sleepTime)
 
 //---------------------------------------------------------------------------
 
-class CRtlFailException : public IUserException, public CInterface
+class DECL_EXCEPTION CRtlFailException : public IUserException, public CInterface
 {
 public:
     CRtlFailException(int _code, char const * _msg) : code(_code) { msg = strdup(_msg); }

@@ -17,13 +17,6 @@
 #ifndef BUILDFUNC_HPP
 #define BUILDFUNC_HPP
 
-#ifdef READSCRIPT_EXPORTS
-#define READSCRIPT_DECL __declspec(dllexport)
-#else
-#define READSCRIPT_DECL __declspec(dllimport)
-#endif
-
-
 interface ITypeInfo;
 interface IFunctionParamInfo : public IInterface
 {

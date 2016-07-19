@@ -25,14 +25,10 @@
 #include "errorlist.h"
 #include <atomic>
 
-#ifdef _WIN32
- #ifdef ROXIEMEM_EXPORTS
-  #define roxiemem_decl __declspec(dllexport)
- #else
-  #define roxiemem_decl __declspec(dllimport)
- #endif
+#ifdef ROXIEMEM_EXPORTS
+#define roxiemem_decl DECL_EXPORT
 #else
- #define roxiemem_decl
+#define roxiemem_decl DECL_IMPORT
 #endif
 
 #define ROXIEMM_MEMORY_LIMIT_EXCEEDED     ROXIEMM_ERROR_START

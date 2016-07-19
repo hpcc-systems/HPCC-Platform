@@ -20,14 +20,10 @@
 
 #pragma warning (disable : 4786)
 
-#ifdef _WIN32
-    #ifdef LOGGINGCOMMON_EXPORTS
-        #define LOGGINGCOMMON_API __declspec(dllexport)
-    #else
-        #define LOGGINGCOMMON_API __declspec(dllimport)
-    #endif
+#ifdef LOGGINGCOMMON_EXPORTS
+    #define LOGGINGCOMMON_API DECL_EXPORT
 #else
-    #define LOGGINGCOMMON_API
+    #define LOGGINGCOMMON_API DECL_IMPORT
 #endif
 
 #define MAXLOGSERVICES 32

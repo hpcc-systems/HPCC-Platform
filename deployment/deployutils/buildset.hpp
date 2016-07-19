@@ -27,9 +27,9 @@
 #endif // _MSC_VER > 1000
 
 #ifdef DEPLOYUTILS_EXPORTS
-  #define DEPLOYUTILS_API __declspec(dllexport)
+  #define DEPLOYUTILS_API DECL_EXPORT
 #else
-  #define DEPLOYUTILS_API __declspec(dllimport)
+  #define DEPLOYUTILS_API DECL_IMPORT
 #endif
 
 interface IConstEnvironment;

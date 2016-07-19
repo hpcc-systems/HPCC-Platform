@@ -1314,8 +1314,7 @@ public:
 
 //==============================================================================
 
-
-IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep,IDiskUsage *iDiskUsage,ICommunicator *clusterComm, mptag_t _mpTagRPC)
+THORSORT_API IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep,IDiskUsage *iDiskUsage,ICommunicator *clusterComm, mptag_t _mpTagRPC)
 {
     return new CThorSorter(activity, ep, iDiskUsage, clusterComm, _mpTagRPC);
 }

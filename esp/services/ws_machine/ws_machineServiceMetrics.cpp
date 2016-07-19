@@ -26,7 +26,7 @@
 #include "thirdparty.h"
 
 #include "portlist.h"
-#include "roxiecommlibscm.hpp"
+#include "roxiecommlib.hpp"
 #include "exception_util.hpp"
 
 //---------------------------------------------------------------------------------------------

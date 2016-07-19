@@ -22,9 +22,9 @@
 #define RMTSSH_API
 #else
 #ifdef REMOTE_EXPORTS
-#define RMTSSH_API __declspec(dllexport)
+#define RMTSSH_API DECL_EXPORT
 #else
-#define RMTSSH_API __declspec(dllimport)
+#define RMTSSH_API DECL_IMPORT
 #endif
 #endif
 

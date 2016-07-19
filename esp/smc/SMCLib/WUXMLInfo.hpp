@@ -22,9 +22,9 @@
 #define __CWUXMLInfo_HPP__
 
 #ifdef SMCLIB_EXPORTS
-    #define WUXMLINFO_API __declspec(dllexport)
+    #define WUXMLINFO_API DECL_EXPORT
 #else
-    #define WUXMLINFO_API __declspec(dllimport)
+    #define WUXMLINFO_API DECL_IMPORT
 #endif
 
 #include "jiface.hpp"

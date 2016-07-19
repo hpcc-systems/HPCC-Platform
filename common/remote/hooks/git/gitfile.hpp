@@ -21,9 +21,9 @@
 #include "jfile.hpp"
 
 #ifdef GITFILE_EXPORTS
-#define GITFILE_API __declspec(dllexport)
+#define GITFILE_API DECL_EXPORT
 #else
-#define GITFILE_API __declspec(dllimport)
+#define GITFILE_API DECL_IMPORT
 #endif
 
 

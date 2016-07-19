@@ -26,13 +26,6 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 
-
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT
-#endif
-
 static const char *g_moduleName = "couchbase";
 static const char *g_moduleDescription = "Couchbase Embed Helper";
 static const char *g_version = "Couchbase Embed Helper 1.0.0";
@@ -997,12 +990,12 @@ namespace couchbaseembed
         }
     };
 
-    extern IEmbedContext* getEmbedContext()
+    extern DECL_EXPORT IEmbedContext* getEmbedContext()
     {
         return new CouchbaseEmbedContext();
     }
 
-    extern bool syntaxCheck(const char *script)
+    extern DECL_EXPORT bool syntaxCheck(const char *script)
     {
         return true; // TO-DO
     }

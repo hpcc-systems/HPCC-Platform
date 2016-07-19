@@ -19,7 +19,7 @@
 #define DACLIENT_HPP
 
 #ifndef da_decl
-#define da_decl __declspec(dllimport)
+#define da_decl DECL_IMPORT
 #endif
 
 #include "jlib.hpp"
@@ -40,7 +40,7 @@ interface IDaliClientShutdown : extends IInterface
 extern da_decl void addShutdownHook(IDaliClientShutdown &shutdown);
 extern da_decl void removeShutdownHook(IDaliClientShutdown &shutdown);
 
-interface IDaliClient_Exception: extends IException
+interface da_decl IDaliClient_Exception: extends IException
 {
 };
 

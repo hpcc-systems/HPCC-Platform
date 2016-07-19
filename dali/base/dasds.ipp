@@ -352,7 +352,7 @@ protected:
     ChangeInfoMap changeMap;
 };
 
-class CSDSException : implements ISDSException, public CInterface
+class DECL_EXCEPTION CSDSException : implements ISDSException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

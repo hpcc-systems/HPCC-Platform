@@ -22,16 +22,11 @@
 #define __DFUWrapper_HPP__
 
 
-#ifdef _WIN32
 #ifdef SMCLIB_EXPORTS
-#define LFWRAPPER_API __declspec(dllexport)
+#define LFWRAPPER_API DECL_EXPORT
 #else
-#define LFWRAPPER_API __declspec(dllimport)
+#define LFWRAPPER_API DECL_IMPORT
 #endif
-#else
-#define LFWRAPPER_API
-#endif
-
 
 
 #include "jiface.hpp"

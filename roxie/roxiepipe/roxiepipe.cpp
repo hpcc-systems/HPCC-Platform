@@ -50,7 +50,7 @@ interface IReceivedRoxieException : extends IException
 {
 };
 
-class ReceivedRoxieException: public IReceivedRoxieException, public CInterface
+class DECL_EXCEPTION ReceivedRoxieException: public IReceivedRoxieException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

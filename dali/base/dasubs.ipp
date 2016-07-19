@@ -21,7 +21,7 @@
 #include "dasubs.hpp"
 
 #ifndef da_decl
-#define da_decl __declspec(dllimport)
+#define da_decl DECL_IMPORT
 #endif
 
 interface ISubscription: extends IInterface             

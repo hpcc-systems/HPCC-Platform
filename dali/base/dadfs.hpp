@@ -27,7 +27,7 @@
 #define DADFS_HPP
 
 #ifndef da_decl
-#define da_decl __declspec(dllimport)
+#define da_decl DECL_IMPORT
 #endif
 
 #include "jiface.hpp"
@@ -729,7 +729,7 @@ extern da_decl bool decodeChildGroupName(const char *gname,StringBuffer &parentn
 
 // Exceptions
 
-interface IDFS_Exception: extends IException
+interface da_decl IDFS_Exception: extends IException
 {
 };
 

@@ -688,7 +688,7 @@ public:
     virtual unsigned numInputs() const { return inputs.ordinality(); }
 };
 
-class CWrappedException : implements IException, public CInterface
+class DECL_EXCEPTION CWrappedException : implements IException, public CInterface
 {
     Owned<IException> wrapped;
     ThorActivityKind kind;
@@ -1994,7 +1994,7 @@ void setStartRuid(unsigned restarts)
 
 enum { LimitSkipErrorCode = 0, KeyedLimitSkipErrorCode = 1 };
 
-class LimitSkipException : public IException, public CInterface
+class DECL_EXCEPTION LimitSkipException : public IException, public CInterface
 {
     int code;
 public:

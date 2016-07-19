@@ -64,18 +64,12 @@
 #include "rtlfield_imp.hpp"
 #include "nbcd.hpp"
 
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT
-#endif
-
 static const char * compatibleVersions[] =
 { "R Embed Helper 1.0.0", NULL };
 
 static const char *version = "R Embed Helper 1.0.0";
 
-extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
+extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
@@ -1103,12 +1097,12 @@ public:
     }
 };
 
-extern IEmbedContext* getEmbedContext()
+extern DECL_EXPORT IEmbedContext* getEmbedContext()
 {
     return new REmbedContext;
 }
 
-extern bool syntaxCheck(const char *script)
+extern DECL_EXPORT bool syntaxCheck(const char *script)
 {
     return true; // MORE
 }

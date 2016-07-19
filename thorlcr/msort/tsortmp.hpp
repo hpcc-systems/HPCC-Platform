@@ -6,6 +6,11 @@
 #include <mpbase.hpp>
 #include <mpcomm.hpp>
 
+#ifdef THORSORT_EXPORTS
+#define THORSORT_API DECL_EXPORT
+#else
+#define THORSORT_API DECL_IMPORT
+#endif
 
 #define CMPFN_NORMAL 0
 #define CMPFN_COLLATE 1

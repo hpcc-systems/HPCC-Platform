@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define ECL_MEMCACHED_CALL _cdecl
-#ifdef ECL_MEMCACHED_EXPORTS
-#define ECL_MEMCACHED_API __declspec(dllexport)
-#else
-#define ECL_MEMCACHED_API __declspec(dllimport)
-#endif
 #else
 #define ECL_MEMCACHED_CALL
-#define ECL_MEMCACHED_API
+#endif
+
+#ifdef ECL_MEMCACHED_EXPORTS
+#define ECL_MEMCACHED_API DECL_EXPORT
+#else
+#define ECL_MEMCACHED_API DECL_IMPORT
 #endif
 
 #include "hqlplugins.hpp"

@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define WORKUNITSERVICES_CALL _cdecl
-#ifdef WORKUNITSERVICES_EXPORTS
-#define WORKUNITSERVICES_API __declspec(dllexport)
-#else
-#define WORKUNITSERVICES_API __declspec(dllimport)
-#endif
 #else
 #define WORKUNITSERVICES_CALL
-#define WORKUNITSERVICES_API
+#endif
+
+#ifdef WORKUNITSERVICES_EXPORTS
+#define WORKUNITSERVICES_API DECL_EXPORT
+#else
+#define WORKUNITSERVICES_API DECL_IMPORT
 #endif
 
 #include "hqlplugins.hpp"

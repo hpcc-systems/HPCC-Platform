@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define AUDITLIB_CALL _cdecl
-#ifdef AUDITLIB_EXPORTS
-#define AUDITLIB_API __declspec(dllexport)
-#else
-#define AUDITLIB_API __declspec(dllimport)
-#endif
 #else
 #define AUDITLIB_CALL
-#define AUDITLIB_API
+#endif
+
+#ifdef AUDITLIB_EXPORTS
+#define AUDITLIB_API DECL_EXPORT
+#else
+#define AUDITLIB_API DECL_IMPORT
 #endif
 
 #include "hqlplugins.hpp"

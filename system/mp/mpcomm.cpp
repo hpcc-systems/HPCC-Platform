@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#define mp_decl __declspec(dllexport)
+#define mp_decl DECL_EXPORT
 
 /* TBD
     lost packet disposal
@@ -210,7 +210,7 @@ struct MultiPacketHeader
 
 // 
 
-class CMPException: public IMP_Exception, public CInterface
+class DECL_EXCEPTION CMPException: public IMP_Exception, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

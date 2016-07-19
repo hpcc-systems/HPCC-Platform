@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#define mp_decl __declspec(dllexport)
+#define mp_decl DECL_EXPORT
 #include "platform.h"
 #include "jlib.hpp"
 #include "jlog.hpp"

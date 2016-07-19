@@ -18,6 +18,12 @@
 #ifndef REMOTEERR_HPP
 #define REMOTEERR_HPP
 
+#ifdef REMOTE_EXPORTS
+#define REMOTE_API DECL_EXPORT
+#else
+#define REMOTE_API DECL_IMPORT
+#endif
+
 #define ERR_REMOTE_FIRST                        8000
 #define ERR_REMOTE_LAST                         8049
 
@@ -80,7 +86,7 @@
 #define RAERR_InvalidUsernamePassword_Text      "Invalid (upper case U) in username/password"
 
 
-interface IDAFS_Exception: extends IException
+interface REMOTE_API IDAFS_Exception: extends IException
 { // Raise by dafilesrv calls
 };
 

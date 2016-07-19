@@ -30,14 +30,10 @@
 
 using namespace cassandraembed;
 
-#ifdef WIN32
-    #ifdef CASSANDRALOGAGENT_EXPORTS
-        #define CASSANDRALOGAGENT_API __declspec(dllexport)
-    #else
-        #define CASSANDRALOGAGENT_API __declspec(dllimport)
-    #endif
+#ifdef CASSANDRALOGAGENT_EXPORTS
+    #define CASSANDRALOGAGENT_API DECL_EXPORT
 #else
-    #define CASSANDRALOGAGENT_API
+    #define CASSANDRALOGAGENT_API DECL_IMPORT
 #endif
 
 class CCassandraLogAgent : public CDBLogAgentBase

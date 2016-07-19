@@ -17,14 +17,6 @@
 #ifndef __HQLCCOMMON_HPP_
 #define __HQLCCOMMON_HPP_
 
-#ifdef _WIN32
-#ifdef HQLCPP_EXPORTS
-#define HQLCPP_API __declspec(dllexport)
-#else
-#define HQLCPP_API __declspec(dllimport)
-#endif
-#endif
-
 extern IHqlExpression * activeActivityMarkerExpr;
 extern IHqlExpression * activeFailureMarkerExpr;
 extern IHqlExpression * activeMatchTextExpr;

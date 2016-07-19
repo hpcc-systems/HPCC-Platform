@@ -18,14 +18,10 @@
 #ifndef __ESDL_DECL_HPP__
 #define __ESDL_DECL_HPP__
 
-#ifdef _WIN32
- #ifdef ESDLCOMP_EXPORTS
-  #define esdlcomp_decl __declspec(dllexport)
- #else
-  #define esdlcomp_decl __declspec(dllimport)
- #endif
+#ifdef ESDLCOMP_EXPORTS
+ #define esdlcomp_decl DECL_EXPORT
 #else
- #define esdlcomp_decl
+ #define esdlcomp_decl DECL_IMPORT
 #endif
 
 #endif

@@ -33,7 +33,7 @@
 extern "C"
 {
 
-ESP_FACTORY IEspProtocol * http_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
+esp_http_decl IEspProtocol * http_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
     if (strcmp(type, "http_protocol")==0)
     {

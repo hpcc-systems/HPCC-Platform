@@ -61,6 +61,7 @@ include_directories (
          ./../../../bindings/SOAP/xpp 
     )
 
+ADD_DEFINITIONS( -DESPHTTP_EXPORTS )
 
 if (WIN32)
     ADD_DEFINITIONS( -D_LIB )

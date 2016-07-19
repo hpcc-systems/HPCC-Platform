@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#define da_decl __declspec(dllexport)
+#define da_decl DECL_EXPORT
 #include "platform.h"
 #include "jlib.hpp"
 #include "jexcept.hpp"
@@ -48,7 +48,7 @@ MODULE_EXIT()
 }
 
 
-class CDaliClientException: public IDaliClient_Exception, public CInterface
+class DECL_EXCEPTION CDaliClientException: public IDaliClient_Exception, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

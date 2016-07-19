@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define TIMELIB_CALL _cdecl
-#ifdef TIMELIB_EXPORTS
-#define TIMELIB_API __declspec(dllexport)
-#else
-#define TIMELIB_API __declspec(dllimport)
-#endif
 #else
 #define TIMELIB_CALL
-#define TIMELIB_API
+#endif
+
+#ifdef TIMELIB_EXPORTS
+#define TIMELIB_API DECL_EXPORT
+#else
+#define TIMELIB_API DECL_IMPORT
 #endif
 
 #include <time.h>

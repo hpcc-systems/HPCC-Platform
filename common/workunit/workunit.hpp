@@ -18,14 +18,10 @@
 #ifndef WORKUNIT_INCL
 #define WORKUNIT_INCL
 
-#ifdef _WIN32
-    #ifdef WORKUNIT_EXPORTS
-        #define WORKUNIT_API __declspec(dllexport)
-    #else
-        #define WORKUNIT_API __declspec(dllimport)
-    #endif
+#ifdef WORKUNIT_EXPORTS
+    #define WORKUNIT_API DECL_EXPORT
 #else
-    #define WORKUNIT_API
+    #define WORKUNIT_API DECL_IMPORT
 #endif
 
 #define MINIMUM_SCHEDULE_PRIORITY 0
@@ -1343,14 +1339,15 @@ interface IExtendedWUInterface
     
 };
 
+//Do not mark this as WORKUNIT_API - all functions are inline, and it causes windows link errors
 struct WorkunitUpdate : public Owned<IWorkUnit>
 {
 public:
-    WorkunitUpdate(IWorkUnit *wu) : Owned<IWorkUnit>(wu) { }
-    ~WorkunitUpdate() { if (get()) get()->commit(); }
+    inline WorkunitUpdate(IWorkUnit *wu) : Owned<IWorkUnit>(wu) { }
+    inline ~WorkunitUpdate() { if (get()) get()->commit(); }
 };
 
-class WuStatisticTarget : implements IStatisticTarget
+class WORKUNIT_API WuStatisticTarget : implements IStatisticTarget
 {
 public:
     WuStatisticTarget(IWorkUnit * _wu, const char * _defaultWho) : wu(_wu), defaultWho(_defaultWho) {}

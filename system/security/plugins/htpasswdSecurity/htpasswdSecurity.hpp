@@ -20,15 +20,11 @@
 
 #ifndef HTPASSWDSECURITY_API
 
-#ifdef _WIN32
-    #ifndef HTPASSWDSECURITY_EXPORTS
-        #define HTPASSWDSECURITY_API __declspec(dllimport)
-    #else
-        #define HTPASSWDSECURITY_API __declspec(dllexport)
-    #endif //HTPASSWDSECURITY_EXPORTS
+#ifndef HTPASSWDSECURITY_EXPORTS
+    #define HTPASSWDSECURITY_API DECL_IMPORT
 #else
-    #define HTPASSWDSECURITY_API
-#endif //_WIN32
+    #define HTPASSWDSECURITY_API DECL_EXPORT
+#endif //HTPASSWDSECURITY_EXPORTS
 
 #endif 
 

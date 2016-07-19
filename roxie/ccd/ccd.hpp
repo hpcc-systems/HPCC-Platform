@@ -32,14 +32,10 @@
 #include "eclrtl.hpp"
 #include "workunit.hpp"
 
-#ifdef _WIN32
 #ifdef CCD_EXPORTS
-#define CCD_API __declspec(dllexport)
+#define CCD_API DECL_EXPORT
 #else
-#define CCD_API __declspec(dllimport)
-#endif
-#else
-#define CCD_API
+#define CCD_API DECL_IMPORT
 #endif
 
 #define PARALLEL_EXECUTE

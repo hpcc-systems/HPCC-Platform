@@ -18,14 +18,10 @@
 #ifndef DFUXREF_HPP
 #define DFUXREF_HPP
 
-#ifdef _WIN32
-    #ifdef DFUXREFLIB_EXPORTS
-        #define DFUXREFLIB_API __declspec(dllexport)
-    #else
-        #define DFUXREFLIB_API __declspec(dllimport)
-    #endif
+#ifdef DFUXREFLIB_EXPORTS
+    #define DFUXREFLIB_API DECL_EXPORT
 #else
-    #define DFUXREFLIB_API
+    #define DFUXREFLIB_API DECL_IMPORT
 #endif
 
 #include "XRefNodeManager.hpp"

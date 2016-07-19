@@ -31,7 +31,6 @@ set ( ESPSCM_SRCS
       esp.ecm
       ws_access.ecm
       esploggingservice.ecm
-      roxiecommlibscm.ecm
       soapesp.ecm
       ws_ecl_client.ecm
       ws_fs.ecm

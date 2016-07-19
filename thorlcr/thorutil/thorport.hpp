@@ -22,14 +22,10 @@
 #include "jutil.hpp"
 #include "jsocket.hpp"
 
-#ifdef _WIN32
-    #ifdef GRAPH_EXPORTS
-        #define graph_decl __declspec(dllexport)
-    #else
-        #define graph_decl __declspec(dllimport)
-    #endif
+#ifdef GRAPH_EXPORTS
+    #define graph_decl DECL_EXPORT
 #else
-    #define graph_decl
+    #define graph_decl DECL_IMPORT
 #endif
 
 enum ThorPortKind

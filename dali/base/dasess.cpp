@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#define da_decl __declspec(dllexport)
+#define da_decl DECL_EXPORT
 #include "platform.h"
 #include "jlib.hpp"
 #include "jfile.hpp"
@@ -101,7 +101,7 @@ static CriticalSection sessionCrit;
 #define CLDAPE_getpermtimeout (-1)
 #define CLDAPE_ldapfailure    (-2)
 
-class CDaliLDAP_Exception: implements IException, public CInterface
+class DECL_EXCEPTION CDaliLDAP_Exception: implements IException, public CInterface
 {
     int errcode;
 public:

@@ -17,13 +17,6 @@
 
 #pragma warning( disable : 4786)
 
-#ifdef WIN32
-#ifdef ESPHTTP_EXPORTS
-    #define esp_http_decl __declspec(dllexport)
-#endif
-#endif
-
-
 //Jlib
 #include "jexcept.hpp"
 

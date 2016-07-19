@@ -20,7 +20,7 @@
 #include "dadfs.hpp"
 #include "exception_util.hpp"
 #include "workunit.hpp"
-#include "roxiecommlibscm.hpp"
+#include "roxiecommlib.hpp"
 #include "componentstatus.hpp"
 #include "rmtssh.hpp"
 #include "platform.h"
