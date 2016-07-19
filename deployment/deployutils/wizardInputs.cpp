@@ -300,7 +300,7 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
         else
           pIpAddrMap = &m_ipaddressSupport;
 
-        unsigned numOfIPSAlreadyTaken = getCntForAlreadyAssignedIPS(buildSetName);
+        unsigned numOfIPSAlreadyTaken = m_arrBuildSetsWithAssignedIPs.find(buildSetName) == NotFound ? getCntForAlreadyAssignedIPS(buildSetName) : x;
 
         if( numOfIPSAlreadyTaken < pIpAddrMap->ordinality())
           addToCompIPMap(buildSetName, pIpAddrMap->item(numOfIPSAlreadyTaken), compName);
