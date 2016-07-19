@@ -250,8 +250,6 @@ public:
         if (!receiveMsg(replyMsg, sender, mpTag, NULL, 5*60000))
             throwUnexpected();
         replyMsg.swapWith(msg);
-        queryJobChannel().queryJobComm().reply(replyMsg); // ack
-        
         unsigned numGot;
         msg.read(numGot);
         unsigned l=msg.remaining();
@@ -266,6 +264,7 @@ public:
             totalSize += resultData.length();
             flushResults(0 == numGot);
         }
+        queryJobChannel().queryJobComm().reply(replyMsg); // ack
     }
     virtual void handleSlaveMessage(CMessageBuffer &msg)
     {
