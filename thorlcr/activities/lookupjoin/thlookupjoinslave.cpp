@@ -3217,16 +3217,19 @@ public:
     }
     virtual void stop()
     {
-        if (isGlobal())
+        if (hasStarted())
         {
-            if (gotRHS)
+            if (isGlobal())
             {
-                // Other channels sharing HT. So do not reset until all here
-                if (queryJob().queryJobChannels()>1)
-                    InterChannelBarrier();
+                if (gotRHS)
+                {
+                    // Other channels sharing HT. So do not reset until all here
+                    if (queryJob().queryJobChannels()>1)
+                        InterChannelBarrier();
+                }
+                else
+                    getRHS(true); // If global, need to handle RHS until all are slaves stop
             }
-            else
-                getRHS(true); // If global, need to handle RHS until all are slaves stop
         }
         PARENT::stop();
     }
