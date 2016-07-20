@@ -233,6 +233,7 @@ void CSlaveMessageHandler::main()
                         assertex(element);
                         try
                         {
+                            element->reset();
                             element->doCreateActivity(parentExtractSz, parentExtract);
                         }
                         catch (IException *e)
