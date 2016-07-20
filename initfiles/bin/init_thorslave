@@ -41,7 +41,7 @@ stop_slaves()
     local isAlive=0
 
     log "Attempting to kill $slavename with SIGTERM"
-    killall -SIGTERM $slavename > /dev/null 2>&1
+    killall -SIGTERM $slavename > /dev/null
     while [[ $isAlive -eq 0 && $timer -gt 0 ]];do
         killall -0 $slavename > /dev/null 2>&1
         isAlive=$?
@@ -51,18 +51,18 @@ stop_slaves()
 
     if [[ $isAlive -eq 0 ]]; then
         log "Failed to kill slaves with SIGTERM. Sending SIGKILL"
-        killall -SIGKILL $slavename > /dev/null 2>&1
+        killall -SIGKILL $slavename > /dev/null
     fi
 
-    rm -f $PID/${slavename}_*.pid > /dev/null 2>&1
+    rm -f $PID/${slavename}_*.pid > /dev/null
 }
 
 start_slaves()
 {
     # insuring dafilesrv is running on the machine as it is a prerequisite
-    sudo /etc/init.d/dafilesrv status > /dev/null 2>&1
+    sudo /etc/init.d/dafilesrv status > /dev/null
     if [[ $? -ne 0 ]];then
-        sudo /etc/init.d/dafilesrv start > /dev/null 2>&1
+        sudo /etc/init.d/dafilesrv start > /dev/null
         if [[ $? -ne 0 ]];then
             exit 1
         fi
@@ -76,9 +76,9 @@ start_slaves()
 
     log "dependency dafilesrv started"
 
-    ulimit -Sc hard > /dev/null 2>&1
+    ulimit -Sc hard > /dev/null
     [[ $? -ne 0 ]] && log "Failed to set ulimit for core file size"
-    ulimit -Sn hard > /dev/null 2>&1
+    ulimit -Sn hard > /dev/null
     [[ $? -ne 0 ]] && log "Failed to set ulimit for number of file descriptors open"
 
     log "slave init"
@@ -93,6 +93,7 @@ start_slaves()
 
     # NB: Would simply use slavesPerNode to create N slaves, but for backward compatilibty reasons, need to cater for clusters
     # defined with arbitrary repeated IP's listed in their definitions.    
+    fts=0
     clusternodes=$(cat $instancedir/slaves.tmp | wc -l)
     clusternode=1
     for slaveip in $(cat $instancedir/slaves.tmp); do
@@ -104,6 +105,7 @@ start_slaves()
                 slavepid=$!
                 if [[ "$slavepid" -eq "0" ]]; then
                     log "failed to start"
+                    fts=1
                 else
                     log "slave pid $slavepid started"
                     PID_NAME="$PID/${slavename}_${slavenum}.pid"
@@ -114,7 +116,8 @@ start_slaves()
         fi
         clusternode=$(( $clusternode + 1 ))
     done
-    rm -f $instancedir/slaves.tmp > /dev/null 2>&1
+    rm -f $instancedir/slaves.tmp > /dev/null
+    exit ${fts}
 }
 
 print_usage()
