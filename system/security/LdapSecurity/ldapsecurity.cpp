@@ -528,8 +528,8 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     else
         throwUnexpected();
 
-    ldap_client->init(pp);
     pp->setLdapClient(ldap_client);
+    ldap_client->init(pp);
 
     m_ldap_client.setown(ldap_client);
     m_pp.setown(pp);
