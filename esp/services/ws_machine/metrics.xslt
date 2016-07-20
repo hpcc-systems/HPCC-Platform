@@ -66,13 +66,13 @@
             <script type="text/javascript">
               var autoRefreshVal=<xsl:value-of select="$autoRefresh"/>;
               var autoUpdateChecked=<xsl:value-of select="$autoupdatechecked"/>;
+              var viewColumnsStr = '<xsl:value-of select="$hpccStrings/st[@id='ViewColumns']"/>';
             <xsl:text disable-output-escaping="yes"><![CDATA[
          //############ begin auto reload script ######################
          var reloadTimer = null;
          var reloadTimeout = 0;
          var idCount = 0;
          var checkboxIDs = new Array();
-         var viewColumnsStr = '<xsl:value-of select="$hpccStrings/st[@id='ViewColumns']"/>';
 
          // This function gets called when the window has completely loaded.
          // It starts the reload timer with a default time value.
