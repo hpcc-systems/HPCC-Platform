@@ -18,7 +18,7 @@
 #ifndef __MIME_HPP_
 #define __MIME_HPP_
 
-class CMimeBodyPart : public CInterface, implements IInterface
+class CMimeBodyPart : public CInterface
 {
 private:
     StringAttr m_content_type;
@@ -29,8 +29,6 @@ private:
     StringBuffer m_content;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CMimeBodyPart(const char* content_type, const char* encoding, const char* cid, const char* location, StringBuffer* content, const char* content_disposition = NULL);
     virtual ~CMimeBodyPart();
     const char* getContentType();
@@ -52,7 +50,7 @@ private:
     StringAttr m_boundary;
     StringAttr m_type;
     StringAttr m_start;
-    IArrayOf<CMimeBodyPart> m_parts;
+    CIArrayOf<CMimeBodyPart> m_parts;
 
 public:
     IMPLEMENT_IINTERFACE;

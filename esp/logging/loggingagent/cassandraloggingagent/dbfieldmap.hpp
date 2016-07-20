@@ -24,7 +24,7 @@
 #include "jstring.hpp"
 #include "jptree.hpp"
 
-class CLogField : public CInterface, implements IInterface
+class CLogField : public CInterface
 {
     StringAttr  name;
     StringAttr  mapTo;
@@ -32,7 +32,6 @@ class CLogField : public CInterface, implements IInterface
     StringAttr  defaultValue;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CLogField(const char* _name, const char* _mapTo, const char* _type)
         : name(_name), mapTo(_mapTo), type(_type) {};
     virtual ~CLogField() {};
@@ -49,7 +48,6 @@ class CLogTable : public CInterface
     StringAttr tableName;
     CIArrayOf<CLogField> logFields;
 public:
-    IMPLEMENT_IINTERFACE;
     CLogTable(const char* _tableName) : tableName(_tableName) {};
     virtual ~CLogTable() {};
 

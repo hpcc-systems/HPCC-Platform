@@ -20,8 +20,7 @@
 
 #include "ws_ecl_client.hpp"
 
-class CClientWsEclService : public CInterface,
-   implements IClientWsEclService
+class CClientWsEclService : implements IClientWsEclService, public CInterface
 {
 private:
     char m_url[256];

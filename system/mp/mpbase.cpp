@@ -26,7 +26,7 @@ static INode *MyNode=NULL;
 static INode *NullNode=NULL;
 
 
-class MPNode: public CInterface, implements INode
+class MPNode: implements INode, public CInterface
 {
 protected: friend class MPNodeCache;
     SocketEndpoint ep;
@@ -128,7 +128,7 @@ MPNode *MPNode::deserialize(MemoryBuffer &src)
 
 
 
-class CGroup: public CInterface, implements IGroup
+class CGroup: implements IGroup, public CInterface
 {
 protected: friend class CNodeIterator;
     rank_t count;
@@ -586,7 +586,7 @@ public:
 
 
 
-class CNodeIterator : public CInterface, implements INodeIterator
+class CNodeIterator : implements INodeIterator, public CInterface
 {
     Linked<IGroup> parent;
     rank_t start;

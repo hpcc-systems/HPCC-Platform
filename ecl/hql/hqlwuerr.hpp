@@ -20,7 +20,7 @@
 #include "hqlexpr.hpp"
 #include "workunit.hpp"
 
-class HQL_API WorkUnitErrorReceiver : public CInterface, implements IErrorReceiver
+class HQL_API WorkUnitErrorReceiver : implements IErrorReceiver, public CInterface
 {
 public:
     WorkUnitErrorReceiver(IWorkUnit * _wu, const char * _component) { wu.set(_wu); component.set(_component); }

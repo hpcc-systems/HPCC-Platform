@@ -21,7 +21,7 @@
 #include "daft.hpp"
 
 
-class CDistributedFileSystem : public CInterface, implements IDistributedFileSystem
+class CDistributedFileSystem : implements IDistributedFileSystem, public CInterface
 {
 public:
     CDistributedFileSystem();

@@ -33,11 +33,10 @@
 #include "roxierow.hpp"
 #include "package.h"
 
-class TranslatorArray : public CInterface, implements IInterface
+class TranslatorArray : public CInterface
 {
     IPointerArrayOf<IRecordLayoutTranslator> a;
 public:
-    IMPLEMENT_IINTERFACE;
     inline IRecordLayoutTranslator *item(unsigned idx) const { return a.item(idx); }
     inline void append(IRecordLayoutTranslator * item) { a.append(item); }
     bool needsTranslation() const

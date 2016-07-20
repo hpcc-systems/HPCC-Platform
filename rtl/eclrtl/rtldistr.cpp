@@ -33,7 +33,6 @@ class CDistributionTable : public CInterface
 protected:
     StringAttr fieldname;
 public:
-    IMPLEMENT_IINTERFACE;
     CDistributionTable(const char *_fieldname) : fieldname(_fieldname) {}
     virtual unsigned __int64 distinct() = 0;
     virtual bool exact() = 0;
@@ -99,7 +98,6 @@ class CByteDistributionTable : public CDistributionTable
 {
     unsigned __int64 counts[256];
 public:
-    IMPLEMENT_IINTERFACE;
     CByteDistributionTable(const char *_fieldname) : CDistributionTable(_fieldname) 
     {
         memset(counts, 0, sizeof(counts));
@@ -182,7 +180,6 @@ FixedMapper::FixedMapper(const void *_key, int _ksize) : Mapping(_key, _ksize)
 class CFixedDistributionTable : public CDistributionTable
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CFixedDistributionTable(const char *_fieldname, unsigned _ksize, unsigned _threshold) 
         : CDistributionTable(_fieldname), threshold(_threshold), table(_ksize, false), ksize(_ksize)
     {

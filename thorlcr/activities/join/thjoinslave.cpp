@@ -97,7 +97,7 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
         return (algo&&algo->getAlgorithmFlags()&TAFunstable);
     }
 
-    class cRowStreamPlus1Adaptor: public CSimpleInterface, implements IRowStream
+    class cRowStreamPlus1Adaptor: implements IRowStream, public CSimpleInterface
     {
         OwnedConstThorRow firstrow;
         Linked<IRowStream> base;

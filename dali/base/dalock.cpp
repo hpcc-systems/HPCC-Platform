@@ -545,7 +545,7 @@ DistributedLockId lookupDistributedLockId(const char *name)
 }
 
 
-class CDistributedLock: public CInterface, implements IDistributedLock
+class CDistributedLock: implements IDistributedLock, public CInterface
 {
     DistributedLockId id;
     SessionId session;
@@ -586,7 +586,7 @@ IDistributedLock *createDistributedLock(DistributedLockId id, SessionId session)
 }
 
 
-class CDaliLockServer: public CInterface, public IDaliServer
+class CDaliLockServer: public IDaliServer, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

@@ -80,7 +80,7 @@ interface IAci : implements IInterface
  *    Class CAci
  ****************************************************************/
 
-class CAci : public CInterface, implements IAci
+class CAci : implements IAci, public CInterface
 {
 private:
     StringBuffer m_targetattr;
@@ -384,7 +384,7 @@ public:
  *    Class COpenLdapAci
  ****************************************************************/
 
-class COpenLdapAci : public CInterface, implements IAci
+class COpenLdapAci : implements IAci, public CInterface
 {
 private:
     StringBuffer m_name;
@@ -609,7 +609,7 @@ int NewSec2Sec(int newsec)
  *    Class CAciList
  ****************************************************************/
 
-class CAciList : public CInterface, implements IInterface
+class CAciList : implements IInterface, public CInterface
 {
 private:
     IArrayOf<IAci> m_acilist;

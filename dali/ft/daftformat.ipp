@@ -27,7 +27,7 @@
 
 //---------------------------------------------------------------------------
 
-class DALIFT_API CPartitioner : public CInterface, implements IFormatProcessor
+class DALIFT_API CPartitioner : implements IFormatProcessor, public CInterface
 {
 public:
     CPartitioner();
@@ -357,7 +357,7 @@ protected:
     Linked<IFileIOStream> stream;
 };
 
-class DALIFT_API JsonSplitter : public CInterface, implements IPTreeNotifyEvent
+class DALIFT_API JsonSplitter : implements IPTreeNotifyEvent, public CInterface
 {
     friend class CJsonInputPartitioner;
 public:
@@ -697,7 +697,7 @@ protected:
 
 // Following are used for processing output.  They can also do transformations (e.g., see below)
 
-class DALIFT_API COutputProcessor : public CInterface, implements IOutputProcessor
+class DALIFT_API COutputProcessor : implements IOutputProcessor, public CInterface
 {
 public:
     COutputProcessor();
@@ -797,7 +797,7 @@ protected:
 //---------------------------------------------------------------------------
 //Special output formats used for transforming to standard output format....
 
-class DALIFT_API COutputProcessorHook : public CInterface, implements IOutputProcessor
+class DALIFT_API COutputProcessorHook : implements IOutputProcessor, public CInterface
 {
 public:
     COutputProcessorHook(IOutputProcessor * _target) : target(_target) {}

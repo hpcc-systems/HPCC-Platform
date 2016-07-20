@@ -44,7 +44,7 @@ public:
 static CPluginCtx PluginCtx;
 
 
-class CEclSourceCollection : public CInterface, implements IEclSourceCollection
+class CEclSourceCollection : implements IEclSourceCollection, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE
@@ -1175,7 +1175,7 @@ IPropertyTree * cloneModuleNoAttributes(IPropertyTree * target, IPropertyTree * 
 }
 
 //This is not implemented for efficiency, it is purely for testing this interface
-class ArchiveXmlEclRepository : public CInterface, implements IXmlEclRepository
+class ArchiveXmlEclRepository : implements IXmlEclRepository, public CInterface
 {
 public:
     ArchiveXmlEclRepository(IPropertyTree * _archive) : archive(_archive)
@@ -1245,7 +1245,7 @@ extern HQL_API IXmlEclRepository * createArchiveXmlEclRepository(IPropertyTree *
 //---------------------------------------------------------------------------------------------------------------------
 
 
-class ReplayXmlEclRepository : public CInterface, implements IXmlEclRepository
+class ReplayXmlEclRepository : implements IXmlEclRepository, public CInterface
 {
 public:
     ReplayXmlEclRepository(IPropertyTree * _xmlTree) : xmlTree(_xmlTree)

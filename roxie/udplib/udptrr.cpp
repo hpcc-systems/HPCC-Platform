@@ -51,7 +51,7 @@ unsigned udpInlineCollationPacketLimit;
 bool udpInlineCollation = false;
 bool udpSendCompletedInData = false;
 
-class CReceiveManager : public CInterface, implements IReceiveManager
+class CReceiveManager : implements IReceiveManager, public CInterface
 {
     class ReceiveFlowManager : public Thread 
     {

@@ -235,10 +235,9 @@ class THORHELPER_API RowAggregator : private SuperHashTable
     // that we always do exactly one iteration through the hash table. We therefore DON'T free anything in onRemove.
     
 public:
-    IMPLEMENT_IINTERFACE;
-    
     RowAggregator(IHThorHashAggregateExtra &_extra, IHThorRowAggregator & _helper);
     ~RowAggregator();
+    IMPLEMENT_IINTERFACE
 
     void reset();
     void start(IEngineRowAllocator *rowAllocator);
@@ -279,7 +278,7 @@ private:
 
 //------------------------------------------------------------------------------------------------
 
-class THORHELPER_API CPrefixedRowSerializer : public CInterface, implements IOutputRowSerializer
+class THORHELPER_API CPrefixedRowSerializer : implements IOutputRowSerializer, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -338,7 +337,7 @@ protected:
     Owned<ISourceRowPrefetcher> original;
 };
 
-class THORHELPER_API CPrefixedOutputMeta : public CInterface, implements IOutputMetaData
+class THORHELPER_API CPrefixedOutputMeta : implements IOutputMetaData, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -419,7 +418,7 @@ protected:
 
 //------------------------------------------------------------------------------------------------
 
-class THORHELPER_API CSuffixedRowSerializer : public CInterface, implements IOutputRowSerializer
+class THORHELPER_API CSuffixedRowSerializer : implements IOutputRowSerializer, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -662,7 +661,7 @@ protected:
 };
 
 
-class THORHELPER_API CSimpleFixedRowSerializer : public CInterface, implements IOutputRowSerializer
+class THORHELPER_API CSimpleFixedRowSerializer : implements IOutputRowSerializer, public CInterface
 {
 public:
     CSimpleFixedRowSerializer(size32_t _fixedSize) : fixedSize(_fixedSize) {}
@@ -677,7 +676,7 @@ protected:
     size32_t fixedSize;
 };
 
-class THORHELPER_API CSimpleFixedRowDeserializer : public CInterface, implements IOutputRowDeserializer
+class THORHELPER_API CSimpleFixedRowDeserializer : implements IOutputRowDeserializer, public CInterface
 {
 public:
     CSimpleFixedRowDeserializer(size32_t _fixedSize) : fixedSize(_fixedSize) {}
@@ -693,7 +692,7 @@ protected:
     size32_t fixedSize;
 };
 
-class THORHELPER_API CSimpleVariableRowSerializer : public CInterface, implements IOutputRowSerializer
+class THORHELPER_API CSimpleVariableRowSerializer : implements IOutputRowSerializer, public CInterface
 {
 public:
     CSimpleVariableRowSerializer(const CachedOutputMetaData * _meta) : meta(_meta) {}

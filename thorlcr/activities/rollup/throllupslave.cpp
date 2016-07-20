@@ -23,7 +23,7 @@
 #include "thbufdef.hpp"
 #include "thexception.hpp"
 
-class CDedupAllHelper : public CSimpleInterface, implements IRowStream
+class CDedupAllHelper : implements IRowStream, public CSimpleInterface
 {
     CActivityBase *activity;
 

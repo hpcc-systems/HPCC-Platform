@@ -1943,7 +1943,7 @@ IBarrier *CJobMasterChannel::createBarrier(mptag_t tag)
 
 ///////////////////
 
-class CCollatedResult : public CSimpleInterface, implements IThorResult
+class CCollatedResult : implements IThorResult, public CSimpleInterface
 {
     CMasterGraph &graph;
     CActivityBase &activity;

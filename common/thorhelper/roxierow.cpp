@@ -119,11 +119,11 @@ bool isRowCheckValid(unsigned allocatorId, const void * row)
 //More: Function to calculate the total size of a row - requires access to a rowallocator.
 
 //--------------------------------------------------------------------------------------------------------------------
-class RoxieEngineRowAllocatorBase : public CInterface, implements IEngineRowAllocator
+class RoxieEngineRowAllocatorBase : implements IEngineRowAllocator, public CInterface
 {
 public:
     RoxieEngineRowAllocatorBase(IRowAllocatorMetaActIdCache * _cache, roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, roxiemem::RoxieHeapFlags _createFlags)
-        : cache(_cache), rowManager(_rowManager), meta(_meta), createFlags(_createFlags)
+        : createFlags(_createFlags), cache(_cache), rowManager(_rowManager), meta(_meta)
     {
         activityId = _activityId;
         allocatorId = _allocatorId;
@@ -256,12 +256,12 @@ protected:
 
 protected:
     static CriticalSection cs; // Very unlikely to have contention, so share between all allocators
+    roxiemem::RoxieHeapFlags createFlags;
     IRowAllocatorMetaActIdCache * cache;
     roxiemem::IRowManager & rowManager;
     const CachedOutputMetaData meta;
     unsigned activityId;
     unsigned allocatorId;
-    roxiemem::RoxieHeapFlags createFlags;
     IArrayOf<IEngineRowAllocator> children;
 };
 

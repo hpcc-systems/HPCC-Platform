@@ -220,7 +220,7 @@ enum eclCmdOptionMatchIndicator
     EclCmdOptionCompletion=2
 };
 
-class EclCmdCommon : public CInterface, implements IEclCommand
+class EclCmdCommon : implements IEclCommand, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

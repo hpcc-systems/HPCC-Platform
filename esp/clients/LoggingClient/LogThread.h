@@ -159,7 +159,7 @@ public:
     virtual void async_UpdateLogService(IClientLOGServiceUpdateRequest *request, IClientWsLogServiceEvents *events,IInterface* state);
 };
 
-class WSLOGThread_API CLogThread : public Thread , implements IClientLogThread , IClientWsLogServiceEvents  
+class WSLOGThread_API CLogThread : public Thread , implements IClientLogThread , implements IClientWsLogServiceEvents
 {
     CriticalSection crit;
     CriticalSection seed_gen_crit;

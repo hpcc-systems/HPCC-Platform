@@ -163,7 +163,7 @@ private:
 // Have to read through the entire archive directory to find the bit you want, it seems
 // It's possible that we could add some seek support to at least avoid having to do so twice?
 
-class ArchiveFileIO : public CInterface, implements IFileIO
+class ArchiveFileIO : implements IFileIO, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -303,7 +303,7 @@ protected:
 // in the hope they might be useful for directly seeking to the file to be extracted
 // at some point.
 
-class ArchiveFile : public CInterface, implements IFile
+class ArchiveFile : implements IFile, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -456,7 +456,7 @@ static IFile *createIFileInArchive(const char *containedFileName)
     }
 }
 
-class ArchiveDirectoryIterator : public CInterface, implements IDirectoryIterator
+class ArchiveDirectoryIterator : implements IDirectoryIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

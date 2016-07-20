@@ -24,8 +24,6 @@
 class DumpHelper : implements IEclPlusHelper
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     DumpHelper(IProperties * globals, IFormatType * format);
     virtual ~DumpHelper();
 
@@ -40,8 +38,6 @@ private:
 class GraphHelper : implements IEclPlusHelper
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     GraphHelper(IProperties * globals, IFormatType * format);
     virtual ~GraphHelper();
 

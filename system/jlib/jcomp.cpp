@@ -222,10 +222,9 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
 
 //===========================================================================
 
-class CCompilerThreadParam : CInterface
+class CCompilerThreadParam : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CCompilerThreadParam(const StringBuffer & _cmdline, Semaphore & _finishedCompiling, const StringBuffer & _logfile) : cmdline(_cmdline), logfile(_logfile), finishedCompiling(_finishedCompiling) {};
 
     StringBuffer        cmdline;
@@ -876,7 +875,7 @@ ICppCompiler * createCompiler(const char * coreName, const char * sourceDir, con
 
 //===========================================================================
 
-class CCompilerWorker : public CInterface, implements IPooledThread
+class CCompilerWorker : implements IPooledThread, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

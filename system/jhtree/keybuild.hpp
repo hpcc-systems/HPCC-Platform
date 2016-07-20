@@ -20,7 +20,7 @@
 
 #include "ctfile.hpp"
 
-class CNodeInfo : public CInterface, implements serializable
+class CNodeInfo : implements serializable, public CInterface
 {
 public:
     offset_t pos;

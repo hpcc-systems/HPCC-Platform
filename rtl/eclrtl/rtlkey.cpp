@@ -31,7 +31,7 @@
 
 
 
-class CKeySegmentMonitor : public CInterface, implements IKeySegmentMonitor
+class CKeySegmentMonitor : implements IKeySegmentMonitor, public CInterface
 {
 protected:
     size32_t size;
@@ -207,8 +207,6 @@ private:
     bool optional;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSetKeySegmentMonitor(bool _optional, IStringSet *set, unsigned _offset, unsigned _size);
     CSetKeySegmentMonitor(MemoryBuffer &mb)
         : CKeySegmentMonitor(mb)
@@ -742,7 +740,7 @@ public:
 };
 
 
-class CIndirectKeySegmentMonitor : public CInterface, implements IKeySegmentMonitor
+class CIndirectKeySegmentMonitor : implements IKeySegmentMonitor, public CInterface
 {
 protected:
     unsigned hash;
@@ -935,7 +933,7 @@ protected:
     size_t size;
 };
 
-class COverrideableKeySegmentMonitor : public CInterface, public IOverrideableKeySegmentMonitor
+class COverrideableKeySegmentMonitor : public IOverrideableKeySegmentMonitor, public CInterface
 {
     const void *overridden;
     unsigned hash;
@@ -1304,11 +1302,11 @@ ECLRTL_API int memcmplittlesigned(const void *l, const void *r, unsigned size)
     return 0;
 }
 
-class CStringSet : public CInterface, implements IStringSet
+class CStringSet : implements IStringSet, public CInterface
 {
 protected:
-    IArrayOf<ITransition> transitions;
     size32_t size;
+    IArrayOf<ITransition> transitions;
 
     IStringSet *unionOrIntersect(IStringSet *r, bool isUnion);
 
@@ -1726,7 +1724,7 @@ public:
 };
 
 
-class CTransition : public CInterface, implements ITransition
+class CTransition : implements ITransition, public CInterface
 {
 private:
     bool state;                 // note: should move before ITransition to pack better in 64bit

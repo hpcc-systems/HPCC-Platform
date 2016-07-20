@@ -54,7 +54,7 @@ private:
 
 // Class on managers's list of children which sends new filters to children, and holds thread which receives log messages
 
-class CLogMsgLinkToChild : public CInterface, implements ILogMsgLinkToChild
+class CLogMsgLinkToChild : implements ILogMsgLinkToChild, public CInterface
 {
 public:
     CLogMsgLinkToChild(MPLogId _cid, MPLogId _pid, INode * _childNode, bool isListener, bool _connected = false);
@@ -132,7 +132,7 @@ private:
 
 // Class on manager's list of handlers which sends log messages to a parent, also holds thread which receives filter changes
 
-class LinkToParentLogMsgHandler : public CInterface, implements ILogMsgHandler
+class LinkToParentLogMsgHandler : implements ILogMsgHandler, public CInterface
 {
 public:
     LinkToParentLogMsgHandler(MPLogId _cid, MPLogId _pid, INode * _parentNode, bool _connected) : parentNode(_parentNode), cid(_cid), pid(_pid), receiverThread(new LogMsgFilterReceiverThread(_pid, _parentNode)), connected(_connected) { receiverThread->setHandler(this); }

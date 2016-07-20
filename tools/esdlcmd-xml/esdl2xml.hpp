@@ -25,8 +25,6 @@ typedef MapStringTo<bool> AddedHash;
 class Esdl2Esxdl : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     Esdl2Esxdl()
     {
         optRecursive = false;

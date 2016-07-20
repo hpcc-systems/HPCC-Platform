@@ -529,7 +529,7 @@ class CPTreeMaker : public CInterfaceOf<IPTreeMaker>
     IPropertyTree *root;
     ICopyArrayOf<IPropertyTree> ptreeStack;
     IPTreeNodeCreator *nodeCreator;
-    class CDefaultNodeCreator : public CInterface, implements IPTreeNodeCreator
+    class CDefaultNodeCreator : implements IPTreeNodeCreator, public CInterface
     {
         byte flags;
     public:

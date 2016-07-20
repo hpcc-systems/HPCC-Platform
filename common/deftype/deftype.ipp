@@ -868,7 +868,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-class CCharsetInfo : public CInterface, implements ICharsetInfo
+class CCharsetInfo : implements ICharsetInfo, public CInterface
 {
 public:
     CCharsetInfo(IAtom * _name, unsigned char _fillChar, IAtom * _codepage)
@@ -898,7 +898,7 @@ protected:
     unsigned char fillChar;
 };
 
-class CCollationInfo : public CInterface, implements ICollationInfo
+class CCollationInfo : implements ICollationInfo, public CInterface
 {
 public:
     CCollationInfo(IAtom * _name) { name = _name; }
@@ -939,7 +939,7 @@ public:
     virtual const char * getCompareName(bool varLength)                             { return varLength ? "stricmp" : "memicmp"; }
 };
 
-class CTranslationInfo : public CInterface, implements ITranslationInfo
+class CTranslationInfo : implements ITranslationInfo, public CInterface
 {
 public:
     CTranslationInfo(IAtom * _name, ICharsetInfo * src, ICharsetInfo * tgt);

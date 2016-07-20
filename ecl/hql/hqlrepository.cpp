@@ -135,7 +135,7 @@ IHqlScope * getResolveDottedScope(const char * modname, unsigned lookupFlags, Hq
 
 //-------------------------------------------------------------------------------------------------------------------
 
-class HQL_API CompoundEclRepository : public CInterface, implements IEclRepository
+class HQL_API CompoundEclRepository : implements IEclRepository, public CInterface
 {
 public:
     CompoundEclRepository() { rootScope.setown(new CHqlMergedScope(NULL, NULL)); }
@@ -188,7 +188,7 @@ extern HQL_API IEclRepository * createCompoundRepository(EclRepositoryArray & re
 
 //-------------------------------------------------------------------------------------------------------------------
 
-class HQL_API NestedEclRepository : public CInterface, implements IEclRepository
+class HQL_API NestedEclRepository : implements IEclRepository, public CInterface
 {
 public:
     NestedEclRepository(IIdAtom * name, IEclRepository * _repository) : repository(_repository)
@@ -229,7 +229,7 @@ static IIdAtom * queryModuleIdFromFullName(const char * name)
     return createIdAtom(name);
 }
 
-class HQL_API CNewEclRepository : public CInterface, implements IEclRepositoryCallback
+class HQL_API CNewEclRepository : implements IEclRepositoryCallback, public CInterface
 {
 public:
     CNewEclRepository(IEclSourceCollection * _collection, const char * rootScopeFullName) : collection(_collection)

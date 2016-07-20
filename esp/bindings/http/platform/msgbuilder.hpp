@@ -31,8 +31,6 @@ protected:
     Owned<IPropertyTree> m_properties;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSoapMsgBuilder(const char * xml);
 
     void setPropertyValue(const char * key, const char * val);
@@ -49,7 +47,6 @@ protected:
     Linked<CSoapMsgXsdBuilder> m_xsd;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CSoapMsgArrayBuilder(CSoapMsgXsdBuilder * xsd);
 
     CSoapMsgBuilder * newMsgBuilder();
@@ -78,8 +75,6 @@ protected:
     void appendProperty(const char * prop, XSD_TYPES type = XSD_STRING);
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSoapMsgXsdBuilder(const char * structLabel, const char * var = "xsd");
     StringBuffer & getLabel(StringBuffer & label);
     StringBuffer & getXsd(StringBuffer & wsdlSchema);

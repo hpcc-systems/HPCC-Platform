@@ -18,8 +18,7 @@
 #include "platform.h"
 #include "wsexcept.hpp"
 
-class CWsException : public CInterface,
-implements IWsException
+class CWsException : implements IWsException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE

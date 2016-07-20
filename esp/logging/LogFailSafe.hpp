@@ -45,7 +45,7 @@ interface ILogFailSafe : IInterface
 extern LOGGINGCOMMON_API ILogFailSafe* createFailSafeLogger(const char* logType="", const char* logsdir="./logs");
 extern LOGGINGCOMMON_API ILogFailSafe* createFailSafeLogger(const char* pszService, const char* logType="", const char* logsdir="./logs");
 
-class CLogFailSafe : public CInterface,  implements ILogFailSafe
+class CLogFailSafe : implements ILogFailSafe, public CInterface
 {
     CLogSerializer m_Added;
     CLogSerializer m_Cleared;

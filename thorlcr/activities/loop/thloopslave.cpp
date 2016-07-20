@@ -137,7 +137,7 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
     bool eof, finishedLooping;
     Owned<IBarrier> barrier;
 
-    class CNextRowFeeder : public CSimpleInterface, implements IThreaded, implements IRowStream
+    class CNextRowFeeder : implements IRowStream, implements IThreaded, public CSimpleInterface
     {
         CThreaded threaded;
         CLoopSlaveActivity *activity;

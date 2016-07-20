@@ -56,7 +56,7 @@
 #define LINUX_SIGNAL_EXCEPTION
 #endif
 
-class jlib_thrown_decl StringException: public CInterface, public IException
+class jlib_thrown_decl StringException: public IException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -123,7 +123,7 @@ void jlib_decl throwStringExceptionV(int code,const char *format, ...)
     throw ret;
 }
 
-class jlib_thrown_decl OsException: public CInterface, public IOSException
+class jlib_thrown_decl OsException: public IOSException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -166,7 +166,7 @@ IOSException *makeOsExceptionV(int code, const char *msg, ...)
     return new OsException(code, eStr.str());
 }
 
-class jlib_thrown_decl ErrnoException: public CInterface, public IErrnoException
+class jlib_thrown_decl ErrnoException: public IErrnoException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -292,8 +292,7 @@ MessageAudience deserializeMessageAudience(const char* text)
     return ma;
 }
 
-class jlib_thrown_decl CMultiException : public CInterface,
-implements IMultiException
+class jlib_thrown_decl CMultiException : implements IMultiException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE
@@ -880,7 +879,7 @@ static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
 
 
 
-class jlib_thrown_decl CSEHException: public CInterface, public ISEH_Exception
+class jlib_thrown_decl CSEHException: public ISEH_Exception, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -946,7 +945,7 @@ static IException *sigsegv_exc;
 #endif
 static int excsignal;
 
-class jlib_thrown_decl CSEHException: public CInterface, public ISEH_Exception
+class jlib_thrown_decl CSEHException: public ISEH_Exception, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

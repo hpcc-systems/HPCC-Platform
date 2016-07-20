@@ -117,7 +117,7 @@ public:
 typedef CIArrayOf<OutputProgress> OutputProgressArray;
 
 
-class DALIFT_API CrcIOStream : public CInterface, implements IFileIOStream
+class DALIFT_API CrcIOStream : implements IFileIOStream, public CInterface
 {
 public:
     CrcIOStream(IFileIOStream * _stream, unsigned startCRC = 0);

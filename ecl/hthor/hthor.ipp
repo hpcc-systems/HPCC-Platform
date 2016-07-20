@@ -49,7 +49,7 @@ using roxiemem::DynamicRoxieOutputRowArray;
 
 //---------------------------------------------------------------------------
 
-class CHThorException : public CInterface, implements IHThorException
+class CHThorException : implements IHThorException, public CInterface
 {
 public: 
     IMPLEMENT_IINTERFACE;
@@ -1088,7 +1088,7 @@ protected:
     Owned<IRowStream> diskReader;
 };
 
-class CSimpleSorterBase : public CInterface, public ISorter
+class CSimpleSorterBase : public ISorter, public CInterface
 {
 public:
     CSimpleSorterBase(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : compare(_compare), finger(0), rowManager(_rowManager),

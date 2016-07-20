@@ -766,9 +766,8 @@ static void dfsunlink(const char *lname, IUserDescriptor *user)
 class CIpItem: public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-    IpAddress ip;
     bool ok;
+    IpAddress ip;
 };
 
 
@@ -839,7 +838,6 @@ public:
     unsigned crc;
     unsigned partno;
     unsigned copy;
-    IMPLEMENT_IINTERFACE;
     bool ok;
     byte flags;
     CDateTime dt;
@@ -2120,7 +2118,7 @@ class CXMLSizesParser : public CInterface
     PTreeReaderOptions xmlOptions;
     double pc;
 
-    class CParse : public CInterface, implements IPTreeNotifyEvent
+    class CParse : implements IPTreeNotifyEvent, public CInterface
     {
         CIArrayOf<CTreeItem> stack;
         String * levtail;
@@ -2231,8 +2229,6 @@ class CXMLSizesParser : public CInterface
     } *parser;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CXMLSizesParser(const char *fName, PTreeReaderOptions _xmlOptions=ptr_none, double _pc=1.0) : xmlOptions(_xmlOptions), pc(_pc) { go(fName); }
     ~CXMLSizesParser() { ::Release(parser); }
 

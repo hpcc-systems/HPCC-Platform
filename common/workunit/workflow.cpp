@@ -94,7 +94,7 @@ static int getEnum(IPropertyTree *p, const char *propname, mapEnums *map)
 }
 
 
-class CWorkflowDependencyIterator : public CInterface, implements IWorkflowDependencyIterator
+class CWorkflowDependencyIterator : implements IWorkflowDependencyIterator, public CInterface
 {
 public:
     CWorkflowDependencyIterator(IPropertyTree * tree) { iter.setown(tree->getElements("Dependency")); }
@@ -120,7 +120,7 @@ private:
     StringAttr text;
 };
 
-class CWorkflowItem : public CInterface, implements IWorkflowItem
+class CWorkflowItem : implements IWorkflowItem, public CInterface
 {
 public:
     CWorkflowItem(IPropertyTree & _tree) { tree.setown(&_tree); }

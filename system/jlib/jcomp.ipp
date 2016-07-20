@@ -22,7 +22,7 @@
 
 #include "jlib.hpp"
 
-class CppCompiler : public CInterface, implements ICppCompiler, implements IThreadFactory
+class CppCompiler : implements ICppCompiler, implements IThreadFactory, public CInterface
 {
 public:
     CppCompiler(const char * _coreName, const char * _sourceDir, const char * _targetDir, unsigned _targetCompiler, bool _verbose);

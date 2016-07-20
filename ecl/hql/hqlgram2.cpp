@@ -2863,7 +2863,6 @@ class PseudoPatternScope : public CHqlScope
 {
 public:
     PseudoPatternScope(IHqlExpression * _patternList);
-    IMPLEMENT_IINTERFACE_USING(CHqlScope)
 
     virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int bodystart, int lineno, int column) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
     virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { ::Release(value); PSEUDO_UNIMPLEMENTED; }

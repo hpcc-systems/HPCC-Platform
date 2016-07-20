@@ -490,7 +490,7 @@ public:
     unsigned count;
 };
 
-class DefaultTimeReporter : public CInterface, implements ITimeReporter
+class DefaultTimeReporter : implements ITimeReporter, public CInterface
 {
     StringMapOf<TimeSectionInfo> *sections;
     CriticalSection c;
@@ -1417,8 +1417,6 @@ private:
 
 struct CProcInfo: extends CInterface
 {
-    IMPLEMENT_IINTERFACE;
-
     UserStatusInfo info;
     UserSystemTime_t delta;
     bool active;

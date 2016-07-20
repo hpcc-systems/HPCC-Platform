@@ -1059,11 +1059,11 @@ void CThorContiguousRowBuffer::skipVUni()
 
 IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICodeContext *context)
 {
-    class cRowInterfaces: public CSimpleInterface, implements IRowInterfaces
+    class cRowInterfaces: implements IRowInterfaces, public CSimpleInterface
     {
+        unsigned actid;
         Linked<IOutputMetaData> meta;
         ICodeContext* context;
-        unsigned actid;
         Linked<IEngineRowAllocator> allocator;
         Linked<IOutputRowSerializer> serializer;
         Linked<IOutputRowDeserializer> deserializer;
@@ -1122,7 +1122,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICode
     return new cRowInterfaces(meta,actid,context);
 };
 
-class CRowStreamReader : public CSimpleInterface, implements IExtRowStream
+class CRowStreamReader : implements IExtRowStream, public CSimpleInterface
 {
     Linked<IFileIO> fileio;
     Linked<IMemoryMappedFile> mmfile;
@@ -1341,7 +1341,7 @@ void useMemoryMappedRead(bool on)
 }
 
 #define ROW_WRITER_BUFFERSIZE (0x100000)
-class CRowStreamWriter : public CSimpleInterface, private IRowSerializerTarget, implements IExtRowWriter
+class CRowStreamWriter : private IRowSerializerTarget, implements IExtRowWriter, public CSimpleInterface
 {
     Linked<IFileIOStream> stream;
     Linked<IOutputRowSerializer> serializer;
@@ -1585,7 +1585,7 @@ IExtRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, unsig
     return writer.getClear();
 }
 
-class CDiskMerger : public CInterface, implements IDiskMerger
+class CDiskMerger : implements IDiskMerger, public CInterface
 {
     IArrayOf<IFile> tempfiles;
     IRowStream **strms;

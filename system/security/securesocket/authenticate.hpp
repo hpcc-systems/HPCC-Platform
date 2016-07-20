@@ -18,11 +18,9 @@
 #ifndef _AUTHENTICATE_HPP__
 #define _AUTHENTICATE_HPP__
 
-class Authenticator : public CInterface, implements IInterface
+class Authenticator
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     static bool authenticate(const char* realm, const char* userid, const char* password)
     {
         if((strcmp(realm, "EspHttpDemo") == 0) && (strcmp(userid, "yma") == 0) && (strcmp(password, "password")) == 0)

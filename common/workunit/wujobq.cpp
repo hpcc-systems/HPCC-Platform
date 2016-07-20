@@ -49,11 +49,11 @@ JobQueues
 
 
 
-class CJobQueueItem: public CInterface, implements IJobQueueItem
+class CJobQueueItem: implements IJobQueueItem, public CInterface
 {
+    int priority;
     StringAttr wu;
     StringAttr owner;
-    int priority;
     SessionId sessid;
     SocketEndpoint ep;
     unsigned port;
@@ -227,7 +227,7 @@ public:
 
 
 
-class CJobQueueIterator: public CInterface, implements IJobQueueIterator
+class CJobQueueIterator: implements IJobQueueIterator, public CInterface
 {
 public:
     CJobQueueContents &items;
@@ -298,7 +298,7 @@ struct sQueueData
     unsigned lastWaitEdition;
 };
 
-class CJobQueueBase: public CInterface, implements IJobQueueConst
+class CJobQueueBase: implements IJobQueueConst, public CInterface
 {
     class cOrderedIterator
     {
@@ -780,8 +780,6 @@ class CJobQueueConst: public CJobQueueBase
     Owned<IPropertyTree> jobQueueSnapshot;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CJobQueueConst(const char *_qname, IPropertyTree* _jobQueueSnapshot) : CJobQueueBase(_qname)
     {
         if (!_jobQueueSnapshot)
@@ -812,7 +810,7 @@ public:
     bool cancelwaiting;
     bool validateitemsessions;
 
-    class csubs: public CInterface, implements ISDSSubscription
+    class csubs: implements ISDSSubscription, public CInterface
     {
         CJobQueue *parent;
     public:

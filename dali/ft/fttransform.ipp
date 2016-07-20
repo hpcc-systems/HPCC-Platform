@@ -27,7 +27,7 @@
 
 //---------------------------------------------------------------------------
 
-class CTransformerBase : public CInterface, implements ITransformer
+class CTransformerBase : implements ITransformer, public CInterface
 {
 public:
     CTransformerBase();
@@ -56,7 +56,6 @@ class CTransformer : public CTransformerBase
 public:
     CTransformer(size32_t _bufferSize);
     ~CTransformer();
-    IMPLEMENT_IINTERFACE
 
     virtual bool setPartition(RemoteFilename & remoteInputName, offset_t _startOffset, offset_t _length, bool compressedInput, const char *decryptKey);
     virtual size32_t getBlock(IFileIOStream * out);

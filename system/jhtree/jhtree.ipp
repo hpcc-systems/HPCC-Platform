@@ -63,7 +63,7 @@ interface INodeLoader
     virtual CJHTreeNode *loadNode(offset_t offset) = 0;
 };
 
-class jhtree_decl CKeyIndex : public CInterface, implements IKeyIndex, implements INodeLoader
+class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
 {
     friend class CKeyStore;
     friend class CKeyCursor;
@@ -153,7 +153,7 @@ public:
     virtual CJHTreeNode *loadNode(offset_t offset);
 };
 
-class jhtree_decl CKeyCursor : public CInterface, public IKeyCursor
+class jhtree_decl CKeyCursor : public IKeyCursor, public CInterface
 {
 private:
     IContextLogger *ctx;

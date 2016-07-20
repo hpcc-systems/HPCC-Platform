@@ -389,7 +389,7 @@ public:
 };
 
 extern int eclyyparse(HqlGram * parser);
-class HqlGram : public CInterface, implements IErrorReceiver
+class HqlGram : implements IErrorReceiver, public CInterface
 {
     friend class HqlLex;
     friend int eclyyparse(HqlGram * parser);

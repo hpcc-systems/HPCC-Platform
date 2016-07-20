@@ -59,7 +59,6 @@ private:
     void parseURL();
 
 public:
-    IMPLEMENT_IINTERFACE;
     HttpHelper(StringArray *_validTargets) : validTargets(_validTargets), method(HttpMethod::NONE) {parameters.setown(createProperties(true));}
     inline bool isHttp() { return method!=HttpMethod::NONE; }
     inline bool isHttpGet(){ return method==HttpMethod::GET; }
@@ -307,7 +306,7 @@ interface SafeSocket : extends IInterface
     virtual bool getAdaptiveRoot()=0;
 };
 
-class THORHELPER_API CSafeSocket : public CInterface, implements SafeSocket
+class THORHELPER_API CSafeSocket : implements SafeSocket, public CInterface
 {
 protected:
     Linked<ISocket> sock;

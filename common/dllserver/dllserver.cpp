@@ -104,7 +104,7 @@ IRemoteConnection * getEntryConnection(const char * name, unsigned mode)
 
 //---------------------------------------------------------------------------
 
-class TreeIteratorWrapper : public CInterface, implements IIterator
+class TreeIteratorWrapper : implements IIterator, public CInterface
 {
 public:
     TreeIteratorWrapper(IPropertyTreeIterator * _iter) { iter.setown(_iter); }
@@ -169,7 +169,7 @@ static void deleteLocationFiles(IDllLocation & cur, bool removeDirectory)
     }
 }
 
-class DllLocation : public CInterface, implements IDllLocation
+class DllLocation : implements IDllLocation, public CInterface
 {
     StringAttr cacheRoot;
 public:
@@ -306,7 +306,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-class DllEntry : public CInterface, implements IDllEntry
+class DllEntry : implements IDllEntry, public CInterface
 {
 public:
     DllEntry(IPropertyTree *root, const char *cacheRoot, IPropertyTree *owner);
@@ -479,7 +479,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-class DllServer : public CInterface, implements IDllServer
+class DllServer : implements IDllServer, public CInterface
 {
 public:
     DllServer(const char * _rootDir);

@@ -189,7 +189,7 @@ extern jlib_decl size32_t checked_write( int handle, const void *buffer, size32_
     return (size32_t)ret;
 }
 
-class CReadSeq : public CInterface, public IReadSeq
+class CReadSeq : public IReadSeq, public CInterface
 {
     int fh;
     size32_t size;  
@@ -353,7 +353,7 @@ IReadSeq *createReadSeq(int fh, offset_t _offset, size32_t size, size32_t bufsiz
 //================================================================================================
 
 
-class CWriteSeq : public CInterface, public IWriteSeq
+class CWriteSeq : public IWriteSeq, public CInterface
 {
 private:
     int fh;
@@ -618,7 +618,7 @@ offset_t CTeeWriteSeq::getPosition()
 
 //==================================================================================================
 
-class CFixedRecordSize: public CInterface, public IRecordSize
+class CFixedRecordSize: public IRecordSize, public CInterface
 {
 protected:
     size32_t recsize;
@@ -646,7 +646,7 @@ IRecordSize *createFixedRecordSize(size32_t recsize)
 }
 
 
-class CDeltaRecordSize: public CInterface, public IRecordSize
+class CDeltaRecordSize: public IRecordSize, public CInterface
 {
 protected:
     Owned<IRecordSize> recordSize;
@@ -683,7 +683,7 @@ extern jlib_decl IRecordSize *createDeltaRecordSize(IRecordSize * size, int delt
 
 class ElevatorScanner;
 
-class PendingFetch : public CInterface, public IInterface
+class PendingFetch : public IInterface, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -696,7 +696,7 @@ public:
     IRecordFetchChannel *channel;
 };
 
-class ElevatorChannel : public CInterface, implements IRecordFetchChannel
+class ElevatorChannel : implements IRecordFetchChannel, public CInterface
 {
 private:
     bool cancelled;
@@ -929,7 +929,7 @@ extern jlib_decl IRecordFetcher *createElevatorFetcher(int file, size32_t recSiz
 // all streams assumed to have same record size
 
 
-class CChainedWriteSeq : public CInterface, public IWriteSeq
+class CChainedWriteSeq : public IWriteSeq, public CInterface
 {
 protected:
     IWriteSeq *stream;
@@ -979,7 +979,7 @@ public:
 };
 
 
-class CChainedReadSeq : public CInterface, public IReadSeq
+class CChainedReadSeq : public IReadSeq, public CInterface
 {
 protected:
     IReadSeq *stream;
@@ -1206,7 +1206,7 @@ IIOStream *createBufferedIOStream(IIOStream *io, unsigned bufSize)
 
 IRowStream *createNullRowStream()
 {
-    class cNullStream: public CInterface, implements IRowStream
+    class cNullStream: implements IRowStream, public CInterface
     {
         const void *nextRow() { return NULL; }
         void stop() {}
@@ -1260,7 +1260,7 @@ unsigned ungroupedCopyRowStream(IRowStream *in, IRowWriter *out)
     return ret;
 }
 
-class CConcatRowStream : public CInterface, public IRowStream
+class CConcatRowStream : public IRowStream, public CInterface
 {
     IArrayOf<IRowStream> oinstreams;
 public:

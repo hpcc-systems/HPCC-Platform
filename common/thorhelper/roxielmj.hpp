@@ -80,8 +80,6 @@ class THORHELPER_API CRHDualCache: public CInterface
     QueueOf<CRHRollingCacheElem,true> cache;
 public:
 
-    IMPLEMENT_IINTERFACE;
-
     CRHDualCache();
     ~CRHDualCache();
     void init(IRowStream * _in);
@@ -93,11 +91,11 @@ public:
 
     bool get(unsigned n, CRHRollingCacheElem *&out);
 
-    class cOut: public CInterface, public IRowStream
+    class cOut: public IRowStream, public CInterface
     {
     private:
-        CRHDualCache *parent;
         bool stopped;
+        CRHDualCache *parent;
         unsigned &pos;
     public:
         IMPLEMENT_IINTERFACE;
@@ -118,7 +116,7 @@ inline int iabs(int a) { return a<0?-a:a; }
 inline int imin(int a,int b) { return a<b?a:b; }
 
 //CRHLimitedCompareHelper
-class CRHLimitedCompareHelper: public CInterface, implements IRHLimitedCompareHelper
+class CRHLimitedCompareHelper: implements IRHLimitedCompareHelper, public CInterface
 {
     Owned<CRHRollingCache> cache;
     unsigned atmost;

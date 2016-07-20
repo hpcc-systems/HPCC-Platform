@@ -36,7 +36,7 @@
 #endif
 
 
-class CLoggingManager : public CInterface, implements ILoggingManager
+class CLoggingManager : implements ILoggingManager, public CInterface
 {
     typedef std::vector<IUpdateLogThread*> LOGGING_AGENTTHREADS;
     LOGGING_AGENTTHREADS  loggingAgentThreads;

@@ -223,7 +223,7 @@ public:
         return true;
     }
 
-    class cOut: public CSimpleInterface, public IRowStream
+    class cOut: public IRowStream, public CSimpleInterface
     {
     private:
         CDualCache *parent;
@@ -276,7 +276,7 @@ void swapRows(RtlDynamicRowBuilder &row1, RtlDynamicRowBuilder &row2)
     row1.swapWith(row2);
 }
 
-class CJoinHelper : public CSimpleInterface, implements IJoinHelper
+class CJoinHelper : implements IJoinHelper, public CSimpleInterface
 {
     CActivityBase &activity;
     IThorRowInterfaces *rowIf;
@@ -966,7 +966,7 @@ public:
     virtual rowcount_t getRhsProgress() const { return rhsProgressCount; }
 };
 
-class SelfJoinHelper: public CSimpleInterface, implements IJoinHelper
+class SelfJoinHelper: implements IJoinHelper, public CSimpleInterface
 {
     CActivityBase &activity;
     IThorRowInterfaces *rowIf;
@@ -1320,7 +1320,7 @@ IJoinHelper *createDenormalizeHelper(CActivityBase &activity, IHThorDenormalizeA
 inline int iabs(int a) { return a<0?-a:a; }
 inline int imin(int a,int b) { return a<b?a:b; }
 
-class CLimitedCompareHelper: public CSimpleInterface, implements ILimitedCompareHelper
+class CLimitedCompareHelper: implements ILimitedCompareHelper, public CSimpleInterface
 {
 
     Owned<CRollingCache> cache;
@@ -1448,7 +1448,7 @@ ILimitedCompareHelper *createLimitedCompareHelper()
 
 //===============================================================
 
-class CMultiCoreJoinHelperBase: extends CSimpleInterface, implements IJoinHelper, implements IMulticoreIntercept
+class CMultiCoreJoinHelperBase: implements IJoinHelper, implements IMulticoreIntercept, public CSimpleInterface
 {
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);

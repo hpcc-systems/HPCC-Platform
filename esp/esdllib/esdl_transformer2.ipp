@@ -142,8 +142,6 @@ protected:
     bool count_value;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     Esdl2Base(Esdl2Transformer *xformer, IEsdlDefObject* def, EsdlBasicElementType t=ESDLT_UNKOWN, bool might_skip_root_=false);
     virtual ~Esdl2Base();
 

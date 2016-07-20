@@ -1006,7 +1006,7 @@ void CJHTreeMetadataNode::get(StringBuffer & out)
     out.append(expandedSize, keyBuf);
 }
 
-class CKeyException : public CInterface, implements IKeyException
+class CKeyException : implements IKeyException, public CInterface
 {
     int errCode;
     StringBuffer errMsg;

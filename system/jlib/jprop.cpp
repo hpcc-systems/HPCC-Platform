@@ -39,7 +39,7 @@ const char *tokvchar_ptr(const void *p) { return (const char *)p; }
 
 
 template <class PTYPE, class PITER>
-class PropertyIteratorOf : public CInterface, implements PITER
+class PropertyIteratorOf : implements PITER, public CInterface
 {
 protected:
     HashIterator *piter;
@@ -87,7 +87,7 @@ public:
 };
 
 template <class PTYPE, class MAPPING, class IPROP, class IPROPITER, class PROPITER>
-class CPropertiesBase : public CInterface, implements IPROP
+class CPropertiesBase : implements IPROP, public CInterface
 {
 private:
     MAPPING properties;

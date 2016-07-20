@@ -99,7 +99,7 @@ IPipeErrorHelper * createPipeErrorHelper()
 
 #define PIPE_BUFSIZE 0x8000
 
-class CBufferedReadRowStream : public CInterface, implements IReadRowStream
+class CBufferedReadRowStream : implements IReadRowStream, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -154,7 +154,6 @@ private:
 class CReadRowCSVStream : extends CBufferedReadRowStream
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CReadRowCSVStream(IEngineRowAllocator * _rowAllocator, ICsvToRowTransformer * _csvTransformer)
         : CBufferedReadRowStream(_rowAllocator), csvTransformer(_csvTransformer)
     {
@@ -209,7 +208,7 @@ private:
 };
 
 
-class CReadRowXMLStream : public CInterface, implements IReadRowStream, implements IXMLSelect, implements IThorDiskCallback
+class CReadRowXMLStream : implements IReadRowStream, implements IXMLSelect, implements IThorDiskCallback, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

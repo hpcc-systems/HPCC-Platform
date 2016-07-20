@@ -352,7 +352,7 @@ protected:
     ChangeInfoMap changeMap;
 };
 
-class CSDSException : public CInterface, implements ISDSException
+class CSDSException : implements ISDSException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -521,7 +521,7 @@ protected:
 
 typedef ThreadSafeOwningSimpleHashTableOf<CConnectionBase, ConnectionId> CConnectionHashTable;
 
-class CSDSManagerBase : public CInterface, implements ISDSConnectionManager
+class CSDSManagerBase : implements ISDSConnectionManager, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -550,7 +550,7 @@ public:
     IArrayOf<IPropertyTree> array;
 };
 
-class CRemoteConnections : public CInterface, implements IRemoteConnections
+class CRemoteConnections : implements IRemoteConnections, public CInterface
 {
     IArrayOf<IRemoteConnection> connections;
 public:

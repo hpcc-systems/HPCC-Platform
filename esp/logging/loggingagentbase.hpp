@@ -48,7 +48,7 @@ interface IEspUpdateLogRequestWrap : extends IInterface
     virtual void clearOriginalContent() = 0;
 };
 
-class CUpdateLogRequestWrap : public CInterface, implements IEspUpdateLogRequestWrap
+class CUpdateLogRequestWrap : implements IEspUpdateLogRequestWrap, public CInterface
 {
     StringAttr  GUID;
     StringAttr  option;

@@ -157,7 +157,7 @@ typedef unsigned short UChar;
 #include "rtlkey.hpp"
 #include "jmisc.hpp"
 
-class jhtree_decl SegMonitorList : public CInterface, implements IInterface, implements IIndexReadContext
+class jhtree_decl SegMonitorList : implements IInterface, implements IIndexReadContext, public CInterface
 {
     unsigned _lastRealSeg() const;
     unsigned cachedLRS;

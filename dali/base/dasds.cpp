@@ -457,8 +457,6 @@ private:
 class CSDSTransactionServer : public Thread, public CTransactionLogTracker
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSDSTransactionServer(CCovenSDSManager &_manager);
     
     void stop();
@@ -1847,7 +1845,7 @@ private:
 ////////////////
 
 typedef MapBetween<SubscriptionId, SubscriptionId, ConnectionId, ConnectionId> SubConnMap;
-class CConnectionSubscriptionManager : CInterface, implements ISubscriptionManager
+class CConnectionSubscriptionManager : implements ISubscriptionManager, CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -2688,7 +2686,7 @@ public:
     }
 };
 
-class CNodeSubscriptionManager : public CSimpleInterface, implements INodeSubscriptionManager
+class CNodeSubscriptionManager : implements INodeSubscriptionManager, public CSimpleInterface
 {
 public:
     class CNodeSubscriberContainerList : public CSimpleInterfaceOf<IInterface>
@@ -3207,7 +3205,7 @@ public:
 typedef Int64Array IdPath;
 #define LOCKSESSCHECK (1000*60*5)
 
-class CLock : public CInterface, implements IInterface
+class CLock : implements IInterface, public CInterface
 {
     DECL_NAMEDCOUNT;
 
@@ -4840,7 +4838,7 @@ IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigne
 
 
 // Not really coalescing, blocking transations and saving store (which will delete pending transactions).
-class CLightCoalesceThread : public CInterface, implements ICoalesce
+class CLightCoalesceThread : implements ICoalesce, public CInterface
 {
     bool stopped, within24;
     Semaphore sem;
@@ -5049,7 +5047,7 @@ public:
     }
 };
 
-class CStoreHelper : public CInterface, implements IStoreHelper
+class CStoreHelper : implements IStoreHelper, public CInterface
 {
     StringAttr storeName, location, remoteBackupLocation;
     CStoreInfo storeInfo, deltaInfo;
@@ -5951,7 +5949,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
 {
     if (root) root->Release();
 
-    class CNodeCreate : public CInterface, implements IPTreeNodeCreator
+    class CNodeCreate : implements IPTreeNodeCreator, public CInterface
     {
     public:
         IMPLEMENT_IINTERFACE;
@@ -6548,7 +6546,7 @@ inline void serverToClientTree(CServerRemoteTree &src, CClientRemoteTree &dst)
     if (src.hasChildren()) dst.addServerTreeInfo(STI_HaveChildren);
 }
 
-class CMultipleConnector : public CInterface, implements IMultipleConnector
+class CMultipleConnector : implements IMultipleConnector, public CInterface
 {
     StringArray xpaths;
     UnsignedArray modes;
@@ -8127,9 +8125,9 @@ void CCovenSDSManager::handleNodeNotify(notifications n, CServerRemoteTree &tree
 void CCovenSDSManager::handleNotify(CSubscriberContainerBase *_subscriber, MemoryBuffer &notifyData)
 {
     Owned<CSubscriberContainerBase> subscriber = _subscriber;
-    class CNotifyPoolFactory : public CInterface, public IThreadFactory
+    class CNotifyPoolFactory : public IThreadFactory, public CInterface
     {
-        class CNotifyHandler : public CInterface, implements IPooledThread
+        class CNotifyHandler : implements IPooledThread, public CInterface
         {
             DECL_NAMEDCOUNT;
         public:
@@ -8445,9 +8443,9 @@ public:
 
 void CCovenSDSManager::startNotification(IPropertyTree &changeTree, CPTStack &stack, CBranchChange &changes)
 {
-    class CScanNotifyPoolFactory : public CInterface, public IThreadFactory
+    class CScanNotifyPoolFactory : public IThreadFactory, public CInterface
     {
-        class CScanNotifyHandler : public CInterface, implements IPooledThread
+        class CScanNotifyHandler : implements IPooledThread, public CInterface
         {
         public:
             IMPLEMENT_IINTERFACE;
@@ -8661,7 +8659,7 @@ void CCovenSDSManager::notifyNode(CServerRemoteTree &node, PDState state)
 
 ///////////////////////
 
-class CDaliSDSServer: public CInterface, public IDaliServer
+class CDaliSDSServer: implements IDaliServer, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -8798,7 +8796,7 @@ IDaliServer *createDaliSDSServer(IPropertyTree *config)
 
 bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
 {
-    class CDeltaProcessor : CInterface, implements IPTreeNotifyEvent
+    class CDeltaProcessor : implements IPTreeNotifyEvent, public CInterface
     {
         unsigned level;
         IPTreeMaker *maker;

@@ -35,7 +35,7 @@ xmlDocPtr globalLibXsltIncludeHandler(const xmlChar * URI, xmlDictPtr dict, int 
 
 void libxsltCustomMessageHandler(StringBuffer& out, const char* in, IXslTransform* transform);
 
-class CLibXsltSource : public CInterface, implements IXslBuffer
+class CLibXsltSource : implements IXslBuffer, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

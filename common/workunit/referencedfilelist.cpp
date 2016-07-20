@@ -120,7 +120,7 @@ void splitDerivedDfsLocation(const char *address, StringBuffer &cluster, StringB
 
 class ReferencedFileList;
 
-class ReferencedFile : public CInterface, implements IReferencedFile
+class ReferencedFile : implements IReferencedFile, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -194,7 +194,7 @@ public:
     bool trackSubFiles;
 };
 
-class ReferencedFileList : public CInterface, implements IReferencedFileList
+class ReferencedFileList : implements IReferencedFileList, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -499,7 +499,7 @@ void ReferencedFile::cloneSuperInfo(unsigned updateFlags, ReferencedFileList *li
     }
 }
 
-class ReferencedFileIterator : public CInterface, implements IReferencedFileIterator
+class ReferencedFileIterator : implements IReferencedFileIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

@@ -38,7 +38,7 @@ interface IReceivedRoxieException : extends IException
 {
 };
 
-class ReceivedRoxieException: public CInterface, public IReceivedRoxieException
+class ReceivedRoxieException: public IReceivedRoxieException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -60,7 +60,7 @@ interface IRoxieClientException : extends IException
 {
 };
 
-class RoxieClientException: public CInterface, public IRoxieClientException
+class RoxieClientException: public IRoxieClientException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -79,11 +79,9 @@ private:
 };
 
 
-class CDataInput : public CInterface, implements IInterface
+class CDataInput : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CDataInput(const char* _name, int iw, IByteInputStream* _stream)
     {
         name.append(_name);
@@ -97,11 +95,9 @@ public:
     Mutex        readMutex; 
 };
 
-class CDataOutput : public CInterface, implements IInterface
+class CDataOutput : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CDataOutput(const char* _name, int ow, IByteOutputStream* _stream)
     {
         name.append(_name);
@@ -311,8 +307,8 @@ private:
     int                         m_readTimeout;
 
 protected:
-    IArrayOf<CDataInput>        m_inputs;
-    IArrayOf<CDataOutput>       m_outputs;  
+    CIArrayOf<CDataInput>       m_inputs;
+    CIArrayOf<CDataOutput>      m_outputs;
     Owned<CDataInput>           m_default_input;
     Owned<CDataOutput>          m_default_output;
     unsigned                    m_recordsPerQuery;

@@ -21,7 +21,7 @@
 #include "deffield.hpp"
 
 
-class CDefRecordElement : public CInterface, implements IDefRecordElement
+class CDefRecordElement : implements IDefRecordElement, public CInterface
 {
 public:
     CDefRecordElement(DefElemKind _kind, IAtom * _name, ITypeInfo * _type, size32_t _maxSize = 0);
@@ -90,7 +90,7 @@ protected:
 };
 
 
-class CDefRecordMeta : public CInterface, implements IDefRecordMeta
+class CDefRecordMeta : implements IDefRecordMeta, public CInterface
 {
 public:
     CDefRecordMeta(IDefRecordElement * _record, unsigned _numKeyed);
@@ -109,7 +109,7 @@ protected:
     unsigned numKeyed;
 };
 
-class CDefRecordBuilder : public CInterface, implements IDefRecordBuilder
+class CDefRecordBuilder : implements IDefRecordBuilder, public CInterface
 {
 public:
     CDefRecordBuilder(unsigned maxSize);

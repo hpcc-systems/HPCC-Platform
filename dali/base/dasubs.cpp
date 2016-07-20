@@ -47,10 +47,10 @@ enum MSubscriptionRequestKind {
 };
 
 
-class CSubscriptionStub: public CInterface, implements ISubscription
+class CSubscriptionStub: implements ISubscription, public CInterface
 { // Server (Coven)  side
-    MemoryAttr data;
     unsigned tag;
+    MemoryAttr data;
     SubscriptionId sid;
     INode *dst;
     bool hasaborted;
@@ -434,7 +434,7 @@ void CSubscriptionStub::unlink()
 
 
 
-class CDaliSubscriptionManagerStub: public CInterface, implements ISubscriptionManager
+class CDaliSubscriptionManagerStub: implements ISubscriptionManager, public CInterface
 {
     // Client side
     unsigned tag;

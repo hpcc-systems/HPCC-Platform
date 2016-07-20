@@ -133,7 +133,7 @@ public:
     unsigned maxActivityId;
 };
 
-class HQLCPP_API HqlCppInstance : public CInterface, public IHqlCppInstance
+class HQLCPP_API HqlCppInstance : public IHqlCppInstance, public CInterface
 {
 public:
     HqlCppInstance(IWorkUnit * _workunit, const char * _wupathname);
@@ -438,7 +438,7 @@ public:
 
 //===========================================================================
 
-class GlobalFileTracker : public CInterface, public IHqlDelayedCodeGenerator
+class GlobalFileTracker : public IHqlDelayedCodeGenerator, public CInterface
 {
 public:
     GlobalFileTracker(IHqlExpression * _filename, IPropertyTree * _graphNode)
@@ -456,9 +456,9 @@ public:
     void writeToGraph();
 
 public:
+    unsigned usageCount;
     OwnedHqlExpr filename;
     Owned<IPropertyTree> graphNode;
-    unsigned usageCount;
 };
 
 //===========================================================================
@@ -821,7 +821,7 @@ enum PEtype {
     PETlibrary,     // a library
     PETmax };
 
-class HQLCPP_API HqlCppTranslator : public CInterface, implements IHqlCppTranslator
+class HQLCPP_API HqlCppTranslator : implements IHqlCppTranslator, public CInterface
 {
 //MORE: This is in serious need of refactoring....
 
@@ -2022,7 +2022,7 @@ protected:
 
 //===========================================================================
 
-class HQLCPP_API HqlQueryInstance : public CInterface, implements IHqlQueryInstance
+class HQLCPP_API HqlQueryInstance : implements IHqlQueryInstance, public CInterface
 {
 public:
     HqlQueryInstance();

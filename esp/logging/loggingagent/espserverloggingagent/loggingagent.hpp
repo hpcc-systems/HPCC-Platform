@@ -42,14 +42,12 @@ enum ESPLogContentGroup
 
 static const char * const espLogContentGroupNames[] = { "ESPContext", "UserContext", "UserRequest", "UserResponse", "BackEndResponse", "", NULL };
 
-class CESPLogContentGroupFilters : public CInterface, implements IInterface
+class CESPLogContentGroupFilters : public CInterface
 {
     ESPLogContentGroup group;
     StringArray filters;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CESPLogContentGroupFilters(ESPLogContentGroup _group) : group(_group) {};
     ESPLogContentGroup getGroup() { return group; };
     StringArray& getFilters() { return filters; };
@@ -69,7 +67,7 @@ class CESPServerLoggingAgent : public CInterface, implements IEspLogAgent
     unsigned maxServerWaitingSeconds; //time out value for HTTP connection to logging server
     unsigned maxGTSRetries;
     StringArray     logContentFilters;
-    IArrayOf<CESPLogContentGroupFilters> groupFilters;
+    CIArrayOf<CESPLogContentGroupFilters> groupFilters;
     bool logBackEndResp;
 
     void readAllLogFilters(IPropertyTree* cfg);

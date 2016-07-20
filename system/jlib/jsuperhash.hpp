@@ -193,8 +193,6 @@ public:
     SuperHashIterator(const SuperHashTable & _table, bool _linkTable=true) : linkTable(_linkTable), table(_table) { cur = NULL; if (linkTable) table.Link(); }
     ~SuperHashIterator() { if (linkTable) table.Release(); }
 
-    IMPLEMENT_IINTERFACE
-
     virtual bool     first(void)
       { cur = table.next(NULL); return cur != NULL; }
     virtual bool     isValid(void) { return cur != NULL; }

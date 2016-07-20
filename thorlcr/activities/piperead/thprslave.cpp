@@ -41,7 +41,7 @@ protected:
 
 protected:
 
-    class CPipeStream : public CSimpleInterface, implements ISimpleReadStream
+    class CPipeStream : implements ISimpleReadStream, public CSimpleInterface
     {
         CPipeSlaveBase *parent;
         Owned<ISimpleReadStream> stream;

@@ -146,7 +146,12 @@ public:
 
 };
 
-class jlib_decl CInterface : public CInterfaceOf<CEmptyClass> {};
+class jlib_decl CInterface : public CInterfaceOf<CEmptyClass>
+{
+public:
+    inline CInterface() = default;
+    bool Release() const;
+};
 
 //---------------------------------------------------------------------------------------------------------------------
 

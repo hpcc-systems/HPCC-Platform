@@ -173,7 +173,7 @@ protected:
 
 typedef Linked<IDistributedFile> DistributedFileAttr;
 
-class FileSprayer : public CInterface, public IFileSprayer
+class FileSprayer : public IFileSprayer, public CInterface
 {
     friend class FileTransferThread;
     friend class AsyncAfterTransfer;

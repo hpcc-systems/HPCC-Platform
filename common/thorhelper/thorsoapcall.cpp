@@ -56,7 +56,7 @@ public:
 
 #define EXCEPTION_PREFIX "ReceivedRoxieException:"
 
-class ReceivedRoxieException: public CInterface, public IReceivedRoxieException
+class ReceivedRoxieException: public IReceivedRoxieException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -484,7 +484,7 @@ MODULE_EXIT()
 
 //=================================================================================================
 
-class ColumnProvider : public CInterface, public IColumnProvider
+class ColumnProvider : public IColumnProvider, public CInterface
 {
 public:
     ColumnProvider(unsigned _callLatencyMs) : callLatencyMs(_callLatencyMs), base(NULL) {}
@@ -600,7 +600,7 @@ IWSCAsyncFor * createWSCAsyncFor(CWSCHelper * _master, CommonXmlWriter &_xmlWrit
 
 //=================================================================================================
 
-class CMatchCB : public CInterface, implements IXMLSelect
+class CMatchCB : implements IXMLSelect, public CInterface
 {
     IWSCAsyncFor &parent;
     const Url &url;
@@ -699,7 +699,7 @@ public:
 
 //=================================================================================================
 
-class CWSCHelper : public CInterface, implements IWSCHelper
+class CWSCHelper : implements IWSCHelper, public CInterface
 {
 private:
     SimpleInterThreadQueueOf<const void, true> outputQ;

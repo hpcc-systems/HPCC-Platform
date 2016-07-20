@@ -28,7 +28,6 @@ public:
     BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, ColumnToOffsetMap * _columnMap);                       // row
     BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, ColumnToOffsetMap * _columnMap, node_operator side, IHqlExpression * selSeq);  // cursor
     ~BoundRow();
-    IMPLEMENT_IINTERFACE
 
     virtual AssocKind getKind()             { return (AssocKind)kind; }
     virtual bool isRowAssociation()         { return true; }

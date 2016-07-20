@@ -800,8 +800,6 @@ class CPooledThreadWrapper: public Thread
     CThreadPoolBase &parent;
     char *runningname;
 public:
-    IMPLEMENT_IINTERFACE;
-
     CPooledThreadWrapper(CThreadPoolBase &_parent,
                          PooledThreadHandle _handle,
                          IPooledThread *_thread) // takes ownership of thread
@@ -913,7 +911,7 @@ public:
 };
 
 
-class CPooledThreadIterator: public CInterface , implements IPooledThreadIterator
+class CPooledThreadIterator: implements IPooledThreadIterator, public CInterface
 {
     unsigned current;
 public:
@@ -1276,7 +1274,7 @@ static void CheckAllowedProgram(const char *prog,const char *allowed)
 }
 
 
-class CSimplePipeStream: public CInterface, implements ISimpleReadStream
+class CSimplePipeStream: implements ISimpleReadStream, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -1296,7 +1294,7 @@ private:
 #ifdef _WIN32
 
 
-class CWindowsPipeProcess: public CInterface, implements IPipeProcess
+class CWindowsPipeProcess: implements IPipeProcess, public CInterface
 {
     HANDLE pipeProcess;
     HANDLE hInput;
@@ -1699,7 +1697,7 @@ static unsigned dowaitpid(HANDLE pid, int mode)
 }
 
 static CriticalSection runsect; // single thread process start to avoid forked handle open/closes interleaving
-class CLinuxPipeProcess: public CInterface, implements IPipeProcess
+class CLinuxPipeProcess: implements IPipeProcess, public CInterface
 {
 
     class cForkThread: public Thread
@@ -2266,7 +2264,7 @@ IPipeProcess *createPipeProcess(const char *allowedprogs)
 
 
 
-class CWorkQueueThread: public CInterface, implements IWorkQueueThread
+class CWorkQueueThread: implements IWorkQueueThread, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -2279,7 +2277,6 @@ public:
         CWorkQueueThread *parent;
         CriticalSection &crit;
     public:
-        IMPLEMENT_IINTERFACE;
         cWorkerThread(CWorkQueueThread *_parent,CriticalSection &_crit,unsigned _persisttime)
             : crit(_crit)
         {

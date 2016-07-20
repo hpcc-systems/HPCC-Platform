@@ -61,7 +61,6 @@ class CDataPacket: extends CInterface
 protected: friend class CDataPacketTransaction;
     int lock;               // -1, exclusive, 0 unlocked, +ve non-exclusive
 public:
-    IMPLEMENT_IINTERFACE;
 
     CDataPacket(const char * _key)
         : key(_key)
@@ -105,7 +104,6 @@ protected: friend class CDataPacketTransaction;
     Semaphore lockingsem;
     unsigned lockingwaiting;
 public:
-    IMPLEMENT_IINTERFACE;
 
     CDataPacketStore()
         : SuperHashTableOf<CDataPacket, const char>() 
@@ -659,7 +657,7 @@ void runPacketStoreServer(IGroup *grp)
 // ==============================================================================================================
 // Client Side
 
-class CPacketStoreClient: public CInterface, implements IPacketStore
+class CPacketStoreClient: implements IPacketStore, public CInterface
 {
     Owned<ICommunicator> comm;
     SocketEndpoint myep;

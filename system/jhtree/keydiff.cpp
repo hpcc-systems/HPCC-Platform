@@ -342,7 +342,7 @@ private:
     offset_t progressCount;
 };
 
-class CKeyFileReader: public CInterface, extends IKeyFileRowReader
+class CKeyFileReader: extends IKeyFileRowReader, public CInterface
 {
     CKeyReader reader;
     Owned<IPropertyTree> header;
@@ -482,7 +482,7 @@ private:
 };
 
 
-class CKeyFileWriter: public CInterface, extends IKeyFileRowWriter
+class CKeyFileWriter: extends IKeyFileRowWriter, public CInterface
 {
     CKeyWriter writer;
     Owned<IPropertyTree> header;
@@ -1046,7 +1046,7 @@ private:
     MemoryAttr compma;
 };
 
-class CKeyDiffGenerator : public CInterface, public IKeyDiffGenerator
+class CKeyDiffGenerator : public IKeyDiffGenerator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -1281,7 +1281,7 @@ private:
     NodeInfoArray TLKnodes;
 };
 
-class CKeyDiffApplicator : public CInterface, public IKeyDiffApplicator
+class CKeyDiffApplicator : public IKeyDiffApplicator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

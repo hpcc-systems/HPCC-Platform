@@ -22,9 +22,7 @@
 #include "seclib.hpp"
 //#include "MD5.hpp"
 
-class CSecureUser : public CInterface,
-    implements ISecUser,
-    implements ISecCredentials
+class CSecureUser : implements ISecUser, implements ISecCredentials, public CInterface
 {
 private:
     StringBuffer    m_realm;

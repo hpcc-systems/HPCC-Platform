@@ -3309,7 +3309,7 @@ void HqlCppTranslator::buildDatasetAssignDatasetFromTransform(BuildCtx & ctx, IH
     target->finishRow(subctx, targetRow);
 }
 
-class InlineDatasetSkipCallback : public CInterface, implements IHqlCodeCallback
+class InlineDatasetSkipCallback : implements IHqlCodeCallback, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE

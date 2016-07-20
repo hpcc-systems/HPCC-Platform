@@ -102,7 +102,6 @@ static __thread MySQLConnection *threadCachedConnection = nullptr;
 class MySQLConnection : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
     MySQLConnection(MYSQL *_conn, const char *_cacheOptions, bool _threadCached, bool _globalCached) : conn(_conn), threadCached(_threadCached), globalCached(_globalCached)
     {
         if (_cacheOptions && (threadCached || globalCached))
@@ -212,7 +211,6 @@ CriticalSection MySQLConnection::globalCacheCrit;
 class MySQLResult : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
     MySQLResult(MYSQL_RES *_res) : res(_res)
     {
     }
@@ -233,7 +231,6 @@ private:
 class MySQLStatement : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
     MySQLStatement(MYSQL_STMT *_stmt) : stmt(_stmt)
     {
     }
@@ -352,7 +349,6 @@ private:
 class MySQLPreparedStatement : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
     MySQLPreparedStatement(MySQLConnection *_conn, MySQLStatement *_stmt)
     : conn(_conn), stmt(_stmt)
     {

@@ -157,7 +157,7 @@ public:
 *
 =================================================================================*/
 
-class CRoxieDaliHelper : public CInterface, implements IRoxieDaliHelper
+class CRoxieDaliHelper : implements IRoxieDaliHelper, public CInterface
 {
 private:
     static bool isConnected;
@@ -803,7 +803,7 @@ protected:
     }
 };
 
-class CRoxieDllServer : public CInterface, implements IDllServer
+class CRoxieDllServer : implements IDllServer, public CInterface
 {
     static CriticalSection crit;
     bool started;

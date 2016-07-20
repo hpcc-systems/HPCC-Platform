@@ -90,8 +90,6 @@ protected:
     bool doCrc;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CKeyBuilderBase(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence) : out(_out)
     {
         doCrc = false;

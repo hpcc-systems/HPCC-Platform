@@ -48,7 +48,7 @@
 
 #define PROTO_TEMPLATE "prototpl.cpp"
 
-class NullContextCallback : public CInterface, implements ICodegenContextCallback
+class NullContextCallback : implements ICodegenContextCallback, public CInterface
 {
     IMPLEMENT_IINTERFACE
 
@@ -56,7 +56,7 @@ class NullContextCallback : public CInterface, implements ICodegenContextCallbac
     virtual bool allowAccess(const char * category, bool isSigned) { return true; }
 };
 
-class HqlDllGenerator : public CInterface, implements IHqlExprDllGenerator, implements IAbortRequestCallback
+class HqlDllGenerator : implements IHqlExprDllGenerator, implements IAbortRequestCallback, public CInterface
 {
 public:
     HqlDllGenerator(IErrorReceiver * _errs, const char * _wuname, const char * _targetdir, IWorkUnit * _wu, const char * _template_dir, ClusterType _targetClusterType, ICodegenContextCallback * _ctxCallback, bool _checkForLocalFileUploads, bool _okToAbort) :

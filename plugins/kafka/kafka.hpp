@@ -318,7 +318,7 @@ extern "C++"
 
         //----------------------------------------------------------------------
 
-        class KafkaStreamedDataset : public RtlCInterface, implements IRowStream
+        class KafkaStreamedDataset : implements IRowStream, public RtlCInterface
         {
             public:
 

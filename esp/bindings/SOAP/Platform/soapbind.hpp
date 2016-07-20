@@ -40,8 +40,7 @@
 #include "http/platform/httpbinding.hpp"
 
 
-class esp_http_decl CSoapComplexType : public CInterface,
-    implements IRpcSerializable
+class esp_http_decl CSoapComplexType : implements IRpcSerializable, public CInterface
 {
 protected:
     unsigned clvalue_;

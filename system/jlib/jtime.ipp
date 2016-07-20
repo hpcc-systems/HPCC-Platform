@@ -21,7 +21,7 @@
 
 #include "jtime.hpp"
 
-class jlib_decl CScmDateTime : public CInterface, implements IJlibDateTime
+class jlib_decl CScmDateTime : implements IJlibDateTime, public CInterface
 {
 public:
     CScmDateTime();

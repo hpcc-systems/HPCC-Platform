@@ -29,8 +29,6 @@ class HTMLPAGE_EXPORT CHtmlEntity : public CInterface
 {
 protected:
 public:
-    IMPLEMENT_IINTERFACE;
-
     virtual StringBuffer & getHtml(StringBuffer & result) = 0;
 };
 

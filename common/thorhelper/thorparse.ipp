@@ -96,7 +96,7 @@ protected:
 };
 
 
-class CMatchedElement : public CInterface, public IMatchedElement
+class CMatchedElement : public IMatchedElement, public CInterface
 {
 public:
     CMatchedElement(MatchState * _cur)                      { cur = _cur; }
@@ -110,7 +110,7 @@ protected:
     MatchState * cur;
 };
 
-class NoMatchElement : public CInterface, public IMatchedElement
+class NoMatchElement : public IMatchedElement, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE
@@ -123,7 +123,7 @@ public:
     const byte * ptr;
 };
 
-class MatchWalker2MatchedElement : public CInterface, public IMatchedElement
+class MatchWalker2MatchedElement : public IMatchedElement, public CInterface
 {
 public:
     MatchWalker2MatchedElement(IMatchWalker * _cur)         { cur.set(_cur); }
@@ -159,7 +159,7 @@ public:
 };
 
 
-class THORHELPER_API CMatchedResults : public CInterface, implements IMatchedResults
+class THORHELPER_API CMatchedResults : implements IMatchedResults, public CInterface
 {
 public:
     CMatchedResults(CMatchedResultInfo * _def);
@@ -187,7 +187,7 @@ protected:
 };
 
 
-class NlpMatchWalker : public CInterface, public IMatchWalker
+class NlpMatchWalker : public IMatchWalker, public CInterface
 {
 public:
     NlpMatchWalker(MatchState * state) { curMatch = state; }

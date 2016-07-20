@@ -238,7 +238,7 @@ void stopDelayedReleaser()
 
 //-------------------------------------------------------------------------
 
-class CSimpleSuperFileArray : public CInterface, implements ISimpleSuperFileEnquiry
+class CSimpleSuperFileArray : implements ISimpleSuperFileEnquiry, public CInterface
 {
     IArrayOf<IPropertyTree> subFiles;
 public:
@@ -1107,7 +1107,6 @@ public:
 class CRoxieServerQuerySetManager : public CRoxieQuerySetManager
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieServerQuerySetManager(const char *_querySetName)
         : CRoxieQuerySetManager(0, _querySetName)
     {
@@ -1130,7 +1129,6 @@ extern IRoxieQuerySetManager *createServerManager(const char *querySet)
 class CRoxieSlaveQuerySetManager : public CRoxieQuerySetManager
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieSlaveQuerySetManager(unsigned _channelNo, const char *_querySetName)
         : CRoxieQuerySetManager(_channelNo, _querySetName)
     {
@@ -1203,7 +1201,7 @@ private:
 
 //===============================================================================================================
 
-class CRoxieDebugSessionManager : public CInterface, implements IRoxieDebugSessionManager
+class CRoxieDebugSessionManager : implements IRoxieDebugSessionManager, public CInterface
 {
 protected:
     ReadWriteLock debugLock; 
@@ -1276,8 +1274,6 @@ static hash64_t hashXML(const IPropertyTree *tree)
 class CRoxieQueryPackageManager : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieQueryPackageManager(unsigned _numChannels, const char *_querySet, const IRoxiePackageMap *_packages, hash64_t _xmlHash)
         : numChannels(_numChannels), packages(_packages), querySet(_querySet), xmlHash(_xmlHash)
     {
@@ -1500,8 +1496,6 @@ class CStandaloneQueryPackageManager : public CRoxieQueryPackageManager
     Owned<IPropertyTree> standaloneDll;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CStandaloneQueryPackageManager(unsigned _numChannels, const char *_querySet, const IRoxiePackageMap *_packages, IPropertyTree *_standaloneDll)
         : CRoxieQueryPackageManager(_numChannels, _querySet, _packages, 0), standaloneDll(_standaloneDll)
     {
@@ -1538,7 +1532,6 @@ extern IRoxieDebugSessionManager &queryRoxieDebugSessionManager()
 class CRoxiePackageSetWatcher : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, unsigned numChannels, CRoxiePackageSetWatcher *oldPackages, bool forceReload)
     : stateHash(0), daliHelper(_daliHelper)
     {
@@ -1790,7 +1783,7 @@ private:
 
 };
 
-class CRoxiePackageSetManager : public CInterface, implements IRoxieQueryPackageManagerSet, implements ISDSSubscription
+class CRoxiePackageSetManager : implements IRoxieQueryPackageManagerSet, implements ISDSSubscription, public CInterface
 {
     Owned<IDaliPackageWatcher> pSetsNotifier;
     Owned<IDaliPackageWatcher> pMapsNotifier;

@@ -437,7 +437,7 @@ public:
 
 };
 
-class CSendManager : public CInterface, implements ISendManager
+class CSendManager : implements ISendManager, public CInterface
 {
     friend class send_send_flow;
     class StartedThread : public Thread
@@ -1017,7 +1017,7 @@ ISendManager *createSendManager(int server_flow_port, int data_port, int client_
     return new CSendManager(server_flow_port, data_port, client_flow_port, sniffer_port, sniffer_multicast_ip, queue_size_pr_server, queues_pr_server, maxRetryData, myNodeIndex, rateLimiter);
 }
 
-class CMessagePacker : public CInterface, implements IMessagePacker
+class CMessagePacker : implements IMessagePacker, public CInterface
 {
     ISendManager   &parent;
     unsigned        destNodeIndex;

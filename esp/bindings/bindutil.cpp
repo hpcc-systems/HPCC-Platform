@@ -853,7 +853,7 @@ const char *mimeTypeFromFileExt(const char *ext)
     return "application/octet-stream";
 }
 
-class CEspHttpException: public CInterface, public IEspHttpException
+class CEspHttpException: public IEspHttpException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

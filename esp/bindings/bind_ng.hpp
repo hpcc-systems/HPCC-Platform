@@ -23,7 +23,7 @@
 #include "esp.hpp"
 #include "soapesp.hpp"
 
-class CEspNgContext  : public CInterface, implements IEspContext
+class CEspNgContext  : implements IEspContext, public CInterface
 {
 protected:
     StringBuffer xuserid;
@@ -150,7 +150,7 @@ public:
 };
 
 
-class EspNgStringParameter : public CInterface, implements IEspNgParameter
+class EspNgStringParameter : implements IEspNgParameter, public CInterface
 {
 private:
     StringBuffer name;
@@ -181,7 +181,7 @@ public:
     operator const char *(){return param->queryValue();}
 };
 
-class EspNgParameterIterator : public CInterface, implements IEspNgParameterIterator
+class EspNgParameterIterator : implements IEspNgParameterIterator, public CInterface
 {
 private:
     IEspNgParameter **p_array;
