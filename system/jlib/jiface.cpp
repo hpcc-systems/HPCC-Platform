@@ -23,6 +23,11 @@
 
 //===========================================================================
 
+bool CSimpleInterface::Release() const
+{
+    return CSimpleInterfaceOf<CEmptyClass>::Release();
+}
+
 bool CInterface::Release() const
 {
     return CInterfaceOf<CEmptyClass>::Release();

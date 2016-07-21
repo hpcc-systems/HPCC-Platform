@@ -99,7 +99,11 @@ private:
 #pragma warning(disable : 4251)
 #endif
 template class CSimpleInterfaceOf<CEmptyClass>;
-class jlib_decl CSimpleInterface : public CSimpleInterfaceOf<CEmptyClass> {};
+class jlib_decl CSimpleInterface : public CSimpleInterfaceOf<CEmptyClass>
+{
+public:
+    bool Release() const;   // Prevent Release() being inlined everwhere it is called
+};
 #ifdef _WIN32
 #pragma warning(pop)
 #endif
@@ -149,8 +153,7 @@ public:
 class jlib_decl CInterface : public CInterfaceOf<CEmptyClass>
 {
 public:
-    inline CInterface() = default;
-    bool Release() const;
+    bool Release() const;   // Prevent Release() being inlined everwhere it is called
 };
 
 //---------------------------------------------------------------------------------------------------------------------
