@@ -1521,6 +1521,9 @@ public:
         if (nextParam != stmtInfo->queryInputBindings().numColumns())
             failx("Not enough parameters supplied (%d parameters supplied, but statement has %d bound columns)", nextParam, stmtInfo->queryInputBindings().numColumns());
         // We actually do the execute later, when the result is fetched
+        // Unless, there is no expected result, in that case execute query now
+        if (stmtInfo->queryResultBindings().numColumns() == 0)
+            lazyExecute();
     }
 protected:
     void lazyExecute()
