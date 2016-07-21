@@ -142,14 +142,25 @@ public:
             }
             unsigned start = msTick();
             Owned<ISecUser> user = ldapsecurity->createUser(username);
+            bool authenticated = false;
             if (user) {
                 user->credentials().setPassword(password);
-                if (filescope)
-                    perm=ldapsecurity->authorizeFileScope(*user, obj);
-                else if (wuscope)
-                    perm=ldapsecurity->authorizeWorkunitScope(*user, obj);
-                if (perm==-1)
-                    perm = 0;
+                bool superUser;
+                if (!ldapsecurity->authenticateUser(*user, superUser))
+                {
+                    PROGLOG("LDAP: getPermissions(%s) scope=%s user=%s fails authentication",key?key:"NULL",obj?obj:"NULL",username.str());
+                    perm = SecAccess_None;//deny
+                }
+                else
+                {
+                    authenticated = true;
+                    if (filescope)
+                        perm=ldapsecurity->authorizeFileScope(*user, obj);
+                    else if (wuscope)
+                        perm=ldapsecurity->authorizeWorkunitScope(*user, obj);
+                    if (perm==-1)
+                        perm = 0;
+                }
             }
             unsigned taken = msTick()-start;
 #ifndef _DEBUG
