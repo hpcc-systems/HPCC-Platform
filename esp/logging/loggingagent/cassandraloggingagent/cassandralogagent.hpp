@@ -42,13 +42,12 @@ using namespace cassandraembed;
 
 class CCassandraLogAgent : public CDBLogAgentBase
 {
-    StringBuffer dbServer, dbUserID, dbPassword;
     Owned<CassandraClusterSession> cassSession;
     CriticalSection transactionSeedCrit;
 
-    void initKeySpace();
+    void initKeySpace(StringBuffer& dbServer, StringBuffer& dbUserID, StringBuffer& dbPassword);
     void ensureDefaultKeySpace();
-    void setSessionOptions(const char *keyspace);
+    void setKeySpace(const char *keyspace);
     void ensureTransSeedTable();
     void createTable(const char *dbName, const char *tableName, StringArray& columnNames, StringArray& columnTypes, const char* keys);
     void executeSimpleStatement(const char *st);
@@ -57,6 +56,11 @@ class CCassandraLogAgent : public CDBLogAgentBase
 
     virtual void queryTransactionSeed(const char* appName, StringBuffer& seed);
     virtual void addField(CLogField& logField, const char* name, StringBuffer& value, StringBuffer& fields, StringBuffer& values);
+    virtual void setUpdateLogStatement(const char* dbName, const char* tableName,
+        const char* fields, const char* values, StringBuffer& statement);
+    virtual void executeUpdateLogStatement(StringBuffer& statement);
+
+    virtual void queryTransactionSeed(const char* appName, StringBuffer& seed);
     virtual void setUpdateLogStatement(const char* dbName, const char* tableName,
         const char* fields, const char* values, StringBuffer& statement);
     virtual void executeUpdateLogStatement(StringBuffer& statement);

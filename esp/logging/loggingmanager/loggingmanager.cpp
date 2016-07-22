@@ -264,11 +264,20 @@ bool CLoggingManager::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEs
     return bRet;
 }
 
-bool CLoggingManager::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status)
+bool CLoggingManager::hasTransactionID()
 {
-    if (!initialized)
-        throw MakeStringException(-1,"LoggingManager not initialized");
+    for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
+    {
+        IUpdateLogThread* loggingThread = loggingAgentThreads[x];
+        if (loggingThread->hasService(LGSTGetTransactionID))
+            return true;
+    }
 
+    return false;
+}
+
+bool CLoggingManager::getTransactionID(const char* source, StringArray& prefix, StringBuffer& transactionID, StringBuffer& status)
+{
     try
     {
         for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
@@ -278,7 +287,7 @@ bool CLoggingManager::getTransactionID(StringAttrMapping* transFields, StringBuf
                 continue;
 
             IEspLogAgent* loggingAgent = loggingThread->getLogAgent();
-            loggingAgent->getTransactionID(transFields, transactionID);
+            loggingAgent->getTransactionID(source, prefix, transactionID);
             return true;
         }
     }

@@ -120,12 +120,12 @@ interface IEspLogAgent : extends IInterface
 {
     virtual bool init(const char * name, const char * type, IPropertyTree * cfg, const char * process) = 0;
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp) = 0;
-    virtual void getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID) = 0;
+    virtual void getTransactionID(const char* source, StringArray& prefix, StringBuffer& transactionID) = 0;
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) = 0;
     virtual void filterLogContent(IEspUpdateLogRequestWrap* req) = 0;
 };
 
-class LOGGINGCOMMON_API CDBLogAgentBase : public CInterface, implements IEspLogAgent
+class CDBLogAgentBase : public CInterface, implements IEspLogAgent
 {
 protected:
     StringBuffer defaultDB, transactionTable, loggingTransactionSeed;
@@ -138,12 +138,12 @@ protected:
     void readDBCfg(IPropertyTree* cfg, StringBuffer& server, StringBuffer& dbUser, StringBuffer& dbPassword);
     void readTransactionCfg(IPropertyTree* cfg);
     bool buildUpdateLogStatement(IPropertyTree* logRequest, const char* logDB, CLogTable& table, StringBuffer& logID, StringBuffer& cqlStatement);
+    void addField(CLogField& logField, const char* name, StringBuffer& value, StringBuffer& fields, StringBuffer& values);
     void appendFieldInfo(const char* field, StringBuffer& value, StringBuffer& fields, StringBuffer& values, bool quoted);
     void addMissingFields(CIArrayOf<CLogField>& logFields, BoolHash& HandledFields, StringBuffer& fields, StringBuffer& values);
     CLogGroup* checkLogSource(IPropertyTree* logRequest, StringBuffer& source, StringBuffer& logDB);
     void getLoggingTransactionID(StringBuffer& id);
 
-    virtual void addField(CLogField& logField, const char* name, StringBuffer& value, StringBuffer& fields, StringBuffer& values) = 0;
     virtual void queryTransactionSeed(const char* appName, StringBuffer& seed) = 0;
     virtual void executeUpdateLogStatement(StringBuffer& statement) = 0;
     virtual void setUpdateLogStatement(const char* dbName, const char* tableName,
@@ -155,7 +155,7 @@ public:
     virtual ~CDBLogAgentBase() {};
 
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
-    virtual void getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID);
+    virtual void getTransactionID(const char* source, StringArray& prefix, StringBuffer& transactionID);
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
     virtual void filterLogContent(IEspUpdateLogRequestWrap* req);
 };

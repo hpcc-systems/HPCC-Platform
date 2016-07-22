@@ -25,6 +25,7 @@
 project( espserverloggingagent )
 
 set ( SRCS
+    ${HPCC_SOURCE_DIR}/esp/logging/datafieldmap.cpp
     loggingagent.cpp
 )
 

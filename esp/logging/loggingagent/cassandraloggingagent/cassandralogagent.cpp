@@ -19,7 +19,7 @@
 #include "esploggingservice_esp.ipp"
 #include "cassandralogagent.hpp"
 
-static const int defaultMaxTriesGTS = -1;
+const int defaultMaxTriesGTS = -1;
 
 static void setCassandraLogAgentOption(StringArray& opts, const char* opt, const char* val)
 {
@@ -48,6 +48,7 @@ bool CCassandraLogAgent::init(const char* name, const char* type, IPropertyTree*
     if(!cassandra)
         throw MakeStringException(-1, "Unable to find Cassandra settings for log agent %s:%s", name, type);
 
+    StringBuffer dbServer, dbUserID, dbPassword;
     readDBCfg(cassandra, dbServer, dbUserID, dbPassword);
 
     //Read information about data mapping for every log groups
@@ -64,11 +65,11 @@ bool CCassandraLogAgent::init(const char* name, const char* type, IPropertyTree*
     maxTriesGTS = cfg->getPropInt("MaxTriesGTS", defaultMaxTriesGTS);
 
     //Setup Cassandra
-    initKeySpace();
+    initKeySpace(dbServer, dbUserID, dbPassword);
     return true;
 }
 
-void CCassandraLogAgent::initKeySpace()
+void CCassandraLogAgent::initKeySpace(StringBuffer& dbServer, StringBuffer& dbUserID, StringBuffer& dbPassword)
 {
     //Initialize Cassandra Cluster Session
     cassSession.setown(new CassandraClusterSession(cass_cluster_new()));
@@ -114,13 +115,13 @@ void CCassandraLogAgent::ensureTransSeedTable()
     transSeedTableKeys.set("application"); //primary keys
 
     //The defaultDB has transactions table.
-    setSessionOptions(defaultDB.str());
+    setKeySpace(defaultDB.str());
     cassSession->connect();
     createTable(defaultDB.str(), transactionTable.str(), transSeedTableColumnNames, transSeedTableColumnTypes, transSeedTableKeys.str());
 
-    unsigned id = 0;
-    VStringBuffer st("SELECT id FROM %s LIMIT 1;", transactionTable.str());
-    if (!executeSimpleSelectStatement(st.str(), id))
+    unsigned transactionCount = 0;
+    VStringBuffer st("SELECT COUNT(*) FROM %s;", transactionTable.str());
+    if (executeSimpleSelectStatement(st.str(), transactionCount) == 0)
     {
         st.setf("INSERT INTO %s (id, application) values ( 10000, '%s');",
             transactionTable.str(), loggingTransactionApp.get());
@@ -142,7 +143,7 @@ void CCassandraLogAgent::queryTransactionSeed(const char* appName, StringBuffer&
 
     unsigned seedInt = 0;
     VStringBuffer st("SELECT id FROM %s WHERE application = '%s'", transactionTable.str(), appName);
-    setSessionOptions(defaultDB.str()); //Switch to defaultDB since it may not be the current keyspace.
+    setKeySpace(defaultDB.str()); //Switch to defaultDB since it may not be the current keyspace.
     cassSession->connect();
     executeSimpleSelectStatement(st.str(), seedInt);
     seed.setf("%d", seedInt);
@@ -154,75 +155,16 @@ void CCassandraLogAgent::queryTransactionSeed(const char* appName, StringBuffer&
     cassSession->disconnect();
 }
 
-void CCassandraLogAgent::setSessionOptions(const char *keyspace)
+void CCassandraLogAgent::setKeySpace(const char *keyspace)
 {
     StringArray opts;
-    setCassandraLogAgentOption(opts, "contact_points", dbServer.str());
-    if (!dbUserID.isEmpty())
-    {
-        setCassandraLogAgentOption(opts, "user", dbUserID.str());
-        if (!dbPassword.isEmpty())
-            setCassandraLogAgentOption(opts, "password", dbPassword.str());
-    }
-    if (keyspace && *keyspace)
-        setCassandraLogAgentOption(opts, "keyspace", keyspace);
+    setCassandraLogAgentOption(opts, "keyspace", keyspace);
     cassSession->setOptions(opts);
 }
 
 void CCassandraLogAgent::createTable(const char *dbName, const char *tableName, StringArray& columnNames, StringArray& columnTypes, const char* keys)
 {
-    StringBuffer fields;
-    ForEachItemIn(i, columnNames)
-        fields.appendf("%s %s,", columnNames.item(i), columnTypes.item(i));
-
-    VStringBuffer createTableSt("CREATE TABLE IF NOT EXISTS %s.%s (%s PRIMARY KEY (%s));", dbName, tableName, fields.str(), keys);
-    executeSimpleStatement(createTableSt.str());
-}
-
-void CCassandraLogAgent::addField(CLogField& logField, const char* name, StringBuffer& value, StringBuffer& fields, StringBuffer& values)
-{
-    const char* fieldType = logField.getType();
-    if(strieq(fieldType, "int"))
-    {
-        appendFieldInfo(logField.getMapTo(), value, fields, values, false);
-        return;
-    }
-
-    if(strieq(fieldType, "raw"))
-    {
-        appendFieldInfo(logField.getMapTo(), value, fields, values, true);;
-        return;
-    }
-
-    if(strieq(fieldType, "varchar") || strieq(fieldType, "text"))
-    {
-        if(fields.length() != 0)
-            fields.append(',');
-        fields.append(logField.getMapTo());
-
-        if(values.length() != 0)
-            values.append(',');
-        values.append('\'');
-
-        const char* str = value.str();
-        int length = value.length();
-        for(int i = 0; i < length; i++)
-        {
-            unsigned char c = str[i];
-            if(c == '\t' || c == '\n' || c== '\r')
-                values.append(' ');
-            else if(c == '\'')
-                values.append('"');
-            else if(c < 32 || c > 126)
-                values.append('?');
-            else
-                values.append(c);
-        }
-        values.append('\'');
-        return;
-    }
-
-    DBGLOG("Unknown format %s", fieldType);
+    statement.setf("INSERT INTO %s.%s (%s, date_added) values (%s, toUnixTimestamp(now()));", dbName, tableName, fields, values);
 }
 
 void CCassandraLogAgent::setUpdateLogStatement(const char* dbName, const char* tableName,
