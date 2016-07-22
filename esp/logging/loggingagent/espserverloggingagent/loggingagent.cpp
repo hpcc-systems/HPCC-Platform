@@ -22,13 +22,14 @@
 #include "loggingagentbase.hpp"
 #include "loggingagent.hpp"
 
-const int DefaultMaxTriesGTS = -1;
-const char* const PropESPServer = "ESPServer";
-const char* const PropServerUrl = "@url";
-const char* const PropServerUserID = "@user";
-const char* const PropServerPassword = "@password";
-const char* const PropServerWaitingSeconds = "MaxServerWaitingSeconds";
-const char* const MaxTriesGTS = "MaxTriesGTS";
+static const int DefaultMaxTriesGTS = -1;
+static const char* const PropESPServer = "ESPServer";
+static const char* const PropServerUrl = "@url";
+static const char* const PropServerUserID = "@user";
+static const char* const PropServerPassword = "@password";
+static const char* const PropServerWaitingSeconds = "MaxServerWaitingSeconds";
+static const char* const MaxTriesGTS = "MaxTriesGTS";
+static const char* const appESPServerLoggingAgent = "ESPServerLoggingAgent";
 
 bool CESPServerLoggingAgent::init(const char * name, const char * type, IPropertyTree * cfg, const char * process)
 {
@@ -52,6 +53,38 @@ bool CESPServerLoggingAgent::init(const char * name, const char * type, IPropert
     }
     maxServerWaitingSeconds = cfg->getPropInt(PropServerWaitingSeconds);
     maxGTSRetries = cfg->getPropInt(MaxTriesGTS, DefaultMaxTriesGTS);
+
+    BoolHash uniqueGroupNames;
+    StringBuffer sourceName, groupName, dbName, localTransactionSeed;
+    Owned<IPropertyTreeIterator> iter = cfg->getElements("LogSourceMap/LogSource");
+    ForEach(*iter)
+    {
+        ensureInputString(iter->query().queryProp("@name"), false, sourceName, -1, "LogSource @name required");
+        ensureInputString(iter->query().queryProp("@maptologgroup"), true, groupName, -1, "LogSource @maptologgroup required");
+        ensureInputString(iter->query().queryProp("@maptodb"), true, dbName, -1, "LogSource @maptodb required");
+        Owned<CLogSource> logSource = new CLogSource(sourceName.str(), groupName.str(), dbName.str());
+        logSources.setValue(sourceName.str(), logSource);
+
+        bool* found = uniqueGroupNames.getValue(groupName.str());
+        if (!found || !*found)
+        {
+            uniqueGroupNames.setValue(groupName.str(), true);
+            StringBuffer transactionSeed, statusMessage;
+            getTransactionSeed(groupName.str(), transactionSeed, statusMessage);
+            if (transactionSeed.length() > 0)
+            {
+                Owned<CTransIDBuilder> entry = new CTransIDBuilder(transactionSeed.str(), false);
+                transIDMap.setValue(groupName.str(), entry);
+                if (iter->query().getPropBool("@default", false))
+                    defaultGroup.set(groupName.str());
+            }
+            else
+                PROGLOG("Failed to get TransactionSeed for <%s>", groupName.str());
+        }
+    }
+    createLocalTransactionSeed(localTransactionSeed);
+    Owned<CTransIDBuilder> localTransactionEntry = new CTransIDBuilder(localTransactionSeed.str(), true);
+    transIDMap.setValue(appESPServerLoggingAgent, localTransactionEntry);
 
     readAllLogFilters(cfg);
     return true;
@@ -127,55 +160,66 @@ bool CESPServerLoggingAgent::readLogFilters(IPropertyTree* cfg, unsigned groupID
     return hasFilter;
 }
 
+void CESPServerLoggingAgent::createLocalTransactionSeed(StringBuffer& transactionSeed)
+{
+    unsigned ip = queryHostIP().iphash();
+    unsigned mstick6char = ((unsigned)usTick() & 0xFFFFFF);
+    unsigned processId2char = ((unsigned)GetCurrentProcessId()) & 0xF;
+    unsigned threadId1char = ((unsigned)GetCurrentThreadId()) & 0xF;
+    transactionSeed.setf("%02X%06X%X%X", ip, mstick6char, processId2char, threadId1char);
+}
+
 bool CESPServerLoggingAgent::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp)
 {
-    bool bRet = false;
+    StringBuffer statusMessage, transactionSeed;
+    int statusCode = getTransactionSeed(req.getApplication(), transactionSeed, statusMessage);
+    resp.setStatusCode(statusCode);
+    resp.setSeedId(transactionSeed.str());
+    if (statusMessage.length())
+        resp.setStatusMessage(statusMessage.str());
+    return (statusCode != -2);
+}
+
+int CESPServerLoggingAgent::getTransactionSeed(const char* appName, StringBuffer& transactionSeed, StringBuffer& statusMessage)
+{
     StringBuffer soapreq(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
         " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\">"
         " <soap:Body>");
-    soapreq.append("<GetTransactionSeedRequest/>");
+    if (!appName || !*appName)
+        soapreq.append("<GetTransactionSeedRequest/>");
+    else
+        soapreq.append("<GetTransactionSeedRequest><Application>").append(appName).append("</Application></GetTransactionSeedRequest>");
     soapreq.append("</soap:Body></soap:Envelope>");
 
     unsigned retry = 1;
+    int statusCode = 0;
     while (1)
     {
         try
         {
-            int statusCode = 0;
-            StringBuffer statusMessage, transactionSeed;
             if (!getTransactionSeed(soapreq, statusCode, statusMessage, transactionSeed))
                 throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed,"Failed to get TransactionSeed");
-
-            resp.setSeedId(transactionSeed.str());
-            resp.setStatusCode(statusCode);
-            if (statusMessage.length())
-                resp.setStatusMessage(statusMessage.str());
-            bRet = true;
             break;
         }
         catch (IException* e)
         {
-            StringBuffer errorStr, errorMessage;
-            errorMessage.append("Failed to get TransactionSeed: error code ").append(e->errorCode()).append(", error message ").append(e->errorMessage(errorStr));
-            ERRLOG("%s -- try %d", errorMessage.str(), retry);
+            StringBuffer errorStr;
+            statusMessage.set("Failed to get TransactionSeed: error code ").append(e->errorCode()).append(", error message ").append(e->errorMessage(errorStr));
+            ERRLOG("%s -- try %d", statusMessage.str(), retry);
             e->Release();
-            if (retry < maxGTSRetries)
+            if (retry >= maxGTSRetries)
             {
-                Sleep(retry*3000);
-                retry++;
-            }
-            else
-            {
-                resp.setStatusCode(-1);
-                resp.setStatusMessage(errorMessage.str());
+                statusCode = -2;
                 break;
             }
+            Sleep(retry*3000);
+            retry++;
         }
     }
 
-    return bRet;
+    return statusCode;
 }
 
 bool CESPServerLoggingAgent::getTransactionSeed(StringBuffer& soapreq, int& statusCode, StringBuffer& statusMessage, StringBuffer& seedID)
@@ -198,6 +242,27 @@ bool CESPServerLoggingAgent::getTransactionSeed(StringBuffer& soapreq, int& stat
     if (statusCode || !seedID.length())
         throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "Failed to get Transaction Seed from %s", serverUrl.str());
     return true;
+}
+
+void CESPServerLoggingAgent::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID)
+{
+    CTransIDBuilder* transIDBuilder = NULL;
+    StringAttr* source = transFields->getValue(sTransactionMethod);
+    if (source)
+    {
+        CLogSource* logSource = logSources.getValue(source->get());
+        if (logSource)
+            transIDBuilder = transIDMap.getValue(logSource->getGroupName());
+    }
+    if (!transIDBuilder && (defaultGroup.length() != 0))
+        transIDBuilder = transIDMap.getValue(defaultGroup.str());
+    if (!transIDBuilder)
+        transIDBuilder = transIDMap.getValue(appESPServerLoggingAgent);
+    if (!transIDBuilder) //This should not happen.
+        throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "Failed to getTransactionID");
+
+    transIDBuilder->getTransID(transFields, transactionID);
+    return;
 }
 
 bool CESPServerLoggingAgent::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp)

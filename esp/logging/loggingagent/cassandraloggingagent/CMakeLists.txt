@@ -37,7 +37,7 @@ if(USE_CASSANDRA)
      ${HPCC_SOURCE_DIR}/esp/platform
      ${HPCC_SOURCE_DIR}/esp/bindings
      ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
-     ${HPCC_SOURCE_DIR}/esp/logging
+     ${HPCC_SOURCE_DIR}/esp/logging/logginglib
   )
 
   ADD_DEFINITIONS( -D_USRDLL -DCASSANDRALOGAGENT_EXPORTS )
@@ -48,12 +48,13 @@ if(USE_CASSANDRA)
 
   HPCC_ADD_LIBRARY( cassandralogagent SHARED ${SRCS} )
 
-  install ( TARGETS cassandralogagent RUNTIME DESTINATION bin LIBRARY DESTINATION lib )
+  install ( TARGETS cassandralogagent RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
   add_dependencies (cassandralogagent espscm)
   target_link_libraries ( cassandralogagent
     cassandraembed
     eclrtl
     esphttp
     jlib
+    logginglib
   )
 endif(USE_CASSANDRA)

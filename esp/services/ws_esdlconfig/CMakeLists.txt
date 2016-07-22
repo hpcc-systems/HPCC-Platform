@@ -53,7 +53,8 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
          ${HPCC_SOURCE_DIR}/esp/services/esdl_svc_engine
          ${HPCC_SOURCE_DIR}/esp/esdllib
-         ${HPCC_SOURCE_DIR}/esp/logging
+         ${HPCC_SOURCE_DIR}/esp/logging/logginglib
+         ${HPCC_SOURCE_DIR}/esp/logging/loggingmanager
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

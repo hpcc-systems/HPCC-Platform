@@ -29,9 +29,6 @@ include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 set ( SRCS
     ${ESPSCM_GENERATED_DIR}/ws_loggingservice_esp.cpp
-    ../LogSerializer.cpp
-    ../LogFailSafe.cpp
-    ../logthread.cpp
     loggingmanager.cpp
 )
 
@@ -50,7 +47,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/LoggingService
     ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
 #    ./../../protocols/sidex
-    ${HPCC_SOURCE_DIR}/esp/logging
+    ${HPCC_SOURCE_DIR}/esp/logging/logginglib
     ./..
 )
 
@@ -64,11 +61,12 @@ HPCC_ADD_LIBRARY( loggingmanager SHARED ${SRCS} )
 
 add_dependencies( loggingmanager espscm )
 
-install ( TARGETS loggingmanager DESTINATION ${LIB_DIR} )
+install ( TARGETS loggingmanager RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 
 target_link_libraries ( loggingmanager
     ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
     jlib
     xmllib
+    logginglib
     esphttp
 )

@@ -44,7 +44,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/esp/clients/espcommonclient
     ${HPCC_SOURCE_DIR}/esp/esdl
     ${HPCC_SOURCE_DIR}/esp/esplib
-    ${HPCC_SOURCE_DIR}/esp/logging
+    ${HPCC_SOURCE_DIR}/esp/logging/logginglib
     ./../..
     ./..
 )
@@ -59,11 +59,12 @@ HPCC_ADD_LIBRARY( espserverloggingagent SHARED ${SRCS} )
 
 add_dependencies( espserverloggingagent espscm )
 
-install ( TARGETS espserverloggingagent DESTINATION ${LIB_DIR} )
+install ( TARGETS espserverloggingagent RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 
 target_link_libraries ( espserverloggingagent
     ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
     jlib
     xmllib
+    logginglib
     esphttp
 )
