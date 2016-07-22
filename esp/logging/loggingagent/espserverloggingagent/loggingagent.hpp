@@ -19,6 +19,7 @@
 #define __ESPSERVERLOGGINGAGENT__HPP__
 
 #include "loggingcommon.hpp"
+#include "datafieldmap.hpp"
 
 #ifdef WIN32
     #ifdef ESPSERVERLOGGINGAGENT_EXPORTS
@@ -42,6 +43,28 @@ enum ESPLogContentGroup
 
 static const char * const espLogContentGroupNames[] = { "ESPContext", "UserContext", "UserRequest", "UserResponse", "BackEndResponse", "", NULL };
 
+class CTransID : public CInterface, implements IInterface
+{
+    StringAttr seed;
+    unsigned __int64 seq;
+
+public:
+    IMPLEMENT_IINTERFACE;
+    CTransID(const char* _seed) : seed(_seed)
+    {
+        seq = 0;
+    };
+    virtual ~CTransID() {};
+
+    virtual void getTransID(StringArray& prefix, StringBuffer& id)
+    {//KW -> Rodrigo: not sure the following format is good enough.
+        id.clear();
+        ForEachItemIn(i, prefix)
+            id.append(prefix.item(i));
+        id.append(seed.get()).append('-').append(++seq);
+    };
+};
+
 class CESPLogContentGroupFilters : public CInterface, implements IInterface
 {
     ESPLogContentGroup group;
@@ -64,13 +87,15 @@ public:
 
 class CESPServerLoggingAgent : public CInterface, implements IEspLogAgent
 {
-    StringBuffer serviceName, loggingAgentName;
+    StringBuffer serviceName, loggingAgentName, defaultGroup;
     StringBuffer serverUrl, serverUserID, serverPassword;
     unsigned maxServerWaitingSeconds; //time out value for HTTP connection to logging server
     unsigned maxGTSRetries;
     StringArray     logContentFilters;
     IArrayOf<CESPLogContentGroupFilters> groupFilters;
     bool logBackEndResp;
+    MapStringToMyClass<CTransID> transIDMap;
+    MapStringToMyClass<CLogSource> logSources;
 
     void readAllLogFilters(IPropertyTree* cfg);
     bool readLogFilters(IPropertyTree* cfg, unsigned groupID);
@@ -79,6 +104,7 @@ class CESPServerLoggingAgent : public CInterface, implements IEspLogAgent
         IPropertyTree* in, IPropertyTree* updateLogRequestTree, bool& logContentEmpty);
     void addLogContentBranch(StringArray& branchNames, IPropertyTree* contentToLogBranch, IPropertyTree* updateLogRequestTree);
     bool sendHTTPRequest(StringBuffer& req, StringBuffer& resp, StringBuffer& status);
+    int getTransactionSeed(const char* source, StringBuffer& transactionSeed, StringBuffer& statusMessage);
     bool getTransactionSeed(StringBuffer& soapreq, int& statusCode, StringBuffer& statusMessage, StringBuffer& seedID);
 
 public:
@@ -90,6 +116,7 @@ public:
     bool init(const char* name, const char* type, IPropertyTree* cfg, const char* process);
 
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
+    virtual void getTransactionID(const char* source, StringArray& prefix, StringBuffer& transactionID);
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
     virtual void filterLogContent(IEspUpdateLogRequestWrap* req);
 };

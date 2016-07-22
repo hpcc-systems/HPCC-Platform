@@ -58,6 +58,8 @@ public:
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status);
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
+    virtual bool hasTransactionID();
+    virtual bool getTransactionID(const char* source, StringArray& prefix, StringBuffer& transactionID, StringBuffer& status);
 };
 
 #endif // !defined(__LOGGINGMANAGER_HPP__)

@@ -73,6 +73,8 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
             services[i++] = LGSTUpdateLOG;
         else if (service && strieq(service, "GetTransactionSeed"))
             services[i++] = LGSTGetTransactionSeed;
+        else if (service && strieq(service, "GetTransactionID"))
+            services[i++] = LGSTGetTransactionID;
     }
     services[i] = LGSTterm;
 
