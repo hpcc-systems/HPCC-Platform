@@ -144,7 +144,7 @@ public:
             Owned<ISecUser> user = ldapsecurity->createUser(username);
             if (user) {
                 user->credentials().setPassword(password);
-                if (!ldapsecurity->authenticateUser(*user, nullptr))
+                if (!ldapsecurity->authenticateUser(*user, NULL))
                 {
                     PROGLOG("LDAP: getPermissions(%s) scope=%s user=%s fails authentication",key?key:"NULL",obj?obj:"NULL",username.str());
                     perm = SecAccess_None;//deny
