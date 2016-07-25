@@ -1212,7 +1212,7 @@ public:
             eos = true;
             return NULL;
         }
-        RtlDynamicRowBuilder rowBuilder(allocator);
+        RtlDynamicRowBuilder rowBuilder(*allocator);
         size_t size = deserializer->deserialize(rowBuilder,source);
         if (grouped && !eos) {
             byte b;
