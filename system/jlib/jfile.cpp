@@ -5657,7 +5657,7 @@ private:
         return size_read;
     }
 
-    const void * dopeek(size32_t sz, size32_t &got)
+    const void * dopeek(size32_t sz, size32_t &got) __attribute__((noinline))
     {
         loop
         {
@@ -5684,6 +5684,41 @@ private:
             bufmax = rd+left;
             bufpos = 0;
         }
+    }
+
+    void getreadnext(size32_t len, void * ptr) __attribute__((noinline))
+    {
+        bufbase += bufmax;
+        bufpos = 0;
+        bufmax = 0;
+        size32_t rd = 0;
+        if (!eoinput) {
+            //If reading >= bufsize, read any complete blocks directly into the target
+            if (len>=bufsize) {
+                size32_t tord = (len/bufsize)*bufsize;
+                rd =  doread(bufbase,tord,ptr);
+                bufbase += rd;
+                if (rd!=tord) {
+                    eoinput = true;
+                    PrintStackReport();
+                    ERRLOG("CFileSerialStream::get read past end of stream.1 (%u,%u) %s",rd,tord,eoinput?"eoinput":"");
+                    throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
+                }
+                len -= rd;
+                if (!len)
+                    return;
+                ptr = (byte *)ptr+rd;
+            }
+            const void *p = dopeek(len,rd);
+            if (len<=rd) {
+                memcpy(ptr,p,len);
+                bufpos += len;
+                return;
+            }
+        }
+        PrintStackReport();
+        ERRLOG("CFileSerialStream::get read past end of stream.2 (%u,%u) %s",len,rd,eoinput?"eoinput":"");
+        throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
     }
 
 protected:
@@ -5740,38 +5775,7 @@ public:
             bufpos += cpy;
             return;
         }
-        bufbase += bufmax;
-        bufpos = 0;
-        bufmax = 0;
-        size32_t rd = 0;
-        if (!eoinput) {
-            ptr = (byte *)ptr+cpy;
-            if (len>=bufsize) {
-                size32_t tord = (len/bufsize)*bufsize;
-                rd =  doread(bufbase,tord,ptr); // copy directly if large
-                bufbase += rd;
-                if (rd!=tord) {
-                    eoinput = true;
-                    PrintStackReport();
-                    ERRLOG("CFileSerialStream::get read past end of stream.1 (%u,%u) %s",rd,tord,eoinput?"eoinput":"");
-                    throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
-                }
-                cpy += rd;
-                len -= rd;
-                if (!len) 
-                    return;
-                ptr = (byte *)ptr+rd;
-            }
-            const void *p = dopeek(len,rd);
-            if (len<=rd) {
-                memcpy(ptr,p,len);
-                bufpos += len;
-                return;
-            }
-        }
-        PrintStackReport();
-        ERRLOG("CFileSerialStream::get read past end of stream.2 (%u,%u) %s",len,rd,eoinput?"eoinput":"");
-        throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
+        return getreadnext(len, (byte *)ptr+cpy);
     }
 
     bool eos()
