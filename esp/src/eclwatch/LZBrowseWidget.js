@@ -124,6 +124,17 @@ define([
                 context.fileListDialog.hide();
                 context.refreshGrid();
             });
+
+            this.connect(this.uploader, "onError", function (response) {
+                if (response.type === 'error') {
+                    topic.publish("hpcc/brToaster", {
+                        Severity: "Error",
+                        Source: "FileSpray.UploadFile",
+                        Exceptions: [{ Message: this.i18n.ErrorUploadingFile }]
+                    });
+                    this.uploader.reset();
+                }
+            });
         },
 
         startup: function (args) {
