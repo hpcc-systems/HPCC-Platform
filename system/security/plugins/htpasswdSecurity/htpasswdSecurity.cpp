@@ -122,6 +122,12 @@ protected:
         return "HTPASSWD Security Manager";
     }
 
+    bool authenticateUser(ISecUser & user, bool &superUser)
+    {
+        superuser = IsPasswordValid(user);//superUser if password is valid
+        return Superuser;
+    }
+
     bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext) override
     {
         return IsPasswordValid(user);
