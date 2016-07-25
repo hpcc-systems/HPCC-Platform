@@ -414,7 +414,7 @@
                port="8002"
                protocol="http"
                resourcesBasedn="ou=WsEcl,ou=EspServices,ou=ecl"
-               service="myws_ecl"
+               service="ws_ecl"
                type=""
                workunitsBasedn="ou=workunits,ou=ecl"
                wsdlServiceAddress="">
@@ -677,7 +677,7 @@
   <EspService build="_"
               buildSet="ws_ecl"
               description="WS ECL Service"
-              name="myws_ecl"
+              name="ws_ecl"
               roxieTimeout="300"
               workunitTimeout="600">
    <Properties bindingType="ws_eclSoapBinding"
