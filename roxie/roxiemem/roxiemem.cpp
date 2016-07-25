@@ -1324,8 +1324,8 @@ protected:
     std::atomic_uint r_blocks;  // the free chain as a relative pointer
     std::atomic_uint freeBase;
     const size32_t chunkSize;
+    const unsigned heapFlags;
     unsigned sharedAllocatorId;
-    unsigned heapFlags;
     unsigned nextMatchOffset = 0;
 
     inline char *data() const
@@ -1338,9 +1338,8 @@ protected:
 
 public:
     ChunkedHeaplet(CHeap * _heap, const IRowAllocatorCache *_allocatorCache, size32_t _chunkSize, size32_t _chunkCapacity, unsigned _heapFlags)
-        : Heaplet(_heap, _allocatorCache, _chunkCapacity), r_blocks(0), freeBase(0), chunkSize(_chunkSize), heapFlags(_heapFlags)
+        : Heaplet(_heap, _allocatorCache, _chunkCapacity), r_blocks(0), freeBase(0), chunkSize(_chunkSize), heapFlags(_heapFlags), sharedAllocatorId(0)
     {
-        sharedAllocatorId = 0;
     }
 
     virtual size32_t sizeInPages() { return 1; }
@@ -1438,7 +1437,9 @@ public:
         r_blocks.store(nextBlock, std::memory_order_relaxed);
     }
 
+    inline char * allocateSingle(unsigned allocated, bool incCounter) __attribute__((always_inline));
     char * allocateChunk();
+    unsigned allocateMultiChunk(unsigned max, char * * rows);   // allocates at least 1 row
     virtual void verifySpaceList();
 
 protected:
@@ -2233,6 +2234,8 @@ public:
                     flags.append("U");
                 if (cur.heapFlags & RHFvariable)
                     flags.append("V");
+                if (cur.heapFlags & RHFnofragment)
+                    flags.append("S");
 
                 //Should never be called with numPages == 0, but protect against divide by zero in case of race condition etc.
                 unsigned __int64 memReserved = cur.numPages * HEAP_ALIGNMENT_SIZE;
@@ -2313,6 +2316,10 @@ public:
         rowManager = NULL;
     }
 
+    virtual void emptyCache() override
+    {
+    }
+
 protected:
     CChunkingRowManager * rowManager;       // Lifetime of rowManager is guaranteed to be longer
     unsigned allocatorId;
@@ -2362,6 +2369,44 @@ public:
 
 protected:
     Owned<T> heap;
+};
+
+template <class T>
+class CRoxieDirectFixedBlockedRowHeap : public CRoxieDirectFixedRowHeap<T>
+{
+public:
+    CRoxieDirectFixedBlockedRowHeap(CChunkingRowManager * _rowManager, unsigned _allocatorId, RoxieHeapFlags _flags, T * _heap)
+        : CRoxieDirectFixedRowHeap<T>(_rowManager, _allocatorId, _flags, _heap)
+    {
+    }
+
+    virtual void *allocate()
+    {
+        if (curRow == numRows)
+        {
+            numRows = this->heap->allocateBlock(this->allocatorId, maxRows, rows);
+            curRow = 0;
+        }
+        return rows[curRow++];
+    }
+
+    virtual void clearRowManager()
+    {
+        emptyCache();
+        CRoxieDirectFixedRowHeap<T>::clearRowManager();
+    }
+
+    virtual void emptyCache() override
+    {
+        while (curRow < numRows)
+            ::ReleaseRoxieRow(rows[curRow++]);
+    }
+
+protected:
+    static const unsigned maxRows = 16; // Maximum number of rows to allocate at once.
+    char * rows[maxRows];
+    unsigned curRow = 0;
+    unsigned numRows = 0;
 };
 
 //================================================================================
@@ -2912,6 +2957,7 @@ public:
 
 protected:
     void * doAllocateRow(unsigned allocatorId, unsigned maxSpillCost);
+    unsigned doAllocateRowBlock(unsigned allocatorId, unsigned maxSpillCost, unsigned max, char * * rows);
 
     virtual ChunkedHeaplet * allocateHeaplet() = 0;
 
@@ -2929,6 +2975,7 @@ public:
     }
 
     void * allocate(unsigned allocatorId);
+    unsigned allocateBlock(unsigned activityId, unsigned maxRows, char * * rows);
 
     virtual bool matches(size32_t searchSize, unsigned /*searchActivity*/, unsigned searchFlags) const
     {
@@ -2953,6 +3000,7 @@ public:
     }
 
     void * allocate(unsigned allocatorId);
+    unsigned allocateBlock(unsigned activityId, unsigned maxRows, char * * rows);
 
     virtual bool matches(size32_t searchSize, unsigned searchActivity, unsigned searchFlags) const
     {
@@ -3001,7 +3049,7 @@ void ChunkedHeaplet::verifySpaceList()
 }
 
 //This function must be called inside a protecting lock on the heap it belongs to, or after precreateFreeChain() has been called.
-char * ChunkedHeaplet::allocateChunk()
+char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter)
 {
     //The spin lock for the heap this chunk belongs to must be held when this function is called
     char *ret;
@@ -3009,7 +3057,7 @@ char * ChunkedHeaplet::allocateChunk()
 
     if (heapFlags & RHFnofragment)
     {
-        unsigned numAllocs = count.load(std::memory_order_acquire)-1;
+        unsigned numAllocs = count.load(std::memory_order_acquire)+allocated-1;
         CChunkedHeap * chunkHeap = static_cast<CChunkedHeap *>(heap);
         unsigned maxAllocs = chunkHeap->maxChunksPerPage();
         unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
@@ -3099,8 +3147,36 @@ done:
         }
     }
 
-    count.fetch_add(1, std::memory_order_relaxed);
+    if (incCounter)
+        count.fetch_add(1, std::memory_order_relaxed);
+
     return ret;
+}
+
+//This function must be called inside a protecting lock on the heap it belongs to, or after precreateFreeChain() has been called.
+char * ChunkedHeaplet::allocateChunk()
+{
+    return allocateSingle(0, true);
+}
+
+unsigned ChunkedHeaplet::allocateMultiChunk(unsigned max, char * * rows)
+{
+    //The spin lock for the heap this chunk belongs to must be held when this function is called
+    unsigned allocated = 0;
+    do
+    {
+        char * ret = allocateSingle(allocated, false);
+        if (!ret)
+        {
+            if (allocated == 0)
+                return 0;
+            break;
+        }
+        rows[allocated++] = ret;
+    } while (allocated < max);
+
+    count.fetch_add(allocated, std::memory_order_relaxed);
+    return allocated;
 }
 
 bool ChunkedHeaplet::isFull() const
@@ -4289,15 +4365,19 @@ protected:
         if ((roxieHeapFlags & RHFoldfixed) || (fixedSize > FixedSizeHeaplet::maxHeapSize()))
             return new CRoxieFixedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, fixedSize);
 
-        unsigned heapFlags = roxieHeapFlags & (RHFunique|RHFpacked|RHFblocked|RHFnofragment);
+        unsigned heapFlags = roxieHeapFlags & (RHFunique|RHFpacked|RHFnofragment);
         if (heapFlags & RHFpacked)
         {
             CPackedChunkingHeap * heap = createPackedHeap(fixedSize, activityId, heapFlags, maxSpillCost);
+            if (roxieHeapFlags & RHFblocked)
+                return new CRoxieDirectFixedBlockedRowHeap<CPackedChunkingHeap>(this, activityId, (RoxieHeapFlags)roxieHeapFlags, heap);
             return new CRoxieDirectFixedRowHeap<CPackedChunkingHeap>(this, activityId, (RoxieHeapFlags)roxieHeapFlags, heap);
         }
         else
         {
             CFixedChunkedHeap * heap = createFixedHeap(fixedSize, activityId, heapFlags, maxSpillCost);
+            if (roxieHeapFlags & RHFblocked)
+                return new CRoxieDirectFixedBlockedRowHeap<CFixedChunkedHeap>(this, activityId, (RoxieHeapFlags)roxieHeapFlags, heap);
             return new CRoxieDirectFixedRowHeap<CFixedChunkedHeap>(this, activityId, (RoxieHeapFlags)roxieHeapFlags, heap);
         }
     }
@@ -4932,7 +5012,6 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
 }
 
 
-//An inline function used to common up the allocation code for fixed and non fixed sizes.
 void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
 {
     //Only hold the spinblock while walking the list - so subsequent calls to checkLimit don't deadlock.
@@ -5028,6 +5107,104 @@ gotChunk:
     return donorHeaplet->initChunk(chunk, allocatorId);
 }
 
+//MORE: Consider allocating single rows via this function as well.
+unsigned CChunkedHeap::doAllocateRowBlock(unsigned allocatorId, unsigned maxSpillCost, unsigned maxRows, char * * rows)
+{
+    //Only hold the spinblock while walking the list - so subsequent calls to checkLimit don't deadlock.
+    //NB: The allocation is split into two - finger->allocateChunk, and finger->initializeChunk().
+    //The latter is done outside the spinblock, to reduce the window for contention.
+    ChunkedHeaplet * donorHeaplet;
+    unsigned allocated = 0;
+    loop
+    {
+        {
+            NonReentrantSpinBlock b(heapletLock);
+            if (activeHeaplet)
+            {
+                //This cast is safe because we are within a member of CChunkedHeap
+                donorHeaplet = static_cast<ChunkedHeaplet *>(activeHeaplet);
+                allocated = donorHeaplet->allocateMultiChunk(maxRows, rows);
+                if (allocated)
+                {
+                    //The code at the end of this function needs to be executed outside of the spinblock.
+                    //Just occasionally gotos are the best way of expressing something
+                    goto gotChunk;
+                }
+                activeHeaplet = NULL;
+            }
+
+            //Now walk the list of blocks which may potentially have some free space:
+            loop
+            {
+                Heaplet * next = popFromSpaceList();
+                if (!next)
+                    break;
+
+                //This cast is safe because we are within a member of CChunkedHeap
+                donorHeaplet = static_cast<ChunkedHeaplet *>(next);
+                allocated = donorHeaplet->allocateMultiChunk(maxRows, rows);
+                if (allocated)
+                {
+                    activeHeaplet = donorHeaplet;
+                    //The code at the end of this function needs to be executed outside of the spinblock.
+                    //Just occasionally gotos are the best way of expressing something
+                    goto gotChunk;
+                }
+            }
+        }
+
+        //NB: At this point activeHeaplet = NULL;
+        try
+        {
+            rowManager->checkLimit(1, maxSpillCost);
+        }
+        catch (IException * e)
+        {
+            //No pages left, but freeing the buffers may have freed some records from the current heap
+            if (!mayHaveEmptySpace())
+                throw;
+            logctx.CTXLOG("Checking for space in existing heap following callback");
+            e->Release();
+            continue;
+        }
+
+        donorHeaplet = allocateHeaplet();
+        if (donorHeaplet)
+            break;
+        rowManager->restoreLimit(1);
+
+        //Could check if activeHeaplet was now set (and therefore allocated by another thread), and if so restart
+        //the function, but grabbing the spin lock would be inefficient.
+        if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
+            throwHeapExhausted(allocatorId, 1);
+    }
+
+    if (memTraceLevel >= 5 || (memTraceLevel >= 3 && chunkSize > 32000))
+        logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new FixedSizeHeaplet size %u - addr=%p pageLimit=%u peakPages=%u rowMgr=%p",
+                chunkSize, chunkSize, donorHeaplet, rowManager->getPageLimit(), rowManager->peakPages, this);
+
+    {
+        NonReentrantSpinBlock b(heapletLock);
+        insertHeaplet(donorHeaplet);
+
+        //While this thread was allocating a block, another thread also did the same.  Ensure that other block is
+        //placed on the list of those with potentially free space.
+        if (activeHeaplet)
+            addToSpaceList(activeHeaplet);
+        activeHeaplet = donorHeaplet;
+
+        //If no protecting spinblock there would be a race e.g., if another thread allocates all the rows!
+        allocated = donorHeaplet->allocateMultiChunk(maxRows, rows);
+        dbgassertex(allocated);
+    }
+
+gotChunk:
+    //since a chunk has been allocated from donorHeaplet it cannot be released at this point.
+    for (unsigned i=0; i < allocated; i++)
+        rows[i] = (char *)donorHeaplet->initChunk(rows[i], allocatorId);
+    return allocated;
+}
+
 const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state)
 {
     //Use protect heap instead of a lock, so that multiple compacts on the same heap (very likely) avoid
@@ -5092,6 +5269,13 @@ void * CFixedChunkedHeap::allocate(unsigned activityId)
 }
 
 
+unsigned CFixedChunkedHeap::allocateBlock(unsigned activityId, unsigned maxRows, char * * rows)
+{
+    rowManager->beforeAllocate(chunkSize-FixedSizeHeaplet::chunkHeaderSize, activityId);
+    return doAllocateRowBlock(activityId, defaultSpillCost, maxRows, rows);
+}
+
+
 ChunkedHeaplet * CPackedChunkingHeap::allocateHeaplet()
 {
     void * memory = suballoc_aligned(1, true);
@@ -5104,6 +5288,13 @@ void * CPackedChunkingHeap::allocate(unsigned allocatorId)
 {
     rowManager->beforeAllocate(chunkSize-PackedFixedSizeHeaplet::chunkHeaderSize, allocatorId);
     return doAllocateRow(allocatorId, defaultSpillCost);
+}
+
+
+unsigned CPackedChunkingHeap::allocateBlock(unsigned activityId, unsigned maxRows, char * * rows)
+{
+    rowManager->beforeAllocate(chunkSize-PackedFixedSizeHeaplet::chunkHeaderSize, activityId);
+    return doAllocateRowBlock(activityId, defaultSpillCost, maxRows, rows);
 }
 
 
@@ -5522,6 +5713,8 @@ extern void setDataAlignmentSize(unsigned size)
 //============================================================================================================
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
+
+#include <algorithm>
 
 namespace roxiemem {
 
@@ -6514,7 +6707,7 @@ protected:
         unsigned cost;
         unsigned id;
     };
-    void runCasTest(const char * title, Semaphore & sem, CasAllocatorThread * threads[])
+    unsigned runCasTest(const char * title, Semaphore & sem, CasAllocatorThread * threads[])
     {
         for (unsigned i2 = 0; i2 < numCasThreads; i2++)
         {
@@ -6529,7 +6722,9 @@ protected:
 
         for (unsigned i4 = 0; i4 < numCasThreads; i4++)
             threads[i4]->Release();
-        DBGLOG("Time taken for %s cas = %d", title, endTime-startTime);
+        unsigned timeTaken = endTime-startTime;
+        DBGLOG("Time taken for %s cas = %d", title, timeTaken);
+        return timeTaken;
     }
     class HeapletCasAllocatorThread : public CasAllocatorThread
     {
@@ -6593,6 +6788,10 @@ protected:
         FixedCasAllocatorThread(IFixedRowHeap * _rowHeap, Semaphore & _sem, IRowManager * _rm, unsigned _id) : CasAllocatorThread(_sem, _rm, _id), rowHeap(_rowHeap)
         {
         }
+        ~FixedCasAllocatorThread()
+        {
+            rowHeap->emptyCache();
+        }
 
         virtual void * allocate() { return rowHeap->allocate(); }
         virtual void * finalize(void * ptr) { return rowHeap->finalizeRow(ptr); }
@@ -6613,22 +6812,23 @@ protected:
         runCasTest("old fixed allocator", sem, threads);
         ASSERT(rowCache.counter == 2 * numCasThreads * numCasIter * numCasAlloc);
     }
-    void testSharedFixedCas()
+    void testSharedFixedCas(const char * variant, unsigned flags)
     {
         CountingRowAllocatorCache rowCache;
         Owned<IFixedRowHeap> rowHeap;
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
         //For this test the row heap is assign to a variable that will be destroyed after the manager, to ensure that works.
-        rowHeap.setown(rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor));
+        rowHeap.setown(rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor|flags));
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
             threads[i1] = new FixedCasAllocatorThread(rowHeap, sem, rowManager, i1);
 
-        runCasTest("shared fixed allocator", sem, threads);
+        VStringBuffer title("shared %s allocator", variant);
+        runCasTest(title, sem, threads);
         ASSERT(rowCache.counter == 2 * numCasThreads * numCasIter * numCasAlloc);
     }
-    void testFixedCas()
+    unsigned doTestFixedCas(const char * variant, unsigned flags)
     {
         CountingRowAllocatorCache rowCache;
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
@@ -6636,27 +6836,23 @@ protected:
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
         {
-            Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFunique|RHFhasdestructor);
+            Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFunique|RHFhasdestructor|flags);
             threads[i1] = new FixedCasAllocatorThread(rowHeap, sem, rowManager, i1);
         }
 
-        runCasTest("separate fixed allocator", sem, threads);
+        VStringBuffer title("separate %s allocator", variant);
+        unsigned timeTaken = runCasTest(title.str(), sem, threads);
         ASSERT(rowCache.counter == 2 * numCasThreads * numCasIter * numCasAlloc);
+        return timeTaken;
     }
-    void testPackedCas()
+    void testFixedCas(const char * variant, unsigned flags)
     {
-        CountingRowAllocatorCache rowCache;
-        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
-        Semaphore sem;
-        CasAllocatorThread * threads[numCasThreads];
-        for (unsigned i1 = 0; i1 < numCasThreads; i1++)
-        {
-            Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFunique|RHFpacked|RHFhasdestructor);
-            threads[i1] = new FixedCasAllocatorThread(rowHeap, sem, rowManager, i1);
-        }
-
-        runCasTest("separate packed allocator", sem, threads);
-        ASSERT(rowCache.counter == 2 * numCasThreads * numCasIter * numCasAlloc);
+        const unsigned maxIters = 5;
+        unsigned timings[maxIters];
+        for (unsigned i=0; i < maxIters; i++)
+            timings[i] = doTestFixedCas(variant, flags);
+        std::sort(timings, timings+maxIters);
+        DBGLOG("Median %s = %u", variant, timings[maxIters/2]);
     }
     class GeneralCasAllocatorThread : public CasAllocatorThread
     {
@@ -6815,9 +7011,14 @@ protected:
         testVariableCas();
         testHeapletCas();
         testOldFixedCas();
-        testSharedFixedCas();
-        testFixedCas();
-        testPackedCas();
+        testSharedFixedCas("fixed", 0);
+        testSharedFixedCas("fixed scan", RHFnofragment);
+        //NB: blocked allocators cannot be shared
+        testFixedCas("fixed", 0);
+        testFixedCas("packed", RHFpacked);
+        testFixedCas("packed scan", RHFpacked|RHFnofragment);
+        testFixedCas("packed blocked", RHFpacked|RHFblocked);
+        testFixedCas("packed blocked scan", RHFpacked|RHFnofragment|RHFblocked);
         testGeneralCas();
     }
 

@@ -385,6 +385,7 @@ interface IFixedRowHeap : extends IInterface
 {
     virtual void *allocate() = 0;
     virtual void *finalizeRow(void *final) = 0;
+    virtual void emptyCache() = 0;
 };
 
 interface IVariableRowHeap : extends IInterface
