@@ -120,12 +120,15 @@ define([
             var deferred = new Deferred();
             var context = this;
             this.TpServiceQuery({}).then(function (response) {
-                var retVal = "";
+                var retVal = ESPRequest.getURL({
+                    port: window.location.protocol === "https:" ? 18002 : 8002,
+                    pathname: ""
+                });
                 if (lang.exists("TpServiceQueryResponse.ServiceList.TpEspServers.TpEspServer", response)) {
                     arrayUtil.forEach(response.TpServiceQueryResponse.ServiceList.TpEspServers.TpEspServer, function (item, idx) {
                         if (lang.exists("TpBindings.TpBinding", item)) {
                             arrayUtil.forEach(item.TpBindings.TpBinding, function (binding, idx) {
-                                if (binding.ServiceType === type && binding.Protocol + ":" === location.protocol) {
+                                if (binding.Service === type && binding.Protocol + ":" === location.protocol) {
                                     retVal = ESPRequest.getURL({
                                         port: binding.Port,
                                         pathname: ""
