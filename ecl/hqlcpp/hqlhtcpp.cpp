@@ -1844,6 +1844,16 @@ void ActivityInstance::addAttribute(const char * name, IHqlExpression * expr)
     addGraphAttribute(graphNode, name, temp);
 }
 
+void ActivityInstance::addSignedAttribute(IHqlExpression * signedAttr)
+{
+    if (signedAttr)
+    {
+        StringBuffer buf;
+        getStringValue(buf, signedAttr->queryChild(0));
+        addAttribute("signedBy", buf.str());
+    }
+}
+
 void ActivityInstance::addLocationAttribute(IHqlExpression * location)
 {
     if (!translator.queryOptions().reportLocations || translator.queryOptions().obfuscateOutput)
@@ -10345,6 +10355,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
 
+    instance->addSignedAttribute(expr->queryAttribute(_signed_Atom));
+
     OwnedHqlExpr dependency = createAttribute(fileAtom, getNormalizedFilename(filename));
     Owned<ABoundActivity> bound = instance->getBoundActivity();
     OwnedHqlExpr boundUnknown = createUnknown(no_attr, NULL, NULL, LINK(bound));
@@ -10638,6 +10650,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         instance->addConstructorParameter(tempCount);
         addFilenameConstructorParameter(*instance, "getFileName", filename);
     }
+
+    instance->addSignedAttribute(expr->queryAttribute(_signed_Atom));
 
     instance->addAttributeBool("_isSpill", expr->hasAttribute(_spill_Atom));
     if (targetRoxie())
