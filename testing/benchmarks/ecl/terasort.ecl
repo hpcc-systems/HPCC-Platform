@@ -21,6 +21,7 @@
 
 #option('crcReadEnabled', false);
 #option('crcWriteEnabled', false);
+#option('timeActivities', false);
 
 rec := record
      string10  key;
