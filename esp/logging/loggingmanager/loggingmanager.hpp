@@ -59,7 +59,7 @@ public:
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status);
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
     virtual bool providesTransactionID();
-    virtual bool getTransactionID(const char* source, StringAttrMapping* transIDFields, StringBuffer& transactionID, StringBuffer& status);
+    virtual bool getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status);
 };
 
 #endif // !defined(__LOGGINGMANAGER_HPP__)

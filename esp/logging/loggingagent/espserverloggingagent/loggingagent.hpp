@@ -129,7 +129,7 @@ public:
     bool init(const char* name, const char* type, IPropertyTree* cfg, const char* process);
 
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
-    virtual void getTransactionID(const char* source, StringAttrMapping* transIDFields, StringBuffer& transactionID);
+    virtual void getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID);
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
     virtual void filterLogContent(IEspUpdateLogRequestWrap* req);
 };

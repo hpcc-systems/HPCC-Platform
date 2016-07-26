@@ -260,7 +260,7 @@ bool CLoggingManager::providesTransactionID()
     return false;
 }
 
-bool CLoggingManager::getTransactionID(const char* source, StringAttrMapping* transIDFields, StringBuffer& transactionID, StringBuffer& status)
+bool CLoggingManager::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status)
 {
     try
     {
@@ -271,7 +271,7 @@ bool CLoggingManager::getTransactionID(const char* source, StringAttrMapping* tr
                 continue;
 
             IEspLogAgent* loggingAgent = loggingThread->getLogAgent();
-            loggingAgent->getTransactionID(source, transIDFields, transactionID);
+            loggingAgent->getTransactionID(transFields, transactionID);
             return true;
         }
     }

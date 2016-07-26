@@ -309,7 +309,7 @@ void CDBLogAgentBase::addMissingFields(CIArrayOf<CLogField>& logFields, BoolHash
     }
 }
 
-void CDBLogAgentBase::getTransactionID(const char* source, StringAttrMapping* transIDFields, StringBuffer& transactionID)
+void CDBLogAgentBase::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID)
 {
     //Not implemented
 }

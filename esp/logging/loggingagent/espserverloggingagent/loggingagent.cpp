@@ -230,12 +230,13 @@ bool CESPServerLoggingAgent::getTransactionSeed(StringBuffer& soapreq, int& stat
     return true;
 }
 
-void CESPServerLoggingAgent::getTransactionID(const char* source, StringAttrMapping* transIDFields, StringBuffer& transactionID)
+void CESPServerLoggingAgent::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID)
 {
     CTransIDBuilder* transIDBuilder = NULL;
-    if (source && *source)
+    StringAttr* source = transFields->getValue(TRANSACTIONMETHOD);
+    if (source)
     {
-        CLogSource* logSource = logSources.getValue(source);
+        CLogSource* logSource = logSources.getValue(source->get());
         if (logSource)
             transIDBuilder = transIDMap.getValue(logSource->getGroupName());
         //KW -> Rodrigo: should I throw an exception if the source cannot be found in transIDMap?
@@ -245,7 +246,7 @@ void CESPServerLoggingAgent::getTransactionID(const char* source, StringAttrMapp
     if (!transIDBuilder)
         throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "Failed to get TransactionSeed");
 
-    transIDBuilder->getTransID(transIDFields, transactionID);
+    transIDBuilder->getTransID(transFields, transactionID);
     return;
 }
 
