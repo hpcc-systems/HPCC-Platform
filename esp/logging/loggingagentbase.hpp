@@ -26,6 +26,9 @@
 #include "ws_loggingservice_esp.ipp"
 
 #define UPDATELOGTHREADWAITINGTIME 3000
+#define TRANSACTIONDATETIME "TransactionDateTime"
+#define TRANSACTIONMETHOD "TransactionMethod"
+#define TRANSACTIONESPID "TransactionESPIP"
 
 interface IEspUpdateLogRequestWrap : extends IInterface
 {
@@ -113,7 +116,7 @@ interface IEspLogAgent : extends IInterface
 {
     virtual bool init(const char * name, const char * type, IPropertyTree * cfg, const char * process) = 0;
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp) = 0;
-    virtual void getTransactionID(const char* source, StringArray& prefix, StringBuffer& transactionID) = 0;
+    virtual void getTransactionID(const char* source, StringAttrMapping* transIDFields, StringBuffer& transactionID) = 0;
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) = 0;
     virtual void filterLogContent(IEspUpdateLogRequestWrap* req) = 0;
 };
@@ -148,7 +151,7 @@ public:
     virtual ~CDBLogAgentBase() {};
 
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
-    virtual void getTransactionID(const char* source, StringArray& prefix, StringBuffer& transactionID);
+    virtual void getTransactionID(const char* source, StringAttrMapping* transIDFields, StringBuffer& transactionID);
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
     virtual void filterLogContent(IEspUpdateLogRequestWrap* req);
 };

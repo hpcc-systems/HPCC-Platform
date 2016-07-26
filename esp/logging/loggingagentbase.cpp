@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -309,7 +309,7 @@ void CDBLogAgentBase::addMissingFields(CIArrayOf<CLogField>& logFields, BoolHash
     }
 }
 
-void CDBLogAgentBase::getTransactionID(const char* source, StringArray& prefix, StringBuffer& transactionID)
+void CDBLogAgentBase::getTransactionID(const char* source, StringAttrMapping* transIDFields, StringBuffer& transactionID)
 {
     //Not implemented
 }

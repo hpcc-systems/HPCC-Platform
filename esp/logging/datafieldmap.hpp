@@ -88,7 +88,7 @@ public:
     const char* getDBName() { return dbName.get(); };
 };
 
-void ensureInputString(const char* input, bool lowerCase, StringBuffer& inputStr, int code, const char* msg);
+void ensureInputString(const char* input, bool lowerCase, StringBuffer& outputStr, int code, const char* msg);
 void readLogGroupCfg(IPropertyTree* cfg, StringAttr& defaultLogGroup, MapStringToMyClass<CLogGroup>& logGroups);
 void readLogSourceCfg(IPropertyTree* cfg, unsigned& logSourceCount, StringAttr& logSourcePath, MapStringToMyClass<CLogSource>& logGroups);
 

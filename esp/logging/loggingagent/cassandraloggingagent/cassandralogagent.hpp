@@ -52,7 +52,7 @@ class CCassandraLogAgent : public CDBLogAgentBase
     void createTable(const char *dbName, const char *tableName, StringArray& columnNames, StringArray& columnTypes, const char* keys);
     void executeSimpleStatement(const char *st);
     void executeSimpleStatement(StringBuffer& st);
-    unsigned executeSimpleSelectStatement(const char* st, unsigned& resultValue);
+    bool executeSimpleSelectStatement(const char* st, unsigned& resultValue);
 
     virtual void queryTransactionSeed(const char* appName, StringBuffer& seed);
     virtual void setUpdateLogStatement(const char* dbName, const char* tableName,

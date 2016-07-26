@@ -127,9 +127,9 @@ void CCassandraLogAgent::ensureTransSeedTable()
     cassSession->connect();
     createTable(defaultDB.str(), transactionTable.str(), transSeedTableColumnNames, transSeedTableColumnTypes, transSeedTableKeys.str());
 
-    unsigned transactionCount = 0;
-    VStringBuffer st("SELECT COUNT(*) FROM %s;", transactionTable.str());
-    if (executeSimpleSelectStatement(st.str(), transactionCount) == 0)
+    unsigned id = 0;
+    VStringBuffer st("SELECT id FROM %s LIMIT 1;", transactionTable.str());
+    if (!executeSimpleSelectStatement(st.str(), id))
     {
         st.setf("INSERT INTO %s (id, application) values ( 10000, '%s');",
             transactionTable.str(), loggingTransactionApp.get());
@@ -206,14 +206,17 @@ void CCassandraLogAgent::executeUpdateLogStatement(StringBuffer& st)
     cassSession->disconnect();
 }
 
-unsigned CCassandraLogAgent::executeSimpleSelectStatement(const char* st, unsigned& resultValue)
+bool CCassandraLogAgent::executeSimpleSelectStatement(const char* st, unsigned& resultValue)
 {
     CassandraStatement statement(cassSession->prepareStatement(st, getEspLogLevel()>LogNormal));
     CassandraFuture future(cass_session_execute(cassSession->querySession(), statement));
     future.wait("execute");
     CassandraResult result(cass_future_get_result(future));
+    if (cass_result_row_count(result) == 0)
+        return false;
+
     resultValue = getUnsignedResult(NULL, getSingleResult(result));
-    return resultValue;
+    return true;
 }
 
 extern "C"
