@@ -18,13 +18,13 @@
 #include "datafieldmap.hpp"
 const char* const defaultLogSourcePath = "Source";
 
-void ensureInputString(const char* input, bool lowerCase, StringBuffer& inputStr, int code, const char* msg)
+void ensureInputString(const char* input, bool lowerCase, StringBuffer& outputStr, int code, const char* msg)
 {
-    inputStr.set(input).trim();
-    if (inputStr.isEmpty())
+    outputStr.set(input).trim();
+    if (outputStr.isEmpty())
         throw MakeStringException(code, "%s", msg);
     if (lowerCase)
-        inputStr.toLowerCase();
+        outputStr.toLowerCase();
 }
 
 void readLogGroupCfg(IPropertyTree* cfg, StringAttr& defaultLogGroup, MapStringToMyClass<CLogGroup>& logGroups)
@@ -45,10 +45,10 @@ void readLogGroupCfg(IPropertyTree* cfg, StringAttr& defaultLogGroup, MapStringT
 void readLogSourceCfg(IPropertyTree* cfg, unsigned& logSourceCount, StringAttr& logSourcePath, MapStringToMyClass<CLogSource>& logSources)
 {
     logSourceCount = 0;
+    StringBuffer name, groupName, dbName;
     Owned<IPropertyTreeIterator> iter = cfg->getElements("LogSourceMap/LogSource");
     ForEach(*iter)
     {
-        StringBuffer name, groupName, dbName;
         ensureInputString(iter->query().queryProp("@name"), false, name, -1, "LogSource @name required");
         ensureInputString(iter->query().queryProp("@maptologgroup"), true, groupName, -1, "LogSource @maptologgroup required");
         ensureInputString(iter->query().queryProp("@maptodb"), true, dbName, -1, "LogSource @maptodb required");

@@ -43,24 +43,37 @@ enum ESPLogContentGroup
 
 static const char * const espLogContentGroupNames[] = { "ESPContext", "UserContext", "UserRequest", "UserResponse", "BackEndResponse", "", NULL };
 
-class CTransID : public CInterface, implements IInterface
+class CTransIDBuilder : public CInterface, implements IInterface
 {
     StringAttr seed;
     unsigned __int64 seq;
+    void add(StringAttrMapping* transIDFields, const char* key, StringBuffer& id)
+    {
+        StringAttr* value = transIDFields->getValue(key);
+        if (value)
+            id.append(value->get()).append('-');
+        else
+            id.append('??-');
+    }
 
 public:
     IMPLEMENT_IINTERFACE;
-    CTransID(const char* _seed) : seed(_seed)
+    CTransIDBuilder(const char* _seed) : seed(_seed)
     {
         seq = 0;
     };
-    virtual ~CTransID() {};
+    virtual ~CTransIDBuilder() {};
 
-    virtual void getTransID(StringArray& prefix, StringBuffer& id)
-    {//KW -> Rodrigo: not sure the following format is good enough.
+    virtual void getTransID(StringAttrMapping* transIDFields, StringBuffer& id)
+    {
         id.clear();
-        ForEachItemIn(i, prefix)
-            id.append(prefix.item(i));
+
+        if (transIDFields)
+        {
+            add(transIDFields, sTransactionDateTime, id);
+            add(transIDFields, sTransactionMethod, id);
+            add(transIDFields, sTransactionESPIP, id);
+        }
         id.append(seed.get()).append('-').append(++seq);
     };
 };
@@ -94,7 +107,7 @@ class CESPServerLoggingAgent : public CInterface, implements IEspLogAgent
     StringArray     logContentFilters;
     CIArrayOf<CESPLogContentGroupFilters> groupFilters;
     bool logBackEndResp;
-    MapStringToMyClass<CTransID> transIDMap;
+    MapStringToMyClass<CTransIDBuilder> transIDMap;
     MapStringToMyClass<CLogSource> logSources;
 
     void readAllLogFilters(IPropertyTree* cfg);
@@ -118,7 +131,7 @@ public:
     bool init(const char* name, const char* type, IPropertyTree* cfg, const char* process);
 
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
-    virtual void getTransactionID(const char* source, StringArray& prefix, StringBuffer& transactionID);
+    virtual void getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID);
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
     virtual void filterLogContent(IEspUpdateLogRequestWrap* req);
 };

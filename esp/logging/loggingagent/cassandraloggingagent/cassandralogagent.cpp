@@ -48,7 +48,6 @@ bool CCassandraLogAgent::init(const char* name, const char* type, IPropertyTree*
     if(!cassandra)
         throw MakeStringException(-1, "Unable to find Cassandra settings for log agent %s:%s", name, type);
 
-    StringBuffer dbServer, dbUserID, dbPassword;
     readDBCfg(cassandra, dbServer, dbUserID, dbPassword);
 
     //Read information about data mapping for every log groups
@@ -65,11 +64,11 @@ bool CCassandraLogAgent::init(const char* name, const char* type, IPropertyTree*
     maxTriesGTS = cfg->getPropInt("MaxTriesGTS", defaultMaxTriesGTS);
 
     //Setup Cassandra
-    initKeySpace(dbServer, dbUserID, dbPassword);
+    initKeySpace();
     return true;
 }
 
-void CCassandraLogAgent::initKeySpace(StringBuffer& dbServer, StringBuffer& dbUserID, StringBuffer& dbPassword)
+void CCassandraLogAgent::initKeySpace()
 {
     //Initialize Cassandra Cluster Session
     cassSession.setown(new CassandraClusterSession(cass_cluster_new()));
@@ -115,13 +114,13 @@ void CCassandraLogAgent::ensureTransSeedTable()
     transSeedTableKeys.set("application"); //primary keys
 
     //The defaultDB has transactions table.
-    setKeySpace(defaultDB.str());
+    setSessionOptions(defaultDB.str());
     cassSession->connect();
     createTable(defaultDB.str(), transactionTable.str(), transSeedTableColumnNames, transSeedTableColumnTypes, transSeedTableKeys.str());
 
-    unsigned transactionCount = 0;
-    VStringBuffer st("SELECT COUNT(*) FROM %s;", transactionTable.str());
-    if (executeSimpleSelectStatement(st.str(), transactionCount) == 0)
+    unsigned id = 0;
+    VStringBuffer st("SELECT id FROM %s LIMIT 1;", transactionTable.str());
+    if (!executeSimpleSelectStatement(st.str(), id))
     {
         st.setf("INSERT INTO %s (id, application) values ( 10000, '%s');",
             transactionTable.str(), loggingTransactionApp.get());
@@ -143,7 +142,7 @@ void CCassandraLogAgent::queryTransactionSeed(const char* appName, StringBuffer&
 
     unsigned seedInt = 0;
     VStringBuffer st("SELECT id FROM %s WHERE application = '%s'", transactionTable.str(), appName);
-    setKeySpace(defaultDB.str()); //Switch to defaultDB since it may not be the current keyspace.
+    setSessionOptions(defaultDB.str()); //Switch to defaultDB since it may not be the current keyspace.
     cassSession->connect();
     executeSimpleSelectStatement(st.str(), seedInt);
     seed.setf("%d", seedInt);
@@ -155,10 +154,17 @@ void CCassandraLogAgent::queryTransactionSeed(const char* appName, StringBuffer&
     cassSession->disconnect();
 }
 
-void CCassandraLogAgent::setKeySpace(const char *keyspace)
+void CCassandraLogAgent::setSessionOptions(const char *keyspace)
 {
     StringArray opts;
-    setCassandraLogAgentOption(opts, "keyspace", keyspace);
+    setCassandraLogAgentOption(opts, "contact_points", dbServer.str());
+    if (!dbUserID.isEmpty() && !dbPassword.isEmpty())
+    {
+        setCassandraLogAgentOption(opts, "user", dbUserID.str());
+        setCassandraLogAgentOption(opts, "password", dbPassword.str());
+    }
+    if (keyspace && *keyspace)
+        setCassandraLogAgentOption(opts, "keyspace", keyspace);
     cassSession->setOptions(opts);
 }
 

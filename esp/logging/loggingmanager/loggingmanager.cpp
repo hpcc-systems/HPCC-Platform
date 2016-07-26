@@ -264,8 +264,11 @@ bool CLoggingManager::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEs
     return bRet;
 }
 
-bool CLoggingManager::hasTransactionID()
+bool CLoggingManager::providesTransactionID()
 {
+    if (!initialized)
+        throw MakeStringException(-1,"LoggingManager not initialized");
+
     for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
     {
         IUpdateLogThread* loggingThread = loggingAgentThreads[x];
@@ -276,8 +279,11 @@ bool CLoggingManager::hasTransactionID()
     return false;
 }
 
-bool CLoggingManager::getTransactionID(const char* source, StringArray& prefix, StringBuffer& transactionID, StringBuffer& status)
+bool CLoggingManager::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status)
 {
+    if (!initialized)
+        throw MakeStringException(-1,"LoggingManager not initialized");
+
     try
     {
         for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
@@ -287,7 +293,7 @@ bool CLoggingManager::getTransactionID(const char* source, StringArray& prefix, 
                 continue;
 
             IEspLogAgent* loggingAgent = loggingThread->getLogAgent();
-            loggingAgent->getTransactionID(source, prefix, transactionID);
+            loggingAgent->getTransactionID(transFields, transactionID);
             return true;
         }
     }
