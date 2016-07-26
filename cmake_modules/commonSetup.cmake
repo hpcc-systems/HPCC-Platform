@@ -112,6 +112,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(KAFKA "Create a package with ONLY the kafkaembed plugin" OFF)
   #"cmake -DEXAMPLEPLUGIN=ON <path-to/HPCC-Platform/>" will configure the plugin makefiles to be built with "make".
   option(EXAMPLEPLUGIN "Create a package with ONLY the exampleplugin plugin" OFF)
+  option(COUCHBASEEMBED "Create a package with ONLY the couchbaseembed plugin" OFF)
 
   if (APPLE OR WIN32)
       option(USE_TBB "Enable Threading Building Block support" OFF)
@@ -124,9 +125,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
-
     if(REMBED OR V8EMBED OR MEMCACHED OR PYEMBED OR REDIS OR JAVAEMBED OR MYSQLEMBED
-        OR SQLITE3EMBED OR KAFKA OR EXAMPLEPLUGIN)
+        OR SQLITE3EMBED OR KAFKA OR EXAMPLEPLUGIN OR COUCHBASEEMBED)
         set(PLUGIN ON)
         set(CLIENTTOOLS OFF)
         set(PLATFORM OFF)
@@ -202,6 +202,13 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
             message(FATAL_ERROR "Cannot enable exampleplugin, already declared ${pluginname}")
         else()
            set(pluginname "exampleplugin")
+        endif()
+    endif()
+    if(COUCHBASEEMBED)
+        if(DEFINED pluginname)
+            message(FATAL_ERROR "Cannot enable couchbaseembed, already declared ${pluginname}")
+        else()
+            set(pluginname "couchbaseembed")
         endif()
     endif()
 

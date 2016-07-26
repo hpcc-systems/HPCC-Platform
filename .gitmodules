@@ -37,3 +37,6 @@
 [submodule "system/lz4_sm/lz4"]
     path = system/lz4_sm/lz4
     url = https://github.com/hpcc-systems/lz4.git
+[submodule "plugins/couchbase/libcouchbase-cxx"]
+	path = plugins/couchbase/libcouchbase-cxx
+	url = https://github.com/couchbaselabs/libcouchbase-cxx.git

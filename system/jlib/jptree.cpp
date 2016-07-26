@@ -1057,7 +1057,7 @@ void PTree::setName(const char *_name)
         name = NULL;
     else
     {
-        if (!validateXMLTag(_name)) 
+        if (!validateXMLTag(_name))
             throw MakeIPTException(PTreeExcpt_InvalidTagName, ": %s", _name);
         name = kT->queryCreate(_name);
     }
