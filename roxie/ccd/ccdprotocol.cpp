@@ -1250,7 +1250,7 @@ public:
         {
             responseHead.append("<").append(queryName);
             responseHead.append("Response").append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append('\"');
-            responseHead.append(" sequence=\"").append(seqNo).append("\">");
+            responseHead.append(" sequence=\"").append(seqNo).append("\"><Results><Result>");
             unsigned len = responseHead.length();
             client->write(responseHead.detach(), len, true);
         }
@@ -1262,7 +1262,7 @@ public:
 
         if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
         {
-            responseTail.append("</").append(queryName);
+            responseTail.append("</Result></Results></").append(queryName);
             if (isHTTP)
                 responseTail.append("Response");
             responseTail.append('>');
