@@ -450,15 +450,17 @@ void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
                 StringBuffer xpath;
                 xpath.appendf("EspService[@name='%s']", service);
                 IPropertyTree* pServiceNode = root->queryPropTree(xpath.str());
-                const char* serviceType = pServiceNode ? pServiceNode->queryProp("Properties/@type") : NULL;
-                if (serviceType && *serviceType)
-                    pTpBinding->setServiceType(serviceType);
-
                 if (pServiceNode)
                 {
+                    const char* serviceType = pServiceNode->queryProp("Properties/@type");
+                    if (serviceType && *serviceType)
+                        pTpBinding->setServiceType(serviceType);
                     const char* bindingType = pServiceNode->queryProp("Properties/@bindingType");
                     if (bindingType && *bindingType)
                         pTpBinding->setBindingType(bindingType);
+                    const char* buildSet = pServiceNode->queryProp("@buildSet");
+                    if (buildSet && *buildSet)
+                        pTpBinding->setServiceBuildSet(buildSet);
                 }
                 tpBindings.append(*pTpBinding.getLink());
             }
