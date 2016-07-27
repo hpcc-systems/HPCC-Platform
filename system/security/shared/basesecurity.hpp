@@ -106,6 +106,12 @@ public:
         return false;
     }
 
+    bool authorizeViewScope(ISecUser & user, ISecResourceList * resources)
+    {
+        UNIMPLEMENTED;
+        return false;
+    }
+
     bool addResources(ISecUser & user, ISecResourceList * resources)
     {
         UNIMPLEMENTED;

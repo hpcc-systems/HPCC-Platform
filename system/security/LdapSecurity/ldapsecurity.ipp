@@ -359,6 +359,7 @@ public:
     int authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, IEspSecureContext* secureContext = NULL);
     virtual int authorizeFileScope(ISecUser & user, const char * filescope);
     virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources);
+    virtual bool authorizeViewScope(ISecUser & user, ISecResourceList * resources);
     virtual int authorizeWorkunitScope(ISecUser & user, const char * wuscope);
     virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources);
     virtual bool addResources(ISecUser& sec_user, ISecResourceList * resources);
@@ -449,6 +450,20 @@ public:
     virtual bool authenticateUser(ISecUser & user, bool &superUser);
     virtual secManagerType querySecMgrType() { return SMT_LDAP; }
     inline virtual const char* querySecMgrTypeName() { return "LdapSecurity"; }
+
+    //Data View related interfaces
+    virtual void createView(const char * viewName, const char * viewDescription);
+    virtual void deleteView(const char * viewName);
+    virtual void queryAllViews(StringArray & viewNames, StringArray & viewDescriptions);
+
+    virtual void addViewColumns(const char * viewName, StringArray & files, StringArray & columns);
+    virtual void removeViewColumns(const char * viewName, StringArray & files, StringArray & columns);
+    virtual void queryViewColumns(const char * viewName, StringArray & files, StringArray & columns);
+
+    virtual void addViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups);
+    virtual void removeViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups);
+    virtual void queryViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups);
+    virtual bool userInView(const char * user, const char* viewName);
 };
 
 #endif

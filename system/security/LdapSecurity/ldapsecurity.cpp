@@ -503,6 +503,7 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
 {
     for(int i = 0; i < RT_SCOPE_MAX; i++)
         m_cache_off[i] = false;
+    m_cache_off[RT_VIEW_SCOPE] = true;
     
     m_usercache_off = false;
 
@@ -662,7 +663,7 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
     }
     else
     {
-        rc = m_ldap_client->authorize(rtype, sec_user, rlist);
+        rc = m_ldap_client->authorize(rtype, sec_user, rlist, reslist->getName());
     }
     return rc;
 }
@@ -858,10 +859,32 @@ int CLdapSecManager::authorizeFileScope(ISecUser & user, const char * filescope)
     else
         return -1;
 }
-    
+
 bool CLdapSecManager::authorizeFileScope(ISecUser & user, ISecResourceList * resources)
 {
     return authorizeEx(RT_FILE_SCOPE, user, resources);
+}
+
+//METHOD: authorizeViewScope()
+//For all lfn/column resources in the given ISecResourceList, retrieve
+//perms and set them in their respective ISecResource entry.
+//Each ISecResource must have 2 parameters set, "file" and "column"
+
+/*following to be done by caller
+    //Create resource list for each Logical File and columns combos
+    Owned<ISecResourceList> resList;//Each list must contain a single view name. Do not combine
+    resList.setown(createResourceList("ViewName"));//identifies the view name
+    for(int idx = 0; idx < arrColumns.length(); idx++)
+    {
+        ISecResource* res = resList->addResource("file : col");//name must be unique within the list (map)
+        res->addParameter("file", lfn );
+        res->addParameter("column", arrColumns.item(idx) );
+        res->setResourceType(RT_VIEW_SCOPE);
+    }
+*/
+bool CLdapSecManager::authorizeViewScope(ISecUser & user, ISecResourceList * resources)
+{
+    return authorizeEx(RT_VIEW_SCOPE, user, resources);
 }
 
 int CLdapSecManager::authorizeWorkunitScope(ISecUser & user, const char * wuscope)
@@ -1313,6 +1336,57 @@ bool CLdapSecManager::authenticateUser(ISecUser & user, bool &superUser)
         return false;
     superUser = isSuperUser(&user);
     return true;
+}
+
+//Data View related interfaces
+void CLdapSecManager::createView(const char* viewName, const char * viewDescription)
+{
+    m_ldap_client->createView(viewName, viewDescription);
+}
+
+void CLdapSecManager::deleteView(const char* viewName)
+{
+    m_ldap_client->deleteView(viewName);
+}
+
+void CLdapSecManager::queryAllViews(StringArray & viewNames, StringArray & viewDescriptions)
+{
+    m_ldap_client->queryAllViews(viewNames, viewDescriptions);
+}
+
+void CLdapSecManager::addViewColumns(const char* viewName, StringArray & files, StringArray & columns)
+{
+    m_ldap_client->addViewColumns(viewName, files, columns);
+}
+
+void CLdapSecManager::removeViewColumns(const char* viewName, StringArray & files, StringArray & columns)
+{
+    m_ldap_client->removeViewColumns(viewName, files, columns);
+}
+
+void CLdapSecManager::queryViewColumns(const char* viewName, StringArray & files, StringArray & columns)
+{
+    m_ldap_client->queryViewColumns(viewName, files, columns);
+}
+
+void CLdapSecManager::addViewMembers(const char* viewName, StringArray & viewUsers, StringArray & viewGroups)
+{
+    m_ldap_client->addViewMembers(viewName, viewUsers, viewGroups);
+}
+
+void CLdapSecManager::removeViewMembers(const char* viewName, StringArray & viewUsers, StringArray & viewGroups)
+{
+    m_ldap_client->removeViewMembers(viewName, viewUsers, viewGroups);
+}
+
+void CLdapSecManager::queryViewMembers(const char* viewName, StringArray & viewUsers, StringArray & viewGroups)
+{
+    m_ldap_client->queryViewMembers(viewName, viewUsers, viewGroups);
+}
+
+bool CLdapSecManager::userInView(const char * user, const char* viewName)
+{
+    return m_ldap_client->userInView(user, viewName);
 }
 
 extern "C"
