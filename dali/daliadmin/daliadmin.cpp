@@ -80,6 +80,7 @@ void usage(const char *exe)
   printf("Logical File meta information commands:\n");
   printf("  dfsfile <logicalname>          -- get meta information for file\n");
   printf("  dfspart <logicalname> <part>   -- get meta information for part num\n");
+  printf("  dfscheck                       -- verify dfs file information is valid\n");
   printf("  dfscsv <logicalnamemask>       -- get csv info. for files matching mask\n");
   printf("  dfsgroup <logicalgroupname> [filename] -- get IPs for logical group (aka cluster). Written to optional filename if provided\n");
   printf("  clusternodes <clustername> [filename] -- get IPs for cluster group. Written to optional filename if provided\n");
@@ -657,6 +658,43 @@ static void writeGroup(IGroup *group, const char *name, const char *outputFilena
             OUTLOG("%s",eps.str());
     }
 }
+
+unsigned dfsCheck(StringBuffer & path, IPropertyTree * tree)
+{
+    const char * name = tree->queryProp("@name");
+    //MORE: What other consistency checks can be added here?
+    if (tree->hasProp("Attr[2]"))
+    {
+        printf("%s%s - duplicate Attr tag\n", path.str(), name ? name : "");
+        return 1;
+    }
+
+    unsigned issues = 0;
+    unsigned prevLength = path.length();
+    if (name)
+        path.append(name).append("::");
+    Owned<IPropertyTreeIterator> elems = tree->getElements("*");
+    ForEach(*elems)
+    {
+        issues += dfsCheck(path, &elems->query());
+    }
+    path.setLength(prevLength);
+    return issues;
+}
+
+void dfsCheck()
+{
+    StringBuffer xpath;
+    Owned<IRemoteConnection> conn = connectXPathOrFile("/Files",true,xpath);
+    if (!conn) {
+        ERRLOG("Could not connect to %s","/Files");
+        return;
+    }
+
+    StringBuffer path;
+    dfsCheck(path, conn->queryRoot());
+}
+
 
 static void dfsGroup(const char *name, const char *outputFilename)
 {
@@ -2880,6 +2918,10 @@ int main(int argc, char* argv[])
                     else if (stricmp(cmd,"dfspart")==0) {
                         CHECKPARAMS(2,2);
                         dfspart(params.item(1),userDesc,atoi(params.item(2)));
+                    }
+                    else if (stricmp(cmd,"dfscheck")==0) {
+                        CHECKPARAMS(0,0);
+                        dfsCheck();
                     }
                     else if (stricmp(cmd,"dfscsv")==0) {
                         CHECKPARAMS(1,1);
