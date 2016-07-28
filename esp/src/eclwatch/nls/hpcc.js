@@ -149,6 +149,7 @@ define({root:
     Errorparsingserverresult: "Error parsing server result",
     Errors: "Error(s)",
     ErrorsStatus: "Errors/Status",
+    ErrorUploadingFile: "Error uploading file(s). Try checking permissions.",
     ErrorWarnings: "Error/Warning(s)",
     Escape: "Escape",
     ESPBuildVersion: "ESP Build Version",
