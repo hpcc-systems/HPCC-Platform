@@ -220,18 +220,18 @@ define([
                 lang.mixin(retVal, {
                     StartDate: this.getISOString("FromDate", "FromTime")
                 });
-            } else if (retVal.StartDate) {
+            } else if (retVal.StartDate && !retVal.FromTime) {
                 lang.mixin(retVal, {
-                    StartDate: registry.byId(this.id + "FromDate").attr("value").toISOString()
+                    StartDate: registry.byId(this.id + "FromDate").attr("value").toISOString().replace(/T.*Z/, '') + "T00:00:00Z"
                 });
             }
             if (retVal.EndDate && retVal.ToTime) {
                 lang.mixin(retVal, {
                     EndDate: this.getISOString("ToDate", "ToTime")
                 });
-            } else if (retVal.EndDate) {
+            } else if (retVal.EndDate && !retVal.ToTime) {
                 lang.mixin(retVal, {
-                    EndDate: registry.byId(this.id + "ToDate").attr("value").toISOString()
+                    EndDate: registry.byId(this.id + "ToDate").attr("value").toISOString().replace(/T.*Z/, '') + "T23:59:59Z"
                 });
             }
             if (retVal.StartDate && retVal.EndDate) {
