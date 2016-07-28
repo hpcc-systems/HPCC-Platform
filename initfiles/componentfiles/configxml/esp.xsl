@@ -91,6 +91,7 @@
                         <xsl:with-param name="ldapAuthMethod" select="@ldapAuthMethod"/>
                         <xsl:with-param name="ldapConnections" select="@ldapConnections"/>
                         <xsl:with-param name="passwordExpirationWarningDays" select="@passwordExpirationWarningDays"/>
+                        <xsl:with-param name="checkViewPermissions" select="@checkViewPermissions"/>
                         <xsl:with-param name="localDomain" select="/Environment/Hardware/Computer[@name=$computerName]/@domain"/>
                     </xsl:call-template>
                 </xsl:if>
@@ -321,6 +322,7 @@
         <xsl:param name="ldapConnections"/>
         <xsl:param name="localDomain"/>
         <xsl:param name="passwordExpirationWarningDays"/>
+        <xsl:param name="checkViewPermissions"/>
         <xsl:variable name="ldapServerNode" select="/Environment/Software/LDAPServerProcess[@name=$ldapServer]"/>
         <xsl:if test="not($ldapServerNode)">
            <xsl:message terminate="yes">LDAP server is either not specified or is invalid!</xsl:message>
@@ -330,6 +332,7 @@
                 <xsl:attribute name="name">ldapserver</xsl:attribute>
                 <xsl:attribute name="ldapProtocol"><xsl:value-of select="$method"/></xsl:attribute>
                 <xsl:attribute name="localDomain"><xsl:value-of select="$localDomain"/></xsl:attribute>
+                <xsl:attribute name="checkViewPermissions"><xsl:value-of select="$checkViewPermissions"/></xsl:attribute>
                 <xsl:attribute name="authMethod">
                    <xsl:choose>
                       <xsl:when test="string($ldapAuthMethod) != ''">
