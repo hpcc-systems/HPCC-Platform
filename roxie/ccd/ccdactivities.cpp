@@ -595,6 +595,10 @@ public:
     {
         return queryContext->queryCodeContext()->getRowAllocator(meta, activityId);
     }
+    virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const
+    {
+        return queryContext->queryCodeContext()->getRowAllocatorEx(meta, activityId, heapFlags);
+    }
     virtual const char *cloneVString(const char *str) const
     {
         return queryContext->queryCodeContext()->cloneVString(str);

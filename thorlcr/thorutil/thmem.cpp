@@ -2272,17 +2272,17 @@ ILargeMemLimitNotify *createMultiThorResourceMutex(const char *grpname,CSDSServe
 }
 
 
-IThorRowInterfaces *createThorRowInterfaces(roxiemem::IRowManager *rowManager, IOutputMetaData *meta, unsigned actId, ICodeContext *context)
+IThorRowInterfaces *createThorRowInterfaces(roxiemem::IRowManager *rowManager, IOutputMetaData *meta, unsigned actId, unsigned heapFlags, ICodeContext *context)
 {
     class CThorRowInterfaces : public CSimpleInterfaceOf<IThorRowInterfaces>
     {
         roxiemem::IRowManager *rowManager;
         Owned<IRowInterfaces> baseRowIf;
     public:
-        CThorRowInterfaces(roxiemem::IRowManager *_rowManager, IOutputMetaData *meta, unsigned actId, ICodeContext *context)
+        CThorRowInterfaces(roxiemem::IRowManager *_rowManager, IOutputMetaData *meta, unsigned actId, unsigned heapFlags, ICodeContext *context)
             : rowManager(_rowManager)
         {
-            baseRowIf.setown(createRowInterfaces(meta, actId, context));
+            baseRowIf.setown(createRowInterfaces(meta, actId, heapFlags, context));
         }
         virtual IEngineRowAllocator * queryRowAllocator() { return baseRowIf->queryRowAllocator(); }
         virtual IOutputRowSerializer * queryRowSerializer() { return baseRowIf->queryRowSerializer(); }
@@ -2292,7 +2292,7 @@ IThorRowInterfaces *createThorRowInterfaces(roxiemem::IRowManager *rowManager, I
         virtual ICodeContext *queryCodeContext() { return baseRowIf->queryCodeContext(); }
         virtual roxiemem::IRowManager *queryRowManager() const { return rowManager; }
     };
-    return new CThorRowInterfaces(rowManager, meta, actId, context);
+    return new CThorRowInterfaces(rowManager, meta, actId, heapFlags, context);
 };
 
 

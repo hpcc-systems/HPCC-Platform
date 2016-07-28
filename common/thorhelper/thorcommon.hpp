@@ -79,7 +79,7 @@ interface IRowInterfaces: extends IInterface
 
 extern THORHELPER_API void useMemoryMappedRead(bool on);
 
-extern THORHELPER_API IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICodeContext *context);
+extern THORHELPER_API IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsigned heapFlags, ICodeContext *context);
 
 
 enum RowReaderWriterFlags
@@ -524,6 +524,10 @@ public:
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
         return ctx->getRowAllocator(meta, activityId);
+    }
+    virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const
+    {
+        return ctx->getRowAllocatorEx(meta, activityId, heapFlags);
     }
     virtual const char *cloneVString(const char *str) const
     {

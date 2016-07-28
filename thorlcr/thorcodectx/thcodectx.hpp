@@ -106,6 +106,7 @@ public:
     virtual char *getGroupName(); // thorlib.group()
     virtual char *queryIndexMetaData(char const * lfn, char const * xpath) { UNIMPLEMENTED; }
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const;
+    virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const;
     virtual const char *cloneVString(const char *str) const;
     virtual const char *cloneVString(size32_t len, const char *str) const;
     virtual IEclGraphResults *resolveLocalQuery(__int64 gid);

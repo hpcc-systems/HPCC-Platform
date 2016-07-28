@@ -376,7 +376,7 @@ void CHThorDiskWriteActivity::ready()
     uncompressedBytesWritten = 0;
     numRecords = 0;
     sizeLimit = agent.queryWorkUnit()->getDebugValueInt64("hthorDiskWriteSizeLimit", defaultHThorDiskWriteSizeLimit);
-    rowIf.setown(createRowInterfaces(input->queryOutputMeta(), activityId, agent.queryCodeContext()));
+    rowIf.setown(createRowInterfaces(input->queryOutputMeta(), activityId, 0, agent.queryCodeContext()));
     open();
 }
 
@@ -3943,7 +3943,7 @@ bool CHThorGroupSortActivity::sortAndSpillRows()
             }
         };
         Owned<IRowLinkCounter> linker = new CHThorRowLinkCounter();
-        Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(input->queryOutputMeta(), activityId, agent.queryCodeContext());
+        Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(input->queryOutputMeta(), activityId, 0, agent.queryCodeContext());
         diskMerger.setown(createDiskMerger(rowInterfaces, linker, fbase.str()));
     }
     sorter->performSort();

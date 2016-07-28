@@ -1674,6 +1674,11 @@ public:
         return allocatorMetaCache->ensure(meta, activityId, roxiemem::RHFnone);
     }
 
+    virtual IEngineRowAllocator *getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned flags) const
+    {
+        return allocatorMetaCache->ensure(meta, activityId, (roxiemem::RoxieHeapFlags)flags);
+    }
+
     virtual IEngineRowAllocator *getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
     {
         return allocatorMetaCache->ensure(meta, activityId, flags);

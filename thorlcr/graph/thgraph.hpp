@@ -507,6 +507,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual unsigned logString(const char * text) const { return ctx->logString(text); }
         virtual const IContextLogger &queryContextLogger() const { return ctx->queryContextLogger(); }
         virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const { return ctx->getRowAllocator(meta, activityId); }
+        virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const { return ctx->getRowAllocatorEx(meta, activityId, heapFlags); }
         virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, isGrouped, xmlTransformer, csvTransformer); }
         virtual void getResultDictionary(size32_t & tcount, byte * * & tgt,IEngineRowAllocator * _rowAllocator,  const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { ctx->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, xmlTransformer, csvTransformer, hasher); }
 
@@ -1028,6 +1029,8 @@ public:
     inline bool queryInitialized() const { return initialized; }
     inline void setInitialized(bool tf) { initialized = tf; }
     inline bool queryTimeActivities() const { return timeActivities; }
+    inline roxiemem::RoxieHeapFlags queryHeapFlags() const { return (roxiemem::RoxieHeapFlags)container.getOptInt("heapflags", 0); }
+
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
@@ -1059,6 +1062,8 @@ public:
     void ActPrintLog(const char *format, ...) __attribute__((format(printf, 2, 3)));
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
     void ActPrintLog(IException *e);
+
+    IThorRowInterfaces * createRowInterfaces(IOutputMetaData * meta);
 
 // IExceptionHandler
     bool fireException(IException *e);

@@ -1435,7 +1435,7 @@ public:
 
         if (isGlobal())
         {
-            sharedRightRowInterfaces.setown(createThorRowInterfaces(rightRowManager, rightOutputMeta, queryId(), &queryJobChannel().querySharedMemCodeContext()));
+            sharedRightRowInterfaces.setown(createThorRowInterfaces(rightRowManager, rightOutputMeta, queryId(), queryHeapFlags(), &queryJobChannel().querySharedMemCodeContext()));
             rhs.setup(sharedRightRowInterfaces);
 
             // It is not until here, that it is guaranteed all channel slave activities have been initialized.

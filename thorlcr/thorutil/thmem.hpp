@@ -85,7 +85,7 @@ interface IThorRowInterfaces : extends IRowInterfaces
     virtual roxiemem::IRowManager *queryRowManager() const = 0;
 };
 
-extern graph_decl IThorRowInterfaces *createThorRowInterfaces(roxiemem::IRowManager *rowManager, IOutputMetaData *meta, unsigned actId, ICodeContext *context);
+extern graph_decl IThorRowInterfaces *createThorRowInterfaces(roxiemem::IRowManager *rowManager, IOutputMetaData *meta, unsigned actId, unsigned heapFlags, ICodeContext *context);
 
 
 class OwnedConstThorRow 

@@ -340,7 +340,7 @@ public:
             memset(encryptedKey, 0, encryptedKeyLen);
             free(encryptedKey);
         }
-        fetchDiskRowIf.setown(createThorRowInterfaces(queryRowManager(), fetchContext->queryDiskRecordSize(), queryId(), queryCodeContext()));
+        fetchDiskRowIf.setown(createRowInterfaces(fetchContext->queryDiskRecordSize()));
     }
 
     virtual void initializeFileParts()
@@ -422,7 +422,7 @@ public:
                 keyIn = new CKeyFieldExtract(this, *inputStream, *fetchBaseHelper, *fetchContext);
                 keyInMeta.set(QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData));
             }
-            keyInIf.setown(createThorRowInterfaces(queryRowManager(), keyInMeta,queryId(),queryCodeContext()));
+            keyInIf.setown(createRowInterfaces(keyInMeta));
         }
         else
         {
@@ -451,11 +451,11 @@ public:
                 }
             };
             Owned<IOutputMetaData> fmeta = createFixedSizeMetaData(sizeof(offset_t)); // should be provided by Gavin?
-            keyInIf.setown(createThorRowInterfaces(queryRowManager(), fmeta,queryId(),queryCodeContext()));
+            keyInIf.setown(createRowInterfaces(fmeta));
             keyIn = new CKeyFPosExtract(keyInIf, this, *inputStream, *fetchBaseHelper, *fetchContext);
         }
 
-        Owned<IThorRowInterfaces> rowIf = createThorRowInterfaces(queryRowManager(), queryRowMetaData(), queryId(), queryCodeContext());
+        Owned<IThorRowInterfaces> rowIf = createRowInterfaces(queryRowMetaData());
         fetchStream = createFetchStream(*this, keyInIf, rowIf, abortSoon, parts, offsetCount, offsetMapSz, offsetMapBytes.toByteArray(), this, mptag, eexp);
         fetchStreamOut = fetchStream->queryOutput();
         fetchStream->start(keyIn);

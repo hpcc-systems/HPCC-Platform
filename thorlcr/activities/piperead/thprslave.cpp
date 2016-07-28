@@ -194,7 +194,7 @@ public:
         needTransform = false;
 
         if (needTransform)
-            inrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(), queryId(), queryCodeContext()));
+            inrowif.setown(createRowInterfaces(helper->queryDiskRecordSize()));
         setRequireInitData(false);
         appendOutputLinked(this);
     }
