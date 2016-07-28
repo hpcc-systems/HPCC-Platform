@@ -288,7 +288,7 @@ bool loadDefinitions(const char * espServiceName, IEsdlDefinition * esdl, IPrope
 
 bool EsdlServiceImpl::loadLogggingManager()
 {
-    if (!loggingManager)
+    if (!m_oLoggingManager)
     {
         StringBuffer realName;
         realName.append(SharedObjectPrefix).append(LOGGINGMANAGERLIB).append(SharedObjectExtension);
@@ -310,7 +310,7 @@ bool EsdlServiceImpl::loadLogggingManager()
             return false;
         }
 
-        loggingManager.setown((ILoggingManager*) xproc());
+        m_oLoggingManager.setown((ILoggingManager*) xproc());
     }
 
     return true;
@@ -322,6 +322,7 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
 {
     m_espServiceName.set(service);
     m_espProcName.set(process);
+    m_bGenerateLocalTrxId = true;
 
     StringBuffer xpath;
     xpath.appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
@@ -333,13 +334,15 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
         if (m_espServiceType.length() <= 0)
             throw MakeStringException(-1, "Could not determine ESDL service configuration type: esp process '%s' service name '%s'", process, service);
 
-        //Rodrigo: this will depend on how Kevin/Gleb structure the configuration
         IPropertyTree* loggingConfig = srvcfg->queryPropTree("LoggingManager");
         if (loggingConfig)
         {
-            ESPLOG(LogNormal, "ESP Service %s attempting to load configured logging manager.", service);
+            ESPLOG(LogMin, "ESP Service %s attempting to load configured logging manager.", service);
             if (loadLogggingManager())
-                loggingManager->init(loggingConfig, service);
+            {
+                m_oLoggingManager->init(loggingConfig, service);
+                m_bGenerateLocalTrxId = !m_oLoggingManager->providesTransactionID();
+            }
             else
                 throw MakeStringException(-1, "ESDL Service %s could not load logging manager", service);
         }
@@ -522,6 +525,38 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
     const char *mthName = mthdef.queryName();
     context.addTraceSummaryValue("method", mthName);
 
+    StringBuffer trxid;
+    if (!m_bGenerateLocalTrxId)
+    {
+        if (m_oLoggingManager)
+        {
+            StringBuffer wsaddress;
+            short int port;
+            context.getServAddress(wsaddress, port);
+            VStringBuffer uniqueId("%s:%d-%u", wsaddress.str(), port, (unsigned) (memsize_t) GetCurrentThreadId());
+
+            StringAttrMapping trxidbasics;
+            StringBuffer creationTime;
+            creationTime.setf("%u", context.queryCreationTime());
+            trxidbasics.setValue("TransactionDateTime", creationTime.str());
+            trxidbasics.setValue("TransactionMethod", mthName);
+            trxidbasics.setValue("TransactionESPIP", uniqueId.str()); // this should be unique ID
+
+            StringBuffer trxidstatus;
+            if (!m_oLoggingManager->getTransactionID(&trxidbasics,trxid, trxidstatus))
+                ESPLOG(LogMin,"DESDL: Logging Agent generated Transaction ID failed: %s", trxidstatus.str());
+        }
+        else
+            ESPLOG(LogNormal,"DESDL: Transaction ID could not be fetched from logging manager!");
+       }
+    else
+        generateTransactionId(context, trxid);
+
+    if (trxid.length())
+        context.setTransactionID(trxid.str());
+    else
+        ESPLOG(LogMin,"DESDL: Transaction ID could not be generated!");
+
     StringBuffer origResp;
     EsdlMethodImplType implType = EsdlMethodImplUnknown;
 
@@ -619,10 +654,10 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawresp, const char * finalresp)
 {
     bool success = true;
-    if (loggingManager)
+    if (m_oLoggingManager)
     {
         StringBuffer logresp;
-        success = loggingManager->updateLog(LOGGINGDBSINGLEINSERT, espcontext, reqcontext, request, rawresp, finalresp, logresp);
+        success = m_oLoggingManager->updateLog(LOGGINGDBSINGLEINSERT, espcontext, reqcontext, request, rawresp, finalresp, logresp);
         ESPLOG(LogMin,"ESDLService: Attempted to log ESP transaction: %s", logresp.str());
     }
 
@@ -2469,6 +2504,7 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
 
     StringBuffer roxiemsg, serviceQName, methodQName;
     IEspContext * context = request->queryContext();
+    context->setTransactionID("ROXIETEST-NOTRXID");
     IEsdlDefService *defsrv = m_esdl->queryService(queryServiceType());
     IEsdlDefMethod *defmth;
     if(defsrv)
