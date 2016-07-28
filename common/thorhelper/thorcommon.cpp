@@ -1124,6 +1124,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICode
 
 class CRowStreamReader : public CSimpleInterface, implements IExtRowStream
 {
+protected:
     Linked<IFileIO> fileio;
     Linked<IMemoryMappedFile> mmfile;
     Linked<IOutputRowDeserializer> deserializer;
@@ -1133,8 +1134,6 @@ class CRowStreamReader : public CSimpleInterface, implements IExtRowStream
     Owned<ISourceRowPrefetcher> prefetcher;
     CThorContiguousRowBuffer prefetchBuffer; // used if prefetcher set
     bool grouped;
-    unsigned __int64 maxrows;
-    unsigned __int64 rownum;
     bool eoi;
     bool eos;
     bool eog;
@@ -1156,19 +1155,17 @@ class CRowStreamReader : public CSimpleInterface, implements IExtRowStream
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, bool _grouped)
+    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, bool _grouped)
         : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(NULL) 
     {
 #ifdef TRACE_CREATE
         PROGLOG("CRowStreamReader %d = %p",++rdnum,this);
 #endif
-        maxrows = _maxrows;
         grouped = _grouped;
         eoi = false;
-        eos = maxrows==0;
+        eos = false;
         eog = false;
         bufofs = 0;
-        rownum = 0;
         if (fileio)
             strm.setown(createFileSerialStream(fileio,_ofs,_len,(size32_t)-1, _tallycrc?&crccb:NULL));
         else
@@ -1189,15 +1186,13 @@ public:
 
     void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows)
     {
-        maxrows = _maxrows;
+        assertex(_maxrows == 0);
         eoi = false;
-        eos = (maxrows==0)||(_len==0);
+        eos = (_len==0);
         eog = false;
         bufofs = 0;
-        rownum = 0;
         strm->reset(_ofs,_len);
     }
-
 
 
     const void *nextRow()
@@ -1214,13 +1209,11 @@ public:
         }
         RtlDynamicRowBuilder rowBuilder(allocator);
         size_t size = deserializer->deserialize(rowBuilder,source);
-        if (grouped && !eos) {
+        if (grouped) {
             byte b;
             source.read(sizeof(b),&b);
             eog = (b==1);
         }
-        if (++rownum==maxrows)
-            eos = true;
         return rowBuilder.finalizeRowClear(size);
     }
 
@@ -1293,6 +1286,39 @@ public:
 
 };
 
+class CLimitedRowStreamReader : public CRowStreamReader
+{
+    unsigned __int64 maxrows;
+    unsigned __int64 rownum;
+
+public:
+    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, bool _grouped)
+        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _tallycrc, _grouped)
+    {
+        maxrows = _maxrows;
+        rownum = 0;
+        eos = maxrows==0;
+    }
+
+    void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows)
+    {
+        CRowStreamReader::reinit(_ofs, _len, 0);
+        if (_maxrows==0)
+            eos = true;
+        maxrows = _maxrows;
+        rownum = 0;
+    }
+
+    const void *nextRow()
+    {
+        const void * ret = CRowStreamReader::nextRow();
+        if (++rownum==maxrows)
+            eos = true;
+        return ret;
+    }
+
+};
+
 #ifdef TRACE_CREATE
 unsigned CRowStreamReader::rdnum;
 #endif
@@ -1308,7 +1334,10 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         Owned<IMemoryMappedFile> mmfile = file->openMemoryMapped();
         if (!mmfile)
             return NULL;
-        return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+        if (maxrows == (unsigned __int64)-1)
+            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+        else
+            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
     }
     else
     {
@@ -1323,7 +1352,10 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
             fileio.setown(file->open(IFOread));
         if (!fileio)
             return NULL;
-        return new CRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+        if (maxrows == (unsigned __int64)-1)
+            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+        else
+            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
     }
 }
 
