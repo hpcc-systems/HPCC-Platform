@@ -465,7 +465,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 if (stricmp(argv[name], "-q")==0)
                 {
                     traceLevel = 0;
-                    roxiemem::memTraceLevel = 0;
+                    roxiemem::setMemTraceLevel(0);
                     removeLog();
                 }
                 else
@@ -578,7 +578,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (traceLevel > MAXTRACELEVEL)
             traceLevel = MAXTRACELEVEL;
         udpTraceLevel = topology->getPropInt("@udpTraceLevel", runOnce ? 0 : 1);
-        roxiemem::memTraceLevel = topology->getPropInt("@memTraceLevel", runOnce ? 0 : 1);
+        roxiemem::setMemTraceLevel(topology->getPropInt("@memTraceLevel", runOnce ? 0 : 1));
         soapTraceLevel = topology->getPropInt("@soapTraceLevel", runOnce ? 0 : 1);
         miscDebugTraceLevel = topology->getPropInt("@miscDebugTraceLevel", 0);
 
@@ -671,7 +671,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         headRegionSize = topology->getPropInt("@headRegionSize", 50);
         ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);
-        roxiemem::memTraceSizeLimit = (memsize_t) topology->getPropInt64("@memTraceSizeLimit", 0);
+        roxiemem::setMemTraceSizeLimit((memsize_t) topology->getPropInt64("@memTraceSizeLimit", 0));
         callbackRetries = topology->getPropInt("@callbackRetries", 3);
         callbackTimeout = topology->getPropInt("@callbackTimeout", 5000);
         lowTimeout = topology->getPropInt("@lowTimeout", 10000);
