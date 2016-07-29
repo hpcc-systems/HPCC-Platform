@@ -582,6 +582,10 @@ static const StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(SpillElapsedCycles) },
     { CYCLESTAT(SortElapsedCycles) },
     { NUMSTAT(Strands) },
+    { CYCLESTAT(TotalExecuteCycles) },
+    { NUMSTAT(Executions) },
+    { TIMESTAT(TotalNested) },
+    { CYCLESTAT(LocalExecuteCycles) },
 };
 
 
