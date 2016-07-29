@@ -75,12 +75,7 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id === this.id + "_Resources") {
-                    currSel.set("content", dojo.create("iframe", {
-                        src: dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsSMC") + "/BrowseResources"),
-                        style: "border: 0; width: 100%; height: 100%"
-                    }));
-                } else if (currSel.id === this.id + "_TargetClusters") {
+                if (currSel.id === this.id + "_TargetClusters") {
                     currSel.set("content", dojo.create("iframe", {
                         src: dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsTopology") + "/TpTargetClusterQuery?Type=ROOT"),
                         style: "border: 0; width: 100%; height: 100%"
