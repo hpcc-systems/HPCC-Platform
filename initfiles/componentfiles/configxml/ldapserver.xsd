@@ -213,6 +213,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="viewsBasedn" type="xs:string" use="required"  default="ou=views,ou=ecl">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>The ldap "base distinguished name" that ecl server should use when looking up views in the ldap (ActiveDirectory) server.</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="usersBasedn" type="xs:string" use="required"  default="ou=users,ou=ecl">
                 <xs:annotation>
                     <xs:appinfo>
