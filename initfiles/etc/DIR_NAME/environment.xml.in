@@ -285,6 +285,7 @@
                    ldapConnections="10"
                    ldapServer=""
                    method="none"
+                   checkViewPermissions="false"
                    passwordExpirationWarningDays="10"/>
    <EspBinding defaultForPort="true"
                defaultServiceVersion=""
