@@ -150,7 +150,7 @@
                 <xs:annotation>
                     <xs:appinfo>
                         <required>true</required>
-                        <tooltip>The port of the ldap (ActiveDirectory) server.</tooltip>
+                        <tooltip>The port of the ldap (Active Directory) server.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
@@ -158,7 +158,7 @@
                 <xs:annotation>
                     <xs:appinfo>
                         <required>true</required>
-                        <tooltip>The port of the ldap (ActiveDirectory) server.</tooltip>
+                        <tooltip>The port of the ldap (Active Directory) server.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
@@ -209,28 +209,28 @@
             <xs:attribute name="groupsBasedn" type="xs:string" use="required"  default="ou=groups,ou=ecl">
                 <xs:annotation>
                     <xs:appinfo>
-                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up groups in the ldap (ActiveDirectory) server.</tooltip>
+                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up groups in the ldap (Active Directory) server.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="viewsBasedn" type="xs:string" use="required"  default="ou=views,ou=ecl">
               <xs:annotation>
                 <xs:appinfo>
-                  <tooltip>The ldap "base distinguished name" that ecl server should use when looking up views in the ldap (ActiveDirectory) server.</tooltip>
+                  <tooltip>The ldap "base distinguished name" that ecl server should use when looking up views in the ldap (Active Directory) server.</tooltip>
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
             <xs:attribute name="usersBasedn" type="xs:string" use="required"  default="ou=users,ou=ecl">
                 <xs:annotation>
                     <xs:appinfo>
-                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up users in the ldap (ActiveDirectory) server.</tooltip>
+                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up users in the ldap (Active Directory) server.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="modulesBasedn" type="xs:string" use="required" default="ou=modules,ou=ecl">
                 <xs:annotation>
                     <xs:appinfo>
-                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up modules in the ldap (ActiveDirectory) server.</tooltip>
+                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up modules in the ldap (Active Directory) server.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
@@ -238,7 +238,7 @@
                 <xs:annotation>
                     <xs:appinfo>
                         <required>true</required>
-                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up workunit scopes in the ldap (ActiveDirectory) server.</tooltip>
+                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up workunit scopes in the ldap (Active Directory) server.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
@@ -246,7 +246,7 @@
                 <xs:annotation>
                     <xs:appinfo>
                         <required>true</required>
-                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up file scopes in the ldap (ActiveDirectory) server.</tooltip>
+                        <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up file scopes in the ldap (Active Directory) server.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
