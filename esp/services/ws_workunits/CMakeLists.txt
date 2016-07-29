@@ -62,6 +62,7 @@ include_directories (
          ./../../../ecl/hql
          ./../../../system/security/securesocket
          ./../../../system/security/shared
+         ./../../../system/security/LdapSecurity
          ./../../../system/include
          ./../../../common/workunit
          ./../../../common/wuwebview
