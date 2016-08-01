@@ -1790,6 +1790,7 @@ void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char
 
     unsigned numaMap[NUMA_NUM_NODES];
     unsigned numNumaNodes = 0;
+#if defined(LIBNUMA_API_VERSION) && (LIBNUMA_API_VERSION>=2)
     for (unsigned i=0; i<=numa_max_node(); i++)
     {
         if (numa_bitmask_isbitset(numa_all_nodes_ptr, i))
@@ -1798,6 +1799,14 @@ void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char
             numNumaNodes++;
         }
     }
+#else
+    //On very old versions of numa assume that all nodes are present
+    for (unsigned i=0; i<=numa_max_node(); i++)
+    {
+        numaMap[numNumaNodes] = i;
+        numNumaNodes++;
+    }
+#endif
     if (numNumaNodes <= 1)
         return;
 

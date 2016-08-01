@@ -1313,11 +1313,12 @@ bool CLdapSecManager::clearPermissionsCache(ISecUser& user)
     }
     return true;
 }
-bool CLdapSecManager::authenticateUser(ISecUser & user, bool &superUser)
+bool CLdapSecManager::authenticateUser(ISecUser & user, bool *superUser)
 {
     if (!authenticate(&user))
         return false;
-    superUser = isSuperUser(&user);
+    if (superUser)
+        *superUser = isSuperUser(&user);
     return true;
 }
 

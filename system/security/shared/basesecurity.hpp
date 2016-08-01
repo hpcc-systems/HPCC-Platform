@@ -286,7 +286,7 @@ public:
         return false;
     }
 
-    bool authenticateUser(ISecUser & user, bool &superUser)
+    bool authenticateUser(ISecUser & user, bool *superUser)
     {
         UNIMPLEMENTED;
         return false;
