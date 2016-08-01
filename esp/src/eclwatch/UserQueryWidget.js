@@ -395,6 +395,22 @@ define([
             }
         },
 
+        _onEditPermission: function (event) {
+            var selections = this.permissionsGrid.getSelected();
+            var firstTab = null;
+            for (var i = selections.length - 1; i >= 0; --i) {
+                var tab = this.ensurePermissionsPane("Permissions" + selections[i].name, {
+                    Name: selections[i].name
+                });
+                if (i === 0) {
+                    firstTab = tab;
+                }
+            }
+            if (firstTab) {
+                this.selectChild(firstTab);
+            }
+        },
+
         _onDeletePermission: function (params) {
             var selection = this.permissionsGrid.getSelected();
             var list = this.arrayToList(selection, "DisplayName");
@@ -762,11 +778,11 @@ define([
             }));
             pMenu.addChild(new MenuItem({
                 label: this.i18n.Edit,
-                onClick: function (args) { context._onEditUser(); }
+                onClick: function (args) { context._onEditPermission(); }
             }));
             pMenu.addChild(new MenuItem({
                 label: this.i18n.Delete,
-                onClick: function (args) { context._onDeleteUser(); }
+                onClick: function (args) { context._onDeletePermission(); }
             }));
             pMenu.addChild(new MenuSeparator());
             pMenu.addChild(new MenuItem({
