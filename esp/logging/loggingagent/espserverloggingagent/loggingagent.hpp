@@ -72,7 +72,7 @@ public:
         {
             add(transIDFields, sTransactionDateTime, id);
             add(transIDFields, sTransactionMethod, id);
-            add(transIDFields, sTransactionESPIP, id);
+            add(transIDFields, sTransactionIdentifier, id);
         }
         id.append(seed.get()).append('-').append(++seq);
     };
