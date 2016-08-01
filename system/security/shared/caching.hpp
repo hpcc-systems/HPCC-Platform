@@ -70,10 +70,11 @@ public:
     virtual void add( IArrayOf<ISecResource>& resources );
     virtual void remove(SecResourceType rtype, const char* resourcename);
 
-private:
     //removes entries older than tstamp passed in
     //
     virtual void removeStaleEntries(time_t tstamp);
+private:
+
 
     //type definitions
     //define mapping from resource name to pair<timeout, permission>
@@ -191,20 +192,20 @@ private:
     typedef std::map<string, CachedUser*> MapUserCache;
 
     MapResPermissionsCache m_resPermissionsMap;  //user specific resource permissions cache
-    mutable CriticalSection m_resPermCacheLock; //guards m_resPermissionsMap - DO NOT use RW lock as the lookup modifies the cache to remove expired entries
+    mutable ReadWriteLock m_resPermCacheRWLock; //guards m_resPermissionsMap
 
     int m_cacheTimeout; //cleanup cycle period
     bool m_transactionalEnabled;
 
     MapUserCache m_userCache;
-    mutable CriticalSection m_userCacheLock;    //guards m_userCache - DO NOT use RW lock as the lookup modifies the cache to remove expired entries
+    mutable ReadWriteLock m_userCacheRWLock;    //guards m_userCache
 
     StringAttr                  m_secMgrClass;
 
     //Managed File Scope support
     int                         m_defaultPermission;
     map<string, ISecResource*>  m_managedFileScopesMap;
-    mutable CriticalSection     m_scopesLock;  //guards m_managedFileScopesMap
+    mutable ReadWriteLock       m_scopesRWLock;//guards m_managedFileScopesMap
     ISecManager *               m_secMgr;
     time_t                      m_lastManagedFileScopesRefresh;
 };
