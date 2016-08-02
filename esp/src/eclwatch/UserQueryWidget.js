@@ -704,6 +704,9 @@ define([
                     check: selector({
                         width: 27,
                         disabled: function (row) {
+                            if (row.name === "File Scopes" || row.name === "Workunit Scopes" || row.name === "Repository Modules") {
+                                return false;
+                            }
                             return row.children ? true : false;
                         }
                     }, "checkbox"),
@@ -816,14 +819,6 @@ define([
         },
 
         refreshActionState: function (event) {
-            registry.byId(this.id + "EnableScopeScans").set("disabled", true);
-            registry.byId(this.id + "DisableScopeScans").set("disabled", true);
-            registry.byId(this.id + "FileScopeDefaultPermissions").set("disabled", true);
-            registry.byId(this.id + "WorkUnitScopeDefaultPermissions").set("disabled", true);
-            registry.byId(this.id + "PhysicalFiles").set("disabled", true);
-            registry.byId(this.id + "CheckFilePermissions").set("disabled", true);
-            registry.byId(this.id + "CodeGenerator").set("disabled", true);
-
             var userSelection = this.usersGrid.getSelected();
             var hasUserSelection = userSelection.length;
             registry.byId(this.id + "EditUsers").set("disabled", !hasUserSelection);
@@ -838,20 +833,40 @@ define([
 
             var permissionSelection = this.permissionsGrid.getSelected();
             var hasPermissionSelection = permissionSelection.length;
+            registry.byId(this.id + "EnableScopeScans").set("disabled", true);
+            registry.byId(this.id + "DisableScopeScans").set("disabled", true);
+            registry.byId(this.id + "FileScopeDefaultPermissions").set("disabled", true);
+            registry.byId(this.id + "WorkUnitScopeDefaultPermissions").set("disabled", true);
+            registry.byId(this.id + "PhysicalFiles").set("disabled", true);
+            registry.byId(this.id + "CheckFilePermissions").set("disabled", true);
+            registry.byId(this.id + "CodeGenerator").set("disabled", true);
+            registry.byId(this.id + "AdvancedPermissions").set("disabled", true);
             registry.byId(this.id + "DeletePermissions").set("disabled", !hasPermissionSelection);
-
-            if (hasPermissionSelection && event.rows[0].data.__hpcc_parent.DisplayName === "File Scopes") {
-                registry.byId(this.id + "EnableScopeScans").set("disabled", !hasPermissionSelection);
-                registry.byId(this.id + "DisableScopeScans").set("disabled", !hasPermissionSelection);
-                registry.byId(this.id + "PhysicalFiles").set("disabled", !hasPermissionSelection);
-                registry.byId(this.id + "FileScopeDefaultPermissions").set("disabled", !hasPermissionSelection);
-                registry.byId(this.id + "CheckFilePermissions").set("disabled", !hasPermissionSelection);
-            }
-            if (hasPermissionSelection && event.rows[0].data.__hpcc_parent.DisplayName === "Workunit Scopes") {
-                registry.byId(this.id + "WorkUnitScopeDefaultPermissions").set("disabled", !hasPermissionSelection);
-            }
-            if (hasPermissionSelection && event.rows[0].data.__hpcc_parent.DisplayName === "Repository Modules") {
-                registry.byId(this.id + "CodeGenerator").set("disabled", !hasPermissionSelection);
+            
+            for (var i = 0; i < permissionSelection.length; ++i) {
+                if (permissionSelection[i] && permissionSelection[i] !== null) {
+                    if (permissionSelection[i].children) {
+                        registry.byId(this.id + "DeletePermissions").set("disabled", true);
+                    }
+                    switch (permissionSelection[i].name) {
+                        case "File Scopes":
+                            registry.byId(this.id + "EnableScopeScans").set("disabled", !hasPermissionSelection);
+                            registry.byId(this.id + "DisableScopeScans").set("disabled", !hasPermissionSelection);
+                            registry.byId(this.id + "PhysicalFiles").set("disabled", !hasPermissionSelection);
+                            registry.byId(this.id + "FileScopeDefaultPermissions").set("disabled", !hasPermissionSelection);
+                            registry.byId(this.id + "CheckFilePermissions").set("disabled", !hasPermissionSelection);
+                            registry.byId(this.id + "AdvancedPermissions").set("disabled", !hasPermissionSelection);
+                        break;
+                        case "Workunit Scopes":
+                            registry.byId(this.id + "WorkUnitScopeDefaultPermissions").set("disabled", !hasPermissionSelection);
+                            registry.byId(this.id + "AdvancedPermissions").set("disabled", !hasPermissionSelection);
+                        break;
+                        case "Repository Modules":
+                            registry.byId(this.id + "CodeGenerator").set("disabled", !hasPermissionSelection);
+                            registry.byId(this.id + "AdvancedPermissions").set("disabled", !hasPermissionSelection);
+                        break;
+                    }
+                }
             }
         }
     });
