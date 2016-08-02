@@ -111,7 +111,7 @@
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div data-dojo-attach-event="onClick:_onClearPermissionsCache" data-dojo-type="dijit.form.Button">${i18n.ClearPermissionsCache}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div data-dojo-type="dijit.form.DropDownButton">
+                    <div id="${id}AdvancedPermissions" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Advanced}</span>
                         <div data-dojo-type="dijit.DropDownMenu">
                             <div data-dojo-attach-event="onClick:_onEnableScopeScans "id="${id}EnableScopeScans" data-dojo-type="dijit.MenuItem">${i18n.EnableScopeScans}</div>
