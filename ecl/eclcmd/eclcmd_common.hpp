@@ -339,7 +339,7 @@ public:
     StringAttr optQuery;
 };
 
-void outputMultiExceptions(const IMultiException &me);
+int outputMultiExceptionsEx(const IMultiException &me);
 bool checkMultiExceptionsQueryNotFound(const IMultiException &me);
 
 

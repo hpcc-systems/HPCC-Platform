@@ -263,15 +263,14 @@ public:
         req->setCheckAllNodes(optCheckAllNodes);
 
         Owned<IClientWUMultiQuerySetDetailsResponse> resp = client->WUMultiQuerysetDetails(req);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-        else
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret == 0)
         {
             IArrayOf<IConstWUQuerySetDetail> &querysets = resp->getQuerysets();
             ForEachItemIn(i, querysets)
                 outputQueryset(querysets.item(i));
         }
-        return 0;
+        return ret;
     }
     virtual void usage()
     {
@@ -361,9 +360,8 @@ public:
         req->setQueryId(optQuery.get());
 
         Owned<IClientWUQueryFilesResponse> resp = client->WUQueryFiles(req);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-        else
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret == 0)
         {
             IArrayOf<IConstFileUsedByQuery> &files = resp->getFiles();
             if (!files.length())
@@ -381,7 +379,7 @@ public:
             }
             fputs("\n", stdout);
         }
-        return 0;
+        return ret;
     }
     virtual void usage()
     {
@@ -538,11 +536,10 @@ public:
             req->setComment(optComment);
 
         Owned<IClientWUQuerySetCopyQueryResponse> resp = client->WUQuerysetCopyQuery(req);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
         if (resp->getQueryId() && *resp->getQueryId())
             fprintf(stdout, "%s/%s\n\n", optTargetQuerySet.str(), resp->getQueryId());
-        return 0;
+        return ret;
     }
     virtual void usage()
     {
@@ -694,8 +691,7 @@ public:
         req->setAllowForeignFiles(optAllowForeign);
 
         Owned<IClientWUCopyQuerySetResponse> resp = client->WUCopyQuerySet(req);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
         StringArray &copied = resp->getCopiedQueries();
         fputs("Queries copied:\n", stdout);
         if (!copied.length())
@@ -716,7 +712,7 @@ public:
                 fprintf(stdout, "  %s\n", existing.item(i));
             fputs("\n", stdout);
         }
-        return 0;
+        return ret;
     }
     virtual void usage()
     {
@@ -855,8 +851,7 @@ public:
             req->setComment(optComment);
 
         Owned<IClientWUQueryConfigResponse> resp = client->WUQueryConfig(req);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
         IArrayOf<IConstWUQueryConfigResult> &results = resp->getResults();
         if (results.length())
         {
@@ -864,7 +859,7 @@ public:
             ForEachItemIn(i, results)
                 fprintf(stdout, "   %s\n", results.item(i).getQueryId());
         }
-        return 0;
+        return ret;
     }
     virtual void usage()
     {
