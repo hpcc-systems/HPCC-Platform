@@ -45,6 +45,28 @@
 #   5. To build the project, load the solution into the visual studio IDE and build in the usual way.
 #   6. Executables will be created in .\hpcc\bin\<release_mode>
 #
+#   To create a development installation on Linux:
+#   1. Check out sources (for example, to directory ~/hpcc)
+#   2. Create a build directory alongside your source
+#   3. export a DESTDIR which will act as the new root of your installation
+#       This must be done before you attempt to build makefiles for the project
+#   4. To create makefiles and have the ability to run the applications as non-superuser, execute
+#       cmake -DRUNTIME_USER=$USER ~/hpcc
+#   5. To build the makefiles just created above, run
+#       make
+#   6. To install the project under DESTDIR, run
+#       make install
+#   7. To populate environment xml's and conf files necessary for running your development installation, run
+#       make configure
+#   8a.To start up the platform, execute all binaries and scripts under DESTDIR as a regular user, example
+#       $DESTDIR/etc/init.d/hpcc-init start
+#   8b.All runtime files will be under $DESTDIR/var/{log,lib,run,lock}
+#   9a.To patch your running installation, simply modify the source, and then from the build directory run
+#       make install
+#      Which will recompile any changes and only install files into the platform that have been modified
+#   9b.Restart the platform (or specific component that had modifications), example
+#       $DESTDIR/etc/init.d/hpcc-init restart
+#
 #########################################################
 
 project(hpccsystems-platform)
