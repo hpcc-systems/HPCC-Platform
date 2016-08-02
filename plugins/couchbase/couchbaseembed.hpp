@@ -79,7 +79,7 @@ namespace couchbaseembed
         return count;
     }
 
-    void handleDeserializeOutcome(DeserializationResult resultcode, const char * targetype, const char * culpritvalue)
+    static void handleDeserializeOutcome(DeserializationResult resultcode, const char * targetype, const char * culpritvalue)
     {
         switch (resultcode)
         {
@@ -107,6 +107,67 @@ namespace couchbaseembed
                 typeError(targetype, culpritvalue);
                 break;
         }
+    }
+
+    static const char * findUnquotedChar(const char *query, char searchFor)
+    {
+        // Note - returns pointer to char AFTER the first occurrence of searchFor outside of quotes
+        char inStr = '\0';
+        char ch;
+        while ((ch = *query++) != 0)
+        {
+            if (ch == inStr)
+                inStr = false;
+            else switch (ch)
+            {
+            case '\'':
+            case '"':
+                inStr = ch;
+                break;
+            case '\\':
+                if (inStr && *query)
+                    query++;
+                break;
+            case '/':
+                if (!inStr)
+                {
+                    if (*query=='/')
+                    {
+                        while (*query && *query != '\n')
+                            query++;
+                    }
+                    else if (*query=='*')
+                    {
+                        query++;
+                        loop
+                        {
+                            if (!*query)
+                                fail("Unterminated comment in query string");
+                            if (*query=='*' && query[1]=='/')
+                            {
+                                query+= 2;
+                                break;
+                            }
+                            query++;
+                        }
+                    }
+                }
+                break;
+            default:
+                if (!inStr && ch==searchFor)
+                    return query;
+                break;
+            }
+        }
+        return NULL;
+    }
+
+    static unsigned countParameterPlaceholders(const char *query)
+    {
+        unsigned queryCount = 0;
+        while ((query = findUnquotedChar(query, '$')) != NULL)
+            queryCount++;
+        return queryCount;
     }
 
     class CouchbaseRowStream : public RtlCInterface, implements IRowStream
@@ -168,223 +229,221 @@ namespace couchbaseembed
             m_oResultRow.set(resultrow);
         }
 
-        virtual bool getBooleanResult(const RtlFieldInfo *field)
-        {
-            const char * value = nextField(field);
-
-            if (!value && !*value)
-            {
-                NullFieldProcessor p(field);
-                return p.boolResult;
-            }
-
-            bool mybool;
-            couchbaseembed::handleDeserializeOutcome(m_tokenDeserializer.deserialize(value, mybool), "bool", value);
-            return mybool;
-        }
-
-        virtual void getDataResult(const RtlFieldInfo *field, size32_t &len, void * &result)
-        {
-            const char * value = nextField(field);
-
-            if (!value || !*value)
-            {
-                NullFieldProcessor p(field);
-                rtlStrToDataX(len, result, p.resultChars, p.stringResult);
-                return;
-            }
-            rtlStrToDataX(len, result, strlen(value), value);   // This feels like it may not work to me - will preallocate rather larger than we want
-        }
-
-        virtual double getRealResult(const RtlFieldInfo *field)
-        {
-            const char * value = nextField(field);
-
-            if (!value || !*value)
-            {
-                NullFieldProcessor p(field);
-                return p.doubleResult;
-            }
-
-            double mydouble;
-            couchbaseembed::handleDeserializeOutcome(m_tokenDeserializer.deserialize(value, mydouble), "real", value);
-            return mydouble;
-        }
-
-        virtual __int64 getSignedResult(const RtlFieldInfo *field)
-        {
-            const char * value = nextField(field);
-            if (!value || !*value)
-            {
-                NullFieldProcessor p(field);
-                return p.uintResult;
-            }
-
-            __int64 myint64;
-            couchbaseembed::handleDeserializeOutcome(m_tokenDeserializer.deserialize(value, myint64), "signed", value);
-            return myint64;
-        }
-
-        virtual unsigned __int64 getUnsignedResult(const RtlFieldInfo *field)
-        {
-            const char * value = nextField(field);
-            if (!value || !*value)
-            {
-                NullFieldProcessor p(field);
-                return p.uintResult;
-            }
-
-            unsigned __int64 myuint64;
-            couchbaseembed::handleDeserializeOutcome(m_tokenDeserializer.deserialize(value, myuint64), "unsigned", value);
-            return myuint64;
-        }
-
-        virtual void getStringResult(const RtlFieldInfo *field, size32_t &chars, char * &result)
-        {
-             const char * value = nextField(field);
-
-            if (!value || !*value)
-            {
-                NullFieldProcessor p(field);
-                rtlStrToStrX(chars, result, p.resultChars, p.stringResult);
-                return;
-            }
-
-            unsigned numchars = rtlUtf8Length(strlen(value), value);  // MORE - is it a good assumption that it is utf8 ? Depends how the database is configured I think
-            rtlUtf8ToStrX(chars, result, numchars, value);
-            return;
-        }
-
-        virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char * &result)
-        {
-            getStringResult(field, chars, result);
-            return;
-        }
-
-        virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar * &result)
-        {
-            const char * value = nextField(field);
-
-            if (!value || !*value)
-            {
-                NullFieldProcessor p(field);
-                rtlUnicodeToUnicodeX(chars, result, p.resultChars, p.unicodeResult);
-                return;
-            }
-
-            unsigned numchars = rtlUtf8Length(strlen(value), value);  // MORE - is it a good assumption that it is utf8 ? Depends how the database is configured I think
-            rtlUtf8ToUnicodeX(chars, result, numchars, value);
-            return;
-        }
-
-        virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value)
-        {
-            const char * dvalue = nextField(field);
-            if (!dvalue || !*dvalue)
-            {
-                NullFieldProcessor p(field);
-                value.set(p.decimalResult);
-                return;
-            }
-
-            size32_t chars;
-            rtlDataAttr result;
-            value.setString(strlen(dvalue), dvalue);
-            if (field)
-            {
-                RtlDecimalTypeInfo *dtype = (RtlDecimalTypeInfo *) field->type;
-                value.setPrecision(dtype->getDecimalDigits(), dtype->getDecimalPrecision());
-            }
-        }
-
+        virtual bool getBooleanResult(const RtlFieldInfo *field);
+        virtual void getDataResult(const RtlFieldInfo *field, size32_t &len, void * &result);
+        virtual double getRealResult(const RtlFieldInfo *field);
+        virtual __int64 getSignedResult(const RtlFieldInfo *field);
+        virtual unsigned __int64 getUnsignedResult(const RtlFieldInfo *field);
+        virtual void getStringResult(const RtlFieldInfo *field, size32_t &chars, char * &result);
+        virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char * &result);
+        virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar * &result);
+        virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value);
         virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll)
         {
             UNSUPPORTED("Embedded Couchbase support error: processBeginSet() not supported");
         }
-
         virtual bool processNextSet(const RtlFieldInfo * field)
         {
             UNSUPPORTED("Embedded Couchbase support error: processNextSet() not supported");
             return false;
         }
-
-        virtual void processBeginDataset(const RtlFieldInfo * field)
-        {
-            /*
-             *
-             *childRec := RECORD real x; real y; END;
-             *parentRec := RECORD
-             * childRec child1,                        <-- flatens out the childrec, this function would receive a field of name x
-             * dataset(childRec) child2;               <-- keeps nested structure, this funciton would receive a field of name child2
-             *END;
-            */
-
-            if (getNumFields(field->type->queryChildType()) > 0)
-                m_oNestedField.set(m_oResultRow->queryBranch(field->name->queryStr()));
-        }
-
-        virtual void processBeginRow(const RtlFieldInfo * field)
-        {
-            m_fieldsProcessedCount = 0;
-            m_rowFieldCount = getNumFields(field->type);
-        }
-
-        virtual bool processNextRow(const RtlFieldInfo * field)
-        {
-            return m_fieldsProcessedCount + 1 == m_rowFieldCount;;
-        }
-
+        virtual void processBeginDataset(const RtlFieldInfo * field);
+        virtual void processBeginRow(const RtlFieldInfo * field);
+        virtual bool processNextRow(const RtlFieldInfo * field);
         virtual void processEndSet(const RtlFieldInfo * field)
         {
             UNSUPPORTED("Embedded Couchbase support error: processEndSet() not supported");
         }
-
-        virtual void processEndDataset(const RtlFieldInfo * field)
-        {
-            if(m_oNestedField)
-                m_oNestedField.clear();
-        }
-
-        virtual void processEndRow(const RtlFieldInfo * field)
-        {
-            if(m_oNestedField)
-                m_oNestedField.clear();
-        }
+        virtual void processEndDataset(const RtlFieldInfo * field);
+        virtual void processEndRow(const RtlFieldInfo * field);
 
     protected:
-        const char * nextField(const RtlFieldInfo * field)
-        {
-            m_fieldsProcessedCount++;
-            if (!m_oResultRow)
-                failx("Missing result row data");
-
-            const char * fieldname = field->name->queryStr();
-            if (!fieldname || !*fieldname)
-                failx("Missing result column metadata (name)");
-
-            if (!m_oResultRow->hasProp(fieldname))
-            {
-                VStringBuffer nxpath("locationData/%s", fieldname);
-                if (m_oNestedField)
-                {
-                    if (!m_oNestedField->hasProp(fieldname))
-                    {
-                        StringBuffer xml;
-                        toXML(m_oResultRow, xml);
-                        failx("Result row does not contain field: %s: %s", fieldname, xml.str());
-                    }
-
-                    return m_oNestedField->queryProp(fieldname);
-                }
-            }
-            return m_oResultRow->queryProp(fieldname);
-        }
+        const char * nextField(const RtlFieldInfo * field);
     private:
         TokenDeserializer m_tokenDeserializer;
         Owned<IPropertyTree> m_oResultRow;
         Owned<IPropertyTree> m_oNestedField;
         int m_fieldsProcessedCount;
-        int m_rowFieldCount;;
+        int m_rowFieldCount;
     };
+
+    // Bind Couchbase columns from an ECL record
+    class CouchbaseRecordBinder : public CInterfaceOf<IFieldProcessor>
+    {
+    public:
+        CouchbaseRecordBinder(const IContextLogger &_logctx, const RtlTypeInfo *_typeInfo, Couchbase::QueryCommand * _pQcmd, int _firstParam)
+         : logctx(_logctx), typeInfo(_typeInfo), m_pQcmd(_pQcmd), firstParam(_firstParam), dummyField("<row>", NULL, typeInfo), thisParam(_firstParam) {}
+
+        int numFields();
+        void processRow(const byte *row);
+        virtual void processString(unsigned len, const char *value, const RtlFieldInfo * field);
+        virtual void processBool(bool value, const RtlFieldInfo * field);
+        virtual void processData(unsigned len, const void *value, const RtlFieldInfo * field);
+        virtual void processInt(__int64 value, const RtlFieldInfo * field);
+        virtual void processUInt(unsigned __int64 value, const RtlFieldInfo * field);
+        virtual void processReal(double value, const RtlFieldInfo * field);
+        virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field);
+        virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
+        {
+            UNSUPPORTED("UNSIGNED decimals");
+        }
+
+        virtual void processUnicode(unsigned chars, const UChar *value, const RtlFieldInfo * field);
+        virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field);
+        virtual void processUtf8(unsigned chars, const char *value, const RtlFieldInfo * field);
+        virtual bool processBeginSet(const RtlFieldInfo * field, unsigned numElements, bool isAll, const byte *data)
+        {
+            UNSUPPORTED("SET");
+            return false;
+        }
+        virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned numRows)
+        {
+            return false;
+        }
+        virtual bool processBeginRow(const RtlFieldInfo * field)
+        {
+            return true;
+        }
+        virtual void processEndSet(const RtlFieldInfo * field)
+        {
+            UNSUPPORTED("SET");
+        }
+        virtual void processEndDataset(const RtlFieldInfo * field)
+        {
+            UNSUPPORTED("DATASET");
+        }
+        virtual void processEndRow(const RtlFieldInfo * field)
+        {
+        }
+
+    protected:
+        inline unsigned checkNextParam(const RtlFieldInfo * field);
+
+        const RtlTypeInfo *typeInfo;
+        Couchbase::QueryCommand * m_pQcmd;
+        const IContextLogger &logctx;
+        int firstParam;
+        RtlFieldStrInfo dummyField;
+        int thisParam;
+        TokenSerializer m_tokenSerializer;
+    };
+
+    class CouchbaseDatasetBinder : public CouchbaseRecordBinder
+    {
+    public:
+        CouchbaseDatasetBinder(const IContextLogger &_logctx, IRowStream * _input, const RtlTypeInfo *_typeInfo, Couchbase::QueryCommand * _pQcmd, int _firstParam)
+          : input(_input), CouchbaseRecordBinder(_logctx, _typeInfo, _pQcmd, _firstParam)
+        {
+        }
+
+        bool bindNext()
+        {
+            roxiemem::OwnedConstRoxieRow nextRow = (const byte *) input->ungroupedNextRow();
+            if (!nextRow)
+                return false;
+            processRow((const byte *) nextRow.get());   // Bind the variables for the current row
+            return true;
+        }
+
+        void executeAll(CouchbaseConnection * conn)
+        {
+            while (bindNext())
+            {
+                auto m_pQuery = conn->query(m_pQcmd);
+
+                if (m_pQuery->meta().status().errcode() != LCB_SUCCESS )//rows.length() == 0)
+                    failx("Query execution error: %s", m_pQuery->meta().body().to_string().c_str());
+
+                //consider parsing json result
+                if (strstr(m_pQuery->meta().body().data(), "\"status\": \"errors\""))
+                    failx("Err: %s", m_pQuery->meta().body().data());
+            }
+        }
+
+    protected:
+        Owned<IRowStream> input;
+    };
+
+    class CouchbaseEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
+    {
+       public:
+           CouchbaseEmbedFunctionContext(const IContextLogger &_logctx, const char *options, unsigned _flags);
+           IPropertyTree * nextResultRowTree();
+           IPropertyTreeIterator * nextResultRowIterator();
+           const char * nextResultScalar();
+           virtual bool getBooleanResult();
+           virtual void getDataResult(size32_t &len, void * &result);
+           virtual double getRealResult();
+           virtual __int64 getSignedResult();
+           virtual unsigned __int64 getUnsignedResult();
+           virtual void getStringResult(size32_t &chars, char * &result);
+           virtual void getUTF8Result(size32_t &chars, char * &result);
+           virtual void getUnicodeResult(size32_t &chars, UChar * &result);
+           virtual void getDecimalResult(Decimal &value);
+           virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
+           {
+               UNSUPPORTED("SET results");
+           }
+           virtual IRowStream * getDatasetResult(IEngineRowAllocator * _resultAllocator);
+           virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator);
+           virtual size32_t getTransformResult(ARowBuilder & rowBuilder);
+           virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val);
+           virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val);
+           virtual void bindBooleanParam(const char *name, bool val);
+           virtual void bindDataParam(const char *name, size32_t len, const void *val);
+           virtual void bindFloatParam(const char *name, float val);
+           virtual void bindRealParam(const char *name, double val);
+           virtual void bindSignedSizeParam(const char *name, int size, __int64 val);
+           virtual void bindSignedParam(const char *name, __int64 val);
+           virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val);
+           virtual void bindUnsignedParam(const char *name, unsigned __int64 val);
+           virtual void bindStringParam(const char *name, size32_t len, const char *val);
+           virtual void bindVStringParam(const char *name, const char *val);
+           virtual void bindUTF8Param(const char *name, size32_t chars, const char *val);
+           virtual void bindUnicodeParam(const char *name, size32_t chars, const UChar *val);
+           virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, const void *setData)
+           {
+               UNSUPPORTED("SET parameters");
+           }
+           virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
+           {
+               return NULL;
+           }
+           virtual void paramWriterCommit(IInterface *writer)
+           {
+               UNSUPPORTED("paramWriterCommit");
+           }
+           virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
+           {
+               UNSUPPORTED("writeResult");
+           }
+           virtual void importFunction(size32_t lenChars, const char *text)
+           {
+               UNSUPPORTED("importFunction");
+           }
+           virtual void compileEmbeddedScript(size32_t chars, const char *script);
+           virtual void callFunction();
+       protected:
+           void execute();
+           unsigned countBindings(const char *query);
+           const char * findUnquoted(const char *query, char searchFor);
+           unsigned checkNextParam(const char *name);
+
+           const IContextLogger &logctx;
+           Owned<CouchbaseConnection>    m_oCBConnection;
+           Couchbase::Client           * m_pCouchbaseClient;
+           Couchbase::Query            * m_pQuery;
+           Couchbase::QueryCommand     * m_pQcmd;
+
+           StringArray m_Rows;
+           int m_NextRow;
+           Owned<CouchbaseDatasetBinder> m_oInputStream;
+           Couchbase::Internal::RowIterator<Couchbase::QueryRow> * cbQueryIterator;
+           TokenDeserializer m_tokenDeserializer;
+           TokenSerializer m_tokenSerializer;
+           unsigned m_nextParam;
+           unsigned m_numParams;
+           unsigned m_scriptFlags;
+       };
 } // couchbaseembed namespace
 #endif

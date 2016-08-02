@@ -54,13 +54,12 @@ IF (NOT LIBCOUCHBASE_FOUND)
     )
 
     FIND_LIBRARY(
-      MYSQL_LIBRARIES NAMES ${mysql_lib} PATHS "${EXTERNALS_DIRECTORY}/mysql/${osdir}/lib" "${EXTERNALS_DIRECTORY}/mysql/${osdir}" "${EXTERNALS_DIRECTORY}/mysql/lib"
+      LIBCOUCHBASE_LIBRARIES
+      NAMES couchbase libcouchbase
+      PATHS "${EXTERNALS_DIRECTORY}/couchbase/${osdir}/lib" "${EXTERNALS_DIRECTORY}/couchbase/${osdir}" "${EXTERNALS_DIRECTORY}/couchbase/lib" "${EXTERNALS_DIRECTORY}/libcouchbase/lib" "${EXTERNALS_DIRECTORY}/libcouchbase/${osdir}/lib"
       NO_DEFAULT_PATH
     )
-    FIND_LIBRARY (
-      MYSQL_LIBRARIES NAMES ${mysql_lib_alt} PATHS "${EXTERNALS_DIRECTORY}/mysql/${osdir}/lib" "${EXTERNALS_DIRECTORY}/mysql/${osdir}" "${EXTERNALS_DIRECTORY}/mysql/lib"
-      NO_DEFAULT_PATH
-    )
+
   ENDIF()
 
   FIND_PATH (
