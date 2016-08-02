@@ -477,6 +477,8 @@ const void *CSplitterOutput::nextRow()
 
 void CSplitterOutput::getMetaInfo(ThorDataLinkMetaInfo &info)
 {
+    initMetaInfo(info);
+    info.fastThrough = true;
     CThorDataLink::calcMetaInfoSize(info, activity.inputs.item(0));
 }
 
