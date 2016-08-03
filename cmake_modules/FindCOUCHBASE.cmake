@@ -28,57 +28,16 @@ IF (NOT LIBCOUCHBASE_FOUND)
   #couchbase.h
   #libcouchbase
 
-  IF (UNIX)
-    IF (${ARCH64BIT} EQUAL 1)
-      SET (osdir "x86_64-linux-gnu")
-    ELSE()
-      SET (osdir "unknown")
-    ENDIF()
-  ELSEIF(WIN32)
-    IF (${ARCH64BIT} EQUAL 1)
-      SET (osdir "unknown")
-    ELSE()
-      SET (osdir "unknown")
-    ENDIF()
-  ELSE()
-    SET (osdir "unknown")
-  ENDIF()
-
-  IF (NOT ("${osdir}" STREQUAL "unknown"))
-    FIND_PATH(
-      LIBCOUCHBASE_INCLUDE_DIR
-      NAMES couchbase.h
-      PATHS "${EXTERNALS_DIRECTORY}/couchbase/${osdir}/include" "${EXTERNALS_DIRECTORY}/couchbase/include"
-      PATH_SUFFIXES include libcouchbase
-      NO_DEFAULT_PATH
-    )
-
-    FIND_LIBRARY(
-      LIBCOUCHBASE_LIBRARIES
-      NAMES couchbase libcouchbase
-      PATHS "${EXTERNALS_DIRECTORY}/couchbase/${osdir}/lib" "${EXTERNALS_DIRECTORY}/couchbase/${osdir}" "${EXTERNALS_DIRECTORY}/couchbase/lib" "${EXTERNALS_DIRECTORY}/libcouchbase/lib" "${EXTERNALS_DIRECTORY}/libcouchbase/${osdir}/lib"
-      NO_DEFAULT_PATH
-    )
-
-  ENDIF()
-
   FIND_PATH (
-    LIBCOUCHBASE_INCLUDE_DIR couchbase.h
-    PATHS
-      /usr
-      /usr/include
-      /usr/include/libcouchbase
-      /opt/local
-      /opt
+    LIBCOUCHBASE_INCLUDE_DIR 
+    NAMES couchbase.h
+    PATH_SUFFIXES libcouchbase
    )
 
    FIND_LIBRARY (
      LIBCOUCHBASE_LIBRARIES
      NAMES couchbase libcouchbase
-     PATH_SUFFIXES lib lib/${osdir} libcouchbase libcouchbase/${osdir}
-     PATHS
-       /usr
-     NO_DEFAULT_PATH
+     PATH_SUFFIXES libcouchbase
    )
 
   include(FindPackageHandleStandardArgs)
@@ -87,6 +46,9 @@ IF (NOT LIBCOUCHBASE_FOUND)
     LIBCOUCHBASE_LIBRARIES
     LIBCOUCHBASE_INCLUDE_DIR
   )
+
+  message(STATUS "LIBCOUCHBASE_LIBRARIES :: ${LIBCOUCHBASE_LIBRARIES}")
+  message(STATUS "LIBCOUCHBASE_INCLUDE_DIR :: ${LIBCOUCHBASE_INCLUDE_DIR}")
 
   MARK_AS_ADVANCED(LIBCOUCHBASE_INCLUDE_DIR LIBCOUCHBASE_LIBRARIES)
 ENDIF()
