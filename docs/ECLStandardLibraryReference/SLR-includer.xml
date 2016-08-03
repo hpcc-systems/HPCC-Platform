@@ -176,16 +176,6 @@
               
   </chapter>
 
-  <chapter id="Remote_File_Support">
-    <title><emphasis>Remote Files</emphasis></title>
-
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/RfsQuery.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/RfsAction.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-  </chapter>
-
   <chapter id="File_Browsing_Support">
     <title><emphasis>File Browsing </emphasis></title>
 

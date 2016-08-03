@@ -165,8 +165,8 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         }
         throw;
     }
-    if (resp->getExceptions().ordinality())
-        outputMultiExceptions(resp->getExceptions());
+    outputMultiExceptionsEx(resp->getExceptions()); //ignore error returned, no wuid is error
+
     const char *w = resp->getWorkunit().getWuid();
     if (w && *w)
     {
@@ -445,10 +445,7 @@ public:
         if (resp->getReloadFailed())
             fputs("\nAdded to Queryset, but request to reload queries on cluster failed\n", stderr);
 
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-
-        return 0;
+        return outputMultiExceptionsEx(resp->getExceptions());
     }
     virtual void usage()
     {
@@ -624,11 +621,10 @@ public:
         {
             //checking if it was a query was last resort.  may not have been after all, use generic language
             fprintf(stderr, "\n%s not found\n", optObj.query.str());
-            return 0;
+            return 1;
         }
 
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
 
         StringBuffer respwuid(resp->getWuid());
         if (optVerbose && respwuid.length() && !streq(wuid.str(), respwuid.str()))
@@ -638,7 +634,7 @@ public:
         if (resp->getResults())
             fprintf(stdout, "%s\n", resp->getResults());
 
-        return 0;
+        return ret;
     }
     virtual void usage()
     {
@@ -718,9 +714,11 @@ public:
 
         Owned<IClientWUQuerySetQueryActionResponse> resp = client->WUQuerysetQueryAction(req);
         IArrayOf<IConstQuerySetQueryActionResult> &results = resp->getResults();
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-        else if (results.empty())
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret != 0)
+            return ret;
+
+        if (results.empty())
             fprintf(stderr, "\nError Empty Result!\n");
         else
             outputQueryActionResults(results, "Activated", optQuerySet.str());
@@ -765,9 +763,11 @@ public:
 
         Owned<IClientWUQuerySetQueryActionResponse> resp = client->WUQuerysetQueryAction(req);
         IArrayOf<IConstQuerySetQueryActionResult> &results = resp->getResults();
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-        else if (results.empty())
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret != 0)
+            return ret;
+
+        if (results.empty())
             fprintf(stderr, "\nError Empty Result!\n");
         else
             outputQueryActionResults(results, "Unpublished", optQuerySet.str());
@@ -811,9 +811,11 @@ public:
 
         Owned<IClientWUQuerySetAliasActionResponse> resp = client->WUQuerysetAliasAction(req);
         IArrayOf<IConstQuerySetAliasActionResult> &results = resp->getResults();
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-        else if (results.empty())
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret != 0)
+            return ret;
+
+        if (results.empty())
             fprintf(stderr, "\nError Empty Result!\n");
         else
         {
@@ -917,8 +919,7 @@ public:
         req->setWuids(wuids);
         Owned<IClientWUAbortResponse> resp = client->WUAbort(req);
 
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
 
         // Get status of WU(s)
         if (optObj.type == eclObjQuery)
@@ -951,7 +952,7 @@ public:
             }
         }
 
-        return 0;
+        return ret;
     }
     virtual void usage()
     {
