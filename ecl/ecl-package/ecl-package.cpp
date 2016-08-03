@@ -739,7 +739,7 @@ public:
         bool validateMessages = false;
         Owned<IClientValidatePackageResponse> resp = packageProcessClient->ValidatePackage(request);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
-        if (ret == 0)
+        if (ret != 0)
             validateMessages = true;
         StringArray &errors = resp->getErrors();
         if (errors.ordinality()>0)
