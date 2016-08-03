@@ -109,10 +109,7 @@ public:
         request->setGlobalScope(optGlobalScope);
 
         Owned<IClientActivatePackageResponse> resp = packageProcessClient->ActivatePackage(request);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-
-        return 0;
+        return outputMultiExceptionsEx(resp->getExceptions());
     }
     virtual void usage()
     {
@@ -200,10 +197,7 @@ public:
         request->setGlobalScope(optGlobalScope);
 
         Owned<IClientDeActivatePackageResponse> resp = packageProcessClient->DeActivatePackage(request);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-
-        return 0;
+        return outputMultiExceptionsEx(resp->getExceptions());
     }
     virtual void usage()
     {
@@ -268,9 +262,8 @@ public:
         request->setProcess("*");
 
         Owned<IClientListPackageResponse> resp = packageProcessClient->ListPackage(request);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-        else
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret == 0)
         {
             IArrayOf<IConstPackageListMapData> &pkgMapInfo = resp->getPkgListMapData();
             unsigned int num = pkgMapInfo.ordinality();
@@ -294,7 +287,7 @@ public:
                 }
             }
         }
-        return 0;
+        return ret;
     }
     virtual void usage()
     {
@@ -357,11 +350,10 @@ public:
         request->setProcess("*");
 
         Owned<IClientGetPackageResponse> resp = packageProcessClient->GetPackage(request);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-        else
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret == 0)
             printf("%s", resp->getInfo());
-        return 0;
+        return ret;
     }
     virtual void usage()
     {
@@ -449,12 +441,10 @@ public:
         request->setGlobalScope(optGlobalScope);
 
         Owned<IClientDeletePackageResponse> resp = packageProcessClient->DeletePackage(request);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-        else
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret == 0)
             printf("Successfully deleted package %s\n", optPackageMap.get());
-
-        return 0;
+        return ret;
     }
 
     virtual void usage()
@@ -592,8 +582,7 @@ public:
         request->setAppendCluster(!optDontAppendCluster);
 
         Owned<IClientAddPackageResponse> resp = packageProcessClient->AddPackage(request);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
 
         StringArray &notFound = resp->getFilesNotFound();
         if (notFound.length())
@@ -604,7 +593,7 @@ public:
             fputs("\n", stderr);
         }
 
-        return 0;
+        return ret;
     }
 
     virtual void usage()
@@ -749,11 +738,9 @@ public:
 
         bool validateMessages = false;
         Owned<IClientValidatePackageResponse> resp = packageProcessClient->ValidatePackage(request);
-        if (resp->getExceptions().ordinality()>0)
-        {
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret != 0)
             validateMessages = true;
-            outputMultiExceptions(resp->getExceptions());
-        }
         StringArray &errors = resp->getErrors();
         if (errors.ordinality()>0)
         {
@@ -808,7 +795,7 @@ public:
         if (!validateMessages)
             fputs("   Validation was successful\n", stdout);
 
-        return 0;
+        return ret;
     }
 
     virtual void usage()
@@ -909,8 +896,7 @@ public:
         request->setGlobalScope(optGlobalScope);
 
         Owned<IClientGetQueryFileMappingResponse> resp = packageProcessClient->GetQueryFileMapping(request);
-        if (resp->getExceptions().ordinality()>0)
-            outputMultiExceptions(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
 
         StringArray &unmappedFiles = resp->getUnmappedFiles();
         if (!unmappedFiles.ordinality())
@@ -940,7 +926,7 @@ public:
             }
         }
 
-        return 0;
+        return ret;
     }
 
     virtual void usage()
@@ -1077,8 +1063,7 @@ public:
         request->setAppendCluster(!optDontAppendCluster);
 
         Owned<IClientAddPartToPackageMapResponse> resp = packageProcessClient->AddPartToPackageMap(request);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
 
         StringArray &notFound = resp->getFilesNotFound();
         if (notFound.length())
@@ -1089,7 +1074,7 @@ public:
             fputs("\n", stderr);
         }
 
-        return 0;
+        return ret;
     }
 
     virtual void usage()
@@ -1204,12 +1189,10 @@ public:
         request->setPartName(optPartName);
 
         Owned<IClientRemovePartFromPackageMapResponse> resp = packageProcessClient->RemovePartFromPackageMap(request);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-        else
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret == 0)
             printf("Successfully removed part %s from package %s\n", optPartName.get(), optPMID.get());
-
-        return 0;
+        return ret;
     }
 
     virtual void usage()
@@ -1303,12 +1286,10 @@ public:
         request->setPartName(optPartName);
 
         Owned<IClientGetPartFromPackageMapResponse> resp = packageProcessClient->GetPartFromPackageMap(request);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-        else
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret == 0)
             printf("%s", resp->getContent());
-
-        return 0;
+        return ret;
     }
 
     virtual void usage()
