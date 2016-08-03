@@ -2329,13 +2329,15 @@ private:
             }
             else if (stricmp(queryName, "control:memtrace")==0)
             {
-                roxiemem::memTraceLevel = control->getPropInt("@level", 0);
-                topology->setPropInt("@memTraceLevel", roxiemem::memTraceLevel);
+                unsigned memTraceLevel = control->getPropInt("@level", 0);
+                roxiemem::setMemTraceLevel(memTraceLevel);
+                topology->setPropInt("@memTraceLevel", memTraceLevel);
             }
             else if (stricmp(queryName, "control:memtracesizelimit")==0)
             {
-                roxiemem::memTraceSizeLimit = (memsize_t) control->getPropInt64("@val", control->getPropInt64("@value", 0)); // used to accept @value so coded like this for backward compatibility
-                topology->setPropInt64("@memTraceSizeLimit", roxiemem::memTraceSizeLimit);
+                memsize_t memTraceSizeLimit = (memsize_t) control->getPropInt64("@val", control->getPropInt64("@value", 0)); // used to accept @value so coded like this for backward compatibility
+                roxiemem::setMemTraceSizeLimit(memTraceSizeLimit);
+                topology->setPropInt64("@memTraceSizeLimit", memTraceSizeLimit);
             }
             else if (stricmp(queryName, "control:metrics")==0)
             {

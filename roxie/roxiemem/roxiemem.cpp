@@ -67,8 +67,18 @@ namespace roxiemem {
 #define RELEASE_THRESHOLD_SCALING                       64     // rather high, may reduce if memory manager restructured
 #define DEFAULT_PARALLEL_SYNC_RELEASE_THRESHOLD         (DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY * RELEASE_THRESHOLD_SCALING)
 
-unsigned memTraceLevel = 1;
-memsize_t memTraceSizeLimit = 0;
+static unsigned memTraceLevel = 1;
+static memsize_t memTraceSizeLimit = 0;
+
+void setMemTraceLevel(unsigned value)
+{
+    memTraceLevel = value;
+}
+
+void setMemTraceSizeLimit(memsize_t value)
+{
+    memTraceSizeLimit = 0;
+}
 
 unsigned DATA_ALIGNMENT_SIZE=0x400;
 const static unsigned UNLIMITED_PAGES = (unsigned)-1;

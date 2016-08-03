@@ -512,8 +512,8 @@ extern roxiemem_decl unsigned getDataBuffersActive();
 
 //Various options to stress the memory
 
-extern roxiemem_decl unsigned memTraceLevel;
-extern roxiemem_decl memsize_t memTraceSizeLimit;
+extern roxiemem_decl void setMemTraceLevel(unsigned value);
+extern roxiemem_decl void setMemTraceSizeLimit(memsize_t value);
 
 
 #define ALLOCATE(a) allocate(a, activityId)
