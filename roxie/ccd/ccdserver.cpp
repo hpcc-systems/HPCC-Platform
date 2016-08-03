@@ -5818,7 +5818,7 @@ class CRoxieServerStrandedInlineTableActivity : public CRoxieServerStrandedActiv
             //Return rows while the current section is active
             while (curRow < maxRows)
             {
-                RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                RtlDynamicRowBuilder rowBuilder(*rowAllocator);
                 unsigned outSize = helper.getRow(rowBuilder, curRow++);
                 if (outSize)
                 {

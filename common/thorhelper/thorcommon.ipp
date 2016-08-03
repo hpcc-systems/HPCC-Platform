@@ -168,39 +168,39 @@ protected:
 
 //------------------------------------------------------------------------------------------------
 
-//This class is only ever used to apply a delta to a self pointer, it is never finalized
+//This class is only ever used to apply a delta to a self pointer, it is never finalized, and the builder must stay alive.
 class THORHELPER_API CPrefixedRowBuilder : implements RtlRowBuilderBase
 {
 public:
-    inline CPrefixedRowBuilder(size32_t _offset, ARowBuilder & _builder) : offset(_offset), builder(&_builder)
+    inline CPrefixedRowBuilder(size32_t _offset, ARowBuilder & _builder) : offset(_offset), builder(_builder)
     { 
-        self = builder->getSelf()+offset;
+        self = builder.getSelf()+offset;
     }
 
     virtual byte * ensureCapacity(size32_t required, const char * fieldName)
     {
-        self = builder->ensureCapacity(offset+required, fieldName) + offset;
+        self = builder.ensureCapacity(offset+required, fieldName) + offset;
         return getSelf();
     }
 
     virtual byte * createSelf()
     {
-        self = builder->getSelf()+offset;
+        self = builder.getSelf()+offset;
         return self;
     }
 
     virtual IEngineRowAllocator *queryAllocator() const
     {
-        return builder->queryAllocator();
+        return builder.queryAllocator();
     }
 protected:
     size32_t offset;
-    Linked<ARowBuilder> builder;
+    ARowBuilder & builder;
 };
 
 //------------------------------------------------------------------------------------------------
 
-class AggregateRowBuilder : public RtlDynamicRowBuilder
+class AggregateRowBuilder : public RtlDynamicRowBuilder, public CInterface
 {
 public:
     AggregateRowBuilder(IEngineRowAllocator *_rowAllocator, unsigned _elementHash)

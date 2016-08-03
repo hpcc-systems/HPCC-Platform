@@ -209,11 +209,9 @@ protected:
 
 void ECLRTL_API rtlReportFieldOverflow(unsigned size, unsigned max, const RtlFieldInfo * field);
 
-class ECLRTL_API RtlRowBuilderBase : implements ARowBuilder, public RtlCInterface
+class ECLRTL_API RtlRowBuilderBase : implements ARowBuilder
 {
 public:
-    RTLIMPLEMENT_IINTERFACE
-
     virtual void reportMissingRow() const;
 };
 
@@ -229,6 +227,10 @@ public:
             self = NULL;
             maxLength = 0;
         }
+    }
+    inline RtlDynamicRowBuilder(IEngineRowAllocator & _rowAllocator) : rowAllocator(&_rowAllocator)
+    {
+        create();
     }
     virtual IEngineRowAllocator *queryAllocator() const
     {

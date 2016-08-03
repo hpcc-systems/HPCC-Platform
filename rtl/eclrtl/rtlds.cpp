@@ -503,7 +503,7 @@ void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngine
 
 const void * rtlCloneRow(IEngineRowAllocator * rowAllocator, size32_t len, const void * row)
 {
-    RtlDynamicRowBuilder builder(rowAllocator);
+    RtlDynamicRowBuilder builder(*rowAllocator);
 
     byte * self = builder.ensureCapacity(len, NULL);
     memcpy(self, row, len);
@@ -1244,7 +1244,7 @@ extern ECLRTL_API byte * rtlDeserializeRow(IEngineRowAllocator * rowAllocator, I
     Owned<ISerialStream> stream = createMemorySerialStream(src, unknownSourceLength);
     CThorStreamDeserializerSource source(stream);
 
-    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+    RtlDynamicRowBuilder rowBuilder(*rowAllocator);
     size32_t rowSize = deserializer->deserialize(rowBuilder, source);
     return static_cast<byte *>(const_cast<void *>(rowBuilder.finalizeRowClear(rowSize)));
 }
