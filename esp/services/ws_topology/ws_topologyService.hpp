@@ -132,6 +132,8 @@ public:
 
     bool onTpMachineQuery(IEspContext &context, IEspTpMachineQueryRequest &req, IEspTpMachineQueryResponse &resp);
 
+    bool onTpMachineInfo(IEspContext &context, IEspTpMachineInfoRequest &req, IEspTpMachineInfoResponse &resp);
+
     bool onTpSetMachineStatus(IEspContext &context,IEspTpSetMachineStatusRequest  &req, IEspTpSetMachineStatusResponse &resp);
 
     bool onTpSwapNode(IEspContext &context,IEspTpSwapNodeRequest  &req, IEspTpSwapNodeResponse &resp);

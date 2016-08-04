@@ -163,6 +163,8 @@ public:
     void setMachineInfo(const char* name,const char* type,IEspTpMachine& machine);
     void resolveGroupInfo(const char* groupName,StringBuffer& Cluster, StringBuffer& ClusterPrefix);
     void getMachineInfo(IEspTpMachine& machineInfo,IPropertyTree& machine,const char* ParentPath,const char* MachineType,const char* nodenametag);
+    void getMachineInfo(double clientVersion, const char* name, const char* netAddress, IEspTpMachine& machineInfo);
+    void setTpMachine(IConstMachineInfo* machine, IEspTpMachine& tpMachine);
 
     void getTpDaliServers(IArrayOf<IConstTpDali>& list);
     void getTpEclServers(IArrayOf<IConstTpEclServer>& ServiceList, const char* name = NULL);

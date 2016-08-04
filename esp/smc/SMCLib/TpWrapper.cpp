@@ -1437,10 +1437,62 @@ bool CTpWrapper::ContainsProcessDefinition(IPropertyTree& clusterNode,const char
 }
 
 
+void CTpWrapper::getMachineInfo(double clientVersion, const char* name, const char* netAddress, IEspTpMachine& machineInfo)
+{
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+    Owned<IConstMachineInfo> pMachineInfo;
+    if (name && *name)
+        pMachineInfo.setown(constEnv->getMachine(name));
+    else if (netAddress && *netAddress)
+        pMachineInfo.setown(constEnv->getMachineByAddress(netAddress));
+    else
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Machine not specified");
+
+    if (!pMachineInfo)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Machine Not Found for %s '%s'",
+            (name && *name)? "Name" : "Net Address", (name && *name)? name : netAddress);
+
+    setTpMachine(pMachineInfo, machineInfo);
+}
+
+void CTpWrapper::setTpMachine(IConstMachineInfo* machine, IEspTpMachine& tpMachine)
+{
+    if (!machine)
+        return;
+
+    SCMStringBuffer machineName, netAddress;
+    machine->getName(machineName);
+    machine->getNetAddress(netAddress);
+    tpMachine.setName(machineName.str());
+    tpMachine.setNetaddress(netAddress.str());
+    tpMachine.setOS(machine->getOS());
+
+    switch(machine->getState())
+    {
+        case MachineStateAvailable:
+            tpMachine.setAvailable("Available");
+            break;
+        case MachineStateUnavailable:
+            tpMachine.setAvailable("Unavailable");
+            break;
+        case MachineStateUnknown:
+            tpMachine.setAvailable("Unknown");
+            break;
+    }
+    Owned<IConstDomainInfo> pDomain = machine->getDomain();
+    if (pDomain != 0)
+    {
+        SCMStringBuffer sName;
+        tpMachine.setDomain(pDomain->getName(sName).str());
+    }
+}
+
 void CTpWrapper::getMachineInfo(IEspTpMachine& machineInfo,IPropertyTree& machine,const char* ParentPath,const char* MachineType,const char* nodenametag)
 {
     const char* name = machine.queryProp(nodenametag);
     setMachineInfo(name,MachineType,machineInfo);
+
     StringBuffer tmpPath;
     StringBuffer ppath(ParentPath);
     setAttPath(ppath,machine.queryName(),"name",name,tmpPath);
@@ -1509,29 +1561,7 @@ void CTpWrapper::getMachineList(double clientVersion,
             Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachineByAddress(netAddress.str());
             if (pMachineInfo.get())
             {
-                SCMStringBuffer machineName;
-                pMachineInfo->getName(machineName);
-                machineInfo.setName(machineName.str());
-                machineInfo.setOS(pMachineInfo->getOS());
-
-                switch(pMachineInfo->getState())
-                {
-                    case MachineStateAvailable:
-                        machineInfo.setAvailable("Available");
-                        break;
-                    case MachineStateUnavailable:
-                        machineInfo.setAvailable("Unavailable");
-                        break;
-                    case MachineStateUnknown:
-                        machineInfo.setAvailable("Unknown");
-                        break;
-                }
-                Owned<IConstDomainInfo> pDomain = pMachineInfo->getDomain();
-                if (pDomain != 0)
-                {
-                    SCMStringBuffer sName;
-                    machineInfo.setDomain(pDomain->getName(sName).str());
-                }
+                setTpMachine(pMachineInfo, machineInfo);
 
                 if (clientVersion > 1.17)
                 {

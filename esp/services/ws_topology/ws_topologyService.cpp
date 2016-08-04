@@ -1396,6 +1396,25 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
     {   
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
+    return true;
+}
+
+bool CWsTopologyEx::onTpMachineInfo(IEspContext &context, IEspTpMachineInfoRequest &req, IEspTpMachineInfoResponse &resp)
+{
+    try
+    {
+        //another client (like configenv) may have updated the constant environment so reload it
+        m_envFactory->validateCache();
+
+        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
+            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Machine Info. Permission denied.");
+
+        m_TpWrapper.getMachineInfo(context.getClientVersion(), req.getName(), req.getNetAddress(), resp.updateMachineInfo());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
     return false;
 }
 
