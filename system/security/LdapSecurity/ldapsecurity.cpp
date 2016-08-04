@@ -869,7 +869,10 @@ bool CLdapSecManager::authorizeFileScope(ISecUser & user, ISecResourceList * res
 bool CLdapSecManager::authorizeViewScope(ISecUser & user, StringArray & filenames, StringArray & columnnames)
 {
     if (filenames.length() != columnnames.length())
+    {
+        PROGLOG("Error authorizing view scope: number of filenames (%d) do not match number of columnnames (%d).", filenames.length(), columnnames.length());
         return false; 
+    }
 
     const char* username = user.getName();
     StringArray viewnames, viewdescriptions, viewManagedBy;
@@ -900,6 +903,7 @@ bool CLdapSecManager::authorizeViewScope(ISecUser & user, StringArray & filename
 
             if (!authorizeEx(RT_VIEW_SCOPE, user, resList.get()))
             {
+                PROGLOG("View scope authorization denied by a view %s for a user %s", viewname, username);
                 return false;
             }
         }

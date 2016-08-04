@@ -3008,16 +3008,16 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
 
 #ifndef _NO_LDAP
     CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
-    if(secmgr == NULL)
-        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, "Security manager is not found");
 
-    if (secmgr->getCheckViewPermissions())
+    // View Scope is checked only when LDAP secmgr is available AND checkViewPermissions config is also enabled.
+    // Otherwise, the view permission check is skipped, and WU is submitted as normal.
+    if (secmgr && secmgr->getCheckViewPermissions())
     {
         StringArray filenames, columnnames;
         if (cw->getFieldUsageArray(filenames, columnnames, cluster)) // check view permission only for a query with fieldUsage information
         {
             if (!secmgr->authorizeViewScope(*context.queryUser(), filenames, columnnames))
-                throw MakeStringException(ECLWATCH_VIEW_ACCESS_DENIED, "View Access denied");
+                throw MakeStringException(ECLWATCH_VIEW_ACCESS_DENIED, "View Access denied for a WU: %s", cw->queryWuid());
         }
     }
 #endif
