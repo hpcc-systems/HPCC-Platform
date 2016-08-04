@@ -62,7 +62,8 @@
     <para>The <emphasis role="bold">WHEN </emphasis>function associates an
     <emphasis>action</emphasis> with a <emphasis>trigger</emphasis> (dataset
     or action) so that when the <emphasis>trigger</emphasis> is executed the
-    <emphasis>action</emphasis> is also executed. This allows</para>
+    <emphasis>action</emphasis> is also executed. This allows job scheduling
+    based upon triggers.</para>
 
     <para>Example:</para>
 
