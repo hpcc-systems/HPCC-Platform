@@ -1909,7 +1909,7 @@ public:
     IMPLEMENT_IINTERFACE;
     CLocalWUFieldUsage(IPropertyTree& _p) { p.setown(&_p); }
 
-    virtual IStringVal & getName(IStringVal & ret) const { ret.set(p->queryProp("@name")); return ret; }
+    virtual const char * queryName() const { return p->queryProp("@name"); }
 };
 
 class CConstWUFieldUsageIterator : public CInterface, implements IConstWUFieldUsageIterator
@@ -1932,8 +1932,8 @@ public:
     IMPLEMENT_IINTERFACE;
     CLocalWUFileUsage(IPropertyTree& _p) { p.setown(&_p); }
 
-    virtual IStringVal & getName(IStringVal & ret) const { ret.set(p->queryProp("@name")); return ret; }
-    virtual IStringVal & getType(IStringVal & ret) const { ret.set(p->queryProp("@type")); return ret; }
+    virtual const char * queryName() const { return p->queryProp("@name"); }
+    virtual const char * queryType() const { return p->queryProp("@type"); }
     virtual unsigned getNumFields() const { return p->getPropInt("@numFields"); }
     virtual unsigned getNumFieldsUsed() const { return p->getPropInt("@numFieldsUsed"); }
     virtual IConstWUFieldUsageIterator * getFields() const { return new CConstWUFieldUsageIterator(p->getElements("fields/field")); }
@@ -6441,6 +6441,17 @@ IConstWUFileUsageIterator * CLocalWorkUnit::getFieldUsage() const
     return new CConstWUFileUsageIterator(iter);
 }
 
+bool isFilenameResolved(StringBuffer& filename)
+{
+    size32_t length = filename.length();
+
+    // With current implementation, if filename is surrounded by single quotes, it means that the filename was resolved at compile time.
+    if (filename.length() >= 2 && filename.charAt(0) == '\'' && filename.charAt(length-1) == '\'')
+        return true;
+    else
+        return false;
+}
+
 bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const
 {
     bool scopeLoaded = false;
@@ -6455,51 +6466,62 @@ bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & c
     {    
         Owned<IConstWUFileUsage> file = files->get();
 
-        SCMStringBuffer filename;
-        file->getName(filename);
-
-        // filename cannot be empty
-        if (filename.length() < 3)
+        StringBuffer filename = file->queryName();
+        size32_t length = filename.length();
+        
+        if (length == 0)
             throw MakeStringException(WUERR_InvalidFieldUsage, "Invalid FieldUsage found in WU. Cannot enforce view security.");
 
-        // Filenames in field usage are surrounded with single quotes ('filename').
-        // Need to remove surrounding single quotes quickly using memcpy.
-        char* cleanFilename = new char[filename.length()-1];
-        memcpy(cleanFilename, filename.str()+1, filename.length()-2);
-        cleanFilename[filename.length()-2] = '\0';
-        filename.set(cleanFilename); 
-        delete[] cleanFilename;
-
-        // When a filename doesn't start with a tilde (~), it means scope is omitted and is relying on a default scope.
-        // We need to load a default scope from config and prefix the filename with it.
-        if (filename.str()[0] != '~')
+        StringBuffer normalizedFilename;
+        
+        // Two cases to handle:
+        // 1. Filename was known at compile time, and is surrounded in single quotes (i.e. 'filename').
+        // 2. Filename could not be resolved at compile time (i.e. filename is an input to a query), 
+        //    and is a raw expression WITHOUT surrounding single quotes (i.e. STORED('input_filename')).
+        if (isFilenameResolved(filename))
         {
-            // loading a default scope from config is expensive, and should be only done once and be reused later.
-            if (!scopeLoaded)
+            // filename cannot be empty (i.e. empty single quotes '')
+            if (length == 2)
+                throw MakeStringException(WUERR_InvalidFieldUsage, "Invalid FieldUsage found in WU. Cannot enforce view security.");
+        
+            // Remove surrounding single quotes
+            StringAttr cleanFilename(filename.str()+1, length-2);
+
+            // When a filename doesn't start with a tilde (~), it means scope is omitted and is relying on a default scope.
+            // We need to load a default scope from config and prefix the filename with it.
+            if (cleanFilename.str()[0] != '~')
             {
-                Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
-                if (!clusterInfo)
-                    throw MakeStringException(WUERR_InvalidCluster, "Unknown cluster %s", clusterName);
-                clusterInfo->getScope(defaultScope);
-                scopeLoaded = true;
+                // loading a default scope from config is expensive, and should be only done once and be reused later.
+                if (!scopeLoaded)
+                {
+                    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
+                    if (!clusterInfo)
+                        throw MakeStringException(WUERR_InvalidCluster, "Unknown cluster %s", clusterName);
+                    clusterInfo->getScope(defaultScope);
+                    scopeLoaded = true;
+                }
+
+                normalizedFilename.append(defaultScope.str());
+                normalizedFilename.append(cleanFilename.str());
             }
-
-            StringBuffer normalizedFilename(defaultScope.str());
+            else
+            {
+                normalizedFilename.append(cleanFilename); 
+            }
+        }
+        else
+        {
+            // When filename is an unresolved expression, simply treat the expression as a "non-existent" filename.
+            // It will have an effect of this query accessing a non-existent filename, and will be denied access unconditionally.
             normalizedFilename.append(filename.str());
-
-            filename.set(normalizedFilename);
         }
 
         Owned<IConstWUFieldUsageIterator> fields = file->getFields();
         ForEach(*fields)
         {    
             Owned<IConstWUFieldUsage> field = fields->get();
-
-            SCMStringBuffer columnname;
-            field->getName(columnname);
-
-            filenames.append(filename.str());
-            columnnames.append(columnname.str());
+            filenames.append(normalizedFilename.str());
+            columnnames.append(field->queryName());
         }
     }
 

@@ -380,7 +380,7 @@ interface IConstWUAssociatedFileIterator : extends IScmIterator
 
 interface IConstWUFieldUsage : extends IInterface // Defines a file (dataset or index) that contains used fields from queries
 {
-    virtual IStringVal & getName(IStringVal & ret) const = 0;
+    virtual const char * queryName() const = 0;
 };
 
 interface IConstWUFieldUsageIterator : extends IScmIterator // Iterates over files that contains used fields
@@ -390,8 +390,8 @@ interface IConstWUFieldUsageIterator : extends IScmIterator // Iterates over fil
 
 interface IConstWUFileUsage : extends IInterface // Defines a file (dataset or index) that contains used fields from queries
 {
-    virtual IStringVal & getName(IStringVal & ret) const = 0;
-    virtual IStringVal & getType(IStringVal & ret) const = 0; // used file type: "dataset" or "index"
+    virtual const char * queryName() const = 0;
+    virtual const char * queryType() const = 0; // used file type: "dataset" or "index"
     virtual unsigned getNumFields() const = 0;
     virtual unsigned getNumFieldsUsed() const = 0;
     virtual IConstWUFieldUsageIterator * getFields() const = 0;
