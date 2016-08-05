@@ -171,11 +171,7 @@ void CResPermissionsCache::add( IArrayOf<ISecResource>& resources )
 //called from within a WriteLockBlock
 void CResPermissionsCache::removeStaleEntries(time_t tstamp)
 {
-    int timeout = m_pParentCache->getCacheTimeout();
-    if(timeout == 0 && m_pParentCache->isTransactionalEnabled())
-        timeout = 10; //Transactional timeout is set to 10 seconds for long transactions that might take over 10 seconds.
-    tstamp -= timeout;
-    if (m_tLastCleanup < tstamp)
+    if (needsCleanup(tstamp, m_pParentCache->getCacheTimeout()))
     {
         MapTimeStamp::iterator i;
         MapTimeStamp::iterator itL    = m_timestampMap.lower_bound(tstamp);
@@ -234,11 +230,24 @@ int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resou
 
     const char* userId = sec_user.getName();
 
-    //First, clear stale cache entries for this CResPermissionsCache entry
+    //First check if matching cache entry is stale
+    bool needsCleanup = false;
+    {
+        ReadLockBlock readLock(m_resPermCacheRWLock);
+        MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( userId );
+        if (i != m_resPermissionsMap.end())
+        {
+            CResPermissionsCache* pResPermissionsCache = (*i).second;
+            needsCleanup = pResPermissionsCache->needsCleanup(tstamp, getCacheTimeout());
+        }
+    }
+
+    //clear stale cache entries for this CResPermissionsCache entry
+    if (needsCleanup)
     {
         WriteLockBlock writeLock(m_resPermCacheRWLock);
         MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( userId );
-        if (i != m_resPermissionsMap.end())
+        if (i != m_resPermissionsMap.end())//Entry could have been deleted by another thread
         {
             CResPermissionsCache* pResPermissionsCache = (*i).second;
             pResPermissionsCache->removeStaleEntries(tstamp);
