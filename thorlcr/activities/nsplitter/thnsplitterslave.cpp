@@ -479,7 +479,7 @@ void CSplitterOutput::getMetaInfo(ThorDataLinkMetaInfo &info)
 {
     initMetaInfo(info);
     info.fastThrough = true;
-    CThorDataLink::calcMetaInfoSize(info, activity.inputs.item(0));
+    info.unknownRowsOutput = true;
 }
 
 CActivityBase *createNSplitterSlave(CGraphElementBase *container)
