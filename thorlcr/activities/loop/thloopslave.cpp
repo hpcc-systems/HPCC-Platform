@@ -36,7 +36,7 @@ protected:
     bool global;
     bool sentEndLooping = true;
     unsigned maxIterations;
-    unsigned loopCounter;
+    unsigned loopCounter = 0;
     rtlRowBuilder extractBuilder;
     bool lastMaxEmpty;
     unsigned maxEmptyLoopIterations;

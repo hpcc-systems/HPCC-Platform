@@ -1580,7 +1580,7 @@ protected:
     bool mmRegistered;
     Owned<CSharedSpillableRowSet> spillableRowSet;
     unsigned options;
-    unsigned spillCompInfo;
+    unsigned spillCompInfo = 0;
     __uint64 spillCycles;
     __uint64 sortCycles;
     roxiemem::IRowManager *rowManager;

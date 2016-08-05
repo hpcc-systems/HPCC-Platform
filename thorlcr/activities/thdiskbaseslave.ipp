@@ -88,7 +88,7 @@ protected:
     ThorDataLinkMetaInfo cachedMetaInfo;
     Owned<CDiskPartHandlerBase> partHandler;
     Owned<IExpander> eexp;
-    rowcount_t diskProgress;
+    rowcount_t diskProgress = 0;
 
 public:
     CDiskReadSlaveActivityBase(CGraphElementBase *_container);

@@ -282,7 +282,7 @@ void CSlaveActivity::startAllInputs()
 
 void CSlaveActivity::startInput(unsigned index, const char *extra)
 {
-    StringBuffer s("Starting input");
+    VStringBuffer s("Starting input %u", index);
     if (extra)
         s.append(" ").append(extra);
     ActPrintLog("%s", s.str());
