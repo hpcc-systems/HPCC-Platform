@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book lang="en_US" xml:base="../">
+<book id="Running_HPCC_In_A_Virtual_Machine" lang="en_US" xml:base="../">
   <title>Running HPCC in a Virtual Machine</title>
 
   <bookinfo>
@@ -60,7 +60,7 @@
     </mediaobject>
   </bookinfo>
 
-  <chapter>
+  <chapter id="VM_Intro">
     <title>Introduction</title>
 
     <para>These instructions will guide you through installing and running an
@@ -115,7 +115,7 @@
         </tgroup>
       </informaltable></para>
 
-    <sect1>
+    <sect1 id="VM_Requirements">
       <title>System Requirements</title>
 
       <para>Running HPCC in a virtual machine requires (at minimum):</para>
@@ -161,7 +161,7 @@
     </sect1>
   </chapter>
 
-  <chapter>
+  <chapter id="VM_GettingTheTools">
     <title>Getting the Tools and the VM Image</title>
 
     <para>To run the virtual machine version of the HPCC System, you need
@@ -170,7 +170,7 @@
     virtualization software, while any or all of these could work, we support
     Oracle VM VirtualBox<superscript>®</superscript> .</para>
 
-    <sect1>
+    <sect1 id="VM_VirtualBox">
       <title>VM VirtualBox</title>
 
       <para>Oracle's virtualization software, VM VirtualBox is supported for
@@ -290,7 +290,7 @@
         </orderedlist>
       </sect2>
 
-      <sect2>
+      <sect2 id="VM_ImportVirtualImage">
         <title id="get_HPCC">Import the HPCC Virtual Image File</title>
 
         <para><orderedlist>
@@ -503,7 +503,7 @@
             </listitem>
           </orderedlist></para>
 
-        <sect3>
+        <sect3 id="VM_GuestAdditions">
           <title>Guest Additions</title>
 
           <para>The HPCC VM Images include Guest Additions. Guest Additions
@@ -521,7 +521,7 @@
     </sect1>
   </chapter>
 
-  <chapter>
+  <chapter id="VM_RunningHPCC_VM">
     <title>Running the HPCC VM</title>
 
     <para>In this section, we will access the HPCC using the web-based
@@ -607,7 +607,7 @@
         </listitem>
       </orderedlist></para>
 
-    <sect1>
+    <sect1 id="VM_RunningTheIDE">
       <title>Running the ECL IDE for the first time</title>
 
       <para>In this section, we will configure the ECL IDE.</para>
@@ -706,7 +706,7 @@
       </orderedlist>
     </sect1>
 
-    <sect1>
+    <sect1 id="VM_RunningtheIDE_wPreviousVersion">
       <title>Running the HPCC ECL IDE when you had a previous version
       installed</title>
 
@@ -804,7 +804,7 @@
       </orderedlist>
     </sect1>
 
-    <sect1>
+    <sect1 id="VM_WriteSomeECL">
       <title>Write some ECL</title>
 
       <para>Let's write, compile, and execute a simple "Hello World" program
@@ -929,7 +929,7 @@
       </orderedlist>
     </sect1>
 
-    <sect1>
+    <sect1 id="VM_WorkingWithECL">
       <title>Working with ECL</title>
 
       <para>Now that you have submitted some ECL code, it's time to try some
@@ -937,7 +937,7 @@
 
       <para>The following examples are provided to get you started.</para>
 
-      <sect2>
+      <sect2 id="VM_ECL_exampleAnagram1">
         <title>ECL Example: Anagram1</title>
 
         <para>This example takes a STRING and produces every possible anagram
@@ -1022,7 +1022,7 @@ OUTPUT(L);</programlisting></para>
 
       <?hard-pagebreak ?>
 
-      <sect2>
+      <sect2 id="VM_RoxieExampleAnagram2">
         <title>Roxie Example: Anagram2</title>
 
         <para>In this example, we will download an open source data file of
@@ -1032,7 +1032,7 @@ OUTPUT(L);</programlisting></para>
         dictionary file. Using an index and a keyed join would be more
         efficient, but this serves as a simple example.</para>
 
-        <sect3>
+        <sect3 id="VM_DownloadTheWordList">
           <title>Download the word list</title>
 
           <para>We will download the word list from <ulink
@@ -1052,7 +1052,7 @@ OUTPUT(L);</programlisting></para>
             </orderedlist></para>
         </sect3>
 
-        <sect3 id="Load_the_Incoming_Data">
+        <sect3 id="VM_Load_the_Incoming_Data">
           <title>Load the Dictionary File to your Landing Zone</title>
 
           <para>In this step, you will copy the data files to a location from
@@ -1148,7 +1148,7 @@ OUTPUT(L);</programlisting></para>
           </orderedlist>
         </sect3>
 
-        <sect3 id="Spray_the_Data_to_THOR">
+        <sect3 id="VM_Spray_the_Data_to_THOR">
           <title>Spray the Data File to your <emphasis>Data Refinery (Thor)
           Cluster</emphasis></title>
 
@@ -1271,7 +1271,7 @@ OUTPUT(L);</programlisting></para>
           </orderedlist>
         </sect3>
 
-        <sect3>
+        <sect3 id="VM_RunTheQueryOnThor">
           <title>Run the query on Thor<parameter></parameter></title>
 
           <para><orderedlist>
@@ -1357,7 +1357,7 @@ OUTPUT(ValidWords)
 
         <?hard-pagebreak ?>
 
-        <sect3>
+        <sect3 id="VM_Compile-Publish2Roxie">
           <title>Compile and Publish the query to
           Roxie<parameter></parameter></title>
 
@@ -1537,7 +1537,7 @@ OUTPUT(ValidWords)
             </orderedlist></para>
         </sect3>
 
-        <sect3 id="Deploy_the_Query_to_Roxie">
+        <sect3 id="VM_Deploy_the_Query_to_Roxie">
           <title>Publish the Roxie query</title>
 
           <para>Next we will publish the query to a Roxie Cluster.</para>
@@ -1573,7 +1573,7 @@ OUTPUT(ValidWords)
           </orderedlist>
         </sect3>
 
-        <sect3 id="Run_the_Roxie_Query">
+        <sect3 id="VM_Run_the_Roxie_Query">
           <title>Run the Roxie Query in WsECL</title>
 
           <para>Now that the query is published to a Roxie cluster, we can run
@@ -1635,14 +1635,14 @@ OUTPUT(ValidWords)
       </sect2>
     </sect1>
 
-    <sect1 id="Working_with_a_data_file">
+    <sect1 id="VM_Working_with_a_data_file">
       <title>Working with data files</title>
 
       <para>Once you start working with your HPCC system, you will want to
       process some real data, this section shows you how to load data to your
       HPCC system.</para>
 
-      <sect2 id="Cautions_and_Warnings">
+      <sect2 id="VM_Cautions_and_Warnings">
         <title>Before you begin</title>
 
         <para>A typical production HPCC system would have much more data
@@ -1688,7 +1688,7 @@ OUTPUT(ValidWords)
 
       <?hard-pagebreak ?>
 
-      <sect2 id="Uploading_a_file">
+      <sect2 id="VM_Uploading_a_file">
         <title>Uploading a file</title>
 
         <para>For smaller data files, maximum of 2GB, you can use the
@@ -1784,7 +1784,7 @@ OUTPUT(ValidWords)
         <para></para>
       </sect2>
 
-      <sect2 id="Uploading_files_w_secure_client">
+      <sect2 id="VM_Uploading_files_w_secure_client">
         <title>Uploading files with a Secure Copy Client</title>
 
         <para>To upload a large file for processing to your virtual machine,
@@ -1856,7 +1856,7 @@ OUTPUT(ValidWords)
       </sect2>
     </sect1>
 
-    <sect1>
+    <sect1 id="VM_NextSteps">
       <title>Next Steps</title>
 
       <para>Available from the menu in ECL Watch are several documents which
@@ -1944,7 +1944,7 @@ OUTPUT(ValidWords)
     </sect1>
   </chapter>
 
-  <chapter>
+  <chapter id="VM_FAQ_Chap">
     <title>Frequently Asked Questions</title>
 
     <para></para>
