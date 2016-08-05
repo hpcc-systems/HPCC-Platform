@@ -344,7 +344,16 @@ public:
     {
         initMetaInfo(info);
         info.fastThrough = true;
-        calcMetaInfoSize(info, queryInput(0));
+        info.unknownRowsOutput = true;  // remove once calcMetaInfoSize() is called
+
+        //GH->JCS I think the following line is correct and may remove some downstream spilling streams
+        //info.canBufferInput = spill;
+
+        //GH->JCS.  This should call calcMetaInfoSize, but that hits a race condition.
+        //The splitter does not start its input until the first row is requested, but some activities (e.g.,
+        //inline dataset) rely on information in getMetaInfo that is set up in start.
+        //If calcMetaInfoSize() is called, then the result should really be cached in the class
+        //calcMetaInfoSize(info, queryInput(0));
     }
 
 friend class CInputWrapper;
