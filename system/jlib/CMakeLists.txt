@@ -167,6 +167,13 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
     )
 
+if (USE_APR)
+  include_directories (
+         ${APR_INCLUDE_DIR}
+         ${APRUTIL_INCLUDE_DIR}
+     )
+endif()
+
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=1 -D_USRDLL -DJLIB_EXPORTS )
 HPCC_ADD_LIBRARY( jlib SHARED ${SRCS} ${INCLUDES} )
 
@@ -187,7 +194,10 @@ if (WIN32)
  target_link_libraries ( jlib ws2_32 mpr.lib Winmm.lib)
 elseif (("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" ))
 else ()
- target_link_libraries ( jlib rt)
+ target_link_libraries ( jlib rt )
+ if (USE_APR)
+   target_link_libraries ( jlib ${APR_LIBRARY} ${APRUTIL_LIBRARY} )
+ endif()
 endif ()
 
 if (WIN32)
