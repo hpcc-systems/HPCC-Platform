@@ -3153,6 +3153,12 @@ void HqlCppTranslator::doBuildUnsignedFunction(BuildCtx & ctx, const char * name
     doBuildFunction(ctx, unsignedType, name, value);
 }
 
+void HqlCppTranslator::doBuildDoubleFunction(BuildCtx & ctx, const char * name, IHqlExpression * value)
+{
+    Owned<ITypeInfo> type = makeRealType(8);
+    doBuildFunction(ctx, doubleType, name, value);
+}
+
 void HqlCppTranslator::doBuildUnsigned64Function(BuildCtx & ctx, const char * name, IHqlExpression * value)
 {
     Owned<ITypeInfo> type = makeIntType(8, false);
@@ -16253,6 +16259,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
     //virtual unsigned getTimeLimit()
     doBuildUnsignedFunction(instance->classctx, "getTimeLimit", queryPropertyChild(expr, timeLimitAtom, 0));
 
+    //virtual double getTimeoutMS()
+    doBuildDoubleFunction(instance->classctx, "getTimeoutMS", queryPropertyChild(expr, timeoutAtom, 0));
+
+    //virtual double getTimeLimitMS()
+    doBuildDoubleFunction(instance->classctx, "getTimeLimitMS", queryPropertyChild(expr, timeLimitAtom, 0));
+
     if (namespaceAttr)
     {
         doBuildVarStringFunction(instance->startctx, "queryNamespaceName", namespaceAttr->queryChild(0));
@@ -16299,7 +16311,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
             buildTransformBody(onFailCtx, onFailTransform, dataset, NULL, expr, selSeq);
         }
     }
-
     buildInstanceSuffix(instance);
     if (boundDataset)
         buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
@@ -16405,6 +16416,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
     //virtual unsigned getTimeLimit()
     doBuildUnsignedFunction(instance->classctx, "getTimeLimit", queryPropertyChild(expr, timeLimitAtom, 0));
 
+    //virtual double getTimeoutMS()
+    doBuildDoubleFunction(instance->classctx, "getTimeoutMS", queryPropertyChild(expr, timeoutAtom, 0));
+
+    //virtual double getTimeLimitMS()
+    doBuildDoubleFunction(instance->classctx, "getTimeLimitMS", queryPropertyChild(expr, timeLimitAtom, 0));
+
     if (namespaceAttr)
     {
         doBuildVarStringFunction(instance->startctx, "queryNamespaceName", namespaceAttr->queryChild(0));
@@ -16443,7 +16460,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
             buildTransformBody(onFailCtx, onFail->queryChild(0), dataset, NULL, expr, selSeq);
         }
     }
-
     buildInstanceSuffix(instance);
     if (boundDataset)
         buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
