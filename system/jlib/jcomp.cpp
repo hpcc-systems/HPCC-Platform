@@ -814,7 +814,7 @@ void CppCompiler::setTargetBitLength(unsigned bitlength)
         // Note that gcc only seems to support these options on the x86 architecture
         switch (bitlength)
         {
-        case 32: option = "-m32"; break;
+        case 32: option = ""; break;
         case 64: option = "-m64"; break;
         default:
             throwUnexpected();
