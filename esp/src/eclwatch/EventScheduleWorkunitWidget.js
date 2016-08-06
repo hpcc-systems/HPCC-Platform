@@ -216,6 +216,7 @@ define([
                 if (i == 0) {
                     firstTab = tab;
                 }
+                this.eventGrid.deselect(selections[i]);
             }
             if (firstTab) {
                 this.selectChild(firstTab, true);
@@ -238,6 +239,7 @@ define([
 
         _onRowDblClick: function (item) {
             var wuTab = this.ensurePane(item.Wuid, item);
+            this.eventGrid.deselect(item);
             this.selectChild(wuTab);
         },
 

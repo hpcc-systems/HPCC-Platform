@@ -118,6 +118,7 @@ define([
                 if (i == 0) {
                     firstTab = tab;
                 }
+                this.subfilesGrid.deselect(selections[i]);
             }
             if (firstTab) {
                 this.selectChild(firstTab, true);
@@ -239,6 +240,7 @@ define([
             this.subfilesGrid.on(".dgrid-row-url:click", function (evt) {
                 var item = context.subfilesGrid.row(evt).data;
                 var tab = context.ensureLFPane(item.Name, item);
+                context.subfilesGrid.deselect(item);
                 context.selectChild(tab, true);
             });
             this.subfilesGrid.on("dgrid-select", function (evt) {
@@ -255,6 +257,7 @@ define([
             this.subfilesGrid.on(".dgrid-row:dblclick", function (evt) {
                 var item = context.subfilesGrid.row(evt).data;
                 var tab = context.ensureLFPane(item.Name, item);
+                context.subfilesGrid.deselect(item);
                 context.selectChild(tab, true);
             });
             this.subfilesGrid.startup();

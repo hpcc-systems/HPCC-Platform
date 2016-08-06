@@ -507,6 +507,7 @@ define([
                 if (i == 0) {
                     firstTab = tab;
                 }
+                this.querySetGrid.deselect(selections[i]);
             }
             if (firstTab) {
                 this.selectChild(firstTab);
@@ -528,6 +529,7 @@ define([
             } else {
                 tab = this.ensurePane(item.Id, item, false);
             }
+            this.querySetGrid.deselect(item);
             this.selectChild(tab);
         },
 

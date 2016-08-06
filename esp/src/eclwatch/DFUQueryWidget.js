@@ -157,6 +157,7 @@ define([
                 if (i == 0) {
                     firstTab = tab;
                 }
+                this.workunitsGrid.deselect(selections[i]);
             }
             if (firstTab) {
                 this.selectChild(firstTab, true);
@@ -276,6 +277,7 @@ define([
         _onRowDblClick: function (item) {
             var wuTab = this.ensureLFPane(item.__hpcc_id, item);
             this.selectChild(wuTab);
+            this.workunitsGrid.deselect(item);
         },
 
         _onRowContextMenu: function (item, colField, mystring) {
