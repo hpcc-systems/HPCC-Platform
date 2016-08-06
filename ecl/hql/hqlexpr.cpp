@@ -3328,6 +3328,41 @@ void CHqlExpression::initFlagsBeforeOperands()
     }
 }
 
+//Can be called from updateFlagsAfterOperands to help track down inconsistencies
+static bool verifyTransform(IHqlExpression * record, IHqlExpression * expr)
+{
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_assignall:
+            if (!verifyTransform(record, cur))
+                return false;
+            break;
+        case no_assign:
+            {
+                IHqlExpression * lhs = cur->queryChild(0);
+                if (lhs->getOperator() == no_select)
+                {
+                    if ((lhs->queryChild(0)->getOperator() == no_select) &&
+                        (lhs->queryChild(0)->queryChild(0)->getOperator() == no_self))
+                        return false;
+
+                    IHqlExpression * field = lhs->queryChild(1);
+                    OwnedHqlExpr match = record->querySimpleScope()->lookupSymbol(field->queryId());
+                    if (match != field)
+                        return false;
+                }
+                break;
+            }
+            break;
+        }
+    }
+    return true;
+}
+
+
 void CHqlExpression::updateFlagsAfterOperands()
 {
 //  DBGLOG("%p: Create(%s) type = %lx", (unsigned)(IHqlExpression *)this, getOpString(op), (unsigned)type);

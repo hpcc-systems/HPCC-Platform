@@ -1286,7 +1286,7 @@ ITypeInfo * getSerializedForm(ITypeInfo * type, IAtom * variation)
         {
             //MORE: If (variant == internalAtom) consider using a format that prefixes the dataset with a count instead of a size
             OwnedITypeInfo noOutOfLineType = removeModifier(type, typemod_outofline);
-            OwnedITypeInfo noLinkCountType = removeProperty(noOutOfLineType, _linkCounted_Atom);
+            OwnedITypeInfo noLinkCountType = removeAttribute(noOutOfLineType, _linkCounted_Atom);
             ITypeInfo * childType = noLinkCountType->queryChildType();
             OwnedITypeInfo newChild = getSerializedForm(childType, variation);
             return replaceChildType(noLinkCountType, newChild);
@@ -1294,7 +1294,7 @@ ITypeInfo * getSerializedForm(ITypeInfo * type, IAtom * variation)
     case type_dictionary:
         {
             OwnedITypeInfo noOutOfLineType = removeModifier(type, typemod_outofline);
-            OwnedITypeInfo noLinkCountType = removeProperty(noOutOfLineType, _linkCounted_Atom);
+            OwnedITypeInfo noLinkCountType = removeAttribute(noOutOfLineType, _linkCounted_Atom);
             ITypeInfo * childType = noLinkCountType->queryChildType();
             OwnedITypeInfo newChild = getSerializedForm(childType, variation);
             if (variation == internalAtom)
@@ -3131,7 +3131,7 @@ ITypeInfo * cloneEssentialFieldModifiers(ITypeInfo * donor, ITypeInfo * rawtype)
     return type.getClear();
 }
 
-ITypeInfo * removeProperty(ITypeInfo * t, IAtom * search)
+ITypeInfo * removeAttribute(ITypeInfo * t, IAtom * search)
 {
     typemod_t curModifier = t->queryModifier();
     if (curModifier == typemod_none)
@@ -3145,7 +3145,7 @@ ITypeInfo * removeProperty(ITypeInfo * t, IAtom * search)
             return LINK(base);
     }
 
-    OwnedITypeInfo newBase = removeProperty(base, search);
+    OwnedITypeInfo newBase = removeAttribute(base, search);
     if (newBase == base)
         return LINK(t);
     return makeModifier(newBase.getClear(), curModifier, LINK(t->queryModifierExtra()));
@@ -3701,7 +3701,7 @@ ITypeInfo * setLinkCountedAttr(ITypeInfo * _type, bool setValue)
     {
         if (setValue)
             return LINK(type);
-        return removeProperty(type, _linkCounted_Atom);
+        return removeAttribute(type, _linkCounted_Atom);
     }
     else
     {
@@ -3735,7 +3735,7 @@ ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue)
     {
         if (setValue)
             return LINK(type);
-        return removeProperty(type, streamedAtom);
+        return removeAttribute(type, streamedAtom);
     }
     else
     {

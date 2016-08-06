@@ -318,6 +318,7 @@
 #define HQLERR_UnknownCompoundAssign            4837
 #define HQLERR_ReadSpillBeforeWriteFix          4838
 #define HQLERR_AccessUnavailableGraph           4839
+#define HQLERR_NoMappingForField                4840
 //#define HQLERR_Max                            4999
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
@@ -603,6 +604,7 @@
 #define HQLERR_ReadSpillBeforeWriteFix_Text     "INTERNAL: Attempt to read spill file %s before it is written.  Try adding #option ('allowThroughSpill', false); to the query."
 #define HQLERR_CouldNotGenerateDefault_Text     "INTERNAL: Could not generate default value for field %s"
 #define HQLERR_AccessUnavailableGraph_Text      "INTERNAL: Attempt to access result from unavailable graph (%s)"
+#define HQLERR_NoMappingForField_Text           "INTERNAL: Mapping for field %s is missing from transform"
 
 #define WARNINGAT(cat, e, x)                 reportWarning(cat, SeverityUnknown, e, x, x##_Text)
 #define WARNINGAT1(cat, e, x, a)             reportWarning(cat, SeverityUnknown, e, x, x##_Text, a)
