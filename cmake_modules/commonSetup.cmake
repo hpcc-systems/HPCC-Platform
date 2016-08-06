@@ -271,7 +271,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   if ( "${HPCC_MATURITY}" STREQUAL "release" )
     set(stagever "${HPCC_SEQUENCE}")
   else()
-    set(stagever "${HPCC_SEQUENCE}${HPCC_MATURITY}")
+    set(stagever "${HPCC_MATURITY}${HPCC_SEQUENCE}")
   endif()
   set(version ${majorver}.${minorver}.${point})
 
