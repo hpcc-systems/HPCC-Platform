@@ -9,6 +9,7 @@ var dojoConfig = (function () {
         return {
             hostname: location.hostname,
             port: location.port,
+            wseclhostandport: location.hostname + ":8002",
             pathname: location.pathname,
             hash: hashNodes.length >= 2 ? hashNodes[1] : "",
             params: searchNodes.length >= 2 ? searchNodes[1] : "",
