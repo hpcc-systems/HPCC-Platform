@@ -4019,8 +4019,39 @@ void MonitorExtractor::buildKeySegmentInExpr(BuildMonitorState & buildState, Key
 
             HqlExprArray args;
             args.append(*LINK(targetVar));
-            args.append(*LINK(address));
-            args.append(*LINK(address));
+            unsigned srcSize = address->queryType()->getSize();
+            if (srcSize < curSize)
+            {
+                OwnedHqlExpr rangeLower = subctx.getTempDeclare(LINK(fieldType), NULL);
+                OwnedHqlExpr rangeUpper = subctx.getTempDeclare(LINK(fieldType), NULL);
+                HqlExprArray argsMemcpy;
+
+                argsMemcpy.append(*translator.getElementPointer(rangeLower));
+                argsMemcpy.append(*LINK(address));
+                argsMemcpy.append(*getSizetConstant(srcSize));
+                translator.callProcedure(subctx, memcpyId, argsMemcpy);
+                StringBuffer s;
+                s.append("*(");
+                translator.generateExprCpp(s, rangeLower);
+                s.append(" + ").append(srcSize).append(") = 0;");
+                subctx.addQuoted(s);
+
+                argsMemcpy.append(*translator.getElementPointer(rangeUpper));
+                argsMemcpy.append(*LINK(address));
+                argsMemcpy.append(*getSizetConstant(srcSize));
+                translator.callProcedure(subctx, memcpyId, argsMemcpy);
+                s.set("*(");
+                translator.generateExprCpp(s, rangeUpper);
+                s.append(" + ").append(srcSize).append(") = '\377';");
+                subctx.addQuoted(s);
+
+                args.append(*LINK(rangeLower));
+                args.append(*LINK(rangeUpper));
+            } else
+            {
+                args.append(*LINK(address));
+                args.append(*LINK(address));
+            }
             translator.callProcedure(subctx, func, args);
         }
     }
@@ -5005,6 +5036,7 @@ IHqlExpression * MonitorExtractor::castToFieldAndBack(IHqlExpression * left, IHq
                 return LINK(right);
             return ensureExprType(right, leftType);
         }
+    case no_substring:
     case no_add:
     case no_sub:
         return castToFieldAndBack(left->queryChild(0), right);
@@ -5049,6 +5081,13 @@ IHqlExpression * MonitorExtractor::invertTransforms(IHqlExpression * left, IHqlE
             assertex(right->getOperator() != no_list);
 
             OwnedHqlExpr adjusted = createValue(op == no_sub ? no_add : no_sub, right->getType(), LINK(right), LINK(left->queryChild(1)));
+            return invertTransforms(left->queryChild(0), adjusted);
+        }
+    case no_substring:
+        {
+            assertex(right->getOperator() != no_list);
+
+            OwnedHqlExpr adjusted = createValue(no_substring, right->getType(), LINK(right), LINK(left->queryChild(1)));
             return invertTransforms(left->queryChild(0), adjusted);
         }
     default:
@@ -5138,6 +5177,23 @@ IHqlExpression * MonitorExtractor::isKeyableFilter(IHqlExpression * left, IHqlEx
             reason.set(KFRnokey);
         return NULL;
 
+    case no_substring:
+        {
+            IHqlExpression * range = left->queryChild(1);
+            if (range->getOperator() == no_rangeto)
+            {
+                return isKeyableFilter(left->queryChild(0), right, duplicate, compareOp, reason, keyedKind);
+            }
+            else if (range->getOperator() == no_range)
+            {
+                IValue *start = range->queryChild(0)->queryValue();
+                if (!start || start->getIntValue() != 1)
+                    break;
+                return isKeyableFilter(left->queryChild(0), right, duplicate, compareOp, reason, keyedKind);
+            }
+            reason.set(KFRtoocomplex, right);
+            return NULL;
+        }
     case no_add:
     case no_sub:
         if (isIndexInvariant(left->queryChild(1)))
