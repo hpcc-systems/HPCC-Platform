@@ -472,7 +472,6 @@ sub _check_ini_file($)
     my $ini = new Config::Simple(syntax=>'ini');
 
     # Test suites
-    my $clusters = '';
     my $xml_cl = $xml_sw->{Topology}->{Cluster};
     foreach my $name (keys %$xml_cl) {
         my $type = '';
@@ -491,6 +490,7 @@ sub _check_ini_file($)
         my %config = (
             'cluster' => $name,
             'type' => $type,
+            'setup_clusters' => $name
         );
         # roxieserver, only in Roxie
         if ($type eq 'roxie') {
@@ -507,8 +507,6 @@ sub _check_ini_file($)
                 }
             }
         }
-        # Append suite to list
-        $clusters .= $name.' ' unless ($type eq 'roxie');
 
         $ini->param(-block=>$name.'_suite', -value=> \%config);
     }
@@ -522,8 +520,7 @@ sub _check_ini_file($)
             'setup_file_location' => '',
             'os' => $os,
             'parallel_queries' => $parallel,
-            'purge' => $purge,
-            'setup_clusters' => $clusters,
+            'purge' => $purge
     });
 
     $ini->save($ini_file);
