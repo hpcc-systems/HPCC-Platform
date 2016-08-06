@@ -3020,6 +3020,7 @@ public:
             StringAttr nameFilterLo;
             StringAttr nameFilterHi;
             StringArray unknownAttributes;
+            unsigned totalWUs;
 
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -3027,6 +3028,7 @@ public:
             CDFUWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi, StringArray& _unknownAttributes)
                 : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
             {
+                totalWUs = 0;
                 ForEachItemIn(x, _unknownAttributes)
                     unknownAttributes.append(_unknownAttributes.item(x));
             }
@@ -3039,8 +3041,10 @@ public:
                 if (!iter)
                     return NULL;
                 sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), unknownAttributes, elements);
+                totalWUs = elements.ordinality();
                 return conn.getClear();
             }
+            virtual unsigned getTotalElements() { return totalWUs; }
         };
 
         StringBuffer query;
@@ -3095,7 +3099,7 @@ public:
         }
         IArrayOf<IPropertyTree> results;
         Owned<IElementsPager> elementsPager = new CDFUWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
-        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,queryowner,cachehint,results,total);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,queryowner,cachehint,results,total,NULL);
         return new CConstDFUWUArrayIterator(this,conn,results);
     }
 
