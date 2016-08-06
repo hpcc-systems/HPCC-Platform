@@ -70,12 +70,16 @@ public class SQLParserTest
 				System.out.print("Select Columns: [ ");
 				for (int i = 0; i < cols.size(); i++)
 				{
-					System.out.print(cols.get(i).getColumnName() + "( " + cols.get(i).getAlias()  + " )");
+					HPCCColumnMetaData col = cols.get(i);
+					System.out.print(col.getColumnName() + " " + (col.getAlias() != null ?
+							"(" + col.getAlias()  + ") " : ""));
 				}
 				System.out.println(" ] ");
 				System.out.println("Table Name: " + parser.getTableName());
 				System.out.println("Table Alias: " + parser.getTableAlias());
 				System.out.println("Index Hint: " + parser.getIndexHint());
+				if (parser.hasJoinClause())
+					System.out.println("Join Clause: " + parser.getJoinClause().toString());
 				System.out.println("Where Clause: " + parser.getWhereClauseString());
 				if (parser.hasGroupByColumns())
 					System.out.println("Group By: " + parser.getGroupByString(','));
@@ -132,6 +136,9 @@ public class SQLParserTest
 			success &= testTableAlias("mytablename", "mytablealias");
 			success &= testFreeHandSQL("select city as mycity, persons.zip, count(*) from tutorial::rp::tutorialperson as persons USE INDEX(myindex) where zip ='33445' limit 1000");
 			success &= testFreeHandSQL("call peoplebyzip(33445) limit 1000");
+			success &= testFreeHandSQL("select * from tablename1 JOIN tablename2 tablealias2 On tablealias2.a = tablename.a limit 1000");
+			success &= testFreeHandSQL("select col1 as colONE, col2 as colTWO from tablename1 t1 JOIN tablename2 tablealias2 On tablealias2.a = t1.a where t1.a > 300 limit 1000");
+			success &= testFreeHandSQL("select col1 as colONE, col2 as colTWO from tablename1 t1 JOIN tablename2 tablealias2 On tablealias2.a = a limit 1000");
 		}
 		catch (Exception e)
 		{
@@ -140,6 +147,6 @@ public class SQLParserTest
 			success = false;
 		}
 
-		System.out.println("\nParser test " + (success ? "passed! " : "failed!"));
+		System.out.println("\nParser test " + (success ? " did not cause exceptions, please verify output! " : "failed!"));
 	}
 }

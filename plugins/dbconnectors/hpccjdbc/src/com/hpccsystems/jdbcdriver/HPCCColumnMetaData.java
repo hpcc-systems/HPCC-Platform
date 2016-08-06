@@ -6,7 +6,8 @@ import java.util.List;
  * @author rpastrana
  */
 
-public class HPCCColumnMetaData {
+public class HPCCColumnMetaData
+{
 	private String columnName;
 	private int index;
 	private int sqlType;
@@ -26,7 +27,6 @@ public class HPCCColumnMetaData {
 	private int columnType;
 	private String alias;
 	private List<HPCCColumnMetaData> funccols;
-
 
 	final static int COLUMN_TYPE_DATA 		= 1;
 	final static int COLUMN_TYPE_CONSTANT 	= 2;
@@ -79,7 +79,7 @@ public class HPCCColumnMetaData {
 
 	public boolean isConstant()
 	{
-		return constantValue == null ? false : true;
+		return constantValue != null;
 	}
 
 	public String getConstantValue()

@@ -2223,6 +2223,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			HttpURLConnection dfulogfilesConn = createHPCCESPConnection(dfuLogicalFilesURL);
 
 			isSuccess = parseDFULogicalFiles(dfulogfilesConn.getInputStream(), true) > 0 ? true : false;
+
+			if (isSuccess)
+				dfufiles.updateSuperFiles();
 		}
 		catch (MalformedURLException e)
 		{

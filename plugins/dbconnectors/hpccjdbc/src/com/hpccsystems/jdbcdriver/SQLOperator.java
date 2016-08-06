@@ -1,5 +1,6 @@
 package com.hpccsystems.jdbcdriver;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,12 +47,56 @@ public class SQLOperator
 
 	private final String value;
 
+	private static void populateValidOps ()
+	{
+		validOps = new ArrayList<String>();
+
+		validOps.add(eq);
+		validOps.add(neq);
+		validOps.add(isNull);
+		validOps.add(isNotNull);
+		validOps.add(gt);
+		validOps.add(lt);
+		validOps.add(gte);
+		validOps.add(lte);
+		validOps.add(and);
+		validOps.add(or);
+		validOps.add(not);
+		validOps.add(exists);
+		validOps.add(like);
+		validOps.add(in);
+	}
+
 	public SQLOperator(String operator)
 	{
+		if (validOps == null)
+			populateValidOps();
+
 		if( validOps.contains(operator.toUpperCase()))
-				value = operator.toUpperCase();
+			value = operator.toUpperCase();
 		else
-				value = null;
+			value = null;
+	}
+
+	static public String parseOperatorFromFragmentStr(String fragment)
+	{
+		String trimmedFragment = fragment.trim();
+		String operator = null;
+
+		if (trimmedFragment.indexOf(SQLOperator.gte)!=-1)
+			operator = SQLOperator.gte;
+		else if (trimmedFragment.indexOf(SQLOperator.lte)!=-1)
+			operator = SQLOperator.lte;
+		else if (trimmedFragment.indexOf(SQLOperator.neq)!=-1)
+			operator = SQLOperator.neq;
+		else if (trimmedFragment.indexOf(SQLOperator.eq)!=-1)
+			operator = SQLOperator.eq;
+		else if (trimmedFragment.indexOf(SQLOperator.gt)!=-1)
+			operator = SQLOperator.gt;
+		else if (trimmedFragment.indexOf(SQLOperator.lt)!=-1)
+			operator = SQLOperator.lt;
+
+		return operator;
 	}
 
 	public String getValue()
