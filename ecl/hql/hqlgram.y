@@ -11622,7 +11622,7 @@ sortItem
                             $$.setExpr(createAttribute(thresholdAtom, $3.getExpr()));
                         }
     | WHOLE RECORD      {   $$.setExpr(createAttribute(recordAtom)); }
-    | RECORD            {   $$.setExpr(createAttribute(recordAtom)); }
+    | RECORD            {   parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "The RECORD attribute has been deprecated, use WHOLE RECORD instead."); }
     | EXCEPT expression {   
                             parser->normalizeExpression($2);
                             $$.setExpr(createExprAttribute(exceptAtom, $2.getExpr()));
@@ -11684,7 +11684,7 @@ dedupFlag
                             $$.inherit($1);
                         }
     | WHOLE RECORD      {   $$.setExpr(createAttribute(recordAtom)); }
-    | RECORD            {   $$.setExpr(createAttribute(recordAtom)); }
+    | RECORD            {  parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "The RECORD attribute has been deprecated, use WHOLE RECORD instead."); }
     | EXCEPT expression {   
                             //MORE:SORTLIST  Allow sort list as an exception
                             parser->normalizeExpression($2);
@@ -11724,7 +11724,7 @@ rollupFlag
                             $$.inherit($1);
                         }
     | WHOLE RECORD      {   $$.setExpr(createAttribute(recordAtom)); }
-    | RECORD                {   $$.setExpr(createAttribute(recordAtom)); }
+    | RECORD            {  parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "The RECORD attribute has been deprecated, use WHOLE RECORD instead."); }
     | EXCEPT expression {   
                             //MORE:SORTLIST  Allow sort list as an exception
                             parser->normalizeExpression($2);
