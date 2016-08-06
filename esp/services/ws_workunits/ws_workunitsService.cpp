@@ -2009,39 +2009,36 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
             return;
         }
 
-        void addArchivedWU(IArrayOf<IEspECLWorkunit>& archivedWUs, StringArray& wuDataArray, bool canAccess)
+        IEspECLWorkunit *createArchivedWUEntry(StringArray& wuDataArray, bool canAccess)
         {
             Owned<IEspECLWorkunit> info= createECLWorkunit("","");
             const char* wuid = wuDataArray.item(0);
+            const char* owner = wuDataArray.item(1);
+            const char* jobName = wuDataArray.item(2);
+            const char* cluster = wuDataArray.item(3);
+            const char* state = wuDataArray.item(4);
             info->setWuid(wuid);
             if (!canAccess)
                 info->setState("<Hidden>");
             else
             {
-                if (notEmpty(wuDataArray.item(1)))
-                    info->setOwner(wuDataArray.item(1));
-                if (notEmpty(wuDataArray.item(2)))
-                    info->setJobname(wuDataArray.item(2));
-                if (notEmpty(wuDataArray.item(3)))
-                    info->setCluster(wuDataArray.item(3));
-                if (notEmpty(wuDataArray.item(4)))
-                    info->setState(wuDataArray.item(4));
+                if (notEmpty(owner))
+                    info->setOwner(owner);
+                if (notEmpty(jobName))
+                    info->setJobname(jobName);
+                if (notEmpty(cluster))
+                    info->setCluster(cluster);
+                if (notEmpty(state))
+                    info->setState(state);
             }
-
-            //Sort WUs by WUID
-            ForEachItemIn(i, archivedWUs)
-            {
-                IEspECLWorkunit& w = archivedWUs.item(i);
-                if (!isEmpty(w.getWuid()) && strcmp(wuid, w.getWuid())>0)
-                {
-                    archivedWUs.add(*info.getClear(), (aindex_t) i);
-                    return;
-                }
-            }
-            archivedWUs.append(*info.getClear());
-            return;
+            return info.getClear();
         }
-
+        static int compareWuids(IInterface **_a, IInterface **_b)
+        {
+            IEspECLWorkunit *a = *(IEspECLWorkunit **)_a;
+            IEspECLWorkunit *b = *(IEspECLWorkunit **)_b;
+            return strcmp(b->getWuid(), a->getWuid());
+        }
     public:
         IMPLEMENT_IINTERFACE_USING(CInterface);
 
@@ -2052,7 +2049,7 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
         {
             hasMoreWU = false;
             numberOfWUsReturned = 0;
-        };
+        }
 
         void getArchivedWUs(IArrayOf<IEspECLWorkunit>& archivedWUs)
         {
@@ -2108,12 +2105,15 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
                         const char* wuid = wuDataArray.item(0);
                         if (isEmpty(wuid))
                         {
-                            WARNLOG("Empty WUID in SCA_LIST response");
+                            WARNLOG("Empty WUID in SCA_LIST response"); // JCS->KW - have u ever seen this happen?
                             continue;
                         }
-
-                        addArchivedWU(archivedWUs, wuDataArray, chooseWuAccessFlagsByOwnership(context.queryUserId(), wuDataArray.item(1), accessOwn, accessOthers) >= SecAccess_Read);
+                        const char* owner = wuDataArray.item(1);
+                        bool canAccess = chooseWuAccessFlagsByOwnership(context.queryUserId(), owner, accessOwn, accessOthers) >= SecAccess_Read;
+                        Owned<IEspECLWorkunit> info = createArchivedWUEntry(wuDataArray, canAccess);
+                        archivedWUs.append(*info.getClear());
                     }
+                    archivedWUs.sort(compareWuids);
 
                     archivedWuCache.add(filterStr, "AddWhenAvailable", hasMoreWU, numberOfWUsReturned, archivedWUs);
                 }
