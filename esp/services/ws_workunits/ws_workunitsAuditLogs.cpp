@@ -33,6 +33,9 @@
 #include "schedulectrl.hpp"
 #include "scheduleread.hpp"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpointer-bool-conversion"
+
 bool getClusterJobQueueXLS(StringBuffer &xml, const char* cluster, const char* startDate, const char* endDate, const char* showType)
 {
     CDateTime fromTime;

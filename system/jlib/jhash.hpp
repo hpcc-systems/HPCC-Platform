@@ -27,6 +27,9 @@
 #include "jiter.hpp"
 #include "jsuperhash.hpp"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundefined-bool-conversion"
+
 #ifndef IHASH_DEFINED       // may be defined already elsewhere
 #define IHASH_DEFINED
 interface IHash
