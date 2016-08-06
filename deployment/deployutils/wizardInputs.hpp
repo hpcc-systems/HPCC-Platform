@@ -128,6 +128,7 @@ private:
    unsigned m_supportNodes;
    unsigned m_roxieNodes;
    unsigned m_thorNodes;
+   bool m_ldapServer;
    unsigned m_thorSlavesPerNode;
    unsigned m_roxieAgentRedChannels;
    unsigned m_roxieAgentRedOffset;
