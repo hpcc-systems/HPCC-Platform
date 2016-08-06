@@ -3511,6 +3511,7 @@ public:
                             if (diff < 0)
                             {
                                 rawSeek = steppingRow;
+                                keyProcessed--;
                                 break;
                             }
                         }
