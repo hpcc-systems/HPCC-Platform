@@ -45,6 +45,7 @@ private:
     StringAttr   m_pw;
     StringAttr   m_Fqdn;
     StringAttr   m_Peer;
+    StringAttr   m_employeeID;
     authStatus   m_authenticateStatus;
     CDateTime    m_passwordExpiration;//local time
     unsigned     m_userid;
@@ -131,6 +132,9 @@ public:
 
    authStatus getAuthenticateStatus()           { return m_authenticateStatus; }
    void setAuthenticateStatus(authStatus status){ m_authenticateStatus = status; }
+
+   virtual const char * getEmployeeID()                 { return m_employeeID.get(); }
+   virtual void setEmployeeID(const char * employeeID)  { m_employeeID.set(employeeID); }
 
    ISecUser * clone();
     virtual void setProperty(const char* name, const char* value){}
@@ -343,6 +347,7 @@ private:
     bool authenticate(ISecUser* user);
     StringBuffer m_description;
     unsigned m_passwordExpirationWarningDays;
+    StringBuffer m_employeeID;
 
 public:
     IMPLEMENT_IINTERFACE
@@ -438,6 +443,10 @@ public:
     virtual unsigned getPasswordExpirationWarningDays()
     {
         return m_passwordExpirationWarningDays;
+    }
+    virtual const char * getEmployeeID()
+    {
+        return m_employeeID.str();
     }
 };
 

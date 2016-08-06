@@ -30,7 +30,7 @@
                     }
                     else
                     {
-                            f.S1.disabled=true;
+                        f.S1.disabled=true;
                     }
                 }
             </script>
@@ -45,6 +45,7 @@
         <tr><td><b>User ID: </b></td><td><input type="text" name="username" size="20" onKeyPress="checkfields(this.form)"/></td></tr>
         <tr><td><b>First Name: </b></td><td><input type="text" name="firstname" size="20" value="" onKeyPress="checkfields(this.form)" onChange="checkfields(this.form)"/></td></tr>
         <tr><td><b>Last Name: </b></td><td><input type="text" name="lastname" size="20" value="" onKeyPress="checkfields(this.form)"/></td></tr>
+        <tr><td><b>Employee ID: </b></td><td><input type="text" name="employeeID" size="20" value="" onKeyPress="checkfields(this.form)"/></td></tr>
         <tr><td><b>Password: </b></td><td><input type="password" name="password1" size="20" value="" onKeyPress="checkfields(this.form)" onChange="checkfields(this.form)"/></td></tr>
         <tr><td><b>Retype password: </b></td><td><input type="password" name="password2" size="20" value="" onKeyPress="checkfields(this.form)" onChange="checkfields(this.form)"/></td></tr>
         <tr><td></td><td><input type="submit" value="Submit" disabled="form.username.value=''" name="S1" /> &nbsp; <input type="reset" value="Clear"  onClick="S1.disabled='true'"/> </td>

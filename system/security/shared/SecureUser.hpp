@@ -36,6 +36,7 @@ private:
     StringBuffer    m_fullname;
     StringBuffer    m_firstname;
     StringBuffer    m_lastname;
+    StringBuffer    m_employeeID;
     unsigned        m_userID;
     StringBuffer    m_Fqdn;
     StringBuffer    m_Peer;
@@ -104,6 +105,19 @@ public:
         }
         return true;
     }
+
+    virtual const char * getEmployeeID()
+    {
+        return m_employeeID.str();
+    }
+    virtual void setEmployeeID(const char * employeeID)
+    {
+        m_employeeID.clear();
+        if(employeeID && *employeeID)
+            m_employeeID.append(employeeID);
+    }
+
+
     const char * getRealm()
     {
         return m_realm.str();
@@ -218,6 +232,7 @@ public:
         destination.credentials().setPassword(credentials().getPassword());
         CDateTime tmpTime;
         destination.setPasswordExpiration(getPasswordExpiration(tmpTime));
+        destination.setEmployeeID(getEmployeeID());
         destination.setStatus(getStatus());
         if(m_parameters.get()==NULL)
             return;

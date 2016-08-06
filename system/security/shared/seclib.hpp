@@ -173,6 +173,8 @@ interface ISecUser : extends IInterface
     virtual void setPropertyInt(const char * name, int value) = 0;
     virtual int getPropertyInt(const char * name) = 0;
     virtual ISecUser * clone() = 0;
+    virtual const char * getEmployeeID() = 0;
+    virtual void setEmployeeID(const char * employeeID) = 0;
 };
 
 
@@ -298,6 +300,7 @@ interface ISecManager : extends IInterface
     virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources) = 0;
     virtual const char * getDescription() = 0;
     virtual unsigned getPasswordExpirationWarningDays() = 0;
+    virtual const char * getEmployeeID() = 0;
 };
 
 interface IExtSecurityManager
