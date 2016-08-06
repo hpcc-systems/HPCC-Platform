@@ -155,9 +155,11 @@ define([
         },
 
         _onReschedule: function (event) {
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Reschedule");
         },
 
         _onDeschedule: function (event) {
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Deschedule");
         },
 
         _onRowDblClick: function (wuid) {
@@ -473,6 +475,8 @@ define([
             var hasNotFailed = false;
             var hasCompleted = false;
             var hasNotCompleted = false;
+            var hasDeschedule = false;
+            var hasNotDeschedule = false;
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
                 if (selection[i] && selection[i].Protected !== null) {
@@ -493,6 +497,13 @@ define([
                     } else {
                         hasNotCompleted = true;
                     }
+                    if (selection[i] && selection[i].EventSchedule !== null) {
+                        if (selection[i].EventSchedule === 1) {
+                            hasNotDeschedule = true;
+                        } else if (selection[i].EventSchedule === 2) {
+                            hasDeschedule = true;
+                        }
+                    }
                 }
             }
 
@@ -502,8 +513,8 @@ define([
             registry.byId(this.id + "SetToFailed").set("disabled", !hasNotProtected);
             registry.byId(this.id + "Protect").set("disabled", !hasNotProtected);
             registry.byId(this.id + "Unprotect").set("disabled", !hasProtected);
-            registry.byId(this.id + "Reschedule").set("disabled", true);    //TODO
-            registry.byId(this.id + "Deschedule").set("disabled", true);    //TODO
+            registry.byId(this.id + "Reschedule").set("disabled", !hasNotDeschedule);
+            registry.byId(this.id + "Deschedule").set("disabled", !hasDeschedule);
 
             this.menuProtect.set("disabled", !hasNotProtected);
             this.menuUnprotect.set("disabled", !hasProtected);
