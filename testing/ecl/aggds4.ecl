@@ -33,3 +33,6 @@ output(sort(table(pr(aage > 20), { aage, max(group, fullname) }, aage, few), rec
 
 //Filtered Aggregate on a projected table.
 output(sort(table(pr2(seq > 10), { surname, ave(group, aage) }, surname, few), record));
+
+//Grouped Hash Aggregate
+output(sort(table(group(sort(sqNamesTable1, surname),surname), { surname, ave(group, aage) }, surname, few), record));
