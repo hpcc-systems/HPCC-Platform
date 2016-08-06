@@ -3131,7 +3131,14 @@ IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
         if (modScope)
         {
             OwnedHqlExpr resolved = modScope->lookupSymbol(searchName, LSFrequired|LSFsharedOK, lookupCtx);
-            if (resolved && (modScope != containerScope) && !isExported(resolved))
+            if (!resolved)
+            {
+                if (modScope->queryName())
+                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a member named '%s'", modScope->queryName()->str(), searchName->str());
+                else
+                    reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object does not have a member named '%s'", searchName->str());
+            }
+            else if ((modScope != containerScope) && !isExported(resolved))
                 reportError(HQLERR_CannotAccessShared, errpos, "Cannot access SHARED symbol '%s' in another module", searchName->str());
             return resolved.getClear();
         }
