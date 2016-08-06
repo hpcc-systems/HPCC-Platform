@@ -746,6 +746,17 @@ int CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const c
         return -1;
 }
 
+bool CLdapSecManager::logout(ISecUser& sec_user)
+{
+    sec_user.setAuthenticateStatus(AS_UNKNOWN);
+    if  (m_permissionsCache.isCacheEnabled())
+    {
+        m_permissionsCache.removePermissions(sec_user);
+        m_permissionsCache.removeFromUserCache(sec_user);
+    }
+    return  true;
+}
+
 int CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
 {
     if(!resourcename || !*resourcename)
