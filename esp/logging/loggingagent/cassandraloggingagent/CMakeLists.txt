@@ -43,6 +43,8 @@ if(USE_CASSANDRA)
   ADD_DEFINITIONS( -D_USRDLL -DCASSANDRALOGAGENT_EXPORTS )
 
   set ( SRCS
+    ${HPCC_SOURCE_DIR}/esp/logging/datafieldmap.cpp
+    ${HPCC_SOURCE_DIR}/esp/logging/loggingagentbase.cpp
     cassandralogagent.cpp
   )
 

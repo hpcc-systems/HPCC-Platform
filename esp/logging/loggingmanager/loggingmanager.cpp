@@ -248,6 +248,42 @@ bool CLoggingManager::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEs
     return bRet;
 }
 
+bool CLoggingManager::providesTransactionID()
+{
+    for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
+    {
+        IUpdateLogThread* loggingThread = loggingAgentThreads[x];
+        if (loggingThread->hasService(LGSTGetTransactionID))
+            return true;
+    }
+
+    return false;
+}
+
+bool CLoggingManager::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status)
+{
+    try
+    {
+        for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
+        {
+            IUpdateLogThread* loggingThread = loggingAgentThreads[x];
+            if (!loggingThread->hasService(LGSTGetTransactionID))
+                continue;
+
+            IEspLogAgent* loggingAgent = loggingThread->getLogAgent();
+            loggingAgent->getTransactionID(transFields, transactionID);
+            return true;
+        }
+    }
+    catch (IException* e)
+    {
+        e->errorMessage(status);
+        e->Release();
+    }
+
+    return false;
+}
+
 extern "C"
 {
 LOGGINGMANAGER_API ILoggingManager* newLoggingManager()

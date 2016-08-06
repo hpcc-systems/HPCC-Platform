@@ -53,6 +53,34 @@ bool CESPServerLoggingAgent::init(const char * name, const char * type, IPropert
     maxServerWaitingSeconds = cfg->getPropInt(PropServerWaitingSeconds);
     maxGTSRetries = cfg->getPropInt(MaxTriesGTS, DefaultMaxTriesGTS);
 
+    StringBuffer sourceName, groupName, dbName;
+    Owned<IPropertyTreeIterator> iter = cfg->getElements("LogSourceMap/LogSource");
+    ForEach(*iter)
+    {
+        ensureInputString(iter->query().queryProp("@name"), false, sourceName, -1, "LogSource @name required");
+        ensureInputString(iter->query().queryProp("@maptologgroup"), true, groupName, -1, "LogSource @maptologgroup required");
+        ensureInputString(iter->query().queryProp("@maptodb"), true, dbName, -1, "LogSource @maptodb required");
+        Owned<CLogSource> logSource = new CLogSource(sourceName.str(), groupName.str(), dbName.str());
+        logSources.setValue(sourceName.str(), logSource);
+
+        CTransIDBuilder* transIDBuilder = transIDMap.getValue(groupName.str());
+        if (!transIDBuilder)
+        {
+            StringBuffer transactionSeed, statusMessage;
+            getTransactionSeed(groupName.str(), transactionSeed, statusMessage);
+            if (transactionSeed.length() == 0)
+            {
+                VStringBuffer msg("Unable to get transaction seed for LogSource:%s", groupName.str());
+                if (statusMessage.length())
+                    msg.append(" - ").append(statusMessage.str());
+                throw MakeStringException(-1, "%s", msg.str());
+            }
+            Owned<CTransIDBuilder> entry = new CTransIDBuilder(transactionSeed.str());
+            transIDMap.setValue(groupName.str(), entry);
+        }
+        if (defaultGroup.length() == 0)
+            defaultGroup.set(groupName.str());
+    }
     readAllLogFilters(cfg);
     return true;
 }
@@ -129,53 +157,55 @@ bool CESPServerLoggingAgent::readLogFilters(IPropertyTree* cfg, unsigned groupID
 
 bool CESPServerLoggingAgent::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp)
 {
-    bool bRet = false;
+    StringBuffer statusMessage, transactionSeed;
+    int statusCode = getTransactionSeed(req.getApplication(), transactionSeed, statusMessage);
+    resp.setStatusCode(statusCode);
+    resp.setSeedId(transactionSeed.str());
+    if (statusMessage.length())
+        resp.setStatusMessage(statusMessage.str());
+    return (statusCode != -2);
+}
+
+int CESPServerLoggingAgent::getTransactionSeed(const char* appName, StringBuffer& transactionSeed, StringBuffer& statusMessage)
+{
     StringBuffer soapreq(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
         " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\">"
         " <soap:Body>");
-    soapreq.append("<GetTransactionSeedRequest/>");
+    if (!appName || !*appName)
+        soapreq.append("<GetTransactionSeedRequest/>");
+    else
+        soapreq.append("<GetTransactionSeedRequest><Application>").append(appName).append("</Application></GetTransactionSeedRequest>");
     soapreq.append("</soap:Body></soap:Envelope>");
 
     unsigned retry = 1;
+    int statusCode = 0;
     while (1)
     {
         try
         {
-            int statusCode = 0;
-            StringBuffer statusMessage, transactionSeed;
             if (!getTransactionSeed(soapreq, statusCode, statusMessage, transactionSeed))
                 throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed,"Failed to get TransactionSeed");
-
-            resp.setSeedId(transactionSeed.str());
-            resp.setStatusCode(statusCode);
-            if (statusMessage.length())
-                resp.setStatusMessage(statusMessage.str());
-            bRet = true;
             break;
         }
         catch (IException* e)
         {
-            StringBuffer errorStr, errorMessage;
-            errorMessage.append("Failed to get TransactionSeed: error code ").append(e->errorCode()).append(", error message ").append(e->errorMessage(errorStr));
-            ERRLOG("%s -- try %d", errorMessage.str(), retry);
+            StringBuffer errorStr;
+            statusMessage.set("Failed to get TransactionSeed: error code ").append(e->errorCode()).append(", error message ").append(e->errorMessage(errorStr));
+            ERRLOG("%s -- try %d", statusMessage.str(), retry);
             e->Release();
-            if (retry < maxGTSRetries)
+            if (retry >= maxGTSRetries)
             {
-                Sleep(retry*3000);
-                retry++;
-            }
-            else
-            {
-                resp.setStatusCode(-1);
-                resp.setStatusMessage(errorMessage.str());
+                statusCode = -2;
                 break;
             }
+            Sleep(retry*3000);
+            retry++;
         }
     }
 
-    return bRet;
+    return statusCode;
 }
 
 bool CESPServerLoggingAgent::getTransactionSeed(StringBuffer& soapreq, int& statusCode, StringBuffer& statusMessage, StringBuffer& seedID)
@@ -198,6 +228,26 @@ bool CESPServerLoggingAgent::getTransactionSeed(StringBuffer& soapreq, int& stat
     if (statusCode || !seedID.length())
         throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "Failed to get Transaction Seed from %s", serverUrl.str());
     return true;
+}
+
+void CESPServerLoggingAgent::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID)
+{
+    CTransIDBuilder* transIDBuilder = NULL;
+    StringAttr* source = transFields->getValue(TRANSACTIONMETHOD);
+    if (source)
+    {
+        CLogSource* logSource = logSources.getValue(source->get());
+        if (logSource)
+            transIDBuilder = transIDMap.getValue(logSource->getGroupName());
+        //KW -> Rodrigo: should I throw an exception if the source cannot be found in transIDMap?
+    }
+    if (!transIDBuilder && (defaultGroup.length() != 0))
+        transIDBuilder = transIDMap.getValue(defaultGroup.str());
+    if (!transIDBuilder)
+        throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "Failed to get TransactionSeed");
+
+    transIDBuilder->getTransID(transFields, transactionID);
+    return;
 }
 
 bool CESPServerLoggingAgent::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp)

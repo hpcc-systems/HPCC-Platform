@@ -26,7 +26,7 @@
 #include "cassandraembed.hpp"
 #include "loggingcommon.hpp"
 #include "loggingagentbase.hpp"
-#include "dbfieldmap.hpp"
+#include "datafieldmap.hpp"
 
 using namespace cassandraembed;
 
@@ -40,33 +40,24 @@ using namespace cassandraembed;
     #define CASSANDRALOGAGENT_API
 #endif
 
-class CCassandraLogAgent : public CInterface, implements IEspLogAgent
+class CCassandraLogAgent : public CDBLogAgentBase
 {
-    StringBuffer dbServer, defaultDB, dbUserID, dbPassword, transactionSeed;
-    StringAttr agentName, defaultLogGroup, defaultTransactionApp, loggingTransactionApp;
-    unsigned logSourceCount, loggingTransactionCount, maxTriesGTS;
-    MapStringToMyClass<CLogGroup> logGroups;
-    MapStringToMyClass<CLogSource> logSources;
     Owned<CassandraClusterSession> cassSession;
-    CriticalSection uniqueIDCrit, transactionSeedCrit;
+    CriticalSection transactionSeedCrit;
 
-    CLogGroup* checkLogSource(IPropertyTree* logRequest, StringBuffer& source, StringBuffer& logDB);
-    void getLoggingTransactionID(StringBuffer& id);
-    bool buildUpdateLogStatement(IPropertyTree* logRequest, const char* logDB, CLogTable& table, StringBuffer& logID, StringBuffer& cqlStatement);
-    void addField(CLogField& logField, const char* name, StringBuffer& value, StringBuffer& fields, StringBuffer& values);
-    void appendFieldInfo(const char* field, StringBuffer& value, StringBuffer& fields, StringBuffer& values, bool quoted);
-    void addMissingFields(CIArrayOf<CLogField>& logFields, BoolHash& HandledFields, StringBuffer& fields, StringBuffer& values);
-
-    void initKeySpace();
-    void ensureKeySpace();
+    void initKeySpace(StringBuffer& dbServer, StringBuffer& dbUserID, StringBuffer& dbPassword);
+    void ensureDefaultKeySpace();
     void setKeySpace(const char *keyspace);
-    void initTransSeedTable();
-    void queryTransactionSeed(const char* appName, StringBuffer& seed);
+    void ensureTransSeedTable();
     void createTable(const char *dbName, const char *tableName, StringArray& columnNames, StringArray& columnTypes, const char* keys);
-    //void executeSimpleStatement(CassSession *session, const char *st);
     void executeSimpleStatement(const char *st);
     void executeSimpleStatement(StringBuffer& st);
-    unsigned executeSimpleSelectStatement(const char* st, unsigned& resultValue);
+    bool executeSimpleSelectStatement(const char* st, unsigned& resultValue);
+
+    virtual void queryTransactionSeed(const char* appName, StringBuffer& seed);
+    virtual void setUpdateLogStatement(const char* dbName, const char* tableName,
+        const char* fields, const char* values, StringBuffer& statement);
+    virtual void executeUpdateLogStatement(StringBuffer& statement);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -75,9 +66,6 @@ public:
     virtual ~CCassandraLogAgent() { logGroups.kill(); logSources.kill(); };
 
     virtual bool init(const char* name, const char* type, IPropertyTree* cfg, const char* process);
-    virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
-    virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
-    virtual void filterLogContent(IEspUpdateLogRequestWrap* req);
 };
 
 #endif //_CASSANDRALOGAGENT_HPP__

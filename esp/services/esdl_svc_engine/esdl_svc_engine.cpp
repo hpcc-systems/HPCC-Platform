@@ -41,28 +41,24 @@ CEsdlSvcEngineSoapBindingEx::CEsdlSvcEngineSoapBindingEx(IPropertyTree* cfg, con
 
 IPropertyTree *CEsdlSvcEngine::createTargetContext(IEspContext &context, IPropertyTree *tgtcfg, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *req_pt)
 {
-    const char *querytype = tgtcfg->queryProp("@querytype");
-    if (!querytype || !strieq(querytype, "ROXIE")) //only roxie?
-        return NULL;
-
-    StringBuffer trxid;
-    generateTransactionId(context, trxid);
+    //const char *querytype = tgtcfg->queryProp("@querytype");
+    //if (!querytype || !strieq(querytype, "ROXIE")) //only roxie?
+    //    return NULL;
 
     Owned<IPropertyTree> localCtx(createPTreeFromIPT(m_service_ctx, ipt_none));
     ensurePTree(localCtx, "Row/Common");
-    localCtx->setProp("Row/Common/TransactionId", trxid.str());
+    localCtx->setProp("Row/Common/TransactionId", context.queryTransactionID());
+    ensurePTree(localCtx, "Row/Common/ESP");
+    localCtx->setProp("Row/Common/ESP/ServiceName", context.queryServiceName(""));
+    localCtx->setProp("Row/Common/ESP/MethodName", mthdef.queryMethodName());
 
     return localCtx.getLink();
 }
 
 void CEsdlSvcEngine::generateTransactionId(IEspContext & context, StringBuffer & trxid)
 {
-    //RANDOMNUM_DATE for now.
-    CriticalBlock b(trxIdCritSec);
-    Owned<IJlibDateTime> _timeNow =  createDateTimeNow();
-    SCMStringBuffer _dateString;
-    _timeNow->getDateString(_dateString);
-    trxid.appendf("%u_%s",getRandom(),_dateString.str());
+    //creationtime_threadid_RANDOMNUM for now.
+    trxid.appendf("%u_%u_%u",context.queryCreationTime(), ((unsigned) (memsize_t) GetCurrentThreadId()), getRandom());
 }
 
 void CEsdlSvcEngine::esdl_log(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IPropertyTree *req_pt, const char *rawresp, const char *logdata, unsigned int timetaken)

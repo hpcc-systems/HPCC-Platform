@@ -15,8 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _DBFIELDMAP_HPP__
-#define _DBFIELDMAP_HPP__
+#ifndef _DATAFIELDMAP_HPP__
+#define _DATAFIELDMAP_HPP__
 
 #pragma warning (disable : 4786)
 
@@ -87,4 +87,9 @@ public:
     const char* getGroupName() { return groupName.get(); };
     const char* getDBName() { return dbName.get(); };
 };
-#endif // !_DBFIELDMAP_HPP__
+
+void ensureInputString(const char* input, bool lowerCase, StringBuffer& outputStr, int code, const char* msg);
+void readLogGroupCfg(IPropertyTree* cfg, StringAttr& defaultLogGroup, MapStringToMyClass<CLogGroup>& logGroups);
+void readLogSourceCfg(IPropertyTree* cfg, unsigned& logSourceCount, StringAttr& logSourcePath, MapStringToMyClass<CLogSource>& logGroups);
+
+#endif // !_DATAFIELDMAP_HPP__

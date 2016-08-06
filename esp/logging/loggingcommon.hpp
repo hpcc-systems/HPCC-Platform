@@ -36,7 +36,8 @@ enum LOGServiceType
 {
     LGSTterm = 0,
     LGSTGetTransactionSeed = 1,
-    LGSTUpdateLOG = 2
+    LGSTUpdateLOG = 2,
+    LGSTGetTransactionID = 3
 };
 
 #endif // !defined __LOGGINGCOMMONDEF_HPP__

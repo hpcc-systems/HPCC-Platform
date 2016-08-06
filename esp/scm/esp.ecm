@@ -163,6 +163,9 @@ interface IEspContext : extends IInterface
     virtual IEspSecureContext* querySecureContext() = 0;
     virtual void setHTTPMethod(const char *method) = 0;
     virtual void setServiceMethod(const char *method) = 0;
+
+    virtual void setTransactionID(const char * trxid) = 0;
+    virtual const char * queryTransactionID() = 0;
 };
 
 
