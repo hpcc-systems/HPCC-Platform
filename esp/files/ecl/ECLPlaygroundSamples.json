@@ -1,0 +1,9 @@
+{
+	"identifier": "filename",
+	"label": "name",
+	"items": [
+		{ "name": "Simple Filter", 	"filename": "default.ecl",	selected: true },
+		{ "name": "Hello World", 	"filename": "hello.ecl" },
+		{ "name": "Simple Sort", 	"filename": "simplesort.ecl" }
+	]
+}
