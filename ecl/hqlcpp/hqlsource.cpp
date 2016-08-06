@@ -573,7 +573,7 @@ IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * table
 IHqlExpression * convertToPhysicalTable(IHqlExpression * tableExpr, bool ensureSerialized)
 {
     VirtualFieldsInfo fieldInfo;
-    fieldInfo.gatherVirtualFields(tableExpr->queryRecord(), false, ensureSerialized);
+    fieldInfo.gatherVirtualFields(tableExpr->queryRecord(), tableExpr->hasAttribute(_noVirtual_Atom), ensureSerialized);
     if (fieldInfo.hasVirtualsOrDeserialize())
         return createTableWithoutVirtuals(fieldInfo, tableExpr);
     return LINK(tableExpr);
@@ -2667,7 +2667,11 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     }
 
     if (includeFormatCrc)
-        translator.buildFormatCrcFunction(instance->classctx, "getFormatCrc", physicalRecord, NULL, 0);
+    {
+        //Spill files can still have virtual attributes in their physical records => remove them.
+        OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(physicalRecord);
+        translator.buildFormatCrcFunction(instance->classctx, "getFormatCrc", noVirtualRecord, NULL, 0);
+    }
 
     buildLimits(instance->startctx, expr, instance->activityId); 
     buildKeyedLimitHelper(expr);
