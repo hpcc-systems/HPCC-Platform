@@ -53,6 +53,8 @@ define([
     "dijit/form/Button",
     "dijit/form/RadioButton",
     "dijit/form/Select",
+    "dijit/form/DropDownButton",
+    "dijit/Dialog",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
@@ -80,6 +82,10 @@ define([
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
             this.stateSelect = registry.byId(this.id + "StateSelect");
             this.logicalFileSearchTypeSelect = registry.byId(this.id + "LogicalFileSearchType");
+            this.downloadToList = registry.byId(this.id + "DownloadToList");
+            this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
+            this.downListForm = registry.byId(this.id + "DownListForm");
+            this.fileName = registry.byId(this.id + "FileName");
         },
 
         startup: function (args) {
@@ -93,6 +99,62 @@ define([
                     context._onRefresh();
                 }
             });
+        },
+
+        _onDownloadToListCancelDialog: function (event){
+            this.downloadToListDialog.hide();
+        },
+
+        _onDownloadToList: function (event) {
+            this.downloadToListDialog.show();
+        },
+
+        _buildCSV: function (event) {
+            var selections = this.workunitsGrid.getSelected();
+            var csvContent = "";
+            var headers = this.workunitsGrid.columns;
+            var container = [];
+            var headerNames = [headers.Protected.field,headers.Wuid.label,headers.Owner.label,headers.Jobname.label,headers.Cluster.label,headers.RoxieCluster.label,headers.State.label,headers.TotalClusterTime.label];
+            container.push(headerNames);
+
+            arrayUtil.forEach(selections, function (cell, idx){
+                var row = [cell.Protected,cell.Wuid,cell.Owner,cell.Jobname,cell.Cluster,cell.RoxieCluster,cell.State,cell.TotalClusterTime];
+                    container.push(row);
+            });
+
+            arrayUtil.forEach(container, function (header, idx) {
+                dataString = header.join(",");
+                csvContent += dataString + "\n";
+            });
+
+            var download = function(content, fileName, mimeType) {
+            var a = document.createElement('a');
+            mimeType = mimeType || 'application/octet-stream';
+
+            if (navigator.msSaveBlob) { // IE10
+                return navigator.msSaveBlob(new Blob([content], { type: mimeType }), fileName);
+            } else if ('download' in a) {
+                a.href = 'data:' + mimeType + ',' + encodeURIComponent(content);
+                a.setAttribute('download', fileName);
+                document.body.appendChild(a);
+                setTimeout(function() {
+                  a.click();
+                  document.body.removeChild(a);
+                }, 66);
+                return true;
+              } else {
+                var f = document.createElement('iframe');
+                document.body.appendChild(f);
+                f.src = 'data:' + mimeType + ',' + encodeURIComponent(content);
+
+                setTimeout(function() {
+                  document.body.removeChild(f);
+                }, 333);
+                return true;
+              }
+            }
+            download(csvContent,  this.fileName.get("value")+".csv", 'text/csv');
+            this._onDownloadToListCancelDialog();
         },
 
         destroy: function (args) {
@@ -456,6 +518,12 @@ define([
             });
             this.workunitsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
+                var selection = context.workunitsGrid.getSelected();
+                if (selection.length > 0) {
+                    context.downloadToList.set("disabled", false);
+                } else {
+                    context.downloadToList.set("disabled", true);
+                }
             });
             aspect.after(this.workunitsGrid, 'gotoPage', function (deferred, args) {
                 return deferred.then(function () {
