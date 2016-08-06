@@ -363,6 +363,13 @@ hr.dashedLine {
     cursor: pointer;
 }
 
+.iconPlugins{
+    background-image: url("../img/Plugins.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
 .iconLandingZone{
     background-image: url("../img/LandingZone.png");
     width: 32px;

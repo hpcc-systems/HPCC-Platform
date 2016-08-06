@@ -14,6 +14,7 @@ var dojoConfig = (function () {
             params: searchNodes.length >= 2 ? searchNodes[1] : "",
             baseHost: baseHost,
             basePath: baseHost + "/esp/files",
+            pluginsPath: baseHost + "/esp/files",
             resourcePath: baseHost + "/esp/files/eclwatch",
             scriptsPath: baseHost + "/esp/files/eclwatch",
             thisPath: pathnodes.join("/")
@@ -53,6 +54,9 @@ var dojoConfig = (function () {
         }, {
             name: "ecl",
             location: urlInfo.resourcePath + "/ecl"
+        }, {
+            name: "plugins",
+            location: urlInfo.pluginsPath
         }, {
             name: "this",
             location: urlInfo.thisPath

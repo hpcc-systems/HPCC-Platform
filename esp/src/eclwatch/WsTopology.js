@@ -121,6 +121,9 @@ define([
         },
         TpThorStatus: function (params) {
             return ESPRequest.send("WsTopology", "TpThorStatus", params);
+        },
+        TpGetServicePlugins: function (params) {
+            return ESPRequest.send("WsTopology", "TpGetServicePlugins", params);
         }
     };
 });

@@ -37,6 +37,7 @@ define([
     "hpcc/ws_access",
     "hpcc/WsDfu",
     "hpcc/WsSMC",
+    "hpcc/WsTopology",
     "hpcc/GraphWidget",
     "hpcc/DelayLoadWidget",
 
@@ -63,7 +64,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domStyle, domGeo, cookie,
                 registry, Tooltip,
                 UpgradeBar,
-                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, GraphWidget, DelayLoadWidget,
+                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, WsTopology, GraphWidget, DelayLoadWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -81,6 +82,7 @@ define([
             this.stackContainer = registry.byId(this.id + "TabContainer");
             this.mainPage = registry.byId(this.id + "_Main");
             this.errWarnPage = registry.byId(this.id + "_ErrWarn");
+            this.pluginsPage = registry.byId(this.id + "_Plugins");
             registry.byId(this.id + "SetBanner").set("disabled", true);
 
             this.upgradeBar = new UpgradeBar({
@@ -91,6 +93,9 @@ define([
 
         startup: function (args) {
             this.inherited(arguments);
+            domStyle.set(dom.byId(this.id + "StackController_stub_Plugins").parentNode.parentNode, {
+                visibility: "hidden"
+            });
             domStyle.set(dom.byId(this.id + "StackController_stub_ErrWarn").parentNode.parentNode, {
                 visibility: "hidden"
             });
@@ -213,6 +218,17 @@ define([
                 }
             });
 
+            WsTopology.TpGetServicePlugins({
+                request: {
+                }
+            }).then(function (response) {
+                if (lang.exists("TpGetServicePluginsResponse.Plugins.Plugin", response) && response.TpGetServicePluginsResponse.Plugins.Plugin.length) {
+                    domStyle.set(dom.byId(context.id + "StackController_stub_Plugins").parentNode.parentNode, {
+                        visibility: "visible"
+                    });
+                }
+            });
+
             this.activity = ESPActivity.Get();
             this.activity.watch("Build", function (name, oldValue, newValue) {
                 context.parseBuildString(newValue);
@@ -226,6 +242,7 @@ define([
             this.createStackControllerTooltip(this.id + "_Files", this.i18n.Files);
             this.createStackControllerTooltip(this.id + "_RoxieQueries", this.i18n.PublishedQueries);
             this.createStackControllerTooltip(this.id + "_OPS", this.i18n.Operations);
+            this.createStackControllerTooltip(this.id + "_Plugins", this.i18n.Plugins);
             this.initTab();
         },
 
