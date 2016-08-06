@@ -39,6 +39,7 @@ public:
     ~SuperHashTable();
     // Derived class destructor expected to call _releaseAll()
     
+    void             destroy();  // kills the elements, reinit() must be called before any other operations
     void             reinit(unsigned initsize);
     void             kill(void);
     inline unsigned  count() const { return tablecount; }

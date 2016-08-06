@@ -2300,6 +2300,7 @@ void ActivityInstance::buildSuffix()
     classctx.removeAssociation(this);
     locations.kill();
     names.kill();
+    classGroupStmt->finishedBuilding();
 
     if (isExternal())
     {

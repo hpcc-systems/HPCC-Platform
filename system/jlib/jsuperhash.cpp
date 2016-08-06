@@ -503,6 +503,15 @@ void SuperHashTable::releaseAll()
     _releaseAll();
 }
 
+void SuperHashTable::destroy()
+{
+    releaseAll();
+    doKill();
+    tablesize = 0;
+    setCache(0);
+    table = nullptr;
+}
+
 void SuperHashTable::kill(void)
 {
     _releaseAll();
