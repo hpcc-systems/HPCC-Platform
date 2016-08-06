@@ -1261,6 +1261,10 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
 
 bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQueriesUsingFileRequest &req, IEspWUListQueriesUsingFileResponse &resp)
 {
+    ISecManager *secmgr = context.querySecManager();
+    if (secmgr && secmgr->querySecMgrType()==SMT_LDAP)
+        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, "List Queries using file not yet supported in LDAP enabled environments");
+
     const char *target = req.getTarget();
     const char *process = req.getProcess();
 
