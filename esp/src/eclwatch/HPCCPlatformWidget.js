@@ -23,6 +23,7 @@ define([
     "dojo/dom-form",
     "dojo/dom-style",
     "dojo/dom-geometry",
+    "dojo/on",
     "dojo/cookie",
 
     "dijit/registry",
@@ -60,7 +61,7 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domStyle, domGeo, cookie,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domStyle, domGeo, on, cookie,
                 registry, Tooltip,
                 UpgradeBar,
                 _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, GraphWidget, DelayLoadWidget,
@@ -167,10 +168,18 @@ define([
         },
 
         init: function (params) {
+            var context = this;
             if (this.inherited(arguments))
                 return;
 
-            var context = this;
+            on(this.searchText, "focus", function(evt){
+                context.searchText.set("placeHolder", "");
+            });
+
+            on(this.searchText, "blur", function(evt){
+                 context.searchText.set("placeHolder", context.i18n.PlaceholderFindText);
+            });
+
             WsAccount.MyAccount({
             }).then(function (response) {
                 if (lang.exists("MyAccountResponse.username", response)) {
