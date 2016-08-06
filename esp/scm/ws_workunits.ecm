@@ -778,6 +778,7 @@ ESPrequest WUResultRequest
     string LogicalName;
     string Cluster;
     bool SuppressXmlSchema(0);
+    [min_ver("1.60")] bool BypassCachedResult(false);
     [min_ver("1.50")] ESParray<ESPstruct NamedValue> FilterBy;
 
     int64 Start(0);
@@ -1767,7 +1768,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetArchiveFileResponse
 };
 
 ESPservice [
-    version("1.59"), default_client_version("1.59"),
+    version("1.60"), default_client_version("1.60"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

@@ -3069,10 +3069,12 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         const char* clusterName = req.getCluster();
         const char* resultName = req.getResultName();
 
-        PROGLOG("WUResult: %s", filter.str());
-        Owned<DataCacheElement> data = dataCache->lookup(context, filter, awusCacheMinutes);
+        Owned<DataCacheElement> data;
+        if (!req.getBypassCachedResult())
+            data.setown(dataCache->lookup(context, filter, awusCacheMinutes));
         if (data)
         {
+            PROGLOG("Retrieving Cached WUResult: %s", filter.str());
             mb.append(data->m_data.c_str());
             name.set(data->m_name.c_str());
             logicalName = data->m_logicalName.c_str();
@@ -3095,6 +3097,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         }
         else
         {
+            PROGLOG("Retrieving WUResult: %s", filter.str());
             WUState wuState = WUStateUnknown;
             if(logicalName && *logicalName)
             {
