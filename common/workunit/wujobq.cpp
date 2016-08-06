@@ -1897,6 +1897,33 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid)
         return false;
 }
 
+extern WORKUNIT_API StringBuffer &getQueuesContainingWorkUnit(const char *wuid, StringBuffer &queueList)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("/JobQueues", myProcessSession(), RTM_LOCK_READ, 5000);
+    if (!conn)
+        return queueList;
+
+    VStringBuffer xpath("Queue[Item/@wuid='%s']", wuid);
+    Owned<IPropertyTreeIterator> it = conn->getElements(xpath.str());
+    ForEach(*it)
+    {
+        if (queueList.length())
+            queueList.append(',');
+        queueList.append(it->query().queryProp("@name"));
+    }
+    return queueList;
+}
+
+extern void WORKUNIT_API removeWorkUnitFromAllQueues(const char *wuid)
+{
+    StringBuffer queueList;
+    if (!getQueuesContainingWorkUnit(wuid, queueList).length())
+        return;
+    Owned<IJobQueue> q = createJobQueue(queueList.str());
+    if (q)
+        while(q->remove(wuid));
+}
+
 extern bool WORKUNIT_API switchWorkUnitQueue(IWorkUnit* wu, const char *cluster)
 {
     if (!wu)

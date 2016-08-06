@@ -22,6 +22,7 @@
 
 #include "jliball.hpp"
 #include "junicode.hpp"
+#include "jsmartsock.hpp"
 #include "fileview.hpp"
 
 #include "esp.hpp"
@@ -87,13 +88,11 @@ typedef enum wsEclTypes_
 
 } wsEclType;
 
-
-
 class CWsEclService : public CInterface,
     implements IEspService
 {
 public:
-    Owned<IProperties> roxies;
+    MapStringToMyClass<ISmartSocketFactory> connMap;
     StringAttr auth_method;
     StringAttr portal_URL;
 
@@ -108,7 +107,6 @@ public:
     virtual void setContainer(IEspContainer * container){}
 
 };
-
 
 class CWsEclBinding : public CHttpSoapBinding
 {
@@ -190,13 +188,12 @@ public:
 
     int getWsEclExample(CHttpRequest* request, CHttpResponse* response, const char *thepath);
 
-
     int getJsonTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *formtype);
     void getWsEclJsonRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags);
     void getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest *request, const char *xml, WsEclWuInfo &wsinfo);
     
     int onRelogin(IEspContext &context, CHttpRequest* request, CHttpResponse* response);
-
+    void sendRoxieRequest(const char *process, StringBuffer &req, StringBuffer &resp, StringBuffer &status);
 };
 
 #endif //_WS_ECL_SERVICE_HPP__

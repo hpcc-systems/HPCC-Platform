@@ -19,7 +19,9 @@
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:output method="html"/>
-
+    <xsl:variable name="clusterselected" select="WUQuerySetDetailsResponse/ClusterName"/>
+    <xsl:variable name="filtertype" select="WUQuerySetDetailsResponse/FilterType"/>
+    <xsl:variable name="filter" select="WUQuerySetDetailsResponse/Filter"/>
     <xsl:template match="/WUQuerySetDetailsResponse">
         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
             <head>
@@ -45,15 +47,25 @@
         <script type="text/javascript" src="/esp/files/yui/build/datatable/datatable-min.js"></script>
         <script type="text/javascript" src="/esp/files/yui/build/json/json-min.js"></script>
         <script type="text/javascript" src="/esp/files/yui/build/tabview/tabview-min.js"></script>
+        <script type="text/javascript" src="/esp/files/yui/build/container/container_core-min.js"></script>
+        <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
+        <script type="text/javascript" src="/esp/files/yui/build/button/button-min.js"></script>
         ]]></xsl:text>
 
         <script language="JavaScript1.2">
-          var querySet = '<xsl:value-of select="QuerySetName"/>';
-          function onLoad() {
-          }
-          <xsl:text disable-output-escaping="yes"><![CDATA[
+            var querySet = '<xsl:value-of select="QuerySetName"/>';
+            var clusterName = '<xsl:value-of select="ClusterName"/>';
+            var countClusters = '<xsl:value-of select="count(ClusterNames/Item)"/>';
+            <xsl:text disable-output-escaping="yes"><![CDATA[
+              function onLoad() {
+                if ((countClusters > 0) && ((clusterName == '') || (clusterName == '--')))
+                {
+                    document.getElementById('divStatus').style.visibility = "hidden";
+                }
+              }
+
               var selectedRows = 0;
-                            var sortableTable = null;
+              var sortableTable = null;
 
               function deleteQueries() {
                 actionWorkunits('Delete');
@@ -158,6 +170,21 @@
                   }
               };
 
+              function reloadPage()
+              {
+                  var clusterSelect = document.getElementById('Clusters');
+                  if (clusterSelect.options[clusterSelect.selectedIndex].value == '--')
+                  {
+                      document.location.href='/WsWorkunits/WUQuerysetDetails?QuerySetName=' + querySet;
+                      return;
+                  }
+
+                  var optionSelect = document.getElementById('Status');
+                  var opt = ('&ClusterName='+ clusterSelect.options[clusterSelect.selectedIndex].value);
+                  opt += ('&FilterType=Status&Filter='+ optionSelect.options[optionSelect.selectedIndex].value);
+                  document.location.href='/WsWorkunits/WUQuerysetDetails?QuerySetName=' + querySet + opt;
+              }
+
               var queryDataTable;
               var aliasDataTable;
 
@@ -170,11 +197,25 @@
                     {key:"Dll", sortable:true, resizeable:true},
                     {key:"Suspended", formatter: formatCheckColumn, sortable:true, resizeable:true}
                   ];
+                  if (clusterName != '')
+                    queryColumnDefs = [
+                        {key:"Id", sortable:true, resizeable:true},
+                        {key:"Name", sortable:true, resizeable:true},
+                        {key:"Wuid", sortable:true, resizeable:true},
+                        {key:"Dll", sortable:true, resizeable:true},
+                        {key:"Suspended", formatter: formatCheckColumn, sortable:true, resizeable:true},
+                        {key:"Status", sortable:true, resizeable:true}
+                      ];
 
                   var queryDataSource = new YAHOO.util.DataSource(querysetQueries);
                   queryDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
+                  if (clusterName == '')
                   queryDataSource.responseSchema = {
                     fields: ["Id","Name","Wuid","Dll","Suspended"]
+                  };
+                  else
+                  queryDataSource.responseSchema = {
+                    fields: ["Id","Name","Wuid","Dll","Suspended","Status"]
                   };
 
                   queryDataTable = new YAHOO.widget.DataTable("querydiv",
@@ -249,23 +290,92 @@
           </ul>
           <div class="yui-content">
             <div>
-              <div id="querydiv">&#160;</div>
-              <br/>              
-              <span id="DeleteQueryButton1" class="yui-button yui-push-button">
-                <em class="first-child">
-                    <button type="button" name="DeleteQueryButton1" onclick="deleteQueries();">Delete</button>
-                </em>
-              </span>
-              <span id="ToggleSuspendButton" class="yui-button yui-push-button">
-                <em class="first-child">
-                  <button type="button" name="ToggleSuspendButton" onclick="toggleQueries();">Toggle Suspend</button>
-                </em>
-              </span>
-              <span id="ActivateButton" class="yui-button yui-push-button">
-                <em class="first-child">
-                    <button type="button" name="ActivateButton" onclick="activateQueries();">Activate</button>
-                </em>
-             </span>
+                <table>
+                    <xsl:if test="count(ClusterNames/Item)">
+                        <tr>
+                            <td align="left">
+                                Cluster:
+                                <select id="Clusters" name="Clusters" size="1" onchange="reloadPage()">
+                                    <option>--</option>
+                                    <xsl:for-each select="ClusterNames/Item">
+                                        <xsl:choose>
+                                            <xsl:when test="$clusterselected=.">
+                                                <option value="{.}" selected="selected">
+                                                    <xsl:value-of select="."/>
+                                                </option>
+                                            </xsl:when>
+                                            <xsl:otherwise>
+                                                <option value="{.}">
+                                                    <xsl:value-of select="."/>
+                                                </option>
+                                            </xsl:otherwise>
+                                        </xsl:choose>
+                                    </xsl:for-each>
+                                </select>
+                                <span id="divStatus">
+                                    <xsl:text disable-output-escaping="yes">&amp;nbsp;&amp;nbsp;&amp;nbsp;</xsl:text>
+                                    Query Status:
+                                    <select id="Status" name="Status" size="1" onchange="reloadPage()">
+                                        <option value="All">All</option>
+                                        <xsl:choose>
+                                            <xsl:when test="$filtertype='Status' and $filter='Available'">
+                                                <option value="Available" selected="selected">Available</option>
+                                            </xsl:when>
+                                            <xsl:otherwise>
+                                                <option value="Available">Available</option>
+                                            </xsl:otherwise>
+                                        </xsl:choose>
+                                        <xsl:choose>
+                                            <xsl:when test="$filtertype='Status' and $filter='Suspended'">
+                                                <option value="Suspended" selected="selected">Suspended</option>
+                                            </xsl:when>
+                                            <xsl:otherwise>
+                                                <option value="Suspended">Suspended</option>
+                                            </xsl:otherwise>
+                                        </xsl:choose>
+                                        <xsl:choose>
+                                            <xsl:when test="$filtertype='Status' and $filter='NotFound'">
+                                                <option value="NotFound" selected="selected">Not Found</option>
+                                            </xsl:when>
+                                            <xsl:otherwise>
+                                                <option value="NotFound">Not Found</option>
+                                            </xsl:otherwise>
+                                        </xsl:choose>
+                                    </select>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                            </td>
+                        </tr>
+                    </xsl:if>
+                    <tr>
+                        <td>
+                            <div id="querydiv">&#160;</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                          <br/>
+                          <span id="DeleteQueryButton1" class="yui-button yui-push-button">
+                            <em class="first-child">
+                                <button type="button" name="DeleteQueryButton1" onclick="deleteQueries();">Delete</button>
+                            </em>
+                          </span>
+                          <span id="ToggleSuspendButton" class="yui-button yui-push-button">
+                            <em class="first-child">
+                              <button type="button" name="ToggleSuspendButton" onclick="toggleQueries();">Toggle Suspend</button>
+                            </em>
+                          </span>
+                          <span id="ActivateButton" class="yui-button yui-push-button">
+                            <em class="first-child">
+                                <button type="button" name="ActivateButton" onclick="activateQueries();">Activate</button>
+                            </em>
+                          </span>
+                        </td>
+                    </tr>
+                </table>
             </div>
             <div>
               <div id="aliasdiv">&#160;</div>
@@ -292,7 +402,14 @@
   </xsl:template>
 
   <xsl:template match="QuerySetQuery">
-    {Id:'<xsl:value-of select="Id"/>', Name:'<xsl:value-of select="Name"/>', Wuid:'<xsl:value-of select="Wuid"/>', Dll:'<xsl:value-of select="Dll"/>', Suspended:'<xsl:value-of select="Suspended"/>'}<xsl:if test="position()!=last()">,</xsl:if>
+      <xsl:choose>
+          <xsl:when test="$clusterselected = ''">
+              {Id:'<xsl:value-of select="Id"/>', Name:'<xsl:value-of select="Name"/>', Wuid:'<xsl:value-of select="Wuid"/>', Dll:'<xsl:value-of select="Dll"/>', Suspended:'<xsl:value-of select="Suspended"/>'}<xsl:if test="position()!=last()">,</xsl:if>
+          </xsl:when>
+          <xsl:otherwise>
+              {Id:'<xsl:value-of select="Id"/>', Name:'<xsl:value-of select="Name"/>', Wuid:'<xsl:value-of select="Wuid"/>', Dll:'<xsl:value-of select="Dll"/>', Suspended:'<xsl:value-of select="Suspended"/>', Status:'<xsl:value-of select="Clusters/ClusterQueryState[1]/State"/>'}<xsl:if test="position()!=last()">,</xsl:if>
+          </xsl:otherwise>
+      </xsl:choose>
   </xsl:template>
 
 

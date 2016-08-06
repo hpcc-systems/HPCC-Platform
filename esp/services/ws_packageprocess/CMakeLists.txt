@@ -38,7 +38,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/dali/dfu
-         ${HPCC_SOURCE_DIR}/dali/dfutil
          ${HPCC_SOURCE_DIR}/common/remote
     )
 

@@ -403,9 +403,11 @@ private:
     void addSchemaSuffix();
     void clear();
     void getXmlTypeName(StringBuffer & xmlType, ITypeInfo & type);
+    void appendField(StringBuffer &xml, const char * name, ITypeInfo & type);
 
 protected:
     StringBuffer xml;
+    StringBufferArray attributes;
     StringBuffer typesXml;
     IntArray dataSizes;
     IntArray stringSizes;

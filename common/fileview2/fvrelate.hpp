@@ -102,6 +102,7 @@ interface IViewFileWeb : public IInterface
 {
 public:
     virtual void gatherWeb(const char * rootFilename, const ViewGatherOptions & options) = 0;
+    virtual void gatherWeb(const char * rootFilename, IDistributedFile * alreadyResolved, const ViewGatherOptions & options) = 0;
     virtual void gatherWebFromPattern(const char * pattern, const ViewGatherOptions & options) = 0;
     virtual IViewRelatedFile * queryFile(unsigned i) = 0;
     virtual IViewRelatedFileIterator * getFileIterator() = 0;

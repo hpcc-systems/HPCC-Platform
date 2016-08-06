@@ -73,6 +73,7 @@ public:
     }
     inline void set(const Shared<CLASS> &other) { this->set(other.get()); }
     inline void setown(CLASS * _ptr)            { CLASS * temp = ptr; ptr = _ptr; ::Release(temp); }
+    inline void swap(Shared<CLASS> & other)     { CLASS * temp = ptr; ptr = other.ptr; other.ptr = temp; }
     
 protected:
     inline Shared(CLASS * _ptr)                  { ptr = _ptr; } // deliberately protected

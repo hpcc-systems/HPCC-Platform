@@ -141,7 +141,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
                                 throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.",sourceLogicalFile.str());
                             }
             
-                            const char *kind = df->queryProperties().queryProp("@kind");
+                            const char *kind = df->queryAttributes().queryProp("@kind");
                             if (kind && strcmp(kind,"key")==0)
                             {
                                 params->setProp("@compressflag", 0);

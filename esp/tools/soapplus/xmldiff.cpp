@@ -323,11 +323,11 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
     }
 
     StringBuffer keybuf;
-    keybuf.appendf("%p-%p", t1, t2);
+    keybuf.appendf("%s-%s", xpath, xpathFull);
     std::string key = keybuf.str();
-    if(m_compcache.find(key) != m_compcache.end())
+    if(m_compcache.getValue(key.c_str()) != NULL)
     {
-        return m_compcache[key];
+        return *(m_compcache.getValue(key.c_str()));
     }
 
 
@@ -335,7 +335,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
     {
         if(m_ignoredXPaths.find(xpath) != m_ignoredXPaths.end())
         {
-            m_compcache[key] = true;
+            m_compcache.setValue(key.c_str(),true);
             return true;
         }
     }
@@ -344,14 +344,14 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
     const char* name2 = t2->queryName();
     if((name1 && !name2) || (!name1 && name2) || (name1 && name2 && strcmp(name1, name2) != 0))
     {
-        m_compcache[key] = false;
+        m_compcache.setValue(key.c_str(),false);
         return false;
     }
 
     // compare attributes
     if (cmpAttributes(t1,t2,xpathFull,false))
     {
-        m_compcache[key] = false;
+        m_compcache.setValue(key.c_str(),false);
         return false;
     }
 
@@ -361,7 +361,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         int num2 = t2->numChildren();
         if(num1 != num2)
         {
-            m_compcache[key] = false;
+            m_compcache.setValue(key.c_str(),false);
             return false;
         }
 
@@ -429,7 +429,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
 
             if(!foundmatch)
             {
-                m_compcache[key] = false;
+                m_compcache.setValue(key.c_str(),false);
                 delete[] ptrs1;
                 delete[] ptrs2;
                 return false;
@@ -440,7 +440,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         {
             if(ptrs1[i] != NULL)
             {
-                m_compcache[key] = false;
+                m_compcache.setValue(key.c_str(),false);
                 return false;           
             }
         }
@@ -449,7 +449,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         {
             if(ptrs2[i] != NULL)
             {
-                m_compcache[key] = false;
+                m_compcache.setValue(key.c_str(),false);
                 return false;
             }
         }
@@ -457,12 +457,12 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         delete[] ptrs1;
         delete[] ptrs2;
 
-        m_compcache[key] = true;
+        m_compcache.setValue(key.c_str(),true);
         return true;
     }
     else if((t1->hasChildren() && !t2->hasChildren()) || (!t1->hasChildren() && t2->hasChildren()))
     {
-        m_compcache[key] = false;
+        m_compcache.setValue(key.c_str(),false);
         return false;
     }
     else
@@ -477,7 +477,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         else
             isEqual = true;
 
-        m_compcache[key] = isEqual;
+        m_compcache.setValue(key.c_str(),isEqual);
         return isEqual;
     }
 }   

@@ -48,5 +48,6 @@
 #define WUERR_PackageAlreadyExists              5022
 #define WUERR_MismatchClusterType               5023
 #define WUERR_InvalidDll                        5024
+#define WUERR_WorkunitPublished                 5005
 
 #endif

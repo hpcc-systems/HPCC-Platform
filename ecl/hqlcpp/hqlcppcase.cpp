@@ -283,11 +283,17 @@ void HqlCppCaseInfo::buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & targe
 
 void HqlCppCaseInfo::buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test)
 {
-    //need to hack it because there is no signed integer type
-    OwnedHqlExpr tempVar = ctx.getTempDeclare(indexType, NULL);
-
     translator.buildExprAssign(ctx, target, defaultValue);
-    buildChop3Map(ctx, target, test, tempVar, 0, getNumPairs());
+    if (getNumPairs() <= 2)
+    {
+        buildChop2Map(ctx, target, test, 0, getNumPairs());
+    }
+    else
+    {
+        //need to hack it because there is no signed integer type
+        OwnedHqlExpr tempVar = ctx.getTempDeclare(indexType, NULL);
+        buildChop3Map(ctx, target, test, tempVar, 0, getNumPairs());
+    }
 }
 
 void HqlCppCaseInfo::buildChop2Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test, unsigned start, unsigned end)

@@ -215,7 +215,7 @@ public:
     virtual const void * querySeek(unsigned i) const;
     
 //inline helper functions
-    inline void clearPending() { if (pending) skip(); }
+    inline void clearPending() { if (readAheadRow) skip(); }
     inline bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return input->gatherConjunctions(collector); }
     inline unsigned getStepFlags() { return inputStepping ? inputStepping->getSteppedFlags() : 0; }
     inline double getPriority() { return inputStepping ? inputStepping->getPriority() : 0.0; }
@@ -240,7 +240,6 @@ public:
         }
         return next();
     }
-    inline bool hasRecordPending() { return pending != NULL; }
     inline void resetInputEOF() { input->resetEOF(); }
 
 private:
@@ -258,24 +257,24 @@ protected:
 
 private:
     Linked<ISteppedInput> input;
-    LinkedRowQueue seekRows;                    // rows that have been read from the input to provide as seek pointers for the next term
-    LinkedRowQueue readAheadRows;               // previous seek rows, that have been read past, but still required to return as results.
+    LinkedRowQueue readAheadRows; // rows that have been read from the input to provide seekRows for other terms
+    LinkedRowQueue seekRows;      // unique read-ahead rows that are >= the last seek position provided to ensureFilled()
 
 protected:
     IRangeCompare * compare;
-    const void * pending;
+    const void * readAheadRow;
     IInputSteppingMeta * inputStepping;
     IMultipleStepSeekInfo * lowestFrequencyInput;
     Linked<IEngineRowAllocator> rowAllocator;
     const void * restrictValue;
-    const void * previousPending;
+    const void * previousReadAheadRow;
     unsigned maxFields;
     unsigned numStepableFields;
     unsigned numRestrictFields;
     unsigned stepFlagsMask;
     unsigned stepFlagsValue;
     bool paranoid;
-    bool pendingMatches;
+    bool readAheadRowIsExactMatch;
     bool isPostFiltered;
 };
 

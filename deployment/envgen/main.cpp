@@ -24,6 +24,36 @@
 #define STANDARD_CONFIGXMLDIR COMPONENTFILES_DIR"/configxml/"
 #define STANDARD_CONFIG_BUILDSETFILE "buildset.xml"
 
+bool validateInteger(const char *str,int &out)
+{
+  bool bIsValid = false;
+  char *end = NULL;
+
+  errno = 0;
+
+  const long sl = strtol(str,&end,10);
+
+  if (end == str)
+  {
+    fprintf(stderr, "Error: non-integer parameter '%s' specified.\n",str);
+  }
+  else if ('\0' != *end)
+  {
+    fprintf(stderr, "Error: non-integer characters found in '%s' when expecting integer input.\n",str);
+  }
+  else if ( (INT_MAX < sl || INT_MIN > sl) || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno))
+  {
+    fprintf(stderr, "Error: integer '%s' is out of range.\n",str);
+  }
+  else
+  {
+    out = (int)sl;
+    bIsValid = true;
+  }
+
+  return bIsValid;
+}
+
 void usage()
 {
   const char* version = "1.1";
@@ -108,29 +138,58 @@ int main(int argc, char** argv)
     else if (stricmp(argv[i], "-supportnodes") == 0)
     {
       i++;
-      supportNodes = atoi(argv[i++]);
+
+      if (validateInteger(argv[i++],supportNodes) != true)
+      {
+        releaseAtoms();
+        return 1;
+      }
     }
     else if (stricmp(argv[i], "-roxienodes") == 0)
     {
       i++;
-      roxieNodes = atoi(argv[i++]);
+
+      if (validateInteger(argv[i++],roxieNodes) != true)
+      {
+        releaseAtoms();
+        return 1;
+      }
     }
     else if (stricmp(argv[i], "-thornodes") == 0)
     {
       i++;
-      thorNodes = atoi(argv[i++]);
+
+      if (validateInteger(argv[i++],thorNodes) != true)
+      {
+        releaseAtoms();
+        return 1;
+      }
     }
     else if (stricmp(argv[i], "-slavespernode") == 0)
     {
       i++;
-      slavesPerNode = atoi(argv[i++]);
+
+      if (validateInteger(argv[i++],slavesPerNode) != true)
+      {
+        releaseAtoms();
+        return 1;
+      }
     }
     else if (stricmp(argv[i], "-roxieondemand") == 0)
     {
       i++;
+      int iConverted = 0;
 
-      if (atoi(argv[i++]) != 1)
+      if (validateInteger(argv[i++],iConverted) != true)
+      {
+        releaseAtoms();
+        return 1;
+      }
+
+      if (iConverted != 1)
+      {
         roxieOnDemand = false;
+      }
     }
     else if (stricmp(argv[i], "-ip") == 0)
     {

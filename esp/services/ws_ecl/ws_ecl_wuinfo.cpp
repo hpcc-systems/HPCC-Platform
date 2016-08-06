@@ -183,7 +183,7 @@ void WsEclWuInfo::getSchemaFromResult(StringBuffer &schema, IConstWUResult &res)
         
         Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(username, password));
         Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&res);
-        meta->getXmlSchema(s, true);
+        meta->getXmlXPathSchema(s, true);
         const char *finger=schema.str();
         while (finger && strncmp(finger, "<xs:schema", 10))
             finger++;

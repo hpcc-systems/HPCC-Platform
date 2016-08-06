@@ -168,9 +168,9 @@ public:
                 Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helper->getFileName(), 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()));
                 if (file.get() && canMatch)
                 {
-                    if (0 != (TDRunfilteredcount & helper->getFlags()) && file->queryProperties().hasProp("@recordCount"))
+                    if (0 != (TDRunfilteredcount & helper->getFlags()) && file->queryAttributes().hasProp("@recordCount"))
                     {
-                        totalCount = (rowcount_t)file->queryProperties().getPropInt64("@recordCount");
+                        totalCount = (rowcount_t)file->queryAttributes().getPropInt64("@recordCount");
                         if (totalCount > stopAfter)
                             totalCount = stopAfter;
                         totalCountKnown = true;

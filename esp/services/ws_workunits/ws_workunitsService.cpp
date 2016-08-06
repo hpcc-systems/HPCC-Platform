@@ -401,7 +401,6 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                             switch (state)
                             {
                                 case WUStateWait:
-                                    throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT,"Cannot delete a workunit which is in a 'Wait' status.");
                                 case WUStateAborted:
                                 case WUStateCompleted:
                                 case WUStateFailed:
@@ -416,7 +415,7 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                                 }
                             }
                             cw.clear();
-                            factory->deleteWorkUnitEx(wuid);
+                            factory->deleteWorkUnit(wuid);
                             AuditSystemAccess(context.queryUserId(), true, "Deleted %s", wuid);
                         }
                        break;
@@ -1112,7 +1111,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
             case WUStateUnknown:
             {
                 SCMStringBuffer result;
-                getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityInformation);
+                getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityInformation, req.getNoRootTag());
                 resp.setResults(result.str());
                 break;
             }
@@ -3387,14 +3386,11 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
 
     wu->setAction(WUActionCompile);
 
-    if (notEmpty(req.getName()))
-        wu->setJobName(req.getName());
-    else if (notEmpty(req.getFileName()))
-    {
-        StringBuffer name;
+    StringBuffer name(req.getName());
+    if (!name.trim().length() && notEmpty(req.getFileName()))
         splitFilename(req.getFileName(), NULL, NULL, &name, NULL);
+    if (name.length())
         wu->setJobName(name.str());
-    }
 
     if (req.getObject().length())
     {
@@ -3413,6 +3409,17 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
     WsWuInfo winfo(context, wuid.str());
     winfo.getCommon(resp.updateWorkunit(), WUINFO_All);
     winfo.getExceptions(resp.updateWorkunit(), WUINFO_All);
+
+    name.clear();
+    if (notEmpty(resp.updateWorkunit().getJobname()))
+        origValueChanged(req.getName(), resp.updateWorkunit().getJobname(), name, false);
+
+    if (name.length()) //non generated user specified name, so override #Workunit('name')
+    {
+        WorkunitUpdate wx(&winfo.cw->lock());
+        wx->setJobName(name.str());
+        resp.updateWorkunit().setJobname(name.str());
+    }
 
     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
 }

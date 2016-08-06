@@ -18,6 +18,7 @@
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/dropzone.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/dropzone.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/eclagent_config.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/eclagent_config.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/eclagent_config.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/eclagent_config.xsd)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/esp.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/esp.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/espsmcservice.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/espsmcservice.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/ftslave_linux.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/ftslave_linux.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/roxie.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/roxie.xsd)
@@ -31,6 +32,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_BINARY_DIR}/dropzone.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/eclagent_config.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/eclagent_config.xsd
+    ${CMAKE_CURRENT_BINARY_DIR}/esp.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/espsmcservice.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/ftslave_linux.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/roxie.xsd
@@ -54,7 +56,6 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_ecldirect.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl2.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/ftslave.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/GABConfig.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/generic.xsd

@@ -128,7 +128,7 @@ int EclCMDShell::run()
     }
     catch (IException *E)
     {
-        StringBuffer m("Error: ");
+        StringBuffer m;
         fputs(E->errorMessage(m).newline().str(), stderr);
         E->Release();
         return 2;

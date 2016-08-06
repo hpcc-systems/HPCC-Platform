@@ -22,7 +22,7 @@ class GroupAggregateSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 
 private:
-    bool eof;
+    bool eof, ungroupedExistsAggregate;
     IHThorAggregateArg * helper;
     IThorDataLink *input;
 
@@ -47,9 +47,8 @@ public:
         eof = false;
         input=inputs.item(0);
         startInput(input);
+        ungroupedExistsAggregate = (container.getKind() == TAKexistsaggregate) && !input->isGrouped();
         dataLinkStart("GROUPAGGREGATE", container.queryId());
-        if (!input->isGrouped())
-            ActPrintLog("WARNING: non-grouped data as input to GroupAggregate");
     }
 
     void stop()
@@ -69,12 +68,16 @@ public:
         if (row)
         {
             sz = helper->processFirst(out, row);
-            loop
+            // NB: if ungrouped existsAggregate, no need to look at rest of input
+            if (!ungroupedExistsAggregate)
             {
-                row.setown(input->nextRow());
-                if (!row)
-                    break;
-                sz = helper->processNext(out, row);
+                while (!abortSoon)
+                {
+                    row.setown(input->nextRow());
+                    if (!row)
+                        break;
+                    sz = helper->processNext(out, row);
+                }
             }
             if (!input->isGrouped())
                 eof = true;

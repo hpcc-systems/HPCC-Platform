@@ -140,9 +140,9 @@ void FilePartInfo::extractExtra(IDistributedFilePart &part)
     if (hasCRC)
         crc = _crc;
 
-    properties.set(&part.queryProperties());
-    if (part.queryProperties().hasProp("@modified"))
-        modifiedTime.setString(part.queryProperties().queryProp("@modified"));
+    properties.set(&part.queryAttributes());
+    if (part.queryAttributes().hasProp("@modified"))
+        modifiedTime.setString(part.queryAttributes().queryProp("@modified"));
 }
 
 void FilePartInfo::init()
@@ -1481,9 +1481,9 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
         tgtFormat.set(srcFormat);
         if (distributedTarget)
         {
-            IPropertyTree &curProps = distributedTarget->lockProperties();
+            DistributedFilePropertyLock lock(distributedTarget);
+            IPropertyTree &curProps = lock.queryAttributes();
             tgtFormat.save(&curProps);
-            distributedTarget->unlockProperties();
         }
     }
 }
@@ -2284,7 +2284,7 @@ void FileSprayer::setReplicate(bool _replicate)
 void FileSprayer::setSource(IDistributedFile * source)
 {
     distributedSource.set(source);
-    srcAttr.setown(createPTreeFromIPT(&source->queryProperties()));
+    srcAttr.setown(createPTreeFromIPT(&source->queryAttributes()));
     extractSourceFormat(srcAttr);
     unsigned numParts = source->numParts();
     for (unsigned idx=0; idx < numParts; idx++)
@@ -2420,16 +2420,16 @@ void FileSprayer::setTarget(IDistributedFile * target)
     distributedTarget.set(target);
     compressOutput = !encryptKey.isEmpty()||target->isCompressed();
 
-    if (tgtFormat.restore(&target->queryProperties()))
+    if (tgtFormat.restore(&target->queryAttributes()))
         unknownTargetFormat = false;
     else
     {
         tgtFormat.set(srcFormat);
         if (!unknownSourceFormat)
         {
-            IPropertyTree &curProps = target->lockProperties();
+            DistributedFilePropertyLock lock(target);
+            IPropertyTree &curProps = lock.queryAttributes();
             tgtFormat.save(&curProps);
-            target->unlockProperties();
         }
     }
 
@@ -2758,7 +2758,9 @@ void FileSprayer::updateTargetProperties()
             if (idx+1 == partition.ordinality() || partition.item(idx+1).whichOutput != cur.whichOutput)
             {
                 Owned<IDistributedFilePart> curPart = distributedTarget->getPart(cur.whichOutput);
-                IPropertyTree& curProps = curPart->lockProperties();
+                // TODO: Create DistributedFilePropertyLock for parts
+                curPart->lockProperties();
+                IPropertyTree& curProps = curPart->queryAttributes();
                 if (calcCRC())
                 {
                     curProps.setPropInt(FAcrc, partCRC.get());
@@ -2827,7 +2829,8 @@ void FileSprayer::updateTargetProperties()
         if (failedParts.length())
             error.setown(MakeStringException(DFTERR_InputOutputCrcMismatch, "%s", failedParts.str()));
 
-        IPropertyTree &curProps = distributedTarget->lockProperties();
+        DistributedFilePropertyLock lock(distributedTarget);
+        IPropertyTree &curProps = lock.queryAttributes();
         if (calcCRC())
             curProps.setPropInt(FAcrc, totalCRC.get());
         curProps.setPropInt64(FAsize, totalLength);
@@ -2861,7 +2864,6 @@ void FileSprayer::updateTargetProperties()
                 curProps.addPropTree(iter->query().queryName(),createPTreeFromIPT(&iter->query()));
             }
         }
-        distributedTarget->unlockProperties();
     }
     if (error)
         throw error.getClear();

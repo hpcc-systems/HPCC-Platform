@@ -86,7 +86,7 @@ public:
   void setWizardIPList(const StringArray ipArray);
   void setWizardRules();
   CInstDetails* getServerIPMap(const char* compName, const char* buildSetName,const IPropertyTree* pEnvTree, unsigned numOfNode = 1);
-  void applyOverlappingRules(const char* compName, const char* buildSetName, unsigned startpos);
+  bool applyOverlappingRules(const char* compName, const char* buildSetName, unsigned startpos, StringArray* pIpAddrMap);
   count_t getNumOfInstForIP(StringBuffer ip);
   void generateSoftwareTree(IPropertyTree* pTree);
   void addInstanceToTree(IPropertyTree* pTree, StringBuffer attrName, const char* processName, const char* buildSetName, const char* instName);

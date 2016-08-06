@@ -415,7 +415,8 @@
 #define HQLERR_CannotSubmitFunction 2385
 #define HQLERR_CannotSubmitModule   2386
 #define ERR_COUNTER_NOT_COUNT       2387
-#define HQLERR_CannotSubmitMacroX   2385
+#define HQLERR_CannotSubmitMacroX   2388
+#define HQLERR_CannotBeGrouped      2389
 
 #define ERR_ASSERTION_FAILS         100000
 

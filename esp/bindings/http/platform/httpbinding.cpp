@@ -1747,7 +1747,7 @@ int EspHttpBinding::onGetIndex(IEspContext &context, CHttpRequest* request,  CHt
         MethodInfoArray methods;
         getQualifiedNames(context, methods);
 
-        if (supportGeneratedForms())
+        if (supportGeneratedForms() || request->queryParameters()->hasProp("list_forms"))
         {
             page.appendContent(new CHtmlText("The following operations are supported:<br/>"));
 

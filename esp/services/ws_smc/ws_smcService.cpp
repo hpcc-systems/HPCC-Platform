@@ -287,12 +287,13 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
         double version = context.getClientVersion();
 
+        bool isSuperUser = true;
 #ifdef _USE_OPENLDAP
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
-        if(req.getFromSubmitBtn() && secmgr && secmgr->isSuperUser(context.queryUser()))
-#else
-        if(req.getFromSubmitBtn())
+        if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+            isSuperUser =  false;
 #endif
+        if(isSuperUser && req.getFromSubmitBtn())
         {
             StringBuffer chatURLStr, bannerStr;
             const char* chatURL = req.getChatURL();
@@ -353,15 +354,8 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
         if (version > 1.05)
         {
-#ifdef _USE_OPENLDAP
-            int UserPermission = -1;
-            CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
-            if(secmgr && secmgr->isSuperUser(context.queryUser()))
-                UserPermission = 0;
-#else
-            int UserPermission = 0;
-#endif
-            resp.setUserPermission(UserPermission);
+            if (version > 1.11)
+                resp.setSuperUser(isSuperUser);
             resp.setShowBanner(m_BannerAction);
             resp.setShowChatURL(m_EnableChatURL);
             resp.setBannerContent(m_Banner.str());
@@ -493,9 +487,10 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         }
 
         SecAccessFlags access;
-        bool doCommand=(context.authorizeFeature(THORQUEUE_FEATURE, access) && access>=SecAccess_Full);
+        bool fullAccess=(context.authorizeFeature(THORQUEUE_FEATURE, access) && access>=SecAccess_Full);
 
         IArrayOf<IEspThorCluster> ThorClusters;
+        IArrayOf<IEspHThorCluster> HThorClusters;
         IArrayOf<IEspRoxieCluster> RoxieClusters;
 
         CConstWUClusterInfoArray clusters;
@@ -523,13 +518,12 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 returnCluster->setQueueStatus(queueState);
                 if (version > 1.06)
                     returnCluster->setQueueStatus2(color_type);
-                returnCluster->setDoCommand(doCommand);
                 if (version > 1.10)
                     returnCluster->setClusterSize(cluster.getSize());
 
                 addToThorClusterList(ThorClusters, returnCluster, req.getSortBy(), req.getDescending());
             }
-            if (version > 1.06) // JCSMORE->WANGKX , is this necessary?
+            if (version > 1.06)
             {
                 str.clear();
                 if (cluster.getRoxieProcess(str).length())
@@ -543,21 +537,53 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     const char *queueName = cluster.getAgentQueue(str).str();
                     Owned<IJobQueue> queue = createJobQueue(queueName);
                     addQueuedWorkUnits(queueName, queue, aws, context, "RoxieServer", NULL);
-                    const char *queueState = getQueueState(queue, -1, NULL);
+
+                    int color_type;
+                    int serverID = runningQueueNames.find(queueName);
+                    int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
+                    const char *queueState = getQueueState(queue, numRunningJobsInQueue, &color_type);
                     returnCluster->setQueueStatus(queueState);
+                    returnCluster->setQueueStatus2(color_type);
                     if (version > 1.10)
                         returnCluster->setClusterSize(cluster.getSize());
 
                     addToRoxieClusterList(RoxieClusters, returnCluster, req.getSortBy(), req.getDescending());
                 }
             }
+            if (version > 1.11 && (cluster.getPlatform() == HThorCluster))
+            {
+                IEspHThorCluster* returnCluster = new CHThorCluster("","");
+                str.clear();
+                returnCluster->setClusterName(cluster.getName(str).str());
+                str.clear();
+                returnCluster->setQueueName(cluster.getAgentQueue(str).str());
+                str.clear();
+                const char *queueName = cluster.getAgentQueue(str).str();
+                Owned<IJobQueue> queue = createJobQueue(queueName);
+                addQueuedWorkUnits(queueName, queue, aws, context, "HThorServer", NULL);
+
+                int color_type;
+                int serverID = runningQueueNames.find(queueName);
+                int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
+                const char *queueState = getQueueState(queue, numRunningJobsInQueue, &color_type);
+                returnCluster->setQueueStatus(queueState);
+                returnCluster->setQueueStatus2(color_type);
+                HThorClusters.append(*returnCluster);
+            }
         }
         resp.setThorClusters(ThorClusters);
-        resp.setRoxieClusters(RoxieClusters);
+        if (version > 1.06)
+            resp.setRoxieClusters(RoxieClusters);
         if (version > 1.10)
         {
             resp.setSortBy(req.getSortBy());
             resp.setDescending(req.getDescending());
+        }
+        if (version > 1.11)
+        {
+            resp.setHThorClusters(HThorClusters);
+            if (fullAccess)
+                resp.setAccessRight("Access_Full");
         }
 
         IArrayOf<IConstTpEclServer> eclccservers;

@@ -1229,8 +1229,10 @@ void SourceBuilder::associateTargetCursor(BuildCtx & subctx, BuildCtx & ctx, Bou
 
 void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr, bool ignoreFilters)
 {
-    if (expr != instance->dataset)
+    //This function can be called again for the unfiltered tranform.  Don't process annotations again.
+    if ((expr != instance->dataset) && !ignoreFilters)
         instance->processAnnotations(expr);
+
     expr = expr->queryBody();
     node_operator op = expr->getOperator();
 
@@ -1868,10 +1870,10 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
             if (fieldInfo.hasVirtualsOrDeserialize())
             {
                 OwnedHqlExpr diskTable = createDataset(no_anon, LINK(physicalRecord));
-                translator.buildMetaMember(instance->classctx, diskTable, "queryDiskRecordSize");
+                translator.buildMetaMember(instance->classctx, diskTable, false, "queryDiskRecordSize");
             }
             else
-                translator.buildMetaMember(instance->classctx, tableExpr, "queryDiskRecordSize");
+                translator.buildMetaMember(instance->classctx, tableExpr, isGrouped(tableExpr), "queryDiskRecordSize");
 
         }
     }
@@ -2050,10 +2052,10 @@ void SourceBuilder::buildGroupAggregateCompareHelper(ParentExtract * extractBuil
         }
     }
 
-    OwnedHqlExpr leftList = createValue(no_sortlist, makeSortListType(NULL), optimizedLeft);
+    OwnedHqlExpr leftList = createSortList(optimizedLeft);
     DatasetReference datasetRight(aggregate, no_activetable, NULL);
     OwnedHqlExpr selSeq = createDummySelectorSequence();
-    OwnedHqlExpr rightList = createValue(no_sortlist, makeSortListType(NULL), optimizedRight);
+    OwnedHqlExpr rightList = createSortList(optimizedRight);
     OwnedHqlExpr rightSelect = datasetRight.getSelector(no_right, selSeq);
     OwnedHqlExpr rightResolved = datasetRight.mapCompound(rightList, rightSelect);
 
@@ -2803,7 +2805,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
         if (expr->getOperator() == no_table)
             transformed.setown(createDataset(no_compound_diskread, LINK(transformed)));
         OwnedHqlExpr optimized = optimizeHqlExpression(transformed, optFlags);
-        traceExpression("before disk optimize", transformed);
         traceExpression("after disk optimize", optimized);
         return doBuildActivityDiskRead(ctx, optimized);
     }
@@ -6308,7 +6309,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexRead(BuildCtx & ctx, IHql
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
     OwnedHqlExpr optimized = optimizeHqlExpression(transformed, HOOfold);
-    optimized.setown(foldHqlExpression(optimized));
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     //If the filter is false, then it may get reduced to a NULL operation!
@@ -6386,9 +6386,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexNormalize(BuildCtx & ctx,
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
     OwnedHqlExpr optimized = optimizeHqlExpression(transformed, HOOfold);
-    optimized.setown(foldHqlExpression(optimized));
-    traceExpression("before physical", expr);
-    traceExpression("after physical", transformed);
     traceExpression("after optimize", optimized);
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
@@ -6557,7 +6554,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexAggregate(BuildCtx & ctx,
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
     OwnedHqlExpr optimized = optimizeHqlExpression(transformed, getSourceAggregateOptimizeFlags());
-    optimized.setown(foldHqlExpression(optimized));
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     if (!tableExpr)
@@ -6720,7 +6716,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexGroupAggregate(BuildCtx &
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
     OwnedHqlExpr optimized = optimizeHqlExpression(transformed, getSourceAggregateOptimizeFlags());
-    optimized.setown(foldHqlExpression(optimized));
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     if (!tableExpr)
@@ -6806,7 +6801,7 @@ void HqlCppTranslator::buildXmlReadTransform(IHqlExpression * dataset, StringBuf
 
     classctx.addQuoted("ICodeContext * ctx;");
     classctx.addQuoted("unsigned activityId;");
-    buildMetaMember(classctx, dataset, "queryRecordSize");
+    buildMetaMember(classctx, dataset, false, "queryRecordSize");
 
     transformClass->setIncomplete(false);
 
@@ -6893,7 +6888,7 @@ void HqlCppTranslator::buildCsvReadTransformer(IHqlExpression * dataset, StringB
     unsigned maxColumns = buildCsvReadTransform(classctx, dataset, false, optCsvAttr);
     doBuildUnsignedFunction(classctx, "getMaxColumns", maxColumns);
 
-    buildMetaMember(classctx, dataset, "queryRecordSize");
+    buildMetaMember(classctx, dataset, false, "queryRecordSize");
     buildCsvParameters(classctx, optCsvAttr, NULL, true);
 
     transformClass->setIncomplete(false);
@@ -6934,7 +6929,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
 
     doBuildVarStringFunction(instance->classctx, "queryIteratorPath", queryRealChild(mode, 0));
 
-    buildMetaMember(instance->classctx, tableExpr, "queryDiskRecordSize");  // A lie, but I don't care....
+    buildMetaMember(instance->classctx, tableExpr, false, "queryDiskRecordSize");  // A lie, but I don't care....
 
     //virtual unsigned getFlags() = 0;
     StringBuffer flags;
@@ -7074,8 +7069,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
         translator.buildRecordSerializeExtract(funcctx, memoryRhsRecord);
 
         StringBuffer s;
-        OwnedHqlExpr serializedRhs = createDataset(no_anon, LINK(serializedRhsRecord));
-        MetaInstance meta(translator, serializedRhs);
+        MetaInstance meta(translator, serializedRhsRecord, false);
         translator.buildMetaInfo(meta);
         instance->classctx.addQuoted(s.clear().append("virtual IOutputMetaData * queryExtractedSize() { return &").append(meta.queryInstanceObject()).append("; }"));
     }

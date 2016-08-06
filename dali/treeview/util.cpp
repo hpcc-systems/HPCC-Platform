@@ -62,11 +62,6 @@ void putProfile(LPCSTR section, LPCSTR key, int value)
 
 LPCSTR getProfileStr(LPCSTR section, LPCSTR key)
 {
-    char cdir[256];
-    GetCurrentDirectory(256, cdir);
-
-
-
     static char buffer[256];
 
     DWORD b = GetPrivateProfileString(section, key, "0", buffer, sizeof(buffer), INIFILE);

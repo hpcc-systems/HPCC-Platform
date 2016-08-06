@@ -409,8 +409,7 @@ void KeyedJoinInfo::buildExtractFetchFields(BuildCtx & ctx)
     }
 
     //virtual IOutputMetaData * queryFetchInputRecordSize() = 0;
-    OwnedHqlExpr null = createValue(no_null, makeVoidType());
-    translator.buildMetaMember(ctx, fileAccessDataset.get() ? fileAccessDataset.get() : null.get(), "queryFetchInputRecordSize");
+    translator.buildMetaMember(ctx, fileAccessDataset, false, "queryFetchInputRecordSize");
 }
 
 
@@ -430,7 +429,7 @@ void KeyedJoinInfo::buildExtractIndexReadFields(BuildCtx & ctx)
     }
 
     //virtual IOutputMetaData * queryIndexReadInputRecordSize() = 0;
-    translator.buildMetaMember(ctx, keyAccessDataset, "queryIndexReadInputRecordSize");
+    translator.buildMetaMember(ctx, keyAccessDataset, isGrouped(keyAccessDataset), "queryIndexReadInputRecordSize");    //->false
 }
 
 
@@ -465,7 +464,7 @@ void KeyedJoinInfo::buildExtractJoinFields(ActivityInstance & instance)
     }
 
     //virtual IOutputMetaData * queryJoinFieldsRecordSize() = 0;
-    translator.buildMetaMember(instance.classctx, extractJoinFieldsRecord, "queryJoinFieldsRecordSize");
+    translator.buildMetaMember(instance.classctx, extractJoinFieldsRecord, false, "queryJoinFieldsRecordSize");
 }
 
 void KeyedJoinInfo::buildFetchMatch(BuildCtx & ctx)
@@ -1136,7 +1135,7 @@ void HqlCppTranslator::buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpr
 {
     //virtual IOutputMetaData * queryDiskRecordSize() = 0;  // Excluding fpos and sequence
     if (info->isFullJoin())
-        buildMetaMember(instance.classctx, info->queryRawRhs(), "queryDiskRecordSize");
+        buildMetaMember(instance.classctx, info->queryRawRhs(), false, "queryDiskRecordSize");
 
     //virtual unsigned __int64 extractPosition(const void * _right) = 0;  // Gets file position value from rhs row
     if (info->isFullJoin())
@@ -1194,7 +1193,7 @@ void HqlCppTranslator::buildKeyJoinIndexReadHelper(ActivityInstance & instance, 
     buildFilenameFunction(instance, instance.startctx, "getIndexFileName", info->queryKeyFilename(), hasDynamicFilename(info->queryKey()));
 
     //virtual IOutputMetaData * queryIndexRecordSize() = 0; //Excluding fpos and sequence
-    buildMetaMember(instance.classctx, info->queryRawKey(), "queryIndexRecordSize");
+    buildMetaMember(instance.classctx, info->queryRawKey(), false, "queryIndexRecordSize");
 
     //virtual void createSegmentMonitors(IIndexReadContext *ctx, const void *lhs) = 0;
     info->buildMonitors(instance.startctx);
@@ -1436,7 +1435,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
     buildFilenameFunction(*instance, instance->startctx, "getIndexFileName", keyFilename, dynamic);
 
     //virtual IOutputMetaData * queryIndexRecordSize() = 0; //Excluding fpos and sequence
-    buildMetaMember(instance->classctx, info.queryRawKey(), "queryIndexRecordSize");
+    buildMetaMember(instance->classctx, info.queryRawKey(), false, "queryIndexRecordSize");
 
     //virtual void createSegmentMonitors(IIndexReadContext *ctx, const void *lhs) = 0;
     info.buildMonitors(instance->startctx);

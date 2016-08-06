@@ -606,8 +606,12 @@ public:
             // the path will be expanded (by xmllib's source resolver) to its full path, beginning with file://
             // on windows it looks like: file:///C:/playground/esp_lsb2/xslt/ui_overrides.xslt
             // on linux: file:///home/yma/playground/esp_lsb2/xslt/ui_overrides.xslt
+            // If current path not found, use root
             char dir[_MAX_PATH];
-            GetCurrentDirectory(sizeof(dir), dir);
+            if (!GetCurrentDirectory(sizeof(dir), dir)) {
+                ERRLOG("ESPxsltIncludeHandler::getInclude: Current directory path too big, setting local path to null");
+                dir[0] = 0;
+            }
 #ifdef _WIN32
             for(int i = 0; i < _MAX_PATH; i++)
             {

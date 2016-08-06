@@ -45,6 +45,7 @@ public:
     unsigned getFixedSize() const                           { return fixedSize; }
     unsigned getMinimumSize()   const                       { return fixedSize+varMinSize; }
     IHqlExpression * getSizeExpr(BoundRow * cursor);
+    bool isEmpty() const                                    { return fixedSize == 0 && varSize == NULL; }
     bool isFixedSize() const                                { return varSize == NULL; }
     bool isWorthCommoning() const;
     IHqlExpression * queryVarSize() const                   { return varSize; }
@@ -188,7 +189,7 @@ public:
     virtual unsigned getTotalFixedSize();
     virtual unsigned getTotalMinimumSize();
     virtual bool isConditional();
-    virtual bool isFixedSize()              { return fixedSize; }
+    virtual bool isFixedSize()              { return fixedSize && !isDynamic; }
 
     void addTrailingFixed(SizeStruct & size, CMemberInfo * cur);
     void subLeadingFixed(SizeStruct & size, CMemberInfo * cur);
@@ -198,6 +199,7 @@ public:
 public:
     void addChild(CMemberInfo * child);
     void setFixedSize(bool _fixed)          { fixedSize = _fixed; }
+    void setDynamic()                       { isDynamic = true; }
 
 protected:
     virtual void registerChild(CMemberInfo * child);
@@ -208,6 +210,7 @@ protected:
 protected:
     CMemberInfoArray    children;
     bool                fixedSize;
+    bool                isDynamic;
 };
 
 

@@ -26,6 +26,7 @@
 #include <jlog.hpp>
 #include <jprop.hpp>
 #include <jfile.hpp>
+#include "jutil.hpp"
 #include <build-config.h>
 
 #include "rmtfile.hpp"
@@ -149,6 +150,7 @@ StringBuffer pluginDirectory;
 StringBuffer queryDirectory;
 StringBuffer codeDirectory;
 StringBuffer baseDataDirectory;
+StringBuffer tempDirectory;
 
 ClientCertificate clientCert;
 bool useHardLink;
@@ -699,7 +701,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         memsize_t totalMemoryLimit = (memsize_t) topology->getPropInt64("@totalMemoryLimit", 0);
         if (!totalMemoryLimit)
             totalMemoryLimit = 1024 * 0x100000;  // 1 Gb;
-        roxiemem::setTotalMemoryLimit(totalMemoryLimit);
+        roxiemem::setTotalMemoryLimit(totalMemoryLimit, 0, NULL);
         rtlSetReleaseRowHook(&callbackHook);
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
@@ -788,8 +790,14 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
         addNonEmptyPathSepChar(queryDirectory);
 
-        baseDataDirectory.append(topology->queryProp("@baseDataDir"));
+        // if no Dali, files are local
+        if (fileNameServiceDali.length() == 0)
+            baseDataDirectory.append("./"); // Path separator will be replaced, if necessary
+        else
+            baseDataDirectory.append(topology->queryProp("@baseDataDir"));
         queryFileCache().start();
+
+        getTempFilePath(tempDirectory, "roxie", topology);
 
 #ifdef _WIN32
         topology->addPropBool("@linuxOS", false);

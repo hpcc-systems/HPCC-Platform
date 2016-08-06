@@ -41,7 +41,7 @@ private:
     std::set<std::string> m_ignoredXPaths;
     IPropertyTree* m_cfgtree;
     std::map<std::string, int> m_diffcountcache;
-    std::map<std::string, bool> m_compcache;
+    MapStringTo<bool> m_compcache;
     int m_difflimit;
     bool m_ooo;
     IProperties* m_globals;

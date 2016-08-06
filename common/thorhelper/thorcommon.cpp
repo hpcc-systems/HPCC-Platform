@@ -625,6 +625,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKfunnel:                 return "Funnel";
     case TAKapply:                  return "Apply";
     case TAKtemptable:              return "Inline Dataset";
+    case TAKinlinetable:            return "Inline Dataset";
     case TAKtemprow:                return "Inline Row";
     case TAKhashdistribute:         return "Hash Distribute";
     case TAKhashdedup:              return "Hash Dedup";
@@ -768,6 +769,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKexternalsink:           return "User Output";
     case TAKexternalprocess:        return "User Proceess";
     case TAKwhen_action:            return "When";
+    case TAKshuffle:                return "Shuffle";
     }
     throwUnexpected();
 }
@@ -778,6 +780,7 @@ extern bool isActivitySource(ThorActivityKind kind)
     {
     case TAKpiperead:
     case TAKtemptable:
+    case TAKinlinetable:
     case TAKtemprow:
     case TAKworkunitread:
     case TAKnull:
@@ -1542,7 +1545,16 @@ public:
         for (unsigned i=0;i<tempfiles.ordinality();i++) {
             if (strms&&strms[i])
                 strms[i]->Release();
-            tempfiles.item(i).remove();
+            try
+            {
+                tempfiles.item(i).remove();
+            }
+            catch (IException * e)
+            {
+                //Exceptions inside destructors are bad.
+                EXCLOG(e);
+                e->Release();
+            }
         }
         free(strms);
     }

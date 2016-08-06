@@ -196,8 +196,8 @@
       </indexterm>, and heapsort<indexterm>
         <primary>heapsort</primary>
       </indexterm>. They are not all available on all platforms. Specifying an
-    invalid algorithm for the targeted platform will be ignored and the
-    default algorithm for that platform will be implemented.</para>
+    invalid algorithm for the targeted platform will generate a warning and
+    the default algorithm for that platform will be implemented.</para>
 
     <para><informaltable colsep="0" frame="none" rowsep="0">
         <tgroup cols="2">

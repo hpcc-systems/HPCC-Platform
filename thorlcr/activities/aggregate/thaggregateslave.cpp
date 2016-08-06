@@ -182,11 +182,15 @@ public:
         {
             hadElement = true;
             sz = helper->processFirst(resultcr, next);
-            loop {
-                next.setown(input->ungroupedNextRow());
-                if (!next)
-                    break;
-                sz = helper->processNext(resultcr, next);
+            if (container.getKind() != TAKexistsaggregate)
+            {
+                while (!abortSoon)
+                {
+                    next.setown(input->ungroupedNextRow());
+                    if (!next)
+                        break;
+                    sz = helper->processNext(resultcr, next);
+                }
             }
         }
         doStopInput();

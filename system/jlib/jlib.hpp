@@ -339,6 +339,6 @@ struct DynamicScopeCtx
 #endif
 
 typedef CIArrayOf<StringAttrItem> StringAttrArray;
-class StringBuffer;
+typedef CIArrayOf<StringBufferItem> StringBufferArray;
 
 #endif

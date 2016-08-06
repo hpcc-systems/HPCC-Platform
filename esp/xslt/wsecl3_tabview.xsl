@@ -114,12 +114,12 @@
                     </ul>
                     <div class="yui-content"  style="height:94%">
                             <div id="tab1" style="height:100%">
-                                <iframe src="/WsEcl/forms/ecl/wuid/{$wuid}?qset={$qset}&amp;qname={$qname}" width="100%" height="100%" frameborder="0" border="0">
+                                <iframe src="/WsEcl/forms/ecl/query/{$qset}/{$qname}" width="100%" height="100%" frameborder="0" border="0">
                                     <p>Your browser does not support iframes.</p>
                                 </iframe>
                         </div>
                             <div id="tab2" style="height:94%">
-                                <iframe name="links" src="/WsEcl/links/wuid/{$wuid}?qset={$qset}&amp;qname={$qname}" width="100%" height="100%" frameborder="0" border="0">
+                                <iframe name="links" src="/WsEcl/links/query/{$qset}/{$qname}" width="100%" height="100%" frameborder="0" border="0">
                                     <p>Your browser does not support iframes.</p>
                                 </iframe>
                             </div>

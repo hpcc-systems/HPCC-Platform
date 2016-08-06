@@ -2094,6 +2094,8 @@ public:
                         E->Release();
                     else if (roxiemem::memPoolExhausted()) 
                     {
+                        //MORE: I think this should probably be based on the error code instead.
+
                         EXCLOG(E, "Exception reading or processing multicast msg");
                         E->Release();
                         MilliSleep(1000); // Give a chance for mem free

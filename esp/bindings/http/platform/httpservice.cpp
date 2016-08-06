@@ -346,8 +346,20 @@ int CEspHttpServer::processRequest()
                     return onGetNavEvent(m_request.get(), m_response.get());
                 else if (!stricmp(methodName.str(), "soapreq"))
                     return onGetBuildSoapRequest(m_request.get(), m_response.get());
+#ifdef _USE_OPENLDAP
+                else if (strieq(methodName.str(), "updatepasswordinput"))
+                    return onUpdatePasswordInput(m_request.get(), m_response.get());
+#endif
             }
         }
+#ifdef _USE_OPENLDAP
+        else if (strieq(method.str(), POST_METHOD) && strieq(serviceName.str(), "esp") && (methodName.length() > 0) && strieq(methodName.str(), "updatepassword"))
+        {
+            if (!rootAuth(ctx))
+                return 0;
+            return onUpdatePassword(m_request.get(), m_response.get());
+        }
+#endif
 
         if(m_apport != NULL)
         {
@@ -571,6 +583,33 @@ int CEspHttpServer::onGetBuildSoapRequest(CHttpRequest* request, CHttpResponse* 
     return 0;
 }
 
+#ifdef _USE_OPENLDAP
+int CEspHttpServer::onUpdatePasswordInput(CHttpRequest* request, CHttpResponse* response)
+{
+    StringBuffer html;
+    m_apport->onUpdatePasswordInput(*request->queryContext(), html);
+    response->setContent(html.length(), html.str());
+    response->setContentType("text/html; charset=UTF-8");
+    response->setStatus(HTTP_STATUS_OK);
+
+    response->send();
+
+    return 0;
+}
+
+int CEspHttpServer::onUpdatePassword(CHttpRequest* request, CHttpResponse* response)
+{
+    StringBuffer html;
+    m_apport->onUpdatePassword(*request->queryContext(), request, html);
+    response->setContent(html.length(), html.str());
+    response->setContentType("text/html; charset=UTF-8");
+    response->setStatus(HTTP_STATUS_OK);
+
+    response->send();
+    return 0;
+}
+#endif
+
 int CEspHttpServer::onGetMainWindow(CHttpRequest* request, CHttpResponse* response)
 {
     StringBuffer url("../?main");
@@ -617,8 +656,11 @@ typedef enum _cgi_resp_state
 
 int CEspHttpServer::onRunCGI(CHttpRequest* request, CHttpResponse* response, const char *path)
 {
-    char cwd[512]={0};
-    GetCurrentDirectory(512, cwd);
+    char cwd[1024];
+    if (!GetCurrentDirectory(1024, cwd)) {
+        ERRLOG("onRunCGI: Current directory path too big, setting local path to null");
+        cwd[0] = 0;
+    }
     StringBuffer docRoot(cwd);
     docRoot.append("/files");
     StringBuffer script(docRoot);

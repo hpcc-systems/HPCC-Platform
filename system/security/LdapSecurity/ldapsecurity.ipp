@@ -46,6 +46,7 @@ private:
     StringAttr   m_Fqdn;
     StringAttr   m_Peer;
     bool         m_isAuthenticated;
+    CDateTime    m_passwordExpiration;//local time
     unsigned     m_userid;
     MemoryBuffer m_usersid;
     BufferArray  m_groupsids;
@@ -99,8 +100,37 @@ public:
     virtual bool setStatus(SecUserStatus Status){return false;}
 
 
-   virtual CDateTime& getPasswordExpiration(CDateTime& expirationDate) {return expirationDate; }
-   virtual bool setPasswordExpiration(CDateTime& expirationDate){return false;}
+   virtual CDateTime& getPasswordExpiration(CDateTime& expirationDate)
+   {
+       expirationDate.set(m_passwordExpiration);
+       return expirationDate;
+   }
+   virtual bool setPasswordExpiration(CDateTime& expirationDate)
+   {
+       m_passwordExpiration.set(expirationDate);
+       return true;
+   }
+   virtual int getPasswordDaysRemaining()
+   {
+       if (m_passwordExpiration.isNull())
+           return -2;//-2 if never expires
+       CDateTime expiry(m_passwordExpiration);
+       CDateTime now;
+       now.setNow();
+       now.adjustTime(now.queryUtcToLocalDelta());
+       if (expiry <= now)
+           return -1;//-1 if already expired
+       expiry.setTime(0,0,0,0);
+       now.setTime(23,59,59);
+       int numDays = 0;
+       while (expiry > now)
+       {
+           ++numDays;
+           now.adjustTime(24*60);
+       }
+       return numDays;
+   }
+
    ISecUser * clone();
     virtual void setProperty(const char* name, const char* value){}
     virtual const char* getProperty(const char* name){ return "";}
@@ -311,6 +341,7 @@ private:
     bool m_usercache_off;
     bool authenticate(ISecUser* user);
     StringBuffer m_description;
+    unsigned m_passwordExpirationWarningDays;
 
 public:
     IMPLEMENT_IINTERFACE
@@ -401,6 +432,11 @@ public:
     virtual const char* getDescription()
     {
         return m_description.str();
+    }
+
+    virtual unsigned getPasswordExpirationWarningDays()
+    {
+        return m_passwordExpirationWarningDays;
     }
 };
 

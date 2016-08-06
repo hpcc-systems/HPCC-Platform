@@ -93,7 +93,7 @@ bool rltEnabled(IConstWorkUnit const * wu)
 
 IRecordLayoutTranslator * getRecordLayoutTranslator(IDefRecordMeta const * activityMeta, size32_t activityMetaSize, void const * activityMetaBuff, IDistributedFile * df, IRecordLayoutTranslatorCache * cache)
 {
-    IPropertyTree const & props = df->queryProperties();
+    IPropertyTree const & props = df->queryAttributes();
     MemoryBuffer diskMetaBuff;
     if(!props.getPropBin("_record_layout", diskMetaBuff))
 #ifdef IGNORE_FORMAT_CRC_MISMATCH_WHEN_NO_METADATA
@@ -379,7 +379,7 @@ CHThorIndexReadActivityBase::CHThorIndexReadActivityBase(IAgentContext &_agent, 
     : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), df(LINK(_df)), activityRecordMetaBuff(NULL)
 {
     singlePart = false;
-    localSortKey = (df->queryProperties().hasProp("@local"));
+    localSortKey = (df->queryAttributes().hasProp("@local"));
     IDistributedSuperFile *super = df->querySuperFile();
     superCount = 1;
     superIndex = 0;
@@ -1813,7 +1813,7 @@ public:
                 unsigned __int64 thissize = ifile->size();
                 if (thissize != -1)
                 {
-                    IPropertyTree & props = part->queryProperties();
+                    IPropertyTree & props = part->queryAttributes();
                     unsigned __int64 expectedSize;
                     Owned<IExpander> eexp;
                     if (encryptionkey.length()!=0) {
@@ -1918,7 +1918,7 @@ public:
 protected:
     static offset_t getPartSize(IDistributedFilePart *part)
     {
-        offset_t partsize = part->queryProperties().getPropInt64("@size", -1);
+        offset_t partsize = part->queryAttributes().getPropInt64("@size", -1);
         if (partsize==-1)
         {
             MTIME_SECTION(timer, "Fetch remote file size");
@@ -1932,8 +1932,9 @@ protected:
                     partsize = ifile->size();
                     if (partsize != -1)
                     {
-                        IPropertyTree &tree = part->lockProperties();
-                        tree.setPropInt64("@size", partsize);
+                        // TODO: Create DistributedFilePropertyLock for parts
+                        part->lockProperties();
+                        part->queryAttributes().setPropInt64("@size", partsize);
                         part->unlockProperties();
                         break;
                     }
@@ -2457,7 +2458,7 @@ public:
         const char * terminators = NULL;
         if (dFile)
         {
-            IPropertyTree & options = dFile->queryProperties();
+            IPropertyTree & options = dFile->queryAttributes();
             quotes = options.queryProp("@csvQuote");
             separators = options.queryProp("@csvSeparate");
             terminators = options.queryProp("@csvTerminate");
@@ -3032,7 +3033,7 @@ class DistributedKeyLookupHandler : public CInterface, implements IThreadedExcep
 
     void addFile(IDistributedFile &f)
     {
-        if((f.numParts() == 1) || (f.queryProperties().hasProp("@local")))
+        if((f.numParts() == 1) || (f.queryAttributes().hasProp("@local")))
             throw MakeStringException(0, "Superfile %s contained mixed monolithic/local/noroot and regular distributed keys --- not supported", file->queryLogicalName());
         subSizes.append(parts.length());
         unsigned numParts = f.numParts()-1;
@@ -3192,7 +3193,7 @@ public:
 
     void addFile(IDistributedFile &f)
     {
-        if((f.numParts() != 1) && (!f.queryProperties().hasProp("@local")))
+        if((f.numParts() != 1) && (!f.queryAttributes().hasProp("@local")))
             throw MakeStringException(0, "Superfile %s contained mixed monolithic/local/noroot and regular distributed keys --- not supported", file->queryLogicalName());
         keyFiles.append(OLINK(f));
     }
@@ -3877,7 +3878,7 @@ public:
 
     static bool useMonolithic(IDistributedFile & f)
     {
-        return ((f.numParts() == 1) || (f.queryProperties().hasProp("@local")));
+        return ((f.numParts() == 1) || (f.queryAttributes().hasProp("@local")));
     }
 
     virtual void start()

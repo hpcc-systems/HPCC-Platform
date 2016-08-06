@@ -240,6 +240,7 @@ public:
 protected:
     bool isInvariant(IHqlExpression * expr);
     bool isTrivialAlias(IHqlExpression * expr);
+    bool isAlwaysAlias(IHqlExpression * expr);
     inline TableInvariantInfo * queryBodyExtra(IHqlExpression * expr) { return (TableInvariantInfo*)NewHqlTransformer::queryTransformExtra(expr->queryBody()); }
 
 protected:

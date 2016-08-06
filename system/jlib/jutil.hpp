@@ -269,6 +269,7 @@ extern jlib_decl int parseCommandLine(const char * cmdline, MemoryBuffer &mb, co
 
 extern jlib_decl bool safe_ecvt(size_t len, char * buffer, double value, int numDigits, int * decimal, int * sign);
 extern jlib_decl bool safe_fcvt(size_t len, char * buffer, double value, int numPlaces, int * decimal, int * sign);
+extern jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree);
 
 #endif
 

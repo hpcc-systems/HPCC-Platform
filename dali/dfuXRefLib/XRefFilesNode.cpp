@@ -365,7 +365,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
     }
 
     Owned<IDistributedFile> dFile = queryDistributedFileDirectory().createNew(fileDesc);
-    dFile->attach(logicalName.toCharArray(),NULL,udesc);
+    dFile->attach(logicalName.toCharArray(),udesc);
 
     if (!RemoveTreeNode(Partmask)) {                   
         ERRLOG("Removing XRef Branch %s",Partmask);

@@ -259,6 +259,7 @@ public:
     virtual bool navMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req, 
                                             IEspNavMenuEventResponse &resp);
     virtual bool displaySettings(IEspContext &context, IEspDisplaySettingsRequest &req, IEspDisplaySettingsResponse &resp);
+    virtual bool isAlphaNumeric(const char *pstr) const;
     virtual bool saveSetting(IEspContext &context, IEspSaveSettingRequest &req, IEspSaveSettingResponse &resp);
     virtual bool getBuildSetInfo(IEspContext &context, IEspGetBuildSetInfoRequest &req, IEspGetBuildSetInfoResponse &resp);
     virtual bool getDeployableComps(IEspContext &context, IEspGetDeployableCompsRequest &req, IEspGetDeployableCompsResponse &resp);
@@ -679,6 +680,48 @@ private:
     StringBuffer m_ip;
 };
 
+
+class CConfigHelper
+{
+public:
+
+  CConfigHelper();
+  virtual ~CConfigHelper();
+
+  void init(const IPropertyTree *cfg, const char* esp_name);
+
+  bool isInBuildSet(const char* comp_process_name, const char* comp_name) const;
+
+  const char* getConfigXMLDir() const
+  {
+    return m_strConfigXMLDir.toCharArray();
+  };
+  const char* getBuildSetFileName() const
+  {
+    return m_strBuildSetFileName.toCharArray();
+  };
+  const char* getEnvConfFile() const
+  {
+    return m_strEnvConfFile.toCharArray();
+  };
+  const char* getConfFile() const
+  {
+    return m_strConfFile.toCharArray();
+  };
+  const char* getBuildSetFilePath() const
+  {
+    return m_strBuildSetFilePath.toCharArray();
+  };
+
+protected:
+  Owned<IPropertyTree> m_pDefBldSet;
+  StringBuffer  m_strConfigXMLDir;
+  StringBuffer  m_strBuildSetFileName;
+  StringBuffer  m_strEnvConfFile;
+  StringBuffer  m_strConfFile;
+  StringBuffer  m_strBuildSetFilePath;
+};
+
 class CWsDeployExCE : public CWsDeploy
 {
 public:
@@ -732,6 +775,7 @@ public:
     const char* getBackupDir() { return m_backupDir.str(); }
     const char* getProcessName() { return m_process.str(); }
     const char* getSourceDir() { return m_sourceDir.str(); }
+    CConfigHelper m_configHelper;
 
 private:
   virtual void getWizOptions(StringBuffer& sb);

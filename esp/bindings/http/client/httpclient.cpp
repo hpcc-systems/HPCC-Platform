@@ -250,22 +250,19 @@ int CHttpClient::connect(StringBuffer& errmsg)
             }
         }
     }
-    catch(IException *excpt)
+    catch(IException *e)
     {
-        StringBuffer errMsg;
-        errmsg.appendf("Exception in CHttpClient::connect... %d==>%s", excpt->errorCode(), excpt->errorMessage(errMsg).str());
-        DBGLOG("%s", errmsg.str());
         StringBuffer url;
-        ERRLOG("Connect to %s failed: %s", ep.getUrlStr(url).str(),errMsg.str());
-        excpt->Release();
+        ERRLOG("Error connecting to %s", ep.getUrlStr(url).str());
+        DBGLOG(e);
+        e->Release();
         m_socket = NULL;
         return -1;
     }
     catch(...)
     {
-        DBGLOG(">>Exception in CHttpClient::connect...");
-        errmsg.appendf("Internal error: unexpected exception in CHttpClient::connect()");
-        ERRLOG("%s", errmsg.str());
+        StringBuffer url;
+        ERRLOG("Unknown exception connecting to %s", ep.getUrlStr(url).str());
         m_socket = NULL;
         return -1;
     }

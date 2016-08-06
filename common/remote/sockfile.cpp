@@ -202,6 +202,7 @@ bool enableDafsAuthentication(bool on)
 
 
 #define CLIENT_TIMEOUT      (1000*60*60*12)     // long timeout in case zombies
+#define CLIENT_INACTIVEWARNING_TIMEOUT (1000*60*60*12) // time between logging inactive clients
 #define SERVER_TIMEOUT      (1000*60*5)         // timeout when waiting for dafilesrv to reply after command
                                                 // (increased when waiting for large block)
 #define DAFS_CONNECT_FAIL_RETRY_TIME (1000*60*15)
@@ -2989,7 +2990,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer, imple
         Owned<IDirectoryIterator> opendir;
         StringAttrArray     opennames;      // for debug
         IntArray            handles;
-        unsigned            lasttick;
+        unsigned            lasttick, lastInactiveTick;
         atomic_t            &globallasttick;
         unsigned            previdx;        // for debug
 
@@ -3171,9 +3172,20 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer, imple
             return (msTick()-lasttick)>CLIENT_TIMEOUT;
         }
 
+        bool inactiveTimedOut()
+        {
+            unsigned ms = msTick();
+            if ((ms-lastInactiveTick)>CLIENT_INACTIVEWARNING_TIMEOUT)
+            {
+                lastInactiveTick = ms;
+                return true;
+            }
+            return false;
+        }
+
         void touch()
         {
-            lasttick = msTick();
+            lastInactiveTick = lasttick = msTick();
             atomic_set(&globallasttick,lasttick);
         }
 
@@ -4531,7 +4543,7 @@ public:
                 StringBuffer s;
                 bool ok = client.getInfo(s);    // will spot duff sockets
                 if (ok&&(client.handles.ordinality()!=0))  {
-                    if (TF_TRACE_CLIENT_CONN) 
+                    if (TF_TRACE_CLIENT_CONN && client.inactiveTimedOut())
                         WARNLOG("Inactive %s",s.str());
                 }
                 else {

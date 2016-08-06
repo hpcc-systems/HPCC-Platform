@@ -27,14 +27,20 @@ ESPresponse [exceptions_inline] UpdateUserInputResponse
     string username;
 };
 
-ESPrequest WhoAmIRequest
+
+ESPrequest MyAccountRequest
 {
 };
 
-ESPresponse [exceptions_inline] WhoAmIResponse
+ESPresponse [exceptions_inline] MyAccountResponse
 {
     string username;
+    string firstName;
+    string lastName;
+    string passwordExpiration;
+    int    passwordDaysRemaining;
 };
+
 
 ESPrequest UpdateUserRequest
 {
@@ -63,8 +69,8 @@ ESPresponse [exceptions_inline] VerifyUserResponse
 
 ESPservice [exceptions_inline("./smc_xslt/exceptions.xslt")] ws_account
 {
+    ESPmethod [client_xslt("/esp/xslt/account_myaccount.xslt")] MyAccount(MyAccountRequest, MyAccountResponse);
     ESPmethod [client_xslt("/esp/xslt/account_input.xslt")] UpdateUserInput(UpdateUserInputRequest, UpdateUserInputResponse);
-    ESPmethod [client_xslt("/esp/xslt/account_whoami.xslt")] WhoAmI(WhoAmIRequest, WhoAmIResponse);
     ESPmethod [resp_xsl_default("./smc_xslt/account.xslt")] UpdateUser(UpdateUserRequest, UpdateUserResponse);
 	ESPmethod VerifyUser(VerifyUserRequest, VerifyUserResponse);
 };

@@ -267,24 +267,58 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
     }
     else
     {
-      for(unsigned x = 0; x < numOfNodes ; x++)
+      unsigned x = 0;
+
+      for(; x < numOfNodes ; x++)
       {
-        unsigned numOfIPSAlreadyTaken = getCntForAlreadyAssignedIPS(buildSetName);
-        if( numOfIPSAlreadyTaken < getIpAddrMap(buildSetName).ordinality())
-        {
-          addToCompIPMap(buildSetName, getIpAddrMap(buildSetName).item(numOfIPSAlreadyTaken), compName);
-        }
+        StringArray* pIpAddrMap = NULL;
+
+        if (x == 0 && m_supportNodes > 0 && !strcmp(buildSetName, "thor"))
+          pIpAddrMap = &m_ipaddressSupport;
         else
-        {
-          applyOverlappingRules(compName, buildSetName, numOfIPSAlreadyTaken);
-        }
+          pIpAddrMap = &getIpAddrMap(buildSetName);
+
+        unsigned numOfIPSAlreadyTaken = getCntForAlreadyAssignedIPS(buildSetName);
+
+        if( numOfIPSAlreadyTaken < pIpAddrMap->ordinality())
+          addToCompIPMap(buildSetName, pIpAddrMap->item(numOfIPSAlreadyTaken), compName);
+        else if (!applyOverlappingRules(compName, buildSetName, numOfIPSAlreadyTaken, pIpAddrMap))
+          break;
       }
  
       if(m_compIpMap.find(buildSetName) != NULL)
       {
         instDetails = m_compIpMap.getValue(buildSetName);
-        if( (instDetails->getIpAssigned()).ordinality() != numOfNodes) 
-          throw MakeStringException(-1, "Cannot assign [%d] number of nodes for [%s] cluster due to insufficient IP Addresses available after applying given set of rules. Please enter different value", numOfNodes, buildSetName);
+
+        if( (instDetails->getIpAssigned()).ordinality() != numOfNodes)
+        {
+          StringBuffer sb("support");
+          StringBuffer sbBuildSet(buildSetName);
+          unsigned ips = m_ipaddressSupport.length();
+          unsigned ipns = m_ipaddress.length();
+
+          if (!strcmp(buildSetName, "thor") && m_supportNodes > 0)
+          {
+            if (x == 0)
+            {
+              sb.clear().append(m_supportNodes == 0?"non-support":"support");
+              sbBuildSet.clear().append("Thor Master");
+              numOfNodes = 1;
+            }
+            else
+            {
+              sb.clear().append("non-support");
+              sbBuildSet.clear().append("Thor Slaves");
+              numOfNodes--;
+            }
+          }
+          else if (!strcmp(buildSetName, "roxie"))
+            sb.clear().append("non-support ");
+
+          throw MakeStringException(-1, \
+            "Total nodes: %d (%d Support Nodes + %d Non-support Nodes)\nError: Cannot assign %d number of nodes for %s due to insufficient %s nodes available. Please enter different values", \
+            ips + ipns, ips, ipns, numOfNodes, sbBuildSet.str(), sb.str());
+        }
         else{
           return m_compIpMap.getValue(buildSetName);
         }
@@ -295,7 +329,7 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
   return NULL;
 }
 
-void CWizardInputs::applyOverlappingRules(const char* compName,const char* buildSetName, unsigned startpos)
+bool CWizardInputs::applyOverlappingRules(const char* compName,const char* buildSetName, unsigned startpos, StringArray* pIpAddrMap)
 {
   StringArray dontAssign , ignoredForOverlap;
   bool assignedIP = false;
@@ -327,25 +361,25 @@ void CWizardInputs::applyOverlappingRules(const char* compName,const char* build
       dontAssign.append(ipArr.item(i));
   }
 
-  unsigned pos = startpos % getIpAddrMap(buildSetName).ordinality();
+  unsigned pos = startpos % pIpAddrMap->ordinality();
 
-  for (unsigned j=pos; j < pos + getIpAddrMap(buildSetName).ordinality(); j++)
+  for (unsigned j=pos; j < pos + pIpAddrMap->ordinality(); j++)
   {
-    unsigned ii = (j >= getIpAddrMap(buildSetName).ordinality()) ? 0 : j;
-    count_t ipAssignedCount = getNumOfInstForIP(getIpAddrMap(buildSetName).item(ii));
+    unsigned ii = (j >= pIpAddrMap->ordinality()) ? 0 : j;
+    count_t ipAssignedCount = getNumOfInstForIP(pIpAddrMap->item(ii));
 
     if(dontAssign.ordinality() > 0)
     {
-      if( dontAssign.find(getIpAddrMap(buildSetName).item(ii)) == NotFound)
+      if( dontAssign.find(pIpAddrMap->item(ii)) == NotFound)
       {
         if(ipAssignedCount >= m_maxCompOnNode )
         {
-          ignoredForOverlap.append(getIpAddrMap(buildSetName).item(ii));
+          ignoredForOverlap.append(pIpAddrMap->item(ii));
         }
         else
         {
           assignedIP = true;
-          addToCompIPMap(buildSetName, getIpAddrMap(buildSetName).item(ii), compName);
+          addToCompIPMap(buildSetName, pIpAddrMap->item(ii), compName);
           break;
         }
       }
@@ -354,12 +388,12 @@ void CWizardInputs::applyOverlappingRules(const char* compName,const char* build
     {
       if(ipAssignedCount >= m_maxCompOnNode )
       {
-        ignoredForOverlap.append(getIpAddrMap(buildSetName).item(ii));
+        ignoredForOverlap.append(pIpAddrMap->item(ii));
       } 
       else
       {
         assignedIP = true;
-        addToCompIPMap(buildSetName, getIpAddrMap(buildSetName).item(ii), compName);
+        addToCompIPMap(buildSetName, pIpAddrMap->item(ii), compName);
         break;
       }
     }
@@ -367,7 +401,10 @@ void CWizardInputs::applyOverlappingRules(const char* compName,const char* build
   if(!assignedIP && ignoredForOverlap.ordinality() > 0)
   {          
     addToCompIPMap(buildSetName, ignoredForOverlap.item(0), compName);
+    assignedIP = true;
   }
+
+  return assignedIP;
 }
 
 count_t CWizardInputs::getNumOfInstForIP(StringBuffer ip)
@@ -460,10 +497,16 @@ IPropertyTree* CWizardInputs::createEnvironment()
   xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_OPSYS);    
   pCompTree->setProp(xpath.str(), "linux"); 
 
+  unsigned x;
+  IpAddress ipaddr;
+
   for(unsigned i = 0; i < m_ipaddressSupport.ordinality(); i++)
   {
     IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER,createPTree());
-    name.clear().appendf("node%03d", (i + 1));
+    ipaddr.ipset(m_ipaddressSupport.item(i));
+    ipaddr.getNetAddress(sizeof(x),&x);
+    name.clear().appendf("node%03d%03d", (x >> 16) & 0xFF, (x >> 24) & 0xFF);
+    getUniqueName(pCompTree, name, XML_TAG_COMPUTER, "");
     pComputer->addProp(XML_ATTR_COMPUTERTYPE, "linuxmachine");
     pComputer->addProp(XML_ATTR_DOMAIN, "localdomain");
     pComputer->addProp(XML_ATTR_NAME, name.str());
@@ -471,9 +514,12 @@ IPropertyTree* CWizardInputs::createEnvironment()
   }
 
   for(unsigned i = 0; i < m_ipaddress.ordinality(); i++)
-  { 
+  {
     IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER,createPTree());
-    name.clear().appendf("node%03d", (m_ipaddressSupport.ordinality() + i + 1));
+    ipaddr.ipset(m_ipaddress.item(i));
+    ipaddr.getNetAddress(sizeof(x),&x);
+    name.clear().appendf("node%03d%03d", (x >> 16) & 0xFF, (x >> 24) & 0xFF);
+    getUniqueName(pCompTree, name, XML_TAG_COMPUTER, "");
     pComputer->addProp(XML_ATTR_COMPUTERTYPE, "linuxmachine");
     pComputer->addProp(XML_ATTR_DOMAIN, "localdomain");
     pComputer->addProp(XML_ATTR_NAME, name.str());
@@ -749,7 +795,6 @@ unsigned CWizardInputs::getCntForAlreadyAssignedIPS(const char* buildSetName)
 
 void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDetails* pInstDetails, const char* buildSetName, bool genRoxieOnDemand)
 {
-  
   StringBuffer xmlForRoxieServer, xmlForRoxieSlave, xpath, compName, computerName, msg;
     
   if(!strcmp(buildSetName, "roxie"))
@@ -775,7 +820,7 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
     if(pInstDetails)
     {
       StringArray& ipAssignedToComp = pInstDetails->getIpAssigned();
-  
+
       ForEachItemIn(i, ipAssignedToComp)
       {
         xpath.clear().appendf("./%s/%s/[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, ipAssignedToComp.item(i));
@@ -805,7 +850,7 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
     if(pInstDetails)
     {
       StringArray& ipAssignedToComp = pInstDetails->getIpAssigned();
-  
+
       if(!ipAssignedToComp.empty())
         masterIP.clear().append(ipAssignedToComp.item(0));
     
@@ -817,7 +862,7 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
 
       //Now add Slave 
       xml.clear().appendf("<ThorData type=\"Slave\" name=\"%s\" validateComputers=\"false\" slavesPerNode=\"%d\" skipExisting=\"false\" >", compName.str(), m_thorSlavesPerNode);
-      unsigned numOfNodes = ipAssignedToComp.ordinality() == 1 || m_thorNodes == m_ipaddress.ordinality()? 0 : 1;
+      unsigned numOfNodes = ipAssignedToComp.ordinality() == 1 ? 0 : 1;
 
       for( ; numOfNodes < ipAssignedToComp.ordinality() ; numOfNodes++)
       {
@@ -1126,12 +1171,7 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
         if (!strcmp(buildSetName, "roxie"))
           numOfIpNeeded = m_roxieNodes;
         else if (!strcmp(buildSetName, "thor"))
-        {
-          numOfIpNeeded = m_thorNodes;
-
-          if (m_thorNodes < m_ipaddress.ordinality())
-            numOfIpNeeded += 1;
-        }
+          numOfIpNeeded = m_thorNodes + 1;
 
         CInstDetails* pInstDetail = getServerIPMap(sbNewName.str(), buildSetName, pNewEnvTree, numOfIpNeeded);
 

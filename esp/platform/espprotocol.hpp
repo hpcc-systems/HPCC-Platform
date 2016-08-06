@@ -126,6 +126,11 @@ public:
 
     CEspBindingEntry* queryBindingItem(int item){return (item<bindingCount) ? bindings[item] : NULL;}
     CEspBindingEntry* getDefaultBinding(){return bindings[(defBinding>=0) ? defBinding : 0];}
+#ifdef _USE_OPENLDAP
+    unsigned updatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& message);
+    void onUpdatePasswordInput(IEspContext &context, StringBuffer &html);
+    void onUpdatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& html);
+#endif
 };
 
 typedef map<int, CEspApplicationPort*> CApplicationPortMap;

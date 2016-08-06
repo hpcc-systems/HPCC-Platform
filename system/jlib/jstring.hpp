@@ -318,6 +318,15 @@ private:
 #define StringBufferAdaptor GccStringBufferAdaptor
 #endif
 
+class jlib_decl StringBufferItem : public CInterface, public StringBuffer
+{
+public:
+    StringBufferItem()                                  : StringBuffer() {}
+    StringBufferItem(const char *value)                 : StringBuffer(value) {}
+    StringBufferItem(unsigned len, const char *value)   : StringBuffer(len, value) {}
+    StringBufferItem(const StringBuffer & value)        : StringBuffer(value) {}
+};
+
 class jlib_decl StringAttrItem : public CInterface
 {
 public:
@@ -362,12 +371,26 @@ inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flag
     return encodeXML(x, ret, flags, len, true);
 }
 
+inline StringBuffer & appendXMLOpenTag(StringBuffer &xml, const char *tag)
+{
+    if (tag && *tag)
+        xml.append('<').append(tag).append('>');
+    return xml;
+}
+
+inline StringBuffer & appendXMLCloseTag(StringBuffer &xml, const char *tag)
+{
+    if (tag && *tag)
+        xml.append("</").append(tag).append('>');
+    return xml;
+}
+
 inline StringBuffer &appendXMLTag(StringBuffer &xml, const char *tag, const char *value, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=true)
 {
-    xml.append('<').append(tag).append('>');
+    appendXMLOpenTag(xml, tag);
     if (value && *value)
         encodeXML(value, xml, flags, len, utf8);
-    return xml.append("</").append(tag).append('>');
+    return appendXMLCloseTag(xml, tag);
 }
 
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);

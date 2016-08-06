@@ -40,20 +40,23 @@ class MetaInstance
 {
 public:
     //Shouldn't really need to pass translator, but it provides a place to have a per-query unique id. Anything else seems even messier.
-    MetaInstance()  { dataset = NULL; }
-    MetaInstance(HqlCppTranslator & translator, IHqlExpression * _dataset);
-    IHqlExpression * queryRecord();
-    void setDataset(HqlCppTranslator & translator, IHqlExpression * _dataset);
+    MetaInstance()  { record = NULL; grouped = false; }
+    MetaInstance(HqlCppTranslator & translator, IHqlExpression * _record, bool _isGrouped);
+    bool isGrouped() const { return grouped; }
+    IHqlExpression * queryRecord() const { return record; }
+    void setMeta(HqlCppTranslator & translator, IHqlExpression * _record, bool _isGrouped);
     IHqlExpression * getMetaUniqueKey()     { return searchKey.getLink(); }
     const char * queryInstanceObject()      { return instanceObject ? instanceObject : instanceName; }
 
 public:
-    IHqlExpression * dataset;
-    HqlExprAttr      searchKey;
     StringAttr       metaName;
     StringAttr       instanceName;
     StringAttr       metaFactoryName;
     StringAttr       instanceObject;
+private:
+    HqlExprAttr      searchKey;
+    IHqlExpression * record;
+    bool grouped;
 };
 
 //===========================================================================

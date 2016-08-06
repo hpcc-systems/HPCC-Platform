@@ -318,6 +318,15 @@ void CDateTime::setTime(unsigned hour, unsigned minute, unsigned second, unsigne
     set(year, month, day, hour, minute, second, nano, local);
 }
 
+//FILETIME is a large integer that represents the number of 100 nanosecond
+//intervals since January 1, 1601 (UTC), also known as a FILETIME value.
+void CDateTime::setFromFILETIME(__int64 fileTime)
+{
+    __int64 secsAfterADEpoch = fileTime / 10000000;
+    __int64 AD2Unix = ((1970-1601) * 365 - 3 + ((1970-1601)/4) ) * (__int64)86400;
+    set(secsAfterADEpoch - AD2Unix);
+}
+
 void CDateTime::setNow()
 {
     time_t simple;

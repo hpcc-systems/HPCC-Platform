@@ -195,7 +195,10 @@ public:
                             {
                                 StringBuffer msg("Failed to save dll, cwd = ");
                                 char buf[255];
-                                getcwd(buf, sizeof(buf));
+                                if (!GetCurrentDirectory(sizeof(buf), buf)) {
+                                    ERRLOG("CJobListener::main: Current directory path too big, setting it to null");
+                                    buf[0] = 0;
+                                }
                                 msg.append(buf).append(", path = ").append(soPath.str());
                                 EXCLOG(e, msg.str());
                                 e->Release();

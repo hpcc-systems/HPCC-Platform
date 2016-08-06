@@ -95,7 +95,13 @@ int CDataOutputCache::writeOutput()
             finger = strchr(obuf+9, '\0') + 1;
             len -= (finger-obuf);
         }
-        outputstream->writeBytes(finger, len);
+        try {
+            outputstream->writeBytes(finger, len);
+        }
+        catch (IException *e) {
+            delete mb;
+            throw;
+        }
 
 #ifdef DEBUG_ROXIECLIENT_
         DBGLOG("Written %d bytes to output %s", len, name.str());

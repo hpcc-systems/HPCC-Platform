@@ -497,7 +497,7 @@ bool CMasterGraphElement::checkUpdate()
         Owned<IDistributedFile> file = queryThorFileManager().lookup(queryJob(), filename, temporary, true);
         if (file)
         {
-            IPropertyTree &props = file->queryProperties();
+            IPropertyTree &props = file->queryAttributes();
             if ((eclCRC == props.getPropInt("@eclCRC")) && (totalCRC == props.getPropInt64("@totalCRC")))
             {
                 // so this needs pruning
@@ -1108,7 +1108,7 @@ public:
             else
             {
                 StringBuffer modifiedStr;
-                if (iDfsFile->queryProperties().getProp("@modified", modifiedStr))
+                if (iDfsFile->queryAttributes().getProp("@modified", modifiedStr))
                     hash = rtlHash64Data(modifiedStr.length(), modifiedStr.str(), hash);
                 // JCS->GH - what's the best thing to do here, if [for some reason] neither are available..
             }
@@ -1600,7 +1600,7 @@ bool CJobMaster::go()
 
                 StringBuffer newName;
                 queryThorFileManager().addScope(*this, tmpName, newName, true, true);
-                verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, 0, NULL, queryBaseDirectory()));
+                verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory()));
 
                 file->attach(newName);
 

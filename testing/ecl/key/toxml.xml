@@ -23,8 +23,8 @@
 <Dataset name='Result 10'>
 </Dataset>
 <Dataset name='Result 11'>
- <Row><surname>Hälliday            </surname><forename>Gavin     </forename><homephone><areacode>     </areacode><number>0</number></homephone><hasmobile>false</hasmobile><contact><phone><areacode>     </areacode><number>0</number></phone><hasemail>false</hasemail></contact><books></books><colours></colours><endmarker>  </endmarker></Row>
- <Row><surname>Halliday            </surname><forename>Abigäil   </forename><homephone><areacode>     </areacode><number>0</number></homephone><hasmobile>false</hasmobile><contact><phone><areacode>     </areacode><number>0</number></phone><hasemail>false</hasemail></contact><books></books><colours></colours><endmarker>  </endmarker></Row>
+ <Row><surname>Hälliday            </surname><forename>Gavin     </forename><homephone areaCode="     " number="0"></homephone><hasmobile>false</hasmobile><contact hasEmail="false"><phone areaCode="     " number="0"></phone></contact><books></books><colours></colours><endmarker>  </endmarker></Row>
+ <Row><surname>Halliday            </surname><forename>Abigäil   </forename><homephone areaCode="     " number="0"></homephone><hasmobile>false</hasmobile><contact hasEmail="false"><phone areaCode="     " number="0"></phone></contact><books></books><colours></colours><endmarker>  </endmarker></Row>
 </Dataset>
 <Dataset name='Result 12'>
 </Dataset>

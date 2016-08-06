@@ -30,5 +30,7 @@
 activityslaves_decl CActivityBase *createTempTableSlave(CGraphElementBase *container);
 
 
+activityslaves_decl CActivityBase *createInlineTableSlave(CGraphElementBase *container);
+
 
 #endif

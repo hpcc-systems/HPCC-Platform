@@ -94,6 +94,7 @@ void CBaseSecurityManager::init(const char *serviceName, IPropertyTree *config)
 
     m_enableIPRoaming = config->getPropBool("@enableIPRoaming");
     m_enableOTP = config->getPropBool("@enableOTP",false);
+    m_passwordExpirationWarningDays = config->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
 }
 
 CBaseSecurityManager::~CBaseSecurityManager()

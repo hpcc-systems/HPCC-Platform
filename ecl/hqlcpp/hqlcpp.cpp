@@ -1672,6 +1672,14 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.createImplicitAliases,"createImplicitAliases", false),
         DebugOption(options.combineSiblingGraphs,"combineSiblingGraphs", true),
         DebugOption(options.optimizeSharedGraphInputs,"optimizeSharedGraphInputs", true),
+        DebugOption(options.supportsShuffleActivity,"supportsShuffleActivity",false),
+        DebugOption(options.implicitShuffle,"implicitShuffle",false),
+        DebugOption(options.implicitBuildIndexShuffle,"implicitBuildIndexShuffle",false),
+        DebugOption(options.implicitJoinShuffle,"implicitJoinShuffle",false),
+        DebugOption(options.implicitGroupShuffle,"implicitGroupShuffle",false),
+        DebugOption(options.implicitGroupHashAggregate,"implicitGroupHashAggregate",false),
+        DebugOption(options.implicitGroupHashDedup,"implicitGroupHashDedup",false),
+        DebugOption(options.shuffleLocalJoinConditions,"shuffleLocalJoinConditions",false),
     };
 
     //get options values from workunit
@@ -1818,10 +1826,10 @@ unsigned HqlCppTranslator::getOptimizeFlags() const
     switch (targetClusterType)
     {
     case RoxieCluster:
-        optFlags |= HOOnoclonelimit;
+        optFlags |= HOOnoclonelimit|HOOalwayslocal;
         break;
     case HThorCluster:
-        optFlags |= HOOnocloneindexlimit;
+        optFlags |= HOOnocloneindexlimit|HOOalwayslocal;
         break;
     case ThorCluster:
     case ThorLCRCluster:

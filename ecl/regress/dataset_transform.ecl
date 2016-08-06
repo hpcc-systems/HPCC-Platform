@@ -49,3 +49,8 @@ output(ds50);
 output(true);
 ds5 := DATASET(C, t2());
 output(ds5);
+
+// distributed
+output(true);
+dsd := DATASET(10, t1(COUNTER), DISTRIBUTED);
+output(dsd);

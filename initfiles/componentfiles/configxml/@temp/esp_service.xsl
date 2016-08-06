@@ -917,6 +917,17 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
             <xsl:when test="$serviceType='ws_thing_finder'">
                 <LanguageDirectory><xsl:value-of select="@LanguageDirectory"/></LanguageDirectory>
             </xsl:when>
+            <xsl:when test="$serviceType='ws_ecl'">
+                <VIPS>
+                    <xsl:for-each select="ProcessCluster">
+                        <xsl:if test="string(@roxie) != '' and string(@vip) != ''">
+                            <xsl:variable name="roxie" select="@roxie"/>
+                            <xsl:variable name="vip" select="@vip"/>
+                            <ProcessCluster name="{$roxie}" vip="{$vip}"></ProcessCluster>
+                        </xsl:if>
+                    </xsl:for-each>
+                </VIPS>
+            </xsl:when>
         </xsl:choose>
     </xsl:template>
 

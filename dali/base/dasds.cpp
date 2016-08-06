@@ -5584,7 +5584,10 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     else
     {
         char cwd[1024];
-        GetCurrentDirectory(1024, cwd);
+        if (!GetCurrentDirectory(1024, cwd)) {
+            ERRLOG("CCovenSDSManager: Current directory path too big, setting local path to null");
+            cwd[0] = 0;
+        }
         rfn.setLocalPath(cwd);
     }
     unsigned keepLastN = config.getPropInt("@keepStores", DEFAULT_KEEP_LASTN_STORES);

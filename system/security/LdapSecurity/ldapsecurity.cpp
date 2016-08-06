@@ -210,6 +210,7 @@ void CLdapSecUser::copyTo(ISecUser& destination)
     dest->credentials().setPassword(credentials().getPassword());
     dest->setUserSid(m_usersid.length(), m_usersid.toByteArray());
     dest->setUserID(m_userid);
+    dest->setPasswordExpiration(m_passwordExpiration);
 }
 
 ISecUser * CLdapSecUser::clone()
@@ -540,6 +541,7 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     int cachetimeout = cfg->getPropInt("@cacheTimeout", 5);
     m_permissionsCache.setCacheTimeout( 60 * cachetimeout);
     m_permissionsCache.setTransactionalEnabled(true);
+    m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
 };
 
 

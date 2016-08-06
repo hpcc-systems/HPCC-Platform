@@ -46,7 +46,6 @@ include_directories (
          ./../../dali/base 
          ./../shared 
          ./../../system/jlib 
-         ./../../system/icu/include 
          ./../../common/workunit 
          ./../../common/commonext 
          ./../thorutil 

@@ -388,6 +388,7 @@ extern _ATOM loadResourceAtom;
 extern _ATOM log10Atom;
 extern _ATOM lookupBlobAtom;
 extern _ATOM _loop_Atom;
+extern _ATOM _loopFirst_Atom;
 extern _ATOM ls42anAtom;
 extern _ATOM ls42axAtom;
 extern _ATOM ls42vnAtom;

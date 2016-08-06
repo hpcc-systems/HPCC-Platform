@@ -108,6 +108,7 @@ extern HTHOR_API IHThorActivity *createWorkUnitWriteActivity(IAgentContext &, un
 extern HTHOR_API IHThorActivity *createFirstNActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorFirstNArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createCountActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorCountArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createTempTableActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorTempTableArg &arg, ThorActivityKind kind);
+extern HTHOR_API IHThorActivity *createInlineTableActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorInlineTableArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createConcatActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorFunnelArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createApplyActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorApplyArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createSampleActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorSampleArg &arg, ThorActivityKind kind);

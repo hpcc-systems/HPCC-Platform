@@ -59,6 +59,7 @@ include_directories (
          ./../../../system/jlib 
          ./../../platform 
          ./../../../system/security/shared 
+         ./../../../system/security/LdapSecurity
     )
 
 ADD_DEFINITIONS( -DESPHTTP_EXPORTS -DESP_TIMING -D_USRDLL -DESP_PLUGIN )
@@ -71,5 +72,8 @@ target_link_libraries ( esphttp
          jlib
          xmllib 
     )
+IF (USE_OPENLDAP)
+target_link_libraries ( esphttp LdapSecurity )
+ENDIF(USE_OPENLDAP)
 
 

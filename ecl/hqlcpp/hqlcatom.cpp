@@ -388,6 +388,7 @@ _ATOM loadResourceAtom;
 _ATOM log10Atom;
 _ATOM lookupBlobAtom;
 _ATOM _loop_Atom;
+_ATOM _loopFirst_Atom;
 _ATOM ls42anAtom;
 _ATOM ls42axAtom;
 _ATOM ls42vnAtom;
@@ -1089,6 +1090,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(loadResource);
     MAKEATOM(lookupBlob);
     MAKESYSATOM(loop);
+    MAKESYSATOM(loopFirst);
     log10Atom = createAtom("_log10");
     MAKEATOM(ls42an);
     MAKEATOM(ls42ax);

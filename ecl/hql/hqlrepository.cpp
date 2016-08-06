@@ -363,7 +363,7 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
     default:
         throwUnexpected();
     }
-    return ::createSymbol(eclName, scope->queryName(), body.getClear(), NULL, true, true, symbolFlags, contents, 0, 0, 0, 0, contents ? contents->length() : 0);
+    return ::createSymbol(eclName, scope->queryName(), body.getClear(), NULL, true, true, symbolFlags, contents, 0, 0, 0, 0, 0);
 }
 
 

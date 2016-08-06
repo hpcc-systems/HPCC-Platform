@@ -32,6 +32,34 @@
 #include "roxiemem.hpp"
 #include "eclhelper.hpp"
 
+#define ALLOCATORID_CHECK_MASK  0x00300000
+#define ALLOCATORID_MASK                0x000fffff
+
 extern ROXIEHELPER_API IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool packed);
+extern ROXIEHELPER_API IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, bool packed);
+
+extern ROXIEHELPER_API bool isRowCheckValid(unsigned allocatorId, const void * row);
+
+//Inline call which avoids the call if no row checking is enabled.
+inline bool RoxieRowCheckValid(unsigned allocatorId, const void * row)
+{
+    if (allocatorId & ALLOCATORID_CHECK_MASK)
+        return isRowCheckValid(allocatorId, row);
+    return true;
+}
+
+class RoxieRowLinkCounter : public CSimpleInterface, implements IRowLinkCounter
+{
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    virtual void releaseRow(const void *row)
+    {
+        ReleaseRoxieRow(row);
+    }
+    virtual void linkRow(const void *row)
+    {
+        LinkRoxieRow(row);
+    }
+};
 
 #endif

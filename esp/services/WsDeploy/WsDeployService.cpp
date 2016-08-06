@@ -34,6 +34,7 @@
 #define STANDARD_CONFIG_BACKUPDIR CONFIG_DIR"/backup"
 #define STANDARD_CONFIG_SOURCEDIR CONFIG_DIR
 #define STANDARD_CONFIG_BUILDSETFILE "buildset.xml"
+#define STANDARD_CONFIG_CONFIGXML_DIR "/componentfiles/configxml/"
 
 #define DEFAULT_DIRECTORIES "<Directories name=\""DIR_NAME"\">\
       <Category dir=\""EXEC_PREFIX"/log/[NAME]/[INST]\" name=\"log\"/>\
@@ -61,6 +62,7 @@ bool supportedInEEOnly()
 
 void substituteParameters(const IPropertyTree* pEnv, const char *xpath, IPropertyTree* pNode, StringBuffer& result) 
 {
+  const char* xpathorig = xpath;
   while (*xpath)
   {
     if (*xpath=='$')
@@ -115,6 +117,38 @@ void substituteParameters(const IPropertyTree* pEnv, const char *xpath, IPropert
         }
         xpath+=12;
       }
+      else if (strncmp(xpath, "$./*", 4) == 0)
+      {
+        String xpath2(xpath+4);
+        StringBuffer sb(xpath2);
+        String xpath3(xpathorig);
+        String* pstr = xpath3.substring(xpath3.lastIndexOf('[', xpath3.indexOf("$./*")) + 1, xpath3.indexOf("$./*"));
+        int pos1 = xpath2.indexOf(']');
+        int pos2 = xpath2.lastIndexOf('/');
+
+        if (pos1 != -1 && pos2 != -1)
+          sb.clear().append(xpath2.substring(0, pos2)->toCharArray());
+        else if (pos1 != -1)
+          sb.clear().append(xpath2.substring(0, pos1)->toCharArray());
+
+        Owned<IPropertyTreeIterator> elems = pNode->getElements(sb.str());
+
+        if (pos2 != -1)
+          sb.clear().append(xpath2.substring(pos2+ 1, pos1)->toCharArray());
+
+        ForEach(*elems)
+        {
+          IPropertyTree* elem = &elems->query();
+          result.append('\"');
+          result.append(elem->queryProp(sb.str()));
+          result.append("\"").append("][").append(pstr->toCharArray());
+        }
+
+        result.setLength(result.length() - pstr->length() - 2);
+        delete pstr;
+
+        xpath+=pos1+4;
+      }
       else if (strncmp(xpath, "$./", 3) == 0)
       {
         String xpath2(xpath+3);
@@ -160,6 +194,59 @@ void expandRange(IPropertyTree* pComputers)
 
       pComputers->removeProp("@hasrange");
     }
+  }
+}
+
+CConfigHelper::CConfigHelper()
+{
+}
+
+CConfigHelper::~CConfigHelper()
+{
+}
+
+void CConfigHelper::init(const IPropertyTree *cfg, const char* esp_name)
+{
+  StringBuffer xpath;
+
+  xpath.clear().appendf("%s/%s/%s[%s='%s']/%s",XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, esp_name, XML_TAG_LOCALCONFFILE);
+  m_strConfFile = cfg->queryProp(xpath.str());
+
+  xpath.clear().appendf("%s/%s/%s[%s='%s']/%s",XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, esp_name, XML_TAG_LOCALENVCONFFILE);
+  m_strEnvConfFile = cfg->queryProp(xpath.str());
+
+  if (m_strConfFile.length() > 0 && m_strEnvConfFile.length() > 0)
+  {
+    Owned<IProperties> pParams = createProperties(m_strConfFile);
+    Owned<IProperties> pEnvParams = createProperties(m_strEnvConfFile);
+
+    m_strConfigXMLDir = pEnvParams->queryProp(TAG_PATH);
+
+    if ( m_strConfigXMLDir.length() == 0)
+    {
+      m_strConfigXMLDir = INSTALL_DIR;
+    }
+
+    m_strBuildSetFileName = pParams->queryProp(TAG_BUILDSET);
+
+    m_strBuildSetFilePath.append(m_strConfigXMLDir).append(STANDARD_CONFIG_CONFIGXML_DIR).append( m_strBuildSetFileName.length() > 0 ? m_strBuildSetFileName : STANDARD_CONFIG_BUILDSETFILE);
+    m_pDefBldSet.set(createPTreeFromXMLFile(m_strBuildSetFilePath.str()));
+  }
+}
+
+bool CConfigHelper::isInBuildSet(const char* comp_process_name, const char* comp_name) const
+{
+  StringBuffer xpath;
+
+  xpath.appendf("./%s/%s/%s[%s=\"%s\"][%s=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, XML_ATTR_PROCESS_NAME, comp_process_name, XML_ATTR_NAME, comp_name);
+
+  if (strcmp(XML_TAG_DIRECTORIES,comp_name) != 0 && m_pDefBldSet->queryPropTree(xpath.str()) == NULL)
+  {
+     return false;
+  }
+  else
+  {
+     return true;
   }
 }
 
@@ -215,6 +302,8 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
   m_bCloud = false;
   StringBuffer xpath;
   m_envFile.clear();
+
+  m_configHelper.init(cfg,service);
 
   xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvConfFile", service);
   const char* tmp = cfg->queryProp(xpath.str());
@@ -892,6 +981,13 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
     return true;
 }//onNavMenuEvent
 
+bool CWsDeployFileInfo::isAlphaNumeric(const char *pstr) const
+{
+  RegExpr expr("[A-Za-z0-9-_]+");
+
+  return (expr.find(pstr) && expr.findlen(0) == strlen(pstr));
+}
+
 bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest &req, IEspSaveSettingResponse &resp)
 {
   synchronized block(m_mutex);
@@ -1159,6 +1255,11 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
                 pComp = pTmpComp->queryPropTree(xpath2.str());
               }
             }
+            else if (pszSubType && strlen(rowIndex) > 0)
+            {
+              xpath2.clear().appendf("%s[%s]", pszSubType, rowIndex);
+              pComp = pTmpComp->queryPropTree(xpath2.str());
+            }
             else if (pszSubType)
             {
               xpath2.clear().appendf("%s", pszSubType);
@@ -1243,7 +1344,14 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
 
         //perform checks
         if (!strcmp(pszAttrName, "name"))
+        {
           ensureUniqueName(pEnvRoot, pComp, pszNewValue);
+
+          if (isAlphaNumeric(pszNewValue) == false)
+          {
+            throw MakeStringException(-1, "Invalid Character in name '%s'.", pszNewValue);
+          }
+        }
 
         //Store prev settings for use further down for esp service bindings
         const char* sPrevDefaultPort = NULL;
@@ -1626,6 +1734,13 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
       const char* rowIndex = pSetting->queryProp("@rowIndex");
       const char* pszOldValue = pSetting->queryProp("@oldValue");
       const char* pszNewValue = pSetting->queryProp("@newValue");
+            
+      StringBuffer xpath_key;
+      xpath_key.appendf("%s/%s/%s[%s='%s']", XML_TAG_SOFTWARE, XML_TAG_TOPOLOGY, XML_TAG_CLUSTER, XML_ATTR_NAME, pszNewValue);
+      //Check to see if the cluster name is already in use
+      IPropertyTree* pEnvCluster = pEnvRoot->queryPropTree(xpath_key);
+      if (pEnvCluster != NULL)
+        throw MakeStringException(-1, "Cluster - %s is already in use. Please enter a unique name for the Cluster.", pszNewValue);      
 
       StringBuffer buf("Topology");
 
@@ -1856,7 +1971,10 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
         if (!strcmp(pszAttrName, "name"))
         {
           if (!strcmp(pszSubType, XML_TAG_COMPUTER))
+          {
             UpdateRefAttributes(pEnvRoot, XML_TAG_SOFTWARE"//*", XML_ATTR_COMPUTER, pszOldValue, pszNewValue);
+            UpdateRefAttributes(pEnvRoot, XML_TAG_SOFTWARE"/"XML_TAG_DALISERVERPROCESS, XML_ATTR_BACKUPCOMPUTER, pszOldValue, pszNewValue);
+          }
           else if (!strcmp(pszSubType, XML_TAG_DOMAIN))
             UpdateRefAttributes(pEnvRoot, XML_TAG_HARDWARE"/"XML_TAG_COMPUTER, XML_ATTR_DOMAIN, pszOldValue, pszNewValue);
           else if (!strcmp(pszSubType, XML_TAG_SWITCH))
@@ -2944,6 +3062,11 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
 
       const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
       const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
+
+      if ( m_pService->m_configHelper.isInBuildSet(pszCompType,buildSetName) == false )
+      {
+        throw MakeStringException(-1, "Component '%s' named '%s' not in build set. Component may be incompatible with the current version.", pszCompType, pszCompName);
+      }
 
       StringBuffer buildSetPath;
       Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
@@ -5799,26 +5922,11 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
     StringBuffer s("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Environment></Environment>");
     Owned<IPropertyTree> pNewTree = createPTreeFromXMLString(s);
 
-    xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalConfFile", m_pService->getName());
-    const char* pConfFile = m_pService->getCfg()->queryProp(xpath.str());
-    xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvConfFile", m_pService->getName());
-    const char* pEnvConfFile = m_pService->getCfg()->queryProp(xpath.str());
-    StringBuffer bldSetFile;
-
-    if( pConfFile && *pConfFile && pEnvConfFile && *pEnvConfFile)
+    if ( strlen(m_pService->m_configHelper.getBuildSetFilePath()) > 0 )
     {
-      Owned<IProperties> pParams = createProperties(pConfFile);
-      Owned<IProperties> pEnvParams = createProperties(pEnvConfFile);
-      const char* dirName = pEnvParams->queryProp("path");
-      const char* fileName = pParams->queryProp("buildset");
-
-      if (dirName && *dirName)
-      {
-        bldSetFile.append(dirName).append("/componentfiles/configxml/").append((fileName && *fileName)? fileName : STANDARD_CONFIG_BUILDSETFILE);
-
         try
         {
-          Owned<IPropertyTree> pDefBldSet = createPTreeFromXMLFile(bldSetFile);
+          Owned<IPropertyTree> pDefBldSet = createPTreeFromXMLFile( m_pService->m_configHelper.getBuildSetFilePath() );
           pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pDefBldSet->queryPropTree("./Programs")));
           pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTreeFromIPT(pDefBldSet->queryPropTree("./Software")));
         }
@@ -5826,7 +5934,6 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
         {
           e->Release();
         }
-      }
     }
 
     if(!pNewTree->queryPropTree(XML_TAG_SOFTWARE))
@@ -5925,6 +6032,11 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
     StringBuffer err;
     if (modified && fileExists)
       saveEnvironment(NULL, NULL, err);
+  }
+  catch (IErrnoException* e)
+  {
+    //Don't ignore file access exceptions
+    throw e;
   }
   catch(IException* e)
   {

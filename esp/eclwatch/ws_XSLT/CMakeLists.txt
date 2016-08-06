@@ -100,6 +100,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/roxiequerydetails.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/roxiequerygraph.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/roxiequerygvcgraph.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/run_ecl.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/scheduledwus.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/services.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/clusterprocesses.xslt
@@ -170,7 +171,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/access_users.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/account.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/account_input.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/account_whoami.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/account_myaccount.xslt
 )
     Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/smc_xslt COMPONENT Runtime )
 ENDFOREACH ( iFILES )

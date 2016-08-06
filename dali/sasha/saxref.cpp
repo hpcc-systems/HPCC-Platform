@@ -1504,7 +1504,7 @@ public:
                 error(lfn.get(),"could not set preferred cluster (set to %s)",tmpname.str());
                 continue;
             }
-            if (ignorelazylost&&(file->queryProperties().getPropInt("@lazy")!=0)) {
+            if (ignorelazylost&&(file->queryAttributes().getPropInt("@lazy")!=0)) {
                 warn(lfn.get(),"Lazy file ignored");
                 continue;
             }

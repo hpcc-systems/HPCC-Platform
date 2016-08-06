@@ -343,7 +343,7 @@ enum _node_operator {
         no_crc,
         no_return_stmt,
         no_update,    
-    no_unused17,
+        no_shuffle,
     no_unused18,
         no_alias,
     no_unused19,
@@ -1534,6 +1534,7 @@ extern HQL_API bool isSimpleCountExistsAggregate(IHqlExpression * aggregateExpr,
 extern HQL_API bool isKeyedCountAggregate(IHqlExpression * aggregate);
 extern HQL_API IHqlExpression * createNullDataset();
 extern HQL_API IHqlExpression * queryNullRecord();
+extern HQL_API IHqlExpression * queryNullRowRecord();
 extern HQL_API IHqlExpression * queryExpression(ITypeInfo * t);
 extern HQL_API IHqlExpression * queryExpression(IHqlDataset * ds);
 inline IHqlExpression * queryExpression(IHqlScope * scope) { return scope ? scope->queryExpression() : NULL; }
@@ -1580,6 +1581,7 @@ extern HQL_API IHqlScope * closeScope(IHqlScope * scope);
 extern HQL_API _ATOM queryPatternName(IHqlExpression * expr);
 extern HQL_API IHqlExpression * closeAndLink(IHqlExpression * expr);
 extern HQL_API IHqlExpression * createAbstractRecord(IHqlExpression * record);
+extern HQL_API IHqlExpression * createSortList(HqlExprArray & elements);
 
 // Same as expr->queryChild() except it doesn't return attributes.
 inline IHqlExpression * queryRealChild(IHqlExpression * expr, unsigned i)
@@ -1606,7 +1608,7 @@ inline IHqlExpression * queryDistribution(IHqlExpression * expr)    { return que
 inline IHqlExpression * queryGlobalSortOrder(IHqlExpression * expr) { return queryGlobalSortOrder(expr->queryType()); }
 inline IHqlExpression * queryLocalUngroupedSortOrder(IHqlExpression * expr) { return queryLocalUngroupedSortOrder(expr->queryType()); }
 inline IHqlExpression * queryGroupSortOrder(IHqlExpression * expr)  { return queryGroupSortOrder(expr->queryType()); }
-inline bool isGrouped(ITypeInfo * type)                     { return type->queryGroupInfo() != NULL; }
+inline bool isGrouped(ITypeInfo * type)                     { return type && type->queryGroupInfo() != NULL; }
 inline bool isGrouped(IHqlExpression * expr)                { return isGrouped(expr->queryType()); }
 
 inline IFunctionTypeExtra * queryFunctionTypeExtra(ITypeInfo * type)    { return static_cast<IFunctionTypeExtra *>(queryUnqualifiedType(type)->queryModifierExtra()); }
@@ -1663,6 +1665,12 @@ inline bool isAbstractDataset(IHqlExpression * expr)
 { 
     IHqlExpression * record = expr->queryRecord();
     return record && record->hasProperty(abstractAtom);
+}
+inline IHqlExpression * queryRecord(IHqlExpression * expr)
+{
+    if (!expr)
+        return NULL;
+    return expr->queryRecord();
 }
 
 extern HQL_API bool isPureVirtual(IHqlExpression * cur);

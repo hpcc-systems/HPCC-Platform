@@ -89,7 +89,7 @@ public:
         if (indexFile)
         {
             unsigned numParts = 0;
-            localKey = indexFile->queryProperties().getPropBool("@local");
+            localKey = indexFile->queryAttributes().getPropBool("@local");
             checkFormatCrc(this, indexFile, helper->getIndexFormatCrc(), true);
             Owned<IFileDescriptor> indexFileDesc = indexFile->getFileDescriptor();
             IDistributedSuperFile *superIndex = indexFile->querySuperFile();
@@ -106,7 +106,7 @@ public:
                     IDistributedFile &f = iter->query();
                     unsigned np = f.numParts()-1;
                     IDistributedFilePart &part = f.queryPart(np);
-                    const char *kind = part.queryProperties().queryProp("@kind");
+                    const char *kind = part.queryAttributes().queryProp("@kind");
                     bool hasTlk = NULL != kind && 0 == stricmp("topLevelKey", kind); // if last part not tlk, then deemed local (might be singlePartKey)
                     if (first)
                     {
@@ -134,7 +134,7 @@ public:
                 numParts = indexFile->numParts();
                 if (numParts)
                 {
-                    const char *kind = indexFile->queryPart(indexFile->numParts()-1).queryProperties().queryProp("@kind");
+                    const char *kind = indexFile->queryPart(indexFile->numParts()-1).queryAttributes().queryProp("@kind");
                     keyHasTlk = NULL != kind && 0 == stricmp("topLevelKey", kind);
                     if (keyHasTlk)
                         --numParts;

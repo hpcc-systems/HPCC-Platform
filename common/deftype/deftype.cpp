@@ -3723,37 +3723,48 @@ void XmlSchemaBuilder::getXmlTypeName(StringBuffer & xmlType, ITypeInfo & type)
     }
 }
 
+void XmlSchemaBuilder::appendField(StringBuffer &s, const char * name, ITypeInfo & type)
+{
+    const char * tag = name;
+    if (*tag == '@')
+    {
+        s.append("<xs:attribute");
+        tag++;
+    }
+    else
+        s.append("<xs:element");
+
+    s.append(" name=\"").append(tag).append("\" type=\"");
+    getXmlTypeName(s, type);
+    s.append("\"");
+    if (optionalNesting)
+    {
+        if (*name == '@')
+            s.append(" use=\"optional\"");
+        else
+            s.append(" minOccurs=\"0\"");
+    }
+    else
+    {
+        if (*name == '@')
+            s.append(" use=\"required\"");
+    }
+
+    s.append("/>\n");
+}
+
 void XmlSchemaBuilder::addField(const char * name, ITypeInfo & type)
 {
     if (xml.length() == 0)
         addSchemaPrefix();
 
-    const char * tag = name;
-    if (*tag == '@')
+    if (*name == '@')
     {
-        xml.append("<xs:attribute");
-        tag++;
+        if (attributes.length())
+            appendField(attributes.tos(), name, type);
     }
     else
-        xml.append("<xs:element");
-
-    xml.append(" name=\"").append(tag).append("\" type=\"");
-    getXmlTypeName(xml, type);
-    xml.append("\"");
-    if (optionalNesting)
-    {
-        if (*name == '@')
-            xml.append(" use=\"optional\"");
-        else
-            xml.append(" minOccurs=\"0\"");
-    }
-    else
-    {
-        if (*name == '@')
-            xml.append(" use=\"required\"");
-    }
-
-    xml.append("/>\n");
+        appendField(xml, name, type);
 }
 
 void XmlSchemaBuilder::addSetField(const char * name, const char * itemname, ITypeInfo & type)
@@ -3782,8 +3793,12 @@ void XmlSchemaBuilder::addSetField(const char * name, const char * itemname, ITy
 
 void XmlSchemaBuilder::beginRecord(const char * name)
 {
+    if (!name || !*name)
+        return;
     if (xml.length() == 0)
         addSchemaPrefix();
+
+    attributes.append(*new StringBufferItem);
 
     xml.append("<xs:element name=\"").append(name).append("\"");
     if (optionalNesting)
@@ -3796,7 +3811,12 @@ void XmlSchemaBuilder::beginRecord(const char * name)
 
 void XmlSchemaBuilder::endRecord(const char * name)
 {
-    xml.append("</xs:sequence></xs:complexType>").newline();
+    if (!name || !*name)
+        return;
+    xml.append("</xs:sequence>").newline();
+    xml.append(attributes.tos());
+    attributes.pop();
+    xml.append("</xs:complexType>").newline();
     xml.append("</xs:element>").newline();
     optionalNesting = nesting.pop();
 }
@@ -3818,6 +3838,7 @@ bool XmlSchemaBuilder::beginDataset(const char * name, const char * row)
     xml.append("<xs:sequence minOccurs=\"0\" maxOccurs=\"unbounded\">").newline();
     if (row && *row)
     {
+        attributes.append(*new StringBufferItem);
         xml.append("<xs:element name=\"").append(row).append("\"><xs:complexType><xs:sequence>").newline();
     }
     nesting.append(optionalNesting);
@@ -3828,7 +3849,12 @@ bool XmlSchemaBuilder::beginDataset(const char * name, const char * row)
 void XmlSchemaBuilder::endDataset(const char * name, const char * row)
 {
     if (row && *row)
-        xml.append("</xs:sequence></xs:complexType></xs:element>").newline();
+    {
+        xml.append("</xs:sequence>").newline();
+        xml.append(attributes.tos());
+        attributes.pop();
+        xml.append("</xs:complexType></xs:element>").newline();
+    }
     xml.append("</xs:sequence>").newline();
     if (name && *name)
     {

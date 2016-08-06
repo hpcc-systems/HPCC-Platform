@@ -139,6 +139,8 @@ extern WORKUNIT_API IJobQueue *createJobQueue(const char *name);
 
 extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *cluster);
 extern bool WORKUNIT_API runWorkUnit(const char *wuid);
+extern WORKUNIT_API StringBuffer & getQueuesContainingWorkUnit(const char *wuid, StringBuffer &queueList);
+extern WORKUNIT_API void removeWorkUnitFromAllQueues(const char *wuid);
 
 extern bool WORKUNIT_API switchWorkUnitQueue(IWorkUnit* wu, const char *cluster);
 

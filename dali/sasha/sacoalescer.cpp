@@ -255,8 +255,10 @@ public:
                     StringBuffer cmd(sashaProgramName);
                     cmd.append(" coalesce");
                     char cwd[1024];
-                    GetCurrentDirectory(1024, cwd);
-                    PROGLOG("COALESCE: Running '%s' in '%s'",cmd.str(),cwd);
+                    if (GetCurrentDirectory(1024, cwd))
+                        PROGLOG("COALESCE: Running '%s' in '%s'",cmd.str(),cwd);
+                    else
+                        ERRLOG("COALESCE: Running '%s' in unknown current directory",cmd.str());
                     if (!invoke_program(cmd.str(), runcode, false, NULL, &h)) 
                         ERRLOG("Could not run saserver in coalesce mode");
                     else {

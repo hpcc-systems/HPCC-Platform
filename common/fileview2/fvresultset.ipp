@@ -368,6 +368,9 @@ public:
     virtual IStringVal & getDisplayText(IStringVal &ret, int columnIndex);
     virtual IStringVal & getXml(IStringVal & ret, int columnIndex);
     virtual IStringVal & getXmlRow(IStringVal &ret);
+    virtual IStringVal & getXmlItem(IStringVal & ret);
+
+
 
 //IResultSetCursor
     virtual void beginAccess();
@@ -381,7 +384,8 @@ protected:
     void init(IExtendedNewResultSet * _resultSet);
     bool isMappedIndexField(unsigned columnIndex) { return resultSet->isMappedIndexField(columnIndex); }
     const byte * getColumn(unsigned idx) const      { return (const byte *)curRowData.toByteArray() + offsets[idx]; }
-    void getXmlText(StringBuffer & out, int columnIndex);
+    void getXmlText(StringBuffer & out, int columnIndex, const char *tag=NULL);
+    void getXmlAttrText(StringBuffer & out, int columnIndex, const char *tag=NULL);
 
     virtual __int64 getCurRow() const;
     virtual __int64 translateRow(__int64 row) const;
@@ -436,6 +440,7 @@ public:
     virtual IStringVal & getDisplayText(IStringVal &ret, int columnIndex);
     virtual IStringVal & getXml(IStringVal & ret, int columnIndex);
     virtual IStringVal & getXmlRow(IStringVal &ret);
+    virtual IStringVal & getXmlItem(IStringVal &ret);
     virtual void noteRelatedFileChanged();
 
 protected:

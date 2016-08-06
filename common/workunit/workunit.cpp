@@ -1960,6 +1960,7 @@ public:
         }
         else
             cw->cleanupAndDelete(true,true);
+        removeWorkUnitFromAllQueues(wuid); //known active workunits wouldn't make it this far
         return true;
     }
 
@@ -2619,22 +2620,23 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll,bool deleteOwned)
             throw MakeStringException(WUERR_WorkunitActive, "%s: Workunit is active",p->queryName());
         break;
     case WUStateWait:
-        throw MakeStringException(WUERR_WorkunitScheduled, "%s: Workunit is scheduled, not deleting",p->queryName());
+        throw MakeStringException(WUERR_WorkunitScheduled, "%s: Workunit is scheduled",p->queryName());
     default:
         throw MakeStringException(WUERR_WorkunitActive, "%s: Workunit is active",p->queryName());
         break;
     }
+    if (getIsQueryService())
+    {
+        Owned<IPropertyTree> registry = getQueryRegistryRoot();
+        if (registry)
+        {
+            VStringBuffer xpath("QuerySet/Query[@wuid='%s']", p->queryName());
+            if (registry->hasProp(xpath.str()))
+                throw MakeStringException(WUERR_WorkunitPublished, "%s: Workunit is published",p->queryName());
+        }
+    }
     try
     {
-        //Move any service aliases
-        if (getIsQueryService())
-        {
-            Owned<IPropertyTree> registry = getQueryRegistry(p->queryProp("@clusterName"), false);
-            if (registry)
-                removeWuidFromNamedQueries(registry, p->queryName());
-        }
-
-
         if (deldll && !p->getPropBool("@isClone", false))
         {
             Owned<IConstWUQuery> q = getQuery();
@@ -5291,9 +5293,8 @@ IConstWUResult* CLocalWorkUnit::getGlobalByName(const char *qname) const
     CriticalBlock block(crit);
     if (strcmp(p->queryName(), GLOBAL_WORKUNIT)==0)
         return getVariableByName(qname);
-    Owned <IConstWorkUnit> global = factory->openWorkUnit(GLOBAL_WORKUNIT, false);
-    if (!global)
-        global.setown(factory->createWorkUnit(NULL, NULL, NULL));
+
+    Owned <IWorkUnit> global = factory->ensureNamedWorkUnit(GLOBAL_WORKUNIT);
     return global->getVariableByName(qname);
 }
 
@@ -5423,7 +5424,7 @@ void CLocalWorkUnit::deleteTempFiles(const char *graph, bool deleteOwned, bool d
         {
             const char *name = file.queryProp("@name");
             LOG(MCdebugProgress, unknownJob, "Removing workunit file %s from DFS", name);
-            queryDistributedFileDirectory().removePhysical(name, 0, NULL, NULL, queryUserDescriptor());
+            queryDistributedFileDirectory().removePhysical(name, NULL, NULL, queryUserDescriptor());
             toRemove.append(file);
         }
     }
@@ -5531,7 +5532,7 @@ void CLocalWorkUnit::releaseFile(const char *fileName)
             files->removeTree(file);
             if (!name.isEmpty()&&(1 == usageCount))
             {
-                if (queryDistributedFileDirectory().removePhysical(fileName, 0, NULL, NULL, queryUserDescriptor()))
+                if (queryDistributedFileDirectory().removePhysical(fileName, NULL, NULL, queryUserDescriptor()))
                     LOG(MCdebugProgress, unknownJob, "Removed (released) file %s from DFS", name.get());
             }
         }
@@ -7725,6 +7726,22 @@ extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr,
         abortWorkUnit(wuid);
 }
 
+extern WORKUNIT_API void submitWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
+{
+    if (secmgr && secuser)
+        return secSubmitWorkUnit(wuid, *secmgr, *secuser);
+    if (secuser)
+        return submitWorkUnit(wuid, secuser->getName(), secuser->credentials().getPassword());
+    submitWorkUnit(wuid, "", "");
+}
+
+extern WORKUNIT_API void abortWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
+{
+    if (secmgr && secuser)
+        return secAbortWorkUnit(wuid, *secmgr, *secuser);
+    abortWorkUnit(wuid);
+}
+
 bool CLocalWorkUnit::hasWorkflow() const
 {
     return p->hasProp("Workflow");
@@ -8638,11 +8655,10 @@ extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSever
     }
 }
 
-
-extern WORKUNIT_API bool isArchiveQuery(const char * text)
+const char * skipLeadingXml(const char * text)
 {
     if (!text)
-        return false;
+        return NULL;
 
     //skip utf8 BOM, probably excessive
     if (memcmp(text, UTF8_BOM, 3) == 0)
@@ -8652,6 +8668,20 @@ extern WORKUNIT_API bool isArchiveQuery(const char * text)
     {
         if (isspace(*text))
             text++;
+        else if (text[0] == '<' && text[1] == '?')
+        {
+            text += 2;
+            loop
+            {
+                if (!*text) break;
+                if (text[0] == '?' && text[1] == '>')
+                {
+                    text += 2;
+                    break;
+                }
+                text++;
+            }
+        }
         else if (text[0] == '<' && text[1] == '!' && text[2] == '-' && text[3] == '-')
         {
             text += 4;
@@ -8670,8 +8700,25 @@ extern WORKUNIT_API bool isArchiveQuery(const char * text)
             break;
     }
 
+    return text;
+}
+
+extern WORKUNIT_API bool isArchiveQuery(const char * text)
+{
+    text = skipLeadingXml(text);
+    if (!text)
+        return false;
     const char * archivePrefix = "<Archive";
     return memicmp(text, archivePrefix, strlen(archivePrefix)) == 0;
+}
+
+extern WORKUNIT_API bool isQueryManifest(const char * text)
+{
+    text = skipLeadingXml(text);
+    if (!text)
+        return false;
+    const char * manifestPrefix = "<Manifest";
+    return memicmp(text, manifestPrefix, strlen(manifestPrefix)) == 0;
 }
 
 //------------------------------------------------------------------------------
@@ -8981,7 +9028,7 @@ extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, 
     return conn->getRoot();
 }
 
-void addQueryToQuerySet(IConstWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId)
+void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId)
 {
     StringBuffer cleanQueryName;
     appendUtf8XmlName(cleanQueryName, strlen(queryName), queryName);
@@ -9015,12 +9062,10 @@ void addQueryToQuerySet(IConstWorkUnit *workunit, const char *querySetName, cons
         }
     }
 
-
     IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str());
     newQueryId.append(newEntry->queryProp("@id"));
-
-    //A single workunit could be published as multiple queries
-    //workunit->setDebugValue("queryId", newQueryId.str(), true);
+    workunit->setIsQueryService(true); //will check querysets before delete
+    workunit->commit();
 
     if (activateOption == ACTIVATE_SUSPEND_PREVIOUS|| activateOption == ACTIVATE_DELETE_PREVIOUS)
     {

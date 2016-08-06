@@ -577,12 +577,12 @@ void sortSimulator()
     SortMaster master(numSortSlaves);
     SortSlave *slaves = new SortSlave[numSortSlaves];
     unsigned start = msTick();
-    for (int i = 0; i < numSortSlaves; i++)
+    for (unsigned i = 0; i < numSortSlaves; i++)
     {
         slaves[i].init(&master, i);
         slaves[i].start();
     }
-    for (int j = 0; j < numSortSlaves; j++)
+    for (unsigned j = 0; j < numSortSlaves; j++)
     {
         slaves[j].join();
     }
@@ -753,7 +753,7 @@ int main(int argc, char * argv[] )
             printf("ERROR: my ip does not appear to be in range\n");
             usage();
         }
-        roxiemem::setTotalMemoryLimit(1048576000);
+        roxiemem::setTotalMemoryLimit(1048576000, 0, NULL);
         testNxN();
         roxiemem::releaseRoxieHeap();
     }

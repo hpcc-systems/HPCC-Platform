@@ -1554,12 +1554,8 @@ void CTpWrapper::getMachineList(double clientVersion,
         if (!cluster)
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
+        //set this flag for legacy multi slave clusters because SwapNode made little sense in the old scheme
         multiSlaves = cluster->getPropBool("@multiSlaves");
-        if (multiSlaves)
-        {   //multiSlaves will be set to true for legacy multiSlaves environment
-            getMachineList(MachineType, ParentPath, Status, Directory, MachineList);
-            return;
-        }
 
         StringBuffer groupName;
         if (strieq(MachineType, eqThorSlaveProcess))

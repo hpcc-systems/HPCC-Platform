@@ -580,7 +580,7 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
         StringBuffer host, expected;
         queryHostIP().getIpText(host);
         ep.getIpText(expected);
-        throwError2(DFTERR_OutputOffsetMismatch, expected.str(), host.str());
+        throwError2(DFTERR_WrongComputer, expected.str(), host.str());
     }
 
     srcFormat.deserialize(msg);
@@ -812,7 +812,8 @@ processedProgress:
 
             StringBuffer localFilename;
             localTempFilename.getPath(localFilename);
-            recursiveCreateDirectoryForFile(localFilename);
+            if (!recursiveCreateDirectoryForFile(localFilename))
+                throw MakeOsException(GetLastError(), "Failed to create directory for file: %s", localFilename.str());
 
             OwnedIFile outFile = createIFile(localFilename.str());
             OwnedIFileIO outio = outFile->openShared(IFOcreate,IFSHnone);

@@ -264,7 +264,7 @@ IHqlExpression* HqlGram::bindFieldMap(IHqlExpression* expr, IHqlExpression* map)
                     newmaps.append(*createComma(createAttribute(mappedName), LINK(to)));
             }
             map->Release();
-            IHqlExpression * newmap = createValue(no_sortlist, makeSortListType(NULL), newmaps);
+            IHqlExpression * newmap = createSortList(newmaps);
 
             expr = clearFieldMap(expr);
             expr = createFieldMap(expr,newmap);

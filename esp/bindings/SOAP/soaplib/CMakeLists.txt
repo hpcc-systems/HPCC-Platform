@@ -51,6 +51,7 @@ include_directories (
          ./../../../../system/include 
          ./../../../../system/security/shared
          ./../../../../system/security/securesocket 
+         ./../../../../system/security/LdapSecurity
          ./../../../../system/jlib 
          ./../../../bindings 
          ./../../../platform 

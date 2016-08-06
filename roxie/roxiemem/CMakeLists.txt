@@ -26,10 +26,12 @@ project( roxiemem )
 
 set (    SRCS 
          roxiemem.cpp 
+         roxierowbuff.cpp
     )
          
 set (    INCLUDES
          roxiemem.hpp 
+         roxierowbuff.hpp
     )
 
 include_directories ( 

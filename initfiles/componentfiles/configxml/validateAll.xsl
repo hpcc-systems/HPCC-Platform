@@ -28,6 +28,26 @@ xmlns:seisint="http://seisint.com" exclude-result-prefixes="seisint">
   <xsl:template match="/Environment">
     <xsl:apply-templates select="Hardware/Computer"/>
     <xsl:apply-templates select="Software/ThorCluster"/>
+    <xsl:apply-templates select="Software/Topology"/>
+    <xsl:apply-templates select="Software"/>
+  </xsl:template>
+
+  <xsl:template match="Environment/Software/*">
+    <xsl:for-each select="descendant-or-self::*[name()='Cluster']">
+    <xsl:variable select="@name" name="elem"/>
+      <xsl:if test= "count(preceding-sibling::*[@name=$elem]) = 0 and count(following-sibling::*[@name=$elem]) &gt; 0">
+        <xsl:variable select="count(following-sibling::*[@name=$elem])+1" name="numOccurrences"/>
+        <xsl:call-template name="validationMessage">
+            <xsl:with-param name="msg" select="concat('/Environment/Software/Topology/Cluster[@name=',$elem,']',' occurs ', $numOccurrences, ' times. Max occurrence must be 1.')"/>
+        </xsl:call-template>        
+      </xsl:if> 
+    </xsl:for-each>
+    <xsl:variable select="@name" name="elem1"/>
+        <xsl:if test="(translate($elem1,'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_',''))" >
+      <xsl:call-template name="validationMessage">
+        <xsl:with-param name="msg" select=" concat('Invalid character[@name=' ,$elem1, ']') "/>
+      </xsl:call-template>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="Computer">

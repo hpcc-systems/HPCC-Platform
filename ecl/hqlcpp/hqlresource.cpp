@@ -142,6 +142,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
         if (!isGrouped && !isLocal)
         {
             resources.set(RESslavememory, MEM_Const_Minimal+DEDUP_SMART_BUFFER_SIZE);
+            //MORE: Is this still correct?
             resources.setManyToMasterSockets(1);
         }
         break;
@@ -149,6 +150,12 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
     case no_keyeddistribute:
         resources.setLightweight();
         setHashResources(expr, resources, options);
+        break;
+    case no_shuffle:
+        if (expr->hasProperty(manyAtom))
+            resources.setHeavyweight();
+        else
+            resources.setLightweight();
         break;
     case no_sort:
         if (isGrouped)
@@ -654,14 +661,15 @@ ResourceGraphInfo::ResourceGraphInfo(CResourceOptions * _options) : resources(_o
 {
     options = _options;
     depth = 0;
+    depthSequence = -1;
     beenResourced = false;
     isUnconditional = false;
     mergedConditionSource = false;
     hasConditionSource = false;
     isDead = false;
-    gatheredDependants = false;
     startedGeneratingResourced = false;
     inheritedExpandedDependencies = false;
+    cachedDependent.other = NULL;
 }
 
 ResourceGraphInfo::~ResourceGraphInfo()
@@ -769,72 +777,31 @@ void ResourceGraphInfo::display()
     DBGLOG("%s", s.str());
 }
 
-void ResourceGraphInfo::expandDependants(ResourceGraphArray & target)
-{
-    ForEachItemIn(idx, dependsOn)
-    {
-        ResourceGraphInfo * source = dependsOn.item(idx).sourceGraph;
-        if (target.find(*source) == NotFound)
-            target.append(*LINK(source));
-    }
-    ForEachItemIn(idx2, sources)
-    {
-        ResourceGraphLink & cur = sources.item(idx2);
-//      if (!queryResourceInfo(cur.sourceNode)->expandRatherThanSpill())
-        {
-            ResourceGraphInfo * source = cur.sourceGraph;
-            if (target.find(*source) == NotFound)
-                target.append(*LINK(source));
-        }
-    }
-    ForEachItemIn(idx3, indirectSources)
-    {
-        ResourceGraphInfo & cur = indirectSources.item(idx3);
-        if (target.find(cur) == NotFound)
-            target.append(OLINK(cur));
-    }
-}
-
-void ResourceGraphInfo::gatherDependants(bool recalculate)
-{
-    if (gatheredDependants && !recalculate)
-        return;
-    gatheredDependants = true;
-    depth = 0;
-    indirectSources.kill();
-
-    ForEachItemIn(idx, dependsOn)
-    {
-        ResourceGraphInfo * source = dependsOn.item(idx).sourceGraph;
-        source->gatherDependants(false);
-        source->expandDependants(indirectSources);
-        if (source->depth >= depth)
-            depth = source->depth + 1;
-    }
-    ForEachItemIn(idx2, sources)
-    {
-        ResourceGraphInfo * source = sources.item(idx2).sourceGraph;
-        source->gatherDependants(false);
-        source->expandDependants(indirectSources);
-        if (source->getDepth() >= depth)
-            depth = source->getDepth() + 1;
-    }
-}
-
 void ResourceGraphInfo::getMergeFailReason(StringBuffer & reasonText, ResourceGraphInfo * otherGraph, const CResources & limit)
 {
     resources.getExceedsReason(reasonText, otherGraph->resources, limit);
 }
 
-void ResourceGraphInfo::replaceReferences(ResourceGraphInfo * oldGraph, ResourceGraphInfo * newGraph)
-{
-    if (indirectSources.find(*oldGraph) != NotFound)
-        gatheredDependants = false;
-}
-
 unsigned ResourceGraphInfo::getDepth()
 {
-    gatherDependants(false);
+    //If no graphs have been merged since this was last called it is still valid.
+    if (depthSequence == options->state.updateSequence)
+        return depth;
+
+    depthSequence = options->state.updateSequence;
+    depth = 0;
+    ForEachItemIn(idx, dependsOn)
+    {
+        ResourceGraphInfo * source = dependsOn.item(idx).sourceGraph;
+        if (source->getDepth() >= depth)
+            depth = source->getDepth() + 1;
+    }
+    ForEachItemIn(idx2, sources)
+    {
+        ResourceGraphInfo * source = sources.item(idx2).sourceGraph;
+        if (source->getDepth() >= depth)
+            depth = source->getDepth() + 1;
+    }
     return depth;
 }
 
@@ -848,30 +815,43 @@ bool ResourceGraphInfo::hasSameConditions(ResourceGraphInfo & other)
     return true;
 }
 
-bool ResourceGraphInfo::isDependentOn(ResourceGraphInfo & other, bool allowDirect)
+bool ResourceGraphInfo::evalDependentOn(ResourceGraphInfo & other, bool ignoreSources)
 {
-    gatherDependants(false);
     ForEachItemIn(idx, dependsOn)
     {
         ResourceGraphInfo * cur = dependsOn.item(idx).sourceGraph;
         if (cur == &other)
             return true;
-    }
-    ForEachItemIn(idx2, indirectSources)
-    {
-        ResourceGraphInfo & cur = indirectSources.item(idx2);
-        if (&cur == &other)
+        if (cur->isDependentOn(other, false))
             return true;
     }
-    if (!allowDirect)
+    ForEachItemIn(idx2, sources)
     {
-        ForEachItemIn(idx3, sources)
-        {
-            if (sources.item(idx3).sourceGraph == &other)
-                return true;
-        }
+        ResourceGraphInfo * cur = sources.item(idx2).sourceGraph;
+        if ((cur == &other) && !ignoreSources)
+            return true;
+        if (cur->isDependentOn(other, false))
+            return true;
     }
     return false;
+}
+
+
+bool ResourceGraphInfo::isDependentOn(ResourceGraphInfo & other, bool ignoreSources)
+{
+    //Cache the last query so that traversal doesn't convert a graph into a tree walk
+    if ((cachedDependent.other == &other) && (cachedDependent.ignoreSources == ignoreSources) &&
+        (cachedDependent.updateSequence == options->state.updateSequence))
+        return cachedDependent.value;
+
+    if (getDepth() <= other.getDepth())
+        return false;
+
+    cachedDependent.other = &other;
+    cachedDependent.ignoreSources = ignoreSources;
+    cachedDependent.updateSequence = options->state.updateSequence;
+    cachedDependent.value = evalDependentOn(other, ignoreSources);
+    return cachedDependent.value;
 }
 
 
@@ -951,16 +931,8 @@ void ResourceGraphInfo::mergeGraph(ResourceGraphInfo & other, bool isConditional
 
     //Recalculate the dependents, because sources of the source merged in may no longer be indirect
     //although they may be via another path.  
-    gatheredDependants = false;
+    options->noteGraphsChanged();
 
-    //Any of my sources will already have the correct dependencies, however, 
-    //anything that is a sink of the source has just gained some dependencies.
-    ForEachItemIn(idx, other.sinks)
-    {
-        ResourceGraphInfo * graph = other.sinks.item(idx).sinkGraph;
-        if (graph)
-            graph->gatheredDependants = false;
-    }
     //If was very cheap and merged into an unconditional graph, make sure this is now tagged as
     //unconditional...
     if (other.isUnconditional)
@@ -1189,7 +1161,8 @@ bool ResourcerInfo::useGraphResult()
 
     if (linkedFromChild)
         return true;
-    if (options->targetClusterType != HThorCluster)
+    //Roxie converts spills into splitters, so best to retain them
+    if (options->targetClusterType == RoxieCluster)
         return false;
     return true;
 }
@@ -1243,6 +1216,7 @@ IHqlExpression * ResourcerInfo::createSpilledRead(IHqlExpression * spillReason)
         if (options->targetThor() && original->isDataset() && !options->isChildQuery)
             args.append(*createAttribute(_distributed_Atom));
         dataset.setown(createDataset(no_getgraphresult, args));
+        loseDistribution = false;
     }
     else if (useGlobalResult())
     {
@@ -1808,11 +1782,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     }
 
 
-#ifdef MPHASHDISTRIBUTE 
-    options.useMpForDistribute = true;
-#else
-    options.useMpForDistribute = false;
-#endif
+    options.useMpForDistribute = (targetClusterType == ThorLCRCluster);
     
     if (_translatorOptions.hasResourceUseMpForDistribute)
         options.useMpForDistribute = _translatorOptions.resourceUseMpForDistribute;
@@ -1970,9 +1940,6 @@ void EclResourcer::replaceGraphReferences(ResourceGraphInfo * oldGraph, Resource
                 cur.changeSinkGraph(newGraph);
         }
     }
-
-    ForEachItemIn(idx3, graphs)
-        graphs.item(idx3).replaceReferences(oldGraph, newGraph);
 }
 
 //------------------------------------------------------------------------------------------
@@ -3692,7 +3659,7 @@ void EclResourcer::spotSharedInputs()
         ForEachItemIn(i2, curGraph.sinks)
         {
             ResourceGraphLink & cur = curGraph.sinks.item(i2);
-            IHqlExpression * curExpr = cur.sourceNode;
+            IHqlExpression * curExpr = cur.sourceNode->queryBody();
             if (!visited.contains(*curExpr))
             {
                 ResourcerInfo * info = queryResourceInfo(curExpr);

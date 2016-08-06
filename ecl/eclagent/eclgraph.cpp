@@ -106,6 +106,8 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKtemptable:
     case TAKtemprow:
         return createTempTableActivity(agent, activityId, subgraphId, (IHThorTempTableArg &)arg, kind);
+    case TAKinlinetable:
+        return createInlineTableActivity(agent, activityId, subgraphId, (IHThorInlineTableArg &)arg, kind);
     case TAKnormalize:
         return createNormalizeActivity(agent, activityId, subgraphId, (IHThorNormalizeArg &)arg, kind);
     case TAKnormalizechild:
@@ -396,7 +398,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
         return (totalCRC <= pseudoCrc);
     }
 
-    IPropertyTree & cur = f->queryProperties();
+    IPropertyTree & cur = f->queryAttributes();
     if ((eclCRC != cur.getPropInt("@eclCRC")) || (totalCRC != cur.getPropInt64("@totalCRC")))
         return false;
     return true;
@@ -1806,11 +1808,13 @@ EclBoundLoopGraph::EclBoundLoopGraph(IAgentContext & _agent, IEclLoopGraph * _gr
     activityId = _activityId;
 }
 
-IHThorGraphResult * EclBoundLoopGraph::execute(void * counterRow, ConstPointerArray & rows, const byte * parentExtract)
+IHThorGraphResults * EclBoundLoopGraph::execute(void * counterRow, ConstPointerArray & rows, const byte * parentExtract)
 {
     Owned<GraphResults> results = new GraphResults(3);
 
-    IHThorGraphResult * inputResult = results->createResult(1, agent.queryCodeContext()->getRowAllocator(resultMeta, activityId));
+    if (!inputAllocator)
+        inputAllocator.setown(agent.queryCodeContext()->getRowAllocator(resultMeta, activityId));
+    IHThorGraphResult * inputResult = results->createResult(1, LINK(inputAllocator));
     ForEachItemIn(i, rows)
         inputResult->addRowOwn(rows.item(i));
     rows.kill();
@@ -1818,12 +1822,14 @@ IHThorGraphResult * EclBoundLoopGraph::execute(void * counterRow, ConstPointerAr
     if (counterRow)
     {
         counterMeta.setown(new EclCounterMeta);
-        IHThorGraphResult * counterResult = results->createResult(2, agent.queryCodeContext()->getRowAllocator(counterMeta, activityId));
+        if (!counterAllocator)
+            counterAllocator.setown(agent.queryCodeContext()->getRowAllocator(counterMeta, activityId));
+        IHThorGraphResult * counterResult = results->createResult(2, LINK(counterAllocator));
         counterResult->addRowOwn(counterRow);
     }
 
     graph->executeChild(parentExtract, results, NULL);
-    return LINK(results->queryResult(0));
+    return results.getClear();
 }
 
 
@@ -1833,7 +1839,9 @@ void EclBoundLoopGraph::execute(void * counterRow, IHThorGraphResults * graphLoo
     if (counterRow)
     {
         counterMeta.setown(new EclCounterMeta);
-        IHThorGraphResult * counterResult = results->createResult(0, agent.queryCodeContext()->getRowAllocator(counterMeta, activityId));
+        if (!counterAllocator)
+            counterAllocator.setown(agent.queryCodeContext()->getRowAllocator(counterMeta, activityId));
+        IHThorGraphResult * counterResult = results->createResult(0, LINK(counterAllocator));
         counterResult->addRowOwn(counterRow);
     }
 

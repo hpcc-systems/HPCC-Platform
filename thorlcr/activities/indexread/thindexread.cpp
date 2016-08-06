@@ -98,14 +98,14 @@ protected:
                 unsigned _tlkCrc;
                 if (part->getCrc(_tlkCrc))
                     fileCrc = true;
-                else if (part->queryProperties().hasProp("@crc")) // NB: key "@crc" is not a crc on the file, but data within.
+                else if (part->queryAttributes().hasProp("@crc")) // NB: key "@crc" is not a crc on the file, but data within.
                 {
-                    _tlkCrc = part->queryProperties().getPropInt("@crc");
+                    _tlkCrc = part->queryAttributes().getPropInt("@crc");
                     rowCrc = true;
                 }
-                else if (part->queryProperties().hasProp("@tlkCrc")) // backward compat.
+                else if (part->queryAttributes().hasProp("@tlkCrc")) // backward compat.
                 {
-                    _tlkCrc = part->queryProperties().getPropInt("@tlkCrc");
+                    _tlkCrc = part->queryAttributes().getPropInt("@tlkCrc");
                     rowCrc = true;
                 }
                 else
@@ -196,7 +196,7 @@ public:
         if (index)
         {
             nofilter = 0 != (TIRnofilter & helper->getFlags());
-            if (index->queryProperties().getPropBool("@local"))
+            if (index->queryAttributes().getPropBool("@local"))
                 nofilter = true;
             else
             {

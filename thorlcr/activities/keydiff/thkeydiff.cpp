@@ -173,7 +173,7 @@ public:
             if (patchFile) {
                 __int64 fs = patchFile->getFileSize(true,false);
                 if (fs!=-1)
-                    patchFile->queryProperties().setPropInt64("@size",fs);
+                    patchFile->queryAttributes().setPropInt64("@size",fs);
             }
         }
         catch (IException *e) {
@@ -181,7 +181,8 @@ public:
             e->Release();
         }
         // Add a new 'Patch' description to the secondary key.
-        IPropertyTree &fileProps = newIndexFile->lockProperties();
+        DistributedFilePropertyLock lock(newIndexFile);
+        IPropertyTree &fileProps = lock.queryAttributes();
         StringBuffer path("Patch[@name=\"");
         path.append(scopedName.str()).append("\"]");
         IPropertyTree *patch = fileProps.queryPropTree(path.str());
@@ -195,8 +196,6 @@ public:
         index->setProp("@name", originalIndexFile->queryLogicalName());
         if (originalIndexFile->getFileCheckSum(checkSum))
             index->setPropInt64("@checkSum", checkSum);
-
-        newIndexFile->unlockProperties();
     }
     void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {

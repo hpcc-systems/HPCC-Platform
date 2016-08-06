@@ -407,5 +407,9 @@ public:
     void setTimeOut(unsigned int timeout);
 };
 
+inline bool canRedirect(CHttpRequest &req)
+{
+    return !req.queryParameters()->hasProp("rawxml_");
+}
 
 #endif
