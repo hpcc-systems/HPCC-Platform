@@ -26,7 +26,7 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
     <xsl:param name="instance" select="'rmoondhra'"/>
     <xsl:param name="outputFilePath" select="'c:\development\deployment\xmlenv\dummy.xml'"/>
     <xsl:param name="isLinuxInstance" select="0"/>    
-    <xsl:param name="espServiceName" select="'espsmc'"/>
+    <xsl:param name="espServiceName" select="'eclwatch'"/>
 
     <xsl:template match="text()"/>
 

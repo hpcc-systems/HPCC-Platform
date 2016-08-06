@@ -147,7 +147,7 @@
             </script>
         </head>
     <body class="yui-skin-sam" onload="nof5()">
-            <h3>Permissions of <xsl:value-of select="name"/></h3>
+            <h3>Permissions of '<xsl:value-of select="description"/> (<xsl:value-of select="name"/>)'</h3>
             <p/>
             <xsl:choose>
                 <xsl:when test="not(Permissions/Permission[1])">

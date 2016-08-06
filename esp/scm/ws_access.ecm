@@ -440,6 +440,7 @@ ESPrequest ResourcePermissionsRequest
     string name;
     string rtitle;
     string prefix;
+    string description;
 };
 
 ESPstruct ResourcePermission
@@ -464,6 +465,7 @@ ESPresponse ResourcePermissionsResponse
     string name;
     string rtitle;
     string prefix;
+    [min_ver("1.07")] string description;
     ESParray<ESPstruct ResourcePermission, Permission> Permissions;
 };
 
@@ -647,7 +649,7 @@ ESPresponse [nil_remove] UserAccountExportResponse
 };
 
 
-ESPservice [version("1.06"), default_client_version("1.06"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
+ESPservice [version("1.07"), default_client_version("1.07"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
 {
     ESPmethod [client_xslt("/esp/xslt/access_users.xslt")] Users(UserRequest, UserResponse);
     ESPmethod [client_xslt("/esp/xslt/access_useredit.xslt")] UserEdit(UserEditRequest, UserEditResponse);

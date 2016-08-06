@@ -102,7 +102,7 @@ void usage()
   puts("          directory and to set eclwatch's enableSystemUseRewrite to true, the following options");
   puts("          can be provided.");
   puts("          \"-override DropZone,@directory,/mnt/disk1/mydropzone ");
-  puts("          -override espsmc,@enableSystemUseRewrite,true\"");
+  puts("          -override eclwatch,@enableSystemUseRewrite,true\"");
   puts("   -help: print out this usage.");
 }
 

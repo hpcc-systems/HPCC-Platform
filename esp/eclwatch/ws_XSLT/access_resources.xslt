@@ -271,7 +271,7 @@
         <xsl:value-of select="description"/>
         </td>
         <td align="center">
-            <a href="javascript:go('/ws_access/ResourcePermissions?basedn={../../basedn}&amp;rtype={../../rtype}&amp;rtitle={../../rtitle}&amp;name={name}&amp;prefix={../../prefix}')">Permissions</a>
+            <a href="javascript:go('/ws_access/ResourcePermissions?basedn={../../basedn}&amp;rtype={../../rtype}&amp;rtitle={../../rtitle}&amp;name={name}&amp;description={description}&amp;prefix={../../prefix}')">Permissions</a>
         </td>
         </tr>
     </xsl:template>
