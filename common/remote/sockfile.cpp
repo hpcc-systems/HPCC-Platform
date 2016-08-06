@@ -1525,12 +1525,14 @@ class CRemoteFile : public CRemoteBase, implements IFile
 {
     StringAttr remotefilename;
     unsigned flags;
+    unsigned cumask;
 public:
     IMPLEMENT_IINTERFACE
     CRemoteFile(const SocketEndpoint &_ep, const char * _filename)
         : CRemoteBase(_ep, _filename)
     {
-        flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR)<<16);
+        flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)<<16);
+        cumask = IFUnone;
     }
 
     bool exists()
@@ -1798,7 +1800,8 @@ public:
         MemoryBuffer sendBuffer;
         initSendBuffer(sendBuffer);
         MemoryBuffer replyBuffer;
-        sendBuffer.append((RemoteFileCommandType)RFCcreatedir).append(filename);
+        // also send cumask
+        sendBuffer.append((RemoteFileCommandType)RFCcreatedir).append(filename).append(cumask);
         sendRemoteCommand(sendBuffer, replyBuffer);
 
         bool ok;
@@ -1928,9 +1931,23 @@ public:
         return crc;
     }
 
-    void setCreateFlags(unsigned cflags)
+    void setCreateFlags(unsigned cflags, unsigned _cumask=IFUnone)
     {
+        flags &= 0xffff;
         flags |= (cflags<<16);
+        setFileUmask(_cumask);
+    }
+
+    void getCreateFlags(unsigned &oflags, unsigned &oumask)
+    {
+        oflags = flags;
+        oumask = cumask;
+    }
+
+    void setFileUmask(unsigned _cumask)
+    {
+        if (_cumask != IFUnone)
+            cumask = _cumask;
     }
 
     void setShareMode(IFSHmode shmode)
@@ -2208,8 +2225,10 @@ public:
         MemoryBuffer replyBuffer;
         const char *localname = parent->queryLocalName();
         localname = skipSpecialPath(localname);
-        // also send _extraFlags
-        sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode).append((byte)_extraFlags);
+        unsigned eflags, ecumask;
+        parent->getCreateFlags(eflags, ecumask);
+        // also send _extraFlags, eflags, ecumask
+        sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode).append((byte)_extraFlags).append(eflags).append(ecumask);
         parent->sendRemoteCommand(sendBuffer, replyBuffer);
 
         replyBuffer.read(handle);
@@ -3976,6 +3995,11 @@ public:
         // can revert to previous behavior with conf file setting "allow_pgcache_flush=false"
         if (extraFlags == IFEnone)
             extraFlags = IFEnocache;
+        // also try to recv extra flags and cumask
+        unsigned eflags = IFUnone;
+        unsigned ecumask = IFUnone;
+        if (msg.remaining() >= 2*sizeof(unsigned))
+            msg.read(eflags).read(ecumask);
         Owned<IFile> file = createIFile(name->text);
         switch ((compatIFSHmode)share) {
         case compatIFSHnone:
@@ -3996,8 +4020,14 @@ public:
             file->setShareMode(IFSHfull);
             break;
         }
+        // use true flags if sent
+        if (eflags != IFUnone)
+        {
+            file->setCreateFlags(eflags>>16, ecumask);
+            file->setShareMode((IFSHmode)(eflags & 0xffff));
+        }
         if (TF_TRACE_PRE_IO)
-            PROGLOG("before open file '%s',  (%d,%d,%d)",name->text.get(),(int)mode,(int)share,extraFlags);
+            PROGLOG("before open file '%s',  (%d,%d,%d,%x,%o,%o)",name->text.get(),(int)mode,(int)share,extraFlags,eflags&0xffff,eflags>>16,ecumask);
         IFileIO *fileio = file->open((IFOmode)mode,extraFlags);
         int handle;
         if (fileio) {
@@ -4355,9 +4385,15 @@ public:
         IMPERSONATE_USER(client);
         StringAttr name;
         msg.read(name);
+        // try to recv extra cumask
+        unsigned ecumask = IFUnone;
+        if (msg.remaining() >= sizeof(unsigned))
+            msg.read(ecumask);
         if (TF_TRACE)
             PROGLOG("CreateDir,  '%s'",name.get());
         Owned<IFile> dir=createIFile(name);
+        if (ecumask != IFUnone)
+            dir->setFileUmask(ecumask);
         bool ret = dir->createDirectory();
         reply.append((unsigned)RFEnoerror).append(ret);
         return true;

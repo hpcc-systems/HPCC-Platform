@@ -399,8 +399,9 @@ public:
     virtual bool setCompression(bool set) { UNIMPLEMENTED; }
     virtual offset_t compressedSize() { UNIMPLEMENTED; }
     virtual unsigned getCRC() { UNIMPLEMENTED; }
-    virtual void setCreateFlags(unsigned cflags) { UNIMPLEMENTED; }
+    virtual void setCreateFlags(unsigned cflags, unsigned _cumask=IFUnone) { UNIMPLEMENTED; }
     virtual void setShareMode(IFSHmode shmode) { UNIMPLEMENTED; }
+    virtual void setFileUmask(unsigned _cumask) { UNIMPLEMENTED; }
     virtual bool createDirectory() { UNIMPLEMENTED; }
     virtual IDirectoryDifferenceIterator *monitorDirectory(
                                   IDirectoryIterator *prev=NULL,    // in (NULL means use current as baseline)

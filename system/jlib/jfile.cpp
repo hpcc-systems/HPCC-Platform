@@ -243,12 +243,21 @@ static StringBuffer &getLocalOrRemoteName(StringBuffer &name,const RemoteFilenam
 CFile::CFile(const char * _filename)
 {
     filename.set(_filename);
-    flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)<<16);
+    flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)<<16);
+    cumask = IFUnone;
 }
 
-void CFile::setCreateFlags(unsigned cflags)
+void CFile::setCreateFlags(unsigned cflags, unsigned _cumask)
 {
+    flags &= 0xffff;
     flags |= (cflags<<16);
+    setFileUmask(_cumask);
+}
+
+void CFile::setFileUmask(unsigned _cumask)
+{
+    if (_cumask != IFUnone)
+        cumask = _cumask;
 }
 
 void CFile::setShareMode(IFSHmode shmode)
@@ -256,7 +265,6 @@ void CFile::setShareMode(IFSHmode shmode)
     flags &= ~(IFSHfull|IFSHread);
     flags |= (unsigned)(shmode&(IFSHfull|IFSHread));
 }
-
 
 bool CFile::exists()
 {
@@ -294,13 +302,22 @@ bool WindowsCreateDirectory(const char * path)
 
 #else
 
-
-bool LinuxCreateDirectory(const char * path)
+bool LinuxCreateDirectory(const char * path, unsigned _cumask=IFUnone)
 {
     if (!path)
         return false;
     if (CreateDirectory(path, NULL))
+    {
+        if (_cumask != IFUnone)
+        {
+            mode_t newPerms = ~_cumask & (S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IROTH|S_IWOTH|S_IXOTH);
+#ifdef CFILEIOTRACE
+            DBGLOG("createDirectory(%s): _cumask=0%o newPerms=0%o", path, _cumask, newPerms);
+#endif
+            chmod(path, newPerms);
+        }
         return true;
+    }
     else
     {
         if (EEXIST == errno)
@@ -318,7 +335,7 @@ bool LinuxCreateDirectory(const char * path)
 #endif
 
 
-bool localCreateDirectory(const char *name)
+bool localCreateDirectory(const char *name, unsigned _cumask=IFUnone)
 {
     if (!name)
         return false;
@@ -338,7 +355,7 @@ bool localCreateDirectory(const char *name)
 #ifdef _WIN32
     if (WindowsCreateDirectory(name))
 #else
-    if (LinuxCreateDirectory(name))
+    if (LinuxCreateDirectory(name, _cumask))
 #endif
         return true;
     if (isPathSepChar(name[l-1])) l--;
@@ -347,12 +364,12 @@ bool localCreateDirectory(const char *name)
     if (l<=1)
         return true;
     StringAttr parent(name,l-1);
-    if (!localCreateDirectory(parent.get()))
+    if (!localCreateDirectory(parent.get(), _cumask))
         return false;
 #ifdef _WIN32
     return (WindowsCreateDirectory(name));
 #else
-    return (LinuxCreateDirectory(name));
+    return (LinuxCreateDirectory(name, _cumask));
 #endif
 }
 
@@ -361,9 +378,8 @@ bool localCreateDirectory(const char *name)
 
 bool CFile::createDirectory()
 {
-    return localCreateDirectory(filename);
+    return localCreateDirectory(filename, cumask);
 }
-
 
 
 #ifdef _WIN32
@@ -635,6 +651,16 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
             throw makeErrnoExceptionV(errno, "CFile::open %s", filename.get());
         return NULLFILE;
     }
+
+    if (cumask != IFUnone)
+    {
+        mode_t newPerms = ~cumask & fileflags;
+#ifdef CFILEIOTRACE
+        DBGLOG("openHandle(%s): fileflags=0%o cumask=0%o newPerms=0%o", filename.get(), fileflags, cumask, newPerms);
+#endif
+        fchmod(handle, newPerms);
+    }
+
     // check not a directory (compatible with windows)
 
     struct stat info;
@@ -1486,11 +1512,10 @@ public:
     }
 
 
-
     bool createDirectory()
     {
         connect();
-        return localCreateDirectory(filename);
+        return localCreateDirectory(filename, cumask);
     }
 
     IDirectoryIterator *directoryFiles(const char *mask,bool sub,bool includedirs)
