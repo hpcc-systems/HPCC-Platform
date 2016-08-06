@@ -74,6 +74,7 @@ static const char* FEATURE_URL="DfuAccess";
 const int DESCRIPTION_DISPLAY_LENGTH = 12;
 const unsigned MAX_VIEWKEYFILE_ROWS = 1000;
 const unsigned MAX_KEY_ROWS = 20;
+const unsigned ITFS_CACHE_SIZE = 1000;
 
 short days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
@@ -113,6 +114,8 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
 
     if (!daliClientActive())
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
+
+    iterateFilesCache.setown(new IterateFilesCache(ITFS_CACHE_SIZE));
 
     setDaliServixSocketCaching(true);
 
@@ -3060,6 +3063,14 @@ void CWsDfuEx::setFileNameFilter(const char* fname, const char* prefix, StringBu
     filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(fileNameFilter.str()).append(DFUQFilterSeparator);
 }
 
+void CWsDfuEx::setFileIterateFilter(unsigned cacheFrom, unsigned cacheTo, StringBuffer &filterBuf)
+{
+    filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFPageFrom).append(DFUQFilterSeparator)
+        .append(cacheFrom).append(DFUQFilterSeparator);
+    filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFPageTo).append(DFUQFilterSeparator)
+        .append(cacheTo).append(DFUQFilterSeparator);
+}
+
 void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filterBuf)
 {
     setFileNameFilter(req.getLogicalName(), req.getPrefix(), filterBuf);
@@ -3366,6 +3377,77 @@ void CWsDfuEx::setDFUQueryResponse(IEspContext &context, unsigned totalFiles, St
     return;
 }
 
+struct CompareITFS
+{
+    CompareITFS(__int64 _cacheHint): cacheHint(_cacheHint) {}
+    bool operator()(const Linked<IterateFilesCacheElement>& e) const
+    {
+        return (e->cacheHint == cacheHint);
+    }
+    __int64 cacheHint;
+};
+
+
+IterateFilesCacheElement* IterateFilesCache::lookup(IEspContext &context, __int64 cacheHint)
+{
+    if (cacheHint == 0)
+        return NULL;
+
+    CriticalBlock block(crit);
+
+    if (cache.size() < 1)
+        return NULL;
+
+    //erase data if it should be
+    unsigned now = msTick();
+    while (true)
+    {
+        std::list<Linked<IterateFilesCacheElement> >::iterator list_iter = cache.begin();
+        if (list_iter == cache.end())
+            break;
+
+        IterateFilesCacheElement* itfs = list_iter->get();
+        if (itfs && (itfs->due > now))
+            break;
+
+        cache.pop_front();
+    }
+
+    if (cache.size() < 1)
+        return NULL;
+
+    //Check whether we have the data cache for this cluster. If yes, get the version
+    std::list<Linked<IterateFilesCacheElement> >::iterator it = std::find_if(cache.begin(),cache.end(),CompareITFS(cacheHint));
+    if(it!=cache.end())
+        return it->getLink();
+
+    return NULL;
+}
+
+void IterateFilesCache::add(__int64 _cacheHint, unsigned _cacheFrom, unsigned _cacheTo, unsigned _totalFiles)
+{
+    CriticalBlock block(crit);
+
+    //Save new data
+    Owned<IterateFilesCacheElement> e = new IterateFilesCacheElement(_cacheHint, _cacheFrom, _cacheTo, _totalFiles);
+    if (cacheSize > 0)
+    {
+        if (cache.size() >= cacheSize)
+            cache.pop_front();
+
+        cache.push_back(e.get());
+    }
+}
+
+void IterateFilesCache::remove(__int64 cacheHint)
+{
+    CriticalBlock block(crit);
+
+    std::list<Linked<IterateFilesCacheElement> >::iterator it = std::find_if(cache.begin(),cache.end(),CompareITFS(cacheHint));
+    if(it!=cache.end())
+        cache.remove(it->get());
+}
+
 bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp)
 {
     double version = context.getClientVersion();
@@ -3417,18 +3499,56 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
     if (!req.getCacheHint_isNull())
         cacheHint = req.getCacheHint();
 
+    unsigned cacheFrom, cacheTo;
+    Owned<IterateFilesCacheElement> cachedITFS = iterateFilesCache->lookup(context, cacheHint);
+    if (cachedITFS && (cachedITFS->cacheFrom <= pageStart+1) && (pageStart+pageSize <= cachedITFS->cacheTo))
+    {
+        cacheFrom = cachedITFS->cacheFrom;
+        cacheTo = cachedITFS->cacheTo;
+    }
+    else
+    {
+        cacheHint = 0;
+        cacheFrom = pageStart + 1;
+        cacheTo = pageStart + ITERATE_FILTEREDFILES_LIMIT;
+    }
+    //We need to set FileIterateFilter even if there is cachedITFS because the cache may not be available in getLogicalFilesSorted
+    setFileIterateFilter(cacheFrom, cacheTo, filterBuf);
+
+    __int64 oldCacheHint = cacheHint;
     unsigned totalFiles = 0;
     Owned<IDFAttributesIterator> it = queryDistributedFileDirectory().getLogicalFilesSorted(udesc, sortOrder, filterBuf.str(),
-        localFilters, localFilterBuf.bufferBase(), pageStart, pageSize, &cacheHint, &totalFiles);
+        localFilters, localFilterBuf.bufferBase(), pageStart+1-cacheFrom, pageSize, &cacheHint, &totalFiles);
     if(!it)
         throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
+
+    if (oldCacheHint != cacheHint)
+    {
+        if (cachedITFS)
+            iterateFilesCache->remove(oldCacheHint);
+        if (cacheTo > totalFiles)
+            cacheTo = totalFiles;
+        iterateFilesCache->add(cacheHint, cacheFrom, cacheTo, totalFiles);
+    }
+    else
+    {
+        //The getLogicalFilesSorted() cannot get the totalFiles from its cached ITFS data.
+        //We have to read it from cachedITFS.
+        totalFiles = cachedITFS->totalFiles;
+    }
 
     IArrayOf<IEspDFULogicalFile> logicalFiles;
     ForEach(*it)
         addToLogicalFileList(it->query(), NULL, version, logicalFiles);
 
-    if (version >= 1.24)
-        resp.setCacheHint(cacheHint);
+    if (totalFiles > ITERATE_FILTEREDFILES_LIMIT)
+    {
+        VStringBuffer warning("More than %d files matched. The files are returned in random order. Using a correct filter may reduce the number of files matched.",
+            ITERATE_FILTEREDFILES_LIMIT);
+        resp.setWarning(warning.str());
+    }
+
+    resp.setCacheHint(cacheHint);
     resp.setDFULogicalFiles(logicalFiles);
     setDFUQueryResponse(context, totalFiles, sortBy, descending, pageStart, pageSize, req, resp); //This call may be removed after 5.0
 

@@ -48,7 +48,7 @@ interface IUserDescriptor;
 #define S_LINK_RELATIONSHIP_KIND "link"
 #define S_VIEW_RELATIONSHIP_KIND "view"
 
-
+#define ITERATE_FILTEREDFILES_LIMIT 100000
 
 interface IDistributedSuperFile;
 interface IDistributedFile;
@@ -185,7 +185,9 @@ enum DFUQFilterType
 enum DFUQSpecialFilter
 {
     DFUQSFFileNameWithPrefix = 1,
-    DFUQSFFileType = 2
+    DFUQSFFileType = 2,
+    DFUQSFPageFrom = 3,
+    DFUQSFPageTo = 4
 };
 
 enum DFUQFileTypeFilter
@@ -550,7 +552,7 @@ interface IDistributedFileDirectory: extends IInterface
             // wildname is in form scope/name and may contain wild components for either
     virtual IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
     virtual IPropertyTreeIterator *getDFAttributesTreeIterator(const char *filters, DFUQResultField* localFilters,
-        const char *localFilterBuf, IUserDescriptor *user, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
+        const char *localFilterBuf, IUserDescriptor *user, unsigned& totalFiles, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
     virtual IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
 
     virtual IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope=NULL,bool recursive=true,bool includeempty=false)=0;
