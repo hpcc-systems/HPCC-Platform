@@ -773,15 +773,12 @@ void EclSubGraph::createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IProp
     xgmml.set(node->queryPropTree("att/graph"));
 
     id = node->getPropInt("@id", 0);
-    bool multiInstance = node->getPropBool("@multiInstance");
-    if (multiInstance)
-        agent = &subgraphAgentContext;
 
     isSink = xgmml->getPropBool("att[@name=\"rootGraph\"]/@value", false);
     parentActivityId = node->getPropInt("att[@name=\"_parentActivity\"]/@value", 0);
-    numResults = xgmml->getPropInt("att[@name=\"_numResults\"]/@value", 0);
-    if (multiInstance || numResults)
+    if (xgmml->hasProp("att[@name=\"_numResults\"]/@value"))
     {
+        numResults = xgmml->getPropInt("att[@name=\"_numResults\"]/@value", 0);
         localResults.setown(new GraphResults(numResults));
         resultsGraph = this;
     }
