@@ -43,6 +43,7 @@ include_directories (
          ${ZLIB_INCLUDE_DIR}
          ${OPENSSL_INCLUDE_DIR}
          ./../../include 
+         ./../../jlib
     )
 
 ADD_DEFINITIONS ( -D_USRDLL -DZCRYPT_EXPORTS )
