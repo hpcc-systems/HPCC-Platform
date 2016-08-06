@@ -1512,6 +1512,18 @@ int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char
     if (!mi)
         throw MakeStringException(-1, "ESDL - method '%s::%s'not found", service, method);
 
+    // check the auth_feature
+    if (mode==EsdlRequestMode)
+    {
+        const char* auth_feature = mi->queryMetaData("auth_feature");
+        if (auth_feature)
+        {
+            SecAccessFlags access;
+            if (!ctx.authorizeFeature(auth_feature,access) || access!=SecAccess_Full)
+                throw MakeStringException(-1, "Access Denied to %s",auth_feature);
+        }
+    }
+
     const char *root_type=NULL;
     if (mode==EsdlRequestMode)
         root_type=mi->queryRequestType();
