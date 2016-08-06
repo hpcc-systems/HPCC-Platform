@@ -2173,12 +2173,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext * ctx,c
     SocketEndpoint ep(location);
     if (ep.isNull())
         throw MakeStringException(-1,"fsMoveExternalFile: Cannot resolve location %s",location);
-    CDfsLogicalFileName from;
-    from.setExternal(location,frompath);
-    CDfsLogicalFileName to;
-    to.setExternal(location,topath);
-    checkExternalFileRights(ctx,from,true,true);
-    checkExternalFileRights(ctx,to,false,true);
+
     RemoteFilename fromrfn;
     fromrfn.setPath(ep,frompath);
     RemoteFilename torfn;
