@@ -21,16 +21,17 @@ thorpid=0
 ulimit -c unlimited
 ulimit -n 8192
 
+RUN_THOR_PID_NAME="$PID/run_thor.`basename $PWD`.pid"
 # prevent two thors starting together
-if [ -e run_thor.lck ]; then
-  oldpid=`cat run_thor.lck`
+if [ -e $RUN_THOR_PID_NAME ]; then
+  oldpid=`cat $RUN_THOR_PID_NAME`
   while ps h $oldpid ; do 
      echo waiting for process $oldpid to finish
      sleep 5
   done
 fi
-trap "rm -f run_thor.lck" exit
-echo $$ > run_thor.lck
+trap "rm -f $RUN_THOR_PID_NAME" exit
+echo $$ > $RUN_THOR_PID_NAME
 
 export SENTINEL="thor.sentinel"
 while [ 1 ]; do

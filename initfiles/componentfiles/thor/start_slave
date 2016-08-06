@@ -43,7 +43,7 @@ cd $instancedir
 
 echo "slave init `date`"
 
-lckfile="start_slave_${slaveport}.lck"
+lckfile="$PID/start_slave_${hpcc_compname}_${slavenum}.pid"
 
 # prevent two slaves starting together
 while [ -e $lckfile ]; do
