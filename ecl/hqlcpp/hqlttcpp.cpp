@@ -2590,8 +2590,7 @@ static IHqlExpression * getNonThorSortedJoinInput(IHqlExpression * joinExpr, IHq
     if (table != expr)
         table.setown(cloneInheritedAnnotations(joinExpr, table));
 
-    OwnedHqlExpr group = createDatasetF(no_group, table.getClear(), LINK(groupOrder), NULL);
-    return cloneInheritedAnnotations(joinExpr, group);
+    return cloneInheritedAnnotations(joinExpr, table);
 }
 
 
@@ -3002,7 +3001,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
             }
         }
 
-        //Ensure that inputs to the activities in hthor/roxie are sorted and grouped.  (Should really be done in the engines)
+        //Ensure that inputs to the activities in hthor/roxie are sorted.  (Should really be done in the engines)
         OwnedHqlExpr newLeft = getNonThorSortedJoinInput(expr, leftDs, joinInfo.queryLeftSort(), options.implicitSubSort);
         OwnedHqlExpr newRight = getNonThorSortedJoinInput(expr, rightDs, joinInfo.queryRightSort(), options.implicitSubSort);
         try

@@ -4250,7 +4250,7 @@ void CHThorJoinActivity::ready()
 {
     CHThorActivityBase::ready();
     input1->ready();
-
+    groupedRightInput->reset();
     outBuilder.setAllocator(rowAllocator);
     leftOuterJoin = (helper.getJoinFlags() & JFleftouter) != 0;
     rightOuterJoin = (helper.getJoinFlags() & JFrightouter) != 0;
@@ -4311,7 +4311,10 @@ void CHThorJoinActivity::done()
 void CHThorJoinActivity::setInput(unsigned index, IHThorInput *_input)
 {
     if (index==1)
+    {
         input1 = _input;
+        groupedRightInput.setown(new GroupedInputReader(input1, helper.queryCompareRight()));
+    }
     else
         CHThorActivityBase::setInput(index, _input);
 }
@@ -4393,12 +4396,12 @@ void CHThorJoinActivity::fillRight()
         }
         else
         {
-            next.setown(input1->nextInGroup());
+            next.setown(groupedRightInput->nextInGroup());
         }
         if(!rightOuterJoin && next && (!left || (collateupper->docompare(left, next) > 0))) // if right is less than left, and not right outer, can skip group
         {
             while(next) 
-                next.setown(input1->nextInGroup());
+                next.setown(groupedRightInput->nextInGroup());
             continue;
         }
         while(next)
@@ -4425,7 +4428,7 @@ void CHThorJoinActivity::fillRight()
                 right.append(next.getClear());
                 do
                 {
-                    next.setown(input1->nextInGroup());
+                    next.setown(groupedRightInput->nextInGroup());
                 } while(next);
                 break;
             }
@@ -4435,7 +4438,7 @@ void CHThorJoinActivity::fillRight()
                 groupCount = 0;
                 while(next) 
                 {
-                    next.setown(input1->nextInGroup());
+                    next.setown(groupedRightInput->nextInGroup());
                 }
             }
             else
@@ -4443,13 +4446,13 @@ void CHThorJoinActivity::fillRight()
                 right.append(next.getClear());
                 groupCount++;
             }
-            next.setown(input1->nextInGroup());
+            next.setown(groupedRightInput->nextInGroup());
             
         }
         // normally only want to read one right group, but if is between join and next right group is in window for left, need to continue
         if(betweenjoin && left)
         {
-            pendingRight.setown(input1->nextInGroup());
+            pendingRight.setown(groupedRightInput->nextInGroup());
             if(!pendingRight || (collate->docompare(left, pendingRight) < 0))
                 break;
         }
@@ -4850,12 +4853,20 @@ bool CHThorJoinActivity::isGrouped()
 CHThorSelfJoinActivity::CHThorSelfJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind) 
         : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
 {
+    dualCacheInput = NULL;
+}
+
+void CHThorSelfJoinActivity::setInput(unsigned index, IHThorInput * _input)
+{
+    CHThorActivityBase::setInput(index, _input);
+    groupedInput.setown(new GroupedInputReader(input, helper.queryCompareLeft()));
 }
 
 void CHThorSelfJoinActivity::ready()
 {
     CHThorActivityBase::ready();
     outBuilder.setAllocator(rowAllocator);
+    groupedInput->reset();
 
     leftOuterJoin = (helper.getJoinFlags() & JFleftouter) != 0;
     rightOuterJoin = (helper.getJoinFlags() & JFrightouter) != 0;
@@ -4904,8 +4915,8 @@ void CHThorSelfJoinActivity::ready()
     if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
     {   //Limited Match Join (s[1..n])
         dualcache.setown(new CRHDualCache());
-        dualcache->init(input);
-        setInput(0, (IHThorInput *)dualcache->queryOut1());
+        dualcache->init(groupedInput);
+        dualCacheInput = dualcache->queryOut1();
         failingOuterAtmost = false;
         matchedLeft = false;
         leftIndex = 0;
@@ -4921,8 +4932,6 @@ void CHThorSelfJoinActivity::done()
 {
     outBuilder.clear();
     group.clear();
-    if (limitedhelper)
-        input = (IHThorInput*)dualcache->input();
     CHThorActivityBase::done();
 }
 
@@ -4934,7 +4943,7 @@ bool CHThorSelfJoinActivity::fillGroup()
     failingOuterAtmost = false;
     OwnedConstRoxieRow next;
     unsigned groupCount = 0;
-    next.setown(input->nextInGroup());
+    next.setown(groupedInput->nextInGroup());
     while(next)
     {
         if(groupCount==abortLimit)
@@ -4962,7 +4971,7 @@ bool CHThorSelfJoinActivity::fillGroup()
             group.clear();
             groupCount = 0;
             while(next) 
-                next.setown(input->nextInGroup());
+                next.setown(groupedInput->nextInGroup());
         }
         else if(groupCount==atmostLimit)
         {
@@ -4978,7 +4987,7 @@ bool CHThorSelfJoinActivity::fillGroup()
                 group.clear();
                 groupCount = 0;
                 while(next) 
-                    next.setown(input->nextInGroup());
+                    next.setown(groupedInput->nextInGroup());
             }
         }
         else
@@ -4986,7 +4995,7 @@ bool CHThorSelfJoinActivity::fillGroup()
             group.append(next.getClear());
             groupCount++;
         }
-        next.setown(input->nextInGroup());
+        next.setown(groupedInput->nextInGroup());
     }
     if(group.ordinality()==0)
     {
@@ -5010,7 +5019,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
         {
             if (!group.isItem(rightIndex))
             {
-                lhs.setown(input->nextInGroup());   //get from dualcache
+                lhs.setown(dualCacheInput->nextInGroup());
                 if (lhs)
                 {
                     rightIndex = 0;
@@ -5074,7 +5083,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
         {
             if(failingLimit || failingOuterAtmost)
             {
-                OwnedConstRoxieRow lhs(input->nextInGroup());
+                OwnedConstRoxieRow lhs(groupedInput->nextInGroup());  // dualCache never active here
                 while(lhs)
                 {
                     const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
@@ -5083,7 +5092,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
                         processed++;
                         return ret;
                     }
-                    lhs.setown(input->nextInGroup());
+                    lhs.setown(groupedInput->nextInGroup());
                 }
                 failingLimit.clear();
             }

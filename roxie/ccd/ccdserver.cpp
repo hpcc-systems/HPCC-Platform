@@ -11764,6 +11764,7 @@ class CRoxieServerJoinActivity : public CRoxieServerTwoInputActivity
     OwnedConstRoxieRow defaultRight;
     Owned<IEngineRowAllocator> defaultLeftAllocator;
     Owned<IEngineRowAllocator> defaultRightAllocator;
+    Owned<GroupedInputReader> groupedRight;
 
     bool cloneLeft;
 
@@ -11876,6 +11877,7 @@ public:
         defaultLeft.clear();
 
         CRoxieServerTwoInputActivity::reset();
+        groupedRight->reset();
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
@@ -11893,6 +11895,7 @@ public:
             break;
         case 1:
             input1 = _in;
+            groupedRight.setown(new GroupedInputReader(input1, helper.queryCompareRight()));
             break;
         default:
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
@@ -11957,14 +11960,14 @@ public:
             }
             else
             {
-                next = input1->nextInGroup();
+                next = groupedRight->nextInGroup();
             }
             if(!rightOuterJoin && next && (!left || (collateupper->docompare(left, next) > 0))) // if right is less than left, and not right outer, can skip group
             {
                 while(next)
                 {
                     ReleaseClearRoxieRow(next);
-                    next = input1->nextInGroup();
+                    next = groupedRight->nextInGroup();
                 }
                 continue;
             }
@@ -11992,7 +11995,7 @@ public:
                     right.append(next);
                     do
                     {
-                        next = input1->nextInGroup();
+                        next = groupedRight->nextInGroup();
                         ReleaseRoxieRow(next);
                     } while(next);
                     break;
@@ -12005,7 +12008,7 @@ public:
                     while(next) 
                     {
                         ReleaseRoxieRow(next);
-                        next = input1->nextInGroup();
+                        next = groupedRight->nextInGroup();
                     }
                 }
                 else
@@ -12013,12 +12016,12 @@ public:
                     right.append(next);
                     groupCount++;
                 }
-                next = input1->nextInGroup();
+                next = groupedRight->nextInGroup();
             }
             // normally only want to read one right group, but if is between join and next right group is in window for left, need to continue
             if(betweenjoin && left)
             {
-                pendingRight = input1->nextInGroup();
+                pendingRight = groupedRight->nextInGroup();
                 if(!pendingRight || (collate->docompare(left, pendingRight) < 0))
                     break;
             }
@@ -17021,7 +17024,15 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     Owned<IEngineRowAllocator> defaultAllocator;
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
+    Owned<GroupedInputReader> groupedInput;
     IInputBase *dualCacheInput;
+
+    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    {
+        CRoxieServerActivity::setInput(idx, _in);
+        if (!idx)
+            groupedInput.setown(new GroupedInputReader(input, helper.queryCompareLeft()));
+    }
 
     bool fillGroup()
     {
@@ -17031,7 +17042,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
         failingOuterAtmost = false;
         const void * next;
         unsigned groupCount = 0;
-        while((next = input->nextInGroup()) != NULL)
+        while((next = groupedInput->nextInGroup()) != NULL)
         {
             if(groupCount==abortLimit)
             {
@@ -17060,7 +17071,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
                 while(next) 
                 {
                     ReleaseRoxieRow(next);
-                    next = input->nextInGroup();
+                    next = groupedInput->nextInGroup();
                 }
             }
             else if(groupCount==atmostLimit)
@@ -17080,7 +17091,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
                     while (next) 
                     {
                         ReleaseRoxieRow(next);
-                        next = input->nextInGroup();
+                        next = groupedInput->nextInGroup();
                     }
                 }
             }
@@ -17221,7 +17232,7 @@ public:
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
         {   //limited match join (s[1..n])
             dualcache.setown(new CRHDualCache());
-            dualcache->init(CRoxieServerActivity::input);
+            dualcache->init(groupedInput);
             dualCacheInput = dualcache->queryOut1();
             failingOuterAtmost = false;
             matchedLeft = false;
@@ -17321,7 +17332,7 @@ public:
                     if(failingLimit || failingOuterAtmost)
                     {
                         const void * lhs;
-                        while((lhs = input->nextInGroup()) != NULL)  // dualCache never active here
+                        while((lhs = groupedInput->nextInGroup()) != NULL)  // dualCache never active here
                         {
                             const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
                             ReleaseRoxieRow(lhs);
