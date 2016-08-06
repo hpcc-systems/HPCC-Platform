@@ -456,124 +456,12 @@ public:
                 queryBodyExtra(expr)->setHoist();
                 return;
             }
-            if (walkFurtherDownTree(expr))
-                doAnalyseExpr(expr);
-            return;
+
+            if (!walkFurtherDownTree(expr))
+                return;
         }
 
-        switch (op)
-        {
-        case no_createset:
-            //not really good enough - need to prevent anything within these from being hoisted.
-            return;
-        case no_select:
-        case no_if:
-        case no_choose:
-        case no_case:
-        case no_and:
-        case no_which:
-        case no_rejected:
-        case no_or:
-        case no_range:
-        case no_rangeto:
-        case no_rangefrom:
-        case no_rangecommon:
-        case no_list:
-        case no_selectnth:
-        case no_mul:
-        case no_div:
-        case no_modulus:
-        case no_negate:
-        case no_add:
-        case no_sub:
-        case no_exp:
-        case no_power:
-        case no_round:
-        case no_roundup:
-        case no_ln:
-        case no_log10:
-        case no_sin:
-        case no_cos:
-        case no_tan:
-        case no_asin:
-        case no_acos:
-        case no_atan:
-        case no_atan2:
-        case no_sinh:
-        case no_cosh:
-        case no_tanh:
-        case no_sqrt:
-        case no_truncate:
-        case no_cast:
-        case no_implicitcast:
-        case no_abs:
-        case no_charlen:
-        case no_sizeof:
-        case no_offsetof:
-        case no_band:
-        case no_bor:
-        case no_bxor:
-        case no_bnot:
-        case no_order:          //?? also a comparison
-        case no_rank:
-        case no_ranked:
-        case no_hash:
-        case no_typetransfer:
-        case no_lshift:
-        case no_rshift:
-        case no_crc:
-        case no_random:
-        case no_counter:
-        case no_address:
-        case no_hash32:
-        case no_hash64:
-        case no_wuid:
-        case no_existslist:
-        case no_countlist:
-        case no_maxlist:
-        case no_minlist:
-        case no_sumlist:
-        case no_unicodeorder:
-        case no_assertkeyed:
-        case no_hashmd5:
-        case no_concat:
-        case no_substring:
-        case no_asstring:
-        case no_intformat:
-        case no_realformat:
-        case no_trim:
-        case no_fromunicode:
-        case no_tounicode:
-        case no_keyunicode:
-        case no_rowdiff:
-        case no_regex_find:
-        case no_regex_replace:
-        case no_eq:
-        case no_ne:
-        case no_lt:
-        case no_le:
-        case no_gt:
-        case no_ge:
-        case no_not:
-        case no_notnot:
-        case no_xor:
-        case no_notin:
-        case no_in:
-        case no_notbetween:
-        case no_between:
-        case no_is_valid:
-        case no_alias:
-        case no_transform:
-        case no_assign:
-        case no_alias_scope:
-        case no_getenv:
-        case no_assignall:
-            doAnalyseExpr(expr);
-            break;
-        default:
-            doAnalyseExpr(expr);
-            break;
-        }
+        doAnalyseExpr(expr);
     }
 
     inline bool isUsedUnconditionallyEnough(IHqlExpression * expr)
@@ -614,6 +502,17 @@ public:
                     builder.setown(new ChildGraphBuilder(translator));
                 return builder->addDataset(expr);
             }
+        }
+
+        //Very occasionally an index read being hoisted means that an index aggregate is now an aggregate
+        //on a hoisted result.
+        switch (transformed->getOperator())
+        {
+            case no_compound_indexcount:
+            case no_compound_indexaggregate:
+                if (!queryPhysicalRootTable(transformed))
+                    transformed.set(transformed->queryChild(0));
+                break;
         }
 
         return transformed.getClear();
