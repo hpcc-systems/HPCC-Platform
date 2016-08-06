@@ -212,7 +212,7 @@ private:
         const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo);
     void setServerQueueInfo(IEspContext &context, const char *serverType, const char *networkAddress, unsigned port, const IArrayOf<IEspServerJobQueue>& serverJobQueues,
         const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo);
-    void setESPTargetCluster(IEspContext &context, CWsSMCTargetCluster& targetCluster, IEspTargetCluster* espTargetCluster);
+    void setESPTargetCluster(IEspContext &context, const CWsSMCTargetCluster& targetCluster, IEspTargetCluster* espTargetCluster);
     void setActiveWUs(IEspContext &context, const char *serverType, const char *clusterName, const char *queueName, const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo);
     void setActiveWUs(IEspContext &context, const char *serverType, const char *instance, const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo);
     void setActiveWUs(IEspContext &context, IEspActiveWorkunit& wu, IEspActiveWorkunit* wuToSet);
