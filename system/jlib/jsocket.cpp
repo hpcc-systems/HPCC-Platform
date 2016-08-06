@@ -4946,6 +4946,12 @@ public:
         }
     }
 
+    void set_keep_alive(bool keepalive)
+    {
+        if (sock)
+            sock->set_keep_alive(keepalive);
+    }
+
     bool connect(unsigned timeoutms)
     {
         CriticalBlock block(crit);

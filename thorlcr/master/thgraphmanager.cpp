@@ -428,6 +428,7 @@ void CJobManager::run()
                                     Owned<IConversation> acceptconv = createSingletonSocketConnection(ep.port,&ep);
                                     if (acceptconv->connect(60*1000)) // shouldn't need that long
                                     {
+                                        acceptconv->set_keep_alive(true);
                                         item.setown(_item.getClear());
                                         conversation.setown(acceptconv.getClear());
                                     }
