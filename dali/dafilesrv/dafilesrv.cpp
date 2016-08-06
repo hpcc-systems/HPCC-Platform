@@ -331,13 +331,6 @@ int main(int argc,char **argv)
 #endif
 
     StringBuffer logDir;
-#ifdef _WIN32
-    logDir.append("c:\\");
-#else
-    if (checkDirExists("/c$"))
-        logDir.append("/c$/");
-#endif
-
     Owned<IFile> sentinelFile = createSentinelTarget();
     removeSentinelFile(sentinelFile);
 
@@ -348,7 +341,6 @@ int main(int argc,char **argv)
     bool isdaemon = (memicmp(argv[0]+strlen(argv[0])-4,".exe",4)==0);
     // bit of a kludge for windows - if .exe not specified then not daemon
     bool locallisten = false;
-    const char *logdir=NULL;
     bool requireauthenticate = false;
     while (argc>i) {
         if (stricmp(argv[i],"-D")==0) {
@@ -534,7 +526,11 @@ int main(int argc,char **argv)
 #endif
     }
     {
-        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logDir.str(), "DAFILESRV");
+        Owned<IComponentLogFileCreator> lf;
+        if (logDir.length())
+            lf.setown(createComponentLogFileCreator(logDir.str(), "mydafilesrv"));
+        else
+            lf.setown(createComponentLogFileCreator("mydafilesrv"));
         lf->setCreateAliasFile(false);
         lf->setMaxDetail(TopDetail);
         lf->beginLogging();

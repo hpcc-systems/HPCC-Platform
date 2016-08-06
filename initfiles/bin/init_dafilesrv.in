@@ -19,7 +19,7 @@
 ###<REPLACE>###
 
 if [ -z $1 ]; then
-        log=${LOG_DIR}/dafilesrv
+        log=${LOG_DIR}/mydafilesrv
 else
         log=$1
 fi
