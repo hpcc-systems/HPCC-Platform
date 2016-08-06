@@ -1359,12 +1359,18 @@ private:
         else
             throw MakeStringException(ROXIE_DATA_ERROR, "Malformed request");
     }
+    inline byte getQueryPTFlags()
+    {
+        if (allowAmbiguousRequests)
+            return ipt_caseInsensitive | ipt_allowAmbiguousXpath;
+        return ipt_caseInsensitive;
+    }
     void parseQueryPTFromString(Owned<IPropertyTree> &queryPT, HttpHelper &httpHelper, const char *text, PTreeReaderOptions options)
     {
         if (strieq(httpHelper.queryContentType(), "application/json"))
-            queryPT.setown(createPTreeFromJSONString(text, ipt_caseInsensitive, options));
+            queryPT.setown(createPTreeFromJSONString(text, getQueryPTFlags(), options));
         else
-            queryPT.setown(createPTreeFromXMLString(text, ipt_caseInsensitive, options));
+            queryPT.setown(createPTreeFromXMLString(text, getQueryPTFlags(), options));
     }
     void doMain(const char *runQuery)
     {
@@ -1648,7 +1654,7 @@ readAnother:
                                 }
                                 else
                                 {
-                                    IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
+                                    IPropertyTree *fixedreq = createPTree(queryName, getQueryPTFlags());
                                     Owned<IPropertyTreeIterator> iter = queryXml->getElements("*");
                                     ForEach(*iter)
                                     {

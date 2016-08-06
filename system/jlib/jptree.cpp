@@ -1716,7 +1716,7 @@ IPropertyTree *PTree::queryPropTree(const char *xpath) const
     if (iter->first())
     {
         element = &iter->query();
-        if (iter->next())
+        if (iter->next() && !IptFlagTst(flags, ipt_allowAmbiguousXpath))
             AMBIGUOUS_PATH("getProp",xpath);
     }
     return element;

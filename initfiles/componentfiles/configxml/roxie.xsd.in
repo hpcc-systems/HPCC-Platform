@@ -410,6 +410,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="allowAmbiguousRequests" type="xs:boolean" use="optional" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>If enabled, requests will not fail if they contain more than one element of the same name for an item that shouldn't repeat</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="callbackRetries" type="xs:nonNegativeInteger" use="optional" default="3">
       <xs:annotation>
         <xs:appinfo>
