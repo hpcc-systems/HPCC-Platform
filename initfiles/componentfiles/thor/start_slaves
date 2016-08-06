@@ -21,14 +21,16 @@ master=$3
 masterport=$4
 logpth=$5
 instancedir=$6
-hpcc_compname=$7
-hpcc_setenv=$8
-logredirect=$9
+deploydir=$7
+hpcc_compname=$8
+hpcc_setenv=$9
+logredirect=${10}
+LCR=${11}
 
 source ${hpcc_setenv}
 
-if [ $# -lt 9 ]; then
-  echo usage: ip prog master masterport logdir workingdir hpcc_compname hpcc_setenv logredirect
+if [ $# -lt 11 ]; then
+  echo usage: ip prog master masterport logdir workingdir deploydir hpcc_compname hpcc_setenv logredirect LCR
   exit 1
 fi
 
@@ -68,6 +70,9 @@ ulimit -c unlimited
 ulimit -n $handlelimit
 
 echo "slave(s) starting `date`"
+
+# create symlink for easier identification of slaves by compName
+ln -s -f $deploydir/thorslave${LCR} thorslave_${hpcc_compname}
 
 # sync to current master thorgroup
 echo rsync -e "ssh -o StrictHostKeyChecking=no" $master:$instancedir/thorgroup $instancedir/thorgroup.slave
