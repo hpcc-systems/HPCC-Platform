@@ -8774,8 +8774,8 @@ void HqlCppTranslator::doBuildReturnCompare(BuildCtx & ctx, IHqlExpression * exp
 class HashCodeCreator
 {
 public:
-    HashCodeCreator(HqlCppTranslator & _translator, const CHqlBoundTarget & _target, node_operator _hashKind, bool _optimizeInternal) 
-        : translator(_translator), target(_target), hashKind(_hashKind), optimizeInternal(_optimizeInternal)
+    HashCodeCreator(HqlCppTranslator & _translator, const CHqlBoundTarget & _target, node_operator _hashKind, bool _optimizeInternal, bool _optimizeCasts)
+        : translator(_translator), target(_target), hashKind(_hashKind), optimizeInternal(_optimizeInternal), optimizeCasts(_optimizeCasts)
     {
         prevFunc = NULL;
     }
@@ -8830,7 +8830,8 @@ public:
     }
 
     inline node_operator kind() const { return hashKind; }
-    inline bool optimize() const { return optimizeInternal; }
+    inline bool queryOptimizeCompareSelf() const { return optimizeInternal; }
+    inline bool queryOptimizeCasts() const { return optimizeInternal || optimizeCasts; }
 
 protected:
     void buildCall(BuildCtx & ctx, IIdAtom * func, IHqlExpression * length, IHqlExpression * ptr)
@@ -8893,6 +8894,7 @@ protected:
     LinkedHqlExpr initialValue;
     node_operator hashKind;
     bool optimizeInternal;
+    bool optimizeCasts;
     IIdAtom * prevFunc;
     OwnedHqlExpr prevLength;
     OwnedHqlExpr prevPtr;
@@ -8909,7 +8911,7 @@ void HqlCppTranslator::doBuildAssignHashCrc(BuildCtx & ctx, const CHqlBoundTarge
     else if (op == no_hash64)
         initialValue.setown(createConstant(createIntValue(HASH64_INIT, 8, false)));
 
-    HashCodeCreator creator(*this, target, op, expr->hasAttribute(internalAtom));
+    HashCodeCreator creator(*this, target, op, expr->hasAttribute(internalAtom), expr->hasAttribute(optimizeCastAtom));
     creator.setInitialValue(initialValue);
     if (child->getOperator() != no_sortlist)
         doBuildAssignHashElement(ctx, creator, child);
@@ -8950,33 +8952,35 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
 
 void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator & creator, IHqlExpression * elem)
 {
-    if (creator.optimize())
+    Linked<ITypeInfo> type = elem->queryType()->queryPromotedType();        // skip alien data types, to logical type.
+    bool canOptimizeCast = (creator.queryOptimizeCasts() && isFixedSize(type));
+
+    switch (elem->getOperator())
     {
-        switch (elem->getOperator())
+    case no_if:
+        if (creator.queryOptimizeCompareSelf() || canOptimizeCast)
         {
-        case no_if:
+            BuildCtx subctx(ctx);
+            creator.beginCondition(subctx);
+            IHqlStmt * cond = buildFilterViaExpr(subctx, elem->queryChild(0));
+            doBuildAssignHashElement(subctx, creator, elem->queryChild(1));
+            creator.endCondition(subctx);
+            IHqlExpression * elseValue = elem->queryChild(2);
+            if (elseValue && elseValue->getOperator() != no_constant)
             {
-                BuildCtx subctx(ctx);
+                subctx.selectElse(cond);
                 creator.beginCondition(subctx);
-                IHqlStmt * cond = buildFilterViaExpr(subctx, elem->queryChild(0));
-                doBuildAssignHashElement(subctx, creator, elem->queryChild(1));
+                doBuildAssignHashElement(subctx, creator, elseValue);
                 creator.endCondition(subctx);
-                IHqlExpression * elseValue = elem->queryChild(2);
-                if (elseValue && elseValue->getOperator() != no_constant)
-                {
-                    subctx.selectElse(cond);
-                    creator.beginCondition(subctx);
-                    doBuildAssignHashElement(subctx, creator, elseValue);
-                    creator.endCondition(subctx);
-                }
-                return;
             }
-        case no_constant:
             return;
         }
+    case no_constant:
+        if (creator.queryOptimizeCompareSelf())
+            return;
+        break;
     }
 
-    Linked<ITypeInfo> type = elem->queryType()->queryPromotedType();        // skip alien data types, to logical type.
     if (type->getTypeCode() == type_row)
     {
         doBuildAssignHashElement(ctx, creator, elem, elem->queryRecord());
@@ -8997,8 +9001,7 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
     OwnedHqlExpr ptr;
     bool alreadyTrimmedRight = (elem->getOperator() == no_trim) && (elem->hasAttribute(rightAtom) || !elem->hasAttribute(leftAtom));
     //If this hash is generated internally (e.g., for a dedup) and fixed length, then can simplify the hash calculation
-    bool canOptimizeHash = (creator.optimize() && isFixedSize(type));
-    bool optimizeTrim = alreadyTrimmedRight || canOptimizeHash;
+    bool optimizeTrim = alreadyTrimmedRight || canOptimizeCast;
     switch (type->getTypeCode())
     {
         case type_string:
@@ -9070,7 +9073,7 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
         case type_qstring:
             {
                 LinkedHqlExpr exprToHash = elem;
-                if (!canOptimizeHash)
+                if (!canOptimizeCast)
                 {
                     //Always convert to a string so the hash is compatible with a string.
                     OwnedHqlExpr cast = ensureExprType(elem, unknownStringType);
@@ -9118,7 +9121,7 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
         case type_int:
         case type_swapint:
         case type_real:
-            if (creator.optimize() && hasAddress(ctx, elem))
+            if (canOptimizeCast && hasAddress(ctx, elem))
             {
                 buildAddress(ctx, elem, bound);
                 length.setown(getSizetConstant(type->getSize()));
@@ -9126,7 +9129,7 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
             }
             else
             {
-                if (!creator.optimize())
+                if (!canOptimizeCast)
                     type.setown(makeIntType(8, true));
                 OwnedHqlExpr castElem = ensureExprType(elem, type);
                 buildTempExpr(ctx, castElem, bound);
@@ -9144,7 +9147,7 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
             //Not sure if that is a good idea - we need to be certain we get the same values with
             //LCR rows enabled and disabled.  But this won't be very efficient with lcr rows.
             //fallthrough
-            if (creator.optimize() && hasOutOfLineRows(elem->queryType()))
+            if (creator.queryOptimizeCompareSelf() && hasOutOfLineRows(elem->queryType()))
             {
                 creator.beginCondition(ctx);
                 BuildCtx iterctx(ctx);

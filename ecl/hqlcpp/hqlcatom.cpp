@@ -73,6 +73,7 @@ IAtom * _noReplicate_Atom;
 IAtom * noSetAtom;
 IAtom * _noVirtual_Atom;
 IAtom * numResultsAtom;
+IAtom * optimizeCastAtom;
 IAtom * packingAtom;
 IAtom * parentHelpersAtom;
 IAtom * pathAtom;
@@ -1467,6 +1468,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(multiInstance);
     MAKEATOM(noSet);
     MAKEATOM(numResults);
+    MAKEATOM(optimizeCast);
     MAKEATOM(packing);
     MAKEATOM(parentHelpers);
     MAKEATOM(path);

@@ -2108,7 +2108,7 @@ void SourceBuilder::buildGroupAggregateHashHelper(ParentExtract * extractBuilder
     funcctx.addQuotedCompoundLiteral("virtual unsigned hash(const void * _self)");
     assignLocalExtract(funcctx, extractBuilder, dataset, "_self");
 
-    OwnedHqlExpr hash = createValue(no_hash32, LINK(unsignedType), LINK(fields), createAttribute(internalAtom));
+    OwnedHqlExpr hash = createValue(no_hash32, LINK(unsignedType), LINK(fields), createAttribute(optimizeCastAtom));
     translator.buildReturn(funcctx, hash);
 
     translator.endNestedClass();
@@ -2255,7 +2255,7 @@ void SourceBuilder::buildGroupAggregateHelpers(ParentExtract * extractBuilder, I
     buildGroupAggregateCompareHelper(extractBuilder, aggregate, recordFields, aggregateFields);
 
     //virtual IHash * queryHashElement()
-    translator.buildHashOfExprsClass(instance->nestedctx, "HashElement", allAggregateFields, outRef, true);
+    translator.buildHashOfExprsClass(instance->nestedctx, "HashElement", allAggregateFields, outRef, false, true);
 
 }
 
