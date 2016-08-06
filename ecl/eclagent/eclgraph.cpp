@@ -1737,7 +1737,7 @@ void EclAgent::updateWULogfile()
 void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract)
 {
     assertex(parentExtractSize == 0);
-    if (realThor)
+    if (realThor && !isStandAloneExe)
     {
         if (isStandAloneExe)
             throw MakeStringException(0, "Cannot execute Thor Graph in standalone mode");
