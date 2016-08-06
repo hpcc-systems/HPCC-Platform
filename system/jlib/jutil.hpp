@@ -146,7 +146,7 @@ public:
     // Appends a list in a string delimited by 'delim' without duplicates
     void appendListUniq(const char *list, const char *delim);
 };
-class CIStringArray : public StringArray, public CInterface
+class jlib_decl CIStringArray : public StringArray, public CInterface
 {
 };
 
