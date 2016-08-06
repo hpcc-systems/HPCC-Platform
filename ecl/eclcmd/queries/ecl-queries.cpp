@@ -192,38 +192,50 @@ public:
         line.append(suspendedOnCluster ? 'X' : ' ');
         line.append(query.getSuspended() ? 'S' : ' ');
         line.append(isActive ? 'A' : ' ');
-        line.append(' ').append(queryid);
-        if (!query.getTimeLimit_isNull())
-        {
-            if (line.length() < 34)
-                line.appendN(34 - line.length(), ' ');
-            line.append(' ').append(query.getTimeLimit());
-        }
-        if (!query.getWarnTimeLimit_isNull())
-        {
-            if (line.length() < 41)
-                line.appendN(41 - line.length(), ' ');
-            line.append(' ').append(query.getWarnTimeLimit());
-        }
-        if (query.getPriority())
-        {
-            if (line.length() < 48)
-                line.appendN(48 - line.length(), ' ');
-            line.append(' ').append(query.getPriority());
-        }
-        if (query.getMemoryLimit())
-        {
-            if (line.length() < 53)
-                line.appendN(53 - line.length(), ' ');
-            line.append(' ').append(query.getMemoryLimit());
-        }
+        line.append("  ").append(queryid);
+        if (line.length() < 34)
+            line.appendN(34 - line.length(), ' ');
+        line.append(' ').append(query.getWuid());
         if (query.getComment())
         {
-            if (line.length() < 64)
-                line.appendN(64 - line.length(), ' ');
+            if (line.length() < 51)
+                line.appendN(51 - line.length(), ' ');
             line.append(' ').append(query.getComment());
         }
         fputs(line.append('\n').str(), stdout);
+        StringBuffer metaTags;
+        if (!query.getTimeLimit_isNull())
+            metaTags.append("timeLimit=").append(query.getTimeLimit());
+        if (!query.getWarnTimeLimit_isNull())
+        {
+            if (metaTags.length())
+                metaTags.append(", ");
+            metaTags.append("warnTimeLimit=").append(query.getWarnTimeLimit());
+        }
+        if (query.getPriority())
+        {
+            if (metaTags.length())
+                metaTags.append(", ");
+            metaTags.append("priority=").append(query.getPriority());
+        }
+        if (query.getMemoryLimit())
+        {
+            if (metaTags.length())
+                metaTags.append(", ");
+            metaTags.append("memLimit=").append(query.getMemoryLimit());
+        }
+        if (query.getSnapshot())
+        {
+            if (metaTags.length())
+                metaTags.append(", ");
+            metaTags.append("snapshot=").append(query.getSnapshot());
+        }
+        if (metaTags.length())
+        {
+            fputs("          [", stdout);
+            fputs(metaTags.str(), stdout);
+            fputs("]\n\n", stdout);
+        }
     }
 
     void outputQueryset(IConstWUQuerySetDetail &qs)
@@ -232,9 +244,8 @@ public:
         if (qs.getQuerySetName())
             fprintf(stdout, "\nTarget: %s\n", qs.getQuerySetName());
         fputs("\n", stdout);
-        fputs("                                   Time   Warn        Memory\n", stdout);
-        fputs("Flags Query Id                     Limit  Limit  Pri  Limit      Comment\n", stdout);
-        fputs("----- ---------------------------- ------ ------ ---- ---------- ------------\n", stdout);
+        fputs("Flags Query Id                     WUID             Comment\n", stdout);
+        fputs("----- ---------------------------- ---------------- ------------\n", stdout);
 
         IArrayOf<IConstQuerySetQuery> &queries = qs.getQueries();
         ForEachItemIn(id, queries)

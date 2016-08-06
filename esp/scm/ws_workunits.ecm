@@ -1189,6 +1189,7 @@ ESPStruct [nil_remove] QuerySetQuery
     [min_ver("1.46")] bool IsLibrary;
     [min_ver("1.46")] bool Activated;
     [min_ver("1.46")] string PublishedBy;
+    [min_ver("1.48")] string snapshot;
 };
 
 ESPStruct QuerySetAlias
@@ -1474,7 +1475,7 @@ ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
 };
 
 ESPservice [
-    version("1.47"), default_client_version("1.47"),
+    version("1.48"), default_client_version("1.48"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
