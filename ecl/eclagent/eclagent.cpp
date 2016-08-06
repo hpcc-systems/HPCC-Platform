@@ -807,6 +807,7 @@ void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val)
     {
         r->setResultInt(val);   
         r->setResultStatus(ResultStatusCalculated);
+        r->setResultRowCount(r->getResultRowCount() + 1);
     }
     else
         fail(0, "Unexpected parameters to setResultInt");
@@ -830,6 +831,7 @@ void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __in
     {
         r->setResultUInt(val);  
         r->setResultStatus(ResultStatusCalculated);
+        r->setResultRowCount(r->getResultRowCount() + 1);
     }
     else
         fail(0, "Unexpected parameters to setResultUInt");
@@ -854,6 +856,7 @@ void EclAgent::setResultReal(const char *name, unsigned sequence, double val)
     {
         r->setResultReal(val);  
         r->setResultStatus(ResultStatusCalculated);
+        r->setResultRowCount(r->getResultRowCount() + 1);
     }
     else
         fail(0, "Unexpected parameters to setResultReal");
@@ -1123,6 +1126,7 @@ void EclAgent::doSetResultString(type_t type, const char *name, unsigned sequenc
     {
         r->setResultString(val, len);   
         r->setResultStatus(ResultStatusCalculated);
+        r->setResultRowCount(r->getResultRowCount() + 1);
     }
     else
         fail(0, "Unexpected parameters to setResultString");
@@ -1146,6 +1150,7 @@ void EclAgent::setResultRaw(const char * name, unsigned sequence, int len, const
     {
         r->setResultRaw(len, val, ResultFormatRaw); 
         r->setResultStatus(ResultStatusCalculated);
+        r->setResultRowCount(r->getResultRowCount() + 1);
     }
     else
         fail(0, "Unexpected parameters to setResultString");
@@ -1170,6 +1175,7 @@ void EclAgent::setResultSet(const char * name, unsigned sequence, bool isAll, si
         r->setResultIsAll(isAll);
         r->setResultRaw(len, val, ResultFormatRaw); 
         r->setResultStatus(ResultStatusCalculated);
+        r->setResultRowCount(r->getResultRowCount() + 1);
     }
     else
         fail(0, "Unexpected parameters to setResultSet");
@@ -1229,6 +1235,7 @@ void EclAgent::setResultUnicode(const char * name, unsigned sequence, int len, U
     {
         r->setResultUnicode((char const *)val, len);
         r->setResultStatus(ResultStatusCalculated);
+        r->setResultRowCount(r->getResultRowCount() + 1);
     }
     else
         fail(0, "Unexpected parameters to setResultUnicode");
@@ -1256,6 +1263,7 @@ void EclAgent::setResultBool(const char *name, unsigned sequence, bool val)
     {
         r->setResultBool(val);
         r->setResultStatus(ResultStatusCalculated);
+        r->setResultRowCount(r->getResultRowCount() + 1);
     }
     else
         fail(0, "Unexpected parameters to setResultBool");
@@ -1279,6 +1287,7 @@ void EclAgent::setResultDecimal(const char *name, unsigned sequence, int len, in
     {
         r->setResultDecimal(val, len);
         r->setResultStatus(ResultStatusCalculated);
+        r->setResultRowCount(r->getResultRowCount() + 1);
     }
     else
         fail(0, "Unexpected parameters to setResultDecimal");
