@@ -591,25 +591,29 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (!eoi)
+        if (eoi)
+            return NULL;
+
+        loop
         {
             CThorExpandingRowArray rows(*this, queryRowInterfaces(input));
             Owned<IRowStream> rowStream = groupLoader->loadGroup(input, abortSoon, &rows);
             unsigned count = rows.ordinality();
-            if (count)
+            if (0 == count)
             {
-                RtlDynamicRowBuilder row(queryRowAllocator());
-                size32_t sz = helper->transform(row, count, rows.getRowArray());
-                rows.kill();
-                if (sz)
-                {
-                    dataLinkIncrement();
-                    return row.finalizeRowClear(sz);
-                }
+                eoi = true;
+                return NULL;
+            }
+
+            RtlDynamicRowBuilder row(queryRowAllocator());
+            size32_t sz = helper->transform(row, count, rows.getRowArray());
+            rows.kill();
+            if (sz)
+            {
+                dataLinkIncrement();
+                return row.finalizeRowClear(sz);
             }
         }
-        eoi = true;
-        return NULL;
     }
     virtual bool isGrouped() { return false; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
