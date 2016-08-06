@@ -62,6 +62,7 @@
                      var scheduleChecked = 0;
                      var descheduleChecked = 0;
                      var noscheduleChecked = 0;
+                     var cannotDelete = false;
                      function checkSelected(o)
                      {
                         if (o.tagName=='INPUT' && o.id!='All2'  && o.id!='All1'  && o.checked)
@@ -75,6 +76,10 @@
                                 unprotectedChecked++;
                             }
 
+                            if (document.getElementById(o.value + "_NoDelete"))
+                            {
+                                cannotDelete = true;
+                            }
                             var v1 = o.value + "_S";
                             var v2 = o.value + "_D";
                             var v1v2 = false;
@@ -122,6 +127,7 @@
             scheduleChecked = 0;
                         descheduleChecked = 0;
                         noscheduleChecked = 0;
+                        cannotDelete = false;
                         checkSelected(document.forms['listitems']);
                         if (protectedChecked + unprotectedChecked > 0)
                         {
@@ -134,7 +140,7 @@
                         }
                         else if (unprotectedChecked > 0 && protectedChecked == 0)
                         {
-                            if (document.getElementById("deleteBtn"))
+                            if (!cannotDelete && document.getElementById("deleteBtn"))
                                 document.getElementById("deleteBtn").disabled = false;
                             if (document.getElementById("protectBtn"))
                                 document.getElementById("protectBtn").disabled = false;
@@ -623,6 +629,10 @@
          </td>
          </xsl:if>
          <td>
+             <xsl:if test="number(IsPausing) or (State='running') or (State='aborting') or (State='compiling') or (State='debug_running')
+                     or (State='uploading_files') or (State='debugging') or (State='scheduled' and number(Aborting))">
+                 <input type="hidden" id="{Wuid}_NoDelete"/>
+             </xsl:if>
          <xsl:choose>
            <xsl:when test="number(IsPausing)">
              Pausing
