@@ -439,14 +439,16 @@ interface IDistributedFileDirectory: extends IInterface
                                         IUserDescriptor *user=NULL,
                                         bool writeaccess=false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
-                                        unsigned timeout=INFINITE
+                                        unsigned timeout=INFINITE,
+                                        bool checkScope=true
                                     ) = 0;  // links, returns NULL if not found
 
     virtual IDistributedFile *lookup(   const CDfsLogicalFileName &logicalname,
                                         IUserDescriptor *user=NULL,
                                         bool writeaccess=false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
-                                        unsigned timeout=INFINITE
+                                        unsigned timeout=INFINITE,
+                                        bool checkScope=true
                                     ) = 0;  // links, returns NULL if not found
 
     virtual IDistributedFile *createNew(IFileDescriptor *desc,bool includeports=false) = 0;
