@@ -364,6 +364,9 @@ public:
             workunit.clear();
             return;
         }
+        CSDSServerStatus serverstatus("eclcc");
+        serverstatus.queryProperties()->setProp("WorkUnit",wuid.get());
+        serverstatus.commitProperties();
         workunit->setAgentSession(myProcessSession());
         SCMStringBuffer clusterName;
         workunit->getClusterName(clusterName);
