@@ -853,22 +853,30 @@ int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, co
         if (pathlen>5 && !stricmp(path+pathlen-4, ".php"))
             return onRunCGI(request, response, path);
         
-        StringBuffer mimetype;
+        StringBuffer mimetype, etag, lastModified;
         MemoryBuffer content;
+        bool modified = true;
+        request->getHeader("If-None-Match", etag);
 
         StringBuffer filepath(getCFD());
         filepath.append("files/");
         filepath.append(path);
-        if (httpContentFromFile(filepath.str(), mimetype, content))
+        if (httpContentFromFile(filepath.str(), mimetype, content, modified, lastModified, etag))
         {
-            response->setContent(content.length(), content.toByteArray());
-            response->setContentType(mimetype.str());
+            if (!modified)
+                response->setNotModified(etag.str());
+            else
+            {
+                response->setLastModified(lastModified.str(), etag.str());
+                response->setContent(content.length(), content.toByteArray());
+                response->setContentType(mimetype.str());
 
-            //if file being requested is an image file then set its expiration to a year
-            //so browser does not keep reloading it
-            const char* pchExt = strrchr(path, '.');
-            if (pchExt && (!stricmp(++pchExt, "gif") || !stricmp(pchExt, "jpg") || !stricmp(pchExt, "png")))
-                response->addHeader("Cache-control",  "max-age=31536000");
+                //if file being requested is an image file then set its expiration to a year
+                //so browser does not keep reloading it
+                const char* pchExt = strrchr(path, '.');
+                if (pchExt && (!stricmp(++pchExt, "gif") || !stricmp(pchExt, "jpg") || !stricmp(pchExt, "png")))
+                    response->addHeader("Cache-control",  "max-age=31536000");
+            }
         }
         else
         {
@@ -884,14 +892,22 @@ int CEspHttpServer::onGetXslt(CHttpRequest* request, CHttpResponse* response, co
         if (!request || !response || !path)
             return -1;
         
-        StringBuffer mimetype;
+        StringBuffer mimetype, etag, lastModified;
         MemoryBuffer content;
+        bool modified = true;
+        request->getHeader("If-None-Match", etag);
 
         StringBuffer filepath;
-        if (httpContentFromFile(filepath.append(getCFD()).append("smc_xslt/").append(path).str(), mimetype, content) || httpContentFromFile(filepath.clear().append(getCFD()).append("xslt/").append(path).str(), mimetype, content))
+        if (httpContentFromFile(filepath.append(getCFD()).append("smc_xslt/").append(path).str(), mimetype, content, modified, lastModified.clear(), etag) || httpContentFromFile(filepath.clear().append(getCFD()).append("xslt/").append(path).str(), mimetype, content, modified, lastModified.clear(), etag))
         {
-            response->setContent(content.length(), content.toByteArray());
-            response->setContentType(mimetype.str());
+            if (!modified)
+                response->setNotModified(etag.str());
+            else
+            {
+                response->setLastModified(lastModified.str(), etag.str());
+                response->setContent(content.length(), content.toByteArray());
+                response->setContentType(mimetype.str());
+            }
         }
         else
         {
@@ -962,13 +978,20 @@ int CEspHttpServer::onGet()
 {   
     if (m_request && m_request->queryParameters()->hasProp("config_") && m_viewConfig)
     {
-        StringBuffer mimetype;
+        StringBuffer mimetype, etag, lastModified;
         MemoryBuffer content;
-        httpContentFromFile("esp.xml", mimetype, content);
-
+        bool modified = true;
+        m_request->getHeader("If-None-Match", etag);
+        httpContentFromFile("esp.xml", mimetype, content, modified, lastModified, etag);
+        if (!modified)
+            m_response->setNotModified(etag.str());
+        else
+        {
+            m_response->setLastModified(lastModified.str(), etag.str());
+            m_response->setContent(content.length(), content.toByteArray());
+            m_response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
+        }
         m_response->setVersion(HTTP_VERSION);
-        m_response->setContent(content.length(), content.toByteArray());
-        m_response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
         m_response->setStatus(HTTP_STATUS_OK);
         m_response->send();
     }

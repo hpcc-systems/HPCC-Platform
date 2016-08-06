@@ -37,7 +37,7 @@ IEspHttpException* createEspHttpException(int code, const char *_msg, const char
     return new CEspHttpException(code, _msg, _httpstatus);
 }
 
-bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuffer &fileContents)
+bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuffer &fileContents, bool &checkModifiedTime, StringBuffer &lastModified, StringBuffer &etag)
 {
     StringBuffer strfile(filepath);
 
@@ -49,6 +49,21 @@ bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuf
     Owned<IFile> file = createIFile(strfile.str());
     if (file && file->isFile())
     {
+        if (checkModifiedTime)
+        {
+            CDateTime createTime, accessedTime, modifiedTime;
+            StringBuffer etagSource, etagForThisFile;
+            file->getTime( &createTime,  &modifiedTime, &accessedTime);
+            modifiedTime.getString(lastModified);
+            etagSource.appendf("%s+%s", filepath, lastModified.str());
+            etagForThisFile.append(hashc((unsigned char *)etagSource.str(), etagSource.length(), 0));
+            if ( streq(etagForThisFile.str(), etag.str()))
+            {
+                checkModifiedTime = false;
+                return true;
+            }
+        }
+
         Owned<IFileIO> io = file->open(IFOread);
         if (io)
         {
@@ -2265,9 +2280,12 @@ int CHttpResponse::processHeaders(IMultiException *me)
 
 bool CHttpResponse::httpContentFromFile(const char *filepath)
 {
-    StringBuffer mimetype;
+    StringBuffer mimetype, etag, lastModified;
     MemoryBuffer content;
-    bool ok = ::httpContentFromFile(filepath, mimetype, content);
+    //Set 'modified = false' here since this is called by CMySoapBinding::onGetFile() which does
+    //not need to check and set both 'etag' and 'lastModified' inside httpContentFromFile().
+    bool modified = false;
+    bool ok = ::httpContentFromFile(filepath, mimetype, content, modified, lastModified, etag);
     if (ok)
     {
         setContent(content.length(), content.toByteArray());
@@ -2280,6 +2298,21 @@ bool CHttpResponse::httpContentFromFile(const char *filepath)
     }
 
     return ok;
+}
+
+void CHttpResponse::setLastModified(const char *lastModified, const char *etag)
+{
+    addHeader("Cache-control",  "max-age=300");
+    addHeader("Last-Modified", lastModified);
+    addHeader("Etag",  etag);
+}
+
+
+void CHttpResponse::setNotModified(const char *etag)
+{
+    setStatus(HTTP_STATUS_NOT_MODIFIED);
+    addHeader("Cache-control",  "max-age=300");
+    addHeader("Etag",  etag);
 }
 
 int CHttpResponse::receive(IMultiException *me)

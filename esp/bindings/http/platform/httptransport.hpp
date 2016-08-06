@@ -97,7 +97,7 @@
 //#define DEBUG_HTTP_
 #endif
 
-bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuffer &fileContents);
+bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuffer &fileContents, bool &checkmodifiedTime, StringBuffer &lastModified, StringBuffer &etag);
 bool xmlContentFromFile(const char *filepath, const char *stylesheet, StringBuffer &fileContents);
 
 
