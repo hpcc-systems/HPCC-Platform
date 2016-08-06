@@ -135,6 +135,10 @@ hr.dashedLine {
     overflow: hidden;
 }
 
+.claro .dojoxUploaderFileListProgressBar{
+    background:rgb(0, 108, 204);
+}
+
 .claro #stubStackController{
     height: 32px;
     margin-top: 6px;
