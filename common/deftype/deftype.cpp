@@ -2622,6 +2622,8 @@ ITypeInfo * getPromotedCompareType(ITypeInfo * left, ITypeInfo * right)
         switch (ptc)
         {
         case type_string:
+        case type_data:
+        case type_qstring:
             {
                 if ((left->getTypeCode() == ptc) && (right->getTypeCode() == ptc))
                 {
@@ -2636,6 +2638,7 @@ ITypeInfo * getPromotedCompareType(ITypeInfo * left, ITypeInfo * right)
         case type_unicode:
         case type_utf8:
             {
+                promoted.setown(getStretchedType(UNKNOWN_LENGTH, promoted));
             }
             break;
         }
