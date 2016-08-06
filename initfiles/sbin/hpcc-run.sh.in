@@ -61,8 +61,15 @@ createIPListFile(){
 }
 
 createIPListFileExcludeDIP(){
-  _file=$1
-  echo "$IPS" | grep -v $DIP  > $_file
+  _input=$1
+  _file=$2
+  rm -f $_file
+  touch $_file
+  while read addr; do
+    if [[ "$DIP" != "$addr" ]]; then
+      echo "$addr" >> $_file
+    fi
+  done < $_input
 }
 
 doOneIP(){
@@ -234,7 +241,7 @@ init() {
     IPsFile=/tmp/ip_list_$$
     createIPListFile $IPsFile
     IPsExcludeDIP=/tmp/ip_list_exclude_dip_$$
-    createIPListFileExcludeDIP $IPsExcludeDIP
+    createIPListFileExcludeDIP $IPsFile $IPsExcludeDIP
 
     if [ $concurrent -eq 0 ]; then
         concurrent=$( wc -l $IPsFile | awk '{ print $1 }')
