@@ -63,7 +63,7 @@
 
 namespace roxiemem {
 
-interface IRowAllocatorCache
+interface IRowAllocatorCache : extends IInterface
 {
     virtual unsigned getActivityId(unsigned cacheId) const = 0;
     virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const = 0;

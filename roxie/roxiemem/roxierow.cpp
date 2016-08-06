@@ -341,6 +341,158 @@ IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowMana
         return new RoxieEngineVariableRowAllocator<Crc16CheckingHelper>(rowManager, meta, activityId, allocatorId, flags);
 }
 
+#pragma pack(push,1) // hashing on members, so ensure contiguous
+struct AllocatorKey
+{
+    IOutputMetaData *meta;
+    unsigned activityId;
+    AllocatorKey(IOutputMetaData *_meta, unsigned &_activityId) : meta(_meta), activityId(_activityId) { }
+    bool operator==(AllocatorKey const &other) const
+    {
+        return (meta == other.meta) && (activityId == other.activityId);
+    }
+};
+#pragma pack(pop)
+
+class CAllocatorCacheItem : public OwningHTMapping<IEngineRowAllocator, AllocatorKey>
+{
+    Linked<IOutputMetaData> meta;
+public:
+    CAllocatorCacheItem(IEngineRowAllocator *allocator, AllocatorKey &key)
+        : OwningHTMapping<IEngineRowAllocator, AllocatorKey>(*allocator, key)
+    {
+        meta.set(key.meta);
+    }
+};
+
+class CAllocatorCache : public CSimpleInterface, implements IRowAllocatorMetaActIdCache
+{
+    OwningSimpleHashTableOf<CAllocatorCacheItem, AllocatorKey> cache;
+    IArrayOf<IEngineRowAllocator> allAllocators;
+    mutable SpinLock allAllocatorsLock;
+    Owned<roxiemem::IRowManager> rowManager;
+    roxiemem::RoxieHeapFlags flags;
+    IRowAllocatorMetaActIdCacheCallback *callback;
+
+    inline IEngineRowAllocator *_lookup(IOutputMetaData *meta, unsigned activityId) const
+    {
+        AllocatorKey key(meta, activityId);
+        CAllocatorCacheItem *container = cache.find(key);
+        if (!container)
+            return NULL;
+        return &container->queryElement();
+    }
+    inline bool _add(IEngineRowAllocator *allocator, IOutputMetaData *meta, unsigned activityId)
+    {
+        AllocatorKey key(meta, activityId);
+        CAllocatorCacheItem *container = new CAllocatorCacheItem(allocator, key);
+        return cache.replace(*container);
+    }
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CAllocatorCache(IRowAllocatorMetaActIdCacheCallback *_callback) : callback(_callback)
+    {
+    }
+// IRowAllocatorMetaActIdCache
+    inline IEngineRowAllocator *lookup(IOutputMetaData *meta, unsigned activityId) const
+    {
+        SpinBlock b(allAllocatorsLock);
+        return _lookup(meta, activityId);
+    }
+    inline bool add(IEngineRowAllocator *allocator, IOutputMetaData *meta, unsigned activityId)
+    {
+        SpinBlock b(allAllocatorsLock);
+        return _add(allocator, meta, activityId);
+    }
+    virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned activityId)
+    {
+        SpinBlock b(allAllocatorsLock);
+        IEngineRowAllocator *ret = _lookup(meta, activityId);
+        if (ret)
+            return LINK(ret);
+        assertex(allAllocators.ordinality() < ALLOCATORID_MASK);
+        ret = callback->createAllocator(meta, activityId, allAllocators.ordinality());
+        _add(LINK(ret), meta, activityId);
+        allAllocators.append(*LINK(ret));
+        return ret;
+    }
+    virtual bool remove(IOutputMetaData *meta, unsigned activityId)
+    {
+        SpinBlock b(allAllocatorsLock);
+        AllocatorKey key(meta, activityId);
+        return cache.remove(&key);
+    }
+    virtual void clear()
+    {
+        SpinBlock b(allAllocatorsLock);
+        cache.kill();
+        allAllocators.kill();
+    }
+    virtual unsigned items() const
+    {
+        return allAllocators.ordinality();
+    }
+// roxiemem::IRowAllocatorCache
+    virtual unsigned getActivityId(unsigned cacheId) const
+    {
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
+        SpinBlock b(allAllocatorsLock);
+        if (allAllocators.isItem(allocatorIndex))
+            return allAllocators.item(allocatorIndex).queryActivityId();
+        else
+        {
+            //assert(false);
+            return 12345678; // Used for tracing, better than a crash...
+        }
+    }
+    virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const
+    {
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
+        SpinBlock b(allAllocatorsLock);
+        if (allAllocators.isItem(allocatorIndex))
+            return allAllocators.item(allocatorIndex).getId(out);
+        else
+        {
+            assert(false);
+            return out.append("unknown"); // Used for tracing, better than a crash...
+        }
+    }
+    virtual void onDestroy(unsigned cacheId, void *row) const
+    {
+        IEngineRowAllocator *allocator;
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
+        {
+            SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
+            if (allAllocators.isItem(allocatorIndex))
+                allocator = &allAllocators.item(allocatorIndex);
+            else
+            {
+                assert(false);
+                return;
+            }
+        }
+        if (!RoxieRowCheckValid(cacheId, row))
+        {
+            //MORE: Give an error, but don't throw an exception!
+        }
+        allocator->queryOutputMeta()->destruct((byte *) row);
+    }
+    virtual void checkValid(unsigned cacheId, const void *row) const
+    {
+        if (!RoxieRowCheckValid(cacheId, row))
+        {
+            //MORE: Throw an exception?
+        }
+    }
+};
+
+IRowAllocatorMetaActIdCache *createRowAllocatorCache(IRowAllocatorMetaActIdCacheCallback *callback)
+{
+    return new CAllocatorCache(callback);
+}
+
+
 
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/HelperMacros.h>
@@ -354,6 +506,7 @@ class RoxieRowAllocatorTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testSetup);
         CPPUNIT_TEST(testChecking);
         CPPUNIT_TEST(testCleanup);
+        CPPUNIT_TEST(testAllocatorCache);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
 
@@ -367,9 +520,11 @@ public:
     }
 
 protected:
-    class CheckingRowAllocatorCache : public IRowAllocatorCache
+    class CheckingRowAllocatorCache : public CSimpleInterface, public IRowAllocatorCache
     {
     public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
         CheckingRowAllocatorCache() { numFailures = 0; }
         virtual unsigned getActivityId(unsigned cacheId) const { return 0; }
         virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const { return out.append(cacheId); }
@@ -488,6 +643,48 @@ protected:
         }
     }
 
+    void testAllocatorCache()
+    {
+        IArrayOf<IOutputMetaData> metas;
+        Owned<IRowManager> rm = createRowManager(0, NULL, logctx, NULL);
+        class CAllocatorCallback : implements IRowAllocatorMetaActIdCacheCallback
+        {
+            IRowManager *rm;
+        public:
+            CAllocatorCallback(IRowManager *_rm) : rm(_rm)
+            {
+            }
+            virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned cacheId) const
+            {
+                return createRoxieRowAllocator(*rm, meta, activityId, cacheId, roxiemem::RHFnone);
+            }
+        } callback(rm);
+        Owned<IRowAllocatorMetaActIdCache> allocatorCache = createRowAllocatorCache(&callback);
+        for (unsigned fixedSize=1; fixedSize<=64; fixedSize++)
+        {
+            DummyOutputMeta *meta = new DummyOutputMeta(fixedSize, fixedSize);
+            metas.append(*meta);
+
+            unsigned activityId = 1 + ((fixedSize-1) % 32); // i.e. make an id, so half are duplicates
+            Owned<IEngineRowAllocator> allocator = allocatorCache->ensure(meta, activityId);
+        }
+        ASSERT(allocatorCache->items() == 64);
+        Owned<IEngineRowAllocator> allocator = allocatorCache->lookup(&metas.item(0), 1);
+        ASSERT(NULL != allocator);
+        ASSERT(allocatorCache->remove(&metas.item(0), 1));
+        ASSERT(allocatorCache->add(allocator.getClear(), &metas.item(0), 1));
+
+        for (unsigned fixedSize=1; fixedSize<=64; fixedSize++)
+        {
+            unsigned activityId = 1 + ((fixedSize-1) % 32); // i.e. make an id, so half are duplicates
+            IOutputMetaData *meta = &metas.item(fixedSize-1); // from 1st round
+            Owned<IEngineRowAllocator> allocator = allocatorCache->ensure(meta, activityId);
+        }
+        ASSERT(allocatorCache->items() == 64);
+
+        metas.kill();
+        allocatorCache.clear();
+    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieRowAllocatorTests );

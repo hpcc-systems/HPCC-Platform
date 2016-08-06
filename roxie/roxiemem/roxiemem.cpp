@@ -4076,9 +4076,11 @@ protected:
         ASSERT(RoxieRowCapacity(alloc3) == capacity);
         ReleaseRoxieRow(alloc3);
     }
-    class CountingRowAllocatorCache : public IRowAllocatorCache
+    class CountingRowAllocatorCache : public CSimpleInterface, public IRowAllocatorCache
     {
     public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
         CountingRowAllocatorCache() { atomic_set(&counter, 0); }
         virtual unsigned getActivityId(unsigned cacheId) const { return 0; }
         virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const { return out.append(cacheId); }

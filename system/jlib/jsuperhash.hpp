@@ -347,7 +347,7 @@ public:
     virtual void onRemove(void *et) { ((ET *)et)->Release(); }
 };
 
-// template mapping object for base type to arbitary object
+// template mapping object for base type to arbitrary object
 template <class ET, class FP>
 class HTMapping : public CInterface
 {
@@ -363,11 +363,18 @@ public:
 
 // template mapping object for base type to IInterface object
 template <class ET, class FP>
-class LinkedHTMapping : public HTMapping<ET, FP>
+class OwningHTMapping : public HTMapping<ET, FP>
 {
 public:
-    LinkedHTMapping(ET &et, FP &fp) : HTMapping<ET, FP>(et, fp) { this->et.Link(); }
-    ~LinkedHTMapping() { this->et.Release(); }
+    OwningHTMapping(ET &et, FP &fp) : HTMapping<ET, FP>(et, fp) { }
+    ~OwningHTMapping() { this->et.Release(); }
+};
+
+template <class ET, class FP>
+class LinkedHTMapping : public OwningHTMapping<ET, FP>
+{
+public:
+    LinkedHTMapping(ET &et, FP &fp) : OwningHTMapping<ET, FP>(et, fp) { this->et.Link(); }
 };
 
 // template mapping object for string to arbitrary object
