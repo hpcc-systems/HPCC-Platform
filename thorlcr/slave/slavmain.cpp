@@ -407,6 +407,7 @@ public:
                     }
                     case Shutdown:
                     {
+                        PROGLOG("Shutdown received");
                         doReply = false;
                         stopped = true;
                         break;

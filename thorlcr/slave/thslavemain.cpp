@@ -62,6 +62,8 @@ MODULE_EXIT()
     ::Release(masterNode);
 }
 
+static bool terminated = false;
+
 #ifdef _DEBUG
 USE_JLIB_ALLOC_HOOK;
 #endif
@@ -187,7 +189,8 @@ void UnregisterSelf(IException *e)
         LOG(MCdebugProgress, thorJob, "Unregistered slave : %s", slfStr.toCharArray());
     }
     catch (IException *e) {
-        FLLOG(MCexception(e), thorJob, e,"slave unregistration error");
+        if (!terminated) // asked to end so do not log errors contacting master
+            FLLOG(MCexception(e), thorJob, e,"slave unregistration error");
         e->Release();
     }
 }
@@ -195,7 +198,9 @@ void UnregisterSelf(IException *e)
 bool ControlHandler(ahType type)
 {
     if (ahInterrupt == type)
-        LOG(MCdebugProgress, thorJob, "CTRL-C pressed");
+        LOG(MCdebugProgress, thorJob, "CTRL-C caught");
+    if (ahTerminate == type)
+        terminated = true;
     if (masterNode)
         UnregisterSelf(NULL);
     abortSlave();
