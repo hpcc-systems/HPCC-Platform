@@ -85,6 +85,14 @@ ESPStruct DFUJob
     string Command;
 };
 
+ESPStruct ServerJobQueue
+{
+    string QueueName;
+    string ServerName;
+    string ServerType;
+    string QueueStatus;
+};
+
 ESPrequest [nil_remove] ActivityRequest
 {
     string ChatURL;
@@ -118,6 +126,7 @@ ESPresponse [exceptions_inline] ActivityResponse
     [min_ver("1.11")] bool Descending(false);
     [min_ver("1.12")] bool SuperUser(false);
     [min_ver("1.12")] string AccessRight;
+    [min_ver("1.14")] ESParray<ESPstruct ServerJobQueue> ServerJobQueues;
 };
 
 ESPrequest SMCIndexRequest
@@ -259,7 +268,7 @@ BrowseResourcesResponse
     ESParray<ESPstruct HPCCResourceRepository> HPCCResourceRepositories;
 };
 
-ESPservice [noforms, version("1.12"), default_client_version("1.12"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [noforms, version("1.14"), default_client_version("1.14"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPuses ESPStruct Capability;
     ESPuses ESPStruct Permission;
