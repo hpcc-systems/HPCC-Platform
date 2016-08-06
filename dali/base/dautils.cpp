@@ -1826,20 +1826,34 @@ public:
     Owned<IBitSet> passesFilter;
 };
 
-IRemoteConnection *getElementsPaged( const char *basexpath,
-                                     const char *xpath,
-                                     const char *sortorder,
+void sortElements(IPropertyTreeIterator* elementsIter,
+                    const char *sortOrder,
+                    const char *nameFilterLo,
+                    const char *nameFilterHi,
+                    IArrayOf<IPropertyTree> &sortedElements)
+{
+    if (nameFilterLo&&!*nameFilterLo)
+        nameFilterLo = NULL;
+    if (nameFilterHi&&!*nameFilterHi)
+        nameFilterHi = NULL;
+    cSort sort;
+    if (sortOrder && *sortOrder)
+        sort.dosort(*elementsIter,sortOrder,nameFilterLo,nameFilterHi,sortedElements);
+    else
+        ForEach(*elementsIter)
+            filteredAdd(sortedElements,nameFilterLo,nameFilterHi,&elementsIter->query());
+};
+
+IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
                                      unsigned startoffset,
                                      unsigned pagesize,
                                      ISortedElementsTreeFilter *postfilter, // filters before adding to page
                                      const char *owner,
                                      __int64 *hint,
-                                     const char *namefilterlo,
-                                     const char *namefilterhi,
                                      IArrayOf<IPropertyTree> &results,
                                      unsigned *total)
 {
-    if (pagesize==0)
+    if ((pagesize==0) || !elementsPager)
         return NULL;
     {
         CriticalBlock block(pagedElementsCacheSect);
@@ -1857,7 +1871,7 @@ IRemoteConnection *getElementsPaged( const char *basexpath,
     if (!elem)
         elem.setown(new CPECacheElem(owner, postfilter));
     if (!elem->conn)
-        elem->conn.setown(getSortedElements(basexpath,xpath,sortorder,namefilterlo,namefilterhi,elem->totalres));
+        elem->conn.setown(elementsPager->getElements(elem->totalres));
     if (!elem->conn)
         return NULL;
     unsigned n;

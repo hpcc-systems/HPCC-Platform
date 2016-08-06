@@ -1169,6 +1169,7 @@ ESPStruct [nil_remove] QuerySetQuery
     nonNegativeInteger warnTimeLimit;
     string priority;
     string Comment;
+    [min_ver("1.45")] string QuerySetId;
 };
 
 ESPStruct QuerySetAlias
@@ -1203,6 +1204,33 @@ ESPresponse [exceptions_inline] WUQuerySetDetailsResponse
     [min_ver("1.37")] string  Filter;
     [min_ver("1.37")] ESPenum WUQuerySetFilterType FilterType;
     [min_ver("1.37")] ESParray<string> ClusterNames;
+};
+
+ESPrequest [nil_remove] WUListQueriesRequest
+{
+    string  QuerySetName;
+    string  ClusterName;
+    int64 MemoryLimitLow;
+    int64 MemoryLimitHigh;
+    nonNegativeInteger TimeLimitLow;
+    nonNegativeInteger TimeLimitHigh;
+    nonNegativeInteger WarnTimeLimitLow;
+    nonNegativeInteger WarnTimeLimitHigh;
+    nonNegativeInteger PriorityLow;
+    nonNegativeInteger PriorityHigh;
+
+    nonNegativeInteger PageSize(0);
+    nonNegativeInteger PageStartFrom(0);
+    string Sortby;
+    bool Descending(false);
+    int64 CacheHint;
+};
+
+ESPresponse [exceptions_inline] WUListQueriesResponse
+{
+    int   NumberOfQueries;
+    int64 CacheHint;
+    ESParray<ESPstruct QuerySetQuery> QuerysetQueries;
 };
 
 ESPrequest WUQueryDetailsRequest
@@ -1362,7 +1390,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.44"), default_client_version("1.44"),
+    version("1.45"), default_client_version("1.45"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -1429,6 +1457,7 @@ ESPservice [
     ESPmethod WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
+    ESPmethod WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
 };
 
 
