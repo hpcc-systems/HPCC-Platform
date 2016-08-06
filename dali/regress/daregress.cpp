@@ -566,7 +566,7 @@ static void testDFSTrans()
     dsub1->attach("regress::trans::sub1");
     dsub1.clear();
 
-    if (dir.exists("regress::trans::sub1",true,false) && !dir.removeEntry("regress::trans::sub2")) {
+    if (dir.exists("regress::trans::sub2",true,false) && !dir.removeEntry("regress::trans::sub2")) {
         ERROR("Can't remove sub2");
         return;
     }
@@ -575,7 +575,7 @@ static void testDFSTrans()
     dsub2->attach("regress::trans::sub2");
     dsub2.clear();
 
-    if (dir.exists("regress::trans::sub1",true,false) && !dir.removeEntry("regress::trans::sub3")) {
+    if (dir.exists("regress::trans::sub3",true,false) && !dir.removeEntry("regress::trans::sub3")) {
         ERROR("Can't remove sub3");
         return;
     }
@@ -584,7 +584,7 @@ static void testDFSTrans()
     dsub3->attach("regress::trans::sub3");
     dsub3.clear();
 
-    if (dir.exists("regress::trans::sub1",true,false) && !dir.removeEntry("regress::trans::sub4")) {
+    if (dir.exists("regress::trans::sub4",true,false) && !dir.removeEntry("regress::trans::sub4")) {
         ERROR("Can't remove sub4");
         return;
     }
