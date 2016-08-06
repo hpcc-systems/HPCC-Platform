@@ -42,6 +42,7 @@ ESPStruct ActiveWorkunit
     [min_ver("1.15")] ClusterName;
     [min_ver("1.15")] string ClusterType;
     [min_ver("1.15")] string ClusterQueueName;
+    [min_ver("1.16")] string AgentQueueName;
 };
 
 ESPStruct ThorCluster
@@ -303,7 +304,7 @@ RoxieControlCmdResponse
     ESParray<ESPstruct RoxieControlEndpointInfo, Endpoint> Endpoints;
 };
 
-ESPservice [noforms, version("1.15"), default_client_version("1.15"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [noforms, version("1.16"), default_client_version("1.16"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
