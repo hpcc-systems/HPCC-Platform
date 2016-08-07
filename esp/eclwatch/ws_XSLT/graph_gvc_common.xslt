@@ -27,8 +27,7 @@
       </tbody>
     </table>
     <br />
-    
-    <table width="100%">
+    <table width="100%" cellSpacing="5" style="border-collapse:separate;border-spacing:5;">
       <tr>
         <td width="80%" valign="top">
           <object id="pluginLHS" type="application/x-hpccsystemsgraphviewcontrol" standby="Loading HPCC Systems GraphView Control..."
@@ -90,7 +89,7 @@
           </table>
           
         </td>
-        <td valign="top">
+        <td width="20%" valign="top">
           <object id="pluginRHS" type="application/x-hpccsystemsgraphviewcontrol" standby="Loading HPCC Systems GraphView Control..." style="width:100%; height:500px;">
           </object>
           <div id="zoom2-slider-bg" class="yui-h-slider" tabindex="-1" title="Zoom Mini Graph" style="text-align:left;">

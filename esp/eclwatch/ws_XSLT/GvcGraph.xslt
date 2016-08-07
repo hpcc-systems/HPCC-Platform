@@ -113,14 +113,14 @@
 
     function onLoad()
     {
-
       addEvent(pluginLHS(), 'LayoutFinished', layoutFinished);
       addEvent(pluginRHS(), 'LayoutFinished', layoutFinishedRHS);
       addEvent(pluginLHS(), 'Scaled', scaled);
       addEvent(pluginRHS(), 'Scaled', scaled2);
       addEvent(pluginLHS(), 'MouseDoubleClick', mouseDoubleClick);
+      addEvent(pluginRHS(), 'MouseDoubleClick', mouseDoubleClickRHS);
       addEvent(pluginLHS(), 'SelectionChanged', selectionChanged);
-      addEvent(pluginRHS(), 'SelectionChanged', selectionChangedRHS);
+      //addEvent(pluginRHS(), 'SelectionChanged', selectionChangedRHS);
 
       var thisEsp = getEspAddressAndPort(document.location.href);
       if (graphType == 'roxieconfig')
