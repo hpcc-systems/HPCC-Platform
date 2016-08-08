@@ -1,6 +1,7 @@
 ﻿define([
+    "dojo/_base/array",
     "dojox/html/entities"
-], function (entities) {
+], function (arrayUtil, entities) {
 
     function xmlEncode(str) {
         str = "" + str;
@@ -17,6 +18,11 @@
                   .replace(/\n/g, '&#10;')
                   .replace(/\r/g, '&#13;')
         ;
+    }
+
+    function csvEncode(cell) {
+        if (!isNaN(cell)) return cell;
+        return '"' + String(cell).replace('"', '""') + '"';
     }
 
     function espTime2Seconds(duration) {
@@ -158,6 +164,63 @@
         }, this);
     }
 
+    function downloadToCSV (grid, rows, fileName) {
+            var csvContent = "";
+            var headers = grid.columns;
+            var container = [];
+            var headerNames = [];
+
+            for (var key in headers) {
+                if (headers[key].selectorType !== 'checkbox') {
+                    if (!headers[key].label) {
+                        var str = csvEncode(headers[key].field);
+                        headerNames.push(str);
+                    } else {
+                        var str = csvEncode(headers[key].label);
+                        headerNames.push(str);
+                    }
+                }
+            }
+            container.push(headerNames);
+
+            arrayUtil.forEach(rows, function (cells, idx){
+                container.push(csvEncode(cells));
+            });
+
+            arrayUtil.forEach(container, function (header, idx) {
+                dataString = header.join(",");
+                csvContent += dataString + "\n";
+            });
+
+            var download = function(content, fileName, mimeType) {
+            var a = document.createElement('a');
+            mimeType = mimeType || 'application/octet-stream';
+
+            if (navigator.msSaveBlob) { // IE10
+                return navigator.msSaveBlob(new Blob([content], { type: mimeType }), fileName);
+            } else if ('download' in a) {
+                a.href = 'data:' + mimeType + ',' + encodeURIComponent(content);
+                a.setAttribute('download', fileName);
+                document.body.appendChild(a);
+                setTimeout(function() {
+                  a.click();
+                  document.body.removeChild(a);
+                }, 66);
+                return true;
+              } else {
+                var f = document.createElement('iframe');
+                document.body.appendChild(f);
+                f.src = 'data:' + mimeType + ',' + encodeURIComponent(content);
+
+                setTimeout(function() {
+                  document.body.removeChild(f);
+                }, 333);
+                return true;
+              }
+            }
+            download(csvContent,  fileName, 'text/csv');
+    }
+
     /* alphanum.js (C) Brian Huisman
      * Based on the Alphanum Algorithm by David Koelle
      * The Alphanum Algorithm is discussed at http://www.DaveKoelle.com
@@ -269,6 +332,7 @@
         espSkew2Number: espSkew2Number,
         xmlEncode: xmlEncode,
         xmlEncode2: xmlEncode2,
-        alphanumSort: alphanumSort
+        alphanumSort: alphanumSort,
+        downloadToCSV: downloadToCSV
     }
 });
