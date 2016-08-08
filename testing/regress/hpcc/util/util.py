@@ -25,7 +25,6 @@ import subprocess
 
 from ..common.error import Error
 from ..common.shell import Shell
-from ..common.config import Config
 
 def isPositiveIntNum(string):
     for i in range(0,  len(string)):
@@ -98,7 +97,7 @@ def getConfig():
 
 def queryWuid(jobname,  taskId):
     shell = Shell()
-    cmd = shell.which('ecl')
+    cmd = 'ecl'
     defaults = []
     args = []
     args.append('status')
@@ -127,7 +126,7 @@ def queryWuid(jobname,  taskId):
 
 def abortWorkunit(wuid):
     shell = Shell()
-    cmd = shell.which('ecl')
+    cmd = 'ecl'
     defaults=[]
     args = []
     args.append('abort')
