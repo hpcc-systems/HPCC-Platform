@@ -252,7 +252,7 @@ public:
         self = static_cast<byte *>(_self); 
         maxLength = _maxLength;
     }
-    inline ~RtlDynamicRowBuilder() { clear(); }
+    inline ~RtlDynamicRowBuilder() { if (self) { rowAllocator->releaseRow(self); } }
 
     virtual byte * ensureCapacity(size32_t required, const char * fieldName);
 
@@ -260,9 +260,10 @@ public:
     inline bool exists() { return (self != NULL); }
     inline const void * finalizeRowClear(size32_t len) 
     { 
-        const unsigned finalMaxLength = maxLength;
+        const void * result = rowAllocator->finalizeRow(len, self, maxLength);
+        self = NULL;
         maxLength = 0;
-        return rowAllocator->finalizeRow(len, getUnfinalizedClear(), finalMaxLength);
+        return result;
     }
     inline size32_t getMaxLength() const { return maxLength; }
     inline void * getUnfinalizedClear() { void * ret = self; self = NULL; return ret; }
