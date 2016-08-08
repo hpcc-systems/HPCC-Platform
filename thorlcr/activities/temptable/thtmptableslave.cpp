@@ -99,6 +99,8 @@ public:
         info.isSource = true;
         info.unknownRowsOutput = false;
         info.totalRowsMin = info.totalRowsMax = maxRow - startRow;
+        if (helper->getFlags() & TTFfiltered)
+            info.totalRowsMin = 0;
     }
 };
 

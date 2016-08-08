@@ -16958,13 +16958,16 @@ void HqlCppTranslator::buildDatasetAssignXmlProject(BuildCtx & ctx, IHqlCppDatas
 //---------------------------------------------------------------------------
 //-- no_temptable [DATASET] --
 
-void HqlCppTranslator::doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant)
+void HqlCppTranslator::doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant, bool canFilter)
 {
     StringBuffer flags;
     if (expr->hasAttribute(distributedAtom))
         flags.append("|TTFdistributed");
     if (!isConstant)
         flags.append("|TTFnoconstant");
+    if (canFilter)
+        flags.append("|TTFfiltered");
+
     if (flags.length())
         doBuildUnsignedFunction(ctx, "getFlags", flags.str()+1);
 }
@@ -17080,7 +17083,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
 
     doBuildUnsigned64Function(instance->startctx, "numRows", rowsExpr);
 
-    doBuildTempTableFlags(instance->startctx, expr, values->isConstant());
+    doBuildTempTableFlags(instance->startctx, expr, values->isConstant(), false);
 
     buildInstanceSuffix(instance);
 
@@ -17151,7 +17154,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     buildAssign(funcctx, self, cseExpr);
     buildReturnRecordSize(funcctx, selfCursor);
 
-    doBuildTempTableFlags(instance->startctx, expr, valuesAreConstant);
+    doBuildTempTableFlags(instance->startctx, expr, valuesAreConstant, false);
 
     buildInstanceSuffix(instance);
 
@@ -17204,6 +17207,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     IHqlExpression * self = selfCursor->querySelector();
 
     unsigned maxRows = values->numChildren();
+    bool canFilter = false;
     if (maxRows)
     {
         StringBuffer s;
@@ -17217,6 +17221,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
             casectx.addQuotedCompound(s.clear().append("case ").append(row).append(":"));
 
             IHqlExpression * cur = values->queryChild(row);
+            if (containsSkip(cur))
+                canFilter = true;
             OwnedHqlExpr rowValue = createRow(no_createrow, LINK(cur));
             buildAssign(casectx, self, rowValue);
             buildReturnRecordSize(casectx, selfCursor);
@@ -17227,7 +17233,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     OwnedHqlExpr rowsExpr = getSizetConstant(maxRows);
     doBuildUnsigned64Function(instance->startctx, "numRows", rowsExpr);
 
-    doBuildTempTableFlags(instance->startctx, expr, values->isConstant());
+    doBuildTempTableFlags(instance->startctx, expr, values->isConstant(), canFilter);
 
     buildInstanceSuffix(instance);
 
@@ -17259,7 +17265,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     doBuildUnsigned64Function(instance->startctx, "numRows", count);
 
     // unsigned getFlags()
-    doBuildTempTableFlags(instance->startctx, expr, isConstantTransform(transform));
+    doBuildTempTableFlags(instance->startctx, expr, isConstantTransform(transform), containsSkip(transform));
 
     buildInstanceSuffix(instance);
     return instance->getBoundActivity();

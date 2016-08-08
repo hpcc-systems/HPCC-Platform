@@ -21,7 +21,7 @@ r := record
     unsigned i;
 end;
 
-r t1(unsigned value) := transform
+r t1(unsigned value) := transform,SKIP(value = 0)
     SELF.i := value * 10;
 end;
 

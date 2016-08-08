@@ -1208,6 +1208,7 @@ enum
 {
     TTFnoconstant        = 0x0001,      // default flags is zero
     TTFdistributed       = 0x0002,
+    TTFfiltered          = 0x0004,
 };
 
 struct IHThorIndexWriteArg : public IHThorArg
