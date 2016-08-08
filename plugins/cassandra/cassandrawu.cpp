@@ -711,7 +711,7 @@ public:
 private:
     const char *elemName;
     const char *nameAttr;
-} graphMapColumnMapper("Graph", "@name"), workflowMapColumnMapper("Item", "@wfid"), associationsMapColumnMapper("File", "@filename");;
+} graphMapColumnMapper("Graph", "@name"), workflowMapColumnMapper("Item", "@wfid"), associationsMapColumnMapper("File", "@filename"), usedFieldsMapColumnMapper("field", "@name");
 
 
 static class WarningsMapColumnMapper : implements CassandraColumnMapper
@@ -968,7 +968,7 @@ static const CassandraXmlMapping versionMappings [] =
 
 // The following describe child tables - all keyed by wuid
 
-enum ChildTablesEnum { WuQueryChild, WuExceptionsChild, WuStatisticsChild, WuGraphsChild, WuResultsChild, WuVariablesChild, WuTemporariesChild, WuFilesReadChild, WuFilesWrittenChild, ChildTablesSize };
+enum ChildTablesEnum { WuQueryChild, WuExceptionsChild, WuStatisticsChild, WuGraphsChild, WuResultsChild, WuVariablesChild, WuTemporariesChild, WuFilesReadChild, WuFilesWrittenChild, WuFieldUsage, ChildTablesSize };
 
 struct ChildTableInfo
 {
@@ -1160,8 +1160,27 @@ static const ChildTableInfo wuFilesWrittenTable =
     wuFilesWrittenMappings
 };
 
+static const CassandraXmlMapping wuFieldUsageMappings [] =
+{
+    {"partition", "int", NULL, hashRootNameColumnMapper},
+    {"wuid", "text", NULL, rootNameColumnMapper},
+    {"name", "text", "@name", stringColumnMapper},
+    {"type", "text", "@type", stringColumnMapper},
+    {"numFields", "int", "@numFields", intColumnMapper},
+    {"numFieldsUsed", "int", "@numFieldsUsed", intColumnMapper},
+    {"fields", "map<text, text>", "fields", usedFieldsMapColumnMapper},
+    { NULL, "wuFieldUsage", "((partition, wuid), name)", stringColumnMapper}
+};
+
+static const ChildTableInfo wuFieldUsageTable =
+{
+    "usedsources", "datasource",
+    WuFieldUsage,
+    wuFieldUsageMappings
+};
+
 // Order should match the enum above
-static const ChildTableInfo * const childTables [] = { &wuQueriesTable, &wuExceptionsTable, &wuStatisticsTable, &wuGraphsTable, &wuResultsTable, &wuVariablesTable, &wuTemporariesTable, &wuFilesReadTable, &wuFilesWrittenTable, NULL };
+static const ChildTableInfo * const childTables [] = { &wuQueriesTable, &wuExceptionsTable, &wuStatisticsTable, &wuGraphsTable, &wuResultsTable, &wuVariablesTable, &wuTemporariesTable, &wuFilesReadTable, &wuFilesWrittenTable, &wuFieldUsageTable, NULL };
 
 // Graph progress tables are read directly, XML mappers not used
 
@@ -2182,6 +2201,8 @@ public:
                 childXMLtoCassandra(sessionCache, *batch, wuStatisticsMappings, p, "Statistics/Statistic", 0);
                 childXMLtoCassandra(sessionCache, *batch, wuFilesReadMappings, p, "FilesRead/File", 0);
                 childXMLtoCassandra(sessionCache, *batch, wuFilesWrittenMappings, p, "Files/File", 0);
+                childXMLtoCassandra(sessionCache, *batch, wuFieldUsageMappings, p, "usedsources/datasource", 0);
+
                 IPTree *query = p->queryPropTree("Query");
                 if (query)
                     childXMLRowtoCassandra(sessionCache, *batch, wuQueryMappings, wuid, *query, 0);
@@ -2384,6 +2405,11 @@ public:
     {
         checkChildLoaded(wuQueriesTable);
         return CPersistedWorkUnit::getQuery();
+    }
+    virtual IConstWUFileUsageIterator * getFieldUsage() const
+    {
+        checkChildLoaded(wuFieldUsageTable);
+        return CPersistedWorkUnit::getFieldUsage();
     }
     virtual IWUException *createException()
     {
@@ -2784,7 +2810,26 @@ protected:
         // NOTE - should be called inside critsec
         if (!childLoaded[childTable.index])
         {
-            CassandraResult result(sessionCache->fetchDataForWuid(childTable.mappings, queryWuid(), false));
+            const CassResult* cassResult;
+            try
+            {
+                cassResult = sessionCache->fetchDataForWuid(childTable.mappings, queryWuid(), false);
+            }
+            catch (IException* e)
+            {
+                int errorCode = e->errorCode();
+                StringBuffer origErrorMsg;
+                e->errorMessage(origErrorMsg);
+                e->Release();
+
+                const char* tableName = queryTableName(childTable.mappings);
+
+                VStringBuffer newErrorMsg("Failed to read from cassandra table '%s' (Have you run wutool to initialize cassandra repository?), [%s]", tableName, origErrorMsg.str());
+
+                rtlFail(errorCode, newErrorMsg);
+            }
+
+            CassandraResult result(cassResult);
             IPTree *results = p->queryPropTree(childTable.parentElement);
             CassandraIterator rows(cass_iterator_from_result(result));
             while (cass_iterator_next(rows))

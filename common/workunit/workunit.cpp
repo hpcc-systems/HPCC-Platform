@@ -1398,6 +1398,10 @@ public:
             { return queryExtendedWU(c)->archiveWorkUnit(base,del,deldll,deleteOwned,exportAssociatedFiles); }
     virtual unsigned queryFileUsage(const char *filename) const
             { return c->queryFileUsage(filename); }
+    virtual IConstWUFileUsageIterator * getFieldUsage() const
+            { return c->getFieldUsage(); }
+    virtual bool getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const
+            { return c->getFieldUsageArray(filenames, columnnames, clusterName); }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const
             { return c->getTimeScheduled(val); }
     virtual unsigned getDebugAgentListenerPort() const
@@ -1536,6 +1540,8 @@ public:
             { c->addFile(fileName, clusters, usageCount, fileKind, graphOwner); }
     virtual void noteFileRead(IDistributedFile *file)
             { c->noteFileRead(file); }
+    virtual void noteFieldUsage(IPropertyTree * usage)
+            { c->noteFieldUsage(usage); }
     virtual void releaseFile(const char *fileName)
             { c->releaseFile(fileName); }
     virtual void resetBeforeGeneration()
@@ -1894,6 +1900,59 @@ public:
     }
     IConstWorkUnitInfo & query() { return *cur; }
 };
+
+
+class CLocalWUFieldUsage : public CInterface, implements IConstWUFieldUsage
+{
+    Owned<IPropertyTree> p;
+public:
+    IMPLEMENT_IINTERFACE;
+    CLocalWUFieldUsage(IPropertyTree& _p) { p.setown(&_p); }
+
+    virtual const char * queryName() const { return p->queryProp("@name"); }
+};
+
+class CConstWUFieldUsageIterator : public CInterface, implements IConstWUFieldUsageIterator
+{
+public:
+   IMPLEMENT_IINTERFACE;
+   CConstWUFieldUsageIterator(IPropertyTreeIterator * tree) { iter.setown(tree); }
+   bool                  first() override { return iter->first(); }
+   bool                  isValid() override { return iter->isValid(); }
+   bool                  next() override { return iter->next(); }
+   IConstWUFieldUsage *  get() const override { return new CLocalWUFieldUsage(iter->get()); }
+private:
+   Owned<IPropertyTreeIterator> iter;
+};
+
+class CLocalWUFileUsage : public CInterface, implements IConstWUFileUsage
+{
+    Owned<IPropertyTree> p;
+public:
+    IMPLEMENT_IINTERFACE;
+    CLocalWUFileUsage(IPropertyTree& _p) { p.setown(&_p); }
+
+    virtual const char * queryName() const { return p->queryProp("@name"); }
+    virtual const char * queryType() const { return p->queryProp("@type"); }
+    virtual unsigned getNumFields() const { return p->getPropInt("@numFields"); }
+    virtual unsigned getNumFieldsUsed() const { return p->getPropInt("@numFieldsUsed"); }
+    virtual IConstWUFieldUsageIterator * getFields() const { return new CConstWUFieldUsageIterator(p->getElements("fields/field")); }
+};
+
+class CConstWUFileUsageIterator : public CInterface, implements IConstWUFileUsageIterator
+{
+public:
+   IMPLEMENT_IINTERFACE;
+   CConstWUFileUsageIterator(IPropertyTreeIterator * tree) { iter.setown(tree); }
+   bool                 first() override { return iter->first(); }
+   bool                 isValid() override { return iter->isValid(); }
+   bool                 next() override { return iter->next(); }
+   IConstWUFileUsage *  get() const override { return new CLocalWUFileUsage(iter->get()); }
+private:
+   Owned<IPropertyTreeIterator> iter;
+};
+
+
 //==========================================================================================
 
 class CStringArrayIterator : public CInterface, implements IStringIterator
@@ -5239,6 +5298,8 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
         CLocalWUResult result(LINK(&results->query()));
         result.setResultStatus(ResultStatusUndefined);
     }
+
+    copyTree(p, fromP, "usedsources"); // field usage
 }
 
 bool CLocalWorkUnit::hasDebugValue(const char *propname) const
@@ -6268,6 +6329,15 @@ void CLocalWorkUnit::noteFileRead(IDistributedFile *file)
     }
 }
 
+void CLocalWorkUnit::noteFieldUsage(IPropertyTree * fieldUsage)
+{
+    if (fieldUsage)
+    {
+        CriticalBlock block(crit);
+        p->addPropTree("usedsources", fieldUsage);
+    }
+}
+
 void CLocalWorkUnit::_loadFilesWritten() const
 {
     // Nothing to do
@@ -6357,6 +6427,105 @@ unsigned CLocalWorkUnit::queryFileUsage(const char *fileName) const
     path.append(fileName).append("\"]/@usageCount");
     CriticalBlock block(crit);
     return p->getPropInt(path.str());
+}
+
+IConstWUFileUsageIterator * CLocalWorkUnit::getFieldUsage() const
+{
+    CriticalBlock block(crit);
+    IPropertyTree* fieldUsageTree = p->queryPropTree("usedsources");
+
+    if (!fieldUsageTree)
+        return NULL;
+
+    IPropertyTreeIterator* iter = fieldUsageTree->getElements("*");
+    return new CConstWUFileUsageIterator(iter);
+}
+
+bool isFilenameResolved(StringBuffer& filename)
+{
+    size32_t length = filename.length();
+
+    // With current implementation, if filename is surrounded by single quotes, it means that the filename was resolved at compile time.
+    if (filename.length() >= 2 && filename.charAt(0) == '\'' && filename.charAt(length-1) == '\'')
+        return true;
+    else
+        return false;
+}
+
+bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const
+{
+    bool scopeLoaded = false;
+    SCMStringBuffer defaultScope;
+
+    Owned<IConstWUFileUsageIterator> files = getFieldUsage();
+
+    if (!files)
+        return false; // this query was not compiled with recordFieldUsage option.
+
+    ForEach(*files)
+    {    
+        Owned<IConstWUFileUsage> file = files->get();
+
+        StringBuffer filename = file->queryName();
+        size32_t length = filename.length();
+        
+        if (length == 0)
+            throw MakeStringException(WUERR_InvalidFieldUsage, "Invalid FieldUsage found in WU. Cannot enforce view security.");
+
+        StringBuffer normalizedFilename;
+        
+        // Two cases to handle:
+        // 1. Filename was known at compile time, and is surrounded in single quotes (i.e. 'filename').
+        // 2. Filename could not be resolved at compile time (i.e. filename is an input to a query), 
+        //    and is a raw expression WITHOUT surrounding single quotes (i.e. STORED('input_filename')).
+        if (isFilenameResolved(filename))
+        {
+            // filename cannot be empty (i.e. empty single quotes '')
+            if (length == 2)
+                throw MakeStringException(WUERR_InvalidFieldUsage, "Invalid FieldUsage found in WU. Cannot enforce view security.");
+        
+            // Remove surrounding single quotes
+            StringAttr cleanFilename(filename.str()+1, length-2);
+
+            // When a filename doesn't start with a tilde (~), it means scope is omitted and is relying on a default scope.
+            // We need to load a default scope from config and prefix the filename with it.
+            if (cleanFilename.str()[0] != '~')
+            {
+                // loading a default scope from config is expensive, and should be only done once and be reused later.
+                if (!scopeLoaded)
+                {
+                    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
+                    if (!clusterInfo)
+                        throw MakeStringException(WUERR_InvalidCluster, "Unknown cluster %s", clusterName);
+                    clusterInfo->getScope(defaultScope);
+                    scopeLoaded = true;
+                }
+
+                normalizedFilename.append(defaultScope.str());
+                normalizedFilename.append(cleanFilename.str());
+            }
+            else
+            {
+                normalizedFilename.append(cleanFilename); 
+            }
+        }
+        else
+        {
+            // When filename is an unresolved expression, simply treat the expression as a "non-existent" filename.
+            // It will have an effect of this query accessing a non-existent filename, and will be denied access unconditionally.
+            normalizedFilename.append(filename.str());
+        }
+
+        Owned<IConstWUFieldUsageIterator> fields = file->getFields();
+        ForEach(*fields)
+        {    
+            Owned<IConstWUFieldUsage> field = fields->get();
+            filenames.append(normalizedFilename.str());
+            columnnames.append(field->queryName());
+        }
+    }
+
+    return true;
 }
 
 IPropertyTree *CLocalWorkUnit::getDiskUsageStats()

@@ -733,6 +733,7 @@ struct HqlCppOptions
     bool                implicitGroupHashDedup;
     bool                reportFieldUsage;
     bool                reportFileUsage;
+    bool                recordFieldUsage;
     bool                subsortLocalJoinConditions;
     bool                projectNestedTables;
     bool                showSeqInGraph;
