@@ -109,8 +109,8 @@ envfile=$configs/$environment
 
 # Know HPCC user after set_environmentvars
 log_dir_owner=$(ls -ld $LOG_DIR | awk '{print $3}')
-[ "log_dir_owner" != "${user}" ] && chown ${user}:${user} $LOG_DIR
-chown ${user}:${user} $logfile
+[ "log_dir_owner" != "${user}" ] && chown ${user}:${group} $LOG_DIR
+chown ${user}:${group} $logfile
 
 #Sourcing the hpcc environment
 configgen_path=${path}/sbin
@@ -220,9 +220,9 @@ component=""
 runSetupOnly=0
 dafilesrvflag=0
 
-TEMP=`/usr/bin/getopt -o c:hdf --long help,componentlist,typelist,debug,force -n 'hpcc-init' -- "$@"`
+TEMP=`getopt -o c:hdf --long help,componentlist,typelist,debug,force -n 'hpcc-init' -- "$@"`
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
-eval set -- "$TEMP"
+eval set -- $TEMP
 while true ; do
     case "$1" in
         -c) comp=$2
@@ -275,7 +275,7 @@ fi
 log "Debug log written to $LOG_DIR/hpcc-init.debug"
 [ -e $LOG_DIR/hpcc-init.debug ] && rm -rf ${LOG_DIR}/hpcc-init.debug
 touch ${LOG_DIR}/hpcc-init.debug
-chown ${user}:${user} ${LOG_DIR}/hpcc-init.debug
+chown ${user}:${group} ${LOG_DIR}/hpcc-init.debug
 exec 2>$LOG_DIR/hpcc-init.debug
 set -x
 

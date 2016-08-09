@@ -11,7 +11,7 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
         <xsl:variable name="bindType" select="'loggingservice_binding'"/>
         <xsl:variable name="servicePlugin">
             <xsl:choose>
-                <xsl:when test="$isLinuxInstance">libws_loggingservice.so</xsl:when>
+                <xsl:when test="$isLinuxInstance">ws_loggingservice</xsl:when>
                 <xsl:otherwise>ws_loggingservice.dll</xsl:otherwise>
             </xsl:choose>
         </xsl:variable>

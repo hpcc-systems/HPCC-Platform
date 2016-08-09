@@ -59,7 +59,7 @@
       <xsl:variable name="bindType" select="'scrubbed_binding'"/>
       <xsl:variable name="servicePlugin">
       <xsl:choose>
-         <xsl:when test="$isLinuxInstance">libws_ecl_attribute.so</xsl:when>
+         <xsl:when test="$isLinuxInstance">ws_ecl_attribute</xsl:when>
          <xsl:otherwise>ws_ecl_attribute.dll</xsl:otherwise>
       </xsl:choose>
       </xsl:variable>

@@ -63,7 +63,7 @@ cfg.parser () {
     if [ ! -e $1 ] || [ $# -lt 1 ]; then
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
     fi
-    IFS=$'\n' && ini=( $(cat $1 | sed -e 's/[ \t]*=[ \t]*/=/') )              # convert to line-array
+    IFS=$'\n' && ini=( $(cat $1 | sed -e 's/[[:blank:]]*=[[:blank:]]*/=/') )              # convert to line-array
     ini=( ${ini[*]//[;#]*/} )                   # remove comments
     ini=( ${ini[*]/#[/\}$'\n'cfg.section.} ) # set section prefix
     ini=( ${ini[*]/%]/ \(} )                 # convert text2function (1)
@@ -732,7 +732,7 @@ check_group(){
     GROUP=$1
     touch /tmp/file.$$
     chgrp ${GROUP} /tmp/file.$$ > /dev/null 2>&1
-    if [ $(stat -c %G /tmp/file.$$) = "${GROUP}" ];
+    if [ $(stat -c %G /tmp/file.$$ 2>/dev/null || stat -f %Sg /tmp/file.$$ 2>/dev/null) = "${GROUP}" ];
     then
         rm -rf /tmp/file.$$
         return 1
@@ -976,7 +976,7 @@ cluster_tools_init() {
    [ ! -d $CLUSTER_LOG_DIR ] && mkdir -p $CLUSTER_LOG_DIR
    # workaround inconsistency of stat command
    cluster_log_dir_owner=$(ls -ld $CLUSTER_LOG_DIR | awk '{print $3}')
-   [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${user} $CLUSTER_LOG_DIR
+   [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${group} $CLUSTER_LOG_DIR
 }
 
 ##

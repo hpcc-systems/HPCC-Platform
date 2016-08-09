@@ -25,7 +25,7 @@ checkLockDir () {
     else 
         log "$LOCKPATH ..."
         log "Creating Lock Path ..."
-        /bin/mkdir $LOCKPATH
+        mkdir $LOCKPATH
         if [ !-d $LOCKPATH ]; then
             log "Can not create Lock Path $LOCKPATH ..."
         fi  
@@ -45,7 +45,7 @@ lock () {
         __lockCreated=0
         log "Lock file $FILE already exists"
     else
-        /bin/touch $FILE
+        touch $FILE
         locked $FILE
         if [ $flagLocked -eq 1 ]; then
             #log_success_msg 
@@ -79,7 +79,7 @@ unlock () {
         log "Lock file $FILE does not exist"
         __lockRemoved=0
     else
-        /bin/rm -rf $FILE
+        rm -rf $FILE
         if [ -e $FILE ]; then
             log "File $FILE can not be removed"
             __lockRemoved=0

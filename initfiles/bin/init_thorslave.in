@@ -64,7 +64,7 @@ stop_slaves()
 start_slaves()
 {
     # insuring dafilesrv is running on the machine as it is a prerequisite
-    dafilesrv_owner=$(stat -c "%U" ${INIT_PATH}/dafilesrv 2>/dev/null)
+    dafilesrv_owner=$(stat -c "%U" ${INIT_PATH}/dafilesrv 2>/dev/null || stat -f %Su ${INIT_PATH}/dafilesrv 2>/dev/null)
     [[ "${dafilesrv_owner}" != "${user}" ]] && cmd_prefix="sudo"
     ${cmd_prefix} ${INIT_PATH}/dafilesrv status > /dev/null
     if [[ $? -ne 0 ]];then
