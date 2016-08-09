@@ -31,7 +31,8 @@ Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.xml DESTINATION ${CONFIG
 
 ADD_SUBDIRECTORY(configmgr)
 
-if("$ENV{DESTDIR}" STRGREATER "")
+if(NOT "${DESTDIR}" STREQUAL "")
+    message(STATUS "DESTDIR is set to ${DESTDIR}. Enabling configure target.")
     add_custom_target(configure
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CONFIG_DIR}
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_XML_FILE} ${CONFIG_DIR}
