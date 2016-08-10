@@ -2231,7 +2231,7 @@ struct HqlRowCountInfo
 public:
     HqlRowCountInfo() { setUnknown(RCMnone); }
 
-    void applyChoosen(IHqlExpression * limitExpr, __int64 limit, bool isLocal);
+    void applyChoosen(IHqlExpression * limitExpr, __int64 limit, bool isLocal, bool isGrouped);
     void combineAlternatives(const HqlRowCountInfo & other);
     void combineBoth(const HqlRowCountInfo & other);
     bool extractHint(IHqlExpression * hint);
@@ -2289,22 +2289,30 @@ public:
 };
 
 
-void HqlRowCountInfo::applyChoosen(IHqlExpression * limitExpr, __int64 limit, bool isLocal)
+void HqlRowCountInfo::applyChoosen(IHqlExpression * limitExpr, __int64 limit, bool isLocal, bool isGrouped)
 {
     if (getMin() > limit)
-        min.set(limitExpr);
-
-    __int64 maxLimit = isLocal ? RCclusterSizeEstimate*limit : limit;
-    if (getIntValue(max, maxLimit+1) > maxLimit)
     {
-        if (isLocal)
-            max.setown(makeConstant(maxLimit));
+        if (limitExpr->isConstant() && (limit >= 0))
+            min.set(limitExpr);
         else
-            max.set(limitExpr);
+            min.setown(makeConstant(0));
     }
-    RowCountMagnitude newMagnitude = getRowCountMagnitude(maxLimit);
-    if (magnitude > newMagnitude)
-        magnitude = newMagnitude;
+
+    if (!isGrouped && (limit != 0))
+    {
+        __int64 maxLimit = isLocal ? RCclusterSizeEstimate*limit : limit;
+        if (getIntValue(max, maxLimit+1) > maxLimit)
+        {
+            if (isLocal)
+                max.setown(makeConstant(maxLimit));
+            else
+                max.set(limitExpr);
+        }
+        RowCountMagnitude newMagnitude = getRowCountMagnitude(maxLimit);
+        if (magnitude > newMagnitude)
+            magnitude = newMagnitude;
+    }
 }
 
 void HqlRowCountInfo::combineAlternatives(const HqlRowCountInfo & other)
@@ -2574,10 +2582,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
 
             IHqlExpression * limitExpr = expr->queryChild(1);
             __int64 limit = getIntValue(limitExpr, 0);
-            if ((limit != 0) && !isGrouped(expr))
-                info.applyChoosen(limitExpr, limit, isLocalActivity(expr));
-            else
-                info.limitMin(limit);
+            info.applyChoosen(limitExpr, limit, isLocalActivity(expr), isGrouped(expr));
             break;
         }
     case no_hqlproject:
@@ -2840,10 +2845,8 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
             __int64 choosenLimit = getIntValue(limitExpr, 0);
             if (choosenLimit == CHOOSEN_ALL_LIMIT)
                 info.limitMin(0);   // play safe - could be clever if second value is constant, and min/max known.
-            else if ((choosenLimit != 0) && !isGrouped(expr))
-                info.applyChoosen(limitExpr, choosenLimit, isLocalActivity(expr));
             else
-                info.limitMin(choosenLimit);
+                info.applyChoosen(limitExpr, choosenLimit, isLocalActivity(expr), isGrouped(expr));
         }
         break;
     case no_quantile:
@@ -2873,10 +2876,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
 
             IHqlExpression * limitExpr = expr->queryChild(2);
             __int64 choosenLimit = getIntValue(limitExpr, 0);
-            if ((choosenLimit > 0) && !isGrouped(expr))
-                info.applyChoosen(limitExpr, choosenLimit, isLocalActivity(expr));
-            else
-                info.limitMin(choosenLimit);
+            info.applyChoosen(limitExpr, choosenLimit, isLocalActivity(expr), isGrouped(expr));
         }
         break;
     case no_select:
