@@ -114,14 +114,13 @@ public:
         else
             return in->queryConcreteInput(idx);
     }
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx)
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput)
     {
         return this;
     }
     virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const
     {
-        // MORE - not sure what is right here!
-        return in->queryConcreteOutputJunction(idx);
+        return nullptr;
     }
     virtual IRoxieServerActivity *queryActivity()
     {

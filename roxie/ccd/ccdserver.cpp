@@ -1155,7 +1155,7 @@ public:
         return ctx;
     }
 
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx) { assertex(idx==0); return this; }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(whichInput==0); return this; }
     virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return junction; }
     virtual IRoxieServerActivity *queryActivity() { return this; }
     virtual IIndexReadActivityInfo *queryIndexReadActivity() { return NULL; }
@@ -2221,7 +2221,7 @@ public:
         return NULL;
     }
 
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx) { return this; }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { return this; }
     virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { return nullptr; }
 
     virtual IIndexReadActivityInfo *queryIndexReadActivity() 
@@ -2528,10 +2528,10 @@ public:
         return queryInput(idx);
     }
 
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx)
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput)
     {
-        if (idx < numInputs)
-            return streamArray[idx];
+        if (whichInput < numInputs)
+            return streamArray[whichInput];
         else
             return NULL;
     }
@@ -4043,7 +4043,7 @@ public:
         meta.set(newmeta);
     }
 
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx) { assertex(idx==0); return this; }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(whichInput==0); return this; }
     virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return nullptr; }
 
     virtual IRoxieServerActivity *queryActivity()
@@ -6078,7 +6078,7 @@ public:
     {
         return input->queryTotalCycles();
     }
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx) { assertex(idx==0); return this; }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(whichInput==0); return this; }
     virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return nullptr; }
     virtual IRoxieServerActivity *queryActivity()
     {
@@ -6146,7 +6146,7 @@ public:
         return 0;
     }
 
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx) { assertex(idx==0); return this; }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(whichInput==0); return this; }
     virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return nullptr; }
 
     virtual IRoxieServerActivity *queryActivity()
@@ -6232,9 +6232,9 @@ public:
         return input->queryConcreteInput(idx);
     }
 
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx)
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput)
     {
-        return input->queryConcreteOutputStream(idx);
+        return input->queryConcreteOutputStream(whichInput);
     }
 
     virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const
@@ -8628,7 +8628,7 @@ public:
             stopped = false;
         }
 
-        virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx) { assertex(idx==0); return this; }
+        virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(idx==0); return this; }
         virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return nullptr; }
 
         virtual IRoxieServerActivity *queryActivity()
@@ -16163,10 +16163,10 @@ public:
         return queryInput(idx);
     }
 
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx)
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput)
     {
-        if (selectedStreams.isItem(idx))
-            return selectedStreams.item(idx);
+        if (selectedStreams.isItem(whichInput))
+            return selectedStreams.item(whichInput);
         return NULL;
     }
 
@@ -20145,7 +20145,7 @@ public:
         }
     }
 
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx) { return this; }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { return this; }
     virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { return nullptr; }
 
     virtual IIndexReadActivityInfo *queryIndexReadActivity()
@@ -27536,7 +27536,7 @@ public:
         streams.append(this);
         return NULL;
     }
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx) { assertex(idx==0); return this; }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(whichInput==0); return this; }
     virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return nullptr; }
     virtual IRoxieServerActivity *queryActivity()
     {

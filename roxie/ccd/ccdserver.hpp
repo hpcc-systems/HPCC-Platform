@@ -102,7 +102,7 @@ interface IFinalRoxieInput : extends IInputBase
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual unsigned numConcreteOutputs() const { return 1; }
     virtual IFinalRoxieInput * queryConcreteInput(unsigned idx) { assertex(idx==0); return this; }
-    virtual IEngineRowStream *queryConcreteOutputStream(unsigned idx) = 0;
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) = 0;
     virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const = 0;
     virtual IRoxieServerActivity *queryActivity() = 0;
     virtual IIndexReadActivityInfo *queryIndexReadActivity() = 0;
