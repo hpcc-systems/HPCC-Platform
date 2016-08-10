@@ -16884,9 +16884,7 @@ public:
                     unsigned numRealInputs = cur->numConcreteOutputs();
                     if (whichInput < numRealInputs)
                     {
-                        expandedInputs.append(cur->queryConcreteInput(whichInput));
-                        expandedStreams.append(cur->queryConcreteOutputStream(whichInput));
-                        expandedJunctions.append(cur->queryConcreteOutputJunction(whichInput));
+                        selectedInput = cur->queryConcreteInput(whichInput);
                         break;
                     }
                     whichInput -= numRealInputs;
@@ -16895,22 +16893,22 @@ public:
                 {
                     if (whichInput == 0)
                     {
-                        expandedInputs.append(cur);
-                        // NB: this activities input streams + junction have been setup and held in CRoxieServerMultiInputActivity base
-                        expandedStreams.append(queryConcreteOutputStream(i));
-                        expandedJunctions.append(queryConcreteOutputJunction(i));
+                        selectedInput = cur;
                         break;
                     }
                     whichInput -= 1;
                 }
             }
+            if (selectedInput)
+            {
+                selectedStream = connectSingleStream(ctx, selectedInput, 0, selectedJunction, true);
+                expandedInputs.append(selectedInput);
+                expandedStreams.append(selectedStream);
+                expandedJunctions.append(selectedJunction);
+            }
         }
-        if (expandedInputs.ordinality())
-        {
+        if (selectedInput)
             startExpandedInputs(parentExtractSize, parentExtract, paused);
-            selectedInput = expandedInputs.item(0);
-            selectedStream = expandedStreams.item(0);
-        }
     }
 
     const void * nextRow()
@@ -16952,6 +16950,7 @@ public:
 protected:
     IFinalRoxieInput * selectedInput = nullptr;
     IEngineRowStream * selectedStream = nullptr;
+    Owned<IStrandJunction> selectedJunction;
 };
 
 
