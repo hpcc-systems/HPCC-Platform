@@ -179,6 +179,7 @@ enum StatisticKind
     StNumExecutions,
     StTimeTotalNested,
     StCycleLocalExecuteCycles,
+    StNumCompares,
 
     StMax,
 

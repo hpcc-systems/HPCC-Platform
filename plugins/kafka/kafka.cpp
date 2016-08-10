@@ -475,7 +475,14 @@ namespace KafkaPlugin
     {
         if (message.err() != RdKafka::ERR_NO_ERROR)
         {
-            DBGLOG("Kafka: Error publishing message: %d (%s); message: '%s'", message.err(), message.errstr().c_str(), static_cast<char*>(message.payload()));
+            StringBuffer    payloadStr;
+
+            if (message.len() == 0)
+                payloadStr.append("<no message>");
+            else
+                payloadStr.append(message.len(), static_cast<const char*>(message.payload()));
+
+            DBGLOG("Kafka: Error publishing message: %d (%s); message: '%s'", message.err(), message.errstr().c_str(), payloadStr.str());
         }
     }
 
