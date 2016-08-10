@@ -69,7 +69,7 @@
     </mediaobject>
   </bookinfo>
 
-  <chapter>
+  <chapter id="InstaCloud_Intro">
     <title>Introduction</title>
 
     <para>This guide provides details and guidance in running an HPCC
@@ -144,7 +144,7 @@
       </tgroup>
     </informaltable>
 
-    <sect1>
+    <sect1 id="InstaCloud_PreReqs">
       <title>Prerequisites and Assumptions</title>
 
       <para>You will need:</para>
@@ -227,10 +227,10 @@
     </sect1>
   </chapter>
 
-  <chapter id="Collect">
+  <chapter id="InstaCloudLaunch">
     <title>Using Instant Cloud Launch</title>
 
-    <sect1 role="nobrk">
+    <sect1 id="InstaCloud_PreLaunch" role="nobrk">
       <title>Before you begin</title>
 
       <para>In this section, you will gather some information you need before
@@ -252,7 +252,7 @@
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
-    <sect1>
+    <sect1 id="InstaCloud_Login">
       <title>Login</title>
 
       <para><orderedlist>
@@ -314,7 +314,7 @@
         </orderedlist></para>
     </sect1>
 
-    <sect1>
+    <sect1 id="InstaCloud_LaunchNewHPCC">
       <title>Launch a New HPCC Cluster</title>
 
       <para>In this section, you will launch a set of Ubuntu 12.04 machines to
@@ -369,7 +369,7 @@
         </listitem>
       </itemizedlist>
 
-      <sect2 role="brk">
+      <sect2 id="IC_LaunchThor" role="brk">
         <title>Launch a New Thor Cluster</title>
 
         <orderedlist numeration="arabic">
@@ -452,15 +452,15 @@
         </orderedlist>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="IC_TerminatingInstances" role="brk">
         <title>Terminating your instances</title>
 
         <para>If you need to save your data, you must to despray it first and
         save it off of your cluster before shutting down. More information
         about Data Handling in an HPCC Systems platform are available in the
         <emphasis>Data Handling</emphasis> manual. See the <link
-        linkend="NextSteps">Next Steps</link> section for details on
-        downloading other manuals.</para>
+        linkend="InstaCloud_NextSteps">Next Steps</link> section for details
+        on downloading other manuals.</para>
 
         <para><emphasis role="bold">To terminate your cluster:
         </emphasis><orderedlist>
@@ -536,7 +536,7 @@
         <para></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="InstaCloudOtherTasks" role="brk">
         <title>Other Tasks</title>
 
         <para></para>
@@ -544,7 +544,7 @@
         <para><!--***  Log Out Comments FAQs Forum AWS Access Keys AWS Management Console AWS Health Dashboard AWS Limit Increase Request
 --></para>
 
-        <sect3>
+        <sect3 id="IC_ViewClusters">
           <title>View Clusters</title>
 
           <para>The <emphasis role="bold">View Clusters</emphasis> page
@@ -566,7 +566,7 @@
             </figure></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="IC_ManageSSHKeys">
           <title>Manage your SSH keys</title>
 
           <para>The SSH Key management page allows you to download your
@@ -631,7 +631,7 @@
     </sect1>
   </chapter>
 
-  <chapter>
+  <chapter id="InstaCloud_RunningECL">
     <title>Running ECL</title>
 
     <para></para>
@@ -651,7 +651,7 @@
         </footnote> code using either ECL IDE, the command line ECL compiler,
       or the ECLPlus tool.</para>
 
-      <sect2>
+      <sect2 id="IC_InstallECLIDEandClienTools">
         <title>Install the ECL IDE and HPCC Client Tools</title>
 
         <para>You only need to install the ECL IDE once. If you have already
@@ -727,7 +727,7 @@
           </orderedlist></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="InsCloud_RunningBasicECLprogram" role="brk">
         <title>Running a basic ECL program from the ECL IDE</title>
 
         <para><orderedlist>
@@ -913,14 +913,14 @@
     </sect1>
   </chapter>
 
-  <chapter>
+  <chapter id="InstaCloud_MoreECLExamplesChap">
     <title>More ECL Examples</title>
 
     <para>This section contains additional ECL examples you can use on your
     HPCC Systems Thor platform. You can run these on a single-node system or a
     larger multi-node cluster.</para>
 
-    <sect1 role="nobrk">
+    <sect1 id="InstaCloud_ECLAnagram1Example" role="nobrk">
       <title>ECL Example: Anagram1</title>
 
       <para>This example takes a STRING and produces every possible anagram
@@ -1004,7 +1004,7 @@ OUTPUT(L);</programlisting></para>
       <?hard-pagebreak ?>
     </sect1>
 
-    <sect1>
+    <sect1 id="InstaCloud_ECLAnagram2Example">
       <title>Anagram2</title>
 
       <para>In this example, we will download an open source data file of
@@ -1257,7 +1257,7 @@ OUTPUT(L);</programlisting></para>
         </orderedlist>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="InstaCloud_RunTheECLonThor" role="brk">
         <title>Run the ECL program on Thor<parameter></parameter></title>
 
         <para><orderedlist>
@@ -1340,14 +1340,14 @@ OUTPUT(ValidWords)
     </sect1>
   </chapter>
 
-  <chapter>
+  <chapter id="InstaCloud_DataHandling_Chap">
     <title>Data Handling</title>
 
     <para>This section explains data handling in an AWS configuration. More
     information about Data Handling in an HPCC Systems platform are available
     in the <emphasis>Data Handling</emphasis> manual.</para>
 
-    <sect1 role="nobrk">
+    <sect1 id="InstaCloud_UsingS3Buckets" role="nobrk">
       <title>Using S3 buckets</title>
 
       <para>S3 buckets provide a means of persistent storage inside Amazon Web
@@ -1361,7 +1361,7 @@ OUTPUT(ValidWords)
       <xi:include href="InstantCloud/AWS-Mods/AWSIncludes.xml"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-      <sect2>
+      <sect2 id="InstaCloud_InstallS3Pkgs">
         <title role="brk">Install and Configure S3 packages on your Landing
         Zone node</title>
 
@@ -1431,7 +1431,7 @@ s3cmd --configure
           </orderedlist></para>
       </sect2>
 
-      <sect2>
+      <sect2 id="InstaCloud_CreatingUsingS3Buckets">
         <title>Creating and Using S3 Buckets</title>
 
         <para>To store data on S3, you must create a bucket that is unique to
@@ -1445,26 +1445,26 @@ s3cmd --configure
         platform are available in the <emphasis>Data Handling</emphasis>
         manual.</para>
 
-        <sect3>
+        <sect3 id="InstaCloud_CreateABucket">
           <title>Create a bucket</title>
 
           <para><programlisting>s3cmd mb s3://your-unique-bucket-name</programlisting></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="InstaCloud_ListBuckets">
           <title>List Buckets</title>
 
           <para><programlisting>s3cmd ls</programlisting></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="InstaCloud_UploadAFileToBucket">
           <title>Upload a file to a bucket</title>
 
           <para><programlisting>s3cmd put myfile.csv s3://your-unique-bucket-name
 </programlisting></para>
         </sect3>
 
-        <sect3>
+        <sect3 id="InstaCloud_RetrieveFileFromBucket">
           <title>Retrieve a file from a bucket</title>
 
           <para><programlisting>s3cmd get s3://your-unique-bucket-name/myfile.csv myfile.csv
@@ -1476,7 +1476,7 @@ s3cmd --configure
     </sect1>
   </chapter>
 
-  <chapter id="NextSteps">
+  <chapter id="InstaCloud_NextSteps">
     <title>Next Steps</title>
 
     <para>To familiarize yourself with what your system can do, we recommend
