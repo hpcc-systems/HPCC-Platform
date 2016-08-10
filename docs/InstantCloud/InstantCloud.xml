@@ -459,8 +459,8 @@
         save it off of your cluster before shutting down. More information
         about Data Handling in an HPCC Systems platform are available in the
         <emphasis>Data Handling</emphasis> manual. See the <link
-        linkend="NextSteps">Next Steps</link> section for details on
-        downloading other manuals.</para>
+        linkend="InstaCloud_NextSteps">Next Steps</link> section for details
+        on downloading other manuals.</para>
 
         <para><emphasis role="bold">To terminate your cluster:
         </emphasis><orderedlist>
