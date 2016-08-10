@@ -3868,6 +3868,29 @@ double queryLikelihood(IHqlExpression * expr)
     return likelihoodExpr->queryValue()->getRealValue();
 }
 
+double queryActivityLikelihood(IHqlExpression * expr)
+{
+    assertex(expr->getOperator() == no_filter);
+    double filterLikelihood = 1.0;
+    ForEachChildFrom(idx, expr, 1)
+    {
+        IHqlExpression *child = expr->queryChild(idx);
+        if (child->isAttribute())
+            continue;
+        double likelihood = queryLikelihood(child);
+        if (isKnownLikelihood(likelihood))
+            // Combine the likelihood of the 2 filter conditions
+            // N.B. this only works if the filter probability are independent
+            filterLikelihood *= likelihood;
+        else
+        {
+            // One of the filter probability is unknown, so the overall probability is unknown
+            setUnknownLikelihood(filterLikelihood);
+            break;
+        }
+    }
+    return filterLikelihood;
+}
 //---------------------------------------------------------------------------------------------------------------------
 
 IInterface * CHqlExpression::queryExistingProperty(ExprPropKind propKind) const
