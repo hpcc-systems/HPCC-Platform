@@ -26,7 +26,7 @@ class ConfigGen(Shell):
         self.defaults = []
         self.defaults.append('-env')
         self.defaults.append(environment)
-        self.cmd = self.which('configgen')
+        self.cmd = 'configgen'
 
     def __ConfigGen(self):
         return self.command(self.cmd, *self.defaults)

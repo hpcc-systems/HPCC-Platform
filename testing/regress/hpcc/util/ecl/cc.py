@@ -22,13 +22,12 @@ import logging
 
 from ...common.error import Error
 from ...common.shell import Shell
-from ...util.ecl.file import ECLFile
 
 
 class ECLCC(Shell):
     def __init__(self):
         self.defaults = []
-        self.cmd = self.which('eclcc')
+        self.cmd = 'eclcc'
         self.makeArchiveError=''
 
     def __ECLCC(self):

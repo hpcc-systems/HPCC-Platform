@@ -20,14 +20,13 @@
 import logging
 
 from ...common.shell import Shell
-from ...util.ecl.file import ECLFile
 from ...common.error import Error
 from ...util.util import queryWuid
 
 class ECLcmd(Shell):
     def __init__(self):
         self.defaults = []
-        self.cmd = self.which('ecl')
+        self.cmd = 'ecl'
 
     def __ECLcmd(self):
         return self.command(self.cmd, *self.defaults)
