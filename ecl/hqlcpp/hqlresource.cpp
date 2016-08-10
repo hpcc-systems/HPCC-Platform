@@ -3091,6 +3091,9 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
         if (info && info->forceHoist)
             return false;
 
+        if (!canDuplicateActivity(expr))
+            return false;
+
         node_operator op = expr->getOperator();
         switch (op)
         {
@@ -3644,7 +3647,7 @@ static bool isPotentialCompoundSteppedIndexRead(IHqlExpression * expr)
         case no_choosen:
             {
                 IHqlExpression * arg2 = expr->queryChild(2);
-                if (arg2 && !arg2->isPure())
+                if (arg2 && !canDuplicateExpr(arg2))
                     return false;
                 break;
             }

@@ -711,6 +711,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
 #ifdef SHOWCONTEXTDETAIL
             s.append('[');
             unsigned flags = expr->getInfoFlags();
+            if (flags & HEFnoduplicate) s.append('V');
             if (flags & HEFgraphDependent) s.append('G');
             if (flags & HEFcontainsSkip) s.append('S');
             if (flags & HEFcontainsCounter) s.append('C');
@@ -1455,7 +1456,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 for (unsigned idx = 0; idx < kids; idx++)
                 {
                     IHqlExpression *child = expr->queryChild(idx);
-                    if (!child->isAttribute())
+                    if (expandProcessed || !child->isAttribute())
                     {
                         if (!first)
                             s.append(", ");
@@ -1561,7 +1562,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             bool first = true;
             while(IHqlExpression *kid = expr->queryChild(idx))
             {
-                bool isHidden = false;
+                bool isHidden = !expandProcessed && kid->isAttribute();
                 if (formals && !expandProcessed)
                 {
                     IHqlExpression *formal = formals->queryChild(idx);

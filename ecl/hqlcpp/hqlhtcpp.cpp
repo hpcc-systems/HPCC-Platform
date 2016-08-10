@@ -385,7 +385,7 @@ public:
             if (moveTo->isUnconditional() && isUsedUnconditionallyEnough(expr))
                 guard.set(queryBoolExpr(true));
 
-            bool invalid = !guard->isPure();
+            bool invalid = !canDuplicateExpr(guard);
             //version 1: don't guard any child queries.
             if (!matchesBoolean(guard, true))
             {

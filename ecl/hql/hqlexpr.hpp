@@ -112,15 +112,18 @@ enum
     HEFunbound                  = 0x00000010,
     HEFinternalSelect          = 0x00000020,
     HEFcontainsDatasetAliasLocally= 0x00000040,
-  HEF____unused2____          = 0x00000080,
-  HEF____unused3____          = 0x00000100,
-    HEFfunctionOfGroupAggregate = 0x00000200,
-    HEFvolatile                 = 0x00000400,           // value changes each time called - e.g., random()
-    HEFaction                   = 0x00000800,           // an action, or something that can have a side-effect
-    HEFaccessRuntimeContext     = 0x00000100,
-    HEFthrowscalar              = 0x00002000,           // scalar/action that can throw an exception
-    HEFthrowds                  = 0x00004000,           // dataset that can throw an exception
-    HEFoldthrows                = 0x00008000,           // old throws flag, which I should remove asap
+
+//impure properties (see head of hqlexpr.cpp for detailed discussion)
+    HEFnoduplicate              = 0x00000080,           // value changes each time it is called - e.g., RANDOM()
+    HEFcontextDependentException= 0x00000100,           // depends on the context, but not known how
+    HEFcostly                   = 0x00000200,           // an expensive operation
+    HEFaction                   = 0x00000400,           // an action, or something that can have a side-effect.  Not convinced this is needed
+
+    HEFaccessRuntimeContext     = 0x00000800,
+    HEFthrowscalar              = 0x00001000,           // scalar/action that can throw an exception
+    HEFthrowds                  = 0x00002000,           // dataset that can throw an exception
+    HEFoldthrows                = 0x00004000,           // old throws flag, which I should remove asap
+    HEFfunctionOfGroupAggregate = 0x00008000,
 
 // code generator specific start from the bottom up.
 //NB: update the select 
@@ -139,7 +142,7 @@ enum
     HEFcontainsSkip             = 0x04000000,
     HEFcontainsCounter          = 0x08000000,
     HEFassertkeyed              = 0x10000000,
-    HEFcontextDependentException= 0x20000000,               // A context dependent item that doesn't fit into any other category - for use as a last resort!
+    HEF__unused5__              = 0x20000000,
     HEFcontainsAlias            = 0x40000000,
     HEFcontainsAliasLocally     = 0x80000000,
 
@@ -148,20 +151,22 @@ enum
     HEFalwaysInherit            = HEFunbound|HEFinternalSelect,
     HEFassigninheritFlags       = ~(HEFhousekeeping|HEFalwaysInherit),          // An assign inherits all but this list from the rhs value 
 
+    HEFthrow                    = (HEFthrowscalar|HEFthrowds),
 //  HEFcontextDependent         = (HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFcontainsSkip|HEFcontainsCounter|HEFtransformDependent|HEFtranslated|HEFonFailDependent|HEFcontextDependentException|HEFthrowscalar|HEFthrowds),
     HEFcontextDependent         = (HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFcontainsSkip|HEFcontainsCounter|HEFtransformDependent|HEFtranslated|HEFonFailDependent|HEFcontextDependentException|HEFoldthrows),
     HEFretainedByActiveSelect   = (HEFhousekeeping|HEFalwaysInherit),
 
     HEFintersectionFlags        = (0),
-    HEFunionFlags               = (HEFunbound|HEFfunctionOfGroupAggregate|HEFvolatile|HEFaction|HEFthrowscalar|HEFthrowds|HEFoldthrows|
+    HEFunionFlags               = (HEFunbound|HEFfunctionOfGroupAggregate|
+                                   HEFnoduplicate|HEFcontextDependentException|HEFcostly|HEFaction|HEFthrowscalar|HEFthrowds|HEFoldthrows|
                                    HEFonFailDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector|HEFcontainsDataset|
                                    HEFtranslated|HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFtransformDependent|
-                                   HEFcontainsSkip|HEFcontainsCounter|HEFassertkeyed|HEFcontextDependentException|HEFcontainsAlias|HEFcontainsAliasLocally|
+                                   HEFcontainsSkip|HEFcontainsCounter|HEFassertkeyed|HEFcontainsAlias|HEFcontainsAliasLocally|
                                    HEFinternalSelect|HEFcontainsThisNode|HEFcontainsDatasetAliasLocally|HEFaccessRuntimeContext),
 
     HEFcontextDependentNoThrow  = (HEFcontextDependent & ~(HEFthrowscalar|HEFthrowds|HEFoldthrows)),
     HEFcontextDependentDataset  = (HEFcontextDependent & ~(HEFthrowscalar)),
-    HEFimpure                   = (HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip),
+    HEFimpure                   = (HEFnoduplicate|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip),
 };
 
 //NB: increase the member variable if it grows 
@@ -1505,7 +1510,8 @@ extern HQL_API unsigned unwoundCount(IHqlExpression * expr, node_operator op);
 extern HQL_API void unwindAttribute(HqlExprArray & args, IHqlExpression * expr, IAtom * name);
 extern HQL_API IHqlExpression * queryChildOperator(node_operator op, IHqlExpression * expr);
 extern HQL_API IHqlExpression * createSelector(node_operator op, IHqlExpression * ds, IHqlExpression * seq);
-extern HQL_API IHqlExpression * createUniqueId();
+extern HQL_API IHqlExpression * createUniqueId(IAtom * name);
+
 extern HQL_API IHqlExpression * createUniqueRowsId();
 extern HQL_API IHqlExpression * createCounter();
 extern HQL_API IHqlExpression * createSelectorSequence();
@@ -1526,6 +1532,9 @@ extern HQL_API bool canEvaluateInScope(const HqlExprCopyArray & activeScopes, co
 extern HQL_API IHqlExpression * ensureDeserialized(IHqlExpression * expr, ITypeInfo * type, IAtom * serialForm);
 extern HQL_API IHqlExpression * ensureSerialized(IHqlExpression * expr, IAtom * serialForm);
 extern HQL_API bool isDummySerializeDeserialize(IHqlExpression * expr);
+
+inline IHqlExpression * createUniqueId() { return createUniqueId(_uid_Atom); }
+inline IHqlExpression * createVolatileId() { return createUniqueId(_volatileId_Atom); }
 
 extern HQL_API unsigned getRepeatMax(IHqlExpression * expr);
 extern HQL_API unsigned getRepeatMin(IHqlExpression * expr);
@@ -1659,12 +1668,32 @@ extern HQL_API bool isSameUnqualifiedType(ITypeInfo * l, ITypeInfo * r);
 extern HQL_API bool isSameFullyUnqualifiedType(ITypeInfo * l, ITypeInfo * r);
 extern HQL_API IHqlExpression * queryNewSelectAttrExpr();
 
+//The following functions deal with the different aspects of impure functions - volatile,costly,throw,skip,...
+
+inline bool isVolatile(IHqlExpression * expr)           { return (expr->getInfoFlags() & HEFnoduplicate) != 0; }
+//Is it ok to duplicate the evaluation of this expression in another context?
+inline bool canDuplicateExpr(IHqlExpression * expr)      { return (expr->getInfoFlags() & (HEFnoduplicate|HEFcostly)) == 0; }
+//Is it legal to evaluate this expression in a different context - e.g, in a parent instead of child query
+inline bool canChangeContext(IHqlExpression * expr)     { return (expr->getInfoFlags() & (HEFcontextDependent|HEFthrow|HEFcontainsSkip|HEFcostly)) == 0; }
+//Is it ok to convert a conditional expression to an unconditional expression?
+inline bool canRemoveGuard(IHqlExpression * expr)       { return (expr->getInfoFlags() & (HEFthrow|HEFcontainsSkip|HEFcostly)) == 0; }
+//Is it legal to reuse the value created in another context for this expression?
+inline bool canCommonUpContext(IHqlExpression * expr)     { return (expr->getInfoFlags() & (HEFcontextDependent|HEFcontainsSkip)) == 0; }
+
+//Is it legal to duplicate this activity?
+extern HQL_API bool canDuplicateActivity(IHqlExpression * expr);
+
+extern HQL_API bool hasTransformWithSkip(IHqlExpression * expr);
+extern HQL_API bool isNoSkipInlineDataset(IHqlExpression * expr);
+
+
+
+
 //The following are wrappers for the code generator specific getInfoFlags()
 //inline bool isTableInvariant(IHqlExpression * expr)       { return (expr->getInfoFlags() & HEFtableInvariant) != 0; }
 inline bool containsActiveDataset(IHqlExpression * expr){ return (expr->getInfoFlags() & HEFcontainsActiveDataset) != 0; }
 inline bool containsActiveNonSelector(IHqlExpression * expr)
                                                         { return (expr->getInfoFlags() & HEFcontainsActiveNonSelector) != 0; }
-
 inline bool containsNonActiveDataset(IHqlExpression * expr) { return (expr->getInfoFlags() & (HEFcontainsDataset)) != 0; }
 inline bool containsAnyDataset(IHqlExpression * expr)   { return (expr->getInfoFlags() & (HEFcontainsDataset|HEFcontainsActiveDataset)) != 0; }
 inline bool containsAlias(IHqlExpression * expr)        { return (expr->getInfoFlags() & HEFcontainsAlias) != 0; }
@@ -1678,6 +1707,7 @@ inline bool containsCounter(IHqlExpression * expr)      { return (expr->getInfoF
 inline bool isCountProject(IHqlExpression * expr)       { return expr->hasAttribute(_countProject_Atom); }
 inline bool containsSkip(IHqlExpression * expr)         { return (expr->getInfoFlags() & (HEFcontainsSkip)) != 0; }
 inline bool containsSelf(IHqlExpression * expr)         { return (expr->getInfoFlags2() & (HEF2containsSelf)) != 0; }
+
 inline bool isContextDependentExceptGraph(IHqlExpression * expr)    
                                                         { return (expr->getInfoFlags() & (HEFcontextDependent & ~HEFgraphDependent)) != 0; }
 inline bool isGraphDependent(IHqlExpression * expr)     { return (expr->getInfoFlags() & HEFgraphDependent) != 0; }
@@ -1711,6 +1741,7 @@ inline IHqlExpression * queryRecord(IHqlExpression * expr)
 }
 
 extern HQL_API bool isPureVirtual(IHqlExpression * cur);
+extern HQL_API bool isVolatileFuncdef(IHqlExpression * funcdef);
 inline bool isForwardScope(IHqlScope * scope) { return scope && (queryExpression(scope)->getOperator() == no_forwardscope); }
 
 extern HQL_API bool isContextDependent(IHqlExpression * expr, bool ignoreFailures = false, bool ignoreGraph = false);

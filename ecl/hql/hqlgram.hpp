@@ -642,7 +642,7 @@ public:
     void enterScope(bool allowExternal);
     void enterVirtualScope();
     void leaveScope(const attribute & errpos);
-    IHqlExpression * leaveLamdaExpression(attribute & exprattr);
+    IHqlExpression * leaveLamdaExpression(attribute * modifierattr, attribute & exprattr);
     IHqlScope * closeLeaveScope(const YYSTYPE & errpos);
     void enterPatternScope(IHqlExpression * pattern);
     void leavePatternScope(const YYSTYPE & errpos);
@@ -710,8 +710,9 @@ public:
     void addActiveParameterOwn(const attribute & errpos, IHqlExpression * expr, IHqlExpression * defaultValue);
     void gatherActiveParameters(HqlExprCopyArray & target);
 
-
-    IHqlExpression * createUniqueId();  
+    IHqlExpression * createVolatileId() { return ::createUniqueId(_volatileId_Atom); }
+    IHqlExpression * createUniqueId() { return createUniqueId(_uid_Atom); }
+    IHqlExpression * createUniqueId(IAtom * name);
 
     void onOpenBra();
     void onCloseBra();
@@ -814,12 +815,13 @@ protected:
     IHqlExpression * createRecordExcept(IHqlExpression * left, IHqlExpression * right, const attribute & errpos);
     IHqlExpression * createIndexFromRecord(IHqlExpression * record, IHqlExpression * attr, const attribute & errpos);
     IHqlExpression * createProjectRow(attribute & rowAttr, attribute & transformAttr, attribute & seqAttr);
-    void doDefineSymbol(DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered);
-    void defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults);
+    void doDefineSymbol(DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered, IHqlExpression * modifiers);
+    void defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHqlExpression * expr, const attribute & idattr, int assignPos, int semiColonPos);
     void checkDerivedCompatible(IIdAtom * name, IHqlExpression * scope, IHqlExpression * expr, bool isParametered, HqlExprArray & parameters, attribute const & errpos);
     void defineSymbolProduction(attribute & nameattr, attribute & paramattr, attribute & assignattr, attribute * valueattr, attribute * failattr, attribute & semiattr);
-    void definePatternSymbolProduction(attribute & nameattr, const attribute & assignAttr, attribute & valueAttr, attribute & workflowAttr, const attribute & semiattr);
+    void definePatternSymbolProduction(attribute & nameattr, attribute & paramattr, const attribute & assignAttr, attribute & valueAttr, attribute & workflowAttr, const attribute & semiattr);
     void cloneInheritedAttributes(IHqlScope * scope, const attribute & errpos);
+    IHqlExpression * normalizeFunctionExpression(DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults, IHqlExpression * modifiers);
 
     IHqlExpression * createEvaluateOutputModule(const attribute & errpos, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, node_operator outputOp, IIdAtom *matchId);
     IHqlExpression * createStoredModule(const attribute & errpos, IHqlExpression * scopeExpr);

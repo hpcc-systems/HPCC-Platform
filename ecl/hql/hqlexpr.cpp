@@ -125,6 +125,204 @@ static int checkSeqId(unsigned __int64 seqid, unsigned why)
 
 #define STDIO_BUFFSIZE 0x10000     // 64K
 
+//---------------------------------------------------------------------------------------------------------------------
+
+/*
+
+There is a general issue with ECL (and other functional/declarative languages) about what to do with impure functions.
+Generally it is assumed that expressions can be evaluated on demand, evaluated more than once, not evaluated,
+evaluated in a different place, and that it will not affect the result of the query.  There are some expressions
+that don't follow those rules and cause problems.
+The following aims to describe the issues, and formalize the behaviour@
+
+Different impure modifiers
+- VOLATILE indicates that an expression may return a different value each time it is called.
+  E.g.,  RANDOM(), msTick()
+  Because volatile expressions return a different value each time, by default they are tagged as context
+  sensitive - to try and ensure they are evaluated in the same place as they were used in the source code.  So
+  volatile is expanded as two separate modifiers - NODUPLICATE and CONTEXT
+- CONTEXT indicates the value returned depends on the context (but is non-volatile within that context)
+  E.g., std.system.thorlib.node(), XMLTEXT
+- THROWS indicates an expression might throw an exception.
+  IF (cond, value, FAIL)
+- SKIPS indicates an expression may cause a transform to skip.
+- COSTLY The operation is expensive, so should not be duplicated.
+  E.g., Some PIPE/SOAPCALLs, external function calls.
+  A first step towards introducing a cost() function - where costly = cost(+inf)
+- EFFECT indicates the expression may have a side-effect.  The side-effect is tied to the expression that it is
+  associated with.  It would have implications for ordering, which we currently make no guarantees about.  Also,
+  EVALUATE(EFFECT) should be forced to evaluate, rather than being optimized away.
+
+Pseudo modifier:
+- once [ Implies pure,fold(false) ]
+- action indicates the expression performs a specific (costly?) action.  Equivalent to COSTLY+EFFECT
+- volatile.  Really a combination of NODUPLICATE and CONTEXT
+
+What decisions do the flags affect?
+
+canRemoveEvaluation()   - Is it ok to not evaluate an expression?
+canReduceEvaluations()  - Is it possible to reduce the number of times something is evaluated?
+canDuplicateExpr()      - Whether an expression can be duplicated.
+canChangeContext()      - Whether an expression can be moved to a different context.
+canRemoveGuard()        - Is it ok to evaluate this expression without any surrounding conditions?
+isVolatile()            - Whether an expression always generates the same value. (E.g., for matching distributions)
+canBeCommonedUp()       - Is it ok to evaluate two instances of the same expression only once?
+canBeReordered()        - Is it possible to reorder evaluation?
+
+How do these decisions relate to the modifiers?
+
+canRemoveEvaluation()
+- the whole system is based around lazy evaluation.  Nothing restricts an expressions from not being evaluated.
+
+canReduceNumberEvaluations()
+- noduplicate... yes
+  Say you have a counter which is assigned to rows in a dataset, and one row is then selected.  If only that single row
+  is calculated you will get a different result.  However lazy evaluation should ensure that is ok, just unexpected.
+  The context may also require checking for duplication if the dataset is shared...
+- otherwise - yes.
+  i.e. *all* expressions are lazy - there are no guarantees that an expression will be evaluated.
+
+canDuplicateExpr()
+- noduplicate - no since that will introduce an inconsistency.  This means volatile rows can only be selected
+  from a dataset if it is the only use of the dataset.
+- context - yes if same context.
+- throws - yes
+- skips - yes
+- costly - no
+- effect - yes
+
+canChangeContext/canHoist
+- noduplicate - yes.  (volatile would also set context, implying no since that may change the number of times something is executed).
+- context - no
+- throws - safer to say no.  What if it causes something to fail because of early evaluation?
+           Better would be to allow it, but only report the error if it is actually used.  This has implications for
+           the way results are stored in the workunit, and the implementation of the engines.
+- skips - no (but skips doesn't percolate outside a transform)
+- costly - yes if unconditional. no if conditional - we don't want it evaluated unnecessarily.
+- effect - yes - it is the expression that is important.
+
+canRemoveGuard (make something unconditional that was conditional)
+- noduplicate - possibly/yes.  It would be better to always evaluate than to evaluate multiple times.  The context is handled separately.
+- context - yes.
+- throws - no since it causes failures that wouldn't otherwise occur
+- skips - no, it could records to be lost.
+- costly - no by definition.
+- effect - yes.
+
+isVolatile()
+- Only set if the expression is volatile.  Equivalent to !canDuplicateExpr()
+
+canBeCommonedUpBetweenContexts()
+- noduplicate - This is explicitly managed by ensuring each volatile expression has a unique attribute associated with it.
+  It means that different instances of a volatile expression in different transforms must have different ids
+  so that combining transforms doesn't cause them to be combined.
+- context - ?no.  The same value evaluated in a different context will give a different value.
+- throws - yes
+- skips - yes
+- costly - yes.
+- effect - yes
+
+canCombineTransforms(a,b)
+- all - yes
+- provided volatile expressions are unique there shouldn't be any problems combining them.
+- still need to be careful about SKIPs having a different meaning in the combined transform.
+
+canBeReordered()
+ - we currently make no guarantees about the order that expressions are evaluated in, other than with
+   the SEQUENTIAL keyword, and implicit ordering of rows supplied to APPLY/OUTPUT.  Restricting the order would
+   cause significant issues with optimization (e.g., executing on multiple nodes, or strands within a channel). It
+   would require something similar to Haskell monads to impose some global ordering.
+
+Reducing the context dependency of expressions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The operator no_within(expression, context) has the effect of removing all the context-dependent attributes, and adds
+any dependencies from the context instead.  (Any explicit dependencies of the expression are also kept.)
+Note:  WITHIN can only be used to *reduce* the context-dependency.
+
+RANDOM() WITHIN {LEFT} - indicate the context for calling random.
+
+What should be the scope/extent of their effects?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Theoretically, each of these "impure" attributes are inherited by any expression that uses them.  However that can
+be too conservative, so the following limits are placed on their scope:
+
+noduplicate - always
+context     - always, except for within().  ?possibly not outside a transform, or dataset/action excluding its inputs.
+costly      - always
+action
+throwscalar - not outside transform/filter
+throwds     - not outside transform.  Not outside the action (e.g., output) that consumes it.
+skip        - no outside transform
+
+
+**************** THIS NEEDS MORE THOUGHT WORK - probably inspired from the examples *************************
+
+- A sink (e.g., OUTPUT), row selector ([]), or scalar aggregate (e.g., count(ds)) that is applied to a noduplicate dataset isn't itself noduplicate.
+- A sink (e.g., output) applied to a volatile expression isn't itself volatile.
+- An aggregate is not volatile if the scalar argument is volatile
+- Attributes are not volatile if their arguments are
+- ??? An activity that contains a volatile scalar item isn't itself volatile?  E.g., ds(id != RANDOM()).  I'm not convinced.
+
+For example this means IF(cond, ds, FAIL) will be context dependent.  But the activity (e.g, OUTPUT) that is based on it is not.  The entire OUTPUT could be evaluated elsewhere (e.g., in a parent context) if there are no other dependencies on the context.
+
+I would be inclined to use the same rule for context sensitive expressions and exceptions.
+
+Essentially the rule is:
+- the impure flags are not inherited from a transform
+- actions and attributes inherit no impure flags.  (They could possibly have them set explicitly.)
+
+What makes a unique volatile instance?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Each instance in the original ECL source code creates a unique instance.
+- Each expansion of a macro counts as new source instance.
+- A call to a function containing a volatile should not create new instances.
+- It is possible to mark functions as volatile, so that each call creates a new unique instance of
+  any volatiles within it.
+
+So RANDOM() - RANDOM() should evaluate two random numbers,
+and x:= RANDOM(); x - x; should always evaluate to 0.
+
+So unique volatile identifiers are added to
+- volatile builtin operators (e.g, RANDOM())
+- volatile c++ functions
+- volatile external functions
+and contained volatile modifiers are made unique if a functional definition is specified as volatile.
+
+Modifiers on external functions and beginc++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- pure
+- action
+- costly
+- once = pure, runtime only
+- volatile = nodup, context
+- nomove = context dependent
+- context(xxx)?
+- fail
+
+Context Dependent:
+~~~~~~~~~~~~~~~~~~
+There are several different flags to indicate context dependent:
+
+HEFgraphDependent - loop counter (?) graph result, (parameter!) - should probably use a pseudo table
+HEFcontainsNlpText - should use a pseudo table
+HEFcontainsXmlText - should use a pseudo table
+HEFcontainsSkip
+HEFcontainsCounter  - should use a pseudo table
+HEFtransformDependent - SELF, count(group)
+HEFtranslated
+HEFonFailDependent - FAILCODE/FAILMESSAGE
+HEFcontextDependentException - fields, pure virtual  [nohoist?]
+HEFoldthrows - legacy and should be killed
+
+Other related syntax
+~~~~~~~~~~~~~~~~~~~~
+PURE(expression) - treat an expression as pure - probably superseded with WITHIN {}
+*/
+
+//---------------------------------------------------------------------------------------------------------------------
+
 class HqlExprCache : public JavaHashTableOf<IHqlExpression>
 {
 public:
@@ -3226,7 +3424,7 @@ void CHqlExpression::initFlagsBeforeOperands()
         break;
     case no_random:
         infoFlags2 &= ~(HEF2constant);
-        infoFlags |= HEFvolatile;
+        infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
         break;
     case no_wait:
         infoFlags2 |= HEF2globalAction;
@@ -3405,7 +3603,7 @@ void CHqlExpression::updateFlagsAfterOperands()
     switch (op)
     {
     case no_pure:
-        infoFlags &= ~(HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip);
+        infoFlags &= ~(HEFnoduplicate|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip);
         break;
     case no_record:
         {
@@ -3552,9 +3750,14 @@ void CHqlExpression::updateFlagsAfterOperands()
         infoFlags2 |= HEF2constant;
         break;
     case no_attr:
-        infoFlags = (infoFlags & (HEFhousekeeping|HEFalwaysInherit));
-        infoFlags2 |= HEF2constant;
-        break;
+        {
+            infoFlags = (infoFlags & (HEFhousekeeping|HEFalwaysInherit));
+            infoFlags2 |= HEF2constant;
+            IAtom * name = queryName();
+            if (name == _volatileId_Atom)
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
+            break;
+        }
     case no_newxmlparse:
     case no_xmlparse:
         //clear flag unless set in the dataset.
@@ -3584,15 +3787,18 @@ void CHqlExpression::updateFlagsAfterOperands()
         break;
     case no_attr_link:
     case no_attr_expr:
-        if (queryName() == onFailAtom)
         {
-            infoFlags &= ~(HEFonFailDependent|HEFcontainsSkip); // ONFAIL(SKIP) - skip shouldn't extend any further
+            IAtom * name = queryName();
+            if (name == onFailAtom)
+                infoFlags &= ~(HEFonFailDependent|HEFcontainsSkip); // ONFAIL(SKIP) - skip shouldn't extend any further
+            else if (name == _volatileId_Atom)
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
+            infoFlags &= ~(HEFthrowscalar|HEFthrowds|HEFoldthrows);
+            break;
         }
-        infoFlags &= ~(HEFthrowscalar|HEFthrowds|HEFoldthrows);
-        break;
     case no_clustersize:
         //wrong, but improves the generated code
-        infoFlags |= HEFvolatile;
+        infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
         break;
     case no_type:
         {
@@ -3652,7 +3858,7 @@ void CHqlExpression::updateFlagsAfterOperands()
                 if (bodycode->getOperator() == no_embedbody)
                 {
                     if (bodycode->queryAttribute(actionAtom))
-                        infoFlags |= HEFvolatile;
+                        infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
                 }
             }
             else
@@ -3663,13 +3869,13 @@ void CHqlExpression::updateFlagsAfterOperands()
     case no_getresult:
         {
             if (false && matchesConstantValue(queryAttributeChild(this, sequenceAtom, 0), ResultSequenceOnce))
-                infoFlags |= HEFvolatile;
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
             break;
         }
     case no_embedbody:
         {
             if (queryAttribute(actionAtom))
-                infoFlags |= HEFvolatile;
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
             break;
         }
     }
@@ -3929,6 +4135,17 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     unsigned childFlags = child.getInfoFlags();
     unsigned childFlags2 = child.getInfoFlags2();
     node_operator childOp = child.getOperator();
+
+    const unsigned contextFlags = HEFcontextDependentException|HEFthrowscalar|HEFthrowds;
+    if (childFlags & contextFlags)
+    {
+        if (isDataset() || isAction())
+        {
+            if (!child.isDataset() && !child.isAction())
+                childFlags &= ~contextFlags;
+        }
+    }
+
     switch (op)
     {
     case no_keyindex:
@@ -3993,7 +4210,7 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     {
     case no_transform:
     case no_newtransform:
-        childFlags &= ~(HEFtransformDependent|HEFcontainsSkip|HEFthrowscalar|HEFthrowds);
+        childFlags &= ~(HEFcontextDependentException|HEFtransformDependent|HEFcontainsSkip|HEFthrowscalar|HEFthrowds);
         break;
     }
 
@@ -4144,7 +4361,7 @@ unsigned CHqlExpression::getCachedEclCRC()
     case no_attr_link:
         {
             const IAtom * name = queryBody()->queryName();
-            if (name == _uid_Atom)
+            if (name == _uid_Atom || name == _volatileId_Atom)
                 return 0;
             const char * nameText = str(name);
             crc = hashnc((const byte *)nameText, strlen(nameText), crc);
@@ -7908,7 +8125,10 @@ IHqlExpression * createFunctionDefinition(IIdAtom * id, IHqlExpression * value, 
     if (defaults)
         args.append(*defaults);
     if (attrs)
+    {
         attrs->unwindList(args, no_comma);
+        ::Release(attrs);
+    }
     return createFunctionDefinition(id, args);
 }
 
@@ -9736,7 +9956,7 @@ IHqlExpression * CHqlScopeParameter::lookupSymbol(IIdAtom * searchName, unsigned
 //==============================================================================================================
 
 CHqlDelayedScope::CHqlDelayedScope(HqlExprArray &_ownedOperands)
- : CHqlExpressionWithTables(no_delayedscope)
+ : CHqlExpressionWithTables(no_delayedscope), type(nullptr)
 {
     setOperands(_ownedOperands); // after type is initialized
     type = queryChild(0)->queryType();
@@ -10061,7 +10281,7 @@ IHqlExpression *CHqlSequence::clone(HqlExprArray &newkids)
 
 StringBuffer &CHqlSequence::toString(StringBuffer &ret)
 {
-    return ret.append(name);
+    return ret.append(name).append(":").append(seq);
 }
 
 //==============================================================================================================
@@ -10083,28 +10303,89 @@ CHqlExternal *CHqlExternal::makeExternalReference(IIdAtom * _id, ITypeInfo *_typ
 
 //==============================================================================================================
 
+extern bool isVolatileFuncdef(IHqlExpression * funcdef)
+{
+    if (funcdef->hasAttribute(volatileAtom))
+        return true;
+
+    IHqlExpression * body = funcdef->queryChild(0);
+    switch (body->getOperator())
+    {
+    case no_external:
+        {
+            if (body->hasAttribute(volatileAtom))
+                return true;
+            return false;
+        }
+    case no_outofline:
+        {
+            //Out of line volatile c++ functions create new instances each time they are called.
+            //otherwise it requires an explicit volatile qualifier.
+            IHqlExpression * bodycode = body->queryChild(0);
+            if (bodycode->getOperator() == no_embedbody)
+                return bodycode->queryAttribute(volatileAtom);
+            return false;
+        }
+    default:
+        return false;
+    }
+}
+
 CHqlExternalCall::CHqlExternalCall(IHqlExpression * _funcdef, ITypeInfo * _type, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(no_externalcall, _type, _ownedOperands), funcdef(_funcdef)
 {
-    IHqlExpression * def = funcdef->queryChild(0);
+    IHqlExpression * body = funcdef->queryChild(0);
+    unsigned impureFlags = 0;
+    if (body->hasAttribute(failAtom))
+        impureFlags |= isDataset() ? HEFthrowds : HEFthrowscalar;
+    if (body->hasAttribute(noMoveAtom) || body->hasAttribute(contextSensitiveAtom))
+        impureFlags |= HEFcontextDependentException;
+    if (body->hasAttribute(costlyAtom))
+        impureFlags |= HEFcostly;
+    if (body->hasAttribute(_noDuplicate_Atom))
+        impureFlags |= HEFnoduplicate;
+
+    if (isVolatileFuncdef(funcdef))
+        impureFlags |= (HEFnoduplicate|HEFcontextDependentException);
     //Once aren't really pure, but are as far as the code generator is concerned.  Split into more flags if it becomes an issue.
-    if (!def->hasAttribute(pureAtom) && !def->hasAttribute(onceAtom))
+    if (!body->hasAttribute(pureAtom) && !body->hasAttribute(onceAtom))
     {
-        infoFlags |= (HEFvolatile);
+        infoFlags |= (HEFnoduplicate);
     }
+
+    //Special case built in context functions for backward compatibility
+    if (body->hasAttribute(ctxmethodAtom))
+    {
+        StringBuffer entrypoint;
+        getStringValue(entrypoint, queryAttributeChild(body, entrypointAtom, 0));
+        if (streq(entrypoint.str(), "getNodeNum") ||
+            streq(entrypoint.str(), "getFilePart"))
+        {
+            impureFlags |= HEFcontextDependentException;
+        }
+        if (streq(entrypoint.str(), "getPlatform"))
+        {
+            //impureFlags |= (HEFvolatilevalue|HEFcontextDependentException);
+        }
+    }
+
+    infoFlags |= impureFlags;
     
-    if (def->hasAttribute(actionAtom) || (type && type->getTypeCode() == type_void))
+    if (body->hasAttribute(actionAtom) || (type && type->getTypeCode() == type_void))
         infoFlags |= HEFaction;
 
-    if (def->hasAttribute(userMatchFunctionAtom))
+    if (body->hasAttribute(userMatchFunctionAtom))
     {
         infoFlags |= HEFcontainsNlpText;
     }
 
-    if (def->hasAttribute(contextSensitiveAtom))
-        infoFlags |= HEFcontextDependentException;
-
-    if (def->hasAttribute(ctxmethodAtom) || def->hasAttribute(gctxmethodAtom) || def->hasAttribute(globalContextAtom) || def->hasAttribute(contextAtom))
+    if (body->hasAttribute(ctxmethodAtom) || body->hasAttribute(gctxmethodAtom) || body->hasAttribute(globalContextAtom) || body->hasAttribute(contextAtom))
         infoFlags |= HEFaccessRuntimeContext;
+
+    if (hasAttribute(_pseudoAction_Atom))
+    {
+        ::Release(type);
+        type = makeVoidType();
+    }
 }
 
 bool CHqlExternalCall::equals(const IHqlExpression & other) const
@@ -11378,8 +11659,6 @@ IHqlExpression * ParameterBindTransformer::createExpandedCall(IHqlExpression * c
 {
     HqlExprArray actuals;
     unwindChildren(actuals, call);
-    while (actuals.ordinality() && actuals.tos().isAttribute())
-        actuals.pop();
 
     IHqlExpression * funcdef = call->queryBody()->queryFunctionDefinition();
     return createExpandedCall(funcdef, actuals);
@@ -11389,8 +11668,14 @@ IHqlExpression * ParameterBindTransformer::createExpandedCall(IHqlExpression *fu
 {
     assertex(funcdef->getOperator() == no_funcdef);
     IHqlExpression * formals = funcdef->queryChild(1);
-    assertex(formals->numChildren() == resolvedActuals.length());
-    ForEachItemIn(i, resolvedActuals)
+
+    unsigned numFormals = formals->numChildren();
+    assertex(numFormals <= resolvedActuals.length());
+
+    for (unsigned i1 = numFormals; i1 < resolvedActuals.length(); i1++)
+        assertex(resolvedActuals.item(i1).isAttribute());
+
+    ForEachChild(i, formals)
     {
         IHqlExpression * formal = formals->queryChild(i);
         IHqlExpression * actual = &resolvedActuals.item(i);
@@ -11419,6 +11704,46 @@ extern HQL_API bool isKey(IHqlExpression * expr)
         return false;
     }
 }
+
+
+//-------------------------------------------------------------------------------------
+
+static HqlTransformerInfo volatileIdModifierInfo("VolatileIdModifier");
+class VolatileIdModifier : public QuickHqlTransformer
+{
+public:
+    VolatileIdModifier(IHqlExpression * _volatileid)
+    : QuickHqlTransformer(volatileIdModifierInfo, NULL), volatileid(_volatileid)
+    {
+    }
+
+protected:
+    virtual IHqlExpression * createTransformedBody(IHqlExpression * expr)
+    {
+        if (expr->getOperator() == no_outofline)
+            return LINK(expr);
+
+        if (expr->isAttribute() && (expr->queryName() == _volatileId_Atom))
+        {
+            HqlExprArray args;
+            args.append(*LINK(expr));
+            args.append(*LINK(volatileid));
+            return createExprAttribute(_volatileId_Atom, args);
+        }
+
+        return QuickHqlTransformer::createTransformedBody(expr);
+    }
+
+protected:
+    IHqlExpression * volatileid;
+};
+
+IHqlExpression * modifyVolatileIds(IHqlExpression * expr, IHqlExpression * volatileid)
+{
+    VolatileIdModifier modifier(volatileid);
+    return modifier.transform(expr);
+}
+
 
 
 //-------------------------------------------------------------------------------------
@@ -11666,8 +11991,15 @@ static IHqlExpression * createNormalizedCall(IHqlExpression *funcdef, const HqlE
 
 inline IHqlExpression * expandFunctionalCallBody(CallExpansionContext & ctx, IHqlExpression * call)
 {
-    ParameterBindTransformer binder(ctx, call);
-    return binder.createExpandedCall(call);
+    OwnedHqlExpr ret;
+    {
+        ParameterBindTransformer binder(ctx, call);
+        ret.setown(binder.createExpandedCall(call));
+    }
+    IHqlExpression * volatileid = call->queryAttribute(_volatileId_Atom);
+    if (volatileid)
+        return modifyVolatileIds(ret, volatileid);
+    return ret.getClear();
 }
 
 static IHqlExpression * normalizeTrailingAttributes(IHqlExpression * call)
@@ -12227,11 +12559,12 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
     HqlExprArray attrs;
     unwindChildren(attrs, body, 1);
 
-    if (body->isPure())
-        attrs.append(*createAttribute(pureAtom));
-    if (body->getInfoFlags() & HEFaction)
-        attrs.append(*createAttribute(actionAtom));
-    if (body->getInfoFlags() & HEFcontextDependentException)
+    //This should mirror the code in CHqlExternalCall::CHqlExternalCall
+    unsigned impureFlags = body->getInfoFlags();
+    if (impureFlags & (HEFthrowds|HEFthrowscalar))
+        attrs.append(*createAttribute(failAtom));
+
+    if (impureFlags & HEFcontextDependentException)
         attrs.append(*createAttribute(contextSensitiveAtom));
     if (functionBodyUsesContext(body))
         attrs.append(*LINK(cachedContextAttribute));
@@ -12239,6 +12572,21 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
     IHqlExpression *child = body->queryChild(0);
     if (child && child->getOperator()==no_embedbody)
         unwindAttribute(attrs, child, inlineAtom);
+
+    if (impureFlags & HEFcostly)
+        attrs.append(*createAttribute(costlyAtom));
+
+    if (impureFlags & HEFnoduplicate)
+        attrs.append(*createAttribute(_noDuplicate_Atom));
+
+    if (impureFlags & HEFaction)
+        attrs.append(*createAttribute(actionAtom));
+
+    if (impureFlags & HEFcontainsNlpText)
+        attrs.append(*createAttribute(userMatchFunctionAtom));
+
+    if (!(impureFlags & HEFimpure))// && attrs.empty())
+        attrs.append(*createAttribute(pureAtom));
 
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryId(), LINK(returnType), attrs);
@@ -15054,6 +15402,38 @@ IHqlExpression * queryOnlyField(IHqlExpression * record)
     return ret;
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+bool canDuplicateActivity(IHqlExpression * expr)
+{
+    unsigned max = expr->numChildren();
+    for (unsigned i = getNumChildTables(expr); i < max; i++)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (!canDuplicateExpr(cur))
+            return false;
+    }
+    return true;
+}
+
+bool hasTransformWithSkip(IHqlExpression * expr)
+{
+    unsigned max = expr->numChildren();
+    for (unsigned i = getNumChildTables(expr); i < max; i++)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (containsSkip(cur))
+            return true;
+    }
+    return false;
+}
+
+bool isNoSkipInlineDataset(IHqlExpression * expr)
+{
+    assertex(expr->getOperator() == no_inlinetable);
+    IHqlExpression * values = expr->queryChild(0);
+    return !hasTransformWithSkip(values);
+}
 
 bool isPureActivity(IHqlExpression * expr)
 {
@@ -15102,6 +15482,8 @@ bool assignsContainSkip(IHqlExpression * expr)
         return false;
     }
 }
+
+//---------------------------------------------------------------------------------------------------------------------
 
 extern HQL_API bool isKnownTransform(IHqlExpression * transform)
 {
@@ -15157,7 +15539,7 @@ bool isContextDependent(IHqlExpression * expr, bool ignoreFailures, bool ignoreG
 
 bool isPureCanSkip(IHqlExpression * expr)
 {
-    return (expr->getInfoFlags() & (HEFvolatile|HEFaction|HEFthrowscalar|HEFthrowds)) == 0; 
+    return (expr->getInfoFlags() & (HEFnoduplicate|HEFaction|HEFthrowscalar|HEFthrowds)) == 0;
 }
 
 bool hasSideEffects(IHqlExpression * expr)
@@ -15350,10 +15732,10 @@ IHqlExpression * createSelector(node_operator op, IHqlExpression * ds, IHqlExpre
 }
 
 static UniqueSequenceCounter uidSequence;
-IHqlExpression * createUniqueId()
+IHqlExpression * createUniqueId(IAtom * name)
 {
     unsigned __int64 uid = uidSequence.next();
-    return createSequence(no_attr, NULL, _uid_Atom, uid);
+    return createSequence(no_attr, NULL, name, uid);
 }
 
 static UniqueSequenceCounter counterSequence;
