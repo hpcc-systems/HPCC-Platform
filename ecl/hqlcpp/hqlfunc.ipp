@@ -17,7 +17,7 @@
 #ifndef BUILDFUNC_IPP
 #define BUILDFUNC_IPP
 
-class FunctionParamInfo : public CInterface, implements IFunctionParamInfo
+class FunctionParamInfo : implements IFunctionParamInfo, public CInterface
 {
 public:
   FunctionParamInfo(ITypeInfo * type, IAtom * name, unsigned _dir, bool _isArray);
@@ -38,7 +38,7 @@ protected:
   bool                  isArray;
 };
 
-class FunctionInfo : public CInterface, implements IFunctionInfo
+class FunctionInfo : implements IFunctionInfo, public CInterface
 {
 public:
   FunctionInfo(IAtom * _name, IModuleInfo * _module);
@@ -67,7 +67,7 @@ protected:
 };
 
 
-class ModuleInfo : public CInterface, implements IModuleInfo
+class ModuleInfo : implements IModuleInfo, public CInterface
 {
 public:
   ModuleInfo(const char * _filename, bool _isSystem);
@@ -82,7 +82,7 @@ protected:
 };
 
 
-class FunctionDatabase : public CInterface, implements IFunctionDatabase
+class FunctionDatabase : implements IFunctionDatabase, public CInterface
 {
 public:
   FunctionDatabase();

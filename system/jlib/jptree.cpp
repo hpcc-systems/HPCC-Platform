@@ -54,7 +54,7 @@
 #define PTREE_COMPRESS_BOTHER_PECENTAGE (80) // i.e. if it doesn't compress to <80 % of original size don't bother
 
 
-class NullPTreeIterator : public CInterface, implements IPropertyTreeIterator
+class NullPTreeIterator : implements IPropertyTreeIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -245,7 +245,7 @@ unsigned ChildMap::numChildren()
 
 IPropertyTreeIterator *ChildMap::getIterator(bool sort)
 {
-    class CPTHashIterator : public CInterface, implements IPropertyTreeIterator
+    class CPTHashIterator : implements IPropertyTreeIterator, public CInterface
     {
         SuperHashIteratorOf<IPropertyTree> *hiter;
     public:
@@ -447,7 +447,7 @@ bool validateXMLTag(const char *name)
     return true;
 }
 
-class jlib_thrown_decl CPTreeException : public CInterface, implements IPTreeException
+class jlib_thrown_decl CPTreeException : implements IPTreeException, public CInterface
 {
     int errCode;
     StringBuffer errMsg;
@@ -697,7 +697,7 @@ const char *queryHead(const char *xpath, StringBuffer &head)
 
 ///////////////////
 
-class SeriesPTIterator : public CInterface, implements IPropertyTreeIterator
+class SeriesPTIterator : implements IPropertyTreeIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -2024,7 +2024,7 @@ StringBuffer &PTree::getName(StringBuffer &ret) const
 typedef CopyReferenceArrayOf<AttrValue> AttrArray;
 IAttributeIterator *PTree::getAttributes(bool sorted) const
 {
-    class CAttributeIterator : public CInterface, implements IAttributeIterator
+    class CAttributeIterator : implements IAttributeIterator, public CInterface
     {
     public:
         IMPLEMENT_IINTERFACE;
@@ -2083,11 +2083,11 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
         virtual unsigned count() { return parent->queryAttributes().count(); }
 
     private:
-        AttrValue *cur;
         unsigned index;
+        AttrValue *cur;
         Linked<const PTree> parent;
     };
-    class CSortedAttributeIterator : public CInterface, implements IAttributeIterator
+    class CSortedAttributeIterator : implements IAttributeIterator, public CInterface
     {
         typedef ArrayIteratorOf<AttrArray, AttrValue &> AttrIterator;
     public:
@@ -2166,7 +2166,7 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
 }
 
 ///////////////////
-class CIndexIterator : public CInterface, implements IPropertyTreeIterator
+class CIndexIterator : implements IPropertyTreeIterator, public CInterface
 {
     Owned<IPropertyTreeIterator> subIter;
     IPropertyTree *celem;
@@ -3707,7 +3707,7 @@ IPropertyTree *ensurePTree(IPropertyTree *root, const char *xpath)
 
 IPTreeReadException *createPTreeReadException(int code, const char *msg, const char *context, unsigned line, offset_t offset)
 {
-    class jlib_thrown_decl CPTreeReadException : public CInterface, implements IPTreeReadException
+    class jlib_thrown_decl CPTreeReadException : implements IPTreeReadException, public CInterface
     {
         int code;
         StringAttr msg;
@@ -3833,7 +3833,6 @@ public:
         if (bufOwned)
             delete [] buf;
     }
-    IMPLEMENT_IINTERFACE;
 protected:
     virtual void reset()
     {
@@ -4064,7 +4063,6 @@ public:
         init();
         resetState();
     }
-    IMPLEMENT_IINTERFACE;
 protected:
     virtual void reset()
     {
@@ -5425,7 +5423,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
 
 jlib_decl StringBuffer &toXML(const IPropertyTree *tree, StringBuffer &ret, unsigned indent, unsigned flags)
 {
-    class CAdapter : public CInterface, implements IIOStream
+    class CAdapter : implements IIOStream, public CInterface
     {
         StringBuffer &out;
     public:
@@ -5677,7 +5675,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
 
 jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, unsigned indent, byte flags)
 {
-    class CAdapter : public CInterface, implements IIOStream
+    class CAdapter : implements IIOStream, public CInterface
     {
         StringBuffer &out;
     public:
@@ -6324,8 +6322,6 @@ public:
     ~CJSONReaderBase()
     {
     }
-
-    IMPLEMENT_IINTERFACE;
 
 protected:
     inline StringBuffer &appendChar(StringBuffer &id, char c)

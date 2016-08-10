@@ -96,7 +96,7 @@ private:
 
 class CRecordLayoutTranslator;
 
-class ExpandedSegmentMonitorList : public CInterface, public IRecordLayoutTranslator::SegmentMonitorContext
+class ExpandedSegmentMonitorList : public IRecordLayoutTranslator::SegmentMonitorContext, public CInterface
 {
 public:
     ExpandedSegmentMonitorList(CRecordLayoutTranslator * _owner) : owner(_owner) {}

@@ -74,7 +74,7 @@ unsigned ActivityArray::recursiveFindActivityIndex(unsigned id)
 // multiple slave channels
 //----------------------------------------------------------------------------------------------
 
-class CQueryDll : public CInterface, implements IQueryDll
+class CQueryDll : implements IQueryDll, public CInterface
 {
     StringAttr dllName;
     Owned <ILoadedDllEntry> dll;
@@ -474,7 +474,7 @@ void QueryOptions::setFromSlaveLoggingFlags(unsigned loggingFlags)
 // Derived classes handle the differences between slave and server side factories
 //----------------------------------------------------------------------------------------------
 
-class CQueryFactory : public CInterface, implements IQueryFactory, implements IResourceContext
+class CQueryFactory : implements IQueryFactory, implements IResourceContext, public CInterface
 {
 protected:
     const IRoxiePackage &package;

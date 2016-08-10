@@ -976,7 +976,7 @@ public:
     }
 };
 
-class CMarkReadStream : public CMarkReadBase, implements ISimpleReadStream
+class CMarkReadStream : implements ISimpleReadStream, public CMarkReadBase
 {
     ISimpleReadStream &stream;
     offset_t readOffset, markingOffset;
@@ -1127,7 +1127,7 @@ public:
     offset_t startOffset, endOffset;
 };
 
-class COffsetNodeCreator : public CInterface, implements IPTreeNodeCreator
+class COffsetNodeCreator : implements IPTreeNodeCreator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -1136,7 +1136,7 @@ public:
     virtual IPropertyTree *create(const char *tag) { return new CPTreeWithOffsets(tag); }
 };
 
-class thorhelper_decl CColumnIterator : public CInterface, implements IColumnProviderIterator
+class thorhelper_decl CColumnIterator : implements IColumnProviderIterator, public CInterface
 {
     Linked<IColumnProvider> parent;
     Linked<IPropertyTree> root, matchNode;
@@ -1172,7 +1172,7 @@ public:
     void setCurrent();
 };
 
-class CColumnProvider : public CInterface, implements IColumnProvider
+class CColumnProvider : implements IColumnProvider, public CInterface
 {
     Linked<IPropertyTree> root, node;
     MemoryBuffer contentMb;
@@ -1599,7 +1599,7 @@ void CColumnIterator::setCurrent()
 }
 
 
-class CXMLParse : public CInterface, implements IXMLParse
+class CXMLParse : implements IXMLParse, public CInterface
 {
     IPullPTreeReader *xmlReader;
     StringAttr xpath;

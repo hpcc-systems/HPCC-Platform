@@ -170,7 +170,7 @@ public:
 
 //The following don't link their arguments because that creates a circular reference
 //But I wish there was a better way
-class IndirectSlaveContext : public CInterface, implements IRoxieSlaveContext
+class IndirectSlaveContext : implements IRoxieSlaveContext, public CInterface
 {
 public:
     IndirectSlaveContext(IRoxieSlaveContext * _ctx) : ctx(_ctx) {}
@@ -663,8 +663,6 @@ private:
     CRoxieServerMultiInputInfo inputs;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieServerMultiInputFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactoryBase(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
@@ -683,7 +681,7 @@ public:
     virtual unsigned numInputs() const { return inputs.ordinality(); }
 };
 
-class CWrappedException : public CInterface, implements IException
+class CWrappedException : implements IException, public CInterface
 {
     Owned<IException> wrapped;
     ThorActivityKind kind;
@@ -707,8 +705,6 @@ protected:
     unsigned inputidx;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieServerActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactoryBase(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
@@ -907,7 +903,7 @@ extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxi
     return result;
 }
 
-class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IFinalRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
+class CRoxieServerActivity : implements CInterfaceOf<IRoxieServerActivity>, implements IFinalRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
 {
     friend class StrandProcessor;
 protected:
@@ -944,7 +940,7 @@ protected:
     IProbeManager *probeManager = NULL;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IRoxieServerActivity>)
 
     CRoxieServerActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : ctx(_ctx),
@@ -1967,7 +1963,7 @@ void setStartRuid(unsigned restarts)
 
 enum { LimitSkipErrorCode = 0, KeyedLimitSkipErrorCode = 1 };
 
-class LimitSkipException : public CInterface, public IException
+class LimitSkipException : public IException, public CInterface
 {
     int code;
 public:
@@ -2209,7 +2205,7 @@ public:
 
 // MORE - this code copied from ThreadedConcat code - may be able to common up some.
 
-class CRoxieServerReadAheadInput : public CInterface, implements IFinalRoxieInput, implements IRecordPullerCallback, implements IEngineRowStream
+class CRoxieServerReadAheadInput : implements IEngineRowStream, implements IFinalRoxieInput, implements IRecordPullerCallback, public CInterface
 {
     QueueOf<const void, true> buffer;
     InterruptableSemaphore ready;
@@ -2703,7 +2699,7 @@ public:
 
 //=================================================================================
 
-class CRoxieServerQueryPacket : public CInterface, implements IRoxieServerQueryPacket
+class CRoxieServerQueryPacket : implements IRoxieServerQueryPacket, public CInterface
 {
 protected:
     Owned<IMessageResult> result;
@@ -3054,7 +3050,7 @@ public:
     // more than make up for it
 };
 
-class CRowArrayMessageUnpackCursor : public CInterface, implements IMessageUnpackCursor
+class CRowArrayMessageUnpackCursor : implements IMessageUnpackCursor, public CInterface
 {
     ConstPointerArray &data;
     Linked<IMessageResult> result;
@@ -3089,7 +3085,7 @@ public:
 
 // MORE - should possibly move more over to the lazy version used in indexread?
 
-class CRowArrayMessageResult : public CInterface, implements IMessageResult
+class CRowArrayMessageResult : implements IMessageResult, public CInterface
 {
     ConstPointerArray data;
     IRowManager &rowManager;
@@ -3154,7 +3150,7 @@ void throwRemoteException(IMessageUnpackCursor *extra)
     throwUnexpected();
 }
 
-class CRemoteResultAdaptor :public CInterface, implements IFinalRoxieInput, implements IExceptionHandler, implements IEngineRowStream
+class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxieInput, implements IExceptionHandler, public CInterface
 {
     friend class CRemoteResultMerger;
     class CRemoteResultMerger
@@ -5371,7 +5367,7 @@ class CRoxieServerChildGroupAggregateActivity : public CRoxieServerChildBaseActi
     RowAggregator aggregated;
 
 public:
-    IMPLEMENT_IINTERFACE
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerChildBaseActivity)
     CRoxieServerChildGroupAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerChildBaseActivity(_ctx, _factory, _probeManager), helper((IHThorChildGroupAggregateArg &) basehelper),
           aggregated(helper, helper)
@@ -6052,7 +6048,7 @@ public:
 };
 
 
-class CSafeRoxieInput : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
+class CSafeRoxieInput : implements IEngineRowStream, implements IFinalRoxieInput, public CInterface
 {
 public:
     CSafeRoxieInput(unsigned _sourceIdx, IFinalRoxieInput * _input) : input(_input), inputStream(NULL), sourceIdx(_sourceIdx) {}
@@ -6128,7 +6124,7 @@ private:
 
 //=================================================================================
 
-class CPseudoRoxieInput : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
+class CPseudoRoxieInput : implements IEngineRowStream, implements IFinalRoxieInput, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -6287,7 +6283,7 @@ public:
 };
 
 
-class CGraphResult : public CInterface, implements IGraphResult
+class CGraphResult : implements IGraphResult, public CInterface
 {
     CriticalSection cs;
     byte **rowset;
@@ -8562,7 +8558,7 @@ public:
     unsigned headIdx;
     Owned<IException> error;
 
-    class OutputAdaptor : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
+    class OutputAdaptor : implements IEngineRowStream, implements IFinalRoxieInput, public CInterface
     {
         bool eof, eofpending, stopped;
 
@@ -12871,7 +12867,7 @@ IRoxieServerActivityFactory *createRoxieServerJoinActivityFactory(unsigned _id, 
 
 #define CONCAT_READAHEAD 1000
 
-class CRoxieThreadedConcatReader : public CInterface, implements IRecordPullerCallback
+class CRoxieThreadedConcatReader : implements IRecordPullerCallback, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -15229,7 +15225,7 @@ IFinalRoxieInput * LoopExecutorThread::createLoopIterationGraph(unsigned i, unsi
 
 //=================================================================================
 
-class CCounterRowMetaData : public CInterface, implements IOutputMetaData
+class CCounterRowMetaData : implements IOutputMetaData, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE
@@ -15719,8 +15715,6 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
         unsigned processed;
 
     public:
-        IMPLEMENT_IINTERFACE;
-
         OutputAdaptor()
         {
             parent = NULL;
@@ -16223,7 +16217,7 @@ IRoxieServerActivityFactory *createRoxieServerNWayInputActivityFactory(unsigned 
 class CRoxieServerNWayGraphLoopResultReadActivity : public CRoxieServerNWayInputBaseActivity
 {
     IHThorNWayGraphLoopResultReadArg & helper;
-    CIArrayOf<CRoxieServerActivity> resultReaders;
+    IArrayOf<IRoxieServerActivity> resultReaders;
     Owned<IStrandJunction> *resultJunctions;
     unsigned graphId;
     bool grouped;
@@ -16348,7 +16342,7 @@ IRoxieServerActivityFactory *createRoxieServerNWayGraphLoopResultReadActivityFac
 //=================================================================================
 
 
-class RoxieSteppedInput : public CInterface, implements ISteppedInput
+class RoxieSteppedInput : implements ISteppedInput, public CInterface
 {
 public:
     RoxieSteppedInput(IFinalRoxieInput * _input, IEngineRowStream *_stream) { input = _input; inputStream = _stream; }
@@ -21023,7 +21017,7 @@ class CRoxieServerXmlParseActivity : public CRoxieServerActivity, implements IXM
     Owned<IColumnProvider> lastMatch;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerActivity)
 
     CRoxieServerXmlParseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
@@ -21179,7 +21173,7 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerActivity)
 
     CRoxieServerDiskReadBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
@@ -21543,7 +21537,7 @@ class CRoxieServerXmlReadActivity : public CRoxieServerDiskReadBaseActivity, imp
     Owned<IColumnProvider> lastMatch;
     unsigned __int64 fileoffset;
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerDiskReadBaseActivity)
     CRoxieServerXmlReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
         : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager)
     {
@@ -22144,7 +22138,6 @@ class CRoxieServerDiskGroupAggregateActivity : public CRoxieServerDiskAggregateB
     bool gathered;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieServerDiskGroupAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
         : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
           aggregateHelper((IHThorDiskGroupAggregateArg &)basehelper),
@@ -22685,7 +22678,7 @@ public:
             processAllKeys();
     }
 
-    class LazyLocalKeyReader : public CInterface, implements IMessageResult, implements IMessageUnpackCursor 
+    class LazyLocalKeyReader : implements IMessageUnpackCursor, implements IMessageResult, public CInterface
     {
     public:
         IMPLEMENT_IINTERFACE;
@@ -23931,7 +23924,7 @@ public:
         groupSegCount = 0;
     }
 
-    IMPLEMENT_IINTERFACE
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerIndexActivity)
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
@@ -24595,7 +24588,7 @@ interface IJoinProcessor
 //   
 //------------------------------------------------------------------------------------------------------
 
-class CJoinGroup : public CInterface, implements IInterface
+class CJoinGroup : public CInterface
 {
 protected:
     const void *left;                   // LHS row
@@ -24627,8 +24620,6 @@ public:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CJoinGroup(const void *_left, CJoinGroup *_groupStart)
     {
 #ifdef TRACE_JOINGROUPS
@@ -26175,7 +26166,7 @@ protected:
     ClientCertificate *pClientCert;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerActivity)
 
     CRoxieServerSoapActivityBase(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorSoapActionArg &)basehelper)
@@ -26502,7 +26493,7 @@ IRoxieServerActivityFactory *createRoxieServerSoapDatasetActionActivityFactory(u
 
 //=====================================================================================================
 
-class CGraphResults : public CInterface, implements IRoxieGraphResults
+class CGraphResults : implements IRoxieGraphResults, public CInterface
 {
     IArrayOf<IGraphResult> results;
     CriticalSection cs;
@@ -26563,7 +26554,7 @@ public:
 
 //===================================================================================================================
 
-class CPseudoArg : public CInterface, implements IHThorArg
+class CPseudoArg : implements IHThorArg, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE
@@ -26583,7 +26574,7 @@ public:
 };
 
 
-class CActivityGraph : public CInterface, implements IActivityGraph, implements IThorChildGraph, implements ILocalGraphEx, implements IRoxieServerChildGraph
+class CActivityGraph : implements IActivityGraph, implements IThorChildGraph, implements ILocalGraphEx, implements IRoxieServerChildGraph, public CInterface
 {
 protected:
     class ActivityGraphSlaveContext : public IndirectSlaveContext
@@ -27102,7 +27093,7 @@ public:
     }
 };
 
-class CProxyActivityGraph : public CInterface, implements IActivityGraph, implements IThorChildGraph
+class CProxyActivityGraph : implements IActivityGraph, implements IThorChildGraph, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -27318,7 +27309,7 @@ public:
 };
 
 
-class CDelayedActivityGraph : public CInterface, implements IActivityGraph
+class CDelayedActivityGraph : implements IActivityGraph, public CInterface
 {
     StringAttr graphName;
     ActivityArray & graphDefinition;

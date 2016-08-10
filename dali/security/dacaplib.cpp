@@ -135,7 +135,7 @@ enum XMLentrykind { EK_setlimit=1,EK_addnode,EK_removenode};
 
 #define CRCMASK (0x5128F1EE)
 
-class CDaliCapabilityCreator: public CInterface, implements IDaliCapabilityCreator
+class CDaliCapabilityCreator: implements IDaliCapabilityCreator, public CInterface
 {
     StringAttr sysid;
     StringAttr clientpassword;

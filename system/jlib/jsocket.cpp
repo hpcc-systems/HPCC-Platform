@@ -150,7 +150,7 @@ inline void LogErr(unsigned err,unsigned ref,const char *info,unsigned lineno,co
 }
     
 
-class jlib_thrown_decl SocketException: public CInterface, public IJSOCK_Exception
+class jlib_thrown_decl SocketException: public IJSOCK_Exception, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -357,7 +357,7 @@ enum SOCKETMODE { sm_tcp_server, sm_tcp, sm_udp_server, sm_udp, sm_multicast_ser
 
 #define BADSOCKERR(err) ((err==JSE_BADF)||(err==JSE_NOTSOCK))
 
-class CSocket: public CInterface, public ISocket
+class CSocket: public ISocket, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -4312,7 +4312,7 @@ public:
 };
 
 
-class CSocketSelectHandler: public CInterface, implements ISocketSelectHandler
+class CSocketSelectHandler: implements ISocketSelectHandler, public CInterface
 {
     CIArrayOf<CSocketSelectThread> threads;
     CriticalSection sect;
@@ -4860,7 +4860,7 @@ public:
     }
 };
 
-class CSocketEpollHandler: public CInterface, implements ISocketSelectHandler
+class CSocketEpollHandler: implements ISocketSelectHandler, public CInterface
 {
     CSocketEpollThread *epollthread;
     CriticalSection sect;
@@ -5052,7 +5052,7 @@ bool catchWriteBuffer(ISocket * socket, MemoryBuffer & buffer)
 // utility interface for simple conversations 
 // conversation is always between two ends, 
 // at any given time one end must be receiving and other sending (though these may swap during the conversation)
-class CSingletonSocketConnection: public CInterface, implements IConversation
+class CSingletonSocketConnection: implements IConversation, public CInterface
 {
     Owned<ISocket> sock;
     Owned<ISocket> listensock;
@@ -5320,9 +5320,9 @@ IConversation *createSingletonSocketConnection(unsigned short port,SocketEndpoin
 
 
 // interface for reading from multiple sockets using the BF_SYNC_TRANSFER_PUSH protocol 
-class CSocketBufferReader: public CInterface, implements ISocketBufferReader
+class CSocketBufferReader: implements ISocketBufferReader, public CInterface
 {
-    class SocketElem: public CInterface, implements ISocketSelectNotify
+    class SocketElem: implements ISocketSelectNotify, public CInterface
     {
         CSocketBufferReader *parent;
         unsigned num;           // top bit used for ready
@@ -5513,7 +5513,7 @@ static CSocket *prepareSocket(unsigned idx,const SocketEndpoint &ep, ISocketConn
 
 void multiConnect(const SocketEndpointArray &eps,ISocketConnectNotify &inotify,unsigned timeout)
 {
-    class SocketElem: public CInterface, implements ISocketSelectNotify
+    class SocketElem: implements ISocketSelectNotify, public CInterface
     {
         CriticalSection *sect;
         ISocketSelectHandler *handler;
@@ -6090,7 +6090,7 @@ ISocketEndpointHashTable *createSocketEndpointHashTable()
 }
 
 
-class CSocketConnectWait: public CInterface, implements ISocketConnectWait
+class CSocketConnectWait: implements ISocketConnectWait, public CInterface
 {
     Owned<CSocket> sock;
     bool done;

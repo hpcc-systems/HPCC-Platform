@@ -36,8 +36,8 @@ typedef std::map<std::string, std::string> GuidMap;
 
 class CLogSerializer : public CInterface  
 {
-    __int64 m_bytesWritten;
     long m_ItemCount;
+    __int64 m_bytesWritten;
     CriticalSection crit;
 protected:
     IFile* m_file;
@@ -51,7 +51,6 @@ protected:
 public:
     bool EnsureDirectory(StringBuffer& Dir);
 public:
-    IMPLEMENT_IINTERFACE;
     CLogSerializer();
     CLogSerializer(const char* fileName);
     virtual ~CLogSerializer();
@@ -74,7 +73,6 @@ public:
 class CSendLogSerializer : public CLogSerializer  
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CSendLogSerializer();
     CSendLogSerializer(const char* fileName) : CLogSerializer(fileName)
     {
@@ -91,7 +89,6 @@ void SplitRecord(const char* FullStr, StringBuffer& GUID, StringBuffer& Cache);
 class CRecieveLogSerializer : public CLogSerializer  
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CRecieveLogSerializer();
     CRecieveLogSerializer(const char* fileName) : CLogSerializer(fileName){}
     virtual void LoadDataMap(GuidMap& GUIDmap);

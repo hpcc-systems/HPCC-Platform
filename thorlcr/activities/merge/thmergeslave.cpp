@@ -48,7 +48,7 @@ public:
     size32_t chunkmaxsize;
     unsigned width;
 
-    class cRemoteStream : public CSimpleInterface, implements IRowStream
+    class cRemoteStream : implements IRowStream, public CSimpleInterface
     {
         GlobalMergeSlaveActivity *parent;
         Linked<IOutputRowDeserializer> deserializer;

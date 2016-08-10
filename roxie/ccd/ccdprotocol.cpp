@@ -27,7 +27,7 @@
 
 IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue);
 
-class CHpccProtocolPlugin : public CInterface, implements IHpccProtocolPlugin
+class CHpccProtocolPlugin : implements IHpccProtocolPlugin, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -429,7 +429,7 @@ IXmlWriterExt * createAdaptiveRESTWriterExt(AdaptiveRoot model, const char *tagn
 
 //================================================================================================================
 
-class CHpccNativeResultsWriter : public CInterface, implements IHpccNativeProtocolResultsWriter
+class CHpccNativeResultsWriter : implements IHpccNativeProtocolResultsWriter, public CInterface
 {
 protected:
     SafeSocket *client;
@@ -922,7 +922,7 @@ public:
 
 };
 
-class CHpccNativeProtocolResponse : public CInterface, implements IHpccNativeProtocolResponse
+class CHpccNativeProtocolResponse : implements IHpccNativeProtocolResponse, public CInterface
 {
 protected:
     SafeSocket *client;
@@ -1310,8 +1310,6 @@ public:
         queryText = _queryText;
     }
 
-    IMPLEMENT_IINTERFACE;
-
     void onException(IException *E)
     {
         //if (!logctx.isBlind())
@@ -1345,7 +1343,7 @@ public:
 //ADF - Haven't changed it yet, but this should eliminate the need to parse the query twice below
 //I can load the query and lookup the parse flags before doing a full parse
 //if it turns out I need more info I may delete this.
-class QueryNameExtractor : public CInterface, implements IPTreeNotifyEvent
+class QueryNameExtractor : implements IPTreeNotifyEvent, public CInterface
 {
 public:
     TextMarkupFormat mlFmt;
@@ -1454,8 +1452,6 @@ class RoxieSocketWorker : public ProtocolQueryWorker
     Owned<IHpccNativeProtocolMsgSink> sink;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     RoxieSocketWorker(ProtocolSocketListener *_pool, SocketEndpoint &_ep)
         : ProtocolQueryWorker(_pool), ep(_ep)
     {

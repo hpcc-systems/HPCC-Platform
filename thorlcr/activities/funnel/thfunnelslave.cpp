@@ -28,7 +28,7 @@
 
 #include "thfunnelslave.ipp"
 
-class CParallelFunnel : public CSimpleInterface, implements IRowStream
+class CParallelFunnel : implements IRowStream, public CSimpleInterface
 {
     class CInputHandler : public CInterface, implements IThreaded
     {

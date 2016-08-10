@@ -91,8 +91,6 @@ protected:
     IEsdlDefObjectIterator* baseIterator;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     EsdlDefObjectWrapper( IEsdlDefObject& _obj, unsigned _flags = 0 ) : object(_obj), flags(_flags), baseIterator(NULL)
     {
     }
@@ -178,8 +176,6 @@ protected:
     Owned<IProperties> props;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     EsdlDefObject(StartTag &tag, EsdlDefinition *esdl);
 
     ~EsdlDefObject()
@@ -1773,8 +1769,6 @@ public:
     EsdlDefinition *def;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     EsdlDefLoader(EsdlDefinition *_def) : def(_def) {}
 
     void loadMethod(XmlPullParser *xpp, StartTag &method_tag)

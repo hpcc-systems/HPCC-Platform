@@ -79,7 +79,7 @@ public:
         mb.resetBuffer();
     }
 
-    class Chandler: public CInterface, implements IPooledThread
+    class Chandler: implements IPooledThread, public CInterface
     {
         CMessageBuffer mb;
         CMessageHandler<PARENT> *owner;

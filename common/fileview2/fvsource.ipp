@@ -37,7 +37,7 @@ interface IRecordSizeEx : public IRecordSize
     virtual size32_t getRecordSize(unsigned maxLength, const void *rec) = 0;
 };
 
-class RecordSizeToEx : public CInterface, implements IRecordSizeEx
+class RecordSizeToEx : implements IRecordSizeEx, public CInterface
 {
 public:
     RecordSizeToEx(IRecordSize * _recordSize) : recordSize(_recordSize) {}
@@ -90,7 +90,7 @@ public:
     bool hasMixedContent;
 };
 
-class DataSourceMetaData : public CInterface, implements IFvDataSourceMetaData, public IRecordSizeEx
+class DataSourceMetaData : implements IFvDataSourceMetaData, public IRecordSizeEx, public CInterface
 {
     friend class DataSourceSetItem;
     friend class DataSourceDatasetItem;

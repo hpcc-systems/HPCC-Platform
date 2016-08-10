@@ -122,12 +122,11 @@ struct jhtree_decl NodeHdr
 //#pragma pack(4)
 #pragma pack(pop)
 
-class jhtree_decl CKeyHdr : public CInterface, implements IInterface
+class jhtree_decl CKeyHdr : public CInterface
 {
 private:
     KeyHdr hdr;
 public:
-    IMPLEMENT_IINTERFACE;
     CKeyHdr();
 
     void load(KeyHdr &_hdr);
@@ -153,7 +152,7 @@ public:
     inline unsigned getNodeSize() { return hdr.nodeSize; }
 };
 
-class jhtree_decl CNodeBase : public CInterface, implements IInterface
+class jhtree_decl CNodeBase : public CInterface
 {
 protected:
     NodeHdr hdr;
@@ -173,8 +172,6 @@ public:
     inline bool isLeaf() const { return hdr.leafFlag != 0; }
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CNodeBase();
     void load(CKeyHdr *keyHdr, offset_t fpos);
     ~CNodeBase();

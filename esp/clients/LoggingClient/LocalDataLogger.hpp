@@ -93,7 +93,6 @@ private:
         }
     }
 public:
-    IMPLEMENT_IINTERFACE;
     CFileCleanupThread()
     {
         m_TimerPeriod = 1;

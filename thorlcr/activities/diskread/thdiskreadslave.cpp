@@ -365,7 +365,7 @@ public:
         }
     };
 
-    class PgRecordSize : public CSimpleInterface, implements IRecordSize
+    class PgRecordSize : implements IRecordSize, public CSimpleInterface
     {
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);

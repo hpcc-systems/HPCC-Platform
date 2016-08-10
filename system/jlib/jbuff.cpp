@@ -91,7 +91,7 @@ jlib_decl void *checked_realloc(void *orig, size_t newlen, size_t origlen,int er
     return ret;
 }
 
-class jlib_thrown_decl COutOfMemException: public CInterface, implements IOutOfMemException
+class jlib_thrown_decl COutOfMemException: implements IOutOfMemException, public CInterface
 {
     int errcode;
     size_t wanted;

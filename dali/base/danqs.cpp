@@ -46,7 +46,7 @@ enum MQueueRequestKind {
 
 class CQueueChannel;
 
-class CNamedQueueConnection: public CInterface, implements INamedQueueConnection
+class CNamedQueueConnection: implements INamedQueueConnection, public CInterface
 {
     SecurityToken tok;
     CheckedCriticalSection sect;
@@ -125,7 +125,6 @@ protected: friend class CNamedQueueSubscriptionProxy;
     bool oneshot;
     SessionId transaction;
 public:
-    IMPLEMENT_IINTERFACE;
     CNamedQueueHandler(const char *_name, int _priority, bool _oneshot, SessionId _transaction)
         : name(_name)
     {
@@ -221,7 +220,7 @@ public:
 };
 
 
-class CQueueChannel: public CInterface, implements IQueueChannel
+class CQueueChannel: implements IQueueChannel, public CInterface
 { // Client side
 
     StringAttr name;
@@ -437,8 +436,6 @@ class CDaliNamedQueueServer: public IDaliServer, public Thread, implements IConn
         StringAttr name;
         DALI_UID transactionId;
     public:
-        IMPLEMENT_IINTERFACE;
-
         CNamedQueueSubscriptionStub(CMessageBuffer &mb) // takes ownership
         {
             replytag = mb.getReplyTag();

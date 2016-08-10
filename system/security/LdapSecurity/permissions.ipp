@@ -687,7 +687,7 @@ unsigned long GetSecurityDescriptorLength(PSECURITY_DESCRIPTOR pSecurityDescript
 
 #endif
 
-class PermissionProcessor : public CInterface, implements IPermissionProcessor
+class PermissionProcessor : implements IPermissionProcessor, public CInterface
 {
 private:
     Owned<IPropertyTree> m_cfg;

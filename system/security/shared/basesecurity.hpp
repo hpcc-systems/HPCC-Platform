@@ -27,8 +27,7 @@
 #include "SecurityResource.hpp"
 #include "SecurityResourceList.hpp"
 
-class CBaseSecurityManager : public CInterface,
-    implements ISecManager
+class CBaseSecurityManager : implements ISecManager, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE

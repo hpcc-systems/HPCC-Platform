@@ -267,7 +267,7 @@ extern IActivityGraph *createActivityGraph(IRoxieSlaveContext *ctx, const char *
 extern ruid_t getNextRuid();
 extern void setStartRuid(unsigned restarts);
 
-class CIndexTransformCallback : public CInterface, implements IThorIndexCallback 
+class CIndexTransformCallback : implements IThorIndexCallback, public CInterface
 {
 public:
     CIndexTransformCallback() { keyManager = NULL; cleanupRequired = false; filepos = 0; };

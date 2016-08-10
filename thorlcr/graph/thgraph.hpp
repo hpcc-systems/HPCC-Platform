@@ -364,7 +364,7 @@ typedef CICopyArrayOf<CGraphElementBase> CGraphElementArrayCopy;
 typedef OwningSimpleHashTableOf<CGraphElementBase, activity_id> CGraphElementTable;
 typedef IIteratorOf<CGraphElementBase> IThorActivityIterator;
 typedef ArrayIIteratorOf<const CGraphElementArray, CGraphElementBase, IThorActivityIterator> CGraphElementArrayIterator;
-class CGraphElementIterator : public CInterface, implements IThorActivityIterator
+class CGraphElementIterator : implements IThorActivityIterator, public CInterface
 {
     SuperHashIteratorOf<CGraphElementBase> iter;
 public:
@@ -379,7 +379,7 @@ public:
 };
 
 typedef OwningStringSuperHashTableOf<CFileUsageEntry> CFileUsageTable;
-class graph_decl CGraphTempHandler : public CInterface, implements IGraphTempHandler
+class graph_decl CGraphTempHandler : implements IGraphTempHandler, public CInterface
 {
 protected:
     CFileUsageTable tmpFiles;
@@ -405,7 +405,7 @@ public:
     virtual void clearTemps();
     virtual IFileUsageIterator *getIterator()
     {
-        class CIterator : public CInterface, implements IFileUsageIterator
+        class CIterator : implements IFileUsageIterator, public CInterface
         {
             SuperHashIteratorOf<CFileUsageEntry> iter;
         public:
@@ -727,7 +727,7 @@ public:
 friend class CGraphElementBase;
 };
 
-class CGraphTableIterator : public CInterface, implements IThorGraphIterator
+class CGraphTableIterator : implements IThorGraphIterator, public CInterface
 {
     SuperHashIteratorOf<CGraphBase> iter;
 public:
@@ -991,7 +991,7 @@ public:
 
 interface IOutputMetaData;
 
-class graph_decl CActivityBase : public CInterface, implements IExceptionHandler, implements IThorRowInterfaces
+class graph_decl CActivityBase : implements CInterfaceOf<IThorRowInterfaces>, implements IExceptionHandler
 {
     Owned<IEngineRowAllocator> rowAllocator;
     Owned<IOutputRowSerializer> rowSerializer;
@@ -1012,7 +1012,6 @@ protected:
     Owned<IThorGraphResults> ownedResults; // NB: probably only to be used by loop results
 
 public:
-    IMPLEMENT_IINTERFACE;
     CActivityBase(CGraphElementBase *container);
     ~CActivityBase();
     inline activity_id queryId() const { return container.queryId(); }
@@ -1119,7 +1118,7 @@ interface IThorFileCache : extends IInterface
     virtual IDelayedFile *lookup(CActivityBase &activity, IPartDescriptor &partDesc, IExpander *expander=NULL) = 0;
 };
 
-class graph_decl CThorResourceBase : public CInterface, implements IThorResource
+class graph_decl CThorResourceBase : implements IThorResource, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -1130,10 +1129,10 @@ public:
     virtual IFileInProgressHandler &queryFileInProgressHandler() { UNIMPLEMENTED; return *((IFileInProgressHandler *)NULL); }
 };
 
-class graph_decl CThorGraphResults : public CInterface, implements IThorGraphResults
+class graph_decl CThorGraphResults : implements IThorGraphResults, public CInterface
 {
 protected:
-    class CThorUninitializedGraphResults : public CInterface, implements IThorResult
+    class CThorUninitializedGraphResults : implements IThorResult, public CInterface
     {
         unsigned id;
 

@@ -128,7 +128,6 @@ interface IFile :extends IInterface
 struct CDirectoryEntry: public CInterface
 { // for cloning IDirectoryIterator iterator
 public:
-    IMPLEMENT_IINTERFACE;
     CDirectoryEntry() {}
     CDirectoryEntry(IDirectoryIterator &iter)
         : file(&iter.query()), isdir(iter.isDir()), size(iter.getFileSize())

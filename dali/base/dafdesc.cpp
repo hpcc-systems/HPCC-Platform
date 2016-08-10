@@ -364,7 +364,7 @@ static void removeDir(const char *name,const char *dir,StringBuffer &out)
 
 #define RO_SINGLE_PART (0x40000000) // used for singletons
 
-struct CClusterInfo: public CInterface, implements IClusterInfo
+struct CClusterInfo: implements IClusterInfo, public CInterface
 {
     Linked<IGroup> group;
     StringAttr name; // group name
@@ -1961,8 +1961,6 @@ class CSuperFileDescriptor:  public CFileDescriptor
     UnsignedArray *subfilecounts;
     bool interleaved; 
 public:
-
-    IMPLEMENT_IINTERFACE;
 
     CSuperFileDescriptor(MemoryBuffer &mb, IArrayOf<IPartDescriptor> *partsret) 
         : CFileDescriptor(mb,partsret,&subfilecounts,&interleaved)

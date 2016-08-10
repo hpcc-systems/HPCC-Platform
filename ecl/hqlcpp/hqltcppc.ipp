@@ -586,7 +586,7 @@ public:
 };
 
 
-class DelayedSizeGenerator : public CInterface, public IHqlDelayedCodeGenerator
+class DelayedSizeGenerator : public IHqlDelayedCodeGenerator, public CInterface
 {
 public:
     DelayedSizeGenerator(ColumnToOffsetMap * _map)
@@ -603,7 +603,7 @@ public:
 };
 
 
-class DelayedUnsignedGenerator : public CInterface, public IHqlDelayedCodeGenerator
+class DelayedUnsignedGenerator : public IHqlDelayedCodeGenerator, public CInterface
 {
 public:
     DelayedUnsignedGenerator(unsigned & _value)

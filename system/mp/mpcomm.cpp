@@ -199,7 +199,7 @@ struct MultiPacketHeader
 
 // 
 
-class CMPException: public CInterface, public IMP_Exception
+class CMPException: public IMP_Exception, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -1391,7 +1391,7 @@ public:
 
 // --------------------------------------------------------
 
-class CMPPacketReader: public CInterface, public ISocketSelectNotify
+class CMPPacketReader: public ISocketSelectNotify, public CInterface
 {
     CMessageBuffer *activemsg;
     byte * activeptr;
@@ -2409,7 +2409,7 @@ void CMPServer::notifyClosed(SocketEndpoint &ep)
 // --------------------------------------------------------
 
 
-class CInterCommunicator: public CInterface, public IInterCommunicator
+class CInterCommunicator: public IInterCommunicator, public CInterface
 {
     CMPServer *parent;
 
@@ -2619,7 +2619,7 @@ public:
 
 
 
-class CCommunicator: public CInterface, public ICommunicator
+class CCommunicator: public ICommunicator, public CInterface
 {
     IGroup *group;
     CMPServer *parent;

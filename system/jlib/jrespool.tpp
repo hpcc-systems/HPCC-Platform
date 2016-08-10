@@ -31,11 +31,9 @@ template <typename T> interface IResourceFactory: implements IInterface
 };
 
 // T should implement IInterface
-template <typename T> class CResourcePool : public CInterface, implements IInterface
+template <typename T> class CResourcePool : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CResourcePool()
     {
         numresources = 0;

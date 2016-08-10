@@ -155,7 +155,7 @@ protected:
     unsigned __int64 queryLocalCycles() const;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CActivityBase)
 
     CSlaveActivity(CGraphElementBase *container);
     ~CSlaveActivity();

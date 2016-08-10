@@ -39,7 +39,7 @@ void registerCreateFunc(CreateFunc func)
 
 /////
 
-class CThorGraphResult : public CInterface, implements IThorResult, implements IRowWriter
+class CThorGraphResult : implements IThorResult, implements IRowWriter, public CInterface
 {
     CActivityBase &activity;
     rowcount_t rowStreamCount;
@@ -56,7 +56,7 @@ class CThorGraphResult : public CInterface, implements IThorResult, implements I
         meta = allocator->queryOutputMeta();
         rowStreamCount = 0;
     }
-    class CStreamWriter : public CSimpleInterface, implements IRowWriterMultiReader
+    class CStreamWriter : implements IRowWriterMultiReader, public CSimpleInterface
     {
         CThorGraphResult &owner;
         CThorExpandingRowArray rows;
@@ -206,7 +206,7 @@ IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bo
 }
 
 /////
-class CThorBoundLoopGraph : public CInterface, implements IThorBoundLoopGraph
+class CThorBoundLoopGraph : implements IThorBoundLoopGraph, public CInterface
 {
     CGraphBase *graph;
     activity_id activityId;
@@ -1401,7 +1401,7 @@ void CGraphBase::end()
     }
 }
 
-class CGraphTraverseIteratorBase : public CInterface, implements IThorActivityIterator
+class CGraphTraverseIteratorBase : implements IThorActivityIterator, public CInterface
 {
 protected:
     CGraphBase &graph;
@@ -2043,7 +2043,7 @@ public:
     Linked<CGraphBase> subGraph;
     MemoryBuffer parentExtractMb;
 };
-class CGraphExecutor : public CInterface, implements IGraphExecutor
+class CGraphExecutor : implements IGraphExecutor, public CInterface
 {
     CJobChannel &jobChannel;
     CJobBase &job;
@@ -2056,7 +2056,7 @@ class CGraphExecutor : public CInterface, implements IGraphExecutor
     Semaphore runningSem;
     Owned<IThreadPool> graphPool;
 
-    class CGraphExecutorFactory : public CInterface, implements IThreadFactory
+    class CGraphExecutorFactory : implements IThreadFactory, public CInterface
     {
         CGraphExecutor &executor;
     public:
@@ -2066,7 +2066,7 @@ class CGraphExecutor : public CInterface, implements IGraphExecutor
 // IThreadFactory
         virtual IPooledThread *createNew()
         {
-            class CGraphExecutorThread : public CInterface, implements IPooledThread
+            class CGraphExecutorThread : implements IPooledThread, public CInterface
             {
                 Owned<CGraphExecutorGraphInfo> graphInfo;
             public:
@@ -2301,7 +2301,7 @@ public:
 
 ////
 // IContextLogger
-class CThorContextLogger : CSimpleInterface, implements IContextLogger
+class CThorContextLogger : implements IContextLogger, public CSimpleInterface
 {
     CJobBase &job;
     unsigned traceLevel;

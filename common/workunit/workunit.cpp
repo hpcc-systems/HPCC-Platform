@@ -983,7 +983,6 @@ bool CPersistedWorkUnit::aborting() const
 class CDaliWorkUnit : public CPersistedWorkUnit
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CDaliWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser)
         : connection(_conn), CPersistedWorkUnit(secmgr, secuser)
     {
@@ -1204,7 +1203,7 @@ protected:
     mutable Owned<IRemoteConnection> progressConnection;
 };
 
-class CLockedWorkUnit : public CInterface, implements ILocalWorkUnit, implements IExtendedWUInterface
+class CLockedWorkUnit : implements ILocalWorkUnit, implements IExtendedWUInterface, public CInterface
 {
 public:
     Owned<CLocalWorkUnit> c;
@@ -1624,7 +1623,7 @@ public:
             { c->setResultDataset(name, sequence, len, val, numRows, extend); }
 };
 
-class CLocalWUAssociated : public CInterface, implements IConstWUAssociatedFile
+class CLocalWUAssociated : implements IConstWUAssociatedFile, public CInterface
 {
     Owned<IPropertyTree> p;
 
@@ -1642,7 +1641,7 @@ public:
     virtual unsigned getMaxActivityId() const;
 };
 
-class CLocalWUQuery : public CInterface, implements IWUQuery
+class CLocalWUQuery : implements IWUQuery, public CInterface
 {
     Owned<IPropertyTree> p;
     mutable IArrayOf<IConstWUAssociatedFile> associated;
@@ -1679,7 +1678,7 @@ public:
     virtual void        removeAssociatedFile(WUFileType type, const char * name, const char * desc);
 };
 
-class CLocalWUWebServicesInfo : public CInterface, implements IWUWebServicesInfo
+class CLocalWUWebServicesInfo : implements IWUWebServicesInfo, public CInterface
 {
     Owned<IPropertyTree> p;
     mutable CriticalSection crit;
@@ -1705,7 +1704,7 @@ public:
     virtual void        setWebServicesCRC(unsigned);
 };
 
-class CLocalWUResult : public CInterface, implements IWUResult
+class CLocalWUResult : implements IWUResult, public CInterface
 {
     friend class CLocalWorkUnit;
 
@@ -1789,7 +1788,7 @@ public:
     virtual IPropertyTree *queryPTree() { return p; }
 };
 
-class CLocalWUPlugin : public CInterface, implements IWUPlugin
+class CLocalWUPlugin : implements IWUPlugin, public CInterface
 {
     Owned<IPropertyTree> p;
 
@@ -1804,7 +1803,7 @@ public:
     virtual void        setPluginVersion(const char *str);
 };
 
-class CLocalWULibrary : public CInterface, implements IWULibrary
+class CLocalWULibrary : implements IWULibrary, public CInterface
 {
     Owned<IPropertyTree> p;
 
@@ -1816,7 +1815,7 @@ public:
     virtual void setName(const char * str);
 };
 
-class CLocalWUException : public CInterface, implements IWUException
+class CLocalWUException : implements IWUException, public CInterface
 {
     Owned<IPropertyTree> p;
 
@@ -1860,11 +1859,11 @@ extern WORKUNIT_API bool isSpecialResultSequence(unsigned sequence)
     }
 }
 
-class CConstWUArrayIterator : public CInterface, implements IConstWorkUnitIterator
+class CConstWUArrayIterator : implements IConstWorkUnitIterator, public CInterface
 {
+    unsigned curTreeNum;
     IArrayOf<IPropertyTree> trees;
     Owned<IConstWorkUnitInfo> cur;
-    unsigned curTreeNum;
 
     void setCurrent()
     {
@@ -1955,10 +1954,10 @@ private:
 
 //==========================================================================================
 
-class CStringArrayIterator : public CInterface, implements IStringIterator
+class CStringArrayIterator : implements IStringIterator, public CInterface
 {
-    StringArray strings;
     unsigned idx;
+    StringArray strings;
 public:
     IMPLEMENT_IINTERFACE;
     CStringArrayIterator() { idx = 0; };
@@ -1969,7 +1968,7 @@ public:
     virtual IStringVal & str(IStringVal &s) { s.set(strings.item(idx)); return s; }
 };
 
-class CCachedJobNameIterator : public CInterface, implements IStringIterator
+class CCachedJobNameIterator : implements IStringIterator, public CInterface
 {
     Owned<IPropertyTreeIterator> it;
 public:
@@ -1981,7 +1980,7 @@ public:
     virtual IStringVal & str(IStringVal &s) { s.set(it->query().queryName()+1); return s; }
 };
 
-class CEmptyStringIterator : public CInterface, implements IStringIterator
+class CEmptyStringIterator : implements IStringIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -2080,10 +2079,10 @@ public:
 
 //==========================================================================================
 
-class CConstQuerySetQueryIterator : public CInterface, implements IConstQuerySetQueryIterator
+class CConstQuerySetQueryIterator : implements IConstQuerySetQueryIterator, public CInterface
 {
-    IArrayOf<IPropertyTree> trees;
     unsigned index;
+    IArrayOf<IPropertyTree> trees;
 public:
     IMPLEMENT_IINTERFACE;
     CConstQuerySetQueryIterator(IArrayOf<IPropertyTree> &_trees)
@@ -2124,7 +2123,7 @@ class CSecurityCache
 
 };
 
-class CConstWUIterator : public CInterface, implements IConstWorkUnitIterator
+class CConstWUIterator : implements IConstWorkUnitIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -3214,7 +3213,7 @@ extern WORKUNIT_API IWorkUnitFactory * getDaliWorkUnitFactory()
 // A SecureWorkUnitFactory allows the security params to be supplied once to the factory rather than being supplied to each call.
 // They can still be supplied if you want...
 
-class CSecureWorkUnitFactory : public CInterface, implements IWorkUnitFactory
+class CSecureWorkUnitFactory : implements IWorkUnitFactory, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -3382,7 +3381,7 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, I
 
 //==========================================================================================
 
-class CStringPTreeIterator : public CInterface, implements IStringIterator
+class CStringPTreeIterator : implements IStringIterator, public CInterface
 {
     Owned<IPropertyTreeIterator> it;
 public:
@@ -3394,7 +3393,7 @@ public:
     virtual IStringVal & str(IStringVal &s) { s.set(it->query().queryProp(NULL)); return s; }
 };
 
-class CStringPTreeTagIterator : public CInterface, implements IStringIterator
+class CStringPTreeTagIterator : implements IStringIterator, public CInterface
 {
     Owned<IPropertyTreeIterator> it;
 public:
@@ -3406,7 +3405,7 @@ public:
     virtual IStringVal & str(IStringVal &s) { s.set(it->query().queryName()); return s; }
 };
 
-class CStringPTreeAttrIterator : public CInterface, implements IStringIterator
+class CStringPTreeAttrIterator : implements IStringIterator, public CInterface
 {
     Owned<IPropertyTreeIterator> it;
     StringAttr name;
@@ -4294,7 +4293,7 @@ bool CLocalWorkUnit::getRescheduleFlag() const
     return p->getPropInt("RescheduleFlag") != 0; 
 }
 
-class NullIStringIterator : public CInterface, extends IStringIterator
+class NullIStringIterator : implements IStringIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -4369,7 +4368,7 @@ void getRoxieProcessServers(const char *process, SocketEndpointArray &servers)
     getRoxieProcessServers(queryRoxieProcessTree(root, process), servers);
 }
 
-class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
+class CEnvironmentClusterInfo: implements IConstWUClusterInfo, public CInterface
 {
     StringAttr name;
     StringAttr alias;
@@ -9723,7 +9722,7 @@ extern WORKUNIT_API WUState getWorkUnitState(const char* state)
 
 const LogMsgCategory MCschedconn = MCprogress(1000);    // Category used to inform about schedule synchronization
 
-class CWorkflowScheduleConnection : public CInterface, implements IWorkflowScheduleConnection
+class CWorkflowScheduleConnection : implements IWorkflowScheduleConnection, public CInterface
 {
 public:
     CWorkflowScheduleConnection(char const * wuid)

@@ -55,7 +55,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-class GrammarSymbol : public CInterface, public IMatchedElement
+class GrammarSymbol : implements IMatchedElement, public CInterface
 {
 public:
     GrammarSymbol(symbol_id _id)                            { id = _id; penalty = 0; }
@@ -160,7 +160,7 @@ private:
 //---------------------------------------------------------------------------
 
 class PackedSymbolChoice;
-class TomitaMatchWalker : public CInterface, implements IMatchWalker
+class TomitaMatchWalker : implements IMatchWalker, public CInterface
 {
 public:
     TomitaMatchWalker(const PackedSymbolChoice & _choice, GrammarSymbol * _symbol);

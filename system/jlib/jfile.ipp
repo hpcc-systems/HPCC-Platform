@@ -30,7 +30,7 @@
 #endif
 
 
-class jlib_decl CFile : public CInterface, implements IFile
+class jlib_decl CFile : implements IFile, public CInterface
 {
     HANDLE openHandle(IFOmode mode, IFSHmode share, bool async, int stdh=-1);
 public:
@@ -88,7 +88,7 @@ protected:
 };
 
 
-class jlib_decl CFileIO : public CInterface, implements IFileIO
+class jlib_decl CFileIO : implements IFileIO, public CInterface
 {
 public:
     CFileIO(HANDLE,IFOmode _openmode,IFSHmode _sharemode,IFEflags _extraFlags);
@@ -130,7 +130,7 @@ private:
 
 };
 
-class jlib_decl CFileRangeIO : public CInterface, implements IFileIO
+class jlib_decl CFileRangeIO : implements IFileIO, public CInterface
 {
 public:
     CFileRangeIO(IFileIO * _io, offset_t _headerSize, offset_t _maxLength);
@@ -153,7 +153,7 @@ protected:
 };
 
 
-class jlib_decl CFileAsyncIO : public CInterface, implements IFileAsyncIO
+class jlib_decl CFileAsyncIO : implements IFileAsyncIO, public CInterface
 {
 public:
     CFileAsyncIO(HANDLE,IFSHmode _sharemode);
@@ -185,7 +185,7 @@ protected: friend class CFileAsyncResult;
 };
 
 
-class CFileIOStream : public CInterface, implements IFileIOStream
+class CFileIOStream : implements IFileIOStream, public CInterface
 {
 public:
     CFileIOStream(IFileIO * _io);
@@ -205,7 +205,7 @@ protected:
 
 
 
-class jlib_decl CIOStreamReadWriteSeq : public CInterface, public IWriteSeq, public IReadSeq
+class jlib_decl CIOStreamReadWriteSeq : public IWriteSeq, public IReadSeq, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -233,7 +233,7 @@ private:
 
 
 
-class jlib_decl DirectBufferI : public CInterface, implements IFileIO
+class jlib_decl DirectBufferI : implements IFileIO, public CInterface
 {
 public:
     DirectBufferI(unsigned _len, const void * _buffer) { buffLen = _len; buffer = (byte *)_buffer; }

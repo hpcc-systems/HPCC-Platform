@@ -23,8 +23,6 @@
 class ViewHelper : implements IEclPlusHelper
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     ViewHelper(IProperties * globals, IFormatType * format);
     virtual ~ViewHelper();
 

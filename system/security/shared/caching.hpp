@@ -139,11 +139,9 @@ public:
 
 // main cache that stores all user-specific caches (defined by CResPermissionsCache above)
 //
-class CPermissionsCache : public CInterface, implements IInterface
+class CPermissionsCache : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE
-
     CPermissionsCache(const char * _secMgrClass = nullptr)
     {
         m_cacheTimeout = 300;

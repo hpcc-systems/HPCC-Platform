@@ -31,7 +31,7 @@
 
 
 
-class CSoapService : public CInterface, implements ISoapService
+class CSoapService : implements ISoapService, public CInterface
 {
 private:
     Owned<IEspSoapBinding> m_soapbinding;

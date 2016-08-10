@@ -511,7 +511,7 @@ protected:
     mutable CriticalSection   crit;
 };
 
-class HandleLogMsgHandlerXML : public CInterface, implements HandleLogMsgHandler
+class HandleLogMsgHandlerXML : implements HandleLogMsgHandler, public CInterface
 {
 public:
     HandleLogMsgHandlerXML(FILE * _handle, unsigned _fields) : HandleLogMsgHandler(_handle, _fields) {}
@@ -522,7 +522,7 @@ public:
     void                      addToPTree(IPropertyTree * tree) const;
 };
 
-class HandleLogMsgHandlerTable : public CInterface, implements HandleLogMsgHandler
+class HandleLogMsgHandlerTable : implements HandleLogMsgHandler, public CInterface
 {
 public:
     HandleLogMsgHandlerTable(FILE * _handle, unsigned _fields) : HandleLogMsgHandler(_handle, _fields), prepped(false) {}
@@ -559,7 +559,7 @@ protected:
     mutable CriticalSection   crit;
 };
 
-class FileLogMsgHandlerXML : public CInterface, implements FileLogMsgHandler
+class FileLogMsgHandlerXML : implements FileLogMsgHandler, public CInterface
 {
 public:
     FileLogMsgHandlerXML(const char * _filename, const char * _headerText = 0, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true) : FileLogMsgHandler(_filename, _headerText, _fields, _append, _flushes) {}
@@ -570,7 +570,7 @@ public:
     void                      addToPTree(IPropertyTree * tree) const;
 };
 
-class FileLogMsgHandlerTable : public CInterface, implements FileLogMsgHandler
+class FileLogMsgHandlerTable : implements FileLogMsgHandler, public CInterface
 {
 public:
     FileLogMsgHandlerTable(const char * _filename, const char * _headerText = 0, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true) : FileLogMsgHandler(_filename, _headerText, _fields, _append, _flushes), prepped(false) {}
@@ -583,7 +583,7 @@ private:
     bool                      prepped;
 };
 
-class RollingFileLogMsgHandler : public CInterface, implements ILogMsgHandler
+class RollingFileLogMsgHandler : implements ILogMsgHandler, public CInterface
 {
 public:
     RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true, const char *initialName = NULL, const char *alias = NULL, bool daily = false);
@@ -623,7 +623,7 @@ protected:
 
 // Implementation of handler which writes message to file in binary form
 
-class BinLogMsgHandler : public CInterface, implements ILogMsgHandler
+class BinLogMsgHandler : implements ILogMsgHandler, public CInterface
 {
 public:
     BinLogMsgHandler(const char * _filename, bool _append = false);
@@ -652,7 +652,7 @@ protected:
 
 // Implementation of handler which uses the audit event logger
 
-class SysLogMsgHandler : public CInterface, implements ILogMsgHandler
+class SysLogMsgHandler : implements ILogMsgHandler, public CInterface
 {
 public:
     SysLogMsgHandler(ISysLogEventLogger * _logger, unsigned _fields) : logger(_logger), fields(_fields) {}

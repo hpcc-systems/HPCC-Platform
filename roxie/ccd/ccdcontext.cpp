@@ -756,7 +756,7 @@ CRoxieWorkflowMachine *createRoxieWorkflowMachine(IPropertyTree *_workflowInfo, 
 typedef byte *row_t;
 typedef row_t * rowset_t;
 
-class DeserializedDataReader : public CInterface, implements IWorkUnitRowReader
+class DeserializedDataReader : implements IWorkUnitRowReader, public CInterface
 {
     const rowset_t data;
     size32_t count;
@@ -789,7 +789,7 @@ public:
     }
 };
 
-class CDeserializedResultStore : public CInterface, implements IDeserializedResultStore
+class CDeserializedResultStore : implements IDeserializedResultStore, public CInterface
 {
     PointerArrayOf<row_t> stored;
     UnsignedArray counts;
@@ -855,16 +855,16 @@ extern IDeserializedResultStore *createDeserializedResultStore()
     return new CDeserializedResultStore;
 }
 
-class WorkUnitRowReaderBase : public CInterface, implements IWorkUnitRowReader
+class WorkUnitRowReaderBase : implements IWorkUnitRowReader, public CInterface
 {
 protected:
-    Linked<IEngineRowAllocator> rowAllocator;
     bool isGrouped;
+    Linked<IEngineRowAllocator> rowAllocator;
 
 public:
     IMPLEMENT_IINTERFACE;
     WorkUnitRowReaderBase(IEngineRowAllocator *_rowAllocator, bool _isGrouped)
-        : rowAllocator(_rowAllocator), isGrouped(_isGrouped)
+        : isGrouped(_isGrouped), rowAllocator(_rowAllocator)
     {
 
     }
@@ -1100,7 +1100,6 @@ class InlineXmlDataReader : public WorkUnitRowReaderBase
     Owned<IPropertyTreeIterator> rows;
     IXmlToRowTransformer &rowTransformer;
 public:
-    IMPLEMENT_IINTERFACE;
     InlineXmlDataReader(IXmlToRowTransformer &_rowTransformer, IPropertyTree *_xml, IEngineRowAllocator *_rowAllocator, bool _isGrouped)
         : WorkUnitRowReaderBase(_rowAllocator, _isGrouped), xml(_xml), rowTransformer(_rowTransformer)
     {
@@ -1127,7 +1126,7 @@ public:
 //---------------------------------------------------------------------------------------
 
 static const StatisticsMapping graphStatistics(StKindNone);
-class CRoxieContextBase : public CInterface, implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback
+class CRoxieContextBase : implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback, public CInterface
 {
 protected:
     Owned<IWUGraphStats> graphStats;   // This needs to be destroyed very late (particularly, after the childgraphs)

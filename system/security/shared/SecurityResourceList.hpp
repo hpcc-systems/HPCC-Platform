@@ -24,8 +24,7 @@
 #include <string>
 
 
-class CSecurityResourceList : public CInterface,
-    implements ISecResourceList
+class CSecurityResourceList : implements ISecResourceList, public CInterface
 {
 private:
     bool m_complete;

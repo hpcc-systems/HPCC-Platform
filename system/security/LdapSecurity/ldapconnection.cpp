@@ -125,7 +125,7 @@ public:
     }
 };
 
-class CLoadBalancer : public CInterface, implements IInterface
+class CLoadBalancer : public CInterface
 {
 private:
     StringArray hostArray;
@@ -133,8 +133,6 @@ private:
     Mutex       m_mutex;
 
 public:
-    IMPLEMENT_IINTERFACE
-
     CLoadBalancer(const char* addrlist)
     {
         char *copyFullText = strdup(addrlist);
@@ -220,7 +218,7 @@ inline bool LdapServerDown(int rc)
     return rc==LDAP_SERVER_DOWN||rc==LDAP_UNAVAILABLE||rc==LDAP_TIMEOUT;
 }
 
-class CLdapConfig : public CInterface, implements ILdapConfig
+class CLdapConfig : implements ILdapConfig, public CInterface
 {
 private:
     LdapServerType       m_serverType; 
@@ -660,7 +658,7 @@ public:
 };
 
 
-class CLdapConnection : public CInterface, implements ILdapConnection
+class CLdapConnection : implements ILdapConnection, public CInterface
 {
 private:
     LDAP                *m_ld;
@@ -823,7 +821,7 @@ public:
     }
 };
 
-class CLdapConnectionPool : public CInterface, implements ILdapConnectionPool
+class CLdapConnectionPool : implements ILdapConnectionPool, public CInterface
 {
 private:
     int m_maxsize;
@@ -909,7 +907,7 @@ public:
 #define LDAP_CONNECTION_TIMEOUT INFINITE
 
 //------------ New Connection Pool Implementation ------------//
-class CLdapConnectionManager : public CInterface, implements IResourceFactory<CLdapConnection>
+class CLdapConnectionManager : implements IResourceFactory<CLdapConnection>, public CInterface
 {
     Owned<CLdapConfig>   m_ldapconfig;
     
@@ -940,7 +938,7 @@ public:
     }
 };
 
-class CLdapConnectionPool2 : public CInterface, implements ILdapConnectionPool
+class CLdapConnectionPool2 : implements ILdapConnectionPool, public CInterface
 {
 private:
     int m_maxsize;
@@ -1337,7 +1335,7 @@ static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _bas
 }
 
 static CriticalSection  lcCrit;
-class CLdapClient : public CInterface, implements ILdapClient
+class CLdapClient : implements ILdapClient, public CInterface
 {
 private:
     Owned<ILdapConnectionPool> m_connections;

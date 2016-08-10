@@ -62,11 +62,9 @@ class HRPCstub;
 class HRPCmodule;
 
 
-class HRPCserver : public CInterface, extends IInterface
+class HRPCserver : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     HRPCserver(IHRPCtransport *it);
     HRPCserver();
     ~HRPCserver();

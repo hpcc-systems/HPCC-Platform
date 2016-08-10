@@ -41,7 +41,7 @@ public:
     virtual void Disconnect()=0;
 };
 
-class MpTransportStateCommon: public CInterface, implements IMpTransportState
+class MpTransportStateCommon: implements IMpTransportState, public CInterface
 {
 protected:
     static CriticalSection critsect;
@@ -383,7 +383,7 @@ public:
 
 };
 
-class HRPCmptransport: public CInterface, implements IHRPCtransport 
+class HRPCmptransport: implements IHRPCtransport, public CInterface
 {
 
 protected:

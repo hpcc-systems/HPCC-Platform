@@ -1328,7 +1328,7 @@ IPropertyTree *deserializePartAttr(MemoryBuffer &mb)
 
 IPropertyTreeIterator *deserializePartAttrIterator(MemoryBuffer &mb)    // takes ownership of mb
 {
-    class cPartAttrIterator: public CInterface, implements IPropertyTreeIterator
+    class cPartAttrIterator: implements IPropertyTreeIterator, public CInterface
     {
         Owned<IPropertyTree> cur;
         unsigned pn;
@@ -1813,14 +1813,13 @@ IRemoteConnection *getSortedElements( const char *basexpath,
 
 #define PAGE_CACHE_TIMEOUT (1000*60*10)
 
-class CTimedCacheItem: extends CInterface
+class CTimedCacheItem: public CInterface
 {
 protected: friend class CTimedCache;
-    StringAttr owner;
     unsigned due;
+    StringAttr owner;
 public:
     DALI_UID hint;
-    IMPLEMENT_IINTERFACE;
     CTimedCacheItem(const char *_owner)
         : owner(_owner)
     {
@@ -1949,7 +1948,6 @@ static CTimedCache *pagedElementsCache=NULL;
 class CPECacheElem: public CTimedCacheItem
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CPECacheElem(const char *owner, ISortedElementsTreeFilter *_postFilter)
         : CTimedCacheItem(owner), postFilter(_postFilter), postFiltered(0)
     {
@@ -2225,13 +2223,13 @@ IClusterFileScanIterator *getClusterFileScanIterator(
                       bool loadbranch,
                       IUserDescriptor *user)
 {
-    class cFileScanIterator: public CInterface, implements IClusterFileScanIterator
+    class cFileScanIterator: implements IClusterFileScanIterator, public CInterface
     {
         Owned<IPropertyTree> cur;
         unsigned fn;
         Linked<IRemoteConnection> conn;
-        bool loadbranch;
         Linked<IGroup> lgrp;
+        bool loadbranch;
         bool exactmatch;
         bool anymatch;
     public:
@@ -2423,7 +2421,7 @@ void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user)
 
 
 
-class cDaliMutexSub: public CInterface, implements ISDSSubscription
+class cDaliMutexSub: implements ISDSSubscription, public CInterface
 {
     Semaphore &sem;
 public:
@@ -2440,7 +2438,7 @@ public:
 };
 
 
-class CDaliMutex: public CInterface, implements IDaliMutex
+class CDaliMutex: implements IDaliMutex, public CInterface
 {
     StringAttr name;
     CriticalSection crit;
@@ -2569,7 +2567,7 @@ IDaliMutex  *createDaliMutex(const char *name)
 
 */
 
-class CDFSredirection: public CInterface, implements IDFSredirection
+class CDFSredirection: implements IDFSredirection, public CInterface
 {
     MemoryAttr buf;
     unsigned version;
@@ -2623,7 +2621,7 @@ public:
         lastloaded = 0;
     }
 
-    class cDFSredirect: public CInterface, implements IDfsLogicalFileNameIterator
+    class cDFSredirect: implements IDfsLogicalFileNameIterator, public CInterface
     {
         unsigned idx;
         unsigned got;
@@ -2875,12 +2873,12 @@ void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &reload, 
 }
 
 
-class CLocalOrDistributedFile: public CInterface, implements ILocalOrDistributedFile
+class CLocalOrDistributedFile: implements ILocalOrDistributedFile, public CInterface
 {
+    bool fileExists;
     Owned<IDistributedFile> dfile;
     CDfsLogicalFileName lfn;    // set if localpath but prob not useful
     StringAttr localpath;
-    bool fileExists;
 public:
     IMPLEMENT_IINTERFACE;
     CLocalOrDistributedFile()

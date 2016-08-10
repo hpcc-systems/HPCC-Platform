@@ -35,7 +35,7 @@
 #include "espsession.ipp"
 
 
-class CEspHttpServer : public CInterface, implements IHttpServerService
+class CEspHttpServer : implements IHttpServerService, public CInterface
 {
 protected:
     ISocket&                m_socket;

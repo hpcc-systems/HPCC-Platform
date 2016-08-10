@@ -39,7 +39,7 @@
 
 typedef UnsignedArray FreedTagsArray;
 
-class CMPtagAllocator: public CInterface, implements IMPtagAllocator
+class CMPtagAllocator: implements IMPtagAllocator, public CInterface
 {
     CriticalSection crit;
     FreedTagsArray freedtags;

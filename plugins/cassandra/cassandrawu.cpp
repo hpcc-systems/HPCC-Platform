@@ -1996,7 +1996,7 @@ private:
     unsigned idx;
 };
 
-class CassJoinIterator : public CInterface, implements IConstWorkUnitIteratorEx
+class CassJoinIterator : implements IConstWorkUnitIteratorEx, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -2125,7 +2125,6 @@ static void lockWuid(Owned<IRemoteConnection> &connection, const char *wuid)
 class CCassandraWorkUnit : public CPersistedWorkUnit
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CCassandraWorkUnit(ICassandraSession *_sessionCache, IPTree *wuXML, ISecManager *secmgr, ISecUser *secuser, IRemoteConnection *_daliLock, bool _allDirty)
         : sessionCache(_sessionCache), CPersistedWorkUnit(secmgr, secuser), daliLock(_daliLock), allDirty(_allDirty)
     {

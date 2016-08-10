@@ -195,7 +195,7 @@ class CPermission : public CInterface, implements IInterface
 
 public:
     IMPLEMENT_IINTERFACE
-    
+
     CPermission(const char* account_name, ACT_TYPE account_type, int allows, int denies)
     {
         m_account_name.append(account_name);
@@ -212,7 +212,7 @@ public:
     void setDenies(int denies) { m_denies = denies;}
 };
 
-class CPermissionAction : public CInterface, implements IInterface
+class CPermissionAction : public CInterface
 {
 public:
     StringBuffer m_action;
@@ -225,8 +225,6 @@ public:
     ACT_TYPE     m_account_type;
     int          m_allows;
     int          m_denies;
-
-    IMPLEMENT_IINTERFACE
 };
 
 interface ILdapClient : extends IInterface

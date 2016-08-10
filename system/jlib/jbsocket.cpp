@@ -21,7 +21,7 @@
 
 #define BSOCKET_BUFSIZE 1024
 
-class BufferedSocket : public CInterface, implements IBufferedSocket
+class BufferedSocket : implements IBufferedSocket, public CInterface
 {
 private:
     char m_buf[BSOCKET_BUFSIZE + 1];

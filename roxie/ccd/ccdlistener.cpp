@@ -284,7 +284,6 @@ private:
 
 
 public:
-    IMPLEMENT_IINTERFACE;
     CascadeManager(const IRoxieContextLogger &_logctx) : logctx(_logctx)
     {
         entered = false;
@@ -592,7 +591,7 @@ public:
 
 //================================================================================================================================
 
-class ActiveQueryLimiter : public CInterface, implements IActiveQueryLimiter
+class ActiveQueryLimiter : implements IActiveQueryLimiter, public CInterface
 {
     IHpccProtocolListener *parent;
     IHpccProtocolMsgSink *sink;
@@ -1060,7 +1059,7 @@ public:
 };
 
 
-class RoxieQueryWorker : public CInterface, implements IPooledThread
+class RoxieQueryWorker : implements IPooledThread, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -1307,7 +1306,7 @@ private:
     StringAttr wuid;
 };
 
-class RoxieProtocolMsgContext : public CInterface, implements IHpccProtocolMsgContext
+class RoxieProtocolMsgContext : implements IHpccProtocolMsgContext, public CInterface
 {
 public:
     StringAttr queryName;
@@ -1502,7 +1501,7 @@ public:
 };
 
 
-class RoxieProtocolMsgSink : public CInterface, implements IHpccNativeProtocolMsgSink
+class RoxieProtocolMsgSink : implements IHpccNativeProtocolMsgSink, public CInterface
 {
     CriticalSection activeCrit;
     SocketEndpoint ep;

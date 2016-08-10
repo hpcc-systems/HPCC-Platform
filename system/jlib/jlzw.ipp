@@ -39,7 +39,7 @@ public:
 };
 
 
-class jlib_decl CLZWCompressor : public CInterface, public ICompressor
+class jlib_decl CLZWCompressor : public ICompressor, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -84,7 +84,7 @@ protected:
 };
 
 
-class jlib_decl CLZWExpander : public CInterface, public IExpander
+class jlib_decl CLZWExpander : public IExpander, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

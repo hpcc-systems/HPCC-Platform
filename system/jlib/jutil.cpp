@@ -757,7 +757,7 @@ int numtostr(char *dst, unsigned __int64 value)
 }
 
 
-class CRandom: public CInterface, public IRandomNumberGenerator
+class CRandom: public IRandomNumberGenerator, public CInterface
 {
     // from Knuth if I remember correctly
 #define HISTORYSIZE 55
@@ -846,7 +846,7 @@ jlib_decl int rand_r(unsigned int *seed)
 #endif
 #endif
 
-class CShuffledIterator: public CInterface, implements IShuffledIterator
+class CShuffledIterator: implements IShuffledIterator, public CInterface
 {
     CRandom rand;
     unsigned *seq;
@@ -1853,7 +1853,7 @@ bool deduceMask(const char *fn, bool expandN, StringAttr &mask, unsigned &pret, 
 #ifdef _WIN32
 
 
-class CWindowsAuthenticatedUser: public CInterface, implements IAuthenticatedUser
+class CWindowsAuthenticatedUser: implements IAuthenticatedUser, public CInterface
 {
     StringAttr name;
     HANDLE usertoken;
@@ -1906,7 +1906,7 @@ IAuthenticatedUser *createAuthenticatedUser() { return new CWindowsAuthenticated
 
 #elif defined(__linux__)
 
-class CLinuxAuthenticatedUser: public CInterface, implements IAuthenticatedUser
+class CLinuxAuthenticatedUser: implements IAuthenticatedUser, public CInterface
 {
     StringAttr name;
     uid_t uid;

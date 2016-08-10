@@ -55,7 +55,8 @@ interface ILogFailSafe : IInterface
 
 extern "C" WSLOGFAILSAFE_API ILogFailSafe * createFailsafelogger(const char* logType="", const char* logsdir="./logs");
 
-class CLogFailSafe : public CInterface,  implements ILogFailSafe
+//MORE: This should probably be in the cpp file
+class CLogFailSafe : implements ILogFailSafe, public CInterface
 {
     CLogSerializer m_Added;
     CLogSerializer m_Cleared;

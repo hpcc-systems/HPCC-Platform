@@ -49,7 +49,7 @@ atomic_t numFilesOpen[2];
 
 // We point unopened files at a FailingIO object, which avoids having to test for NULL on every access
 
-class NotYetOpenException : public CInterface, implements IException
+class NotYetOpenException : implements IException, public CInterface
 {
 public: 
     IMPLEMENT_IINTERFACE;
@@ -58,7 +58,7 @@ public:
     virtual MessageAudience errorAudience() const { return MSGAUD_internal; }
 };
 
-class CFailingFileIO : public CInterface, implements IFileIO
+class CFailingFileIO : implements IFileIO, public CInterface
 {
 #define THROWNOTOPEN throw new NotYetOpenException()
 
@@ -74,7 +74,7 @@ public:
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return 0; }
 } failure;
 
-class CLazyFileIO : public CInterface, implements ILazyFileIO, implements IDelayedFile
+class CLazyFileIO : implements ILazyFileIO, implements IDelayedFile, public CInterface
 {
 protected:
     IArrayOf<IFile> sources;
@@ -562,7 +562,7 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
 
 typedef StringArray *StringArrayPtr;
 
-class CRoxieFileCache : public CInterface, implements ICopyFileProgress, implements IRoxieFileCache
+class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress, public CInterface
 {
     friend class CcdFileTest;
     mutable ICopyArrayOf<ILazyFileIO> todo; // Might prefer a queue but probably doesn't really matter.
@@ -1355,7 +1355,7 @@ ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDes
 
 //====================================================================================================
 
-class CFilePartMap : public CInterface, implements IFilePartMap
+class CFilePartMap : implements IFilePartMap, public CInterface
 {
     class FilePartMapElement
     {
@@ -1494,7 +1494,7 @@ extern IFilePartMap *createFilePartMap(const char *fileName, IFileDescriptor &fd
 
 //====================================================================================================
 
-class CFileIOArray : public CInterface, implements IFileIOArray
+class CFileIOArray : implements IFileIOArray, public CInterface
 {
     unsigned __int64 totalSize;
     mutable CriticalSection crit;
@@ -1644,7 +1644,7 @@ public:
 
 CRoxieFileCache * fileCache;
 
-class CResolvedFile : public CInterface, implements IResolvedFileCreator, implements ISDSSubscription
+class CResolvedFile : implements IResolvedFileCreator, implements ISDSSubscription, public CInterface
 {
 protected:
     IResolvedFileCache *cached;
@@ -2368,11 +2368,11 @@ extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, 
     return new CResolvedFile(lfn, physical, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE, daliHelper, isDynamic, cacheIt, writeAccess, false);
 }
 
-class CSlaveDynamicFileCache : public CInterface, implements ISlaveDynamicFileCache
+class CSlaveDynamicFileCache : implements ISlaveDynamicFileCache, public CInterface
 {
+    unsigned tableSize;
     mutable CriticalSection crit;
     CIArrayOf<CSlaveDynamicFile> files; // expect numbers to be small - probably not worth hashing
-    unsigned tableSize;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -2463,7 +2463,7 @@ extern IRoxieFileCache &queryFileCache()
     return *fileCache;
 }
 
-class CRoxieWriteHandler : public CInterface, implements IRoxieWriteHandler
+class CRoxieWriteHandler : implements IRoxieWriteHandler, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

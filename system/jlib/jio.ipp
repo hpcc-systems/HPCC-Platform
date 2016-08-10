@@ -29,7 +29,7 @@
 
 
 
-class CUnbufferedReadWriteSeq : public CInterface, public IWriteSeq, public IReadSeq
+class CUnbufferedReadWriteSeq : public IWriteSeq, public IReadSeq, public CInterface
 {
 private:
     offset_t offset;
@@ -54,7 +54,7 @@ public:
     virtual void stop() {} // no action required
 };
 
-class CTeeWriteSeq : public CInterface, public IWriteSeq
+class CTeeWriteSeq : public IWriteSeq, public CInterface
 {
 protected:
     IWriteSeq *w1;
@@ -78,7 +78,6 @@ public:
 class CBufferedIOStreamBase: public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE
     CBufferedIOStreamBase(unsigned _bufferSize);
 
 

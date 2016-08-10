@@ -23,7 +23,7 @@
 #include "jlog.hpp"
 #include "eclhelper.hpp"
 
-class WORKUNIT_API WorkflowException : public CInterface, public IException
+class WORKUNIT_API WorkflowException : public IException, public CInterface
 {
 public:
     typedef enum { SYSTEM, USER, ABORT } Type;

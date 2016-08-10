@@ -93,7 +93,7 @@ static void readBio(BIO* bio, StringBuffer& buf)
 namespace securesocket
 {
 
-class CStringSet : public CInterface, implements IInterface
+class CStringSet : public CInterface
 {
     class StringHolder : public CInterface
     {
@@ -111,8 +111,6 @@ private:
     OwningStringSuperHashTableOf<StringHolder> strhash;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     void add(const char* val)
     {
         StringHolder* h1 = strhash.find(val);
@@ -127,7 +125,7 @@ public:
     }
 };
 
-class CSecureSocket : public CInterface, implements ISecureSocket
+class CSecureSocket : implements ISecureSocket, public CInterface
 {
 private:
     SSL*        m_ssl;
@@ -833,7 +831,7 @@ static void initSSLLibrary()
 }
 
 
-class CSecureSocketContext : public CInterface, implements ISecureSocketContext
+class CSecureSocketContext : implements ISecureSocketContext, public CInterface
 {
 private:
     SSL_CTX*    m_ctx;
@@ -1049,7 +1047,7 @@ public:
     }
 };
 
-class CRsaCertificate : public CInterface, implements ICertificate
+class CRsaCertificate : implements ICertificate, public CInterface
 {
 private:
     StringAttr m_destaddr;

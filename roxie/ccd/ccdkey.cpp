@@ -546,7 +546,7 @@ typedef IArrayOf<InMemoryIndex> InMemoryIndexSet;
  *   giving entire file, and uses getRecordSize(). Will avoid a one or more virtual peek() calls per row.
  *====================================================================================================*/
 
-class InMemoryDirectReader : public CInterface, implements IDirectReader, implements IThorDiskCallback, implements ISimpleReadStream
+class InMemoryDirectReader : implements IDirectReader, implements IThorDiskCallback, implements ISimpleReadStream, public CInterface
 {
     // MORE - might be able to use some of the jlib IStream implementations. But I don't want any indirections...
 public:
@@ -673,7 +673,7 @@ public:
     }
 };
 
-class BufferedDirectReader : public CInterface, implements IDirectReader, implements IThorDiskCallback, implements ISimpleReadStream
+class BufferedDirectReader : implements IDirectReader, implements IThorDiskCallback, implements ISimpleReadStream, public CInterface
 {
     // MORE - could combine some code with in memory version.
 public:
@@ -859,7 +859,7 @@ public:
 
 };
 
-class InMemoryIndexManager : public CInterface, implements IInMemoryIndexManager
+class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
 {
     // manages key selection and rebuilding.
 
@@ -1495,7 +1495,7 @@ extern void reportInMemoryIndexStatistics(StringBuffer &reply, const char *filen
 }
 
 
-class InMemoryIndexCursor : public CInterface, implements IInMemoryIndexCursor
+class InMemoryIndexCursor : implements IInMemoryIndexCursor, public CInterface
 {
     friend class InMemoryIndexTest;
     friend class InMemoryIndexManager;

@@ -38,7 +38,7 @@
 #define OUTPUT_RECORDSIZE
 
 
-class CPartHandler : public CSimpleInterface, implements IRowStream
+class CPartHandler : implements IRowStream, public CSimpleInterface
 {
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);

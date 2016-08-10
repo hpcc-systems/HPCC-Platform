@@ -3929,7 +3929,7 @@ bool CHThorGroupSortActivity::sortAndSpillRows()
         StringBuffer fbase;
         agent.getTempfileBase(fbase).appendf(".spill_sort_%p", this);
         PROGLOG("SORT: spilling to disk, filename base %s", fbase.str());
-        class CHThorRowLinkCounter : public CSimpleInterface, implements IRowLinkCounter
+        class CHThorRowLinkCounter : implements IRowLinkCounter, public CSimpleInterface
         {
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -9514,7 +9514,7 @@ void CHThorGraphLoopResultWriteActivity::execute()
 
 //=====================================================================================================
 
-class CCounterMeta : public CInterface, implements IOutputMetaData
+class CCounterMeta : implements IOutputMetaData, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE

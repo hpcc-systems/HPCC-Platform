@@ -47,7 +47,7 @@ enum MessageLogFlag
     LOGCONTENT = 2
 };
 
-class CHttpMessage : public CInterface, implements IHttpMessage
+class CHttpMessage : implements IHttpMessage, public CInterface
 {
 protected:
     ISocket&     m_socket;

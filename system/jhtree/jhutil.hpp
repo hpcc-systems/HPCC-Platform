@@ -25,7 +25,7 @@
 // TABLE should be SuperHashTable derivative to contain MAPPING's
 // MAPPING should be something that constructs with (KEY, ENTRY) and impl. query returning ref. to ENTRY
 template <class KEY, class ENTRY, class MAPPING, class TABLE>
-class CMRUCacheOf : public CInterface, public IInterface
+class CMRUCacheOf : public CInterface//, public IInterface
 {
 protected:
     class DTABLE : public TABLE
@@ -52,8 +52,6 @@ protected:
     }
 public:
     typedef SuperHashIteratorOf<MAPPING> CMRUIterator;
-
-    IMPLEMENT_IINTERFACE;
 
     CMRUCacheOf<KEY, ENTRY, MAPPING, TABLE>() : table(*this) { }
     void add(KEY key, ENTRY &entry, bool promoteIfAlreadyPresent=true)

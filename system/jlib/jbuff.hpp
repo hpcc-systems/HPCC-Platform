@@ -283,12 +283,11 @@ public:
     virtual void deserialize(MemoryBuffer &src) = 0;
 };
 
-class jlib_decl MemoryBuffer2IDataVal : public CInterface, implements IDataVal
+class jlib_decl MemoryBuffer2IDataVal : implements IDataVal
 {
 
 public:
     MemoryBuffer2IDataVal(MemoryBuffer & _buffer) : buffer(_buffer) {}
-    IMPLEMENT_IINTERFACE;
 
     virtual const void * data() const { return buffer.toByteArray(); }
     virtual void clear() { } // clearing when appending does nothing
@@ -300,11 +299,10 @@ private:
     MemoryBuffer & buffer;
 };
 
-class jlib_decl MemoryAttr2IStringVal : public CInterface, implements IStringVal
+class jlib_decl MemoryAttr2IStringVal : implements IStringVal
 {
 public:
      MemoryAttr2IStringVal(MemoryAttr & _attr) : attr(_attr) {}
-     IMPLEMENT_IINTERFACE;
 
      virtual const char * str() const;
      virtual void set(const char *val) { attr.set(strlen(val), val); }
@@ -316,11 +314,10 @@ protected:
      MemoryAttr & attr;
 };
 
-class jlib_decl Variable2IDataVal : public CInterface, implements IDataVal
+class jlib_decl Variable2IDataVal : implements IDataVal
 {
 public:
     Variable2IDataVal(unsigned * _pLen, void * * _pData) { pLen = _pLen; pData = _pData; }
-    IMPLEMENT_IINTERFACE;
 
     virtual const void * data() const { return *pData; };
     virtual void clear() { free(*pData); *pData = NULL; *pLen = 0; };
@@ -334,11 +331,10 @@ private:
 };
 
 //Similar to above, but only used for fixed sized returns (or variable size rows with a known max length)
-class jlib_decl Fixed2IDataVal : public CInterface, implements IDataVal
+class jlib_decl Fixed2IDataVal : implements IDataVal
 {
 public:
     Fixed2IDataVal(size_t _len, void * _ptr) { len = _len; ptr = _ptr; }
-    IMPLEMENT_IINTERFACE;
 
     virtual const void * data() const { return ptr; };
     virtual void clear() { memset(ptr, 0, len); };

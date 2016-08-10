@@ -2040,7 +2040,7 @@ private:
     jmethodID javaMethodID;
 };
 
-class JavaXmlBuilder : public CInterface, implements IXmlWriterExt
+class JavaXmlBuilder : implements IXmlWriterExt, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -2350,10 +2350,9 @@ public:
     Linked<IEsdlDefinition> esdl;
     StringAttr javaPackage;
     StringAttr esdlType;
-    class DefStackEntry : public CInterface, implements IInterface
+    class DefStackEntry : public CInterface
     {
     public:
-        IMPLEMENT_IINTERFACE;
         DefStackEntry(const char *fieldname, IEsdlDefObject *_defType, IEsdlDefObject *_defObj) : name(fieldname), defType(_defType), defObj(_defObj), Class(0), obj(0), constructor(0), append(0), fieldId(0)
         {
         }
@@ -2454,7 +2453,7 @@ public:
         defStack.append(*entry.getClear());
     }
 
-    IArrayOf<DefStackEntry> defStack;
+    CIArrayOf<DefStackEntry> defStack;
     MapStringTo<jclass> javaClasses;
 };
 

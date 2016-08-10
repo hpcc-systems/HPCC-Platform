@@ -411,7 +411,6 @@ private:
 class CassandraStatementInfo : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries);
     ~CassandraStatementInfo();
     void stop();

@@ -28,8 +28,6 @@ bool ControlHandler();
 class QueryHelper : implements IEclPlusHelper
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     QueryHelper(IProperties * globals, IFormatType * format);
     virtual ~QueryHelper();
 

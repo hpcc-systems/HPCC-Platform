@@ -42,12 +42,12 @@ interface IXRefFilesNode : extends IInterface
     virtual void Commit() = 0;
 };
 
-class CXRefFilesNode : public CSimpleInterface , implements IXRefFilesNode
+class CXRefFilesNode : implements IXRefFilesNode, public CSimpleInterface
 {
 protected:
+    bool m_bChanged;
     IPropertyTree& m_baseTree;
     Owned<IPropertyTree> m_DataTree;
-    bool m_bChanged;
     StringBuffer _data;
     StringBuffer prefixName;
     StringAttr rootdir;

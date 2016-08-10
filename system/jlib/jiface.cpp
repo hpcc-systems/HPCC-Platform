@@ -23,6 +23,16 @@
 
 //===========================================================================
 
+bool CSimpleInterface::Release() const
+{
+    return CSimpleInterfaceOf<CEmptyClass>::Release();
+}
+
+bool CInterface::Release() const
+{
+    return CInterfaceOf<CEmptyClass>::Release();
+}
+
 //===========================================================================
 
 #if !defined(_WIN32) && !defined(__GNUC__)

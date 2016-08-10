@@ -127,7 +127,7 @@ protected:
     CompilerType compiler;
 };
 
-class HQLCPP_API HqlCppSectionWriter : public CInterface, implements ISectionWriter
+class HQLCPP_API HqlCppSectionWriter : implements ISectionWriter, public CInterface
 {
 public:
     HqlCppSectionWriter(IHqlCppInstance & _instance, CompilerType _compiler) : instance(_instance), writer(_compiler)

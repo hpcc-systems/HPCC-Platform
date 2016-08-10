@@ -67,7 +67,7 @@ void initSignals()
 
 //=========================================================================================
 
-class Waiter : public CInterface, implements IAbortHandler
+class Waiter : implements IAbortHandler, public CInterface
 {
     Semaphore aborted;
 public:

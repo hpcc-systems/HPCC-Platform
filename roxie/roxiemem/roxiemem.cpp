@@ -474,7 +474,7 @@ static void dumpHeapState()
 
 IPerfMonHook *createRoxieMemStatsPerfMonHook(IPerfMonHook *chain)
 {
-    class memstatsPerfMonHook : public CInterface, implements IPerfMonHook
+    class memstatsPerfMonHook : implements IPerfMonHook, public CInterface
     {
         Linked<IPerfMonHook> chain;
     public:
@@ -2124,7 +2124,7 @@ public:
 
 typedef MapBetween<unsigned, unsigned, ActivityEntry, ActivityEntry> MapActivityToActivityEntry;
 
-class CActivityMemoryUsageMap : public CInterface, implements IActivityMemoryUsageMap
+class CActivityMemoryUsageMap : implements IActivityMemoryUsageMap, public CInterface
 {
     MapActivityToActivityEntry map;
     CIArrayOf<HeapEntry> heaps;
@@ -3053,7 +3053,7 @@ const void * ChunkedHeaplet::_compactRow(const void * ptr, HeapCompactState & st
 //================================================================================
 
 //Allow private virtual functions to be added to the abstract row manager:
-class CRowManager : public CInterface, implements IRowManager
+class CRowManager : implements IRowManager, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -5091,7 +5091,7 @@ void DataBuffer::noteLinked(const void *ptr)
     count.fetch_add(1, std::memory_order_relaxed);
 }
 
-class CDataBufferManager : public CInterface, implements IDataBufferManager
+class CDataBufferManager : implements IDataBufferManager, public CInterface
 {
     friend class DataBufferBottom;
     CriticalSection crit;

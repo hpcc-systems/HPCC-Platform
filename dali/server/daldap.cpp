@@ -43,7 +43,7 @@ static void ignoreSigPipe()
 #endif
 }
 
-class CDaliLdapConnection: public CInterface, implements IDaliLdapConnection
+class CDaliLdapConnection: implements IDaliLdapConnection, public CInterface
 {
     Owned<ISecManager>      ldapsecurity;
     StringAttr              filesdefaultuser;

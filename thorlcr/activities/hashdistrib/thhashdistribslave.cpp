@@ -77,7 +77,7 @@
 #define HDSendPrintLog5(M,P1,P2,P3,P4)
 #endif
 
-class CDistributorBase : public CInterface, implements IHashDistributor, implements IExceptionHandler
+class CDistributorBase : implements IHashDistributor, implements IExceptionHandler, public CInterface
 {
     Linked<IThorRowInterfaces> rowIf;
     IEngineRowAllocator *allocator;
@@ -100,7 +100,7 @@ protected:
     /*
      * CSendBucket - a collection of rows destined for a particular destination target(slave)
      */
-    class CSendBucket : public CSimpleInterface, implements IRowStream
+    class CSendBucket : implements IRowStream, public CSimpleInterface
     {
         CDistributorBase &owner;
         size32_t total;
@@ -262,7 +262,7 @@ protected:
      * CSender, main send loop functionality
      * processes input, constructs CSendBucket's and manages creation CWriteHandler threads
      */
-    class CSender : public CSimpleInterface, implements IThreadFactory, implements IExceptionHandler
+    class CSender : implements IThreadFactory, implements IExceptionHandler, public CSimpleInterface
     {
         class CTarget
         {
@@ -364,7 +364,7 @@ protected:
          * When done, it will see if more queue available.
          * NB: There will be at most 1 writer per destination target (up to thread pool limit)
          */
-        class CWriteHandler : public CSimpleInterface, implements IPooledThread
+        class CWriteHandler : implements IPooledThread, public CSimpleInterface
         {
             CSender &owner;
             CDistributorBase &distributor;
@@ -1522,7 +1522,7 @@ class CRowPullDistributor: public CDistributorBase
         }
     } *txthread;
 
-    class cSortedDistributeMerger : public CSimpleInterface, implements IRowProvider
+    class cSortedDistributeMerger : implements IRowProvider, public CSimpleInterface
     {
         CDistributorBase &parent;
         Owned<IRowStream> out;
@@ -2095,7 +2095,7 @@ public:
 };
 
 //===========================================================================
-class CHDRproportional: public CSimpleInterface, implements IHash
+class CHDRproportional: implements IHash, public CSimpleInterface
 {
     CActivityBase *activity;
     Owned<IFile> tempfile;
@@ -2505,7 +2505,7 @@ public:
     inline const void **getRowArray() { return CThorExpandingRowArray::getRowArray(); }
 };
 
-class CSpill : public CSimpleInterface, implements IRowWriter
+class CSpill : implements IRowWriter, public CSimpleInterface
 {
     CActivityBase &owner;
     IThorRowInterfaces *rowIf;
@@ -3743,7 +3743,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
     __int64 readCount = 0;
     if (ordered)
     {
-        class CRowAggregatedStream : public CInterface, implements IRowStream
+        class CRowAggregatedStream : implements IRowStream, public CInterface
         {
             CActivityBase &activity;
             IThorRowInterfaces *rowIf;
@@ -3807,7 +3807,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
     }
     else
     {
-        class CRowAggregatedStream : public CInterface, implements IRowStream
+        class CRowAggregatedStream : implements IRowStream, public CInterface
         {
             Linked<RowAggregator> localAggregated;
         public:

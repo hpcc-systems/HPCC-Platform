@@ -217,10 +217,10 @@ inline void LOGFDESC(const char *title,IFileDescriptor *fdesc)
 }
 
 
-class CDFS_Exception: public CInterface, implements IDFS_Exception
+class CDFS_Exception: implements IDFS_Exception, public CInterface
 {
-    StringAttr errstr;
     int errcode;
+    StringAttr errstr;
 public:
     CDFS_Exception(int _errcode, const char *_errstr)
         : errstr(_errstr)
@@ -1010,7 +1010,7 @@ interface IDistributedFileTransactionExt : extends IDistributedFileTransaction
     virtual ICodeContext *queryCodeContext()=0;
 };
 
-class CDistributedFileDirectory: public CInterface, implements IDistributedFileDirectory
+class CDistributedFileDirectory: implements IDistributedFileDirectory, public CInterface
 {
     Owned<IUserDescriptor> defaultudesc;
     Owned<IDFSredirection> redirection;
@@ -1390,7 +1390,7 @@ public:
     }
 };
 
-class CDistributedFileTransaction: public CInterface, implements IDistributedFileTransactionExt
+class CDistributedFileTransaction: implements IDistributedFileTransactionExt, public CInterface
 {
     class CTransactionFile : public CSimpleInterface
     {
@@ -1863,7 +1863,7 @@ static bool recursiveCheckEmptyScope(IPropertyTree &ct)
 }
 
 
-class CDFScopeIterator: public CInterface, implements IDFScopeIterator
+class CDFScopeIterator: implements IDFScopeIterator, public CInterface
 {
     PointerArray scopes;
     unsigned index;
@@ -1964,10 +1964,10 @@ struct SerializeFileAttrOptions
     }
 };
 
-class CDFAttributeIterator: public CInterface, implements IDFAttributesIterator
+class CDFAttributeIterator: implements IDFAttributesIterator, public CInterface
 {
-    IArrayOf<IPropertyTree> attrs;
     unsigned index;
+    IArrayOf<IPropertyTree> attrs;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -2126,7 +2126,7 @@ public:
 };
 
 
-class CDFProtectedIterator: public CInterface, implements IDFProtectedIterator
+class CDFProtectedIterator: implements IDFProtectedIterator, public CInterface
 {
     StringAttr owner;
     StringAttr fn;
@@ -2399,7 +2399,7 @@ public:
  * ARRAYTY need to be extended from IArrayOf<>
  */
 template <class INTERFACE, class ARRAYTY>
-class CDistributedFileIteratorBase: public CInterface, implements INTERFACE
+class CDistributedFileIteratorBase: implements INTERFACE, public CInterface
 {
 protected:
     unsigned index;
@@ -2663,7 +2663,7 @@ static bool checkProtectAttr(const char *logicalname,IPropertyTree *froot,String
  * The actual interface (extended from IDistributedFile) is provided as a template argument.
  */
 template <class INTERFACE>
-class CDistributedFileBase : public CInterface, implements INTERFACE
+class CDistributedFileBase : implements INTERFACE, public CInterface
 {
 protected:
     Owned<IPropertyTree> root;    
@@ -6769,7 +6769,7 @@ unsigned getSuperFileSubs(IDistributedSuperFile *super, IArrayOf<IDistributedFil
 
 // --------------------------------------------------------
 
-class CNamedGroupIterator: public CInterface, implements INamedGroupIterator
+class CNamedGroupIterator: implements INamedGroupIterator, public CInterface
 {
     Owned<IPropertyTreeIterator> pe;
     Linked<IRemoteConnection> conn;
@@ -6882,7 +6882,7 @@ protected:
     unsigned cachedtime;
 };
 
-class CNamedGroupStore: public CInterface, implements INamedGroupStore
+class CNamedGroupStore: implements INamedGroupStore, public CInterface
 {
     CriticalSection cachesect;
     CIArrayOf<CNamedGroupCacheEntry> cache;
@@ -8322,7 +8322,7 @@ void closedownDFS()  // called by dacoven
     groupStore = NULL;
 }
 
-class CDFPartFilter : public CInterface, implements IDFPartFilter
+class CDFPartFilter : implements IDFPartFilter, public CInterface
 {
 protected:
     bool *partincluded;
@@ -11096,7 +11096,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn, IUserDescrip
 }
 
 typedef MapStringTo<bool> SubfileSet;
-class CFilterAttrIterator: public CInterface, implements IDFAttributesIterator
+class CFilterAttrIterator: implements IDFAttributesIterator, public CInterface
 {
     Owned<IDFAttributesIterator> iter;
     Linked<IUserDescriptor> user;
@@ -11175,7 +11175,7 @@ bool decodeChildGroupName(const char *gname,StringBuffer &parentname, StringBuff
     return true;
 }
 
-class CLightWeightSuperFileConn: public CInterface, implements ISimpleSuperFileEnquiry
+class CLightWeightSuperFileConn: implements ISimpleSuperFileEnquiry, public CInterface
 {
     CFileLock lock;
     bool readonly;
@@ -11502,7 +11502,7 @@ bool CDistributedFileDirectory::getFileSuperOwners(const char *logicalname, Stri
     return true;
 }
 
-class CFileRelationship: public CInterface, implements IFileRelationship
+class CFileRelationship: implements IFileRelationship, public CInterface
 {
     Linked<IPropertyTree> pt;
     const char *queryProp(const char *name)
@@ -11532,7 +11532,7 @@ public:
     virtual IPropertyTree *queryTree() { return pt.get(); }
 };
 
-class CFileRelationshipIterator: public CInterface, implements IFileRelationshipIterator
+class CFileRelationshipIterator: implements IFileRelationshipIterator, public CInterface
 {
     unsigned num;
     unsigned idx;
@@ -12105,11 +12105,11 @@ extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild)
 
 IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned numFiles, DFUQResultField* localFilters, const char* localFilterBuf)
 {
-    class CFileAttrIterator: public CInterface, implements IPropertyTreeIterator
+    class CFileAttrIterator: implements IPropertyTreeIterator, public CInterface
     {
+        size32_t fileDataStart;
         Owned<IPropertyTree> cur;
         StringArray fileNodeGroups;
-        size32_t fileDataStart;
 
         void setFileNodeGroup(IPropertyTree *attr, const char* group, StringArray& nodeGroupFilter)
         {
@@ -12319,7 +12319,7 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
     unsigned *total,
     bool *allMatchingFiles)
 {
-    class CDFUPager : public CSimpleInterface, implements IElementsPager
+    class CDFUPager : implements IElementsPager, public CSimpleInterface
     {
         IUserDescriptor* udesc;
         //StringAttr clusterFilter;

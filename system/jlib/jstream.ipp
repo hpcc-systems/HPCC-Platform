@@ -48,7 +48,7 @@ public:
     virtual int readNext() = 0;
 };
 
-class jlib_decl CStringBufferInputStream : public CInterface, public CByteInputStream
+class jlib_decl CStringBufferInputStream : public CByteInputStream, public CInterface
 {
 private:
     size32_t pos;
@@ -61,7 +61,7 @@ public:
     virtual int readNext();
 };
 
-class jlib_decl CUserStringBufferInputStream : public CInterface, public CByteInputStream
+class jlib_decl CUserStringBufferInputStream : public CByteInputStream, public CInterface
 {
 private:
     size32_t pos;
@@ -74,7 +74,7 @@ public:
     virtual int readNext();
 };
 
-class jlib_decl CFileInputStream : public CInterface, public CByteInputStream
+class jlib_decl CFileInputStream : public CByteInputStream, public CInterface
 {
 private:
     unsigned char buffer[1024];
@@ -92,7 +92,7 @@ public:
     virtual int readNext();
 };
 
-class jlib_decl CSocketInputStream : public CInterface, public CByteInputStream
+class jlib_decl CSocketInputStream : public CByteInputStream, public CInterface
 {
 private:
     unsigned char buffer[1024];
@@ -111,7 +111,7 @@ public:
     virtual int readNext();
 };
 
-class jlib_decl CSocketOutputStream : public CInterface, public IByteOutputStream
+class jlib_decl CSocketOutputStream : public IByteOutputStream, public CInterface
 {
 private:
     ISocket *sock;
@@ -127,7 +127,7 @@ public:
     virtual void writeString(const char *str) { writeBytes(str, strlen(str)); }
 };
 
-class jlib_decl CFileOutputStream : public CInterface, public IByteOutputStream
+class jlib_decl CFileOutputStream : public IByteOutputStream, public CInterface
 {
 private:
     int handle;
@@ -142,7 +142,7 @@ public:
     virtual void writeString(const char *str) { writeBytes(str, strlen(str)); }
 };
 
-class jlib_decl CStringBufferOutputStream : public CInterface, public IByteOutputStream
+class jlib_decl CStringBufferOutputStream : public IByteOutputStream, public CInterface
 {
 private:
   StringBuffer & out;

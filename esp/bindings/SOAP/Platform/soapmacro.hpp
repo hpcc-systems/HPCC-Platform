@@ -20,8 +20,7 @@
 #include "soapenc.hpp"
 
 #define BEGIN_SOAP_REQ(MyService) \
-class CSoap##MyService##Request : public CInterface, \
-    implements IEsp##MyService##Request\
+class CSoap##MyService##Request : implements IEsp##MyService##Request, public CInterface \
 {\
 public:\
         IMPLEMENT_IINTERFACE;

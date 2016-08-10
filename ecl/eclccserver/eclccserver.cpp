@@ -172,7 +172,7 @@ private:
 // A threadpool is used to allow multiple compiles to be submitted at once. Threads are reused when compilation completes.
 //------------------------------------------------------------------------------------------------------------------
 
-class EclccCompileThread : public CInterface, implements IPooledThread, implements IErrorReporter
+class EclccCompileThread : implements IPooledThread, implements IErrorReporter, public CInterface
 {
     StringAttr wuid;
     Owned<IWorkUnit> workunit;

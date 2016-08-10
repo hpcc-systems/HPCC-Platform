@@ -912,10 +912,10 @@ public:
 };
 
 
-class CDFUhelper: public CInterface, implements IDFUhelper
+class CDFUhelper: implements IDFUhelper, public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE
 
     void addSuper(const char *superfname, IUserDescriptor *user, unsigned numtoadd, const char **subfiles, const char *before, bool autocreatesuper)
     {

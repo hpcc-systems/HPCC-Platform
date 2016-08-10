@@ -947,13 +947,13 @@ public:
 };
 
 
-class CMergeRowStreams : public CInterface, implements IRowStream
+class CMergeRowStreams : implements IRowStream, public CInterface
 {
 protected:
     CRowStreamMerger *merger;
     bool eos;
 
-    class cProvider: public CInterface, implements IRowProvider
+    class cProvider: implements IRowProvider, public CInterface
     {
         IArrayOf<IRowStream> ostreams;
         IRowStream **streams;

@@ -30,7 +30,7 @@
 
 typedef MapStringTo<bool> BoolHash;
 
-class WuExpandedResultBuffer : public CInterface, implements IPTreeNotifyEvent
+class WuExpandedResultBuffer : implements IPTreeNotifyEvent, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -289,7 +289,7 @@ class WuWebView : public CInterface,
     implements IIncludeHandler
 {
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE
 
     WuWebView(IConstWorkUnit &wu, const char *_target, const char *queryname, const char *wdir, bool mapEspDir, bool delay=true) :
         manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay), target(_target)

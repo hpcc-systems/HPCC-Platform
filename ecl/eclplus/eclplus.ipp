@@ -22,8 +22,6 @@
 interface IEclPlusHelper  : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     virtual bool doit(FILE * fp) = 0;
 };
 

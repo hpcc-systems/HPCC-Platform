@@ -222,7 +222,7 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
     return ret;
 }
 
-class CRoxieQueryPacket : public CInterface, implements IRoxieQueryPacket
+class CRoxieQueryPacket : implements IRoxieQueryPacket, public CInterface
 {
 protected:
     RoxiePacketHeader *data;
@@ -1403,7 +1403,7 @@ void RoxieQueue::abortChannel(unsigned channel)
 
 //=================================================================================
 
-class CallbackEntry : public CInterface, implements IPendingCallback
+class CallbackEntry : implements IPendingCallback, public CInterface
 {
     const RoxiePacketHeader &header;
     StringAttr lfn;
@@ -1446,7 +1446,7 @@ public:
     }
 };
 
-class RoxieReceiverBase : public CInterface, implements IRoxieOutputQueueManager
+class RoxieReceiverBase : implements IRoxieOutputQueueManager, public CInterface
 {
 protected:
 #ifdef ROXIE_SLA_LOGIC
@@ -1643,7 +1643,7 @@ class RoxieThrottledPacketSender : public Thread
     unsigned maxPacketSize;
     SafeQueueOf<IRoxieQueryPacket, false> queue;
 
-    class StoppedException: public CInterface, public IException
+    class StoppedException: public IException, public CInterface
     {
     public:
         IMPLEMENT_IINTERFACE;
@@ -2282,7 +2282,7 @@ public:
 
 };
 
-class CLocalMessageUnpackCursor : public CInterface, implements IMessageUnpackCursor
+class CLocalMessageUnpackCursor : implements IMessageUnpackCursor, public CInterface
 {
     void *data;
     unsigned datalen;
@@ -2327,7 +2327,7 @@ public:
     }
 };
 
-class CLocalMessageResult : public CInterface, implements IMessageResult
+class CLocalMessageResult : implements IMessageResult, public CInterface
 {
     void *data;
     void *meta;
@@ -2377,7 +2377,7 @@ public:
 
 };
 
-class CLocalMessageCollator : public CInterface, implements ILocalMessageCollator
+class CLocalMessageCollator : implements ILocalMessageCollator, public CInterface
 {
     InterruptableSemaphore sem;
     QueueOf<IMessageResult, false> pending;
@@ -2434,7 +2434,7 @@ public:
     }
 };
 
-class RoxieLocalReceiveManager : public CInterface, implements ILocalReceiveManager
+class RoxieLocalReceiveManager : implements ILocalReceiveManager, public CInterface
 {
     MapXToMyClass<ruid_t, ruid_t, ILocalMessageCollator> collators;
     CriticalSection crit;

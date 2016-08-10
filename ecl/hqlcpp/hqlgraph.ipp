@@ -25,7 +25,7 @@
 
 //---------------------------------------------------------------------------
 
-class LogicalGraphInfo : public CInterface, public IInterface
+class LogicalGraphInfo : public IInterface, public CInterface
 {
 public:
     LogicalGraphInfo(IHqlExpression * _expr) : expr(_expr) { globalId = 0; id = 0; subGraphId = 0; outputCount = 0; noDependents = false; }

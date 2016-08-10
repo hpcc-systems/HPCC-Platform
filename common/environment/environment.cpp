@@ -101,7 +101,7 @@ protected:
 
 class CConstInstanceInfo;
 
-class CLocalEnvironment : public CInterface, implements IConstEnvironment
+class CLocalEnvironment : implements IConstEnvironment, public CInterface
 {
 private:
     // NOTE - order is important - we need to construct before p and (especially) destruct after p
@@ -179,7 +179,7 @@ public:
     IConstDropZoneInfo * getDropZoneByIndex(unsigned index) const;
 };
 
-class CLockedEnvironment : public CInterface, implements IEnvironment
+class CLockedEnvironment : implements IEnvironment, public CInterface
 {
 public:
     //note that order of construction/destruction is important
@@ -370,7 +370,7 @@ void CLockedEnvironment::rollback()
 // updates by other clients and is used by environment factory below.  This also serves as 
 // a sample self-contained implementation that can be easily tailored for other purposes.
 //==========================================================================================
-class CSdsSubscription : public CInterface, implements ISDSSubscription
+class CSdsSubscription : implements ISDSSubscription, public CInterface
 {
 public:
     CSdsSubscription()

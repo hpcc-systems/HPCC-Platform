@@ -1266,7 +1266,7 @@ public:
 // RDIFF
 // format ::=  <expsize> <recsize> <plainrec> { <rowdif> }
 
-class jlib_decl CRDiffCompressor : public CInterface, public ICompressor
+class jlib_decl CRDiffCompressor : public ICompressor, public CInterface
 {
     size32_t inlen;
     size32_t outlen;
@@ -1434,7 +1434,7 @@ public:
 };
 
 
-class jlib_decl CRDiffExpander : public CInterface, public IExpander
+class jlib_decl CRDiffExpander : public IExpander, public CInterface
 {
     unsigned char *outbuf;
     size32_t outlen;
@@ -1540,7 +1540,7 @@ struct RRDheader
 
 
 
-class jlib_decl CRandRDiffCompressor : public CInterface, public ICompressor
+class jlib_decl CRandRDiffCompressor : public ICompressor, public CInterface
 {
     size32_t inlen;
     size32_t bufalloc;
@@ -1705,7 +1705,7 @@ public:
 };
 
 
-class jlib_decl CRandRDiffExpander : public CInterface, public IRandRowExpander
+class jlib_decl CRandRDiffExpander : public IRandRowExpander, public CInterface
 {
     MemoryAttr buf;
     const RRDheader *header;
@@ -1910,7 +1910,7 @@ struct WinCompressedFileTrailer
 #pragma pack(pop)
 
 
-class CCompressedFile : public CInterface, implements ICompressedFileIO
+class CCompressedFile : implements ICompressedFileIO, public CInterface
 {
     Linked<IFileIO> fileio;
     Linked<IMemoryMappedFile> mmfile;
@@ -2483,7 +2483,7 @@ ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bo
 #define AES_PADDING_SIZE 32
 
 
-class CAESCompressor : public CInterface, implements ICompressor
+class CAESCompressor : implements ICompressor, public CInterface
 {
     Owned<ICompressor> comp;    // base compressor
     MemoryBuffer compattr;      // compressed buffer
@@ -2575,7 +2575,7 @@ public:
     }
 };
 
-class CAESExpander : public CInterface, implements IExpander
+class CAESExpander : implements IExpander, public CInterface
 {
     Owned<IExpander> exp;   // base expander
     MemoryBuffer compbuf;
@@ -2735,7 +2735,7 @@ Linked<ICompressHandler> defaultCompressor;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    class CCompressHandlerBase : public CInterface, implements ICompressHandler
+    class CCompressHandlerBase : implements ICompressHandler, public CInterface
     {
         StringAttr type;
     public:

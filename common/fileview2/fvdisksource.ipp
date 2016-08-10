@@ -84,7 +84,7 @@ protected:
 };
 
 
-class CsvRecordSize : public CInterface, implements IRecordSizeEx
+class CsvRecordSize : implements IRecordSizeEx, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE

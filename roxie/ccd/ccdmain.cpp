@@ -407,7 +407,7 @@ void saveTopology()
     }
 }
 
-class CHpccProtocolPluginCtx : public CInterface, implements IHpccProtocolPluginContext
+class CHpccProtocolPluginCtx : implements IHpccProtocolPluginContext, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
