@@ -588,6 +588,7 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(Executions) },
     { TIMESTAT(TotalNested) },
     { CYCLESTAT(LocalExecute) },
+    { NUMSTAT(Compares) },
 };
 
 
