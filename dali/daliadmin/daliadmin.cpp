@@ -685,8 +685,9 @@ unsigned dfsCheck(StringBuffer & path, IPropertyTree * tree)
 void dfsCheck()
 {
     StringBuffer xpath;
-    Owned<IRemoteConnection> conn = connectXPathOrFile("/Files",true,xpath);
-    if (!conn) {
+    Owned<IRemoteConnection> conn = querySDS().connect("Files",myProcessSession(),0, daliConnectTimeoutMs);
+    if (!conn)
+    {
         ERRLOG("Could not connect to %s","/Files");
         return;
     }
