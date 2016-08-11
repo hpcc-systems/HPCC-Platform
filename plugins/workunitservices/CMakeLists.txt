@@ -44,6 +44,7 @@ include_directories (
          ./../../system/jhtree 
          ./../../system/jlib 
          ./../../dali/sasha 
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWORKUNITSERVICES_EXPORTS )

@@ -48,8 +48,10 @@ enum NewSecAccessFlags
 
 
 
+
 enum SecAccessFlags
 {
+    SecAccess_Unavailable = -1,
     SecAccess_Unknown = -255,
     SecAccess_None = 0,
     SecAccess_Access = 1,

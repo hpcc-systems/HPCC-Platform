@@ -39,6 +39,7 @@
 #include "rmtfile.hpp"
 #include "dadfs.hpp"
 #include "eclhelper.hpp"
+#include "seclib.hpp"
 
 #ifdef _DEBUG
 //#define EXTRA_LOGGING
@@ -1244,7 +1245,7 @@ static int getScopePermissions(const char *scopename,IUserDescriptor *user,unsig
     static bool permissionsavail=true;
     if (auditflags==(unsigned)-1) 
         return permissionsavail?1:0;
-    int ret = 255;
+    int perms = SecAccess_Full;
     if (permissionsavail&&scopename&&*scopename&&((*scopename!='.')||scopename[1])) {
         if (!user)
         {
@@ -1255,17 +1256,17 @@ static int getScopePermissions(const char *scopename,IUserDescriptor *user,unsig
 #endif
             user = queryDistributedFileDirectory().queryDefaultUser();
         }
-        ret = querySessionManager().getPermissionsLDAP(queryDfsXmlBranchName(DXB_Scope),scopename,user,auditflags);
-        if (ret<0) {
-            if (ret==-1) {
+        perms = querySessionManager().getPermissionsLDAP(queryDfsXmlBranchName(DXB_Scope),scopename,user,auditflags);
+        if (perms<0) {
+            if (perms == SecAccess_Unavailable) {
                 permissionsavail=false;
-                ret = 255;
+                perms = SecAccess_Full;
             }
             else 
-                ret = 0;
+                perms = SecAccess_None;
         }
     }
-    return ret;
+    return perms;
 }
 
 static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool readreq,bool createreq)
@@ -10622,7 +10623,7 @@ int CDistributedFileDirectory::getNodePermissions(const IpAddress &ip,IUserDescr
 int CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *fdesc,IUserDescriptor *user,unsigned auditflags)
 {
     // this checks have access to the nodes in the file descriptor
-    int ret = 255;
+    int retPerms = SecAccess_Full;
     unsigned np = fdesc->numParts();
     for (unsigned i=0;i<np;i++) {
         INode *node = fdesc->queryNode(i);
@@ -10652,16 +10653,16 @@ int CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *fdesc,IUserD
                 dlfn.setExternal(rfn.queryEndpoint(),localpath.str());          
                 StringBuffer scopes;
                 dlfn.getScopes(scopes);
-                int p = getScopePermissions(scopes.str(),user,auditflags);
-                if (p<ret) {
-                    ret = p;
-                    if (ret==0)
-                        return 0;
+                int perm = getScopePermissions(scopes.str(),user,auditflags);
+                if (perm < retPerms) {
+                    retPerms = perm;
+                    if (retPerms == SecAccess_None)
+                        return SecAccess_None;
                 }
             }
         }
     }
-    return ret;
+    return retPerms;
 }
 
 void CDistributedFileDirectory::setDefaultUser(IUserDescriptor *user)
