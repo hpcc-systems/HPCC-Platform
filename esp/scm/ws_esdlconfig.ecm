@@ -47,6 +47,17 @@ ESPresponse [exceptions_inline] PublishESDLDefinitionResponse
     ESPstruct BaseESDLStatus status;
 };
 
+ESPStruct MethodConfig
+{
+	String Name;
+	ESParray<ESPstruct NamedValue, Attribute> Attributes;
+};
+
+ESPStruct ESDLConfiguration
+{
+	ESParray<ESPStruct MethodConfig, Method> Methods;
+};
+
 ESPrequest PublishESDLBindingRequest
 {
     string EspProcName;        //Name of ESP Process
@@ -62,6 +73,7 @@ ESPrequest PublishESDLBindingRequest
                    //              or  <Definition name=xx id=xx.yy><Methods><Method>...
                    //              or  <Methods><Method>....
                    //<methods><Method name="name"  url="http://10.173.128.100:9876" password="h7webmX+vmTgtAsFmC+ahQ==" username="rpastrana" queryname="UPS_Services.RightAddressService" status="available" testrepo="0" querytype="roxie"/><Methods>
+    [min_ver("1.2")] ESParray<ESPStruct MethodConfig, Method> Methods;
 };
 
 ESPresponse [exceptions_inline] PublishESDLBindingResponse
@@ -87,6 +99,7 @@ ESPrequest ConfigureESDLBindingMethodRequest
                    //              or  <Definition name=xx id=xx.yy><Methods><Method>...
                    //              or  <Methods><Method>....
                    //<methods><Method name="name"  url="http://10.173.128.100:9876" password="h7webmX+vmTgtAsFmC+ahQ==" username="rpastrana" queryname="UPS_Services.RightAddressService" status="available" testrepo="0" querytype="roxie"/><Methods>
+    [min_ver("1.2")] ESPStruct MethodConfig MethodStructure;
 };
 
 ESPresponse [exceptions_inline] ConfigureESDLBindingMethodResponse
@@ -121,17 +134,6 @@ ESPstruct ESDLDefinition
     [min_ver("1.1")] String Interface;
 };
 
-ESPStruct MethodConfig
-{
-	String Name;
-	ESParray<ESPstruct NamedValue, Attribute> Attributes;
-};
-
-ESPStruct ESDLConfiguration
-{
-	ESParray<ESPStruct MethodConfig, Method> Methods;
-};
-
 ESPStruct ESDLBindingContents
 {
 	ESPStruct ESDLDefinition Definition;
@@ -144,7 +146,7 @@ ESPresponse [exceptions_inline] GetESDLBindingResponse
     string EspProcName;   //Name of ESP Process
     string BindingName;
     string EspPort;
-    [depr_var("1.1")] String ConfigXML;
+    String ConfigXML;
     [min_ver("1.1")] ESPStruct ESDLBindingContents ESDLBinding;
     ESPstruct BaseESDLStatus status;
 };
@@ -188,7 +190,7 @@ ESPresponse [exceptions_inline] ListESDLBindingsResponse
     ESParray<ESPstruct ESDLBinding, Binding> Bindings;
 };
 
-ESPservice [version("1.1"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
+ESPservice [version("1.2"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod PublishESDLDefinition(PublishESDLDefinitionRequest, PublishESDLDefinitionResponse);

@@ -288,6 +288,7 @@ void CWsESDLConfigEx::addESDLDefinition(IPropertyTree * queryRegistry, const cha
         definitionInfo->setProp("@publishedBy", userid);
     queryRegistry->addPropTree(ESDL_DEF_ENTRY, LINK(definitionInfo));
 }
+
 bool CWsESDLConfigEx::existsESDLDefinition(const char * servicename, unsigned ver)
 {
     bool found = false;
@@ -615,7 +616,28 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
 
         if (config.length() > 0)
             methodstree.setown(fetchConfigInfo(config.str(), espProcName, espBindingName, esdlDefIdSTR, esdlServiceName));
+        else
+        {
+            StringBuffer methodsxml;
+            IArrayOf<IConstMethodConfig>& methods = req.getMethods();
+            if (methods.ordinality() > 0)
+                methodsxml.set("<Methods>");
 
+            ForEachItemIn(idx, methods)
+            {
+                IConstMethodConfig& method = methods.item(idx);
+                methodsxml.appendf("<Method name='%s'", method.getName());
+                IArrayOf<IConstNamedValue> & attributes = method.getAttributes();
+                ForEachItemIn(attributesidx, attributes)
+                {
+                    IConstNamedValue& att = attributes.item(attributesidx);
+                    methodsxml.appendf(" %s='%s'", att.getName(), att.getValue());
+                }
+                methodsxml.append("/>");
+            }
+            methodsxml.append("</Methods>");
+            methodstree.setown(createPTreeFromXMLString(methodsxml.str()));
+        }
         if (esdlServiceName.length() == 0)
             throw MakeStringException(-1, "Must provide the ESDL service name as it appears in the ESDL definition.");
 
@@ -639,8 +661,6 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
             if (esdlver <= 0)
                 throw MakeStringException(-1, "Invalid ESDL Definition version detected: %d", esdlver);
         }
-
-
 
         if (!methodstree || methodstree->getCount("Method") <= 0)
             throw MakeStringException(-1, "Could not find any method configuration entries.");
@@ -707,7 +727,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
         else
         {
             StringBuffer msg;
-            msg.appendf("Could not find ESDL Definition for Service: '%s' version '%d'", esdlServiceName.str(), esdlver);
+            msg.appendf("Could not find ESDL Definition for Service: '%s' version '%d'", esdlDefinitionName.str(), esdlver);
             resp.updateStatus().setCode(-1);
             resp.updateStatus().setDescription(msg.str());
             return false;
@@ -823,6 +843,21 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
 
         if (config.length() > 0)
             methodstree.setown(fetchConfigInfo(config, espProcName, espBindingName, esdlDefIdSTR, esdlServiceName));
+        else
+        {
+            StringBuffer methodsxml("<Methods>");
+
+            IConstMethodConfig& method = req.getMethodStructure();
+            methodsxml.appendf("<Method name='%s'", method.getName());
+            IArrayOf<IConstNamedValue> & attributes = method.getAttributes();
+            ForEachItemIn(attributesidx, attributes)
+            {
+                IConstNamedValue& att = attributes.item(attributesidx);
+                methodsxml.appendf(" %s='%s'", att.getName(), att.getValue());
+            }
+            methodsxml.append("/></Methods>");
+            methodstree.setown(createPTreeFromXMLString(methodsxml.str()));
+        }
 
         bool override = req.getOverwrite();
 
