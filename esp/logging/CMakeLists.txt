@@ -13,6 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+HPCC_ADD_SUBDIRECTORY (logginglib)
 HPCC_ADD_SUBDIRECTORY (loggingagent)
 HPCC_ADD_SUBDIRECTORY (loggingmanager)
 HPCC_ADD_SUBDIRECTORY (test)

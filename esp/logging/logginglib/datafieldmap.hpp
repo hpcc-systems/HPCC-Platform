@@ -15,14 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _DBFIELDMAP_HPP__
-#define _DBFIELDMAP_HPP__
+#ifndef _DATAFIELDMAP_HPP__
+#define _DATAFIELDMAP_HPP__
 
 #pragma warning (disable : 4786)
 
 #include "jiface.hpp"
 #include "jstring.hpp"
 #include "jptree.hpp"
+#include "loggingcommon.hpp"
 
 class CLogField : public CInterface
 {
@@ -85,4 +86,9 @@ public:
     const char* getGroupName() { return groupName.get(); };
     const char* getDBName() { return dbName.get(); };
 };
-#endif // !_DBFIELDMAP_HPP__
+
+extern LOGGINGCOMMON_API void ensureInputString(const char* input, bool lowerCase, StringBuffer& outputStr, int code, const char* msg);
+extern LOGGINGCOMMON_API void readLogGroupCfg(IPropertyTree* cfg, StringAttr& defaultLogGroup, MapStringToMyClass<CLogGroup>& logGroups);
+extern LOGGINGCOMMON_API void readLogSourceCfg(IPropertyTree* cfg, unsigned& logSourceCount, StringAttr& logSourcePath, MapStringToMyClass<CLogSource>& logGroups);
+
+#endif // !_DATAFIELDMAP_HPP__

@@ -37,8 +37,7 @@ include_directories (
      ${HPCC_SOURCE_DIR}/esp/esplib
      ${HPCC_SOURCE_DIR}/esp/clients
      ${HPCC_SOURCE_DIR}/esp/clients/LoggingClient
-     ${HPCC_SOURCE_DIR}/esp/clients/loggingmanager
-     ${HPCC_SOURCE_DIR}/esp/logging
+     ${HPCC_SOURCE_DIR}/esp/logging/logginglib
      ./..
 )
 
@@ -46,9 +45,6 @@ ADD_DEFINITIONS( -D_USRDLL -DLOGGINGCOMMON_EXPORTS )
 
 set ( SRCS
     ${ESPSCM_GENERATED_DIR}/ws_loggingservice_esp.cpp
-    ../../logging/LogSerializer.cpp
-    ../../logging/LogFailSafe.cpp
-    ../../logging/logthread.cpp
     loggingservice.cpp
     loggingserviceplugin.cpp
 )
@@ -60,4 +56,5 @@ add_dependencies (ws_loggingservice espscm)
 target_link_libraries ( ws_loggingservice
     esphttp
     jlib
+    logginglib
 )
