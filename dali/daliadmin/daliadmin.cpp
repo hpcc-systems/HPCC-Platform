@@ -775,8 +775,9 @@ static void displayDirectory(IPropertyTree * directory, const char * options, un
 static void dfsLs(const char *name, const char *options, bool safe = false)
 {
     StringBuffer xpath;
-    Owned<IRemoteConnection> conn = connectXPathOrFile("/Files",safe,xpath);
-    if (!conn) {
+    Owned<IRemoteConnection> conn = querySDS().connect("Files",myProcessSession(),0, daliConnectTimeoutMs);
+    if (!conn)
+    {
         ERRLOG("Could not connect to %s","/Files");
         return;
     }
@@ -786,8 +787,6 @@ static void dfsLs(const char *name, const char *options, bool safe = false)
         if (directory)
             displayDirectory(directory, options, 0);
     }
-    conn->commit();
-    conn->close();
 }
 
 //=============================================================================
