@@ -69,7 +69,7 @@ foreach(dylib ${DYLIBS})
         install(PROGRAMS "${dylib_path}" DESTINATION lib2)
         get_filename_component(dylib_name_ext ${dylib_path} NAME)
 
-        set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
+        set(fixupCommand "execute_process(COMMAND install_name_tool -change \"${dylib_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file} ERROR_VARIABLE ignore)")
 
         #TODO:  Should be able resolve alias's to alias's correctly?
         string(REPLACE ".2.21.dylib" ".2.dylib" dylib_2_path "${dylib_path}")
