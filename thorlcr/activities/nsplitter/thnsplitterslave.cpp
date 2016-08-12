@@ -82,7 +82,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     bool spill = false;
     bool eofHit = false;
     bool writeBlocked = false, pagedOut = false;
-    CriticalSection startLock, writeAheadCrit;
+    CriticalSection connectLock, prepareInputLock, writeAheadCrit;
     PointerArrayOf<Semaphore> stalledWriters;
     unsigned stoppedOutputs = 0;
     unsigned activeOutputs = 0;
@@ -112,7 +112,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         {
             Semaphore writeBlockSem;
             while (!stopped && !parent.eofHit)
-                current = parent.writeahead(current, stopped, writeBlockSem);
+                current = parent.writeahead(current, stopped, writeBlockSem, UINT_MAX);
         }
         void start()
         {
@@ -130,7 +130,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     } writer;
     void connectInput(bool consumerOrdered)
     {
-        CriticalBlock block(startLock);
+        CriticalBlock block(connectLock);
         bool inputOrdered = isInputOrdered(consumerOrdered);
         if (!inputConnected)
         {
@@ -173,7 +173,8 @@ public:
     }
     bool prepareInput()
     {
-        CriticalBlock block(startLock);
+        // NB: called from writeahead by outputs
+        CriticalBlock block(prepareInputLock);
         if (!inputPrepared)
         {
             inputPrepared = true;
@@ -226,7 +227,7 @@ public:
             throw LINK(writeAheadException);
         return row.getClear();
     }
-    rowcount_t writeahead(rowcount_t current, const bool &stopped, Semaphore &writeBlockSem)
+    rowcount_t writeahead(rowcount_t current, const bool &stopped, Semaphore &writeBlockSem, unsigned outIdx)
     {
         // NB: readers call writeahead, which will block others
         CriticalBlock b(writeAheadCrit);
@@ -247,10 +248,11 @@ public:
                 break;
         }
         ActivityTimer t(totalCycles, queryTimeActivities());
-        if (!prepareInput()) // returns true, if
-        {
+
+        // NB: Avoid calling prepareInput() from writer thread, as a) already setup and b) if last output is stopping, it stops writer thread and would deadlock if in prepareInput() crit
+        if ((UINT_MAX != outIdx) && !prepareInput())
             return RCMAX; // signals to requester that you are the only output
-        }
+
         pagedOut = false;
         OwnedConstThorRow row;
         loop
@@ -285,7 +287,7 @@ public:
     }
     void inputStopped(unsigned outIdx)
     {
-        CriticalBlock block(startLock);
+        CriticalBlock block(prepareInputLock);
         if (smartBuf)
         {
             /* If no output has started reading (nextRow()), then it will not have been prepared
@@ -432,7 +434,7 @@ const void *CSplitterOutput::nextRow()
 {
     if (rec == max)
     {
-        max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem);
+        max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem, outIdx);
         // NB: if this is sole input that actually started, writeahead will have returned RCMAX and calls to activity.nextRow will go directly to splitter input
     }
     ActivityTimer t(totalCycles, activity.queryTimeActivities());
