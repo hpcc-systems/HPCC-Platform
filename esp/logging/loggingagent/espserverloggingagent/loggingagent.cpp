@@ -165,7 +165,7 @@ void CESPServerLoggingAgent::createLocalTransactionSeed(StringBuffer& transactio
     unsigned ip = queryHostIP().iphash();
     unsigned mstick6char = ((unsigned)usTick() & 0xFFFFFF);
     unsigned processId2char = ((unsigned)GetCurrentProcessId()) & 0xF;
-    unsigned threadId1char = ((unsigned)GetCurrentThreadId()) & 0xF;
+    unsigned threadId1char = ((unsigned) (memsize_t) GetCurrentThreadId()) & 0xF;
     transactionSeed.setf("%02X%06X%X%X", ip, mstick6char, processId2char, threadId1char);
 }
 
