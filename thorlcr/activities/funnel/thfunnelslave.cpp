@@ -132,7 +132,11 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
     void push(const void *row)
     {   
         CriticalBlock b2(fullCrit); // exclusivity for totSize / full
-        if (stopped) return;
+        if (stopped)
+        {
+            ReleaseThorRow(row);
+            return;
+        }
         rows.enqueue(row);
         totSize += thorRowMemoryFootprint(serializer, row);
         while (totSize > FUNNEL_MIN_BUFF_SIZE)
@@ -206,9 +210,9 @@ public:
         }
         {
             CriticalBlock b(fullCrit);
+            stopped = true; // ensure any pending push()'s don't enqueue and if big row potentially block again.
             if (full)
             {
-                stopped = true; // ensure pending push()'s don't enqueue and if big row potentially block again.
                 loop
                 {
                     OwnedConstThorRow row = rows.dequeueNow();
