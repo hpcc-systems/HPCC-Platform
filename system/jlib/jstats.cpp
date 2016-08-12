@@ -661,6 +661,27 @@ unsigned __int64 convertMeasure(StatisticKind from, StatisticKind to, unsigned _
 }
 
 
+static double convertSquareMeasure(StatisticMeasure from, StatisticMeasure to, double value)
+{
+    if (from == to)
+        return value;
+    const unsigned __int64 largeValue = 1000000000;
+    double scale;
+    if ((from == SMeasureCycle) && (to == SMeasureTimeNs))
+        scale = (double)cycle_to_nanosec(largeValue) / (double)largeValue;
+    else if ((from == SMeasureTimeNs) && (to == SMeasureCycle))
+        scale = (double)nanosec_to_cycle(largeValue) / (double)largeValue;
+    else
+        throwUnexpected();
+    return value * scale * scale;
+}
+
+static double convertSquareMeasure(StatisticKind from, StatisticKind to, double value)
+{
+    return convertSquareMeasure(queryMeasure(from), queryMeasure(to), value);
+}
+
+
 StatisticKind querySerializedKind(StatisticKind kind)
 {
     StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
@@ -1816,6 +1837,12 @@ void CRuntimeSummaryStatisticCollection::mergeStatistic(StatisticKind kind, unsi
     derived[index].mergeStatistic(value, 0);
 }
 
+static bool isSignificantSkew(StatisticKind kind, unsigned __int64 range, unsigned __int64 count)
+{
+    //MORE: Could get more sophisticated!
+    return range > 1;
+}
+
 void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & target) const
 {
     CRuntimeStatisticCollection::recordStatistics(target);
@@ -1833,26 +1860,31 @@ void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & t
             {
                 double sum = (double)convertMeasure(kind, serialKind, values[i].get());
                 //Sum of squares needs to be translated twice
-                double sumSquares = (double)convertMeasure(kind, serialKind, convertMeasure(kind, serialKind, cur.sumSquares));
+                double sumSquares = convertSquareMeasure(kind, serialKind, cur.sumSquares);
                 double mean = (double)(sum / cur.count);
                 double variance = (sumSquares - sum * mean) / cur.count;
                 double stdDev = sqrt(variance);
                 double maxSkew = (10000.0 * ((maxValue-mean)/mean));
                 double minSkew = (10000.0 * ((mean-minValue)/mean));
+                unsigned __int64 range = maxValue - minValue;
 
                 target.addStatistic((StatisticKind)(serialKind|StMinX), minValue);
                 target.addStatistic((StatisticKind)(serialKind|StMaxX), maxValue);
                 target.addStatistic((StatisticKind)(serialKind|StAvgX), (unsigned __int64)mean);
-                target.addStatistic((StatisticKind)(serialKind|StDeltaX), maxValue-minValue);
+                target.addStatistic((StatisticKind)(serialKind|StDeltaX), range);
                 target.addStatistic((StatisticKind)(serialKind|StStdDevX), (unsigned __int64)stdDev);
-                target.addStatistic((StatisticKind)(serialKind|StSkewMin), (unsigned __int64)minSkew);
-                target.addStatistic((StatisticKind)(serialKind|StSkewMax), (unsigned __int64)maxSkew);
-                if (cur.minNode != cur.maxNode)
+                //If all nodes are the same then we re actually merging results from multiple runs
+                //if the range is less than the count then
+                if ((cur.minNode != cur.maxNode) && isSignificantSkew(serialKind, range, cur.count))
                 {
+                    target.addStatistic((StatisticKind)(serialKind|StSkewMin), (unsigned __int64)minSkew);
+                    target.addStatistic((StatisticKind)(serialKind|StSkewMax), (unsigned __int64)maxSkew);
                     target.addStatistic((StatisticKind)(serialKind|StNodeMin), cur.minNode);
                     target.addStatistic((StatisticKind)(serialKind|StNodeMax), cur.maxNode);
                 }
             }
+            else if (cur.count != 1)
+                target.addStatistic((StatisticKind)(serialKind|StAvgX), minValue);
         }
     }
 }
