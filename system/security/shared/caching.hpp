@@ -113,8 +113,8 @@ public:
         const char* pw = user->credentials().getPassword();
         if(pw && *pw)
         {
-            StringBuffer pbuf(pw), md5pbuf;
-            md5_string(pbuf, md5pbuf);
+            StringBuffer md5pbuf;
+            md5_string2(pw, md5pbuf);
             user->credentials().setPassword(md5pbuf.str());
         }
 
