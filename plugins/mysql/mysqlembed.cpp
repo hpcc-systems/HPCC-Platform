@@ -39,11 +39,9 @@
 
 __declspec(noreturn) static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 
-// These should be made configurable at some point
-
-static const unsigned CACHE_CHECK_PERIOD = 10000;
-static const unsigned CACHE_TIMEOUT_PERIOD = 60000;
-static const unsigned CACHE_SIZE = 10;
+static unsigned mysqlCacheCheckPeriod = 10000;
+static unsigned mysqlCacheTimeoutPeriod = 60000;
+static unsigned mysqlConnectionCacheSize = 10;
 
 
 static void UNSUPPORTED(const char *feature)
@@ -73,6 +71,13 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->flags = PLUGIN_MULTIPLE_VERSIONS;
     pb->description = "MySQL Embed Helper";
     return true;
+}
+
+extern "C" EXPORT void setPluginContextEx(IPluginContextEx * _ctx)
+{
+    mysqlCacheCheckPeriod = _ctx->ctxGetPropInt("@mysqlCacheCheckPeriod", 10000);
+    mysqlCacheTimeoutPeriod = _ctx->ctxGetPropInt("@mysqlCacheTimeoutPeriod", 60000);
+    mysqlConnectionCacheSize = _ctx->ctxGetPropInt("@mysqlConnectionCacheSize", 10);
 }
 
 namespace mysqlembed {
@@ -230,7 +235,7 @@ public:
                 else // globalCached
                 {
                     CriticalBlock b(globalCacheCrit);
-                    if (globalCachedConnections.length()==CACHE_SIZE)
+                    if (globalCachedConnections.length()==mysqlConnectionCacheSize)
                     {
                         MySQLConnection &goer = globalCachedConnections.popGet();
                         goer.globalCached = false;  // Make sure we don't recache it!
@@ -468,11 +473,11 @@ int MySQLConnectionCloserThread::run()
 {
     loop
     {
-        if (closing.wait(CACHE_CHECK_PERIOD))
+        if (closing.wait(mysqlCacheCheckPeriod))
         {
             break;
         }
-        MySQLConnection::retireCache(CACHE_TIMEOUT_PERIOD);
+        MySQLConnection::retireCache(mysqlCacheTimeoutPeriod);
     }
     return 0;
 }
