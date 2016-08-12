@@ -1384,7 +1384,7 @@ public:
                 }
             }
             file.clear();
-            PROGLOG("CDelayedDelete: pausing");
+            PROGLOG("CDelayedDelete: pausing due to locked file = %s", logicalname);
             Sleep(SDS_TRANSACTION_RETRY/2+(getRandom()%SDS_TRANSACTION_RETRY));
         }
     }
