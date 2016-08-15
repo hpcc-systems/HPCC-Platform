@@ -140,6 +140,7 @@ public:
     bool isExpanded() const;
     void expand(IUserDescriptor *user);
     void normalizeName(const char * name, StringAttr &res, bool strict);
+    bool normalizeExternal(const char * name, bool strict);
 };
 
 // abstract class, define getCmdText to return tracing text of commands

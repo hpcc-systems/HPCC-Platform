@@ -341,6 +341,18 @@ inline void normalizeScope(const char *name, const char *scope, unsigned len, St
     }
 }
 
+void normalizeNodename(const char *node, unsigned len, SocketEndpoint &ep, bool strict)
+{
+    if (!strict)
+        skipSp(node);
+
+    StringBuffer nodename;
+    nodename.append(len, node);
+    if (!strict)
+        nodename.clip();
+    ep.set(nodename.str());
+}
+
 void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool strict)
 {
     // NB: If !strict(default) allows spaces to exist either side of scopes (no idea why would want to permit that, but preserving for bwrd compat.)
@@ -415,13 +427,8 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                 const char *ns1 = strstr(s1,"::");
                 if (ns1)
                 {
-                    if (!strict)
-                        skipSp(s1);
-                    StringBuffer nodename;
-                    nodename.append(ns1-s1,s1);
-                    if (!strict)
-                        nodename.clip();
-                    SocketEndpoint ep(nodename.str());
+                    SocketEndpoint ep;
+                    normalizeNodename(s1, ns1-s1, ep, strict);
                     if (!ep.isNull())
                     {
                         ep.getUrlStr(str.append("::"));
@@ -456,7 +463,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
     res.set(str);
 }
 
-bool isExternalFile(const char *name, StringAttr &lfn, bool strict, unsigned &tailpos)
+bool CDfsLogicalFileName::normalizeExternal(const char * name, bool strict)
 {
     // TODO Should check the name is a valid OS filename
     if ('~' == *name) // allowed 1 leading ~
@@ -465,53 +472,43 @@ bool isExternalFile(const char *name, StringAttr &lfn, bool strict, unsigned &ta
         if (!strict)
             skipSp(name);
     }
-
     bool retVal = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
     if (retVal)
     {
         lfn.clear();
         StringBuffer str;
         const char *s=strstr(name,"::");
-        if (s)
+        normalizeScope(name, name, s-name, str, strict);
+
+        const char *s1 = s+2;
+        const char *ns1 = strstr(s1,"::");
+        if (!ns1)
+            retVal = false;
+        else
         {
-            normalizeScope(name, name, s-name, str, strict);
-            const char *s1 = s+2;
-            const char *ns1 = strstr(s1,"::");
-            if (!ns1)
+            SocketEndpoint ep;
+            normalizeNodename(s1, ns1-s1, ep, strict);
+            if (ep.isNull())
                 retVal = false;
             else
             {
-                if (!strict)
-                    skipSp(s1);
-
-                StringBuffer nodename;
-                nodename.append(ns1-s1,s1);
-                if (!strict)
-                    nodename.clip();
-                SocketEndpoint ep(nodename.str());
-                if (ep.isNull())
-                    retVal = false;
+                ep.getUrlStr(str.append("::"));
+                s = ns1;
+                if (s[2] == '>')
+                {
+                    str.append("::");
+                    tailpos = str.length();
+                    str.append(s+2);
+                }
                 else
                 {
-                    ep.getUrlStr(str.append("::"));
-                    s = ns1;
-                    if (s[2] == '>')
-                    {
-                        str.append("::");
-                        tailpos = str.length();
-                        str.append(s+2);
-                    }
-                    else
-                    {
-                        str.append(s);
-                        str.toLowerCase();
-                    }
-                    lfn.set(str);
+                    str.append(s);
+                    str.toLowerCase();
                 }
+                lfn.set(str);
             }
         }
-        else
-            retVal = false;
+
     }
     return retVal;
 }
@@ -557,23 +554,18 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign)
         lfn.set(full);
         return;
     }
-    if (isExternalFile(name, lfn, false, this->tailpos))
-    {
-        //lfn.set(name);
-        //const char *ns1 = strstr(name,"::>");
-        //if (ns1)
-            //tailpos = ns1 - name + 2;
-        //else
-        //    lfn.toLowerCase();
+
+    if (normalizeExternal(name, false))
         external = true;
-    }
     else
-        normalizeName(name, lfn, false);
-    if (removeForeign)
     {
-        StringAttr _lfn = get(true);
-        lfn.clear();
-        lfn.set(_lfn);
+        normalizeName(name, lfn, false);
+        if (removeForeign)
+        {
+            StringAttr _lfn = get(true);
+            lfn.clear();
+            lfn.set(_lfn);
+        }
     }
 }
 
