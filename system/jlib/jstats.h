@@ -330,7 +330,7 @@ public:
         for (unsigned i=0; i <= num; i++)
             values[i].set(_other.values[i].get());
     }
-    ~CRuntimeStatisticCollection();
+    virtual ~CRuntimeStatisticCollection();
 
     inline CRuntimeStatistic & queryStatistic(StatisticKind kind)
     {
@@ -353,11 +353,7 @@ public:
     {
         queryStatistic(kind).addAtomic(value);
     }
-    void mergeStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
-    {
-        queryStatistic(kind).merge(value, mergeAction);
-    }
-    void mergeStatistic(StatisticKind kind, unsigned __int64 value);
+    virtual void mergeStatistic(StatisticKind kind, unsigned __int64 value);
     void setStatistic(StatisticKind kind, unsigned __int64 value)
     {
         queryStatistic(kind).set(value);
@@ -384,54 +380,102 @@ public:
     void rollupStatistics(IContextLogger * target) { rollupStatistics(1, &target); }
     void rollupStatistics(unsigned num, IContextLogger * const * targets) const;
 
-    void recordStatistics(IStatisticGatherer & target) const;
+    virtual void recordStatistics(IStatisticGatherer & target) const;
+    void getNodeProgressInfo(IPropertyTree &node) const;
 
     // Print out collected stats to string
     StringBuffer &toStr(StringBuffer &str) const;
     // Print out collected stats to string as XML
     StringBuffer &toXML(StringBuffer &str) const;
     // Serialize/deserialize
-    bool serialize(MemoryBuffer & out) const;  // Returns true if any non-zero
-    void deserialize(MemoryBuffer & in);
-    void deserializeMerge(MemoryBuffer& in);
+    virtual bool serialize(MemoryBuffer & out) const;  // Returns true if any non-zero
+    virtual void deserialize(MemoryBuffer & in);
+    virtual void deserializeMerge(MemoryBuffer& in);
+
 
 protected:
-    void ensureNested();
+    virtual void ensureNested();
     void reportIgnoredStats() const;
+    void mergeStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
+    {
+        queryStatistic(kind).merge(value, mergeAction);
+    }
     const CRuntimeStatistic & queryUnknownStatistic() const { return values[mapping.numStatistics()]; }
 
-private:
+protected:
     const StatisticsMapping & mapping;
     CRuntimeStatistic * values;
     CNestedRuntimeStatisticMap * nested = nullptr;
 };
 
-class CNestedRuntimeStatisticCollection : public CRuntimeStatisticCollection, public CInterface
+//NB: Serialize and deserialize are not currently implemented.
+class jlib_decl CRuntimeSummaryStatisticCollection : public CRuntimeStatisticCollection
 {
 public:
-    CNestedRuntimeStatisticCollection(const StatsScopeId & _scope, const StatisticsMapping & _mapping)
-    : CRuntimeStatisticCollection(_mapping), scope(_scope)
+    CRuntimeSummaryStatisticCollection(const StatisticsMapping & _mapping);
+    ~CRuntimeSummaryStatisticCollection();
+
+    virtual void mergeStatistic(StatisticKind kind, unsigned __int64 value) override;
+    virtual void recordStatistics(IStatisticGatherer & target) const override;
+    virtual bool serialize(MemoryBuffer & out) const override;  // Returns true if any non-zero
+    virtual void deserialize(MemoryBuffer & in) override;
+    virtual void deserializeMerge(MemoryBuffer& in) override;
+
+protected:
+    struct DerivedStats
+    {
+    public:
+        void mergeStatistic(unsigned __int64 value, unsigned node);
+    public:
+        unsigned __int64 max = 0;
+        unsigned __int64 min = 0;
+        unsigned __int64 count = 0;
+        double sumSquares = 0;
+        unsigned minNode = 0;
+        unsigned maxNode = 0;
+    };
+
+protected:
+    virtual void ensureNested() override;
+
+protected:
+    DerivedStats * derived;
+};
+
+class CNestedRuntimeStatisticCollection : public CInterface
+{
+public:
+    CNestedRuntimeStatisticCollection(const StatsScopeId & _scope, CRuntimeStatisticCollection * _stats)
+    : scope(_scope), stats(_stats)
     {
     }
-    CNestedRuntimeStatisticCollection(const CNestedRuntimeStatisticCollection & _other)
-    : CRuntimeStatisticCollection(_other), scope(_other.scope)
-    {
-    }
+    CNestedRuntimeStatisticCollection(const CNestedRuntimeStatisticCollection & _other) = delete;
+    ~CNestedRuntimeStatisticCollection() { delete stats; }
+
     bool matches(const StatsScopeId & otherScope) const;
+    inline const StatisticsMapping & queryMapping() const { return stats->queryMapping(); };
+    inline CRuntimeStatisticCollection & queryStats() { return *stats; }
+    inline const CRuntimeStatisticCollection & queryStats() const { return *stats; }
+
     bool serialize(MemoryBuffer & out) const;  // Returns true if any non-zero
     void deserialize(MemoryBuffer & in);
+    void deserializeMerge(MemoryBuffer& in);
+    void merge(const CNestedRuntimeStatisticCollection & other);
     void recordStatistics(IStatisticGatherer & target) const;
     StringBuffer & toStr(StringBuffer &str) const;
     StringBuffer & toXML(StringBuffer &str) const;
 
 public:
     StatsScopeId scope;
+    CRuntimeStatisticCollection * stats;
 };
 
 class CNestedRuntimeStatisticMap
 {
 public:
-    CRuntimeStatisticCollection & addNested(const StatsScopeId & scope, const StatisticsMapping & mapping);
+    virtual ~CNestedRuntimeStatisticMap() = default;
+
+    CNestedRuntimeStatisticCollection & addNested(const StatsScopeId & scope, const StatisticsMapping & mapping);
 
     bool serialize(MemoryBuffer & out) const;  // Returns true if any non-zero
     void deserialize(MemoryBuffer & in);
@@ -442,8 +486,16 @@ public:
     StringBuffer & toXML(StringBuffer &str) const;
 
 protected:
-    CIArrayOf<CNestedRuntimeStatisticCollection> map;
+    virtual CRuntimeStatisticCollection * createStats(const StatisticsMapping & mapping);
 
+protected:
+    CIArrayOf<CNestedRuntimeStatisticCollection> map;
+};
+
+class CNestedSummaryRuntimeStatisticMap : public CNestedRuntimeStatisticMap
+{
+protected:
+    virtual CRuntimeStatisticCollection * createStats(const StatisticsMapping & mapping) override;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
