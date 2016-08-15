@@ -60,6 +60,7 @@ PermissionProcessor::PermissionProcessor(IPropertyTree* config)
     m_cfg->getProp(".//@ldapAddress", m_server);
 }
 
+//Translates LDAP permissions to SecAccess_* permissions
 unsigned PermissionProcessor::ldap2sec(unsigned ldapperm)
 {
     unsigned permission = 0;

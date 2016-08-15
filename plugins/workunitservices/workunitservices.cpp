@@ -53,6 +53,7 @@ Persists changed?
 #include "workunitservices.hpp"
 #include "workunitservices.ipp"
 #include "environment.hpp"
+#include "seclib.hpp"
 
 #define WORKUNITSERVICES_VERSION "WORKUNITSERVICES 1.0.2"
 
@@ -221,19 +222,19 @@ static bool checkScopeAuthorized(IUserDescriptor *user, const char *scopename)
     if (securityDisabled)
         return true;
     unsigned auditflags = DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED;
-    int perm = 255;
+    int perm = SecAccess_Full;
     if (scopename && *scopename)
     {
         perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags);
         if (perm<0)
         {
-            if (perm==-1)
+            if (perm == SecAccess_Unavailable)
             {
-                perm = 255;
+                perm = SecAccess_Full;
                 securityDisabled = true;
             }
             else 
-                perm = 0;
+                perm = SecAccess_None;
         }
         if (!HASREADPERMISSION(perm)) 
             return false;

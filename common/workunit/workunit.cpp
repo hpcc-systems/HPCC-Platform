@@ -3950,17 +3950,17 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
     unsigned auditflags = DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED;
     if (writeaccess)
         auditflags |= DALI_LDAP_WRITE_WANTED;
-    int perm = 255;
+    int perm = SecAccess_Full;
     const char *scopename = p->queryProp("@scope");
     if (scopename&&*scopename) {
         if (!user)
             user = queryUserDescriptor();
         perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags);
         if (perm<0) {
-            if (perm==-1) 
-                perm = 255;
+            if (perm == SecAccess_Unavailable)
+                perm = SecAccess_Full;
             else 
-                perm = 0;
+                perm = SecAccess_None;
         }
     }
     if (!HASREADPERMISSION(perm))

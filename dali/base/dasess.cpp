@@ -1405,9 +1405,9 @@ public:
         if (err)
             *err = 0;
         if (!ldapconn)
-            return -1;
+            return SecAccess_Unavailable;
 #ifdef _NO_LDAP
-        return -1;
+        return SecAccess_Unavailable;
 #else
 #ifdef NULL_DALIUSER_STACKTRACE
         StringBuffer sb;

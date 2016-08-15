@@ -62,7 +62,8 @@ include_directories (
          ./../../system/mp 
          ./../../system/include 
          ./../../system/jlib 
-         ./../../rtl/include 
+         ./../../rtl/include
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=3 -D_USRDLL -DDALI_EXPORTS )
