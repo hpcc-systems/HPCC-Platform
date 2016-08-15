@@ -186,7 +186,7 @@ void CSlaveActivity::setInputStream(unsigned index, CThorInput &_input, bool con
         _input.junction.setown(junction.getClear());
         if (0 == index)
             inputStream = _inputStream;
-        _input.itdl->setOutputStream(_input.sourceIdx, LINK(_inputStream)); // used by debug request only at moment.
+        _input.itdl->setOutputStream(_input.sourceIdx, LINK(_inputStream)); // used by debug request only at moment. // JCSMORE - this should probably be the junction outputstream if there is one
     }
 }
 

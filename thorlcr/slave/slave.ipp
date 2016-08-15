@@ -82,9 +82,9 @@ public:
 interface IThorNWayInput
 {
     virtual unsigned numConcreteOutputs() const = 0;
-    virtual IThorDataLink *queryConcreteInput(unsigned idx) const = 0;
-    virtual IEngineRowStream *queryConcreteInputStream(unsigned idx) const = 0;
-    virtual IStrandJunction *queryConcreteInputJunction(unsigned idx) const = 0;
+    virtual IThorDataLink *queryConcreteOutput(unsigned idx) const = 0;
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) const = 0;
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned whichInput) const = 0;
 };
 
 
@@ -105,18 +105,18 @@ public:
     {
         ForEachItemIn(i, inputs)
         {
-            IThorDataLink *cur = queryInput(i);
-            CActivityBase *activity = cur->queryFromActivity();
-            IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(cur);
+            IThorDataLink *curInput = queryInput(i);
+            CActivityBase *activity = curInput->queryFromActivity();
+            IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(curInput);
             if (nWayInput)
             {
-                cur->start();
-                unsigned numRealInputs = nWayInput->numConcreteOutputs();
-                for (unsigned i=0; i < numRealInputs; i++)
+                curInput->start();
+                unsigned numOutputs = nWayInput->numConcreteOutputs();
+                for (unsigned i=0; i < numOutputs; i++)
                 {
-                    IThorDataLink *curReal = nWayInput->queryConcreteInput(i);
-                    IEngineRowStream *curRealStream = nWayInput->queryConcreteInputStream(i);
-                    IStrandJunction *curRealJunction = nWayInput->queryConcreteInputJunction(i);
+                    IThorDataLink *curReal = nWayInput->queryConcreteOutput(i);
+                    IEngineRowStream *curRealStream = nWayInput->queryConcreteOutputStream(i);
+                    IStrandJunction *curRealJunction = nWayInput->queryConcreteOutputJunction(i);
                     expandedInputs.append(curReal);
                     expandedStreams.append(curRealStream);
                     expandedJunctions.append(curRealJunction);
@@ -124,7 +124,7 @@ public:
             }
             else
             {
-                expandedInputs.append(cur);
+                expandedInputs.append(curInput);
                 expandedStreams.append(queryInputStream(i));
                 expandedJunctions.append(queryInputJunction(i));
             }
