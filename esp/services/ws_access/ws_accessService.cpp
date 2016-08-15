@@ -3791,7 +3791,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
         if ((!groupName || !*groupName) && (!userName || !*userName))
             throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Either user name or group name has to be specified.");
 
-        int access = -1;
+        int access = SecAccess_Unavailable;
         if (userName && *userName) //for user
         {
             resp.setFileName(fileName);
