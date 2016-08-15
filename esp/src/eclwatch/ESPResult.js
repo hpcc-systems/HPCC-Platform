@@ -45,6 +45,101 @@ define([
         return "";
     }
 
+    function RowFormatter(columns, row) {
+        this._columns = [];
+        this._columnIdx = {};
+        this._formattedRow = {};
+        this.flattenColumns(columns, row);
+
+        this._grid = {};
+        this.formatRow(columns, row);
+    }
+
+    RowFormatter.prototype.flattenColumns = function (columns) {
+        var context = this;
+        arrayUtil.forEach(columns, function (column) {
+            context.flattenColumn(column);
+        });
+    };
+
+    RowFormatter.prototype.flattenColumn = function (column) {
+        if (column.children) {
+            var context = this;
+            arrayUtil.forEach(column.children, function (column) {
+                context.flattenColumn(column);
+            });
+        } else {
+            this._columnIdx[column.field] = this._columns.length;
+            this._columns.push(column.field);
+        }
+    };
+
+    var LINE_SPLITTER = "<br><hr style='border: 0px; border-bottom: 1px solid rgb(238, 221, 204);'>";
+    var LINE_SPLITTER2 = "<br><hr style='visibility: hidden; border: 0px; border-bottom: 1px solid rgb(238, 221, 204);'>";
+    RowFormatter.prototype.formatRow = function (columns, row, rowIdx) {
+        rowIdx = rowIdx || 0;
+        row = row || {};
+        var context = this;
+        var maxChildLen = 0;
+        var colLenBefore = {};
+        arrayUtil.forEach(columns, function (column) {
+            if (!column.children && context._formattedRow[column.field] !== undefined) {
+                colLenBefore[column.field] = context._formattedRow[column.field].split(LINE_SPLITTER).length;
+            }
+            maxChildLen = Math.max(maxChildLen, context.formatCell(column, row[column.leafID], rowIdx));
+        });
+        arrayUtil.forEach(columns, function (column) {
+            if (!column.children) {
+                var cellLength = context._formattedRow[column.field].split(LINE_SPLITTER).length - colLenBefore[column.field];
+                var delta = maxChildLen - cellLength;
+                console.log(delta);
+                if (delta > 0) {
+                    var paddingArr = [];
+                    paddingArr.length = delta + 1;
+                    var padding = paddingArr.join(LINE_SPLITTER2);
+                    context._formattedRow[column.field] += padding;
+                }
+            }
+        });
+        return maxChildLen;
+    };
+
+    RowFormatter.prototype.formatCell = function (column, cell, rowIdx) {
+        var internalRows = 0;
+        if (column.children) {
+            var children = cell && cell.Row ? cell.Row : [cell]
+            if (children.length === 0) {
+                children.push({});
+            }
+            var context = this;
+            arrayUtil.forEach(children, function (row, idx) {
+                internalRows += context.formatRow(column.children, row, rowIdx + idx) + 1;
+            });
+            return children.length;
+        }
+        if (this._formattedRow[column.field] === undefined) {
+            this._formattedRow[column.field] = cell || "";
+            ++internalRows;
+        } else {
+            this._formattedRow[column.field] += LINE_SPLITTER + (cell || "");
+            ++internalRows
+        }
+        if (!this._grid[rowIdx]) {
+            this._grid[rowIdx] = {}
+        }
+        this._grid[rowIdx][column.field] = cell;
+        return internalRows;
+    };
+
+    RowFormatter.prototype.row = function (column) {
+        var retVal = {};
+        var context = this;
+        arrayUtil.forEach(this._columns, function (column) {
+            retVal[column] = context._formattedRow[column];
+        });
+        return retVal;
+    };
+
     var Store = declare([ESPRequest.Store, ESPBase], {
         service: "WsWorkunits",
         action: "WUResult",
@@ -82,12 +177,20 @@ define([
             }
             if (lang.exists("Result.Row", response)) {
                 var context = this;
-                arrayUtil.forEach(response.Result.Row, function (item, index) {
+                var retVal = this.formatRows(context._structure, response.Result.Row);
+                arrayUtil.forEach(retVal, function (item, index) {
                     item.__hpcc_rowNum = request.Start + index + 1;
                     item.__hpcc_id = context.idPrefix + "_" + item.__hpcc_rowNum;
                 });
-                response.Result = response.Result.Row;
+                response.Result = retVal;
             }
+        },
+        formatRows: function (columns, rows) {
+            var context = this;
+            return arrayUtil.map(rows, function (row) {
+                var rowFormatter = new RowFormatter(columns, row);
+                return rowFormatter.row();
+            });
         }
     });
 
@@ -295,7 +398,7 @@ define([
                 if (typeof (node.getAttribute) != "undefined") {
                     var name = node.getAttribute("name");
                     var type = node.getAttribute("type");
-                    var children = this.getRowStructureFromSchema(node, name + "_");
+                    var children = this.getRowStructureFromSchema(node, prefix + name + "_");
                     var keyed = null;
                     var appInfo = this.getFirstSchemaNode(node, "appinfo");
                     if (appInfo) {
@@ -312,6 +415,7 @@ define([
                             this.parseName(nameObj);
                             column = {
                                 label: nameObj.displayName,
+                                leafID: name,
                                 field: prefix + name,
                                 width: nameObj.width,
                                 formatter: function (cell, row) {
@@ -325,6 +429,7 @@ define([
                             this.parseName(nameObj);
                             column = {
                                 label: nameObj.displayName,
+                                leafID: name,
                                 field: prefix + name,
                                 width: nameObj.width,
                                 renderCell: function(row, cell, node, options) {
@@ -334,6 +439,7 @@ define([
                         } else {
                             column = {
                                 label: name,
+                                leafID: name,
                                 field: prefix + name,
                                 width: this.extractWidth(type, name) * 9,
                                 formatter: function (cell, row) {
@@ -352,7 +458,8 @@ define([
                         });
                         column = {
                             label: name,
-                            field: name,
+                            field: prefix + name,
+                            leafID: name,
                             renderCell: function(row, cell, node, options) {
                                 context.rowToTable(cell, row, node);
                             },
@@ -367,6 +474,9 @@ define([
                         column.renderHeaderCell = function (node) {
                             node.innerHTML = this.label + (this.__hpcc_keyed ? dojoConfig.getImageHTML("index.png", context.i18n.Index) : "");
                         };
+                        if (children) {
+                            column.children = children;
+                        }
                         retVal.push(column);
                     }
                 }
@@ -404,7 +514,7 @@ define([
                     cells: [
                         [
                             {
-                                label: "##", field: "__hpcc_rowNum", width: 54, className: "resultGridCell", sortable: false
+                                label: "##", field: "__hpcc_rowNum", leafID: "__hpcc_rowNum", width: 54, className: "resultGridCell", sortable: false
                             }
                         ]
                     ]
@@ -417,7 +527,8 @@ define([
             for (var i = 0; i < innerStruct.length; ++i) {
                 structure[0].cells[structure[0].cells.length - 1].push(innerStruct[i]);
             }
-            return structure[0].cells[0];
+            this.store._structure = structure[0].cells[0];
+            return this.store._structure;
         },
 
         fetchStructure: function (callback) {
