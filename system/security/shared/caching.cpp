@@ -337,12 +337,11 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
     if(!username || !*username)
         return false;
 
-    string key(username);
     bool deleteEntry = false;
     {
         ReadLockBlock readLock(m_userCacheRWLock );
 
-        MapUserCache::iterator it = m_userCache.find(key);
+        MapUserCache::iterator it = m_userCache.find(username);
         if (it == m_userCache.end())
             return false;
         CachedUser* user = (CachedUser*)(it->second);
@@ -356,12 +355,12 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
         else
         {
             const char* cachedpw = user->queryUser()->credentials().getPassword();
-            StringBuffer pw(sec_user.credentials().getPassword());
+            const char * pw = sec_user.credentials().getPassword();
 
-            if(cachedpw && pw.length() > 0)
+            if(cachedpw && pw && *pw != '\0')
             {
                 StringBuffer md5pbuf;
-                md5_string(pw, md5pbuf);
+                md5_string2(pw, md5pbuf);
                 if(strcmp(cachedpw, md5pbuf.str()) == 0)
                 {
 #ifdef _DEBUG
@@ -369,7 +368,7 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
 #endif
                     // Copy cached user to the sec_user structure, but still keep the original clear text password.
                     user->queryUser()->copyTo(sec_user);
-                    sec_user.credentials().setPassword(pw.str());
+                    sec_user.credentials().setPassword(pw);
                     return true;
                 }
                 else
@@ -383,7 +382,7 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
     if (deleteEntry)
     {
         WriteLockBlock writeLock(m_userCacheRWLock);
-        MapUserCache::iterator it = m_userCache.find(key);
+        MapUserCache::iterator it = m_userCache.find(username);
         if (it != m_userCache.end())
         {
             CachedUser* user = (CachedUser*)(it->second);
@@ -404,9 +403,8 @@ ISecUser* CPermissionsCache::getCachedUser( ISecUser& sec_user)
     if(!username || !*username)
         return NULL;
 
-    string key(username);
     ReadLockBlock readLock(m_userCacheRWLock );
-    MapUserCache::iterator it = m_userCache.find(key);
+    MapUserCache::iterator it = m_userCache.find(username);
     if (it == m_userCache.end())
         return NULL;
     CachedUser* user = (CachedUser*)(it->second);
@@ -422,9 +420,8 @@ void CPermissionsCache::add(ISecUser& sec_user)
     if(!username || !*username)
         return;
     
-    string key(username);
     WriteLockBlock writeLock(m_userCacheRWLock );
-    MapUserCache::iterator it = m_userCache.find(key);
+    MapUserCache::iterator it = m_userCache.find(username);
     CachedUser* user = NULL;
     if (it != m_userCache.end())
     {
@@ -435,7 +432,7 @@ void CPermissionsCache::add(ISecUser& sec_user)
 #ifdef _DEBUG
     DBGLOG("CACHE: CPermissionsCache Adding cached user %s", username);
 #endif
-    m_userCache[username] = new CachedUser(sec_user.clone());
+    m_userCache[username] = new CachedUser(LINK(&sec_user));
 }
 
 void CPermissionsCache::removeFromUserCache(ISecUser& sec_user)
@@ -443,9 +440,8 @@ void CPermissionsCache::removeFromUserCache(ISecUser& sec_user)
     const char* username = sec_user.getName();
     if(username && *username)
     {
-        string key(username);
         WriteLockBlock writeLock(m_userCacheRWLock );
-        MapUserCache::iterator it = m_userCache.find(key);
+        MapUserCache::iterator it = m_userCache.find(username);
         if (it != m_userCache.end())
         {
             CachedUser* user = (CachedUser*)(it->second);

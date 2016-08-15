@@ -63,7 +63,7 @@ cfg.parser () {
     if [ ! -e $1 ] || [ $# -lt 1 ]; then
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
     fi
-    IFS=$'\n' && ini=( $(cat $1 | sed -e 's/[ \t]*=[ \t]*/=/') )              # convert to line-array
+    IFS=$'\n' && ini=( $(cat $1 | sed -e 's/[[:blank:]]*=[[:blank:]]*/=/') )              # convert to line-array
     ini=( ${ini[*]//[;#]*/} )                   # remove comments
     ini=( ${ini[*]/#[/\}$'\n'cfg.section.} ) # set section prefix
     ini=( ${ini[*]/%]/ \(} )                 # convert text2function (1)
@@ -391,12 +391,12 @@ cleanupRuntimeEnvironment() {
 
 
 start_dafilesrv() {
-   /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+   ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
    if [ $? -ne 0 ];then
       #Dafilesrv is not running so start it , before starting cleanup the lock and pid file.
       cleanupRuntimeEnvironment
       noStatusCheck=1
-      /etc/init.d/dafilesrv setup 1>/dev/null 2>/dev/null
+      ${INIT_PATH}/dafilesrv setup 1>/dev/null 2>/dev/null
       startCmd ${compName} ${noStatusCheck}
       return $?
    else
@@ -483,7 +483,7 @@ startCmd() {
             limits[i]=$_temp
         fi
         flag="-${element:5:1}"
-        ulimit $flag ${limits[i]##*"="}
+        ulimit $flag ${limits[i]##*"="} 1>/dev/null 2>&1
         i=$((i+1))
     done
 
@@ -628,15 +628,15 @@ start_component() {
 
 restart_component() {
     if strstr "${compType}" "dafilesrv" ;then
-      /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+      ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
       if [ $? -eq 0 ];then
-        /etc/init.d/dafilesrv stop 2>/dev/null
+        ${INIT_PATH}/dafilesrv stop 2>/dev/null
       else
         log  "$compName ---> Stopped.  Now Starting ..."
         echo "Component $compName was not running. Will start it now for you ..."
         cleanupRuntimeEnvironment
       fi
-      /etc/init.d/dafilesrv start 2>/dev/null
+      ${INIT_PATH}/dafilesrv start 2>/dev/null
     else
       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
       RCRESTART=$?
@@ -732,7 +732,7 @@ check_group(){
     GROUP=$1
     touch /tmp/file.$$
     chgrp ${GROUP} /tmp/file.$$ > /dev/null 2>&1
-    if [ $(stat -c %G /tmp/file.$$) = "${GROUP}" ];
+    if [ $(stat -c %G /tmp/file.$$ 2>/dev/null || stat -f %Sg /tmp/file.$$ 2>/dev/null) = "${GROUP}" ];
     then
         rm -rf /tmp/file.$$
         return 1
@@ -965,17 +965,18 @@ cluster_tools_init() {
 
    set_environmentvars
 
-   _cmd_prefix=
-   [ "$(id -u)" != "0" ] && _cmd_prefix=sudo
+   #_cmd_prefix=
+   #[ "$(id -u)" != "0" ] && _cmd_prefix=sudo
 
    # Check and set log directory
    CLUSTER_LOG_DIR=${LOG_DIR}/cluster
-   [ ! -d $LOG_DIR ]  && ${_cmd_prefix} /etc/init.d/hpcc-init status > /dev/null 2>&1
+   #[ ! -d $LOG_DIR ]  && ${_cmd_prefix} ${INIT_PATH}/hpcc-init status > /dev/null 2>&1
+   [ ! -d $LOG_DIR ]  && ${INIT_PATH}/hpcc-init status > /dev/null 2>&1
 
    [ ! -d $CLUSTER_LOG_DIR ] && mkdir -p $CLUSTER_LOG_DIR
    # workaround inconsistency of stat command
    cluster_log_dir_owner=$(ls -ld $CLUSTER_LOG_DIR | awk '{print $3}')
-   [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${user} $CLUSTER_LOG_DIR
+   [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${group} $CLUSTER_LOG_DIR
 }
 
 ##

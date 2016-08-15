@@ -1,2 +1,0 @@
-removeSymlink "/etc/init.d/hpcc-init"
-removeSymlink "/etc/init.d/dafilesrv"

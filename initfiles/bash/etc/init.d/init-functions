@@ -207,8 +207,8 @@ log() {
   fi
 
   local msg=$@
-  local header=$( date --universal --iso-8601='seconds' )
-  local header="${header:0:19}: "
+  local header=$( date +%Y_%m_%d_%H_%M_%S )
+  local header="${header}: "
   printf "%s%s\n" "$header" "$msg" >> $logfile
 
   return 0

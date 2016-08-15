@@ -15,6 +15,8 @@
 #    limitations under the License.
 ################################################################################
 
+###<REPLACE>###
+
 cmd=$1
 ip=$2
 slavespernode=$3
@@ -30,8 +32,10 @@ hpcc_setenv=${12}
 
 export logfile="${logpth}/${hpcc_compname}/${13}"
 
-source "$hpcc_setenv"
-source "$(dirname $hpcc_setenv)/../etc/init.d/hpcc_common"
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+source ${INSTALL_DIR}/sbin/hpcc_setenv
+set_environmentvars
+
 
 slavename=thorslave_${hpcc_compname}
 
@@ -54,15 +58,17 @@ stop_slaves()
         killall -SIGKILL $slavename > /dev/null
     fi
 
-    rm -f $PID/${slavename}_*.pid > /dev/null
+    rm -f ${PID_DIR}/${slavename}_*.pid > /dev/null
 }
 
 start_slaves()
 {
     # insuring dafilesrv is running on the machine as it is a prerequisite
-    sudo /etc/init.d/dafilesrv status > /dev/null
+    dafilesrv_owner=$(stat -c "%U" ${INIT_PATH}/dafilesrv 2>/dev/null || stat -f %Su ${INIT_PATH}/dafilesrv 2>/dev/null)
+    [[ "${dafilesrv_owner}" != "${user}" ]] && cmd_prefix="sudo"
+    ${cmd_prefix} ${INIT_PATH}/dafilesrv status > /dev/null
     if [[ $? -ne 0 ]];then
-        sudo /etc/init.d/dafilesrv start > /dev/null
+        ${cmd_prefix} ${INIT_PATH}/dafilesrv start > /dev/null
         if [[ $? -ne 0 ]];then
             exit 1
         fi
@@ -108,7 +114,7 @@ start_slaves()
                     fts=1
                 else
                     log "slave pid $slavepid started"
-                    PID_NAME="$PID/${slavename}_${slavenum}.pid"
+                    PID_NAME="${PID_DIR}/${slavename}_${slavenum}.pid"
                     echo $slavepid > $PID_NAME
                 fi
                 slaveport=$(( ${slaveport} + ${slaveportinc} ))

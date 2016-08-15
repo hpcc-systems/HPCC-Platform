@@ -232,6 +232,8 @@ protected:
     UnsignedArray childQueryIndexes;
     CachedOutputMetaData meta;
     mutable CRuntimeStatisticCollection mystats;
+    // MORE: Could be CRuntimeSummaryStatisticCollection to include derived stats, but stats are currently converted
+    // to IPropertyTrees.  Would need to serialize/deserialize and then merge/derived so that they merged properly
 
 public:
     CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
@@ -261,13 +263,7 @@ public:
 
     virtual void getNodeProgressInfo(IPropertyTree &node) const
     {
-        ForEachItemIn(i, mystats)
-        {
-            StatisticKind kind = mystats.getKind(i);
-            unsigned __int64 value = mystats.getStatisticValue(kind);
-            if (value)
-                putStatsValue(&node, queryStatisticName(kind), "sum", value);
-        }
+        mystats.getNodeProgressInfo(node);
     }
 
     virtual void resetNodeProgressInfo()

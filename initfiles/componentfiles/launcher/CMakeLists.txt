@@ -15,5 +15,5 @@
 #    limitations under the License.
 ################################################################################
 
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/hpcc-systems.desktop DESTINATION ${INSTALL_DIR}/share COMPONENT Runtime )
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/LN.png DESTINATION ${INSTALL_DIR}/share COMPONENT Runtime )
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/hpcc-systems.desktop DESTINATION share COMPONENT Runtime )
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/LN.png DESTINATION share COMPONENT Runtime )

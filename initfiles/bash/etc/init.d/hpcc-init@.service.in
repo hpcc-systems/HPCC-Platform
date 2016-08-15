@@ -5,15 +5,15 @@
 #           sudo systemctl <start|stop|restart> hpcc-init@<terminal file name without /dev>.service
 #           For example sudo service hpcc-init@pts/1 start
 # Query status: journal -u hpcc-init -t hpcc-init -f  (To return: CRL-C)
-# Alternatively user can directly invoke /etc/init.d/hpcc-init <start|stop|status>
+# Alternatively user can directly invoke @INIT_PATH@/hpcc-init <start|stop|status>
 
 [Unit]
 Description=HPCC Systems®
 
 [Service]
 Type=oneshot
-ExecStart=/etc/init.d/hpcc-init start
-ExecStop=/etc/init.d/hpcc-init stop
+ExecStart=@INIT_PATH@/hpcc-init start
+ExecStop=@INIT_PATH@/hpcc-init stop
 RemainAfterExit=yes
 StandardOutput=tty
 StandardError=tty

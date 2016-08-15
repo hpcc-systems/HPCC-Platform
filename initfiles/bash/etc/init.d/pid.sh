@@ -23,7 +23,7 @@ checkPidDir () {
     else
         log_failure_msg "" 
         echo "Creating a Pid directory"
-        /bin/mkdir -P ${PIDFILEPATH} 
+        mkdir -P ${PIDFILEPATH} 
         if [[ ! -e ${PIDFILEPATH} ]]; then
             log  "Can not create a Pid directory $PIDFILEPATH"
         else
@@ -70,7 +70,7 @@ getPid () {
     PIDFILEPATH=$1
     checkPid ${PIDFILEPATH}
     if [[ $__flagPid -eq 1 ]]; then
-        __pidValue=$(/bin/cat $PIDFILEPATH)
+        __pidValue=$(cat $PIDFILEPATH)
     else
         __pidValue=0
     fi

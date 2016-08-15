@@ -15,15 +15,15 @@
 #    limitations under the License.
 ################################################################################
 
-deploydir=$(dirname $(type -path $0))
-PATH_PRE=$(type -path hpcc_setenv)
-source ${PATH_PRE}
+###<REPLACE>###
 
-INSTALL_DIR=$(dirname ${PATH_PRE})/..
+source ${INSTALL_DIR}/sbin/hpcc_setenv
+deploydir=$(dirname $(type -path $0))
+
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 component=$(basename $PWD)
 
-PID_NAME="$PID/${component}.pid"
+PID_NAME="${PID_DIR}/${component}.pid"
 
 timestamp="$(date +%Y_%m_%d_%H_%M_%S)"
 export logfile="${LOG_DIR}/${component}/init_${component}_${timestamp}.log"
@@ -69,12 +69,12 @@ kill_slaves()
     log "Killing slaves"
     # NB: many of the parameters to init_thorslave not used by 'stop' command
     if [[ "$localthor" = "true" ]]; then
-        $deploydir/init_thorslave stop localhost $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME $PATH_PRE $logredirect
+        $deploydir/init_thorslave stop localhost $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect
     else
         # we want to kill only slaves that have already been started in run_thor
         if [[ -r $instancedir/uslaves ]]; then
             clusternodes=$(cat $instancedir/uslaves 2> /dev/null | wc -l)
-            $deploydir/frunssh $instancedir/slaves "/bin/sh -c '$deploydir/init_thorslave stop localhost $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
+            $deploydir/frunssh $instancedir/slaves "/bin/sh -c '$deploydir/init_thorslave stop localhost $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
             FRUNSSH_RC=$?
             if [[ ${FRUNSSH_RC} -gt 0 ]]; then
                 log "Error ${FRUNSSH_RC} in frunssh"
@@ -82,7 +82,7 @@ kill_slaves()
                 # clean up any slaves it was able to reach
                 log "Stopping ${component}"
                 kill_process ${PID_NAME} thormaster_${component} 30
-                unlock /var/lock/HPCCSystems/$component/${component}.lock
+                unlock ${LOCK_DIR}/$component/${component}.lock
                 rm -f $INIT_PID_NAME $instancedir/slaves > /dev/null 2>&1
                 exit 255
             fi
@@ -100,7 +100,7 @@ killed()
         log "could not kill $component"
     else
         log "$component Stopped"
-        unlock /var/lock/HPCCSystems/$component/${component}.lock
+        unlock ${LOCK_DIR}/$component/${component}.lock
         kill_slaves
         log "removing init.pid file and slaves file"
         rm -f $INIT_PID_NAME $instancedir/slaves > /dev/null 2>&1
@@ -131,10 +131,10 @@ while [[ 1 ]]; do
 
     if [[ "$localthor" = "true" ]]; then
         slaveip=$(head -n 1 $instancedir/uslaves)
-        $deploydir/init_thorslave start $slaveip $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME $PATH_PRE $logredirect
+        $deploydir/init_thorslave start $slaveip $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect
     else
         clusternodes=$(cat $instancedir/uslaves | wc -l)
-        $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/init_thorslave start %a $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
+        $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/init_thorslave start %a $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
         FRUNSSH_RC=$?
         if [[ ${FRUNSSH_RC} -gt 0 ]]; then
             log "Error ${FRUNSSH_RC} in frunssh"

@@ -5,15 +5,15 @@
 #           sudo systemctl <start|stop|restart> dafilesrv@<terminal file name without /dev>.service
 #           For example sudo service dafilesrv@pts/1 start
 # Query status: journal -u dafilesrv -t dafilesrv -f  (To return: CRL-C)
-# Alternatively user can directly invoke /etc/init.d/dafilesrv <start|stop|status>
+# Alternatively user can directly invoke @INIT_PATH@/dafilesrv <start|stop|status>
 
 [Unit]
 Description=HPCC Systems® dafilesrv service
 
 [Service]
 Type=oneshot
-ExecStart=/etc/init.d/dafilesrv start
-ExecStop=/etc/init.d/dafilesrv stop
+ExecStart=@INIT_PATH@/dafilesrv start
+ExecStop=@INIT_PATH@/dafilesrv stop
 RemainAfterExit=yes
 StandardOutput=tty
 StandardError=tty
