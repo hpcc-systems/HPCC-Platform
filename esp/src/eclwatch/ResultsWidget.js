@@ -89,6 +89,15 @@ define([
                 }
             }).placeAt(this.widget.Open.domNode, "after");
 
+            this.openLegacy = new Button({
+                label: this.i18n.OpenLegacyMode,
+                onClick: function (event) {
+                    context._onOpen(event, {
+                        legacyMode: true
+                    });
+                }
+            }).placeAt(this.widget.Open.domNode, "after");
+
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
@@ -159,8 +168,12 @@ define([
 
         getDetailID: function (row, params) {
             var retVal = "Detail" + row[this.idProperty];
-            if (params && params.vizMode) {
-                retVal += "Viz";
+            if (params) {
+                if (params.vizMode) {
+                    retVal += "Viz";
+                } else if (params.legacyMode) {
+                    retVal += "Legacy";
+                }
             }
             return retVal;
         },
@@ -177,6 +190,19 @@ define([
                         params: {
                             Wuid: row.Wuid,
                             Sequence: row.Sequence
+                        }
+                    }
+                });
+            } else if (params && params.legacyMode) {
+                return new DelayLoadWidget({
+                    id: id,
+                    title: "[L] " + row.Name,
+                    closable: true,
+                    delayWidget: "IFrameWidget",
+                    hpcc: {
+                        type: "IFrameWidget",
+                        params: {
+                            src: "/WsWorkunits/WUResult?Wuid=" + row.Wuid + "&Sequence=" + row.Sequence
                         }
                     }
                 });
@@ -242,6 +268,7 @@ define([
         refreshActionState: function (selection) {
             this.inherited(arguments);
 
+            this.openLegacy.set("disabled", !this.wu || !selection.length);
             this.openViz.set("disabled", !this.wu || !selection.length);
         }
 
