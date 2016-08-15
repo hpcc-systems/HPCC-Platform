@@ -45,6 +45,26 @@
 #   5. To build the project, load the solution into the visual studio IDE and build in the usual way.
 #   6. Executables will be created in .\hpcc\bin\<release_mode>
 #
+#   To create a development installation on Linux:
+#   1. Check out sources (for example, to directory ~/hpcc)
+#   2. Create a build directory alongside your source
+#   3. To create makefiles and have the ability to run the applications as non-superuser, execute
+#       cmake -DRUNTIME_USER=$USER -DRUNTIME_GROUP=groupname -DDESTDIR=$HOME/myruntime ~/hpcc
+#   4. To build the makefiles just created above, run
+#       make
+#   5. To install the project under DESTDIR, run
+#       make install
+#   6. To populate environment xml's and conf files necessary for running your development installation, run
+#       make configure
+#   7a.To start up the platform, execute all binaries and scripts under DESTDIR as a regular user, example
+#       $HOME/myruntime/etc/init.d/hpcc-init start
+#   7b.All runtime files will be under $HOME/myruntime/var/{log,lib,run,lock}
+#   8a.To patch your running installation, simply modify the source, and then from the build directory run
+#       make install
+#      Which will recompile any changes and only install files into the platform that have been modified
+#   8b.Restart the platform (or specific component that had modifications), example
+#       $HOME/myruntime/etc/init.d/hpcc-init restart
+#
 #########################################################
 
 project(hpccsystems-platform)
@@ -96,6 +116,7 @@ option(RUNTIME_GROUP "Set the runtime group")
 option(ENV_XML_FILE "Set the environment xml file name.")
 option(ENV_CONF_FILE "Set the environment conf file name.")
 option(LICENSE_FILE "Set the license file to use.")
+option(DESTDIR "Set the alternate root installation path.")
 
 if(NOT LICENSE_FILE)
     if(REMBED)
@@ -446,5 +467,13 @@ endif(TOP_LEVEL_PROJECT)
 if(PLATFORM OR CLIENTTOOLS OR REMBED)
     install(FILES ${HPCC_SOURCE_DIR}/${LICENSE_FILE} DESTINATION "." COMPONENT Runtime)
 endif()
+
+#uninstall target
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY)
+add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
 include(CPack)

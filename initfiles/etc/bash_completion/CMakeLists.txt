@@ -20,5 +20,5 @@ FOREACH( oFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/eclplus
     ${CMAKE_CURRENT_SOURCE_DIR}/eclagent
 )
-    install ( FILES ${oFILES} DESTINATION ${INSTALL_DIR}/etc/bash_completion.d COMPONENT Runtime )
+    install ( FILES ${oFILES} DESTINATION etc/bash_completion.d COMPONENT Runtime )
 ENDFOREACH ( oFILES )

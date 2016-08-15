@@ -17,22 +17,22 @@
 SET(outFiles)
 GENERATE_BASH(processor ${bash-vars} "init_dafilesrv.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "init_eclagent.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_dali.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_thor.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_configesp.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_dfuserver.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_eclccserver.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_eclscheduler.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_esp.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_roxie.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_sasha.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_thorslave.in" outFiles)
 ADD_CUSTOM_TARGET(ProcessFiles-initfiles-bin ALL DEPENDS ${outFiles})
 
 FOREACH( iFILES
     ${outFiles}
-    ${CMAKE_CURRENT_SOURCE_DIR}/init_configesp
-    ${CMAKE_CURRENT_SOURCE_DIR}/init_dali
-    ${CMAKE_CURRENT_SOURCE_DIR}/init_dfuserver
-    ${CMAKE_CURRENT_SOURCE_DIR}/init_eclccserver
-    ${CMAKE_CURRENT_SOURCE_DIR}/init_eclscheduler
-    ${CMAKE_CURRENT_SOURCE_DIR}/init_esp
     ${CMAKE_CURRENT_SOURCE_DIR}/init_ftslave
-    ${CMAKE_CURRENT_SOURCE_DIR}/init_roxie
     ${CMAKE_CURRENT_SOURCE_DIR}/init_roxie_cluster
-    ${CMAKE_CURRENT_SOURCE_DIR}/init_sasha
-    ${CMAKE_CURRENT_SOURCE_DIR}/init_thor
-    ${CMAKE_CURRENT_SOURCE_DIR}/init_thorslave
 )
     install ( PROGRAMS ${iFILES} DESTINATION ${EXEC_DIR} COMPONENT Runtime )
 ENDFOREACH ( iFILES )

@@ -3,15 +3,15 @@
 # Start/stop HPCC: sudo service dafilesrv <start|stop|restart>
 #                  or sudo systemctl <start|stop|restart> dafilesrv
 # Query status: journal -u dafilesrv -t dafilesrv -f  (CRL-C to return)
-# Alternatively user can directly invoke /etc/init.d/dafilesrv <start|stop|status>
+# Alternatively user can directly invoke @INIT_PATH@/dafilesrv <start|stop|status>
 
 [Unit]
 Description=HPCC Systems® dafilesrv service
 
 [Service]
 Type=oneshot
-ExecStart=/etc/init.d/dafilesrv start
-ExecStop=/etc/init.d/dafilesrv stop
+ExecStart=@INIT_PATH@/dafilesrv start
+ExecStop=@INIT_PATH@/dafilesrv stop
 RemainAfterExit=yes
 #StandardOutput=tty
 #StandardError=tty

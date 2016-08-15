@@ -462,7 +462,7 @@
     <xsl:template name="makeServicePluginName">
         <xsl:param name="plugin"/>
         <xsl:choose>
-            <xsl:when test="$isLinuxInstance">lib<xsl:value-of select="$plugin"/>.so</xsl:when>
+            <xsl:when test="$isLinuxInstance"><xsl:value-of select="$plugin"/></xsl:when>
             <xsl:otherwise>
                 <xsl:value-of select="$plugin"/>.dll</xsl:otherwise>
         </xsl:choose>

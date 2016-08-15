@@ -15,17 +15,27 @@
 #    limitations under the License.
 ################################################################################
 configure_file("version.in" "version")
-configure_file("environment.conf.in" "environment.conf")
-configure_file("environment.xml.in" "environment.xml")
+configure_file("environment.conf.in" "environment.conf" IMMEDIATE)
+configure_file("environment.xml.in" "environment.xml" IMMEDIATE)
 FOREACH( iFILES
     ${CMAKE_CURRENT_BINARY_DIR}/environment.conf
     ${CMAKE_CURRENT_BINARY_DIR}/version
 )
-    Install ( FILES ${iFILES}  DESTINATION .${CONFIG_DIR} COMPONENT Runtime )	#  Don't delete the "."
+    Install ( FILES ${iFILES}  DESTINATION etc/${DIR_NAME} COMPONENT Runtime )
 ENDFOREACH ( iFILES)
 
-Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.xml DESTINATION .${CONFIG_DIR}/rpmnew COMPONENT Runtime ) 	#  Don't delete the "."
-Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.conf DESTINATION .${CONFIG_DIR}/rpmnew COMPONENT Runtime )
-Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf DESTINATION .${CONFIG_DIR}/rpmnew COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.xml DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.conf DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.xml DESTINATION ${CONFIG_PREFIX}/${DIR_NAME}/${CONFIG_SOURCE_DIR} )
 
 ADD_SUBDIRECTORY(configmgr)
+
+if(NOT "${DESTDIR}" STREQUAL "")
+    message(STATUS "DESTDIR is set to ${DESTDIR}. Enabling configure target.")
+    add_custom_target(configure
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CONFIG_DIR}
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_XML_FILE} ${CONFIG_DIR}
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_CONF_FILE} ${CONFIG_DIR}
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf ${CONFIG_DIR})
+endif()

@@ -27,19 +27,17 @@ source ${INSTALL_DIR}/etc/init.d/hpcc_common
 
 createConf ()
 {
-    awk -f ${reg_path}/regex.awk -v NEW_ENVFILE=$1 -v NEW_PORT=$2 -v NEW_CONFFILE=$3< ${path}${configs}/configmgr/esp.xml >${runtime}/${compName}/esp.xml
+    awk -f ${reg_path}/regex.awk -v NEW_ENVFILE=$1 -v NEW_PORT=$2 -v NEW_CONFFILE=$3< ${CONFIG_DIR}/configmgr/esp.xml >${runtime}/${compName}/esp.xml
 }
 
 
 cleanup ()
 {
     echo "Exiting configMgr"
-    #stop configesp
     PIDPATH=${pid}/${compName}_init.pid
     stopcmd="${START_STOP_DAEMON} -K -p $PIDPATH"
     eval $stopcmd
     sleep 2
-    killall -9 configesp >/dev/null 2>&1
     cleanupRuntimeEnvironment
     exit
 }
@@ -67,7 +65,7 @@ reg_path=${path}/sbin
 compName=configmgr
 compPath=${runtime}/${compName}
 
-is_root
+[[ ! -w "${CONFIG_DIR}" ]] && is_root
 
 # Trapping keyboard interrupt  control-c
 trap control_c SIGINT

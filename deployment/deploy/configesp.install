@@ -1,1 +1,0 @@
-installFile "$binPath/esp" "$binPath/configesp" 1 || exit 1

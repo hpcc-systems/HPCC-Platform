@@ -22,6 +22,11 @@ GENERATE_BASH(processor ${bash-vars} "hpcc-init.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc_common.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "uninstall-init.in" outFiles)
 
+configure_file(hpcc-init.service.in hpcc-init.service @ONLY)
+configure_file(hpcc-init@.service.in hpcc-init@.service @ONLY)
+configure_file(dafilesrv.service.in dafilesrv.service @ONLY)
+configure_file(dafilesrv@.service.in dafilesrv@.service @ONLY)
+
 ADD_CUSTOM_TARGET(ProcessFiles-initfiles-bash-etc-init.d ALL DEPENDS ${outFiles})
 FOREACH( oFILES
     ${outFiles}
@@ -29,15 +34,13 @@ FOREACH( oFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/lock.sh
     ${CMAKE_CURRENT_SOURCE_DIR}/init-functions
     ${CMAKE_CURRENT_SOURCE_DIR}/export-path
-    ${CMAKE_CURRENT_SOURCE_DIR}/hpcc-init.service
-    ${CMAKE_CURRENT_SOURCE_DIR}/hpcc-init@.service
-    ${CMAKE_CURRENT_SOURCE_DIR}/dafilesrv.service
-    ${CMAKE_CURRENT_SOURCE_DIR}/dafilesrv@.service
+    ${CMAKE_CURRENT_BINARY_DIR}/hpcc-init.service
+    ${CMAKE_CURRENT_BINARY_DIR}/hpcc-init@.service
+    ${CMAKE_CURRENT_BINARY_DIR}/dafilesrv.service
+    ${CMAKE_CURRENT_BINARY_DIR}/dafilesrv@.service
 )
     install ( PROGRAMS ${oFILES} DESTINATION etc/init.d COMPONENT Runtime )
 ENDFOREACH ( oFILES )
 
-if ( PLATFORM )
-    install ( PROGRAMS hpcc-init.install DESTINATION etc/init.d/install COMPONENT Runtime )
-    install ( PROGRAMS hpcc-init.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
-endif()
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/dafilesrv ${CMAKE_CURRENT_BINARY_DIR}/hpcc-init
+    DESTINATION ${CONFIG_PREFIX}/init.d COMPONENT Runtime)
