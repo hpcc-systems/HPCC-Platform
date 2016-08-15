@@ -19,6 +19,7 @@
 #define _ESPWIZ_WsESDLConfig_HPP__
 
 #include "ws_esdlconfig_esp.ipp"
+#include "ws_topology_esp.ipp"
 #include "esdlconfig_errors.h"
 
 static const char* FEATURE_URL="ESDLConfigAccess";
@@ -58,6 +59,7 @@ public:
     bool onGetESDLDefinition(IEspContext &context, IEspGetESDLDefinitionRequest&req, IEspGetESDLDefinitionResponse &resp);
     bool onListESDLDefinitions(IEspContext &context, IEspListESDLDefinitionsRequest&req, IEspListESDLDefinitionsResponse &resp);
     bool onListESDLBindings(IEspContext &context, IEspListESDLBindingsRequest&req, IEspListESDLBindingsResponse &resp);
+    bool onListDESDLEspBindings(IEspContext &context, IEspListDESDLEspBindingsReq&req, IEspListDESDLEspBindingsResp &resp);
 };
 
 #endif //_ESPWIZ_WsESDLConfig_HPP__

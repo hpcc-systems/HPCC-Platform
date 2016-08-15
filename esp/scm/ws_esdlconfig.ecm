@@ -3,6 +3,7 @@ HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems®.
 ############################################################################## */
 
 EspInclude(common);
+EspInclude(ws_topology);
 
 ESPrequest EchoRequest
 {
@@ -85,6 +86,60 @@ ESPresponse [exceptions_inline] PublishESDLBindingResponse
     ESPstruct BaseESDLStatus status;
 };
 
+ESPrequest ListDESDLEspBindingsReq
+{
+	boolean IncludeESDLBindingInfo;
+};
+
+ESPstruct ESDLBinding
+{
+    string EspProcess;
+    string EspBinding;
+    string Id;
+};
+
+ESPstruct ESDLDefinition
+{
+    String Name;
+    int Seq;
+    String Id;
+    [min_ver("1.1")] String Interface;
+};
+
+ESPStruct ESDLBindingContents
+{
+	ESPStruct ESDLDefinition Definition;
+	ESPStruct ESDLConfiguration Configuration;
+};
+
+ESPStruct [nil_remove] TpBindingEx
+{
+    string Name;
+    string Service;
+    string ServiceType;
+    string BindingType;
+    string ServiceBuildSet;
+    string Port;
+    string Protocol;
+    ESPStruct ESDLBindingContents ESDLBinding;
+};
+
+ESPStruct ESPServerEx
+{
+	string Name;
+    string Description;
+    string Build;
+    string Type;
+    string Path;
+    string LogDirectory;
+    ESParray<ESPstruct TpBindingEx> TpBindingEx;
+};
+
+ESPresponse ListDESDLEspBindingsResp
+{
+	ESParray<ESPStruct ESPServerEx, ESPServer> ESPServers;
+};
+
 ESPrequest ConfigureESDLBindingMethodRequest
 {
     string EspProcName;       //Name of ESP Process
@@ -117,27 +172,6 @@ ESPrequest GetESDLBindingRequest
     string EspPort;       //Name + port = service
     string EsdlBindingId; //espprocname.espbinding
     [min_ver("1.1")] bool IncludeInterfaceDefinition;
-};
-
-ESPstruct ESDLBinding
-{
-    string EspProcess;
-    string EspBinding;
-    string Id;
-};
-
-ESPstruct ESDLDefinition
-{
-    String Name;
-    int Seq;
-    String Id;
-    [min_ver("1.1")] String Interface;
-};
-
-ESPStruct ESDLBindingContents
-{
-	ESPStruct ESDLDefinition Definition;
-	ESPStruct ESDLConfiguration Configuration;
 };
 
 ESPresponse [exceptions_inline] GetESDLBindingResponse
@@ -190,7 +224,7 @@ ESPresponse [exceptions_inline] ListESDLBindingsResponse
     ESParray<ESPstruct ESDLBinding, Binding> Bindings;
 };
 
-ESPservice [version("1.2"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
+ESPservice [version("1.3"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod PublishESDLDefinition(PublishESDLDefinitionRequest, PublishESDLDefinitionResponse);
@@ -202,6 +236,7 @@ ESPservice [version("1.2"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsE
     ESPmethod GetESDLDefinition(GetESDLDefinitionRequest, GetESDLDefinitionResponse);
     ESPmethod ListESDLDefinitions(ListESDLDefinitionsRequest, ListESDLDefinitionsResponse);
     ESPmethod ListESDLBindings(ListESDLBindingsRequest, ListESDLBindingsResponse);
+    ESPmethod [min_ver("1.3")] ListDESDLEspBindings(ListDESDLEspBindingsReq, ListDESDLEspBindingsResp);
 };
 
 SCMexportdef(WsESDLConfig);

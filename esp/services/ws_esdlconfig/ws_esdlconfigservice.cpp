@@ -24,6 +24,7 @@
 #include "dadfs.hpp"
 #include "dasess.hpp"
 #include "esdl_binding.hpp"
+#include "TpWrapper.hpp"
 
 IPropertyTree * fetchConfigInfo(const char * config,
                                 StringBuffer & espProcName,
@@ -1345,6 +1346,116 @@ bool CWsESDLConfigEx::onListESDLDefinitions(IEspContext &context, IEspListESDLDe
     resp.setDefinitions(list);
 
     return true;
+}
+
+bool CWsESDLConfigEx::onListDESDLEspBindings(IEspContext &context, IEspListDESDLEspBindingsReq&req, IEspListDESDLEspBindingsResp &resp)
+{
+	bool includeESDLBindings = req.getIncludeESDLBindingInfo();
+	IArrayOf<IEspESPServerEx> allESPServers;
+	IArrayOf<IEspESPServerEx> desdlESPServers;
+	CTpWrapper dummy;
+
+	IArrayOf<IConstTpEspServer> espServers;
+	dummy.getTpEspServers(espServers);
+	ForEachItemIn(idx, espServers)
+	{
+		IConstTpEspServer& server = espServers.item(idx);
+		Owned<IEspESPServerEx> desdlespserver = createESPServerEx("","");
+		desdlespserver->setName(server.getName());
+		desdlespserver->setBuild(server.getBuild());
+		desdlespserver->setType(server.getType());
+		desdlespserver->setPath(server.getPath());
+		desdlespserver->setLogDirectory(server.getLogDirectory());
+
+		IArrayOf<IConstTpBinding> & bindings = server.getTpBindings();
+		IArrayOf<IConstTpBindingEx> desdlbindings;
+		ForEachItemIn(bindingidx, bindings)
+		{
+
+			IConstTpBinding& binding = bindings.item(bindingidx);
+			if (stricmp(binding.getServiceType(), "DynamicESDL")==0)
+			{
+				Owned<IEspTpBindingEx> desdlespbinding = createTpBindingEx("","");
+				desdlespbinding->setPort(binding.getPort());
+				desdlespbinding->setName(binding.getName());
+				desdlespbinding->setProtocol(binding.getProtocol());
+				desdlespbinding->setServiceType(binding.getServiceType());
+				desdlespbinding->setBindingType(binding.getBindingType());
+				desdlespbinding->setService(binding.getService());
+
+				if(includeESDLBindings) //this whole block should be in its own function
+				{
+					StringBuffer msg;
+					Owned<IPropertyTree> esdlbindingtree = getBindingTree(server.getName(), binding.getName(), msg);
+					if (esdlbindingtree)
+					{
+						Owned<IPropertyTree> def;
+						def.setown(esdlbindingtree->queryPropTree("Definition[1]"));
+
+						StringBuffer defid = def->queryProp("@id");
+						msg.appendf("\nFetched ESDL Biding definition declaration: '%s'.", defid.str());
+						desdlespbinding->updateESDLBinding().updateDefinition().setId(defid);
+						desdlespbinding->updateESDLBinding().updateDefinition().setName(def->queryProp("@name"));
+
+						IArrayOf<IEspMethodConfig> iesmethods;
+						Owned<IPropertyTreeIterator> iter = esdlbindingtree->getElements("Definition[1]/Methods/Method");
+						ForEach(*iter)
+						{
+							Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
+
+							IPropertyTree & cur = iter->query();
+							IArrayOf<IEspNamedValue> iespattributes;
+							Owned<IAttributeIterator> attributes = cur.getAttributes();
+							ForEach(*attributes)
+							{
+								Owned<IEspNamedValue> iespattribute = createNamedValue("","");
+								const char * attname = attributes->queryName()+1;
+								if (stricmp(attname, "name")==0)
+								{
+									methodconfig->setName(attributes->queryValue());
+								}
+								else
+								{
+									iespattribute->setName(attributes->queryName()+1);
+									iespattribute->setValue(attributes->queryValue());
+									iespattributes.append(*iespattribute.getClear());
+								}
+							}
+							methodconfig->setAttributes(iespattributes);
+							iesmethods.append(*methodconfig.getClear());
+						}
+
+						msg.appendf("\nFetched ESDL Biding Configuration for %d methods.", iesmethods.length());
+
+							StringBuffer definition;
+							try
+							{
+								fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
+								desdlespbinding->updateESDLBinding().updateDefinition().setInterface(definition.str());
+								msg.append("\nFetched ESDL Biding definition.");
+							}
+							catch (...)
+							{
+								msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
+							}
+
+						desdlespbinding->updateESDLBinding().updateConfiguration().setMethods(iesmethods);
+					}
+				}
+
+				desdlbindings.append(*desdlespbinding.getClear());
+			}
+		}
+		if (desdlbindings.ordinality()>0)
+		{
+			desdlespserver->setTpBindingEx(desdlbindings);
+			desdlESPServers.append(*desdlespserver.getClear());
+		}
+	}
+
+	resp.setESPServers(desdlESPServers);
+
+	return true;
 }
 
 bool CWsESDLConfigEx::onListESDLBindings(IEspContext &context, IEspListESDLBindingsRequest&req, IEspListESDLBindingsResponse &resp)
