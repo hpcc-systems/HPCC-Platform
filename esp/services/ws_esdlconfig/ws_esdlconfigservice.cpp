@@ -121,7 +121,7 @@ bool isESDLDefinitionBound(const char * esdldefid)
     if (!esdldefid || !*esdldefid)
            return false;
 
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        return false;
 
@@ -176,7 +176,7 @@ bool ensureSDSSubPath(const char * sdsPath)
     Owned<IRemoteConnection> conn = querySDS().connect(sdsPath, myProcessSession(), RTM_LOCK_READ, 4000);
     if (!conn)
     {
-        conn.setown(querySDS().connect("/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
+        conn.setown(querySDS().connect("/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL));
         if (!conn.get())
             return false;
 
@@ -244,7 +244,7 @@ IPropertyTree * CWsESDLConfigEx::getESDLDefinitionRegistry(const char * wsEclId,
     if (!ensureSDSPath("ESDL/Definitions"))
         throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
 
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
         throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
     return (conn) ? conn->getRoot() : NULL;
@@ -309,7 +309,7 @@ bool CWsESDLConfigEx::existsESDLDefinition(const char * definitionid)
     StringBuffer lcid (definitionid);
     lcid.toLowerCase();
     VStringBuffer xpath("%s[@id='%s']", ESDL_DEF_PATH, lcid.str());
-    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
 
     if (globalLock)
     {
@@ -329,7 +329,7 @@ bool CWsESDLConfigEx::existsESDLMethodDef(const char * esdlDefinitionName, unsig
     StringBuffer lcdefname (esdlDefinitionName);
     lcdefname.toLowerCase();
     VStringBuffer xpath("%s[@id='%s.%d']/esxdl", ESDL_DEF_PATH, lcdefname.str(), ver);
-    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
 
     if (globalLock)
     {
@@ -375,7 +375,7 @@ void CWsESDLConfigEx::ensureESDLServiceBindingRegistry(const char * espProcName,
     if (!ensureSDSPath("ESDL/Bindings"))
         throw MakeStringException(-1, "Unable to connect to ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);
 
-    Owned<IRemoteConnection> globalLock = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> globalLock = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
 
     if (!globalLock)
         throw MakeStringException(-1, "Unable to connect to ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);
@@ -396,7 +396,7 @@ IPropertyTree * CWsESDLConfigEx::getEspProcessRegistry(const char * espprocname,
            return NULL;
 
     VStringBuffer xpath("/Environment/Software/EspProcess[@name='%s']", espprocname);
-    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
 
     if (!globalLock)
         throw MakeStringException(-1, "Unable to connect to ESDL Service configuration information in dali %s", ESDL_DEFS_ROOT_PATH);
@@ -412,7 +412,7 @@ IPropertyTree * CWsESDLConfigEx::getEspProcessRegistry(const char * espprocname,
         xpath.appendf("/EspBinding[@service='%s']", servicename);
 
     //Only lock the branch for the target we're interested in.
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
     if (conn)
     {
         conn->close(false);
@@ -537,7 +537,7 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
     if (!ensureSDSPath("ESDL/Bindings"))
            throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
 
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
 
@@ -598,6 +598,8 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_ROXIE_QUERY_ACCESS_DENIED, "Failed to Configure ESDL Service. Permission denied.");
 
+        double ver = context.getClientVersion();
+
         StringBuffer username;
         context.getUserID(username);
         DBGLOG("CWsESDLConfigEx::onPublishESDLBinding User=%s",username.str());
@@ -619,25 +621,30 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
             methodstree.setown(fetchConfigInfo(config.str(), espProcName, espBindingName, esdlDefIdSTR, esdlServiceName));
         else
         {
-            StringBuffer methodsxml;
-            IArrayOf<IConstMethodConfig>& methods = req.getMethods();
-            if (methods.ordinality() > 0)
-                methodsxml.set("<Methods>");
-
-            ForEachItemIn(idx, methods)
+            if (ver >= 1.2)
             {
-                IConstMethodConfig& method = methods.item(idx);
-                methodsxml.appendf("<Method name='%s'", method.getName());
-                IArrayOf<IConstNamedValue> & attributes = method.getAttributes();
-                ForEachItemIn(attributesidx, attributes)
+                StringBuffer methodsxml;
+                IArrayOf<IConstMethodConfig>& methods = req.getMethods();
+                if (methods.ordinality() > 0)
                 {
-                    IConstNamedValue& att = attributes.item(attributesidx);
-                    methodsxml.appendf(" %s='%s'", att.getName(), att.getValue());
+                    methodsxml.set("<Methods>");
+
+                    ForEachItemIn(idx, methods)
+                    {
+                        IConstMethodConfig& method = methods.item(idx);
+                        methodsxml.appendf("<Method name='%s'", method.getName());
+                        IArrayOf<IConstNamedValue> & attributes = method.getAttributes();
+                        ForEachItemIn(attributesidx, attributes)
+                        {
+                            IConstNamedValue& att = attributes.item(attributesidx);
+                            methodsxml.appendf(" %s='%s'", att.getName(), att.getValue());
+                        }
+                        methodsxml.append("/>");
+                    }
+                    methodsxml.append("</Methods>");
+                    methodstree.setown(createPTreeFromXMLString(methodsxml.str()));
                 }
-                methodsxml.append("/>");
             }
-            methodsxml.append("</Methods>");
-            methodstree.setown(createPTreeFromXMLString(methodsxml.str()));
         }
         if (esdlServiceName.length() == 0)
             throw MakeStringException(-1, "Must provide the ESDL service name as it appears in the ESDL definition.");
@@ -776,7 +783,7 @@ int CWsESDLConfigEx::publishESDLMethod(const char * espProcName, const char * es
 
     try
     {
-        conn.setown(querySDS().connect(rxpath, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
+        conn.setown(querySDS().connect(rxpath, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL));
     }
     catch (ISDSException * e)
     {
@@ -846,19 +853,31 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
             methodstree.setown(fetchConfigInfo(config, espProcName, espBindingName, esdlDefIdSTR, esdlServiceName));
         else
         {
-            StringBuffer methodsxml("<Methods>");
-
-            IConstMethodConfig& method = req.getMethodStructure();
-            methodsxml.appendf("<Method name='%s'", method.getName());
-            IArrayOf<IConstNamedValue> & attributes = method.getAttributes();
-            ForEachItemIn(attributesidx, attributes)
+            double ver = context.getClientVersion();
+            if (ver >= 1.2)
             {
-                IConstNamedValue& att = attributes.item(attributesidx);
-                methodsxml.appendf(" %s='%s'", att.getName(), att.getValue());
+
+                IConstMethodConfig& method = req.getMethodStructure();
+                IArrayOf<IConstNamedValue> & attributes = method.getAttributes();
+                const char * methname = method.getName();
+                if(methname && *methname && attributes.ordinality() > 0)
+                {
+                    StringBuffer methodsxml("<Methods>");
+                    methodsxml.appendf("<Method name='%s'", method.getName());
+
+                    ForEachItemIn(attributesidx, attributes)
+                    {
+                        IConstNamedValue& att = attributes.item(attributesidx);
+                        methodsxml.appendf(" %s='%s'", att.getName(), att.getValue());
+                    }
+                    methodsxml.append("/></Methods>");
+                    methodstree.setown(createPTreeFromXMLString(methodsxml.str()));
+                }
             }
-            methodsxml.append("/></Methods>");
-            methodstree.setown(createPTreeFromXMLString(methodsxml.str()));
         }
+
+        if (!methodstree || methodstree->getCount("Method") <= 0)
+            throw MakeStringException(-1, "Could not find any method configuration entries.");
 
         bool override = req.getOverwrite();
 
@@ -889,9 +908,6 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
             else
                 esdlServiceName.set(esdlDefinitionName.str());
         }
-
-        if (!methodstree || methodstree->getCount("Method") <= 0)
-            throw MakeStringException(-1, "Could not find any method configuration entries.");
 
         if (espProcName.length() == 0)
             throw MakeStringException(-1, "Must provide ESP Process name");
@@ -967,7 +983,7 @@ IPropertyTree * CWsESDLConfigEx::getBindingTree(const char * espProcName, const 
         return NULL;
     }
 
-    Owned<IRemoteConnection> globalLock = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> globalLock = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
     if (!globalLock)
     {
         msg.set("Unable to connect to ESDL Service binding information in dali");
@@ -984,7 +1000,7 @@ IPropertyTree * CWsESDLConfigEx::getBindingTree(const char * espProcName, const 
     }
 
     VStringBuffer xpath("%s[@espprocess='%s'][@espbinding='%s']", ESDL_BINDING_PATH, espProcName, espBindingName);
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
     {
         msg.setf("Could not find binding for ESP proc: %s, and binding: %s", espProcName, espBindingName);
@@ -1020,7 +1036,7 @@ void fetchESDLDefinitionFromDaliById(const char *id, StringBuffer & def)
 
     DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali: %s ", id);
 
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
@@ -1135,7 +1151,6 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                     Owned<IAttributeIterator> attributes = cur.getAttributes();
                     ForEach(*attributes)
                     {
-                        Owned<IEspNamedValue> iespattribute = createNamedValue("","");
                         const char * attname = attributes->queryName()+1;
                         if (stricmp(attname, "name")==0)
                         {
@@ -1143,7 +1158,8 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                         }
                         else
                         {
-                            iespattribute->setName(attributes->queryName()+1);
+                            Owned<IEspNamedValue> iespattribute = createNamedValue("","");
+                            iespattribute->setName(attname);
                             iespattribute->setValue(attributes->queryValue());
                             iespattributes.append(*iespattribute.getClear());
                         }
@@ -1211,7 +1227,7 @@ bool CWsESDLConfigEx::onDeleteESDLDefinition(IEspContext &context, IEspDeleteESD
 
     esdlDefinitionId.toLowerCase();
 
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
         throw MakeStringException(-1, "Unable to connect to %s dali path", ESDL_DEFS_ROOT_PATH);
 
@@ -1259,7 +1275,7 @@ bool CWsESDLConfigEx::onDeleteESDLBinding(IEspContext &context, IEspDeleteESDLBi
         return false;
     }
 
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), 0, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
         throw MakeStringException(-1, "Unable to connect to %s dali path", ESDL_BINDINGS_ROOT_PATH);
 
@@ -1321,7 +1337,7 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
 
 bool CWsESDLConfigEx::onListESDLDefinitions(IEspContext &context, IEspListESDLDefinitionsRequest&req, IEspListESDLDefinitionsResponse &resp)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
@@ -1350,117 +1366,116 @@ bool CWsESDLConfigEx::onListESDLDefinitions(IEspContext &context, IEspListESDLDe
 
 bool CWsESDLConfigEx::onListDESDLEspBindings(IEspContext &context, IEspListDESDLEspBindingsReq&req, IEspListDESDLEspBindingsResp &resp)
 {
-	bool includeESDLBindings = req.getIncludeESDLBindingInfo();
-	IArrayOf<IEspESPServerEx> allESPServers;
-	IArrayOf<IEspESPServerEx> desdlESPServers;
-	CTpWrapper dummy;
+    bool includeESDLBindings = req.getIncludeESDLBindingInfo();
+    IArrayOf<IEspESPServerEx> allESPServers;
+    IArrayOf<IEspESPServerEx> desdlESPServers;
+    CTpWrapper dummy;
 
-	IArrayOf<IConstTpEspServer> espServers;
-	dummy.getTpEspServers(espServers);
-	ForEachItemIn(idx, espServers)
-	{
-		IConstTpEspServer& server = espServers.item(idx);
-		Owned<IEspESPServerEx> desdlespserver = createESPServerEx("","");
-		desdlespserver->setName(server.getName());
-		desdlespserver->setBuild(server.getBuild());
-		desdlespserver->setType(server.getType());
-		desdlespserver->setPath(server.getPath());
-		desdlespserver->setLogDirectory(server.getLogDirectory());
+    IArrayOf<IConstTpEspServer> espServers;
+    dummy.getTpEspServers(espServers);
+    ForEachItemIn(idx, espServers)
+    {
+        IConstTpEspServer& server = espServers.item(idx);
+        Owned<IEspESPServerEx> desdlespserver = createESPServerEx("","");
+        desdlespserver->setName(server.getName());
+        desdlespserver->setBuild(server.getBuild());
+        desdlespserver->setType(server.getType());
+        desdlespserver->setPath(server.getPath());
+        desdlespserver->setLogDirectory(server.getLogDirectory());
 
-		IArrayOf<IConstTpBinding> & bindings = server.getTpBindings();
-		IArrayOf<IConstTpBindingEx> desdlbindings;
-		ForEachItemIn(bindingidx, bindings)
-		{
+        IArrayOf<IConstTpBinding> & bindings = server.getTpBindings();
+        IArrayOf<IConstTpBindingEx> desdlbindings;
+        ForEachItemIn(bindingidx, bindings)
+        {
+            IConstTpBinding& binding = bindings.item(bindingidx);
+            if (stricmp(binding.getServiceType(), "DynamicESDL")==0)
+            {
+                Owned<IEspTpBindingEx> desdlespbinding = createTpBindingEx("","");
+                desdlespbinding->setPort(binding.getPort());
+                desdlespbinding->setName(binding.getName());
+                desdlespbinding->setProtocol(binding.getProtocol());
+                desdlespbinding->setServiceType(binding.getServiceType());
+                desdlespbinding->setBindingType(binding.getBindingType());
+                desdlespbinding->setService(binding.getService());
 
-			IConstTpBinding& binding = bindings.item(bindingidx);
-			if (stricmp(binding.getServiceType(), "DynamicESDL")==0)
-			{
-				Owned<IEspTpBindingEx> desdlespbinding = createTpBindingEx("","");
-				desdlespbinding->setPort(binding.getPort());
-				desdlespbinding->setName(binding.getName());
-				desdlespbinding->setProtocol(binding.getProtocol());
-				desdlespbinding->setServiceType(binding.getServiceType());
-				desdlespbinding->setBindingType(binding.getBindingType());
-				desdlespbinding->setService(binding.getService());
+                if(includeESDLBindings) //this whole block should be in its own function
+                {
+                    StringBuffer msg;
+                    Owned<IPropertyTree> esdlbindingtree = getBindingTree(server.getName(), binding.getName(), msg);
+                    if (esdlbindingtree)
+                    {
+                        Owned<IPropertyTree> def;
+                        def.setown(esdlbindingtree->queryPropTree("Definition[1]"));
 
-				if(includeESDLBindings) //this whole block should be in its own function
-				{
-					StringBuffer msg;
-					Owned<IPropertyTree> esdlbindingtree = getBindingTree(server.getName(), binding.getName(), msg);
-					if (esdlbindingtree)
-					{
-						Owned<IPropertyTree> def;
-						def.setown(esdlbindingtree->queryPropTree("Definition[1]"));
+                        StringBuffer defid = def->queryProp("@id");
+                        msg.appendf("\nFetched ESDL Biding definition declaration: '%s'.", defid.str());
+                        desdlespbinding->updateESDLBinding().updateDefinition().setId(defid);
+                        desdlespbinding->updateESDLBinding().updateDefinition().setName(def->queryProp("@name"));
 
-						StringBuffer defid = def->queryProp("@id");
-						msg.appendf("\nFetched ESDL Biding definition declaration: '%s'.", defid.str());
-						desdlespbinding->updateESDLBinding().updateDefinition().setId(defid);
-						desdlespbinding->updateESDLBinding().updateDefinition().setName(def->queryProp("@name"));
+                        IArrayOf<IEspMethodConfig> iesmethods;
+                        Owned<IPropertyTreeIterator> iter = esdlbindingtree->getElements("Definition[1]/Methods/Method");
+                        ForEach(*iter)
+                        {
+                            Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
 
-						IArrayOf<IEspMethodConfig> iesmethods;
-						Owned<IPropertyTreeIterator> iter = esdlbindingtree->getElements("Definition[1]/Methods/Method");
-						ForEach(*iter)
+                            IPropertyTree & cur = iter->query();
+                            IArrayOf<IEspNamedValue> iespattributes;
+                            Owned<IAttributeIterator> attributes = cur.getAttributes();
+                            ForEach(*attributes)
+                            {
+                                const char * attname = attributes->queryName()+1;
+                                if (stricmp(attname, "name")==0)
+                                {
+                                    methodconfig->setName(attributes->queryValue());
+                                }
+                                else
+                                {
+                                    Owned<IEspNamedValue> iespattribute = createNamedValue("","");
+                                    iespattribute->setName(attname);
+                                    iespattribute->setValue(attributes->queryValue());
+                                    iespattributes.append(*iespattribute.getClear());
+                                }
+                            }
+                            methodconfig->setAttributes(iespattributes);
+                            iesmethods.append(*methodconfig.getClear());
+                        }
+
+                        msg.appendf("\nFetched ESDL Biding Configuration for %d methods.", iesmethods.length());
+
+						StringBuffer definition;
+						try
 						{
-							Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
-
-							IPropertyTree & cur = iter->query();
-							IArrayOf<IEspNamedValue> iespattributes;
-							Owned<IAttributeIterator> attributes = cur.getAttributes();
-							ForEach(*attributes)
-							{
-								Owned<IEspNamedValue> iespattribute = createNamedValue("","");
-								const char * attname = attributes->queryName()+1;
-								if (stricmp(attname, "name")==0)
-								{
-									methodconfig->setName(attributes->queryValue());
-								}
-								else
-								{
-									iespattribute->setName(attributes->queryName()+1);
-									iespattribute->setValue(attributes->queryValue());
-									iespattributes.append(*iespattribute.getClear());
-								}
-							}
-							methodconfig->setAttributes(iespattributes);
-							iesmethods.append(*methodconfig.getClear());
+							fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
+							desdlespbinding->updateESDLBinding().updateDefinition().setInterface(definition.str());
+							msg.append("\nFetched ESDL Biding definition.");
+						}
+						catch (...)
+						{
+							msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
 						}
 
-						msg.appendf("\nFetched ESDL Biding Configuration for %d methods.", iesmethods.length());
+                        desdlespbinding->updateESDLBinding().updateConfiguration().setMethods(iesmethods);
+                    }
+                }
 
-							StringBuffer definition;
-							try
-							{
-								fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
-								desdlespbinding->updateESDLBinding().updateDefinition().setInterface(definition.str());
-								msg.append("\nFetched ESDL Biding definition.");
-							}
-							catch (...)
-							{
-								msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
-							}
+                desdlbindings.append(*desdlespbinding.getClear());
+            }
+        }
+        if (desdlbindings.ordinality()>0)
+        {
+            desdlespserver->setTpBindingEx(desdlbindings);
+            desdlESPServers.append(*desdlespserver.getClear());
+        }
+    }
 
-						desdlespbinding->updateESDLBinding().updateConfiguration().setMethods(iesmethods);
-					}
-				}
+    resp.setESPServers(desdlESPServers);
 
-				desdlbindings.append(*desdlespbinding.getClear());
-			}
-		}
-		if (desdlbindings.ordinality()>0)
-		{
-			desdlespserver->setTpBindingEx(desdlbindings);
-			desdlESPServers.append(*desdlespserver.getClear());
-		}
-	}
-
-	resp.setESPServers(desdlESPServers);
-
-	return true;
+    return true;
 }
 
 bool CWsESDLConfigEx::onListESDLBindings(IEspContext &context, IEspListESDLBindingsRequest&req, IEspListESDLBindingsResponse &resp)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 

@@ -50,16 +50,16 @@ ESPresponse [exceptions_inline] PublishESDLDefinitionResponse
 
 ESPStruct MethodConfig
 {
-	String Name;
-	ESParray<ESPstruct NamedValue, Attribute> Attributes;
+    String Name;
+    ESParray<ESPstruct NamedValue, Attribute> Attributes;
 };
 
 ESPStruct ESDLConfiguration
 {
-	ESParray<ESPStruct MethodConfig, Method> Methods;
+    ESParray<ESPStruct MethodConfig, Method> Methods;
 };
 
-ESPrequest PublishESDLBindingRequest
+ESPrequest [nil_remove] PublishESDLBindingRequest
 {
     string EspProcName;        //Name of ESP Process
     string EspBindingName;     //Name of ESP Binding - optional, but we must be able to look it up. We can look it up by EspProc + Esp Port or EspProc + Esp Service.
@@ -86,9 +86,9 @@ ESPresponse [exceptions_inline] PublishESDLBindingResponse
     ESPstruct BaseESDLStatus status;
 };
 
-ESPrequest ListDESDLEspBindingsReq
+ESPrequest [nil_remove] ListDESDLEspBindingsReq
 {
-	boolean IncludeESDLBindingInfo;
+    boolean IncludeESDLBindingInfo;
 };
 
 ESPstruct ESDLBinding
@@ -108,8 +108,8 @@ ESPstruct ESDLDefinition
 
 ESPStruct ESDLBindingContents
 {
-	ESPStruct ESDLDefinition Definition;
-	ESPStruct ESDLConfiguration Configuration;
+    ESPStruct ESDLDefinition Definition;
+    ESPStruct ESDLConfiguration Configuration;
 };
 
 ESPStruct [nil_remove] TpBindingEx
@@ -126,7 +126,7 @@ ESPStruct [nil_remove] TpBindingEx
 
 ESPStruct ESPServerEx
 {
-	string Name;
+    string Name;
     string Description;
     string Build;
     string Type;
@@ -137,10 +137,10 @@ ESPStruct ESPServerEx
 
 ESPresponse ListDESDLEspBindingsResp
 {
-	ESParray<ESPStruct ESPServerEx, ESPServer> ESPServers;
+    ESParray<ESPStruct ESPServerEx, ESPServer> ESPServers;
 };
 
-ESPrequest ConfigureESDLBindingMethodRequest
+ESPrequest [nil_remove] ConfigureESDLBindingMethodRequest
 {
     string EspProcName;       //Name of ESP Process
     string EspBindingName;    //Name + port = binding
@@ -214,7 +214,7 @@ ESPresponse [exceptions_inline] ListESDLDefinitionsResponse
     ESParray<ESPstruct ESDLDefinition, Definition> Definitions;
 };
 
-ESPrequest ListESDLBindingsRequest
+ESPrequest [exceptions_inline] ListESDLBindingsRequest
 {
 };
 
@@ -224,7 +224,7 @@ ESPresponse [exceptions_inline] ListESDLBindingsResponse
     ESParray<ESPstruct ESDLBinding, Binding> Bindings;
 };
 
-ESPservice [version("1.3"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
+ESPservice [version("1.2"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod PublishESDLDefinition(PublishESDLDefinitionRequest, PublishESDLDefinitionResponse);
@@ -236,7 +236,7 @@ ESPservice [version("1.3"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsE
     ESPmethod GetESDLDefinition(GetESDLDefinitionRequest, GetESDLDefinitionResponse);
     ESPmethod ListESDLDefinitions(ListESDLDefinitionsRequest, ListESDLDefinitionsResponse);
     ESPmethod ListESDLBindings(ListESDLBindingsRequest, ListESDLBindingsResponse);
-    ESPmethod [min_ver("1.3")] ListDESDLEspBindings(ListDESDLEspBindingsReq, ListDESDLEspBindingsResp);
+    ESPmethod [min_ver("1.2")] ListDESDLEspBindings(ListDESDLEspBindingsReq, ListDESDLEspBindingsResp);
 };
 
 SCMexportdef(WsESDLConfig);
