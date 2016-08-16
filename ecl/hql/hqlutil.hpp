@@ -270,6 +270,7 @@ public:
     bool compareAllRows;
     bool compareAllFields;
     bool isLocal;
+    bool keepBest;
     OwnedHqlExpr numToKeep;
     HqlExprArray conds;
     HqlExprArray equalities;
