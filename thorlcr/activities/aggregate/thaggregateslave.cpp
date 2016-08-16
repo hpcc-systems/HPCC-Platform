@@ -119,6 +119,8 @@ public:
     {
         hadElement = inputStopped = false;
         appendOutputLinked(this);
+        if (container.queryLocal())
+            setRequireInitData(false);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {

@@ -45,12 +45,10 @@ public:
         replyTag = queryMPServer().createReplyTag();
         replyStream.setown(createMemoryBufferSerialStream(masterReplyMsg));
         rowSource.setStream(replyStream);
+        grouped = helper->queryOutputMeta()->isGrouped();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        grouped = helper->queryOutputMeta()->isGrouped();
-    } 
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);

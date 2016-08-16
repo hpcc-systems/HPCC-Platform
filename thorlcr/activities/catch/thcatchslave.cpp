@@ -33,6 +33,7 @@ public:
     CCatchSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = static_cast <IHThorCatchArg *> (queryHelper());
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -187,10 +188,12 @@ class CSkipCatchSlaveActivity : public CCatchSlaveActivityBase
     }
 
 public:
-    CSkipCatchSlaveActivity(CGraphElementBase *container) 
-        : CCatchSlaveActivityBase(container)
+    CSkipCatchSlaveActivity(CGraphElementBase *_container)
+        : CCatchSlaveActivityBase(_container)
     {
-        global = !container->queryLocalOrGrouped();
+        global = !container.queryLocalOrGrouped();
+        if (!global)
+            setRequireInitData(false);
     }
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {

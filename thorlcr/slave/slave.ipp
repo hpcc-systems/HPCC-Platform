@@ -98,8 +98,9 @@ protected:
     PointerArrayOf<IStrandJunction> expandedJunctions;
 
 public:
-    CThorNarySlaveActivity(CGraphElementBase *container) : CSlaveActivity(container)
+    CThorNarySlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
+        setRequireInitData(false);
     }
     virtual void start() override
     {

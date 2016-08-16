@@ -72,8 +72,9 @@ class CFirstNSlaveLocal : public CFirstNSlaveBase
     bool firstget;
     rowcount_t skipped;
 public:
-    CFirstNSlaveLocal(CGraphElementBase *container) : CFirstNSlaveBase(container)
+    CFirstNSlaveLocal(CGraphElementBase *_container) : CFirstNSlaveBase(_container)
     {
+        setRequireInitData(false);
     }
 
 // IRowStream overrides
@@ -126,8 +127,9 @@ class CFirstNSlaveGrouped : public CFirstNSlaveBase
 
     unsigned countThisGroup;
 public:
-    CFirstNSlaveGrouped(CGraphElementBase *container) : CFirstNSlaveBase(container)
+    CFirstNSlaveGrouped(CGraphElementBase *_container) : CFirstNSlaveBase(_container)
     {
+        setRequireInitData(false);
     }
 
 // IRowStream overrides

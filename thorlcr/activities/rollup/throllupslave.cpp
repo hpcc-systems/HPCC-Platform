@@ -170,12 +170,14 @@ protected:
 
     unsigned numKept; // not used by rollup
 public:
-    CDedupRollupBaseActivity(CGraphElementBase *container, bool _rollup, bool _global, bool _groupOp) 
-        : CSlaveActivity(container)
+    CDedupRollupBaseActivity(CGraphElementBase *_container, bool _rollup, bool _global, bool _groupOp)
+        : CSlaveActivity(_container)
     {
         rollup = _rollup;
         global = _global;
         groupOp = _groupOp;
+        if (!global)
+            setRequireInitData(false);
     }
     virtual void stopInput()
     {
@@ -295,6 +297,7 @@ public:
         : CDedupRollupBaseActivity(_container, false, global, groupOp)
     {
         ddhelper = static_cast <IHThorDedupArg *>(queryHelper());
+        setRequireInitData(false);
         appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void start() override
@@ -401,10 +404,6 @@ public:
         : CDedupBaseSlaveActivity(_container, false, groupOp)
     {
         lastEog = false;
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        CDedupBaseSlaveActivity::init(data, slaveData);
     }
     virtual void start()
     {
@@ -555,11 +554,9 @@ public:
     {
         helper = (IHThorRollupGroupArg *)queryHelper();
         eoi = false;
-        appendOutputLinked(this);   // adding 'me' to outputs array
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         groupLoader.setown(createThorRowLoader(*this, NULL, stableSort_none, rc_allMem));
+        setRequireInitData(false);
+        appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void start()
     {

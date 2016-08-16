@@ -1598,7 +1598,7 @@ public:
         lastTick = 0;
 #endif
         helper = (IHThorKeyedJoinArg *)queryHelper();
-        reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
+        reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) || (helper->getJoinFlags() & JFvarindexfilename);
         appendOutputLinked(this);
     }
     ~CKeyedJoinSlave()

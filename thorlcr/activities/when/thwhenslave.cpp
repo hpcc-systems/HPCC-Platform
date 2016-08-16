@@ -34,6 +34,8 @@ public:
     CDependencyExecutorSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         global = !queryContainer().queryOwner().queryOwner() || queryContainer().queryOwner().isGlobal();
+        if (!global)
+            setRequireInitData(false);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {

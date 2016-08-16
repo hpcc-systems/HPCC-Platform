@@ -21,13 +21,11 @@
 class CNullSinkSlaveActivity : public ProcessSlaveActivity
 {
 public:
-    CNullSinkSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container)
+    CNullSinkSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
     {
+        setRequireInitData(false);
     }
 // IThorSlaveActivity
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
-    {       
-    }
     virtual void process() override
     {
         start();
@@ -84,13 +82,9 @@ class CThroughSlaveActivity : public CSlaveActivity
 public:
     CThroughSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
-// IThorSlaveActivity
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
-    {       
-    }
-
 // IThorDataLink
     virtual void start() override
     {

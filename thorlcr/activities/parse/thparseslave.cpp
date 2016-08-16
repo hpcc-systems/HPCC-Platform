@@ -49,6 +49,11 @@ public:
         anyThisGroup = false;
         curSearchTextLen = 0;
         curSearchText = NULL;
+        algorithm.setown(createThorParser(queryCodeContext(), *helper));
+        parser.setown(algorithm->createParser(queryCodeContext(), (unsigned)container.queryId(), helper->queryHelper(), helper));
+        rowIter = parser->queryResultIter();
+        allocator.set(queryRowAllocator());
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     ~CParseSlaveActivity()
@@ -56,13 +61,6 @@ public:
         if (helper->searchTextNeedsFree())
             rtlFree(curSearchText);
     }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        algorithm.setown(createThorParser(queryCodeContext(), *helper));
-        parser.setown(algorithm->createParser(queryCodeContext(), (unsigned)container.queryId(), helper->queryHelper(), helper));
-        rowIter = parser->queryResultIter();
-        allocator.set(queryRowAllocator());
-    } 
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);

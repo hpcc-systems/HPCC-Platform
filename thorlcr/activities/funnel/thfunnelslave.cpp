@@ -275,26 +275,22 @@ class FunnelSlaveActivity : public CSlaveActivity
 public:
     FunnelSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-        grouped = false;
         eog = NULL;
         current = NULL;
         currentMarker = 0;
         eogNext = false;
         readThisInput = 0;
         stopped = true;
-        parallel = false;
+        IHThorFunnelArg *helper = (IHThorFunnelArg *)queryHelper();
+        parallel = !container.queryGrouped() && !helper->isOrdered() && getOptBool(THOROPT_PARALLEL_FUNNEL, true);
+        grouped = container.queryGrouped();
+        ActPrintLog("FUNNEL mode = %s, grouped=%s", parallel?"PARALLEL":"ORDERED", grouped?"GROUPED":"UNGROUPED");
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     ~FunnelSlaveActivity()
     {
         if (eog) delete [] eog;
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        IHThorFunnelArg *helper = (IHThorFunnelArg *)queryHelper();
-        parallel = !container.queryGrouped() && !helper->isOrdered() && getOptBool(THOROPT_PARALLEL_FUNNEL, true);
-        grouped = container.queryGrouped();
-        ActPrintLog("FUNNEL mode = %s, grouped=%s", parallel?"PARALLEL":"ORDERED", grouped?"GROUPED":"UNGROUPED");
     }
     virtual void start() override
     {
@@ -477,6 +473,7 @@ public:
     {
         grouped = container.queryGrouped();
         helper = (IHThorCombineArg *) queryHelper();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -576,6 +573,7 @@ public:
     {
         grouped = container.queryGrouped();
         helper = (IHThorRegroupArg *) queryHelper();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -682,6 +680,8 @@ public:
         sendReceiving = false;
         masterMpTag = TAG_NULL;
         appendOutputLinked(this);
+        if (container.queryLocalOrGrouped())
+            setRequireInitData(false);
     }
 
 // IThorSlaveActivity overloaded methods
@@ -776,6 +776,7 @@ public:
     CNWaySelectActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorSteppable(this)
     {
         helper = (IHThorNWaySelectArg *)queryHelper();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -899,10 +900,11 @@ class CThorNWayInputSlaveActivity : public CSlaveActivity, implements IThorNWayI
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CThorNWayInputSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container)
+    CThorNWayInputSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorNWayInputArg *)queryHelper();
         grouped = helper->queryOutputMeta()->isGrouped(); // JCSMORE should match graph info, i.e. container.queryGrouped()
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override

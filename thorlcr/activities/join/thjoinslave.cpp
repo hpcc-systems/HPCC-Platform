@@ -165,6 +165,8 @@ public:
         leftKeySerializer = helper->querySerializeLeft();
         rightKeySerializer = helper->querySerializeRight();
         rightpartition = (container.getKind()==TAKjoin)&&((helper->getJoinFlags()&JFpartitionright)!=0);
+        if (islocal)
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
 
@@ -636,9 +638,10 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    CMergeJoinSlaveBaseActivity(CGraphElementBase *container, CMergeJoinProcessor &_processor) : CThorNarySlaveActivity(container), CThorSteppable(this), processor(_processor)
+    CMergeJoinSlaveBaseActivity(CGraphElementBase *_container, CMergeJoinProcessor &_processor) : CThorNarySlaveActivity(_container), CThorSteppable(this), processor(_processor)
     {
         helper = (IHThorNWayMergeJoinArg *)queryHelper();
+        setRequireInitData(false);
         inputAllocator.setown(getRowAllocator(helper->queryInputMeta()));
         outputAllocator.setown(getRowAllocator(helper->queryOutputMeta()));
         appendOutputLinked(this);

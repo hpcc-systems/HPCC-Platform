@@ -46,6 +46,7 @@ public:
         startRow = 0;
         currentRow = 0;
         maxRow = 0;
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual bool isGrouped() const override { return false; }

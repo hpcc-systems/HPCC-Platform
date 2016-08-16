@@ -1962,6 +1962,8 @@ public:
     HashDistributeSlaveBase(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
+        IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
+        ihash = distribargs->queryHash();
         appendOutputLinked(this);
     }
     ~HashDistributeSlaveBase()
@@ -2069,12 +2071,8 @@ public:
 class HashDistributeSlaveActivity : public HashDistributeSlaveBase
 {
 public:
-    HashDistributeSlaveActivity(CGraphElementBase *container) : HashDistributeSlaveBase(container) { }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
+    HashDistributeSlaveActivity(CGraphElementBase *container) : HashDistributeSlaveBase(container)
     {
-        HashDistributeSlaveBase::init(data, slaveData);
-        IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
-        ihash = distribargs->queryHash();
     }
 };
 
@@ -2083,15 +2081,11 @@ public:
 class HashDistributeMergeSlaveActivity : public HashDistributeSlaveBase
 {
 public:
-    HashDistributeMergeSlaveActivity(CGraphElementBase *container) : HashDistributeSlaveBase(container) { }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    HashDistributeMergeSlaveActivity(CGraphElementBase *container) : HashDistributeSlaveBase(container)
     {
         IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
         mergecmp = distribargs->queryMergeCompare();
-        HashDistributeSlaveBase::init(data, slaveData);
-        ihash = distribargs->queryHash();
     }
-
 };
 
 //===========================================================================
@@ -3900,6 +3894,8 @@ public:
         helper = static_cast <IHThorHashAggregateArg *> (queryHelper());
         mptag = TAG_NULL;
         eos = true;
+        if (container.queryLocalOrGrouped())
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
@@ -3977,7 +3973,7 @@ public:
 #endif
 
 
-class CHashDistributeSlavedActivity : public CSlaveActivity
+class CHashDistributedSlaveActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
@@ -3985,12 +3981,13 @@ class CHashDistributeSlavedActivity : public CSlaveActivity
     unsigned myNode, nodes;
 
 public:
-    CHashDistributeSlavedActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
+    CHashDistributedSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
         ihash = distribargs->queryHash();
         myNode = queryJobChannel().queryMyRank()-1;
         nodes = container.queryJob().querySlaves();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -4084,6 +4081,6 @@ CActivityBase *createReDistributeSlave(CGraphElementBase *container)
 
 CActivityBase *createHashDistributedSlave(CGraphElementBase *container)
 {
-    return new CHashDistributeSlavedActivity(container);
+    return new CHashDistributedSlaveActivity(container);
 }
 

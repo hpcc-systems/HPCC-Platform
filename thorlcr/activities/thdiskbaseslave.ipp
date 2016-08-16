@@ -133,7 +133,7 @@ protected:
 
 public:
     CDiskWriteSlaveActivityBase(CGraphElementBase *container);
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData);
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData);
     virtual void abort();
     virtual void serializeStats(MemoryBuffer &mb);
 

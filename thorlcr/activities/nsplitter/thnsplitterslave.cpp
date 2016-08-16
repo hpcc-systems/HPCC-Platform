@@ -143,6 +143,13 @@ public:
     {
         activeOutputs = container.getOutputs();
         ActPrintLog("Number of connected outputs: %u", activeOutputs);
+        setRequireInitData(false);
+        IHThorSplitArg *helper = (IHThorSplitArg *)queryHelper();
+        int dV = getOptInt(THOROPT_SPLITTER_SPILL, -1);
+        if (-1 == dV)
+            spill = !helper->isBalanced();
+        else
+            spill = dV>0;
         ForEachItemIn(o, container.outputs)
             appendOutput(new CSplitterOutput(*this, o));
     }
@@ -161,15 +168,6 @@ public:
             if (output)
                 output->reset();
         }
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        IHThorSplitArg *helper = (IHThorSplitArg *)queryHelper();
-        int dV = getOptInt(THOROPT_SPLITTER_SPILL, -1);
-        if (-1 == dV)
-            spill = !helper->isBalanced();
-        else
-            spill = dV>0;
     }
     bool prepareInput()
     {
