@@ -1255,7 +1255,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     if (syntaxChecking || optGenerateMeta || optEvaluateResult)
         return;
 
-    if (optSaveQueryArchive && instance.wu)
+    if (optSaveQueryArchive && instance.wu && instance.archive)
     {
         Owned<IWUQuery> q = instance.wu->updateQuery();
         StringBuffer buf;
@@ -1694,7 +1694,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
     const char * outputFilename = instance.outputFilename;
 
     instance.wu.setown(createLocalWorkUnit(NULL));
-    if (optArchive || optGenerateDepend)
+    if (optArchive || optGenerateDepend || optSaveQueryArchive)
         instance.archive.setown(createAttributeArchive());
 
     EclRepositoryArray repositories;
