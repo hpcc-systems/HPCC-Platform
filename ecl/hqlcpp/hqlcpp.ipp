@@ -1536,7 +1536,7 @@ public:
 
     void doBuildHttpHeaderStringFunction(BuildCtx & ctx, IHqlExpression * expr);
 
-    void doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant);
+    void doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant, bool canFilter);
 
     void doBuildXmlEncode(BuildCtx & ctx, const CHqlBoundTarget * tgt, IHqlExpression * expr, CHqlBoundExpr * result);
 
