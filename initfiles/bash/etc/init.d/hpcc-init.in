@@ -135,7 +135,9 @@ if [ $? -ne 1 ];then
    log  "Group for user ${group} does not exist on the system. Exiting ..."
    echo "Group for user ${group} does not exist on the system. Exiting ..."
    exit 3
-fi 
+fi
+
+check_getopt
 
 #changing ownership of the home directory for user.
 chown -cR $user:$group ${home}/${user} 1>/dev/null 2>/dev/null

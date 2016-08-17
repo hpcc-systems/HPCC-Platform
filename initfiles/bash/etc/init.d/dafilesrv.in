@@ -88,6 +88,8 @@ if [ $? -ne 1 ];then
    exit 3
 fi
 
+check_getopt
+
 COMPS=$(${configgen_path}/configgen -env ${envfile} -ip "127.0.0.1" -list)
 if [[ $rc -ne 0 ]]; then
     log "hpcc-init: failure to build COMPS from configgen call"

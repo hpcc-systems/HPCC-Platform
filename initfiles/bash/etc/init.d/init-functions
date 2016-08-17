@@ -376,6 +376,23 @@ log_action_end_msg () {
     log_action_end_msg_post "$@"
 }
 
+check_getopt () {
+  `getopt -T 1>/dev/null 2>&1`
+  if [ $? -ne 4 ]; then
+    echo "Incompatible version of getopt"
+    os=$(uname)
+    if [ "${os}" == "Darwin" ]; then
+      echo "Update from an external source"
+      echo "Example: brew install gnu-getopt"
+    elif [ "${os}" == "Linux" ]; then
+      echo "insure the environment variable GETOPT_COMPATIBLE is unset"
+    else
+      echo "getopt must support long options"
+    fi
+    exit 3
+  fi
+}
+
 distrib_check () {
   DISTRIB_NAME=
   DISTRIB_VERSION=
