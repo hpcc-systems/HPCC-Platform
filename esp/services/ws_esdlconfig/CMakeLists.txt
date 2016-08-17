@@ -65,4 +65,5 @@ target_link_libraries ( ws_esdlconfig
          esphttp
          environment
          dllserver
+         SMCLib
     )
