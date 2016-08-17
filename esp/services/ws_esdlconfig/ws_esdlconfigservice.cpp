@@ -1132,59 +1132,63 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
             if (esdlbindingtree)
             {
                 Owned<IPropertyTree> def;
-
                 def.setown(esdlbindingtree->queryPropTree("Definition[1]"));
 
-                StringBuffer defid = def->queryProp("@id");
-                msg.appendf("\nFetched ESDL Biding definition declaration: '%s'.", defid.str());
-                resp.updateESDLBinding().updateDefinition().setId(defid);
-                resp.updateESDLBinding().updateDefinition().setName(def->queryProp("@name"));
-
-                IArrayOf<IEspMethodConfig> iesmethods;
-                Owned<IPropertyTreeIterator> iter = esdlbindingtree->getElements("Definition[1]/Methods/Method");
-                ForEach(*iter)
+                if (def)
                 {
-                    Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
+                    StringBuffer defid = def->queryProp("@id");
+                    msg.appendf("\nFetched ESDL Biding definition declaration: '%s'.", defid.str());
+                    resp.updateESDLBinding().updateDefinition().setId(defid);
+                    resp.updateESDLBinding().updateDefinition().setName(def->queryProp("@name"));
 
-                    IPropertyTree & cur = iter->query();
-                    IArrayOf<IEspNamedValue> iespattributes;
-                    Owned<IAttributeIterator> attributes = cur.getAttributes();
-                    ForEach(*attributes)
+                    IArrayOf<IEspMethodConfig> iesmethods;
+                    Owned<IPropertyTreeIterator> iter = esdlbindingtree->getElements("Definition[1]/Methods/Method");
+                    ForEach(*iter)
                     {
-                        const char * attname = attributes->queryName()+1;
-                        if (stricmp(attname, "name")==0)
-                        {
-                            methodconfig->setName(attributes->queryValue());
-                        }
-                        else
-                        {
-                            Owned<IEspNamedValue> iespattribute = createNamedValue("","");
-                            iespattribute->setName(attname);
-                            iespattribute->setValue(attributes->queryValue());
-                            iespattributes.append(*iespattribute.getClear());
-                        }
-                    }
-                    methodconfig->setAttributes(iespattributes);
-                    iesmethods.append(*methodconfig.getClear());
-                }
+                        Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
 
-                msg.appendf("\nFetched ESDL Biding Configuration for %d methods.", iesmethods.length());
-                if (req.getIncludeInterfaceDefinition())
-                {
-                    StringBuffer definition;
-                    try
-                    {
-                        fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
-                        resp.updateESDLBinding().updateDefinition().setInterface(definition.str());
-                        msg.append("\nFetched ESDL Biding definition.");
+                        IPropertyTree & cur = iter->query();
+                        IArrayOf<IEspNamedValue> iespattributes;
+                        Owned<IAttributeIterator> attributes = cur.getAttributes();
+                        ForEach(*attributes)
+                        {
+                            const char * attname = attributes->queryName()+1;
+                            if (stricmp(attname, "name")==0)
+                            {
+                                methodconfig->setName(attributes->queryValue());
+                            }
+                            else
+                            {
+                                Owned<IEspNamedValue> iespattribute = createNamedValue("","");
+                                iespattribute->setName(attname);
+                                iespattribute->setValue(attributes->queryValue());
+                                iespattributes.append(*iespattribute.getClear());
+                            }
+                        }
+                        methodconfig->setAttributes(iespattributes);
+                        iesmethods.append(*methodconfig.getClear());
                     }
-                    catch (...)
+
+                    msg.appendf("\nFetched ESDL Biding Configuration for %d methods.", iesmethods.length());
+                    if (req.getIncludeInterfaceDefinition())
                     {
-                        msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
+                        StringBuffer definition;
+                        try
+                        {
+                            fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
+                            resp.updateESDLBinding().updateDefinition().setInterface(definition.str());
+                            msg.append("\nFetched ESDL Biding definition.");
+                        }
+                        catch (...)
+                        {
+                            msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
+                        }
                     }
+                    resp.updateESDLBinding().updateConfiguration().setMethods(iesmethods);
+                    resp.updateStatus().setCode(0);
                 }
-                resp.updateESDLBinding().updateConfiguration().setMethods(iesmethods);
-                resp.updateStatus().setCode(0);
+                msg.setf("\nCould not find Definition section in ESDL Binding %s.%s", espProcName.str(), espBindingName.str());
+                resp.updateStatus().setCode(-1);
             }
             else
                 resp.updateStatus().setCode(-1);
@@ -1442,17 +1446,17 @@ bool CWsESDLConfigEx::onListDESDLEspBindings(IEspContext &context, IEspListDESDL
 
                         msg.appendf("\nFetched ESDL Biding Configuration for %d methods.", iesmethods.length());
 
-						StringBuffer definition;
-						try
-						{
-							fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
-							desdlespbinding->updateESDLBinding().updateDefinition().setInterface(definition.str());
-							msg.append("\nFetched ESDL Biding definition.");
-						}
-						catch (...)
-						{
-							msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
-						}
+                        StringBuffer definition;
+                        try
+                        {
+                            fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
+                            desdlespbinding->updateESDLBinding().updateDefinition().setInterface(definition.str());
+                            msg.append("\nFetched ESDL Biding definition.");
+                        }
+                        catch (...)
+                        {
+                            msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
+                        }
 
                         desdlespbinding->updateESDLBinding().updateConfiguration().setMethods(iesmethods);
                     }
