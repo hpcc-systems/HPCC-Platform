@@ -133,7 +133,7 @@ void CResPermissionsCache::add( IArrayOf<ISecResource>& resources )
         if(resource == NULL)
             continue;
         int permissions = secResource->getAccessFlags();
-        if(permissions == -1)
+        if(permissions == SecAccess_Unavailable)
             continue;
 
         MapResAccess::iterator it = m_resAccessMap.find(SecCacheKeyEntry(resource, resourcetype));

@@ -587,11 +587,12 @@ public:
     }
 };
 
+//Translates ACI permission settings to SecAccessFlags
 int NewSec2Sec(int newsec)
 {
     int sec = 0;
     if(newsec == -1)
-        return -1;
+        return SecAccess_Unavailable;
     if(newsec == NewSecAccess_Full)
         return SecAccess_Full;
 
@@ -655,7 +656,7 @@ public:
         int perm = 0;
         if(m_acilist.length() == 0)
         {
-            perm = -1;
+            perm = SecAccess_Unavailable;
         }
         else
         {
@@ -1049,7 +1050,7 @@ CSecurityDescriptor* AciProcessor::changePermission(CSecurityDescriptor* initial
 
 StringBuffer& CIPlanetAciProcessor::sec2aci(int secperm, StringBuffer& aciperm)
 {
-    if(secperm == -1 || secperm == SecAccess_None)
+    if(secperm == SecAccess_Unavailable || secperm == SecAccess_None)
         return aciperm;
 
     if(secperm >= SecAccess_Full)
@@ -1134,7 +1135,7 @@ CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser * const user
 
 StringBuffer& COpenLdapAciProcessor::sec2aci(int secperm, StringBuffer& aciperm)
 {
-    if(secperm == -1 || secperm == SecAccess_None)
+    if(secperm == SecAccess_Unavailable || secperm == SecAccess_None)
         return aciperm;
 
     if(secperm >= SecAccess_Full)

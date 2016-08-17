@@ -31,7 +31,7 @@
 #include "dasds.hpp"
 #include "daclient.hpp"
 #include "daldap.hpp"
-
+#include "seclib.hpp"
 #include "dasess.hpp"
 
 #ifdef _MSC_VER
@@ -887,10 +887,10 @@ public:
         if (err)
             *err = 0;
         if (securitydisabled)
-            return -1;
+            return SecAccess_Unavailable;
         if (queryDaliServerVersion().compare("1.8") < 0) {
             securitydisabled = true;
-            return -1;
+            return SecAccess_Unavailable;
         }
         CMessageBuffer mb;
         mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
@@ -922,7 +922,7 @@ public:
                     throw new CDaliLDAP_Exception(e);
             }
         }
-        if (ret==-1)
+        if (ret == SecAccess_Unavailable)
             securitydisabled = true;
         return ret;
     }
@@ -1405,9 +1405,9 @@ public:
         if (err)
             *err = 0;
         if (!ldapconn)
-            return -1;
+            return SecAccess_Unavailable;
 #ifdef _NO_LDAP
-        return -1;
+        return SecAccess_Unavailable;
 #else
 #ifdef NULL_DALIUSER_STACKTRACE
         StringBuffer sb;

@@ -45,6 +45,7 @@
 
 #include "workunit.hpp"
 #include "dllserver.hpp"
+#include "seclib.hpp"
 
 #ifdef _WIN32
 #include <conio.h>
@@ -1521,7 +1522,7 @@ static void listrelationships(const char *primary,const char *secondary)
 
 int dfsperm(const char *obj,IUserDescriptor *user)
 {
-    int perm =0;
+    int perm = SecAccess_None;
     if (strchr(obj,'\\')||strchr(obj,'/')) {
         Owned<IFileDescriptor> fd = createFileDescriptor();
         RemoteFilename rfn;

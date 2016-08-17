@@ -120,13 +120,13 @@ public:
     int getPermissions(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags)
     {
         if (!ldapsecurity||((getLDAPflags()&DLF_ENABLED)==0)) 
-            return 255;
+            return SecAccess_Full;
         bool filescope = stricmp(key,"Scope")==0;
         bool wuscope = stricmp(key,"workunit")==0;
         if (filescope||wuscope) {
             StringBuffer username;
             StringBuffer password;
-            int perm = 0;
+            int perm = SecAccess_None;
             if (udesc) {
                 udesc->getUserName(username);
                 udesc->getPassword(password);
@@ -155,8 +155,8 @@ public:
                         perm=ldapsecurity->authorizeFileScope(*user, obj);
                     else if (wuscope)
                         perm=ldapsecurity->authorizeWorkunitScope(*user, obj);
-                    if (perm==-1)
-                        perm = 0;
+                    if (perm == SecAccess_Unavailable)
+                        perm = SecAccess_None;
                 }
             }
             unsigned taken = msTick()-start;
@@ -181,7 +181,7 @@ public:
             }
             return perm;
         }
-        return 255;
+        return SecAccess_Full;
     }
     bool clearPermissionsCache(IUserDescriptor *udesc)
     {
