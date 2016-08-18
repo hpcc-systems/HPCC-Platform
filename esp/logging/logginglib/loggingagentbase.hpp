@@ -28,7 +28,8 @@
 
 #define UPDATELOGTHREADWAITINGTIME 3000
 
-
+//The 'TransactionXYZ' is expected for the following key strings
+//used in CTransIDBuilder::getTransID() -> add().
 static const char* sTransactionDateTime = "TransactionDateTime";
 static const char* sTransactionMethod = "TransactionMethod";
 static const char* sTransactionESPIP = "TransactionESPIP";
