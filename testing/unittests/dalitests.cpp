@@ -2452,5 +2452,103 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( CDaliUtils );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliUtils, "DaliUtils" );
 
+class CFileNameNormalizeUnitTest : public CppUnit::TestFixture, CDfsLogicalFileName
+{
+    CPPUNIT_TEST_SUITE(CFileNameNormalizeUnitTest);
+      CPPUNIT_TEST(testFileNameNormalize);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testFileNameNormalize()
+    {
+        //Columns
+        const int inFileName = 0;
+        const int normalizedFileName = 1;
+
+        const char *validExternalLfns[][2] = {
+                //     input file name                          expected normalized file name
+                {"~file::192.168.16.1::dir1::file1",            "file::192.168.16.1::dir1::file1"},
+                {"~  file::  192.168.16.1::dir1::file1",        "file::192.168.16.1::dir1::file1"},
+                {"~file::192.168.16.1::>some query or another", "file::192.168.16.1::>some query or another"},
+                {"~file::192.168.16.1::>Some Query or Another", "file::192.168.16.1::>Some Query or Another"},
+                {"~file::192.168.16.1::wild?card1",             "file::192.168.16.1::wild?card1"},
+                {"~file::192.168.16.1::wild*card2",             "file::192.168.16.1::wild*card2"},
+                {"~file::192.168.16.1::^C^a^S^e^d",             "file::192.168.16.1::^c^a^s^e^d"},
+                {"~file::192.168.16.1::file@cluster1",          "file::192.168.16.1::file@cluster1"},
+                {nullptr,                                       nullptr }        // terminator
+                 };
+
+         const char *validInternalLfns[][2] = {
+                 //     input file name                    expected normalized file name
+                 {"~foreign::192.168.16.1::scope1::file1", "foreign::192.168.16.1::scope1::file1"},
+                 {".::scope1::file",                       ".::scope1::file"},
+                 {"~ scope1 :: scope2 :: file  ",          "scope1::scope2::file"},
+                 {". :: scope1 :: file nine",              ".::scope1::file nine"},
+                 {". :: scope1 :: file ten  ",             ".::scope1::file ten"},
+                 {". :: scope1 :: file",                   ".::scope1::file"},
+                 {nullptr,                                 nullptr}   // terminator
+                 };
+
+        // Check results
+        const bool externalFile = true;
+        const bool internalFile = false;
+        const bool fileNameMatch = true;
+
+        PROGLOG("Checking external filenames detection and normalization");
+        unsigned nlfn=0;
+        loop
+        {
+            const char *lfn = validExternalLfns[nlfn][inFileName];
+            if (nullptr == lfn)
+                break;
+            PROGLOG("lfn = '%s'", lfn);
+            StringAttr res;
+            try
+            {
+                ASSERT(externalFile == normalizeExternal(lfn, res, false));
+                ASSERT(fileNameMatch == streq(res.str(), validExternalLfns[nlfn][normalizedFileName]))
+
+            }
+            catch (IException *e)
+            {
+                VStringBuffer err("External filename '%s' ('%s') failed.", lfn, res.str());
+                EXCLOG(e, err.str());
+                CPPUNIT_FAIL(err.str());
+                e->Release();
+            }
+            nlfn++;
+        }
+
+        PROGLOG("Checking valid internal filenames");
+        nlfn=0;
+        loop
+        {
+            const char *lfn = validInternalLfns[nlfn][inFileName];
+            if (nullptr == lfn)
+                break;
+            PROGLOG("lfn = %s", lfn);
+            StringAttr res;
+            try
+            {
+                ASSERT(internalFile == normalizeExternal(lfn, res, false));
+                normalizeName(lfn, res, false);
+                ASSERT(fileNameMatch == streq(res.str(), validInternalLfns[nlfn][normalizedFileName]))
+
+            }
+            catch (IException *e)
+            {
+                VStringBuffer err("Internal filename '%s' ('%s') failed.", lfn, res.str());
+                EXCLOG(e, err.str());
+                CPPUNIT_FAIL(err.str());
+                e->Release();
+            }
+            nlfn++;
+        }
+
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( CFileNameNormalizeUnitTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CFileNameNormalizeUnitTest, "CFileNameNormalizeUnitTest" );
 
 #endif // _USE_CPPUNIT

@@ -341,10 +341,15 @@ inline void normalizeScope(const char *name, const char *scope, unsigned len, St
     }
 }
 
-void normalizeNodename(const char *node, unsigned len, SocketEndpoint &ep, bool strict)
+void normalizeNodeName(const char *node, unsigned len, SocketEndpoint &ep, bool strict)
 {
     if (!strict)
-        skipSp(node);
+        while (isspace(*node))
+        {
+            node++;
+            len--;
+        }
+
 
     StringBuffer nodename;
     nodename.append(len, node);
@@ -428,7 +433,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                 if (ns1)
                 {
                     SocketEndpoint ep;
-                    normalizeNodename(s1, ns1-s1, ep, strict);
+                    normalizeNodeName(s1, ns1-s1, ep, strict);
                     if (!ep.isNull())
                     {
                         ep.getUrlStr(str.append("::"));
@@ -463,7 +468,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
     res.set(str);
 }
 
-bool CDfsLogicalFileName::normalizeExternal(const char * name, bool strict)
+bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, bool strict)
 {
     // TODO Should check the name is a valid OS filename
     if ('~' == *name) // allowed 1 leading ~
@@ -487,7 +492,7 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, bool strict)
         else
         {
             SocketEndpoint ep;
-            normalizeNodename(s1, ns1-s1, ep, strict);
+            normalizeNodeName(s1, ns1-s1, ep, strict);
             if (ep.isNull())
                 retVal = false;
             else
@@ -505,7 +510,7 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, bool strict)
                     str.append(s);
                     str.toLowerCase();
                 }
-                lfn.set(str);
+                res.set(str);
             }
         }
 
@@ -555,7 +560,7 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign)
         return;
     }
 
-    if (normalizeExternal(name, false))
+    if (normalizeExternal(name, lfn, false))
         external = true;
     else
     {
