@@ -32,7 +32,7 @@ ESPStruct ESDLConfiguration
     ESParray<ESPStruct MethodConfig, Method> Methods;
 };
 
-ESPrequest GetESDLDefinitionRequest
+ESPrequest [nil_remove] GetESDLDefinitionRequest
 {
     string Id;
     [min_ver("1.2")] boolean ReportMethodsAvailable;

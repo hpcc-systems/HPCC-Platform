@@ -1171,7 +1171,7 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                                     {
                                         Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
 
-                                        methodconfig->setName(item.queryProp("@name"));
+                                        methodconfig->setName(name);
                                         iesmethods.append(*methodconfig.getClear());
                                     }
                                 }
@@ -1192,45 +1192,45 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                     {
                         Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
 
-						IPropertyTree & cur = iter->query();
-						IArrayOf<IEspNamedValue> iespattributes;
-						Owned<IAttributeIterator> attributes = cur.getAttributes();
-						ForEach(*attributes)
-						{
-							Owned<IEspNamedValue> iespattribute = createNamedValue("","");
-							const char * attname = attributes->queryName()+1;
-							if (stricmp(attname, "name")==0)
-							{
-								methodconfig->setName(attributes->queryValue());
-							}
-							else
-							{
-								iespattribute->setName(attributes->queryName()+1);
-								iespattribute->setValue(attributes->queryValue());
-								iespattributes.append(*iespattribute.getClear());
-							}
-						}
-						methodconfig->setAttributes(iespattributes);
-						iesmethods.append(*methodconfig.getClear());
-					}
+                        IPropertyTree & cur = iter->query();
+                        IArrayOf<IEspNamedValue> iespattributes;
+                        Owned<IAttributeIterator> attributes = cur.getAttributes();
+                        ForEach(*attributes)
+                        {
+                            const char * attname = attributes->queryName()+1;
+                            if (stricmp(attname, "name")==0)
+                            {
+                                methodconfig->setName(attributes->queryValue());
+                            }
+                            else
+                            {
+                                Owned<IEspNamedValue> iespattribute = createNamedValue("","");
+                                iespattribute->setName(attributes->queryName()+1);
+                                iespattribute->setValue(attributes->queryValue());
+                                iespattributes.append(*iespattribute.getClear());
+                            }
+                        }
+                        methodconfig->setAttributes(iespattributes);
+                        iesmethods.append(*methodconfig.getClear());
+                    }
 
-					msg.appendf("\nFetched ESDL Biding Configuration for %d methods.", iesmethods.length());
-					if (req.getIncludeInterfaceDefinition())
-					{
-						StringBuffer definition;
-						try
-						{
-							fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
-							resp.updateESDLBinding().updateDefinition().setInterface(definition.str());
-							msg.append("\nFetched ESDL Biding definition.");
-						}
-						catch (...)
-						{
-							msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
-						}
-					}
-					resp.updateESDLBinding().updateConfiguration().setMethods(iesmethods);
-					resp.updateStatus().setCode(0);
+                    msg.appendf("\nFetched ESDL Biding Configuration for %d methods.", iesmethods.length());
+                    if (req.getIncludeInterfaceDefinition())
+                    {
+                        StringBuffer definition;
+                        try
+                        {
+                            fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
+                            resp.updateESDLBinding().updateDefinition().setInterface(definition.str());
+                            msg.append("\nFetched ESDL Biding definition.");
+                        }
+                        catch (...)
+                        {
+                            msg.appendf("\nUnexpected error while attempting to fetch ESDL Definition %s", defid.toLowerCase().str());
+                        }
+                    }
+                    resp.updateESDLBinding().updateConfiguration().setMethods(iesmethods);
+                    resp.updateStatus().setCode(0);
                 }
                 else
                 {
@@ -1242,11 +1242,12 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                 resp.updateStatus().setCode(-1);
         }
 
-        //ver < 1.1
         StringBuffer bindingxml;
-        resp.updateStatus().setCode(getBindingXML(espProcName.str(), espBindingName.str(), bindingxml, msg));
-        resp.setConfigXML(bindingxml.str());
+        int bindingxmlcode = getBindingXML(espProcName.str(), espBindingName.str(), bindingxml, msg);
+        if (ver < 1.1)
+            resp.updateStatus().setCode(bindingxmlcode);
 
+        resp.setConfigXML(bindingxml.str());
         resp.updateStatus().setDescription(msg.str());
     }
     catch(IException* e)
@@ -1363,7 +1364,7 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
     StringBuffer id = req.getId();
     StringBuffer definition;
     resp.setId(id.str());
-    VStringBuffer message("Successfully fetched ESDL Defintion: %s from Dali.", id.str());
+    StringBuffer message;
     int respcode = 0;
 
     double ver = context.getClientVersion();
@@ -1371,6 +1372,7 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
     try
     {
         fetchESDLDefinitionFromDaliById(id.toLowerCase(), definition);
+        message.setf("Successfully fetched ESDL Defintion: %s from Dali.", id.str());
         if (definition.length() == 0 )
         {
             respcode = -1;
@@ -1416,7 +1418,7 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
                 }
                 catch (...)
                 {
-                    message.append("\n Encountered error while parsing fetching available methods");
+                    message.append("\nEncountered error while parsing fetching available methods");
                 }
             }
             else
