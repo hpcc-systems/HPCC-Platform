@@ -21,9 +21,21 @@ ESPstruct BaseESDLStatus
     string Description;
 };
 
+ESPStruct MethodConfig
+{
+    String Name;
+    ESParray<ESPstruct NamedValue, Attribute> Attributes;
+};
+
+ESPStruct ESDLConfiguration
+{
+    ESParray<ESPStruct MethodConfig, Method> Methods;
+};
+
 ESPrequest GetESDLDefinitionRequest
 {
     string Id;
+    [min_ver("1.2")] boolean ReportMethodsAvailable;
 };
 
 ESPresponse [exceptions_inline] GetESDLDefinitionResponse
@@ -31,6 +43,7 @@ ESPresponse [exceptions_inline] GetESDLDefinitionResponse
     string Id;
     string XMLDefinition;
     ESPstruct BaseESDLStatus status;
+    ESParray<ESPStruct MethodConfig, Method> Methods;
 };
 
 ESPrequest PublishESDLDefinitionRequest
@@ -46,17 +59,6 @@ ESPresponse [exceptions_inline] PublishESDLDefinitionResponse
     int EsdlVersion;
     boolean DeletePrevious;
     ESPstruct BaseESDLStatus status;
-};
-
-ESPStruct MethodConfig
-{
-    String Name;
-    ESParray<ESPstruct NamedValue, Attribute> Attributes;
-};
-
-ESPStruct ESDLConfiguration
-{
-    ESParray<ESPStruct MethodConfig, Method> Methods;
 };
 
 ESPrequest [nil_remove] PublishESDLBindingRequest
@@ -172,6 +174,7 @@ ESPrequest GetESDLBindingRequest
     string EspPort;       //Name + port = service
     string EsdlBindingId; //espprocname.espbinding
     [min_ver("1.1")] bool IncludeInterfaceDefinition;
+    [min_ver("1.2")] boolean ReportMethodsAvailable;
 };
 
 ESPresponse [exceptions_inline] GetESDLBindingResponse
