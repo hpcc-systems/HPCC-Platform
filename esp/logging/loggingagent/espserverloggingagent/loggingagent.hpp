@@ -76,7 +76,7 @@ public:
         {
             add(transIDFields, sTransactionDateTime, id);
             add(transIDFields, sTransactionMethod, id);
-            add(transIDFields, sTransactionESPIP, id);
+            add(transIDFields, sTransactionIdentifier, id);
         }
         if (localSeed)
             id.append(seed.get()).append("-X").append(++seq);

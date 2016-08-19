@@ -83,6 +83,8 @@ private:
 
     Owned<IEspSecureContext> m_secureContext;
 
+    StringAttr   m_transactionID;
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -483,6 +485,15 @@ public:
     IEspSecureContext* querySecureContext() override
     {
         return m_secureContext.get();
+    }
+
+    virtual void setTransactionID(const char * trxid)
+    {
+        m_transactionID.set(trxid);
+    }
+    virtual const char * queryTransactionID()
+    {
+        return m_transactionID.get();
     }
 };
 
