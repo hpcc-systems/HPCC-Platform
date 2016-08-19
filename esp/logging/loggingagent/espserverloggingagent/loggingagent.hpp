@@ -54,7 +54,12 @@ class CTransIDBuilder : public CInterface, implements IInterface
         if (value)
             id.append(value->get()).append('-');
         else
-            id.append('??-');
+        {
+            const char* ptr = key;
+            if (strlen(key) > 11) //skip the "transaction" prefix of the key
+                ptr += 11;
+            id.append('?').append(ptr).append('-');
+        }
     }
 
 public:
