@@ -1552,7 +1552,20 @@ void CLocalEnvironment::clearCache()
     if (conn)
     {
         p.clear();
-        conn->reload();
+        unsigned mode;
+        try
+        {
+            conn->reload();
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "Failed to reload connection");
+            e->Release();
+            mode = conn->queryMode();
+            conn.clear();
+        }
+        if (!conn)
+            conn.setown(querySDS().connect(xPath, myProcessSession(), mode, SDS_LOCK_TIMEOUT));
         p.setown(conn->getRoot());
     }
     cache.kill();
