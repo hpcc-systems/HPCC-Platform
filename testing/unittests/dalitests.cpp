@@ -2474,7 +2474,6 @@ public:
                 {"~file::192.168.16.1::wild?card1",             "file::192.168.16.1::wild?card1"},
                 {"~file::192.168.16.1::wild*card2",             "file::192.168.16.1::wild*card2"},
                 {"~file::192.168.16.1::^C^a^S^e^d",             "file::192.168.16.1::^c^a^s^e^d"},
-                {"~file::192.168.16.1::file@cluster1",          "file::192.168.16.1::file@cluster1"},
                 {nullptr,                                       nullptr }        // terminator
                  };
 
@@ -2486,6 +2485,10 @@ public:
                  {". :: scope1 :: file nine",              ".::scope1::file nine"},
                  {". :: scope1 :: file ten  ",             ".::scope1::file ten"},
                  {". :: scope1 :: file",                   ".::scope1::file"},
+                 {"~scope1::file@cluster1",                "scope1::file"},
+                 {"~scope::^C^a^S^e^d",                    "scope::^c^a^s^e^d"},
+                 {"~scope::CaSed",                         "scope::cased"},
+                 {"~scope::^CaSed",                         "scope::^cased"},
                  {nullptr,                                 nullptr}   // terminator
                  };
 
@@ -2506,15 +2509,15 @@ public:
             try
             {
                 ASSERT(externalFile == normalizeExternal(lfn, res, false));
+                PROGLOG("res = '%s'", res.str());
                 ASSERT(fileNameMatch == streq(res.str(), validExternalLfns[nlfn][normalizedFileName]))
-
             }
             catch (IException *e)
             {
                 VStringBuffer err("External filename '%s' ('%s') failed.", lfn, res.str());
                 EXCLOG(e, err.str());
-                CPPUNIT_FAIL(err.str());
                 e->Release();
+                CPPUNIT_FAIL(err.str());
             }
             nlfn++;
         }
@@ -2526,25 +2529,24 @@ public:
             const char *lfn = validInternalLfns[nlfn][inFileName];
             if (nullptr == lfn)
                 break;
-            PROGLOG("lfn = %s", lfn);
+            PROGLOG("lfn = '%s'", lfn);
             StringAttr res;
             try
             {
                 ASSERT(internalFile == normalizeExternal(lfn, res, false));
                 normalizeName(lfn, res, false);
+                PROGLOG("res = '%s'", res.str());
                 ASSERT(fileNameMatch == streq(res.str(), validInternalLfns[nlfn][normalizedFileName]))
-
             }
             catch (IException *e)
             {
                 VStringBuffer err("Internal filename '%s' ('%s') failed.", lfn, res.str());
                 EXCLOG(e, err.str());
-                CPPUNIT_FAIL(err.str());
                 e->Release();
+                CPPUNIT_FAIL(err.str());
             }
             nlfn++;
         }
-
     }
 };
 

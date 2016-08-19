@@ -344,12 +344,13 @@ inline void normalizeScope(const char *name, const char *scope, unsigned len, St
 void normalizeNodeName(const char *node, unsigned len, SocketEndpoint &ep, bool strict)
 {
     if (!strict)
+    {
         while (isspace(*node))
         {
             node++;
             len--;
         }
-
+    }
 
     StringBuffer nodename;
     nodename.append(len, node);
