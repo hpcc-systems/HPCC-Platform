@@ -945,9 +945,7 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                 if (!existsESDLMethodDef(esdlDefinitionName.str(), esdlver, esdlServiceName.str(), methodName))
                 {
                     StringBuffer msg;
-                    msg.appendf(
-                            "Could not configure: Invalid Method name detected: '%s'. Does not exist in ESDL Service Definition: '%s' version '%d'",
-                            methodName, esdlServiceName.str(), esdlver);
+                    msg.appendf("Could not configure: Invalid Method name detected: '%s'. Does not exist in ESDL Service Definition: '%s' version '%d'", methodName, esdlServiceName.str(), esdlver);
                     resp.updateStatus().setCode(-1);
                     resp.updateStatus().setDescription(msg.str());
                     return false;
@@ -960,11 +958,18 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                 }
             }
         }
+        resp.setEspProcName(espProcName.str());
+        resp.setEspBindingName(espBindingName.str());
+        resp.setEsdlDefinitionID(esdlDefIdSTR.str());
+        resp.setEsdlServiceName(esdlServiceName.str());
     }
     catch(IException* e)
     {
        FORWARDEXCEPTION(context, e, -1);
     }
+
+
+    resp.updateStatus().setCode(0);
 
     return true;
 }
