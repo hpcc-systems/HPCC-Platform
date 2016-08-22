@@ -32,7 +32,7 @@
 //used in CTransIDBuilder::getTransID() -> add().
 static const char* sTransactionDateTime = "TransactionDateTime";
 static const char* sTransactionMethod = "TransactionMethod";
-static const char* sTransactionESPIP = "TransactionESPIP";
+static const char* sTransactionIdentifier = "TransactionIdentifier";
 
 interface IEspUpdateLogRequestWrap : extends IInterface
 {
