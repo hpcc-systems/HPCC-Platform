@@ -167,12 +167,12 @@ public:
     }
     virtual void stop()
     {
-        PARENT::stop();
         if (first) // nextRow, therefore getPrevCount()/sendCount() never called
         {
             prevRecCount = count = getPrevCount();
             signalNext();
         }
+        PARENT::stop();
     }
     virtual void abort()
     {
