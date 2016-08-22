@@ -958,16 +958,22 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                 }
             }
         }
+
         resp.setEspProcName(espProcName.str());
         resp.setEspBindingName(espBindingName.str());
         resp.setEsdlDefinitionID(esdlDefIdSTR.str());
         resp.setEsdlServiceName(esdlServiceName.str());
+
+        if (context.getClientVersion() < 1.2)
+        {
+            resp.setServiceName(esdlDefinitionName.str());
+            resp.setServiceEsdlVersion(esdlver);
+        }
     }
     catch(IException* e)
     {
        FORWARDEXCEPTION(context, e, -1);
     }
-
 
     resp.updateStatus().setCode(0);
 
