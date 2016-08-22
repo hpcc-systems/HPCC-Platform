@@ -102,7 +102,7 @@ public:
 class CountProjectActivity : public BaseCountProjectActivity, implements ILookAheadStopNotify
 {
     typedef BaseCountProjectActivity PARENT;
-    bool first = false; // until start
+    std::atomic<bool> first; // false until start
     Semaphore prevRecCountSem;
     rowcount_t prevRecCount, localRecCount;
 
@@ -143,6 +143,7 @@ class CountProjectActivity : public BaseCountProjectActivity, implements ILookAh
 public:
     CountProjectActivity(CGraphElementBase *container) : BaseCountProjectActivity(container)
     {
+        first = false;
     }   
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
     {
@@ -167,12 +168,12 @@ public:
     }
     virtual void stop()
     {
-        PARENT::stop();
         if (first) // nextRow, therefore getPrevCount()/sendCount() never called
         {
             prevRecCount = count = getPrevCount();
             signalNext();
         }
+        PARENT::stop();
     }
     virtual void abort()
     {
@@ -186,9 +187,9 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (first) 
         {
-            first = false;
             prevRecCount = count = getPrevCount();
             signalNext();
+            first = false;
         }
         while (!abortSoon)
         {
