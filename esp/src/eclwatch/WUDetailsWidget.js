@@ -393,17 +393,17 @@ define([
                     context.slaveNumber.set("maxLength", context.maxSlaves);
                     dom.byId("SlavesMaxNumber").innerHTML = context.i18n.NumberofSlaves + " " + response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo[0].NumberSlaves;
                     context.logDate = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo[0].LogDate;
-                    context.clusterGroup = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo[0].ClusterGroup;
+                    context.clusterGroup = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo[0].ProcessName;
                     context.slaveLogs.set("disabled", false);
                     context.includeSlaveLogsCheckbox.set("disabled", false);
                     var targetData = response.WUInfoResponse.Workunit.ThorLogList.ThorLogInfo;
                         for (var i = 0; i < targetData.length; ++i) {
                             context.thorProcess.options.push({
-                                label: targetData[i].ClusterGroup,
-                                value: targetData[i].ClusterGroup
+                                label: targetData[i].ProcessName,
+                                value: targetData[i].ProcessName
                             });
                         }
-                        context.thorProcess.set("value", targetData[0].ClusterGroup);
+                        context.thorProcess.set("value", targetData[0].ProcessName);
                 } else {
                    context.slaveLogs.set("disabled", true);
                    context.includeSlaveLogsCheckbox.set("disabled", true);
