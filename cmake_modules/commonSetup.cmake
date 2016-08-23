@@ -113,6 +113,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   #"cmake -DEXAMPLEPLUGIN=ON <path-to/HPCC-Platform/>" will configure the plugin makefiles to be built with "make".
   option(EXAMPLEPLUGIN "Create a package with ONLY the exampleplugin plugin" OFF)
   option(COUCHBASEEMBED "Create a package with ONLY the couchbaseembed plugin" OFF)
+  option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
+
+  if(REMBED OR V8EMBED OR MEMCACHED OR PYEMBED OR REDIS OR JAVAEMBED OR MYSQLEMBED
+      OR SQLITE3EMBED OR KAFKA OR EXAMPLEPLUGIN OR COUCHBASEEMBED)
+      set(PLUGIN ON)
+      set(CLIENTTOOLS OFF)
+      set(PLATFORM OFF)
+      set(INCLUDE_PLUGINS OFF)
+      set(SIGN_MODULES OFF)
+      set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
+  endif()
 
   if (SIGN_MODULES)
       message(STATUS "GPG signing check")
@@ -149,16 +160,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   option(LOGGING_SERVICE "Configure use of logging service" ON)
 
-  option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
-
-    if(REMBED OR V8EMBED OR MEMCACHED OR PYEMBED OR REDIS OR JAVAEMBED OR MYSQLEMBED
-        OR SQLITE3EMBED OR KAFKA OR EXAMPLEPLUGIN OR COUCHBASEEMBED)
-        set(PLUGIN ON)
-        set(CLIENTTOOLS OFF)
-        set(PLATFORM OFF)
-        set(INCLUDE_PLUGINS OFF)
-        set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
-    endif()
 
     if(REMBED)
 	if(DEFINED pluginname)
