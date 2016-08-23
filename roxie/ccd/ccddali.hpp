@@ -55,6 +55,7 @@ interface IRoxieDaliHelper : extends IInterface
     virtual void disconnect() = 0;
     virtual void noteQueuesRunning(const char *queueNames) = 0;
     virtual void noteWorkunitRunning(const char *wu, bool running) = 0;
+    virtual StringBuffer &getDaliIp(StringBuffer &ip) const = 0;
 };
 
 
