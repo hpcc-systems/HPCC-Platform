@@ -161,9 +161,12 @@ ESPrequest [nil_remove] ConfigureESDLBindingMethodRequest
 
 ESPresponse [exceptions_inline] ConfigureESDLBindingMethodResponse
 {
-    string ServiceName;         //which ESDL definition are we configuring
-    int ServiceEsdlVersion;     //which version of the ESDL def are we configuring
-    string EspProcName;         //Name of ESP Process
+    string EspProcName;                          //Name of ESP Process
+    [max_ver("1.1")] string ServiceName;         //which ESDL definition are we configuring
+    [max_ver("1.1")] int ServiceEsdlVersion;     //which version of the ESDL def are we configuring
+    [min_ver("1.2")] string EspBindingName;
+    [min_ver("1.2")] string EsdlDefinitionID;    //The ESDL definition name.ver
+    [min_ver("1.2")] string EsdlServiceName;     //which ESDL definition are we configuring
     ESPstruct BaseESDLStatus status;
 };
 
