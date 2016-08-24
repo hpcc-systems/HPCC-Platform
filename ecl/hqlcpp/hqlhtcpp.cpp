@@ -9376,6 +9376,10 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     traceExpression("AfterOptimize", resourced);
     checkNormalized(resourced);
 
+    resourced.setown(convertSetResultToExtract(resourced));
+    traceExpression("After ConvertSetResultToExtract", resourced);
+    checkNormalized(resourced);
+
     if (true)
         resourced.setown(optimizeCompoundSource(resourced, CSFpreload|csfFlags));
 
@@ -18836,6 +18840,19 @@ void HqlCppTranslator::optimizePersists(HqlExprArray & exprs)
     }
     createCompoundEnsure(exprs, 0, max-1);
 }
+
+IHqlExpression * HqlCppTranslator::convertSetResultToExtract(IHqlExpression * expr)
+{
+    cycle_t startCycles = get_cycles_now();
+
+    SetResultToExtractTransformer transformer;
+
+    IHqlExpression * ret = transformer.transformRoot(expr);
+    noteFinishedTiming("compile:tree transform: convert SetResult to Extract", startCycles);
+
+    return ret;
+}
+
 
 IHqlExpression * HqlCppTranslator::extractGlobalCSE(IHqlExpression * expr)
 {
