@@ -630,7 +630,7 @@ public:
     }
 
 protected:
-    bool checkAbnormalTermination(const char *wuid, WUState &state, SessionId agent);
+    void reportAbnormalTermination(const char *wuid, WUState initState, WUState &finalstate, SessionId agent);
 
     // These need to be implemented by the derived classes
     virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;

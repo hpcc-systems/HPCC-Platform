@@ -3572,9 +3572,37 @@ public:
             case WUStateDebugRunning:
             case WUStateBlocked:
             case WUStateAborting:
-                SessionId agent = getUnsignedResult(NULL, cass_row_get_column(row, 1));
-                if (agent && checkAbnormalTermination(wuid, state, agent))
-                    return state;
+                if (queryDaliServerVersion().compare("2.1")>=0)
+                {
+                    SessionId agent = getUnsignedResult(NULL, cass_row_get_column(row, 1));
+                    if(agent && querySessionManager().sessionStopped(agent, 0))
+                    {
+                        // MCK - does checking state after sessionStopped reveal meaningful info ?
+                        CassandraFuture future(cass_session_execute(querySession(), statement));
+                        future.wait("Lookup wu state");
+                        CassandraResult result(cass_future_get_result(future));
+                        WUState finalState = WUStateUnknown;
+                        row = cass_result_first_row(result);
+                        if (!row)
+                        {
+                            reportAbnormalTermination(wuid, state, finalState, agent);
+                            return finalState;
+                        }
+                        stateVal = cass_row_get_column(row, 0);
+                        if (!stateVal)
+                        {
+                            reportAbnormalTermination(wuid, state, finalState, agent);
+                            return finalState;
+                        }
+                        getCassString(stateStr, stateVal);
+                        finalState = getWorkUnitState(stateStr);
+                        if ( (WUStateCompleted != finalState) &&
+                             (WUStateFailed    != finalState) &&
+                             (WUStateAborted   != finalState) )
+                            reportAbnormalTermination(wuid, state, finalState, agent);
+                        return finalState;
+                    }
+                }
                 break;
             }
             unsigned waited = msTick() - start;
