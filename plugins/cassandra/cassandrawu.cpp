@@ -3492,6 +3492,8 @@ public:
         CassandraStatement statement(prepareStatement("select state, agentSession from workunits where partition=? and wuid=?;"));
         statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
         statement.bindString(1, wuid);
+        SessionId agent = 0;
+        bool agentSessionStopped = false;
         unsigned start = msTick();
         loop
         {
@@ -3528,11 +3530,23 @@ public:
             case WUStateDebugRunning:
             case WUStateBlocked:
             case WUStateAborting:
-                SessionId agent = getUnsignedResult(NULL, cass_row_get_column(row, 1));
-                if (agent && checkAbnormalTermination(wuid, state, agent))
+                if (agentSessionStopped)
+                {
+                    reportAbnormalTermination(wuid, state, agent);
                     return state;
+                }
+                if (queryDaliServerVersion().compare("2.1")>=0)
+                {
+                    agent = getUnsignedResult(NULL, cass_row_get_column(row, 1));
+                    if(agent && querySessionManager().sessionStopped(agent, 0))
+                    {
+                        agentSessionStopped = true;
+                        continue;
+                    }
+                }
                 break;
             }
+            agentSessionStopped = false; // reset for state changes such as WUStateWait then WUStateRunning again
             unsigned waited = msTick() - start;
             if (timeout==-1)
             {
