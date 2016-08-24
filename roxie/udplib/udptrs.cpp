@@ -36,7 +36,7 @@
 
 unsigned udpOutQsPriority = 0;
 unsigned udpMaxRetryTimedoutReqs = 0; // 0 means off (keep retrying forever)
-unsigned udpRequestToSendTimeout = 5; // value in sec
+unsigned udpRequestToSendTimeout = 0; // value in milliseconds - 0 means calculate from query timeouts
 bool udpSnifferEnabled = true;
 
 #ifdef _DEBUG
@@ -502,7 +502,7 @@ class CSendManager : implements ISendManager, public CInterface
 
         char *state;
         unsigned char *timeouts;   // Number of consecutive timeouts
-        time_t *request_time;
+        unsigned *request_time;
 
         CriticalSection cr;
         Semaphore       sem;
@@ -527,8 +527,7 @@ class CSendManager : implements ISendManager, public CInterface
                     idle = true;
                 if (!running) return 0;
 
-                time_t now;
-                time(&now);
+                unsigned now = msTick();
 
                 // I don't really like this loop. Could keep a circular buffer of ones with non-zero state?
                 // In a typical heavy load scenario most will be pending
@@ -549,7 +548,7 @@ class CSendManager : implements ISendManager, public CInterface
                         if ( (now - request_time[i]) < udpRequestToSendTimeout) // MORE - should really protect it?
                             break;
                         timeouts[i]++;
-                        EXCLOG(MCoperatorError,"ERROR: UdpSender: timed out %i times (max=%i) waiting ok_to_send msg from node=%d timed out after=%i sec max=%i sec",
+                        EXCLOG(MCoperatorError,"ERROR: UdpSender: timed out %i times (max=%i) waiting ok_to_send msg from node=%d timed out after=%i msec max=%i msec",
                                 timeouts[i], udpMaxRetryTimedoutReqs,   
                                 i, (int) (now - request_time[i]), udpRequestToSendTimeout);
                         // 0 (zero) value of udpMaxRetryTimedoutReqs means NO limit on retries
@@ -584,7 +583,7 @@ class CSendManager : implements ISendManager, public CInterface
                 if (dataRemaining)
                 {
                     state[index] = pending_request;
-                    time(&request_time[index]); 
+                    request_time[index] = msTick();
                 }
                 else
                 {
@@ -616,7 +615,7 @@ class CSendManager : implements ISendManager, public CInterface
             CriticalBlock b(cr);
             parent.sendRequest(index, flow_t::request_to_send);
             state[index] = pending_request;
-            time(&request_time[index]); 
+            request_time[index] = msTick();
         }
 
         void abort(unsigned index) 
@@ -639,8 +638,8 @@ class CSendManager : implements ISendManager, public CInterface
             memset(state, 0, target_count);
             timeouts = new unsigned char [target_count];
             memset(timeouts, 0, target_count);
-            request_time = new time_t [target_count];
-            memset(request_time, 0, sizeof(time_t) * target_count);
+            request_time = new unsigned [target_count];
+            memset(request_time, 0, sizeof(unsigned) * target_count);
             start();
         }
 
