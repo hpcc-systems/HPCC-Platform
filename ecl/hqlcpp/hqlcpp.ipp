@@ -1874,6 +1874,7 @@ protected:
     void doReportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg);
 
     void optimizePersists(HqlExprArray & exprs);
+    IHqlExpression * convertSetResultToExtract(IHqlExpression * expr);
     void allocateSequenceNumbers(HqlExprArray & exprs);
     void convertLogicalToActivities(WorkflowItem & curWorkflow);
     void flattenDatasets(WorkflowArray & array);
