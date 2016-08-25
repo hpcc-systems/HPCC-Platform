@@ -1284,8 +1284,15 @@ bool CWsESDLConfigEx::onDeleteESDLDefinition(IEspContext &context, IEspDeleteESD
     StringBuffer esdlDefinitionId(req.getId());
     if (esdlDefinitionId.length()<=0)
     {
-        resp.updateStatus().setDescription("Must provide the target ESDL definition ID (name.version)");
-        return false;
+        const char * defname = req.getName();
+        const char * defver = req.getVersion();
+
+        if( !defname || !*defname ||  !defver || !*defver)
+        {
+            resp.updateStatus().setDescription("Must provide the target ESDL definition ID or (Definition name and version)");
+            return false;
+        }
+        esdlDefinitionId.setf("%s.%s", defname, defver);
     }
 
     esdlDefinitionId.toLowerCase();
@@ -1334,8 +1341,14 @@ bool CWsESDLConfigEx::onDeleteESDLBinding(IEspContext &context, IEspDeleteESDLBi
     StringBuffer espBindingId(req.getId());
     if (espBindingId.length()<=0)
     {
-        resp.updateStatus().setDescription("Must provide the target ESDL Binding Id <espprocessname>.<espbindingname>");
-        return false;
+        const char * espprocname = req.getEspProcess();
+        const char * espbindingname = req.getEspBinding();
+        if( !espprocname || !*espprocname ||  !espbindingname || !*espbindingname)
+        {
+            resp.updateStatus().setDescription("Must provide the target ESDL Binding Id or espprocessname and espbindingname");
+            return false;
+        }
+        espBindingId.setf("%s.%s", espprocname, espbindingname);
     }
 
     Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), 0, SDS_LOCK_TIMEOUT_DESDL);
