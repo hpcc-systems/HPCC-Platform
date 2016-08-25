@@ -1335,6 +1335,9 @@ HqlCachedPropertyTransformer::HqlCachedPropertyTransformer(HqlTransformerInfo & 
 
 IHqlExpression * HqlCachedPropertyTransformer::transform(IHqlExpression * expr)
 {
+    if (expr != expr->queryBody())
+        return QuickHqlTransformer::transform(expr);
+
     IInterface * match = meta.queryExistingProperty(expr, propKind);
     if (match)
         return static_cast<IHqlExpression *>(LINK(match));
@@ -1343,6 +1346,11 @@ IHqlExpression * HqlCachedPropertyTransformer::transform(IHqlExpression * expr)
 
     if (transformed != expr)
     {
+        //Very unusual - e.g., no_delayedselect
+        IHqlExpression * body = transformed->queryBody();
+        if (transformed != body)
+            transformed.set(body);
+
         //Tag serialized form so don't re-evaluate
         meta.addProperty(transformed, propKind, transformed);
     }
@@ -2223,7 +2231,7 @@ struct HqlRowCountInfo
 public:
     HqlRowCountInfo() { setUnknown(RCMnone); }
 
-    void applyChoosen(__int64 limit, bool isLocal);
+    void applyChoosen(IHqlExpression * limitExpr, __int64 limit, bool isLocal, bool isGrouped);
     void combineAlternatives(const HqlRowCountInfo & other);
     void combineBoth(const HqlRowCountInfo & other);
     bool extractHint(IHqlExpression * hint);
@@ -2232,7 +2240,9 @@ public:
     void scaleFixed(__int64 scale);
     void scaleRange(__int64 scale);
     void setMin(__int64 n) { min.setown(makeConstant(n)); }
+    void setMin(IHqlExpression * value) { min.set(value); }
     void setN(__int64 n);
+    void setN(IHqlExpression * value);
     void setRange(__int64 low, __int64 high);
     void setUnknown(RowCountMagnitude _magnitude);
     void setMaxMagnitude(RowCountMagnitude _magnitude)
@@ -2279,17 +2289,30 @@ public:
 };
 
 
-void HqlRowCountInfo::applyChoosen(__int64 limit, bool isLocal)
+void HqlRowCountInfo::applyChoosen(IHqlExpression * limitExpr, __int64 limit, bool isLocal, bool isGrouped)
 {
     if (getMin() > limit)
-        min.setown(makeConstant(limit));
+    {
+        if (limitExpr->isConstant() && (limit >= 0))
+            min.set(limitExpr);
+        else
+            min.setown(makeConstant(0));
+    }
 
-    __int64 maxLimit = isLocal ? RCclusterSizeEstimate*limit : limit;
-    if (getIntValue(max, maxLimit+1) > maxLimit)
-        max.setown(makeConstant(maxLimit));
-    RowCountMagnitude newMagnitude = getRowCountMagnitude(maxLimit);
-    if (magnitude > newMagnitude)
-        magnitude = newMagnitude;
+    if (!isGrouped && (limit != 0))
+    {
+        __int64 maxLimit = isLocal ? RCclusterSizeEstimate*limit : limit;
+        if (getIntValue(max, maxLimit+1) > maxLimit)
+        {
+            if (isLocal)
+                max.setown(makeConstant(maxLimit));
+            else
+                max.set(limitExpr);
+        }
+        RowCountMagnitude newMagnitude = getRowCountMagnitude(maxLimit);
+        if (magnitude > newMagnitude)
+            magnitude = newMagnitude;
+    }
 }
 
 void HqlRowCountInfo::combineAlternatives(const HqlRowCountInfo & other)
@@ -2335,7 +2358,7 @@ bool HqlRowCountInfo::extractHint(IHqlExpression * hint)
     switch (arg->getOperator())
     {
     case no_constant:
-        setN(getIntValue(arg));
+        setN(arg);
         return true;
     case no_rangeto:
         setRange(0, getIntValue(arg->queryChild(0)));
@@ -2369,7 +2392,7 @@ bool HqlRowCountInfo::extractHint(IHqlExpression * hint)
 void HqlRowCountInfo::getText(StringBuffer & text) const
 {
     min->queryValue()->generateECL(text);
-    if (min != max)
+    if (getMin() != getIntValue(max, -1))
     {
         text.append("..");
         if (max->queryValue())
@@ -2421,6 +2444,13 @@ void HqlRowCountInfo::setN(__int64 n)
     setMin(n);
     max.set(min);
     magnitude = getRowCountMagnitude(n);
+}
+
+void HqlRowCountInfo::setN(IHqlExpression * value)
+{
+    min.set(value);
+    max.set(min);
+    magnitude = getRowCountMagnitude(getIntValue(value));
 }
 
 
@@ -2550,11 +2580,9 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
         {
             retrieveRowInformation(info, ds);
 
-            __int64 limit = getIntValue(expr->queryChild(1), 0);
-            if ((limit != 0) && !isGrouped(expr))
-                info.applyChoosen(limit, isLocalActivity(expr));
-            else
-                info.limitMin(limit);
+            IHqlExpression * limitExpr = expr->queryChild(1);
+            __int64 limit = getIntValue(limitExpr, 0);
+            info.applyChoosen(limitExpr, limit, isLocalActivity(expr), isGrouped(expr));
             break;
         }
     case no_hqlproject:
@@ -2684,7 +2712,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
                 IHqlExpression * maxCount = queryAttributeChild(expr, maxCountAtom, 0);
                 IHqlExpression * aveCount = queryAttributeChild(expr, aveAtom, 0);
                 if (count)
-                    info.setN(getIntValue(count));
+                    info.setN(count);
                 else if (maxCount)
                     info.setRange(0, getIntValue(maxCount));
                 else if (aveCount)
@@ -2744,10 +2772,10 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
                     if (expr->hasAttribute(localAtom))
                     {
                         info.setUnknown(RCMdisk);
-                        info.setMin(maxCount);
+                        info.setMin(count);
                     }
                     else
-                        info.setN(maxCount);
+                        info.setN(count);
                 }
             }
             else
@@ -2759,7 +2787,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
         info.setN(expr->isDatarow() ? 1 : 0);
         break;
     case no_fail:
-        info.setN(0);
+        info.setN(I64C(0));
         break;
     case no_if:
         {
@@ -2813,13 +2841,12 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
         {
             retrieveRowInformation(info, ds);
 
-            __int64 choosenLimit = getIntValue(expr->queryChild(1), 0);
+            IHqlExpression * limitExpr = expr->queryChild(1);
+            __int64 choosenLimit = getIntValue(limitExpr, 0);
             if (choosenLimit == CHOOSEN_ALL_LIMIT)
                 info.limitMin(0);   // play safe - could be clever if second value is constant, and min/max known.
-            else if ((choosenLimit != 0) && !isGrouped(expr))
-                info.applyChoosen(choosenLimit, isLocalActivity(expr));
             else
-                info.limitMin(choosenLimit);
+                info.applyChoosen(limitExpr, choosenLimit, isLocalActivity(expr), isGrouped(expr));
         }
         break;
     case no_quantile:
@@ -2847,11 +2874,9 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
         {
             retrieveRowInformation(info, ds);
 
-            __int64 choosenLimit = getIntValue(expr->queryChild(2), 0);
-            if ((choosenLimit > 0) && !isGrouped(expr))
-                info.applyChoosen(choosenLimit, isLocalActivity(expr));
-            else
-                info.limitMin(choosenLimit);
+            IHqlExpression * limitExpr = expr->queryChild(2);
+            __int64 choosenLimit = getIntValue(limitExpr, 0);
+            info.applyChoosen(limitExpr, choosenLimit, isLocalActivity(expr), isGrouped(expr));
         }
         break;
     case no_select:
@@ -2991,7 +3016,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
             if (dft)
                 retrieveRowInformation(info, dft);
             else
-                info.setN(0);
+                info.setN(I64C(0));
 
             ForEachChildFrom(i2, expr, start)
             {
@@ -3785,12 +3810,15 @@ ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue)
 }
 
 //---------------------------------------------------------------------------------
-IHqlExpression * queryLikelihoodExpr(IHqlExpression * expr)
-{
-    IInterface * match = meta.queryExistingProperty(expr, EPlikelihood);
-    if (match)
-        return static_cast<IHqlExpression *>(match);
 
+inline IHqlExpression * queryLikelihoodExpr(IHqlExpression * expr)
+{
+    return expr->queryProperty(EPlikelihood);
+}
+
+
+IHqlExpression * evaluateLikelihood(IHqlExpression * expr)
+{
     LinkedHqlExpr likelihoodExpr;
     switch(expr->getOperator())
     {
@@ -3864,7 +3892,7 @@ IHqlExpression * queryLikelihoodExpr(IHqlExpression * expr)
 
 double queryLikelihood(IHqlExpression * expr)
 {
-    IHqlExpression * likelihoodExpr = queryLikelihoodExpr(expr);
+    IHqlExpression * likelihoodExpr = expr->queryProperty(EPlikelihood);
     return likelihoodExpr->queryValue()->getRealValue();
 }
 
@@ -3893,7 +3921,7 @@ double queryActivityLikelihood(IHqlExpression * expr)
 }
 //---------------------------------------------------------------------------------------------------------------------
 
-IInterface * CHqlExpression::queryExistingProperty(ExprPropKind propKind) const
+IInterface * CHqlRealExpression::queryExistingProperty(ExprPropKind propKind) const
 {
     //If this was used significantly in a multi threaded environment then reduce the work in the spinblock
     SpinBlock block(*propertyLock);
@@ -3905,14 +3933,14 @@ IInterface * CHqlExpression::queryExistingProperty(ExprPropKind propKind) const
             IInterface * value = cur->value;
             if (value)
                 return value;
-            return static_cast<IHqlExpression *>(const_cast<CHqlExpression *>(this));
+            return static_cast<IHqlExpression *>(const_cast<CHqlRealExpression *>(this));
         }
         cur = cur->next;
     }
     return NULL;
 }
 
-void CHqlExpression::addProperty(ExprPropKind kind, IInterface * value)
+void CHqlRealExpression::addProperty(ExprPropKind kind, IInterface * value)
 {
     if (value == static_cast<IHqlExpression *>(this))
         value = NULL;
@@ -3939,7 +3967,7 @@ void CHqlDataset::addProperty(ExprPropKind kind, IInterface * value)
             metaProperty.set(value);
     }
     else
-        CHqlExpression::addProperty(kind, value);
+        CHqlRealExpression::addProperty(kind, value);
 
 }
 
@@ -3951,12 +3979,12 @@ IInterface * CHqlDataset::queryExistingProperty(ExprPropKind kind) const
         return metaProperty;
     }
 
-    return CHqlExpression::queryExistingProperty(kind);
+    return CHqlRealExpression::queryExistingProperty(kind);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 
-IHqlExpression * CHqlExpression::queryProperty(ExprPropKind kind)
+IHqlExpression * CHqlRealExpression::queryProperty(ExprPropKind kind)
 {
     IInterface * match = queryExistingProperty(kind);
     if (match)
@@ -3978,6 +4006,8 @@ IHqlExpression * CHqlExpression::queryProperty(ExprPropKind kind)
         return evalautePropUnadorned(this);
     case EPlocationIndependent:
         return evalautePropLocationIndependent(this);
+    case EPlikelihood:
+        return evaluateLikelihood(this);
     }
     return NULL;
 }

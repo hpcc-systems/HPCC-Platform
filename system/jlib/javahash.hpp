@@ -41,25 +41,27 @@ class JavaHashTableOf
 {
     typedef JavaHashTableOf<ELEMENT> _SELF;
 private:
-    void onAdd(void *next);
-    void onRemove(void *);
-    inline unsigned getHashFromElement(const void * et) const
+    virtual void onAdd(void *next) override;
+    virtual void onRemove(void *) override;
+    virtual unsigned getHashFromElement(const void * et) const override
     { 
         return static_cast<const ELEMENT *>(et)->getHash(); 
     }
-    inline unsigned getHashFromFindParam(const void * et) const
+    virtual unsigned getHashFromFindParam(const void * et) const override
     { 
         return static_cast<const ELEMENT *>(et)->getHash(); 
     }
-    inline const void * getFindParam(const void * et) const { return et; }
-    inline bool matchesFindParam(const void * et, const void * key, unsigned fphash __attribute__((unused))) const
+    virtual const void * getFindParam(const void * et) const override { return et; }
+    virtual bool matchesFindParam(const void * et, const void * key, unsigned fphash __attribute__((unused))) const override
     { 
         return static_cast<const ELEMENT *>(et)->equals(*static_cast<const ELEMENT *>(key)); 
     }
 
   public:
-    JavaHashTableOf(bool _keep = true)
+    JavaHashTableOf(bool _keep)
         : SuperHashTableOf<ELEMENT, ELEMENT>(), keep(_keep) {}
+    JavaHashTableOf(unsigned initsize, bool _keep)
+        : SuperHashTableOf<ELEMENT, ELEMENT>(initsize), keep(_keep) {}
     ~JavaHashTableOf() { _SELF::_releaseAll(); }
 
     IMPLEMENT_IINTERFACE

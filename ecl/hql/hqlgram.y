@@ -8989,7 +8989,7 @@ simpleDataSet
                                 attrs.setown(createComma(attrs.getClear(), createAttribute(_disallowed_Atom)));
                             parser->normalizeExpression($3, type_string, false);
                             parser->checkValidPipeRecord($5, $5.queryExpr(), attrs, NULL);
-                            $$.setExpr(createNewDataset(createConstant(""), $5.getExpr(), createValue(no_pipe, makeNullType(), $3.getExpr()), NULL, NULL, LINK(attrs)));
+                            $$.setExpr(createNewDataset(createBlankString(), $5.getExpr(), createValue(no_pipe, makeNullType(), $3.getExpr()), NULL, NULL, LINK(attrs)));
                             $$.setPosition($1);
                         }
     | PIPE '(' startTopFilter ',' expression optPipeOptions endTopFilter ')'

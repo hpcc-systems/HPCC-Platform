@@ -2055,6 +2055,9 @@ inline void ReleaseAndClear(T * & ptr)
 
 void ClearTypeCache()
 {
+#ifdef TRACE_HASH
+    globalTypeCache->dumpStats();
+#endif
     size32_t i;
     stt->kill();
     vstt->kill();

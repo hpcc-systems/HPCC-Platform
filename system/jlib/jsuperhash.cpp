@@ -101,7 +101,7 @@ SuperHashTable::~SuperHashTable()
 }
 
 #ifdef TRACE_HASH
-void SuperHashTable::dumpStats()
+void SuperHashTable::dumpStats() const
 {
     if (tablecount && search_tot && search_num)
         printf("Hash table %d entries, %d size, average search length %d(%d/%d) max %d\n", tablecount, tablesize,

@@ -55,7 +55,7 @@ class CHqlExprMeta;
 
 class HQL_API CHqlDynamicProperty
 {
-    friend class CHqlExpression;
+    friend class CHqlRealExpression;
 public:
     inline CHqlDynamicProperty(ExprPropKind _kind, IInterface *_value)
         : kind(_kind), value(_value)
@@ -163,34 +163,25 @@ public:
 protected:
     unsigned hashcode;          // CInterface is 4 byte aligned in 64bits, so use this to pad
                                 // Worth storing because it significantly speeds up equality checking
-    IInterface * transformExtra[NUM_PARALLEL_TRANSFORMS];
-    unsigned cachedCRC;
-    unsigned infoFlags;
-    node_operator op;                           // 2 bytes
-    unsigned short infoFlags2;
-    transformdepth_t transformDepth[NUM_PARALLEL_TRANSFORMS];           // 1 byte
-
-    CHqlDynamicProperty * attributes;
-    HqlExprArray operands;
-
 #ifdef DEBUG_TRACK_INSTANCEID
     unsigned __int64 seqid;
 #endif
+    IInterface * transformExtra[NUM_PARALLEL_TRANSFORMS];
+    HqlExprArray operands;
+    node_operator op;                           // 2 bytes
+    unsigned short infoFlags2 = 0;              // 2 bytes, pack with previous
+    transformdepth_t transformDepth[NUM_PARALLEL_TRANSFORMS];           // 1 byte
+    bool observed = false;                      // 1 byte.  this could be packed into infoFlags2 if the space was required
 
 protected:
     CHqlExpression(node_operator op);
-    void appendOperands(IHqlExpression * arg0, ...);
-    void setOperands(HqlExprArray & ownedOperands);
 
     //protected virtual members not in public interface
     virtual void sethash();
+    virtual void addProperty(ExprPropKind kind, IInterface * value) = 0;
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const = 0;
 
 protected:
-    inline bool constant() const { return (infoFlags2 & HEF2constant) != 0; }
-    inline bool functionOfGroupAggregate() const { return (infoFlags & HEFfunctionOfGroupAggregate) != 0; }
-    inline bool fullyBound() const { return (infoFlags & HEFunbound) == 0; }
-    inline bool pure() const { return (infoFlags & HEFimpure) == 0; }
-
     //For a no_select, is this the root no_select (rather than a.b.c), and is it also an active selector.
     //Used for determining how a no_select should be interpreted e.g., in table gathering. 
     inline bool isSelectRootAndActive() const
@@ -206,24 +197,8 @@ protected:
     bool isAggregate();
     IHqlExpression * commonUpExpression();
 
-    void onAppendOperand(IHqlExpression & child, unsigned whichOperand);
-    inline void doAppendOperand(IHqlExpression & child)
-    {
-        unsigned which = operands.ordinality();
-        operands.append(child);
-        onAppendOperand(child, which);
-    }
-
-    void initFlagsBeforeOperands();
-    void updateFlagsAfterOperands();
-
     IHqlExpression * calcNormalizedSelector() const;
-    IHqlExpression *fixScope(IHqlDataset *table);
-    virtual unsigned getCachedEclCRC();
     void setInitialHash(unsigned typeHash);
-
-    virtual void addProperty(ExprPropKind kind, IInterface * value);
-    virtual IInterface * queryExistingProperty(ExprPropKind kind) const;
 
 public:
 #if (defined(GATHER_LINK_STATS) || defined(DEBUG_TRACK_INSTANCEID))
@@ -234,21 +209,15 @@ public:
     virtual ~CHqlExpression();
 
     virtual bool isExprClosed() const { return hashcode!=0; }
-    virtual bool isFullyBound() const { return fullyBound(); };
     virtual IAtom * queryName() const { return NULL; }
     virtual IIdAtom * queryId() const;
     virtual node_operator getOperator() const { return op; }
     virtual IHqlDataset *queryDataset() { return NULL; };
     virtual IHqlScope *queryScope();
     virtual IHqlSimpleScope *querySimpleScope();
-    virtual IHqlExpression *queryAttribute(IAtom * propName) const;
-    virtual IHqlExpression *queryProperty(ExprPropKind kind);
     virtual IHqlExpression *queryFunctionDefinition() const { return NULL; };
     virtual IHqlExpression *queryExternalDefinition() const { return NULL; };
-    virtual unsigned getInfoFlags() const { return infoFlags; }
-    virtual unsigned getInfoFlags2() const { return infoFlags2; }
     virtual bool isBoolean();
-    virtual bool isConstant();
     virtual bool isDataset();
     virtual bool isDictionary();
     virtual bool isDatarow();
@@ -257,14 +226,12 @@ public:
     virtual bool isType();
     virtual bool isList();
     virtual bool isField();
-    virtual bool isGroupAggregateFunction() { return functionOfGroupAggregate(); }
     virtual bool isRecord();
     virtual bool isAction();
     virtual bool isTransform();
     virtual bool isFunction();
     virtual annotate_kind getAnnotationKind() const { return annotate_none; }
     virtual IHqlAnnotation * queryAnnotation() { return NULL; }
-    virtual bool isPure()       { return pure(); }
     virtual bool isAttribute() const { return false; }
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex) { return this; }
 
@@ -297,7 +264,6 @@ public:
     virtual void                setTransformExtraUnlinked(IInterface * x);
 
     virtual IHqlExpression *closeExpr(); // MORE - should be in expressionBuilder interface!
-    virtual IHqlExpression *addOperand(IHqlExpression *); // MORE - should be in expressionBuilder interface!
 
     virtual StringBuffer& getTextBuf(StringBuffer& buf) { assertex(false); return buf; }
     virtual IFileContents * queryDefinitionText() const { return NULL; }
@@ -308,7 +274,6 @@ public:
     virtual void                addObserver(IObserver & observer);
     virtual void                removeObserver(IObserver & observer);
     virtual unsigned getHash() const;
-    virtual bool                equals(const IHqlExpression & other) const;
     
     virtual void beforeDispose();               // called before item is freed so whole object still valid
     virtual unsigned getSymbolFlags() const;
@@ -316,6 +281,56 @@ public:
 public:
     inline void doSetTransformExtra(IInterface * x, unsigned depthMask);
     inline void resetTransformExtra(IInterface * _extra, unsigned depth);
+    inline unsigned queryHash() const { return hashcode; }
+};
+
+class HQL_API CHqlRealExpression : public CHqlExpression
+{
+public:
+    CHqlRealExpression(node_operator op);
+    ~CHqlRealExpression();
+
+    //virtual because some specialist properties are stored differently in derived classes
+    virtual IHqlExpression *queryProperty(ExprPropKind kind);
+    virtual void addProperty(ExprPropKind kind, IInterface * value) override;
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const override;
+    virtual IHqlExpression *queryAttribute(IAtom * propName) const;
+    virtual IHqlExpression *addOperand(IHqlExpression *); // MORE - should be in expressionBuilder interface!
+
+    virtual bool isFullyBound() const { return fullyBound(); };
+    virtual unsigned getInfoFlags() const { return infoFlags; }
+    virtual unsigned getInfoFlags2() const { return infoFlags2; }
+    virtual bool isGroupAggregateFunction() { return functionOfGroupAggregate(); }
+    virtual bool isPure()       { return pure(); }
+    virtual bool isConstant();
+    virtual IHqlExpression *closeExpr(); // MORE - should be in expressionBuilder interface!
+    virtual bool equals(const IHqlExpression & other) const;
+
+protected:
+    inline bool constant() const { return (infoFlags2 & HEF2constant) != 0; }
+    inline bool functionOfGroupAggregate() const { return (infoFlags & HEFfunctionOfGroupAggregate) != 0; }
+    inline bool fullyBound() const { return (infoFlags & HEFunbound) == 0; }
+    inline bool pure() const { return (infoFlags & HEFimpure) == 0; }
+
+    virtual unsigned getCachedEclCRC();
+
+    void appendOperands(IHqlExpression * arg0, ...);
+    void setOperands(HqlExprArray & ownedOperands);
+    void onAppendOperand(IHqlExpression & child, unsigned whichOperand);
+    inline void doAppendOperand(IHqlExpression & child)
+    {
+        unsigned which = operands.ordinality();
+        operands.append(child);
+        onAppendOperand(child, which);
+    }
+
+    void initFlagsBeforeOperands();
+    void updateFlagsAfterOperands();
+
+protected:
+    unsigned cachedCRC;
+    unsigned infoFlags;
+    CHqlDynamicProperty * attributes = nullptr;
 };
 
 //The following couple of classes are here primarily to save memory.  
@@ -328,10 +343,10 @@ public:
 //If any more class splitting is contemplated it would be worth revisiting in terms of policies.
 
 //This class calculates which tables the expression references to ensure it is evaluated in the correct conext.
-class HQL_API CHqlExpressionWithTables : public CHqlExpression
+class HQL_API CHqlExpressionWithTables : public CHqlRealExpression
 {
 public:
-    inline CHqlExpressionWithTables(node_operator op) : CHqlExpression(op) {}
+    inline CHqlExpressionWithTables(node_operator op) : CHqlRealExpression(op) {}
 
     virtual bool isIndependentOfScope();
     virtual bool isIndependentOfScopeIgnoringInputs();
@@ -396,7 +411,7 @@ public:
 };
 
 
-class CHqlSelectBaseExpression : public CHqlExpression
+class CHqlSelectBaseExpression : public CHqlRealExpression
 {
 public:
     static IHqlExpression * makeSelectExpression(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr);
@@ -581,6 +596,9 @@ public:
     virtual bool                equals(const IHqlExpression & other) const;
     virtual IHqlExpression *queryBody(bool singleLevel = false);
     virtual IHqlExpression * queryAnnotationParameter(unsigned i) const;
+
+    virtual void addProperty(ExprPropKind kind, IInterface * value) override;
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const override;
 };
 
 
@@ -1316,7 +1334,7 @@ protected:
     virtual void sethash();
 };
 
-class CHqlConstant : public CHqlExpression
+class CHqlConstant : public CHqlRealExpression
 {
 protected:
     IValue *val;
@@ -1527,7 +1545,7 @@ protected:
     IHqlScope * typeScope;
 };
 
-class CHqlVariable : public CHqlExpression
+class CHqlVariable : public CHqlRealExpression
 {
 protected:
     StringAttr name;
@@ -1718,8 +1736,8 @@ public:
     bool equals(const IHqlExpression & r) const;
     virtual IHqlExpression *clone(HqlExprArray &newkids);
 
-    virtual void addProperty(ExprPropKind kind, IInterface * value);
-    virtual IInterface * queryExistingProperty(ExprPropKind kind) const;
+    virtual void addProperty(ExprPropKind kind, IInterface * value) override;
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const override;
 
 protected:
     IHqlDataset *rootTable;

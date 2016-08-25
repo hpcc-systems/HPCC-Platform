@@ -214,6 +214,10 @@ class jlib_decl KeptCaseAtomTable : public KeptHashTableOf<CaseAtom, 0U>
 {
   public:
     KeptCaseAtomTable() : KeptHashTableOf<CaseAtom, 0U>(false) {};
+    virtual unsigned getTableLimit(unsigned max)
+    {
+        return max/2;
+    }
     inline IIdAtom * addAtom(const char *name)
     {
         return create(name);

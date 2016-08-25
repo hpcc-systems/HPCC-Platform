@@ -1319,7 +1319,7 @@ int HqlLex::doHashText(YYSTYPE & returnToken)
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected");
         returnToken.release();
-        returnToken.setExpr(createConstant(""));
+        returnToken.setExpr(createBlankString());
         return STRING_CONST;
     }
 
