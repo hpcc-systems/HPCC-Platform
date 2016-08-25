@@ -1341,7 +1341,7 @@ public:
         return inputs.ordinality();
     }
 
-    virtual IHThorInput * queryConcreteInput(unsigned idx) const
+    virtual IHThorInput * queryConcreteOutput(unsigned idx) const
     {
         if (inputs.isItem(idx))
             return &inputs.item(idx);

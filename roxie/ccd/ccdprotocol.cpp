@@ -1745,7 +1745,9 @@ readAnother:
 
                 uid = NULL;
                 sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isRequest, isRequestArray, isBlind, isDebug);
-                if (!uid)
+                if (uid)
+                    msgctx->setTransactionId(uid);
+                else
                     uid = "-";
 
                 sink->checkAccess(peer, queryName, sanitizedText, isBlind);

@@ -3000,8 +3000,21 @@ public:
 
     virtual char *getDaliServers()
     {
-        //MORE: Should this now be implemented using IRoxieDaliHelper?
-        throwUnexpected();
+        try
+        {
+            IRoxieDaliHelper *daliHelper = checkDaliConnection();
+            if (daliHelper)
+            {
+                StringBuffer ip;
+                daliHelper->getDaliIp(ip);
+                return ip.detach();
+            }
+        }
+        catch (IException *E)
+        {
+            E->Release();
+        }
+        return strdup("");
     }
     virtual IHpccProtocolResponse *queryProtocol()
     {

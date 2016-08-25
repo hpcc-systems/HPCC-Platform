@@ -1310,7 +1310,7 @@ class RoxieProtocolMsgContext : implements IHpccProtocolMsgContext, public CInte
 {
 public:
     StringAttr queryName;
-    StringAttr uid;
+    StringAttr uid = "-";
     Owned<CascadeManager> cascade;
     Owned<IDebuggerContext> debuggerContext;
     Owned<CDebugCommandHandler> debugCmdHandler;
@@ -1387,6 +1387,15 @@ public:
         return *cascade;
     }
 
+    virtual void setTransactionId(const char *id)
+    {
+        if (!id || !*id)
+            return;
+        uid.set(id);
+        ensureContextLogger();
+        StringBuffer s;
+        logctx->set(ep.getIpText(s).appendf(":%u{%s}", ep.port, uid.str()).str());
+    }
     inline IDebuggerContext &ensureDebuggerContext(const char *id)
     {
         if (!debuggerContext)
