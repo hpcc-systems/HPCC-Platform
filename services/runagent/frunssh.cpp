@@ -67,6 +67,17 @@ int main( int argc, char *argv[] )
         Owned<IFRunSSH> runssh = createFRunSSH();
         runssh->init(argc,argv);
         runssh->exec();
+        const StringArray & strArray = runssh->getReplyText();
+        const UnsignedArray & unsArray = runssh->getReply();
+        for(unsigned i = 0;i < unsArray.ordinality();i++) {
+            StringBuffer buf = strArray.item(i);
+            // strip newlines off end of string buf
+            if (buf.length() && (buf.charAt(buf.length()-1)) == '\n') {
+                buf.setLength(buf.length()-1);
+                buf.clip();
+            }
+            PROGLOG("%d: ssh(%d): %s",i+1,unsArray.item(i),buf.str());
+        }
     }
     catch(IException *e)
     {
