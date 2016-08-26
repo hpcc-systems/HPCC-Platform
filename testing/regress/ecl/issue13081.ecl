@@ -41,10 +41,10 @@ r2 := TABLE(ds, TableRec, FEW, MERGE);
 OUTPUT(r2, NAMED('FewMerge'));
 
 r1x := TABLE(ds, TableRec, f1 DIV 2, FEW);
-OUTPUT(r1x, NAMED('FewX'));
+OUTPUT(SORT(r1x, RECORD), NAMED('FewX'));
 
 r2x := TABLE(ds, TableRec, f1 DIV 2, FEW, MERGE);
-OUTPUT(r2x, NAMED('FewMergeX'));
+OUTPUT(SORT(r2x, RECORD), NAMED('FewMergeX'));
 
 dsTemp2 := NOFOLD(DATASET
     (
