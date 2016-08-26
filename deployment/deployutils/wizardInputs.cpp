@@ -290,6 +290,7 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
     else
     {
       unsigned x = 0;
+      unsigned origNumOfNodes(numOfNodes);
 
       for(; x < numOfNodes ; x++)
       {
@@ -337,9 +338,12 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
           else if (!strcmp(buildSetName, "roxie"))
             sb.clear().append("non-support ");
 
-          throw MakeStringException(-1, \
-            "Total nodes: %d (%d Support Nodes + %d Non-support Nodes)\nError: Cannot assign %d number of nodes for %s due to insufficient %s nodes available. Please enter different values", \
-            ips + ipns, ips, ipns, numOfNodes, sbBuildSet.str(), sb.str());
+          if (m_arrBuildSetsWithAssignedIPs.find(buildSetName) == NotFound)
+             throw MakeStringException(-1, \
+                "Total nodes: %d (%d Support Nodes + %d Non-support Nodes)\nError: Cannot assign %d number of nodes for %s due to insufficient %s nodes available. Please enter different values", \
+                ips + ipns, ips, ipns, numOfNodes, sbBuildSet.str(), sb.str());
+          else
+              throw MakeStringException(-1, "Total nodes required: %d\nError: Unable to assign %d nodes, no more assigned ip nodes available for %s", origNumOfNodes, origNumOfNodes - getCntForAlreadyAssignedIPS(buildSetName), buildSetName);
         }
         else{
           return m_compIpMap.getValue(buildSetName);
