@@ -41,6 +41,7 @@ ESPrequest [nil_remove] GetESDLDefinitionRequest
 ESPresponse [exceptions_inline] GetESDLDefinitionResponse
 {
     string Id;
+    ESParray<string, Name> ESDLServices;
     string XMLDefinition;
     ESPstruct BaseESDLStatus status;
     ESParray<ESPStruct MethodConfig, Method> Methods;
@@ -106,6 +107,7 @@ ESPstruct ESDLDefinition
     int Seq;
     String Id;
     [min_ver("1.1")] String Interface;
+    ESParray<string, Name> ESDLServices;
 };
 
 ESPStruct ESDLBindingContents
