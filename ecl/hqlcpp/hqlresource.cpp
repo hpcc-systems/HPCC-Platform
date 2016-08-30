@@ -2668,6 +2668,9 @@ IHqlExpression * SpillerInfo::createSpilledRead(IHqlExpression * spillReason)
             dataset.setown(createDataset(no_table, args));
         }
 
+        if (original->isDictionary() && !dataset->isDictionary())
+            dataset.setown(createDictionary(no_createdictionary, LINK(dataset)));
+
         loseDistribution = false;
     }
 
@@ -2716,16 +2719,19 @@ IHqlExpression * SpillerInfo::createSpilledWrite(IHqlExpression * transformed, b
     }
     else
     {
+        LinkedHqlExpr dataset = LINK(transformed);
+        if (dataset->isDictionary())
+            dataset.setown(createDataset(no_datasetfromdictionary, dataset.getClear()));
         if (options->createSpillAsDataset && allowCommonDataset)
         {
-            IHqlExpression * value = LINK(transformed);
+            IHqlExpression * value = dataset.getClear();
             if (value->isDatarow())
                 value = createDatasetFromRow(value);
             spilledDataset.setown(createDataset(no_commonspill, value));
             args.append(*LINK(spilledDataset));
         }
         else
-            args.append(*LINK(transformed));
+            args.append(*dataset.getClear());
 
         args.append(*createSpillName());
         addSpillFlags(args, false);
