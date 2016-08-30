@@ -74,7 +74,7 @@ void usage(const char *exe)
   printf("  bget <xpath> <dest-file>   -- binary property\n");
   printf("  xget <xpath>               -- (multi-value tail can have commas)\n");
   printf("  wget <xpath>               -- (gets all matching xpath)\n");
-  printf("  add <xpath> <value>        -- adds new value\n");
+  printf("  add <xpath> [<value>]      -- adds new xpath node with optional value\n");
   printf("  delv <xpath>               -- deletes value\n");
   printf("  count <xpath>              -- counts xpath matches\n");
   printf("\n");
@@ -497,25 +497,25 @@ static void wget(const char *path)
 
 //=============================================================================
 
-static void add(const char *path,const char *val)
+static void add(const char *path, const char *val)
 {
-    StringBuffer head;
-    StringBuffer tmp;
-    const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
-    if (!conn) {
-        ERRLOG("Could not connect to %s",path);
+    if (!path || !*path)
+        throw makeStringException(0, "Invalid xpath (empty)");
+    if ('/' == path[strlen(path)-1])
+        throw makeStringException(0, "Invalid xpath (no trailing xpath node provided)");
+    Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, daliConnectTimeoutMs);
+    if (!conn)
+    {
+        ERRLOG("Could not connect to %s", path);
         return;
     }
-    Owned<IPropertyTree> root = conn->getRoot();
-    StringBuffer oldv;
-    StringBuffer newv;
-    root->addProp(tail,val);
-    conn->commit();
-    OUTLOG("Added %s value '%s'",path,val);
-    conn->close();
+    VStringBuffer msg("Added %s", path);
+    if (val)
+    {
+        conn->queryRoot()->setProp(NULL, val);
+        msg.appendf(" (with value = '%s')", val);
+    }
+    OUTLOG("%s", msg.str());
 }
 
 //=============================================================================
@@ -2996,8 +2996,8 @@ int main(int argc, char* argv[])
                         wget(params.item(1));
                     }
                     else if (stricmp(cmd,"add")==0) {
-                        CHECKPARAMS(2,2);
-                        add(params.item(1),params.item(2));
+                        CHECKPARAMS(1,2);
+                        add(params.item(1), (np>1) ? params.item(2) : nullptr);
                     }
                     else if (stricmp(cmd,"delv")==0) {
                         CHECKPARAMS(1,1);
