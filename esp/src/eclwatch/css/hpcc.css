@@ -1055,6 +1055,10 @@ margin-left:-20px;
     color: white;
 }
 
+.AlertCell{
+    background: #febe47;
+}
+
 .WarningCell{
     background: yellow;
 }
