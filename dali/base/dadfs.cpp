@@ -53,6 +53,7 @@
 
 #define DEFAULT_NUM_DFS_THREADS 30
 #define TIMEOUT_ON_CLOSEDOWN 120000 // On closedown, give up on trying to join a thread in CDaliDFSServer after two minutes
+#define MAX_PHYSICAL_DELETE_THREADS 1000
 
 #if _INTERNAL_EDITION == 1
 #ifndef _MSC_VER
@@ -3309,7 +3310,7 @@ protected:
                 throw exceptions.getClear();
         }
     }
-    bool removePhysicalPartFiles(IFileDescriptor *fileDesc, IMultiException *mexcept)
+    bool removePhysicalPartFiles(IFileDescriptor *fileDesc, IMultiException *mexcept, unsigned numParallelDeletes=0)
     {
         if (logicalName.isExternal())
         {
@@ -3375,7 +3376,14 @@ protected:
             }
         } afor(fileDesc, mexcept);
         afor.islazy = fileDesc->queryProperties().getPropBool("@lazy");
-        afor.For(fileDesc->numParts(),10,false,true);
+        if (0 == numParallelDeletes)
+            numParallelDeletes = fileDesc->numParts();
+        if (numParallelDeletes > MAX_PHYSICAL_DELETE_THREADS)
+        {
+            WARNLOG("Limiting parallel physical delete threads to %d", MAX_PHYSICAL_DELETE_THREADS);
+            numParallelDeletes = MAX_PHYSICAL_DELETE_THREADS;
+        }
+        afor.For(fileDesc->numParts(),numParallelDeletes,false,true);
         return afor.ok;
     }
 
