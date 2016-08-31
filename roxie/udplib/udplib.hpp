@@ -138,4 +138,7 @@ extern UDPLIB_API unsigned udpInlineCollationPacketLimit;
 extern UDPLIB_API bool udpInlineCollation;
 extern UDPLIB_API bool udpSnifferEnabled;
 extern UDPLIB_API bool udpSendCompletedInData;
+extern UDPLIB_API unsigned udpSnifferReadThreadPriority;
+extern UDPLIB_API unsigned udpSnifferSendThreadPriority;
+
 #endif
