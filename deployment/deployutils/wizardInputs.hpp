@@ -131,6 +131,7 @@ private:
    unsigned m_supportNodes;
    unsigned m_roxieNodes;
    unsigned m_thorNodes;
+   unsigned m_espNodes;
    unsigned m_thorSlavesPerNode;
    unsigned m_roxieAgentRedChannels;
    unsigned m_roxieAgentRedOffset;

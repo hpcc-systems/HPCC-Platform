@@ -110,6 +110,11 @@ void CWizardInputs::setEnvironment()
   if(m_pXml->hasProp("@thorNodes"))
     m_thorNodes = atoi(m_pXml->queryProp("@thorNodes"));
 
+  m_espNodes = 1;
+  if(m_pXml->hasProp("@thorNodes"))
+    m_espNodes = atoi(m_pXml->queryProp("@espNodes"));
+
+
   if(m_pXml->hasProp("@dbuser"))
     m_dbuser = m_pXml->queryProp("@dbuser");
 
@@ -1231,6 +1236,8 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
           numOfIpNeeded = m_roxieNodes;
         else if (!strcmp(buildSetName, "thor"))
           numOfIpNeeded = m_thorNodes + 1;
+        else if (!strcmp(buildSetName, "esp"))
+            numOfIpNeeded = m_espNodes;
 
         CInstDetails* pInstDetail = getServerIPMap(sbNewName.str(), buildSetName, pNewEnvTree, numOfIpNeeded);
 
@@ -1250,7 +1257,14 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
             ForEachItemIn(x, ipArr)
             {
               assignedIP.clear().append(ipArr.item(x));
-              addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName, "s1");
+              if (!strcmp(buildSetName, "esp"))
+              {
+                  StringBuffer s1("s_1");
+                  const char *pName = getUniqueName2(pNewEnvTree, s1, XML_TAG_ESPPROCESS, "");
+                  addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName, pName);
+              }
+              else
+                addInstanceToTree(pNewEnvTree, assignedIP, processName, buildSetName, "s1");
             }
           }
         }
