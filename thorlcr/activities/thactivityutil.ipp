@@ -44,7 +44,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     virtual ~CPartHandler() { }
-    virtual void setPart(IPartDescriptor *partDesc, unsigned partNoSerialized) = 0;
+    virtual void setPart(IPartDescriptor *partDesc) = 0;
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc) { }
     virtual void stop() = 0;
 };

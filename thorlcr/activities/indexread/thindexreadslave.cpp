@@ -76,7 +76,7 @@ public:
     const void *nextKey();  // NB not link counted row
     const void *getKeyPtr(); // nor this
 
-    void setPart(IPartDescriptor *_partDesc, unsigned partNoSerialized);
+    void setPart(IPartDescriptor *_partDesc);
 
     void reset();
 
@@ -238,7 +238,7 @@ rowcount_t CIndexPartHandlerHelper::getCount(const rowcount_t &keyedLimit)
     return (rowcount_t)count;
 }
 
-void CIndexPartHandlerHelper::setPart(IPartDescriptor *_partDesc, unsigned partNoSerialized)
+void CIndexPartHandlerHelper::setPart(IPartDescriptor *_partDesc)
 {
     reset();
     partDesc.set(_partDesc);
@@ -1067,7 +1067,7 @@ public:
             keyedLimitCount = 0;
             ForEachItemIn(p, partDescs)
             {
-                partHelper.setPart(&partDescs.item(p), p);
+                partHelper.setPart(&partDescs.item(p));
                 keyedLimitCount += partHelper.getCount(keyedLimit);
                 if (keyedLimitCount > keyedLimit) break;
             }
@@ -1075,7 +1075,7 @@ public:
         if (partDescs.ordinality())
         {
             eoi = false;
-            partHelper.setPart(&partDescs.item(0), 0);
+            partHelper.setPart(&partDescs.item(0));
         }
         else
             eoi = true;
@@ -1173,7 +1173,7 @@ public:
                         eoi = true;
                         return NULL;
                     }
-                    partHelper.setPart(&partDescs.item(currentPart), currentPart);
+                    partHelper.setPart(&partDescs.item(currentPart));
                 }
             }
         }
@@ -1207,7 +1207,7 @@ class CIndexAggregateSlaveActivity : public CIndexReadSlaveBase
                 ++partn;
                 if (partn>=partDescs.ordinality())
                     return NULL;
-                partHelper.setPart(&partDescs.item(partn), partn);
+                partHelper.setPart(&partDescs.item(partn));
             }
         }
     }
@@ -1249,7 +1249,7 @@ public:
         helper->clearAggregate(row);
         if (partDescs.ordinality())
         {
-            partHelper.setPart(&partDescs.item(0), 0);
+            partHelper.setPart(&partDescs.item(0));
             loop
             {
                 const void *r = nextKey();
