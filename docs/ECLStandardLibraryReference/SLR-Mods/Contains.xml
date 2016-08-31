@@ -64,11 +64,11 @@
 
   <programlisting format="linespecific">A := STD.Str.Contains(
   'the quick brown fox jumps over the lazy dog',
-  'ABCdefghijklmnopqrstuvwxyz', true);
+  'ABCdefghijklmnopqrstuvwxyz', true); //returns TRUE 
 
 B:= STD.Str.Contains(
  'the speedy ochre vixen leapt over the indolent retriever',
- 'abcdefghijklmnopqrstuvwxyz', false);
+ 'abcdefghijklmnopqrstuvwxyz', false); //returns FALSE -- 'z' is missing
 </programlisting>
 
   <para></para>
