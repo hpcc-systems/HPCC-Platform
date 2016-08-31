@@ -602,6 +602,8 @@ public:
     virtual size32_t errCount();
     virtual size32_t warnCount();
     
+    IHqlExpression * queryAlreadyAssigned(IHqlExpression * select);
+    bool checkAlreadyAssigned(const attribute & errpos, IHqlExpression * select);
     IHqlExpression * findAssignment(IHqlExpression *field);
     void addAssignment(attribute &field, attribute &source);
     void addAssignment(const attribute & errpos, IHqlExpression * targetExpr, IHqlExpression * srcExpr);
