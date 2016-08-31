@@ -298,11 +298,13 @@ enum
     PerfMonPackets   = 0x02,
     PerfMonDiskUsage = 0x04,
     //default and full modes:
-    PerfMonExtended  = 0x08,   
+    PerfMonExtended  = 0x08,
+    // UDP packet loss tracing
+    PerfMonUDP       = 0x10,
 #ifdef _WIN32
     PerfMonStandard  = PerfMonProcMem
 #else
-    PerfMonStandard  = PerfMonProcMem|PerfMonExtended
+    PerfMonStandard  = PerfMonProcMem|PerfMonExtended|PerfMonUDP
 #endif
 
 };
