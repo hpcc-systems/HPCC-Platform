@@ -121,44 +121,46 @@ public:
     {
         if (!ldapsecurity||((getLDAPflags()&DLF_ENABLED)==0)) 
             return 255;
+
+        StringBuffer username;
+        StringBuffer password;
+        if (udesc)
+        {
+            udesc->getUserName(username);
+            udesc->getPassword(password);
+        }
+        else
+        {
+            WARNLOG("NULL UserDescriptor in daldap.cpp getPermissions('%s')",key ? key : "NULL");
+        }
+
+        if (0 == username.length())
+        {
+            username.append(filesdefaultuser);
+            decrypt(password, filesdefaultpassword);
+        }
+
+        Owned<ISecUser> user = ldapsecurity->createUser(username);
+        user->credentials().setPassword(password);
+        if (!ldapsecurity->authenticateUser(*user, NULL))
+        {
+            ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails authentication",key?key:"NULL",obj?obj:"NULL",username.str());
+            return SecAccess_None;//deny
+        }
+
         bool filescope = stricmp(key,"Scope")==0;
         bool wuscope = stricmp(key,"workunit")==0;
-        if (filescope||wuscope) {
-            StringBuffer username;
-            StringBuffer password;
+
+        if (checkScopeScans() && (filescope || wuscope)) {
             int perm = 0;
-            if (udesc) {
-                udesc->getUserName(username);
-                udesc->getPassword(password);
-            }
-            if (username.length()==0)  {
-#ifdef NULL_DALIUSER_STACKTRACE
-                DBGLOG("UNEXPECTED USER (NULL) in daldap.cpp getPermissions() line %d", __LINE__);
-                //following debug code to be removed
-                PrintStackReport();
-#endif
-                username.append(filesdefaultuser);
-                decrypt(password, filesdefaultpassword);
-            }
             unsigned start = msTick();
-            Owned<ISecUser> user = ldapsecurity->createUser(username);
-            if (user) {
-                user->credentials().setPassword(password);
-                if (!ldapsecurity->authenticateUser(*user, NULL))
-                {
-                    PROGLOG("LDAP: getPermissions(%s) scope=%s user=%s fails authentication",key?key:"NULL",obj?obj:"NULL",username.str());
-                    perm = SecAccess_None;//deny
-                }
-                else
-                {
-                    if (filescope)
-                        perm=ldapsecurity->authorizeFileScope(*user, obj);
-                    else if (wuscope)
-                        perm=ldapsecurity->authorizeWorkunitScope(*user, obj);
-                    if (perm==-1)
-                        perm = 0;
-                }
-            }
+            if (filescope)
+                perm=ldapsecurity->authorizeFileScope(*user, obj);
+            else if (wuscope)
+                perm=ldapsecurity->authorizeWorkunitScope(*user, obj);
+            if (perm==-1)
+                perm = 0;
+
             unsigned taken = msTick()-start;
 #ifndef _DEBUG
             if (taken>100) 
@@ -183,6 +185,7 @@ public:
         }
         return 255;
     }
+
     bool clearPermissionsCache(IUserDescriptor *udesc)
     {
         if (!ldapsecurity || ((getLDAPflags() & DLF_ENABLED) == 0))
