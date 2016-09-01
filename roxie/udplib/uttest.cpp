@@ -806,12 +806,12 @@ void usage(char *err = NULL)
     fprintf(stderr, " [-destA IP]          : Sets the sender destination ip address to IP (i.e roxie server IP) <default to local host>\n");
     fprintf(stderr, " [-destB IP]          : Sets the sender second destination ip address to IP <default no sec dest>\n");
     fprintf(stderr, " [-multiCast IP]      : Sets the sniffer multicast ip address to IP <default %s>\n", multiCast);
-    fprintf(stderr, " [-udpTimeout sec]    : Sets the sender udpRequestToSendTimeout value  <default %i>\n", udpRequestToSendTimeout);
+    fprintf(stderr, " [-udpTimeout msec]   : Sets the sender udpRequestToSendTimeout value  <default %i>\n", udpRequestToSendTimeout);
     fprintf(stderr, " [-udpMaxTimeouts val]: Sets the sender udpMaxRetryTimedoutReqs value <default %i>\n", udpMaxRetryTimedoutReqs);
     fprintf(stderr, " [-udpNumQs val]      : Sets the sender's number of output queues <default %i>\n", udpNumQs);
     fprintf(stderr, " [-udpQsPriority val] : Sets the sender's output queues priority udpQsPriority <default %i>\n", udpOutQsPriority);
     fprintf(stderr, " [-packerHdrSize val] : Sets the packers header size (like RoxieHeader) <default %i>\n", packerHdrSize);
-    fprintf(stderr, " [-numPackers val]    : Sets the number of packers/unpakcers to create/expect <default %i>\n", numPackers);
+    fprintf(stderr, " [-numPackers val]    : Sets the number of packers/unpackers to create/expect <default %i>\n", numPackers);
     fprintf(stderr, " [-packers val vale .]: Sets a packer specific packet sizes, this option can be repeated as many packers as needed\n");
     fprintf(stderr, " [-numSizes val]      : Sets the number of packet data sizes to try sending/receiving <default %i>\n", numSizes);
     fprintf(stderr, " [-numSends val]]     : Sets the number of msgs per size per packer to send <default %i>\n", numSends);
@@ -839,7 +839,7 @@ int main(int argc, char * argv[] )
     progName = argv[0];
     destA = myIndex = addRoxieNode(GetCachedHostName());
 
-    udpRequestToSendTimeout = 5;
+    udpRequestToSendTimeout = 5000;
     udpMaxRetryTimedoutReqs = 3;
     udpOutQsPriority = 5;
     udpTraceLevel = 1;

@@ -721,11 +721,19 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         udpInlineCollationPacketLimit = topology->getPropInt("@udpInlineCollationPacketLimit", 50);
         udpSendCompletedInData = topology->getPropBool("@udpSendCompletedInData", false);
         udpRetryBusySenders = topology->getPropInt("@udpRetryBusySenders", 0);
+
+        // Historically, this was specified in seconds. Assume any value <= 10 is a legacy value specified in seconds!
         udpMaxRetryTimedoutReqs = topology->getPropInt("@udpMaxRetryTimedoutReqs", 0);
-        udpRequestToSendTimeout = topology->getPropInt("@udpRequestToSendTimeout", 5);
-        // MORE: think of a better way/value/check maybe/and/or based on Roxie server timeout
+        udpRequestToSendTimeout = topology->getPropInt("@udpRequestToSendTimeout", 0);
+        if (udpRequestToSendTimeout<=10)
+            udpRequestToSendTimeout *= 1000;
         if (udpRequestToSendTimeout == 0)
-            udpRequestToSendTimeout = 5; 
+        {
+            if (slaTimeout)
+                udpRequestToSendTimeout = (slaTimeout*3) / 4;
+            else
+                udpRequestToSendTimeout = 5000;
+        }
         // MORE: might want to check socket buffer sizes against sys max here instead of udp threads ?
         udpMulticastBufferSize = topology->getPropInt("@udpMulticastBufferSize", 262142);
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", 131072);
