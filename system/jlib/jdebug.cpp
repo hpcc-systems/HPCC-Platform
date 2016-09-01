@@ -2119,6 +2119,9 @@ public:
 
     bool reportUdpInfo(unsigned traceLevel)
     {
+#ifdef _WIN32
+        return false;
+#else
         if (uidCol==-1 && columnNames.length())
             return false;
         FILE *netfp = fopen("/proc/net/udp", "r");
@@ -2197,6 +2200,7 @@ public:
         }
         fclose(netfp);
         return true;
+#endif
     }
 private:
     MapPortToPortStats map;
@@ -2217,6 +2221,9 @@ public:
     }
     bool reportSnmpInfo()
     {
+#ifdef _WIN32
+        return false;
+#else
         if (inErrorsCol==-1 && columnNames.length())
             return false;
         FILE *netfp = fopen("/proc/net/snmp", "r");
@@ -2255,6 +2262,7 @@ public:
         }
         fclose(netfp);
         return ok;
+#endif
     }
 private:
     StringArray columnNames;
