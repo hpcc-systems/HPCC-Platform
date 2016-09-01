@@ -34,13 +34,19 @@ FOREACH( oFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/lock.sh
     ${CMAKE_CURRENT_SOURCE_DIR}/init-functions
     ${CMAKE_CURRENT_SOURCE_DIR}/export-path
+)
+    install ( PROGRAMS ${oFILES} DESTINATION etc/init.d COMPONENT Runtime )
+ENDFOREACH ( oFILES )
+
+FOREACH( sFILES
     ${CMAKE_CURRENT_BINARY_DIR}/hpcc-init.service
     ${CMAKE_CURRENT_BINARY_DIR}/hpcc-init@.service
     ${CMAKE_CURRENT_BINARY_DIR}/dafilesrv.service
     ${CMAKE_CURRENT_BINARY_DIR}/dafilesrv@.service
 )
-    install ( PROGRAMS ${oFILES} DESTINATION etc/init.d COMPONENT Runtime )
-ENDFOREACH ( oFILES )
+    install ( PROGRAMS ${sFILES} DESTINATION etc/init.d COMPONENT Runtime
+        PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ )
+ENDFOREACH ( sFILES )
 
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/dafilesrv ${CMAKE_CURRENT_BINARY_DIR}/hpcc-init
     DESTINATION ${CONFIG_PREFIX}/init.d COMPONENT Runtime)
