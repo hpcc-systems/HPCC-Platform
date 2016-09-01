@@ -289,13 +289,9 @@ if [ "${DISTRIB_NAME}" = "ubuntu" ] &&
    dpkg -l | grep -q -e "^ii[[:space:]]*systemd "
    if [ $? -eq 0 ]; then
       cp ${INSTALL_DIR}/etc/init.d/hpcc-init.service /lib/systemd/system/
-      chmod 644 /lib/systemd/system/hpcc-init.service
       cp ${INSTALL_DIR}/etc/init.d/hpcc-init@.service /lib/systemd/system/
-      chmod 644 /lib/systemd/system/hpcc-init@.service
       cp ${INSTALL_DIR}/etc/init.d/dafilesrv.service /lib/systemd/system/
-      chmod 644 /lib/systemd/system/dafilesrv.service
       cp ${INSTALL_DIR}/etc/init.d/dafilesrv@.service /lib/systemd/system/
-      chmod 644 /lib/systemd/system/dafilesrv@.service
       systemctl daemon-reload
    fi
 fi
