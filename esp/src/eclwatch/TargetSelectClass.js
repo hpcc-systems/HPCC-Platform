@@ -39,7 +39,7 @@ define([
     return {
         i18n: nlsHPCC,
 
-        loading: false,
+        loading: true,
         defaultValue: "",
 
         //  Implementation  ---

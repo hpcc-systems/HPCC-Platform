@@ -20,6 +20,8 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/on",
 
+    "dijit/registry",
+
     "dgrid/selector",
 
     "hpcc/WsDfu",
@@ -40,6 +42,7 @@ define([
     "dijit/form/TimeTextBox"
 
 ], function (declare, lang, i18n, nlsHPCC, on,
+                registry,
                 selector,
                 WsDfu, ESPUtil, FilterDropDownWidget,
                 template) {
@@ -47,6 +50,11 @@ define([
         templateString: template,
         baseClass: "DiskUsageWidget",
         i18n: nlsHPCC,
+
+        postCreate: function (args) {
+            this.inherited(arguments);
+            this.filter = registry.byId(this.id + "Filter");
+        },
 
         resize: function (args) {
             this.inherited(arguments);
@@ -69,12 +77,12 @@ define([
 
             this.initDiskUsageGrid();
 
-            this.widget.Filter.refreshState();
+            this.filter.refreshState();
             var context = this;
-            this.widget.Filter.on("clear", function (evt) {
+            this.filter.on("clear", function (evt) {
                 context.refreshGrid();
             });
-            this.widget.Filter.on("apply", function (evt) {
+            this.filter.on("apply", function (evt) {
                 context.refreshGrid();
             });
         },
@@ -98,7 +106,7 @@ define([
         },
 
         getFilter: function () {
-            var retVal = this.widget.Filter.toObject();
+            var retVal = this.filter.toObject();
             lang.mixin(retVal, {
                 StartDate: this.getISOString("FromDate", "FromTime"),
                 EndDate: this.getISOString("ToDate", "ToTime")

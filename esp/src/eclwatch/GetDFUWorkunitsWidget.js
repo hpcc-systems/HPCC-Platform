@@ -328,6 +328,7 @@ define([
             var store = this.params.searchResults ? this.params.searchResults : new ESPDFUWorkunit.CreateWUQueryStore();
             this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: store,
+                query: this.filter.toObject(),
                 columns: {
                     col1: selector({
                         width: 27,
