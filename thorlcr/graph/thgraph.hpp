@@ -548,7 +548,7 @@ protected:
     Owned<IPropertyTree> node;
     IBarrier *startBarrier, *waitBarrier, *doneBarrier;
     mptag_t mpTag, startBarrierTag, waitBarrierTag, doneBarrierTag;
-    bool connected, started, aborted, graphDone, prepared, sequential;
+    bool connected, started, aborted, graphDone, sequential;
     CJobBase &job;
     CJobChannel &jobChannel;
     graph_id graphId;
@@ -587,7 +587,6 @@ public:
     inline void setInitialized() { initialized = true; }
     inline bool isInitialized() const { return initialized; }
     bool isComplete() const { return complete; }
-    bool isPrepared() const { return prepared; }
     bool isGlobal() const { return global; }
     bool isStarted() const { return started; }
     bool isLocalOnly() const; // this graph and all upstream dependencies
@@ -1008,7 +1007,7 @@ protected:
     bool timeActivities; // purely for access efficiency
     size32_t parentExtractSz;
     const byte *parentExtract;
-    bool receiving, cancelledReceive, reInit;
+    bool receiving, cancelledReceive, initialized, reInit;
     Owned<IThorGraphResults> ownedResults; // NB: probably only to be used by loop results
 
 public:
@@ -1026,6 +1025,8 @@ public:
     inline bool queryAbortSoon() const { return abortSoon; }
     inline IHThorArg *queryHelper() const { return baseHelper; }
     inline bool needReInit() const { return reInit; }
+    inline bool queryInitialized() const { return initialized; }
+    inline void setInitialized(bool tf) { initialized = tf; }
     inline bool queryTimeActivities() const { return timeActivities; }
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);

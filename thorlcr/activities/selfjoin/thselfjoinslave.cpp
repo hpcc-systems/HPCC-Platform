@@ -111,6 +111,8 @@ public:
         keyserializer = NULL;
         inputStopped = false;
         mpTagRPC = TAG_NULL;
+        if (isLocal)
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
 
@@ -123,7 +125,7 @@ public:
 // IThorSlaveActivity
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {       
-        if(!isLocal)
+        if (!isLocal)
         {
             mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
             mptag_t barrierTag = container.queryJobChannel().deserializeMPTag(data);

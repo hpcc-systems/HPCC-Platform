@@ -159,6 +159,11 @@ public:
 
     CSlaveActivity(CGraphElementBase *container);
     ~CSlaveActivity();
+    void setRequireInitData(bool tf)
+    {
+        // If not required sets sentActInitdata to true, to prevent it being request at graph initialization time.
+        container.sentActInitData->set(0, !tf);
+    }
     virtual void clearConnections();
     virtual void releaseIOs();
     virtual MemoryBuffer &queryInitializationData(unsigned slave) const;
@@ -218,7 +223,7 @@ public:
     virtual void resetEOF() override { throwUnexpected(); }
 
 // IThorSlaveActivity
-    virtual void init(MemoryBuffer &in, MemoryBuffer &out) override { }
+    virtual void init(MemoryBuffer &in, MemoryBuffer &out) { }
     virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) override;
     virtual void processDone(MemoryBuffer &mb) override { };
     virtual void reset() override;

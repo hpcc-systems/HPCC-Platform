@@ -516,10 +516,6 @@ class CFetchSlaveActivity : public CFetchSlaveBase
 {
 public:
     CFetchSlaveActivity(CGraphElementBase *container) : CFetchSlaveBase(container) { }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        CFetchSlaveBase::init(data, slaveData);
-    }
     virtual size32_t fetch(ARowBuilder & rowBuilder, const void *keyRow, unsigned filePartIndex, unsigned __int64 localFpos, unsigned __int64 fpos)
     {
         Owned<ISerialStream> stream = createFileSerialStream(fetchStream->queryPartIO(filePartIndex), localFpos);

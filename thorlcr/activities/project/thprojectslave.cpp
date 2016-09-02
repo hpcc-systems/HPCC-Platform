@@ -84,6 +84,7 @@ public:
     explicit CProjectSlaveActivity(CGraphElementBase *_container) : CThorStrandedActivity(_container)
     {
         helper = static_cast <IHThorProjectArg *> (queryHelper());
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
 
@@ -248,11 +249,9 @@ public:
     {
         helper = (IHThorPrefetchProjectArg *) queryHelper();
         parallel = 0 != (helper->getFlags() & PPFparallel);
-        appendOutputLinked(this);
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
+        setRequireInitData(false);
         allocator.set(queryRowAllocator());
+        appendOutputLinked(this);
     }
     virtual void start() override
     {

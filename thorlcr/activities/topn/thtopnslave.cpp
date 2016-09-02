@@ -87,6 +87,8 @@ public:
         assertex(!(global && grouped));
         helper = (IHThorTopNArg *) queryHelper();
         eog = eos = false;
+        if (container.queryLocalOrGrouped())
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
     ~TopNSlaveActivity()

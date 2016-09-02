@@ -69,6 +69,8 @@ public:
         helper = static_cast <IHThorSelectNArg *> (queryHelper());
         isLocal = _isLocal;
         createDefaultIfFail = isLocal || lastNode();
+        if (container.queryLocalOrGrouped())
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
 

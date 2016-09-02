@@ -1352,6 +1352,8 @@ public:
             rightThorAllocator = queryJobChannel().queryThorAllocator();
         rightRowManager = rightThorAllocator->queryRowManager();
         broadcastLock = NULL;
+        if (!isGlobal())
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
     ~CInMemJoinBase()

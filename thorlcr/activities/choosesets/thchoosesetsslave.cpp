@@ -260,6 +260,8 @@ public:
         totalCounts = NULL;
         limits = NULL;
         inputCounter.setown(new CInputCounter(*this));
+        if (container.queryLocalOrGrouped())
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
     ~ChooseSetsPlusActivity()

@@ -27,6 +27,7 @@ public:
     CDegroupSlaveActivity(CGraphElementBase *_container) 
         : CSlaveActivity(_container), CThorSteppable(this)
     { 
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override

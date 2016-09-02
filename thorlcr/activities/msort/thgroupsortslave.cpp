@@ -46,14 +46,12 @@ public:
     CLocalSortSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container), spillStats(spillStatistics)
     {
-        appendOutputLinked(this);
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         helper = (IHThorSortArg *)queryHelper();
         iCompare = helper->queryCompare();
         IHThorAlgorithm * algo = helper?(static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1))):NULL;
         unstable = (algo&&(algo->getAlgorithmFlags()&TAFunstable));
+        setRequireInitData(false);
+        appendOutputLinked(this);
     }
     virtual void start()
     {
@@ -138,12 +136,8 @@ public:
     {
         helper = (IHThorSortedArg *)queryHelper();
         icompare = helper->queryCompare();
+        setRequireInitData(false);
         appendOutputLinked(this);
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        helper = (IHThorSortedArg *)queryHelper();
-        icompare = helper->queryCompare();
     }
     virtual void start() override
     {

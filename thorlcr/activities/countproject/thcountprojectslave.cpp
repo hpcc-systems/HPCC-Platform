@@ -47,8 +47,9 @@ class LocalCountProjectActivity : public BaseCountProjectActivity
     bool anyThisGroup;
 
 public:
-    LocalCountProjectActivity(CGraphElementBase *container) : BaseCountProjectActivity(container)
+    LocalCountProjectActivity(CGraphElementBase *_container) : BaseCountProjectActivity(_container)
     {
+        setRequireInitData(false);
     }
     virtual void start()
     {

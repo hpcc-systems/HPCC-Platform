@@ -468,7 +468,6 @@ void CGraphElementBase::reset()
 {
     alreadyUpdated = false;
     onStartCalled = false;
-//  prepared = false;
     if (activity)
         activity->reset();
 }
@@ -579,7 +578,7 @@ void CGraphElementBase::deserializeStartContext(MemoryBuffer &mb)
 {
     size32_t startCtxLen;
     mb.read(startCtxLen);
-    startCtxMb.append(startCtxLen, mb.readDirect(startCtxLen));
+    startCtxMb.clear().append(startCtxLen, mb.readDirect(startCtxLen));
     haveStartCtx = true;
     onStartCalled = false; // allow to be called again
 }
@@ -600,6 +599,13 @@ void CGraphElementBase::onCreate()
         }
         else
             baseHelper->onCreate(queryCodeContext(), NULL, haveCreateCtx?&createCtxMb:NULL);
+        if (isLoopActivity(*this))
+        {
+            unsigned loopId = queryXGMML().getPropInt("att[@name=\"_loopid\"]/@value");
+            Owned<CGraphBase> childGraph = owner->getChildGraph(loopId);
+            Owned<IThorBoundLoopGraph> boundLoopGraph = createBoundLoopGraph(childGraph, baseHelper->queryOutputMeta(), queryId());
+            setBoundGraph(boundLoopGraph);
+        }
     }
 }
 
@@ -785,8 +791,9 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
         }
         if (create)
         {
-            if (activity) // no need to recreate
+            if (prepared) // no need to recreate
                 return true;
+            prepared = true;
             ForEachItemIn(i2, inputs)
             {
                 CIOConnection *inputIO = inputs.item(i2);
@@ -794,6 +801,7 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
             }
             if (isSink())
                 owner->addActiveSink(*this);
+            assertex(!activity);
             activity.setown(factory());
         }
         return true;
@@ -822,15 +830,9 @@ void CGraphElementBase::preStart(size32_t parentExtractSz, const byte *parentExt
 
 void CGraphElementBase::initActivity()
 {
-    if (!activity)
-        activity.setown(factory());
-    if (isLoopActivity(*this))
-    {
-        unsigned loopId = queryXGMML().getPropInt("att[@name=\"_loopid\"]/@value");
-        Owned<CGraphBase> childGraph = owner->getChildGraph(loopId);
-        Owned<IThorBoundLoopGraph> boundLoopGraph = createBoundLoopGraph(childGraph, baseHelper->queryOutputMeta(), queryId());
-        setBoundGraph(boundLoopGraph);
-    }
+    if (activity)
+        return;
+    activity.setown(factory());
 }
 
 ICodeContext *CGraphElementBase::queryCodeContext()
@@ -1056,7 +1058,7 @@ CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(
     graphId = 0;
     complete = false;
     parentActivityId = 0;
-    connected = started = graphDone = aborted = prepared = false;
+    connected = started = graphDone = aborted = false;
     startBarrier = waitBarrier = doneBarrier = NULL;
     mpTag = waitBarrierTag = startBarrierTag = doneBarrierTag = TAG_NULL;
     executeReplyTag = TAG_NULL;
@@ -1243,7 +1245,6 @@ void CGraphBase::onCreate()
     {
         CGraphElementBase &element = iter->query();
         element.onCreate();
-        element.initActivity();
     }
 }
 
@@ -1283,6 +1284,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
         {
             CGraphElementBase &element = iter->query();
             element.onStart(parentExtractSz, parentExtract);
+            element.initActivity();
         }
         if (!preStart(parentExtractSz, parentExtract)) return;
         start();
@@ -1349,7 +1351,6 @@ bool CGraphBase::prepare(size32_t parentExtractSz, const byte *parentExtract, bo
         if (sink.prepareContext(parentExtractSz, parentExtract, checkDependencies, shortCircuit, async, false))
             needToExecute = true;
     }
-//  prepared = true;
     onCreate();
     return needToExecute;
 }
@@ -2876,7 +2877,7 @@ IThorResource &queryThor()
 CActivityBase::CActivityBase(CGraphElementBase *_container) : container(*_container), timeActivities(_container->queryJob().queryTimeActivities())
 {
     mpTag = TAG_NULL;
-    abortSoon = receiving = cancelledReceive = reInit = false;
+    abortSoon = receiving = cancelledReceive = initialized = reInit = false;
     baseHelper.set(container.queryHelper());
     parentExtractSz = 0;
     parentExtract = NULL;

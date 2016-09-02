@@ -421,6 +421,7 @@ public:
     LocalMergeSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorMergeArg *)queryHelper();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     void abort()

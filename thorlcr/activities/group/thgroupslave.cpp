@@ -61,6 +61,8 @@ public:
         numGroups = 0;
         numGroupMax = 0;
         startLastGroup = 0;
+        if (container.queryLocalOrGrouped())
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)

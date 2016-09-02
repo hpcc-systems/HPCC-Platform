@@ -31,6 +31,7 @@ class CNullActionSlaveActivity : public CSlaveActivity
 public:
     CNullActionSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     ~CNullActionSlaveActivity()

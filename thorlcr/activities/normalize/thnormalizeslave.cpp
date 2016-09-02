@@ -43,11 +43,9 @@ public:
         : CSlaveActivity(_container)
     {
         helper = static_cast <IHThorNormalizeArg *> (queryHelper());
-        appendOutputLinked(this);
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         allocator.set(queryRowAllocator());
+        setRequireInitData(false);
+        appendOutputLinked(this);
     }
     virtual void start() override
     { 
@@ -117,14 +115,12 @@ public:
         : CSlaveActivity(_container)
     { 
         helper = static_cast <IHThorNormalizeChildArg *> (queryHelper());
+        cursor = helper->queryIterator();
+        allocator.set(queryRowAllocator());
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        cursor = helper->queryIterator();
-        allocator.set(queryRowAllocator());
-    }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
@@ -209,6 +205,7 @@ public:
         : CSlaveActivity(_container)
     { 
         helper = static_cast <IHThorNormalizeLinkedChildArg *> (queryHelper());
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }

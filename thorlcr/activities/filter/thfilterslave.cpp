@@ -28,6 +28,7 @@ public:
     explicit CFilterSlaveActivityBase(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -177,10 +178,6 @@ public:
         : CFilterSlaveActivityBase(container)
     {
         helper = static_cast <IHThorFilterProjectArg *> (queryHelper());
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        PARENT::init(data,slaveData);
         allocator.set(queryRowAllocator());
     }
     virtual void start() override

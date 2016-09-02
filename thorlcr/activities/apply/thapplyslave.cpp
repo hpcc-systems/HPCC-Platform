@@ -23,10 +23,11 @@ class CApplySlaveActivity : public ProcessSlaveActivity
     IHThorApplyArg *helper;
 
 public:
-    CApplySlaveActivity(CGraphElementBase *container) 
-        : ProcessSlaveActivity(container)
+    CApplySlaveActivity(CGraphElementBase *_container)
+        : ProcessSlaveActivity(_container)
     { 
         helper = static_cast <IHThorApplyArg *> (queryHelper());
+        setRequireInitData(false);
     }
 // IThorSlaveProcess overloaded methods
     virtual void process()

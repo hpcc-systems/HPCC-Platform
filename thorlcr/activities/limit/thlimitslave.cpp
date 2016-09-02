@@ -49,6 +49,8 @@ public:
         resultSent = true; // unless started suppress result send
         eos = stopped = anyThisGroup = eogNext = false;
         rowLimit = RCMAX;
+        if (container.queryLocal())
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
@@ -231,18 +233,14 @@ public:
         limitChecked = eof = false;
         rowTransform = _rowTransform;
         helperex = NULL;
+        if (rowTransform)
+            helperex = static_cast<IHThorLimitTransformExtra *>(queryHelper()->selectInterface(TAIlimittransformextra_1));
     }
     void abort()
     {
         if (!container.queryLocal())
             cancelReceiveMsg(0, mpTag);
         CLimitSlaveActivityBase::abort();
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        CLimitSlaveActivityBase::init(data,slaveData);
-        if (rowTransform)
-            helperex = static_cast<IHThorLimitTransformExtra *>(queryHelper()->selectInterface(TAIlimittransformextra_1));
     }
     virtual void start() override
     {
