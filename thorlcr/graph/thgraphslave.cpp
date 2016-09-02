@@ -855,7 +855,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             msg.append(parentExtractSz);
             msg.append(parentExtractSz, parentExtract);
 
-            // NB: will only request activities that need initializaton data (those that override CSlaveActivity::init())
+            // NB: will only request activities that need initializaton data
             ForEach(*iter)
             {
                 CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();

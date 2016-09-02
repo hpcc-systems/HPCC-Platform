@@ -234,7 +234,9 @@ void CSlaveMessageHandler::main()
                         try
                         {
                             element->reset();
-                            element->doCreateActivity(parentExtractSz, parentExtract, &msg);
+                            size32_t startCtxLen;
+                            msg.read(startCtxLen);
+                            element->doCreateActivity(parentExtractSz, parentExtract, startCtxLen ? &msg : nullptr);
                         }
                         catch (IException *e)
                         {
@@ -247,6 +249,7 @@ void CSlaveMessageHandler::main()
                             element->sentActInitData->set(slave, 0); // clear to permit serializeActivityInitData to resend
                         toSerialize.append(*LINK(element));
                     }
+                    graph->setInitialized();
                     msg.clear();
                     mptag_t replyTag = job.queryJobChannel(0).queryMPServer().createReplyTag();
                     msg.append(replyTag); // second reply
@@ -608,21 +611,25 @@ bool CMasterGraphElement::checkUpdate()
 
 void CMasterGraphElement::initActivity()
 {
-    CGraphElementBase::initActivity();
-    if (!initialized || queryActivity()->needReInit())
+    CriticalBlock b(crit);
+    if (!initialized)
     {
-        ((CMasterActivity *)queryActivity())->init();
         initialized = true;
+        ((CMasterActivity *)queryActivity())->init();
     }
-    owner->setInitialized();
+}
+
+void CMasterGraphElement::reset()
+{
+    CGraphElementBase::reset();
+    if (activity && activity->needReInit())
+        initialized = false;
 }
 
 void CMasterGraphElement::doCreateActivity(size32_t parentExtractSz, const byte *parentExtract, MemoryBuffer *startCtx)
 {
-    onCreate();
-    if (startCtx)
-        deserializeStartContext(*startCtx);
-    onStart(parentExtractSz, parentExtract);
+    createActivity();
+    onStart(parentExtractSz, parentExtract, startCtx);
     initActivity();
 }
 
@@ -2672,8 +2679,7 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
                 Owned<IException> e;
                 try
                 {
-                    element->onCreate();
-                    element->initActivity();
+                    element->createActivity();
                     activity = (CMasterActivity *)element->queryActivity();
                 }
                 catch (IException *_e)
