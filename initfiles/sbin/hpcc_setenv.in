@@ -78,6 +78,9 @@ unset IFS
 source /etc/profile
 IFS="${OIFS}"
 
+# use less heap when threaded
+export MALLOC_ARENA_MAX=8
+
 PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path *= *" | sed -e 's/^path *= *//'`
 
 export PID=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^pid *= *" | sed -e 's/^pid *= *//'`
