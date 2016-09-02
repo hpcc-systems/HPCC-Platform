@@ -1071,7 +1071,6 @@ public:
         return ::getMetaStringValue(tags, val, tag);
     }
 
-
     int getMetaInt(const char *tag, int def_val=0)
     {
         return ::getMetaInt(tags, tag, def_val);

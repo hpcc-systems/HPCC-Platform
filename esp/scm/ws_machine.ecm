@@ -368,7 +368,7 @@ ESPresponse [encode(0), nil_remove, exceptions_inline] UpdateComponentStatusResp
 };
 
 //-------- service ---------
-ESPservice [version("1.13")] ws_machine
+ESPservice [requiredaccess("NONE"), version("1.13")] ws_machine
 {
     ESPuses ESPstruct RequestInfoStruct;
     ESPuses ESPstruct MachineInfoEx;

@@ -21,6 +21,7 @@
 
 #include "hidl_utils.hpp"
 #include "hidlcomp.h"
+
 //#undef new
 #include <map>
 #include <set>
@@ -5373,57 +5374,166 @@ void EspServInfo::write_factory_impl()
     outf(" IClient%s * create%sClient() {  return new CClient%s(); }\n", name_, name_, name_);
 }
 
+const char * translateAuthLevel(const char * level)
+{
+    /*
+     *  This method might belong in seclib where the enumeration is defined (selib.h)
+     *  enum SecAccessFlags
+     *  {
+     *     SecAccess_Unknown = -255,
+     *     SecAccess_None = 0,
+     *     SecAccess_Access = 1,
+     *     SecAccess_Read = 3,
+     *     SecAccess_Write = 7,
+     *     SecAccess_Full = 255
+     *   };
+    */
+
+    if (!level || !*level)
+    {
+        outs(2, "\n//FEATURE LEVEL NOT SET, DEFAULTING TO 'READ'\n");
+        return "SecAccess_Read";
+    }
+
+    if (strieq(level, "NONE"))
+    {
+        outs(2, "\n//WARNING: FEATURE LEVEL AUTHORIZATION HAS BEEN TURNED OFF!!\n");
+        return "SecAccess_None";
+    }
+
+    if (strieq(level, "INMETHOD"))
+    {
+        outs(2, "\n//WARNING: FEATURE LEVEL AUTHORIZATION HAS BEEN DEFERED TO INMETHOD!!\n");
+        return "SecAccess_None";
+    }
+
+    if (strieq(level, "FULL"))
+        return "SecAccess_Full";
+    else if (strieq(level, "WRITE"))
+        return "SecAccess_Write";
+    else if (strieq(level, "READ"))
+        return "SecAccess_Read";
+    else if (strieq(level, "ACCESS"))
+        return "SecAccess_Access";
+
+    //we might need to throw here...
+    outs(2, "\n//FEATURE LEVEL VALUE INVALID: DEFAULTING REQUIRED LEVEL to 'READ'!\n//Valid values are NONE INMETHOD, ACCESS, READ, WRITE, FULL\n");
+    return "SecAccess_Read";
+}
+
+void writeAccessMap(const char * rawServiceAccessList, const char * methodname, int tabs)
+{
+    StrBuffer indent;
+    for (int tabindex = 0; tabindex < tabs; tabindex++)
+        indent.append('\t');
+
+    if (rawServiceAccessList && *rawServiceAccessList)
+    {
+        int listlen = strlen(rawServiceAccessList);
+        StrBuffer currAccessName;
+        StrBuffer currAccessLevel;
+        bool nameComplete = false;
+
+        for (int i = 0; i <= listlen; i++ )
+        {
+            if (i == listlen || rawServiceAccessList[i] == ',')
+            {
+                if (nameComplete == false)
+                {
+                    if (strieq(currAccessName, "NONE") || strieq(currAccessName, "INMETHOD"))
+                    {
+                        //outf("\n%sm_accessmap.setValue(\"%sAccess\", %s);\n", indent.str(), methodname, translateAuthLevel("NONE"));
+                        //outf("\n%sm_accessmap.kill();\n", indent.str());
+                        continue;
+                    }
+                    else
+                        outf("\nError: Access level must be declared in service definition: ESPservice [%s(\"myAccessFeature:FULL\"]\n", FEATEACCESSATTRIBUTE);
+                }
+
+                outf("\n%sm_accessmap.setValue(\"%s\", %s);\n", indent.str(), currAccessName.str(), translateAuthLevel(currAccessLevel.str()));
+                currAccessName.clear();
+                currAccessLevel.clear();
+                nameComplete = false;
+                continue;
+            }
+            else if (rawServiceAccessList[i] == ':')
+            {
+                if (currAccessName.length()==0)
+                {
+                    currAccessName.setf("%sAccess", methodname);
+                    outf("\n//processaccesslist: defaulted current name to : %s\n", currAccessName.str());
+                }
+
+                nameComplete = true;
+                continue;
+            }
+            else if (rawServiceAccessList[i] == '"')
+                continue;
+
+            if (!nameComplete)
+                currAccessName.append(rawServiceAccessList[i]);
+            else
+                currAccessLevel.append(rawServiceAccessList[i]);
+        }
+    }
+    else
+    {
+        outf("\n%sm_accessmap.setValue(\"%sAccess\", %s);\n", indent.str(), methodname, "SecAccess_Read"); //This seems to be the default per seclib
+    }
+}
+
 void EspServInfo::write_esp_binding_ipp()
 {
     EspMethodInfo *mthi=NULL;
     int useMethodName = getMetaInt("use_method_name", 0);
-    
+
     outf("\n\nclass C%sSoapBinding : public CHttpSoapBinding\n", name_);
     outs("{\npublic:\n");
+
     //dom
     outf("\tC%sSoapBinding(http_soap_log_level level=hsl_none);\n", name_);
     outf("\tC%sSoapBinding(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL, http_soap_log_level level=hsl_none);\n", name_);
-    
+
     outs("\tvirtual void init_strings();\n");
-    
+
     //method ==> processRequest
     outs("\tvirtual int processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response);\n");
-    
+
     //method ==> getXsdDefinition
     outs("\tint getXsdDefinition(IEspContext &context, CHttpRequest* request, StringBuffer &content, const char *service, const char *method, bool mda);\n");
-    
+
     //method ==> getMethodHtmlForm
     outs("\tvirtual int getMethodHtmlForm(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &page, bool bIncludeFormTag);\n");
-    
+
     //method ==> getQualifiedNames
     outs("\tint getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods);\n");
-    
+
     //method ==> getServiceName
     outs("\tStringBuffer & getServiceName(StringBuffer &resp);\n");
-    
+
     //method ==> isValidServiceName
     outs("\tbool isValidServiceName(IEspContext &context, const char *name);\n");
-    
+
     //method ==> qualifyMethodName
     outs("\tbool qualifyMethodName(IEspContext &context, const char *methname, StringBuffer *methQName);\n");
-    
+
     //method ==> qualifyServiceName
     outs("\tbool qualifyServiceName(IEspContext &context, const char *servname, const char *methname, StringBuffer &servQName, StringBuffer *methQName);\n");
-    
+
     //method ==> onGetFile
     outs("\tvirtual int onGetFile(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *pathex);\n");
-    
+
     //Method ==> onGetForm
     outs("\tvirtual int onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);\n");
-    
+
     //Method ==> onGetXForm
     //if (getMetaInt("use_new_form",0))
     outs("\tvirtual int onGetXForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);\n");
-    
+
     //Method ==> supportGeneratedForms
     if (getMetaInt("noforms", 0))
         outs("\tvirtual bool supportGeneratedForms(){return false;}\n");
-    
+
     if (getMetaInt("no_ws_index", 0))
     {
         //Method ==> onGetIndex
@@ -5432,7 +5542,7 @@ void EspServInfo::write_esp_binding_ipp()
         outs("\t\treturn onGetNotFound(context, request, response, service);\n");
         outs("\t}\n");
     }
-    
+
     //Method ==> onGetService
     outs("\tvirtual int onGetService(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, const char *pathex);\n");
 
@@ -5441,12 +5551,13 @@ void EspServInfo::write_esp_binding_ipp()
 
     //Method ==> onGetInstantQuery
     outs("\tvirtual int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);\n");
-    
+
     //Method ==> xslTransform
     if (needsXslt)
     {
         outs("\tvoid setXslProcessor(IInterface *xslp_){xslp.set(dynamic_cast<IXslProcessor *>(xslp_));}\n");
         outs("private:\n");
+
         outs("\tOwned<IXslProcessor> xslp;\n");
         outs("\tvoid xslTransform(const char* xml, const char* xslFile, StringBuffer& output, IProperties *params)\n"
             "\t{\n"
@@ -5466,7 +5577,10 @@ void EspServInfo::write_esp_binding_ipp()
     }
     else
         outs("\tvoid setXslProcessor(IInterface *xslp){}\n");
-    
+
+    outs("private:\n");
+    outs("\tMapStringTo<SecAccessFlags> m_accessmap;\n");
+
     outs("};\n\n");
 }
 
@@ -5485,9 +5599,19 @@ void EspServInfo::write_esp_binding()
     outs("\n//=======================================================");
     outs("\n");
 
-    outf("\nC%sSoapBinding::C%sSoapBinding(http_soap_log_level level):CHttpSoapBinding(NULL, NULL, NULL, level)\n{\n\tinit_strings();\n\tsetWsdlVersion(%s);\n}\n", name_, name_, wsdlVer.str());
-    outf("\nC%sSoapBinding::C%sSoapBinding(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level):CHttpSoapBinding(cfg, bindname, procname, level)\n{\n\tinit_strings(); \n\tsetWsdlVersion(%s);\n}\n", name_, name_, wsdlVer.str());
-    
+    StrBuffer servicefeatureurl;
+    getMetaStringValue(servicefeatureurl,FEATEACCESSATTRIBUTE);
+    if (servicefeatureurl.length() == 0)
+        outf("ESDL Error: %s service definition must declare default feature access. Example 'ESPservice [%s(\"MyServiceAccess:FULL\")]'", name_, FEATEACCESSATTRIBUTE);
+
+    outf("\nC%sSoapBinding::C%sSoapBinding(http_soap_log_level level):CHttpSoapBinding(NULL, NULL, NULL, level)\n{\n\tinit_strings();\n\tsetWsdlVersion(%s);", name_, name_, wsdlVer.str());
+    writeAccessMap(servicefeatureurl.str(),name_, 1);
+    outf("\n}\n");
+
+    outf("\nC%sSoapBinding::C%sSoapBinding(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level):CHttpSoapBinding(cfg, bindname, procname, level)\n{\n\tinit_strings(); \n\tsetWsdlVersion(%s);\n", name_, name_, wsdlVer.str());
+    writeAccessMap(servicefeatureurl.str(),name_, 1);
+    outf("\n}\n");
+
     outf("\nvoid C%sSoapBinding::init_strings()\n", name_);
     outs("{\n");
     
@@ -5550,7 +5674,8 @@ void EspServInfo::write_esp_binding()
         bool bHandleExceptions = 0 != mthi->getMetaInt("exceptions_inline", 0);
         if (!bHandleExceptions)
             bHandleExceptions = 0 != getMetaInt("exceptions_inline", 0);
-        
+
+        const char * methodAccess = mthi->getMetaString(FEATEACCESSATTRIBUTE, NULL);
         //begin try block
         if (bHandleExceptions)
         {
@@ -5566,7 +5691,14 @@ void EspServInfo::write_esp_binding()
                 outs("\t\t\t\tthrow MakeStringException(-1, \"Client version is too old, please update your client application.\");");
             }
             outs("\t\t\tresponse->set_status(SOAP_OK);\n");
+
+            if (methodAccess && *methodAccess)
+                writeAccessMap(methodAccess, name_, 3);
+
+            outf("\t\t\tif( m_accessmap.ordinality() > 0 )\n\t\t\t\tonFeaturesAuthorize(context, m_accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
+
             outf("\t\t\tiserv->on%s(context, *esp_request, *esp_response);\n", mthi->getName());
+
             outs("\t\t}\n");
             
             write_catch_blocks(mthi, ct_soapresp, 2);
@@ -5580,6 +5712,10 @@ void EspServInfo::write_esp_binding()
             }
             if (mthi->getMetaInt("do_not_log",0))
                 outs("\t\tcontext.queryRequestParameters()->setProp(\"do_not_log\",1);\n");
+
+            if (methodAccess && *methodAccess)
+                writeAccessMap(methodAccess, name_, 3);
+            outf("\t\tif(m_accessmap.ordinality()>0)\n\t\t\tonFeaturesAuthorize(context, m_accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
             outf("\t\tiserv->on%s(*rpc_call->queryContext(), *esp_request, *esp_response);\n", mthi->getName());
             outs("\t\tresponse->set_status(SOAP_OK);\n");
         }
@@ -5966,7 +6102,6 @@ void EspServInfo::write_esp_binding()
         if (!bHandleExceptions)
             bHandleExceptions = 0 != getMetaInt("exceptions_inline", 0) || getMetaInt("http_exceptions_inline", 0);
 
-        
         if (respXsl==NULL)
         {
             outf("\t\tif(!stricmp(method, \"%s\")||!stricmp(method, \"%s\"))\n", mthi->getName(), mthi->getReq());
@@ -5977,6 +6112,8 @@ void EspServInfo::write_esp_binding()
             outf("\t\t\tC%s* resp = new C%s(\"%s\");\n", mthi->getResp(), mthi->getResp(), name_);
             outf("\t\t\tesp_response.setown(resp);\n");
             
+            const char * methodAccess = mthi->getMetaString(FEATEACCESSATTRIBUTE, NULL);
+
             if (bHandleExceptions)
             {
                 outf("\t\t\tsource.setf(\"%s::%%s()\", method);\n", name_);
@@ -5985,6 +6122,12 @@ void EspServInfo::write_esp_binding()
                 //begin try block
                 outs("\t\t\ttry\n");
                 outs("\t\t\t{\n");
+
+                if (methodAccess && *methodAccess)
+                    writeAccessMap(methodAccess, name_, 4);
+
+                outf("\t\t\t\tif(m_accessmap.ordinality()>0)\n\t\t\t\t\tonFeaturesAuthorize(context, m_accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
+
                 if (mthi->getMetaInt("do_not_log",0))
                     outf("\t\t\t\tcontext.queryRequestParameters()->setProp(\"do_not_log\",1);\n");
                 outf("\t\t\t\tiserv->on%s(context, *esp_request.get(), *resp);\n", mthi->getName());
@@ -5993,13 +6136,17 @@ void EspServInfo::write_esp_binding()
                 write_catch_blocks(mthi, ct_httpresp, 3);
             }
             else
+            {
+                if (methodAccess && *methodAccess)
+                    writeAccessMap(methodAccess, name_, 3);
+                outf("\t\t\tif(m_accessmap.ordinality()>0)\n\t\t\t\tonFeaturesAuthorize(context, m_accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
                 outf("\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *resp);\n", mthi->getName());
-            
+            }
+
             outs("\t\t}\n");
         }
         else
         {
-            
             outf("\t\tif(!stricmp(method, \"%s\")||!stricmp(method, \"%s\"))\n", mthi->getName(), mthi->getReq());
             outs("\t\t{\n");
             outf("\t\t\tOwned<C%s> esp_request = new C%s(&context, \"%s\", request->queryParameters(), request->queryAttachments());\n", mthi->getReq(), mthi->getReq(), name_);
@@ -6024,8 +6171,7 @@ void EspServInfo::write_esp_binding()
             {
                 outf("\t\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *esp_response.get());\n", mthi->getName());
             }
-            
-            
+
             outs("\t\t\tif (canRedirect(*request) && esp_response->getRedirectUrl() && *esp_response->getRedirectUrl())\n");
             outs("\t\t\t{\n");
             outs("\t\t\t\tresponse->redirect(*request, esp_response->getRedirectUrl());\n");
@@ -6056,7 +6202,6 @@ void EspServInfo::write_esp_binding()
             outs("\t\t\t\t\tesp_response->serializeStruct(&context, xml, NULL);\n\n");
             if (bClientXslt)
             {
-                
                 outs("\t\t\t\t\tif (request->supportClientXslt()){\n");
                 outs("\t\t\t\t\t\txml.swapWith(sResponse);\n");
                 outs("\t\t\t\t\t\tresponse->setContentType(\"text/xml\");\n");
@@ -6077,7 +6222,6 @@ void EspServInfo::write_esp_binding()
             if (bClientXslt)
                 outs("\t\t\t\t\t}\n");
 
-                
             outs("\t\t\t\t\tresponse->setContent(sResponse.str());\n");
             outs("\t\t\t\t}\n");
             
@@ -6224,6 +6368,8 @@ void EspServInfo::write_esp_client_ipp()
     outs("\tStringBuffer m_realm;\n");
     outs("\tStringBuffer m_action;\n");
     outs("\tlong m_reqId;\n");
+    outs("\tMapStringTo<SecAccessFlags> m_accessmap;\n");
+
     outs("\npublic:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n\n");
 

@@ -26,7 +26,7 @@ ESPresponse [exceptions_inline, encode(0)] ConfigAccessResponse
 };
 
 
-ESPservice [exceptions_inline] ws_config
+ESPservice [requiredaccess("NONE"), exceptions_inline] ws_config
 {
     ESPmethod[description("Initial display"), help(""), noform] 
         GetConfigAccess(ConfigAccessRequest, ConfigAccessResponse);

@@ -964,6 +964,13 @@ int EspHttpBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request
     return 0;
 }
 
+int EspHttpBinding::onFeaturesAuthorize(IEspContext &context, MapStringTo<SecAccessFlags> & pmap, const char *serviceName, const char *methodName)
+{
+    if (!context.validateFeaturesAccess(pmap, false))
+        throw MakeStringException(-1, "%s::%s access denied.", serviceName, methodName);
+    return 0;
+}
+
 int EspHttpBinding::onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
     return onGetNotFound(context, request,  response, serv);

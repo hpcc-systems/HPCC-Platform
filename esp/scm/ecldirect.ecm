@@ -72,7 +72,7 @@ ESPresponse [nil_remove] RunEclExResponse
 };
 
 
-ESPservice EclDirect
+ESPservice [requiredaccess("NONE")]EclDirect
 {
     ESPmethod RunEcl(RunEclRequest, RunEclResponse);
     ESPmethod RunEclEx(RunEclExRequest, RunEclExResponse);

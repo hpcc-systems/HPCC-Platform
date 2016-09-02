@@ -163,6 +163,48 @@ bool SecHandler::authorizeSecFeatures(StringArray & features, IEspStringIntMap &
     return authorizeSecReqFeatures(features, pmap, NULL);
 }
 
+bool SecHandler::validateSecFeaturesAccess(MapStringTo<SecAccessFlags> & accessmap, bool throwExcpt)
+{
+    StringArray features;
+    unsigned reqarray[accessmap.ordinality()];
+
+    HashIterator iter(accessmap);
+    int index = 0;
+    ForEach(iter)
+    {
+        IMapping &cur = iter.query();
+
+        const char * key = (const char *)cur.getKey();
+        SecAccessFlags val = *accessmap.getValue(key);
+        features.append((const char *)cur.getKey());
+        reqarray[index++] = *accessmap.getValue(key);
+
+        DBGLOG("ITERATING: key: %s val: %d", key, val);
+        DBGLOG("reqarray[%d]: val: %d", index-1, reqarray[index-1]);
+    }
+
+    Owned<IEspStringIntMap> pmap=createStringIntMap();
+
+    if (authorizeSecReqFeatures(features, *pmap, reqarray))
+    {
+        for(unsigned i = 0; i < features.length(); i++)
+        {
+            int accessAllowed = pmap->queryValue(features.item(i));
+            if ((accessAllowed == -1) || (reqarray[i] && (accessAllowed < reqarray[i])))
+            {
+                if (throwExcpt)
+                    throw MakeStringException(-1, "Access Denied!");
+                return false;
+            }
+        }
+
+        return true;
+    }
+    if (throwExcpt)
+        throw MakeStringException(-1, "Access Denied!");
+
+    return false;
+}
 
 bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMap & pmap, unsigned *required)
 {
@@ -260,11 +302,8 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
     return auth_ok;
 }
 
-
 bool SecHandler::validateSecFeatureAccess(const char* pszFeatureUrl, unsigned required, bool throwExcpt)
 {
-
-    
     StringArray features;
     features.append(pszFeatureUrl);
     unsigned reqarray[1];
