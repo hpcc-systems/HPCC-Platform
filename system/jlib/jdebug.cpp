@@ -54,6 +54,8 @@
  #include <sys/sysctl.h>
  #include <mach/task.h>
  #include <mach/mach_init.h>
+ #include <mach/mach_host.h>
+ #include <mach/vm_statistics.h>
 #endif
 
 //===========================================================================
@@ -1103,8 +1105,34 @@ static unsigned evalAffinityCpus()
     return 1;
 }
 
+// Note - values are returned in Kb
+
 static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigned &swaptotal,unsigned &swapinuse) 
 {
+#ifdef __APPLE__
+    active = 0;
+    inuse = 0;
+    total = 0;
+    swaptotal = 0;
+    swapinuse = 0;
+
+    vm_size_t pageSize;
+    if (KERN_SUCCESS != host_page_size(mach_host_self(), &pageSize))
+        return;
+    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+    vm_statistics64_data_t vmstat;
+    if (KERN_SUCCESS != host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vmstat, &count))
+        return;
+
+    uint64_t totalBytes = (vmstat.wire_count + vmstat.active_count + vmstat.inactive_count + vmstat.free_count + vmstat.compressor_page_count) * pageSize;
+    uint64_t inuseBytes = (vmstat.wire_count + vmstat.active_count + vmstat.inactive_count + vmstat.compressor_page_count) * pageSize;
+    uint64_t activeBytes = (vmstat.wire_count + vmstat.active_count) * pageSize;
+
+    active = activeBytes / 1024;
+    inuse = inuseBytes / 1024;
+    total = totalBytes / 1024;
+    // swaptotal and swapinuse TBD
+#else
     unsigned free=0;
     unsigned swapfree=0;
     active = 0;
@@ -1150,6 +1178,7 @@ static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigne
     }
     inuse = total-free-cached;
     swapinuse = swaptotal-swapfree-swapcached;
+#endif
 }
 
 class CInt64fix 
