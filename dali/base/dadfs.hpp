@@ -584,7 +584,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IFileDescriptor *getFileDescriptor(const char *lname,IUserDescriptor *user,const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) =0;
 
     virtual IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist=false,IDistributedFileTransaction *transaction=NULL) = 0;
-    virtual IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree) = 0;
+    virtual IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree, const char *optionamName=nullptr) = 0;
     virtual IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,
                                                     IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up sub files
                                                     unsigned timeout=INFINITE) = 0;  // NB lookup will also return superfiles
