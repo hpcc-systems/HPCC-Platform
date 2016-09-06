@@ -860,7 +860,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
             else
             {
                 eof = false;
-                partHandler->setPart(&partDescs.item(0), 0);
+                partHandler->setPart(&partDescs.item(0));
             }
         }
         virtual void stop()
@@ -898,7 +898,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
                     eof = true;
                     return NULL;
                 }
-                partHandler->setPart(&partDescs.item(part), part);
+                partHandler->setPart(&partDescs.item(part));
             }
         }
     };

@@ -412,9 +412,6 @@ startCmd() {
     printf "Starting %-21s" "$compName ..."
     log "compType = $compType"
 
-    # use less heap when threaded
-    export MALLOC_ARENA_MAX=8
-
     # Creating logfiles for component
     logDir=$log/${compName}
 

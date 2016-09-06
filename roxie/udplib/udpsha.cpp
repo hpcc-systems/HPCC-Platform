@@ -41,6 +41,8 @@ unsigned udpTraceLevel = 0;
 unsigned udpTraceCategories = (unsigned) -1;
 unsigned udpFlowSocketsSize = 131072;
 unsigned udpLocalWriteSocketSize = 1024000;
+unsigned udpSnifferReadThreadPriority = 3;
+unsigned udpSnifferSendThreadPriority = 3;
 
 unsigned multicastTTL = 1;
 

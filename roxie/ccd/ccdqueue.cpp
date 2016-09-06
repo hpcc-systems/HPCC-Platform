@@ -673,14 +673,16 @@ void doUnload(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
     unsigned channelNo = header.channel;
     logctx.CTXLOG("Unload received for channel %d", channelNo);
     hash64_t hashValue = header.queryHash;
+    hashValue = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
     SpinBlock b(onDemandQueriesCrit);
-    onDemandQueryCache.remove(hashValue+channelNo);
+    onDemandQueryCache.remove(hashValue);
 }
 
 void cacheOnDemandQuery(hash64_t hashValue, unsigned channelNo, IQueryFactory *query)
 {
+    hashValue = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
     SpinBlock b(onDemandQueriesCrit);
-    onDemandQueryCache.setValue(hashValue+channelNo, query);
+    onDemandQueryCache.setValue(hashValue, query);
 }
 
 //=================================================================================

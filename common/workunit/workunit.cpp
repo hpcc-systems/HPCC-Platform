@@ -2665,38 +2665,26 @@ void CWorkUnitFactory::clearAborting(const char *wuid)
     }
 }
 
-bool CWorkUnitFactory::checkAbnormalTermination(const char *wuid, WUState &state, SessionId agent)
+void CWorkUnitFactory::reportAbnormalTermination(const char *wuid, WUState &state, SessionId agent)
 {
-    if (queryDaliServerVersion().compare("2.1")>=0)
+    WARNLOG("reportAbnormalTermination: session stopped unexpectedly: %" I64F "d state: %d", (__int64) agent, (int) state);
+    bool isEcl = false;
+    switch (state)
     {
-        if((agent>0) && querySessionManager().sessionStopped(agent, 0))
-        {
-            bool isEcl = false;
-            switch (state)
-            {
-                case WUStateCompiling:
-                    isEcl = true;
-                    // drop into
-                case WUStateRunning:
-                case WUStateBlocked:
-                    state = WUStateFailed;
-                    break;
-                case WUStateAborting:
-                    state = WUStateAborted;
-                    break;
-                default:
-                    return false;
-            }
-            WARNLOG("checkAbnormalTermination: workunit terminated: %" I64F "d state = %d",(__int64) agent, (int) state);
-            Owned<IWorkUnit> wu = updateWorkUnit(wuid, NULL, NULL);
-            wu->setState(state);
-            Owned<IWUException> e = wu->createException();
-            e->setExceptionCode(isEcl ? 1001 : 1000);
-            e->setExceptionMessage(isEcl ? "EclServer terminated unexpectedly" : "Workunit terminated unexpectedly");
-            return true;
-        }
+        case WUStateAborting:
+            state = WUStateAborted;
+            break;
+        case WUStateCompiling:
+            isEcl = true;
+            // drop into
+        default:
+            state = WUStateFailed;
     }
-    return false;
+    Owned<IWorkUnit> wu = updateWorkUnit(wuid, NULL, NULL);
+    wu->setState(state);
+    Owned<IWUException> e = wu->createException();
+    e->setExceptionCode(isEcl ? 1001 : 1000);
+    e->setExceptionMessage(isEcl ? "EclServer terminated unexpectedly" : "Workunit terminated unexpectedly");
 }
 
 static CriticalSection deleteDllLock;
@@ -3019,6 +3007,8 @@ public:
         Owned<IRemoteConnection> conn = sdsManager->connect(wuRoot.str(), session, 0, SDS_LOCK_TIMEOUT);
         if (conn)
         {
+            SessionId agent = -1;
+            bool agentSessionStopped = false;
             unsigned start = msTick();
             loop
             {
@@ -3046,13 +3036,24 @@ public:
                 case WUStateDebugRunning:
                 case WUStateBlocked:
                 case WUStateAborting:
-                    SessionId agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
-                    if (checkAbnormalTermination(wuid, ret, agent))
+                    if (agentSessionStopped)
                     {
+                        reportAbnormalTermination(wuid, ret, agent);
                         return ret;
+                    }
+                    if (queryDaliServerVersion().compare("2.1")>=0)
+                    {
+                        agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
+                        if((agent>0) && querySessionManager().sessionStopped(agent, 0))
+                        {
+                            agentSessionStopped = true;
+                            conn->reload();
+                            continue;
+                        }
                     }
                     break;
                 }
+                agentSessionStopped = false; // reset for state changes such as WUStateWait then WUStateRunning again
                 unsigned waited = msTick() - start;
                 if (timeout==-1)
                 {
