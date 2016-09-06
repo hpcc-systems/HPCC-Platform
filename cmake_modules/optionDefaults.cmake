@@ -61,7 +61,11 @@ if ( NOT RUNTIME_DIR )
 endif()
 
 if ( NOT HOME_DIR )
-    set( HOME_DIR "/home" )
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+        set( HOME_DIR "/Users" )
+    else()
+        set( HOME_DIR "/home" )
+    endif()
 endif()
 
 if ( NOT LOCK_DIR )
