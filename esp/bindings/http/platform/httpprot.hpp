@@ -93,8 +93,6 @@ private:
     ISecureSocketContext* m_ssctx;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CHttpThread(ISocket *sock, CEspApplicationPort* apport, bool viewConfig, bool isSSL = false, ISecureSocketContext* ssctx = NULL);
     
     virtual ~CHttpThread();

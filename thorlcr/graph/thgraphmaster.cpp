@@ -233,7 +233,8 @@ void CSlaveMessageHandler::main()
                         assertex(element);
                         try
                         {
-                            element->doCreateActivity(parentExtractSz, parentExtract);
+                            element->reset();
+                            element->doCreateActivity(parentExtractSz, parentExtract, &msg);
                         }
                         catch (IException *e)
                         {
@@ -616,37 +617,12 @@ void CMasterGraphElement::initActivity()
     owner->setInitialized();
 }
 
-void CMasterGraphElement::doCreateActivity(size32_t parentExtractSz, const byte *parentExtract)
+void CMasterGraphElement::doCreateActivity(size32_t parentExtractSz, const byte *parentExtract, MemoryBuffer *startCtx)
 {
-    bool ok=false;
-    switch (getKind())
-    {
-        case TAKspill:
-        case TAKdiskwrite:
-        case TAKfetch:
-        case TAKkeyedjoin:
-        case TAKkeyeddenormalize:
-        case TAKkeyeddenormalizegroup:
-        case TAKworkunitwrite:
-        case TAKworkunitread:
-        case TAKdictionaryworkunitwrite:
-        case TAKdictionaryresultwrite:
-            ok = true;
-            break;
-        default:
-        {
-            if (isDiskInput(getKind()))
-                ok = true;
-            else if (!queryLocalOrGrouped())
-                ok = true;
-            break;
-        }
-    }
-    if (!ok)
-        return;
     onCreate();
-    if (isDiskInput(getKind()))
-       onStart(parentExtractSz, parentExtract);
+    if (startCtx)
+        deserializeStartContext(*startCtx);
+    onStart(parentExtractSz, parentExtract);
     initActivity();
 }
 
@@ -1942,7 +1918,7 @@ IBarrier *CJobMasterChannel::createBarrier(mptag_t tag)
 
 ///////////////////
 
-class CCollatedResult : public CSimpleInterface, implements IThorResult
+class CCollatedResult : implements IThorResult, public CSimpleInterface
 {
     CMasterGraph &graph;
     CActivityBase &activity;
@@ -2428,11 +2404,6 @@ void CMasterGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentE
             }
         }
     }
-    if (syncInitData())
-    {
-        sendActivityInitData(); // has to be done at least once
-        // NB: At this point, on the slaves, the graphs will start
-    }
     fatalHandler.clear();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));
     CGraphBase::executeSubGraph(parentExtractSz, parentExtract);
@@ -2495,6 +2466,11 @@ void CMasterGraph::sendGraph()
 bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
 {
     GraphPrintLog("Processing graph");
+    if (syncInitData())
+    {
+        sendActivityInitData(); // has to be done at least once
+        // NB: At this point, on the slaves, the graphs will start
+    }
     CGraphBase::preStart(parentExtractSz, parentExtract);
     if (isGlobal())
     {

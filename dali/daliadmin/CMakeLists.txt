@@ -39,6 +39,7 @@ include_directories (
          ./../ft 
          ./../../common/workunit
          ./../../common/dllserver
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

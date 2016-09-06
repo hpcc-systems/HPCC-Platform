@@ -659,6 +659,14 @@ IHqlExpression * adjustIndexBaseToOne(IHqlExpression * index)
 
 IHqlExpression * adjustBoundIntegerValues(IHqlExpression * left, IHqlExpression * right, bool subtract)
 {
+    if (!left)
+    {
+        if (!subtract)
+            return LINK(right);
+        else
+            return getNegative(right);
+    }
+
     assertex(queryUnqualifiedType(left->queryType()) == queryUnqualifiedType(right->queryType()));
     if (canOptimizeAdjust(left))
     {
@@ -1750,6 +1758,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.implicitGroupHashDedup,"implicitGroupHashDedup",false),
         DebugOption(options.reportFieldUsage,"reportFieldUsage",false),
         DebugOption(options.reportFileUsage,"reportFileUsage",false),
+        DebugOption(options.recordFieldUsage,"recordFieldUsage",false),
         DebugOption(options.subsortLocalJoinConditions,"subsortLocalJoinConditions",false),
         DebugOption(options.projectNestedTables,"projectNestedTables",true),
         DebugOption(options.showSeqInGraph,"showSeqInGraph",false),  // For tracking down why projects are not commoned up
@@ -6179,6 +6188,10 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
 
     OwnedHqlExpr call = bindTranslatedFunctionCall(funcdef, args);
 
+    CHqlBoundExpr boundTimer, boundStart;
+    if (external->hasAttribute(timeAtom))
+        buildStartTimer(ctx, boundTimer, boundStart, str(external->queryId()));
+
     //either copy the integral value across, or a var string to fixed string
     if (returnMustAssign)
     {
@@ -6216,6 +6229,9 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     //Old style row target where the row is passed in as a parameter
     if (resultRow)
         finalizeTempRow(ctx, resultRow, resultRowBuilder);
+
+    if (external->hasAttribute(timeAtom))
+        buildStopTimer(ctx, boundTimer, boundStart);
 
     if (returnByReference)
         ctx.associateExpr(expr, localBound);

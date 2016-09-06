@@ -39,6 +39,11 @@
 
 __declspec(noreturn) static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 
+static unsigned mysqlCacheCheckPeriod = 10000;
+static unsigned mysqlCacheTimeoutPeriod = 60000;
+static unsigned mysqlConnectionCacheSize = 10;
+
+
 static void UNSUPPORTED(const char *feature)
 {
     throw MakeStringException(-1, "UNSUPPORTED feature: %s not supported in mysql plugin", feature);
@@ -68,6 +73,13 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
+extern "C" EXPORT void setPluginContextEx(IPluginContextEx * _ctx)
+{
+    mysqlCacheCheckPeriod = _ctx->ctxGetPropInt("@mysqlCacheCheckPeriod", 10000);
+    mysqlCacheTimeoutPeriod = _ctx->ctxGetPropInt("@mysqlCacheTimeoutPeriod", 60000);
+    mysqlConnectionCacheSize = _ctx->ctxGetPropInt("@mysqlConnectionCacheSize", 10);
+}
+
 namespace mysqlembed {
 
 __declspec(noreturn) static void failx(const char *msg, ...) __attribute__((format(printf, 1, 2), noreturn));
@@ -93,31 +105,402 @@ static void fail(const char *message)
 
 // Wrappers to MySQL structures that require corresponding releases
 
+class MySQLConnection;
+
+static __thread MySQLConnection *threadCachedConnection = nullptr;
+
+enum MySQLOptionParamType
+{
+    ParamTypeNone,
+    ParamTypeString,
+    ParamTypeUInt,
+    ParamTypeULong,
+    ParamTypeBool
+};
+
+struct MySQLOptionDefinition
+{
+    const char *name;
+    enum mysql_option option;
+    MySQLOptionParamType paramType;
+};
+
+#define addoption(a,b) { #a, a, b }
+
+MySQLOptionDefinition options[] =
+{
+    addoption(MYSQL_OPT_COMPRESS, ParamTypeNone),
+    addoption(MYSQL_OPT_CONNECT_TIMEOUT, ParamTypeUInt),
+    addoption(MYSQL_OPT_GUESS_CONNECTION, ParamTypeNone),
+    addoption(MYSQL_OPT_LOCAL_INFILE, ParamTypeUInt),
+    addoption(MYSQL_OPT_NAMED_PIPE, ParamTypeNone),
+    addoption(MYSQL_OPT_PROTOCOL, ParamTypeUInt),
+    addoption(MYSQL_OPT_READ_TIMEOUT, ParamTypeUInt),
+    addoption(MYSQL_OPT_RECONNECT, ParamTypeBool),
+    addoption(MYSQL_OPT_SSL_VERIFY_SERVER_CERT, ParamTypeBool),
+    addoption(MYSQL_OPT_USE_EMBEDDED_CONNECTION, ParamTypeNone),
+    addoption(MYSQL_OPT_USE_REMOTE_CONNECTION, ParamTypeNone),
+    addoption(MYSQL_OPT_USE_RESULT, ParamTypeNone),
+    addoption(MYSQL_OPT_WRITE_TIMEOUT, ParamTypeUInt),
+    addoption(MYSQL_READ_DEFAULT_FILE, ParamTypeString),
+    addoption(MYSQL_READ_DEFAULT_GROUP, ParamTypeString),
+    addoption(MYSQL_REPORT_DATA_TRUNCATION, ParamTypeBool),
+    addoption(MYSQL_SECURE_AUTH, ParamTypeBool),
+    addoption(MYSQL_SET_CHARSET_DIR, ParamTypeString),
+    addoption(MYSQL_SET_CHARSET_NAME, ParamTypeString),
+    addoption(MYSQL_SET_CLIENT_IP, ParamTypeString),
+    addoption(MYSQL_SHARED_MEMORY_BASE_NAME, ParamTypeString),
+#if MYSQL_VERSION_ID >= 50507
+    addoption(MYSQL_DEFAULT_AUTH, ParamTypeString),
+    addoption(MYSQL_PLUGIN_DIR, ParamTypeString),
+#endif
+#if (MYSQL_VERSION_ID >= 50601)
+    addoption(MYSQL_OPT_BIND, ParamTypeString),
+#endif
+#if (MYSQL_VERSION_ID >= 50603)
+    addoption(MYSQL_OPT_SSL_CA, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_CAPATH, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_CERT, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_CIPHER, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_CRL, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_CRLPATH, ParamTypeString),
+    addoption(MYSQL_OPT_SSL_KEY, ParamTypeString),
+#endif
+#if (MYSQL_VERSION_ID >= 50606)
+    addoption(MYSQL_SERVER_PUBLIC_KEY, ParamTypeString),
+#endif
+#if (MYSQL_VERSION_ID >= 50527 && MYSQL_VERSION_ID < 50600) || MYSQL_VERSION_ID >= 50607
+    addoption(MYSQL_ENABLE_CLEARTEXT_PLUGIN, ParamTypeBool),
+#endif
+    addoption(MYSQL_INIT_COMMAND, ParamTypeString),
+#if (MYSQL_VERSION_ID >= 50610)
+    addoption(MYSQL_OPT_CAN_HANDLE_EXPIRED_PASSWORDS, ParamTypeBool),
+#endif
+#if (MYSQL_VERSION_ID >= 50703)
+    addoption(MYSQL_OPT_SSL_ENFORCE, ParamTypeBool),
+#endif
+#if (MYSQL_VERSION_ID >= 50709)
+    addoption(MYSQL_OPT_MAX_ALLOWED_PACKET, ParamTypeULong),
+    addoption(MYSQL_OPT_NET_BUFFER_LENGTH, ParamTypeULong),
+#endif
+#if (MYSQL_VERSION_ID >= 50710)
+    addoption(MYSQL_OPT_TLS_VERSION, ParamTypeString),
+#endif
+#if (MYSQL_VERSION_ID >= 50711)
+    addoption(MYSQL_OPT_SSL_MODE, ParamTypeUInt),
+#endif
+    { nullptr, (enum mysql_option) 0, ParamTypeNone }
+};
+
+static MySQLOptionDefinition &lookupOption(const char *optName)
+{
+    for (MySQLOptionDefinition *optDef = options; optDef->name != nullptr; optDef++)
+    {
+        if (stricmp(optName, optDef->name)==0)
+            return *optDef;
+    }
+    failx("Unknown option %s", optName);
+}
+
+class MySQLConnectionCloserThread : public Thread
+{
+    virtual int run() override;
+public:
+    static Semaphore closing;
+} *connectionCloserThread = nullptr;
+
+
 class MySQLConnection : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-    MySQLConnection(MYSQL *_conn) : conn(_conn)
+    MySQLConnection(MYSQL *_conn, const char *_cacheOptions, bool _threadCached, bool _globalCached) : conn(_conn), threadCached(_threadCached), globalCached(_globalCached)
     {
+        if (_cacheOptions && (threadCached || globalCached))
+            cacheOptions = strdup(_cacheOptions);
+        else
+            cacheOptions = nullptr;
+        created = msTick();
     }
     ~MySQLConnection()
     {
         if (conn)
-            mysql_close(conn);
+        {
+            if (threadCached || globalCached)
+            {
+                Owned<MySQLConnection> cacheEntry = new MySQLConnection(*this); // Note - takes ownership of this->cacheOptions and this->conn
+                cacheOptions = NULL;
+                conn = NULL;
+                if (threadCached)
+                    setThreadCache(cacheEntry.getLink());
+                else // globalCached
+                {
+                    CriticalBlock b(globalCacheCrit);
+                    if (globalCachedConnections.length()==mysqlConnectionCacheSize)
+                    {
+                        MySQLConnection &goer = globalCachedConnections.popGet();
+                        goer.globalCached = false;  // Make sure we don't recache it!
+                        goer.Release();
+                    }
+                    globalCachedConnections.add(*cacheEntry.getClear(), 0);
+                    if (!connectionCloserThread)
+                    {
+                        connectionCloserThread = new MySQLConnectionCloserThread;
+                        connectionCloserThread->start();
+                    }
+                }
+            }
+            else
+            {
+                mysql_close(conn);
+                free((char *) cacheOptions);
+            }
+        }
     }
     inline operator MYSQL *() const
     {
         return conn;
     }
+    inline bool matches (const char *_options)
+    {
+        return _options && cacheOptions && streq(_options, cacheOptions);
+    }
+
+    static MySQLConnection *findCachedConnection(const char *options, bool bypassCache)
+    {
+        const char *server = "localhost";
+        const char *user = "";
+        const char *password = "";
+        const char *database = "";
+        bool hasMySQLOpt = false;
+        bool threadCache = false;
+        bool globalCache = true;
+        unsigned port = 0;
+        StringArray opts;
+        opts.appendList(options, ",");
+        ForEachItemIn(idx, opts)
+        {
+            const char *opt = opts.item(idx);
+            const char *val = strchr(opt, '=');
+            if (val)
+            {
+                StringBuffer optName(val-opt, opt);
+                val++;
+                if (stricmp(optName, "server")==0)
+                    server = val;   // Note that lifetime of val is adequate for this to be safe
+                else if (stricmp(optName, "port")==0)
+                    port = atoi(val);
+                else if (stricmp(optName, "user")==0)
+                    user = val;
+                else if (stricmp(optName, "password")==0)
+                    password = val;
+                else if (stricmp(optName, "database")==0)
+                    database = val;
+                else if (stricmp(optName, "cache")==0)
+                {
+                    if (clipStrToBool(val) || strieq(val, "thread"))
+                    {
+                        threadCache = true;
+                        globalCache = false;
+                    }
+                    else if (strieq(val, "global"))
+                        globalCache = true;
+                    else if (strieq(val, "none") || strieq(val, "false") || strieq(val, "off") || strieq(val, "0"))
+                        globalCache = false;
+                    else
+                        failx("Unknown cache option %s", val);
+                }
+                else if (strnicmp(optName, "MYSQL_", 6)==0)
+                    hasMySQLOpt = true;
+                else
+                    failx("Unknown option %s", optName.str());
+            }
+        }
+        if (!bypassCache)
+        {
+            if (threadCache)
+            {
+                if (threadCachedConnection && threadCachedConnection->matches(options))
+                {
+                    MySQLConnection *ret = threadCachedConnection;
+                    threadCachedConnection = nullptr;
+                    return ret;
+                }
+            }
+            else if (globalCache)
+            {
+                CriticalBlock b(globalCacheCrit);
+                ForEachItemIn(idx, globalCachedConnections)
+                {
+                    MySQLConnection &cached = globalCachedConnections.item(idx);
+                    if (cached.matches(options))
+                    {
+                        globalCachedConnections.remove(idx, true);
+                        return &cached;
+                    }
+                }
+            }
+        }
+        MySQLConnection::clearThreadCache();
+        Owned<MySQLConnection> newConn = new MySQLConnection(mysql_init(NULL), options, threadCache, globalCache);
+        if (hasMySQLOpt)
+        {
+            ForEachItemIn(idx, opts)
+            {
+                const char *opt = opts.item(idx);
+                if (strnicmp(opt, "MYSQL_", 6)==0)
+                {
+                    const char *val = strchr(opt, '=');
+                    StringBuffer optName(opt);
+                    if (val)
+                    {
+                        optName.setLength(val-opt);
+                        val++;
+                    }
+                    MySQLOptionDefinition &optDef = lookupOption(optName);
+                    int rc;
+                    if (optDef.paramType == ParamTypeNone)
+                    {
+                        if (val)
+                            failx("Option %s does not take a value", optName.str());
+                        rc = mysql_options(*newConn, optDef.option, nullptr);
+                    }
+                    else
+                    {
+                        if (!val)
+                            failx("Option %s requires a value", optName.str());
+                        switch (optDef.paramType)
+                        {
+                        case ParamTypeString:
+                            rc = mysql_options(*newConn, optDef.option, val);
+                            break;
+                        case ParamTypeUInt:
+                            {
+                                unsigned int oval = strtoul(val, nullptr, 10);
+                                rc = mysql_options(*newConn, optDef.option, (const char *) &oval);
+                                break;
+                            }
+                        case ParamTypeULong:
+                            {
+                                unsigned long oval = strtoul(val, nullptr, 10);
+                                rc = mysql_options(*newConn, optDef.option, (const char *) &oval);
+                                break;
+                            }
+                        case ParamTypeBool:
+                            {
+                                my_bool oval = clipStrToBool(val);
+                                rc = mysql_options(*newConn, optDef.option, (const char *) &oval);
+                                break;
+                            }
+                        }
+                    }
+                    if (rc)
+                        failx("Failed to set option %s (%s)", optName.str(), mysql_error(*newConn));
+                }
+            }
+        }
+        if (!mysql_real_connect(*newConn, server, user, password, database, port, NULL, 0))
+            failx("Failed to connect (%s)", mysql_error(*newConn));
+        return newConn.getClear();
+    }
+
+    static void clearThreadCache()
+    {
+        ::Release(threadCachedConnection);
+        threadCachedConnection = NULL;
+    }
+
+    static void setThreadCache(MySQLConnection *connection)
+    {
+        clearThreadCache();
+        threadCachedConnection = connection;
+    }
+
+    bool wasCached() const
+    {
+        return reusing;
+    }
+
+    MySQLConnection *reopen()
+    {
+        threadCached = false;
+        globalCached = false;
+        return findCachedConnection(cacheOptions, true);
+    }
+
+    static void retireCache(unsigned maxAge)
+    {
+        CriticalBlock b(globalCacheCrit);
+        unsigned now = msTick();
+        ForEachItemInRev(idx, globalCachedConnections)
+        {
+            MySQLConnection &cached = globalCachedConnections.item(idx);
+            if (now - cached.created > maxAge)
+            {
+                cached.globalCached = false;  // Make sure we don't re-add it!
+                globalCachedConnections.remove(idx);
+            }
+        }
+    }
+
 private:
-    MySQLConnection(const MySQLConnection &);
+    MySQLConnection(const MySQLConnection &from)
+    {
+        conn = from.conn;  // Taking over ownership
+        cacheOptions = from.cacheOptions;  // Taking over ownership
+        threadCached = from.threadCached;
+        globalCached = from.globalCached;
+        reusing = true;
+        created = msTick();
+    }
+
+    static CIArrayOf<MySQLConnection> globalCachedConnections;
+    static CriticalSection globalCacheCrit;
+
     MYSQL *conn;
+    const char *cacheOptions;  // Not done as a StringAttr, in order to avoid reallocation when recaching after use (see copy constructor above)
+    unsigned created;
+    bool threadCached;
+    bool globalCached;
+    bool reusing = false;
 };
+
+CIArrayOf<MySQLConnection> MySQLConnection::globalCachedConnections;
+CriticalSection MySQLConnection::globalCacheCrit;
+
+Semaphore MySQLConnectionCloserThread::closing;
+
+int MySQLConnectionCloserThread::run()
+{
+    loop
+    {
+        if (closing.wait(mysqlCacheCheckPeriod))
+        {
+            break;
+        }
+        MySQLConnection::retireCache(mysqlCacheTimeoutPeriod);
+    }
+    return 0;
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+
+MODULE_EXIT()
+{
+    if (connectionCloserThread)
+    {
+        MySQLConnectionCloserThread::closing.signal();
+        connectionCloserThread->join();
+        connectionCloserThread->Release();
+    }
+}
+
 
 class MySQLResult : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
     MySQLResult(MYSQL_RES *_res) : res(_res)
     {
     }
@@ -138,7 +521,6 @@ private:
 class MySQLStatement : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
     MySQLStatement(MYSQL_STMT *_stmt) : stmt(_stmt)
     {
     }
@@ -257,7 +639,6 @@ private:
 class MySQLPreparedStatement : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
     MySQLPreparedStatement(MySQLConnection *_conn, MySQLStatement *_stmt)
     : conn(_conn), stmt(_stmt)
     {
@@ -962,21 +1343,6 @@ protected:
 // Each call to a MySQL function will use a new MySQLEmbedFunctionContext object
 
 static __thread ThreadTermFunc threadHookChain;
-static __thread MySQLConnection *cachedConnection = NULL;
-static __thread const char *cachedOptions = NULL;
-
-static bool cachedConnectionMatches(const char *options)
-{
-    return streq(options, cachedOptions);
-}
-
-static void clearCache()
-{
-    ::Release(cachedConnection);
-    cachedConnection = NULL;
-    free((void *) cachedOptions);
-    cachedOptions = NULL;
-}
 
 static bool mysqlInitialized = false;
 static __thread bool mysqlThreadInitialized = false;
@@ -984,7 +1350,7 @@ static CriticalSection initCrit;
 
 static void terminateMySqlThread()
 {
-    clearCache();
+    MySQLConnection::clearThreadCache();
     mysql_thread_end();
     mysqlThreadInitialized = false;  // In case it was a threadpool thread...
     if (threadHookChain)
@@ -1012,223 +1378,14 @@ static void initializeMySqlThread()
     }
 }
 
-static void cacheConnection(MySQLConnection *connection, const char *options)
-{
-    clearCache();
-    cachedOptions = strdup(options);
-    cachedConnection = LINK(connection);
-}
-
-enum MySQLOptionParamType
-{
-    ParamTypeNone,
-    ParamTypeString,
-    ParamTypeUInt,
-    ParamTypeULong,
-    ParamTypeBool
-};
-
-struct MySQLOptionDefinition
-{
-    const char *name;
-    enum mysql_option option;
-    MySQLOptionParamType paramType;
-};
-
-#define addoption(a,b) { #a, a, b }
-
-MySQLOptionDefinition options[] =
-{
-    addoption(MYSQL_OPT_COMPRESS, ParamTypeNone),
-    addoption(MYSQL_OPT_CONNECT_TIMEOUT, ParamTypeUInt),
-    addoption(MYSQL_OPT_GUESS_CONNECTION, ParamTypeNone),
-    addoption(MYSQL_OPT_LOCAL_INFILE, ParamTypeUInt),
-    addoption(MYSQL_OPT_NAMED_PIPE, ParamTypeNone),
-    addoption(MYSQL_OPT_PROTOCOL, ParamTypeUInt),
-    addoption(MYSQL_OPT_READ_TIMEOUT, ParamTypeUInt),
-    addoption(MYSQL_OPT_RECONNECT, ParamTypeBool),
-    addoption(MYSQL_OPT_SSL_VERIFY_SERVER_CERT, ParamTypeBool),
-    addoption(MYSQL_OPT_USE_EMBEDDED_CONNECTION, ParamTypeNone),
-    addoption(MYSQL_OPT_USE_REMOTE_CONNECTION, ParamTypeNone),
-    addoption(MYSQL_OPT_USE_RESULT, ParamTypeNone),
-    addoption(MYSQL_OPT_WRITE_TIMEOUT, ParamTypeUInt),
-    addoption(MYSQL_READ_DEFAULT_FILE, ParamTypeString),
-    addoption(MYSQL_READ_DEFAULT_GROUP, ParamTypeString),
-    addoption(MYSQL_REPORT_DATA_TRUNCATION, ParamTypeBool),
-    addoption(MYSQL_SECURE_AUTH, ParamTypeBool),
-    addoption(MYSQL_SET_CHARSET_DIR, ParamTypeString),
-    addoption(MYSQL_SET_CHARSET_NAME, ParamTypeString),
-    addoption(MYSQL_SET_CLIENT_IP, ParamTypeString),
-    addoption(MYSQL_SHARED_MEMORY_BASE_NAME, ParamTypeString),
-#if MYSQL_VERSION_ID >= 50507
-    addoption(MYSQL_DEFAULT_AUTH, ParamTypeString),
-    addoption(MYSQL_PLUGIN_DIR, ParamTypeString),
-#endif
-#if (MYSQL_VERSION_ID >= 50601)
-    addoption(MYSQL_OPT_BIND, ParamTypeString),
-#endif
-#if (MYSQL_VERSION_ID >= 50603)
-    addoption(MYSQL_OPT_SSL_CA, ParamTypeString),
-    addoption(MYSQL_OPT_SSL_CAPATH, ParamTypeString),
-    addoption(MYSQL_OPT_SSL_CERT, ParamTypeString),
-    addoption(MYSQL_OPT_SSL_CIPHER, ParamTypeString),
-    addoption(MYSQL_OPT_SSL_CRL, ParamTypeString),
-    addoption(MYSQL_OPT_SSL_CRLPATH, ParamTypeString),
-    addoption(MYSQL_OPT_SSL_KEY, ParamTypeString),
-#endif
-#if (MYSQL_VERSION_ID >= 50606)
-    addoption(MYSQL_SERVER_PUBLIC_KEY, ParamTypeString),
-#endif
-#if (MYSQL_VERSION_ID >= 50527 && MYSQL_VERSION_ID < 50600) || MYSQL_VERSION_ID >= 50607
-    addoption(MYSQL_ENABLE_CLEARTEXT_PLUGIN, ParamTypeBool),
-#endif
-    addoption(MYSQL_INIT_COMMAND, ParamTypeString),
-#if (MYSQL_VERSION_ID >= 50610)
-    addoption(MYSQL_OPT_CAN_HANDLE_EXPIRED_PASSWORDS, ParamTypeBool),
-#endif
-#if (MYSQL_VERSION_ID >= 50703)
-    addoption(MYSQL_OPT_SSL_ENFORCE, ParamTypeBool),
-#endif
-#if (MYSQL_VERSION_ID >= 50709)
-    addoption(MYSQL_OPT_MAX_ALLOWED_PACKET, ParamTypeULong),
-    addoption(MYSQL_OPT_NET_BUFFER_LENGTH, ParamTypeULong),
-#endif
-#if (MYSQL_VERSION_ID >= 50710)
-    addoption(MYSQL_OPT_TLS_VERSION, ParamTypeString),
-#endif
-#if (MYSQL_VERSION_ID >= 50711)
-    addoption(MYSQL_OPT_SSL_MODE, ParamTypeUInt),
-#endif
-    { nullptr, (enum mysql_option) 0, ParamTypeNone }
-};
-
-static MySQLOptionDefinition &lookupOption(const char *optName)
-{
-    for (MySQLOptionDefinition *optDef = options; optDef->name != nullptr; optDef++)
-    {
-        if (stricmp(optName, optDef->name)==0)
-            return *optDef;
-    }
-    failx("Unknown option %s", optName);
-}
-
 class MySQLEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
     MySQLEmbedFunctionContext(const char *options)
       : nextParam(0)
     {
-        const char *server = "localhost";
-        const char *user = "";
-        const char *password = "";
-        const char *database = "";
-        bool hasMySQLOpt = false;
-        bool caching = true;
-        unsigned port = 0;
-        StringArray opts;
-        opts.appendList(options, ",");
-        ForEachItemIn(idx, opts)
-        {
-            const char *opt = opts.item(idx);
-            const char *val = strchr(opt, '=');
-            if (val)
-            {
-                StringBuffer optName(val-opt, opt);
-                val++;
-                if (stricmp(optName, "server")==0)
-                    server = val;   // Note that lifetime of val is adequate for this to be safe
-                else if (stricmp(optName, "port")==0)
-                    port = atoi(val);
-                else if (stricmp(optName, "user")==0)
-                    user = val;
-                else if (stricmp(optName, "password")==0)
-                    password = val;
-                else if (stricmp(optName, "database")==0)
-                    database = val;
-                else if (stricmp(optName, "cache")==0)
-                    caching = clipStrToBool(val);
-                else if (strnicmp(optName, "MYSQL_", 6)==0)
-                    hasMySQLOpt = true;
-                else
-                    failx("Unknown option %s", optName.str());
-            }
-        }
         initializeMySqlThread();
-        if (caching && cachedConnection && cachedConnectionMatches(options))
-        {
-            conn.set(cachedConnection);
-        }
-        else
-        {
-            if (cachedConnection)
-            {
-                ::Release(cachedConnection);
-                cachedConnection = NULL;
-            }
-            conn.setown(new MySQLConnection(mysql_init(NULL)));
-            if (hasMySQLOpt)
-            {
-                ForEachItemIn(idx, opts)
-                {
-                    const char *opt = opts.item(idx);
-                    if (strnicmp(opt, "MYSQL_", 6)==0)
-                    {
-                        const char *val = strchr(opt, '=');
-                        StringBuffer optName(opt);
-                        if (val)
-                        {
-                            optName.setLength(val-opt);
-                            val++;
-                        }
-                        MySQLOptionDefinition &optDef = lookupOption(optName);
-                        int rc;
-                        if (optDef.paramType == ParamTypeNone)
-                        {
-                            if (val)
-                                failx("Option %s does not take a value", optName.str());
-                            rc = mysql_options(*conn, optDef.option, nullptr);
-                        }
-                        else
-                        {
-                            if (!val)
-                                failx("Option %s requires a value", optName.str());
-                            switch (optDef.paramType)
-                            {
-                            case ParamTypeString:
-                                rc = mysql_options(*conn, optDef.option, val);
-                                break;
-                            case ParamTypeUInt:
-                                {
-                                    unsigned int oval = strtoul(val, nullptr, 10);
-                                    rc = mysql_options(*conn, optDef.option, (const char *) &oval);
-                                    break;
-                                }
-                            case ParamTypeULong:
-                                {
-                                    unsigned long oval = strtoul(val, nullptr, 10);
-                                    rc = mysql_options(*conn, optDef.option, (const char *) &oval);
-                                    break;
-                                }
-                            case ParamTypeBool:
-                                {
-                                    my_bool oval = clipStrToBool(val);
-                                    rc = mysql_options(*conn, optDef.option, (const char *) &oval);
-                                    break;
-                                }
-                            }
-                        }
-                        if (rc)
-                            failx("Failed to set option %s (%s)", optName.str(), mysql_error(*conn));
-                    }
-                }
-            }
-            if (!mysql_real_connect(*conn, server, user, password, database, port, NULL, 0))
-                failx("Failed to connect (%s)", mysql_error(*conn));
-            if (caching)
-            {
-                cacheConnection(conn, options);
-            }
-        }
+        conn.setown(MySQLConnection::findCachedConnection(options, false));
     }
     virtual bool getBooleanResult()
     {
@@ -1434,18 +1591,33 @@ public:
     virtual void compileEmbeddedScript(size32_t chars, const char *script)
     {
         size32_t len = rtlUtf8Size(chars, script);
-        Owned<MySQLStatement> stmt  = new MySQLStatement(mysql_stmt_init(*conn));
-        if (!*stmt)
-            fail("failed to create statement");
-        if (mysql_stmt_prepare(*stmt, script, len))
-            fail(mysql_stmt_error(*stmt));
-        stmtInfo.setown(new MySQLPreparedStatement(conn, stmt));
+        loop
+        {
+            Owned<MySQLStatement> stmt  = new MySQLStatement(mysql_stmt_init(*conn));
+            if (!*stmt)
+                fail("failed to create statement");
+            if (mysql_stmt_prepare(*stmt, script, len))
+            {
+                // If we get an error, it could be that the cached connection is stale - retry
+                if (conn->wasCached())
+                {
+                    conn.setown(conn->reopen());
+                    continue;
+                }
+                fail(mysql_stmt_error(*stmt));
+            }
+            stmtInfo.setown(new MySQLPreparedStatement(conn, stmt));
+            break;
+        }
     }
     virtual void callFunction()
     {
         if (nextParam != stmtInfo->queryInputBindings().numColumns())
             failx("Not enough parameters supplied (%d parameters supplied, but statement has %d bound columns)", nextParam, stmtInfo->queryInputBindings().numColumns());
         // We actually do the execute later, when the result is fetched
+        // Unless, there is no expected result, in that case execute query now
+        if (stmtInfo->queryResultBindings().numColumns() == 0)
+            lazyExecute();
     }
 protected:
     void lazyExecute()

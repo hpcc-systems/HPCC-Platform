@@ -129,10 +129,11 @@ class CLocalEnthSlaveActivity : public BaseEnthActivity
 
     bool localCountReq;
 public:
-    CLocalEnthSlaveActivity(CGraphElementBase *container) : BaseEnthActivity(container)
+    CLocalEnthSlaveActivity(CGraphElementBase *_container) : BaseEnthActivity(_container)
     {
         actStr.append("LOCALENTH");
         localCountReq = false;
+        setRequireInitData(false);
     }
     virtual void start()
     {
@@ -189,7 +190,7 @@ class CEnthSlaveActivity : public BaseEnthActivity
 
     Semaphore prevRecCountSem;
     rowcount_t prevRecCount;
-    bool first;
+    bool first = false; // until start
 
     void sendCount(rowcount_t count)
     {

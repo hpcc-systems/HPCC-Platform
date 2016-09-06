@@ -42,6 +42,7 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
+    "hpcc/Utility",
 
     "dojo/text!../templates/GetDFUWorkunitsWidget.html",
 
@@ -54,6 +55,7 @@ define([
     "dijit/form/Button",
     "dijit/form/Select",
     "dijit/form/CheckBox",
+    "dijit/Dialog",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
@@ -61,7 +63,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,dom, domClass, domForm, date, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 selector,
-                _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget,
+                _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, Utility,
                 template) {
     return declare("GetDFUWorkunitsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -80,6 +82,10 @@ define([
             this.filter = registry.byId(this.id + "Filter");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
             this.stateSelect = registry.byId(this.id + "StateSelect");
+            this.downloadToList = registry.byId(this.id + "DownloadToList");
+            this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
+            this.downListForm = registry.byId(this.id + "DownListForm");
+            this.fileName = registry.byId(this.id + "FileName");
         },
 
         startup: function (args) {
@@ -91,6 +97,28 @@ define([
             this._idleWatcherHandle = this._idleWatcher.on("idle", function () {
                 context._onRefresh();
             });
+        },
+
+        _onDownloadToListCancelDialog: function (event){
+            this.downloadToListDialog.hide();
+        },
+
+        _onDownloadToList: function (event) {
+            this.downloadToListDialog.show();
+        },
+
+        _buildCSV: function (event) {
+            var selections = this.workunitsGrid.getSelected();
+            var row = [];
+            var fileName = this.fileName.get("value")+".csv";
+
+            arrayUtil.forEach(selections, function (cell, idx){
+                var rowData = [cell.isProtected,cell.ID,cell.CommandMessage,cell.User,cell.JobName,cell.ClusterName,cell.StateMessage,cell.PercentDone];
+                row.push(rowData);
+            });
+
+            Utility.downloadToCSV(this.workunitsGrid, row, fileName);
+            this._onDownloadToListCancelDialog();
         },
 
         destroy: function (args) {
@@ -396,6 +424,12 @@ define([
             });
             this.workunitsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
+                var selection = context.workunitsGrid.getSelected();
+                if (selection.length > 0) {
+                    context.downloadToList.set("disabled", false);
+                } else {
+                    context.downloadToList.set("disabled", true);
+                }
             });
             this.workunitsGrid.startup();
         },

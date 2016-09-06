@@ -1,0 +1,149 @@
+#!/bin/bash
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+###<REPLACE>###
+
+cmd=$1
+ip=$2
+slavespernode=$3
+slaveport=$4
+slaveportinc=$5
+master=$6
+masterport=$7
+logpth=$8
+instancedir=$9
+deploydir=${10}
+hpcc_compname=${11}
+hpcc_setenv=${12}
+
+export logfile="${logpth}/${hpcc_compname}/${13}"
+
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+source ${INSTALL_DIR}/sbin/hpcc_setenv
+set_environmentvars
+
+
+slavename=thorslave_${hpcc_compname}
+
+stop_slaves()
+{
+    local timer=15
+    local isAlive=0
+
+    log "Attempting to kill $slavename with SIGTERM"
+    killall -SIGTERM $slavename > /dev/null
+    while [[ $isAlive -eq 0 && $timer -gt 0 ]];do
+        killall -0 $slavename > /dev/null 2>&1
+        isAlive=$?
+        [[ $isAlive -eq 0 ]] && sleep 0.5
+        ((timer--))
+    done
+
+    if [[ $isAlive -eq 0 ]]; then
+        log "Failed to kill slaves with SIGTERM. Sending SIGKILL"
+        killall -SIGKILL $slavename > /dev/null
+    fi
+
+    rm -f ${PID_DIR}/${slavename}_*.pid > /dev/null
+}
+
+start_slaves()
+{
+    # insuring dafilesrv is running on the machine as it is a prerequisite
+    dafilesrv_owner=$(stat -c "%U" ${INIT_PATH}/dafilesrv 2>/dev/null || stat -f %Su ${INIT_PATH}/dafilesrv 2>/dev/null)
+    [[ "${dafilesrv_owner}" != "${user}" ]] && cmd_prefix="sudo"
+    ${cmd_prefix} ${INIT_PATH}/dafilesrv status > /dev/null
+    if [[ $? -ne 0 ]];then
+        ${cmd_prefix} ${INIT_PATH}/dafilesrv start > /dev/null
+        if [[ $? -ne 0 ]];then
+            exit 1
+        fi
+    fi
+
+    # insuring parent directory structure is setup properly
+    mkdir -p $instancedir
+    mkdir -p $(dirname $logfile)
+
+    cd $instancedir
+
+    log "dependency dafilesrv started"
+
+    ulimit -Sc hard > /dev/null
+    [[ $? -ne 0 ]] && log "Failed to set ulimit for core file size"
+    ulimit -Sn hard > /dev/null
+    [[ $? -ne 0 ]] && log "Failed to set ulimit for number of file descriptors open"
+
+    log "slave init"
+    log "slave(s) starting"
+
+    # create symlink for easier identification of slaves by compName
+    ln -s -f $deploydir/thorslave_lcr ${slavename}
+
+    # sync to current master slaves list
+    log "rsync -e ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no ${master}:${instancedir}/slaves ${instancedir}/slaves.tmp"
+    rsync -e "ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no" $master:$instancedir/slaves $instancedir/slaves.tmp
+
+    # NB: Would simply use slavesPerNode to create N slaves, but for backward compatilibty reasons, need to cater for clusters
+    # defined with arbitrary repeated IP's listed in their definitions.    
+    fts=0
+    clusternodes=$(cat $instancedir/slaves.tmp | wc -l)
+    clusternode=1
+    for slaveip in $(cat $instancedir/slaves.tmp); do
+        if [[ ${slaveip} = ${ip} ]]; then
+            for (( slave=0; slave<${slavespernode}; slave++ )); do
+                slavenum=$(( ${clusternode} + (${slave} * ${clusternodes}) ))
+                log "$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname"
+                ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum slaveprocessnum=$slave logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
+                slavepid=$!
+                if [[ "$slavepid" -eq "0" ]]; then
+                    log "failed to start"
+                    fts=1
+                else
+                    log "slave pid $slavepid started"
+                    PID_NAME="${PID_DIR}/${slavename}_${slavenum}.pid"
+                    echo $slavepid > $PID_NAME
+                fi
+                slaveport=$(( ${slaveport} + ${slaveportinc} ))
+            done
+        fi
+        clusternode=$(( $clusternode + 1 ))
+    done
+    rm -f $instancedir/slaves.tmp > /dev/null
+    exit ${fts}
+}
+
+print_usage()
+{
+    log "usage: cmd ip slavespernode slaveport slaveportinc master masterport logdir workingdir deploydir hpcc_compname hpcc_setenv logredirect"
+}
+
+##  Main
+if [[ $# -lt 10 ]]; then
+    print_usage
+    exit 1
+fi
+
+if [[ "start" = ${cmd} ]]; then
+    start_slaves
+elif [[ "stop" = ${cmd} ]]; then
+    stop_slaves
+else
+    print_usage
+    exit 1
+fi
+
+exit 0

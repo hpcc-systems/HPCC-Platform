@@ -1029,10 +1029,10 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-        <xs:attribute name="udpRequestToSendTimeout" type="xs:nonNegativeInteger" use="optional" default="5">
+        <xs:attribute name="udpRequestToSendTimeout" type="xs:nonNegativeInteger" use="optional" default="0">
             <xs:annotation>
                 <xs:appinfo>
-                    <tooltip>Controls the timeout value a agent udp will wait for a permission to send from a Roxie server</tooltip>
+                    <tooltip>Controls the timeout value agent udp will wait for permission to send from a Roxie server, in milliseconds. Specify 0 to calcuate automatically.</tooltip>
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>

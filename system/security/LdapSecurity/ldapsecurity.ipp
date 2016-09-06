@@ -31,9 +31,7 @@
 #endif
 #include "seclib.hpp"
 
-class CLdapSecUser : public CInterface,
-    implements ISecUser,
-    implements ISecCredentials
+class CLdapSecUser : implements ISecUser, implements ISecCredentials, public CInterface
 {
 private:
     StringAttr   m_realm;
@@ -231,8 +229,7 @@ public:
 };
 
 
-class CLdapSecResource : public CInterface,
-    implements ISecResource
+class CLdapSecResource : implements ISecResource, public CInterface
 {
 private:
     StringAttr         m_name;
@@ -275,8 +272,7 @@ public:
 };
 
 
-class CLdapSecResourceList : public CInterface,
-    implements ISecResourceList
+class CLdapSecResourceList : implements ISecResourceList, public CInterface
 {
 private:
     bool m_complete;
@@ -322,8 +318,7 @@ public:
     }
 };
 
-class CLdapSecManager : public CInterface,
-    implements ISecManager
+class CLdapSecManager : implements ISecManager, public CInterface
 {
 private:
     Owned<ILdapClient> m_ldap_client;
@@ -359,6 +354,7 @@ public:
     int authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, IEspSecureContext* secureContext = NULL);
     virtual int authorizeFileScope(ISecUser & user, const char * filescope);
     virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources);
+    virtual bool authorizeViewScope(ISecUser & user, ISecResourceList * resources);
     virtual int authorizeWorkunitScope(ISecUser & user, const char * wuscope);
     virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources);
     virtual bool addResources(ISecUser& sec_user, ISecResourceList * resources);
@@ -446,9 +442,23 @@ public:
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes);
     virtual int queryDefaultPermission(ISecUser& user);
     virtual bool clearPermissionsCache(ISecUser &user);
-    virtual bool authenticateUser(ISecUser & user, bool &superUser);
+    virtual bool authenticateUser(ISecUser & user, bool * superUser);
     virtual secManagerType querySecMgrType() { return SMT_LDAP; }
     inline virtual const char* querySecMgrTypeName() { return "LdapSecurity"; }
+
+    //Data View related interfaces
+    virtual void createView(const char * viewName, const char * viewDescription);
+    virtual void deleteView(const char * viewName);
+    virtual void queryAllViews(StringArray & viewNames, StringArray & viewDescriptions, StringArray & viewManagedBy);
+
+    virtual void addViewColumns(const char * viewName, StringArray & files, StringArray & columns);
+    virtual void removeViewColumns(const char * viewName, StringArray & files, StringArray & columns);
+    virtual void queryViewColumns(const char * viewName, StringArray & files, StringArray & columns);
+
+    virtual void addViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups);
+    virtual void removeViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups);
+    virtual void queryViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups);
+    virtual bool userInView(const char * user, const char* viewName);
 };
 
 #endif

@@ -798,93 +798,6 @@ public:
     }
 };
 
-#define INSERTION_SORT_BLOCKSIZE 1024
-
-class SortedBlock : public CInterface, implements IInterface
-{
-    unsigned sequence;
-    const void **rows;
-    unsigned length;
-    unsigned pos;
-
-    SortedBlock(const SortedBlock &);
-public:
-    IMPLEMENT_IINTERFACE;
-
-    SortedBlock(unsigned _sequence, roxiemem::IRowManager *rowManager, unsigned activityId) : sequence(_sequence)
-    {
-        rows = (const void **) rowManager->allocate(INSERTION_SORT_BLOCKSIZE * sizeof(void *), activityId);
-        length = 0;
-        pos = 0;
-    }
-
-    ~SortedBlock()
-    {
-        roxiemem::ReleaseRoxieRowRange(rows, pos, length);
-        ReleaseRoxieRow(rows);
-    }
-
-    int compareTo(SortedBlock *r, ICompare *compare)
-    {
-        int rc = compare->docompare(rows[pos], r->rows[r->pos]);
-        if (!rc)
-            rc = sequence - r->sequence;
-        return rc;
-    }
-
-    const void *next()
-    {
-        if (pos < length)
-            return rows[pos++];
-        else
-            return NULL;
-    }
-
-    inline bool eof()
-    {
-        return pos==length;
-    }
-
-    bool insert(const void *next, ICompare *_compare )
-    {
-        unsigned b = length;
-        if (b == INSERTION_SORT_BLOCKSIZE)
-            return false;
-        else if (b < 7)
-        {
-            while (b)
-            {
-                if (_compare->docompare(next, rows[b-1]) >= 0)
-                    break;
-                b--;
-            }
-            if (b != length)
-                memmove(&rows[b+1], &rows[b], (length - b) * sizeof(void *));
-            rows[b] = next;
-            length++;
-            return true;
-        }
-        else
-        {
-            unsigned int a = 0;
-            while ((int)a<b)
-            {
-                int i = (a+b)/2; // cannot overflow
-                int rc = _compare->docompare(next, rows[i]);
-                if (rc>=0)
-                    a = i+1;
-                else
-                    b = i;
-            }
-            if (a != length)
-                memmove(&rows[a+1], &rows[a], (length - a) * sizeof(void *));
-            rows[a] = next;
-            length++;
-            return true;
-        }
-    }
-};
-
 class CHeapSortAlgorithm : public CSortAlgorithm
 {
     unsigned curIndex;
@@ -2494,7 +2407,6 @@ class COrderedOutputSerializer : implements IOrderedOutputSerializer, public CIn
         bool closed;
         StringBuffer sb;
     public:
-        IMPLEMENT_IINTERFACE;
         COrderedResult() : closed(false) {}
         bool flush(FILE * outFile, bool onlyClosed)
         {
@@ -2723,3 +2635,14 @@ void HttpHelper::parseURL()
         return;
     parseHttpParameterString(parameters, ++finger);
 }
+
+//=====================================================================================================================
+
+class NullSectionTimer : public CSimpleInterfaceOf<ISectionTimer>
+{
+    virtual unsigned __int64 getStartCycles() { return 0; }
+    virtual void noteSectionTime(unsigned __int64 startCycles) {}
+};
+
+static NullSectionTimer nullSectionTimer;
+ISectionTimer * queryNullSectionTimer() { return &nullSectionTimer; }

@@ -271,7 +271,7 @@ typedef MapXToMyClass<PUID, PUID, PackageSequencer> msg_map;
 
 // MessageResult ====================================================================================
 //
-class CMessageUnpackCursor: public CInterface, implements IMessageUnpackCursor
+class CMessageUnpackCursor: implements IMessageUnpackCursor, public CInterface
 {
     PackageSequencer *pkSequencer;
     DataBuffer *dataBuff;
@@ -456,7 +456,7 @@ PUID GETPUID(DataBuffer *dataBuff)
     return (((PUID) pktHdr->nodeIndex) << 32) | (PUID) pktHdr->msgSeq;
 }
 
-class CMessageCollator : public CInterface, implements IMessageCollator
+class CMessageCollator : implements IMessageCollator, public CInterface
 {
     seq_map_que         queue;
     msg_map             mapping;

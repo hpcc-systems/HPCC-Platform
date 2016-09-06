@@ -173,7 +173,7 @@ protected:
 
 typedef Linked<IDistributedFile> DistributedFileAttr;
 
-class FileSprayer : public CInterface, public IFileSprayer
+class FileSprayer : public IFileSprayer, public CInterface
 {
     friend class FileTransferThread;
     friend class AsyncAfterTransfer;
@@ -202,7 +202,7 @@ public:
     unsigned numParallelSlaves();
     void setError(const SocketEndpoint & ep, IException * e);
     bool canLocateSlaveForNode(const IpAddress &ip);
-    void checkTarget(IFileDescriptor * target);
+    void checkSourceTarget(IFileDescriptor * file);
 
 protected:
     void addEmptyFilesToPartition(unsigned from, unsigned to);
@@ -264,7 +264,7 @@ protected:
     void waitForTransferSem(Semaphore & sem);
     void addPrefix(size32_t len, const void * data, unsigned idx, PartitionPointArray & partitionWork);
     bool isSameSizeHeaderFooter();
-    void checkTargetPath(RemoteFilename & filename);
+    void checkFilePath(RemoteFilename & filename);
     
 private:
     bool calcUsePull();

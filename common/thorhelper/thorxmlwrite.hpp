@@ -64,7 +64,7 @@ public:
     bool needDelimiter = false;
 };
 
-class thorhelper_decl CommonXmlWriter : public CInterface, implements IXmlWriterExt
+class thorhelper_decl CommonXmlWriter : implements IXmlWriterExt, public CInterface
 {
 public:
     CommonXmlWriter(unsigned _flags, unsigned initialIndent=0,  IXmlStreamFlusher *_flusher=NULL);
@@ -147,7 +147,7 @@ protected:
     bool tagClosed;
 };
 
-class thorhelper_decl CommonJsonWriter : public CInterface, implements IXmlWriterExt
+class thorhelper_decl CommonJsonWriter : implements IXmlWriterExt, public CInterface
 {
 public:
     CommonJsonWriter(unsigned _flags, unsigned initialIndent=0,  IXmlStreamFlusher *_flusher=NULL);
@@ -283,7 +283,7 @@ enum XMLWriterType{WTStandard, WTEncoding, WTEncodingData64, WTJSON} ;
 thorhelper_decl CommonXmlWriter * CreateCommonXmlWriter(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
 thorhelper_decl IXmlWriterExt * createIXmlWriterExt(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
 
-class thorhelper_decl SimpleOutputWriter : public CInterface, implements IXmlWriter
+class thorhelper_decl SimpleOutputWriter : implements IXmlWriter, public CInterface
 {
     void outputFieldSeparator();
     bool separatorNeeded;
@@ -323,7 +323,7 @@ protected:
     StringBuffer out;
 };
 
-class thorhelper_decl CommonFieldProcessor : public CInterface, implements IFieldProcessor
+class thorhelper_decl CommonFieldProcessor : implements IFieldProcessor, public CInterface
 {
     bool trim;
     StringBuffer &result;

@@ -165,8 +165,11 @@ public:
     }
     virtual void stop()
     {
-        readRest();
-        close();
+        if (hasStarted())
+        {
+            readRest();
+            close();
+        }
         PARENT::stop();
     }
 

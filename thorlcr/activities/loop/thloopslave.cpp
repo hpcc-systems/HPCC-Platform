@@ -34,9 +34,9 @@ class CLoopSlaveActivityBase : public CSlaveActivity
 
 protected:
     bool global;
-    bool sentEndLooping;
+    bool sentEndLooping = true;
     unsigned maxIterations;
-    unsigned loopCounter;
+    unsigned loopCounter = 0;
     rtlRowBuilder extractBuilder;
     bool lastMaxEmpty;
     unsigned maxEmptyLoopIterations;
@@ -76,10 +76,12 @@ protected:
         sendLoopingCount(0, 0);
     }
 public:
-    CLoopSlaveActivityBase(CGraphElementBase *container) : CSlaveActivity(container)
+    CLoopSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         mpTag = TAG_NULL;
         maxEmptyLoopIterations = getOptUInt(THOROPT_LOOP_MAX_EMPTY, 1000);
+        if (container.queryLocalOrGrouped())
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
@@ -137,7 +139,7 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
     bool eof, finishedLooping;
     Owned<IBarrier> barrier;
 
-    class CNextRowFeeder : public CSimpleInterface, implements IThreaded, implements IRowStream
+    class CNextRowFeeder : implements IRowStream, implements IThreaded, public CSimpleInterface
     {
         CThreaded threaded;
         CLoopSlaveActivity *activity;
@@ -528,6 +530,7 @@ public:
         helper = (IHThorLocalResultReadArg *)queryHelper();
         curRow = 0;
         replyTag = queryMPServer().createReplyTag();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
@@ -704,8 +707,9 @@ public:
 class CLocalResultWriteActivity : public CLocalResultWriteActivityBase
 {
 public:
-    CLocalResultWriteActivity(CGraphElementBase *container) : CLocalResultWriteActivityBase(container)
+    CLocalResultWriteActivity(CGraphElementBase *_container) : CLocalResultWriteActivityBase(_container)
     {
+        setRequireInitData(false);
     }
     virtual IThorResult *createResult()
     {
@@ -733,6 +737,7 @@ public:
     CDictionaryResultWriteActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
     {
         helper = (IHThorDictionaryResultWriteArg *)queryHelper();
+        setRequireInitData(false);
     }
     virtual void process()
     {
@@ -800,6 +805,7 @@ protected:
 public:
     CConditionalActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -905,6 +911,7 @@ public:
     CIfActionActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
     {
         helper = (IHThorIfArg *)baseHelper.get();
+        setRequireInitData(false);
     }
     // IThorSlaveProcess overloaded methods
     virtual void process() override
@@ -959,11 +966,9 @@ public:
     CChildNormalizeSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorChildNormalizeArg *)queryHelper();
-        appendOutputLinked(this);
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         allocator.set(queryRowAllocator());
+        setRequireInitData(false);
+        appendOutputLinked(this);
     }
     virtual void start()
     {
@@ -1031,6 +1036,7 @@ public:
     CChildAggregateSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorChildAggregateArg *)queryHelper();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start()
@@ -1079,11 +1085,9 @@ public:
     CChildGroupAggregateActivitySlave(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorChildGroupAggregateArg *)queryHelper();
-        appendOutputLinked(this);
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
+        setRequireInitData(false);
         allocator.set(queryRowAllocator());
+        appendOutputLinked(this);
     }
     virtual void start() override
     {
@@ -1148,12 +1152,10 @@ public:
     CChildThroughNormalizeSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), nextOutput(NULL)
     {
         helper = (IHThorChildThroughNormalizeArg *)queryHelper();
-        appendOutputLinked(this);
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         allocator.set(queryRowAllocator());
         nextOutput.setAllocator(allocator);
+        setRequireInitData(false);
+        appendOutputLinked(this);
     }
     virtual void start()
     {
@@ -1224,9 +1226,10 @@ class CGraphLoopResultReadSlaveActivity : public CSlaveActivity
     Owned<IRowStream> resultStream;
 
 public:
-    CGraphLoopResultReadSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container)
+    CGraphLoopResultReadSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorGraphLoopResultReadArg *)queryHelper();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void kill()
@@ -1341,7 +1344,7 @@ public:
         return inputs.ordinality();
     }
 
-    virtual IHThorInput * queryConcreteInput(unsigned idx) const
+    virtual IHThorInput * queryConcreteOutput(unsigned idx) const
     {
         if (inputs.isItem(idx))
             return &inputs.item(idx);
@@ -1361,8 +1364,9 @@ activityslaves_decl CActivityBase *createGraphLoopResultReadSlave(CGraphElementB
 class CGraphLoopResultWriteSlaveActivity : public CLocalResultWriteActivityBase
 {
 public:
-    CGraphLoopResultWriteSlaveActivity(CGraphElementBase *container) : CLocalResultWriteActivityBase(container)
+    CGraphLoopResultWriteSlaveActivity(CGraphElementBase *_container) : CLocalResultWriteActivityBase(_container)
     {
+        setRequireInitData(false);
     }
     virtual IThorResult *createResult()
     {

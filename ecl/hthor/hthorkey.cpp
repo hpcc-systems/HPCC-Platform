@@ -2748,7 +2748,7 @@ interface IJoinProcessor
     virtual void verifyIndex(IDistributedFile * f, IKeyIndex * idx, IRecordLayoutTranslator * trans) = 0;
 };
 
-class CJoinGroup : public CInterface, implements IInterface
+class CJoinGroup : implements IInterface, public CInterface
 {
 public:
     class MatchIterator

@@ -16,11 +16,10 @@
 
 # Component: cassandralogagent
 
-HPCC_ADD_SUBDIRECTORY (${HPCC_SOURCE_DIR}/plugins/cassandra/cpp-driver/ ${PROJECT_BINARY_DIR})
+if(USE_CASSANDRA)
+  project( cassandralogagent )
 
-project( cassandralogagent )
-
-include_directories (
+  include_directories (
      ${HPCC_SOURCE_DIR}/system/include
      ${HPCC_SOURCE_DIR}/system/jlib
      ${HPCC_SOURCE_DIR}/system/security/shared
@@ -38,23 +37,24 @@ include_directories (
      ${HPCC_SOURCE_DIR}/esp/platform
      ${HPCC_SOURCE_DIR}/esp/bindings
      ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
-     ${HPCC_SOURCE_DIR}/esp/logging
-)
+     ${HPCC_SOURCE_DIR}/esp/logging/logginglib
+  )
 
-ADD_DEFINITIONS( -D_USRDLL  -DMYSQLLOGGINGLISTENER_EXPORTS -DMYSQLLOGAGENT_EXPORTS )
+  ADD_DEFINITIONS( -D_USRDLL -DCASSANDRALOGAGENT_EXPORTS )
 
-set ( SRCS
+  set ( SRCS
     cassandralogagent.cpp
-)
+  )
 
-HPCC_ADD_LIBRARY( cassandralogagent SHARED ${SRCS} )
+  HPCC_ADD_LIBRARY( cassandralogagent SHARED ${SRCS} )
 
-install ( TARGETS cassandralogagent RUNTIME DESTINATION bin LIBRARY DESTINATION lib )
-add_dependencies (cassandralogagent espscm)
-target_link_libraries ( cassandralogagent
+  install ( TARGETS cassandralogagent RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+  add_dependencies (cassandralogagent espscm)
+  target_link_libraries ( cassandralogagent
     cassandraembed
-    cassandra
     eclrtl
     esphttp
     jlib
-)
+    logginglib
+  )
+endif(USE_CASSANDRA)

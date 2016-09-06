@@ -23,6 +23,7 @@
 #include "jdebug.hpp"
 #include "jstats.h"
 #include "errorlist.h"
+#include <atomic>
 
 #ifdef _WIN32
  #ifdef ROXIEMEM_EXPORTS
@@ -120,11 +121,10 @@ struct roxiemem_decl HeapletBase
 {
     friend class DataBufferBottom;
 protected:
-    atomic_t count;
+    std::atomic_uint count;
 
-    HeapletBase()
+    HeapletBase() : count(1) // Starts off active
     {
-        atomic_set(&count,1);  // Starts off active
     }
 
     virtual ~HeapletBase()
@@ -144,7 +144,7 @@ protected:
 public:
     inline bool isAlive() const
     {
-        return atomic_read(&count) < DEAD_PSEUDO_COUNT;        //only safe if Link() is called first
+        return count.load(std::memory_order_relaxed) < DEAD_PSEUDO_COUNT;        //only safe if Link() is called first
     }
 
     static void release(const void *ptr);
@@ -174,12 +174,12 @@ public:
 
     inline unsigned queryCount() const
     {
-        return atomic_read(&count);
+        return count.load(std::memory_order_relaxed);
     }
 
     inline bool isEmpty() const
     {
-        return atomic_read(&count) == 1;
+        return queryCount() == 1;
     }
 };
 
@@ -199,21 +199,24 @@ private:
     void released();
 
 protected:
-    DataBuffer()
+    DataBuffer() : count(1)
     {
-        atomic_set(&count,1);  // Starts off active
     }
 public:
-    void Link() { atomic_inc(&count); }
+    // Link and release are used to keep count of the references to the buffers.
+    void Link()
+    {
+        count.fetch_add(1, std::memory_order_relaxed);
+    }
     void Release();
     inline unsigned queryCount() const
     {
-        return atomic_read(&count);
+        return count.load(std::memory_order_relaxed);
     }
     void noteReleased(const void *ptr);
     void noteLinked(const void *ptr);
 public:
-    atomic_t count;
+    std::atomic_uint count;
     IRowManager *mgr = nullptr;
     DataBuffer *next = nullptr;   // Used when chaining them together in rowMgr
     DataBuffer *msgNext = nullptr;    // Next databuffer in same slave message
@@ -229,7 +232,7 @@ class roxiemem_decl DataBufferBottom : public HeapletBase
 private:
     friend class CDataBufferManager;
     CDataBufferManager * volatile owner;
-    atomic_t okToFree;
+    std::atomic_uint okToFree;      // use uint since it is more efficient on some architectures
     DataBufferBottom *nextBottom;   // Used when chaining them together in CDataBufferManager 
     DataBufferBottom *prevBottom;   // Used when chaining them together in CDataBufferManager 
     DataBuffer *freeChain;
@@ -258,7 +261,7 @@ public:
     DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain);
 
     void addToFreeChain(DataBuffer * buffer);
-    void Link() { atomic_inc(&count); }
+    void Link() { count.fetch_add(1, std::memory_order_relaxed); }
     void Release();
 };
 
@@ -509,8 +512,8 @@ extern roxiemem_decl unsigned getDataBuffersActive();
 
 //Various options to stress the memory
 
-extern roxiemem_decl unsigned memTraceLevel;
-extern roxiemem_decl memsize_t memTraceSizeLimit;
+extern roxiemem_decl void setMemTraceLevel(unsigned value);
+extern roxiemem_decl void setMemTraceSizeLimit(memsize_t value);
 
 
 #define ALLOCATE(a) allocate(a, activityId)

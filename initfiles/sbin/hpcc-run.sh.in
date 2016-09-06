@@ -82,7 +82,7 @@ doOneIP(){
             return 1
         else
             hpccStatusFile=/tmp/hpcc_status_$$
-            local CMD="sudo /etc/init.d/$_action $_args"
+            local CMD="sudo ${INIT_PATH}/$_action $_args"
             echo "$_ip: Running $CMD"
             local CMD="$CMD | tee ${hpccStatusFile}"
 
@@ -118,7 +118,7 @@ if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
         echo "\$IP: Cannot SSH to host."
         exit 1
     else
-        CMD="sudo /etc/init.d/$_action $_args"
+        CMD="sudo ${INIT_PATH}/$_action $_args"
         echo "\$IP: Running \$CMD"
         CMD="\$CMD | tee $hpccStatusFile"
         ssh -i $home/$user/.ssh/id_rsa -o LogLevel=QUIET $user@\$IP \$CMD;

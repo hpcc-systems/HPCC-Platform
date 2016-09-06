@@ -58,7 +58,7 @@ public:
         localKey = false;
         numTags = 0;
         tags[0] = tags[1] = tags[2] = tags[3] = TAG_NULL;
-        reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
+        reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) || (helper->getJoinFlags() & JFvarindexfilename);
         remoteDataFiles = false;
     }
     ~CKeyedJoinMaster()

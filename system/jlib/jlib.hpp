@@ -68,7 +68,7 @@ class jlib_decl Int64Array : public ArrayOf<__int64> { };
 class jlib_decl UInt64Array : public ArrayOf<unsigned __int64> { };
 
 template <class A, class C, class IITER>
-class ArrayIIteratorOf : public CInterface, implements IITER
+class ArrayIIteratorOf : implements IITER, public CInterface
 {
 protected:
     ArrayIteratorOf <A, C &> iterator;
@@ -134,6 +134,22 @@ public:
     inline aindex_t find(TYPE & obj) const        { assert(&obj); return IArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); IArray::replace(obj, pos, nodel); }
     inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return IArray::zap(obj, nodel); }
+};
+
+template <class TYPE, class BASE>
+class IBasedArrayOf : public IArray
+{
+public:
+    inline TYPE & item(aindex_t pos) const        { return (TYPE &)(BASE &)IArray::item(pos); }
+    inline TYPE & popGet()                        { return (TYPE &)(BASE &)IArray::popGet(); }
+    inline TYPE & tos(void) const                 { return (TYPE &)(BASE &)IArray::tos(); }
+    inline TYPE & tos(aindex_t num) const         { return (TYPE &)(BASE &)IArray::tos(num); }
+    inline void append(TYPE& obj)                 { assert(&obj); IArray::append((BASE &)obj); }
+    inline void appendUniq(TYPE& obj)             { assert(&obj); IArray::appendUniq((BASE &)obj); }
+    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); IArray::add((BASE &)obj, pos); }
+    inline aindex_t find(TYPE & obj) const        { assert(&obj); return IArray::find((BASE&)obj); }
+    inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); IArray::replace((BASE &)obj, pos, nodel); }
+    inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return IArray::zap((BASE &)obj, nodel); }
 };
 
 template <class TYPE>

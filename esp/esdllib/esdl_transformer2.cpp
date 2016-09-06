@@ -23,6 +23,7 @@
 
 #include "eclhelper.hpp"    //IXMLWriter
 #include "thorxmlwrite.hpp" //JSON WRITER
+#include "eclrtl.hpp"
 
 using namespace std;
 
@@ -160,7 +161,8 @@ void Esdl2LocalContext::handleDataFor(IXmlWriterExt & writer)
             for (it.first(); it.isValid(); it.next())
             {
                 IMapping& et = it.query();
-                writer.outputCString(m_dataFor->mapToValue(&et)->get(), NULL);
+                auto val = m_dataFor->mapToValue(&et)->get();
+                writer.outputUtf8(rtlUtf8Length(strlen(val),val),val, "@xsi:schemaLocation");
             }
         }
     }
@@ -320,7 +322,7 @@ void Esdl2Base::output_content(Esdl2TransformerContext &ctx, const char * conten
                         break;
                     case ESDLT_STRING:
                     default:
-                        ctx.writer->outputCString(content, tagname);
+                        ctx.writer->outputUtf8(rtlUtf8Length(strlen(content),content), content, tagname);
                         break;
                 }
             }
@@ -945,7 +947,8 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
                             StringBuffer attname("@");
                             attname.append(local_in->m_startTag->getLocalName(idx));
 
-                            ctx.writer->outputCString(local_in->m_startTag->getValue(idx), attname.str());
+                            auto val = local_in->m_startTag->getValue(idx);
+                            ctx.writer->outputUtf8(rtlUtf8Length(strlen(val),val),val,attname.str());
                         }
                     }
                 }
@@ -1042,7 +1045,7 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
         }
 
         if (completeContent.length()>0)
-            ctx.writer->outputCString(completeContent.str(), NULL);
+            ctx.writer->outputUtf8(rtlUtf8Length(completeContent.length(),completeContent.str()),completeContent.str(),NULL);
 
         local.handleDataFor(*(ctx.writer));
 
@@ -1224,7 +1227,7 @@ void Esdl2Response::process(Esdl2TransformerContext &ctx, const char *out_name, 
                     if (ctx.schemaLocation.length() > 0 )
                     {
                         ctx.writer->outputXmlns("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-                        ctx.writer->outputCString(ctx.schemaLocation.str(), "@xsi:schemaLocation");
+                        ctx.writer->outputUtf8(rtlUtf8Length(ctx.schemaLocation.length(),ctx.schemaLocation.str()),ctx.schemaLocation.str(),"@xsi:schemaLocation");
                     }
 
                     ctx.do_output_ns=false;

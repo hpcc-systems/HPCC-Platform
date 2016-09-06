@@ -220,7 +220,7 @@ enum eclCmdOptionMatchIndicator
     EclCmdOptionCompletion=2
 };
 
-class EclCmdCommon : public CInterface, implements IEclCommand
+class EclCmdCommon : implements IEclCommand, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -339,7 +339,7 @@ public:
     StringAttr optQuery;
 };
 
-void outputMultiExceptions(const IMultiException &me);
+int outputMultiExceptionsEx(const IMultiException &me);
 bool checkMultiExceptionsQueryNotFound(const IMultiException &me);
 
 

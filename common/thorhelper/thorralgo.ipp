@@ -1050,7 +1050,6 @@ class THORHELPER_API RegexAlgorithm : public NlpAlgorithm
 public:
     RegexAlgorithm(IOutputMetaData * outRecordSize, byte _kind);
     ~RegexAlgorithm();
-    IMPLEMENT_IINTERFACE
 
     virtual INlpParser * createParser(ICodeContext * ctx, unsigned activityId, INlpHelper * helper, IHThorParseArg * arg);
     virtual void init(IHThorParseArg & arg);

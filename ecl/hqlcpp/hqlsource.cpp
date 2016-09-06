@@ -1819,19 +1819,31 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     StringBuffer graphLabel;
     graphLabel.append(getActivityText(activityKind));
 
+    bool isFiltered = false;
+    double filterLikelihood = 1.0;
     if ((activityKind == TAKdiskread) || (activityKind == TAKcsvread) || (activityKind == TAKxmlread) || (activityKind == TAKjsonread))
     {
         graphLabel.clear();
         if (expr != tableExpr)
         {
             IHqlExpression * cur = expr;
-            bool isFiltered = false;
             bool isProjected = false;
             loop
             {
                 switch (cur->getOperator())
                 {
                 case no_filter:
+                    if (isKnownLikelihood(filterLikelihood))
+                    {
+                        double likelihood = queryActivityLikelihood(cur);
+                        if (isKnownLikelihood(likelihood))
+                            // Combine the likelihood of the 2 filter conditions
+                            // N.B. this only works if the filter probability are independent
+                            filterLikelihood *= likelihood;
+                        else
+                            // One of the filter probability is unknown, so the overall probability is unknown
+                            setUnknownLikelihood(filterLikelihood);
+                    }
                     isFiltered = true;
                     break;
                 case no_hqlproject:
@@ -1851,7 +1863,9 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
             }
 
             if (isFiltered)
+            {
                 graphLabel.append("Filtered\n");
+            }
             if (isProjected)
                 graphLabel.append("Projected\n");
         }
@@ -1999,7 +2013,16 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
         instance->addAttributeBool("_isTransformSpill", isSpill);
     else
         instance->addAttributeBool("_isSpill", isSpill);
-
+    if (isFiltered)
+    {
+        if (isKnownLikelihood(filterLikelihood))
+        {
+            StringBuffer text;
+            filterLikelihood *= 100;
+            text.setf("%3.2f%%", filterLikelihood);
+            instance->addAttribute("matchLikelihood", text);
+        }
+    }
     IHqlExpression * spillReason = tableExpr ? queryAttributeChild(tableExpr, _spillReason_Atom, 0) : NULL;
 
     if (spillReason && !translator.queryOptions().obfuscateOutput)

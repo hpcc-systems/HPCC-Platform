@@ -19,7 +19,7 @@ person := dataset('person', { unsigned8 person_id, string1 per_sex, string40 per
 
 filtered1 := person( LIKELY(xpos < 1000) );
 
-filter2 := filtered1( LIKELY(per_last_name = 'Hawthorn', 0.5) ) ;
+filter2 := filtered1( LIKELY(person_id > 1000, 0.01) ) ;
 filter3 := filtered1( LIKELY(per_last_name = 'Hawthorn', 0.99) ) ;
 filter4 := filtered1( UNLIKELY(per_last_name != 'Drimbad' AND per_sex = 'F' ) );
 filter5 := filtered1( UNLIKELY(per_last_name = 'Drimbad') );

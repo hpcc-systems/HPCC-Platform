@@ -2079,7 +2079,7 @@ public:
     }
 };
 
-class CExceptionIterator: public CInterface, implements IExceptionIterator
+class CExceptionIterator: implements IExceptionIterator, public CInterface
 {
     Linked<IPropertyTree> tree;
     unsigned i;
@@ -2758,7 +2758,7 @@ public:
 
 
 
-class CConstDFUWorkUnitIterator: public CInterface, implements IConstDFUWorkUnitIterator
+class CConstDFUWorkUnitIterator: implements IConstDFUWorkUnitIterator, public CInterface
 {
     Linked<IRemoteConnection> conn;
     Linked<IPropertyTreeIterator> iter;
@@ -2802,10 +2802,10 @@ public:
 };
 
 
-class CConstDFUWUArrayIterator : public CInterface, implements IConstDFUWorkUnitIterator
+class CConstDFUWUArrayIterator : implements IConstDFUWorkUnitIterator, public CInterface
 {
-    IArrayOf<IConstDFUWorkUnit> wua;
     unsigned idx;
+    IArrayOf<IConstDFUWorkUnit> wua;
 public:
     IMPLEMENT_IINTERFACE;
     CConstDFUWUArrayIterator(IDFUWorkUnitFactory *_parent,IRemoteConnection *_conn, IArrayOf<IPropertyTree> &trees) 
@@ -2847,7 +2847,7 @@ public:
     }
 };
 
-class CDFUWorkUnitFactory : public CInterface, implements IDFUWorkUnitFactory, implements ISDSSubscription
+class CDFUWorkUnitFactory : implements IDFUWorkUnitFactory, implements ISDSSubscription, public CInterface
 {
     CriticalSection proxylock;
     PointerArray subscribers;
@@ -3024,7 +3024,7 @@ public:
                                                     __int64 *cachehint,
                                                     unsigned *total)
     {
-        class CDFUWorkUnitsPager : public CSimpleInterface, implements IElementsPager
+        class CDFUWorkUnitsPager : implements IElementsPager, public CSimpleInterface
         {
             StringAttr xPath;
             StringAttr sortOrder;

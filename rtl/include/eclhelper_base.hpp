@@ -43,7 +43,7 @@ protected:
 
 };
 
-class COutputRowSerializer : public CGlobalHelperClass, implements IOutputRowSerializer
+class COutputRowSerializer : implements IOutputRowSerializer, public CGlobalHelperClass
 {
 public:
     inline COutputRowSerializer(unsigned _activityId) : CGlobalHelperClass(_activityId) { }
@@ -53,7 +53,7 @@ public:
 };
 
 
-class COutputRowDeserializer : public RtlCInterface, implements IOutputRowDeserializer
+class COutputRowDeserializer : implements IOutputRowDeserializer, public RtlCInterface
 {
 public:
     inline COutputRowDeserializer(unsigned _activityId) { activityId = _activityId; ctx = NULL; }
@@ -69,7 +69,7 @@ protected:
 };
 
 
-class CSourceRowPrefetcher : public RtlCInterface, implements ISourceRowPrefetcher
+class CSourceRowPrefetcher : implements ISourceRowPrefetcher, public RtlCInterface
 {
 public:
     inline CSourceRowPrefetcher(unsigned _activityId) { activityId = _activityId; ctx = NULL; }
@@ -133,7 +133,7 @@ protected:
     IOutputMetaData * meta;
 };
 
-class COutputMetaData : public RtlCInterface, implements IOutputMetaData
+class COutputMetaData : implements IOutputMetaData, public RtlCInterface
 {
 public:
     RTLIMPLEMENT_IINTERFACE
@@ -257,7 +257,7 @@ public:
 
 //---------------------------------------------------------------------------
 
-class CXmlToRowTransformer : public CGlobalHelperClass, implements IXmlToRowTransformer
+class CXmlToRowTransformer : implements IXmlToRowTransformer, public CGlobalHelperClass
 {
 public:
     inline CXmlToRowTransformer(unsigned _activityId) : CGlobalHelperClass(_activityId) {}
@@ -278,7 +278,7 @@ protected:
 };
 
 
-class CNormalizeChildIterator : public RtlCInterface, implements INormalizeChildIterator
+class CNormalizeChildIterator : implements INormalizeChildIterator, public RtlCInterface
 {
 public:
     CNormalizeChildIterator(IOutputMetaData & _recordSize) : iter(0, NULL, _recordSize) {}
@@ -294,7 +294,7 @@ protected:
     RtlVariableDatasetCursor    iter;
 };
     
-class CNormalizeLinkedChildIterator : public RtlCInterface, implements INormalizeChildIterator
+class CNormalizeLinkedChildIterator : implements INormalizeChildIterator, public RtlCInterface
 {
 public:
     CNormalizeLinkedChildIterator() : iter(0, NULL) {}
@@ -310,7 +310,7 @@ protected:
     RtlSafeLinkedDatasetCursor  iter;
 };
     
-class CNormalizeStreamedChildIterator : public RtlCInterface, implements INormalizeChildIterator
+class CNormalizeStreamedChildIterator : implements INormalizeChildIterator, public RtlCInterface
 {
 public:
     CNormalizeStreamedChildIterator() {}
@@ -337,7 +337,7 @@ public:
     }
 };
 
-class CThorIndexWriteArg : public CThorArg, implements IHThorIndexWriteArg
+class CThorIndexWriteArg : implements IHThorIndexWriteArg, public CThorArg
 {
 public:
     virtual void Link() const { RtlCInterface::Link(); }
@@ -371,7 +371,7 @@ public:
     virtual ICompare * queryCompare() { return NULL; }
 };
 
-class CThorFirstNArg : public CThorArg, implements IHThorFirstNArg
+class CThorFirstNArg : implements IHThorFirstNArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -394,7 +394,7 @@ class CThorFirstNArg : public CThorArg, implements IHThorFirstNArg
     virtual bool preserveGrouping()                         { return false; }
 };
 
-class CThorChooseSetsArg : public CThorArg, implements IHThorChooseSetsArg
+class CThorChooseSetsArg : implements IHThorChooseSetsArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -414,7 +414,7 @@ class CThorChooseSetsArg : public CThorArg, implements IHThorChooseSetsArg
     }
 };
 
-class CThorChooseSetsExArg : public CThorArg, implements IHThorChooseSetsExArg
+class CThorChooseSetsExArg : implements IHThorChooseSetsExArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -434,7 +434,7 @@ class CThorChooseSetsExArg : public CThorArg, implements IHThorChooseSetsExArg
     }
 };
 
-class CThorDiskWriteArg : public CThorArg, implements IHThorDiskWriteArg
+class CThorDiskWriteArg : implements IHThorDiskWriteArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -463,7 +463,7 @@ class CThorDiskWriteArg : public CThorArg, implements IHThorDiskWriteArg
     virtual const char * getCluster(unsigned idx)         { return NULL; }
 };
 
-class CThorPipeReadArg : public CThorArg, implements IHThorPipeReadArg
+class CThorPipeReadArg : implements IHThorPipeReadArg, public CThorArg
 {
 public:
     virtual void Link() const { RtlCInterface::Link(); }
@@ -491,7 +491,7 @@ public:
     virtual const char * getXmlIteratorPath()             { return NULL; }
 };
 
-class CThorPipeWriteArg : public CThorArg, implements IHThorPipeWriteArg
+class CThorPipeWriteArg : implements IHThorPipeWriteArg, public CThorArg
 {
 public:
     virtual void Link() const { RtlCInterface::Link(); }
@@ -519,7 +519,7 @@ public:
     virtual IHThorXmlWriteExtra * queryXmlOutput()          { return NULL; }
 };
 
-class CThorPipeThroughArg : public CThorArg, implements IHThorPipeThroughArg
+class CThorPipeThroughArg : implements IHThorPipeThroughArg, public CThorArg
 {
 public:
     virtual void Link() const { RtlCInterface::Link(); }
@@ -550,7 +550,7 @@ public:
 };
 
 
-class CThorFilterArg : public CThorArg, implements IHThorFilterArg
+class CThorFilterArg : implements IHThorFilterArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -573,7 +573,7 @@ class CThorFilterArg : public CThorArg, implements IHThorFilterArg
     virtual bool isValid(const void * _left)                { return true; }
 };
 
-class CThorFilterGroupArg : public CThorArg, implements IHThorFilterGroupArg
+class CThorFilterGroupArg : implements IHThorFilterGroupArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -597,7 +597,7 @@ class CThorFilterGroupArg : public CThorArg, implements IHThorFilterGroupArg
 
 };
 
-class CThorGroupArg : public CThorArg, implements IHThorGroupArg
+class CThorGroupArg : implements IHThorGroupArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -617,7 +617,7 @@ class CThorGroupArg : public CThorArg, implements IHThorGroupArg
     }
 };
 
-class CThorDegroupArg : public CThorArg, implements IHThorDegroupArg
+class CThorDegroupArg : implements IHThorDegroupArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -637,7 +637,7 @@ class CThorDegroupArg : public CThorArg, implements IHThorDegroupArg
     }
 };
 
-class CThorIterateArg : public CThorArg, implements IHThorIterateArg
+class CThorIterateArg : implements IHThorIterateArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -662,7 +662,7 @@ class CThorIterateArg : public CThorArg, implements IHThorIterateArg
 
 typedef CThorIterateArg CThorGroupIterateArg;
 
-class CThorProcessArg : public CThorArg, implements IHThorProcessArg
+class CThorProcessArg : implements IHThorProcessArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -685,7 +685,7 @@ class CThorProcessArg : public CThorArg, implements IHThorProcessArg
 };
 
 
-class CThorProjectArg : public CThorArg, implements IHThorProjectArg
+class CThorProjectArg : implements IHThorProjectArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -707,7 +707,7 @@ class CThorProjectArg : public CThorArg, implements IHThorProjectArg
     virtual bool canFilter()                                { return false; }
 };
 
-class CThorQuantileArg : public CThorArg, implements IHThorQuantileArg
+class CThorQuantileArg : implements IHThorQuantileArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -731,7 +731,7 @@ class CThorQuantileArg : public CThorArg, implements IHThorQuantileArg
     virtual void getRange(bool & isAll, size32_t & tlen, void * & tgt) { isAll = true; tlen = 0; tgt = NULL; }
 };
 
-class CThorPrefetchProjectArg : public CThorArg, implements IHThorPrefetchProjectArg
+class CThorPrefetchProjectArg : implements IHThorPrefetchProjectArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -758,7 +758,7 @@ class CThorPrefetchProjectArg : public CThorArg, implements IHThorPrefetchProjec
     virtual bool preTransform(rtlRowBuilder & extract, const void * _left, unsigned __int64 _counter) { return true; }
 };
 
-struct CThorFilterProjectArg : public CThorArg, implements IHThorFilterProjectArg
+struct CThorFilterProjectArg : implements IHThorFilterProjectArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -781,7 +781,7 @@ struct CThorFilterProjectArg : public CThorArg, implements IHThorFilterProjectAr
     virtual bool canMatchAny() { return true; }
 };
 
-class CThorCountProjectArg : public CThorArg, implements IHThorCountProjectArg
+class CThorCountProjectArg : implements IHThorCountProjectArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -803,7 +803,7 @@ class CThorCountProjectArg : public CThorArg, implements IHThorCountProjectArg
     virtual bool canFilter()                                { return false; }
 };
 
-class CThorNormalizeArg : public CThorArg, implements IHThorNormalizeArg
+class CThorNormalizeArg : implements IHThorNormalizeArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -823,7 +823,7 @@ class CThorNormalizeArg : public CThorArg, implements IHThorNormalizeArg
     }
 };
 
-class CThorSelectNArg : public CThorArg, implements IHThorSelectNArg
+class CThorSelectNArg : implements IHThorSelectNArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -844,7 +844,7 @@ class CThorSelectNArg : public CThorArg, implements IHThorSelectNArg
 };
 
 
-class CThorCombineArg : public CThorArg, implements IHThorCombineArg
+class CThorCombineArg : implements IHThorCombineArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -866,7 +866,7 @@ class CThorCombineArg : public CThorArg, implements IHThorCombineArg
     virtual bool canFilter()                                { return false; }
 };
 
-class CThorCombineGroupArg : public CThorArg, implements IHThorCombineGroupArg
+class CThorCombineGroupArg : implements IHThorCombineGroupArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -888,7 +888,7 @@ class CThorCombineGroupArg : public CThorArg, implements IHThorCombineGroupArg
     virtual bool canFilter()                                { return false; }
 };
 
-class CThorRollupGroupArg : public CThorArg, implements IHThorRollupGroupArg
+class CThorRollupGroupArg : implements IHThorRollupGroupArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -908,7 +908,7 @@ class CThorRollupGroupArg : public CThorArg, implements IHThorRollupGroupArg
     }
 };
 
-class CThorRegroupArg : public CThorArg, implements IHThorRegroupArg
+class CThorRegroupArg : implements IHThorRegroupArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -929,7 +929,7 @@ class CThorRegroupArg : public CThorArg, implements IHThorRegroupArg
 };
 
 
-class CThorNullArg : public CThorArg, implements IHThorNullArg
+class CThorNullArg : implements IHThorNullArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -950,7 +950,7 @@ class CThorNullArg : public CThorArg, implements IHThorNullArg
     }
 };
 
-class CThorActionArg : public CThorArg, implements IHThorActionArg
+class CThorActionArg : implements IHThorActionArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -975,7 +975,7 @@ class CThorActionArg : public CThorArg, implements IHThorActionArg
 
 typedef CThorActionArg CThorSideEffectArg;
 
-class CThorLimitArg : public CThorArg, implements IHThorLimitArg
+class CThorLimitArg : implements IHThorLimitArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -998,7 +998,7 @@ class CThorLimitArg : public CThorArg, implements IHThorLimitArg
 };
 
 
-class CThorCreateRowLimitArg : public CThorArg, implements IHThorLimitArg, implements IHThorLimitTransformExtra
+class CThorCreateRowLimitArg : implements IHThorLimitArg, implements IHThorLimitTransformExtra, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1024,7 +1024,7 @@ class CThorCreateRowLimitArg : public CThorArg, implements IHThorLimitArg, imple
 };
 
 
-class CThorCatchArg : public CThorArg, implements IHThorCatchArg
+class CThorCatchArg : implements IHThorCatchArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1050,7 +1050,7 @@ class CThorCatchArg : public CThorArg, implements IHThorCatchArg
 };
 
 
-class CThorSplitArg : public CThorArg, implements IHThorSplitArg
+class CThorSplitArg : implements IHThorSplitArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1073,7 +1073,7 @@ class CThorSplitArg : public CThorArg, implements IHThorSplitArg
     virtual bool isBalanced()                               { return false; }
 };
 
-class CThorSpillArg : public CThorArg, implements IHThorSpillArg
+class CThorSpillArg : implements IHThorSpillArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1103,7 +1103,7 @@ class CThorSpillArg : public CThorArg, implements IHThorSpillArg
 };
 
 
-class CThorNormalizeChildArg : public CThorArg, implements IHThorNormalizeChildArg
+class CThorNormalizeChildArg : implements IHThorNormalizeChildArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1124,7 +1124,7 @@ class CThorNormalizeChildArg : public CThorArg, implements IHThorNormalizeChildA
 };
 
 
-class CThorNormalizeLinkedChildArg : public CThorArg, implements IHThorNormalizeLinkedChildArg
+class CThorNormalizeLinkedChildArg : implements IHThorNormalizeLinkedChildArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1145,7 +1145,7 @@ class CThorNormalizeLinkedChildArg : public CThorArg, implements IHThorNormalize
 };
 
 
-class CThorChildIteratorArg : public CThorArg, implements IHThorChildIteratorArg
+class CThorChildIteratorArg : implements IHThorChildIteratorArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1166,7 +1166,7 @@ class CThorChildIteratorArg : public CThorArg, implements IHThorChildIteratorArg
 };
 
 
-class CThorRawIteratorArg : public CThorArg, implements IHThorRawIteratorArg
+class CThorRawIteratorArg : implements IHThorRawIteratorArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1187,7 +1187,7 @@ class CThorRawIteratorArg : public CThorArg, implements IHThorRawIteratorArg
 };
 
 
-class CThorLinkedRawIteratorArg : public CThorArg, implements IHThorLinkedRawIteratorArg
+class CThorLinkedRawIteratorArg : implements IHThorLinkedRawIteratorArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1208,7 +1208,7 @@ class CThorLinkedRawIteratorArg : public CThorArg, implements IHThorLinkedRawIte
 };
 
 
-class CThorRollupArg : public CThorArg, implements IHThorRollupArg
+class CThorRollupArg : implements IHThorRollupArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1231,7 +1231,7 @@ class CThorRollupArg : public CThorArg, implements IHThorRollupArg
     virtual bool matches(const void * _left, const void * _right) { return true; }
 };
 
-class CThorDedupArg : public CThorArg, implements IHThorDedupArg
+class CThorDedupArg : implements IHThorDedupArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1257,7 +1257,7 @@ class CThorDedupArg : public CThorArg, implements IHThorDedupArg
     virtual ICompare * queryComparePrimary() { return NULL; }
 };
 
-class CThorAggregateArg : public CThorArg, implements IHThorAggregateArg
+class CThorAggregateArg : implements IHThorAggregateArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1337,7 +1337,7 @@ class CThorExistsAggregateArg : public CThorAggregateArg
     }
 };
 
-class CThorThroughAggregateArg : public CThorArg, implements IHThorThroughAggregateArg
+class CThorThroughAggregateArg : implements IHThorThroughAggregateArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1362,7 +1362,7 @@ class CThorThroughAggregateArg : public CThorArg, implements IHThorThroughAggreg
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 };
 
-class CThorDistributionArg : public CThorArg, implements IHThorDistributionArg
+class CThorDistributionArg : implements IHThorDistributionArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1383,7 +1383,7 @@ class CThorDistributionArg : public CThorArg, implements IHThorDistributionArg
     }
 };
 
-class CThorGroupAggregateArg : public CThorArg, implements IHThorGroupAggregateArg
+class CThorGroupAggregateArg : implements IHThorGroupAggregateArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1406,7 +1406,7 @@ class CThorGroupAggregateArg : public CThorArg, implements IHThorGroupAggregateA
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 };
 
-class CThorHashAggregateArg : public CThorArg, implements IHThorHashAggregateArg
+class CThorHashAggregateArg : implements IHThorHashAggregateArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1431,7 +1431,7 @@ class CThorHashAggregateArg : public CThorArg, implements IHThorHashAggregateArg
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 };
 
-class CThorInlineTableArg : public CThorArg, implements IHThorInlineTableArg
+class CThorInlineTableArg : implements IHThorInlineTableArg, public CThorArg
 {
 public:
     virtual void Link() const { RtlCInterface::Link(); }
@@ -1459,7 +1459,7 @@ class CThorInlineRowArg : public CThorInlineTableArg
     virtual __uint64 numRows()                          { return 1; }
 };
 
-class CThorSampleArg : public CThorArg, implements IHThorSampleArg
+class CThorSampleArg : implements IHThorSampleArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1479,7 +1479,7 @@ class CThorSampleArg : public CThorArg, implements IHThorSampleArg
     }
 };
 
-class CThorEnthArg : public CThorArg, implements IHThorEnthArg
+class CThorEnthArg : implements IHThorEnthArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1499,7 +1499,7 @@ class CThorEnthArg : public CThorArg, implements IHThorEnthArg
     }
 };
 
-class CThorFunnelArg : public CThorArg, implements IHThorFunnelArg
+class CThorFunnelArg : implements IHThorFunnelArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1522,7 +1522,7 @@ class CThorFunnelArg : public CThorArg, implements IHThorFunnelArg
     virtual bool pullSequentially()                     { return false; }
 };
 
-class CThorNonEmptyArg : public CThorArg, implements IHThorNonEmptyArg
+class CThorNonEmptyArg : implements IHThorNonEmptyArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1542,7 +1542,7 @@ class CThorNonEmptyArg : public CThorArg, implements IHThorNonEmptyArg
     }
 };
 
-class CThorMergeArg : public CThorArg, implements IHThorMergeArg
+class CThorMergeArg : implements IHThorMergeArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1567,7 +1567,7 @@ class CThorMergeArg : public CThorArg, implements IHThorMergeArg
     virtual bool dedup()                                { return false; }
 };
 
-class CThorRemoteResultArg : public CThorArg, implements IHThorRemoteResultArg
+class CThorRemoteResultArg : implements IHThorRemoteResultArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1590,7 +1590,7 @@ class CThorRemoteResultArg : public CThorArg, implements IHThorRemoteResultArg
     virtual int getSequence()                               { return -3; }
 };
 
-class CThorApplyArg : public CThorArg, implements IHThorApplyArg
+class CThorApplyArg : implements IHThorApplyArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1614,7 +1614,7 @@ class CThorApplyArg : public CThorArg, implements IHThorApplyArg
     virtual void end() { }
 };
 
-class CThorSortArg : public CThorArg, implements IHThorSortArg, implements IHThorAlgorithm
+class CThorSortArg : implements IHThorSortArg, implements IHThorAlgorithm, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1648,7 +1648,7 @@ class CThorSortArg : public CThorArg, implements IHThorSortArg, implements IHTho
     virtual ICompare * queryCompareSerializedRow()      { return NULL; }
 };
 
-class CThorTopNArg : public CThorArg, implements IHThorTopNArg
+class CThorTopNArg : implements IHThorTopNArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1683,7 +1683,7 @@ class CThorTopNArg : public CThorArg, implements IHThorTopNArg
     virtual int compareBest(const void * _left) { return +1; }
 };
 
-class CThorSubSortArg : public CThorArg, implements IHThorSubSortArg
+class CThorSubSortArg : implements IHThorSubSortArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1715,7 +1715,7 @@ class CThorSubSortArg : public CThorArg, implements IHThorSubSortArg
     virtual ICompare * queryCompareSerializedRow() { return NULL; }
 };
 
-class CThorKeyedJoinArg : public CThorArg, implements IHThorKeyedJoinArg
+class CThorKeyedJoinArg : implements IHThorKeyedJoinArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1774,7 +1774,7 @@ class CThorKeyedJoinArg : public CThorArg, implements IHThorKeyedJoinArg
 typedef CThorKeyedJoinArg CThorKeyedDenormalizeArg;
 typedef CThorKeyedJoinArg CThorKeyedDenormalizeGroupArg;
 
-class CThorJoinArg : public CThorArg, implements IHThorJoinArg
+class CThorJoinArg : implements IHThorJoinArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1827,7 +1827,7 @@ class CThorJoinArg : public CThorArg, implements IHThorJoinArg
 typedef CThorJoinArg CThorDenormalizeArg;
 typedef CThorJoinArg CThorDenormalizeGroupArg;
 
-class CThorAllJoinArg : public CThorArg, implements IHThorAllJoinArg
+class CThorAllJoinArg : implements IHThorAllJoinArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1864,7 +1864,7 @@ typedef CThorAllJoinArg CThorAllDenormalizeArg;
 typedef CThorAllJoinArg CThorAllDenormalizeGroupArg;
 
 // Used for hash and lookup joins.
-class CThorHashJoinArg : public CThorArg, implements IHThorHashJoinArg
+class CThorHashJoinArg : implements IHThorHashJoinArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1923,7 +1923,7 @@ typedef CThorHashJoinArg CThorHashDenormalizeArg;
 typedef CThorHashJoinArg CThorHashDenormalizeGroupArg;
 
 
-class CThorKeyedDistributeArg : public CThorArg, implements IHThorKeyedDistributeArg
+class CThorKeyedDistributeArg : implements IHThorKeyedDistributeArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1947,7 +1947,7 @@ class CThorKeyedDistributeArg : public CThorArg, implements IHThorKeyedDistribut
 };
 
 
-class CThorFetchArg : public CThorArg, implements IHThorFetchArg
+class CThorFetchArg : implements IHThorFetchArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1971,7 +1971,7 @@ class CThorFetchArg : public CThorArg, implements IHThorFetchArg
     }
 };
 
-class CThorWorkUnitWriteArg : public CThorArg, implements IHThorWorkUnitWriteArg
+class CThorWorkUnitWriteArg : implements IHThorWorkUnitWriteArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1998,7 +1998,7 @@ class CThorWorkUnitWriteArg : public CThorArg, implements IHThorWorkUnitWriteArg
     virtual unsigned getMaxSize()                           { return 0; }
 };
 
-class CThorXmlWorkunitWriteArg : public CThorArg, implements IHThorXmlWorkunitWriteArg
+class CThorXmlWorkunitWriteArg : implements IHThorXmlWorkunitWriteArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2023,7 +2023,7 @@ class CThorXmlWorkunitWriteArg : public CThorArg, implements IHThorXmlWorkunitWr
     virtual unsigned getFlags()                             { return 0; }
 };
 
-class CThorDictionaryWorkUnitWriteArg : public CThorArg, implements IHThorDictionaryWorkUnitWriteArg
+class CThorDictionaryWorkUnitWriteArg : implements IHThorDictionaryWorkUnitWriteArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2048,7 +2048,7 @@ class CThorDictionaryWorkUnitWriteArg : public CThorArg, implements IHThorDictio
     virtual unsigned getFlags()                             { return 0; }
 };
 
-class CThorDictionaryResultWriteArg : public CThorArg, implements IHThorDictionaryResultWriteArg
+class CThorDictionaryResultWriteArg : implements IHThorDictionaryResultWriteArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2071,7 +2071,7 @@ class CThorDictionaryResultWriteArg : public CThorArg, implements IHThorDictiona
     virtual bool usedOutsideGraph() { return true; }
 };
 
-class CThorHashDistributeArg : public CThorArg, implements IHThorHashDistributeArg
+class CThorHashDistributeArg : implements IHThorHashDistributeArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2096,7 +2096,7 @@ class CThorHashDistributeArg : public CThorArg, implements IHThorHashDistributeA
     virtual ICompare * queryMergeCompare()              { return NULL; }
 };
 
-class CThorHashDedupArg : public CThorArg, implements IHThorHashDedupArg
+class CThorHashDedupArg : implements IHThorHashDedupArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2118,7 +2118,7 @@ class CThorHashDedupArg : public CThorArg, implements IHThorHashDedupArg
     virtual unsigned getFlags() { return 0; }
 };
 
-class CThorHashMinusArg : public CThorArg, implements IHThorHashMinusArg
+class CThorHashMinusArg : implements IHThorHashMinusArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2139,7 +2139,7 @@ class CThorHashMinusArg : public CThorArg, implements IHThorHashMinusArg
 };
 
 
-class CThorIfArg : public CThorArg, implements IHThorIfArg
+class CThorIfArg : implements IHThorIfArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2160,7 +2160,7 @@ class CThorIfArg : public CThorArg, implements IHThorIfArg
     }
 };
 
-class CThorCaseArg : public CThorArg, implements IHThorCaseArg
+class CThorCaseArg : implements IHThorCaseArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2182,7 +2182,7 @@ class CThorCaseArg : public CThorArg, implements IHThorCaseArg
 };
 
 
-class CThorSequentialArg : public CThorArg, implements IHThorSequentialArg
+class CThorSequentialArg : implements IHThorSequentialArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2204,7 +2204,7 @@ class CThorSequentialArg : public CThorArg, implements IHThorSequentialArg
 };
 
 
-class CThorParallelArg : public CThorArg, implements IHThorParallelArg
+class CThorParallelArg : implements IHThorParallelArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2226,7 +2226,7 @@ class CThorParallelArg : public CThorArg, implements IHThorParallelArg
 };
 
 
-class CThorKeyDiffArg : public CThorArg, implements IHThorKeyDiffArg
+class CThorKeyDiffArg : implements IHThorKeyDiffArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2250,7 +2250,7 @@ class CThorKeyDiffArg : public CThorArg, implements IHThorKeyDiffArg
     virtual unsigned getExpiryDays()                        { return 0; }
 };
 
-class CThorKeyPatchArg : public CThorArg, implements IHThorKeyPatchArg
+class CThorKeyPatchArg : implements IHThorKeyPatchArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2275,7 +2275,7 @@ class CThorKeyPatchArg : public CThorArg, implements IHThorKeyPatchArg
 };
 
 
-class CThorWorkunitReadArg : public CThorArg, implements IHThorWorkunitReadArg
+class CThorWorkunitReadArg : implements IHThorWorkunitReadArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2300,7 +2300,7 @@ class CThorWorkunitReadArg : public CThorArg, implements IHThorWorkunitReadArg
     virtual IXmlToRowTransformer * queryXmlTransformer() { return NULL; }
 };
 
-class CThorLocalResultReadArg : public CThorArg, implements IHThorLocalResultReadArg
+class CThorLocalResultReadArg : implements IHThorLocalResultReadArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2320,7 +2320,7 @@ class CThorLocalResultReadArg : public CThorArg, implements IHThorLocalResultRea
     }
 };
 
-class CThorLocalResultWriteArg : public CThorArg, implements IHThorLocalResultWriteArg
+class CThorLocalResultWriteArg : implements IHThorLocalResultWriteArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2345,7 +2345,7 @@ class CThorLocalResultWriteArg : public CThorArg, implements IHThorLocalResultWr
 
 typedef CThorLocalResultWriteArg CThorLocalResultSpillArg;
 
-class CThorGraphLoopResultReadArg : public CThorArg, implements IHThorGraphLoopResultReadArg
+class CThorGraphLoopResultReadArg : implements IHThorGraphLoopResultReadArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2365,7 +2365,7 @@ class CThorGraphLoopResultReadArg : public CThorArg, implements IHThorGraphLoopR
     }
 };
 
-class CThorGraphLoopResultWriteArg : public CThorArg, implements IHThorGraphLoopResultWriteArg
+class CThorGraphLoopResultWriteArg : implements IHThorGraphLoopResultWriteArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2388,7 +2388,7 @@ class CThorGraphLoopResultWriteArg : public CThorArg, implements IHThorGraphLoop
 
 //-- Csv --
 
-class CThorCsvWriteArg : public CThorArg, implements IHThorCsvWriteArg
+class CThorCsvWriteArg : implements IHThorCsvWriteArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2420,7 +2420,7 @@ class CThorCsvWriteArg : public CThorArg, implements IHThorCsvWriteArg
 };
 
 
-class CThorCsvFetchArg: public CThorArg, implements IHThorCsvFetchArg
+class CThorCsvFetchArg: implements IHThorCsvFetchArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2446,7 +2446,7 @@ class CThorCsvFetchArg: public CThorArg, implements IHThorCsvFetchArg
 
 //-- Xml --
 
-class CThorXmlParseArg : public CThorArg, implements IHThorXmlParseArg
+class CThorXmlParseArg : implements IHThorXmlParseArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2468,7 +2468,7 @@ class CThorXmlParseArg : public CThorArg, implements IHThorXmlParseArg
     virtual bool requiresContents() { return false; }
 };
 
-class CThorXmlFetchArg : public CThorArg, implements IHThorXmlFetchArg
+class CThorXmlFetchArg : implements IHThorXmlFetchArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2495,7 +2495,7 @@ class CThorXmlFetchArg : public CThorArg, implements IHThorXmlFetchArg
 };
 
 //Simple xml generation...
-class CThorXmlWriteArg : public CThorArg, implements IHThorXmlWriteArg
+class CThorXmlWriteArg : implements IHThorXmlWriteArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2534,7 +2534,7 @@ class CThorXmlWriteArg : public CThorArg, implements IHThorXmlWriteArg
 
 //-- SOAP --
 
-class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg
+class CThorSoapActionArg : implements IHThorSoapActionArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2574,7 +2574,7 @@ class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }
 };
 
-class CThorSoapCallArg : public CThorArg, implements IHThorSoapCallArg
+class CThorSoapCallArg : implements IHThorSoapCallArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2624,7 +2624,7 @@ typedef CThorNullArg CThorDatasetResultArg;
 typedef CThorNullArg CThorRowResultArg;
 typedef CThorNullArg CThorPullArg;
 
-class CThorParseArg : public CThorArg, implements IHThorParseArg
+class CThorParseArg : implements IHThorParseArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2650,7 +2650,7 @@ class CThorParseArg : public CThorArg, implements IHThorParseArg
 };
 
 
-class CThorIndexReadArg : public CThorArg, implements IHThorIndexReadArg, implements IHThorSourceLimitTransformExtra
+class CThorIndexReadArg : implements IHThorIndexReadArg, implements IHThorSourceLimitTransformExtra, public CThorArg
 {
 protected:
     virtual void Link() const { RtlCInterface::Link(); }
@@ -2718,7 +2718,7 @@ class CThorSteppedIndexReadArg : public CThorIndexReadArg, implements IHThorStep
     virtual unsigned getPrefetchSize() { return 0; }
 };
 
-class CThorIndexNormalizeArg : public CThorArg, implements IHThorIndexNormalizeArg, implements IHThorSourceLimitTransformExtra
+class CThorIndexNormalizeArg : implements IHThorIndexNormalizeArg, implements IHThorSourceLimitTransformExtra, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2754,7 +2754,7 @@ public:
     IThorIndexCallback * fpp;
 };
 
-class CThorIndexAggregateArg : public CThorArg, implements IHThorIndexAggregateArg
+class CThorIndexAggregateArg : implements IHThorIndexAggregateArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2785,7 +2785,7 @@ public:
     IThorIndexCallback * fpp;
 };
 
-class CThorIndexCountArg : public CThorArg, implements IHThorIndexCountArg, implements IHThorSourceCountLimit
+class CThorIndexCountArg : implements IHThorIndexCountArg, implements IHThorSourceCountLimit, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2828,7 +2828,7 @@ public:
     IThorIndexCallback * fpp;
 };
 
-class CThorIndexGroupAggregateArg : public CThorArg, implements IHThorIndexGroupAggregateArg
+class CThorIndexGroupAggregateArg : implements IHThorIndexGroupAggregateArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2866,7 +2866,7 @@ public:
 };
 
 
-class CThorDiskReadArg : public CThorArg, implements IHThorDiskReadArg, implements IHThorSourceLimitTransformExtra
+class CThorDiskReadArg : implements IHThorDiskReadArg, implements IHThorSourceLimitTransformExtra, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2910,7 +2910,7 @@ public:
     IThorDiskCallback * fpp;
 };
 
-class CThorDiskNormalizeArg : public CThorArg, implements IHThorDiskNormalizeArg, implements IHThorSourceLimitTransformExtra
+class CThorDiskNormalizeArg : implements IHThorDiskNormalizeArg, implements IHThorSourceLimitTransformExtra, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2945,7 +2945,7 @@ public:
     IThorDiskCallback * fpp;
 };
 
-class CThorDiskAggregateArg : public CThorArg, implements IHThorDiskAggregateArg
+class CThorDiskAggregateArg : implements IHThorDiskAggregateArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2975,7 +2975,7 @@ public:
     IThorDiskCallback * fpp;
 };
 
-class CThorDiskCountArg : public CThorArg, implements IHThorDiskCountArg, implements IHThorSourceCountLimit
+class CThorDiskCountArg : implements IHThorDiskCountArg, implements IHThorSourceCountLimit, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3011,7 +3011,7 @@ public:
     IThorDiskCallback * fpp;
 };
 
-class CThorDiskGroupAggregateArg : public CThorArg, implements IHThorDiskGroupAggregateArg
+class CThorDiskGroupAggregateArg : implements IHThorDiskGroupAggregateArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3047,7 +3047,7 @@ public:
 };
 
 
-class CThorCsvReadArg: public CThorArg, implements IHThorCsvReadArg
+class CThorCsvReadArg: implements IHThorCsvReadArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3079,7 +3079,7 @@ public:
     IThorDiskCallback * fpp;
 };
 
-class CThorXmlReadArg: public CThorArg, implements IHThorXmlReadArg
+class CThorXmlReadArg: implements IHThorXmlReadArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3112,7 +3112,7 @@ public:
 };
 
 //Normalize
-class CThorChildNormalizeArg : public CThorArg, implements IHThorChildNormalizeArg
+class CThorChildNormalizeArg : implements IHThorChildNormalizeArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3133,7 +3133,7 @@ class CThorChildNormalizeArg : public CThorArg, implements IHThorChildNormalizeA
 };
 
 //Aggregate
-class CThorChildAggregateArg : public CThorArg, implements IHThorChildAggregateArg
+class CThorChildAggregateArg : implements IHThorChildAggregateArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3155,7 +3155,7 @@ class CThorChildAggregateArg : public CThorArg, implements IHThorChildAggregateA
 
 //NormalizedAggregate
 //NB: The child may actually be a grandchild/great-grand child, so need to store some sort of current state in the hash table
-class CThorChildGroupAggregateArg : public CThorArg, implements IHThorChildGroupAggregateArg
+class CThorChildGroupAggregateArg : implements IHThorChildGroupAggregateArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3178,7 +3178,7 @@ class CThorChildGroupAggregateArg : public CThorArg, implements IHThorChildGroup
 };
 
 //Normalize
-class CThorChildThroughNormalizeArg : public CThorArg, implements IHThorChildThroughNormalizeArg
+class CThorChildThroughNormalizeArg : implements IHThorChildThroughNormalizeArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3201,7 +3201,7 @@ class CThorChildThroughNormalizeArg : public CThorArg, implements IHThorChildThr
     }
 };
 
-class CThorLoopArg : public CThorArg, implements IHThorLoopArg
+class CThorLoopArg : implements IHThorLoopArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3230,7 +3230,7 @@ class CThorLoopArg : public CThorArg, implements IHThorLoopArg
 };
 
 
-class CThorGraphLoopArg : public CThorArg, implements IHThorGraphLoopArg
+class CThorGraphLoopArg : implements IHThorGraphLoopArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3253,7 +3253,7 @@ class CThorGraphLoopArg : public CThorArg, implements IHThorGraphLoopArg
 };
 
 
-class CThorRemoteArg : public CThorArg, implements IHThorRemoteArg
+class CThorRemoteArg : implements IHThorRemoteArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3278,7 +3278,7 @@ class CThorRemoteArg : public CThorArg, implements IHThorRemoteArg
 };
 
 
-class CThorLibraryCallArg : public CThorArg, implements IHThorLibraryCallArg
+class CThorLibraryCallArg : implements IHThorLibraryCallArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3299,7 +3299,7 @@ class CThorLibraryCallArg : public CThorArg, implements IHThorLibraryCallArg
     }
 };
 
-class CThorNWayInputArg : public CThorArg, implements IHThorNWayInputArg
+class CThorNWayInputArg : implements IHThorNWayInputArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3320,7 +3320,7 @@ class CThorNWayInputArg : public CThorArg, implements IHThorNWayInputArg
 
 };
 
-class CThorNWayGraphLoopResultReadArg : public CThorArg, implements IHThorNWayGraphLoopResultReadArg
+class CThorNWayGraphLoopResultReadArg : implements IHThorNWayGraphLoopResultReadArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3342,7 +3342,7 @@ class CThorNWayGraphLoopResultReadArg : public CThorArg, implements IHThorNWayGr
     virtual bool isGrouped() const { return false; }
 };
 
-class CThorNWayMergeArg : public CThorArg, implements IHThorNWayMergeArg
+class CThorNWayMergeArg : implements IHThorNWayMergeArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3370,7 +3370,7 @@ class CThorNWayMergeArg : public CThorArg, implements IHThorNWayMergeArg
     virtual ISteppingMeta * querySteppingMeta()         { return NULL; }
 };
 
-class CThorNWayMergeJoinArg : public CThorArg, implements IHThorNWayMergeJoinArg
+class CThorNWayMergeJoinArg : implements IHThorNWayMergeJoinArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3415,7 +3415,7 @@ class CThorNWayMergeJoinArg : public CThorArg, implements IHThorNWayMergeJoinArg
 };
 
 
-class CThorNWaySelectArg : public CThorArg, implements IHThorNWaySelectArg
+class CThorNWaySelectArg : implements IHThorNWaySelectArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3435,7 +3435,7 @@ class CThorNWaySelectArg : public CThorArg, implements IHThorNWaySelectArg
     }
 };
 
-class CThorSectionArg : public CThorArg, implements IHThorSectionArg
+class CThorSectionArg : implements IHThorSectionArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3458,7 +3458,7 @@ class CThorSectionArg : public CThorArg, implements IHThorSectionArg
     virtual void getDescription(size32_t & _retLen, char * & _retData) { _retLen = 0; _retData = NULL; }
 };
 
-class CThorSectionInputArg : public CThorArg, implements IHThorSectionInputArg
+class CThorSectionInputArg : implements IHThorSectionInputArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3480,7 +3480,7 @@ class CThorSectionInputArg : public CThorArg, implements IHThorSectionInputArg
     virtual unsigned getFlags() { return 0; }
 };
 
-class CThorTraceArg : public CThorArg, implements IHThorTraceArg
+class CThorTraceArg : implements IHThorTraceArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3506,7 +3506,7 @@ class CThorTraceArg : public CThorArg, implements IHThorTraceArg
 };
 
 
-class CThorWhenActionArg : public CThorArg, implements IHThorWhenActionArg
+class CThorWhenActionArg : implements IHThorWhenActionArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3526,7 +3526,7 @@ class CThorWhenActionArg : public CThorArg, implements IHThorWhenActionArg
     }
 };
 
-class CThorStreamedIteratorArg : public CThorArg, implements IHThorStreamedIteratorArg
+class CThorStreamedIteratorArg : implements IHThorStreamedIteratorArg, public CThorArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -3799,7 +3799,7 @@ protected:
     unsigned cur;
 };
 
-class EclProcess : public RtlCInterface, implements IEclProcess
+class EclProcess : implements IEclProcess, public RtlCInterface
 {
 public:
     RTLIMPLEMENT_IINTERFACE

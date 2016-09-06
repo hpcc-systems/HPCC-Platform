@@ -37,18 +37,13 @@ private:
     bool pipeOpen;
 
 public:
-    CPipeWriteSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container)
+    CPipeWriteSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
     {
         helper = static_cast <IHThorPipeWriteArg *> (queryHelper());
         pipe.setown(createPipeProcess(globals->queryProp("@allowedPipePrograms")));
         pipeOpen = false;
-    }
-    ~CPipeWriteSlaveActivity()
-    {
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         recreate = helper->recreateEachRow();
+        setRequireInitData(false);
     }
     void open()
     {

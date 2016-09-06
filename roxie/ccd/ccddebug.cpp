@@ -31,7 +31,7 @@ using roxiemem::IRowManager;
 
 //=======================================================================================================================
 
-class InputProbe : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream, implements IRoxieProbe // base class for the edge probes used for tracing and debugging....
+class InputProbe : implements IEngineRowStream, implements IFinalRoxieInput, implements IRoxieProbe, public CInterface // base class for the edge probes used for tracing and debugging....
 {
 protected:
     IFinalRoxieInput *in;
@@ -53,6 +53,8 @@ protected:
     bool hasStopped;
 
 public:
+    IMPLEMENT_IINTERFACE
+
     InputProbe(IFinalRoxieInput *_in, IDebuggableContext *_debugContext,
         unsigned _sourceId, unsigned _sourceIdx, unsigned _targetId, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
         : in(_in),  debugContext(_debugContext),
@@ -113,6 +115,14 @@ public:
         }
         else
             return in->queryConcreteInput(idx);
+    }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput)
+    {
+        return this;
+    }
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const
+    {
+        return nullptr;
     }
     virtual IRoxieServerActivity *queryActivity()
     {
@@ -187,8 +197,6 @@ public:
 class TraceProbe : public InputProbe
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     TraceProbe(IFinalRoxieInput *_in, unsigned _sourceId, unsigned _targetId, unsigned _sourceIdx, unsigned _targetIdx, unsigned _iteration, unsigned _channel)
         : InputProbe(_in, NULL, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel)
     {
@@ -283,7 +291,7 @@ public:
     }
 };
 
-class CProbeManager : public CInterface, implements IProbeManager
+class CProbeManager : implements IProbeManager, public CInterface
 {
     IArrayOf<IFinalRoxieInput> probes; // May want to replace with hash table at some point....
 public:

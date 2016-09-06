@@ -1352,6 +1352,8 @@ public:
             rightThorAllocator = queryJobChannel().queryThorAllocator();
         rightRowManager = rightThorAllocator->queryRowManager();
         broadcastLock = NULL;
+        if (!isGlobal())
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
     ~CInMemJoinBase()
@@ -1695,6 +1697,7 @@ protected:
     using PARENT::gatheredRHSNodeStreams;
     using PARENT::queryInput;
     using PARENT::rhsRowLock;
+    using PARENT::hasStarted;
 
     IHash *leftHash, *rightHash;
     ICompare *compareRight, *compareLeftRight;
@@ -2665,29 +2668,32 @@ public:
     }
     virtual void stop() override
     {
-        if (isGlobal())
+        if (hasStarted())
         {
-            if (gotRHS)
+            if (isGlobal())
             {
-                // Other channels sharing HT. So do not reset until all here
-                if (!hasFailedOverToLocal() && queryJob().queryJobChannels()>1)
-                    InterChannelBarrier();
+                if (gotRHS)
+                {
+                    // Other channels sharing HT. So do not reset until all here
+                    if (!hasFailedOverToLocal() && queryJob().queryJobChannels()>1)
+                        InterChannelBarrier();
+                }
+                else
+                    getRHS(true); // If global, need to handle RHS until all are slaves stop
             }
-            else
-                getRHS(true); // If global, need to handle RHS until all are slaves stop
-        }
 
-        if (rhsDistributor)
-        {
-            rhsDistributor->disconnect(true);
-            rhsDistributor->join();
+            if (rhsDistributor)
+            {
+                rhsDistributor->disconnect(true);
+                rhsDistributor->join();
+            }
+            if (lhsDistributor)
+            {
+                lhsDistributor->disconnect(true);
+                lhsDistributor->join();
+            }
+            joinHelper.clear();
         }
-        if (lhsDistributor)
-        {
-            lhsDistributor->disconnect(true);
-            lhsDistributor->join();
-        }
-        joinHelper.clear();
         PARENT::stop();
     }
     virtual bool isGrouped() const override
@@ -3215,16 +3221,19 @@ public:
     }
     virtual void stop()
     {
-        if (isGlobal())
+        if (hasStarted())
         {
-            if (gotRHS)
+            if (isGlobal())
             {
-                // Other channels sharing HT. So do not reset until all here
-                if (queryJob().queryJobChannels()>1)
-                    InterChannelBarrier();
+                if (gotRHS)
+                {
+                    // Other channels sharing HT. So do not reset until all here
+                    if (queryJob().queryJobChannels()>1)
+                        InterChannelBarrier();
+                }
+                else
+                    getRHS(true); // If global, need to handle RHS until all are slaves stop
             }
-            else
-                getRHS(true); // If global, need to handle RHS until all are slaves stop
         }
         PARENT::stop();
     }

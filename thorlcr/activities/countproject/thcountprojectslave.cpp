@@ -47,8 +47,9 @@ class LocalCountProjectActivity : public BaseCountProjectActivity
     bool anyThisGroup;
 
 public:
-    LocalCountProjectActivity(CGraphElementBase *container) : BaseCountProjectActivity(container)
+    LocalCountProjectActivity(CGraphElementBase *_container) : BaseCountProjectActivity(_container)
     {
+        setRequireInitData(false);
     }
     virtual void start()
     {
@@ -102,7 +103,7 @@ public:
 class CountProjectActivity : public BaseCountProjectActivity, implements ILookAheadStopNotify
 {
     typedef BaseCountProjectActivity PARENT;
-    bool first;
+    bool first = false; // until start
     Semaphore prevRecCountSem;
     rowcount_t prevRecCount, localRecCount;
 
@@ -167,12 +168,12 @@ public:
     }
     virtual void stop()
     {
-        PARENT::stop();
         if (first) // nextRow, therefore getPrevCount()/sendCount() never called
         {
             prevRecCount = count = getPrevCount();
             signalNext();
         }
+        PARENT::stop();
     }
     virtual void abort()
     {

@@ -36,10 +36,11 @@
 #endif
 
 
-class CLoggingManager : public CInterface, implements ILoggingManager
+class CLoggingManager : implements ILoggingManager, public CInterface
 {
     typedef std::vector<IUpdateLogThread*> LOGGING_AGENTTHREADS;
     LOGGING_AGENTTHREADS  loggingAgentThreads;
+    bool initialized;
 
     IEspLogAgent* loadLoggingAgent(const char* name, const char* dll, const char* type, IPropertyTree* cfg);
     bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp, StringBuffer& status);
@@ -47,7 +48,7 @@ class CLoggingManager : public CInterface, implements ILoggingManager
 public:
     IMPLEMENT_IINTERFACE;
 
-    CLoggingManager(void) {};
+    CLoggingManager(void) { initialized = false; };
     virtual ~CLoggingManager(void);
 
     virtual bool init(IPropertyTree* cfg, const char* service);
@@ -58,6 +59,7 @@ public:
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status);
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
+    virtual bool getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status);
 };
 
 #endif // !defined(__LOGGINGMANAGER_HPP__)

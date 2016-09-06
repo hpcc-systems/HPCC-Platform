@@ -755,7 +755,7 @@ unsigned crc_file(const char *name)
 }
 
 
-class CCrcPipeStream : public CInterface, implements ICrcIOStream
+class CCrcPipeStream : implements ICrcIOStream, public CInterface
 {
     CRC32 crc;
     Linked<IIOStream> io;

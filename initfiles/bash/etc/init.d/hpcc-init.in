@@ -92,6 +92,7 @@ source  ${INSTALL_DIR}/etc/init.d/export-path
 
 export logfile=${LOG_DIR}/hpcc-init.log
 
+createDir ${LOG_DIR}
 [ ! -e ${logfile}  ] && touch $logfile
 
 ## Debug variable allowing verbose debug output
@@ -108,8 +109,8 @@ envfile=$configs/$environment
 
 # Know HPCC user after set_environmentvars
 log_dir_owner=$(ls -ld $LOG_DIR | awk '{print $3}')
-[ "log_dir_owner" != "${user}" ] && chown ${user}:${user} $LOG_DIR
-chown ${user}:${user} $logfile
+[ "log_dir_owner" != "${user}" ] && chown ${user}:${group} $LOG_DIR
+chown ${user}:${group} $logfile
 
 #Sourcing the hpcc environment
 configgen_path=${path}/sbin
@@ -117,7 +118,6 @@ bin_path=${path}/bin
 source ${configgen_path}/hpcc_setenv
 
 which_service
-get_commondirs
 
 log "--------------------------"
 log "--------------------------"
@@ -135,14 +135,15 @@ if [ $? -ne 1 ];then
    log  "Group for user ${group} does not exist on the system. Exiting ..."
    echo "Group for user ${group} does not exist on the system. Exiting ..."
    exit 3
-fi 
+fi
+
+check_getopt
 
 #changing ownership of the home directory for user.
 chown -cR $user:$group ${home}/${user} 1>/dev/null 2>/dev/null
 
 basepath=`pwd`
 
-validate_configuration
 COMPS=$(${configgen_path}/configgen -env ${envfile} -list)
 if [[ $rc -ne 0 ]]; then
     log "hpcc-init: failure to build COMPS from configgen call"
@@ -221,9 +222,9 @@ component=""
 runSetupOnly=0
 dafilesrvflag=0
 
-TEMP=`/usr/bin/getopt -o c:hdf --long help,componentlist,typelist,debug,force -n 'hpcc-init' -- "$@"`
+TEMP=`getopt -o c:hdf --long help,componentlist,typelist,debug,force -n 'hpcc-init' -- "$@"`
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
-eval set -- "$TEMP"
+eval set -- $TEMP
 while true ; do
     case "$1" in
         -c) comp=$2
@@ -276,7 +277,7 @@ fi
 log "Debug log written to $LOG_DIR/hpcc-init.debug"
 [ -e $LOG_DIR/hpcc-init.debug ] && rm -rf ${LOG_DIR}/hpcc-init.debug
 touch ${LOG_DIR}/hpcc-init.debug
-chown ${user}:${user} ${LOG_DIR}/hpcc-init.debug
+chown ${user}:${group} ${LOG_DIR}/hpcc-init.debug
 exec 2>$LOG_DIR/hpcc-init.debug
 set -x
 
@@ -318,30 +319,32 @@ esac
 
 log "Attempting to execute ${cmd} argument on specified components"
 
-unset IFS
 
 # Create dropzone on a full system start
-if [ ${cmd} = "start" ] || [ "${cmd}" = "restart" ]; then
+if [ "${cmd}" = "start" ] || [ "${cmd}" = "restart" ]; then
+    validate_configuration
+    get_commondirs
     log "Creating dropzone"
     create_dropzone
 fi
 
+unset IFS
 #Before we start/stop any component we should check dafilesrv.
 if [ ! -z "${compDafilesrv}" ];then
     case "$1" in
         start)
-            /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+            ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
             if [ $? -ne 0 ];then
               log "--------------------------"
               log "${compDafilesrv} ---> ${cmd}"
-              /etc/init.d/dafilesrv $1 2>/dev/null
+              ${INIT_PATH}/dafilesrv $1 2>/dev/null
             else
               log  "Dependent service dafilesrv, ${compDafilesrv} is already running."
               echo "Dependent service dafilesrv, ${compDafilesrv} is already running."
             fi
             ;;
         status|setup)
-            /etc/init.d/dafilesrv ${1} 2>/dev/null
+            ${INIT_PATH}/dafilesrv ${1} 2>/dev/null
             ;;
         stop|restart)
             ;;
@@ -386,11 +389,11 @@ if [ ${cmd} = "restart" ] && [ "${isComp}" -eq 0 ]; then
     echo "Starting the entire System"
     echo "***************************************************"
     cmd=start
-    /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+    ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
     if [ $? -ne 0 ];then
         log "--------------------------"
         log "${compDafilesrv} ---> ${cmd}"
-        /etc/init.d/dafilesrv $1 2>/dev/null
+        ${INIT_PATH}/dafilesrv $1 2>/dev/null
     fi
 
     statForStart=0
@@ -449,7 +452,7 @@ done
 
 if [ "$cmd" = "stop" ] && [ -n "$compDafilesrv" ]
 then
-    /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+    ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
     if [ $? -ne 0 ];then
       log  "Service dafilesrv, ${compDafilesrv} is already stopped."
       echo "Service dafilesrv, ${compDafilesrv} is already stopped."

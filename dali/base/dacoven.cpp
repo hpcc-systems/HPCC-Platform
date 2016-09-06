@@ -37,7 +37,7 @@ extern void closedownDFS();
 // base is saved in store whenever block exhausted, so replacement coven servers can restart 
 
 // server side versioning.
-#define ServerVersion    "3.12"
+#define ServerVersion    "3.13"
 #define MinClientVersion "1.5"
 
 
@@ -169,7 +169,7 @@ public:
 };
 
 
-class CCovenBase: public CInterface, implements ICoven
+class CCovenBase: implements ICoven, public CInterface
 {
     unsigned        ord;
     Int64Array      serverIDs;
@@ -755,8 +755,6 @@ public:
 class CCovenClient: public CCovenBase
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CCovenClient(IGroup *grp) : CCovenBase(grp,false)
     {
     }

@@ -25,7 +25,7 @@
 #define WUID_VERSION 2 // recorded in each wuid created, useful for bkwd compat. checks
 #define GLOBAL_WORKUNIT "global"
 
-class CLocalWUAppValue : public CInterface, implements IConstWUAppValue
+class CLocalWUAppValue : implements IConstWUAppValue, public CInterface
 {
     Owned<IPropertyTree> p;
     StringAttr prop;
@@ -39,7 +39,7 @@ public:
 };
 
 
-class CLocalWUStatistic : public CInterface, implements IConstWUStatistic
+class CLocalWUStatistic : implements IConstWUStatistic, public CInterface
 {
     Owned<IPropertyTree> p;
 public:
@@ -63,7 +63,7 @@ public:
     virtual bool matches(const IStatisticsFilter * filter) const;
 };
 
-class CLocalWULegacyTiming : public CInterface, implements IConstWUStatistic
+class CLocalWULegacyTiming : implements IConstWUStatistic, public CInterface
 {
     Owned<IPropertyTree> p;
 public:
@@ -164,7 +164,7 @@ template <>  struct CachedTags<CLocalWUAppValue, IConstWUAppValue>
 
 //==========================================================================================
 
-class CLocalWorkUnit : public CInterface, implements IWorkUnit , implements IExtendedWUInterface
+class CLocalWorkUnit : implements IWorkUnit , implements IExtendedWUInterface, public CInterface
 {
     friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs, bool includeProgress, bool hidePasswords);
     friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs, bool includeProgress, bool hidePasswords);
@@ -306,6 +306,9 @@ public:
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all);
     virtual IPropertyTree *queryPTree() const;
     virtual unsigned queryFileUsage(const char *filename) const;
+    virtual IConstWUFileUsageIterator * getFieldUsage() const;
+    virtual bool getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const;
+
     virtual bool getCloneable() const;
     virtual IUserDescriptor * queryUserDescriptor() const;
     virtual unsigned getCodeVersion() const;
@@ -382,6 +385,7 @@ public:
     virtual IWUResult * updateVariableByName(const char * name);
     void addFile(const char *fileName, StringArray *clusters, unsigned usageCount, WUFileKind fileKind, const char *graphOwner);
     void noteFileRead(IDistributedFile *file);
+    void noteFieldUsage(IPropertyTree * usage);
     void releaseFile(const char *fileName);
     void resetBeforeGeneration();
     void deleteTempFiles(const char *graph, bool deleteOwned, bool deleteJobOwned);
@@ -584,7 +588,7 @@ protected:
     mutable bool abortState;
 };
 
-class CWorkUnitFactory : public CInterface, implements IWorkUnitFactory
+class CWorkUnitFactory : implements IWorkUnitFactory, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -635,7 +639,7 @@ protected:
     virtual bool _restoreWorkUnit(IPTree *pt, const char *wuid) = 0;
 };
 
-class CLocalWUGraph : public CInterface, implements IConstWUGraph
+class CLocalWUGraph : implements IConstWUGraph, public CInterface
 {
     const CLocalWorkUnit &owner;
     Owned<IPropertyTree> p;

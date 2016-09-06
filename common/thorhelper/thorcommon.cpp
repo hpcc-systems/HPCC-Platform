@@ -1059,11 +1059,11 @@ void CThorContiguousRowBuffer::skipVUni()
 
 IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICodeContext *context)
 {
-    class cRowInterfaces: public CSimpleInterface, implements IRowInterfaces
+    class cRowInterfaces: implements IRowInterfaces, public CSimpleInterface
     {
+        unsigned actid;
         Linked<IOutputMetaData> meta;
         ICodeContext* context;
-        unsigned actid;
         Linked<IEngineRowAllocator> allocator;
         Linked<IOutputRowSerializer> serializer;
         Linked<IOutputRowDeserializer> deserializer;
@@ -1122,8 +1122,9 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICode
     return new cRowInterfaces(meta,actid,context);
 };
 
-class CRowStreamReader : public CSimpleInterface, implements IExtRowStream
+class CRowStreamReader : implements IExtRowStream, public CSimpleInterface
 {
+protected:
     Linked<IFileIO> fileio;
     Linked<IMemoryMappedFile> mmfile;
     Linked<IOutputRowDeserializer> deserializer;
@@ -1133,8 +1134,6 @@ class CRowStreamReader : public CSimpleInterface, implements IExtRowStream
     Owned<ISourceRowPrefetcher> prefetcher;
     CThorContiguousRowBuffer prefetchBuffer; // used if prefetcher set
     bool grouped;
-    unsigned __int64 maxrows;
-    unsigned __int64 rownum;
     bool eoi;
     bool eos;
     bool eog;
@@ -1156,19 +1155,17 @@ class CRowStreamReader : public CSimpleInterface, implements IExtRowStream
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, bool _grouped)
+    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, bool _grouped)
         : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(NULL) 
     {
 #ifdef TRACE_CREATE
         PROGLOG("CRowStreamReader %d = %p",++rdnum,this);
 #endif
-        maxrows = _maxrows;
         grouped = _grouped;
         eoi = false;
-        eos = maxrows==0;
+        eos = false;
         eog = false;
         bufofs = 0;
-        rownum = 0;
         if (fileio)
             strm.setown(createFileSerialStream(fileio,_ofs,_len,(size32_t)-1, _tallycrc?&crccb:NULL));
         else
@@ -1189,15 +1186,13 @@ public:
 
     void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows)
     {
-        maxrows = _maxrows;
+        assertex(_maxrows == 0);
         eoi = false;
-        eos = (maxrows==0)||(_len==0);
+        eos = (_len==0);
         eog = false;
         bufofs = 0;
-        rownum = 0;
         strm->reset(_ofs,_len);
     }
-
 
 
     const void *nextRow()
@@ -1212,15 +1207,13 @@ public:
             eos = true;
             return NULL;
         }
-        RtlDynamicRowBuilder rowBuilder(allocator);
+        RtlDynamicRowBuilder rowBuilder(*allocator);
         size_t size = deserializer->deserialize(rowBuilder,source);
-        if (grouped && !eos) {
+        if (grouped) {
             byte b;
             source.read(sizeof(b),&b);
             eog = (b==1);
         }
-        if (++rownum==maxrows)
-            eos = true;
         return rowBuilder.finalizeRowClear(size);
     }
 
@@ -1293,6 +1286,39 @@ public:
 
 };
 
+class CLimitedRowStreamReader : public CRowStreamReader
+{
+    unsigned __int64 maxrows;
+    unsigned __int64 rownum;
+
+public:
+    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, bool _grouped)
+        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _tallycrc, _grouped)
+    {
+        maxrows = _maxrows;
+        rownum = 0;
+        eos = maxrows==0;
+    }
+
+    void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows)
+    {
+        CRowStreamReader::reinit(_ofs, _len, 0);
+        if (_maxrows==0)
+            eos = true;
+        maxrows = _maxrows;
+        rownum = 0;
+    }
+
+    const void *nextRow()
+    {
+        const void * ret = CRowStreamReader::nextRow();
+        if (++rownum==maxrows)
+            eos = true;
+        return ret;
+    }
+
+};
+
 #ifdef TRACE_CREATE
 unsigned CRowStreamReader::rdnum;
 #endif
@@ -1308,7 +1334,10 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         Owned<IMemoryMappedFile> mmfile = file->openMemoryMapped();
         if (!mmfile)
             return NULL;
-        return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+        if (maxrows == (unsigned __int64)-1)
+            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+        else
+            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
     }
     else
     {
@@ -1323,7 +1352,10 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
             fileio.setown(file->open(IFOread));
         if (!fileio)
             return NULL;
-        return new CRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+        if (maxrows == (unsigned __int64)-1)
+            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+        else
+            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
     }
 }
 
@@ -1341,7 +1373,7 @@ void useMemoryMappedRead(bool on)
 }
 
 #define ROW_WRITER_BUFFERSIZE (0x100000)
-class CRowStreamWriter : public CSimpleInterface, private IRowSerializerTarget, implements IExtRowWriter
+class CRowStreamWriter : private IRowSerializerTarget, implements IExtRowWriter, public CSimpleInterface
 {
     Linked<IFileIOStream> stream;
     Linked<IOutputRowSerializer> serializer;
@@ -1585,7 +1617,7 @@ IExtRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, unsig
     return writer.getClear();
 }
 
-class CDiskMerger : public CInterface, implements IDiskMerger
+class CDiskMerger : implements IDiskMerger, public CInterface
 {
     IArrayOf<IFile> tempfiles;
     IRowStream **strms;
@@ -1788,7 +1820,25 @@ void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char
     if (optNodes)
         throw makeStringException(1, "Numa node list not yet supported");
 
-    unsigned numNumaNodes = numa_max_node()+1;
+    unsigned numaMap[NUMA_NUM_NODES];
+    unsigned numNumaNodes = 0;
+#if defined(LIBNUMA_API_VERSION) && (LIBNUMA_API_VERSION>=2)
+    for (unsigned i=0; i<=numa_max_node(); i++)
+    {
+        if (numa_bitmask_isbitset(numa_all_nodes_ptr, i))
+        {
+            numaMap[numNumaNodes] = i;
+            numNumaNodes++;
+        }
+    }
+#else
+    //On very old versions of numa assume that all nodes are present
+    for (unsigned i=0; i<=numa_max_node(); i++)
+    {
+        numaMap[numNumaNodes] = i;
+        numNumaNodes++;
+    }
+#endif
     if (numNumaNodes <= 1)
         return;
 
@@ -1797,20 +1847,20 @@ void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char
 
 #if defined(LIBNUMA_API_VERSION) && (LIBNUMA_API_VERSION>=2)
     struct bitmask * cpus = numa_allocate_cpumask();
-    numa_node_to_cpus(curNode, cpus);
+    numa_node_to_cpus(numaMap[curNode], cpus);
     bool ok = (numa_sched_setaffinity(0, cpus) == 0);
     numa_bitmask_free(cpus);
 #else
     cpu_set_t cpus;
     CPU_ZERO(&cpus);
-    numa_node_to_cpus(curNode, (unsigned long *) &cpus, sizeof (cpus));
+    numa_node_to_cpus(numaMap[curNode], (unsigned long *) &cpus, sizeof (cpus));
     bool ok = sched_setaffinity (0, sizeof(cpus), &cpus) != 0;
 #endif
 
     if (!ok)
-        throw makeStringExceptionV(1, "Failed to set affinity for node %u", curNode);
+        throw makeStringExceptionV(1, "Failed to set affinity to numa node %u (id:%u)", curNode, numaMap[curNode]);
 
-    DBGLOG("Process bound to numa node %u of %u", curNode, numNumaNodes);
+    DBGLOG("Process bound to numa node %u (id:%u) of %u", curNode, numaMap[curNode], numNumaNodes);
 #endif
     clearAffinityCache();
 }
@@ -1820,7 +1870,12 @@ void bindMemoryToLocalNodes()
 #if defined(LIBNUMA_API_VERSION) && (LIBNUMA_API_VERSION>=2)
     numa_set_bind_policy(1);
 
-    unsigned numNumaNodes = numa_max_node() + 1;
+    unsigned numNumaNodes = 0;
+    for (unsigned i=0; i<=numa_max_node(); i++)
+    {
+        if (numa_bitmask_isbitset(numa_all_nodes_ptr, i))
+            numNumaNodes++;
+    }
     if (numNumaNodes <= 1)
         return;
     struct bitmask *nodes = numa_get_run_node_mask();

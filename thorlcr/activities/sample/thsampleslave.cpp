@@ -31,6 +31,7 @@ public:
     SampleSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = static_cast <IHThorSampleArg *> (queryHelper());
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override

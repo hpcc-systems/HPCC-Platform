@@ -367,7 +367,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
       <xsl:variable name="bindType" select="'EclDirectSoapBinding'"/>
       <xsl:variable name="servicePlugin">
         <xsl:choose>
-          <xsl:when test="$isLinuxInstance">libEclDirect.so</xsl:when>
+          <xsl:when test="$isLinuxInstance">EclDirect</xsl:when>
           <xsl:otherwise>EclDirect.dll</xsl:otherwise>
         </xsl:choose>
       </xsl:variable>
@@ -715,7 +715,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
     <xsl:template name="defineServicePlugin">
         <xsl:param name="plugin"/>            
         <xsl:choose>
-            <xsl:when test="$isLinuxInstance">lib<xsl:value-of select="$plugin"/>.so</xsl:when>
+            <xsl:when test="$isLinuxInstance"><xsl:value-of select="$plugin"/></xsl:when>
             <xsl:otherwise><xsl:value-of select="$plugin"/>.dll</xsl:otherwise>
         </xsl:choose>
     </xsl:template>

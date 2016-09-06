@@ -95,7 +95,7 @@ public:
     inline OwnedConstThorRow(const void * _ptr)             { TESTROW(_ptr); ptr = _ptr; }
     inline OwnedConstThorRow(const OwnedConstThorRow & other)   { ptr = other.getLink(); }
 
-    inline ~OwnedConstThorRow()                             { ReleaseThorRow(ptr); }
+    inline ~OwnedConstThorRow()                             { if (ptr) ReleaseThorRow(ptr); }
     
 private: 
     /* these overloaded operators are the devil of memory leak. Use set, setown instead. */

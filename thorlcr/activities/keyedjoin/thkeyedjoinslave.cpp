@@ -100,9 +100,10 @@ interface IJoinGroupNotify
 {
     virtual void addJoinGroup(CJoinGroup *jg) = 0;
 };
-class CJoinGroup : public CSimpleInterface, implements IInterface
+class CJoinGroup : implements IInterface, public CSimpleInterface
 {
 protected:
+    unsigned candidates;
     CActivityBase &activity;
     OwnedConstThorRow left;
     CThorExpandingRowArray rows;
@@ -111,7 +112,6 @@ protected:
     IJoinProcessor *join;
     mutable CriticalSection crit;
     CJoinGroup *groupStart;
-    unsigned candidates;
 
 public:
     CJoinGroup *prev;  // Doubly-linked list to allow us to keep track of ones that are still in use
@@ -1148,7 +1148,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     friend class CKeyedFetchRequestProcessor;
     friend class CKeyedFetchResultProcessor;
     } *fetchHandler;
-    class CKeyLocalLookup : public CSimpleInterface, implements IRowStreamSetInput, implements IStopInput
+    class CKeyLocalLookup : implements IRowStreamSetInput, implements IStopInput, public CSimpleInterface
     {
         CKeyedJoinSlave &owner;
         Linked<IRowStream> in;
@@ -1468,7 +1468,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             reset();
         }
     };
-    class CPRowStream : public CSimpleInterface, implements IRowStreamSetInput, implements IThreadFactory
+    class CPRowStream : implements IRowStreamSetInput, implements IThreadFactory, public CSimpleInterface
     {
         unsigned maxPoolSize, queueSize;
         CKeyedJoinSlave &owner;
@@ -1487,7 +1487,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
 
     public:
-        class CKeyLookupPoolMember : public CSimpleInterface, implements IPooledThread
+        class CKeyLookupPoolMember : implements IPooledThread, public CSimpleInterface
         {
             Owned<IRowStreamSetInput> lookupStream;
             CPRowStream &owner;
@@ -1598,7 +1598,7 @@ public:
         lastTick = 0;
 #endif
         helper = (IHThorKeyedJoinArg *)queryHelper();
-        reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
+        reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) || (helper->getJoinFlags() & JFvarindexfilename);
         appendOutputLinked(this);
     }
     ~CKeyedJoinSlave()
@@ -2060,12 +2060,15 @@ public:
     }
     virtual void stop()
     {
-        if (fetchHandler)
-            fetchHandler->stop(true);
-        if (!eos)
+        if (hasStarted())
         {
-            eos = true;
-            resultDistStream->stop();
+            if (fetchHandler)
+                fetchHandler->stop(true);
+            if (!eos)
+            {
+                eos = true;
+                resultDistStream->stop();
+            }
         }
         stopInput();
 #ifdef TRACE_JOINGROUPS

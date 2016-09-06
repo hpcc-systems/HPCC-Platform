@@ -36,6 +36,8 @@ public:
     IterateSlaveActivityBase(CGraphElementBase *_container, bool _global) : CSlaveActivity(_container)
     {
         global = _global;
+        if (!global)
+            setRequireInitData(false);
         appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
@@ -88,8 +90,11 @@ public:
     }
     virtual void stop() override
     {
-        if (global)
-            putNext(NULL);
+        if (hasStarted())
+        {
+            if (global)
+                putNext(NULL);
+        }
         PARENT::stop();
     }
     virtual bool isGrouped() const override { return false; }
@@ -186,11 +191,7 @@ public:
         : IterateSlaveActivityBase(_container,_global)
     {
         helper = static_cast <IHThorProcessArg *> (queryHelper());
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
         rightRowAllocator.setown(getRowAllocator(helper->queryRightRecordSize()));
-        IterateSlaveActivityBase::init(data,slaveData);
     }
     CATCH_NEXTROW()
     {
@@ -272,6 +273,7 @@ public:
     CChildIteratorSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = static_cast <IHThorChildIteratorArg *> (queryHelper());
+        setRequireInitData(false);
         appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void start() override
@@ -322,11 +324,9 @@ public:
         : CSlaveActivity(_container)
     {
         helper = static_cast <IHThorLinkedRawIteratorArg *> (queryHelper());
-        appendOutputLinked(this);   // adding 'me' to outputs array
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
         grouped = helper->queryOutputMeta()->isGrouped();
+        setRequireInitData(false);
+        appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void start() override
     {
@@ -381,6 +381,7 @@ public:
         : CSlaveActivity(_container)
     {
         helper = static_cast <IHThorStreamedIteratorArg *> (queryHelper());
+        setRequireInitData(false);
         appendOutputLinked(this);   // adding 'me' to outputs array
     }
     virtual void start() override

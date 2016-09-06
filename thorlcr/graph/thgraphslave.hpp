@@ -155,10 +155,15 @@ protected:
     unsigned __int64 queryLocalCycles() const;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CActivityBase)
 
     CSlaveActivity(CGraphElementBase *container);
     ~CSlaveActivity();
+    void setRequireInitData(bool tf)
+    {
+        // If not required sets sentActInitdata to true, to prevent it being request at graph initialization time.
+        container.sentActInitData->set(0, !tf);
+    }
     virtual void clearConnections();
     virtual void releaseIOs();
     virtual MemoryBuffer &queryInitializationData(unsigned slave) const;
@@ -171,6 +176,7 @@ public:
     IThorDataLink *queryOutput(unsigned index) const;
     IThorDataLink *queryInput(unsigned index) const;
     IEngineRowStream *queryInputStream(unsigned index) const;
+    IStrandJunction *queryInputJunction(unsigned index) const;
     IEngineRowStream *queryOutputStream(unsigned index) const;
     inline bool queryInputStarted(unsigned input) const { return inputs.item(input).isStarted(); }
     inline bool queryInputStopped(unsigned input) const { return inputs.item(input).isStopped(); }
@@ -217,7 +223,7 @@ public:
     virtual void resetEOF() override { throwUnexpected(); }
 
 // IThorSlaveActivity
-    virtual void init(MemoryBuffer &in, MemoryBuffer &out) override { }
+    virtual void init(MemoryBuffer &in, MemoryBuffer &out) { }
     virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) override;
     virtual void processDone(MemoryBuffer &mb) override { };
     virtual void reset() override;

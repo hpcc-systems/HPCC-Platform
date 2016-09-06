@@ -39,6 +39,7 @@
 #include "rmtfile.hpp"
 #include "dadfs.hpp"
 #include "eclhelper.hpp"
+#include "seclib.hpp"
 
 #ifdef _DEBUG
 //#define EXTRA_LOGGING
@@ -52,6 +53,7 @@
 
 #define DEFAULT_NUM_DFS_THREADS 30
 #define TIMEOUT_ON_CLOSEDOWN 120000 // On closedown, give up on trying to join a thread in CDaliDFSServer after two minutes
+#define MAX_PHYSICAL_DELETE_THREADS 1000
 
 #if _INTERNAL_EDITION == 1
 #ifndef _MSC_VER
@@ -78,6 +80,7 @@ enum MDFSRequestKind
     MDFS_ITERATE_RELATIONSHIPS,
     MDFS_SET_FILE_PROTECT,
     MDFS_ITERATE_FILTEREDFILES,
+    MDFS_ITERATE_FILTEREDFILES2,
     MDFS_MAX
 };
 
@@ -216,10 +219,10 @@ inline void LOGFDESC(const char *title,IFileDescriptor *fdesc)
 }
 
 
-class CDFS_Exception: public CInterface, implements IDFS_Exception
+class CDFS_Exception: implements IDFS_Exception, public CInterface
 {
-    StringAttr errstr;
     int errcode;
+    StringAttr errstr;
 public:
     CDFS_Exception(int _errcode, const char *_errstr)
         : errstr(_errstr)
@@ -1009,7 +1012,7 @@ interface IDistributedFileTransactionExt : extends IDistributedFileTransaction
     virtual ICodeContext *queryCodeContext()=0;
 };
 
-class CDistributedFileDirectory: public CInterface, implements IDistributedFileDirectory
+class CDistributedFileDirectory: implements IDistributedFileDirectory, public CInterface
 {
     Owned<IUserDescriptor> defaultudesc;
     Owned<IDFSredirection> redirection;
@@ -1243,7 +1246,7 @@ static int getScopePermissions(const char *scopename,IUserDescriptor *user,unsig
     static bool permissionsavail=true;
     if (auditflags==(unsigned)-1) 
         return permissionsavail?1:0;
-    int ret = 255;
+    int perms = SecAccess_Full;
     if (permissionsavail&&scopename&&*scopename&&((*scopename!='.')||scopename[1])) {
         if (!user)
         {
@@ -1254,17 +1257,17 @@ static int getScopePermissions(const char *scopename,IUserDescriptor *user,unsig
 #endif
             user = queryDistributedFileDirectory().queryDefaultUser();
         }
-        ret = querySessionManager().getPermissionsLDAP(queryDfsXmlBranchName(DXB_Scope),scopename,user,auditflags);
-        if (ret<0) {
-            if (ret==-1) {
+        perms = querySessionManager().getPermissionsLDAP(queryDfsXmlBranchName(DXB_Scope),scopename,user,auditflags);
+        if (perms<0) {
+            if (perms == SecAccess_Unavailable) {
                 permissionsavail=false;
-                ret = 255;
+                perms = SecAccess_Full;
             }
             else 
-                ret = 0;
+                perms = SecAccess_None;
         }
     }
-    return ret;
+    return perms;
 }
 
 static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool readreq,bool createreq)
@@ -1383,13 +1386,13 @@ public:
                 }
             }
             file.clear();
-            PROGLOG("CDelayedDelete: pausing");
+            PROGLOG("CDelayedDelete: pausing due to locked file = %s", logicalname);
             Sleep(SDS_TRANSACTION_RETRY/2+(getRandom()%SDS_TRANSACTION_RETRY));
         }
     }
 };
 
-class CDistributedFileTransaction: public CInterface, implements IDistributedFileTransactionExt
+class CDistributedFileTransaction: implements IDistributedFileTransactionExt, public CInterface
 {
     class CTransactionFile : public CSimpleInterface
     {
@@ -1862,7 +1865,7 @@ static bool recursiveCheckEmptyScope(IPropertyTree &ct)
 }
 
 
-class CDFScopeIterator: public CInterface, implements IDFScopeIterator
+class CDFScopeIterator: implements IDFScopeIterator, public CInterface
 {
     PointerArray scopes;
     unsigned index;
@@ -1963,10 +1966,10 @@ struct SerializeFileAttrOptions
     }
 };
 
-class CDFAttributeIterator: public CInterface, implements IDFAttributesIterator
+class CDFAttributeIterator: implements IDFAttributesIterator, public CInterface
 {
-    IArrayOf<IPropertyTree> attrs;
     unsigned index;
+    IArrayOf<IPropertyTree> attrs;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -2125,7 +2128,7 @@ public:
 };
 
 
-class CDFProtectedIterator: public CInterface, implements IDFProtectedIterator
+class CDFProtectedIterator: implements IDFProtectedIterator, public CInterface
 {
     StringAttr owner;
     StringAttr fn;
@@ -2398,7 +2401,7 @@ public:
  * ARRAYTY need to be extended from IArrayOf<>
  */
 template <class INTERFACE, class ARRAYTY>
-class CDistributedFileIteratorBase: public CInterface, implements INTERFACE
+class CDistributedFileIteratorBase: implements INTERFACE, public CInterface
 {
 protected:
     unsigned index;
@@ -2662,7 +2665,7 @@ static bool checkProtectAttr(const char *logicalname,IPropertyTree *froot,String
  * The actual interface (extended from IDistributedFile) is provided as a template argument.
  */
 template <class INTERFACE>
-class CDistributedFileBase : public CInterface, implements INTERFACE
+class CDistributedFileBase : implements INTERFACE, public CInterface
 {
 protected:
     Owned<IPropertyTree> root;    
@@ -3307,7 +3310,7 @@ protected:
                 throw exceptions.getClear();
         }
     }
-    bool removePhysicalPartFiles(IFileDescriptor *fileDesc, IMultiException *mexcept)
+    bool removePhysicalPartFiles(IFileDescriptor *fileDesc, IMultiException *mexcept, unsigned numParallelDeletes=0)
     {
         if (logicalName.isExternal())
         {
@@ -3373,7 +3376,14 @@ protected:
             }
         } afor(fileDesc, mexcept);
         afor.islazy = fileDesc->queryProperties().getPropBool("@lazy");
-        afor.For(fileDesc->numParts(),10,false,true);
+        if (0 == numParallelDeletes)
+            numParallelDeletes = fileDesc->numParts();
+        if (numParallelDeletes > MAX_PHYSICAL_DELETE_THREADS)
+        {
+            WARNLOG("Limiting parallel physical delete threads to %d", MAX_PHYSICAL_DELETE_THREADS);
+            numParallelDeletes = MAX_PHYSICAL_DELETE_THREADS;
+        }
+        afor.For(fileDesc->numParts(),numParallelDeletes,false,true);
         return afor.ok;
     }
 
@@ -6768,7 +6778,7 @@ unsigned getSuperFileSubs(IDistributedSuperFile *super, IArrayOf<IDistributedFil
 
 // --------------------------------------------------------
 
-class CNamedGroupIterator: public CInterface, implements INamedGroupIterator
+class CNamedGroupIterator: implements INamedGroupIterator, public CInterface
 {
     Owned<IPropertyTreeIterator> pe;
     Linked<IRemoteConnection> conn;
@@ -6881,7 +6891,7 @@ protected:
     unsigned cachedtime;
 };
 
-class CNamedGroupStore: public CInterface, implements INamedGroupStore
+class CNamedGroupStore: implements INamedGroupStore, public CInterface
 {
     CriticalSection cachesect;
     CIArrayOf<CNamedGroupCacheEntry> cache;
@@ -8321,7 +8331,7 @@ void closedownDFS()  // called by dacoven
     groupStore = NULL;
 }
 
-class CDFPartFilter : public CInterface, implements IDFPartFilter
+class CDFPartFilter : implements IDFPartFilter, public CInterface
 {
 protected:
     bool *partincluded;
@@ -9837,10 +9847,8 @@ public:
         mb.writeDirect(0,sizeof(count),&count);
     }
 
-    void iterateFilteredFiles(CMessageBuffer &mb,StringBuffer &trc)
+    void iterateFilteredFiles(TransactionLog &transactionLog, CMessageBuffer &mb,StringBuffer &trc, bool returnAllFilesFlag)
     {
-        TransactionLog transactionLog(*this, MDFS_ITERATE_FILTEREDFILES, mb.getSender());
-
         Owned<IUserDescriptor> udesc;
         StringAttr filters;
         bool recursive;
@@ -9886,7 +9894,8 @@ public:
             e->Release();
             returnAllMatchingFiles = false;
         }
-        mb.append(returnAllMatchingFiles);
+        if (returnAllFilesFlag)
+            mb.append(returnAllMatchingFiles);
 
         tookMs = msTick()-start;
         if (tookMs>100)
@@ -9904,6 +9913,18 @@ public:
             PROGLOG("TIMING(filescan-serialization): %s: took %dms, %d files",trc.str(), tookMs, count);
 
         mb.writeDirect(0,sizeof(count),&count);
+    }
+
+    void iterateFilteredFiles(CMessageBuffer &mb,StringBuffer &trc)
+    {
+        TransactionLog transactionLog(*this, MDFS_ITERATE_FILTEREDFILES, mb.getSender());
+        iterateFilteredFiles(transactionLog, mb, trc, false);
+    }
+
+    void iterateFilteredFiles2(CMessageBuffer &mb,StringBuffer &trc)
+    {
+        TransactionLog transactionLog(*this, MDFS_ITERATE_FILTEREDFILES2, mb.getSender());
+        iterateFilteredFiles(transactionLog, mb, trc, true);
     }
 
     void iterateRelationships(CMessageBuffer &mb,StringBuffer &trc)
@@ -10124,54 +10145,71 @@ public:
         int fn;
         mb.read(fn);
 
-        try {
-            switch (fn) {
-            case MDFS_ITERATE_FILES: {
-                    iterateFiles(mb,trc);                    
+        try
+        {
+            switch (fn)
+            {
+                case MDFS_ITERATE_FILES:
+                {
+                    iterateFiles(mb, trc);
+                    break;
                 }
-                break;
-            case MDFS_ITERATE_FILTEREDFILES: {
-                    iterateFilteredFiles(mb,trc);
+                case MDFS_ITERATE_FILTEREDFILES: // legacy, newer clients will send MDFS_ITERATE_FILTEREDFILES2
+                {
+                    iterateFilteredFiles(mb, trc);
+                    break;
                 }
-                break;
-            case MDFS_ITERATE_RELATIONSHIPS: {
-                    iterateRelationships(mb,trc);                    
+                case MDFS_ITERATE_FILTEREDFILES2:
+                {
+                    iterateFilteredFiles2(mb, trc);
+                    break;
                 }
-                break;
-            case MDFS_GET_FILE_TREE: {
-                    getFileTree(mb,trc);
+                case MDFS_ITERATE_RELATIONSHIPS:
+                {
+                    iterateRelationships(mb, trc);
+                    break;
                 }
-                break;
-            case MDFS_GET_GROUP_TREE: {
-                    getGroupTree(mb,trc);
+                case MDFS_GET_FILE_TREE:
+                {
+                    getFileTree(mb, trc);
+                    break;
                 }
-                break;
-            case MDFS_SET_FILE_ACCESSED: {
-                    setFileAccessed(mb,trc);
+                case MDFS_GET_GROUP_TREE:
+                {
+                    getGroupTree(mb, trc);
+                    break;
                 }
-                break;
-            case MDFS_SET_FILE_PROTECT: {
-                    setFileProtect(mb,trc);
+                case MDFS_SET_FILE_ACCESSED:
+                {
+                    setFileAccessed(mb, trc);
+                    break;
                 }
-                break;
-            default: {
+                case MDFS_SET_FILE_PROTECT:
+                {
+                    setFileProtect(mb, trc);
+                    break;
+                }
+                default:
+                {
                     mb.clear();
+                    break;
                 }
-                break;
             }
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             int err=-1; // exception marker
             mb.clear().append(err); 
             serializeException(e, mb); 
             e->Release();
         }
-        coven.reply(mb);    
-        if (block0.slow()) {
+        coven.reply(mb);
+        if (block0.slow())
+        {
             SocketEndpoint ep = mb.getSender();
             ep.getUrlStr(block0.appendMsg(trc).append(" from "));
         }
-    }   
+    }
 
     void nodeDown(rank_t rank)
     {
@@ -10187,6 +10225,8 @@ public:
             return ret.append("MDFS_ITERATE_FILES");
         case MDFS_ITERATE_FILTEREDFILES:
             return ret.append("MDFS_ITERATE_FILTEREDFILES");
+        case MDFS_ITERATE_FILTEREDFILES2:
+            return ret.append("MDFS_ITERATE_FILTEREDFILES2");
         case MDFS_ITERATE_RELATIONSHIPS:
             return ret.append("MDFS_ITERATE_RELATIONSHIPS");
         case MDFS_GET_FILE_TREE:
@@ -10591,7 +10631,7 @@ int CDistributedFileDirectory::getNodePermissions(const IpAddress &ip,IUserDescr
 int CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *fdesc,IUserDescriptor *user,unsigned auditflags)
 {
     // this checks have access to the nodes in the file descriptor
-    int ret = 255;
+    int retPerms = SecAccess_Full;
     unsigned np = fdesc->numParts();
     for (unsigned i=0;i<np;i++) {
         INode *node = fdesc->queryNode(i);
@@ -10621,16 +10661,16 @@ int CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *fdesc,IUserD
                 dlfn.setExternal(rfn.queryEndpoint(),localpath.str());          
                 StringBuffer scopes;
                 dlfn.getScopes(scopes);
-                int p = getScopePermissions(scopes.str(),user,auditflags);
-                if (p<ret) {
-                    ret = p;
-                    if (ret==0)
-                        return 0;
+                int perm = getScopePermissions(scopes.str(),user,auditflags);
+                if (perm < retPerms) {
+                    retPerms = perm;
+                    if (retPerms == SecAccess_None)
+                        return SecAccess_None;
                 }
             }
         }
     }
-    return ret;
+    return retPerms;
 }
 
 void CDistributedFileDirectory::setDefaultUser(IUserDescriptor *user)
@@ -11065,7 +11105,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn, IUserDescrip
 }
 
 typedef MapStringTo<bool> SubfileSet;
-class CFilterAttrIterator: public CInterface, implements IDFAttributesIterator
+class CFilterAttrIterator: implements IDFAttributesIterator, public CInterface
 {
     Owned<IDFAttributesIterator> iter;
     Linked<IUserDescriptor> user;
@@ -11144,7 +11184,7 @@ bool decodeChildGroupName(const char *gname,StringBuffer &parentname, StringBuff
     return true;
 }
 
-class CLightWeightSuperFileConn: public CInterface, implements ISimpleSuperFileEnquiry
+class CLightWeightSuperFileConn: implements ISimpleSuperFileEnquiry, public CInterface
 {
     CFileLock lock;
     bool readonly;
@@ -11471,7 +11511,7 @@ bool CDistributedFileDirectory::getFileSuperOwners(const char *logicalname, Stri
     return true;
 }
 
-class CFileRelationship: public CInterface, implements IFileRelationship
+class CFileRelationship: implements IFileRelationship, public CInterface
 {
     Linked<IPropertyTree> pt;
     const char *queryProp(const char *name)
@@ -11501,7 +11541,7 @@ public:
     virtual IPropertyTree *queryTree() { return pt.get(); }
 };
 
-class CFileRelationshipIterator: public CInterface, implements IFileRelationshipIterator
+class CFileRelationshipIterator: implements IFileRelationshipIterator, public CInterface
 {
     unsigned num;
     unsigned idx;
@@ -12072,10 +12112,11 @@ extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild)
     return DFUQResultFieldNames[feild];
 }
 
-IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultField* localFilters, const char* localFilterBuf)
+IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned numFiles, DFUQResultField* localFilters, const char* localFilterBuf)
 {
-    class CFileAttrIterator: public CInterface, implements IPropertyTreeIterator
+    class CFileAttrIterator: implements IPropertyTreeIterator, public CInterface
     {
+        size32_t fileDataStart;
         Owned<IPropertyTree> cur;
         StringArray fileNodeGroups;
 
@@ -12182,15 +12223,19 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
         IMPLEMENT_IINTERFACE;
         MemoryBuffer mb;
         unsigned numfiles;
-        bool allMatchingFilesReceived;
         StringArray nodeGroupFilter;
 
+        CFileAttrIterator(MemoryBuffer &_mb, unsigned _numfiles) : numfiles(_numfiles)
+        {
+            /* not particuarly nice, but buffer contains extra meta info ahead of serialized file info
+             * record position to rewind to, if iterator reused.
+             */
+            fileDataStart = _mb.getPos();
+            mb.swapWith(_mb);
+        }
         bool first()
         {
-            mb.reset();
-            mb.read(numfiles);
-            mb.read(allMatchingFilesReceived);
-
+            mb.reset(fileDataStart);
             return next();
         }
 
@@ -12237,8 +12282,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
             }
         }
 
-    } *fai = new CFileAttrIterator;
-    mb.swapWith(fai->mb);
+    } *fai = new CFileAttrIterator(mb, numFiles);
     fai->setLocalFilters(localFilters, localFilterBuf);
     return fai;
 }
@@ -12247,7 +12291,13 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
     const char* localFilterBuf, IUserDescriptor* user, bool& allMatchingFilesReceived, INode* foreigndali, unsigned foreigndalitimeout)
 {
     CMessageBuffer mb;
-    mb.append((int)MDFS_ITERATE_FILTEREDFILES).append(filters).append(true);
+    CDaliVersion serverVersionNeeded("3.13");
+    bool legacy = (queryDaliServerVersion().compare(serverVersionNeeded) < 0);
+    if (legacy)
+        mb.append((int)MDFS_ITERATE_FILTEREDFILES);
+    else
+        mb.append((int)MDFS_ITERATE_FILTEREDFILES2);
+    mb.append(filters).append(true);
     if (user)
         user->serialize(mb);
 
@@ -12259,8 +12309,11 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
 
     unsigned numfiles;
     mb.read(numfiles);
-    mb.read(allMatchingFilesReceived);
-    return deserializeFileAttrIterator(mb, localFilters, localFilterBuf);
+    if (legacy)
+        allMatchingFilesReceived = true; // don't know any better
+    else
+        mb.read(allMatchingFilesReceived);
+    return deserializeFileAttrIterator(mb, numfiles, localFilters, localFilterBuf);
 }
 
 IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
@@ -12275,7 +12328,7 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
     unsigned *total,
     bool *allMatchingFiles)
 {
-    class CDFUPager : public CSimpleInterface, implements IElementsPager
+    class CDFUPager : implements IElementsPager, public CSimpleInterface
     {
         IUserDescriptor* udesc;
         //StringAttr clusterFilter;

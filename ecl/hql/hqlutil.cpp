@@ -4452,7 +4452,7 @@ IHqlExpression * getFailMessage(IHqlExpression * failExpr, bool nullIfOmitted)
     }
     if (nullIfOmitted)
         return NULL;
-    return createConstant("");
+    return createBlankString();
 }
 
 int compareAtoms(IInterface * const * pleft, IInterface * const * pright)
@@ -5807,6 +5807,10 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
                     i = end;
                     if(matchOption(start, end, buffer, 4, "pure", false, valueStart, valueEnd))
                         attrs.setown(createComma(attrs.getClear(), createAttribute(pureAtom)));
+                    else if (matchOption(start, end, buffer, 8, "volatile", false, valueStart, valueEnd))
+                        attrs.setown(createComma(attrs.getClear(), createAttribute(volatileAtom)));
+                    else if (matchOption(start, end, buffer, 4, "costly", false, valueStart, valueEnd))
+                        attrs.setown(createComma(attrs.getClear(), createAttribute(costlyAtom)));
                     else if (matchOption(start, end, buffer, 4, "once", false, valueStart, valueEnd))
                         attrs.setown(createComma(attrs.getClear(), createAttribute(onceAtom)));
                     else if (matchOption(start, end, buffer, 6, "action", false, valueStart, valueEnd))

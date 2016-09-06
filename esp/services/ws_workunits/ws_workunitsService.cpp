@@ -3069,10 +3069,12 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         const char* clusterName = req.getCluster();
         const char* resultName = req.getResultName();
 
-        PROGLOG("WUResult: %s", filter.str());
-        Owned<DataCacheElement> data = dataCache->lookup(context, filter, awusCacheMinutes);
+        Owned<DataCacheElement> data;
+        if (!req.getBypassCachedResult())
+            data.setown(dataCache->lookup(context, filter, awusCacheMinutes));
         if (data)
         {
+            PROGLOG("Retrieving Cached WUResult: %s", filter.str());
             mb.append(data->m_data.c_str());
             name.set(data->m_name.c_str());
             logicalName = data->m_logicalName.c_str();
@@ -3095,6 +3097,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         }
         else
         {
+            PROGLOG("Retrieving WUResult: %s", filter.str());
             WUState wuState = WUStateUnknown;
             if(logicalName && *logicalName)
             {
@@ -4392,19 +4395,30 @@ void CWsWorkunitsEx::createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, c
     ForEach(*iter)
     {
         IConstWUAssociatedFile & cur = iter->query();
-        SCMStringBuffer ssb;
+        SCMStringBuffer ssb, ip;
         cur.getDescription(ssb);
         if (!strieq(ssb.str(), "archive"))
             continue;
 
         cur.getName(ssb);
-        if (!ssb.length())
+        cur.getIp(ip);
+        if (!ssb.length() || !ip.length())
             continue;
 
         StringBuffer fileName, archiveContents;
         try
         {
-            archiveContents.loadFile(ssb.str());
+            SocketEndpoint ep(ip.str());
+            RemoteFilename rfn;
+            rfn.setRemotePath(ssb.str());
+            rfn.setIp(ep);
+            Owned<IFile> rFile = createIFile(rfn);
+            if (!rFile)
+            {
+                DBGLOG("Cannot open %s on %s", ssb.str(), ip.str());
+                continue;
+            }
+            archiveContents.loadFile(rFile);
         }
         catch (IException *e)
         {

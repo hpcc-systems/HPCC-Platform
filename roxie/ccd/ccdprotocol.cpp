@@ -27,7 +27,7 @@
 
 IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue);
 
-class CHpccProtocolPlugin : public CInterface, implements IHpccProtocolPlugin
+class CHpccProtocolPlugin : implements IHpccProtocolPlugin, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -76,7 +76,7 @@ public:
     ProtocolListener(IHpccProtocolMsgSink *_sink) : Thread("RoxieListener")
     {
         running = false;
-        sink.set(dynamic_cast<IHpccNativeProtocolMsgSink*>(_sink));
+        sink.setown(dynamic_cast<IHpccNativeProtocolMsgSink*>(_sink));
     }
     virtual IHpccProtocolMsgSink *queryMsgSink()
     {
@@ -429,7 +429,7 @@ IXmlWriterExt * createAdaptiveRESTWriterExt(AdaptiveRoot model, const char *tagn
 
 //================================================================================================================
 
-class CHpccNativeResultsWriter : public CInterface, implements IHpccNativeProtocolResultsWriter
+class CHpccNativeResultsWriter : implements IHpccNativeProtocolResultsWriter, public CInterface
 {
 protected:
     SafeSocket *client;
@@ -922,7 +922,7 @@ public:
 
 };
 
-class CHpccNativeProtocolResponse : public CInterface, implements IHpccNativeProtocolResponse
+class CHpccNativeProtocolResponse : implements IHpccNativeProtocolResponse, public CInterface
 {
 protected:
     SafeSocket *client;
@@ -1250,7 +1250,7 @@ public:
         {
             responseHead.append("<").append(queryName);
             responseHead.append("Response").append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append('\"');
-            responseHead.append(" sequence=\"").append(seqNo).append("\">");
+            responseHead.append(" sequence=\"").append(seqNo).append("\"><Results><Result>");
             unsigned len = responseHead.length();
             client->write(responseHead.detach(), len, true);
         }
@@ -1262,7 +1262,7 @@ public:
 
         if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
         {
-            responseTail.append("</").append(queryName);
+            responseTail.append("</Result></Results></").append(queryName);
             if (isHTTP)
                 responseTail.append("Response");
             responseTail.append('>');
@@ -1310,8 +1310,6 @@ public:
         queryText = _queryText;
     }
 
-    IMPLEMENT_IINTERFACE;
-
     void onException(IException *E)
     {
         //if (!logctx.isBlind())
@@ -1345,7 +1343,7 @@ public:
 //ADF - Haven't changed it yet, but this should eliminate the need to parse the query twice below
 //I can load the query and lookup the parse flags before doing a full parse
 //if it turns out I need more info I may delete this.
-class QueryNameExtractor : public CInterface, implements IPTreeNotifyEvent
+class QueryNameExtractor : implements IPTreeNotifyEvent, public CInterface
 {
 public:
     TextMarkupFormat mlFmt;
@@ -1454,8 +1452,6 @@ class RoxieSocketWorker : public ProtocolQueryWorker
     Owned<IHpccNativeProtocolMsgSink> sink;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     RoxieSocketWorker(ProtocolSocketListener *_pool, SocketEndpoint &_ep)
         : ProtocolQueryWorker(_pool), ep(_ep)
     {
@@ -1749,7 +1745,9 @@ readAnother:
 
                 uid = NULL;
                 sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isRequest, isRequestArray, isBlind, isDebug);
-                if (!uid)
+                if (uid)
+                    msgctx->setTransactionId(uid);
+                else
                     uid = "-";
 
                 sink->checkAccess(peer, queryName, sanitizedText, isBlind);

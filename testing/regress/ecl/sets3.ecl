@@ -17,7 +17,7 @@
 
 gavLib := service
     set of integer4 getPrimes() : eclrtl,pure,library='eclrtl',entrypoint='rtlTestGetPrimes',oldSetFormat;
-    set of integer4 getFibList(const set of integer4 inlist) : eclrtl,pure,library='eclrtl',entrypoint='rtlTestFibList',newset;
+    set of integer4 getFibList(const set of integer4 inlist) : eclrtl,pure,library='eclrtl',entrypoint='rtlTestFibList',newset,time;
 end;
 
 r1 := record
@@ -65,3 +65,18 @@ f3 := p3(id*2 in zips);
 
 output(f3, {id});
 
+nothor(output(gavLib.getFibList([1,3])));
+
+
+r3 := record
+    unsigned id;
+    dataset(r2) children;
+end;
+
+r3 t4(unsigned id) := transform
+    ds2 := NOFOLD(DATASET(2, transform(r1, SELF.id := id + COUNTER)));
+    SELF.id := id;
+    SELF.children := SORT(NOFOLD(PROJECT(ds2, t(LEFT))), id);
+END;
+
+output(NOFOLD(PROJECT(d, t4(LEFT.id))));

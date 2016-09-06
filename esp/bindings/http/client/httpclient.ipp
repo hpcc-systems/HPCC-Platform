@@ -72,7 +72,7 @@ public:
     virtual IHttpClient* createHttpClient(const char* proxy, const char* url);
 };
 
-class CHttpClient : public CInterface, implements IHttpClient
+class CHttpClient : implements IHttpClient, public CInterface
 {
 
 #ifdef COOKIE_HANDLING

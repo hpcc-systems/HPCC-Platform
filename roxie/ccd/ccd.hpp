@@ -324,7 +324,6 @@ extern IPropertyTree *ccdChannels;
 extern IPropertyTree *topology;
 extern MapStringTo<int> *preferredClusters;
 extern StringArray allQuerySetNames;
-extern IProperties *targetAliases;
 
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
@@ -554,7 +553,7 @@ public:
 extern void putStatsValue(IPropertyTree *node, const char *statName, const char *statType, unsigned __int64 val);
 extern void putStatsValue(StringBuffer &reply, const char *statName, const char *statType, unsigned __int64 val);
 
-class ContextLogger : public CInterface, implements IRoxieContextLogger
+class ContextLogger : implements IRoxieContextLogger, public CInterface
 {
 protected:
     mutable CriticalSection crit;

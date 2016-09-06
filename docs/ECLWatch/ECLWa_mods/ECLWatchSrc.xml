@@ -1511,19 +1511,20 @@
           </listitem>
         </itemizedlist>
 
-        <sect3 id="ECLWatch_LogicalFiles_SuperFiles">
+        <sect3 id="ECLWatch_LogicalFiles_SuperFiles" role="brk">
           <title>Superfiles</title>
 
-          <para>A superfile is a managed list of sub-files (Logical Files)
+          <para>A superfile is a managed list of subfiles (Logical Files)
           treated as a single logical entity. When a file is a superfile, the
-          Summary tab displays the superfile details, such as each subfile.
-          Select a superfile from the Logical Files list, then press the Open
-          action button. This displays the superfile details page.<figure>
+          <emphasis role="bold">Summary</emphasis> tab displays the superfile
+          details, such as each subfile. Select a superfile from the Logical
+          Files list, then press the Open action button. This displays the
+          superfile details page.<figure>
               <title>Superfile Details page</title>
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="../../images/ECLWAS00a.jpg"
+                  <imagedata fileref="../../images/ECLWaS00a.jpg"
                              vendor="eclwatchSS" />
                 </imageobject>
               </mediaobject>
@@ -1533,31 +1534,29 @@
 
           <para><itemizedlist>
               <listitem>
-                <para>See a summary of the sub-files the superfile
-                contains.</para>
+                <para>See the list of subfiles in the superfile. Click on any
+                subfile hyperlink to see details for that subfile.</para>
               </listitem>
 
               <listitem>
-                <para>See the details of the sub-files.</para>
-              </listitem>
-
-              <listitem>
-                <para>Select one or more sub-file(s).</para>
+                <para>See the details of the subfiles.</para>
               </listitem>
 
               <listitem>
                 <para>Press the <emphasis role="bold">Save</emphasis> button
-                to save any changes the superfile.</para>
+                to save any changes to the superfile.</para>
               </listitem>
 
               <listitem>
-                <para>Press the <emphasis role="bold">Delete</emphasis> button
-                delete the superfile.</para>
+                <para>Press the <emphasis role="bold">Delete
+                Superfile</emphasis> button to delete the entire
+                superfile.</para>
               </listitem>
 
               <listitem>
-                <para>Press the <emphasis role="bold">Remove</emphasis> button
-                to remove a sub-file from the superfile.</para>
+                <para>Press the <emphasis role="bold">Remove
+                Subfile(s)</emphasis> button to remove any selected subfile
+                from the superfile.</para>
               </listitem>
             </itemizedlist></para>
         </sect3>

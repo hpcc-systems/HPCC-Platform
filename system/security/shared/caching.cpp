@@ -54,17 +54,11 @@ CResPermissionsCache::~CResPermissionsCache()
     }   
 }
 
+//called from within a ReadLockBlock
 int CResPermissionsCache::lookup( IArrayOf<ISecResource>& resources, bool* pFound )
 {
     time_t tstamp;
     time(&tstamp);
-
-    int timeout = m_pParentCache->getCacheTimeout();
-    if(timeout == 0 && m_pParentCache->isTransactionalEnabled())
-        timeout = 10; //Transactional timeout is set to 10 seconds for long transactions that might take over 10 seconds.
-    tstamp -= timeout;
-    if (m_tLastCleanup < tstamp)
-        removeStaleEntries(tstamp);
 
     int nresources = resources.ordinality();
     int nFound = 0;
@@ -122,6 +116,7 @@ int CResPermissionsCache::lookup( IArrayOf<ISecResource>& resources, bool* pFoun
     return nFound;
 }
 
+//called from within a WriteLockBlock
 void CResPermissionsCache::add( IArrayOf<ISecResource>& resources )
 {
     time_t tstamp;
@@ -138,7 +133,7 @@ void CResPermissionsCache::add( IArrayOf<ISecResource>& resources )
         if(resource == NULL)
             continue;
         int permissions = secResource->getAccessFlags();
-        if(permissions == -1)
+        if(permissions == SecAccess_Unavailable)
             continue;
 
         MapResAccess::iterator it = m_resAccessMap.find(SecCacheKeyEntry(resource, resourcetype));
@@ -173,29 +168,34 @@ void CResPermissionsCache::add( IArrayOf<ISecResource>& resources )
     }
 }
 
+//called from within a WriteLockBlock
 void CResPermissionsCache::removeStaleEntries(time_t tstamp)
 {
-    MapTimeStamp::iterator i; 
-    MapTimeStamp::iterator itL    = m_timestampMap.lower_bound(tstamp);
-    MapTimeStamp::iterator iBegin = m_timestampMap.begin();
-
-    for (i = iBegin; i != itL; i++)
+    if (needsCleanup(tstamp, m_pParentCache->getCacheTimeout()))
     {
-        SecCacheKeyEntry& cachekey = (*i).second;
-        MapResAccess::iterator it = m_resAccessMap.find(cachekey);
-        if (it != m_resAccessMap.end())//exists in cache
-        {
-            ResPermCacheEntry& entry = (*it).second;
-            if(entry.second)
-                entry.second->Release();
-        }
-        m_resAccessMap.erase(cachekey);
-    }
+        MapTimeStamp::iterator i;
+        MapTimeStamp::iterator itL    = m_timestampMap.lower_bound(tstamp);
+        MapTimeStamp::iterator iBegin = m_timestampMap.begin();
 
-    m_timestampMap.erase(iBegin, itL);
-    m_tLastCleanup = tstamp;
+        for (i = iBegin; i != itL; i++)
+        {
+            SecCacheKeyEntry& cachekey = (*i).second;
+            MapResAccess::iterator it = m_resAccessMap.find(cachekey);
+            if (it != m_resAccessMap.end())//exists in cache
+            {
+                ResPermCacheEntry& entry = (*it).second;
+                if(entry.second)
+                    entry.second->Release();
+            }
+            m_resAccessMap.erase(cachekey);
+        }
+
+        m_timestampMap.erase(iBegin, itL);
+        m_tLastCleanup = tstamp;
+    }
 }
 
+//called from within a WriteLockBlock
 void CResPermissionsCache::remove(SecResourceType rtype, const char* resourcename)
 {
     SecCacheKeyEntry key(resourcename, rtype);
@@ -223,10 +223,38 @@ CPermissionsCache::~CPermissionsCache()
     flush();
 }
 
-int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resources, 
-                            bool* pFound)
+int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resources, bool* pFound)
 {
+    time_t tstamp;
+    time(&tstamp);
+
     const char* userId = sec_user.getName();
+
+    //First check if matching cache entry is stale
+    bool needsCleanup = false;
+    {
+        ReadLockBlock readLock(m_resPermCacheRWLock);
+        MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( userId );
+        if (i != m_resPermissionsMap.end())
+        {
+            CResPermissionsCache* pResPermissionsCache = (*i).second;
+            needsCleanup = pResPermissionsCache->needsCleanup(tstamp, getCacheTimeout());
+        }
+    }
+
+    //clear stale cache entries for this CResPermissionsCache entry
+    if (needsCleanup)
+    {
+        WriteLockBlock writeLock(m_resPermCacheRWLock);
+        MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( userId );
+        if (i != m_resPermissionsMap.end())//Entry could have been deleted by another thread
+        {
+            CResPermissionsCache* pResPermissionsCache = (*i).second;
+            pResPermissionsCache->removeStaleEntries(tstamp);
+        }
+    }
+
+    //Lookup all user/resources
     int nFound;
     ReadLockBlock readLock(m_resPermCacheRWLock);
     MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( userId ); 
@@ -309,45 +337,57 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
     if(!username || !*username)
         return false;
 
-    string key(username);
-    ReadLockBlock readLock(m_userCacheRWLock );
-
-    MapUserCache::iterator it = m_userCache.find(key);
-    if (it == m_userCache.end())
-        return false;
-    CachedUser* user = (CachedUser*)(it->second);
-
-    time_t now;
-    time(&now);
-    if(user->getTimestamp() < (now - m_cacheTimeout))
+    bool deleteEntry = false;
     {
-        m_userCache.erase(username);
-        delete user;
-        return false;
-    }
+        ReadLockBlock readLock(m_userCacheRWLock );
 
-    const char* cachedpw = user->queryUser()->credentials().getPassword();
-    StringBuffer pw(sec_user.credentials().getPassword());
-    
-    if(cachedpw && pw.length() > 0)
-    {
-        StringBuffer md5pbuf;
-        md5_string(pw, md5pbuf);
-        if(strcmp(cachedpw, md5pbuf.str()) == 0)
+        MapUserCache::iterator it = m_userCache.find(username);
+        if (it == m_userCache.end())
+            return false;
+        CachedUser* user = (CachedUser*)(it->second);
+
+        time_t now;
+        time(&now);
+        if(user->getTimestamp() < (now - m_cacheTimeout))
         {
-#ifdef _DEBUG
-            DBGLOG("CACHE: CPermissionsCache Found validated user %s", username);
-#endif
-            // Copy cached user to the sec_user structure, but still keep the original clear text password.
-            user->queryUser()->copyTo(sec_user);
-            sec_user.credentials().setPassword(pw.str());
-            return true;
+            deleteEntry = true;
         }
         else
         {
+            const char* cachedpw = user->queryUser()->credentials().getPassword();
+            const char * pw = sec_user.credentials().getPassword();
+
+            if(cachedpw && pw && *pw != '\0')
+            {
+                StringBuffer md5pbuf;
+                md5_string2(pw, md5pbuf);
+                if(strcmp(cachedpw, md5pbuf.str()) == 0)
+                {
+#ifdef _DEBUG
+                    DBGLOG("CACHE: CPermissionsCache Found validated user %s", username);
+#endif
+                    // Copy cached user to the sec_user structure, but still keep the original clear text password.
+                    user->queryUser()->copyTo(sec_user);
+                    sec_user.credentials().setPassword(pw);
+                    return true;
+                }
+                else
+                {
+                    deleteEntry = true;
+                }
+            }
+        }
+    }
+
+    if (deleteEntry)
+    {
+        WriteLockBlock writeLock(m_userCacheRWLock);
+        MapUserCache::iterator it = m_userCache.find(username);
+        if (it != m_userCache.end())
+        {
+            CachedUser* user = (CachedUser*)(it->second);
             m_userCache.erase(username);
             delete user;
-            return false;
         }
     }
 
@@ -363,9 +403,8 @@ ISecUser* CPermissionsCache::getCachedUser( ISecUser& sec_user)
     if(!username || !*username)
         return NULL;
 
-    string key(username);
     ReadLockBlock readLock(m_userCacheRWLock );
-    MapUserCache::iterator it = m_userCache.find(key);
+    MapUserCache::iterator it = m_userCache.find(username);
     if (it == m_userCache.end())
         return NULL;
     CachedUser* user = (CachedUser*)(it->second);
@@ -381,9 +420,8 @@ void CPermissionsCache::add(ISecUser& sec_user)
     if(!username || !*username)
         return;
     
-    string key(username);
     WriteLockBlock writeLock(m_userCacheRWLock );
-    MapUserCache::iterator it = m_userCache.find(key);
+    MapUserCache::iterator it = m_userCache.find(username);
     CachedUser* user = NULL;
     if (it != m_userCache.end())
     {
@@ -394,7 +432,7 @@ void CPermissionsCache::add(ISecUser& sec_user)
 #ifdef _DEBUG
     DBGLOG("CACHE: CPermissionsCache Adding cached user %s", username);
 #endif
-    m_userCache[username] = new CachedUser(sec_user.clone());
+    m_userCache[username] = new CachedUser(LINK(&sec_user));
 }
 
 void CPermissionsCache::removeFromUserCache(ISecUser& sec_user)
@@ -402,9 +440,8 @@ void CPermissionsCache::removeFromUserCache(ISecUser& sec_user)
     const char* username = sec_user.getName();
     if(username && *username)
     {
-        string key(username);
         WriteLockBlock writeLock(m_userCacheRWLock );
-        MapUserCache::iterator it = m_userCache.find(key);
+        MapUserCache::iterator it = m_userCache.find(username);
         if (it != m_userCache.end())
         {
             CachedUser* user = (CachedUser*)(it->second);
@@ -616,6 +653,8 @@ int CPermissionsCache::queryDefaultPermission(ISecUser& user)
 }
 void CPermissionsCache::flush()
 {
+    // MORE - is this safe? m_defaultPermossion and m_lastManagedFileScopesRefresh are unprotected,
+    // and entries could be added to the first cache while the second is being cleared - does that matter?
     {
         WriteLockBlock writeLock(m_resPermCacheRWLock);
         MapResPermissionsCache::const_iterator i;

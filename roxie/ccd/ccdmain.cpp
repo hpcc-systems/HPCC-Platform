@@ -92,7 +92,6 @@ StringBuffer topologyFile;
 CriticalSection ccdChannelsCrit;
 IPropertyTree* ccdChannels;
 StringArray allQuerySetNames;
-IProperties *targetAliases;
 
 bool allFilesDynamic;
 bool lockSuperFiles;
@@ -408,7 +407,7 @@ void saveTopology()
     }
 }
 
-class CHpccProtocolPluginCtx : public CInterface, implements IHpccProtocolPluginContext
+class CHpccProtocolPluginCtx : implements IHpccProtocolPluginContext, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -466,7 +465,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 if (stricmp(argv[name], "-q")==0)
                 {
                     traceLevel = 0;
-                    roxiemem::memTraceLevel = 0;
+                    roxiemem::setMemTraceLevel(0);
                     removeLog();
                 }
                 else
@@ -579,7 +578,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (traceLevel > MAXTRACELEVEL)
             traceLevel = MAXTRACELEVEL;
         udpTraceLevel = topology->getPropInt("@udpTraceLevel", runOnce ? 0 : 1);
-        roxiemem::memTraceLevel = topology->getPropInt("@memTraceLevel", runOnce ? 0 : 1);
+        roxiemem::setMemTraceLevel(topology->getPropInt("@memTraceLevel", runOnce ? 0 : 1));
         soapTraceLevel = topology->getPropInt("@soapTraceLevel", runOnce ? 0 : 1);
         miscDebugTraceLevel = topology->getPropInt("@miscDebugTraceLevel", 0);
 
@@ -672,7 +671,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         headRegionSize = topology->getPropInt("@headRegionSize", 50);
         ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);
-        roxiemem::memTraceSizeLimit = (memsize_t) topology->getPropInt64("@memTraceSizeLimit", 0);
+        roxiemem::setMemTraceSizeLimit((memsize_t) topology->getPropInt64("@memTraceSizeLimit", 0));
         callbackRetries = topology->getPropInt("@callbackRetries", 3);
         callbackTimeout = topology->getPropInt("@callbackTimeout", 5000);
         lowTimeout = topology->getPropInt("@lowTimeout", 10000);
@@ -722,11 +721,19 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         udpInlineCollationPacketLimit = topology->getPropInt("@udpInlineCollationPacketLimit", 50);
         udpSendCompletedInData = topology->getPropBool("@udpSendCompletedInData", false);
         udpRetryBusySenders = topology->getPropInt("@udpRetryBusySenders", 0);
+
+        // Historically, this was specified in seconds. Assume any value <= 10 is a legacy value specified in seconds!
         udpMaxRetryTimedoutReqs = topology->getPropInt("@udpMaxRetryTimedoutReqs", 0);
-        udpRequestToSendTimeout = topology->getPropInt("@udpRequestToSendTimeout", 5);
-        // MORE: think of a better way/value/check maybe/and/or based on Roxie server timeout
+        udpRequestToSendTimeout = topology->getPropInt("@udpRequestToSendTimeout", 0);
+        if (udpRequestToSendTimeout<=10)
+            udpRequestToSendTimeout *= 1000;
         if (udpRequestToSendTimeout == 0)
-            udpRequestToSendTimeout = 5; 
+        {
+            if (slaTimeout)
+                udpRequestToSendTimeout = (slaTimeout*3) / 4;
+            else
+                udpRequestToSendTimeout = 5000;
+        }
         // MORE: might want to check socket buffer sizes against sys max here instead of udp threads ?
         udpMulticastBufferSize = topology->getPropInt("@udpMulticastBufferSize", 262142);
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", 131072);
@@ -901,21 +908,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         topology->addPropBool("@linuxOS", true);
 #endif
         allQuerySetNames.appendListUniq(topology->queryProp("@querySets"), ",");
-        targetAliases = createProperties();
-        StringArray tempList;
-        tempList.appendListUniq(topology->queryProp("@targetAliases"), ",");
-        ForEachItemIn(i, tempList)
-        {
-            const char *alias = tempList.item(i);
-            const char *eq = strchr(alias, '=');
-            if (eq)
-            {
-                StringAttr name(alias, eq-alias);
-                if (!allQuerySetNames.contains(name))
-                    targetAliases->setProp(name.str(), ++eq);
-            }
-        }
-
         Owned<IPropertyTreeIterator> roxieServers = topology->getElements("./RoxieServerProcess");
         ForEach(*roxieServers)
         {
@@ -1028,31 +1020,49 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         Owned<IHpccProtocolPluginContext> protocolCtx = new CHpccProtocolPluginCtx();
         if (runOnce)
         {
-            Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(protocolCtx, NULL);
-            Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(getNodeAddress(myNodeIndex), 0, 1, false), 0, 0, NULL);
-            try
+            if (globals->hasProp("-wu"))
             {
-                const char *format = globals->queryProp("format");
-                if (!format)
+                Owned<IHpccProtocolListener> roxieServer = createRoxieWorkUnitListener(1, false);
+                try
                 {
-                    if (globals->hasProp("-xml"))
-                        format = "xml";
-                    else if (globals->hasProp("-csv"))
-                        format = "csv";
-                    else if (globals->hasProp("-raw"))
-                        format = "raw";
-                    else
-                        format = "ascii";
+                    VStringBuffer x("-%s", argv[0]);
+                    roxieServer->runOnce(x);
+                    fflush(stdout);  // in windows if output is redirected results don't appear without flushing
                 }
-                StringBuffer query;
-                query.appendf("<roxie format='%s'/>", format);
-                roxieServer->runOnce(query.str()); // MORE - should use the wu listener instead I suspect
-                fflush(stdout);  // in windows if output is redirected results don't appear without flushing
+                catch (IException *E)
+                {
+                    EXCLOG(E);
+                    E->Release();
+                }
             }
-            catch (IException *E)
+            else
             {
-                EXCLOG(E);
-                E->Release();
+                Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(protocolCtx, NULL);
+                Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(getNodeAddress(myNodeIndex), 0, 1, false), 0, 0, NULL);
+                try
+                {
+                    const char *format = globals->queryProp("format");
+                    if (!format)
+                    {
+                        if (globals->hasProp("-xml"))
+                            format = "xml";
+                        else if (globals->hasProp("-csv"))
+                            format = "csv";
+                        else if (globals->hasProp("-raw"))
+                            format = "raw";
+                        else
+                            format = "ascii";
+                    }
+                    StringBuffer query;
+                    query.appendf("<roxie format='%s'/>", format);
+                    roxieServer->runOnce(query.str()); // MORE - should use the wu listener instead I suspect
+                    fflush(stdout);  // in windows if output is redirected results don't appear without flushing
+                }
+                catch (IException *E)
+                {
+                    EXCLOG(E);
+                    E->Release();
+                }
             }
         }
         else

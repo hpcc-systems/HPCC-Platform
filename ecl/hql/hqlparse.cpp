@@ -1319,7 +1319,7 @@ int HqlLex::doHashText(YYSTYPE & returnToken)
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected");
         returnToken.release();
-        returnToken.setExpr(createConstant(""));
+        returnToken.setExpr(createBlankString());
         return STRING_CONST;
     }
 
@@ -1535,7 +1535,7 @@ void HqlLex::doIsValid(YYSTYPE & returnToken)
 
 void HqlLex::checkNextLoop(const YYSTYPE & errpos, bool first, int startLine, int startCol)
 {
-    if (yyParser->aborting)
+    if (yyParser->checkAborting())
         return;
     if (loopTimes++ > MAX_LOOP_TIMES)
     {
@@ -2003,9 +2003,9 @@ bool HqlLex::checkUnicodeLiteral(char const * str, unsigned length, unsigned & e
 
 //====================================== Error Reporting  ======================================
 
-bool HqlLex::isAborting()
+bool HqlLex::checkAborting()
 {
-    return yyParser->isAborting();
+    return yyParser->checkAborting();
 }
 
 void HqlLex::reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...)

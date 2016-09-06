@@ -26,7 +26,7 @@
 #define GET_LOCK_FAILURE            1100
 
 //////////////////////////////////////////
-class CRoxieCommunicationClient: public CInterface, implements IRoxieCommunicationClient
+class CRoxieCommunicationClient: implements IRoxieCommunicationClient, public CInterface
 {
 private:
     void processRoxieQueryList(IPropertyTree *info)

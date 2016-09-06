@@ -50,6 +50,7 @@ enum NewSecAccessFlags
 
 enum SecAccessFlags
 {
+    SecAccess_Unavailable = -1,
     SecAccess_Unknown = -255,
     SecAccess_None = 0,
     SecAccess_Access = 1,
@@ -69,7 +70,8 @@ enum SecResourceType
     RT_WORKUNIT_SCOPE = 4,
     RT_SUDOERS = 5,
     RT_TRIAL = 6,
-    RT_SCOPE_MAX = 7
+    RT_VIEW_SCOPE = 7,
+    RT_SCOPE_MAX = 8
 };
 
 
@@ -280,6 +282,7 @@ interface ISecManager : extends IInterface
     virtual int getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename) = 0;
     virtual int authorizeFileScope(ISecUser & user, const char * filescope) = 0;
     virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources) = 0;
+    virtual bool authorizeViewScope(ISecUser & user, ISecResourceList * resources) = 0;
     virtual bool addResources(ISecUser & user, ISecResourceList * resources) = 0;
     virtual bool addResourcesEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, SecPermissionType ptype, const char * basedn) = 0;
     virtual bool addResourceEx(SecResourceType rtype, ISecUser & user, const char * resourcename, SecPermissionType ptype, const char * basedn) = 0;
@@ -310,7 +313,7 @@ interface ISecManager : extends IInterface
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes) = 0;
     virtual int queryDefaultPermission(ISecUser& user) = 0;
     virtual bool clearPermissionsCache(ISecUser & user) = 0;
-    virtual bool authenticateUser(ISecUser & user, bool &superUser) = 0;
+    virtual bool authenticateUser(ISecUser & user, bool * superUser) = 0;
     virtual secManagerType querySecMgrType() = 0;
     virtual const char* querySecMgrTypeName() = 0;
 };

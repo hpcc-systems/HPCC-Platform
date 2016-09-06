@@ -40,7 +40,6 @@ public:
     //double       m_maxVer;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CMethodInfo(const char * label, const char * req, const char * resp) //, const char *sectag, const char *optag,const char* minver=NULL, const char* maxver=NULL)
     {
         m_label.set(label);

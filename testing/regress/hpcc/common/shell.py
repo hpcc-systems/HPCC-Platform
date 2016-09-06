@@ -18,21 +18,13 @@
 '''
 
 import logging
-import sys
+
 from subprocess import (
     PIPE,
     Popen,
     CalledProcessError
 )
 from ..common.error import Error
-
-#TODO: Find a better way since which is tempramental.
-CMD = {
-    "eclcc": "/usr/bin/eclcc",
-    "ecl": "/usr/bin/ecl",
-    "configgen": "/opt/HPCCSystems/sbin/configgen"
-}
-
 
 class Shell:
     def command(self, *command_args):
@@ -67,11 +59,3 @@ class Shell:
             logging.debug("exception.output:'%s'",  err_msg)
             raise Error('1001', err=str(err_msg))
         return stdout
-
-    # Currently hacked to use the CMD dict as which can be tempramental.
-    # - What other methods can be used?
-    # - Support multiple versions of eclcc?
-    def which(self, command):
-        if command in CMD:
-            return CMD[command]
-        return self.__run("which", command).rstrip('\n')

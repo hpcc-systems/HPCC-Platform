@@ -24,7 +24,7 @@
 <EspProtocol name="http" type="http_protocol" plugin="esphttp" maxRequestEntityLength="8000000"/>
 <EspService name="WsDeploy_wsdeploy_esp" type="WsDeploy" plugin="WsDeploy">
   <LocalEnvFile>${CONFIG_DIR}/${ENV_XML_FILE}</LocalEnvFile>
-  <LocalConfFile>${INSTALL_DIR}${CONFIG_DIR}/configmgr/configmgr.conf</LocalConfFile>
+  <LocalConfFile>${INSTALL_DIR}/etc/${DIR_NAME}/configmgr/configmgr.conf</LocalConfFile>
   <LocalEnvConfFile>${CONFIG_DIR}/${ENV_CONF_FILE}</LocalEnvConfFile>
 </EspService>
 <EspBinding name="WsDeploy_EspBinding_esp" service="WsDeploy_wsdeploy_esp" protocol="http" type="WsDeploySoapBinding" plugin="WsDeploy" netAddress="0.0.0.0" port="8015" defaultBinding="true">

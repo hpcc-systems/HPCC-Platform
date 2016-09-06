@@ -41,7 +41,7 @@
 
 #include "edwin.h"
 
-class CClientWsEclResponse : public CInterface, implements IClientWsEclResp
+class CClientWsEclResponse : implements IClientWsEclResp, public CInterface
 {
 private:
     SoapAttachParam<StringBuffer> m_ResultsXML;
@@ -211,7 +211,7 @@ public:
 };
 
 
-class CClientRequestNode : public CInterface, implements IClientRequestNode
+class CClientRequestNode : implements IClientRequestNode, public CInterface
 {
 private:
     StringAttr m_name;
@@ -378,7 +378,7 @@ public:
     }
 };
 
-class CClientWsEclRequest : public CInterface, implements IClientWsEclRequest
+class CClientWsEclRequest : implements IClientWsEclRequest, public CInterface
 {
 private:
     StringAttr m_method;

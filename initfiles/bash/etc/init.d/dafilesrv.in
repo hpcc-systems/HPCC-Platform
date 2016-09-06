@@ -71,9 +71,9 @@ bin_path=${INSTALL_DIR}/bin
 component=""
 runSetupOnly=0
 source ${configgen_path}/hpcc_setenv
+createDir ${LOG_DIR}
 
 which_service
-get_commondirs
 
 #Check for existance of user
 check_user ${user}
@@ -82,17 +82,14 @@ if [ $? -ne 1 ];then
    exit 3
 fi
 
-groupNum=`grep -w ${user} /etc/passwd  | cut -d ':' -f 4`
-group=`grep -w ${groupNum} /etc/group | cut -d ':' -f 1`
-
 check_group ${group}
 if [ $? -ne 1 ];then
    echo "Group for user ${user} does not exist on the system. Exiting....."
    exit 3
 fi
 
+check_getopt
 
-validate_configuration
 COMPS=$(${configgen_path}/configgen -env ${envfile} -ip "127.0.0.1" -list)
 if [[ $rc -ne 0 ]]; then
     log "hpcc-init: failure to build COMPS from configgen call"
@@ -122,9 +119,9 @@ if [ -z "${component}" ] ; then
     exit 3
 fi
 
-TEMP=`/usr/bin/getopt -o h --long help -n 'dafilesrv' -- "$@"`
+TEMP=`getopt -o h --long help -n 'dafilesrv' -- "$@"`
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
-eval set -- "$TEMP"
+eval set -- $TEMP
 while true ; do
     case "$1" in
         -h|--help) print_usage
@@ -147,6 +144,9 @@ case "$arg" in
         ;;
 esac
 
+if [ "${cmd}" = "start" ] || [ "${cmd}" = "restart" ]; then
+    validate_configuration
+fi
 
 unset IFS
 

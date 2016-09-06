@@ -25,7 +25,7 @@
 #include "package.h"
 #include "referencedfilelist.hpp"
 
-class CPackageSuperFileArray : public CInterface, implements ISimpleSuperFileEnquiry
+class CPackageSuperFileArray : implements ISimpleSuperFileEnquiry, public CInterface
 {
     IArrayOf<IPropertyTree> subFiles;
 public:
@@ -72,7 +72,7 @@ public:
     }
 };
 
-class WORKUNIT_API CPackageNode : extends CInterface, implements IHpccPackage
+class WORKUNIT_API CPackageNode : implements IHpccPackage, public CInterface
 {
 protected:
     Owned<IPropertyTree> node;
@@ -298,7 +298,7 @@ typedef CResolvedPackage<CPackageNode> CHpccPackage;
 //================================================================================================
 
 template <class TYPE, class IFACE>
-class CPackageMapOf : public CInterface, implements IHpccPackageMap
+class CPackageMapOf : implements IHpccPackageMap, public CInterface
 {
 public:
     typedef CResolvedPackage<TYPE> packageType;
@@ -597,7 +597,7 @@ typedef CPackageMapOf<CPackageNode, IHpccPackage> CHpccPackageMap;
 // CHpccPackageSet - an implementation of IHpccPackageSet
 //================================================================================================
 
-class WORKUNIT_API CHpccPackageSet : public CInterface, implements IHpccPackageSet
+class WORKUNIT_API CHpccPackageSet : implements IHpccPackageSet, public CInterface
 {
     IArrayOf<CHpccPackageMap> packageMaps;
     StringAttr process;

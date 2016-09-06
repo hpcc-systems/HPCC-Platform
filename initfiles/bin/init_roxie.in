@@ -1,0 +1,91 @@
+#!/bin/bash
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+###<REPLACE>###
+
+source ${INSTALL_DIR}/sbin/hpcc_setenv
+PID_NAME="${PID_DIR}/$(basename $PWD).pid"
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+
+component=$(basename $PWD)
+export logfile="${LOG_DIR}/${component}/init_${component}_$(date +%Y_%m_%d_%H_%M_%S).log"
+
+export SENTINEL="roxie.sentinel"
+log "Removing $SENTINEL"
+rm -f ${SENTINEL}
+
+if [[ -n "$1" ]]; then
+    log "cd $1"
+    cd $1
+fi
+
+log "sourcing roxievars"
+source ./roxievars
+
+if [[ -n "$2" ]]; then
+    logfilename=$2
+else
+    logfilename="`date +%m_%d_%Y_%H_%M_%S`"
+fi
+
+export LIBC_FATAL_STDERR_=1
+export restarts=0
+
+log "Setting limits for core and open file descriptors"
+ulimit -Sc hard > /dev/null 2>&1
+[[ $? -ne 0 ]] && log "Failed to set core file limit"
+ulimit -Sn hard > /dev/null 2>&1
+[[ $? -ne 0 ]] && log "Failed to set file descriptor limit"
+
+killed()
+{
+    if [[ -n "$1" ]]; then
+        log "cd $1"
+        cd $1
+    fi
+    log "Attempting to kill $component"
+    kill_process ${PID_NAME} roxie 3 ${SENTINEL}
+    if [[ $? -eq 1 ]]; then
+        log "could not kill $component"
+    else
+        log "$component Stopped"
+        unlock ${LOCK_DIR}/$component/${component}.lock
+    fi
+    exit 255
+}
+
+trap "killed" SIGINT SIGTERM SIGKILL
+log "Calling nohup roxie --topology=RoxieTopology.xml --logfile --restarts=$restarts --stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &"
+nohup roxie --topology=RoxieTopology.xml --logfile --restarts=$restarts --stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
+echo $! > $PID_NAME 
+wait
+log "Removing $PID_NAME"
+rm $PID_NAME
+
+# Automatically restart roxie when it dies
+while [[ -e ${SENTINEL} ]]; do
+    export restarts=$(($restarts+1))
+    log "Restarting $restarts"
+    echo Restarting $restarts >> $logfilename.stderr
+    echo Restarting $restarts >> $logfilename.stdout
+    log "Calling nohup roxie --topology=RoxieTopology.xml --logfile --restarts=$restarts --stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &"
+    nohup roxie --topology=RoxieTopology.xml --logfile --restarts=$restarts --stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
+    echo $! > $PID_NAME
+    wait
+    log "Removing $PID_NAME"
+    rm $PID_NAME
+done

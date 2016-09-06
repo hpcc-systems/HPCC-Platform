@@ -28,7 +28,7 @@
 
 IRowStream *createFirstNReadSeqVar(IRowStream *input, unsigned limit)
 {
-    class CFirstNReadSeqVar : public CSimpleInterface, implements IRowStream
+    class CFirstNReadSeqVar : implements IRowStream, public CSimpleInterface
     {
         IRowStream *input;
         unsigned limit, c;
@@ -87,6 +87,8 @@ public:
         assertex(!(global && grouped));
         helper = (IHThorTopNArg *) queryHelper();
         eog = eos = false;
+        if (container.queryLocalOrGrouped())
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
     ~TopNSlaveActivity()

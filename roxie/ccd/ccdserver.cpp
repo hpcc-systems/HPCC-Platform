@@ -29,6 +29,7 @@
 #include "thorsoapcall.hpp"
 #include "thorcommon.ipp"
 #include "thorsort.hpp"
+#include "thorstats.hpp"
 #include "jlzw.hpp"
 #include "javahash.hpp"
 #include "javahash.tpp"
@@ -169,7 +170,7 @@ public:
 
 //The following don't link their arguments because that creates a circular reference
 //But I wish there was a better way
-class IndirectSlaveContext : public CInterface, implements IRoxieSlaveContext
+class IndirectSlaveContext : implements IRoxieSlaveContext, public CInterface
 {
 public:
     IndirectSlaveContext(IRoxieSlaveContext * _ctx) : ctx(_ctx) {}
@@ -662,8 +663,6 @@ private:
     CRoxieServerMultiInputInfo inputs;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieServerMultiInputFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactoryBase(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
@@ -682,7 +681,7 @@ public:
     virtual unsigned numInputs() const { return inputs.ordinality(); }
 };
 
-class CWrappedException : public CInterface, implements IException
+class CWrappedException : implements IException, public CInterface
 {
     Owned<IException> wrapped;
     ThorActivityKind kind;
@@ -706,8 +705,6 @@ protected:
     unsigned inputidx;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieServerActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactoryBase(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
@@ -906,7 +903,7 @@ extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxi
     return result;
 }
 
-class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IFinalRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
+class CRoxieServerActivity : implements CInterfaceOf<IRoxieServerActivity>, implements IFinalRoxieInput, implements IEngineRowStream, implements IRoxieContextLogger
 {
     friend class StrandProcessor;
 protected:
@@ -929,6 +926,7 @@ protected:
     CriticalSection statscrit;
 
     mutable CRuntimeStatisticCollection stats;
+    MapStringToMyClass<ThorSectionTimer> functionTimers;
     unsigned processed;
     ActivityTimeAccumulator totalCycles;
     cycle_t localCycles;
@@ -942,7 +940,7 @@ protected:
     IProbeManager *probeManager = NULL;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IRoxieServerActivity>)
 
     CRoxieServerActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : ctx(_ctx),
@@ -1031,6 +1029,31 @@ public:
     virtual void mergeStats(MemoryBuffer &buf)
     {
         stats.deserializeMerge(buf);
+    }
+    virtual ISectionTimer *registerTimer(unsigned activityId, const char * name)
+    {
+        CriticalBlock b(statscrit); // reuse statscrit to protect functionTimers - it will not be held concurrently
+        ISectionTimer *timer = functionTimers.getValue(name);
+        if (!timer)
+        {
+            timer = ThorSectionTimer::createTimer(stats, name);
+            functionTimers.setValue(name, timer);
+            timer->Release(); // Value returned is not linked
+        }
+        return timer;
+    }
+    virtual IRoxieServerActivity * queryChildActivity(unsigned activityId)
+    {
+        ForEachItemIn(i, childGraphs)
+        {
+            IRoxieServerActivity * activity = childGraphs.item(i).queryActivity(activityId);
+            if (activity)
+                return activity;
+        }
+#ifdef _DEBUG
+        throwUnexpectedX("Unable to map child activity id to an activity");
+#endif
+        return nullptr;
     }
     void mergeStrandStats(unsigned strandProcessed, const ActivityTimeAccumulator & strandCycles, const CRuntimeStatisticCollection & strandStats)
     {
@@ -1155,6 +1178,8 @@ public:
         return ctx;
     }
 
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(whichInput==0); return this; }
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return junction; }
     virtual IRoxieServerActivity *queryActivity() { return this; }
     virtual IIndexReadActivityInfo *queryIndexReadActivity() { return NULL; }
 
@@ -1940,7 +1965,7 @@ void setStartRuid(unsigned restarts)
 
 enum { LimitSkipErrorCode = 0, KeyedLimitSkipErrorCode = 1 };
 
-class LimitSkipException : public CInterface, public IException
+class LimitSkipException : public IException, public CInterface
 {
     int code;
 public:
@@ -2182,7 +2207,7 @@ public:
 
 // MORE - this code copied from ThreadedConcat code - may be able to common up some.
 
-class CRoxieServerReadAheadInput : public CInterface, implements IFinalRoxieInput, implements IRecordPullerCallback, implements IEngineRowStream
+class CRoxieServerReadAheadInput : implements IEngineRowStream, implements IFinalRoxieInput, implements IRecordPullerCallback, public CInterface
 {
     QueueOf<const void, true> buffer;
     InterruptableSemaphore ready;
@@ -2218,6 +2243,9 @@ public:
         streams.append(this);
         return NULL;
     }
+
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { return this; }
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { return nullptr; }
 
     virtual IIndexReadActivityInfo *queryIndexReadActivity() 
     {
@@ -2518,7 +2546,28 @@ public:
             return NULL;
     }
 
-    virtual void reset()    
+    virtual IFinalRoxieInput * queryConcreteInput(unsigned idx)
+    {
+        return queryInput(idx);
+    }
+
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput)
+    {
+        if (whichInput < numInputs)
+            return streamArray[whichInput];
+        else
+            return NULL;
+    }
+
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const
+    {
+        if (idx < numInputs)
+            return junctionArray[idx];
+        else
+            return NULL;
+    }
+
+    virtual void reset()
     {
         for (unsigned i = 0; i < numInputs; i++)
             inputArray[i]->reset();
@@ -2676,7 +2725,7 @@ public:
 
 //=================================================================================
 
-class CRoxieServerQueryPacket : public CInterface, implements IRoxieServerQueryPacket
+class CRoxieServerQueryPacket : implements IRoxieServerQueryPacket, public CInterface
 {
 protected:
     Owned<IMessageResult> result;
@@ -3027,7 +3076,7 @@ public:
     // more than make up for it
 };
 
-class CRowArrayMessageUnpackCursor : public CInterface, implements IMessageUnpackCursor
+class CRowArrayMessageUnpackCursor : implements IMessageUnpackCursor, public CInterface
 {
     ConstPointerArray &data;
     Linked<IMessageResult> result;
@@ -3062,7 +3111,7 @@ public:
 
 // MORE - should possibly move more over to the lazy version used in indexread?
 
-class CRowArrayMessageResult : public CInterface, implements IMessageResult
+class CRowArrayMessageResult : implements IMessageResult, public CInterface
 {
     ConstPointerArray data;
     IRowManager &rowManager;
@@ -3127,7 +3176,7 @@ void throwRemoteException(IMessageUnpackCursor *extra)
     throwUnexpected();
 }
 
-class CRemoteResultAdaptor :public CInterface, implements IFinalRoxieInput, implements IExceptionHandler, implements IEngineRowStream
+class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxieInput, implements IExceptionHandler, public CInterface
 {
     friend class CRemoteResultMerger;
     class CRemoteResultMerger
@@ -4016,6 +4065,9 @@ public:
     {
         meta.set(newmeta);
     }
+
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(whichInput==0); return this; }
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return nullptr; }
 
     virtual IRoxieServerActivity *queryActivity()
     {
@@ -5344,7 +5396,7 @@ class CRoxieServerChildGroupAggregateActivity : public CRoxieServerChildBaseActi
     RowAggregator aggregated;
 
 public:
-    IMPLEMENT_IINTERFACE
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerChildBaseActivity)
     CRoxieServerChildGroupAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerChildBaseActivity(_ctx, _factory, _probeManager), helper((IHThorChildGroupAggregateArg &) basehelper),
           aggregated(helper, helper)
@@ -5791,7 +5843,7 @@ class CRoxieServerStrandedInlineTableActivity : public CRoxieServerStrandedActiv
             //Return rows while the current section is active
             while (curRow < maxRows)
             {
-                RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                RtlDynamicRowBuilder rowBuilder(*rowAllocator);
                 unsigned outSize = helper.getRow(rowBuilder, curRow++);
                 if (outSize)
                 {
@@ -6025,7 +6077,7 @@ public:
 };
 
 
-class CSafeRoxieInput : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
+class CSafeRoxieInput : implements IEngineRowStream, implements IFinalRoxieInput, public CInterface
 {
 public:
     CSafeRoxieInput(unsigned _sourceIdx, IFinalRoxieInput * _input) : input(_input), inputStream(NULL), sourceIdx(_sourceIdx) {}
@@ -6049,6 +6101,8 @@ public:
     {
         return input->queryTotalCycles();
     }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(whichInput==0); return this; }
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return nullptr; }
     virtual IRoxieServerActivity *queryActivity()
     {
         return input->queryActivity();
@@ -6101,7 +6155,7 @@ private:
 
 //=================================================================================
 
-class CPseudoRoxieInput : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
+class CPseudoRoxieInput : implements IEngineRowStream, implements IFinalRoxieInput, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -6114,6 +6168,9 @@ public:
     {
         return 0;
     }
+
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(whichInput==0); return this; }
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return nullptr; }
 
     virtual IRoxieServerActivity *queryActivity()
     {
@@ -6198,6 +6255,16 @@ public:
         return input->queryConcreteInput(idx);
     }
 
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput)
+    {
+        return input->queryConcreteOutputStream(whichInput);
+    }
+
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const
+    {
+        return input->queryConcreteOutputJunction(idx);
+    }
+
     virtual IOutputMetaData * queryOutputMeta() const 
     { 
         return input->queryOutputMeta(); 
@@ -6260,7 +6327,7 @@ public:
 };
 
 
-class CGraphResult : public CInterface, implements IGraphResult
+class CGraphResult : implements IGraphResult, public CInterface
 {
     CriticalSection cs;
     byte **rowset;
@@ -8535,7 +8602,7 @@ public:
     unsigned headIdx;
     Owned<IException> error;
 
-    class OutputAdaptor : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream
+    class OutputAdaptor : implements IEngineRowStream, implements IFinalRoxieInput, public CInterface
     {
         bool eof, eofpending, stopped;
 
@@ -8584,6 +8651,9 @@ public:
             stopped = false;
         }
 
+        virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(idx==0); return this; }
+        virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return nullptr; }
+
         virtual IRoxieServerActivity *queryActivity()
         {
             return parent;
@@ -8593,7 +8663,7 @@ public:
         {
             return parent->queryIndexReadActivity();
         }
-        
+
         virtual unsigned __int64 queryTotalCycles() const
         {
             return totalCycles;
@@ -12844,7 +12914,7 @@ IRoxieServerActivityFactory *createRoxieServerJoinActivityFactory(unsigned _id, 
 
 #define CONCAT_READAHEAD 1000
 
-class CRoxieThreadedConcatReader : public CInterface, implements IRecordPullerCallback
+class CRoxieThreadedConcatReader : implements IRecordPullerCallback, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -15202,7 +15272,7 @@ IFinalRoxieInput * LoopExecutorThread::createLoopIterationGraph(unsigned i, unsi
 
 //=================================================================================
 
-class CCounterRowMetaData : public CInterface, implements IOutputMetaData
+class CCounterRowMetaData : implements IOutputMetaData, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE
@@ -15692,8 +15762,6 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
         unsigned processed;
 
     public:
-        IMPLEMENT_IINTERFACE;
-
         OutputAdaptor()
         {
             parent = NULL;
@@ -16054,6 +16122,7 @@ class CRoxieServerNWayInputBaseActivity : public CRoxieServerMultiInputBaseActiv
 protected:
     PointerArrayOf<IFinalRoxieInput> selectedInputs;
     PointerArrayOf<IEngineRowStream> selectedStreams;
+    PointerArrayOf<IStrandJunction> selectedJunctions;
 
 public:
     CRoxieServerNWayInputBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
@@ -16095,6 +16164,7 @@ public:
             selectedInputs.item(i)->reset();
         selectedInputs.kill();
         selectedStreams.kill();
+        selectedJunctions.kill();
         CRoxieServerMultiInputBaseActivity::reset(); 
     }
 
@@ -16111,8 +16181,20 @@ public:
 
     virtual IFinalRoxieInput * queryConcreteInput(unsigned idx)
     {
-        if (selectedInputs.isItem(idx))
-            return selectedInputs.item(idx);
+        return queryInput(idx);
+    }
+
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput)
+    {
+        if (selectedStreams.isItem(whichInput))
+            return selectedStreams.item(whichInput);
+        return NULL;
+    }
+
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const
+    {
+        if (selectedJunctions.isItem(idx))
+            return selectedJunctions.item(idx);
         return NULL;
     }
 };
@@ -16136,6 +16218,8 @@ public:
         helper.getInputSelection(selectionIsAll, selectionLen, selection.refdata());
 
         selectedInputs.kill();
+        selectedStreams.kill();
+        selectedJunctions.kill();
         assertex(numInputs==numStreams); // Will need refactoring when that ceases to be true
         if (selectionIsAll)
         {
@@ -16143,6 +16227,7 @@ public:
             {
                 selectedInputs.append(inputArray[i]);
                 selectedStreams.append(streamArray[i]);    // Assumes 1:1 relationship - is that good?
+                selectedJunctions.append(junctionArray[i]);
             }
         }
         else
@@ -16163,13 +16248,17 @@ public:
 
                 selectedInputs.append(inputArray[nextIndex-1]);
                 selectedStreams.append(streamArray[nextIndex-1]);    // Assumes 1:1 relationship - is that good?
+                selectedJunctions.append(junctionArray[nextIndex-1]);
             }
         }
 
-        ForEachItemIn(i2, selectedInputs)
-            selectedInputs.item(i2)->start(parentExtractSize, parentExtract, paused);
+        // NB: Whatever pulls this nwayinput activity, starts and stops the selectedInputs and selectedJunctions
     }
 
+    virtual void stop()
+    {
+        // NB: Whatever pulls this nwayinput activity, starts and stops the selectedInputs
+    }
 };
 
 class CRoxieServerNWayInputActivityFactory : public CRoxieServerMultiInputFactory
@@ -16196,7 +16285,7 @@ IRoxieServerActivityFactory *createRoxieServerNWayInputActivityFactory(unsigned 
 class CRoxieServerNWayGraphLoopResultReadActivity : public CRoxieServerNWayInputBaseActivity
 {
     IHThorNWayGraphLoopResultReadArg & helper;
-    CIArrayOf<CRoxieServerActivity> resultReaders;
+    IArrayOf<IRoxieServerActivity> resultReaders;
     Owned<IStrandJunction> *resultJunctions;
     unsigned graphId;
     bool grouped;
@@ -16238,15 +16327,9 @@ public:
                 resultInput->onCreate(colocalParent);
                 resultInput->start(parentExtractSize, parentExtract, paused);
                 selectedStreams.append(connectSingleStream(ctx, resultInput, 0, resultJunctions[i], true));
+                selectedJunctions.append(resultJunctions[i]);
             }
         }
-        else
-        {
-            ForEachItemIn(i, selectedInputs)
-                selectedInputs.item(i)->start(parentExtractSize, parentExtract, paused);
-        }
-        ForEachItemIn(i, selectedStreams)
-            startJunction(resultJunctions[i]);
     }
 
     virtual void reset()    
@@ -16280,6 +16363,7 @@ public:
             IFinalRoxieInput *in = processor.connectIterationOutput(selections[i], probeManager, probes, this, i);
             selectedInputs.append(in);
             selectedStreams.append(connectSingleStream(ctx, in, 0, resultJunctions[i], true));
+            selectedJunctions.append(resultJunctions[i]);
         }
     }
 
@@ -16321,7 +16405,7 @@ IRoxieServerActivityFactory *createRoxieServerNWayGraphLoopResultReadActivityFac
 //=================================================================================
 
 
-class RoxieSteppedInput : public CInterface, implements ISteppedInput
+class RoxieSteppedInput : implements ISteppedInput, public CInterface
 {
 public:
     RoxieSteppedInput(IFinalRoxieInput * _input, IEngineRowStream *_stream) { input = _input; inputStream = _stream; }
@@ -16413,52 +16497,84 @@ protected:
 
 //=================================================================================
 
-class CRoxieServerNaryActivity : public CRoxieServerMultiInputActivity
+class CRoxieServerNWayBaseActivity : public CRoxieServerMultiInputBaseActivity
+{
+public:
+    CRoxieServerNWayBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputBaseActivity(_ctx, _factory, _probeManager, _numInputs)
+    {
+    }
+
+    void startExpandedInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        ForEachItemIn(ei, expandedInputs)
+            expandedInputs.item(ei)->start(parentExtractSize, parentExtract, paused);
+        ForEachItemIn(idx, expandedInputs)
+            startJunction(expandedJunctions.item(idx));
+    }
+
+    virtual void stop()
+    {
+        ForEachItemIn(i, expandedStreams)
+            expandedStreams.item(i)->stop();
+        CRoxieServerMultiInputBaseActivity::stop();
+    }
+
+    virtual void reset()
+    {
+        ForEachItemIn(idx, expandedInputs)
+            resetJunction(expandedJunctions.item(idx));
+        expandedInputs.kill();
+        expandedStreams.kill();
+        expandedJunctions.kill();
+        CRoxieServerMultiInputBaseActivity::reset();
+    }
+protected:
+    PointerArrayOf<IFinalRoxieInput> expandedInputs;
+    PointerArrayOf<IEngineRowStream> expandedStreams;
+    PointerArrayOf<IStrandJunction> expandedJunctions;
+};
+
+//=================================================================================
+
+class CRoxieServerNaryActivity : public CRoxieServerNWayBaseActivity
 {
 public:
     CRoxieServerNaryActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerMultiInputActivity(_ctx, _factory, _probeManager, _numInputs), expandedJunctions(nullptr)
+        : CRoxieServerNWayBaseActivity(_ctx, _factory, _probeManager, _numInputs)
     {
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerNWayBaseActivity::start(parentExtractSize, parentExtract, paused);
+
         for (unsigned i=0; i < numInputs; i++)
         {
             IFinalRoxieInput * cur = inputArray[i];
-            unsigned numRealInputs = cur->numConcreteOutputs();
-            for (unsigned j = 0; j < numRealInputs; j++)
+            CRoxieServerNWayInputBaseActivity *nWayInput = dynamic_cast<CRoxieServerNWayInputBaseActivity *>(cur);
+            if (nWayInput)
             {
-                IFinalRoxieInput * curReal = cur->queryConcreteInput(j);
-                expandedInputs.append(curReal);
+                nWayInput->start(parentExtractSize, parentExtract, paused);
+                unsigned numRealInputs = cur->numConcreteOutputs();
+                for (unsigned j = 0; j < numRealInputs; j++)
+                {
+                    expandedInputs.append(cur->queryConcreteInput(j));
+                    expandedStreams.append(cur->queryConcreteOutputStream(j));
+                    expandedJunctions.append(cur->queryConcreteOutputJunction(j));
+                }
+            }
+            else
+            {
+                expandedInputs.append(cur);
+                // NB: this activities input streams + junction have been setup and held in CRoxieServerMultiInputActivity base
+                expandedStreams.append(queryConcreteOutputStream(i));
+                expandedJunctions.append(queryConcreteOutputJunction(i));
             }
         }
-        expandedJunctions = new Owned<IStrandJunction> [expandedInputs.length()];
-        ForEachItemIn(idx, expandedInputs)
-        {
-            expandedStreams.append(connectSingleStream(ctx, expandedInputs.item(idx), 0, expandedJunctions[idx], true));  // MORE - is the index 0 right?
-            startJunction(expandedJunctions[idx]);
-        }
+        startExpandedInputs(parentExtractSize, parentExtract, paused);
     }
-
-    virtual void reset()    
-    {
-        ForEachItemIn(idx, expandedInputs)
-            resetJunction(expandedJunctions[idx]);
-        expandedInputs.kill();
-        expandedStreams.kill();
-        delete [] expandedJunctions;
-        expandedJunctions = nullptr;
-        CRoxieServerMultiInputActivity::reset(); 
-    }
-
-protected:
-    PointerArrayOf<IFinalRoxieInput> expandedInputs;
-    PointerArrayOf<IEngineRowStream> expandedStreams;
-    Owned<IStrandJunction> *expandedJunctions;
 };
-
 
 //=================================================================================
 
@@ -16760,50 +16876,62 @@ IRoxieServerActivityFactory *createRoxieServerNWayMergeJoinActivityFactory(unsig
 
 //=================================================================================
 
-class CRoxieServerNWaySelectActivity : public CRoxieServerMultiInputActivity
+class CRoxieServerNWaySelectActivity : public CRoxieServerNWayBaseActivity
 {
     IHThorNWaySelectArg &helper;
 public:
     CRoxieServerNWaySelectActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
-        : CRoxieServerMultiInputActivity(_ctx, _factory, _probeManager, _numInputs),
+        : CRoxieServerNWayBaseActivity(_ctx, _factory, _probeManager, _numInputs),
           helper((IHThorNWaySelectArg &)basehelper)
     {
-        selectedInput = NULL;
-        selectedStream = NULL;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerNWayBaseActivity::start(parentExtractSize, parentExtract, paused);
 
         unsigned whichInput = helper.getInputIndex();
-        selectedInput = NULL;
-        selectedStream = NULL;
+        selectedInput = nullptr;
+        selectedStream = nullptr;
         if (whichInput--)
         {
             for (unsigned i=0; i < numInputs; i++)
             {
                 IFinalRoxieInput * cur = inputArray[i];
-                unsigned numRealInputs = cur->numConcreteOutputs();
-                if (whichInput < numRealInputs)
+                CRoxieServerNWayInputBaseActivity *nWayInput = dynamic_cast<CRoxieServerNWayInputBaseActivity *>(cur);
+                if (nWayInput)
                 {
-                    selectedInput = cur->queryConcreteInput(whichInput);
-                    selectedStream = connectSingleStream(ctx, selectedInput, 0, selectedJunction, true);  // Should this be passing whichInput??
-                    break;
+                    nWayInput->start(parentExtractSize, parentExtract, paused);
+                    unsigned numRealInputs = cur->numConcreteOutputs();
+                    if (whichInput < numRealInputs)
+                    {
+                        expandedInputs.append(cur->queryConcreteInput(whichInput));
+                        expandedStreams.append(cur->queryConcreteOutputStream(whichInput));
+                        expandedJunctions.append(cur->queryConcreteOutputJunction(whichInput));
+                        break;
+                    }
+                    whichInput -= numRealInputs;
                 }
-                whichInput -= numRealInputs;
+                else
+                {
+                    if (whichInput == 0)
+                    {
+                        expandedInputs.append(cur);
+                        // NB: this activities input streams + junction have been setup and held in CRoxieServerMultiInputActivity base
+                        expandedStreams.append(queryConcreteOutputStream(i));
+                        expandedJunctions.append(queryConcreteOutputJunction(i));
+                        break;
+                    }
+                    whichInput -= 1;
+                }
             }
         }
-        startJunction(selectedJunction);
-    }
-
-    virtual void reset()    
-    {
-        selectedInput = NULL;
-        selectedStream = NULL;
-        resetJunction(selectedJunction);
-        selectedJunction.clear();
-        CRoxieServerMultiInputActivity::reset(); 
+        if (expandedInputs.ordinality())
+        {
+            startExpandedInputs(parentExtractSize, parentExtract, paused);
+            selectedInput = expandedInputs.item(0);
+            selectedStream = expandedStreams.item(0);
+        }
     }
 
     const void * nextRow()
@@ -16843,8 +16971,8 @@ public:
     }
 
 protected:
-    IFinalRoxieInput * selectedInput;
-    IEngineRowStream * selectedStream;
+    IFinalRoxieInput * selectedInput = nullptr;
+    IEngineRowStream * selectedStream = nullptr;
     Owned<IStrandJunction> selectedJunction;
 };
 
@@ -20039,6 +20167,9 @@ public:
         }
     }
 
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { return this; }
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { return nullptr; }
+
     virtual IIndexReadActivityInfo *queryIndexReadActivity()
     {
         IFinalRoxieInput *in = cond ? inputTrue  : inputFalse;
@@ -20996,7 +21127,7 @@ class CRoxieServerXmlParseActivity : public CRoxieServerActivity, implements IXM
     Owned<IColumnProvider> lastMatch;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerActivity)
 
     CRoxieServerXmlParseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
@@ -21152,7 +21283,7 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerActivity)
 
     CRoxieServerDiskReadBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
@@ -21516,7 +21647,7 @@ class CRoxieServerXmlReadActivity : public CRoxieServerDiskReadBaseActivity, imp
     Owned<IColumnProvider> lastMatch;
     unsigned __int64 fileoffset;
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerDiskReadBaseActivity)
     CRoxieServerXmlReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
         : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager)
     {
@@ -22117,7 +22248,6 @@ class CRoxieServerDiskGroupAggregateActivity : public CRoxieServerDiskAggregateB
     bool gathered;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieServerDiskGroupAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
         : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
           aggregateHelper((IHThorDiskGroupAggregateArg &)basehelper),
@@ -22658,7 +22788,7 @@ public:
             processAllKeys();
     }
 
-    class LazyLocalKeyReader : public CInterface, implements IMessageResult, implements IMessageUnpackCursor 
+    class LazyLocalKeyReader : implements IMessageUnpackCursor, implements IMessageResult, public CInterface
     {
     public:
         IMPLEMENT_IINTERFACE;
@@ -23904,7 +24034,7 @@ public:
         groupSegCount = 0;
     }
 
-    IMPLEMENT_IINTERFACE
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerIndexActivity)
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
@@ -24568,7 +24698,7 @@ interface IJoinProcessor
 //   
 //------------------------------------------------------------------------------------------------------
 
-class CJoinGroup : public CInterface, implements IInterface
+class CJoinGroup : public CInterface
 {
 protected:
     const void *left;                   // LHS row
@@ -24600,8 +24730,6 @@ public:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CJoinGroup(const void *_left, CJoinGroup *_groupStart)
     {
 #ifdef TRACE_JOINGROUPS
@@ -26148,7 +26276,7 @@ protected:
     ClientCertificate *pClientCert;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CRoxieServerActivity)
 
     CRoxieServerSoapActivityBase(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorSoapActionArg &)basehelper)
@@ -26475,7 +26603,7 @@ IRoxieServerActivityFactory *createRoxieServerSoapDatasetActionActivityFactory(u
 
 //=====================================================================================================
 
-class CGraphResults : public CInterface, implements IRoxieGraphResults
+class CGraphResults : implements IRoxieGraphResults, public CInterface
 {
     IArrayOf<IGraphResult> results;
     CriticalSection cs;
@@ -26536,7 +26664,7 @@ public:
 
 //===================================================================================================================
 
-class CPseudoArg : public CInterface, implements IHThorArg
+class CPseudoArg : implements IHThorArg, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE
@@ -26556,7 +26684,7 @@ public:
 };
 
 
-class CActivityGraph : public CInterface, implements IActivityGraph, implements IThorChildGraph, implements ILocalGraphEx, implements IRoxieServerChildGraph
+class CActivityGraph : implements IActivityGraph, implements IThorChildGraph, implements ILocalGraphEx, implements IRoxieServerChildGraph, public CInterface
 {
 protected:
     class ActivityGraphSlaveContext : public IndirectSlaveContext
@@ -26703,6 +26831,18 @@ public:
     virtual const char *queryName() const
     {
         return graphName.get();
+    }
+
+    virtual IRoxieServerActivity *queryActivity(unsigned _activityId)
+    {
+        unsigned idx = graphDefinition.recursiveFindActivityIndex(_activityId);
+        if (idx==NotFound)
+            return nullptr;
+        assertex(activities.isItem(idx));
+        IRoxieServerActivity *activity = &activities.item(idx);
+        if (activity->queryId() == _activityId)
+            return activity;
+        return activity->queryChildActivity(_activityId);
     }
 
     void createGraph(IRoxieSlaveContext *_ctx)
@@ -27063,7 +27203,7 @@ public:
     }
 };
 
-class CProxyActivityGraph : public CInterface, implements IActivityGraph, implements IThorChildGraph
+class CProxyActivityGraph : implements IActivityGraph, implements IThorChildGraph, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -27087,6 +27227,7 @@ public:
     virtual IRoxieServerChildGraph * queryLoopGraph() { throwUnexpected(); }
     virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) { throwUnexpected(); }
     virtual const char *queryName() const { throwUnexpected(); }
+    virtual IRoxieServerActivity *queryActivity(unsigned _activityId) { return nullptr; } // MORE - may need something here!?
 
     virtual IEclGraphResults * evaluate(unsigned parentExtractSize, const byte * parentExtract)
     {
@@ -27278,7 +27419,7 @@ public:
 };
 
 
-class CDelayedActivityGraph : public CInterface, implements IActivityGraph
+class CDelayedActivityGraph : implements IActivityGraph, public CInterface
 {
     StringAttr graphName;
     ActivityArray & graphDefinition;
@@ -27309,6 +27450,7 @@ public:
     virtual IThorChildGraph * queryChildGraph() { throwUnexpected(); }
     virtual IEclGraphResults * queryLocalGraph() { throwUnexpected(); }
     virtual IRoxieServerChildGraph * queryLoopGraph() { throwUnexpected(); }
+    virtual IRoxieServerActivity *queryActivity(unsigned _activityId) { return nullptr; } // MORE - may need something here!?
 
     virtual void onCreate(IHThorArg *_colocalParent)
     { 
@@ -27427,6 +27569,8 @@ public:
         streams.append(this);
         return NULL;
     }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) { assertex(whichInput==0); return this; }
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const { assertex(idx==0); return nullptr; }
     virtual IRoxieServerActivity *queryActivity()
     {
         throwUnexpected();

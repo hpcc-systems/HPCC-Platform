@@ -48,7 +48,7 @@ public:
     size32_t chunkmaxsize;
     unsigned width;
 
-    class cRemoteStream : public CSimpleInterface, implements IRowStream
+    class cRemoteStream : implements IRowStream, public CSimpleInterface
     {
         GlobalMergeSlaveActivity *parent;
         Linked<IOutputRowDeserializer> deserializer;
@@ -421,6 +421,7 @@ public:
     LocalMergeSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorMergeArg *)queryHelper();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     void abort()

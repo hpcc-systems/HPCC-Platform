@@ -97,7 +97,7 @@ public:
 };
 
 
-class jlib_thrown_decl SmartSocketException: public CInterface, public ISmartSocketException
+class jlib_thrown_decl SmartSocketException: public ISmartSocketException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

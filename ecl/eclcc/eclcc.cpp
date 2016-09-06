@@ -71,8 +71,8 @@
 
 //=========================================================================================
 
-//The following flag could be used not free items to speed up closedown
-static bool optDebugMemLeak = false;
+//The following flag is used to speed up closedown by not freeing items
+static bool optReleaseAllMemory = false;
 
 #if defined(_WIN32) && defined(_DEBUG)
 static HANDLE leakHandle;
@@ -191,12 +191,8 @@ struct EclCompileInstance
 {
 public:
     EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errorProcessor, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen) :
-      inputFile(_inputFile), errorProcessor(&_errorProcessor), errout(_errout), outputFilename(_outputFilename)
-    {
-        legacyImport = _legacyImport;
-        legacyWhen = _legacyWhen;
-        ignoreUnknownImport = false;
-        fromArchive = false;
+      inputFile(_inputFile), errorProcessor(&_errorProcessor), errout(_errout), outputFilename(_outputFilename), legacyImport(_legacyImport), legacyWhen(_legacyWhen)
+{
         stats.parseTime = 0;
         stats.generateTime = 0;
         stats.xmlSize = 0;
@@ -223,8 +219,8 @@ public:
     Owned<IPropertyTree> globalDependTree;
     bool legacyImport;
     bool legacyWhen;
-    bool fromArchive;
-    bool ignoreUnknownImport;
+    bool fromArchive = false;
+    bool ignoreUnknownImport = false;
     struct {
         unsigned parseTime;
         unsigned generateTime;
@@ -244,37 +240,6 @@ public:
     {
         argc = _argc;
         argv = _argv;
-        logVerbose = false;
-        logTimings = false;
-        optArchive = false;
-        optCheckEclVersion = true;
-        optEvaluateResult = false;
-        optGenerateMeta = false;
-        optGenerateDepend = false;
-        optIncludeMeta = false;
-        optKeywords = false;
-        optLegacyImport = false;
-        optLegacyWhen = false;
-        optShared = false;
-        optWorkUnit = false;
-        optNoCompile = false;
-        optNoLogFile = false;
-        optNoStdInc = false;
-        optNoBundles = false;
-        optOnlyCompile = false;
-        optBatchMode = false;
-        optSaveQueryText = false;
-        optSaveQueryArchive = false;
-        optGenerateHeader = false;
-        optShowPaths = false;
-        optNoSourcePath = false;
-        optTargetClusterType = RoxieCluster;
-        optTargetCompiler = DEFAULT_COMPILER;
-        optThreads = 0;
-        optLogDetail = 0;
-        batchPart = 0;
-        batchSplit = 1;
-        batchLog = NULL;
         cclogFilename.append("cc.").append((unsigned)GetCurrentProcessId()).append(".log");
         defaultAllowed[false] = true;  // May want to change that?
         defaultAllowed[true] = true;
@@ -344,7 +309,7 @@ protected:
     StringAttr optOutputFilename;
     StringAttr optQueryRepositoryReference;
     StringAttr optComponentName;
-    FILE * batchLog;
+    FILE * batchLog = nullptr;
 
     StringAttr optManifestFilename;
     StringArray resourceManifestFiles;
@@ -364,36 +329,40 @@ protected:
     StringArray deniedPermissions;
     bool defaultAllowed[2];
 
-    ClusterType optTargetClusterType;
-    CompilerType optTargetCompiler;
-    unsigned optThreads;
-    unsigned batchPart;
-    unsigned batchSplit;
-    unsigned optLogDetail;
-    bool logVerbose;
-    bool logTimings;
-    bool optArchive;
-    bool optCheckEclVersion;
-    bool optEvaluateResult;
-    bool optGenerateMeta;
-    bool optGenerateDepend;
-    bool optIncludeMeta;
-    bool optKeywords;
-    bool optWorkUnit;
-    bool optNoCompile;
-    bool optNoLogFile;
-    bool optNoStdInc;
-    bool optNoBundles;
-    bool optBatchMode;
-    bool optShared;
-    bool optOnlyCompile;
-    bool optSaveQueryText;
-    bool optSaveQueryArchive;
-    bool optLegacyImport;
-    bool optLegacyWhen;
-    bool optGenerateHeader;
-    bool optShowPaths;
-    bool optNoSourcePath;
+    ClusterType optTargetClusterType = RoxieCluster;
+    CompilerType optTargetCompiler = DEFAULT_COMPILER;
+    unsigned optThreads = 0;
+    unsigned batchPart = 0;
+    unsigned batchSplit = 1;
+    unsigned optLogDetail = 0;
+    unsigned optMaxErrors = 0;
+    bool optUnsuppressImmediateSyntaxErrors = false;
+    bool logVerbose = false;
+    bool logTimings = false;
+    bool optArchive = false;
+    bool optCheckEclVersion = true;
+    bool optDebugMemLeak = false;
+    bool optEvaluateResult = false;
+    bool optGenerateMeta = false;
+    bool optGenerateDepend = false;
+    bool optIncludeMeta = false;
+    bool optKeywords = false;
+    bool optLeakCheck = false;
+    bool optWorkUnit = false;
+    bool optNoCompile = false;
+    bool optNoLogFile = false;
+    bool optNoStdInc = false;
+    bool optNoBundles = false;
+    bool optBatchMode = false;
+    bool optShared = false;
+    bool optOnlyCompile = false;
+    bool optSaveQueryText = false;
+    bool optSaveQueryArchive = false;
+    bool optLegacyImport = false;
+    bool optLegacyWhen = false;
+    bool optGenerateHeader = false;
+    bool optShowPaths = false;
+    bool optNoSourcePath = false;
     int argc;
     const char **argv;
 };
@@ -483,12 +452,13 @@ int main(int argc, const char *argv[])
 
     unsigned exitCode = doMain(argc, argv);
 
-#ifndef _DEBUG
-    //In release mode exit without calling all the clean up code.
-    //It is faster, and it helps avoids potential crashes if there are active objects which depend on objects in file hook dlls.
-    fflush(NULL);
-    _exit(exitCode);
-#endif
+    if (!optReleaseAllMemory)
+    {
+        //In release mode exit without calling all the clean up code.
+        //It is faster, and it helps avoid potential crashes if there are active objects which depend on objects in file hook dlls.
+        fflush(NULL);
+        _exit(exitCode);
+    }
 
     releaseAtoms();
     ClearTypeCache();   // Clear this cache before the file hooks are unloaded
@@ -1129,6 +1099,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
         HqlParseContext parseCtx(instance.dataServer, this, instance.archive);
+        if (optMaxErrors > 0)
+            parseCtx.maxErrors = optMaxErrors;
+        parseCtx.unsuppressImmediateSyntaxErrors = optUnsuppressImmediateSyntaxErrors;
         if (!instance.archive)
             parseCtx.globalDependTree.setown(createPTree(ipt_none)); //to locate associated manifests, keep separate from user specified MetaOptions
         if (optGenerateMeta || optIncludeMeta)
@@ -1266,7 +1239,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     if (syntaxChecking || optGenerateMeta || optEvaluateResult)
         return;
 
-    if (optSaveQueryArchive && instance.wu)
+    if (optSaveQueryArchive && instance.wu && instance.archive)
     {
         Owned<IWUQuery> q = instance.wu->updateQuery();
         StringBuffer buf;
@@ -1705,7 +1678,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
     const char * outputFilename = instance.outputFilename;
 
     instance.wu.setown(createLocalWorkUnit(NULL));
-    if (optArchive || optGenerateDepend)
+    if (optArchive || optGenerateDepend || optSaveQueryArchive)
         instance.archive.setown(createAttributeArchive());
 
     EclRepositoryArray repositories;
@@ -2027,6 +2000,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optKeywords, "--keywords"))
         {
         }
+        else if (iter.matchFlag(optLeakCheck, "--leakcheck"))
+        {
+        }
         else if (iter.matchFlag(tempArg, "-L"))
         {
             libraryPaths.append(tempArg);
@@ -2105,6 +2081,12 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(tempBool, "-syntax"))
         {
             setDebugOption("syntaxCheck", tempBool);
+        }
+        else if (iter.matchOption(optMaxErrors, "--maxErrors"))
+        {
+        }
+        else if (iter.matchFlag(optUnsuppressImmediateSyntaxErrors, "--unsuppressImmediateSyntaxErrors"))
+        {
         }
         else if (iter.matchOption(optIniFilename, "-specs"))
         {
@@ -2205,6 +2187,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
     if (optArchive || optWorkUnit || optGenerateMeta || optGenerateDepend || optShowPaths)
         optNoCompile = true;
 
+    optReleaseAllMemory = optDebugMemLeak || optLeakCheck;
     loadManifestOptions();
 
     if (inputFileNames.ordinality() == 0 && !optKeywords)

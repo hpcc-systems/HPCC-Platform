@@ -30,10 +30,9 @@
 #include <list>
 #include <vector>
 
-template<typename T> class WaitQueue: public CInterface, protected Mutex, implements IInterface
+template<typename T> class WaitQueue: public CInterface, protected Mutex
 {
 public:
-    IMPLEMENT_IINTERFACE;
     WaitQueue(): counter(), stopped(false), waiting(0)
     {
     }

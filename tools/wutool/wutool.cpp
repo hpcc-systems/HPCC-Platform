@@ -486,7 +486,8 @@ class WuTool : public CppUnit::TestFixture
         CPPUNIT_TEST(testQuery);
         CPPUNIT_TEST(testGraph);
         CPPUNIT_TEST(testGraphProgress);
-        CPPUNIT_TEST(testGlobal);
+        CPPUNIT_TEST(testGlobal); 
+        CPPUNIT_TEST(testSortByThorTime);
     CPPUNIT_TEST_SUITE_END();
 protected:
     static StringArray wuids;
@@ -1646,6 +1647,27 @@ protected:
         ASSERT(numIterated == (testSize+9)/10);
         numIterated++;
     }
+    void testSortByThorTime()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned start = msTick();
+        unsigned numIterated = 0;
+        // Test filter by filesRead
+        WUSortField nofilter[] = { WUSFterm };
+        unsigned prevValue = 0;
+        Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsSorted((WUSortField)(WUSFtotalthortime+WUSFnumeric), nofilter, nullptr, 0, 10000, NULL, NULL);
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            if (numIterated)
+                ASSERT(wu.getTotalThorTime() >= prevValue);
+            prevValue=wu.getTotalThorTime();
+            numIterated++;
+        }
+        DBGLOG("%d workunits by totalThorTime in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+9)/10);
+        numIterated++;
+    }
     void testGlobal()
     {
         // Is global workunit ever actually used any more? For scalar persists, perhaps
@@ -1778,7 +1800,7 @@ protected:
             virtual IEngineContext *queryEngineContext() { return NULL; }
             virtual char *getDaliServers() { throwUnexpected(); }
             virtual IWorkUnit* updateWorkUnit() const { throwUnexpected(); }
-
+            virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) { throwUnexpected(); }
         } ctx;
 
         size32_t lenResult;

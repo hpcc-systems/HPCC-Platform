@@ -57,8 +57,6 @@ class graphmaster_decl CMasterGraph : public CGraphBase
     void serializeGraphInit(MemoryBuffer &mb);
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CMasterGraph(CJobChannel &jobChannel);
     ~CMasterGraph();
 
@@ -116,8 +114,6 @@ class graphmaster_decl CJobMaster : public CJobBase
     void initNodeDUCache();
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CJobMaster(IConstWorkUnit &workunit, const char *_graphName, ILoadedDllEntry *querySo, bool _sendSo, const SocketEndpoint &_agentEp);
     ~CJobMaster();
 
@@ -186,7 +182,7 @@ public:
 
 
 
-class graphmaster_decl CThorStats : public CInterface, implements IInterface
+class graphmaster_decl CThorStats : public CInterface
 {
 protected:
     CJobBase &ctx;
@@ -277,7 +273,7 @@ public:
     virtual void processInfo();
     void getStats(IStatisticGatherer & stats);
 };
-typedef IArrayOf<ProgressInfo> ProgressInfoArray;
+typedef CIArrayOf<ProgressInfo> ProgressInfoArray;
 
 class graphmaster_decl CMasterActivity : public CActivityBase, implements IThreaded
 {
@@ -296,7 +292,7 @@ protected:
     IDistributedFile *queryReadFile(unsigned f);
     virtual void process() { }
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CActivityBase)
 
     CMasterActivity(CGraphElementBase *container);
     ~CMasterActivity();
@@ -331,7 +327,7 @@ class graphmaster_decl CMasterGraphElement : public CGraphElementBase
     bool initialized = false;
 public:
     CMasterGraphElement(CGraphBase &owner, IPropertyTree &xgmml);
-    void doCreateActivity(size32_t parentExtractSz=0, const byte *parentExtract=NULL);
+    void doCreateActivity(size32_t parentExtractSz=0, const byte *parentExtract=NULL, MemoryBuffer *startCtx=nullptr);
     virtual bool checkUpdate();
 
     virtual void initActivity() override;

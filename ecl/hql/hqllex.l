@@ -964,6 +964,7 @@ UPDATE              { RETURNSYM(UPDATE); }
 USE                 { RETURNSYM(USE); }
 VALIDATE            { RETURNSYM(VALIDATE); }
 VIRTUAL             { RETURNSYM(VIRTUAL); }
+VOLATILE            { RETURNSYM(VOLATILE); }
 WAIT                { RETURNSYM(WAIT); }
 WARNING             { RETURNSYM(TOK_WARNING); }
 WHEN                { RETURNSYM(WHEN); }
@@ -1715,7 +1716,7 @@ FUNCTIONMACRO|MACRO {
                                     StringBuffer msg("Can not terminate a string with escape char '\\': ");
                                     msg.append(CUR_TOKEN_TEXT);
                                     lexer->reportError(returnToken, RRR_ESCAPE_ENDWITHSLASH, "%s", msg.str());
-                                    if (lexer->isAborting())
+                                    if (lexer->checkAborting())
                                         return EOF;
                                 }
                                 else if (next == '\'' || next == '\\' || next == '?' || next == '"') 
@@ -1775,7 +1776,7 @@ FUNCTIONMACRO|MACRO {
                                         StringBuffer msg;
                                         msg.append("3-digit numeric escape sequence contained non-octal digit: ").append(next);
                                         lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
-                                        if (lexer->isAborting())
+                                        if (lexer->checkAborting())
                                             return EOF;
                                     }
                                     *bf++ = value;
@@ -1783,7 +1784,7 @@ FUNCTIONMACRO|MACRO {
                                     {
                                         returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                         lexer->reportWarning(CategoryCast, returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
-                                        if (lexer->isAborting())
+                                        if (lexer->checkAborting())
                                             return EOF;
                                     }
                                     finger += count;
@@ -1796,7 +1797,7 @@ FUNCTIONMACRO|MACRO {
                                     msg.append("\\").append(finger[1]);
                                     returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                     lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
-                                    if (lexer->isAborting())
+                                    if (lexer->checkAborting())
                                         return EOF;
                                 }
                                 *bf++ = next;
@@ -1805,7 +1806,7 @@ FUNCTIONMACRO|MACRO {
                             {
                                 returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                 lexer->reportError(returnToken, ERR_STRING_NEEDESCAPE,"' needs to be escaped by \\ inside string");
-                                if (lexer->isAborting())
+                                if (lexer->checkAborting())
                                     return EOF;
                             }
                             else if (next >= 128)
@@ -1819,7 +1820,7 @@ FUNCTIONMACRO|MACRO {
                                     //because two characters > 128 are next to each other.
                                     returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                     lexer->reportError(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not legal UTF-8");
-                                    if (lexer->isAborting())
+                                    if (lexer->checkAborting())
                                         return EOF;
                                     *bf = next;
                                 }
@@ -1841,7 +1842,7 @@ FUNCTIONMACRO|MACRO {
                                 {
                                     returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());
                                     lexer->reportError(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
-                                    if (lexer->isAborting())
+                                    if (lexer->checkAborting())
                                         return EOF;
                                 }
                             }
@@ -1883,7 +1884,7 @@ FUNCTIONMACRO|MACRO {
                         msg.append("\"");
                         lexer->reportError(returnToken, ERR_STRING_UNENDED, "%s", msg.str());
                         // recovery 
-                        returnToken.setExpr(createConstant(""));
+                        returnToken.setExpr(createBlankString());
                         return STRING_CONST;                        
                     }
 
@@ -1891,7 +1892,7 @@ FUNCTIONMACRO|MACRO {
                         /* error pattern */
                         setupdatepos;
                         lexer->reportError(returnToken, ERR_STRING_ILLDELIMITER, "\" is not legal string delimiter; use ' instead");
-                        returnToken.setExpr(createConstant(""));
+                        returnToken.setExpr(createBlankString());
                         return STRING_CONST;
                     }
 [xX]\'{hexpairs}\'  { 

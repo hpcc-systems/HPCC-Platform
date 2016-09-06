@@ -33,7 +33,7 @@
 #include "thorhelper.hpp"
 #include "csvsplitter.hpp"
 
-class thorhelper_decl XmlColumnProvider : public CInterface, implements IColumnProvider
+class thorhelper_decl XmlColumnProvider : implements IColumnProvider, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -47,8 +47,6 @@ protected:
 class thorhelper_decl XmlDatasetColumnProvider : public XmlColumnProvider
 {
 public:
-    IMPLEMENT_IINTERFACE
-
 //IColumnProvider
     virtual bool        getBool(const char * name);
     virtual void        getData(size32_t len, void * text, const char * name);
@@ -80,7 +78,7 @@ public:
 
 };
 
-class thorhelper_decl XmlColumnIterator : public CInterface, implements IColumnProviderIterator
+class thorhelper_decl XmlColumnIterator : implements IColumnProviderIterator, public CInterface
 {
 public:
     XmlColumnIterator(IPropertyTreeIterator * _iter);
@@ -100,8 +98,6 @@ protected:
 class thorhelper_decl XmlSetColumnProvider : public XmlColumnProvider
 {
 public:
-    IMPLEMENT_IINTERFACE
-
 //IColumnProvider
     virtual bool        getBool(const char * name);
     virtual void        getData(size32_t len, void * text, const char * name);
@@ -133,7 +129,7 @@ public:
 
 };
 
-class thorhelper_decl CXmlToRawTransformer : public CInterface, implements IXmlToRawTransformer
+class thorhelper_decl CXmlToRawTransformer : implements IXmlToRawTransformer, public CInterface
 {
 public:
     CXmlToRawTransformer(IXmlToRowTransformer & _rowTransformer, PTreeReaderOptions _xmlReadFlags)
@@ -150,7 +146,7 @@ protected:
     PTreeReaderOptions xmlReadFlags;
 };
 
-class thorhelper_decl CCsvToRawTransformer : public CInterface, implements ICsvToRawTransformer
+class thorhelper_decl CCsvToRawTransformer : implements ICsvToRawTransformer, public CInterface
 {
 public:
     CCsvToRawTransformer(ICsvToRowTransformer & _rowTransformer) { rowTransformer.set(&_rowTransformer); }
@@ -163,7 +159,7 @@ protected:
 };
 
 #if 0
-class thorhelper_decl CSVColumnProvider : public CInterface, implements IColumnProvider
+class thorhelper_decl CSVColumnProvider : implements IColumnProvider, public CInterface
 {
     CSVSplitter csvSplitter;
 
@@ -178,7 +174,7 @@ public:
 };
 
 
-class thorhelper_decl CCsvToRawTransformer : public CInterface, implements IXmlToRawTransformer
+class thorhelper_decl CCsvToRawTransformer : implements IXmlToRawTransformer, public CInterface
 {
 public:
     CCsvToRawTransformer(IXmlToRowTransformer & _rowTransformer) { rowTransformer.set(&_rowTransformer); }

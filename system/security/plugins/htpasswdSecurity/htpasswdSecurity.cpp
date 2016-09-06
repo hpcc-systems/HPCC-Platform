@@ -147,6 +147,21 @@ protected:
         return SecAccess_Full;//grant full access to authenticated users
     }
 
+    bool authorizeViewScope(ISecUser & user, ISecResourceList * resources)
+    {
+        int nResources = resources->count();
+        for (int ri = 0; ri < nResources; ri++)
+        {
+            ISecResource* res = resources->queryResource(ri);
+            if(res != nullptr)
+            {
+                assertex(res->getResourceType() == RT_VIEW_SCOPE);
+                res->setAccessFlags(SecAccess_Full);//grant full access to authenticated users
+            }
+        }
+        return true;//success
+    }
+
     int authorizeWorkunitScope(ISecUser & user, const char * filescope) override
     {
         return SecAccess_Full;//grant full access to authenticated users

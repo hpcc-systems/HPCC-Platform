@@ -1142,7 +1142,7 @@ size32_t RtlDatasetTypeInfo::build(ARowBuilder &builder, size32_t offset, const 
         RtlFieldStrInfo dummyField("<nested row>", NULL, child);
         while (source.processNextRow(field))
         {
-            RtlDynamicRowBuilder childBuilder(childAllocator);
+            RtlDynamicRowBuilder childBuilder(*childAllocator);
             size32_t childLen = child->build(childBuilder, 0, &dummyField, source);
             childRows = childAllocator->appendRowOwn(childRows, ++numRows, (void *) childBuilder.finalizeRowClear(childLen));
         }

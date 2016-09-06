@@ -263,7 +263,7 @@ public:
 
     const void *queryFindParam() const { return &queryId(); } // for SimpleHashTableOf
 
-    bool alreadyUpdated;
+    bool alreadyUpdated = false;
     EclHelperFactory helperFactory;
 
     CIOConnectionArray inputs, outputs, connectedInputs, connectedOutputs;
@@ -300,7 +300,7 @@ public:
     virtual void deserializeStartContext(MemoryBuffer &mb);
     virtual void serializeCreateContext(MemoryBuffer &mb); // called after onCreate and create() (of activity)
     virtual void serializeStartContext(MemoryBuffer &mb);
-    virtual bool checkUpdate() { return false; }
+    virtual bool checkUpdate() { return alreadyUpdated; }
     virtual void reset();
     void onStart(size32_t parentExtractSz, const byte *parentExtract);
     void onCreate();
@@ -364,7 +364,7 @@ typedef CICopyArrayOf<CGraphElementBase> CGraphElementArrayCopy;
 typedef OwningSimpleHashTableOf<CGraphElementBase, activity_id> CGraphElementTable;
 typedef IIteratorOf<CGraphElementBase> IThorActivityIterator;
 typedef ArrayIIteratorOf<const CGraphElementArray, CGraphElementBase, IThorActivityIterator> CGraphElementArrayIterator;
-class CGraphElementIterator : public CInterface, implements IThorActivityIterator
+class CGraphElementIterator : implements IThorActivityIterator, public CInterface
 {
     SuperHashIteratorOf<CGraphElementBase> iter;
 public:
@@ -379,7 +379,7 @@ public:
 };
 
 typedef OwningStringSuperHashTableOf<CFileUsageEntry> CFileUsageTable;
-class graph_decl CGraphTempHandler : public CInterface, implements IGraphTempHandler
+class graph_decl CGraphTempHandler : implements IGraphTempHandler, public CInterface
 {
 protected:
     CFileUsageTable tmpFiles;
@@ -405,7 +405,7 @@ public:
     virtual void clearTemps();
     virtual IFileUsageIterator *getIterator()
     {
-        class CIterator : public CInterface, implements IFileUsageIterator
+        class CIterator : implements IFileUsageIterator, public CInterface
         {
             SuperHashIteratorOf<CFileUsageEntry> iter;
         public:
@@ -535,6 +535,10 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
             return ctx->getDaliServers();
         }
         virtual IWorkUnit *updateWorkUnit() const { return ctx->updateWorkUnit(); }
+        virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
+        {
+            return ctx->registerTimer(activityId, name);
+        }
    } graphCodeContext;
 
 protected:
@@ -544,7 +548,7 @@ protected:
     Owned<IPropertyTree> node;
     IBarrier *startBarrier, *waitBarrier, *doneBarrier;
     mptag_t mpTag, startBarrierTag, waitBarrierTag, doneBarrierTag;
-    bool connected, started, aborted, graphDone, prepared, sequential;
+    bool connected, started, aborted, graphDone, sequential;
     CJobBase &job;
     CJobChannel &jobChannel;
     graph_id graphId;
@@ -583,7 +587,6 @@ public:
     inline void setInitialized() { initialized = true; }
     inline bool isInitialized() const { return initialized; }
     bool isComplete() const { return complete; }
-    bool isPrepared() const { return prepared; }
     bool isGlobal() const { return global; }
     bool isStarted() const { return started; }
     bool isLocalOnly() const; // this graph and all upstream dependencies
@@ -723,7 +726,7 @@ public:
 friend class CGraphElementBase;
 };
 
-class CGraphTableIterator : public CInterface, implements IThorGraphIterator
+class CGraphTableIterator : implements IThorGraphIterator, public CInterface
 {
     SuperHashIteratorOf<CGraphBase> iter;
 public:
@@ -987,7 +990,7 @@ public:
 
 interface IOutputMetaData;
 
-class graph_decl CActivityBase : public CInterface, implements IExceptionHandler, implements IThorRowInterfaces
+class graph_decl CActivityBase : implements CInterfaceOf<IThorRowInterfaces>, implements IExceptionHandler
 {
     Owned<IEngineRowAllocator> rowAllocator;
     Owned<IOutputRowSerializer> rowSerializer;
@@ -1004,11 +1007,10 @@ protected:
     bool timeActivities; // purely for access efficiency
     size32_t parentExtractSz;
     const byte *parentExtract;
-    bool receiving, cancelledReceive, reInit;
+    bool receiving, cancelledReceive, initialized, reInit;
     Owned<IThorGraphResults> ownedResults; // NB: probably only to be used by loop results
 
 public:
-    IMPLEMENT_IINTERFACE;
     CActivityBase(CGraphElementBase *container);
     ~CActivityBase();
     inline activity_id queryId() const { return container.queryId(); }
@@ -1023,6 +1025,8 @@ public:
     inline bool queryAbortSoon() const { return abortSoon; }
     inline IHThorArg *queryHelper() const { return baseHelper; }
     inline bool needReInit() const { return reInit; }
+    inline bool queryInitialized() const { return initialized; }
+    inline void setInitialized(bool tf) { initialized = tf; }
     inline bool queryTimeActivities() const { return timeActivities; }
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
@@ -1115,7 +1119,7 @@ interface IThorFileCache : extends IInterface
     virtual IDelayedFile *lookup(CActivityBase &activity, IPartDescriptor &partDesc, IExpander *expander=NULL) = 0;
 };
 
-class graph_decl CThorResourceBase : public CInterface, implements IThorResource
+class graph_decl CThorResourceBase : implements IThorResource, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -1126,10 +1130,10 @@ public:
     virtual IFileInProgressHandler &queryFileInProgressHandler() { UNIMPLEMENTED; return *((IFileInProgressHandler *)NULL); }
 };
 
-class graph_decl CThorGraphResults : public CInterface, implements IThorGraphResults
+class graph_decl CThorGraphResults : implements IThorGraphResults, public CInterface
 {
 protected:
-    class CThorUninitializedGraphResults : public CInterface, implements IThorResult
+    class CThorUninitializedGraphResults : implements IThorResult, public CInterface
     {
         unsigned id;
 

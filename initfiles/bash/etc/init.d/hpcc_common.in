@@ -63,7 +63,7 @@ cfg.parser () {
     if [ ! -e $1 ] || [ $# -lt 1 ]; then
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
     fi
-    IFS=$'\n' && ini=( $(cat $1 | sed -e 's/[ \t]*=[ \t]*/=/') )              # convert to line-array
+    IFS=$'\n' && ini=( $(cat $1 | sed -e 's/[[:blank:]]*=[[:blank:]]*/=/') )              # convert to line-array
     ini=( ${ini[*]//[;#]*/} )                   # remove comments
     ini=( ${ini[*]/#[/\}$'\n'cfg.section.} ) # set section prefix
     ini=( ${ini[*]/%]/ \(} )                 # convert text2function (1)
@@ -89,6 +89,7 @@ dir.parser() {
         if [ $# -lt 1 ]; then
             [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
         fi
+        OIFS=${IFS}
         IFS=$'\n' && cmp=( $@ )
         cmp=( ${cmp[*]/#/dir_} )
         cmp=( ${cmp[*]/=/= dirItem=} )
@@ -98,6 +99,7 @@ dir.parser() {
         for i in ${!dir_*}; do
             dirArray=( ${dirArray[@]} $i )
         done
+        IFS=${OIFS}
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 0
 }
 
@@ -273,7 +275,7 @@ set_componentvars() {
 
 validate_configuration() {
     if ! validation_error=$(${configgen_path}/configgen -env ${envfile} -validateonly 2>&1); then
-        log  "get_commondirs(): validation failure ${envfile}"
+        log  "validate_configuration(): validation failure ${envfile}"
         log  "${validation_error}"
         echo -e "\033[31merror\033[0m: configgen xml validation failure"
         exit 1
@@ -282,7 +284,6 @@ validate_configuration() {
 
 get_commondirs() {
     componentFile="${path}/componentfiles/configxml"
-    validate_configuration
     DIRS=$(${configgen_path}/configgen -env ${envfile} -id ${componentFile} -listcommondirs)
     rc=$?
     if [[ $rc -ne 0 ]]; then
@@ -299,7 +300,6 @@ configGenCmd() {
     # Creating logfiles for component
     logDir=$log/${compName}
 
-    validate_configuration
     configcmd="${configgen_path}/configgen -env ${envfile} -od ${runtime} -id ${componentFile} -c ${compName}"
     log "$configcmd"
     if [ "$(whoami)" != "${user}" ]; then
@@ -369,6 +369,7 @@ createRuntime() {
     chown -c $user:$group "$lock/$compName"  1> /dev/null 2>/dev/null
     chown -c $user:$group "$log/$compName"  1> /dev/null 2>/dev/null
     chown -c $user:$group "$compPath"  1> /dev/null 2>/dev/null
+
     dir.getByName data
     chown -c $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
     dir.getByName data2
@@ -390,12 +391,12 @@ cleanupRuntimeEnvironment() {
 
 
 start_dafilesrv() {
-   /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+   ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
    if [ $? -ne 0 ];then
       #Dafilesrv is not running so start it , before starting cleanup the lock and pid file.
       cleanupRuntimeEnvironment
       noStatusCheck=1
-      /etc/init.d/dafilesrv setup 1>/dev/null 2>/dev/null
+      ${INIT_PATH}/dafilesrv setup 1>/dev/null 2>/dev/null
       startCmd ${compName} ${noStatusCheck}
       return $?
    else
@@ -482,7 +483,7 @@ startCmd() {
             limits[i]=$_temp
         fi
         flag="-${element:5:1}"
-        ulimit $flag ${limits[i]##*"="}
+        ulimit $flag ${limits[i]##*"="} 1>/dev/null 2>&1
         i=$((i+1))
     done
 
@@ -554,10 +555,18 @@ startCmd() {
 stop_component() {
     printf "Stopping %-21s" "${compName}... "
 
+    if [ ! -d ${compPath} ] ; then
+        log_success_msg
+        return 0;
+    fi
     cd ${compPath}
+    if [ $? -ne 0 ] ; then
+        log_failure_msg
+        return 1;
+    fi
 
     if [[ -e "${PIDPATH}" ]]; then
-        stopcmd="${START_STOP_DAEMON} -K -p ${PIDPATH} >> tmp.txt 2>&1"
+        stopcmd="${START_STOP_DAEMON} -K -p ${PIDPATH}"
         log "$stopcmd"
         eval $stopcmd
 
@@ -597,8 +606,8 @@ start_component() {
     logDir=$log/${compName}
 
     if [ ! -d $logDir ]; then
-        mkdir -p $logDir >> tmp.txt 2>&1
-        chown -c $user:$group $logDir >> /dev/null 2>&1
+        mkdir -p $logDir || return 1
+        chown $user:$group $logDir || return 1
     fi
 
     # Creating Runtime
@@ -610,7 +619,7 @@ start_component() {
 
     if [ ${runSetupOnly} -ne 1 ]
     then
-        cd ${compPath} >>/dev/null 2>&1
+        cd ${compPath} || return 1
         startCmd ${compName} 0
         STAT=$?
     fi
@@ -619,15 +628,15 @@ start_component() {
 
 restart_component() {
     if strstr "${compType}" "dafilesrv" ;then
-      /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+      ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
       if [ $? -eq 0 ];then
-        /etc/init.d/dafilesrv stop 2>/dev/null
+        ${INIT_PATH}/dafilesrv stop 2>/dev/null
       else
         log  "$compName ---> Stopped.  Now Starting ..."
         echo "Component $compName was not running. Will start it now for you ..."
         cleanupRuntimeEnvironment
       fi
-      /etc/init.d/dafilesrv start 2>/dev/null
+      ${INIT_PATH}/dafilesrv start 2>/dev/null
     else
       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
       RCRESTART=$?
@@ -688,7 +697,8 @@ setup_component() {
 }
 
 create_dropzone() {
-    validate_configuration
+    OIFS=${IFS}
+    unset IFS
     dropzones=$(${configgen_path}/configgen -env ${envfile} -listdirs)
     rc=$?
     if [[ $rc -ne 0 ]]; then
@@ -704,6 +714,7 @@ create_dropzone() {
             chmod 777 $D > /dev/null 2>&1
         fi
     done
+    IFS=${OIFS}
 }
 
 check_user(){
@@ -721,7 +732,7 @@ check_group(){
     GROUP=$1
     touch /tmp/file.$$
     chgrp ${GROUP} /tmp/file.$$ > /dev/null 2>&1
-    if [ $(stat -c %G /tmp/file.$$) = "${GROUP}" ];
+    if [ $(stat -c %G /tmp/file.$$ 2>/dev/null || stat -f %Sg /tmp/file.$$ 2>/dev/null) = "${GROUP}" ];
     then
         rm -rf /tmp/file.$$
         return 1
@@ -954,17 +965,18 @@ cluster_tools_init() {
 
    set_environmentvars
 
-   _cmd_prefix=
-   [ "$(id -u)" != "0" ] && _cmd_prefix=sudo
+   #_cmd_prefix=
+   #[ "$(id -u)" != "0" ] && _cmd_prefix=sudo
 
    # Check and set log directory
    CLUSTER_LOG_DIR=${LOG_DIR}/cluster
-   [ ! -d $LOG_DIR ]  && ${_cmd_prefix} /etc/init.d/hpcc-init status > /dev/null 2>&1
+   #[ ! -d $LOG_DIR ]  && ${_cmd_prefix} ${INIT_PATH}/hpcc-init status > /dev/null 2>&1
+   [ ! -d $LOG_DIR ]  && ${INIT_PATH}/hpcc-init status > /dev/null 2>&1
 
    [ ! -d $CLUSTER_LOG_DIR ] && mkdir -p $CLUSTER_LOG_DIR
    # workaround inconsistency of stat command
    cluster_log_dir_owner=$(ls -ld $CLUSTER_LOG_DIR | awk '{print $3}')
-   [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${user} $CLUSTER_LOG_DIR
+   [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${group} $CLUSTER_LOG_DIR
 }
 
 ##

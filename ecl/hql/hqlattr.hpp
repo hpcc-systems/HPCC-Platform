@@ -71,7 +71,10 @@ inline bool hasOutOfLineRows(ITypeInfo * type) { return (hasOutOfLineModifier(ty
 inline bool hasLinkCountedModifier(IHqlExpression * expr)    { return hasLinkCountedModifier(expr->queryType()); }
 inline bool hasStreamedModifier(ITypeInfo * t)   { return queryAttribute(t, streamedAtom) != NULL; }
 inline bool isStreamed(IHqlExpression * expr) { return hasStreamedModifier(expr->queryType()); }
-inline bool isKnownLikelihood(double p) { return p >= 0; }
+
+const static double unknownLikelihood = - 1.0;
+inline bool isKnownLikelihood(double p) { return p != unknownLikelihood; }
+inline void setUnknownLikelihood(double &p) { p = unknownLikelihood;}
 
 extern HQL_API ITypeInfo * setLinkCountedAttr(ITypeInfo * _type, bool setValue);
 extern HQL_API ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue);
@@ -82,6 +85,8 @@ extern HQL_API IHqlExpression * getRecordCountInfo(IHqlExpression * expr);
 extern HQL_API bool hasNoMoreRowsThan(IHqlExpression * expr, __int64 limit);
 extern HQL_API bool spillToWorkunitNotFile(IHqlExpression * expr, ClusterType platform);
 extern HQL_API double queryLikelihood(IHqlExpression * expr);
+extern HQL_API double queryActivityLikelihood(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryFixedRowCount(IHqlExpression * expr);
 
 class CHqlMetaProperty;
 extern HQL_API CHqlMetaProperty * queryMetaProperty(IHqlExpression * expr);

@@ -341,12 +341,30 @@ inline void normalizeScope(const char *name, const char *scope, unsigned len, St
     }
 }
 
+void normalizeNodeName(const char *node, unsigned len, SocketEndpoint &ep, bool strict)
+{
+    if (!strict)
+    {
+        while (isspace(*node))
+        {
+            node++;
+            len--;
+        }
+    }
+
+    StringBuffer nodename;
+    nodename.append(len, node);
+    if (!strict)
+        nodename.clip();
+    ep.set(nodename.str());
+}
+
 void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool strict)
 {
     // NB: If !strict(default) allows spaces to exist either side of scopes (no idea why would want to permit that, but preserving for bwrd compat.)
     StringBuffer str;
     StringBuffer nametmp;
-    const char *ct = NULL;    
+    const char *ct = nullptr;
     bool wilddetected = false;
     if ('~' == *name) // allowed 1 leading ~
     {
@@ -361,7 +379,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         switch (c)
         {
             case '@': ct = s; break;
-            case ':': ct = NULL; break;
+            case ':': ct = nullptr; break;
             case '?':
             case '*': wilddetected = true; break;
             case '~':
@@ -379,10 +397,9 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         }
         c = *++s;
     }
-    bool isext = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
-    if (!isext && !allowWild && wilddetected)
+    if (!allowWild && wilddetected)
         throw MakeStringException(-1, "Wildcards not allowed in filename (%s)", name);
-    if (!isext&&ct&&(ct-name>=1)) // trailing @
+    if (ct&&(ct-name>=1)) // trailing @
     {
         if ((ct[1]=='@')||(ct[1]=='^')) // escape
         {
@@ -410,40 +427,19 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         {
             normalizeScope(name, name, s-name, str, strict);
             bool isForeign = 0 == stricmp(str.str(),FOREIGN_SCOPE);
-            if (isext || isForeign) // normalize node
+            if (isForeign) // normalize node
             {
                 const char *s1 = s+2;
                 const char *ns1 = strstr(s1,"::");
-                if (ns1) // TBD accept groupname here (in the case of isext)
+                if (ns1)
                 {
-                    if (!strict)
-                        skipSp(s1);
-                    StringBuffer nodename;
-                    nodename.append(ns1-s1,s1);
-                    if (!strict)
-                        nodename.clip();
-                    SocketEndpoint ep(nodename.str());
+                    SocketEndpoint ep;
+                    normalizeNodeName(s1, ns1-s1, ep, strict);
                     if (!ep.isNull())
                     {
                         ep.getUrlStr(str.append("::"));
                         s = ns1;
-                        if (isext)
-                        {
-                            external = true;
-                            if (s[2]=='>')
-                            {
-                                str.append("::");
-                                tailpos = str.length();
-                                str.append(s+2);
-                                res.set(str);
-                                return;
-                            }
-                        }
-                        else
-                        {
-                            dbgassertex(isForeign);
-                            localpos = str.length()+2;
-                        }
+                        localpos = str.length()+2;
                     }
                 }
             }
@@ -466,13 +462,62 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
     }
     str.append("::");
     tailpos = str.length();
-    if (strstr(s,"::")!=NULL)
+    if (strstr(s,"::")!=nullptr)
         ERRLOG("Tail contains '::'!");
     normalizeScope(name, s, strlen(name)-(s-name), str, strict);
     str.toLowerCase();
     res.set(str);
 }
 
+bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, bool strict)
+{
+    // TODO Should check the name is a valid OS filename
+    if ('~' == *name) // allowed 1 leading ~
+    {
+        name++;
+        if (!strict)
+            skipSp(name);
+    }
+    bool retVal = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
+    if (retVal)
+    {
+        lfn.clear();
+        StringBuffer str;
+        const char *s=strstr(name,"::");
+        normalizeScope(name, name, s-name, str, strict);
+
+        const char *s1 = s+2;
+        const char *ns1 = strstr(s1,"::");
+        if (!ns1)
+            retVal = false;
+        else
+        {
+            SocketEndpoint ep;
+            normalizeNodeName(s1, ns1-s1, ep, strict);
+            if (ep.isNull())
+                retVal = false;
+            else
+            {
+                ep.getUrlStr(str.append("::"));
+                s = ns1;
+                if (s[2] == '>')
+                {
+                    str.append("::");
+                    tailpos = str.length();
+                    str.append(s+2);
+                }
+                else
+                {
+                    str.append(s);
+                    str.toLowerCase();
+                }
+                res.set(str);
+            }
+        }
+
+    }
+    return retVal;
+}
 
 void CDfsLogicalFileName::set(const char *name, bool removeForeign)
 {
@@ -480,7 +525,7 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign)
     if (!name)
         return;
     skipSp(name);
-    if (allowospath&&(isAbsolutePath(name)||(stdIoHandle(name)>=0)||(strstr(name,"::")==NULL)))
+    if (allowospath&&(isAbsolutePath(name)||(stdIoHandle(name)>=0)||(strstr(name,"::")==nullptr)))
     {
         RemoteFilename rfn;
         rfn.setRemotePath(name);
@@ -515,12 +560,18 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign)
         lfn.set(full);
         return;
     }
-    normalizeName(name, lfn, false);
-    if (removeForeign)
+
+    if (normalizeExternal(name, lfn, false))
+        external = true;
+    else
     {
-        StringAttr _lfn = get(true);
-        lfn.clear();
-        lfn.set(_lfn);
+        normalizeName(name, lfn, false);
+        if (removeForeign)
+        {
+            StringAttr _lfn = get(true);
+            lfn.clear();
+            lfn.set(_lfn);
+        }
     }
 }
 
@@ -1328,7 +1379,7 @@ IPropertyTree *deserializePartAttr(MemoryBuffer &mb)
 
 IPropertyTreeIterator *deserializePartAttrIterator(MemoryBuffer &mb)    // takes ownership of mb
 {
-    class cPartAttrIterator: public CInterface, implements IPropertyTreeIterator
+    class cPartAttrIterator: implements IPropertyTreeIterator, public CInterface
     {
         Owned<IPropertyTree> cur;
         unsigned pn;
@@ -1813,14 +1864,13 @@ IRemoteConnection *getSortedElements( const char *basexpath,
 
 #define PAGE_CACHE_TIMEOUT (1000*60*10)
 
-class CTimedCacheItem: extends CInterface
+class CTimedCacheItem: public CInterface
 {
 protected: friend class CTimedCache;
-    StringAttr owner;
     unsigned due;
+    StringAttr owner;
 public:
     DALI_UID hint;
-    IMPLEMENT_IINTERFACE;
     CTimedCacheItem(const char *_owner)
         : owner(_owner)
     {
@@ -1949,7 +1999,6 @@ static CTimedCache *pagedElementsCache=NULL;
 class CPECacheElem: public CTimedCacheItem
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CPECacheElem(const char *owner, ISortedElementsTreeFilter *_postFilter)
         : CTimedCacheItem(owner), postFilter(_postFilter), postFiltered(0)
     {
@@ -2225,13 +2274,13 @@ IClusterFileScanIterator *getClusterFileScanIterator(
                       bool loadbranch,
                       IUserDescriptor *user)
 {
-    class cFileScanIterator: public CInterface, implements IClusterFileScanIterator
+    class cFileScanIterator: implements IClusterFileScanIterator, public CInterface
     {
         Owned<IPropertyTree> cur;
         unsigned fn;
         Linked<IRemoteConnection> conn;
-        bool loadbranch;
         Linked<IGroup> lgrp;
+        bool loadbranch;
         bool exactmatch;
         bool anymatch;
     public:
@@ -2423,7 +2472,7 @@ void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user)
 
 
 
-class cDaliMutexSub: public CInterface, implements ISDSSubscription
+class cDaliMutexSub: implements ISDSSubscription, public CInterface
 {
     Semaphore &sem;
 public:
@@ -2440,7 +2489,7 @@ public:
 };
 
 
-class CDaliMutex: public CInterface, implements IDaliMutex
+class CDaliMutex: implements IDaliMutex, public CInterface
 {
     StringAttr name;
     CriticalSection crit;
@@ -2569,7 +2618,7 @@ IDaliMutex  *createDaliMutex(const char *name)
 
 */
 
-class CDFSredirection: public CInterface, implements IDFSredirection
+class CDFSredirection: implements IDFSredirection, public CInterface
 {
     MemoryAttr buf;
     unsigned version;
@@ -2623,7 +2672,7 @@ public:
         lastloaded = 0;
     }
 
-    class cDFSredirect: public CInterface, implements IDfsLogicalFileNameIterator
+    class cDFSredirect: implements IDfsLogicalFileNameIterator, public CInterface
     {
         unsigned idx;
         unsigned got;
@@ -2875,12 +2924,12 @@ void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &reload, 
 }
 
 
-class CLocalOrDistributedFile: public CInterface, implements ILocalOrDistributedFile
+class CLocalOrDistributedFile: implements ILocalOrDistributedFile, public CInterface
 {
+    bool fileExists;
     Owned<IDistributedFile> dfile;
     CDfsLogicalFileName lfn;    // set if localpath but prob not useful
     StringAttr localpath;
-    bool fileExists;
 public:
     IMPLEMENT_IINTERFACE;
     CLocalOrDistributedFile()

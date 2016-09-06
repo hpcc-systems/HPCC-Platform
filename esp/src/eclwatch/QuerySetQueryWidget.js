@@ -20,6 +20,7 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/on",
     "dojo/topic",
+    "dojo/_base/array",
 
     "dijit/registry",
     "dijit/Menu",
@@ -34,6 +35,7 @@ define([
     "hpcc/WsWorkunits",
     "hpcc/ESPQuery",
     "hpcc/ESPUtil",
+    "hpcc/Utility",
 
     "dojo/text!../templates/QuerySetQueryWidget.html",
 
@@ -53,10 +55,10 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, on, topic,
+], function (declare, lang, i18n, nlsHPCC, on, topic, arrayUtil,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 selector,
-                _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil,
+                _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, Utility,
                 template) {
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -82,11 +84,37 @@ define([
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.filter = registry.byId(this.id + "Filter");
+            this.downloadToList = registry.byId(this.id + "DownloadToList");
+            this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
+            this.downListForm = registry.byId(this.id + "DownListForm");
+            this.fileName = registry.byId(this.id + "CSVFileName");
         },
 
         startup: function (args) {
             this.inherited(arguments);
             this.initContextMenu();
+        },
+
+        _onDownloadToListCancelDialog: function (event){
+            this.downloadToListDialog.hide();
+        },
+
+        _onDownloadToList: function (event) {
+            this.downloadToListDialog.show();
+        },
+
+         _buildCSV: function (event) {
+            var selections = this.querySetGrid.getSelected();
+            var row = [];
+            var fileName = this.fileName.get("value")+".csv";
+
+            arrayUtil.forEach(selections, function (cell, idx){
+                var rowData = [cell.Suspended,cell.ErrorCount,cell.MixedNodeStates,cell.Activated,cell.Id,cell.Name,cell.QuerySetId,cell.Wuid,cell.Dll,cell.PublishedBy,cell.Status];
+                row.push(rowData);
+            });
+
+            Utility.downloadToCSV(this.querySetGrid, row, fileName);
+            this._onDownloadToListCancelDialog();
         },
 
         resize: function (args) {
@@ -409,6 +437,12 @@ define([
             });
             this.querySetGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
+                var selection = context.querySetGrid.getSelected();
+                if (selection.length > 0) {
+                    context.downloadToList.set("disabled", false);
+                } else {
+                    context.downloadToList.set("disabled", true);
+                }
             });
             this.querySetGrid.startup();
             this.refreshActionState();

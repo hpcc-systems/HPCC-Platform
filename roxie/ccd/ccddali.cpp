@@ -157,7 +157,7 @@ public:
 *
 =================================================================================*/
 
-class CRoxieDaliHelper : public CInterface, implements IRoxieDaliHelper
+class CRoxieDaliHelper : implements IRoxieDaliHelper, public CInterface
 {
 private:
     static bool isConnected;
@@ -644,6 +644,22 @@ public:
         }
     }
 
+    virtual StringBuffer &getDaliIp(StringBuffer &ret) const
+    {
+        IGroup &group = queryCoven().queryComm().queryGroup();
+        Owned<INodeIterator> coven = group.getIterator();
+        bool first = true;
+        ForEach(*coven)
+        {
+            if (first)
+                first = false;
+            else
+                ret.append(',');
+            coven->query().endpoint().getUrlStr(ret);
+        }
+        return ret;
+    }
+
     static IRoxieDaliHelper *connectToDali(unsigned waitToConnect)
     {
         CriticalBlock b(daliHelperCrit);
@@ -803,7 +819,7 @@ protected:
     }
 };
 
-class CRoxieDllServer : public CInterface, implements IDllServer
+class CRoxieDllServer : implements IDllServer, public CInterface
 {
     static CriticalSection crit;
     bool started;

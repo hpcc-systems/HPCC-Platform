@@ -122,7 +122,7 @@ public:
 extern THORHELPER_API IRowMatcher *createRowMatcher(const char *fieldName, BreakpointConditionMode condition, const char *value, bool caseSensitive);
 extern THORHELPER_API IRowMatcher *createRowMatcher(MemoryBuffer &serialized);
 
-class THORHELPER_API CBreakpointInfo : public CInterface, implements IBreakpointInfo
+class THORHELPER_API CBreakpointInfo : implements IBreakpointInfo, public CInterface
 {
 private:
     BreakpointMode mode;

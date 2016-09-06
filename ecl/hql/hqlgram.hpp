@@ -31,7 +31,6 @@
 
 #include "hqlxmldb.hpp"
 
-#define DEFAULT_MAX_ERRORS 100
 #define EXPORT_FLAG 1
 #define VIRTUAL_FLAG 2
 #define SHARED_FLAG 4
@@ -390,7 +389,7 @@ public:
 };
 
 extern int eclyyparse(HqlGram * parser);
-class HqlGram : public CInterface, implements IErrorReceiver
+class HqlGram : implements IErrorReceiver, public CInterface
 {
     friend class HqlLex;
     friend int eclyyparse(HqlGram * parser);
@@ -411,7 +410,6 @@ public:
     IHqlScope * queryGlobalScope();
 
     bool canFollowCurrentState(int tok, const short * yyps);
-    void syntaxError(const char *s, int token, int *expected);
     int mapToken(int lexToken) const;
     IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
     IHqlExpression *lookupSymbol(IHqlScope * scope, IIdAtom * name);
@@ -578,6 +576,18 @@ public:
     IHqlExpression * nextEnumValue();
 
 // Error handling
+    void syntaxError(const char *s, int token, int *expected);
+    bool checkErrorCountAndAbort();
+    bool exceedsMaxCompileErrors();
+    unsigned getMaxCompileErrors()
+    {
+        return lookupCtx.queryParseContext().maxErrors;
+    }
+    bool unsuppressImmediateSyntaxErrors()
+    {
+        return lookupCtx.queryParseContext().unsuppressImmediateSyntaxErrors;
+    }
+    void reportTooManyErrors();
     void doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
     void reportError(int errNo, const attribute& a, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
@@ -632,7 +642,7 @@ public:
     void enterScope(bool allowExternal);
     void enterVirtualScope();
     void leaveScope(const attribute & errpos);
-    IHqlExpression * leaveLamdaExpression(attribute & exprattr);
+    IHqlExpression * leaveLamdaExpression(attribute * modifierattr, attribute & exprattr);
     IHqlScope * closeLeaveScope(const YYSTYPE & errpos);
     void enterPatternScope(IHqlExpression * pattern);
     void leavePatternScope(const YYSTYPE & errpos);
@@ -691,8 +701,6 @@ public:
     IHqlExpression * processIfProduction(attribute & condAttr, attribute & trueAttr, attribute * falseAttr);
 
     IHqlExpression * createSymbolFromValue(IHqlExpression * primaryExpr, IHqlExpression * value);
-    unsigned getMaxErrorsAllowed() { return m_maxErrorsAllowed; }
-    void setMaxErrorsAllowed(unsigned n) { m_maxErrorsAllowed = n; } 
     void setAssociateWarnings(bool value) { associateWarnings = value; }
     IHqlExpression* clearFieldMap(IHqlExpression* expr);
     void setExpectedAttribute(IIdAtom * _expectedAttribute)             { expectedAttribute = _expectedAttribute; current_id = _expectedAttribute; }
@@ -702,8 +710,9 @@ public:
     void addActiveParameterOwn(const attribute & errpos, IHqlExpression * expr, IHqlExpression * defaultValue);
     void gatherActiveParameters(HqlExprCopyArray & target);
 
-
-    IHqlExpression * createUniqueId();  
+    IHqlExpression * createVolatileId() { return ::createUniqueId(_volatileId_Atom); }
+    IHqlExpression * createUniqueId() { return createUniqueId(_uid_Atom); }
+    IHqlExpression * createUniqueId(IAtom * name);
 
     void onOpenBra();
     void onCloseBra();
@@ -753,7 +762,6 @@ protected:
 
     void canNotAssignTypeError(ITypeInfo* expected, ITypeInfo* given, const attribute& errpos);
     void canNotAssignTypeWarn(ITypeInfo* expected, ITypeInfo* given, const attribute& errpos);
-    void abortParsing();
     bool isExceptionalCase(attribute& defineid, attribute& object, attribute& failure);
     void checkSvcAttrNoValue(IHqlExpression* attr, const attribute& errpos);
     void checkFormals(IIdAtom * name, HqlExprArray & parms, HqlExprArray & defaults, attribute& object);
@@ -776,7 +784,17 @@ protected:
 
     void disableError() { errorDisabled = true; }
     void enableError() { errorDisabled = false; }
-    bool isAborting() { return errorDisabled; }
+    void abortParsing();
+    bool checkAborting()
+    {
+        if (lookupCtx.isAborting())
+        {
+            abortParsing();//Ensure a consistent abort by propagating the aborting state.
+            return true;
+        }
+        return false;
+    }
+
     IIdAtom * fieldMapTo(IHqlExpression* expr, IIdAtom * name);
     IIdAtom * fieldMapFrom(IHqlExpression* expr, IIdAtom * name);
     bool requireLateBind(IHqlExpression* funcdef, const HqlExprArray & actuals);
@@ -797,12 +815,13 @@ protected:
     IHqlExpression * createRecordExcept(IHqlExpression * left, IHqlExpression * right, const attribute & errpos);
     IHqlExpression * createIndexFromRecord(IHqlExpression * record, IHqlExpression * attr, const attribute & errpos);
     IHqlExpression * createProjectRow(attribute & rowAttr, attribute & transformAttr, attribute & seqAttr);
-    void doDefineSymbol(DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered);
-    void defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults);
+    void doDefineSymbol(DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered, IHqlExpression * modifiers);
+    void defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHqlExpression * expr, const attribute & idattr, int assignPos, int semiColonPos);
     void checkDerivedCompatible(IIdAtom * name, IHqlExpression * scope, IHqlExpression * expr, bool isParametered, HqlExprArray & parameters, attribute const & errpos);
     void defineSymbolProduction(attribute & nameattr, attribute & paramattr, attribute & assignattr, attribute * valueattr, attribute * failattr, attribute & semiattr);
-    void definePatternSymbolProduction(attribute & nameattr, const attribute & assignAttr, attribute & valueAttr, attribute & workflowAttr, const attribute & semiattr);
+    void definePatternSymbolProduction(attribute & nameattr, attribute & paramattr, const attribute & assignAttr, attribute & valueAttr, attribute & workflowAttr, const attribute & semiattr);
     void cloneInheritedAttributes(IHqlScope * scope, const attribute & errpos);
+    IHqlExpression * normalizeFunctionExpression(DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults, IHqlExpression * modifiers);
 
     IHqlExpression * createEvaluateOutputModule(const attribute & errpos, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, node_operator outputOp, IIdAtom *matchId);
     IHqlExpression * createStoredModule(const attribute & errpos, IHqlExpression * scopeExpr);
@@ -854,7 +873,6 @@ protected:
     bool isQuery;
     bool parseConstantText;
     bool expandingMacroPosition;
-    unsigned m_maxErrorsAllowed;
     bool inSignedModule;
 
     IErrorArray pendingWarnings;
@@ -911,7 +929,6 @@ protected:
     ConstPointerArray validAttributesStack;
     unsigned minimumScopeIndex;
     const TokenMap * pendingAttributes;
-    bool aborting;
 
     void setIdUnknown(bool expected) { expectedUnknownId = expected; }
     bool getIdUnknown() { return expectedUnknownId; }
@@ -1138,7 +1155,7 @@ class HqlLex
         inline ISourcePath * querySourcePath() const { return sourcePath; }
 
         bool isMacroActive(IHqlExpression *expr);
-        bool isAborting();
+        bool checkAborting();
         void pushMacro(IHqlExpression *expr);
         void pushText(IFileContents * text, int startLineNo, int startColumn);
         void pushText(const char *s, int startLineNo, int startColumn);

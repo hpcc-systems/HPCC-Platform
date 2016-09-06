@@ -1092,10 +1092,10 @@ public:
     bool markNew;
 };
 
-class CCronTable : public CInterface, implements ICronTable
+class CCronTable : implements ICronTable, public CInterface
 {
 private:
-    class XFrame : public CInterface, implements ICronTable::Transaction
+    class XFrame : implements ICronTable::Transaction, public CInterface
     {
     public:
         XFrame(CCronTable * _owner) : owner(_owner) {}

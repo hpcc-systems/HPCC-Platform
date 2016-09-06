@@ -48,7 +48,7 @@ MODULE_EXIT()
 }
 
 
-class CDaliClientException: public CInterface, public IDaliClient_Exception
+class CDaliClientException: public IDaliClient_Exception, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

@@ -26,7 +26,7 @@
 #include "jmutex.hpp"
 #include "jexcept.hpp"
 
-class HRPCsockettransport: public CInterface, implements IHRPCtransport 
+class HRPCsockettransport: implements IHRPCtransport, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

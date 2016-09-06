@@ -31,7 +31,7 @@
 #include "dasds.hpp"
 #include "daclient.hpp"
 #include "daldap.hpp"
-
+#include "seclib.hpp"
 #include "dasess.hpp"
 
 #ifdef _MSC_VER
@@ -101,7 +101,7 @@ static CriticalSection sessionCrit;
 #define CLDAPE_getpermtimeout (-1)
 #define CLDAPE_ldapfailure    (-2)
 
-class CDaliLDAP_Exception: public CInterface, implements IException
+class CDaliLDAP_Exception: implements IException, public CInterface
 {
     int errcode;
 public:
@@ -672,7 +672,7 @@ public:
 };
 
 
-class CSessionManagerBase: public CInterface, implements ISessionManager
+class CSessionManagerBase: implements ISessionManager, public CInterface
 {
 protected:
     CheckedCriticalSection sessmanagersect;
@@ -689,7 +689,7 @@ public:
     {
     }
 
-    class CSessionSubscriptionProxy: public CInterface, implements ISubscription
+    class CSessionSubscriptionProxy: implements ISubscription, public CInterface
     {   
         ISessionNotify *sub;
         SubscriptionId id;
@@ -790,7 +790,7 @@ public:
     }
 
 
-    class cNotify: public CInterface, implements ISessionNotify
+    class cNotify: implements ISessionNotify, public CInterface
     {
     public:
         IMPLEMENT_IINTERFACE;
@@ -887,10 +887,10 @@ public:
         if (err)
             *err = 0;
         if (securitydisabled)
-            return -1;
+            return SecAccess_Unavailable;
         if (queryDaliServerVersion().compare("1.8") < 0) {
             securitydisabled = true;
-            return -1;
+            return SecAccess_Unavailable;
         }
         CMessageBuffer mb;
         mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
@@ -922,7 +922,7 @@ public:
                     throw new CDaliLDAP_Exception(e);
             }
         }
-        if (ret==-1)
+        if (ret == SecAccess_Unavailable)
             securitydisabled = true;
         return ret;
     }
@@ -1134,7 +1134,6 @@ class CLdapWorkItem : public Thread
     Semaphore &threaddone;
     int ret;
 public:
-    IMPLEMENT_IINTERFACE;
     CLdapWorkItem(IDaliLdapConnection *_ldapconn,Semaphore &_threaddone)
         : ldapconn(_ldapconn), threaddone(_threaddone)
     {
@@ -1406,9 +1405,9 @@ public:
         if (err)
             *err = 0;
         if (!ldapconn)
-            return -1;
+            return SecAccess_Unavailable;
 #ifdef _NO_LDAP
-        return -1;
+        return SecAccess_Unavailable;
 #else
 #ifdef NULL_DALIUSER_STACKTRACE
         StringBuffer sb;
@@ -1594,8 +1593,6 @@ protected:
         SubscriptionId id;
         SessionId sessid;
     public:
-        IMPLEMENT_IINTERFACE;
-
         CSessionSubscriptionStub(ISubscription *_subs,SubscriptionId _id) // takes ownership
         {
             subs = _subs;
@@ -1816,7 +1813,7 @@ ISessionManager &querySessionManager()
 }
 
 
-class CDaliSessionServer: public CInterface, public IDaliServer
+class CDaliSessionServer: public IDaliServer, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -1903,7 +1900,6 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
         else {
             struct cThread: public Thread
             {
-                IMPLEMENT_IINTERFACE;
                 Semaphore sem;
                 Linked<ICommunicator> comm;
                 bool ok;
@@ -2006,7 +2002,7 @@ class CProcessSessionWatchdog
 
 
 
-class CUserDescriptor: public CInterface, implements IUserDescriptor
+class CUserDescriptor: implements IUserDescriptor, public CInterface
 {
     StringAttr username;
     StringAttr passwordenc;

@@ -26,8 +26,6 @@ typedef IPropertyTree * IPTreePtr;
 class TypeEntry : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     StringAttr name;
     StringAttr src;
     StringBuffer comment;

@@ -88,7 +88,7 @@ protected:
     ThorDataLinkMetaInfo cachedMetaInfo;
     Owned<CDiskPartHandlerBase> partHandler;
     Owned<IExpander> eexp;
-    rowcount_t diskProgress;
+    rowcount_t diskProgress = 0;
 
 public:
     CDiskReadSlaveActivityBase(CGraphElementBase *_container);
@@ -133,7 +133,7 @@ protected:
 
 public:
     CDiskWriteSlaveActivityBase(CGraphElementBase *container);
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData);
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData);
     virtual void abort();
     virtual void serializeStats(MemoryBuffer &mb);
 

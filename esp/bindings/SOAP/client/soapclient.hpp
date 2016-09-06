@@ -32,7 +32,7 @@
 //ESP Bindings
 #include "SOAP/Platform/soapmessage.hpp"
 
-class esp_http_decl CSoapClient : public CInterface, implements ISoapClient
+class esp_http_decl CSoapClient : implements ISoapClient, public CInterface
 {
 private:
     StringAttr                  m_username;
@@ -44,7 +44,7 @@ private:
                          StringBuffer& responsebuf, CMimeMultiPart* resp_multipart, IRpcMessageArray *headers=NULL);
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE
 
     CSoapClient(){m_disableKeepAlive=false;}
     CSoapClient(ITransportClient* transportclient){m_transportclient.setown(transportclient); m_disableKeepAlive=false;}

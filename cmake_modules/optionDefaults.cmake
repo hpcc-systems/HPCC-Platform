@@ -1,3 +1,6 @@
+if ( NOT DESTDIR )
+    set( DESTDIR "" )
+endif()
 
 if ( NOT PREFIX )
 if ( WIN32 )
@@ -9,16 +12,16 @@ if ( WIN32 )
     endif()
     string(REGEX REPLACE "\\\\" "/" PREFIX ${PREFIX})    
 else (WIN32)
-    set( PREFIX "/opt" )
+    set( PREFIX "${DESTDIR}/opt" )
 endif (WIN32)    
 endif()
 
 if ( NOT EXEC_PREFIX )
-    set( EXEC_PREFIX "/var" )
+    set( EXEC_PREFIX "${DESTDIR}/var" )
 endif()
 
 if ( NOT CONFIG_PREFIX )
-    set( CONFIG_PREFIX "/etc" )
+    set( CONFIG_PREFIX "${DESTDIR}/etc" )
 endif()
 
 if ( NOT DIR_NAME )
@@ -78,7 +81,7 @@ if ( NOT RUNTIME_USER )
 endif()
 
 if ( NOT RUNTIME_GROUP )
-    set( RUNTIME_GROUP "hpcc" )
+    set( RUNTIME_GROUP "${RUNTIME_USER}" )
 endif()
 
 if ( NOT ENV_XML_FILE )
@@ -95,9 +98,12 @@ set( RUNTIME_PATH "${EXEC_PREFIX}/${RUNTIME_DIR}/${DIR_NAME}" )
 set( LOG_PATH "${EXEC_PREFIX}/${LOG_DIR}/${DIR_NAME}" )
 set( LOCK_PATH "${EXEC_PREFIX}/${LOCK_DIR}/${DIR_NAME}" )
 set( PID_PATH "${EXEC_PREFIX}/${PID_DIR}/${DIR_NAME}" )
+set( INIT_PATH "${CONFIG_PREFIX}/init.d")
+
 set( CONFIG_SOURCE_PATH "${CONFIG_DIR}/${CONFIG_SOURCE_DIR}" )
 set( COMPONENTFILES_PATH "${INSTALL_DIR}/${COMPONENTFILES_DIR}" )
 set( PLUGINS_PATH "${INSTALL_DIR}/${PLUGINS_DIR}" )
 set( LIB_PATH "${INSTALL_DIR}/${LIB_DIR}" )
 set( EXEC_PATH "${INSTALL_DIR}/${EXEC_DIR}" )
 set( ADMIN_PATH "${INSTALL_DIR}/${ADMIN_DIR}" )
+

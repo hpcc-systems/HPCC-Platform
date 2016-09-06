@@ -6,7 +6,7 @@
 
 rtl := SERVICE
  unsigned4 msTick() :       eclrtl,library='eclrtl',entrypoint='rtlTick';
- unsigned4 sleep(unsigned4 _delay) : eclrtl,library='eclrtl',entrypoint='rtlSleep';
+ unsigned4 sleep(unsigned4 _delay) : eclrtl,action,library='eclrtl',entrypoint='rtlSleep';
 END;
 
 import lib_parselib;

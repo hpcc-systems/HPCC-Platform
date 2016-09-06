@@ -97,7 +97,7 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
         return (algo&&algo->getAlgorithmFlags()&TAFunstable);
     }
 
-    class cRowStreamPlus1Adaptor: public CSimpleInterface, implements IRowStream
+    class cRowStreamPlus1Adaptor: implements IRowStream, public CSimpleInterface
     {
         OwnedConstThorRow firstrow;
         Linked<IRowStream> base;
@@ -165,6 +165,8 @@ public:
         leftKeySerializer = helper->querySerializeLeft();
         rightKeySerializer = helper->querySerializeRight();
         rightpartition = (container.getKind()==TAKjoin)&&((helper->getJoinFlags()&JFpartitionright)!=0);
+        if (islocal)
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
 
@@ -546,7 +548,7 @@ public:
         }
         else
         {
-            sorter->Gather(primaryRowIf, primaryInputStream, primaryCompare, NULL, NULL, primaryKeySerializer, NULL, false, isUnstable(), abortSoon, NULL);
+            sorter->Gather(primaryRowIf, primaryInputStream, primaryCompare, NULL, NULL, primaryKeySerializer, NULL, NULL, false, isUnstable(), abortSoon, NULL);
             stopPartitionInput();
             if (abortSoon)
             {
@@ -571,7 +573,7 @@ public:
             sorter->stopMerge();
         }
         // NB: on secondary sort, the primaryKeySerializer is used
-        sorter->Gather(secondaryRowIf, secondaryInputStream, secondaryCompare, primarySecondaryCompare, primarySecondaryUpperCompare, primaryKeySerializer, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, primaryRowIf); // primaryKeySerializer *is* correct
+        sorter->Gather(secondaryRowIf, secondaryInputStream, secondaryCompare, primarySecondaryCompare, primarySecondaryUpperCompare, primaryKeySerializer, primaryCompare, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, primaryRowIf); // primaryKeySerializer *is* correct
         mergeStats(spillStats, sorter);
         //MORE: Stats from spilling the primaryStream??
         partitionRow.clear();
@@ -636,9 +638,10 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    CMergeJoinSlaveBaseActivity(CGraphElementBase *container, CMergeJoinProcessor &_processor) : CThorNarySlaveActivity(container), CThorSteppable(this), processor(_processor)
+    CMergeJoinSlaveBaseActivity(CGraphElementBase *_container, CMergeJoinProcessor &_processor) : CThorNarySlaveActivity(_container), CThorSteppable(this), processor(_processor)
     {
         helper = (IHThorNWayMergeJoinArg *)queryHelper();
+        setRequireInitData(false);
         inputAllocator.setown(getRowAllocator(helper->queryInputMeta()));
         outputAllocator.setown(getRowAllocator(helper->queryOutputMeta()));
         appendOutputLinked(this);

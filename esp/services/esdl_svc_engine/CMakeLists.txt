@@ -56,7 +56,8 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/esp/esdllib
-         ${HPCC_SOURCE_DIR}/esp/logging
+         ${HPCC_SOURCE_DIR}/esp/logging/logginglib
+         ${HPCC_SOURCE_DIR}/esp/logging/loggingmanager
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )

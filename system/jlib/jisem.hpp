@@ -25,7 +25,7 @@
 #include "jexcept.hpp"
 #include "jthread.hpp"
 
-class jlib_thrown_decl InterruptedSemaphoreException : public CInterface, implements IException
+class jlib_thrown_decl InterruptedSemaphoreException : implements IException, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

@@ -57,7 +57,7 @@ interface IRoxieOutputQueueManager : public IInterface
     virtual void removePendingCallback(IPendingCallback *x) = 0;
 };
 
-class CDummyMessagePacker : public CInterface, implements IMessagePacker
+class CDummyMessagePacker : implements IMessagePacker, public CInterface
 {
 protected:
     unsigned lastput;

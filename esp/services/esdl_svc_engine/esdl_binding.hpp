@@ -38,7 +38,7 @@ static const char* ESDL_BINDING_ENTRY="Binding";
 static const char* ESDL_METHOD_DESCRIPTION="description";
 static const char* ESDL_METHOD_HELP="help";
 
-#define SDS_LOCK_TIMEOUT (30*1000)
+#define SDS_LOCK_TIMEOUT_DESDL (30*1000)
 
 #include "SOAP/Platform/soapbind.hpp"
 
@@ -74,7 +74,9 @@ private:
     IEspContainer *container;
     MapStringToMyClass<ISmartSocketFactory> connMap;
     MapStringToMyClass<IEmbedServiceContext> javaServiceMap;
-    Owned<ILoggingManager> loggingManager;
+    Owned<ILoggingManager> m_oLoggingManager;
+    bool m_bGenerateLocalTrxId;
+
 #ifndef LINK_STATICALLY
     Owned<ILoadedDllEntry> javaPluginDll;
 #endif

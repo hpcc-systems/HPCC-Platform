@@ -35,7 +35,6 @@
 #define DROPZONE_BY_MACHINE_SUFFIX  "-dropzoneByMachine-"
 #define DROPZONE_SUFFIX             "dropzone-"
 #define MACHINE_PREFIX              "machine-"
-#define NUMBER_OF_DROPZONES_SUFFIX  "-numberOfDropZones"
 
 static int environmentTraceLevel = 1;
 static Owned <IConstEnvironment> cache;
@@ -101,7 +100,7 @@ protected:
 
 class CConstInstanceInfo;
 
-class CLocalEnvironment : public CInterface, implements IConstEnvironment
+class CLocalEnvironment : implements IConstEnvironment, public CInterface
 {
 private:
     // NOTE - order is important - we need to construct before p and (especially) destruct after p
@@ -122,6 +121,12 @@ private:
     void buildMachineCache() const;
     void buildDropZoneCache() const;
     void init();
+    StringBuffer & createComputerNameXpath(const char * computer, StringBuffer &xpath) const
+    {
+        xpath.append("numberOfDropZones[@name=\"");
+        xpath.append(computer).append("\"]/number");
+        return xpath;
+    }
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -168,10 +173,9 @@ public:
     unsigned getNumberOfDropZonesByComputer(const char * computer) const
     {
         buildDropZoneCache();
-        StringBuffer xpath("@");
-        xpath.append(computer).append(NUMBER_OF_DROPZONES_SUFFIX);
-        unsigned numOfDropZoneByComputer = numOfDropzonesByComputer->getPropInt(xpath, -1);
-        return (numOfDropZoneByComputer != -1 ? numOfDropZoneByComputer : 0);
+        StringBuffer xpath;
+        createComputerNameXpath(computer, xpath);
+        return numOfDropzonesByComputer->getPropInt(xpath);
     }
     IConstDropZoneInfo * getDropZoneByComputerByIndex(const char * computer, unsigned index) const;
 
@@ -179,7 +183,7 @@ public:
     IConstDropZoneInfo * getDropZoneByIndex(unsigned index) const;
 };
 
-class CLockedEnvironment : public CInterface, implements IEnvironment
+class CLockedEnvironment : implements IEnvironment, public CInterface
 {
 public:
     //note that order of construction/destruction is important
@@ -370,7 +374,7 @@ void CLockedEnvironment::rollback()
 // updates by other clients and is used by environment factory below.  This also serves as 
 // a sample self-contained implementation that can be easily tailored for other purposes.
 //==========================================================================================
-class CSdsSubscription : public CInterface, implements ISDSSubscription
+class CSdsSubscription : implements ISDSSubscription, public CInterface
 {
 public:
     CSdsSubscription()
@@ -1152,16 +1156,19 @@ void CLocalEnvironment::buildDropZoneCache() const
             const char * computer = it->query().queryProp("@computer");
             if (computer)
             {
-                StringBuffer xpath("@");
-                xpath.append(computer).append(NUMBER_OF_DROPZONES_SUFFIX);
-                unsigned numOfDropZoneByComputer = numOfDropzonesByComputer->getPropInt(xpath, -1);
+                StringBuffer xpath;
+                createComputerNameXpath(computer, xpath);
+                unsigned numOfDropZoneByComputer = numOfDropzonesByComputer->getPropInt(xpath.str(), -1);
                 if (numOfDropZoneByComputer == -1)
                 {
                     numOfDropZoneByComputer = 0;
-                    numOfDropzonesByComputer->addPropInt(xpath, numOfDropZoneByComputer );
+                    IPropertyTree * val = createPTree("numberOfDropZones");
+                    val->addPropInt("@number",numOfDropZoneByComputer);
+                    val->addProp("@name", computer);
+                    numOfDropzonesByComputer->addPropTree("numberOfDropZones",val);
                 }
                 numOfDropZoneByComputer++;
-                numOfDropzonesByComputer->setPropInt(xpath, numOfDropZoneByComputer);
+                numOfDropzonesByComputer->setPropInt(xpath.str(), numOfDropZoneByComputer);
 
                 StringBuffer x("Software/DropZone[@computer=\"");
                 x.append(computer);
@@ -1310,8 +1317,8 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZoneByComputer(const char * compu
         return nullptr;
     buildDropZoneCache();
 
-    StringBuffer x("@");
-    x.append(computer).append(NUMBER_OF_DROPZONES_SUFFIX);
+    StringBuffer x;
+    createComputerNameXpath(computer, x);
     unsigned numOfDropZoneByComputer = numOfDropzonesByComputer->getPropInt(x, -1);
     if (numOfDropZoneByComputer == -1)
         return nullptr;
@@ -1545,7 +1552,20 @@ void CLocalEnvironment::clearCache()
     if (conn)
     {
         p.clear();
-        conn->reload();
+        unsigned mode;
+        try
+        {
+            conn->reload();
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "Failed to reload connection");
+            e->Release();
+            mode = conn->queryMode();
+            conn.clear();
+        }
+        if (!conn)
+            conn.setown(querySDS().connect(xPath, myProcessSession(), mode, SDS_LOCK_TIMEOUT));
         p.setown(conn->getRoot());
     }
     cache.kill();

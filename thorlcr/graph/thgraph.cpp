@@ -39,7 +39,7 @@ void registerCreateFunc(CreateFunc func)
 
 /////
 
-class CThorGraphResult : public CInterface, implements IThorResult, implements IRowWriter
+class CThorGraphResult : implements IThorResult, implements IRowWriter, public CInterface
 {
     CActivityBase &activity;
     rowcount_t rowStreamCount;
@@ -56,7 +56,7 @@ class CThorGraphResult : public CInterface, implements IThorResult, implements I
         meta = allocator->queryOutputMeta();
         rowStreamCount = 0;
     }
-    class CStreamWriter : public CSimpleInterface, implements IRowWriterMultiReader
+    class CStreamWriter : implements IRowWriterMultiReader, public CSimpleInterface
     {
         CThorGraphResult &owner;
         CThorExpandingRowArray rows;
@@ -206,7 +206,7 @@ IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bo
 }
 
 /////
-class CThorBoundLoopGraph : public CInterface, implements IThorBoundLoopGraph
+class CThorBoundLoopGraph : implements IThorBoundLoopGraph, public CInterface
 {
     CGraphBase *graph;
     activity_id activityId;
@@ -466,8 +466,8 @@ IThorGraphDependencyIterator *CGraphElementBase::getDependsIterator() const
 
 void CGraphElementBase::reset()
 {
+    alreadyUpdated = false;
     onStartCalled = false;
-//  prepared = false;
     if (activity)
         activity->reset();
 }
@@ -552,6 +552,8 @@ void CGraphElementBase::serializeCreateContext(MemoryBuffer &mb)
     DelayedSizeMarker sizeMark(mb);
     queryHelper()->serializeCreateContext(mb);
     sizeMark.write();
+    if (isSink())
+        mb.append(alreadyUpdated);
 }
 
 void CGraphElementBase::serializeStartContext(MemoryBuffer &mb)
@@ -568,13 +570,15 @@ void CGraphElementBase::deserializeCreateContext(MemoryBuffer &mb)
     mb.read(createCtxLen);
     createCtxMb.clear().append(createCtxLen, mb.readDirect(createCtxLen));
     haveCreateCtx = true;
+    if (isSink())
+        mb.read(alreadyUpdated);
 }
 
 void CGraphElementBase::deserializeStartContext(MemoryBuffer &mb)
 {
     size32_t startCtxLen;
     mb.read(startCtxLen);
-    startCtxMb.append(startCtxLen, mb.readDirect(startCtxLen));
+    startCtxMb.clear().append(startCtxLen, mb.readDirect(startCtxLen));
     haveStartCtx = true;
     onStartCalled = false; // allow to be called again
 }
@@ -595,6 +599,13 @@ void CGraphElementBase::onCreate()
         }
         else
             baseHelper->onCreate(queryCodeContext(), NULL, haveCreateCtx?&createCtxMb:NULL);
+        if (isLoopActivity(*this))
+        {
+            unsigned loopId = queryXGMML().getPropInt("att[@name=\"_loopid\"]/@value");
+            Owned<CGraphBase> childGraph = owner->getChildGraph(loopId);
+            Owned<IThorBoundLoopGraph> boundLoopGraph = createBoundLoopGraph(childGraph, baseHelper->queryOutputMeta(), queryId());
+            setBoundGraph(boundLoopGraph);
+        }
     }
 }
 
@@ -666,7 +677,6 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                     return false;
             }
             whichBranch = (unsigned)-1;
-            alreadyUpdated = false;
             switch (getKind())
             {
                 case TAKindexwrite:
@@ -781,8 +791,9 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
         }
         if (create)
         {
-            if (activity) // no need to recreate
+            if (prepared) // no need to recreate
                 return true;
+            prepared = true;
             ForEachItemIn(i2, inputs)
             {
                 CIOConnection *inputIO = inputs.item(i2);
@@ -790,6 +801,7 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
             }
             if (isSink())
                 owner->addActiveSink(*this);
+            assertex(!activity);
             activity.setown(factory());
         }
         return true;
@@ -818,15 +830,9 @@ void CGraphElementBase::preStart(size32_t parentExtractSz, const byte *parentExt
 
 void CGraphElementBase::initActivity()
 {
-    if (!activity)
-        activity.setown(factory());
-    if (isLoopActivity(*this))
-    {
-        unsigned loopId = queryXGMML().getPropInt("att[@name=\"_loopid\"]/@value");
-        Owned<CGraphBase> childGraph = owner->getChildGraph(loopId);
-        Owned<IThorBoundLoopGraph> boundLoopGraph = createBoundLoopGraph(childGraph, baseHelper->queryOutputMeta(), queryId());
-        setBoundGraph(boundLoopGraph);
-    }
+    if (activity)
+        return;
+    activity.setown(factory());
 }
 
 ICodeContext *CGraphElementBase::queryCodeContext()
@@ -1052,7 +1058,7 @@ CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(
     graphId = 0;
     complete = false;
     parentActivityId = 0;
-    connected = started = graphDone = aborted = prepared = false;
+    connected = started = graphDone = aborted = false;
     startBarrier = waitBarrier = doneBarrier = NULL;
     mpTag = waitBarrierTag = startBarrierTag = doneBarrierTag = TAG_NULL;
     executeReplyTag = TAG_NULL;
@@ -1239,7 +1245,6 @@ void CGraphBase::onCreate()
     {
         CGraphElementBase &element = iter->query();
         element.onCreate();
-        element.initActivity();
     }
 }
 
@@ -1279,6 +1284,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
         {
             CGraphElementBase &element = iter->query();
             element.onStart(parentExtractSz, parentExtract);
+            element.initActivity();
         }
         if (!preStart(parentExtractSz, parentExtract)) return;
         start();
@@ -1345,7 +1351,6 @@ bool CGraphBase::prepare(size32_t parentExtractSz, const byte *parentExtract, bo
         if (sink.prepareContext(parentExtractSz, parentExtract, checkDependencies, shortCircuit, async, false))
             needToExecute = true;
     }
-//  prepared = true;
     onCreate();
     return needToExecute;
 }
@@ -1401,7 +1406,7 @@ void CGraphBase::end()
     }
 }
 
-class CGraphTraverseIteratorBase : public CInterface, implements IThorActivityIterator
+class CGraphTraverseIteratorBase : implements IThorActivityIterator, public CInterface
 {
 protected:
     CGraphBase &graph;
@@ -2043,7 +2048,7 @@ public:
     Linked<CGraphBase> subGraph;
     MemoryBuffer parentExtractMb;
 };
-class CGraphExecutor : public CInterface, implements IGraphExecutor
+class CGraphExecutor : implements IGraphExecutor, public CInterface
 {
     CJobChannel &jobChannel;
     CJobBase &job;
@@ -2056,7 +2061,7 @@ class CGraphExecutor : public CInterface, implements IGraphExecutor
     Semaphore runningSem;
     Owned<IThreadPool> graphPool;
 
-    class CGraphExecutorFactory : public CInterface, implements IThreadFactory
+    class CGraphExecutorFactory : implements IThreadFactory, public CInterface
     {
         CGraphExecutor &executor;
     public:
@@ -2066,7 +2071,7 @@ class CGraphExecutor : public CInterface, implements IGraphExecutor
 // IThreadFactory
         virtual IPooledThread *createNew()
         {
-            class CGraphExecutorThread : public CInterface, implements IPooledThread
+            class CGraphExecutorThread : implements IPooledThread, public CInterface
             {
                 Owned<CGraphExecutorGraphInfo> graphInfo;
             public:
@@ -2301,7 +2306,7 @@ public:
 
 ////
 // IContextLogger
-class CThorContextLogger : CSimpleInterface, implements IContextLogger
+class CThorContextLogger : implements IContextLogger, public CSimpleInterface
 {
     CJobBase &job;
     unsigned traceLevel;
@@ -2872,7 +2877,7 @@ IThorResource &queryThor()
 CActivityBase::CActivityBase(CGraphElementBase *_container) : container(*_container), timeActivities(_container->queryJob().queryTimeActivities())
 {
     mpTag = TAG_NULL;
-    abortSoon = receiving = cancelledReceive = reInit = false;
+    abortSoon = receiving = cancelledReceive = initialized = reInit = false;
     baseHelper.set(container.queryHelper());
     parentExtractSz = 0;
     parentExtract = NULL;

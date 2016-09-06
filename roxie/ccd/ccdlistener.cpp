@@ -21,6 +21,7 @@
 #include "jregexp.hpp"
 
 #include "wujobq.hpp"
+#include "thorplugin.hpp"
 
 #include "ccd.hpp"
 #include "ccdcontext.hpp"
@@ -283,7 +284,6 @@ private:
 
 
 public:
-    IMPLEMENT_IINTERFACE;
     CascadeManager(const IRoxieContextLogger &_logctx) : logctx(_logctx)
     {
         entered = false;
@@ -591,7 +591,7 @@ public:
 
 //================================================================================================================================
 
-class ActiveQueryLimiter : public CInterface, implements IActiveQueryLimiter
+class ActiveQueryLimiter : implements IActiveQueryLimiter, public CInterface
 {
     IHpccProtocolListener *parent;
     IHpccProtocolMsgSink *sink;
@@ -960,7 +960,9 @@ public:
 
     virtual void runOnce(const char *query)
     {
-        UNIMPLEMENTED;
+        Owned<IPooledThread> worker = createNew();
+        worker->init((void *) query);
+        worker->main();
     }
 
     virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, bool continuationNeeded)
@@ -1057,7 +1059,7 @@ public:
 };
 
 
-class RoxieQueryWorker : public CInterface, implements IPooledThread
+class RoxieQueryWorker : implements IPooledThread, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -1142,22 +1144,42 @@ public:
 
     virtual void main()
     {
-        Owned <IRoxieDaliHelper> daliHelper = connectToDali();
-        Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid.get(), NULL);
+        assertex(wuid.length());
+        bool standalone = *wuid.str()=='-';
+        Owned<IRoxieDaliHelper> daliHelper;
+        Owned<IConstWorkUnit> wu;
+        Owned<const IQueryDll> dll;
+        if (standalone)
+        {
+            Owned<ILoadedDllEntry> standAloneDll = createExeDllEntry(wuid.get()+1);
+            StringBuffer wuXML;
+            if (getEmbeddedWorkUnitXML(standAloneDll, wuXML))
+            {
+                wu.setown(createLocalWorkUnit(wuXML));
+                dll.setown(createExeQueryDll(wuid.get()+1));
+            }
+        }
+        else
+        {
+            daliHelper.setown(connectToDali());
+            wu.setown(daliHelper->attachWorkunit(wuid.get(), NULL));
+        }
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         Owned<IQueryFactory> queryFactory;
         try
         {
             checkWorkunitVersionConsistency(wu);
-            daliHelper->noteWorkunitRunning(wuid.get(), true);
+            if (daliHelper)
+                daliHelper->noteWorkunitRunning(wuid.get(), true);
             if (!wu)
                 throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
-            queryFactory.setown(createServerQueryFactoryFromWu(wu));
+            queryFactory.setown(createServerQueryFactoryFromWu(wu, dll));
         }
         catch (IException *E)
         {
             reportException(wu, E, *logctx);
-            daliHelper->noteWorkunitRunning(wuid.get(), false);
+            if (daliHelper)
+                daliHelper->noteWorkunitRunning(wuid.get(), false);
             throw;
         }
 #ifndef _DEBUG
@@ -1171,7 +1193,14 @@ public:
         doMain(wu, queryFactory, *logctx);
         sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
         queryFactory.clear();
-        daliHelper->noteWorkunitRunning(wuid.get(), false);
+        if (daliHelper)
+            daliHelper->noteWorkunitRunning(wuid.get(), false);
+        if (standalone && traceLevel)
+        {
+            StringBuffer wuXML;
+            exportWorkUnitToXML(wu, wuXML, true, true, true);
+            DBGLOG("%s", wuXML.str());
+        }
         clearKeyStoreCache(false);   // Bit of a kludge - cache should really be smarter
     }
 
@@ -1277,11 +1306,11 @@ private:
     StringAttr wuid;
 };
 
-class RoxieProtocolMsgContext : public CInterface, implements IHpccProtocolMsgContext
+class RoxieProtocolMsgContext : implements IHpccProtocolMsgContext, public CInterface
 {
 public:
     StringAttr queryName;
-    StringAttr uid;
+    StringAttr uid = "-";
     Owned<CascadeManager> cascade;
     Owned<IDebuggerContext> debuggerContext;
     Owned<CDebugCommandHandler> debugCmdHandler;
@@ -1358,6 +1387,15 @@ public:
         return *cascade;
     }
 
+    virtual void setTransactionId(const char *id)
+    {
+        if (!id || !*id)
+            return;
+        uid.set(id);
+        ensureContextLogger();
+        StringBuffer s;
+        logctx->set(ep.getIpText(s).appendf(":%u{%s}", ep.port, uid.str()).str());
+    }
     inline IDebuggerContext &ensureDebuggerContext(const char *id)
     {
         if (!debuggerContext)
@@ -1472,7 +1510,7 @@ public:
 };
 
 
-class RoxieProtocolMsgSink : public CInterface, implements IHpccNativeProtocolMsgSink
+class RoxieProtocolMsgSink : implements IHpccNativeProtocolMsgSink, public CInterface
 {
     CriticalSection activeCrit;
     SocketEndpoint ep;

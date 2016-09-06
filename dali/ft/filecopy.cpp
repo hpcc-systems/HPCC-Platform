@@ -2628,27 +2628,27 @@ void FileSprayer::setTarget(IDistributedFile * target)
     }
 }
 
-void FileSprayer::checkTargetPath(RemoteFilename & filename)
+void FileSprayer::checkFilePath(RemoteFilename & filename)
 {
-    StringBuffer targetFilePath;
-    filename.getLocalPath(targetFilePath);
-    const char * ptargetFilePath = targetFilePath.str();
+    StringBuffer filePath;
+    filename.getLocalPath(filePath);
+    const char * pfilePath = filePath.str();
 
     if (filename.queryIP().isLoopBack())
-        throwError1(DFTERR_LocalhostAddressUsed, ptargetFilePath);
+        throwError1(DFTERR_LocalhostAddressUsed, pfilePath);
 
 #ifdef _DEBUG
-    LOG(MCdebugInfo, unknownJob, "Target file path is '%s'", targetFilePath.str());
+    LOG(MCdebugInfo, unknownJob, "File path is '%s'", filePath.str());
 #endif
 
     const char pathSep = filename.getPathSeparator();
     const char dotString[]    = {pathSep, '.', pathSep, '\0'};
     const char dotDotString[] = {pathSep, '.', '.', pathSep, '\0'};
 
-    const char * isDotString = strstr(ptargetFilePath, dotString);
-    const char * isDotDotString = strstr(ptargetFilePath, dotDotString);
+    const char * isDotString = strstr(pfilePath, dotString);
+    const char * isDotDotString = strstr(pfilePath, dotDotString);
     if ((isDotDotString != nullptr) || (isDotString != nullptr))
-        throwError3(DFTERR_InvalidTargetPath, ptargetFilePath, dotDotString, dotString);
+        throwError3(DFTERR_InvalidFilePath, pfilePath, dotDotString, dotString);
 
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     if (factory)
@@ -2659,21 +2659,21 @@ void FileSprayer::checkTargetPath(RemoteFilename & filename)
             StringBuffer netaddress;
             filename.queryIP().getIpText(netaddress);
 
-            Owned<IConstDropZoneInfo> targetDropZone = env->getDropZoneByAddressPath(netaddress.str(), ptargetFilePath);
-            if (!targetDropZone)
-                LOG(MCdebugInfo, unknownJob, "No matching drop zone path to target file path: '%s'", targetFilePath.str());
+            Owned<IConstDropZoneInfo> dropZone = env->getDropZoneByAddressPath(netaddress.str(), pfilePath);
+            if (!dropZone)
+                LOG(MCdebugInfo, unknownJob, "No matching drop zone path to file path: '%s'", filePath.str());
         }
     }
 }
 
-void FileSprayer::checkTarget(IFileDescriptor * target)
+void FileSprayer::checkSourceTarget(IFileDescriptor * file)
 {
-    unsigned numParts = target->numParts();
+    unsigned numParts = file->numParts();
     RemoteFilename filename;
     for (unsigned idx=0; idx < numParts; idx++)
     {
-        target->getFilename(idx, 0, filename);
-        checkTargetPath(filename);
+        file->getFilename(idx, 0, filename);
+        checkFilePath(filename);
     }
 }
 

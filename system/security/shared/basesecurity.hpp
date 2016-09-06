@@ -27,8 +27,7 @@
 #include "SecurityResource.hpp"
 #include "SecurityResourceList.hpp"
 
-class CBaseSecurityManager : public CInterface,
-    implements ISecManager
+class CBaseSecurityManager : implements ISecManager, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE
@@ -101,6 +100,12 @@ public:
     }
 
     bool authorizeFileScope(ISecUser & user, ISecResourceList * resources)
+    {
+        UNIMPLEMENTED;
+        return false;
+    }
+
+    bool authorizeViewScope(ISecUser & user, ISecResourceList * resources)
     {
         UNIMPLEMENTED;
         return false;
@@ -280,7 +285,7 @@ public:
         return false;
     }
 
-    bool authenticateUser(ISecUser & user, bool &superUser)
+    bool authenticateUser(ISecUser & user, bool *superUser)
     {
         UNIMPLEMENTED;
         return false;

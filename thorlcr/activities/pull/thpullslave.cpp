@@ -28,6 +28,7 @@ class PullSlaveActivity : public CSlaveActivity
 public:
     PullSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
 

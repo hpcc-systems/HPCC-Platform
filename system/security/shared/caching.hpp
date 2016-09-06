@@ -70,10 +70,15 @@ public:
     virtual void add( IArrayOf<ISecResource>& resources );
     virtual void remove(SecResourceType rtype, const char* resourcename);
 
-private:
     //removes entries older than tstamp passed in
     //
     virtual void removeStaleEntries(time_t tstamp);
+    virtual bool needsCleanup(time_t now, unsigned timeout)
+    {
+        return m_tLastCleanup < (now - timeout);
+    }
+private:
+
 
     //type definitions
     //define mapping from resource name to pair<timeout, permission>
@@ -108,8 +113,8 @@ public:
         const char* pw = user->credentials().getPassword();
         if(pw && *pw)
         {
-            StringBuffer pbuf(pw), md5pbuf;
-            md5_string(pbuf, md5pbuf);
+            StringBuffer md5pbuf;
+            md5_string2(pw, md5pbuf);
             user->credentials().setPassword(md5pbuf.str());
         }
 
@@ -134,11 +139,9 @@ public:
 
 // main cache that stores all user-specific caches (defined by CResPermissionsCache above)
 //
-class CPermissionsCache : public CInterface, implements IInterface
+class CPermissionsCache : public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE
-
     CPermissionsCache(const char * _secMgrClass = nullptr)
     {
         m_cacheTimeout = 300;
@@ -173,11 +176,31 @@ public:
     virtual void add (ISecUser& sec_user);
     virtual void removeFromUserCache(ISecUser& sec_user);
 
-    void  setCacheTimeout(int timeout) { m_cacheTimeout = timeout; }
+#define DEFAULT_CACHE_TIMEOUT_SECONDS 10
+    void  setCacheTimeout(int timeoutSeconds)
+    {
+        m_cacheTimeout = timeoutSeconds;
+        if(m_cacheTimeout == 0 && isTransactionalEnabled())//ensure transactional time is updated
+            setTransactionalCacheTimeout(DEFAULT_CACHE_TIMEOUT_SECONDS); //Transactional timeout is set to 10 seconds for long transactions that might take over 10 seconds.
+        else
+            setTransactionalCacheTimeout(timeoutSeconds);
+    }
     const int getCacheTimeout() { return m_cacheTimeout; }
     bool  isCacheEnabled() { return m_cacheTimeout > 0; }
-    void setTransactionalEnabled(bool enable) { m_transactionalEnabled = enable; }
+
+    void setTransactionalEnabled(bool enable)
+    {
+        m_transactionalEnabled = enable;
+        if(getCacheTimeout() == 0 && enable)//ensure transactional time is updated
+            setTransactionalCacheTimeout(DEFAULT_CACHE_TIMEOUT_SECONDS); //Transactional timeout is set to 10 seconds for long transactions that might take over 10 seconds.
+        else
+            setTransactionalCacheTimeout(getCacheTimeout());
+    }
+    void setTransactionalCacheTimeout(int timeoutSeconds) { m_transactionalCacheTimeout = timeoutSeconds; }
+    const int getTransactionalCacheTimeout() { return m_transactionalCacheTimeout; }
+
     bool isTransactionalEnabled() { return m_transactionalEnabled;}
+
     void flush();
     bool addManagedFileScopes(IArrayOf<ISecResource>& scopes);
     void removeManagedFileScopes(IArrayOf<ISecResource>& scopes);
@@ -195,6 +218,7 @@ private:
 
     int m_cacheTimeout; //cleanup cycle period
     bool m_transactionalEnabled;
+    int m_transactionalCacheTimeout;
 
     MapUserCache m_userCache;
     mutable ReadWriteLock m_userCacheRWLock;    //guards m_userCache

@@ -48,7 +48,7 @@ struct FPosTableEntryIFileIO : public FPosTableEntry
     IDelayedFile *file;
 };
 
-class CFetchStream : public CSimpleInterface, public IRowStream, implements IStopInput, implements IFetchStream
+class CFetchStream : public IRowStream, implements IStopInput, implements IFetchStream, public CSimpleInterface
 {
     Owned<IRowStream> keyIn;
     IFetchHandler *iFetchHandler;
@@ -82,7 +82,7 @@ protected:
     CActivityBase &owner;
     Linked<IThorRowInterfaces> keyRowIf, fetchRowIf;
 
-    class CFPosHandler : public CSimpleInterface, implements IHash
+    class CFPosHandler : implements IHash, public CSimpleInterface
     {
         IFetchHandler &iFetchHandler;
         unsigned count;
@@ -365,7 +365,7 @@ public:
         // NB: indexRowExtractNeeded is a member variable, because referenced by callback IFetchHandler::extractFpos()
         indexRowExtractNeeded = fetchBaseHelper->transformNeedsRhs();
 
-        class CKeyFieldExtractBase : public CSimpleInterface, implements IRowStream
+        class CKeyFieldExtractBase : implements IRowStream, public CSimpleInterface
         {
         protected:
             CFetchSlaveBase *activity;
@@ -516,10 +516,6 @@ class CFetchSlaveActivity : public CFetchSlaveBase
 {
 public:
     CFetchSlaveActivity(CGraphElementBase *container) : CFetchSlaveBase(container) { }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        CFetchSlaveBase::init(data, slaveData);
-    }
     virtual size32_t fetch(ARowBuilder & rowBuilder, const void *keyRow, unsigned filePartIndex, unsigned __int64 localFpos, unsigned __int64 fpos)
     {
         Owned<ISerialStream> stream = createFileSerialStream(fetchStream->queryPartIO(filePartIndex), localFpos);
@@ -594,7 +590,7 @@ class CXmlFetchSlaveActivity : public CFetchSlaveBase
     Owned<IFileIOStream> *streams;
     Owned<IColumnProvider> *lastMatch;
 
-    class CXMLSelect : public CSimpleInterface, implements IXMLSelect
+    class CXMLSelect : implements IXMLSelect, public CSimpleInterface
     {
         CXmlFetchSlaveActivity &owner;
     public:

@@ -25,8 +25,6 @@
 class DeleteHelper : implements IEclPlusHelper
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     DeleteHelper(IProperties * globals, IFormatType * format);
     virtual ~DeleteHelper();
 
@@ -41,8 +39,6 @@ protected:
 class AbortHelper : implements IEclPlusHelper
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     AbortHelper(IProperties * globals, IFormatType * format);
     virtual bool doit(FILE * fp);
 

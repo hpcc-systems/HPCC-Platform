@@ -34,11 +34,6 @@ protected:
     bool stopped;
     IHThorFirstNArg *helper;
 
-    virtual void doStop()
-    {
-        PARENT::stop();
-    }
-
 public:
     CFirstNSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
@@ -58,7 +53,7 @@ public:
         {
             abortSoon = true;
             stopped = true;
-            doStop();
+            PARENT::stop();
         }
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
@@ -77,8 +72,9 @@ class CFirstNSlaveLocal : public CFirstNSlaveBase
     bool firstget;
     rowcount_t skipped;
 public:
-    CFirstNSlaveLocal(CGraphElementBase *container) : CFirstNSlaveBase(container)
+    CFirstNSlaveLocal(CGraphElementBase *_container) : CFirstNSlaveBase(_container)
     {
+        setRequireInitData(false);
     }
 
 // IRowStream overrides
@@ -131,8 +127,9 @@ class CFirstNSlaveGrouped : public CFirstNSlaveBase
 
     unsigned countThisGroup;
 public:
-    CFirstNSlaveGrouped(CGraphElementBase *container) : CFirstNSlaveBase(container)
+    CFirstNSlaveGrouped(CGraphElementBase *_container) : CFirstNSlaveBase(_container)
     {
+        setRequireInitData(false);
     }
 
 // IRowStream overrides
@@ -215,14 +212,6 @@ class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNot
     ThorDataLinkMetaInfo inputMeta;
     Owned<IEngineRowStream> originalInputStream;
 
-protected:
-    virtual void doStop()
-    {
-        limitgot.signal(); // JIC not previously signalled by lookahead
-        onInputFinished(getDataLinkCount()+skipped);
-        PARENT::doStop();
-    }
-
 public:
     CFirstNSlaveGlobal(CGraphElementBase *container) : CFirstNSlaveBase(container)
     {
@@ -268,7 +257,7 @@ public:
     {
         CMessageBuffer msgMb;
         if (!receiveMsg(msgMb, 0, mpTag))
-            return false; // NB: can be triggered by onInputFinished with count==0, or abort()
+            return false; // NB: can be triggered by abort()
         msgMb.read(limit);
         msgMb.read(skipCount);
         skipped = 0;
@@ -295,7 +284,7 @@ public:
     void sendCount()
     {
         limitgot.wait();
-        
+
         rowcount_t read = 0;
         rowcount_t skip = skipCount;
         if (limit > 0)
@@ -329,7 +318,8 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (!abortSoon) {
+        if (!abortSoon)
+        {
             if (firstget)
             {
                 firstget = false;
@@ -377,12 +367,6 @@ public:
             sendCount();
         }
         ActPrintLog("FIRSTN: maximum row count %" RCPF "d", count);
-        if (0 == count)
-        {
-            limit = 0;
-            CriticalBlock b(crit);
-            cancelReceiveMsg(RANK_ALL, mpTag);
-        }
     }
 };
 

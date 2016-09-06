@@ -97,7 +97,7 @@ size32_t WorkUnitErrorReceiver::warnCount()
 }
 
 
-class CompoundErrorReceiver : public CInterface, implements IErrorReceiver
+class CompoundErrorReceiver : implements IErrorReceiver, public CInterface
 {
 public:
     CompoundErrorReceiver(IErrorReceiver * _primary, IErrorReceiver * _secondary) { primary.set(_primary); secondary.set(_secondary); }

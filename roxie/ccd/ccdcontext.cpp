@@ -23,6 +23,7 @@
 #include "rtlread_imp.hpp"
 #include "thorplugin.hpp"
 #include "thorxmlread.hpp"
+#include "thorstats.hpp"
 #include "roxiemem.hpp"
 #include "eventqueue.hpp"
 
@@ -755,7 +756,7 @@ CRoxieWorkflowMachine *createRoxieWorkflowMachine(IPropertyTree *_workflowInfo, 
 typedef byte *row_t;
 typedef row_t * rowset_t;
 
-class DeserializedDataReader : public CInterface, implements IWorkUnitRowReader
+class DeserializedDataReader : implements IWorkUnitRowReader, public CInterface
 {
     const rowset_t data;
     size32_t count;
@@ -788,7 +789,7 @@ public:
     }
 };
 
-class CDeserializedResultStore : public CInterface, implements IDeserializedResultStore
+class CDeserializedResultStore : implements IDeserializedResultStore, public CInterface
 {
     PointerArrayOf<row_t> stored;
     UnsignedArray counts;
@@ -854,16 +855,16 @@ extern IDeserializedResultStore *createDeserializedResultStore()
     return new CDeserializedResultStore;
 }
 
-class WorkUnitRowReaderBase : public CInterface, implements IWorkUnitRowReader
+class WorkUnitRowReaderBase : implements IWorkUnitRowReader, public CInterface
 {
 protected:
-    Linked<IEngineRowAllocator> rowAllocator;
     bool isGrouped;
+    Linked<IEngineRowAllocator> rowAllocator;
 
 public:
     IMPLEMENT_IINTERFACE;
     WorkUnitRowReaderBase(IEngineRowAllocator *_rowAllocator, bool _isGrouped)
-        : rowAllocator(_rowAllocator), isGrouped(_isGrouped)
+        : isGrouped(_isGrouped), rowAllocator(_rowAllocator)
     {
 
     }
@@ -1099,7 +1100,6 @@ class InlineXmlDataReader : public WorkUnitRowReaderBase
     Owned<IPropertyTreeIterator> rows;
     IXmlToRowTransformer &rowTransformer;
 public:
-    IMPLEMENT_IINTERFACE;
     InlineXmlDataReader(IXmlToRowTransformer &_rowTransformer, IPropertyTree *_xml, IEngineRowAllocator *_rowAllocator, bool _isGrouped)
         : WorkUnitRowReaderBase(_rowAllocator, _isGrouped), xml(_xml), rowTransformer(_rowTransformer)
     {
@@ -1125,7 +1125,8 @@ public:
 
 //---------------------------------------------------------------------------------------
 
-class CRoxieContextBase : public CInterface, implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback
+static const StatisticsMapping graphStatistics(StKindNone);
+class CRoxieContextBase : implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback, public CInterface
 {
 protected:
     Owned<IWUGraphStats> graphStats;   // This needs to be destroyed very late (particularly, after the childgraphs)
@@ -1207,7 +1208,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
     CRoxieContextBase(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
-        : factory(_factory), logctx(_logctx), options(factory->queryOptions())
+        : factory(_factory), logctx(_logctx), options(factory->queryOptions()), globalStats(graphStatistics)
     {
         startTime = lastWuAbortCheck = msTick();
         persists = NULL;
@@ -1469,8 +1470,7 @@ public:
             }
             graph.clear();
             childGraphs.kill();
-            if (graphStats)
-                graphStats.clear();
+            graphStats.clear();
             if (error)
                 throw error;
         }
@@ -1972,6 +1972,24 @@ public:
         useContext(sequence).getProp(name, x);
         return rtlVCodepageToVUnicodeX(x.str(), "utf-8");
     }
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
+    {
+        if (activityId && graph)
+        {
+            IRoxieServerActivity *act = graph->queryActivity(activityId);
+            if (act)
+                return act->registerTimer(activityId, name);
+        }
+        CriticalBlock b(contextCrit);
+        ISectionTimer *timer = functionTimers.getValue(name);
+        if (!timer)
+        {
+            timer = ThorSectionTimer::createTimer(globalStats, name);
+            functionTimers.setValue(name, timer);
+            timer->Release(); // Value returned is not linked
+        }
+        return timer;
+    }
 
 protected:
     mutable CriticalSection contextCrit;
@@ -1981,6 +1999,8 @@ protected:
     IPropertyTree *rereadResults;
     PTreeReaderOptions xmlStoredDatasetReadFlags;
     CDeserializedResultStore *deserializedResultStore;
+    MapStringToMyClass<ThorSectionTimer> functionTimers;
+    CRuntimeStatisticCollection globalStats;
 
     IPropertyTree &useContext(unsigned sequence)
     {
@@ -2374,6 +2394,7 @@ public:
     {
         // NOTE: This is needed to ensure that owned activities are destroyed BEFORE I am,
         // to avoid pure virtual calls when they come to call noteProcessed()
+        logctx.mergeStats(globalStats);
         childGraphs.releaseAll();
     }
 
@@ -2600,6 +2621,14 @@ protected:
 
     void doPostProcess()
     {
+        if (workUnit)
+        {
+            WorkunitUpdate w(&workUnit->lock());
+            Owned<IStatisticGatherer> builder = createGlobalStatisticGatherer(w);
+            globalStats.recordStatistics(*builder);
+        }
+        logctx.mergeStats(globalStats);
+        globalStats.reset();
         if (!protocol)
             return;
 
@@ -2633,6 +2662,7 @@ protected:
         isBlocked = false;
         isNative = true;
         sendHeartBeats = false;
+        trim = false;
 
         lastSocketCheckTime = startTime;
         lastHeartBeat = startTime;
@@ -2731,6 +2761,8 @@ public:
         isNative = (flags & HPCC_PROTOCOL_NATIVE);
         isRaw = (flags & HPCC_PROTOCOL_NATIVE_RAW);
         isBlocked = (flags & HPCC_PROTOCOL_BLOCKED);
+        trim = (flags & HPCC_PROTOCOL_TRIM);
+
         xmlStoredDatasetReadFlags = _xmlReadFlags;
         sendHeartBeats = enableHeartBeat && isRaw && isBlocked && options.priority==0;
 
@@ -2968,8 +3000,21 @@ public:
 
     virtual char *getDaliServers()
     {
-        //MORE: Should this now be implemented using IRoxieDaliHelper?
-        throwUnexpected();
+        try
+        {
+            IRoxieDaliHelper *daliHelper = checkDaliConnection();
+            if (daliHelper)
+            {
+                StringBuffer ip;
+                daliHelper->getDaliIp(ip);
+                return ip.detach();
+            }
+        }
+        catch (IException *E)
+        {
+            E->Release();
+        }
+        return strdup("");
     }
     virtual IHpccProtocolResponse *queryProtocol()
     {

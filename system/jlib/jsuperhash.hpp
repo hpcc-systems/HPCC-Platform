@@ -49,7 +49,7 @@ public:
     void             releaseAll(); // like kill(), but does not resize the table
 
 #ifdef TRACE_HASH
-    void dumpStats();
+    void dumpStats() const;
 #endif
 
 protected:
@@ -192,8 +192,6 @@ class jlib_decl SuperHashIterator : public CInterface
 public:
     SuperHashIterator(const SuperHashTable & _table, bool _linkTable=true) : linkTable(_linkTable), table(_table) { cur = NULL; if (linkTable) table.Link(); }
     ~SuperHashIterator() { if (linkTable) table.Release(); }
-
-    IMPLEMENT_IINTERFACE
 
     virtual bool     first(void)
       { cur = table.next(NULL); return cur != NULL; }

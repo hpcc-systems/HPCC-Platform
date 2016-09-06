@@ -45,14 +45,11 @@ public:
 
     CWscRowCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
+        buildAuthToken(queryJob().queryUserDescriptor(), authToken);
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
 
-    // IThorSlaveActivity overloaded methods
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        buildAuthToken(queryJob().queryUserDescriptor(), authToken);
-    }
     // IThorDataLink methods
     virtual void start()
     {
@@ -140,6 +137,7 @@ public:
 
     SoapDatasetCallSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
 
@@ -223,7 +221,10 @@ class SoapRowActionSlaveActivity : public ProcessSlaveActivity, implements IWSCR
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    SoapRowActionSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container) { }
+    SoapRowActionSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
+    {
+        setRequireInitData(false);
+    }
 
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
@@ -276,7 +277,10 @@ class SoapDatasetActionSlaveActivity : public ProcessSlaveActivity, implements I
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    SoapDatasetActionSlaveActivity(CGraphElementBase *container) : ProcessSlaveActivity(container) { }
+    SoapDatasetActionSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
+    {
+        setRequireInitData(false);
+    }
 
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)

@@ -82,7 +82,7 @@ interface IXRefNodeManager :  extends IInterface
 
 extern DFUXREFNODEMANAGERLIB_API IXRefNodeManager * CreateXRefNodeFactory();
 
-class CXRefNode : public CInterface, implements IXRefNode ,implements IXRefProgressCallback
+class CXRefNode : implements IXRefNode ,implements IXRefProgressCallback, public CInterface
 {
 private:
     Owned<IRemoteConnection> m_conn;
@@ -148,7 +148,7 @@ public:
 
 };
 
-class CXRefNodeManager : public CInterface, implements IXRefNodeManager
+class CXRefNodeManager : implements IXRefNodeManager, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

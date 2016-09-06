@@ -1097,9 +1097,23 @@ protected:
 
 // A Java function that returns a dataset will return a JavaRowStream object that can be
 // interrogated to return each row of the result in turn
-// Note that we can't cache the JNIEnv here - calls may be made on different threads (though not at the same time).
 
 static JNIEnv *queryJNIEnv();
+
+class JavaLocalFrame
+{
+public:
+    JavaLocalFrame(JNIEnv *_JNIenv, unsigned size = 16) : JNIenv(_JNIenv)
+    {
+        JNIenv->PushLocalFrame(size);
+    }
+    ~JavaLocalFrame()
+    {
+        JNIenv->PopLocalFrame(NULL);
+    }
+private:
+    JNIEnv *JNIenv;
+};
 
 class JavaRowStream : public CInterfaceOf<IRowStream>
 {
@@ -1107,13 +1121,20 @@ public:
     JavaRowStream(jobject _iterator, IEngineRowAllocator *_resultAllocator)
     : resultAllocator(_resultAllocator)
     {
-        iterator = queryJNIEnv()->NewGlobalRef(_iterator);
+        JNIEnv *JNIenv = queryJNIEnv();
+        iterator = JNIenv->NewGlobalRef(_iterator);
+        // Note that we can't cache the JNIEnv, iterClass, or methodIds here - calls may be made on different threads (though not at the same time).
+    }
+    ~JavaRowStream()
+    {
+        stop();
     }
     virtual const void *nextRow()
     {
         if (!iterator)
             return NULL;
         JNIEnv *JNIenv = queryJNIEnv();
+        JavaLocalFrame lf(JNIenv);
         // Java code would be
         // if (!iterator.hasNext)
         // {
@@ -1145,16 +1166,20 @@ public:
     virtual void stop()
     {
         resultAllocator.clear();
-        if (iterator)
+        JNIEnv *JNIenv = queryJNIEnv();
+        if (JNIenv)
         {
-            queryJNIEnv()->DeleteGlobalRef(iterator);
-            iterator = NULL;
+            if (iterator)
+            {
+                JNIenv->DeleteGlobalRef(iterator);
+                iterator = NULL;
+            }
         }
     }
 
 protected:
     Linked<IEngineRowAllocator> resultAllocator;
-    jobject iterator;;
+    jobject iterator;
 };
 
 const char *esdl2JavaSig(IEsdlDefinition &esdl, const char *esdlType)
@@ -2040,7 +2065,7 @@ private:
     jmethodID javaMethodID;
 };
 
-class JavaXmlBuilder : public CInterface, implements IXmlWriterExt
+class JavaXmlBuilder : implements IXmlWriterExt, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -2350,10 +2375,9 @@ public:
     Linked<IEsdlDefinition> esdl;
     StringAttr javaPackage;
     StringAttr esdlType;
-    class DefStackEntry : public CInterface, implements IInterface
+    class DefStackEntry : public CInterface
     {
     public:
-        IMPLEMENT_IINTERFACE;
         DefStackEntry(const char *fieldname, IEsdlDefObject *_defType, IEsdlDefObject *_defObj) : name(fieldname), defType(_defType), defObj(_defObj), Class(0), obj(0), constructor(0), append(0), fieldId(0)
         {
         }
@@ -2454,7 +2478,7 @@ public:
         defStack.append(*entry.getClear());
     }
 
-    IArrayOf<DefStackEntry> defStack;
+    CIArrayOf<DefStackEntry> defStack;
     MapStringTo<jclass> javaClasses;
 };
 

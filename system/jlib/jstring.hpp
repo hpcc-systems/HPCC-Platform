@@ -291,11 +291,10 @@ protected:
     StringAttr & target;
 };
 
-class jlib_decl StringAttrAdaptor : public CInterface, implements IStringVal
+class jlib_decl StringAttrAdaptor : implements IStringVal
 {
 public:
     StringAttrAdaptor(StringAttr & _attr) : attr(_attr) {}
-    IMPLEMENT_IINTERFACE;
 
     virtual const char * str() const { return attr.get(); };
     virtual void set(const char *val) { attr.set(val); };
@@ -307,12 +306,11 @@ private:
     StringAttr & attr;
 };
 
-class jlib_decl StringBufferAdaptor : public CInterface, implements IStringVal
+class jlib_decl StringBufferAdaptor : implements IStringVal
 {
 
 public:
     StringBufferAdaptor(StringBuffer & _buffer) : buffer(_buffer) { initsize=buffer.length(); }
-    IMPLEMENT_IINTERFACE;
 
     virtual const char * str() const { return buffer.str(); };
     virtual void set(const char *val) { clear(); buffer.append(val); };

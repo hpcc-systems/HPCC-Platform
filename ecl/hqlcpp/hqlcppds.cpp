@@ -49,6 +49,7 @@
 #include "hqlinline.hpp"
 #include "hqlusage.hpp"
 #include "hqlcppds.hpp"
+#include "hqlattr.hpp"
 
 #define MAX_FIXED_SIZE_RAW 1024
 #define INLINE_TABLE_EXPAND_LIMIT 4
@@ -785,7 +786,7 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
     case no_count:
         {
             CHqlBoundExpr temp;
-            if (canBuildOptimizedCount(ctx, dataset, temp))
+            if (canBuildOptimizedCount(ctx, dataset, temp, op))
             {
                 OwnedHqlExpr thisCount = temp.getTranslatedExpr();
                 buildIncrementAssign(ctx, target, thisCount);
@@ -982,8 +983,24 @@ void HqlCppTranslator::doBuildAssignAggregate(BuildCtx & ctx, const CHqlBoundTar
 
 //---------------------------------------------------------------------------
 
-bool HqlCppTranslator::canBuildOptimizedCount(BuildCtx & ctx, IHqlExpression * dataset, CHqlBoundExpr & tgt)
+void HqlCppTranslator::setBoundCount(CHqlBoundExpr & tgt, const CHqlBoundExpr & src, node_operator aggOp)
 {
+    //If checking for existence, lie and return the length as the count instead since more efficient
+    if ((aggOp == no_exists) && src.length)
+        tgt.expr.set(src.length);
+    else
+        tgt.expr.setown(getBoundCount(src));
+}
+
+bool HqlCppTranslator::canBuildOptimizedCount(BuildCtx & ctx, IHqlExpression * dataset, CHqlBoundExpr & tgt, node_operator aggOp)
+{
+    CHqlBoundExpr bound;
+    if (ctx.getMatchExpr(dataset, bound))
+    {
+        setBoundCount(tgt, bound, aggOp);
+        return true;
+    }
+
     switch (dataset->getOperator())
     {
     case no_select:
@@ -994,36 +1011,103 @@ bool HqlCppTranslator::canBuildOptimizedCount(BuildCtx & ctx, IHqlExpression * d
             Owned<IReferenceSelector> selector = buildReference(ctx, dataset);
             CHqlBoundExpr temp;
             selector->get(ctx, temp);
-            tgt.expr.setown(getBoundCount(temp));
+            setBoundCount(tgt, temp, aggOp);
             return true;
         }
         break;
-    default:
-        if (!alwaysEvaluatesToBound(dataset))
-            break;
-        //fall through
-    case no_rows:
-    case no_null:
-        {
-            CHqlBoundExpr temp;
-            buildDataset(ctx, dataset, temp, FormatNatural);
-            tgt.expr.setown(getBoundCount(temp));
-            return true;
-        }
-    }
-
-#if 0
-    //This is improves a few obscure cases (normally in the global context).  I'm not convinced it is worth the extra cycles.
-    //Could also remove the bound.count test.
-    CHqlBoundExpr bound;
-    if (ctx.getMatchExpr(dataset, bound) && bound.count)
+    case no_newusertable:
+    case no_hqlproject:
+    case no_iterate:
     {
-        tgt.expr.setown(getBoundCount(bound));
+        IHqlExpression * transform = queryNewColumnProvider(dataset);
+        if (containsSkip(transform) || containsThrow(transform))
+            return false;
+        return canBuildOptimizedCount(ctx, dataset->queryChild(0), tgt, aggOp);
+    }
+    case no_group:
+    case no_owned_ds:
+    case no_translated:
+    case no_alias:
+    case no_getresult:
+    case no_getgraphresult:
+    case no_workunit_dataset:
+    case no_activetable:
+    case no_externalcall:
+    case no_call:
+        if (hasStreamedModifier(dataset->queryType()))
+            return false;
+        break;
+    case no_distributed:
+    case no_unordered:
+    case no_preservemeta:
+    case no_sorted:
+    case no_nofold:
+    case no_nohoist:
+    case no_forcegraph:
+    case no_nocombine:
+    case no_section:
+    case no_sectioninput:
+    case no_sort:
+    case no_distribute:
+        return canBuildOptimizedCount(ctx, dataset->queryChild(0), tgt, aggOp);
+    case no_datasetfromrow:
+        tgt.expr.setown(getSizetConstant(1));
+        return true;
+    case no_if:
+    {
+        if (!queryRealChild(dataset, 2))
+            return false;
+        CHqlBoundExpr countLeft, countRight;
+        if (!canBuildOptimizedCount(ctx, dataset->queryChild(1), countLeft, aggOp))
+            return false;
+        if (!canBuildOptimizedCount(ctx, dataset->queryChild(2), countRight, aggOp))
+            return false;
+        if (countLeft.expr != countRight.expr)
+        {
+            //MORE: Could create a no_if...
+            return false;
+        }
+        tgt.expr.set(countLeft.expr);
         return true;
     }
-#endif
+    case no_addfiles:
+    case no_merge:
+    {
+        ForEachChild(i, dataset)
+        {
+            IHqlExpression * cur = dataset->queryChild(i);
+            if (!cur->isAttribute())
+            {
+                CHqlBoundExpr temp;
+                if (!canBuildOptimizedCount(ctx, cur, temp, aggOp))
+                    return false;
+                tgt.expr.setown(adjustBoundIntegerValues(tgt.expr, temp.expr, false));
+            }
+        }
+        return true;
+    }
+    case no_compound:
+        return canBuildOptimizedCount(ctx, dataset->queryChild(1), tgt, aggOp);
+    case no_null:
+    case no_rows:
+    case no_id2blob:
+        break;
+    case no_inlinetable:
+    {
+        OwnedHqlExpr count = queryFixedRowCount(dataset);
+        if (!count)
+            return false;
+        tgt.expr.set(count);
+        return true;
+    }
+    default:
+        return false;
+    }
 
-    return false;
+    CHqlBoundExpr temp;
+    buildDataset(ctx, dataset, temp, FormatNatural);
+    setBoundCount(tgt, temp, aggOp);
+    return true;
 }
 
 void HqlCppTranslator::doBuildExprCount(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
@@ -1033,7 +1117,7 @@ void HqlCppTranslator::doBuildExprCount(BuildCtx & ctx, IHqlExpression * expr, C
 
     IHqlExpression * dataset = expr->queryChild(0);
     CHqlBoundExpr temp;
-    if (canBuildOptimizedCount(ctx, dataset, temp))
+    if (canBuildOptimizedCount(ctx, dataset, temp, no_count))
     {
         OwnedHqlExpr translated = temp.getTranslatedExpr();
         OwnedHqlExpr cast = ensureExprType(translated, expr->queryType());
@@ -1051,7 +1135,7 @@ IHqlExpression * HqlCppTranslator::queryOptimizedExists(BuildCtx & ctx, IHqlExpr
     //really this is isSimple()
 
     CHqlBoundExpr optimized;
-    bool canOptimizeCount = canBuildOptimizedCount(ctx, dataset, optimized);
+    bool canOptimizeCount = canBuildOptimizedCount(ctx, dataset, optimized, no_exists);
     node_operator op = (expr->getOperator() == no_exists) ? no_ne : no_eq;
     bool specialCase = false;
     switch (dsOp)
@@ -3225,7 +3309,7 @@ void HqlCppTranslator::buildDatasetAssignDatasetFromTransform(BuildCtx & ctx, IH
     target->finishRow(subctx, targetRow);
 }
 
-class InlineDatasetSkipCallback : public CInterface, implements IHqlCodeCallback
+class InlineDatasetSkipCallback : implements IHqlCodeCallback, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE
@@ -4280,16 +4364,19 @@ void HqlCppTranslator::doBuildRowAssignAggregate(BuildCtx & ctx, IReferenceSelec
 
     OwnedHqlExpr simpleAggregate = convertToSimpleAggregate(expr);
     CHqlBoundExpr optimized;
-    if (simpleAggregate && canBuildOptimizedCount(ctx, dataset, optimized))
+    if (simpleAggregate)
     {
         node_operator aggOp = simpleAggregate->getOperator();
         if (aggOp == no_exists || aggOp == no_count)
         {
-            IHqlExpression * assign = transform->queryChild(0);
-            IHqlExpression * lhs = assign->queryChild(0);
-            Owned<IReferenceSelector> selected = target->select(ctx, lhs);
-            selected->set(ctx, simpleAggregate);
-            return;
+            if (canBuildOptimizedCount(ctx, dataset, optimized, aggOp))
+            {
+                IHqlExpression * assign = transform->queryChild(0);
+                IHqlExpression * lhs = assign->queryChild(0);
+                Owned<IReferenceSelector> selected = target->select(ctx, lhs);
+                selected->set(ctx, simpleAggregate);
+                return;
+            }
         }
     }
 

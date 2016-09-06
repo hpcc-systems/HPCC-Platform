@@ -102,6 +102,8 @@ interface IFinalRoxieInput : extends IInputBase
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
     virtual unsigned numConcreteOutputs() const { return 1; }
     virtual IFinalRoxieInput * queryConcreteInput(unsigned idx) { assertex(idx==0); return this; }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) = 0;
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const = 0;
     virtual IRoxieServerActivity *queryActivity() = 0;
     virtual IIndexReadActivityInfo *queryIndexReadActivity() = 0;
 
@@ -181,6 +183,8 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual ThorActivityKind getKind() const = 0;
     virtual const IRoxieContextLogger &queryLogCtx() const = 0;
     virtual void mergeStats(MemoryBuffer &stats) = 0;
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
+    virtual IRoxieServerActivity * queryChildActivity(unsigned activityId) = 0;
 };
 
 interface IRoxieServerActivityFactory : extends IActivityFactory
@@ -265,7 +269,7 @@ extern IActivityGraph *createActivityGraph(IRoxieSlaveContext *ctx, const char *
 extern ruid_t getNextRuid();
 extern void setStartRuid(unsigned restarts);
 
-class CIndexTransformCallback : public CInterface, implements IThorIndexCallback 
+class CIndexTransformCallback : implements IThorIndexCallback, public CInterface
 {
 public:
     CIndexTransformCallback() { keyManager = NULL; cleanupRequired = false; filepos = 0; };

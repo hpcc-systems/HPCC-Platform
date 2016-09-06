@@ -430,7 +430,6 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
 
     outerScopeAccessDepth = 0;
     inType = false;
-    aborting = lookupCtx.isAborting();
     errorHandler = NULL;
     moduleName = NULL;
     resolveSymbols = true;
@@ -455,9 +454,8 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     fieldMapUsed = false;
     associateWarnings = true;
 
-    errorDisabled = false;
+    errorDisabled = lookupCtx.isAborting();//NOTE: If in an aborting state, disable future error reports.
     setIdUnknown(false);
-    m_maxErrorsAllowed = DEFAULT_MAX_ERRORS;
     sortDepth = 0;
     serviceScope.clear();
 
@@ -484,7 +482,7 @@ HqlGram::~HqlGram()
 
 int HqlGram::yyLex(attribute * yylval, const short * activeState)
 {
-    if (aborting) return 0;
+    if (checkAborting()) return 0;
     return lexObject->yyLex(*yylval, resolveSymbols, activeState);
 }
 
@@ -682,7 +680,7 @@ IHqlExpression * HqlGram::endFunctionCall()
     return ret.getClear();
 }
 
-IHqlExpression * HqlGram::createUniqueId()
+IHqlExpression * HqlGram::createUniqueId(IAtom * name)
 {
     HqlExprArray args;
     ForEachItemIn(i, defineScopes)
@@ -694,9 +692,9 @@ IHqlExpression * HqlGram::createUniqueId()
     if (args.ordinality())
     {
         args.add(*::createUniqueId(), 0);
-        return createExprAttribute(_uid_Atom, args);
+        return createExprAttribute(name, args);
     }
-    return ::createUniqueId();
+    return ::createUniqueId(name);
 }
 
 IHqlExpression * HqlGram::createActiveSelectorSequence(IHqlExpression * left, IHqlExpression * right)
@@ -1147,7 +1145,7 @@ void HqlGram::processEnum(attribute & idAttr, IHqlExpression * value)
     DefineIdSt * id = new DefineIdSt;
     id->id = idAttr.getId();
     id->scope = EXPORT_FLAG;
-    doDefineSymbol(id, LINK(lastEnumValue), NULL, idAttr, idAttr.pos.position, idAttr.pos.position, false);
+    doDefineSymbol(id, LINK(lastEnumValue), NULL, idAttr, idAttr.pos.position, idAttr.pos.position, false, NULL);
 }
 
 bool HqlGram::extractConstantString(StringBuffer & text, attribute & attr)
@@ -2834,17 +2832,18 @@ IHqlScope * HqlGram::closeLeaveScope(const YYSTYPE & errpos)
     return closeScope(scope);
 }
 
-IHqlExpression * HqlGram::leaveLamdaExpression(attribute & exprattr)
+IHqlExpression * HqlGram::leaveLamdaExpression(attribute * paramattr, attribute & exprattr)
 {
     OwnedHqlExpr resultExpr = exprattr.getExpr();
     OwnedHqlExpr expr = associateSideEffects(resultExpr, exprattr.pos);
+    OwnedHqlExpr modifiers = paramattr ? paramattr->getExpr() : NULL;
 
     if (queryParametered())
     {
         ActiveScopeInfo & activeScope = defineScopes.tos();
         OwnedHqlExpr formals = activeScope.createFormals(false);
         OwnedHqlExpr defaults = activeScope.createDefaults();
-        expr.setown(createFunctionDefinition(atId, expr.getClear(), formals.getClear(), defaults.getClear(), NULL));
+        expr.setown(createFunctionDefinition(atId, expr.getClear(), formals.getClear(), defaults.getClear(), modifiers.getClear()));
     }
 
     leaveScope(exprattr);
@@ -2865,7 +2864,6 @@ class PseudoPatternScope : public CHqlScope
 {
 public:
     PseudoPatternScope(IHqlExpression * _patternList);
-    IMPLEMENT_IINTERFACE_USING(CHqlScope)
 
     virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int bodystart, int lineno, int column) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
     virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
@@ -3065,7 +3063,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
             reportError(ERR_EXPECTED, errpos, "Missing END in FORWARD module definition");
             abortParsing();
             return;
-        case COMPLEX_MACRO: 
+        case COMPLEX_MACRO:
         case MACRO:
         case SIMPLE_TYPE:
         case CPPBODY:
@@ -3391,8 +3389,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
         return NULL;
 
     //Check periodically if parsing a referenced identifier has caused the compile to abort.
-    if (lookupCtx.isAborting())
-        aborting = true;
+    checkAborting();//NOTE: checkAborting() checks whether the parseContext is aborting and implicitly propagates this state, thus consistently triggering the parser to abort.
 
     try
     {
@@ -3556,7 +3553,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
     }
     catch(IError* error)
     {
-        if(errorHandler && !errorDisabled)
+        if(errorHandler && !errorDisabled && !checkAborting())
             errorHandler->report(error);
         error->Release();
         // recover: to avoid reload the definition again and again
@@ -3777,7 +3774,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 cppApi = true;
                 checkSvcAttrNoValue(attr, errpos);
             }
-            else if (name == pureAtom || name == templateAtom || name == volatileAtom || name == onceAtom || name == actionAtom)
+            else if (name == pureAtom || name == templateAtom || name == volatileAtom || name == onceAtom || name == actionAtom || name == timeAtom || name == noMoveAtom || name == failAtom)
             {
                 checkSvcAttrNoValue(attr, errpos);
             }
@@ -4365,7 +4362,7 @@ ITypeInfo * HqlGram::queryElementType(const attribute & errpos, IHqlExpression *
 void HqlGram::setDefaultString(attribute &a)
 {
     a.release();
-    a.setExpr(createConstant(""));
+    a.setExpr(createBlankString());
 }
 
 void HqlGram::ensureString(attribute &a)
@@ -6029,7 +6026,7 @@ void HqlGram::exportMappings(IWorkUnit * wu) const
 
 void HqlGram::report(IError* error)
 {
-    if (errorHandler && !errorDisabled)
+    if (errorHandler && !errorDisabled && !checkAborting())
     {
         //Severity of warnings are not mapped here.  Fatal errors are reported directly.  Others are delayed
         //(and may possibly be disabled by local onWarnings etc.)
@@ -6047,12 +6044,7 @@ void HqlGram::report(IError* error)
         else
         {
             errorHandler->report(error);
-
-            if (getMaxErrorsAllowed()>0 && errorHandler->errCount() >= getMaxErrorsAllowed())
-            {
-                errorHandler->reportError(ERR_ERROR_TOOMANY,"Too many errors; parsing aborted",error->getFilename(),error->getLine(),error->getColumn(),error->getPosition());
-                abortParsing();
-            }
+            checkErrorCountAndAbort();
         }
 
         reportMacroExpansionPosition(error, lexObject);
@@ -6232,6 +6224,9 @@ IHqlExpression *HqlGram::bindParameters(const attribute & errpos, IHqlExpression
             }
             else
             {
+                //Binding an external, outofline or beginc++ function
+                if (isVolatileFuncdef(function))
+                    actuals.append(*createVolatileId());
                 bool expandCall = insideTemplateFunction() ? false : expandCallsWhenBound;
                 // do the actual binding
                 return createBoundFunction(this, function, actuals, lookupCtx.functionCache, expandCall);
@@ -9197,7 +9192,7 @@ IHqlExpression * HqlGram::associateSideEffects(IHqlExpression * expr, const ECLl
 }
 
 
-void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered)
+void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered, IHqlExpression * modifiers)
 {
     OwnedHqlExpr expr = _expr;
     // env symbol
@@ -9209,6 +9204,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
     if (activeScope.templateAttrContext)
         expr.setown(createTemplateFunctionContext(expr.getClear(), closeScope(activeScope.templateAttrContext.getClear())));
 
+    IHqlScope * targetScope = NULL;
     if (!activeScope.localScope)
     {
         expr.setown(associateSideEffects(expr, idattr.pos));
@@ -9218,7 +9214,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
             reportWarning(CategorySyntax, WRN_EXPORT_IGNORED, idattr.pos, "EXPORT/SHARED qualifiers are ignored in this context");
 
         defineid->scope = 0;
-        defineSymbolInScope(activeScope.privateScope, defineid, expr.getClear(), failure, idattr, assignPos, semiColonPos, isParametered, activeScope.activeParameters, activeScope.createDefaults());
+        targetScope = activeScope.privateScope;
     }
     else
     {
@@ -9268,14 +9264,16 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
             //static int i = 0;
             //PrintLog("Kill private scope: %d at %s:%d because of %s", ++i, filename->str(), idattr.lineno, current_id->str());
             activeScope.newPrivateScope();
-            defineSymbolInScope(activeScope.localScope, defineid, expr.getClear(), failure, idattr, assignPos, semiColonPos, isParametered, activeScope.activeParameters, activeScope.createDefaults());
+            targetScope = activeScope.localScope;
             lastpos = semiColonPos+1;
         }
         else
         {
-            defineSymbolInScope(activeScope.privateScope, defineid, expr.getClear(), failure, idattr, assignPos, semiColonPos, isParametered, activeScope.activeParameters, activeScope.createDefaults());
+            targetScope = activeScope.privateScope;
         }
     }
+    OwnedHqlExpr normalized = normalizeFunctionExpression(defineid, expr, failure, isParametered, activeScope.activeParameters, activeScope.createDefaults(), modifiers);
+    defineSymbolInScope(targetScope, defineid, normalized, idattr, assignPos, semiColonPos);
 
     ::Release(failure);
     // clean up
@@ -9310,10 +9308,32 @@ IHqlExpression * HqlGram::attachMetaAttributes(IHqlExpression * ownedExpr, HqlEx
     return ownedExpr;
 }
 
-void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults)
+IHqlExpression * HqlGram::normalizeFunctionExpression(DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults, IHqlExpression * modifiers)
 {
+    HqlExprCopyArray activeParameters;
+    gatherActiveParameters(activeParameters);
+    HqlExprArray meta;
+    expr = attachWorkflowOwn(meta, LINK(expr), failure, &activeParameters);
+    if (isParametered)
+    {
+        IHqlExpression * formals = createValue(no_sortlist, makeSortListType(NULL), parameters);
+        expr = createFunctionDefinition(defineid->id, expr, formals, defaults, modifiers);
+    }
+    else
+        ::Release(modifiers);
+    expr = attachPendingWarnings(expr);
+    expr = attachMetaAttributes(expr, meta);
+    IPropertyTree * doc = defineid->queryDoc();
+    if (doc)
+        expr = createJavadocAnnotation(expr, LINK(doc));
+    return expr;
+}
+
+void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHqlExpression * expr, const attribute & idattr, int assignPos, int semiColonPos)
+{
+    IHqlScope * exprScope = expr->queryScope();
     IHqlExpression * scopeExpr = queryExpression(scope);
-    IIdAtom * moduleName = NULL;
+    IIdAtom * moduleName = nullptr;
     if (!inType)
         moduleName = createIdAtom(scope->queryFullName());
 
@@ -9333,25 +9353,7 @@ void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHql
         }
     }
 
-    HqlExprCopyArray activeParameters;
-    gatherActiveParameters(activeParameters);
-
-    HqlExprArray meta;
-    expr = attachWorkflowOwn(meta, expr, failure, &activeParameters);
-    if (isParametered)
-    {
-        IHqlExpression * formals = createValue(no_sortlist, makeSortListType(NULL), parameters);
-        expr = createFunctionDefinition(defineid->id, expr, formals, defaults, NULL);
-    }
-
-    expr = attachPendingWarnings(expr);
-    expr = attachMetaAttributes(expr, meta);
-
-    IPropertyTree * doc = defineid->queryDoc();
-    if (doc)
-        expr = createJavadocAnnotation(expr, LINK(doc));
-
-    scope->defineSymbol(defineid->id, moduleName, expr, (defineid->scope & EXPORT_FLAG) != 0, (defineid->scope & SHARED_FLAG) != 0, symbolFlags, lexObject->query_FileContents(), idattr.pos.lineno, idattr.pos.column, idattr.pos.position, assignPos+2, semiColonPos+1);
+    scope->defineSymbol(defineid->id, moduleName, LINK(expr), (defineid->scope & EXPORT_FLAG) != 0, (defineid->scope & SHARED_FLAG) != 0, symbolFlags, lexObject->query_FileContents(), idattr.pos.lineno, idattr.pos.column, idattr.pos.position, assignPos+2, semiColonPos+1);
 }
 
 
@@ -9528,7 +9530,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
                     {
                         if (!matchType->assignableFrom(etype))
                         {
-                            canNotAssignTypeError(type, etype, paramattr);
+                            canNotAssignTypeError(type, etype, nameattr);
                             expr.setown(createNullExpr(matchType));
                         }
                     }
@@ -9548,7 +9550,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
             {
                 if (queryRecord(type) != queryNullRecord())
                 {
-                    canNotAssignTypeError(type,etype,paramattr);
+                    canNotAssignTypeError(type,etype,nameattr);
                     switch (type->getTypeCode())
                     {
                     case type_record:
@@ -9580,11 +9582,11 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     }
 
     // env symbol
-    doDefineSymbol(defineid, expr.getClear(), failure, nameattr, assignattr.pos.position, semiattr.pos.position, activeScope.isParametered);
+    doDefineSymbol(defineid, expr.getClear(), failure, nameattr, assignattr.pos.position, semiattr.pos.position, activeScope.isParametered, paramattr.getExpr());
 }
 
 
-void HqlGram::definePatternSymbolProduction(attribute & nameattr, const attribute & assignAttr, attribute & valueAttr, attribute & workflowAttr, const attribute & semiattr)
+void HqlGram::definePatternSymbolProduction(attribute & nameattr, attribute & paramattr, const attribute & assignAttr, attribute & valueAttr, attribute & workflowAttr, const attribute & semiattr)
 {
     DefineIdSt* defineid = nameattr.getDefineId();
 
@@ -9631,7 +9633,7 @@ void HqlGram::definePatternSymbolProduction(attribute & nameattr, const attribut
             args.append(*createAttribute(_function_Atom));
         expr = createValue(no_pat_instance, expr->getType(), args);
     }
-    doDefineSymbol(defineid, expr, failure, nameattr, assignAttr.pos.position, semiattr.pos.position, queryParametered());
+    doDefineSymbol(defineid, expr, failure, nameattr, assignAttr.pos.position, semiattr.pos.position, queryParametered(), paramattr.getExpr());
 }
 
 //-- SAS style conditional assignments
@@ -11050,9 +11052,39 @@ void HqlGram::simplifyExpected(int *expected)
     simplify(expected, END, '}', 0);
 }
 
+bool HqlGram::exceedsMaxCompileErrors()
+{
+    unsigned errorCount = errorHandler ? errorHandler->errCount() : 0;
+    return errorCount >= getMaxCompileErrors();
+}
+
+bool HqlGram::checkErrorCountAndAbort()
+{
+    if (checkAborting())
+        return true;
+
+    if (exceedsMaxCompileErrors())
+    {
+        reportTooManyErrors();
+        abortParsing();
+        return true;
+    }
+    return false;
+}
+
+void HqlGram::reportTooManyErrors()
+{
+    if (errorHandler && !errorDisabled && !checkAborting())
+    {
+        StringBuffer msg("Too many errors");
+        msg.append(" (max = ").append(getMaxCompileErrors()).append("); Aborting...");
+        errorHandler->reportError(ERR_ERROR_TOOMANY, msg.str(), str(lexObject->queryActualSourcePath()), lexObject->getActualLineNo(), lexObject->getActualColumn(), lexObject->get_yyPosition());
+    }
+}
+
 void HqlGram::syntaxError(const char *s, int token, int *expected)
-{ 
-    if (errorDisabled || !s || !errorHandler)
+{
+    if (errorDisabled || !s || !errorHandler || checkAborting())
         return;
 
     int lineno = lexObject->getActualLineNo();
@@ -11165,10 +11197,8 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
 
 void HqlGram::abortParsing()
 {
-    // disable more error report
-    disableError();
     lookupCtx.setAborting();
-    aborting = true;
+    disableError();//NOTE: aborting the parser may not be immediate, disable future errors to aid the illusion of aborting.
 }
 
 IHqlExpression * HqlGram::createCheckMatchAttr(attribute & attr, type_t tc)
@@ -11569,7 +11599,7 @@ void HqlGram::beginRecord()
     pushRecord(r); 
     LinkedHqlExpr locale = queryDefaultLocale();
     if (!locale)
-        locale.setown(createConstant(""));
+        locale.setown(createBlankString());
     pushLocale(locale.getClear());
 }
 

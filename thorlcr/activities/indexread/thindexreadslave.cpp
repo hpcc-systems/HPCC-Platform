@@ -62,7 +62,7 @@ protected:
     Owned<IKeyIndexSet> keyIndexSet;
     bool keyMergerInUse = false;
 
-    class TransformCallback : public CSimpleInterface, implements IThorIndexCallback 
+    class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
     {
     protected:
         IKeyManager *keyManager;

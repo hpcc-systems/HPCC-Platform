@@ -57,7 +57,7 @@ public:
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state) = 0;
 };
 
-class HQLCPP_API ABoundActivity : public CInterface, public IInterface
+class HQLCPP_API ABoundActivity : public IInterface, public CInterface
 {
 public:
     ABoundActivity(IHqlExpression * _dataset, IHqlExpression * _bound, unsigned _activityid, unsigned _containerid, unsigned _graphId, ThorActivityKind _kind)
@@ -80,13 +80,13 @@ public:
     void updateActivityKind(ThorActivityKind newKind) { kind = newKind; }
 
 private:
+    ThorActivityKind        kind;
     HqlExprAttr             represents;
     HqlExprAttr             bound;
     unsigned                activityId;
     unsigned                containerId;
     unsigned                graphId;
     unsigned                outputCount;
-    ThorActivityKind        kind;
 };
 
 

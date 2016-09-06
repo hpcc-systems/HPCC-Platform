@@ -46,7 +46,7 @@ typedef unsigned __int64 activityid_t;
 
 //The following don't link their arguments because that creates a circular reference
 //But I wish there was a better way
-class IndirectAgentContext : public CInterface, implements IAgentContext
+class IndirectAgentContext : implements IAgentContext, public CInterface
 {
 public:
     IndirectAgentContext(IAgentContext * _ctx = NULL) : ctx(_ctx) {}
@@ -314,7 +314,6 @@ class CHThorDebugContext : extends CBaseServerDebugContext
     EclAgent *eclAgent;
     
 public:
-    IMPLEMENT_IINTERFACE;
     CHThorDebugContext(const IContextLogger &_logctx, IPropertyTree *_queryXGMML, EclAgent *_eclAgent); 
     inline unsigned queryPort();
     inline EclAgent * getEclAgent() { return eclAgent; };
@@ -330,7 +329,7 @@ public:
 
 
 class CHThorDebugContext;
-class EclAgent : public CInterface, implements IAgentContext, implements ICodeContext, implements IRowAllocatorMetaActIdCacheCallback
+class EclAgent : implements IAgentContext, implements ICodeContext, implements IRowAllocatorMetaActIdCacheCallback, public CInterface
 {
 private:
     friend class EclAgentWorkflowMachine;
@@ -509,6 +508,10 @@ public:
 
     unsigned __int64 queryStopAfter() { return stopAfter; }
 
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
+    {
+        return queryNullSectionTimer();
+    }
 
 //New workflow interface
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }
@@ -642,7 +645,7 @@ public:
 class EclSubGraph;
 interface IHThorActivity;
 
-class EclCounterMeta : public CInterface, implements IOutputMetaData
+class EclCounterMeta : implements IOutputMetaData, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE
@@ -664,7 +667,7 @@ public:
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
 };
 
-class EclBoundLoopGraph : public CInterface, implements IHThorBoundLoopGraph
+class EclBoundLoopGraph : implements IHThorBoundLoopGraph, public CInterface
 {
 public:
     EclBoundLoopGraph(IAgentContext & _agent, IEclLoopGraph * _graph, IOutputMetaData * _resultMeta, unsigned _activityId);
@@ -749,9 +752,9 @@ protected:
 };
 
 //NB: I don't think the members of GraphResult need to be protected with a critical section because
-// only one thing can modify a given result, and nothing can read while writing is occuring.
+// only one thing can modify a given result, and nothing can read while writing is occurring.
 // getOwnRow() is an exception, but only called on one thread at a time.
-class UninitializedGraphResult : public CInterface, implements IHThorGraphResult
+class UninitializedGraphResult : implements IHThorGraphResult, public CInterface
 {
 public:
     UninitializedGraphResult(unsigned _id) { id = _id; }
@@ -767,7 +770,7 @@ protected:
     unsigned id;
 };
 
-class GraphResult : public CInterface, implements IHThorGraphResult
+class GraphResult : implements IHThorGraphResult, public CInterface
 {
 public:
     GraphResult(IEngineRowAllocator * _ownedRowsetAllocator) : rowsetAllocator(_ownedRowsetAllocator) { meta = _ownedRowsetAllocator->queryOutputMeta(); }
@@ -786,7 +789,7 @@ protected:
     OwnedHThorRowArray rows;
 };
 
-class GraphResults : public CInterface, implements IHThorGraphResults
+class GraphResults : implements IHThorGraphResults, public CInterface
 {
 public:
     GraphResults(unsigned _maxResults = 0);

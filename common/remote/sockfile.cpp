@@ -409,15 +409,15 @@ static void mergeOnce(OnceKey &key,size32_t sz,const void *data)
 
 //---------------------------------------------------------------------------
 
-class CDafsException: public CInterface, public IDAFS_Exception
+class CDafsException: public IDAFS_Exception, public CInterface
 {
-    StringAttr msg;
     int     errcode;
+    StringAttr msg;
 public:
     IMPLEMENT_IINTERFACE;
 
     CDafsException(int code,const char *_msg) 
-        : msg(_msg), errcode(code)
+        : errcode(code), msg(_msg)
     {
     };
 
@@ -1243,7 +1243,7 @@ unsigned CRemoteBase::lastfailtime;
 
 //---------------------------------------------------------------------------
 
-class CRemoteDirectoryIterator : public CInterface, implements IDirectoryDifferenceIterator
+class CRemoteDirectoryIterator : implements IDirectoryDifferenceIterator, public CInterface
 {
     Owned<IFile>    cur;
     bool            curvalid;
@@ -2069,7 +2069,7 @@ extern bool clientAsyncCopyFileSection(const char *uuid,
 
 //---------------------------------------------------------------------------
 
-class CRemoteFileIO : public CInterface, implements IFileIO
+class CRemoteFileIO : implements IFileIO, public CInterface
 {
 protected:
     Linked<CRemoteFile> parent;
@@ -3047,10 +3047,10 @@ public:
     }
 };
 
-class CRemoteFileServer : public CInterface, implements IRemoteFileServer
+class CRemoteFileServer : implements IRemoteFileServer, public CInterface
 {
     class CThrottler;
-    class CRemoteClientHandler : public CInterface, implements ISocketSelectNotify
+    class CRemoteClientHandler : implements ISocketSelectNotify, public CInterface
     {
     public:
         CRemoteFileServer *parent;

@@ -21,7 +21,7 @@
 #include "permissions.hpp"
 #include "ldaputils.hpp"
 
-class AciProcessor : public CInterface, implements IPermissionProcessor
+class AciProcessor : implements IPermissionProcessor, public CInterface
 {
 protected:
     Owned<IPropertyTree> m_cfg;

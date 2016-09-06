@@ -195,7 +195,7 @@ class CPermission : public CInterface, implements IInterface
 
 public:
     IMPLEMENT_IINTERFACE
-    
+
     CPermission(const char* account_name, ACT_TYPE account_type, int allows, int denies)
     {
         m_account_name.append(account_name);
@@ -212,7 +212,7 @@ public:
     void setDenies(int denies) { m_denies = denies;}
 };
 
-class CPermissionAction : public CInterface, implements IInterface
+class CPermissionAction : public CInterface
 {
 public:
     StringBuffer m_action;
@@ -225,8 +225,6 @@ public:
     ACT_TYPE     m_account_type;
     int          m_allows;
     int          m_denies;
-
-    IMPLEMENT_IINTERFACE
 };
 
 interface ILdapClient : extends IInterface
@@ -234,7 +232,7 @@ interface ILdapClient : extends IInterface
     virtual void init(IPermissionProcessor* pp) = 0;
     virtual LdapServerType getServerType() = 0;
     virtual bool authenticate(ISecUser& user) = 0;
-    virtual bool authorize(SecResourceType rtype, ISecUser&, IArrayOf<ISecResource>& resources) = 0;
+    virtual bool authorize(SecResourceType rtype, ISecUser&, IArrayOf<ISecResource>& resources, const char * resName = nullptr) = 0;
     virtual bool addResources(SecResourceType rtype, ISecUser& user, IArrayOf<ISecResource>& resources, SecPermissionType ptype, const char* basedn) = 0;
     virtual bool addUser(ISecUser& user) = 0;
     virtual void getGroups(const char *user, StringArray& groups) = 0;
@@ -248,7 +246,7 @@ interface ILdapClient : extends IInterface
     virtual IPropertyTreeIterator* getUserIterator(const char* userName) = 0;
     virtual ISecItemIterator* getUsersSorted(const char* userName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
         unsigned *total, __int64 *cachehint) = 0;
-    virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions) = 0;
+    virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions, const char * baseDN = nullptr) = 0;
     virtual IPropertyTreeIterator* getGroupIterator() = 0;
     virtual ISecItemIterator* getGroupsSorted(GroupField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
         unsigned *total, __int64 *cachehint) = 0;
@@ -269,11 +267,11 @@ interface ILdapClient : extends IInterface
         ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned *total, __int64 *cachehint) = 0;
     virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions) = 0;
     virtual bool changePermission(CPermissionAction& action) = 0;
-    virtual void changeUserGroup(const char* action, const char* username, const char* groupname) = 0;
+    virtual void changeUserGroup(const char* action, const char* username, const char* groupname, const char * groupDN=nullptr) = 0;
     virtual bool deleteUser(ISecUser* user) = 0;
     virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc) = 0;
-    virtual void deleteGroup(const char* groupname) = 0;
-    virtual void getGroupMembers(const char* groupname, StringArray & users) = 0;
+    virtual void deleteGroup(const char* groupname, const char * groupsDN=nullptr) = 0;
+    virtual void getGroupMembers(const char* groupname, StringArray & users, const char * groupsDN=nullptr) = 0;
     virtual void deleteResource(SecResourceType rtype, const char* name, const char* basedn) = 0;
     virtual void renameResource(SecResourceType rtype, const char* oldname, const char* newname, const char* basedn) = 0;
     virtual void copyResource(SecResourceType rtype, const char* oldname, const char* newname, const char* basedn) = 0;
@@ -287,6 +285,20 @@ interface ILdapClient : extends IInterface
     virtual bool createUserScope(ISecUser& user) = 0;
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes) = 0;
     virtual int queryDefaultPermission(ISecUser& user) = 0;
+
+    //Data View related interfaces
+    virtual void createView(const char * viewName, const char * viewDescription) = 0;
+    virtual void deleteView(const char * viewName) = 0;
+    virtual void queryAllViews(StringArray & viewNames, StringArray & viewDescriptions, StringArray & viewManagedBy) = 0;
+
+    virtual void addViewColumns(const char * viewName, StringArray & files, StringArray & columns) = 0;
+    virtual void removeViewColumns(const char * viewName, StringArray & files, StringArray & columns) = 0;
+    virtual void queryViewColumns(const char * viewName, StringArray & files, StringArray & columns) = 0;
+
+    virtual void addViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) = 0;
+    virtual void removeViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) = 0;
+    virtual void queryViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) = 0;
+    virtual bool userInView(const char * user, const char* viewName) = 0;
 };
 
 ILdapClient* createLdapClient(IPropertyTree* cfg);

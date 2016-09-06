@@ -1104,7 +1104,7 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
         <xsl:value-of select="$plugin"/>
         <!--
         <xsl:choose>
-            <xsl:when test="$isLinuxInstance">lib<xsl:value-of select="$plugin"/>.so</xsl:when>
+            <xsl:when test="$isLinuxInstance"><xsl:value-of select="$plugin"/></xsl:when>
             <xsl:otherwise>
                 <xsl:value-of select="$plugin"/>.dll</xsl:otherwise>
         </xsl:choose>-->

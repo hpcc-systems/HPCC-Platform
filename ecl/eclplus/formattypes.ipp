@@ -21,7 +21,7 @@
 #include "eclplus.hpp"
 #include "xslprocessor.hpp"
 
-interface CFormatType  : public CInterface, implements IFormatType
+interface CFormatType  : implements IFormatType, public CInterface
 {
 protected: 
     int startRowNumber;

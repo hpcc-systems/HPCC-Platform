@@ -356,7 +356,7 @@ bool SegMonitorList::matched(void *keyBuffer, unsigned &lastMatch) const
 
 ///
 
-class jhtree_decl CKeyLevelManager : public CInterface, implements IKeyManager
+class jhtree_decl CKeyLevelManager : implements IKeyManager, public CInterface
 {
 protected:
     IContextLogger *ctx;
@@ -1948,7 +1948,7 @@ void CKeyCursor::releaseBlobs()
     activeBlobs.kill();
 }
 
-class CLazyKeyIndex : public CInterface, implements IKeyIndex
+class CLazyKeyIndex : implements IKeyIndex, public CInterface
 {
     StringAttr keyfile;
     unsigned crc; 
@@ -2366,8 +2366,6 @@ class CKeyMerger : public CKeyLevelManager
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CKeyMerger(IKeyIndexSet *_keyset, size32_t _eclKeySize, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(NULL, _eclKeySize, _ctx), sortFieldOffset(_sortFieldOffset)
     {
         segs.setMergeBarrier(sortFieldOffset);
@@ -2881,7 +2879,7 @@ extern jhtree_decl IKeyManager *createSingleKeyMerger(IKeyIndex * _onekey, unsig
     return new CKeyMerger(_onekey, _rawSize, _sortFieldOffset, _ctx);
 }
 
-class CKeyIndexSet : public CInterface, implements IKeyIndexSet
+class CKeyIndexSet : implements IKeyIndexSet, public CInterface
 {
     IPointerArrayOf<IKeyIndex> indexes;
     offset_t recordCount;
@@ -2911,7 +2909,7 @@ extern jhtree_decl IKeyManager *createKeyManager(IKeyIndex *key, unsigned _rawSi
     return new CKeyLevelManager(key, _rawSize, _ctx);
 }
 
-class CKeyArray : public CInterface, implements IKeyArray
+class CKeyArray : implements IKeyArray, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

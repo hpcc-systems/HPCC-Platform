@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      160
-#define MIN_ACTIVITY_INTERFACE_VERSION  160             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      161
+#define MIN_ACTIVITY_INTERFACE_VERSION  161             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -105,7 +105,7 @@ interface INaryCompareEq
 
 interface IEngineRowAllocator;
 
-interface IRowBuilder : public IInterface
+interface IRowBuilder
 {
     virtual byte * ensureCapacity(size32_t required, const char * fieldName) = 0;
 protected:
@@ -536,6 +536,12 @@ interface IThorChildGraph : public IInterface
     virtual IEclGraphResults * evaluate(unsigned parentExtractSize, const byte * parentExtract) = 0;
 };
 
+interface ISectionTimer : public IInterface
+{
+    virtual unsigned __int64 getStartCycles() = 0;
+    virtual void noteSectionTime(unsigned __int64 startCycles) = 0;
+};
+
 //NB: New methods must always be added at the end of this interface to retain backward compatibility
 interface IContextLogger;
 interface IDebuggableContext;
@@ -647,6 +653,7 @@ interface ICodeContext : public IResourceContext
     virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
     virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
     virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) = 0;
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
 };
 
 
@@ -1201,6 +1208,7 @@ enum
 {
     TTFnoconstant        = 0x0001,      // default flags is zero
     TTFdistributed       = 0x0002,
+    TTFfiltered          = 0x0004,
 };
 
 struct IHThorIndexWriteArg : public IHThorArg

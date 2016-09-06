@@ -35,6 +35,7 @@
 #include "wuwebview.hpp"
 #include "build-config.h"
 
+#include "loggingagentbase.hpp"
 /*
  * trim xpath at first instance of element
  */
@@ -69,7 +70,7 @@ IPropertyTree * fetchESDLDefinitionFromDaliById(const char *id)
 
     DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali: %s ", id);
 
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
@@ -104,7 +105,7 @@ IPropertyTree * fetchESDLBindingFromDali(const char *process, const char *bindin
     Owned<IRemoteConnection> conn;
     try
     {
-        conn.set(querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT));
+        conn.set(querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL));
         if (!conn)
         {
             DBGLOG("Unable to connect to ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);
@@ -288,7 +289,7 @@ bool loadDefinitions(const char * espServiceName, IEsdlDefinition * esdl, IPrope
 
 bool EsdlServiceImpl::loadLogggingManager()
 {
-    if (!loggingManager)
+    if (!m_oLoggingManager)
     {
         StringBuffer realName;
         realName.append(SharedObjectPrefix).append(LOGGINGMANAGERLIB).append(SharedObjectExtension);
@@ -310,7 +311,7 @@ bool EsdlServiceImpl::loadLogggingManager()
             return false;
         }
 
-        loggingManager.setown((ILoggingManager*) xproc());
+        m_oLoggingManager.setown((ILoggingManager*) xproc());
     }
 
     return true;
@@ -322,6 +323,7 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
 {
     m_espServiceName.set(service);
     m_espProcName.set(process);
+    m_bGenerateLocalTrxId = true;
 
     StringBuffer xpath;
     xpath.appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
@@ -333,13 +335,15 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
         if (m_espServiceType.length() <= 0)
             throw MakeStringException(-1, "Could not determine ESDL service configuration type: esp process '%s' service name '%s'", process, service);
 
-        //Rodrigo: this will depend on how Kevin/Gleb structure the configuration
         IPropertyTree* loggingConfig = srvcfg->queryPropTree("LoggingManager");
         if (loggingConfig)
         {
-            ESPLOG(LogNormal, "ESP Service %s attempting to load configured logging manager.", service);
+            ESPLOG(LogMin, "ESP Service %s attempting to load configured logging manager.", service);
             if (loadLogggingManager())
-                loggingManager->init(loggingConfig, service);
+            {
+                m_oLoggingManager->init(loggingConfig, service);
+                m_bGenerateLocalTrxId = false;
+            }
             else
                 throw MakeStringException(-1, "ESDL Service %s could not load logging manager", service);
         }
@@ -522,6 +526,40 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
     const char *mthName = mthdef.queryName();
     context.addTraceSummaryValue("method", mthName);
 
+    StringBuffer trxid;
+    if (!m_bGenerateLocalTrxId)
+    {
+        if (m_oLoggingManager)
+        {
+            StringBuffer wsaddress;
+            short int port;
+            context.getServAddress(wsaddress, port);
+            VStringBuffer uniqueId("%s:%d-%u", wsaddress.str(), port, (unsigned) (memsize_t) GetCurrentThreadId());
+
+            StringAttrMapping trxidbasics;
+            StringBuffer creationTime;
+            creationTime.setf("%u", context.queryCreationTime());
+
+            trxidbasics.setValue(sTransactionDateTime, creationTime.str());
+            trxidbasics.setValue(sTransactionMethod, mthName);
+            trxidbasics.setValue(sTransactionIdentifier, uniqueId.str());
+
+            StringBuffer trxidstatus;
+            if (!m_oLoggingManager->getTransactionID(&trxidbasics,trxid, trxidstatus))
+                ESPLOG(LogMin,"DESDL: Logging Agent generated Transaction ID failed: %s", trxidstatus.str());
+        }
+        else
+            ESPLOG(LogMin,"DESDL: Transaction ID could not be fetched from logging manager!");
+    }
+
+    if (!trxid.length())                       //either there's no logging agent providing trxid, or it failed to generate an id
+        generateTransactionId(context, trxid); //in that case, the failure is logged and we generate a local trxid
+
+    if (trxid.length())
+        context.setTransactionID(trxid.str());
+    else
+        ESPLOG(LogMin,"DESDL: Transaction ID could not be generated!");
+
     StringBuffer origResp;
     EsdlMethodImplType implType = EsdlMethodImplUnknown;
 
@@ -612,17 +650,17 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         }
     }
 
-    handleResultLogging(context, tgtcfg.get(), req,  origResp.str(), out.str());
+    handleResultLogging(context, tgtctx.get(), req,  origResp.str(), out.str());
     ESPLOG(LogMax,"Customer Response: %s", out.str());
 }
 
 bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawresp, const char * finalresp)
 {
     bool success = true;
-    if (loggingManager)
+    if (m_oLoggingManager)
     {
         StringBuffer logresp;
-        success = loggingManager->updateLog(LOGGINGDBSINGLEINSERT, espcontext, reqcontext, request, rawresp, finalresp, logresp);
+        success = m_oLoggingManager->updateLog(LOGGINGDBSINGLEINSERT, espcontext, reqcontext, request, rawresp, finalresp, logresp);
         ESPLOG(LogMin,"ESDLService: Attempted to log ESP transaction: %s", logresp.str());
     }
 
@@ -2469,6 +2507,7 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
 
     StringBuffer roxiemsg, serviceQName, methodQName;
     IEspContext * context = request->queryContext();
+    context->setTransactionID("ROXIETEST-NOTRXID");
     IEsdlDefService *defsrv = m_esdl->queryService(queryServiceType());
     IEsdlDefMethod *defmth;
     if(defsrv)
@@ -2813,7 +2852,7 @@ void EsdlBindingImpl::CESDLBindingSubscription::notify(SubscriptionId id, const 
 
     StringBuffer bindingName;
     StringBuffer processName;
-    Owned<IRemoteConnection> conn = querySDS().connect(parentElementXPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(parentElementXPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
     {
         //Can't find this path, is this a delete?
@@ -2866,7 +2905,7 @@ void EsdlBindingImpl::CESDLDefinitionSubscription::notify(SubscriptionId id, con
     if(!trimXPathToParentSDSElement("Definition[", xpath, parentElementXPath))
         return;
 
-    Owned<IRemoteConnection> conn = querySDS().connect(parentElementXPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect(parentElementXPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
         return;
 

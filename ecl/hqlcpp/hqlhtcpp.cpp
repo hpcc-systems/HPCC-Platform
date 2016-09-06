@@ -385,7 +385,7 @@ public:
             if (moveTo->isUnconditional() && isUsedUnconditionallyEnough(expr))
                 guard.set(queryBoolExpr(true));
 
-            bool invalid = !guard->isPure();
+            bool invalid = !canDuplicateExpr(guard);
             //version 1: don't guard any child queries.
             if (!matchesBoolean(guard, true))
             {
@@ -6078,7 +6078,7 @@ IPropertyTree * HqlCppTranslator::gatherFieldUsage(const char * variant, const I
     trackedSources.sort(compareTrackedSourceByName);
     ForEachItemIn(i, trackedSources)
     {
-        IPropertyTree * next = trackedSources.item(i).createReport(options.reportFieldUsage, exclude);
+        IPropertyTree * next = trackedSources.item(i).createReport(options.reportFieldUsage || options.recordFieldUsage, exclude);
         if (next)
             sources->addPropTree(next->queryName(), next);
     }
@@ -6088,7 +6088,7 @@ IPropertyTree * HqlCppTranslator::gatherFieldUsage(const char * variant, const I
 
 SourceFieldUsage * HqlCppTranslator::querySourceFieldUsage(IHqlExpression * expr)
 {
-    if (!(options.reportFieldUsage || options.reportFileUsage) || !expr)
+    if (!(options.reportFieldUsage || options.recordFieldUsage || options.reportFileUsage) || !expr)
         return NULL;
 
     if (expr->hasAttribute(_spill_Atom) || expr->hasAttribute(jobTempAtom))
@@ -6141,10 +6141,16 @@ void HqlCppTranslator::writeFieldUsage(const char * targetDir, IPropertyTree * s
 
 void HqlCppTranslator::generateStatistics(const char * targetDir, const char * variant)
 {
-    if ((options.reportFieldUsage || options.reportFileUsage) && trackedSources.ordinality())
+    if (options.reportFieldUsage || options.reportFileUsage)
     {
         Owned<IPropertyTree> sources = gatherFieldUsage(variant, NULL);
         writeFieldUsage(targetDir, sources, NULL);
+    }
+    
+    if (options.recordFieldUsage)
+    {
+        Owned<IPropertyTree> sources = gatherFieldUsage(variant, NULL);
+        wu()->noteFieldUsage(LINK(sources));
     }
 }
 
@@ -16952,13 +16958,16 @@ void HqlCppTranslator::buildDatasetAssignXmlProject(BuildCtx & ctx, IHqlCppDatas
 //---------------------------------------------------------------------------
 //-- no_temptable [DATASET] --
 
-void HqlCppTranslator::doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant)
+void HqlCppTranslator::doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant, bool canFilter)
 {
     StringBuffer flags;
     if (expr->hasAttribute(distributedAtom))
         flags.append("|TTFdistributed");
     if (!isConstant)
         flags.append("|TTFnoconstant");
+    if (canFilter)
+        flags.append("|TTFfiltered");
+
     if (flags.length())
         doBuildUnsignedFunction(ctx, "getFlags", flags.str()+1);
 }
@@ -17074,7 +17083,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
 
     doBuildUnsigned64Function(instance->startctx, "numRows", rowsExpr);
 
-    doBuildTempTableFlags(instance->startctx, expr, values->isConstant());
+    doBuildTempTableFlags(instance->startctx, expr, values->isConstant(), false);
 
     buildInstanceSuffix(instance);
 
@@ -17145,7 +17154,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     buildAssign(funcctx, self, cseExpr);
     buildReturnRecordSize(funcctx, selfCursor);
 
-    doBuildTempTableFlags(instance->startctx, expr, valuesAreConstant);
+    doBuildTempTableFlags(instance->startctx, expr, valuesAreConstant, false);
 
     buildInstanceSuffix(instance);
 
@@ -17198,6 +17207,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     IHqlExpression * self = selfCursor->querySelector();
 
     unsigned maxRows = values->numChildren();
+    bool canFilter = false;
     if (maxRows)
     {
         StringBuffer s;
@@ -17211,6 +17221,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
             casectx.addQuotedCompound(s.clear().append("case ").append(row).append(":"));
 
             IHqlExpression * cur = values->queryChild(row);
+            if (containsSkip(cur))
+                canFilter = true;
             OwnedHqlExpr rowValue = createRow(no_createrow, LINK(cur));
             buildAssign(casectx, self, rowValue);
             buildReturnRecordSize(casectx, selfCursor);
@@ -17221,7 +17233,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     OwnedHqlExpr rowsExpr = getSizetConstant(maxRows);
     doBuildUnsigned64Function(instance->startctx, "numRows", rowsExpr);
 
-    doBuildTempTableFlags(instance->startctx, expr, values->isConstant());
+    doBuildTempTableFlags(instance->startctx, expr, values->isConstant(), canFilter);
 
     buildInstanceSuffix(instance);
 
@@ -17253,7 +17265,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     doBuildUnsigned64Function(instance->startctx, "numRows", count);
 
     // unsigned getFlags()
-    doBuildTempTableFlags(instance->startctx, expr, isConstantTransform(transform));
+    doBuildTempTableFlags(instance->startctx, expr, isConstantTransform(transform), containsSkip(transform));
 
     buildInstanceSuffix(instance);
     return instance->getBoundActivity();
@@ -17838,6 +17850,44 @@ void HqlCppTranslator::doBuildExprRegexFindSet(BuildCtx & ctx, IHqlExpression * 
     IIdAtom * func = isUnicode ? regexUStrMatchSetId : regexMatchSetId;
     OwnedHqlExpr call = bindFunctionCall(func, args);
     buildExprOrAssign(ctx, NULL, call, &bound);
+}
+
+//---------------------------------------------------------------------------
+
+void HqlCppTranslator::buildStartTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, CHqlBoundExpr & boundStart, const char * name)
+{
+    BuildCtx * initCtx = &ctx;
+    BuildCtx * declareCtx = &ctx;
+    getInvariantMemberContext(ctx, &declareCtx, &initCtx, true, false);
+
+    Owned<ITypeInfo> timerType = makePointerType(makeClassType("ISectionTimer"));
+    OwnedHqlExpr timer = declareCtx->getTempDeclare(timerType, NULL);
+    boundTimer.expr.set(timer);
+
+    unsigned activityId = 0;
+    ActivityInstance * activity = queryCurrentActivity(ctx);
+    if (activity)
+        activityId = activity->activityId;
+
+    HqlExprArray registerArgs;
+    registerArgs.append(*getSizetConstant(activityId));
+    registerArgs.append(*createConstant(name));
+    OwnedHqlExpr call = bindFunctionCall(registerTimerId, registerArgs);
+    initCtx->addAssign(timer, call);
+
+    HqlExprArray nowArgs;
+    nowArgs.append(*boundTimer.getTranslatedExpr());
+    OwnedHqlExpr now = bindFunctionCall(getStartCyclesId, nowArgs);
+    buildTempExpr(ctx, now, boundStart);
+}
+
+void HqlCppTranslator::buildStopTimer(BuildCtx & ctx, const CHqlBoundExpr & boundTimer, const CHqlBoundExpr & boundStart)
+{
+    HqlExprArray nowArgs;
+    nowArgs.append(*boundTimer.getTranslatedExpr());
+    nowArgs.append(*boundStart.getTranslatedExpr());
+    OwnedHqlExpr done = bindFunctionCall(noteSectionTimeId, nowArgs);
+    buildStmt(ctx, done);
 }
 
 //---------------------------------------------------------------------------

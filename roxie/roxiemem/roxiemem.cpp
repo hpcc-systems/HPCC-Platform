@@ -25,7 +25,6 @@
 #include "tbb/task.h"
 #include "tbb/task_scheduler_init.h"
 #endif
-#include <atomic>
 #include <utility>
 
 #ifndef _WIN32
@@ -68,8 +67,18 @@ namespace roxiemem {
 #define RELEASE_THRESHOLD_SCALING                       64     // rather high, may reduce if memory manager restructured
 #define DEFAULT_PARALLEL_SYNC_RELEASE_THRESHOLD         (DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY * RELEASE_THRESHOLD_SCALING)
 
-unsigned memTraceLevel = 1;
-memsize_t memTraceSizeLimit = 0;
+static unsigned memTraceLevel = 1;
+static memsize_t memTraceSizeLimit = 0;
+
+void setMemTraceLevel(unsigned value)
+{
+    memTraceLevel = value;
+}
+
+void setMemTraceSizeLimit(memsize_t value)
+{
+    memTraceSizeLimit = 0;
+}
 
 unsigned DATA_ALIGNMENT_SIZE=0x400;
 const static unsigned UNLIMITED_PAGES = (unsigned)-1;
@@ -133,10 +142,11 @@ static bool heapNotifyUnusedEachFree = true;
 static bool heapNotifyUnusedEachBlock = false;
 static unsigned __int64 lastStatsCycles;
 static unsigned __int64 statsCyclesInterval;
+static std::atomic<unsigned> activeRowManagers;
 
 static unsigned heapAllocated;
-static atomic_t dataBufferPages;
-static atomic_t dataBuffersActive;
+static std::atomic_uint dataBufferPages;
+static std::atomic_uint dataBuffersActive;
 
 const unsigned UNSIGNED_BITS = sizeof(unsigned) * 8;
 const unsigned UNSIGNED_ALLBITS = (unsigned) -1;
@@ -464,7 +474,7 @@ static void dumpHeapState()
 
 IPerfMonHook *createRoxieMemStatsPerfMonHook(IPerfMonHook *chain)
 {
-    class memstatsPerfMonHook : public CInterface, implements IPerfMonHook
+    class memstatsPerfMonHook : implements IPerfMonHook, public CInterface
     {
         Linked<IPerfMonHook> chain;
     public:
@@ -550,14 +560,14 @@ static StringBuffer &memmap(StringBuffer &stats)
 
 static void throwHeapExhausted(unsigned allocatorId, unsigned pages)
 {
-    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u", allocatorId, heapTotalPages, pages);
+    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u active(%u) heap(%u/%u)", allocatorId, heapTotalPages, pages, activeRowManagers.load(), heapAllocated, heapTotalPages);
     DBGLOG("%s", msg.str());
     throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
 
 static void throwHeapExhausted(unsigned allocatorId, unsigned newPages, unsigned oldPages)
 {
-    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u, had %u", allocatorId, heapTotalPages, newPages, oldPages);
+    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u, had %u active(%u) heap(%u/%u)", allocatorId, heapTotalPages, newPages, oldPages, activeRowManagers.load(), heapAllocated, heapTotalPages);
     DBGLOG("%s", msg.str());
     throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
@@ -579,7 +589,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
             lastStatsCycles = cyclesNow;
             StringBuffer s;
             memstats(s);
-            s.appendf(", heapLWM %u, heapHWM %u, dataBuffersActive=%d, dataBufferPages=%d", heapLWM, heapHWM, atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
+            s.appendf(", heapLWM %u, heapHWM %u, dataBuffersActive=%d, dataBufferPages=%d", heapLWM, heapHWM, dataBuffersActive.load(std::memory_order_relaxed), dataBufferPages.load(std::memory_order_relaxed));
             DBGLOG("RoxieMemMgr: %s", s.str());
         }
     }
@@ -1250,7 +1260,7 @@ protected:
     const IRowAllocatorCache *allocatorCache;
     CHeap * const heap;
     memsize_t chunkCapacity;
-    atomic_t nextSpace;
+    std::atomic_uint nextSpace; // guaranteed to be set if it is in the maybeFreeList.
     
     inline unsigned getActivityId(unsigned allocatorId) const
     {
@@ -1258,9 +1268,8 @@ protected:
     }
 
 public:
-    Heaplet(CHeap * _heap, const IRowAllocatorCache *_allocatorCache, memsize_t _chunkCapacity) : heap(_heap), chunkCapacity(_chunkCapacity)
+    Heaplet(CHeap * _heap, const IRowAllocatorCache *_allocatorCache, memsize_t _chunkCapacity) : heap(_heap), chunkCapacity(_chunkCapacity), nextSpace(0)
     {
-        atomic_set(&nextSpace, 0);
         assertex(heap);
         next = NULL;
         prev = NULL;
@@ -1289,6 +1298,8 @@ public:
 
     inline void addToSpaceList();
     virtual void verifySpaceList();
+
+    inline bool isWithinHeap(CHeap * search) const { return heap == search; }
 };
 
 
@@ -1307,8 +1318,8 @@ class CChunkedHeap;
 class ChunkedHeaplet : public Heaplet
 {
 protected:
-    atomic_t r_blocks;  // the free chain as a relative pointer
-    atomic_t freeBase;
+    std::atomic_uint r_blocks;  // the free chain as a relative pointer
+    std::atomic_uint freeBase;
     const size32_t chunkSize;
     unsigned sharedAllocatorId;
 
@@ -1322,11 +1333,9 @@ protected:
 
 public:
     ChunkedHeaplet(CHeap * _heap, const IRowAllocatorCache *_allocatorCache, size32_t _chunkSize, size32_t _chunkCapacity)
-        : Heaplet(_heap, _allocatorCache, _chunkCapacity), chunkSize(_chunkSize)
+        : Heaplet(_heap, _allocatorCache, _chunkCapacity), r_blocks(0), freeBase(0), chunkSize(_chunkSize)
     {
         sharedAllocatorId = 0;
-        atomic_set(&freeBase, 0);
-        atomic_set(&r_blocks, 0);
     }
 
     virtual size32_t sizeInPages() { return 1; }
@@ -1338,7 +1347,7 @@ public:
     {
         //This could use a special value of freeBase to indicate it was full, but that would add complication to
         //the allocation code which is more time critical.
-        unsigned curFreeBase = atomic_read(&freeBase);
+        unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
         size32_t bytesFree = dataAreaSize() - curFreeBase;
         return (bytesFree >= chunkSize);
     }
@@ -1346,7 +1355,7 @@ public:
     virtual bool isFull() const
     {
         //Has all the space been allocated at least once, and is the free chain empty.
-        return !hasAnyUnallocatedSpace() && (atomic_read(&r_blocks) & RBLOCKS_OFFSET_MASK) == 0;
+        return !hasAnyUnallocatedSpace() && (r_blocks.load(std::memory_order_relaxed) & RBLOCKS_OFFSET_MASK) == 0;
     }
 
     inline static unsigned dataOffset() { return HEAPLET_DATA_AREA_OFFSET(ChunkedHeaplet); }
@@ -1357,14 +1366,16 @@ public:
     {
         dbgassertex(_ptr != this);
         char *ptr = (char *) _ptr;
-        ptr -= sizeof(atomic_t);
-        atomic_set((atomic_t *)ptr, 1|ROWCOUNT_DESTRUCTOR_FLAG);
+        std::atomic_uint * curCount = (std::atomic_uint *)(ptr - sizeof(std::atomic_uint));
+        //Use memory_order_relaxed since this is called as the end of the constructor() on the creator thread
+        curCount->store(1|ROWCOUNT_DESTRUCTOR_FLAG, std::memory_order_relaxed);
     }
 
     virtual bool _hasDestructor(const void *ptr) const
     {
-        const atomic_t * curCount = reinterpret_cast<const atomic_t *>((const char *) ptr - sizeof(atomic_t));
-        unsigned rowCount = atomic_read(curCount);
+        const std::atomic_uint * curCount = reinterpret_cast<const std::atomic_uint *>((const char *) ptr - sizeof(std::atomic_uint));
+        // can access relaxed since the flag being tested is only set when constructing the row
+        unsigned rowCount = curCount->load(std::memory_order_relaxed);
         return (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
     }
 
@@ -1404,8 +1415,9 @@ public:
         //The function is to aid testing - it allows the cas code to be tested without a surrounding lock
         //Allocate all possible rows and add them to the free space map.
         //This is not worth doing in general because it effectively replaces atomic_sets with atomic_cas
-        unsigned nextFree = atomic_read(&freeBase);
-        unsigned nextBlock = atomic_read(&r_blocks);
+        //relaxed memory order since there will be no multi-threaded access
+        unsigned nextFree = freeBase.load(std::memory_order_relaxed);
+        unsigned nextBlock = r_blocks.load(std::memory_order_relaxed);
         loop
         {
             size32_t bytesFree = dataAreaSize() - nextFree;
@@ -1419,8 +1431,8 @@ public:
             * (unsigned *)ret = nextBlock;
             nextBlock = makeRelative(ret);
         }
-        atomic_set(&freeBase, nextFree);
-        atomic_set(&r_blocks, nextBlock);
+        freeBase.store(nextFree, std::memory_order_relaxed);
+        r_blocks.store(nextBlock, std::memory_order_relaxed);
     }
 
     char * allocateChunk();
@@ -1445,35 +1457,43 @@ protected:
     {
         dbgassertex(_ptr != this);
         char *ptr = (char *) _ptr;
-        ptr -= sizeof(atomic_t);
-        return ROWCOUNT(atomic_read((atomic_t *) ptr)) !=1;
+        std::atomic_uint * count = (std::atomic_uint *)(ptr - sizeof(std::atomic_uint));
+        //memory_order_relaxed may give false positives, but that will not cause issues.
+        return ROWCOUNT(count->load(std::memory_order_relaxed)) !=1;
     }
 
     inline void inlineNoteLinked(const void *_ptr)
     {
         dbgassertex(_ptr != this);
         char *ptr = (char *) _ptr;
-        ptr -= sizeof(atomic_t);
-        atomic_inc((atomic_t *) ptr);
+        std::atomic_uint * count = (std::atomic_uint *)(ptr - sizeof(std::atomic_uint));
+        count->fetch_add(1, std::memory_order_relaxed);
     }
 
     inline void inlineReleasePointer(char * ptr)
     {
         unsigned r_ptr = makeRelative(ptr);
+#ifdef HAS_EFFICIENT_CAS
+        unsigned old_blocks = r_blocks.load(std::memory_order_relaxed);  // can be relaxed because the cas will fail if not up to date.
+#endif
         loop
         {
+#ifndef HAS_EFFICIENT_CAS
+            unsigned old_blocks = r_blocks.load(std::memory_order_relaxed);  // can be relaxed because the cas will fail if not up to date.
+#endif
             //To prevent the ABA problem the top part of r_blocks stores an incrementing tag
             //which is incremented whenever something is added to the free list
-            unsigned old_blocks = atomic_read(&r_blocks);
             * (unsigned *) ptr = (old_blocks & RBLOCKS_OFFSET_MASK);
             unsigned new_tag = ((old_blocks & RBLOCKS_CAS_TAG_MASK) + RBLOCKS_CAS_TAG);
             unsigned new_blocks = new_tag | r_ptr;
-            if (atomic_cas(&r_blocks, new_blocks, old_blocks))
+
+            //memory_order_release ensures updates to next and count etc are available once the cas completes.
+            if (compare_exchange_efficient(r_blocks, old_blocks, new_blocks, std::memory_order_release, std::memory_order_relaxed))
             {
-                //If this is the first block being added to the free chain then add it to the space list
+                //Try and add it to the potentially free page chain if it isn't already present.
                 //It is impossible to make it more restrictive -e.g., only when freeing and full because of
                 //various race conditions.
-                if (atomic_read(&nextSpace) == 0)
+                if (nextSpace.load(std::memory_order_relaxed) == 0)
                     addToSpaceList();
                 break;
             }
@@ -1481,9 +1501,12 @@ protected:
 
         CHeap * savedHeap = heap;
         // after the following dec it is possible that the page could be freed, so cannot access any members of this
-        compiler_memory_barrier();
-        if (atomic_dec_and_read(&count) == 1)
+        // std::memory_order_release ensures that savedHeap will not be evaluated after the fetch_sub.
+        if (count.fetch_sub(1, std::memory_order_release) == 2)
+        {
+            //This thread does not access anything else from the object, so no need for an acquire fence!
             noteEmptyPage(savedHeap);
+        }
     }
 };
 
@@ -1495,7 +1518,7 @@ class FixedSizeHeaplet : public ChunkedHeaplet
     struct ChunkHeader
     {
         unsigned allocatorId;
-        atomic_t count;  //count must be the last item in the header
+        std::atomic_uint count;  //count must be the last item in the header
     };
 public:
     enum { chunkHeaderSize = sizeof(ChunkHeader) };
@@ -1520,18 +1543,32 @@ public:
         ChunkHeader * header = (ChunkHeader *)ptr;
         //If count == 1 then no other thread can be releasing at the same time - so avoid locked operation
         //Subtract 1 here to try and minimize the conditional branches/simplify the fast path
-        unsigned rowCount = atomic_read(&header->count)-1;
+        unsigned rowCount = header->count.load(std::memory_order_relaxed)-1;
 
-        //Check if this is the last release of this row.
+        //NOTEs on memory order:
+        //    The fetch_sub() needs to have memory_order_release to ensure earlier *reads* in this thread happen before
+        //    any side-effects on another thread (which could occur after the row has been deleted).
+        //
+        //    The store (when count==1) cannot be effected by another thread since the other thread will never call the
+        //    destructor, so the store can be relaxed.  (There is no other thread to synchronize with.)
+        //
+        //    An acquire fence would normally be required before the destructor to ensure that data written from another
+        //    thread is correctly interpreted in the destructor.  (This would be true even if the data was updated inside
+        //    a critical section.)
+        //    However if we assert that data that is used in the destructor can only be initialised on the creating thread
+        //    (i.e. rows, row arrays) the the acquire is not required.  If this assumption is broken the destructor must
+        //    contain an acquire barrier.
+
         //It is coded this way to avoid re-evaluating ROWCOUNT() == 0. You could code it using a goto, but it generates worse code.
         if ((ROWCOUNT(rowCount) == 0) ?
                 //If the count is zero then use comma expression to set the count for the record to zero as a
                 //side-effect of this condition.  Could be avoided if leak checking and checkHeap worked differently.
-                (atomic_set(&header->count, rowCount), true) :
+                (header->count.store(rowCount, std::memory_order_relaxed), true) :
                 //otherwise atomically decrement the count, and check if this thread was the last one to release
                 //Note: the assignment to rowCount allows the compiler to reuse a register, improving the code slightly
-                ROWCOUNT(rowCount = atomic_dec_and_read(&header->count)) == 0)
+                ROWCOUNT(rowCount = header->count.fetch_sub(1, std::memory_order_release)) == 1)
         {
+            //See note above detailing the missing acquire barrier
             if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
             {
                 unsigned id = header->allocatorId;
@@ -1550,12 +1587,15 @@ public:
         char *ptr = (char *) _ptr - chunkHeaderSize;
         ChunkHeader * header = (ChunkHeader *)ptr;
 #ifdef _DEBUG
-        unsigned rowCount = atomic_read(&header->count);
+        unsigned rowCount = header->count.load(std::memory_order_relaxed);
         assertex(ROWCOUNT(rowCount) == 1);
 #endif
         //Set to zero so that leak checking doesn't get false positives.  If the leak checking
         //worked differently - e.g, deducing from the free list this could be removed.
-        atomic_set(&header->count, 0);
+
+        //memory order can be relaxed - this must be the only thread with an active pointer to this sub-allocation,
+        //and inlineReleasePointer() will ensure writes are updated before adding to the free list
+        header->count.store(0, std::memory_order_relaxed);
 
         inlineReleasePointer(ptr);
     }
@@ -1572,7 +1612,7 @@ public:
         char * ret = chunk;
         ChunkHeader * header = (ChunkHeader *)ret;
         header->allocatorId = (allocatorId & ACTIVITY_MASK) | ACTIVITY_MAGIC;
-        atomic_set(&header->count, 1);
+        header->count.store(1, std::memory_order_relaxed);
         ret += chunkHeaderSize;
 #ifdef _CLEAR_ALLOCATED_ROW
         memset(ret, 0xcc, chunkCapacity);
@@ -1587,11 +1627,11 @@ public:
         char * oldPtr = (char *)row - chunkHeaderSize;
         ChunkHeader * oldHeader = (ChunkHeader *)oldPtr;
         ChunkHeader * newHeader = (ChunkHeader *)ret;
-        unsigned rowCountValue = atomic_read(&oldHeader->count);
+        unsigned rowCountValue = oldHeader->count.load(std::memory_order_relaxed);
         unsigned destructFlag = (rowCountValue & ROWCOUNT_DESTRUCTOR_FLAG);
         unsigned allocatorId = oldHeader->allocatorId;
         newHeader->allocatorId = allocatorId;
-        atomic_set(&newHeader->count, 1|destructFlag);
+        newHeader->count.store(1|destructFlag, std::memory_order_relaxed); // relaxed since initialisation code
         ret += chunkHeaderSize;
         memcpy(ret, row, chunkCapacity);
 
@@ -1622,12 +1662,13 @@ public:
     {
         //This function may not give correct results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = atomic_read(&freeBase);
+        unsigned limit = freeBase.load(std::memory_order_relaxed);
         while (leaked > 0 && base < limit)
         {
             const char *block = data() + base;
             const char *ptr = block + (chunkSize-chunkCapacity);  // assumes the overhead is all at the start
-            unsigned rowCount = atomic_read((atomic_t *) (ptr - sizeof(atomic_t)));
+            std::atomic_uint * ptrCount = (std::atomic_uint *)(ptr - sizeof(std::atomic_uint));
+            unsigned rowCount = ptrCount->load(std::memory_order_relaxed);
             if (ROWCOUNT(rowCount) != 0)
             {
                 reportLeak(block, logctx);
@@ -1641,12 +1682,12 @@ public:
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = atomic_read(&freeBase);
+        unsigned limit = freeBase.load(std::memory_order_relaxed);
         while (base < limit)
         {
             const char *block = data() + base;
             ChunkHeader * header = (ChunkHeader *)block;
-            unsigned rowCount = atomic_read(&header->count);
+            unsigned rowCount = header->count.load(std::memory_order_relaxed);
             if (ROWCOUNT(rowCount) != 0)
             {
                 //MORE: Potential race: could be freed while the pointer is being checked
@@ -1663,7 +1704,7 @@ public:
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = atomic_read(&freeBase);
+        unsigned limit = freeBase.load(std::memory_order_relaxed);
         memsize_t running = 0;
         unsigned runningCount = 0;
         unsigned lastId = 0;
@@ -1674,7 +1715,7 @@ public:
             unsigned allocatorId = header->allocatorId;
             //Potential race condition - a block could become allocated between these two lines.
             //That may introduce invalid activityIds (from freed memory) in the memory tracing.
-            unsigned rowCount = atomic_read(&header->count);
+            unsigned rowCount = header->count.load(std::memory_order_relaxed);
             if (ROWCOUNT(rowCount) != 0)
             {
                 if (allocatorId != lastId)
@@ -1713,7 +1754,7 @@ private:
 #endif
         if ((header->allocatorId & ~ACTIVITY_MASK) != ACTIVITY_MAGIC)
         {
-            DBGLOG("%s: Invalid pointer %p id(%x) cnt(%x)", reason, ptr, header->allocatorId, atomic_read(&header->count));
+            DBGLOG("%s: Invalid pointer %p id(%x) cnt(%x)", reason, ptr, header->allocatorId, header->count.load());
             PrintStackReport();
             PrintMemoryReport();
             HEAPERROR("Invalid pointer");
@@ -1724,7 +1765,7 @@ private:
     {
         ChunkHeader * header = (ChunkHeader *)block;
         unsigned allocatorId = header->allocatorId;
-        unsigned rowCount = atomic_read(&header->count);
+        unsigned rowCount = header->count.load();
         bool hasChildren = (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
 
         const char * ptr = (const char *)block + chunkHeaderSize;
@@ -1741,7 +1782,7 @@ class PackedFixedSizeHeaplet : public ChunkedHeaplet
     //NOTE: This class should not contain any more data - otherwise the dataOffset() may be calculated incorrectly
     struct ChunkHeader
     {
-        atomic_t count;
+        std::atomic_uint count;
     };
 public:
     enum { chunkHeaderSize = sizeof(ChunkHeader) };
@@ -1765,11 +1806,15 @@ public:
 
         //If count == 1 then no other thread can be releasing at the same time - so avoid locked operation
         //Subtract 1 here to try and minimize the conditional branches
-        unsigned rowCount = atomic_read(&header->count)-1;
+        unsigned rowCount = header->count.load(std::memory_order_relaxed)-1;
+
+        //NORE: See comment on FixedSizeHeaplet::noteReleased() regarding the memory order operands
+
         //No need to reassign to rowCount if dec and read is required - since only top bit is used, and that must be the same
         //No need to ensure header->count is 0 because the free list overlaps the count so it is never checked.
-        if (ROWCOUNT(rowCount) == 0 || ROWCOUNT(atomic_dec_and_read(&header->count)) == 0)
+        if (ROWCOUNT(rowCount) == 0 || ROWCOUNT(header->count.fetch_sub(1, std::memory_order_release)) == 1)
         {
+            //No need for a fence - there is no problem if reads from below are processed before the condition since read only.
             if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
                 allocatorCache->onDestroy(sharedAllocatorId & MAX_ACTIVITY_ID, ptr + chunkHeaderSize);
 
@@ -1785,7 +1830,7 @@ public:
         char *ptr = (char *) _ptr - chunkHeaderSize;
 #ifdef _DEBUG
         ChunkHeader * header = (ChunkHeader *)ptr;
-        unsigned rowCount = atomic_read(&header->count);
+        unsigned rowCount = header->count.load(std::memory_order_relaxed);
         assertex(ROWCOUNT(rowCount) == 1);
 #endif
         //NOTE: The free list overlaps the count, so there is no point in updating the count.
@@ -1802,7 +1847,7 @@ public:
     {
         char * ret = chunk;
         ChunkHeader * header = (ChunkHeader *)ret;
-        atomic_set(&header->count, 1);
+        header->count.store(1, std::memory_order_relaxed);
         ret += chunkHeaderSize;
 #ifdef _CLEAR_ALLOCATED_ROW
         memset(ret, 0xcc, chunkCapacity);
@@ -1818,9 +1863,9 @@ public:
         char * oldPtr = (char *)row - chunkHeaderSize;
         ChunkHeader * oldHeader = (ChunkHeader *)oldPtr;
         ChunkHeader * newHeader = (ChunkHeader *)ret;
-        unsigned rowCountValue = atomic_read(&oldHeader->count);
+        unsigned rowCountValue = oldHeader->count.load(std::memory_order_relaxed);
         unsigned destructFlag = (rowCountValue & ROWCOUNT_DESTRUCTOR_FLAG);
-        atomic_set(&newHeader->count, 1|destructFlag);
+        newHeader->count.store(1|destructFlag, std::memory_order_relaxed); // relaxed since initialising
         ret += chunkHeaderSize;
         memcpy(ret, row, chunkCapacity);
 
@@ -1857,12 +1902,12 @@ public:
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = atomic_read(&freeBase);
+        unsigned limit = freeBase.load(std::memory_order_relaxed);
         while (base < limit)
         {
             const char *block = data() + base;
             ChunkHeader * header = (ChunkHeader *)block;
-            unsigned rowCount = atomic_read(&header->count);
+            unsigned rowCount = header->count.load(std::memory_order_relaxed);
             if (ROWCOUNT(rowCount) != 0)
             {
                 //MORE: Potential race: could be freed while the pointer is being checked
@@ -1892,7 +1937,7 @@ class HugeHeaplet : public Heaplet
 {
 protected:
     unsigned allocatorId;
-    atomic_t rowCount;  // A separate rowcount is required, otherwise the page could be freed before the destructor is called
+    std::atomic_uint rowCount;  // A separate rowcount is required, otherwise the page could be freed before the destructor is called
 
     inline unsigned _sizeInPages() const
     {
@@ -1923,7 +1968,7 @@ public:
 
     bool _isShared(const void *ptr) const
     {
-        return atomic_read(&rowCount) > 1;
+        return rowCount.load(std::memory_order_relaxed) > 1;
     }
 
     virtual unsigned sizeInPages() 
@@ -1953,19 +1998,22 @@ public:
 
     virtual void noteReleased(const void *ptr)
     {
+        //NORE: See comment on FixedSizeHeaplet::noteReleased() regarding the memory order operands
+
         //If rowCount == 1 then this must be the last reference - avoid a locked operation.
         //rowCount is not used once the heaplet is known to be freed, so no need to ensure rowCount=0
-        if (atomic_read(&rowCount) == 1 || atomic_dec_and_test(&rowCount))
+        if (rowCount.load(std::memory_order_relaxed) == 1 || rowCount.fetch_sub(1, std::memory_order_release) == 1)
         {
+            //No need for a memory barrier - any reads moved earlier will be valid
             if (allocatorId & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
                 allocatorCache->onDestroy(allocatorId & MAX_ACTIVITY_ID, (void *)ptr);
 
             CHeap * savedHeap = heap;
             addToSpaceList();
             // after the following dec(count) it is possible that the page could be freed, so cannot access any members of this
-            compiler_memory_barrier();
-            unsigned cnt = atomic_dec_and_read(&count);
-            assertex(cnt == 1);
+            // the memory order release ensures savedHeap is evaluated before the decrement
+            unsigned cnt = count.fetch_sub(1, std::memory_order_release);
+            assertex(cnt == 2);
             noteEmptyPage(savedHeap);
         }
     }
@@ -1988,13 +2036,13 @@ public:
 
     virtual void noteLinked(const void *ptr)
     {
-        atomic_inc(&rowCount);
+        rowCount.fetch_add(1, std::memory_order_relaxed);
     }
 
     void *allocateHuge(memsize_t size)
     {
-        atomic_inc(&count);
-        atomic_set(&rowCount, 1);
+        count.fetch_add(1, std::memory_order_relaxed); // setting to 2 would be more efficient!
+        rowCount.store(1, std::memory_order_relaxed);
         dbgassertex(size <= chunkCapacity);
 #ifdef _CLEAR_ALLOCATED_HUGE_ROW
         memset(data(), 0xcc, chunkCapacity);
@@ -2031,7 +2079,7 @@ public:
 
     virtual bool isFull() const
     {
-        return (atomic_read(&count) > 1);
+        return (count.load(std::memory_order_relaxed) > 1);
     }
 };
 
@@ -2076,7 +2124,7 @@ public:
 
 typedef MapBetween<unsigned, unsigned, ActivityEntry, ActivityEntry> MapActivityToActivityEntry;
 
-class CActivityMemoryUsageMap : public CInterface, implements IActivityMemoryUsageMap
+class CActivityMemoryUsageMap : implements IActivityMemoryUsageMap, public CInterface
 {
     MapActivityToActivityEntry map;
     CIArrayOf<HeapEntry> heaps;
@@ -2338,8 +2386,6 @@ public:
     CHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, unsigned _flags)
         : flags(_flags), rowManager(_rowManager), allocatorCache(_allocatorCache), logctx(_logctx)
     {
-        atomic_set(&possibleEmptyPages, 0);
-        atomic_set(&headMaybeSpace, BLOCKLIST_NULL);
     }
 
     ~CHeap()
@@ -2347,8 +2393,8 @@ public:
         if (memTraceLevel >= 3)
         {
             //ensure verifySpaceListConsistency isn't triggered by leaked allocations that are never freed.
-            if (activeHeaplet && atomic_read(&activeHeaplet->nextSpace) == 0)
-                atomic_set(&activeHeaplet->nextSpace, BLOCKLIST_NULL);
+            if (activeHeaplet && activeHeaplet->nextSpace.load(std::memory_order_relaxed) == 0)
+                activeHeaplet->nextSpace.store(BLOCKLIST_NULL, std::memory_order_relaxed);
 
             verifySpaceListConsistency();
         }
@@ -2375,20 +2421,21 @@ public:
     void addToSpaceList(Heaplet * heaplet)
     {
         //Careful: Two threads might be calling this at exactly the same time: ensure only one goes any further
-        if (!atomic_cas(&heaplet->nextSpace, BLOCKLIST_NULL, 0))
+        unsigned expected = 0;
+        if (!heaplet->nextSpace.compare_exchange_strong(expected, BLOCKLIST_NULL, std::memory_order_relaxed))
             return;
 
         unsigned block = heapletToBlock(heaplet);
+        unsigned head = headMaybeSpace.load(std::memory_order_relaxed); // can be relaxed since not accessing anything from another thread
         loop
         {
-            unsigned head = atomic_read(&headMaybeSpace);
-
             //Update the next pointer.  BLOCKLIST_ABA_INC is ORed with the value to ensure it is non-zero.
-            atomic_set(&heaplet->nextSpace, head | BLOCKLIST_ABA_INC);
+            //Relaxed - no one else can access, and following release will ensure it is available.
+            heaplet->nextSpace.store(head | BLOCKLIST_ABA_INC, std::memory_order_relaxed);
 
             //Ensure any items added onto the list have a new aba tag
             unsigned newHead = block + (head & BLOCKLIST_ABA_MASK) + BLOCKLIST_ABA_INC;
-            if (atomic_cas(&headMaybeSpace, newHead, head))
+            if (headMaybeSpace.compare_exchange_weak(head, newHead, std::memory_order_release)) // release to ensure next is initialised once added to the list
                 break;
         }
     }
@@ -2397,21 +2444,23 @@ public:
     {
         //This must only be called within a critical section since some functions assume only one active thread is
         //allowed to remove elements from the list
+        unsigned head = headMaybeSpace.load(std::memory_order_acquire); // acquire so that heaplet->nextSpace is available
         loop
         {
-            unsigned head = atomic_read(&headMaybeSpace);
             if (isNullBlock(head))
                 return NULL;
 
             Heaplet * heaplet = blockToHeaplet(head);
+
             //Always valid to access a heaplet on a list, because we must remove from all lists before disposing.
-            unsigned next = atomic_read(&heaplet->nextSpace);
+            unsigned next = heaplet->nextSpace.load(std::memory_order_relaxed);
 
             //No need to update the aba mask on removal since removal cannot create a false positives.
-            if (atomic_cas(&headMaybeSpace, next, head))
+            if (headMaybeSpace.compare_exchange_weak(head, next, std::memory_order_acquire))
             {
                 //Indicate that this item is no longer on the list.
-                atomic_set(&heaplet->nextSpace, 0);
+                heaplet->nextSpace.store(0, std::memory_order_relaxed);
+
                 //NOTE: If another thread tries to add it before this set succeeds that doesn't cause a problem since on return this heaplet will be processed
                 return heaplet;
             }
@@ -2425,15 +2474,17 @@ public:
         //being removed cannot be being added.
         //And nothing else can be being removed - since we are protected by the critical section
 
+        //Load the head of the free list with acquire semantics to ensure value of nextSpace will be synchronized
+        unsigned head = headMaybeSpace.load(std::memory_order_acquire);
+
         //NextSpace can't change while this function is executing
-        unsigned nextSpace = atomic_read(&toRemove->nextSpace);
+        unsigned nextSpace = toRemove->nextSpace.load(std::memory_order_relaxed);
         //If not on the list then return immediately
         if (nextSpace == 0)
             return;
 
         //Special case head because that can change while this is being executed...
         unsigned searchBlock = heapletToBlock(toRemove);
-        unsigned head = atomic_read(&headMaybeSpace);
         if (isNullBlock(head))
         {
             //The block wasn't found on the space list even though it should have been
@@ -2444,21 +2495,20 @@ public:
         if ((head & BLOCKLIST_MASK) == searchBlock)
         {
             //Currently head of the list, try and remove it
-            if (atomic_cas(&headMaybeSpace, nextSpace, head))
+            if (headMaybeSpace.compare_exchange_weak(head, nextSpace, std::memory_order_acquire)) // acquire ensures prevHeplet->nextSpace is up to date
             {
-                atomic_set(&toRemove->nextSpace, 0);
+                toRemove->nextSpace.store(0, std::memory_order_relaxed); // ensure the cas is seen by other threads before this write.
                 return;
             }
 
-            //head changed - reread head and fall through since it must now be a child of that new head
-            head = atomic_read(&headMaybeSpace);
+            //head changed - head already updated - fall through since it must now be a child of that new head
         }
 
         //Not at the head of the list, and head is not NULL
         Heaplet * prevHeaplet = blockToHeaplet(head);
         loop
         {
-            unsigned next = atomic_read(&prevHeaplet->nextSpace);
+            unsigned next = prevHeaplet->nextSpace.load(std::memory_order_relaxed);
             if (isNullBlock(next))
             {
                 //The block wasn't found on the space list even though it should have been
@@ -2470,9 +2520,9 @@ public:
             if (heaplet == toRemove)
             {
                 //Remove the item from the list, and indicate it is no longer on the list
-                //Can use atomic_set() because no other thread can be removing (and therefore modifying nextSpace)
-                atomic_set(&prevHeaplet->nextSpace, nextSpace);
-                atomic_set(&toRemove->nextSpace, 0);
+                prevHeaplet->nextSpace.store(nextSpace, std::memory_order_relaxed);
+                //Use release to ensure that the block is removed from the list before setting next to 0
+                toRemove->nextSpace.store(0, std::memory_order_release);
                 return;
             }
             prevHeaplet = heaplet;
@@ -2481,7 +2531,7 @@ public:
 
     bool mayHaveEmptySpace() const
     {
-        unsigned head = atomic_read(&headMaybeSpace);
+        unsigned head = headMaybeSpace.load(std::memory_order_relaxed);
         return !isNullBlock(head);
     }
 
@@ -2574,13 +2624,13 @@ public:
         //If releaseEmptyPages() is called between the last release on a page (setting count to 1), and this flag
         //getting set, it won't release the page *this time*.  But that is the same as the release happening
         //slightly later.
-        if (atomic_read(&possibleEmptyPages) == 0)
+        if (!possibleEmptyPages.load(std::memory_order_relaxed))
             return 0;
 
         unsigned total = 0;
         NonReentrantSpinBlock c1(heapletLock);
         //Check again in case other thread has also called this function and no other pages have been released.
-        if (atomic_read(&possibleEmptyPages) == 0)
+        if (!possibleEmptyPages.load(std::memory_order_acquire))
             return 0;
 
         if (flags & RHForphaned)
@@ -2588,7 +2638,7 @@ public:
 
         //You will get a false positive if possibleEmptyPages is set while walking the active page list, but that
         //only mean the list is walked more than it needs to be.
-        atomic_set(&possibleEmptyPages, 0);
+        possibleEmptyPages.store(false, std::memory_order_release);
 
         //Any blocks that could be freed must either be the active block and/or on the maybe space list.
         Heaplet * headHeaplet;
@@ -2596,7 +2646,7 @@ public:
         //First free any empty blocks at the head of the maybe space list
         loop
         {
-            unsigned head = atomic_read(&headMaybeSpace);
+            unsigned head = headMaybeSpace.load(std::memory_order_acquire);
             if (isNullBlock(head))
             {
                 headHeaplet = NULL;
@@ -2616,12 +2666,12 @@ public:
             }
 
             //Always valid to access a heaplet on a list, because we must remove from all lists before disposing.
-            unsigned next = atomic_read(&headHeaplet->nextSpace);
+            unsigned next = headHeaplet->nextSpace.load(std::memory_order_relaxed);
 
             //No need to update the aba mask on removal since removal cannot create a false positives.
-            if (atomic_cas(&headMaybeSpace, next, head))
+            if (headMaybeSpace.compare_exchange_weak(head, next, std::memory_order_acquire))
             {
-                atomic_set(&headHeaplet->nextSpace, 0);
+                headHeaplet->nextSpace.store(0, std::memory_order_relaxed);
                 total += releasePage(headHeaplet);
             }
         }
@@ -2632,7 +2682,7 @@ public:
             Heaplet * prevHeaplet = headHeaplet;
             loop
             {
-                unsigned curSpace = atomic_read(&prevHeaplet->nextSpace);
+                unsigned curSpace = prevHeaplet->nextSpace.load(std::memory_order_relaxed);
                 if (isNullBlock(curSpace))
                     break;
 
@@ -2640,9 +2690,9 @@ public:
                 if (heaplet->queryCount() == 1)
                 {
                     //Remove it directly rather than walking the list to remove it.
-                    unsigned nextSpace = atomic_read(&heaplet->nextSpace);
-                    atomic_set(&prevHeaplet->nextSpace, nextSpace);
-                    atomic_set(&heaplet->nextSpace, 0);
+                    unsigned nextSpace = heaplet->nextSpace.load(std::memory_order_relaxed);
+                    prevHeaplet->nextSpace.store(nextSpace, std::memory_order_relaxed);
+                    heaplet->nextSpace.store(0, std::memory_order_release); // ensure nextSpace is updated after it is removed from the list
                     total += releasePage(heaplet);
                 }
                 else
@@ -2661,7 +2711,8 @@ public:
         else if (preserved)
         {
             //Add this page back onto the potential-space list
-            atomic_set(&possibleEmptyPages, 1);
+            possibleEmptyPages.store(true, std::memory_order_release);
+            //No barrier - another thread will only read from the space list if possibleEmptyPages is true
             addToSpaceList(preserved);
         }
 
@@ -2700,7 +2751,7 @@ public:
         return false;
     }
 
-    void noteEmptyPage() { atomic_set(&possibleEmptyPages, 1); }
+    void noteEmptyPage() { possibleEmptyPages.store(true, std::memory_order_release); }
 
 protected:
     virtual void reportHeapUsage(IActivityMemoryUsageMap * usageMap, unsigned numPages, memsize_t numAllocs) const = 0;
@@ -2757,8 +2808,8 @@ protected:
     const IRowAllocatorCache *allocatorCache;
     const IContextLogger & logctx;
     mutable NonReentrantSpinLock heapletLock;
-    atomic_t headMaybeSpace;  // The head of the list of heaplets which potentially have some space.
-    atomic_t possibleEmptyPages;  // Are there any pages with 0 records.  Primarily here to avoid walking long page chains.
+    std::atomic_uint headMaybeSpace{BLOCKLIST_NULL};  // The head of the list of heaplets which potentially have some space.  When adding must use mo_release, when removing must use mo_acquire
+    std::atomic_uint possibleEmptyPages{false};  // Are there any pages with 0 records.  Primarily here to avoid walking long page chains.
 };
 
 
@@ -2917,14 +2968,14 @@ void noteEmptyPage(CHeap * const heap)
 
 void Heaplet::addToSpaceList()
 {
-    if (atomic_read(&nextSpace) != 0)
+    if (nextSpace.load(std::memory_order_relaxed) != 0)
         return;
     heap->addToSpaceList(this);
 }
 
 void Heaplet::verifySpaceList()
 {
-    if (atomic_read(&nextSpace) == 0)
+    if (nextSpace.load(std::memory_order_relaxed) == 0)
     {
         ERRLOG("%p@%" I64F "u: Verify failed: %p %u", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull());
     }
@@ -2932,9 +2983,9 @@ void Heaplet::verifySpaceList()
 
 void ChunkedHeaplet::verifySpaceList()
 {
-    if (atomic_read(&nextSpace) == 0)
+    if (nextSpace.load(std::memory_order_relaxed) == 0)
     {
-        ERRLOG("%p@%" I64F "u: Verify failed: %p %u %x %x", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull(), atomic_read(&freeBase), atomic_read(&r_blocks));
+        ERRLOG("%p@%" I64F "u: Verify failed: %p %u %x %x", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull(), freeBase.load(), r_blocks.load());
     }
 }
 
@@ -2944,15 +2995,21 @@ char * ChunkedHeaplet::allocateChunk()
     //The spin lock for the heap this chunk belongs to must be held when this function is called
     char *ret;
     const size32_t size = chunkSize;
+#ifdef HAS_EFFICIENT_CAS
+    unsigned old_blocks = r_blocks.load(std::memory_order_acquire); // acquire ensures that *(unsigned *)ret is up to date
+#endif
     loop
     {
-        unsigned old_blocks = atomic_read(&r_blocks);
+#ifndef HAS_EFFICIENT_CAS
+        unsigned old_blocks = r_blocks.load(std::memory_order_acquire); // acquire ensures that *(unsigned *)ret is up to date
+#endif
+
         unsigned r_ret = (old_blocks & RBLOCKS_OFFSET_MASK);
         if (r_ret)
         {
             ret = makeAbsolute(r_ret);
             //may have been allocated by another thread, but still legal to dereference
-            //the cas will fail if the contents are invalid.
+            //the cas will fail if the contents are invalid.  May be flagged as a benign race.
             unsigned next = *(unsigned *)ret;
 
             //There is a potential ABA problem if other thread(s) allocate two or more items, and free the first
@@ -2960,25 +3017,27 @@ char * ChunkedHeaplet::allocateChunk()
             //To avoid that a tag is stored in the top bits of r_blocks which is modified whenever an item is added
             //onto the free list.  The offsets in the freelist do not need tags.
             unsigned new_blocks = (old_blocks & RBLOCKS_CAS_TAG_MASK) | next;
-            if (atomic_cas(&r_blocks, new_blocks, old_blocks))
+            if (compare_exchange_efficient(r_blocks, old_blocks, new_blocks, std::memory_order_acquire, std::memory_order_acquire))
                 break;
+
+            //NOTE: Currently I think a lock is always held before allocating from a chunk, so I'm not sure there is an ABA problem!
         }
         else
         {
-            unsigned curFreeBase = atomic_read(&freeBase);
+            unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
             //There is no ABA issue on freeBase because it is never decremented (and no next chain with it)
             size32_t bytesFree = dataAreaSize() - curFreeBase;
             if (bytesFree < size)
                 return NULL;
 
             //This is the only place that modifies freeBase, so it can be unconditional since caller must have a lock.
-            atomic_set(&freeBase, curFreeBase + size);
+            freeBase.store(curFreeBase + size, std::memory_order_relaxed);
             ret = data() + curFreeBase;
             break;
         }
     }
 
-    atomic_inc(&count);
+    count.fetch_add(1, std::memory_order_relaxed);
     return ret;
 }
 
@@ -2994,7 +3053,7 @@ const void * ChunkedHeaplet::_compactRow(const void * ptr, HeapCompactState & st
 //================================================================================
 
 //Allow private virtual functions to be added to the abstract row manager:
-class CRowManager : public CInterface, implements IRowManager
+class CRowManager : implements IRowManager, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -3159,6 +3218,19 @@ class BufferedRowCallbackManager
             return numSuccess;
         }
 
+        void report(const IContextLogger &logctx) const
+        {
+            StringBuffer msg;
+            msg.appendf(" ac(%u) cost(%u):", activityId, cost);
+            ForEachItemIn(i, callbacks)
+            {
+                if (i == nextCallback)
+                    msg.append(" {").append(callbacks.item(i).first).append("}");
+                else
+                    msg.append(" ").append(callbacks.item(i).first);
+            }
+            logctx.CTXLOG("%s", msg.str());
+        }
         inline unsigned getSpillCost() const { return cost; }
         inline unsigned getActivityId() const { return activityId; }
 
@@ -3171,10 +3243,8 @@ class BufferedRowCallbackManager
 
 
 public:
-    BufferedRowCallbackManager(CRowManager * _owner) : owner(_owner)
+    BufferedRowCallbackManager(CRowManager * _owner) : owner(_owner), releasingBuffers(false), releaseSeq(0)
     {
-        atomic_set(&releasingBuffers, 0);
-        atomic_set(&releaseSeq, 0);
         abortBufferThread = false;
         minCallbackThreshold = 1;
         releaseWhenModifyCallback = false;
@@ -3188,7 +3258,7 @@ public:
 
     //If this sequence number has changed then it is likely that some rows have been freed up, so worth
     //trying to allocate again.
-    inline unsigned getReleaseSeq() const { return atomic_read(&releaseSeq); }
+    inline unsigned getReleaseSeq() const { return releaseSeq.load(std::memory_order_acquire); }
 
     void addRowBuffer(unsigned slaveId, IBufferedRowCallback * callback)
     {
@@ -3279,6 +3349,14 @@ public:
         return releaseBuffersThread->releaseBuffers(slaveId, maxSpillCost, critical);
     }
 
+    void reportActive(const IContextLogger &logctx) const
+    {
+        logctx.CTXLOG("--Active callbacks--");
+        CriticalBlock block(callbackCrit);
+        ForEachItemIn(i, rowBufferCallbacks)
+            rowBufferCallbacks.item(i).report(logctx);
+    }
+
     void runReleaseBufferThread()
     {
         loop
@@ -3287,13 +3365,14 @@ public:
             if (abortBufferThread)
                 break;
             releaseBuffersNow(0, backgroundReleaseCost, false, false, 0);
-            atomic_set(&releasingBuffers, 0);
+            releasingBuffers.store(false);
         }
     }
 
     void releaseBuffersInBackground()
     {
-        if (atomic_cas(&releasingBuffers, 1, 0))
+        bool expected = false;
+        if (releasingBuffers.compare_exchange_strong(expected, true))
         {
             assertex(backgroundReleaseBuffersThread);
             releaseBuffersSem.signal();
@@ -3392,31 +3471,31 @@ protected:
         if (doReleaseBuffers(slaveId, maxSpillCost, false, minSuccess) || (critical && doReleaseBuffers(slaveId, maxSpillCost, true, minSuccess)))
         {
             //Increment first so that any called knows some rows may have been freed
-            atomic_inc(&releaseSeq);
+            releaseSeq.fetch_add(1, std::memory_order_release);
             owner->releaseEmptyPages(slaveId, critical);
             //incremented again because some rows may now have been freed.  A difference may give a
             //false positive, but better than a false negative.
-            atomic_inc(&releaseSeq);
+            releaseSeq.fetch_add(1, std::memory_order_release); // release ensure that other threads see this updated after the pages are freed.
             return true;
         }
         else if (owner->releaseEmptyPages(slaveId, critical))
         {
-            atomic_inc(&releaseSeq);
+            releaseSeq.fetch_add(1, std::memory_order_release);
             return true;
         }
         return false;
     }
 
 protected:
-    CriticalSection callbackCrit;
+    mutable CriticalSection callbackCrit;
     Semaphore releaseBuffersSem;
     CIArrayOf<CallbackItem> rowBufferCallbacks;
     PointerArrayOf<IBufferedRowCallback> activeCallbacks;
     Owned<BackgroundReleaseBufferThread> backgroundReleaseBuffersThread;
     Owned<ReleaseBufferThread> releaseBuffersThread;
     CRowManager * owner;
-    atomic_t releasingBuffers;  // boolean if pre-emptive releasing thread is active
-    atomic_t releaseSeq;
+    std::atomic_bool releasingBuffers;  // if pre-emptive releasing thread is active.
+    std::atomic_uint releaseSeq;
     unsigned minCallbackThreshold;
     unsigned backgroundReleaseCost;
     bool releaseWhenModifyCallback;
@@ -3480,7 +3559,6 @@ void initAllocSizeMappings(const unsigned * sizes)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static std::atomic<unsigned> activeRowManagers;
 class CChunkingRowManager : public CRowManager
 {
     friend class CRoxieFixedRowHeap;
@@ -3497,12 +3575,11 @@ private:
     CHugeHeap hugeHeap;
     ITimeLimiter *timeLimit;
     DataBuffer *activeBuffs;
-    const IContextLogger &logctx;
     unsigned peakPages;
     unsigned dataBuffs;
     unsigned dataBuffPages;
-    atomic_t possibleGoers;
-    atomic_t totalHeapPages;
+    std::atomic_uint possibleGoers = {0};
+    std::atomic_uint totalHeapPages = {0};
     Owned<IActivityMemoryUsageMap> peakUsageMap;
     CIArrayOf<CHeap> fixedHeaps;
     CICopyArrayOf<CRoxieFixedRowHeapBase> fixedRowHeaps;  // These are observed, NOT linked
@@ -3516,6 +3593,7 @@ private:
     bool minimizeFootprintCritical;
 
 protected:
+    const IContextLogger &logctx;
     unsigned maxPageLimit;
     unsigned spillPageLimit;
 
@@ -3547,8 +3625,6 @@ public:
         timeLimit = _tl;
         peakPages = 0;
         dataBuffs = 0;
-        atomic_set(&possibleGoers, 0);
-        atomic_set(&totalHeapPages, 0);
         activeBuffs = NULL;
         dataBuffPages = 0;
         ignoreLeaks = _ignoreLeaks;
@@ -3581,7 +3657,7 @@ public:
         activeRowManagers--;
         if (memTraceLevel >= 2)
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p num=%u",
-                    maxPageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this, activeRowManagers.load());
+                    maxPageLimit, peakPages, dataBuffs, dataBuffPages, possibleGoers.load(), this, activeRowManagers.load());
 
         if (!ignoreLeaks)
             reportLeaks(2);
@@ -3603,7 +3679,7 @@ public:
                         dfinger->queryCount()-1, dfinger, this);
             dfinger->next = NULL;
             dfinger->mgr = NULL; // Avoid calling back to noteDataBufferReleased, which would be unhelpful
-            atomic_set(&dfinger->count, 0);
+            dfinger->count.store(0, std::memory_order_relaxed);
             dfinger->released();
             dfinger = next;
         }
@@ -3662,7 +3738,7 @@ public:
     virtual unsigned numPagesAfterCleanup(bool forceFreeAll)
     {
         releaseEmptyPages(0, forceFreeAll);
-        return dataBuffPages + atomic_read(&totalHeapPages);
+        return dataBuffPages + totalHeapPages.load(std::memory_order_relaxed);
     }
 
     void removeUnusedHeaps()
@@ -3706,7 +3782,7 @@ public:
             removeUnusedHeaps();
 
         if (total)
-            atomic_add(&totalHeapPages, -(int)total);
+            totalHeapPages.fetch_sub(total, std::memory_order_release);
         return (total != 0);
     }
 
@@ -3957,7 +4033,7 @@ public:
     {
         if (memTraceLevel >= 4)
             logctx.CTXLOG("RoxieMemMgr: attachDataBuff() attaching DataBuff to rowMgr - addr=%p dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p", 
-                    dataBuff, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this);
+                    dataBuff, dataBuffs, dataBuffPages, possibleGoers.load(), this);
 
         dataBuff->Link();
         DataBuffer *last = NULL;
@@ -3965,7 +4041,7 @@ public:
         {
             CriticalBlock b(activeBufferCS);
             DataBuffer *finger = activeBuffs;
-            while (finger && atomic_read(&possibleGoers))
+            while (finger && possibleGoers.load(std::memory_order_relaxed))
             {
                 // MORE - if we get a load of data in and none out this can start to bog down...
                 DataBuffer *next = finger->next;
@@ -3977,7 +4053,7 @@ public:
                     finger->next = NULL;
                     finger->Release();
                     dataBuffs--;
-                    atomic_dec(&possibleGoers);
+                    possibleGoers.fetch_sub(1, std::memory_order_relaxed); // It doesn't matter when other threads see this update
                     if (last)
                         last->next = next;
                     else
@@ -4006,10 +4082,10 @@ public:
     
     virtual void noteDataBuffReleased(DataBuffer *dataBuff)
     {
-        atomic_inc(&possibleGoers);
+        possibleGoers.fetch_add(1, std::memory_order_release);
         if (memTraceLevel >= 4)
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::noteDataBuffReleased dataBuffs=%u dataBuffPages=%u possibleGoers=%u dataBuff=%p rowMgr=%p", 
-                    dataBuffs, dataBuffPages, atomic_read(&possibleGoers), dataBuff, this);
+                    dataBuffs, dataBuffPages, possibleGoers.load(), dataBuff, this);
     }
 
     virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags, unsigned maxSpillCost)
@@ -4046,7 +4122,7 @@ public:
             unsigned lastReleaseSeq = getReleaseSeq();
             //We need to ensure that the number of allocated pages is updated atomically so multiple threads can't all
             //succeed and have the total take them over the limit.
-            unsigned numHeapPages = atomic_read(&totalHeapPages);
+            unsigned numHeapPages = totalHeapPages.load(std::memory_order_acquire); //I suspect relaxed would be sufficient, but not *that* time critical.
             unsigned pageCount = dataBuffPages + numHeapPages;
             totalPages = pageCount + numRequested;
             unsigned pageLimit = getPageLimit();
@@ -4054,15 +4130,15 @@ public:
             {
                 if (pageLimit != UNLIMITED_PAGES)
                 {
-                    //Use atomic_cas so that only one thread can increase the number of pages at a time.
+                    //Use compare_exchange so that only one thread can increase the number of pages at a time.
                     //(Don't use atomic_add because we need to check the limit hasn't been exceeded.)
-                    if (!atomic_cas(&totalHeapPages, numHeapPages + numRequested, numHeapPages))
+                    if (!totalHeapPages.compare_exchange_weak(numHeapPages, numHeapPages + numRequested, std::memory_order_relaxed))
                         continue;
                 }
                 else
                 {
                     //Unlimited pages => just increment the total
-                    atomic_add(&totalHeapPages, numRequested);
+                    totalHeapPages.fetch_add(numRequested, std::memory_order_relaxed);
                 }
                 break;
             }
@@ -4072,7 +4148,7 @@ public:
 
             //Try and directly free up some buffers.  It is worth trying again if one of the release functions thinks it
             //freed up some memory.
-            //The following reduces the nubmer of times the callback is called, but I'm not sure how this affects
+            //The following reduces the number of times the callback is called, but I'm not sure how this affects
             //performance.  I think better if a single free is likely to free up some memory, and worse if not.
             const bool skipReleaseIfAnotherThreadReleases = true;
             if (!releaseCallbackMemory(maxSpillCost, true, skipReleaseIfAnotherThreadReleases, lastReleaseSeq))
@@ -4084,9 +4160,9 @@ public:
                     //very unusual: another thread may have just released a lot of memory (e.g., it has finished), but
                     //the empty pages haven't been cleaned up
                     releaseEmptyPages(querySlaveId(), true);
-                    if (numHeapPages == (unsigned) atomic_read(&totalHeapPages))
+                    if (numHeapPages == totalHeapPages.load(std::memory_order_relaxed))
                     {
-                        VStringBuffer msg("Memory limit exceeded: current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
+                        VStringBuffer msg("Memory limit exceeded: current %u, requested %u, limit %u active(%u) heap(%u/%u)", pageCount, numRequested, pageLimit, activeRowManagers.load(), heapAllocated, heapTotalPages);
                         logctx.CTXLOG("%s", msg.str());
 
                         //Avoid a stack trace if the allocation is optional
@@ -4121,7 +4197,7 @@ public:
 
     void restoreLimit(unsigned numRequested)
     {
-        atomic_add(&totalHeapPages, -(int)numRequested);
+        totalHeapPages.fetch_sub(numRequested, std::memory_order_relaxed);
     }
 
     inline bool releaseCallbackMemory(unsigned maxSpillCost, bool critical)
@@ -4133,7 +4209,7 @@ public:
     virtual unsigned getReleaseSeq() const = 0;
     virtual unsigned getPageLimit() const = 0;
 
-    inline unsigned getActiveHeapPages() const { return atomic_read(&totalHeapPages); }
+    inline unsigned getActiveHeapPages() const { return totalHeapPages.load(std::memory_order_relaxed); }
 
 
 protected:
@@ -4290,7 +4366,7 @@ protected:
         else
         {
             logctx.CTXLOG("RoxieMemMgr: pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p cnt(%u)",
-                          maxPageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this, activeRowManagers.load());
+                          maxPageLimit, peakPages, dataBuffs, dataBuffPages, possibleGoers.load(), this, activeRowManagers.load());
             Owned<IActivityMemoryUsageMap> map = getActivityUsage();
             map->report(logctx, allocatorCache);
         }
@@ -4353,6 +4429,7 @@ public:
     virtual void setMinimizeFootprint(bool value, bool critical) { throwUnexpected(); }
     virtual void setReleaseWhenModifyCallback(bool value, bool critical) { throwUnexpected(); }
     virtual unsigned querySlaveId() const { return slaveId; }
+    virtual void reportMemoryUsage(bool peak) const;
 
 protected:
     virtual unsigned getPageLimit() const;
@@ -4431,6 +4508,12 @@ public:
     }
 
     virtual unsigned querySlaveId() const { return 0; }
+
+    virtual void reportMemoryUsage(bool peak) const
+    {
+        CChunkingRowManager::reportMemoryUsage(peak);
+        callbacks.reportActive(logctx);
+    }
 
 protected:
     virtual void addRowBuffer(IBufferedRowCallback * callback)
@@ -4565,6 +4648,11 @@ unsigned CSlaveRowManager::getPageLimit() const
     return globalManager->getSlavePageLimit(slaveId);
 }
 
+void CSlaveRowManager::reportMemoryUsage(bool peak) const
+{
+    CChunkingRowManager::reportMemoryUsage(peak);
+    globalManager->reportMemoryUsage(peak);
+}
 
 //================================================================================
 
@@ -4678,6 +4766,8 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
     unsigned newPages = PAGES(newsize + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
     unsigned oldPages = PAGES(oldcapacity + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
     void *oldbase =  (void *) ((memsize_t) original & HEAP_ALIGNMENT_MASK);
+    HugeHeaplet * oldHeaplet = (HugeHeaplet *)oldbase;
+    assertex(oldHeaplet->isWithinHeap(this));
 
     //Check if we are shrinking the number of pages.
     if (newPages <= oldPages)
@@ -4893,7 +4983,8 @@ const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state
                 }
                 return ret;
             }
-            dbgassertex((chunkedFinger->numChunks() == maxChunksPerPage()) || (chunkedFinger->numChunks() == 0));
+
+            //heaplet was either empty or full (it may no longer be full if another thread has freed a row)
             finger = getNext(finger);
 
             //Check if we have looped all the way around
@@ -4946,9 +5037,14 @@ void * CPackedChunkingHeap::allocate()
 
 void DataBuffer::Release()
 {
-    if (atomic_read(&count)==2 && mgr)
-        mgr->noteDataBuffReleased(this);
-    if (atomic_dec_and_test(&count)) released(); 
+    if (count.load(std::memory_order_relaxed)==2 && mgr)
+        mgr->noteDataBuffReleased((DataBuffer*) this);
+    if (count.fetch_sub(1, std::memory_order_release) == 1)
+    {
+        //No acquire fence - released() is assumed not to access the data in this buffer
+        //If it does it should contain an acquire fence
+        released();
+    }
 }
 
 void DataBuffer::released()
@@ -4958,7 +5054,7 @@ void DataBuffer::released()
     assert((char *)bottom != (char *)this);
     if (memTraceLevel >= 4)
         DBGLOG("RoxieMemMgr: DataBuffer::released() releasing DataBuffer - addr=%p", this);
-    atomic_dec(&dataBuffersActive);
+    dataBuffersActive.fetch_sub(1);
     bottom->addToFreeChain(this);
     bottom->Release();
 }
@@ -4982,16 +5078,20 @@ bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
 void DataBuffer::noteReleased(const void *ptr)
 {
     //The link counter is shared by all the rows that are contained in this DataBuffer
-    if (atomic_dec_and_test(&count))
+    if (count.fetch_sub(1, std::memory_order_release) == 1)
+    {
+        //No acquire fence - released() is assumed not to access the data in this buffer
+        //If it does it should contain an acquire fence
         released();
+    }
 }
 
 void DataBuffer::noteLinked(const void *ptr)
 {
-    atomic_inc(&count);
+    count.fetch_add(1, std::memory_order_relaxed);
 }
 
-class CDataBufferManager : public CInterface, implements IDataBufferManager
+class CDataBufferManager : implements IDataBufferManager, public CInterface
 {
     friend class DataBufferBottom;
     CriticalSection crit;
@@ -4999,7 +5099,7 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
     DataBufferBottom *freeChain;
     char * nextBase = nullptr;
     size32_t nextOffset = 0; // offset within a page
-    atomic_t freePending;
+    std::atomic_uint freePending;
 
     void unlink(DataBufferBottom *goer)
     {
@@ -5035,7 +5135,7 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
                 // NOTE - do NOT put a CriticalBlock c(finger->crit) here since:
                 // 1. It's not needed - no-one modifies finger->nextBottom chain but me and I hold CDataBufferManager::crit
                 // 2. finger->crit is about to get released back to the pool and it's important that it is not locked at the time!
-                if (atomic_read(&finger->okToFree) == 1)
+                if (finger->okToFree.load(std::memory_order_acquire))
                 {
                     assert(!finger->isAlive());
                     DataBufferBottom *goer = finger;
@@ -5048,7 +5148,7 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
                     memset((void *) goer, 0xcc, HEAP_ALIGNMENT_SIZE);
 #endif
                     subfree_aligned(goer, 1);
-                    atomic_dec(&dataBufferPages);
+                    dataBufferPages.fetch_sub(1);
                 }
                 else
                     finger = finger->nextBottom;
@@ -5061,12 +5161,11 @@ class CDataBufferManager : public CInterface, implements IDataBufferManager
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDataBufferManager(size32_t size)
+    CDataBufferManager(size32_t size) : freePending(false)
     {
         assertex(size==DATA_ALIGNMENT_SIZE);
         curBlock = NULL;
         freeChain = NULL;
-        atomic_set(&freePending, 0);
     }
 
     DataBuffer *allocate()
@@ -5076,7 +5175,7 @@ public:
         if (memTraceLevel >= 5)
             DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() curBlock=%p nextAddr=%p:%x", curBlock, nextBase, nextOffset);
 
-        if (atomic_cas(&freePending, 0, 1))
+        if (freePending.exchange(false, std::memory_order_acquire))
             freeUnused();
 
         loop
@@ -5087,7 +5186,7 @@ public:
                 CriticalBlock c(bottom->crit);
                 if (bottom->freeChain)
                 {
-                    atomic_inc(&dataBuffersActive);
+                    dataBuffersActive.fetch_add(1);
                     curBlock->Link();
                     DataBuffer *x = bottom->freeChain;
                     bottom->freeChain = x->next;
@@ -5098,7 +5197,7 @@ public:
                 }
                 else if (nextOffset < HEAP_ALIGNMENT_SIZE) // Is there any space in the current block (it must be a whole block)
                 {
-                    atomic_inc(&dataBuffersActive);
+                    dataBuffersActive.fetch_add(1);
                     curBlock->Link();
                     DataBuffer *x = ::new(nextBase+nextOffset) DataBuffer();
                     nextOffset += DATA_ALIGNMENT_SIZE;
@@ -5139,7 +5238,7 @@ public:
                             curBlock = finger;
                             nextBase = nullptr; // should never be accessed
                             nextOffset = HEAP_ALIGNMENT_SIZE; // only use the free chain to allocate
-                            atomic_inc(&dataBuffersActive);
+                            dataBuffersActive.fetch_add(1);
                             finger->Link(); // and once for the value we are about to return
                             DataBuffer *x = finger->freeChain;
                             finger->freeChain = x->next;
@@ -5157,7 +5256,7 @@ public:
             nextBase = (char *)suballoc_aligned(1, false);
             nextOffset = DATA_ALIGNMENT_SIZE;
             curBlock = (DataBufferBottom *)nextBase;
-            atomic_inc(&dataBufferPages);
+            dataBufferPages.fetch_add(1);
             assertex(curBlock);
             if (memTraceLevel >= 3)
                     DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() allocated new DataBuffers Page - addr=%p", curBlock);
@@ -5174,14 +5273,13 @@ public:
     {
         if (memTraceLevel > 1) memmap(s); // MORE: may want to make a separate interface (poolMap) and control query for this
         else memstats(s);
-        s.appendf(", DataBuffsActive=%d, DataBuffPages=%d", atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
+        s.appendf(", DataBuffsActive=%d, DataBuffPages=%d", dataBuffersActive.load(std::memory_order_relaxed), dataBufferPages.load(std::memory_order_relaxed));
         DBGLOG("%s", s.str());
     }
 };
 
-DataBufferBottom::DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain)
+DataBufferBottom::DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain) : okToFree(false)
 {
-    atomic_set(&okToFree, 0);
     owner = _owner;
     if (ownerFreeChain)
     {
@@ -5207,18 +5305,24 @@ void DataBufferBottom::addToFreeChain(DataBuffer * buffer)
 
 void DataBufferBottom::Release()
 {
-    if (atomic_dec_and_test(&count))
+    if (count.fetch_sub(1, std::memory_order_release) == 1)
+    {
+        //No acquire fence - released() is assumed not to access the data in this buffer
+        //If it does it should contain an acquire fence
         released();
+    }
 }
 
 void DataBufferBottom::released()
 {
     // Not safe to free here as owner may be in the middle of allocating from it
     // instead, give owner a hint that it's worth thinking about freeing this page next time it is safe
-    if (atomic_cas(&count, DEAD_PSEUDO_COUNT, 0))
+    unsigned expected = 0;
+    if (count.compare_exchange_strong(expected, DEAD_PSEUDO_COUNT, std::memory_order_release))
     {
-        atomic_set(&owner->freePending, 1);
-        atomic_set(&okToFree, 1);
+        //No acquire fence required since the following code doesn't read anything from the object
+        okToFree.store(true, std::memory_order_release);
+        owner->freePending.store(true, std::memory_order_release);
     }
 }
 
@@ -5311,12 +5415,12 @@ extern unsigned getHeapPercentAllocated()
 
 extern unsigned getDataBufferPages()
 {
-   return atomic_read(&dataBufferPages);
+   return dataBufferPages.load(std::memory_order_relaxed);
 }
 
 extern unsigned getDataBuffersActive()
 {
-   return atomic_read(&dataBuffersActive);
+   return dataBuffersActive.load(std::memory_order_relaxed);
 }
 
 extern IDataBufferManager *createDataBufferManager(size32_t size)
@@ -5604,32 +5708,32 @@ protected:
         DataBuffer *pages[3000];
         for (i = 0; i < 3000; i++)
             pages[i] = 0;
-        //printf("\n----Begin DataBuffsActive=%d, DataBuffPages=%d ------ \n", atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
+        //printf("\n----Begin DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(std::memory_order_relaxed), dataBufferPages.load(std::memory_order_relaxed));
         for (i = 0; i < 2046; i++)
             pages[i] = dm.allocate();
-        //printf("\n----Mid 1 DataBuffsActive=%d, DataBuffPages=%d ------ \n", atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
+        //printf("\n----Mid 1 DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(), dataBufferPages.load());
 
-        ASSERT(atomic_read(&dataBufferPages)==PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
+        ASSERT(dataBufferPages.load()==PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
         pages[1022]->Release(); // release from first page
         pages[1022] = 0;  
         pages[2100] = dm.allocate(); // allocate from first page 
-        //printf("\n----Mid 2 DataBuffsActive=%d, DataBuffPages=%d ------ \n", atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
-        ASSERT(atomic_read(&dataBufferPages)==PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
+        //printf("\n----Mid 2 DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(), dataBufferPages.load());
+        ASSERT(dataBufferPages.load(std::memory_order_relaxed)==PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
         pages[2101] = dm.allocate(); // allocate from a new page (third)
-        //printf("\n----Mid 3 DataBuffsActive=%d, DataBuffPages=%d ------ \n", atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
+        //printf("\n----Mid 3 DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(), dataBufferPages.load());
         // Release all blocks, which releases all pages, except active one
         for (i = 0; i < 3000; i++)
             if (pages[i]) 
                 pages[i]->Release();
-        //printf("\n----End DataBuffsActive=%d, DataBuffPages=%d ------ \n", atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
+        //printf("\n----End DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(), dataBufferPages.load());
         dm.allocate()->Release();
-        ASSERT(atomic_read(&dataBufferPages)==1);
+        ASSERT(dataBufferPages.load()==1);
 
         for (i = 0; i < 1022; i++)
             dm.allocate()->Release();
         dm.allocate()->Release();
         dm.allocate()->Release();
-        ASSERT(atomic_read(&dataBufferPages)==1);
+        ASSERT(dataBufferPages.load()==1);
 
         for (i = 0; i < 2000; i++)
             pages[i] = dm.allocate();
@@ -5637,12 +5741,12 @@ protected:
             pages[i]->Release();
         for (i = 0; i < 1000; i++)
             pages[i] = dm.allocate();
-        ASSERT(atomic_read(&dataBufferPages)==PAGES(2000 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
+        ASSERT(dataBufferPages.load()==PAGES(2000 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
         for (i = 0; i < 1999; i++)
             pages[i]->Release();
         pages[1999]->Release();
         dm.allocate()->Release();
-        ASSERT(atomic_read(&dataBufferPages)==1);
+        ASSERT(dataBufferPages.load()==1);
 
         dm.cleanUp();
     }
@@ -6269,16 +6373,16 @@ protected:
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CountingRowAllocatorCache() { atomic_set(&counter, 0); }
+        CountingRowAllocatorCache() : counter(0) { }
         virtual unsigned getActivityId(unsigned cacheId) const { return 0; }
         virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const { return out.append(cacheId); }
-        virtual void onDestroy(unsigned cacheId, void *row) const { atomic_inc(&counter); }
-        virtual void onClone(unsigned cacheId, void *row) const { atomic_dec(&counter); }
+        virtual void onDestroy(unsigned cacheId, void *row) const { counter++; }
+        virtual void onClone(unsigned cacheId, void *row) const { counter--; }
         virtual void checkValid(unsigned cacheId, const void *row) const { }
 
-        void clear() { atomic_set(&counter, 0); }
+        void clear() { counter = 0; }
 
-        mutable atomic_t counter;
+        mutable std::atomic_uint counter;
     };
     enum { numCasThreads = 20, numCasIter = 100, numCasAlloc = 500 };
     class CasAllocatorThread : public Thread
@@ -6405,7 +6509,7 @@ protected:
         runCasTest(label.str(), sem, threads);
 
         delete heaplet;
-        ASSERT(atomic_read(&rowCache.counter) == 2 * numThreads * numCasIter * numCasAlloc);
+        ASSERT(rowCache.counter == 2 * numThreads * numCasIter * numCasAlloc);
     }
     class FixedCasAllocatorThread : public CasAllocatorThread
     {
@@ -6431,7 +6535,7 @@ protected:
             threads[i1] = new FixedCasAllocatorThread(rowHeap, sem, rowManager, i1);
 
         runCasTest("old fixed allocator", sem, threads);
-        ASSERT(atomic_read(&rowCache.counter) == 2 * numCasThreads * numCasIter * numCasAlloc);
+        ASSERT(rowCache.counter == 2 * numCasThreads * numCasIter * numCasAlloc);
     }
     void testSharedFixedCas()
     {
@@ -6446,7 +6550,7 @@ protected:
             threads[i1] = new FixedCasAllocatorThread(rowHeap, sem, rowManager, i1);
 
         runCasTest("shared fixed allocator", sem, threads);
-        ASSERT(atomic_read(&rowCache.counter) == 2 * numCasThreads * numCasIter * numCasAlloc);
+        ASSERT(rowCache.counter == 2 * numCasThreads * numCasIter * numCasAlloc);
     }
     void testFixedCas()
     {
@@ -6461,7 +6565,7 @@ protected:
         }
 
         runCasTest("separate fixed allocator", sem, threads);
-        ASSERT(atomic_read(&rowCache.counter) == 2 * numCasThreads * numCasIter * numCasAlloc);
+        ASSERT(rowCache.counter == 2 * numCasThreads * numCasIter * numCasAlloc);
     }
     void testPackedCas()
     {
@@ -6476,7 +6580,7 @@ protected:
         }
 
         runCasTest("separate packed allocator", sem, threads);
-        ASSERT(atomic_read(&rowCache.counter) == 2 * numCasThreads * numCasIter * numCasAlloc);
+        ASSERT(rowCache.counter == 2 * numCasThreads * numCasIter * numCasAlloc);
     }
     class GeneralCasAllocatorThread : public CasAllocatorThread
     {
@@ -6501,7 +6605,7 @@ protected:
             threads[i1] = new GeneralCasAllocatorThread(rowManager, sem, i1);
 
         runCasTest("general allocator", sem, threads);
-        ASSERT(atomic_read(&rowCache.counter) == 2 * numCasThreads * numCasIter * numCasAlloc);
+        ASSERT(rowCache.counter == 2 * numCasThreads * numCasIter * numCasAlloc);
     }
     class VariableCasAllocatorThread : public CasAllocatorThread
     {
@@ -6539,7 +6643,7 @@ protected:
             threads[i1] = new VariableCasAllocatorThread(rowManager, sem, i1, i1);
 
         runCasTest("variable allocator", sem, threads);
-        ASSERT(atomic_read(&rowCache.counter) == 2 * numCasThreads * numCasIter * numCasAlloc);
+        ASSERT(rowCache.counter == 2 * numCasThreads * numCasIter * numCasAlloc);
     }
     void timeRoundup()
     {
@@ -6664,7 +6768,7 @@ protected:
         VStringBuffer title("callback(%u,%u,%u,%f,%x)", numPerPage,pages, spillPages, scale, flags);
         runCasTest(title.str(), sem, threads);
         //This test can very occasionally fail if each thread has 1 single row from a different page buffered, and a buffer allocated from a different page
-        CPPUNIT_ASSERT_EQUAL(2 * numCasThreads * numCasIter * numCasAlloc, (int)atomic_read(&rowCache.counter));
+        CPPUNIT_ASSERT_EQUAL(2 * numCasThreads * numCasIter * numCasAlloc, (int)rowCache.counter);
     }
     void testCallbacks()
     {

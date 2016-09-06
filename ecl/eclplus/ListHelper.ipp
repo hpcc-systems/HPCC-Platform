@@ -24,8 +24,6 @@
 class ListHelper : implements IEclPlusHelper
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     ListHelper(IProperties * globals, IFormatType * format);
     virtual ~ListHelper();
 

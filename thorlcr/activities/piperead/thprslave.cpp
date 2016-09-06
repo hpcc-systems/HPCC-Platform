@@ -41,7 +41,7 @@ protected:
 
 protected:
 
-    class CPipeStream : public CSimpleInterface, implements ISimpleReadStream
+    class CPipeStream : implements ISimpleReadStream, public CSimpleInterface
     {
         CPipeSlaveBase *parent;
         Owned<ISimpleReadStream> stream;
@@ -190,6 +190,12 @@ public:
         : CPipeSlaveBase(_container)
     {
         helper = static_cast <IHThorPipeReadArg *> (queryHelper());
+        flags = helper->getPipeFlags();
+        needTransform = false;
+
+        if (needTransform)
+            inrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(), queryId(), queryCodeContext()));
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     CATCH_NEXTROW()
@@ -229,14 +235,6 @@ public:
         eof = true;
         return NULL;
     }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        flags = helper->getPipeFlags();
-        needTransform = false;
-
-        if (needTransform)
-            inrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(), queryId(), queryCodeContext()));
-    }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
@@ -250,8 +248,11 @@ public:
     }
     virtual void stop() override
     {
-        readTrailing();
-        verifyPipe();
+        if (hasStarted())
+        {
+            readTrailing();
+            verifyPipe();
+        }
         PARENT::stop();
     }
     virtual void abort()
@@ -340,17 +341,15 @@ public:
         helper = static_cast <IHThorPipeThroughArg *> (queryHelper());
         pipeWriter = NULL;
         grouped = false;
+        flags = helper->getPipeFlags();
+        recreate = helper->recreateEachRow();
+        grouped = 0 != (flags & TPFgroupeachrow);
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     ~CPipeThroughSlaveActivity()
     {
         ::Release(pipeWriter);
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        flags = helper->getPipeFlags();
-        recreate = helper->recreateEachRow();
-        grouped = 0 != (flags & TPFgroupeachrow);
     }
     virtual void start() override
     {
@@ -444,6 +443,11 @@ public:
     }
     virtual void stop() override
     {
+        if (!hasStarted())
+        {
+            PARENT::stop();
+            return;
+        }
         abortSoon = true;
         readTrailing();
         if (recreate)
@@ -455,7 +459,6 @@ public:
             throw wrexc.getClear();
         if (retcode!=0 && !(flags & TPFnofail))
             throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d", retcode);
-        PARENT::stop();
     }
     virtual void kill()
     {

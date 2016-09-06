@@ -51,7 +51,7 @@
 #define SOAP_BODY_NAME     "Body"
 
 class CSoapValue;
-typedef IArrayOf<CSoapValue> SoapValueArray;
+typedef CIArrayOf<CSoapValue> SoapValueArray;
 
 using namespace std;
 using namespace xpp;
@@ -68,7 +68,7 @@ const char* const SOAPEnvelopeStart  = "<?xml version=\"1.0\" encoding=\"utf-8\"
 
 const char* const SOAPEnvelopeEnd  =    "</soap:Envelope>";
 
-class CSoapMessage : public CInterface, implements ISoapMessage
+class CSoapMessage : implements ISoapMessage, public CInterface
 {
 private:
     StringAttr   m_content_type;
@@ -149,8 +149,6 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSoapFault(int code, const char* message)
     { 
         AppendDetails(code,message);
@@ -199,9 +197,11 @@ public:
 };
 
 
-class esp_http_decl CSoapValue : public CInterface, implements IInterface //ISoapValue
+class esp_http_decl CSoapValue : public CInterface  //ISoapValue
 {
 private:
+    bool            m_is_array_element;
+    bool            m_encode_xml;
     StringAttr  m_ns;
     StringAttr  m_name;
     StringAttr  m_type;
@@ -209,15 +209,10 @@ private:
     SoapValueArray  m_children;
     Owned<IProperties> m_attributes;
 
-    bool            m_is_array_element;
-    bool            m_encode_xml;
-
     void serialize_attributes(StringBuffer& outbuf);
     void init(const char* ns, const char* name, const char* type, const char* value);
 
 public:
-    IMPLEMENT_IINTERFACE;
-    
     CSoapValue(CSoapValue* soapvalue);
     CSoapValue(const char* ns, const char* name, const char* type, const char* value, bool encode=true);
     CSoapValue(const char* ns, const char* name, const char* type, int value);
@@ -316,7 +311,7 @@ public:
     virtual void simple_serializeChildren(StringBuffer& outbuf);
 };
 
-class esp_http_decl CRpcMessage : public CInterface, implements IRpcMessage
+class esp_http_decl CRpcMessage : implements IRpcMessage, public CInterface
 {
 private:
     StringAttr      m_ns;
@@ -562,14 +557,12 @@ public:
     bool handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt);
 };
 
-class CHeader : public CInterface, implements IInterface
+class CHeader : public CInterface
 {
 private:
     IArrayOf<IRpcMessage> m_headerblocks;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CHeader(){};
     virtual ~CHeader(){};
     virtual void addHeaderBlock(IRpcMessage* block);
@@ -581,15 +574,13 @@ public:
     virtual const char * getMessageType() {return "EnvelopeHeader";};
 };
 
-class CBody : public CInterface, implements IInterface
+class CBody : public CInterface
 {
 private:
     XmlPullParser* m_xpp;
     IArrayOf<IRpcMessage> m_rpcmessages;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CBody() : m_xpp(NULL) { }
     virtual ~CBody() { }
 
@@ -622,13 +613,12 @@ public:
     };
 };
 
-class CEnvelope : public CInterface, implements IInterface
+class CEnvelope : public CInterface
 {
 private:
     Owned<CHeader> m_header;
     Owned<CBody> m_body;
 public:
-    IMPLEMENT_IINTERFACE;
 
     CEnvelope(){m_header.setown(new CHeader); m_body.setown(new CBody);};
     CEnvelope(CHeader* header, CBody* body) {m_header.setown(header); m_body.setown(body);};

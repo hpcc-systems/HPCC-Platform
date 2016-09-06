@@ -53,6 +53,7 @@ define([
     "hpcc/FilterDropDownWidget",
     "hpcc/SelectionGridWidget",
     "hpcc/WsTopology",
+    "hpcc/Utility",
 
     "put-selector/put",
 
@@ -70,6 +71,7 @@ define([
     "dijit/form/Select",
     "dijit/form/CheckBox",
     "dijit/form/RadioButton",
+    "dijit/Dialog",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
@@ -80,7 +82,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea, ValidationTextBox,
                 editor, selector, tree,
-                _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, FilterDropDownWidget, SelectionGridWidget, WsTopology,
+                _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, FilterDropDownWidget, SelectionGridWidget, WsTopology, Utility,
                 put,
                 template) {
     return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
@@ -108,6 +110,10 @@ define([
             this.addToSuperfileTargetName = registry.byId(this.id + "AddToSuperfileTargetName")
             this.createNewSuperRadio = registry.byId(this.id + "CreateNewSuperRadio");
             this.addToSuperfileTargetAppendRadio = registry.byId(this.id + "AddToSuperfileTargetAppend");
+            this.downloadToList = registry.byId(this.id + "DownloadToList");
+            this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
+            this.downListForm = registry.byId(this.id + "DownListForm");
+            this.fileName = registry.byId(this.id + "FileName");
             var context = this;
             var origOnOpen = this.desprayTooltiopDialog.onOpen;
             this.desprayTooltiopDialog.onOpen = function () {
@@ -136,6 +142,28 @@ define([
             this.inherited(arguments);
             this.initContextMenu();
             this.initFilter();
+        },
+
+        _onDownloadToListCancelDialog: function (event){
+            this.downloadToListDialog.hide();
+        },
+
+        _onDownloadToList: function (event) {
+            this.downloadToListDialog.show();
+        },
+
+        _buildCSV: function (event) {
+            var selections = this.workunitsGrid.getSelected();
+            var row = [];
+            var fileName = this.fileName.get("value")+".csv";
+
+            arrayUtil.forEach(selections, function (cell, idx){
+                var rowData = [cell.IsProtected,cell.IsCompressed,cell.IsKeyFile,cell.__hpcc_displayName,cell.Owner,cell.Description,cell.NodeGroup,cell.RecordCount,cell.IntSize,cell.Parts,cell.Modified];
+                row.push(rowData);
+            });
+
+            Utility.downloadToCSV(this.workunitsGrid, row, fileName);
+            this._onDownloadToListCancelDialog();
         },
 
         getTitle: function () {
@@ -589,6 +617,12 @@ define([
             });
             this.workunitsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
+                var selection = context.workunitsGrid.getSelected();
+                if (selection.length > 0) {
+                    context.downloadToList.set("disabled", false);
+                } else {
+                    context.downloadToList.set("disabled", true);
+                }
             });
             this.workunitsGrid.startup();
 

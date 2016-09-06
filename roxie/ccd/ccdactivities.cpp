@@ -134,6 +134,7 @@ class CSlaveActivityFactory : public CActivityFactory, implements ISlaveActivity
 {
 
 public:
+    IMPLEMENT_IINTERFACE
 
     CSlaveActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory) 
         : CActivityFactory(_graphNode.getPropInt("@id", 0), _subgraphId, _queryFactory, _helperFactory, getActivityKind(_graphNode))
@@ -285,7 +286,7 @@ protected:
 
 //================================================================================================
 
-class CRoxieSlaveActivity : public CInterface, implements IRoxieSlaveActivity, implements ICodeContext
+class CRoxieSlaveActivity : implements CInterfaceOf<IRoxieSlaveActivity>, implements ICodeContext
 {
 protected:
     SlaveContextLogger &logctx;
@@ -388,7 +389,7 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IRoxieSlaveActivity>)
 
     virtual const char *queryDynamicFileName() const = 0;
     virtual void setVariableFileInfo() = 0;
@@ -540,6 +541,11 @@ public:
 
     virtual unsigned getResultHash(const char * name, unsigned sequence) { throwUnexpected(); }
     virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { throwUnexpected(); }
+
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
+    {
+        return queryNullSectionTimer();
+    }
 
     // Not yet thought about these....
 
@@ -1160,8 +1166,6 @@ public:
 class CRoxieDiskReadActivityFactory : public CRoxieDiskBaseActivityFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieDiskReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CRoxieDiskBaseActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
@@ -1184,8 +1188,6 @@ class CRoxieCsvReadActivityFactory : public CRoxieDiskBaseActivityFactory
     size32_t maxRowSize;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieCsvReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CRoxieDiskBaseActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
@@ -1210,8 +1212,6 @@ public:
 class CRoxieXmlReadActivityFactory : public CRoxieDiskBaseActivityFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieXmlReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CRoxieDiskBaseActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
@@ -1235,7 +1235,7 @@ public:
 // Note - the classes below could be commoned up to make the code smaller, but they have been deliberately unrolled to 
 // keep to a bare minimum the number of virtual calls/variable tests per record scanned. This is very speed critical.
 
-class RecordProcessor : public CInterface, implements IInMemoryFileProcessor
+class RecordProcessor : implements IInMemoryFileProcessor, public CInterface
 {
 protected:
     IInMemoryIndexCursor *cursor;  // Unkeyed variants still may need to check segmonitors in here
@@ -1259,7 +1259,7 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE
     RecordProcessor(IInMemoryIndexCursor *_cursor) : cursor(_cursor)
     {
         aborted = false;
@@ -1364,8 +1364,6 @@ protected:
     Owned<IDirectReader> reader;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     UnkeyedRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskReadActivity &_owner, IDirectReader *_reader)
         : ReadRecordProcessor(_cursor, _owner), reader(_reader)
     {
@@ -1508,8 +1506,6 @@ protected:
     size32_t maxRowSize;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CsvRecordProcessor(CRoxieCsvReadActivity &_owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *_datafile, size32_t _maxRowSize)
       : RecordProcessor(NULL), owner(_owner), reader(_reader), datafile(_datafile), maxRowSize(_maxRowSize)
     {
@@ -1784,8 +1780,6 @@ public:
 class CRoxieDiskNormalizeActivityFactory : public CRoxieDiskBaseActivityFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieDiskNormalizeActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CRoxieDiskBaseActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
@@ -1903,8 +1897,6 @@ private:
 class UnkeyedNormalizeRecordProcessor : public NormalizeRecordProcessor
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     UnkeyedNormalizeRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskNormalizeActivity &_owner, IDirectReader *_reader) 
         : NormalizeRecordProcessor(_cursor, _owner), reader(_reader), deserializeSource(_reader)
     {
@@ -2019,8 +2011,6 @@ public:
 class CRoxieDiskCountActivityFactory : public CRoxieDiskBaseActivityFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieDiskCountActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CRoxieDiskBaseActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
@@ -2293,7 +2283,7 @@ public:
 class CParallelRoxieActivity : public CRoxieSlaveActivity
 {
 protected:
-    CIArrayOf<CRoxieDiskReadBaseActivity> parts;
+    IBasedArrayOf<CRoxieDiskReadBaseActivity, IRoxieSlaveActivity> parts;
     unsigned numParallel;
     CriticalSection parCrit;
     Owned<IOutputRowDeserializer> deserializer;
@@ -2345,10 +2335,10 @@ public:
             Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
             class casyncfor: public CAsyncFor
             {
-                CIArrayOf<CRoxieDiskReadBaseActivity> &parts;
+                IBasedArrayOf<CRoxieDiskReadBaseActivity, IRoxieSlaveActivity> &parts;
                 CParallelRoxieActivity &parent;
             public:
-                casyncfor(CIArrayOf<CRoxieDiskReadBaseActivity> &_parts, CParallelRoxieActivity &_parent) 
+                casyncfor(IBasedArrayOf<CRoxieDiskReadBaseActivity, IRoxieSlaveActivity> &_parts, CParallelRoxieActivity &_parent)
                     : parts(_parts), parent(_parent)
                 {
                 }
@@ -2510,8 +2500,6 @@ public:
 class CRoxieDiskAggregateActivityFactory : public CRoxieDiskBaseActivityFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieDiskAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CRoxieDiskBaseActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
@@ -2883,8 +2871,6 @@ public:
 class CRoxieDiskGroupAggregateActivityFactory : public CRoxieDiskBaseActivityFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieDiskGroupAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CRoxieDiskBaseActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
@@ -2965,8 +2951,6 @@ IInMemoryFileProcessor *createKeyedGroupAggregateRecordProcessor(IInMemoryIndexC
 class UnkeyedGroupAggregateRecordProcessor : public GroupAggregateRecordProcessor
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     UnkeyedGroupAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, RowAggregator &_results, IHThorDiskGroupAggregateArg &_helper, IDirectReader *_reader)
     : GroupAggregateRecordProcessor(_cursor, _results, _helper), reader(_reader)
     {
@@ -3074,8 +3058,6 @@ public:
 class CRoxieIndexActivityFactory : public CRoxieKeyedActivityFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieIndexActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CRoxieKeyedActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
@@ -4095,7 +4077,8 @@ protected:
     ThorActivityKind kind;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CRoxieIndexActivity)
+
     CRoxieIndexGroupAggregateActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, ThorActivityKind _kind)
         : CRoxieIndexActivity(_logctx, _packet, _hFactory, _aFactory, 0),
           aggregateHelper((IHThorIndexGroupAggregateArg *) basehelper),
@@ -4268,7 +4251,6 @@ ISlaveActivityFactory *createRoxieIndexGroupAggregateActivityFactory(IPropertyTr
 class CRoxieFetchActivityFactory : public CSlaveActivityFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
     Owned<IFileIOArray> fileArray;
 
     CRoxieFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -4503,7 +4485,8 @@ class CRoxieXMLFetchActivity : public CRoxieFetchActivityBase, implements IXMLSe
     unsigned streamBufferSize;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CRoxieFetchActivityBase)
+
     CRoxieXMLFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieFetchActivityFactory *_aFactory, unsigned _streamBufferSize)
         : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory),
           streamBufferSize(_streamBufferSize)
@@ -4614,8 +4597,6 @@ ISlaveActivityFactory *createRoxieXMLFetchActivityFactory(IPropertyTree &_graphN
 class CRoxieKeyedJoinIndexActivityFactory : public CRoxieKeyedActivityFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieKeyedJoinIndexActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CRoxieKeyedActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
@@ -4955,7 +4936,6 @@ ISlaveActivityFactory *createRoxieKeyedJoinIndexActivityFactory(IPropertyTree &_
 class CRoxieKeyedJoinFetchActivityFactory : public CSlaveActivityFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
     Owned<IFileIOArray> fileArray;
 
     CRoxieKeyedJoinFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -5251,7 +5231,6 @@ class CRoxieRemoteActivityFactory : public CSlaveActivityFactory
     unsigned remoteId;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieRemoteActivityFactory(IPropertyTree &graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, unsigned _remoteId)
         : CSlaveActivityFactory(graphNode, _subgraphId, _queryFactory, _helperFactory), remoteId(_remoteId)
     {
@@ -5285,8 +5264,6 @@ protected:
     TranslatorArray layoutTranslators;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRoxieDummyActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, bool isLoadDataOnly)
         : CSlaveActivityFactory(_graphNode, _subgraphId, _queryFactory, NULL)
     {

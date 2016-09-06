@@ -133,7 +133,7 @@ public:
     unsigned maxActivityId;
 };
 
-class HQLCPP_API HqlCppInstance : public CInterface, public IHqlCppInstance
+class HQLCPP_API HqlCppInstance : public IHqlCppInstance, public CInterface
 {
 public:
     HqlCppInstance(IWorkUnit * _workunit, const char * _wupathname);
@@ -438,7 +438,7 @@ public:
 
 //===========================================================================
 
-class GlobalFileTracker : public CInterface, public IHqlDelayedCodeGenerator
+class GlobalFileTracker : public IHqlDelayedCodeGenerator, public CInterface
 {
 public:
     GlobalFileTracker(IHqlExpression * _filename, IPropertyTree * _graphNode)
@@ -456,9 +456,9 @@ public:
     void writeToGraph();
 
 public:
+    unsigned usageCount;
     OwnedHqlExpr filename;
     Owned<IPropertyTree> graphNode;
-    unsigned usageCount;
 };
 
 //===========================================================================
@@ -733,6 +733,7 @@ struct HqlCppOptions
     bool                implicitGroupHashDedup;
     bool                reportFieldUsage;
     bool                reportFileUsage;
+    bool                recordFieldUsage;
     bool                subsortLocalJoinConditions;
     bool                projectNestedTables;
     bool                showSeqInGraph;
@@ -820,7 +821,7 @@ enum PEtype {
     PETlibrary,     // a library
     PETmax };
 
-class HQLCPP_API HqlCppTranslator : public CInterface, implements IHqlCppTranslator
+class HQLCPP_API HqlCppTranslator : implements IHqlCppTranslator, public CInterface
 {
 //MORE: This is in serious need of refactoring....
 
@@ -1535,7 +1536,7 @@ public:
 
     void doBuildHttpHeaderStringFunction(BuildCtx & ctx, IHqlExpression * expr);
 
-    void doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant);
+    void doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant, bool canFilter);
 
     void doBuildXmlEncode(BuildCtx & ctx, const CHqlBoundTarget * tgt, IHqlExpression * expr, CHqlBoundExpr * result);
 
@@ -1545,7 +1546,8 @@ public:
     void doBuildFilterAndRange(BuildCtx & ctx, unsigned first, unsigned last, HqlExprArray & conds);
     void doBuildFilterToTarget(BuildCtx & ctx, const CHqlBoundTarget & isOk, HqlExprArray & conds, bool invert);
     void doBuildFilterNextAndRange(BuildCtx & ctx, unsigned & curIndex, unsigned maxIterations, HqlExprArray & conds);
-    bool canBuildOptimizedCount(BuildCtx & ctx, IHqlExpression * dataset, CHqlBoundExpr & tgt);
+    bool canBuildOptimizedCount(BuildCtx & ctx, IHqlExpression * dataset, CHqlBoundExpr & tgt, node_operator aggOp);
+    void setBoundCount(CHqlBoundExpr & tgt, const CHqlBoundExpr & src, node_operator aggOp);
     bool canEvaluateInContext(BuildCtx & ctx, IHqlExpression * expr);
     void gatherActiveCursors(BuildCtx & ctx, HqlExprCopyArray & activeRows);
 
@@ -1570,6 +1572,9 @@ public:
     IHqlExpression * getConstWuid(IHqlExpression * expr);
     IHqlExpression * getFirstCharacter(IHqlExpression * source);
     bool hasAddress(BuildCtx & ctx, IHqlExpression * expr);
+
+    void buildStartTimer(BuildCtx & ctx, CHqlBoundExpr & boundTimer, CHqlBoundExpr & boundStart, const char * name);
+    void buildStopTimer(BuildCtx & ctx, const CHqlBoundExpr & boundTimer, const CHqlBoundExpr & boundStart);
 
     IHqlExpression * convertOrToAnd(IHqlExpression * expr);
     bool childrenRequireTemp(BuildCtx & ctx, IHqlExpression * expr, bool includeChildren);
@@ -2017,7 +2022,7 @@ protected:
 
 //===========================================================================
 
-class HQLCPP_API HqlQueryInstance : public CInterface, implements IHqlQueryInstance
+class HQLCPP_API HqlQueryInstance : implements IHqlQueryInstance, public CInterface
 {
 public:
     HqlQueryInstance();

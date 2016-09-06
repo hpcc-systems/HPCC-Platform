@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
 
     All rights reserved. This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as

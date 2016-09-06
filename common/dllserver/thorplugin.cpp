@@ -66,7 +66,7 @@ const char * SimplePluginCtx::ctxQueryProp(const char *propName) const
 
 //-------------------------------------------------------------------------------------------------------------------
 
-class HelperDll : public CInterface, implements ILoadedDllEntry
+class HelperDll : implements ILoadedDllEntry, public CInterface
 {
     SharedObject so;
     StringAttr name;

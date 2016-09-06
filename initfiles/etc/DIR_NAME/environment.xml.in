@@ -285,6 +285,7 @@
                    ldapConnections="10"
                    ldapServer=""
                    method="none"
+                   checkViewPermissions="false"
                    passwordExpirationWarningDays="10"/>
    <EspBinding defaultForPort="true"
                defaultServiceVersion=""
@@ -362,6 +363,11 @@
                          resource="FileDkcAccess"
                          service="ws_fs"/>
     <AuthenticateFeature authenticate="Yes"
+                         description="Access to upload files to dropzone"
+                         path="FileUploadAccess"
+                         resource="FileUploadAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature authenticate="Yes"
                          description="Access to files in dropzone"
                          path="FileIOAccess"
                          resource="FileIOAccess"
@@ -413,7 +419,7 @@
                port="8002"
                protocol="http"
                resourcesBasedn="ou=WsEcl,ou=EspServices,ou=ecl"
-               service="myws_ecl"
+               service="ws_ecl"
                type=""
                workunitsBasedn="ou=workunits,ou=ecl"
                wsdlServiceAddress="">
@@ -430,17 +436,17 @@
    </EspBinding>
   </EspProcess>
   <Directories name="${DIR_NAME}">
-   <Category dir="${EXEC_PREFIX}/log/[NAME]/[INST]" name="log"/>
-   <Category dir="${EXEC_PREFIX}/lib/[NAME]/[INST]" name="run"/>
-   <Category dir="${CONFIG_PREFIX}/[NAME]/[INST]" name="conf"/>
-   <Category dir="${EXEC_PREFIX}/lib/[NAME]/[INST]/temp" name="temp"/>
-   <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data/[COMPONENT]" name="data"/>
-   <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data2/[COMPONENT]" name="data2"/>
-   <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data3/[COMPONENT]" name="data3"/>
-   <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-mirror/[COMPONENT]" name="mirror"/>
-   <Category dir="${EXEC_PREFIX}/lib/[NAME]/queries/[INST]" name="query"/>
-   <Category dir="${EXEC_PREFIX}/lock/[NAME]/[INST]" name="lock"/>
-   <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data4/[COMPONENT]" name="data4"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/log/[NAME]/[INST]" name="log"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/[INST]" name="run"/>
+   <Category dir="$ENV{DESTDIR}${CONFIG_PREFIX}/[NAME]/[INST]" name="conf"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/[INST]/temp" name="temp"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/hpcc-data/[COMPONENT]" name="data"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/hpcc-data2/[COMPONENT]" name="data2"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/hpcc-data3/[COMPONENT]" name="data3"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/hpcc-mirror/[COMPONENT]" name="mirror"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/queries/[INST]" name="query"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lock/[NAME]/[INST]" name="lock"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/hpcc-data4/[COMPONENT]" name="data4"/>
   </Directories>
   <EclAgentProcess allowedPipePrograms="*"
                    build="_"
@@ -607,6 +613,10 @@
                          path="FileDkcAccess"
                          resource="FileDkcAccess"
                          service="ws_fs"/>
+    <AuthenticateFeature description="Access to upload files to dropzone"
+                         path="FileUploadAccess"
+                         resource="FileUploadAccess"
+                         service="ws_fs"/>
     <AuthenticateFeature description="Access to files in dropzone"
                          path="FileIOAccess"
                          resource="FileIOAccess"
@@ -676,7 +686,7 @@
   <EspService build="_"
               buildSet="ws_ecl"
               description="WS ECL Service"
-              name="myws_ecl"
+              name="ws_ecl"
               roxieTimeout="300"
               workunitTimeout="600">
    <Properties bindingType="ws_eclSoapBinding"
@@ -903,6 +913,10 @@
      <AuthenticateFeature description="Access to dkcing of key files"
                           path="FileDkcAccess"
                           resource="FileDkcAccess"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to upload files to dropzone"
+                          path="FileUploadAccess"
+                          resource="FileUploadAccess"
                           service="ws_fs"/>
      <AuthenticateFeature description="Access to files in dropzone"
                           path="FileIOAccess"

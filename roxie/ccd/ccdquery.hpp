@@ -33,11 +33,10 @@
 #include "roxierow.hpp"
 #include "package.h"
 
-class TranslatorArray : public CInterface, implements IInterface
+class TranslatorArray : public CInterface
 {
     IPointerArrayOf<IRecordLayoutTranslator> a;
 public:
-    IMPLEMENT_IINTERFACE;
     inline IRecordLayoutTranslator *item(unsigned idx) const { return a.item(idx); }
     inline void append(IRecordLayoutTranslator * item) { a.append(item); }
     bool needsTranslation() const
@@ -67,6 +66,7 @@ interface IActivityGraph : extends IInterface
     virtual IRoxieServerChildGraph * queryLoopGraph() = 0;
     virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) = 0;
     virtual const char *queryName() const = 0;
+    virtual IRoxieServerActivity *queryActivity(unsigned _activityId) = 0;
 };
 
 interface IRoxiePackage;
@@ -232,6 +232,8 @@ protected:
     UnsignedArray childQueryIndexes;
     CachedOutputMetaData meta;
     mutable CRuntimeStatisticCollection mystats;
+    // MORE: Could be CRuntimeSummaryStatisticCollection to include derived stats, but stats are currently converted
+    // to IPropertyTrees.  Would need to serialize/deserialize and then merge/derived so that they merged properly
 
 public:
     CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
@@ -261,13 +263,7 @@ public:
 
     virtual void getNodeProgressInfo(IPropertyTree &node) const
     {
-        ForEachItemIn(i, mystats)
-        {
-            StatisticKind kind = mystats.getKind(i);
-            unsigned __int64 value = mystats.getStatisticValue(kind);
-            if (value)
-                putStatsValue(&node, queryStatisticName(kind), "sum", value);
-        }
+        mystats.getNodeProgressInfo(node);
     }
 
     virtual void resetNodeProgressInfo()
@@ -304,7 +300,7 @@ extern IRecordLayoutTranslator *createRecordLayoutTranslator(const char *logical
 extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry);
 extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned _channelNo, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry);
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel);
-extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu);
+extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu, const IQueryDll *_dll);
 extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo);
 extern unsigned checkWorkunitVersionConsistency(const IConstWorkUnit *wu );
 

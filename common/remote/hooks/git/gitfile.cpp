@@ -75,7 +75,7 @@ static StringBuffer & buildGitFileName(StringBuffer &fullname, const char *gitDi
     return fullname;
 }
 
-class GitRepositoryFileIO : public CInterface, implements IFileIO
+class GitRepositoryFileIO : implements IFileIO, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -149,7 +149,7 @@ protected:
     MemoryBuffer buf;
 };
 
-class GitRepositoryFile : public CInterface, implements IFile
+class GitRepositoryFile : implements IFile, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -290,7 +290,7 @@ static IFile *createGitFile(const char *gitFileName)
         return new GitRepositoryFile(gitFileName, (offset_t) -1, false, false);
 }
 
-class GitRepositoryDirectoryIterator : public CInterface, implements IDirectoryIterator
+class GitRepositoryDirectoryIterator : implements IDirectoryIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

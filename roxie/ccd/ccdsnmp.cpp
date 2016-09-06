@@ -102,7 +102,7 @@ interface ITimerCallback : extends IInterface
     virtual void onTimer() = 0;
 };
 
-class AtomicMetric : public CInterface, implements INamedMetric
+class AtomicMetric : implements INamedMetric, public CInterface
 {
     atomic_t &counter;
     bool cumulative;
@@ -127,7 +127,7 @@ public:
     }
 };
 
-class RelaxedAtomicMetric : public CInterface, implements INamedMetric
+class RelaxedAtomicMetric : implements INamedMetric, public CInterface
 {
     RelaxedAtomic<unsigned> &counter;
     const bool cumulative;
@@ -152,7 +152,7 @@ public:
     }
 };
 
-class CounterMetric : public CInterface, implements INamedMetric
+class CounterMetric : implements INamedMetric, public CInterface
 {
 protected:
     unsigned &counter;
@@ -184,7 +184,7 @@ public:
 
 typedef unsigned (*AccessorFunction)();
 
-class FunctionMetric : public CInterface, implements INamedMetric
+class FunctionMetric : implements INamedMetric, public CInterface
 {
     AccessorFunction accessor;
 public:
@@ -202,7 +202,7 @@ public:
 
 };
 
-class UserMetric : public CInterface, implements INamedMetric
+class UserMetric : implements INamedMetric, public CInterface
 {
 protected:
     Owned <IUserMetric> metric;
@@ -267,7 +267,7 @@ public:
     }
 };
 
-class IntervalMetric : public CInterface, implements INamedMetric, implements ITimerCallback
+class IntervalMetric : implements INamedMetric, implements ITimerCallback, public CInterface
 {
     Linked<INamedMetric> base;
     CriticalSection crit;
@@ -319,7 +319,7 @@ public:
 
 };
 
-class RatioMetric : public CInterface, implements INamedMetric
+class RatioMetric : implements INamedMetric, public CInterface
 {
     atomic_t &counter;
     unsigned __int64 &elapsed;
@@ -345,7 +345,7 @@ public:
 
 };
 
-class UnsignedRatioMetric : public CInterface, implements INamedMetric
+class UnsignedRatioMetric : implements INamedMetric, public CInterface
 {
     unsigned &counter;
     unsigned __int64 &elapsed;
@@ -370,7 +370,7 @@ public:
 
 };
 
-class CRoxieMetricsManager : public CInterface, implements IRoxieMetricsManager
+class CRoxieMetricsManager : implements IRoxieMetricsManager, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

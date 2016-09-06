@@ -379,7 +379,7 @@ protected:
 };
 
 
-class THORHELPER_API CUnfilteredSteppedMerger : public CInterface, implements ISteppedJoinRowGenerator
+class THORHELPER_API CUnfilteredSteppedMerger : implements ISteppedJoinRowGenerator, public CInterface
 {
 public:
     CUnfilteredSteppedMerger(unsigned _numEqualFields) : merger(_numEqualFields)
@@ -519,7 +519,7 @@ protected:
 };
 
 
-class CFilteredSteppedMerger : public CInterface, implements ISteppedJoinRowGenerator
+class CFilteredSteppedMerger : implements ISteppedJoinRowGenerator, public CInterface
 {
 public:
     CFilteredSteppedMerger();
@@ -559,7 +559,7 @@ protected:
 
 class CSteppedConjunctionOptimizer;
 class CJoinGenerator;
-class THORHELPER_API CMergeJoinProcessor : public CInterface, implements ISteppedInput, implements ISteppedJoin
+class THORHELPER_API CMergeJoinProcessor : implements ISteppedInput, implements ISteppedJoin, public CInterface
 {
 public:
     CMergeJoinProcessor(IHThorNWayMergeJoinArg & _arg);
@@ -913,7 +913,7 @@ protected:
 };
 
 
-class CJoinGenerator : public CInterface, implements ISteppedJoinRowGenerator
+class CJoinGenerator : implements ISteppedJoinRowGenerator, public CInterface
 {
 public:
     CJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs);

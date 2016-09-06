@@ -29,13 +29,9 @@ public:
         : CSlaveActivity(_container)
     { 
         helper = static_cast <IHThorAggregateArg *> (queryHelper());
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
-
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-    }
-
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);

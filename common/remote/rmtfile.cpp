@@ -616,7 +616,6 @@ class CScriptThread : public Thread
     Semaphore done;
     bool ok;
 public:
-    IMPLEMENT_IINTERFACE;
     CScriptThread(SocketEndpoint &_ep,const char *_script)
         : script(_script), ep(_ep)
     {

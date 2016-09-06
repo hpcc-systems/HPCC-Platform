@@ -28,7 +28,7 @@
 
 #include "thfunnelslave.ipp"
 
-class CParallelFunnel : public CSimpleInterface, implements IRowStream
+class CParallelFunnel : implements IRowStream, public CSimpleInterface
 {
     class CInputHandler : public CInterface, implements IThreaded
     {
@@ -132,7 +132,11 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
     void push(const void *row)
     {   
         CriticalBlock b2(fullCrit); // exclusivity for totSize / full
-        if (stopped) return;
+        if (stopped)
+        {
+            ReleaseThorRow(row);
+            return;
+        }
         rows.enqueue(row);
         totSize += thorRowMemoryFootprint(serializer, row);
         while (totSize > FUNNEL_MIN_BUFF_SIZE)
@@ -206,9 +210,9 @@ public:
         }
         {
             CriticalBlock b(fullCrit);
+            stopped = true; // ensure any pending push()'s don't enqueue and if big row potentially block again.
             if (full)
             {
-                stopped = true; // ensure pending push()'s don't enqueue and if big row potentially block again.
                 loop
                 {
                     OwnedConstThorRow row = rows.dequeueNow();
@@ -275,26 +279,22 @@ class FunnelSlaveActivity : public CSlaveActivity
 public:
     FunnelSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-        grouped = false;
         eog = NULL;
         current = NULL;
         currentMarker = 0;
         eogNext = false;
         readThisInput = 0;
         stopped = true;
-        parallel = false;
+        IHThorFunnelArg *helper = (IHThorFunnelArg *)queryHelper();
+        parallel = !container.queryGrouped() && !helper->isOrdered() && getOptBool(THOROPT_PARALLEL_FUNNEL, true);
+        grouped = container.queryGrouped();
+        ActPrintLog("FUNNEL mode = %s, grouped=%s", parallel?"PARALLEL":"ORDERED", grouped?"GROUPED":"UNGROUPED");
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     ~FunnelSlaveActivity()
     {
         if (eog) delete [] eog;
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        IHThorFunnelArg *helper = (IHThorFunnelArg *)queryHelper();
-        parallel = !container.queryGrouped() && !helper->isOrdered() && getOptBool(THOROPT_PARALLEL_FUNNEL, true);
-        grouped = container.queryGrouped();
-        ActPrintLog("FUNNEL mode = %s, grouped=%s", parallel?"PARALLEL":"ORDERED", grouped?"GROUPED":"UNGROUPED");
     }
     virtual void start() override
     {
@@ -477,6 +477,7 @@ public:
     {
         grouped = container.queryGrouped();
         helper = (IHThorCombineArg *) queryHelper();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -576,6 +577,7 @@ public:
     {
         grouped = container.queryGrouped();
         helper = (IHThorRegroupArg *) queryHelper();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -682,6 +684,8 @@ public:
         sendReceiving = false;
         masterMpTag = TAG_NULL;
         appendOutputLinked(this);
+        if (container.queryLocalOrGrouped())
+            setRequireInitData(false);
     }
 
 // IThorSlaveActivity overloaded methods
@@ -767,48 +771,64 @@ class CNWaySelectActivity : public CSlaveActivity, public CThorSteppable
     typedef CSlaveActivity PARENT;
 
     IHThorNWaySelectArg *helper;
-    IThorDataLink *selectedInputITDL = nullptr;
+    IThorDataLink *selectedInput = nullptr;
     IEngineRowStream *selectedStream = nullptr;
-    Owned<IStrandJunction> selectedJunction;
+    IStrandJunction *selectedJunction = nullptr;
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
     CNWaySelectActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorSteppable(this)
     {
         helper = (IHThorNWaySelectArg *)queryHelper();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
 
-        PARENT::start();
-
         unsigned whichInput = helper->getInputIndex();
-        selectedInputITDL = NULL;
-        selectedStream = NULL;
+        selectedInput = nullptr;
+        selectedStream = nullptr;
+        selectedJunction = nullptr;
         if (whichInput--)
         {
             ForEachItemIn(i, inputs)
             {
-                IThorDataLink *cur = queryInput(i);
-                IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(cur);
+                IThorDataLink *curInput = queryInput(i);
+                IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(curInput);
                 if (nWayInput)
                 {
-                    unsigned numRealInputs = nWayInput->numConcreteOutputs();
-                    if (whichInput < numRealInputs)
+                    curInput->start();
+                    unsigned numOutputs = nWayInput->numConcreteOutputs();
+                    if (whichInput < numOutputs)
                     {
-                        selectedInputITDL = nWayInput->queryConcreteInput(whichInput);
-                        selectedStream = connectSingleStream(*this, selectedInputITDL, 0, selectedJunction, true);  // Should this be passing whichInput??
+                        selectedInput = nWayInput->queryConcreteOutput(whichInput);
+                        selectedStream = nWayInput->queryConcreteOutputStream(whichInput);
+                        selectedJunction = nWayInput->queryConcreteOutputJunction(whichInput);
                         break;
                     }
-                    whichInput -= numRealInputs;
+                    whichInput -= numOutputs;
                 }
+                else
+                {
+                    if (whichInput == 0)
+                    {
+                        selectedInput = curInput;
+                        selectedStream = queryInputStream(i);
+                        selectedJunction = queryInputJunction(i);
+                        break;
+                    }
+                    whichInput -= 1;
+                }
+                if (selectedInput)
+                    break;
             }
         }
-        if (selectedInputITDL)
-            selectedInputITDL->start();
+        if (selectedInput)
+            selectedInput->start();
         startJunction(selectedJunction);
+        dataLinkStart();
     }
     virtual void stop() override
     {
@@ -830,7 +850,7 @@ public:
     { 
         if (!selectedStream)
             return false;
-        return selectedInputITDL->gatherConjunctions(collector);
+        return selectedInput->gatherConjunctions(collector);
     }
     virtual void resetEOF()
     { 
@@ -853,11 +873,11 @@ public:
     {
         initMetaInfo(info);
         if (selectedStream)
-            calcMetaInfoSize(info, selectedInputITDL);
+            calcMetaInfoSize(info, selectedInput);
         else if (!hasStarted())
             info.canStall = true; // unkwown if !started
     }
-    virtual bool isGrouped() const override { return selectedInputITDL ? selectedInputITDL->isGrouped() : false; }
+    virtual bool isGrouped() const override { return selectedInput ? selectedInput->isGrouped() : false; }
 // steppable
     virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) override
     {
@@ -866,8 +886,8 @@ public:
     }
     virtual IInputSteppingMeta *querySteppingMeta()
     {
-        if (selectedInputITDL)
-            return selectedInputITDL->querySteppingMeta();
+        if (selectedInput)
+            return selectedInput->querySteppingMeta();
         return NULL;
     }
 };
@@ -877,15 +897,18 @@ class CThorNWayInputSlaveActivity : public CSlaveActivity, implements IThorNWayI
 {
     IHThorNWayInputArg *helper;
     PointerArrayOf<IThorDataLink> selectedInputs;
+    PointerArrayOf<IEngineRowStream> selectedInputStreams;
+    PointerArrayOf<IStrandJunction> selectedInputJunctions;
     bool grouped;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CThorNWayInputSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container)
+    CThorNWayInputSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorNWayInputArg *)queryHelper();
         grouped = helper->queryOutputMeta()->isGrouped(); // JCSMORE should match graph info, i.e. container.queryGrouped()
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -896,10 +919,21 @@ public:
         rtlDataAttr selection;
         helper->getInputSelection(selectionIsAll, selectionLen, selection.refdata());
         selectedInputs.kill();
+        selectedInputStreams.kill();
+        selectedInputJunctions.kill();
+
+        /* NB: all input streams have been connected and because NWayInput does not support handling multiple streams.
+         * i.e. not a CThorStrandedActivity, will use base getOutputStreams implementation and ensure single streams are created.
+         * To allow NWay activities to handle stranding would need handle at getOutputStreams level and conditional produce junctions if mismatched # of output streams
+         */
         if (selectionIsAll)
         {
             ForEachItemIn(i, inputs)
+            {
                 selectedInputs.append(queryInput(i));
+                selectedInputStreams.append(queryInputStream(i));
+                selectedInputJunctions.append(queryInputJunction(i));
+            }
         }
         else
         {
@@ -918,9 +952,11 @@ public:
                     throw MakeStringException(100, "Index %d in RANGE selection list is out of range", nextIndex);
 
                 selectedInputs.append(queryInput(nextIndex-1));
+                selectedInputStreams.append(queryInputStream(nextIndex-1));
+                selectedInputJunctions.append(queryInputJunction(nextIndex-1));
             }
         }
-        // NB: Whatever pulls this IThorNWayInput, starts and stops the selectedInputs
+        // NB: Whatever pulls this IThorNWayInput, starts and stops the selectedInputs and selectedInputJunctions
     }
     virtual void stop() override
     {
@@ -941,10 +977,22 @@ public:
     {
         return selectedInputs.ordinality();
     }
-    virtual IThorDataLink *queryConcreteInput(unsigned idx) const
+    virtual IThorDataLink *queryConcreteOutput(unsigned idx) const
     {
         if (selectedInputs.isItem(idx))
             return selectedInputs.item(idx);
+        return NULL;
+    }
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) const
+    {
+        if (selectedInputStreams.isItem(whichInput))
+            return selectedInputStreams.item(whichInput);
+        return NULL;
+    }
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned idx) const
+    {
+        if (selectedInputJunctions.isItem(idx))
+            return selectedInputJunctions.item(idx);
         return NULL;
     }
 };

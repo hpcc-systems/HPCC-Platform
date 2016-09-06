@@ -69,6 +69,7 @@
 //#define GATHER_LINK_STATS
 //#define VERIFY_EXPR_INTEGRITY
 //#define CHECK_RECORD_CONSISTENCY
+//#define GATHER_COMMON_STATS
 
 // To debug a symbol in the C++ generated code, use SEARCH_NAME*
 // and set a breakpoint on debugMatchedName() below
@@ -125,17 +126,220 @@ static int checkSeqId(unsigned __int64 seqid, unsigned why)
 
 #define STDIO_BUFFSIZE 0x10000     // 64K
 
-class HqlExprCache : public JavaHashTableOf<IHqlExpression>
+//---------------------------------------------------------------------------------------------------------------------
+
+/*
+
+There is a general issue with ECL (and other functional/declarative languages) about what to do with impure functions.
+Generally it is assumed that expressions can be evaluated on demand, evaluated more than once, not evaluated,
+evaluated in a different place, and that it will not affect the result of the query.  There are some expressions
+that don't follow those rules and cause problems.
+The following aims to describe the issues, and formalize the behaviour@
+
+Different impure modifiers
+- VOLATILE indicates that an expression may return a different value each time it is called.
+  E.g.,  RANDOM(), msTick()
+  Because volatile expressions return a different value each time, by default they are tagged as context
+  sensitive - to try and ensure they are evaluated in the same place as they were used in the source code.  So
+  volatile is expanded as two separate modifiers - NODUPLICATE and CONTEXT
+- CONTEXT indicates the value returned depends on the context (but is non-volatile within that context)
+  E.g., std.system.thorlib.node(), XMLTEXT
+- THROWS indicates an expression might throw an exception.
+  IF (cond, value, FAIL)
+- SKIPS indicates an expression may cause a transform to skip.
+- COSTLY The operation is expensive, so should not be duplicated.
+  E.g., Some PIPE/SOAPCALLs, external function calls.
+  A first step towards introducing a cost() function - where costly = cost(+inf)
+- EFFECT indicates the expression may have a side-effect.  The side-effect is tied to the expression that it is
+  associated with.  It would have implications for ordering, which we currently make no guarantees about.  Also,
+  EVALUATE(EFFECT) should be forced to evaluate, rather than being optimized away.
+
+Pseudo modifier:
+- once [ Implies pure,fold(false) ]
+- action indicates the expression performs a specific (costly?) action.  Equivalent to COSTLY+EFFECT
+- volatile.  Really a combination of NODUPLICATE and CONTEXT
+
+What decisions do the flags affect?
+
+canRemoveEvaluation()   - Is it ok to not evaluate an expression?
+canReduceEvaluations()  - Is it possible to reduce the number of times something is evaluated?
+canDuplicateExpr()      - Whether an expression can be duplicated.
+canChangeContext()      - Whether an expression can be moved to a different context.
+canRemoveGuard()        - Is it ok to evaluate this expression without any surrounding conditions?
+isVolatile()            - Whether an expression always generates the same value. (E.g., for matching distributions)
+canBeCommonedUp()       - Is it ok to evaluate two instances of the same expression only once?
+canBeReordered()        - Is it possible to reorder evaluation?
+
+How do these decisions relate to the modifiers?
+
+canRemoveEvaluation()
+- the whole system is based around lazy evaluation.  Nothing restricts an expressions from not being evaluated.
+
+canReduceNumberEvaluations()
+- noduplicate... yes
+  Say you have a counter which is assigned to rows in a dataset, and one row is then selected.  If only that single row
+  is calculated you will get a different result.  However lazy evaluation should ensure that is ok, just unexpected.
+  The context may also require checking for duplication if the dataset is shared...
+- otherwise - yes.
+  i.e. *all* expressions are lazy - there are no guarantees that an expression will be evaluated.
+
+canDuplicateExpr()
+- noduplicate - no since that will introduce an inconsistency.  This means volatile rows can only be selected
+  from a dataset if it is the only use of the dataset.
+- context - yes if same context.
+- throws - yes
+- skips - yes
+- costly - no
+- effect - yes
+
+canChangeContext/canHoist
+- noduplicate - yes.  (volatile would also set context, implying no since that may change the number of times something is executed).
+- context - no
+- throws - safer to say no.  What if it causes something to fail because of early evaluation?
+           Better would be to allow it, but only report the error if it is actually used.  This has implications for
+           the way results are stored in the workunit, and the implementation of the engines.
+- skips - no (but skips doesn't percolate outside a transform)
+- costly - yes if unconditional. no if conditional - we don't want it evaluated unnecessarily.
+- effect - yes - it is the expression that is important.
+
+canRemoveGuard (make something unconditional that was conditional)
+- noduplicate - possibly/yes.  It would be better to always evaluate than to evaluate multiple times.  The context is handled separately.
+- context - yes.
+- throws - no since it causes failures that wouldn't otherwise occur
+- skips - no, it could records to be lost.
+- costly - no by definition.
+- effect - yes.
+
+isVolatile()
+- Only set if the expression is volatile.  Equivalent to !canDuplicateExpr()
+
+canBeCommonedUpBetweenContexts()
+- noduplicate - This is explicitly managed by ensuring each volatile expression has a unique attribute associated with it.
+  It means that different instances of a volatile expression in different transforms must have different ids
+  so that combining transforms doesn't cause them to be combined.
+- context - ?no.  The same value evaluated in a different context will give a different value.
+- throws - yes
+- skips - yes
+- costly - yes.
+- effect - yes
+
+canCombineTransforms(a,b)
+- all - yes
+- provided volatile expressions are unique there shouldn't be any problems combining them.
+- still need to be careful about SKIPs having a different meaning in the combined transform.
+
+canBeReordered()
+ - we currently make no guarantees about the order that expressions are evaluated in, other than with
+   the SEQUENTIAL keyword, and implicit ordering of rows supplied to APPLY/OUTPUT.  Restricting the order would
+   cause significant issues with optimization (e.g., executing on multiple nodes, or strands within a channel). It
+   would require something similar to Haskell monads to impose some global ordering.
+
+Reducing the context dependency of expressions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The operator no_within(expression, context) has the effect of removing all the context-dependent attributes, and adds
+any dependencies from the context instead.  (Any explicit dependencies of the expression are also kept.)
+Note:  WITHIN can only be used to *reduce* the context-dependency.
+
+RANDOM() WITHIN {LEFT} - indicate the context for calling random.
+
+What should be the scope/extent of their effects?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Theoretically, each of these "impure" attributes are inherited by any expression that uses them.  However that can
+be too conservative, so the following limits are placed on their scope:
+
+noduplicate - always
+context     - always, except for within().  ?possibly not outside a transform, or dataset/action excluding its inputs.
+costly      - always
+action
+throwscalar - not outside transform/filter
+throwds     - not outside transform.  Not outside the action (e.g., output) that consumes it.
+skip        - no outside transform
+
+
+**************** THIS NEEDS MORE THOUGHT WORK - probably inspired from the examples *************************
+
+- A sink (e.g., OUTPUT), row selector ([]), or scalar aggregate (e.g., count(ds)) that is applied to a noduplicate dataset isn't itself noduplicate.
+- A sink (e.g., output) applied to a volatile expression isn't itself volatile.
+- An aggregate is not volatile if the scalar argument is volatile
+- Attributes are not volatile if their arguments are
+- ??? An activity that contains a volatile scalar item isn't itself volatile?  E.g., ds(id != RANDOM()).  I'm not convinced.
+
+For example this means IF(cond, ds, FAIL) will be context dependent.  But the activity (e.g, OUTPUT) that is based on it is not.  The entire OUTPUT could be evaluated elsewhere (e.g., in a parent context) if there are no other dependencies on the context.
+
+I would be inclined to use the same rule for context sensitive expressions and exceptions.
+
+Essentially the rule is:
+- the impure flags are not inherited from a transform
+- actions and attributes inherit no impure flags.  (They could possibly have them set explicitly.)
+
+What makes a unique volatile instance?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Each instance in the original ECL source code creates a unique instance.
+- Each expansion of a macro counts as new source instance.
+- A call to a function containing a volatile should not create new instances.
+- It is possible to mark functions as volatile, so that each call creates a new unique instance of
+  any volatiles within it.
+
+So RANDOM() - RANDOM() should evaluate two random numbers,
+and x:= RANDOM(); x - x; should always evaluate to 0.
+
+So unique volatile identifiers are added to
+- volatile builtin operators (e.g, RANDOM())
+- volatile c++ functions
+- volatile external functions
+and contained volatile modifiers are made unique if a functional definition is specified as volatile.
+
+Modifiers on external functions and beginc++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- pure
+- action
+- costly
+- once = pure, runtime only
+- volatile = nodup, context
+- nomove = context dependent
+- context(xxx)?
+- fail
+
+Context Dependent:
+~~~~~~~~~~~~~~~~~~
+There are several different flags to indicate context dependent:
+
+HEFgraphDependent - loop counter (?) graph result, (parameter!) - should probably use a pseudo table
+HEFcontainsNlpText - should use a pseudo table
+HEFcontainsXmlText - should use a pseudo table
+HEFcontainsSkip
+HEFcontainsCounter  - should use a pseudo table
+HEFtransformDependent - SELF, count(group)
+HEFtranslated
+HEFonFailDependent - FAILCODE/FAILMESSAGE
+HEFcontextDependentException - fields, pure virtual  [nohoist?]
+HEFoldthrows - legacy and should be killed
+
+Other related syntax
+~~~~~~~~~~~~~~~~~~~~
+PURE(expression) - treat an expression as pure - probably superseded with WITHIN {}
+*/
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class HqlExprCache : public JavaHashTableOf<CHqlExpression>
 {
 public:
-    HqlExprCache() : JavaHashTableOf<IHqlExpression>(false) {}
+    HqlExprCache() : JavaHashTableOf<CHqlExpression>(false) {}
 
 protected:
+    virtual unsigned getHashFromElement(const void * et) const
+    {
+        return static_cast<const CHqlExpression *>(et)->queryHash();
+    }
+
     virtual bool matchesFindParam(const void * _element, const void * _key, unsigned fphash) const
     { 
-        const IHqlExpression * element = static_cast<const IHqlExpression *>(_element);
-        const IHqlExpression * key = static_cast<const IHqlExpression *>(_key);
-        return (element->getHash() == fphash) && element->equals(*key);
+        const CHqlExpression * element = static_cast<const CHqlExpression *>(_element);
+        const CHqlExpression * key = static_cast<const CHqlExpression *>(_key);
+        return (element->queryHash() == fphash) && element->equals(*key);
     }
 
     virtual unsigned getTableLimit(unsigned max)
@@ -170,6 +374,7 @@ static IHqlExpression * constantLikelihoodLikely;
 static IHqlExpression * constantLikelihoodUnlikely;
 static IHqlExpression * constantLikelihoodTrue;
 static IHqlExpression * constantLikelihoodFalse;
+static IHqlExpression * constantBlankString;
 static IHqlExpression * defaultSelectorSequenceExpr;
 static IHqlExpression * dummyVirtualSeq;
 static IHqlExpression * newSelectAttrExpr;
@@ -256,6 +461,7 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     constantLikelihoodUnlikely = createConstant(createRealValue(0.01,8));
     constantLikelihoodTrue = createConstant(createRealValue(1.0,8));
     constantLikelihoodFalse = createConstant(createRealValue(0.0,8));
+    constantBlankString = createConstant(LINK(blank));
     defaultSelectorSequenceExpr = createAttribute(_selectorSequence_Atom);
     dummyVirtualSeq =  createSequence(no_attr, makeNullType(), _virtualSeq_Atom, 0);
     newSelectAttrExpr = createExprAttribute(newAtom);
@@ -291,6 +497,7 @@ MODULE_EXIT()
     constantLikelihoodUnlikely->Release();
     constantLikelihoodTrue->Release();
     constantLikelihoodFalse->Release();
+    constantBlankString->Release();
     blank->Release();
     cachedContextAttribute->Release();
     cachedLocalAttribute->Release();
@@ -3153,46 +3360,8 @@ CHqlExpression::CHqlExpression(node_operator _op)
         transformDepth[i] = 0;
     }
     hashcode = 0;
-    cachedCRC = 0;
-    attributes = NULL;
-
-    initFlagsBeforeOperands();
 
     CHECK_EXPR_SEQID(0);
-}
-
-void CHqlExpression::appendOperands(IHqlExpression * arg0, ...)
-{
-    if (!arg0)
-        return;
-
-    unsigned numArgs = 1;
-    va_list argscount;
-    va_start(argscount, arg0);
-    for (;;)
-    {
-        IHqlExpression *parm = va_arg(argscount, IHqlExpression *);
-        if (!parm)
-            break;
-        numArgs++;
-    }
-    va_end(argscount);
-
-    operands.ensure(numArgs);
-    doAppendOperand(*arg0);
-    va_list args;
-    va_start(args, arg0);
-    for (;;)
-    {
-        IHqlExpression *parm = va_arg(args, IHqlExpression *);
-        if (!parm)
-            break;
-#ifdef _DEBUG
-        assertex(QUERYINTERFACE(parm, IHqlExpression));
-#endif
-        doAppendOperand(*parm);
-    }
-    va_end(args);
 }
 
 IIdAtom * CHqlExpression::queryId() const
@@ -3201,18 +3370,491 @@ IIdAtom * CHqlExpression::queryId() const
     return NULL;
 }
 
-void CHqlExpression::setOperands(HqlExprArray & _ownedOperands)
+//Can be called from updateFlagsAfterOperands to help track down inconsistencies
+static bool verifyTransform(IHqlExpression * record, IHqlExpression * expr)
 {
-    unsigned max = _ownedOperands.ordinality();
-    if (max)
+    ForEachChild(i, expr)
     {
-        operands.swapWith(_ownedOperands);
-        for (unsigned i=0; i < max; i++)
-            onAppendOperand(operands.item(i), i);
+        IHqlExpression * cur = expr->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_assignall:
+            if (!verifyTransform(record, cur))
+                return false;
+            break;
+        case no_assign:
+            {
+                IHqlExpression * lhs = cur->queryChild(0);
+                if (lhs->getOperator() == no_select)
+                {
+                    if ((lhs->queryChild(0)->getOperator() == no_select) &&
+                        (lhs->queryChild(0)->queryChild(0)->getOperator() == no_self))
+                        return false;
+
+                    IHqlExpression * field = lhs->queryChild(1);
+                    OwnedHqlExpr match = record->querySimpleScope()->lookupSymbol(field->queryId());
+                    if (match != field)
+                        return false;
+                }
+                break;
+            }
+            break;
+        }
+    }
+    return true;
+}
+
+
+CHqlExpression::~CHqlExpression()
+{
+//  DBGLOG("%lx: Destroy", (unsigned)(IHqlExpression *)this);
+}
+
+IHqlScope * CHqlExpression::queryScope()
+{
+    //better, especially in cascaded error situations..
+    if (op == no_compound)
+        return queryChild(1)->queryScope();
+    return NULL;
+}
+
+IHqlSimpleScope * CHqlExpression::querySimpleScope()
+{
+    if (op == no_compound)
+        return queryChild(1)->querySimpleScope();
+    return NULL;
+}
+
+#define HASHFIELD(p) hashcode = hashvalue(p, hashcode)
+
+void CHqlExpression::setInitialHash(unsigned typeHash)
+{
+    hashcode = op+typeHash;
+    unsigned kids = operands.ordinality();
+    if (kids)
+        hashcode = hashc((const unsigned char *)operands.getArray(), kids * sizeof(IHqlExpression *), hashcode);
+}
+
+void CHqlExpression::sethash()
+{
+    // In 64-bit, just use bottom 32-bits of the ptr for the hash
+    setInitialHash((unsigned) (memsize_t) queryType());
+}
+
+IHqlExpression *CHqlExpression::closeExpr()
+{
+    assertex(!isExprClosed());   // closeExpr() shouldn't be called twice
+    sethash();
+    return commonUpExpression();
+}
+
+IHqlScope * closeScope(IHqlScope * scope)
+{
+    IHqlExpression * expr = queryExpression(scope);
+    return expr->closeExpr()->queryScope();
+}
+
+bool getAttribute(IHqlExpression * expr, IAtom * propname, StringBuffer &ret)
+{
+    IHqlExpression* match = expr->queryAttribute(propname);
+    if (match)
+    {
+        IHqlExpression * value = match->queryChild(0);
+        if (value)
+            value->queryValue()->getStringValue(ret);
+        return true;
+    }
+    return false;
+}
+
+unsigned CHqlExpression::getSymbolFlags() const
+{
+    throwUnexpected();
+    return 0;
+}
+
+IHqlExpression *CHqlExpression::queryChild(unsigned idx) const
+{
+    if (operands.isItem(idx))
+        return &operands.item(idx);
+    else
+        return NULL;
+}
+
+unsigned CHqlExpression::numChildren() const
+{
+    return operands.length();
+}
+
+inline bool matchesTypeCode(ITypeInfo * type, type_t search)
+{
+    loop
+    {
+        if (!type)
+            return false;
+
+        type_t tc = type->getTypeCode();
+        if (tc == search)
+            return true;
+        if (tc != type_function)
+            return false;
+        type = type->queryChildType();
     }
 }
 
-void CHqlExpression::initFlagsBeforeOperands()
+
+bool CHqlExpression::isBoolean()
+{
+    return matchesTypeCode(queryType(), type_boolean);
+}
+
+bool CHqlExpression::isDataset()
+{
+    ITypeInfo * cur = queryType();
+    loop
+    {
+        if (!cur)
+            return false;
+
+        switch(cur->getTypeCode())
+        {
+        case type_groupedtable:
+        case type_table:
+            return true;
+        case type_function:
+            cur = cur->queryChildType();
+            break;
+        default:
+            return false;
+        }
+    }
+}
+
+bool CHqlExpression::isDictionary()
+{
+    return matchesTypeCode(queryType(), type_dictionary);
+}
+
+bool CHqlExpression::isDatarow()
+{
+    return matchesTypeCode(queryType(), type_row);
+}
+
+bool CHqlExpression:: isFunction()
+{
+    ITypeInfo * thisType = queryType();
+    return thisType && thisType->getTypeCode() == type_function;
+}
+
+bool CHqlExpression::isMacro()
+{
+    switch (op)
+    {
+    case no_macro:
+        return true;
+    case no_funcdef:
+        return queryChild(0)->isMacro();
+    }
+    return false;
+}
+
+bool CHqlExpression::isRecord()
+{
+    return matchesTypeCode(queryType(), type_record);
+}
+
+bool CHqlExpression::isAction()
+{
+    return matchesTypeCode(queryType(), type_void);
+}
+
+bool CHqlExpression::isTransform()
+{
+    return matchesTypeCode(queryType(), type_transform);
+}
+
+bool CHqlExpression::isScope()
+{
+    return matchesTypeCode(queryType(), type_scope);
+}
+
+bool CHqlExpression::isField()
+{
+    return op == no_field;
+}
+
+bool CHqlExpression::isType()
+{
+    switch(op)
+    {
+    case no_type:
+        return true;
+    case no_funcdef:
+        return queryChild(0)->isType();
+    default:
+        return false;
+    }
+}
+
+bool CHqlExpression::isList()
+{
+    return matchesTypeCode(queryType(), type_set);
+}
+
+bool CHqlExpression::isAggregate()
+{
+    //This is only used for HOLe processing - I'm not sure how much sense it really makes.
+    switch(op)
+    {
+    case NO_AGGREGATE:
+    case NO_AGGREGATEGROUP:
+    case no_distribution:
+
+
+    case no_selectnth:
+    case no_evaluate:
+        return true;
+    case no_select:
+        return (queryChild(0)->getOperator() == no_selectnth);
+    default:
+        return false;
+    }
+}
+
+StringBuffer &CHqlExpression::toString(StringBuffer &ret)
+{
+#ifdef TRACE_THIS
+    ret.appendf("[%lx]", this);
+#endif
+    ret.appendf("%s", getOpString(op));
+    return ret;
+}
+
+
+void CHqlExpression::unwindList(HqlExprArray &dst, node_operator u_op)
+{
+    if (op==u_op)
+    {
+        ForEachChild(idx, this)
+            queryChild(idx)->unwindList(dst, u_op);
+    }
+    else
+    {
+        Link();
+        dst.append((IHqlExpression &)*this);
+    }
+}
+
+ITypeInfo *CHqlExpression::queryRecordType()
+{
+    return ::queryRecordType(queryType());
+}
+
+IHqlExpression *CHqlExpression::queryRecord()
+{
+    ITypeInfo *t = queryRecordType();
+    if (t)
+        return queryExpression(t);
+    return NULL;
+}
+
+//== Commoning up code.... ==
+#if (defined(GATHER_LINK_STATS) || defined(DEBUG_TRACK_INSTANCEID))
+void CHqlExpression::Link(void) const
+{
+#ifdef GATHER_LINK_STATS
+    numLinks++;
+    if (insideCreate)
+        numCreateLinks++;
+#endif
+    Parent::Link();
+    CHECK_EXPR_SEQID(1);
+}
+
+bool CHqlExpression::Release(void) const
+{
+#ifdef GATHER_LINK_STATS
+    numReleases++;
+    if (insideCreate)
+        numCreateReleases++;
+#endif
+    CHECK_EXPR_SEQID(2);
+    return Parent::Release();
+}
+#endif
+
+
+void CHqlExpression::beforeDispose()
+{
+    CHECK_EXPR_SEQID(3);
+#ifdef CONSISTENCY_CHECK
+    if (hashcode)
+    {
+        unsigned oldhash = hashcode;
+        sethash();
+        assertex(hashcode == oldhash);
+    }
+    assertex(equals(*this));
+#endif
+    if (observed)
+    {
+#ifdef HQLEXPR_MULTI_THREADED
+        CriticalBlock block(*exprCacheCS);
+#endif
+        if (observed)
+            exprCache->removeExact(this);
+    }
+    assertex(!(observed));
+}
+
+
+unsigned CHqlExpression::getHash() const
+{
+    return hashcode;
+}
+
+
+void CHqlExpression::addObserver(IObserver & observer)
+{
+    assertex(!(observed));
+    assert(&observer == exprCache);
+    observed = true;
+}
+
+void CHqlExpression::removeObserver(IObserver & observer)
+{
+    assertex(observed);
+    assert(&observer == exprCache);
+    observed = false;
+}
+
+
+IHqlExpression * CHqlExpression::commonUpExpression()
+{
+    switch (op)
+    {
+        //I'm still not completely convinced that commoning up parameters doesn't cause problems.
+        //e.g. if a parameter from one function is passed into another.  Don't common up for the moment....
+        //And parameter index must include all parameters in enclosing scopes as well.
+    case no_uncommoned_comma:
+        return this;
+    case no_service:
+        return this;
+    case no_privatescope:
+    case no_mergedscope:
+        return this;
+    case no_remotescope:
+        if (isAnnotation())
+            return this;
+        throwUnexpectedOp(op);
+    }
+
+    IHqlExpression * match;
+    {
+#ifdef HQLEXPR_MULTI_THREADED
+        CriticalBlock block(*exprCacheCS);
+#endif
+        match = exprCache->addOrFind(*this);
+#ifndef GATHER_COMMON_STATS
+        if (match == this)
+            return this;
+#endif
+        match->Link();
+        if (!static_cast<CHqlExpression *>(match)->isAlive())
+        {
+            exprCache->replace(*this);
+#ifndef GATHER_COMMON_STATS
+            return this;
+#endif
+            Link();
+            match = this;
+        }
+    }
+
+#ifdef GATHER_COMMON_STATS
+    node_operator statOp = op;
+
+    if (isAnnotation())
+    {
+        annotate_kind  kind = getAnnotationKind();
+        commonUpAnnCount[kind]++;
+        if (match != this)
+            commonUpAnnClash[kind]++;
+    }
+    else
+    {
+        commonUpCount[statOp]++;
+        if (match != this)
+        {
+            commonUpClash[statOp]++;
+        }
+    }
+#endif
+    Release();
+    return match;
+}
+
+IHqlExpression * CHqlExpression::calcNormalizedSelector() const
+{
+    IHqlExpression * left = &operands.item(0);
+    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
+    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasAttribute(newAtom)))
+    {
+        HqlExprArray args;
+        appendArray(args, operands);
+        args.replace(*LINK(normalizedLeft), 0);
+        removeAttribute(args, newAtom);
+        return doCreateSelectExpr(args);
+    }
+    return NULL;
+}
+
+void displayHqlCacheStats()
+{
+#if 0
+    static HqlExprCopyArray prev;
+    DBGLOG("CachedItems = %d", exprCache->count());
+    exprCache->dumpStats();
+    JavaHashIteratorOf<IHqlExpression> iter(*exprCache, false);
+    ForEach(iter)
+    {
+        IHqlExpression & ret = iter.query();
+        if (!prev.contains(ret))
+        {
+            StringBuffer s;
+            processedTreeToECL(&ret, s);
+            DBGLOG("%p: %s", &ret, s.str());
+        }
+    }
+
+    prev.kill();
+    ForEach(iter)
+    {
+        prev.append(iter.query());
+    }
+#endif
+}
+
+//--------------------------------------------------------------------------------------------------------------
+
+CHqlRealExpression::CHqlRealExpression(node_operator op) : CHqlExpression(op)
+{
+    cachedCRC = 0;
+    initFlagsBeforeOperands();
+}
+
+CHqlRealExpression::~CHqlRealExpression()
+{
+    delete attributes;
+}
+
+IHqlExpression *CHqlRealExpression::closeExpr()
+{
+    updateFlagsAfterOperands();
+    return CHqlExpression::closeExpr();
+}
+
+void CHqlRealExpression::initFlagsBeforeOperands()
 {
     //NB: The following code is not allowed to access queryType()!
     infoFlags = 0;
@@ -3226,7 +3868,7 @@ void CHqlExpression::initFlagsBeforeOperands()
         break;
     case no_random:
         infoFlags2 &= ~(HEF2constant);
-        infoFlags |= HEFvolatile;
+        infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
         break;
     case no_wait:
         infoFlags2 |= HEF2globalAction;
@@ -3258,9 +3900,9 @@ void CHqlExpression::initFlagsBeforeOperands()
     case no_output:
     case no_setresult:
     case no_extractresult:
-        // don't mark as impure because temporary results don't get commoned up.  Need another flag to mean has side-effects, 
+        // don't mark as impure because temporary results don't get commoned up.  Need another flag to mean has side-effects,
         // but can be commoned up because repeating it will have the same effect.
-        infoFlags2 &= ~(HEF2constant);      
+        infoFlags2 &= ~(HEF2constant);
         break;
     case no_skip:
         infoFlags |= HEFcontainsSkip;
@@ -3364,48 +4006,13 @@ void CHqlExpression::initFlagsBeforeOperands()
     }
 }
 
-//Can be called from updateFlagsAfterOperands to help track down inconsistencies
-static bool verifyTransform(IHqlExpression * record, IHqlExpression * expr)
-{
-    ForEachChild(i, expr)
-    {
-        IHqlExpression * cur = expr->queryChild(i);
-        switch (cur->getOperator())
-        {
-        case no_assignall:
-            if (!verifyTransform(record, cur))
-                return false;
-            break;
-        case no_assign:
-            {
-                IHqlExpression * lhs = cur->queryChild(0);
-                if (lhs->getOperator() == no_select)
-                {
-                    if ((lhs->queryChild(0)->getOperator() == no_select) &&
-                        (lhs->queryChild(0)->queryChild(0)->getOperator() == no_self))
-                        return false;
-
-                    IHqlExpression * field = lhs->queryChild(1);
-                    OwnedHqlExpr match = record->querySimpleScope()->lookupSymbol(field->queryId());
-                    if (match != field)
-                        return false;
-                }
-                break;
-            }
-            break;
-        }
-    }
-    return true;
-}
-
-
-void CHqlExpression::updateFlagsAfterOperands()
+void CHqlRealExpression::updateFlagsAfterOperands()
 {
 //  DBGLOG("%p: Create(%s) type = %lx", (unsigned)(IHqlExpression *)this, getOpString(op), (unsigned)type);
     switch (op)
     {
     case no_pure:
-        infoFlags &= ~(HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip);
+        infoFlags &= ~(HEFnoduplicate|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip);
         break;
     case no_record:
         {
@@ -3416,7 +4023,7 @@ void CHqlExpression::updateFlagsAfterOperands()
                 IHqlExpression * cur = queryChild(idx);
                 if (cur->getOperator() == no_field)
                 {
-                    //MORE: Should cope with 
+                    //MORE: Should cope with
                     IHqlExpression * value = cur->queryChild(0);
                     if (value && value->isGroupAggregateFunction())
                     {
@@ -3552,9 +4159,14 @@ void CHqlExpression::updateFlagsAfterOperands()
         infoFlags2 |= HEF2constant;
         break;
     case no_attr:
-        infoFlags = (infoFlags & (HEFhousekeeping|HEFalwaysInherit));
-        infoFlags2 |= HEF2constant;
-        break;
+        {
+            infoFlags = (infoFlags & (HEFhousekeeping|HEFalwaysInherit));
+            infoFlags2 |= HEF2constant;
+            IAtom * name = queryName();
+            if (name == _volatileId_Atom)
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
+            break;
+        }
     case no_newxmlparse:
     case no_xmlparse:
         //clear flag unless set in the dataset.
@@ -3584,15 +4196,18 @@ void CHqlExpression::updateFlagsAfterOperands()
         break;
     case no_attr_link:
     case no_attr_expr:
-        if (queryName() == onFailAtom)
         {
-            infoFlags &= ~(HEFonFailDependent|HEFcontainsSkip); // ONFAIL(SKIP) - skip shouldn't extend any further
+            IAtom * name = queryName();
+            if (name == onFailAtom)
+                infoFlags &= ~(HEFonFailDependent|HEFcontainsSkip); // ONFAIL(SKIP) - skip shouldn't extend any further
+            else if (name == _volatileId_Atom)
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
+            infoFlags &= ~(HEFthrowscalar|HEFthrowds|HEFoldthrows);
+            break;
         }
-        infoFlags &= ~(HEFthrowscalar|HEFthrowds|HEFoldthrows);
-        break;
     case no_clustersize:
         //wrong, but improves the generated code
-        infoFlags |= HEFvolatile;
+        infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
         break;
     case no_type:
         {
@@ -3652,7 +4267,7 @@ void CHqlExpression::updateFlagsAfterOperands()
                 if (bodycode->getOperator() == no_embedbody)
                 {
                     if (bodycode->queryAttribute(actionAtom))
-                        infoFlags |= HEFvolatile;
+                        infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
                 }
             }
             else
@@ -3663,13 +4278,13 @@ void CHqlExpression::updateFlagsAfterOperands()
     case no_getresult:
         {
             if (false && matchesConstantValue(queryAttributeChild(this, sequenceAtom, 0), ResultSequenceOnce))
-                infoFlags |= HEFvolatile;
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
             break;
         }
     case no_embedbody:
         {
             if (queryAttribute(actionAtom))
-                infoFlags |= HEFvolatile;
+                infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
             break;
         }
     }
@@ -3922,13 +4537,38 @@ switch (op)
 }
 
 
-void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOperand)
+bool CHqlRealExpression::isConstant()
+{
+    return constant();
+}
+
+IHqlExpression *CHqlRealExpression::addOperand(IHqlExpression * child)
+{
+    //Forward scopes are never commoned up, and are shared as a side-effect of keeping references to their owner
+    assertex (!IsShared() || (op == no_forwardscope));
+    assertex (!isExprClosed());
+    doAppendOperand(*child);
+    return this;
+}
+
+void CHqlRealExpression::onAppendOperand(IHqlExpression & child, unsigned whichOperand)
 {
     //MORE: All methods that use flags updated here need to be overridden in CHqlNamedExpr()
     bool updateFlags = true;
     unsigned childFlags = child.getInfoFlags();
     unsigned childFlags2 = child.getInfoFlags2();
     node_operator childOp = child.getOperator();
+
+    const unsigned contextFlags = HEFcontextDependentException|HEFthrowscalar|HEFthrowds;
+    if (childFlags & contextFlags)
+    {
+        if (isDataset() || isAction())
+        {
+            if (!child.isDataset() && !child.isAction())
+                childFlags &= ~contextFlags;
+        }
+    }
+
     switch (op)
     {
     case no_keyindex:
@@ -3974,7 +4614,7 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
         {
             switch (childOp)
             {
-            case no_field: 
+            case no_field:
             case no_ifblock:
             case no_record:
             case no_attr:
@@ -3993,16 +4633,12 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     {
     case no_transform:
     case no_newtransform:
-        childFlags &= ~(HEFtransformDependent|HEFcontainsSkip|HEFthrowscalar|HEFthrowds);
+        childFlags &= ~(HEFcontextDependentException|HEFtransformDependent|HEFcontainsSkip|HEFthrowscalar|HEFthrowds);
         break;
     }
 
     if (updateFlags)
     {
-
-        //These are cleared if not set in the child.
-        infoFlags &= (childFlags | ~(HEFintersectionFlags));
-
         //These are set if set in the child
         infoFlags |= (childFlags & HEFunionFlags);
 
@@ -4021,48 +4657,94 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
 #endif
 }
 
-CHqlExpression::~CHqlExpression()
+void CHqlRealExpression::appendOperands(IHqlExpression * arg0, ...)
 {
-//  DBGLOG("%lx: Destroy", (unsigned)(IHqlExpression *)this);
-    delete attributes;
+    if (!arg0)
+        return;
+
+    unsigned numArgs = 1;
+    va_list argscount;
+    va_start(argscount, arg0);
+    for (;;)
+    {
+        IHqlExpression *parm = va_arg(argscount, IHqlExpression *);
+        if (!parm)
+            break;
+        numArgs++;
+    }
+    va_end(argscount);
+
+    operands.ensure(numArgs);
+    doAppendOperand(*arg0);
+    va_list args;
+    va_start(args, arg0);
+    for (;;)
+    {
+        IHqlExpression *parm = va_arg(args, IHqlExpression *);
+        if (!parm)
+            break;
+#ifdef _DEBUG
+        assertex(QUERYINTERFACE(parm, IHqlExpression));
+#endif
+        doAppendOperand(*parm);
+    }
+    va_end(args);
 }
 
-IHqlScope * CHqlExpression::queryScope() 
+void CHqlRealExpression::setOperands(HqlExprArray & _ownedOperands)
 {
-    //better, especially in cascaded error situations..
-    if (op == no_compound)
-        return queryChild(1)->queryScope();
-    return NULL; 
+    unsigned max = _ownedOperands.ordinality();
+    if (max)
+    {
+        operands.swapWith(_ownedOperands);
+        for (unsigned i=0; i < max; i++)
+            onAppendOperand(operands.item(i), i);
+    }
 }
 
-IHqlSimpleScope * CHqlExpression::querySimpleScope() 
-{ 
-    if (op == no_compound)
-        return queryChild(1)->querySimpleScope();
-    return NULL; 
-}
-
-#define HASHFIELD(p) hashcode = hashvalue(p, hashcode)
-
-void CHqlExpression::setInitialHash(unsigned typeHash)
+bool CHqlRealExpression::equals(const IHqlExpression & other) const
 {
-    hashcode = op+typeHash;
-    unsigned kids = operands.ordinality();
-    if (kids)
-        hashcode = hashc((const unsigned char *)operands.getArray(), kids * sizeof(IHqlExpression *), hashcode);
+    if (!isAlive()) return false;
+#ifndef CONSISTENCY_CHECK
+    if (this == &other)
+        return true;
+#endif
+    if (other.isAnnotation())
+        return false;
+    if (op != other.getOperator())
+        return false;
+    switch (op)
+    {
+    case no_record:
+    case no_type:
+    case no_scope:
+    case no_service:
+    case no_virtualscope:
+    case no_concretescope:
+    case no_libraryscope:
+    case no_libraryscopeinstance:
+        break;
+    default:
+        if (queryType() != other.queryType())
+            return false;
+        break;
+    }
+    unsigned kids = other.numChildren();
+    if (kids != operands.ordinality())
+        return false;
+    for (unsigned kid = 0; kid < kids; kid++)
+    {
+        if (&operands.item(kid) != other.queryChild(kid))
+            return false;
+    }
+    return true;
 }
 
-void CHqlExpression::sethash()
-{
-    // In 64-bit, just use bottom 32-bits of the ptr for the hash
-    setInitialHash((unsigned) (memsize_t) queryType());
-}
-
-unsigned CHqlExpression::getCachedEclCRC()
+unsigned CHqlRealExpression::getCachedEclCRC()
 {
     if (cachedCRC)
         return cachedCRC;
-    
+
     unsigned crc = op;
     switch (op)
     {
@@ -4144,7 +4826,7 @@ unsigned CHqlExpression::getCachedEclCRC()
     case no_attr_link:
         {
             const IAtom * name = queryBody()->queryName();
-            if (name == _uid_Atom)
+            if (name == _uid_Atom || name == _volatileId_Atom)
                 return 0;
             const char * nameText = str(name);
             crc = hashnc((const byte *)nameText, strlen(nameText), crc);
@@ -4153,7 +4835,7 @@ unsigned CHqlExpression::getCachedEclCRC()
     case no_libraryscopeinstance:
         {
             IHqlExpression * scopeFunc = queryDefinition();
-            IHqlExpression * moduleExpr = scopeFunc->queryChild(0); 
+            IHqlExpression * moduleExpr = scopeFunc->queryChild(0);
             crc ^= moduleExpr->getCachedEclCRC();
             break;
         }
@@ -4189,462 +4871,17 @@ unsigned CHqlExpression::getCachedEclCRC()
 }
 
 
-bool CHqlExpression::equals(const IHqlExpression & other) const
+IHqlExpression *CHqlRealExpression::queryAttribute(IAtom * propname) const
 {
-    if (!isAlive()) return false;
-#ifndef CONSISTENCY_CHECK
-    if (this == &other)
-        return true;
-#endif
-    if (other.isAnnotation())
-        return false;
-    if (op != other.getOperator())
-        return false;
-    switch (op)
+    ForEachItemIn(i, operands)
     {
-    case no_record:
-    case no_type:
-    case no_scope:
-    case no_service:
-    case no_virtualscope:
-    case no_concretescope:
-    case no_libraryscope:
-    case no_libraryscopeinstance:
-        break;
-    default:
-        if (queryType() != other.queryType())
-            return false;
-        break;
-    }
-    unsigned kids = other.numChildren();
-    if (kids != numChildren())
-        return false;
-    for (unsigned kid = 0; kid < kids; kid++)
-    {
-        if (queryChild(kid) != other.queryChild(kid))
-            return false;
-    }
-    return true;
-}
-
-IHqlExpression *CHqlExpression::closeExpr()
-{
-    assertex(!isExprClosed());   // closeExpr() shouldn't be called twice
-    updateFlagsAfterOperands();
-    sethash();
-    return commonUpExpression();
-}
-
-IHqlScope * closeScope(IHqlScope * scope)
-{
-    IHqlExpression * expr = queryExpression(scope);
-    return expr->closeExpr()->queryScope();
-}
-
-bool getAttribute(IHqlExpression * expr, IAtom * propname, StringBuffer &ret)
-{
-    IHqlExpression* match = expr->queryAttribute(propname);
-    if (match)
-    {
-        IHqlExpression * value = match->queryChild(0);
-        if (value)
-            value->queryValue()->getStringValue(ret);
-        return true;
-    }
-    return false;
-}
-
-IHqlExpression *CHqlExpression::queryAttribute(IAtom * propname) const
-{
-    unsigned kids = numChildren();
-    for (unsigned i = 0; i < kids; i++)
-    {
-        IHqlExpression *kid = queryChild(i);
-        if (kid->isAttribute() && kid->queryName()==propname)
-            return kid;
+        IHqlExpression &kid = operands.item(i);
+        if (kid.isAttribute() && kid.queryName()==propname)
+            return &kid;
     }
     return NULL;
 }
 
-unsigned CHqlExpression::getSymbolFlags() const
-{
-    throwUnexpected();
-    return 0;
-}
-
-IHqlExpression *CHqlExpression::queryChild(unsigned idx) const
-{
-    if (operands.isItem(idx))
-        return &operands.item(idx);
-    else
-        return NULL;
-}
-
-unsigned CHqlExpression::numChildren() const
-{
-    return operands.length();
-}
-
-IHqlExpression *CHqlExpression::addOperand(IHqlExpression * child)
-{
-    //Forward scopes are never commoned up, and are shared as a side-effect of keeping references to their owner
-    assertex (!IsShared() || (op == no_forwardscope));
-    assertex (!isExprClosed());
-    doAppendOperand(*child);
-    return this;
-}
-
-inline bool matchesTypeCode(ITypeInfo * type, type_t search)
-{
-    loop
-    {
-        if (!type)
-            return false;
-
-        type_t tc = type->getTypeCode();
-        if (tc == search)
-            return true;
-        if (tc != type_function)
-            return false;
-        type = type->queryChildType();
-    }
-}
-
-
-bool CHqlExpression::isBoolean() 
-{
-    return matchesTypeCode(queryType(), type_boolean);
-}
-
-bool CHqlExpression::isConstant() 
-{
-    return constant();
-}
-
-bool CHqlExpression::isDataset() 
-{
-    ITypeInfo * cur = queryType();
-    loop
-    {
-        if (!cur)
-            return false;
-
-        switch(cur->getTypeCode())
-        {
-        case type_groupedtable:
-        case type_table:
-            return true;
-        case type_function:
-            cur = cur->queryChildType();
-            break;
-        default:
-            return false;
-        }
-    }
-}
-
-bool CHqlExpression::isDictionary()
-{
-    return matchesTypeCode(queryType(), type_dictionary);
-}
-
-bool CHqlExpression::isDatarow() 
-{
-    return matchesTypeCode(queryType(), type_row);
-}
-
-bool CHqlExpression:: isFunction() 
-{ 
-    ITypeInfo * thisType = queryType();
-    return thisType && thisType->getTypeCode() == type_function;
-} 
-
-bool CHqlExpression::isMacro() 
-{ 
-    switch (op)
-    {
-    case no_macro:
-        return true;
-    case no_funcdef:
-        return queryChild(0)->isMacro();
-    }
-    return false;
-} 
-
-bool CHqlExpression::isRecord() 
-{
-    return matchesTypeCode(queryType(), type_record);
-}
- 
-bool CHqlExpression::isAction() 
-{
-    return matchesTypeCode(queryType(), type_void);
-}
-
-bool CHqlExpression::isTransform() 
-{
-    return matchesTypeCode(queryType(), type_transform);
-}
-
-bool CHqlExpression::isScope() 
-{
-    return matchesTypeCode(queryType(), type_scope);
-}
-
-bool CHqlExpression::isField() 
-{
-    return op == no_field;
-}
-
-bool CHqlExpression::isType() 
-{
-    switch(op)
-    {
-    case no_type:
-        return true;
-    case no_funcdef:
-        return queryChild(0)->isType();
-    default:
-        return false;
-    }
-}
-
-bool CHqlExpression::isList() 
-{
-    return matchesTypeCode(queryType(), type_set);
-}
-
-bool CHqlExpression::isAggregate()
-{
-    //This is only used for HOLe processing - I'm not sure how much sense it really makes.
-    switch(op)
-    {
-    case NO_AGGREGATE:
-    case NO_AGGREGATEGROUP:
-    case no_distribution:
-
-
-    case no_selectnth:
-    case no_evaluate:
-        return true;
-    case no_select:
-        return (queryChild(0)->getOperator() == no_selectnth);
-    default:
-        return false;
-    }
-}
-
-StringBuffer &CHqlExpression::toString(StringBuffer &ret)
-{
-#ifdef TRACE_THIS
-    ret.appendf("[%lx]", this);
-#endif
-    ret.appendf("%s", getOpString(op));
-    return ret;
-}
-
-
-void CHqlExpression::unwindList(HqlExprArray &dst, node_operator u_op)
-{
-    if (op==u_op)
-    {
-        ForEachChild(idx, this)
-            queryChild(idx)->unwindList(dst, u_op);
-    }
-    else
-    {
-        Link();
-        dst.append((IHqlExpression &)*this);
-    }
-}
-
-ITypeInfo *CHqlExpression::queryRecordType()
-{
-    return ::queryRecordType(queryType());
-}
-
-IHqlExpression *CHqlExpression::queryRecord()
-{
-    ITypeInfo *t = queryRecordType();
-    if (t)
-        return queryExpression(t);
-    return NULL;
-}
-
-//== Commoning up code.... ==
-#if (defined(GATHER_LINK_STATS) || defined(DEBUG_TRACK_INSTANCEID))
-void CHqlExpression::Link(void) const
-{ 
-#ifdef GATHER_LINK_STATS
-    numLinks++;
-    if (insideCreate)
-        numCreateLinks++;
-#endif
-    Parent::Link();
-    CHECK_EXPR_SEQID(1);
-}
-
-bool CHqlExpression::Release(void) const
-{ 
-#ifdef GATHER_LINK_STATS
-    numReleases++;
-    if (insideCreate)
-        numCreateReleases++;
-#endif
-    CHECK_EXPR_SEQID(2);
-    return Parent::Release();
-}
-#endif
-
-
-void CHqlExpression::beforeDispose()
-{
-    CHECK_EXPR_SEQID(3);
-#ifdef CONSISTENCY_CHECK
-    if (hashcode)
-    {
-        unsigned oldhash = hashcode;
-        sethash();
-        assertex(hashcode == oldhash);
-    }
-    assertex(equals(*this));
-#endif
-    if (infoFlags & HEFobserved)
-    {
-#ifdef HQLEXPR_MULTI_THREADED
-        CriticalBlock block(*exprCacheCS);
-#endif
-        if (infoFlags & HEFobserved)
-            exprCache->removeExact(this);
-    }
-    assertex(!(infoFlags & HEFobserved));
-}
-
-
-unsigned CHqlExpression::getHash() const                
-{ 
-    return hashcode; 
-}
-
-
-void CHqlExpression::addObserver(IObserver & observer)
-{
-    assertex(!(infoFlags & HEFobserved));
-    assert(&observer == exprCache);
-    infoFlags |= HEFobserved;
-}
-
-void CHqlExpression::removeObserver(IObserver & observer)
-{
-    assertex((infoFlags & HEFobserved));
-    assert(&observer == exprCache);
-    infoFlags &= ~HEFobserved;
-}
-
-
-IHqlExpression * CHqlExpression::commonUpExpression()
-{
-    switch (op)
-    {
-        //I'm still not completely convinced that commoning up parameters doesn't cause problems.
-        //e.g. if a parameter from one function is passed into another.  Don't common up for the moment....
-        //And parameter index must include all parameters in enclosing scopes as well.
-    case no_uncommoned_comma:
-        return this;
-    case no_service:
-        return this;
-    case no_privatescope:
-    case no_mergedscope:
-        return this;
-    case no_remotescope:
-        if (isAnnotation())
-            return this;
-        throwUnexpectedOp(op);
-    }
-
-    IHqlExpression * match;
-    {
-#ifdef HQLEXPR_MULTI_THREADED
-        CriticalBlock block(*exprCacheCS);
-#endif
-        match = exprCache->addOrFind(*this);
-#ifndef GATHER_COMMON_STATS
-        if (match == this)
-            return this;
-#endif
-        match->Link();
-        if (!static_cast<CHqlExpression *>(match)->isAlive())
-        {
-            exprCache->replace(*this);
-#ifndef GATHER_COMMON_STATS
-            return this;
-#endif
-            Link();
-            match = this;
-        }
-    }
-
-#ifdef GATHER_COMMON_STATS
-    node_operator statOp = op;
-
-    if (isAnnotation())
-    {
-        annotate_kind  kind = getAnnotationKind();
-        commonUpAnnCount[kind]++;
-        if (match != this)
-            commonUpAnnClash[kind]++;
-    }
-    else
-    {
-        commonUpCount[statOp]++;
-        if (match != this)
-            commonUpClash[statOp]++;
-    }
-#endif
-    Release();
-    return match;
-}
-
-IHqlExpression * CHqlExpression::calcNormalizedSelector() const
-{
-    IHqlExpression * left = &operands.item(0);
-    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
-    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasAttribute(newAtom)))
-    {
-        HqlExprArray args;
-        appendArray(args, operands);
-        args.replace(*LINK(normalizedLeft), 0);
-        removeAttribute(args, newAtom);
-        return doCreateSelectExpr(args);
-    }
-    return NULL;
-}
-
-void displayHqlCacheStats()
-{
-#if 0
-    static HqlExprCopyArray prev;
-    DBGLOG("CachedItems = %d", exprCache->count());
-    exprCache->dumpStats();
-    JavaHashIteratorOf<IHqlExpression> iter(*exprCache, false);
-    ForEach(iter)
-    {
-        IHqlExpression & ret = iter.query();
-        if (!prev.contains(ret))
-        {
-            StringBuffer s;
-            processedTreeToECL(&ret, s);
-            DBGLOG("%p: %s", &ret, s.str());
-        }
-    }
-
-    prev.kill();
-    ForEach(iter)
-    {
-        prev.append(iter.query());
-    }
-#endif
-}
 //--------------------------------------------------------------------------------------------------------------
 
 CHqlExpressionWithType::CHqlExpressionWithType(node_operator _op, ITypeInfo * _type, HqlExprArray & _ownedOperands)
@@ -4775,7 +5012,7 @@ IHqlExpression *CHqlNamedExpression::clone(HqlExprArray &newkids)
 
 bool CHqlNamedExpression::equals(const IHqlExpression & r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlExpressionWithType::equals(r))
     {
         if (queryName() == r.queryName())
             return true;
@@ -5610,7 +5847,7 @@ void CHqlExpressionWithTables::gatherTablesUsed(CUsedTablesBuilder & used)
 //==============================================================================================================
 
 CHqlSelectBaseExpression::CHqlSelectBaseExpression()
-: CHqlExpression(no_select)
+: CHqlRealExpression(no_select)
 {
 }
 
@@ -5645,7 +5882,7 @@ void CHqlSelectBaseExpression::setOperands(IHqlExpression * left, IHqlExpression
 void CHqlSelectBaseExpression::setOperands(HqlExprArray & _ownedOperands)
 {
     //base setOperands() already processes things in the correct order
-    CHqlExpression::setOperands(_ownedOperands);
+    CHqlRealExpression::setOperands(_ownedOperands);
 }
 
 IHqlExpression * CHqlSelectBaseExpression::clone(HqlExprArray &newkids)
@@ -5791,7 +6028,7 @@ void CHqlSelectExpression::calcNormalized()
 
 //==============================================================================================================
 
-CHqlConstant::CHqlConstant(IValue *_val) : CHqlExpression(no_constant)
+CHqlConstant::CHqlConstant(IValue *_val) : CHqlRealExpression(no_constant)
 {
     val = _val;
     infoFlags |= (HEFhasunadorned|HEFgatheredNew);
@@ -5922,7 +6159,7 @@ void CHqlField::onCreateField()
 
 bool CHqlField::equals(const IHqlExpression & r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlExpressionWithType::equals(r))
     {
         if (id == r.queryId())
             return true;
@@ -6257,7 +6494,7 @@ CHqlDataset::~CHqlDataset()
 
 bool CHqlDataset::equals(const IHqlExpression & r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlExpressionWithType::equals(r))
     {
         const CHqlDataset & other = (const CHqlDataset &)r;
         //No need to check name - since it is purely derived from one of the arguments
@@ -6530,7 +6767,7 @@ CHqlRecord::CHqlRecord(HqlExprArray &operands) : CHqlExpressionWithTables(no_rec
 
 bool CHqlRecord::equals(const IHqlExpression & r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlExpressionWithTables::equals(r))
     {
         return true;
     }
@@ -6566,7 +6803,7 @@ unsigned CHqlRecord::getAlignment()
 
 IHqlExpression *CHqlRecord::addOperand(IHqlExpression *field)
 {
-    CHqlExpression::addOperand(field);
+    CHqlRealExpression::addOperand(field);
     insertSymbols(field);
     return this;
 }
@@ -6800,6 +7037,16 @@ IHqlExpression *CHqlAnnotation::queryChild(unsigned idx) const
 IHqlExpression *CHqlAnnotation::queryAttribute(IAtom * propname) const
 {
     return body->queryAttribute(propname);
+}
+
+void CHqlAnnotation::addProperty(ExprPropKind kind, IInterface * value)
+{
+    throwUnexpected();
+}
+
+IInterface * CHqlAnnotation::queryExistingProperty(ExprPropKind kind) const
+{
+    throwUnexpected();
 }
 
 IHqlExpression * CHqlAnnotation::queryAnnotationParameter(unsigned idx) const
@@ -7089,8 +7336,6 @@ CHqlSymbolAnnotation::CHqlSymbolAnnotation(IIdAtom * _id, IIdAtom * _moduleId, I
     symbolFlags = _symbolFlags;
     moduleId = _moduleId;
     funcdef = _funcdef;
-    if (funcdef && containsInternalSelect(funcdef))
-        infoFlags |= HEFinternalSelect;
 }
 
 void CHqlSymbolAnnotation::sethash()
@@ -7908,7 +8153,10 @@ IHqlExpression * createFunctionDefinition(IIdAtom * id, IHqlExpression * value, 
     if (defaults)
         args.append(*defaults);
     if (attrs)
+    {
         attrs->unwindList(args, no_comma);
+        ::Release(attrs);
+    }
     return createFunctionDefinition(id, args);
 }
 
@@ -8445,7 +8693,7 @@ void CHqlLocalScope::sethash()
 
 bool CHqlLocalScope::equals(const IHqlExpression &r) const
 {
-    if (!CHqlExpression::equals(r))
+    if (!CHqlScope::equals(r))
         return false;
 
     if (!scopesEqual(this, const_cast<IHqlExpression &>(r).queryScope()))
@@ -8723,7 +8971,8 @@ IHqlExpression * createLibraryInstance(IHqlExpression * scopeFunction, HqlExprAr
 
 bool CHqlLibraryInstance::equals(const IHqlExpression & other) const
 {
-    if (!CHqlExpression::equals(other))
+    //NB: Do not call CHqlScopeExpression::equals since that returns true if the pointers match
+    if (!CHqlRealExpression::equals(other))
         return false;
     if (queryExternalDefinition() != other.queryExternalDefinition())
         return false;
@@ -9104,7 +9353,7 @@ void CHqlVirtualScope::sethash()
 
 bool CHqlVirtualScope::equals(const IHqlExpression &r) const
 {
-    if (!CHqlExpression::equals(r))
+    if (!CHqlScope::equals(r))
         return false;
 
     if (!scopesEqual(this, const_cast<IHqlExpression &>(r).queryScope()))
@@ -9585,7 +9834,7 @@ CHqlParameter::~CHqlParameter()
 
 bool CHqlParameter::equals(const IHqlExpression & _other) const
 {
-    if (!CHqlExpression::equals(_other))
+    if (!CHqlExpressionWithType::equals(_other))
         return false;
     const CHqlParameter & other = static_cast<const CHqlParameter &>(_other);
     if (uid != other.uid)
@@ -9672,7 +9921,7 @@ bool CHqlScopeParameter::assignableFrom(ITypeInfo * source)
 
 bool CHqlScopeParameter::equals(const IHqlExpression & _other) const
 {
-    if (!CHqlExpression::equals(_other))
+    if (!CHqlScope::equals(_other))
         return false;
     const CHqlScopeParameter & other = static_cast<const CHqlScopeParameter &>(_other);
     if (uid != other.uid)
@@ -9736,7 +9985,7 @@ IHqlExpression * CHqlScopeParameter::lookupSymbol(IIdAtom * searchName, unsigned
 //==============================================================================================================
 
 CHqlDelayedScope::CHqlDelayedScope(HqlExprArray &_ownedOperands)
- : CHqlExpressionWithTables(no_delayedscope)
+ : CHqlExpressionWithTables(no_delayedscope), type(nullptr)
 {
     setOperands(_ownedOperands); // after type is initialized
     type = queryChild(0)->queryType();
@@ -9842,7 +10091,7 @@ IHqlExpression * createDelayedScope(IHqlExpression * expr)
 }
 
 //==============================================================================================================
-CHqlVariable::CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _type) : CHqlExpression(_op)
+CHqlVariable::CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _type) : CHqlRealExpression(_op)
 {
 #ifdef SEARCH_NAME1
     if (strcmp(_name, SEARCH_NAME1) == 0)
@@ -9883,7 +10132,7 @@ CHqlVariable *CHqlVariable::makeVariable(node_operator op, const char * name, IT
 
 bool CHqlVariable::equals(const IHqlExpression & r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlRealExpression::equals(r))
     {
         dbgassertex(QUERYINTERFACE(&r, const CHqlVariable) == (const CHqlVariable *) &r);
         const CHqlVariable *c = static_cast<const CHqlVariable *>(&r);
@@ -9925,7 +10174,7 @@ CHqlAttribute *CHqlAttribute::makeAttribute(node_operator op, IAtom * name)
 
 bool CHqlAttribute::equals(const IHqlExpression &r) const
 {
-    if (CHqlExpression::equals(r))
+    if (CHqlExpressionWithTables::equals(r))
         return name==r.queryName();
     return false;
 }
@@ -9987,7 +10236,7 @@ CHqlUnknown *CHqlUnknown::makeUnknown(node_operator _op, ITypeInfo * _type, IAto
 
 bool CHqlUnknown::equals(const IHqlExpression &r) const
 {
-    if (CHqlExpression::equals(r) && name==r.queryName())
+    if (CHqlExpressionWithType::equals(r) && name==r.queryName())
     {
         const CHqlUnknown * other = dynamic_cast<const CHqlUnknown *>(&r);
         if (other && (extra == other->extra))
@@ -10037,7 +10286,7 @@ CHqlSequence *CHqlSequence::makeSequence(node_operator _op, ITypeInfo * _type, I
 
 bool CHqlSequence::equals(const IHqlExpression &r) const
 {
-    if (CHqlExpression::equals(r) && name==r.queryName())
+    if (CHqlExpressionWithType::equals(r) && name==r.queryName())
     {
         const CHqlSequence * other = dynamic_cast<const CHqlSequence *>(&r);
         if (other && (seq == other->seq))
@@ -10061,7 +10310,7 @@ IHqlExpression *CHqlSequence::clone(HqlExprArray &newkids)
 
 StringBuffer &CHqlSequence::toString(StringBuffer &ret)
 {
-    return ret.append(name);
+    return ret.append(name).append(":").append(seq);
 }
 
 //==============================================================================================================
@@ -10083,35 +10332,96 @@ CHqlExternal *CHqlExternal::makeExternalReference(IIdAtom * _id, ITypeInfo *_typ
 
 //==============================================================================================================
 
+extern bool isVolatileFuncdef(IHqlExpression * funcdef)
+{
+    if (funcdef->hasAttribute(volatileAtom))
+        return true;
+
+    IHqlExpression * body = funcdef->queryChild(0);
+    switch (body->getOperator())
+    {
+    case no_external:
+        {
+            if (body->hasAttribute(volatileAtom))
+                return true;
+            return false;
+        }
+    case no_outofline:
+        {
+            //Out of line volatile c++ functions create new instances each time they are called.
+            //otherwise it requires an explicit volatile qualifier.
+            IHqlExpression * bodycode = body->queryChild(0);
+            if (bodycode->getOperator() == no_embedbody)
+                return bodycode->queryAttribute(volatileAtom);
+            return false;
+        }
+    default:
+        return false;
+    }
+}
+
 CHqlExternalCall::CHqlExternalCall(IHqlExpression * _funcdef, ITypeInfo * _type, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(no_externalcall, _type, _ownedOperands), funcdef(_funcdef)
 {
-    IHqlExpression * def = funcdef->queryChild(0);
+    IHqlExpression * body = funcdef->queryChild(0);
+    unsigned impureFlags = 0;
+    if (body->hasAttribute(failAtom))
+        impureFlags |= isDataset() ? HEFthrowds : HEFthrowscalar;
+    if (body->hasAttribute(noMoveAtom) || body->hasAttribute(contextSensitiveAtom))
+        impureFlags |= HEFcontextDependentException;
+    if (body->hasAttribute(costlyAtom))
+        impureFlags |= HEFcostly;
+    if (body->hasAttribute(_noDuplicate_Atom))
+        impureFlags |= HEFnoduplicate;
+
+    if (isVolatileFuncdef(funcdef))
+        impureFlags |= (HEFnoduplicate|HEFcontextDependentException);
     //Once aren't really pure, but are as far as the code generator is concerned.  Split into more flags if it becomes an issue.
-    if (!def->hasAttribute(pureAtom) && !def->hasAttribute(onceAtom))
+    if (!body->hasAttribute(pureAtom) && !body->hasAttribute(onceAtom))
     {
-        infoFlags |= (HEFvolatile);
+        infoFlags |= (HEFnoduplicate);
     }
+
+    //Special case built in context functions for backward compatibility
+    if (body->hasAttribute(ctxmethodAtom))
+    {
+        StringBuffer entrypoint;
+        getStringValue(entrypoint, queryAttributeChild(body, entrypointAtom, 0));
+        if (streq(entrypoint.str(), "getNodeNum") ||
+            streq(entrypoint.str(), "getFilePart"))
+        {
+            impureFlags |= HEFcontextDependentException;
+        }
+        if (streq(entrypoint.str(), "getPlatform"))
+        {
+            //impureFlags |= (HEFvolatilevalue|HEFcontextDependentException);
+        }
+    }
+
+    infoFlags |= impureFlags;
     
-    if (def->hasAttribute(actionAtom) || (type && type->getTypeCode() == type_void))
+    if (body->hasAttribute(actionAtom) || (type && type->getTypeCode() == type_void))
         infoFlags |= HEFaction;
 
-    if (def->hasAttribute(userMatchFunctionAtom))
+    if (body->hasAttribute(userMatchFunctionAtom))
     {
         infoFlags |= HEFcontainsNlpText;
     }
 
-    if (def->hasAttribute(contextSensitiveAtom))
-        infoFlags |= HEFcontextDependentException;
-
-    if (def->hasAttribute(ctxmethodAtom) || def->hasAttribute(gctxmethodAtom) || def->hasAttribute(globalContextAtom) || def->hasAttribute(contextAtom))
+    if (body->hasAttribute(ctxmethodAtom) || body->hasAttribute(gctxmethodAtom) || body->hasAttribute(globalContextAtom) || body->hasAttribute(contextAtom))
         infoFlags |= HEFaccessRuntimeContext;
+
+    if (hasAttribute(_pseudoAction_Atom))
+    {
+        ::Release(type);
+        type = makeVoidType();
+    }
 }
 
 bool CHqlExternalCall::equals(const IHqlExpression & other) const
 {
     if (this == &other)
         return true;
-    if (!CHqlExpression::equals(other))
+    if (!CHqlExpressionWithType::equals(other))
         return false;
     if (queryExternalDefinition() != other.queryExternalDefinition())
         return false;
@@ -10170,7 +10480,7 @@ CHqlDelayedCall::CHqlDelayedCall(IHqlExpression * _param, ITypeInfo * _type, Hql
 
 bool CHqlDelayedCall::equals(const IHqlExpression & _other) const
 {
-    if (!CHqlExpression::equals(_other))
+    if (!CHqlExpressionWithType::equals(_other))
         return false;
 
     const CHqlDelayedCall & other = static_cast<const CHqlDelayedCall &>(_other);
@@ -10309,7 +10619,7 @@ ITypeInfo * CHqlAlienType::getType()
 
 bool CHqlAlienType::equals(const IHqlExpression &r) const
 {
-    if (!CHqlExpression::equals(r))
+    if (!CHqlExpressionWithTables::equals(r))
         return false;
     //hack
     return scopesEqual(scope, const_cast<IHqlExpression &>(r).queryScope());
@@ -10456,7 +10766,7 @@ CHqlEnumType::~CHqlEnumType()
 
 bool CHqlEnumType::equals(const IHqlExpression &r) const
 {
-    if (!CHqlExpression::equals(r))
+    if (!CHqlExpressionWithType::equals(r))
         return false;
 
     return scopesEqual(scope, const_cast<IHqlExpression &>(r).queryScope());
@@ -11378,8 +11688,6 @@ IHqlExpression * ParameterBindTransformer::createExpandedCall(IHqlExpression * c
 {
     HqlExprArray actuals;
     unwindChildren(actuals, call);
-    while (actuals.ordinality() && actuals.tos().isAttribute())
-        actuals.pop();
 
     IHqlExpression * funcdef = call->queryBody()->queryFunctionDefinition();
     return createExpandedCall(funcdef, actuals);
@@ -11389,8 +11697,14 @@ IHqlExpression * ParameterBindTransformer::createExpandedCall(IHqlExpression *fu
 {
     assertex(funcdef->getOperator() == no_funcdef);
     IHqlExpression * formals = funcdef->queryChild(1);
-    assertex(formals->numChildren() == resolvedActuals.length());
-    ForEachItemIn(i, resolvedActuals)
+
+    unsigned numFormals = formals->numChildren();
+    assertex(numFormals <= resolvedActuals.length());
+
+    for (unsigned i1 = numFormals; i1 < resolvedActuals.length(); i1++)
+        assertex(resolvedActuals.item(i1).isAttribute());
+
+    ForEachChild(i, formals)
     {
         IHqlExpression * formal = formals->queryChild(i);
         IHqlExpression * actual = &resolvedActuals.item(i);
@@ -11419,6 +11733,46 @@ extern HQL_API bool isKey(IHqlExpression * expr)
         return false;
     }
 }
+
+
+//-------------------------------------------------------------------------------------
+
+static HqlTransformerInfo volatileIdModifierInfo("VolatileIdModifier");
+class VolatileIdModifier : public QuickHqlTransformer
+{
+public:
+    VolatileIdModifier(IHqlExpression * _volatileid)
+    : QuickHqlTransformer(volatileIdModifierInfo, NULL), volatileid(_volatileid)
+    {
+    }
+
+protected:
+    virtual IHqlExpression * createTransformedBody(IHqlExpression * expr)
+    {
+        if (expr->getOperator() == no_outofline)
+            return LINK(expr);
+
+        if (expr->isAttribute() && (expr->queryName() == _volatileId_Atom))
+        {
+            HqlExprArray args;
+            args.append(*LINK(expr));
+            args.append(*LINK(volatileid));
+            return createExprAttribute(_volatileId_Atom, args);
+        }
+
+        return QuickHqlTransformer::createTransformedBody(expr);
+    }
+
+protected:
+    IHqlExpression * volatileid;
+};
+
+IHqlExpression * modifyVolatileIds(IHqlExpression * expr, IHqlExpression * volatileid)
+{
+    VolatileIdModifier modifier(volatileid);
+    return modifier.transform(expr);
+}
+
 
 
 //-------------------------------------------------------------------------------------
@@ -11666,8 +12020,15 @@ static IHqlExpression * createNormalizedCall(IHqlExpression *funcdef, const HqlE
 
 inline IHqlExpression * expandFunctionalCallBody(CallExpansionContext & ctx, IHqlExpression * call)
 {
-    ParameterBindTransformer binder(ctx, call);
-    return binder.createExpandedCall(call);
+    OwnedHqlExpr ret;
+    {
+        ParameterBindTransformer binder(ctx, call);
+        ret.setown(binder.createExpandedCall(call));
+    }
+    IHqlExpression * volatileid = call->queryAttribute(_volatileId_Atom);
+    if (volatileid)
+        return modifyVolatileIds(ret, volatileid);
+    return ret.getClear();
 }
 
 static IHqlExpression * normalizeTrailingAttributes(IHqlExpression * call)
@@ -12110,6 +12471,11 @@ extern IHqlExpression *createConstant(bool constant)
     return LINK(constantFalse);
 }
 
+extern IHqlExpression *createBlankString()
+{
+    return LINK(constantBlankString);
+}
+
 extern IHqlExpression *createConstant(__int64 constant)
 {
     //return CHqlConstant::makeConstant(createIntValue(constant, 8, true));
@@ -12227,11 +12593,12 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
     HqlExprArray attrs;
     unwindChildren(attrs, body, 1);
 
-    if (body->isPure())
-        attrs.append(*createAttribute(pureAtom));
-    if (body->getInfoFlags() & HEFaction)
-        attrs.append(*createAttribute(actionAtom));
-    if (body->getInfoFlags() & HEFcontextDependentException)
+    //This should mirror the code in CHqlExternalCall::CHqlExternalCall
+    unsigned impureFlags = body->getInfoFlags();
+    if (impureFlags & (HEFthrowds|HEFthrowscalar))
+        attrs.append(*createAttribute(failAtom));
+
+    if (impureFlags & HEFcontextDependentException)
         attrs.append(*createAttribute(contextSensitiveAtom));
     if (functionBodyUsesContext(body))
         attrs.append(*LINK(cachedContextAttribute));
@@ -12239,6 +12606,21 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
     IHqlExpression *child = body->queryChild(0);
     if (child && child->getOperator()==no_embedbody)
         unwindAttribute(attrs, child, inlineAtom);
+
+    if (impureFlags & HEFcostly)
+        attrs.append(*createAttribute(costlyAtom));
+
+    if (impureFlags & HEFnoduplicate)
+        attrs.append(*createAttribute(_noDuplicate_Atom));
+
+    if (impureFlags & HEFaction)
+        attrs.append(*createAttribute(actionAtom));
+
+    if (impureFlags & HEFcontainsNlpText)
+        attrs.append(*createAttribute(userMatchFunctionAtom));
+
+    if (!(impureFlags & HEFimpure))// && attrs.empty())
+        attrs.append(*createAttribute(pureAtom));
 
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryId(), LINK(returnType), attrs);
@@ -13922,7 +14304,9 @@ extern HQL_API void lockTransformMutex()
 {
 #if NUM_PARALLEL_TRANSFORMS==1
     assertex(transformMutex);
+#ifdef HQLEXPR_MULTI_THREADED
     transformMutex->lock();
+#endif
 #else
     assertex(transformCS);
     ensureThreadExtraIndex();
@@ -13936,7 +14320,9 @@ extern HQL_API void unlockTransformMutex()
     TransformTrackingInfo * state = &transformExtraState[threadActiveExtraIndex];
     state->unlock();
 #if NUM_PARALLEL_TRANSFORMS==1
+#ifdef HQLEXPR_MULTI_THREADED
     transformMutex->unlock();
+#endif
 #else
     if (state->curTransformDepth == 0)
         releaseExtraIndex();
@@ -14215,11 +14601,23 @@ bool isNewSelector(IHqlExpression * expr)
     if (expr->hasAttribute(newAtom))
         return true;
     IHqlExpression * ds = expr->queryChild(0);
-    while ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
+    while (ds->getOperator() == no_select)
     {
+        type_t tc = ds->queryType()->getTypeCode();
+        switch (tc)
+        {
+        case type_groupedtable:
+        case type_table:
+        case type_dictionary:
+            return false;
+        case type_row:
+            break;
+        default:
+            throwUnexpected();
+            return false;
+        }
         if (ds->hasAttribute(newAtom))
             return true;
-        assertex(ds->isDatarow());
         ds = ds->queryChild(0);
     }
     return false;
@@ -15054,6 +15452,38 @@ IHqlExpression * queryOnlyField(IHqlExpression * record)
     return ret;
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+bool canDuplicateActivity(IHqlExpression * expr)
+{
+    unsigned max = expr->numChildren();
+    for (unsigned i = getNumChildTables(expr); i < max; i++)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (!canDuplicateExpr(cur))
+            return false;
+    }
+    return true;
+}
+
+bool hasTransformWithSkip(IHqlExpression * expr)
+{
+    unsigned max = expr->numChildren();
+    for (unsigned i = getNumChildTables(expr); i < max; i++)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (containsSkip(cur))
+            return true;
+    }
+    return false;
+}
+
+bool isNoSkipInlineDataset(IHqlExpression * expr)
+{
+    assertex(expr->getOperator() == no_inlinetable);
+    IHqlExpression * values = expr->queryChild(0);
+    return !hasTransformWithSkip(values);
+}
 
 bool isPureActivity(IHqlExpression * expr)
 {
@@ -15102,6 +15532,8 @@ bool assignsContainSkip(IHqlExpression * expr)
         return false;
     }
 }
+
+//---------------------------------------------------------------------------------------------------------------------
 
 extern HQL_API bool isKnownTransform(IHqlExpression * transform)
 {
@@ -15157,7 +15589,7 @@ bool isContextDependent(IHqlExpression * expr, bool ignoreFailures, bool ignoreG
 
 bool isPureCanSkip(IHqlExpression * expr)
 {
-    return (expr->getInfoFlags() & (HEFvolatile|HEFaction|HEFthrowscalar|HEFthrowds)) == 0; 
+    return (expr->getInfoFlags() & (HEFnoduplicate|HEFaction|HEFthrowscalar|HEFthrowds)) == 0;
 }
 
 bool hasSideEffects(IHqlExpression * expr)
@@ -15350,10 +15782,10 @@ IHqlExpression * createSelector(node_operator op, IHqlExpression * ds, IHqlExpre
 }
 
 static UniqueSequenceCounter uidSequence;
-IHqlExpression * createUniqueId()
+IHqlExpression * createUniqueId(IAtom * name)
 {
     unsigned __int64 uid = uidSequence.next();
-    return createSequence(no_attr, NULL, _uid_Atom, uid);
+    return createSequence(no_attr, NULL, name, uid);
 }
 
 static UniqueSequenceCounter counterSequence;

@@ -77,7 +77,7 @@ private:
 #if THOR_TRACE_LEVEL > 5
         ActPrintLog("SELFJOIN: Performing global self-join");
 #endif
-        sorter->Gather(::queryRowInterfaces(input), inputStream, compare, NULL, NULL, keyserializer, NULL, false, isUnstable(), abortSoon, NULL);
+        sorter->Gather(::queryRowInterfaces(input), inputStream, compare, NULL, NULL, keyserializer, NULL, NULL, false, isUnstable(), abortSoon, NULL);
         PARENT::stop();
         if (abortSoon)
         {
@@ -111,6 +111,8 @@ public:
         keyserializer = NULL;
         inputStopped = false;
         mpTagRPC = TAG_NULL;
+        if (isLocal)
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
 
@@ -123,7 +125,7 @@ public:
 // IThorSlaveActivity
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {       
-        if(!isLocal)
+        if (!isLocal)
         {
             mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
             mptag_t barrierTag = container.queryJobChannel().deserializeMPTag(data);
@@ -188,19 +190,22 @@ public:
     }
     virtual void stop() override
     {
-        if (!isLocal)
+        if (hasStarted())
         {
-            barrier->wait(false);
-            sorter->stopMerge();
-        }
-        {
-            CriticalBlock b(joinHelperCrit);
-            joinhelper.clear();
-        }
-        if (strm)
-        {
-            strm->stop();
-            strm.clear();
+            if (!isLocal)
+            {
+                barrier->wait(false);
+                sorter->stopMerge();
+            }
+            {
+                CriticalBlock b(joinHelperCrit);
+                joinhelper.clear();
+            }
+            if (strm)
+            {
+                strm->stop();
+                strm.clear();
+            }
         }
         PARENT::stop();
     }

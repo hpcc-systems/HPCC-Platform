@@ -70,7 +70,7 @@ public:
     byte flag;
 };
 
-class CResultSetMetaData : public CInterface, implements IResultSetMetaData
+class CResultSetMetaData : implements IResultSetMetaData, public CInterface
 {
     friend class CResultSet;
     friend class CResultSetCursor;
@@ -318,7 +318,7 @@ protected:
     UInt64Array validOffsets;
 };
 
-class CResultSetCursor : public CInterface, implements IExtendedResultSetCursor
+class CResultSetCursor : implements IExtendedResultSetCursor, public CInterface
 {
 public:
     CResultSetCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet);
@@ -394,7 +394,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-class IndirectResultSetCursor : public CInterface, implements IExtendedResultSetCursor
+class IndirectResultSetCursor : implements IExtendedResultSetCursor, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -536,7 +536,7 @@ protected:
 };
 
 
-class CFilteredResultSetBuilder : public CInterface, implements IFilteredResultSet
+class CFilteredResultSetBuilder : implements IFilteredResultSet, public CInterface
 {
 public:
     CFilteredResultSetBuilder(IExtendedNewResultSet * _resultSet);
@@ -604,7 +604,6 @@ class CRemoteResultSetFactory : public CResultSetFactoryBase
 public:
     CRemoteResultSetFactory(const char * remoteServer, const char * _username, const char * _password);
     CRemoteResultSetFactory(const char * remoteServer, ISecManager &secmgr, ISecUser &secuser);
-    IMPLEMENT_IINTERFACE
 
     virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid);
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile, const char * cluster);

@@ -41,6 +41,7 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
+    "hpcc/Utility",
 
     "dojo/text!../templates/WUQueryWidget.html",
 
@@ -53,6 +54,8 @@ define([
     "dijit/form/Button",
     "dijit/form/RadioButton",
     "dijit/form/Select",
+    "dijit/form/DropDownButton",
+    "dijit/Dialog",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
@@ -60,7 +63,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, date, on, topic, aspect,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 selector,
-                _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget,
+                _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, Utility,
                 template) {
     return declare("WUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
@@ -80,6 +83,10 @@ define([
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
             this.stateSelect = registry.byId(this.id + "StateSelect");
             this.logicalFileSearchTypeSelect = registry.byId(this.id + "LogicalFileSearchType");
+            this.downloadToList = registry.byId(this.id + "DownloadToList");
+            this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
+            this.downListForm = registry.byId(this.id + "DownListForm");
+            this.fileName = registry.byId(this.id + "FileName");
         },
 
         startup: function (args) {
@@ -93,6 +100,28 @@ define([
                     context._onRefresh();
                 }
             });
+        },
+
+        _onDownloadToListCancelDialog: function (event){
+            this.downloadToListDialog.hide();
+        },
+
+        _onDownloadToList: function (event) {
+            this.downloadToListDialog.show();
+        },
+
+        _buildCSV: function (event) {
+            var selections = this.workunitsGrid.getSelected();
+            var row = [];
+            var fileName = this.fileName.get("value")+".csv";
+
+            arrayUtil.forEach(selections, function (cell, idx){
+                var rowData = [cell.Protected,cell.Wuid,cell.Owner,cell.Jobname,cell.Cluster,cell.RoxieCluster,cell.State,cell.TotalClusterTime];
+                row.push(rowData);
+            });
+
+            Utility.downloadToCSV(this.workunitsGrid, row, fileName);
+            this._onDownloadToListCancelDialog();
         },
 
         destroy: function (args) {
@@ -220,18 +249,18 @@ define([
                 lang.mixin(retVal, {
                     StartDate: this.getISOString("FromDate", "FromTime")
                 });
-            } else if (retVal.StartDate) {
+            } else if (retVal.StartDate && !retVal.FromTime) {
                 lang.mixin(retVal, {
-                    StartDate: registry.byId(this.id + "FromDate").attr("value").toISOString()
+                    StartDate: registry.byId(this.id + "FromDate").attr("value").toISOString().replace(/T.*Z/, '') + "T00:00:00Z"
                 });
             }
             if (retVal.EndDate && retVal.ToTime) {
                 lang.mixin(retVal, {
                     EndDate: this.getISOString("ToDate", "ToTime")
                 });
-            } else if (retVal.EndDate) {
+            } else if (retVal.EndDate && !retVal.ToTime) {
                 lang.mixin(retVal, {
-                    EndDate: registry.byId(this.id + "ToDate").attr("value").toISOString()
+                    EndDate: registry.byId(this.id + "ToDate").attr("value").toISOString().replace(/T.*Z/, '') + "T23:59:59Z"
                 });
             }
             if (retVal.StartDate && retVal.EndDate) {
@@ -456,6 +485,12 @@ define([
             });
             this.workunitsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
+                var selection = context.workunitsGrid.getSelected();
+                if (selection.length > 0) {
+                    context.downloadToList.set("disabled", false);
+                } else {
+                    context.downloadToList.set("disabled", true);
+                }
             });
             aspect.after(this.workunitsGrid, 'gotoPage', function (deferred, args) {
                 return deferred.then(function () {

@@ -103,6 +103,12 @@ struct SocketEndpointV4
         val.setNetAddress(sizeof(ip),&ip);
         val.port = port;
     }
+    StringBuffer & getUrlStr(StringBuffer &val)
+    {
+        SocketEndpoint s;
+        this->get(s);
+        return s.getUrlStr(val);
+    }
 };
 
 class PacketHeader // standard packet header - no virtuals 
@@ -199,7 +205,7 @@ struct MultiPacketHeader
 
 // 
 
-class CMPException: public CInterface, public IMP_Exception
+class CMPException: public IMP_Exception, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -844,7 +850,7 @@ protected: friend class CMPPacketReader;
                                 e->Release();
 
 #ifdef _TRACE
-                                LOG(MCdebugInfo(100), unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).toCharArray(),retrycount+1);
+                                LOG(MCdebugInfo(100), unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).str(),retrycount+1);
 #endif
                         }
                         else
@@ -1070,7 +1076,7 @@ public:
                 return true;
         }
         StringBuffer ep;
-        remoteep.getUrlStr(ep);
+        remoteep.getUrlStr(ep); 
         loop {
             CTimeMon pingtm(1000*60);
             if (sendPing(pingtm)) 
@@ -1391,7 +1397,7 @@ public:
 
 // --------------------------------------------------------
 
-class CMPPacketReader: public CInterface, public ISocketSelectNotify
+class CMPPacketReader: public ISocketSelectNotify, public CInterface
 {
     CMessageBuffer *activemsg;
     byte * activeptr;
@@ -1927,8 +1933,10 @@ int CMPConnectThread::run()
 #ifdef _FULLTRACE       
             StringBuffer s;
             SocketEndpoint ep1;
-            sock->getPeerEndpoint(ep1);
-            PROGLOG("MP: Connect Thread: socket accepted from %s",ep1.getUrlStr(s).str());
+            if (sock) {
+                sock->getPeerEndpoint(ep1);
+                PROGLOG("MP: Connect Thread: socket accepted from %s",ep1.getUrlStr(s).str());
+            }
 #endif
         }
         catch (IException *e)
@@ -2409,7 +2417,7 @@ void CMPServer::notifyClosed(SocketEndpoint &ep)
 // --------------------------------------------------------
 
 
-class CInterCommunicator: public CInterface, public IInterCommunicator
+class CInterCommunicator: public IInterCommunicator, public CInterface
 {
     CMPServer *parent;
 
@@ -2619,7 +2627,7 @@ public:
 
 
 
-class CCommunicator: public CInterface, public ICommunicator
+class CCommunicator: public ICommunicator, public CInterface
 {
     IGroup *group;
     CMPServer *parent;

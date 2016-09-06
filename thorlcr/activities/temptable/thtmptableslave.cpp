@@ -46,6 +46,7 @@ public:
         startRow = 0;
         currentRow = 0;
         maxRow = 0;
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual bool isGrouped() const override { return false; }
@@ -99,6 +100,8 @@ public:
         info.isSource = true;
         info.unknownRowsOutput = false;
         info.totalRowsMin = info.totalRowsMax = maxRow - startRow;
+        if (helper->getFlags() & TTFfiltered)
+            info.totalRowsMin = 0;
     }
 };
 

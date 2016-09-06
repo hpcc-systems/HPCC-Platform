@@ -24,6 +24,7 @@ import traceback
 import re
 import tempfile
 import xml.etree.ElementTree as ET
+import unicodedata
 
 from ...util.util import isPositiveIntNum, getConfig
 
@@ -134,11 +135,12 @@ class ECLFile:
 
         self.optF =[]
         self.optFHash={}
-        #process -f CLI parameters
-        if args.f != 'None':
-            args.f[0]=self.removeQuote(args.f[0])
-            optFs = ("-f"+args.f[0].replace(',',  ',-f')).split(',')
-            self.processKeyValPairs(optFs,  self.optFHash)
+        #process -f CLI parameters (multiple -f enabled)
+        if args.f != None:
+            for argf in args.f:
+                argf=self.removeQuote(argf)
+                optFs = ("-f"+argf.replace(',',  ',-f')).split(',')
+                self.processKeyValPairs(optFs,  self.optFHash)
             pass
 
         self.mergeHashToStrArray(self.optFHash,  self.optF)
@@ -426,7 +428,13 @@ class ECLFile:
             logging.debug("%3d. diffLines: " + diffLines,  self.taskId )
             if len(diffLines) > 0:
                 self.diff += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())
-                self.diff += diffLines
+                logging.debug( "type(diffLines) is %s: ",  repr(type(diffLines)), extra={'taskId':self.taskId})
+                if type(diffLines) == type(u' '):
+                    diffLines = unicodedata.normalize('NFKD', diffLines).encode('ascii','ignore').replace('\'','').replace('\\u', '\\\\u')
+                    diffLines = repr(diffLines)
+                else:
+                    diffLines = repr(diffLines)
+                self.diff += str(diffLines)
             logging.debug("%3d. self.diff: '" + self.diff +"'",  self.taskId )
         except Exception as e:
             logging.debug( e, extra={'taskId':self.taskId})

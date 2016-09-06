@@ -285,9 +285,8 @@ struct CLogicalNameEntry;
 class CEndpointItem: public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-    SocketEndpoint ep;
     rank_t rank;
+    SocketEndpoint ep;
 };
 
 struct CDfuDirEntry: public CInterface

@@ -23,6 +23,8 @@
 #define EdgeScopePrefix "e"
 #define SubGraphScopePrefix "sg"
 #define GraphScopePrefix "graph"
+#define FunctionScopePrefix "f"
+
 #define CONST_STRLEN(x) (sizeof(x)-1)       // sizeof(const-string) = strlen(const-string) + 1 byte for the \0 terminator
 #define MATCHES_CONST_PREFIX(search, prefix) (strncmp(search, prefix, CONST_STRLEN(prefix)) == 0)
 
@@ -63,6 +65,7 @@ enum StatisticScopeType
     SSTcompilestage,                    // a stage within the compilation process
     SSTdfuworkunit,                     // a reference to an executing dfu workunit
     SSTedge,
+    SSTfunction,                        // a function call
     SSTmax
 };
 
@@ -103,7 +106,6 @@ enum StatisticKind
 {
     StKindNone,
     StKindAll,
-
     StWhenGraphStarted,                 // When a graph starts
     StWhenGraphFinished,                // When a graph stopped
     StWhenFirstRow,                     // When the first row is processed by slave activity
@@ -112,16 +114,13 @@ enum StatisticKind
     StWhenCreated,
     StWhenCompiled,
     StWhenWorkunitModified,             // Not sure this is very useful
-
     StTimeElapsed,                      // Elapsed wall time between first row and last row
     StTimeLocalExecute,                 // Time spend processing just this activity
     StTimeTotalExecute,                 // Time executing this activity and all inputs
     StTimeRemaining,
-
     StSizeGeneratedCpp,
     StSizePeakMemory,
     StSizeMaxRowSize,
-
     StNumRowsProcessed,                 // on edge
     StNumSlaves,                        // on edge
     StNumStarted,                       // on edge
@@ -175,9 +174,12 @@ enum StatisticKind
     StSizeSpillFile,
     StCycleSpillElapsedCycles,
     StCycleSortElapsedCycles,
-
-    // Stranding stats - on edge
-    StNumStrands,
+    StNumStrands,                       // Stranding stats - on edge
+    StCycleTotalExecuteCycles,
+    StNumExecutions,
+    StTimeTotalNested,
+    StCycleLocalExecuteCycles,
+    StNumCompares,
 
     StMax,
 
@@ -194,7 +196,8 @@ enum StatisticKind
     StNodeMin                           = 0x70000,  // the node containing the minimum
     StNodeMax                           = 0x80000,  // the node containing the maximum
     StDeltaX                            = 0x90000,  // a difference in the value of X
-    StNextModifier                      = 0xa0000,
+    StStdDevX                           = 0xa0000,  // standard deviation in the value of X
+    StNextModifier                      = 0xb0000,
 
 };
 

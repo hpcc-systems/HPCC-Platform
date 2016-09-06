@@ -285,6 +285,9 @@ protected:
                 tag = "node";
                 id += strlen(SubGraphScopePrefix);
                 break;
+            case SSTfunction:
+                //MORE:Should function scopes be included in the graph scope somehow, and if so how?
+                continue;
             default:
                 throwUnexpected();
             }
@@ -485,7 +488,10 @@ public:
             return false;
         ensureUniqueStatistic();
         if (!firstSubGraph())
-            return false;
+        {
+            if (!nextGraph())
+                return false;
+        }
 
         valid = true;
         return true;
@@ -977,7 +983,6 @@ bool CPersistedWorkUnit::aborting() const
 class CDaliWorkUnit : public CPersistedWorkUnit
 {
 public:
-    IMPLEMENT_IINTERFACE;
     CDaliWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser)
         : connection(_conn), CPersistedWorkUnit(secmgr, secuser)
     {
@@ -1198,7 +1203,7 @@ protected:
     mutable Owned<IRemoteConnection> progressConnection;
 };
 
-class CLockedWorkUnit : public CInterface, implements ILocalWorkUnit, implements IExtendedWUInterface
+class CLockedWorkUnit : implements ILocalWorkUnit, implements IExtendedWUInterface, public CInterface
 {
 public:
     Owned<CLocalWorkUnit> c;
@@ -1392,6 +1397,10 @@ public:
             { return queryExtendedWU(c)->archiveWorkUnit(base,del,deldll,deleteOwned,exportAssociatedFiles); }
     virtual unsigned queryFileUsage(const char *filename) const
             { return c->queryFileUsage(filename); }
+    virtual IConstWUFileUsageIterator * getFieldUsage() const
+            { return c->getFieldUsage(); }
+    virtual bool getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const
+            { return c->getFieldUsageArray(filenames, columnnames, clusterName); }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const
             { return c->getTimeScheduled(val); }
     virtual unsigned getDebugAgentListenerPort() const
@@ -1530,6 +1539,8 @@ public:
             { c->addFile(fileName, clusters, usageCount, fileKind, graphOwner); }
     virtual void noteFileRead(IDistributedFile *file)
             { c->noteFileRead(file); }
+    virtual void noteFieldUsage(IPropertyTree * usage)
+            { c->noteFieldUsage(usage); }
     virtual void releaseFile(const char *fileName)
             { c->releaseFile(fileName); }
     virtual void resetBeforeGeneration()
@@ -1612,7 +1623,7 @@ public:
             { c->setResultDataset(name, sequence, len, val, numRows, extend); }
 };
 
-class CLocalWUAssociated : public CInterface, implements IConstWUAssociatedFile
+class CLocalWUAssociated : implements IConstWUAssociatedFile, public CInterface
 {
     Owned<IPropertyTree> p;
 
@@ -1630,7 +1641,7 @@ public:
     virtual unsigned getMaxActivityId() const;
 };
 
-class CLocalWUQuery : public CInterface, implements IWUQuery
+class CLocalWUQuery : implements IWUQuery, public CInterface
 {
     Owned<IPropertyTree> p;
     mutable IArrayOf<IConstWUAssociatedFile> associated;
@@ -1667,7 +1678,7 @@ public:
     virtual void        removeAssociatedFile(WUFileType type, const char * name, const char * desc);
 };
 
-class CLocalWUWebServicesInfo : public CInterface, implements IWUWebServicesInfo
+class CLocalWUWebServicesInfo : implements IWUWebServicesInfo, public CInterface
 {
     Owned<IPropertyTree> p;
     mutable CriticalSection crit;
@@ -1693,7 +1704,7 @@ public:
     virtual void        setWebServicesCRC(unsigned);
 };
 
-class CLocalWUResult : public CInterface, implements IWUResult
+class CLocalWUResult : implements IWUResult, public CInterface
 {
     friend class CLocalWorkUnit;
 
@@ -1777,7 +1788,7 @@ public:
     virtual IPropertyTree *queryPTree() { return p; }
 };
 
-class CLocalWUPlugin : public CInterface, implements IWUPlugin
+class CLocalWUPlugin : implements IWUPlugin, public CInterface
 {
     Owned<IPropertyTree> p;
 
@@ -1792,7 +1803,7 @@ public:
     virtual void        setPluginVersion(const char *str);
 };
 
-class CLocalWULibrary : public CInterface, implements IWULibrary
+class CLocalWULibrary : implements IWULibrary, public CInterface
 {
     Owned<IPropertyTree> p;
 
@@ -1804,7 +1815,7 @@ public:
     virtual void setName(const char * str);
 };
 
-class CLocalWUException : public CInterface, implements IWUException
+class CLocalWUException : implements IWUException, public CInterface
 {
     Owned<IPropertyTree> p;
 
@@ -1848,11 +1859,11 @@ extern WORKUNIT_API bool isSpecialResultSequence(unsigned sequence)
     }
 }
 
-class CConstWUArrayIterator : public CInterface, implements IConstWorkUnitIterator
+class CConstWUArrayIterator : implements IConstWorkUnitIterator, public CInterface
 {
+    unsigned curTreeNum;
     IArrayOf<IPropertyTree> trees;
     Owned<IConstWorkUnitInfo> cur;
-    unsigned curTreeNum;
 
     void setCurrent()
     {
@@ -1888,12 +1899,65 @@ public:
     }
     IConstWorkUnitInfo & query() { return *cur; }
 };
+
+
+class CLocalWUFieldUsage : public CInterface, implements IConstWUFieldUsage
+{
+    Owned<IPropertyTree> p;
+public:
+    IMPLEMENT_IINTERFACE;
+    CLocalWUFieldUsage(IPropertyTree& _p) { p.setown(&_p); }
+
+    virtual const char * queryName() const { return p->queryProp("@name"); }
+};
+
+class CConstWUFieldUsageIterator : public CInterface, implements IConstWUFieldUsageIterator
+{
+public:
+   IMPLEMENT_IINTERFACE;
+   CConstWUFieldUsageIterator(IPropertyTreeIterator * tree) { iter.setown(tree); }
+   bool                  first() override { return iter->first(); }
+   bool                  isValid() override { return iter->isValid(); }
+   bool                  next() override { return iter->next(); }
+   IConstWUFieldUsage *  get() const override { return new CLocalWUFieldUsage(iter->get()); }
+private:
+   Owned<IPropertyTreeIterator> iter;
+};
+
+class CLocalWUFileUsage : public CInterface, implements IConstWUFileUsage
+{
+    Owned<IPropertyTree> p;
+public:
+    IMPLEMENT_IINTERFACE;
+    CLocalWUFileUsage(IPropertyTree& _p) { p.setown(&_p); }
+
+    virtual const char * queryName() const { return p->queryProp("@name"); }
+    virtual const char * queryType() const { return p->queryProp("@type"); }
+    virtual unsigned getNumFields() const { return p->getPropInt("@numFields"); }
+    virtual unsigned getNumFieldsUsed() const { return p->getPropInt("@numFieldsUsed"); }
+    virtual IConstWUFieldUsageIterator * getFields() const { return new CConstWUFieldUsageIterator(p->getElements("fields/field")); }
+};
+
+class CConstWUFileUsageIterator : public CInterface, implements IConstWUFileUsageIterator
+{
+public:
+   IMPLEMENT_IINTERFACE;
+   CConstWUFileUsageIterator(IPropertyTreeIterator * tree) { iter.setown(tree); }
+   bool                 first() override { return iter->first(); }
+   bool                 isValid() override { return iter->isValid(); }
+   bool                 next() override { return iter->next(); }
+   IConstWUFileUsage *  get() const override { return new CLocalWUFileUsage(iter->get()); }
+private:
+   Owned<IPropertyTreeIterator> iter;
+};
+
+
 //==========================================================================================
 
-class CStringArrayIterator : public CInterface, implements IStringIterator
+class CStringArrayIterator : implements IStringIterator, public CInterface
 {
-    StringArray strings;
     unsigned idx;
+    StringArray strings;
 public:
     IMPLEMENT_IINTERFACE;
     CStringArrayIterator() { idx = 0; };
@@ -1904,7 +1968,7 @@ public:
     virtual IStringVal & str(IStringVal &s) { s.set(strings.item(idx)); return s; }
 };
 
-class CCachedJobNameIterator : public CInterface, implements IStringIterator
+class CCachedJobNameIterator : implements IStringIterator, public CInterface
 {
     Owned<IPropertyTreeIterator> it;
 public:
@@ -1916,7 +1980,7 @@ public:
     virtual IStringVal & str(IStringVal &s) { s.set(it->query().queryName()+1); return s; }
 };
 
-class CEmptyStringIterator : public CInterface, implements IStringIterator
+class CEmptyStringIterator : implements IStringIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -2015,10 +2079,10 @@ public:
 
 //==========================================================================================
 
-class CConstQuerySetQueryIterator : public CInterface, implements IConstQuerySetQueryIterator
+class CConstQuerySetQueryIterator : implements IConstQuerySetQueryIterator, public CInterface
 {
-    IArrayOf<IPropertyTree> trees;
     unsigned index;
+    IArrayOf<IPropertyTree> trees;
 public:
     IMPLEMENT_IINTERFACE;
     CConstQuerySetQueryIterator(IArrayOf<IPropertyTree> &_trees)
@@ -2059,7 +2123,7 @@ class CSecurityCache
 
 };
 
-class CConstWUIterator : public CInterface, implements IConstWorkUnitIterator
+class CConstWUIterator : implements IConstWorkUnitIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -2910,7 +2974,7 @@ public:
                 {
                     unknownAttributes.append(getEnumText(subfmt,workunitSortFields));
                     if (subfmt==WUSFtotalthortime)
-                        sortorder = (WUSortField) (sortorder | WUSFnumeric);
+                        sortorder = (WUSortField) (sortorder & ~WUSFnumeric);
                 }
                 else
                 {
@@ -2924,6 +2988,8 @@ public:
                 fv = fv + strlen(fv)+1;
             }
         }
+        if ((sortorder&0xff)==WUSFtotalthortime)
+            sortorder = (WUSortField) (sortorder & ~WUSFnumeric);
         query.insert(0, namefilter.get());
         if (sortorder)
         {
@@ -3147,7 +3213,7 @@ extern WORKUNIT_API IWorkUnitFactory * getDaliWorkUnitFactory()
 // A SecureWorkUnitFactory allows the security params to be supplied once to the factory rather than being supplied to each call.
 // They can still be supplied if you want...
 
-class CSecureWorkUnitFactory : public CInterface, implements IWorkUnitFactory
+class CSecureWorkUnitFactory : implements IWorkUnitFactory, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -3315,7 +3381,7 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, I
 
 //==========================================================================================
 
-class CStringPTreeIterator : public CInterface, implements IStringIterator
+class CStringPTreeIterator : implements IStringIterator, public CInterface
 {
     Owned<IPropertyTreeIterator> it;
 public:
@@ -3327,7 +3393,7 @@ public:
     virtual IStringVal & str(IStringVal &s) { s.set(it->query().queryProp(NULL)); return s; }
 };
 
-class CStringPTreeTagIterator : public CInterface, implements IStringIterator
+class CStringPTreeTagIterator : implements IStringIterator, public CInterface
 {
     Owned<IPropertyTreeIterator> it;
 public:
@@ -3339,7 +3405,7 @@ public:
     virtual IStringVal & str(IStringVal &s) { s.set(it->query().queryName()); return s; }
 };
 
-class CStringPTreeAttrIterator : public CInterface, implements IStringIterator
+class CStringPTreeAttrIterator : implements IStringIterator, public CInterface
 {
     Owned<IPropertyTreeIterator> it;
     StringAttr name;
@@ -3884,17 +3950,17 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
     unsigned auditflags = DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED;
     if (writeaccess)
         auditflags |= DALI_LDAP_WRITE_WANTED;
-    int perm = 255;
+    int perm = SecAccess_Full;
     const char *scopename = p->queryProp("@scope");
     if (scopename&&*scopename) {
         if (!user)
             user = queryUserDescriptor();
         perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags);
         if (perm<0) {
-            if (perm==-1) 
-                perm = 255;
+            if (perm == SecAccess_Unavailable)
+                perm = SecAccess_Full;
             else 
-                perm = 0;
+                perm = SecAccess_None;
         }
     }
     if (!HASREADPERMISSION(perm))
@@ -4227,7 +4293,7 @@ bool CLocalWorkUnit::getRescheduleFlag() const
     return p->getPropInt("RescheduleFlag") != 0; 
 }
 
-class NullIStringIterator : public CInterface, extends IStringIterator
+class NullIStringIterator : implements IStringIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -4302,7 +4368,7 @@ void getRoxieProcessServers(const char *process, SocketEndpointArray &servers)
     getRoxieProcessServers(queryRoxieProcessTree(root, process), servers);
 }
 
-class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
+class CEnvironmentClusterInfo: implements IConstWUClusterInfo, public CInterface
 {
     StringAttr name;
     StringAttr alias;
@@ -5231,6 +5297,8 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
         CLocalWUResult result(LINK(&results->query()));
         result.setResultStatus(ResultStatusUndefined);
     }
+
+    copyTree(p, fromP, "usedsources"); // field usage
 }
 
 bool CLocalWorkUnit::hasDebugValue(const char *propname) const
@@ -6260,6 +6328,15 @@ void CLocalWorkUnit::noteFileRead(IDistributedFile *file)
     }
 }
 
+void CLocalWorkUnit::noteFieldUsage(IPropertyTree * fieldUsage)
+{
+    if (fieldUsage)
+    {
+        CriticalBlock block(crit);
+        p->addPropTree("usedsources", fieldUsage);
+    }
+}
+
 void CLocalWorkUnit::_loadFilesWritten() const
 {
     // Nothing to do
@@ -6349,6 +6426,105 @@ unsigned CLocalWorkUnit::queryFileUsage(const char *fileName) const
     path.append(fileName).append("\"]/@usageCount");
     CriticalBlock block(crit);
     return p->getPropInt(path.str());
+}
+
+IConstWUFileUsageIterator * CLocalWorkUnit::getFieldUsage() const
+{
+    CriticalBlock block(crit);
+    IPropertyTree* fieldUsageTree = p->queryPropTree("usedsources");
+
+    if (!fieldUsageTree)
+        return NULL;
+
+    IPropertyTreeIterator* iter = fieldUsageTree->getElements("*");
+    return new CConstWUFileUsageIterator(iter);
+}
+
+bool isFilenameResolved(StringBuffer& filename)
+{
+    size32_t length = filename.length();
+
+    // With current implementation, if filename is surrounded by single quotes, it means that the filename was resolved at compile time.
+    if (filename.length() >= 2 && filename.charAt(0) == '\'' && filename.charAt(length-1) == '\'')
+        return true;
+    else
+        return false;
+}
+
+bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const
+{
+    bool scopeLoaded = false;
+    SCMStringBuffer defaultScope;
+
+    Owned<IConstWUFileUsageIterator> files = getFieldUsage();
+
+    if (!files)
+        return false; // this query was not compiled with recordFieldUsage option.
+
+    ForEach(*files)
+    {    
+        Owned<IConstWUFileUsage> file = files->get();
+
+        StringBuffer filename = file->queryName();
+        size32_t length = filename.length();
+        
+        if (length == 0)
+            throw MakeStringException(WUERR_InvalidFieldUsage, "Invalid FieldUsage found in WU. Cannot enforce view security.");
+
+        StringBuffer normalizedFilename;
+        
+        // Two cases to handle:
+        // 1. Filename was known at compile time, and is surrounded in single quotes (i.e. 'filename').
+        // 2. Filename could not be resolved at compile time (i.e. filename is an input to a query), 
+        //    and is a raw expression WITHOUT surrounding single quotes (i.e. STORED('input_filename')).
+        if (isFilenameResolved(filename))
+        {
+            // filename cannot be empty (i.e. empty single quotes '')
+            if (length == 2)
+                throw MakeStringException(WUERR_InvalidFieldUsage, "Invalid FieldUsage found in WU. Cannot enforce view security.");
+        
+            // Remove surrounding single quotes
+            StringAttr cleanFilename(filename.str()+1, length-2);
+
+            // When a filename doesn't start with a tilde (~), it means scope is omitted and is relying on a default scope.
+            // We need to load a default scope from config and prefix the filename with it.
+            if (cleanFilename.str()[0] != '~')
+            {
+                // loading a default scope from config is expensive, and should be only done once and be reused later.
+                if (!scopeLoaded)
+                {
+                    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
+                    if (!clusterInfo)
+                        throw MakeStringException(WUERR_InvalidCluster, "Unknown cluster %s", clusterName);
+                    clusterInfo->getScope(defaultScope);
+                    scopeLoaded = true;
+                }
+
+                normalizedFilename.append(defaultScope.str());
+                normalizedFilename.append(cleanFilename.str());
+            }
+            else
+            {
+                normalizedFilename.append(cleanFilename); 
+            }
+        }
+        else
+        {
+            // When filename is an unresolved expression, simply treat the expression as a "non-existent" filename.
+            // It will have an effect of this query accessing a non-existent filename, and will be denied access unconditionally.
+            normalizedFilename.append(filename.str());
+        }
+
+        Owned<IConstWUFieldUsageIterator> fields = file->getFields();
+        ForEach(*fields)
+        {    
+            Owned<IConstWUFieldUsage> field = fields->get();
+            filenames.append(normalizedFilename.str());
+            columnnames.append(field->queryName());
+        }
+    }
+
+    return true;
 }
 
 IPropertyTree *CLocalWorkUnit::getDiskUsageStats()
@@ -6764,7 +6940,15 @@ void CLocalWorkUnit::createGraph(const char * name, const char *label, WUGraphTy
 
 IConstWUGraphProgress *CLocalWorkUnit::getGraphProgress(const char *name) const
 {
-    throwUnexpected();   // Should only be used for persisted workunits
+/*    Owned<IRemoteConnection> conn = getProgressConnection();
+    if (conn)
+    {
+        IPTree *progress = conn->queryRoot()->queryPropTree(graphName);
+        if (progress)
+            return new CConstGraphProgress(p->queryName(), graphName, progress);
+    }
+    */
+    return NULL;
 }
 WUGraphState CLocalWorkUnit::queryGraphState(const char *graphName) const
 {
@@ -6784,7 +6968,7 @@ void CLocalWorkUnit::setNodeState(const char *graphName, WUGraphIDType nodeId, W
 }
 IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
 {
-    throwUnexpected();   // Should only be used for persisted workunits
+    return new CWuGraphStats(LINK(p), creatorType, creator, graphName, subgraph);
 }
 
 void CLocalWUGraph::setName(const char *str)
@@ -9538,7 +9722,7 @@ extern WORKUNIT_API WUState getWorkUnitState(const char* state)
 
 const LogMsgCategory MCschedconn = MCprogress(1000);    // Category used to inform about schedule synchronization
 
-class CWorkflowScheduleConnection : public CInterface, implements IWorkflowScheduleConnection
+class CWorkflowScheduleConnection : implements IWorkflowScheduleConnection, public CInterface
 {
 public:
     CWorkflowScheduleConnection(char const * wuid)

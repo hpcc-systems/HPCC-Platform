@@ -77,7 +77,7 @@
 #define HDSendPrintLog5(M,P1,P2,P3,P4)
 #endif
 
-class CDistributorBase : public CInterface, implements IHashDistributor, implements IExceptionHandler
+class CDistributorBase : implements IHashDistributor, implements IExceptionHandler, public CInterface
 {
     Linked<IThorRowInterfaces> rowIf;
     IEngineRowAllocator *allocator;
@@ -100,7 +100,7 @@ protected:
     /*
      * CSendBucket - a collection of rows destined for a particular destination target(slave)
      */
-    class CSendBucket : public CSimpleInterface, implements IRowStream
+    class CSendBucket : implements IRowStream, public CSimpleInterface
     {
         CDistributorBase &owner;
         size32_t total;
@@ -262,7 +262,7 @@ protected:
      * CSender, main send loop functionality
      * processes input, constructs CSendBucket's and manages creation CWriteHandler threads
      */
-    class CSender : public CSimpleInterface, implements IThreadFactory, implements IExceptionHandler
+    class CSender : implements IThreadFactory, implements IExceptionHandler, public CSimpleInterface
     {
         class CTarget
         {
@@ -364,7 +364,7 @@ protected:
          * When done, it will see if more queue available.
          * NB: There will be at most 1 writer per destination target (up to thread pool limit)
          */
-        class CWriteHandler : public CSimpleInterface, implements IPooledThread
+        class CWriteHandler : implements IPooledThread, public CSimpleInterface
         {
             CSender &owner;
             CDistributorBase &distributor;
@@ -1522,7 +1522,7 @@ class CRowPullDistributor: public CDistributorBase
         }
     } *txthread;
 
-    class cSortedDistributeMerger : public CSimpleInterface, implements IRowProvider
+    class cSortedDistributeMerger : implements IRowProvider, public CSimpleInterface
     {
         CDistributorBase &parent;
         Owned<IRowStream> out;
@@ -1962,6 +1962,8 @@ public:
     HashDistributeSlaveBase(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
+        IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
+        ihash = distribargs->queryHash();
         appendOutputLinked(this);
     }
     ~HashDistributeSlaveBase()
@@ -2069,12 +2071,8 @@ public:
 class HashDistributeSlaveActivity : public HashDistributeSlaveBase
 {
 public:
-    HashDistributeSlaveActivity(CGraphElementBase *container) : HashDistributeSlaveBase(container) { }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
+    HashDistributeSlaveActivity(CGraphElementBase *container) : HashDistributeSlaveBase(container)
     {
-        HashDistributeSlaveBase::init(data, slaveData);
-        IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
-        ihash = distribargs->queryHash();
     }
 };
 
@@ -2083,19 +2081,15 @@ public:
 class HashDistributeMergeSlaveActivity : public HashDistributeSlaveBase
 {
 public:
-    HashDistributeMergeSlaveActivity(CGraphElementBase *container) : HashDistributeSlaveBase(container) { }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    HashDistributeMergeSlaveActivity(CGraphElementBase *container) : HashDistributeSlaveBase(container)
     {
         IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
         mergecmp = distribargs->queryMergeCompare();
-        HashDistributeSlaveBase::init(data, slaveData);
-        ihash = distribargs->queryHash();
     }
-
 };
 
 //===========================================================================
-class CHDRproportional: public CSimpleInterface, implements IHash
+class CHDRproportional: implements IHash, public CSimpleInterface
 {
     CActivityBase *activity;
     Owned<IFile> tempfile;
@@ -2505,7 +2499,7 @@ public:
     inline const void **getRowArray() { return CThorExpandingRowArray::getRowArray(); }
 };
 
-class CSpill : public CSimpleInterface, implements IRowWriter
+class CSpill : implements IRowWriter, public CSimpleInterface
 {
     CActivityBase &owner;
     IThorRowInterfaces *rowIf;
@@ -3743,7 +3737,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
     __int64 readCount = 0;
     if (ordered)
     {
-        class CRowAggregatedStream : public CInterface, implements IRowStream
+        class CRowAggregatedStream : implements IRowStream, public CInterface
         {
             CActivityBase &activity;
             IThorRowInterfaces *rowIf;
@@ -3807,7 +3801,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
     }
     else
     {
-        class CRowAggregatedStream : public CInterface, implements IRowStream
+        class CRowAggregatedStream : implements IRowStream, public CInterface
         {
             Linked<RowAggregator> localAggregated;
         public:
@@ -3900,6 +3894,8 @@ public:
         helper = static_cast <IHThorHashAggregateArg *> (queryHelper());
         mptag = TAG_NULL;
         eos = true;
+        if (container.queryLocalOrGrouped())
+            setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
@@ -3977,7 +3973,7 @@ public:
 #endif
 
 
-class CHashDistributeSlavedActivity : public CSlaveActivity
+class CHashDistributedSlaveActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
@@ -3985,12 +3981,13 @@ class CHashDistributeSlavedActivity : public CSlaveActivity
     unsigned myNode, nodes;
 
 public:
-    CHashDistributeSlavedActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
+    CHashDistributedSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
         ihash = distribargs->queryHash();
         myNode = queryJobChannel().queryMyRank()-1;
         nodes = container.queryJob().querySlaves();
+        setRequireInitData(false);
         appendOutputLinked(this);
     }
     virtual void start() override
@@ -4084,6 +4081,6 @@ CActivityBase *createReDistributeSlave(CGraphElementBase *container)
 
 CActivityBase *createHashDistributedSlave(CGraphElementBase *container)
 {
-    return new CHashDistributeSlavedActivity(container);
+    return new CHashDistributedSlaveActivity(container);
 }
 

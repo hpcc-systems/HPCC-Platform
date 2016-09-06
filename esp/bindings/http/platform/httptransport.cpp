@@ -159,7 +159,7 @@ enum SOAPTag
     BODY = 6
 };
 
-class SOAPMessageLog : public CInterface, implements IPTreeNotifyEvent
+class SOAPMessageLog : implements IPTreeNotifyEvent, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;

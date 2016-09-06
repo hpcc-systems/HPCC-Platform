@@ -45,6 +45,7 @@
 
 #include "workunit.hpp"
 #include "dllserver.hpp"
+#include "seclib.hpp"
 
 #ifdef _WIN32
 #include <conio.h>
@@ -73,16 +74,18 @@ void usage(const char *exe)
   printf("  bget <xpath> <dest-file>   -- binary property\n");
   printf("  xget <xpath>               -- (multi-value tail can have commas)\n");
   printf("  wget <xpath>               -- (gets all matching xpath)\n");
-  printf("  add <xpath> <value>        -- adds new value\n");
+  printf("  add <xpath> [<value>]      -- adds new xpath node with optional value\n");
   printf("  delv <xpath>               -- deletes value\n");
   printf("  count <xpath>              -- counts xpath matches\n");
   printf("\n");
   printf("Logical File meta information commands:\n");
   printf("  dfsfile <logicalname>          -- get meta information for file\n");
   printf("  dfspart <logicalname> <part>   -- get meta information for part num\n");
+  printf("  dfscheck                       -- verify dfs file information is valid\n");
   printf("  dfscsv <logicalnamemask>       -- get csv info. for files matching mask\n");
   printf("  dfsgroup <logicalgroupname> [filename] -- get IPs for logical group (aka cluster). Written to optional filename if provided\n");
   printf("  clusternodes <clustername> [filename] -- get IPs for cluster group. Written to optional filename if provided\n");
+  printf("  dfsls [<logicalname>] [options]-- get list of files within a scope (options=lrs)\n");
   printf("  dfsmap <logicalname>           -- get part files (primary and replicates)\n");
   printf("  dfsexists <logicalname>        -- sets return value to 0 if file exists\n");
   printf("  dfsparents <logicalname>       -- list superfiles containing file\n");
@@ -494,25 +497,25 @@ static void wget(const char *path)
 
 //=============================================================================
 
-static void add(const char *path,const char *val)
+static void add(const char *path, const char *val)
 {
-    StringBuffer head;
-    StringBuffer tmp;
-    const char *tail=splitpath(path,head,tmp);
-    if (!tail)
-        return;
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
-    if (!conn) {
-        ERRLOG("Could not connect to %s",path);
+    if (!path || !*path)
+        throw makeStringException(0, "Invalid xpath (empty)");
+    if ('/' == path[strlen(path)-1])
+        throw makeStringException(0, "Invalid xpath (no trailing xpath node provided)");
+    Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, daliConnectTimeoutMs);
+    if (!conn)
+    {
+        ERRLOG("Could not connect to %s", path);
         return;
     }
-    Owned<IPropertyTree> root = conn->getRoot();
-    StringBuffer oldv;
-    StringBuffer newv;
-    root->addProp(tail,val);
-    conn->commit();
-    OUTLOG("Added %s value '%s'",path,val);
-    conn->close();
+    VStringBuffer msg("Added %s", path);
+    if (val)
+    {
+        conn->queryRoot()->setProp(NULL, val);
+        msg.appendf(" (with value = '%s')", val);
+    }
+    OUTLOG("%s", msg.str());
 }
 
 //=============================================================================
@@ -658,6 +661,44 @@ static void writeGroup(IGroup *group, const char *name, const char *outputFilena
     }
 }
 
+unsigned dfsCheck(StringBuffer & path, IPropertyTree * tree)
+{
+    const char * name = tree->queryProp("@name");
+    //MORE: What other consistency checks can be added here?
+    if (tree->hasProp("Attr[2]"))
+    {
+        printf("%s%s - duplicate Attr tag\n", path.str(), name ? name : "");
+        return 1;
+    }
+
+    unsigned issues = 0;
+    unsigned prevLength = path.length();
+    if (name)
+        path.append(name).append("::");
+    Owned<IPropertyTreeIterator> elems = tree->getElements("*");
+    ForEach(*elems)
+    {
+        issues += dfsCheck(path, &elems->query());
+    }
+    path.setLength(prevLength);
+    return issues;
+}
+
+void dfsCheck()
+{
+    StringBuffer xpath;
+    Owned<IRemoteConnection> conn = querySDS().connect("Files",myProcessSession(),0, daliConnectTimeoutMs);
+    if (!conn)
+    {
+        ERRLOG("Could not connect to %s","/Files");
+        return;
+    }
+
+    StringBuffer path;
+    dfsCheck(path, conn->queryRoot());
+}
+
+
 static void dfsGroup(const char *name, const char *outputFilename)
 {
     Owned<IGroup> group = queryNamedGroupStore().lookup(name);
@@ -689,6 +730,103 @@ static int clusterGroup(const char *name, const char *outputFilename)
     }
     ERRLOG("%s", errStr.str());
     return 1;
+}
+
+static IPropertyTree * selectLevel(IPropertyTree * root, const char * name)
+{
+    StringBuffer xpath;
+    xpath.append("*[@name='").append(name).append("']");
+    Owned<IPropertyTree> match = root->getPropTree(xpath);
+    if (match)
+        return match.getClear();
+    ERRLOG("Path %s not found", name);
+    return nullptr;
+}
+
+static IPropertyTree * selectPath(IPropertyTree * root, const char * path)
+{
+    if (!path || !*path)    // use / to refer to the root directory
+        return LINK(root);
+
+    const char * split = strstr(path, "::");
+    if (split)
+    {
+        //Can use :: to refer to the root directory
+        if (split == path)
+            return selectPath(root, split + 2);
+
+        StringAttr name(path, split - path);
+        Owned<IPropertyTree> match = selectLevel(root, name);
+        if (match)
+            return selectPath(match, split + 2);
+        return nullptr;
+    }
+    return selectLevel(root, path);
+}
+
+static void displayDirectory(IPropertyTree * directory, const char * options, unsigned depth)
+{
+    Owned<IPropertyTreeIterator> elems = directory->getElements("*");
+    ForEach(*elems)
+    {
+        IPropertyTree & cur = elems->query();
+        const char * tag = cur.queryName();
+        const char * name = cur.queryProp("@name");
+        const char * modified = cur.queryProp("@modified");
+        if (name && tag)
+        {
+            if (strieq(tag, "Scope"))
+            {
+                OUTLOG("%*sD %s", depth, "", name);
+                if (options && strchr(options, 'r'))
+                    displayDirectory(&cur, options, depth+1);
+            }
+            else if (strieq(tag, "File"))
+            {
+                const char * group = cur.queryProp("@group");
+                const char * size = cur.queryProp("Attr[1]/@size");
+                if (options && strchr(options, 'l'))
+                    OUTLOG("%*s  %-30s %12s %s %s", depth, "", name, size ? size : "", group ? group : "?", modified ? modified : "");
+                else
+                    OUTLOG("%*s  %s", depth, "", name);
+            }
+            else if (strieq(tag, "SuperFile"))
+            {
+                if (options && strchr(options, 'l'))
+                    OUTLOG("%*sS %s %s (%d)", depth, "", name, modified ? modified : "", cur.getPropInt("@numsubfiles"));
+                else
+                    OUTLOG("%*sS %s", depth, "", name);
+
+                if (options && strchr(options, 's'))
+                {
+                    Owned<IPropertyTreeIterator> subs = cur.getElements("SubFile");
+                    ForEach(*subs)
+                    {
+                        OUTLOG("%*s->%s", depth, "", subs->query().queryProp("@name"));
+                    }
+                }
+            }
+            else
+                OUTLOG("? %s %s", name, tag);
+        }
+    }
+}
+
+static void dfsLs(const char *name, const char *options, bool safe = false)
+{
+    StringBuffer xpath;
+    Owned<IRemoteConnection> conn = querySDS().connect("Files",myProcessSession(),0, daliConnectTimeoutMs);
+    if (!conn)
+    {
+        ERRLOG("Could not connect to %s","/Files");
+        return;
+    }
+
+    {
+        Owned<IPropertyTree> directory = selectPath(conn->queryRoot(), name);
+        if (directory)
+            displayDirectory(directory, options, 0);
+    }
 }
 
 //=============================================================================
@@ -766,9 +904,8 @@ static void dfsunlink(const char *lname, IUserDescriptor *user)
 class CIpItem: public CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-    IpAddress ip;
     bool ok;
+    IpAddress ip;
 };
 
 
@@ -839,7 +976,6 @@ public:
     unsigned crc;
     unsigned partno;
     unsigned copy;
-    IMPLEMENT_IINTERFACE;
     bool ok;
     byte flags;
     CDateTime dt;
@@ -1386,7 +1522,7 @@ static void listrelationships(const char *primary,const char *secondary)
 
 int dfsperm(const char *obj,IUserDescriptor *user)
 {
-    int perm =0;
+    int perm = SecAccess_None;
     if (strchr(obj,'\\')||strchr(obj,'/')) {
         Owned<IFileDescriptor> fd = createFileDescriptor();
         RemoteFilename rfn;
@@ -2120,7 +2256,7 @@ class CXMLSizesParser : public CInterface
     PTreeReaderOptions xmlOptions;
     double pc;
 
-    class CParse : public CInterface, implements IPTreeNotifyEvent
+    class CParse : implements IPTreeNotifyEvent, public CInterface
     {
         CIArrayOf<CTreeItem> stack;
         String * levtail;
@@ -2231,8 +2367,6 @@ class CXMLSizesParser : public CInterface
     } *parser;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CXMLSizesParser(const char *fName, PTreeReaderOptions _xmlOptions=ptr_none, double _pc=1.0) : xmlOptions(_xmlOptions), pc(_pc) { go(fName); }
     ~CXMLSizesParser() { ::Release(parser); }
 
@@ -2862,8 +2996,8 @@ int main(int argc, char* argv[])
                         wget(params.item(1));
                     }
                     else if (stricmp(cmd,"add")==0) {
-                        CHECKPARAMS(2,2);
-                        add(params.item(1),params.item(2));
+                        CHECKPARAMS(1,2);
+                        add(params.item(1), (np>1) ? params.item(2) : nullptr);
                     }
                     else if (stricmp(cmd,"delv")==0) {
                         CHECKPARAMS(1,1);
@@ -2881,6 +3015,10 @@ int main(int argc, char* argv[])
                         CHECKPARAMS(2,2);
                         dfspart(params.item(1),userDesc,atoi(params.item(2)));
                     }
+                    else if (stricmp(cmd,"dfscheck")==0) {
+                        CHECKPARAMS(0,0);
+                        dfsCheck();
+                    }
                     else if (stricmp(cmd,"dfscsv")==0) {
                         CHECKPARAMS(1,1);
                         dfscsv(params.item(1),userDesc);
@@ -2892,6 +3030,10 @@ int main(int argc, char* argv[])
                     else if (stricmp(cmd,"clusternodes")==0) {
                         CHECKPARAMS(1,2);
                         ret = clusterGroup(params.item(1),(np>1)?params.item(2):NULL);
+                    }
+                    else if (stricmp(cmd,"dfsls")==0) {
+                        CHECKPARAMS(0,2);
+                        dfsLs((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL);
                     }
                     else if (stricmp(cmd,"dfsmap")==0) {
                         CHECKPARAMS(1,1);

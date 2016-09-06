@@ -51,4 +51,5 @@
 #define WUERR_GraphProgressWriteUnsupported     5026
 #define WUERR_WorkunitPluginError               5027
 #define WUERR_WorkunitVersionMismatch           5028
+#define WUERR_InvalidFieldUsage                 5029
 #endif

@@ -207,8 +207,8 @@ log() {
   fi
 
   local msg=$@
-  local header=$( date --universal --iso-8601='seconds' )
-  local header="${header:0:19}: "
+  local header=$( date +%Y_%m_%d_%H_%M_%S )
+  local header="${header}: "
   printf "%s%s\n" "$header" "$msg" >> $logfile
 
   return 0
@@ -374,6 +374,23 @@ log_action_end_msg () {
         fi
     fi
     log_action_end_msg_post "$@"
+}
+
+check_getopt () {
+  `getopt -T 1>/dev/null 2>&1`
+  if [ $? -ne 4 ]; then
+    echo "Incompatible version of getopt"
+    os=$(uname)
+    if [ "${os}" == "Darwin" ]; then
+      echo "Update from an external source"
+      echo "Example: brew install gnu-getopt"
+    elif [ "${os}" == "Linux" ]; then
+      echo "insure the environment variable GETOPT_COMPATIBLE is unset"
+    else
+      echo "getopt must support long options"
+    fi
+    exit 3
+  fi
 }
 
 distrib_check () {

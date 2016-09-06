@@ -41,14 +41,6 @@ EXPORT TestFormat := MODULE
     ASSERT(Date.DateToString(20110302, '%d %b %Y') = '02 Mar 2011');
     ASSERT(Date.DateToString(20111202, '%d %B %Y') = '02 December 2011');
 
-    ASSERT(Date.MatchDateString('1dec2011',DateFormats) = 20111201);
-    ASSERT(Date.MatchDateString('2011dec1',DateFormats) = 20111201);
-    ASSERT(Date.MatchDateString('1 december 2011',DateFormats) = 20111201);
-    ASSERT(Date.MatchDateString('2011\tdecem\t01',DateFormats) = 20111201);
-    ASSERT(Date.MatchDateString('20111201',DateFormats) = 20111201);
-    ASSERT(Date.MatchDateString('2011-12-01',DateFormats) = 20111201);
-    ASSERT(Date.MatchDateString('1/12/2011',DateFormats) = 20111201);
-
     ASSERT(Date.MatchTimeString('123456',TimeFormats) = 123456);
     ASSERT(Date.MatchTimeString('12:34:56',TimeFormats) = 123456);
     ASSERT(Date.MatchTimeString('12:34',TimeFormats) = 123400);

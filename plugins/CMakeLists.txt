@@ -35,3 +35,5 @@ add_subdirectory (memcached)
 add_subdirectory (redis)
 add_subdirectory (kafka)
 add_subdirectory (exampleplugin)
+add_subdirectory (couchbase)
+

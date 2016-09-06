@@ -17,8 +17,8 @@
 
 #pragma warning (disable : 4786)
 
-#ifndef _CASSABDRALOGAGENT_HPP__
-#define _CASSABDRALOGAGENT_HPP__
+#ifndef _CASSANDRALOGAGENT_HPP__
+#define _CASSANDRALOGAGENT_HPP__
 
 #include "jmisc.hpp"
 #include "eclhelper.hpp"
@@ -26,47 +26,40 @@
 #include "cassandraembed.hpp"
 #include "loggingcommon.hpp"
 #include "loggingagentbase.hpp"
-#include "dbfieldmap.hpp"
+#include "datafieldmap.hpp"
 
 using namespace cassandraembed;
 
 #ifdef WIN32
-    #ifdef CASSABDRALOGAGENT_EXPORTS
-        #define CASSABDRALOGAGENT_API __declspec(dllexport)
+    #ifdef CASSANDRALOGAGENT_EXPORTS
+        #define CASSANDRALOGAGENT_API __declspec(dllexport)
     #else
-        #define CASSABDRALOGAGENT_API __declspec(dllimport)
+        #define CASSANDRALOGAGENT_API __declspec(dllimport)
     #endif
 #else
-    #define CASSABDRALOGAGENT_API
+    #define CASSANDRALOGAGENT_API
 #endif
 
-class CCassandraLogAgent : public CInterface, implements IEspLogAgent
+class CCassandraLogAgent : public CDBLogAgentBase
 {
-    StringBuffer dbServer, defaultDB, dbUserID, dbPassword, transactionSeed;
-    StringAttr agentName, defaultLogGroup, defaultTransactionApp, loggingTransactionApp;
-    unsigned logSourceCount, loggingTransactionCount, maxTriesGTS;
-    MapStringToMyClass<CLogGroup> logGroups;
-    MapStringToMyClass<CLogSource> logSources;
+    StringBuffer dbServer, dbUserID, dbPassword;
     Owned<CassandraClusterSession> cassSession;
-    CriticalSection uniqueIDCrit, transactionSeedCrit;
-
-    CLogGroup* checkLogSource(IPropertyTree* logRequest, StringBuffer& source, StringBuffer& logDB);
-    void getLoggingTransactionID(StringBuffer& id);
-    bool buildUpdateLogStatement(IPropertyTree* logRequest, const char* logDB, CLogTable& table, StringBuffer& logID, StringBuffer& cqlStatement);
-    void addField(CLogField& logField, const char* name, StringBuffer& value, StringBuffer& fields, StringBuffer& values);
-    void appendFieldInfo(const char* field, StringBuffer& value, StringBuffer& fields, StringBuffer& values, bool quoted);
-    void addMissingFields(CIArrayOf<CLogField>& logFields, BoolHash& HandledFields, StringBuffer& fields, StringBuffer& values);
+    CriticalSection transactionSeedCrit;
 
     void initKeySpace();
-    void ensureKeySpace();
-    void setKeySpace(const char *keyspace);
-    void initTransSeedTable();
-    void queryTransactionSeed(const char* appName, StringBuffer& seed);
+    void ensureDefaultKeySpace();
+    void setSessionOptions(const char *keyspace);
+    void ensureTransSeedTable();
     void createTable(const char *dbName, const char *tableName, StringArray& columnNames, StringArray& columnTypes, const char* keys);
-    //void executeSimpleStatement(CassSession *session, const char *st);
     void executeSimpleStatement(const char *st);
     void executeSimpleStatement(StringBuffer& st);
-    unsigned executeSimpleSelectStatement(const char* st, unsigned& resultValue);
+    bool executeSimpleSelectStatement(const char* st, unsigned& resultValue);
+
+    virtual void queryTransactionSeed(const char* appName, StringBuffer& seed);
+    virtual void addField(CLogField& logField, const char* name, StringBuffer& value, StringBuffer& fields, StringBuffer& values);
+    virtual void setUpdateLogStatement(const char* dbName, const char* tableName,
+        const char* fields, const char* values, StringBuffer& statement);
+    virtual void executeUpdateLogStatement(StringBuffer& statement);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -75,9 +68,6 @@ public:
     virtual ~CCassandraLogAgent() { logGroups.kill(); logSources.kill(); };
 
     virtual bool init(const char* name, const char* type, IPropertyTree* cfg, const char* process);
-    virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
-    virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
-    virtual void filterLogContent(IEspUpdateLogRequestWrap* req);
 };
 
-#endif //_CASSABDRALOGAGENT_HPP__
+#endif //_CASSANDRALOGAGENT_HPP__

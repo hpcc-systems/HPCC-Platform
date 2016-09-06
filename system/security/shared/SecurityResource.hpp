@@ -19,8 +19,7 @@
 #define SECURITYRESOURCE_INCL
 
 #include "seclib.hpp"
-class CSecurityResource : public CInterface,
-    implements ISecResource
+class CSecurityResource : implements ISecResource, public CInterface
 {
 private:
     StringAttr m_name;

@@ -17,7 +17,7 @@
 #ifndef __HQLCSET_IPP_
 #define __HQLCSET_IPP_
 
-class BaseDatasetCursor : public CInterface, implements IHqlCppDatasetCursor
+class BaseDatasetCursor : implements IHqlCppDatasetCursor, public CInterface
 {
 public:
     BaseDatasetCursor(HqlCppTranslator & _translator, IHqlExpression * _ds, CHqlBoundExpr * _boundDs);
@@ -130,7 +130,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-class BaseSetCursor : public CInterface, implements IHqlCppSetCursor
+class BaseSetCursor : implements IHqlCppSetCursor, public CInterface
 {
 public:
     BaseSetCursor(HqlCppTranslator & _translator, IHqlExpression * _expr);
@@ -189,6 +189,7 @@ public:
     virtual void buildIterateClass(BuildCtx & ctx, CHqlBoundExpr & tgt);
     virtual void buildExprSelect(BuildCtx & ctx, IHqlExpression * indexExpr, CHqlBoundExpr & tgt);
     virtual void buildAssignSelect(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * indexExpr);
+    virtual void buildExprOrAssignSelect(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * indexExpr, CHqlBoundExpr * tgt);
     virtual bool isSingleValued();
 
 protected:
@@ -227,7 +228,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-class CHqlCppDatasetBuilder : public CInterface, implements IHqlCppDatasetBuilder
+class CHqlCppDatasetBuilder : implements IHqlCppDatasetBuilder, public CInterface
 {
 public:
     CHqlCppDatasetBuilder(HqlCppTranslator & _translator, IHqlExpression * _record);
@@ -246,7 +247,6 @@ class DatasetBuilderBase : public CHqlCppDatasetBuilder
 {
 public:
     DatasetBuilderBase(HqlCppTranslator & _translator, IHqlExpression * _record, bool _buildLinkedRows);
-    IMPLEMENT_IINTERFACE
 
     virtual BoundRow * buildCreateRow(BuildCtx & ctx);
     virtual BoundRow * buildDeserializeRow(BuildCtx & ctx, IHqlExpression * serializedInput, IAtom * serializeForm);
@@ -282,7 +282,6 @@ class SingleRowTempDatasetBuilder : public CHqlCppDatasetBuilder
 {
 public:
     SingleRowTempDatasetBuilder(HqlCppTranslator & _translator, IHqlExpression * _record, BoundRow * _row);
-    IMPLEMENT_IINTERFACE
 
     virtual void buildDeclare(BuildCtx & ctx);
     virtual BoundRow * buildCreateRow(BuildCtx & ctx);
@@ -331,7 +330,7 @@ public:
 
 //---------------------------------------------------------------------------
 
-class SetBuilder : public CInterface, implements IHqlCppSetBuilder
+class SetBuilder : implements IHqlCppSetBuilder, public CInterface
 {
 public:
     SetBuilder(HqlCppTranslator & _translator, ITypeInfo * fieldType, IHqlExpression * _allVar);
@@ -371,7 +370,6 @@ class InlineDatasetBuilder : public CHqlCppDatasetBuilder
 {
 public:
     InlineDatasetBuilder(HqlCppTranslator & _translator, IHqlExpression * _record, IHqlExpression * _size, IHqlExpression * _address);
-    IMPLEMENT_IINTERFACE
 
     virtual void buildDeclare(BuildCtx & ctx);
     virtual BoundRow * buildCreateRow(BuildCtx & ctx);

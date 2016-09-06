@@ -21,7 +21,7 @@
 
 //---------------------------------------------------------------------------
 
-class CHThorSteppedInput : public CInterface, implements ISteppedInput
+class CHThorSteppedInput : implements ISteppedInput, public CInterface
 {
 public:
     CHThorSteppedInput(IHThorInput * _input);

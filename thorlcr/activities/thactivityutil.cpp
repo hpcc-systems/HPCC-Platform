@@ -617,7 +617,7 @@ void doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICopyFilePr
     }
 }
 
-class CWriteHandler : public CInterface, implements IFileIO
+class CWriteHandler : implements IFileIO, public CInterface
 {
     Linked<IFileIO> primaryio;
     Linked<IFile> primary;
@@ -838,7 +838,7 @@ StringBuffer &locateFilePartPath(CActivityBase *activity, const char *logicalFil
 
 IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPartDescriptor> &partDescs, bool grouped)
 {
-    class CSeqPartHandler : public CSimpleInterface, implements IRowStream
+    class CSeqPartHandler : implements IRowStream, public CSimpleInterface
     {
         IArrayOf<IPartDescriptor> &partDescs;
         int part, parts;

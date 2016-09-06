@@ -357,7 +357,6 @@ public:
     StringArray files;
     bool donefiles;
 
-    IMPLEMENT_IINTERFACE;
     CDirCacheItem()
     {
         donefiles = false;

@@ -1007,7 +1007,7 @@ offset_t CFile::compressedSize()
 #endif
 }
 
-class CDiscretionaryFileLock: public CInterface, implements IDiscretionaryLock
+class CDiscretionaryFileLock: implements IDiscretionaryLock, public CInterface
 {
     bool locked;
     bool excllock;
@@ -1273,7 +1273,7 @@ static void disconnectFromExternalDrive(const char * const filename)
         WNetCancelConnection2((char *)share.str(), 0, 0);
 }
 
-class CWindowsRemoteFile : public CInterface, implements IFile
+class CWindowsRemoteFile : implements IFile, public CInterface
 {
     IFile               *ifile;
     StringAttr          filename;
@@ -1546,7 +1546,7 @@ public:
 
 IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
 {
-    class CMemoryBufferIO : public CInterface, implements IFileIO
+    class CMemoryBufferIO : implements IFileIO, public CInterface
     {
         MemoryBuffer mb;
         void *buffer;
@@ -1661,8 +1661,6 @@ public:
     ~CSequentialFileIO()
     {
     }
-
-    IMPLEMENT_IINTERFACE
 
     size32_t read(offset_t _pos, size32_t len, void * data)
     {
@@ -2139,7 +2137,7 @@ unsigned __int64 CFileAsyncIO::getStatistic(StatisticKind kind)
 
 //-- Windows implementation -------------------------------------------------
 
-class CFileAsyncResult: public CInterface, implements IFileAsyncResult
+class CFileAsyncResult: implements IFileAsyncResult, public CInterface
 {
 protected: friend class CFileAsyncIO;
     OVERLAPPED overlapped;
@@ -2300,7 +2298,7 @@ IFileAsyncResult *CFileAsyncIO::writeAsync(offset_t pos, size32_t len, const voi
 
 //-- Unix implementation ----------------------------------------------------
 
-class CFileAsyncResult: public CInterface, implements IFileAsyncResult
+class CFileAsyncResult: implements IFileAsyncResult, public CInterface
 {
 protected: 
     friend class CFileAsyncIO;
@@ -2679,8 +2677,6 @@ class CBufferedAsyncIOStream: public CBufferedFileIOStreamBase
     IFileAsyncResult        *writeasyncres;
     bool                    readeof;
 public:
-    IMPLEMENT_IINTERFACE
-
     CBufferedAsyncIOStream(IFileAsyncIO * _io, size32_t _bufferSize)
         : CBufferedFileIOStreamBase(_bufferSize/2), io(_io)
     {
@@ -3299,7 +3295,7 @@ StringBuffer& getFileNameOnly(StringBuffer& filename, bool noExtension)
 //---------------------------------------------------------------------------
 
 
-class CNullDirectoryIterator : public CInterface, implements IDirectoryIterator
+class CNullDirectoryIterator : implements IDirectoryIterator, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -3341,7 +3337,7 @@ extern jlib_decl IDirectoryIterator *createNullDirectoryIterator()
     return new CNullDirectoryIterator;
 }
 
-class CDirectoryIterator : public CInterface, implements IDirectoryIterator
+class CDirectoryIterator : implements IDirectoryIterator, public CInterface
 {
 public:
     CDirectoryIterator(const char * _path, const char * _mask, bool _sub, bool _includedir)
@@ -3989,7 +3985,7 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
 
 //---------------------------------------------------------------------------
 
-class FixedPasswordProvider : public CInterface, implements IPasswordProvider
+class FixedPasswordProvider : implements IPasswordProvider, public CInterface
 {
 public:
     FixedPasswordProvider(const char * _username, const char * _password) { username.set(_username); password.set(_password); }
@@ -5582,7 +5578,7 @@ unsigned sortDirectory( CIArrayOf<CDirectoryEntry> &sortedfiles,
 }
 
 
-class CReplicatedFile : public CInterface, implements IReplicatedFile
+class CReplicatedFile : implements IReplicatedFile, public CInterface
 {
     RemoteFilenameArray copies;
 public:
@@ -5630,7 +5626,7 @@ IReplicatedFile *createReplicatedFile()
 
 // ---------------------------------------------------------------------------------
 
-class CSerialStreamBase : public CInterface, implements ISerialStream
+class CSerialStreamBase : implements ISerialStream, public CInterface
 {
 private:
     size32_t bufsize;
@@ -5657,7 +5653,7 @@ private:
         return size_read;
     }
 
-    const void * dopeek(size32_t sz, size32_t &got)
+    const void * dopeek(size32_t sz, size32_t &got) __attribute__((noinline))
     {
         loop
         {
@@ -5684,6 +5680,41 @@ private:
             bufmax = rd+left;
             bufpos = 0;
         }
+    }
+
+    void getreadnext(size32_t len, void * ptr) __attribute__((noinline))
+    {
+        bufbase += bufmax;
+        bufpos = 0;
+        bufmax = 0;
+        size32_t rd = 0;
+        if (!eoinput) {
+            //If reading >= bufsize, read any complete blocks directly into the target
+            if (len>=bufsize) {
+                size32_t tord = (len/bufsize)*bufsize;
+                rd =  doread(bufbase,tord,ptr);
+                bufbase += rd;
+                if (rd!=tord) {
+                    eoinput = true;
+                    PrintStackReport();
+                    ERRLOG("CFileSerialStream::get read past end of stream.1 (%u,%u) %s",rd,tord,eoinput?"eoinput":"");
+                    throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
+                }
+                len -= rd;
+                if (!len)
+                    return;
+                ptr = (byte *)ptr+rd;
+            }
+            const void *p = dopeek(len,rd);
+            if (len<=rd) {
+                memcpy(ptr,p,len);
+                bufpos += len;
+                return;
+            }
+        }
+        PrintStackReport();
+        ERRLOG("CFileSerialStream::get read past end of stream.2 (%u,%u) %s",len,rd,eoinput?"eoinput":"");
+        throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
     }
 
 protected:
@@ -5740,38 +5771,7 @@ public:
             bufpos += cpy;
             return;
         }
-        bufbase += bufmax;
-        bufpos = 0;
-        bufmax = 0;
-        size32_t rd = 0;
-        if (!eoinput) {
-            ptr = (byte *)ptr+cpy;
-            if (len>=bufsize) {
-                size32_t tord = (len/bufsize)*bufsize;
-                rd =  doread(bufbase,tord,ptr); // copy directly if large
-                bufbase += rd;
-                if (rd!=tord) {
-                    eoinput = true;
-                    PrintStackReport();
-                    ERRLOG("CFileSerialStream::get read past end of stream.1 (%u,%u) %s",rd,tord,eoinput?"eoinput":"");
-                    throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
-                }
-                cpy += rd;
-                len -= rd;
-                if (!len) 
-                    return;
-                ptr = (byte *)ptr+rd;
-            }
-            const void *p = dopeek(len,rd);
-            if (len<=rd) {
-                memcpy(ptr,p,len);
-                bufpos += len;
-                return;
-            }
-        }
-        PrintStackReport();
-        ERRLOG("CFileSerialStream::get read past end of stream.2 (%u,%u) %s",len,rd,eoinput?"eoinput":"");
-        throw MakeStringException(-1,"CFileSerialStream::get read past end of stream");
+        return getreadnext(len, (byte *)ptr+cpy);
     }
 
     bool eos()
@@ -5960,7 +5960,7 @@ ISerialStream *createSimpleSerialStream(ISimpleReadStream * input, size32_t bufs
 }
 
 
-class CMemoryMappedSerialStream: public CInterface, implements ISerialStream
+class CMemoryMappedSerialStream: implements ISerialStream, public CInterface
 {
     Linked<IMemoryMappedFile> mmfile;
     const byte *mmbase;
@@ -6068,7 +6068,7 @@ ISerialStream *createMemorySerialStream(const void *buffer, memsize_t len, IFile
     return new CMemoryMappedSerialStream(buffer,len,callback);
 }
 
-class CMemoryBufferSerialStream: public CInterface, implements ISerialStream
+class CMemoryBufferSerialStream: implements ISerialStream, public CInterface
 {
     MemoryBuffer & buffer;
     IFileSerialStreamCallback *tally;
@@ -6138,7 +6138,7 @@ ISerialStream *createMemoryBufferSerialStream(MemoryBuffer & buffer, IFileSerial
 
 #define MEMORYMAP_PAGESIZE  (0x1000) // could be different but won't ever be!
 
-class CMemoryMappedFile: public CInterface, implements IMemoryMappedFile
+class CMemoryMappedFile: implements IMemoryMappedFile, public CInterface
 {
     byte *ptr;            // base
     offset_t ofs;       
@@ -6463,7 +6463,7 @@ extern jlib_decl bool isDirectory(const char * path)
 
 class CLazyFileIOCache;
 
-class CCachedFileIO: public CInterface, implements IFileIO
+class CCachedFileIO: implements IFileIO, public CInterface
 {
     CLazyFileIOCache &owner;
     RemoteFilename filename;
@@ -6554,7 +6554,7 @@ public:
     }
 };
 
-class CLazyFileIOCache: public CInterface, implements IFileIOCache
+class CLazyFileIOCache: implements IFileIOCache, public CInterface
 {
     CriticalSection sect;
     unsigned max;

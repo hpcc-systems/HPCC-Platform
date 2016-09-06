@@ -59,7 +59,7 @@
         <xsl:variable name="bindType" select="'EclDirectSoapBinding'"/>
         <xsl:variable name="servicePlugin">
             <xsl:choose>
-                <xsl:when test="$isLinuxInstance">libEclDirect.so</xsl:when>
+                <xsl:when test="$isLinuxInstance">EclDirect</xsl:when>
                 <xsl:otherwise>EclDirect.dll</xsl:otherwise>
             </xsl:choose>
         </xsl:variable>

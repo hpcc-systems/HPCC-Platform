@@ -82,7 +82,9 @@ public:
 interface IThorNWayInput
 {
     virtual unsigned numConcreteOutputs() const = 0;
-    virtual IThorDataLink *queryConcreteInput(unsigned idx) const = 0;
+    virtual IThorDataLink *queryConcreteOutput(unsigned idx) const = 0;
+    virtual IEngineRowStream *queryConcreteOutputStream(unsigned whichInput) const = 0;
+    virtual IStrandJunction *queryConcreteOutputJunction(unsigned whichInput) const = 0;
 };
 
 
@@ -92,44 +94,46 @@ class CThorNarySlaveActivity : public CSlaveActivity
     
 protected:
     PointerArrayOf<IThorDataLink> expandedInputs;
-    Owned<IStrandJunction> *expandedJunctions = nullptr;
     PointerArrayOf<IEngineRowStream> expandedStreams;
+    PointerArrayOf<IStrandJunction> expandedJunctions;
 
 public:
-    CThorNarySlaveActivity(CGraphElementBase *container) : CSlaveActivity(container)
+    CThorNarySlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-    }
-    ~CThorNarySlaveActivity()
-    {
-        delete [] expandedJunctions;
+        setRequireInitData(false);
     }
     virtual void start() override
     {
         ForEachItemIn(i, inputs)
         {
-            IThorDataLink *cur = queryInput(i);
-            CActivityBase *activity = cur->queryFromActivity();
-            IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(cur);
+            IThorDataLink *curInput = queryInput(i);
+            CActivityBase *activity = curInput->queryFromActivity();
+            IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(curInput);
             if (nWayInput)
             {
-                unsigned numRealInputs = nWayInput->numConcreteOutputs();
-                for (unsigned i=0; i < numRealInputs; i++)
+                curInput->start();
+                unsigned numOutputs = nWayInput->numConcreteOutputs();
+                for (unsigned i=0; i < numOutputs; i++)
                 {
-                    IThorDataLink *curReal = nWayInput->queryConcreteInput(i);
+                    IThorDataLink *curReal = nWayInput->queryConcreteOutput(i);
+                    IEngineRowStream *curRealStream = nWayInput->queryConcreteOutputStream(i);
+                    IStrandJunction *curRealJunction = nWayInput->queryConcreteOutputJunction(i);
                     expandedInputs.append(curReal);
+                    expandedStreams.append(curRealStream);
+                    expandedJunctions.append(curRealJunction);
                 }
             }
             else
-                expandedInputs.append(cur);
+            {
+                expandedInputs.append(curInput);
+                expandedStreams.append(queryInputStream(i));
+                expandedJunctions.append(queryInputJunction(i));
+            }
         }
         ForEachItemIn(ei, expandedInputs)
             expandedInputs.item(ei)->start();
-        expandedJunctions = new Owned<IStrandJunction> [expandedInputs.ordinality()];
         ForEachItemIn(idx, expandedInputs)
-        {
-            expandedStreams.append(connectSingleStream(*this, expandedInputs.item(idx), 0, expandedJunctions[idx], true));  // MORE - is the index 0 right?
-            startJunction(expandedJunctions[idx]);
-        }
+            startJunction(expandedJunctions.item(idx));
         dataLinkStart();
     }
     void stop()
@@ -137,11 +141,10 @@ public:
         ForEachItemIn(ei, expandedStreams)
             expandedStreams.item(ei)->stop();
         ForEachItemIn(idx, expandedInputs)
-            resetJunction(expandedJunctions[idx]);
+            resetJunction(expandedJunctions.item(idx));
         expandedInputs.kill();
         expandedStreams.kill();
-        delete [] expandedJunctions;
-        expandedJunctions = nullptr;
+        expandedJunctions.kill();
     }
 };
 
