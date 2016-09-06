@@ -338,7 +338,7 @@ public:
         assertex(container.queryResultsGraph());
         Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
         IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
-        inputRowIf.setown(createThorRowInterfaces(queryRowManager(), container.queryInput(0)->queryHelper()->queryOutputMeta(),queryId(),queryCodeContext()));
+        inputRowIf.setown(createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta()));
         createResult();
     }
 };

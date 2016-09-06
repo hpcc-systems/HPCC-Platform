@@ -385,6 +385,7 @@ protected:
     bool optStableInput = true; // is the input forced to ordered?
     bool optUnstableInput = false;  // is the input forced to unordered?
     bool optUnordered = false; // is the output specified as unordered?
+    unsigned heapFlags;
 
     mutable CriticalSection statsCrit;
     mutable __int64 processed;
@@ -405,6 +406,7 @@ public:
         dependentCount = 0;
         optParallel = _graphNode.getPropInt("att[@name='parallel']/@value", 0);
         optUnordered = !_graphNode.getPropBool("att[@name='ordered']/@value", true);
+        heapFlags = _graphNode.getPropInt("hint[@name='heapflags']/@value", 0);
     }
     
     ~CRoxieServerActivityFactoryBase()
@@ -613,6 +615,10 @@ public:
     virtual const StatisticsMapping &queryStatsMapping() const
     {
         return actStatistics; // Overridden by anyone that needs more
+    }
+    virtual roxiemem::RoxieHeapFlags getHeapFlags() const
+    {
+        return (roxiemem::RoxieHeapFlags)heapFlags;
     }
 };
 
@@ -1065,7 +1071,7 @@ public:
     inline void createRowAllocator()
     {
         if (!rowAllocator) 
-            rowAllocator = ctx->queryCodeContext()->getRowAllocator(meta.queryOriginal(), activityId);
+            rowAllocator = ctx->getRowAllocatorEx(meta.queryOriginal(), activityId, factory->getHeapFlags());
     }
 
     inline ICodeContext *queryCodeContext()
@@ -1643,7 +1649,10 @@ public:
       : parent(_parent), inputStream(_inputStream), stats(parent.queryStatsMapping()), timeActivities(_parent.timeActivities), abortRequested(false)
     {
         if (needsAllocator)
-            rowAllocator = parent.queryContext()->getRowAllocatorEx(parent.queryOutputMeta(), parent.queryId(), roxiemem::RHFunique);
+        {
+            roxiemem::RoxieHeapFlags extraFlags = _parent.factory->getHeapFlags();
+            rowAllocator = parent.queryContext()->getRowAllocatorEx(parent.queryOutputMeta(), parent.queryId(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFunique|extraFlags));
+        }
         else
             rowAllocator = NULL;
     }
@@ -11461,7 +11470,7 @@ public:
         if (extend)
             diskout->seek(0, IFSend);
         tallycrc = !factory->queryQueryFactory().queryOptions().skipFileFormatCrcCheck && !(helper.getFlags() & TDRnocrccheck) && !blockcompressed;
-        Owned<IRowInterfaces> rowIf = createRowInterfaces(input->queryOutputMeta(), activityId, ctx->queryCodeContext());
+        Owned<IRowInterfaces> rowIf = createRowInterfaces(input->queryOutputMeta(), activityId, factory->getHeapFlags(), ctx->queryCodeContext());
         rowSerializer.set(rowIf->queryRowSerializer());
         unsigned rwFlags = rw_autoflush;
         if(grouped)

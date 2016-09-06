@@ -279,7 +279,7 @@ void CDiskReadSlaveActivityBase::kill()
 IThorRowInterfaces * CDiskReadSlaveActivityBase::queryDiskRowInterfaces()
 {
     if (!diskRowIf) 
-        diskRowIf.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(),queryId(),queryCodeContext()));
+        diskRowIf.setown(createRowInterfaces(helper->queryDiskRecordSize()));
     return diskRowIf;
 }
 

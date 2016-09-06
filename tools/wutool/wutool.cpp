@@ -1775,6 +1775,7 @@ protected:
             // Memory management
 
             virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const { throwUnexpected(); }
+            virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const { throwUnexpected(); }
             virtual const char * cloneVString(const char *str) const { throwUnexpected(); }
             virtual const char * cloneVString(size32_t len, const char *str) const { throwUnexpected(); }
 

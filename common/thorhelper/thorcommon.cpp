@@ -1057,7 +1057,7 @@ void CThorContiguousRowBuffer::skipVUni()
 
 // ===========================================
 
-IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICodeContext *context)
+IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsigned heapFlags, ICodeContext *context)
 {
     class cRowInterfaces: implements IRowInterfaces, public CSimpleInterface
     {
@@ -1070,11 +1070,12 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICode
         CSingletonLock allocatorlock;
         CSingletonLock serializerlock;
         CSingletonLock deserializerlock;
+        unsigned heapFlags;
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-        cRowInterfaces(IOutputMetaData *_meta,unsigned _actid, ICodeContext *_context)
-            : meta(_meta)
+        cRowInterfaces(IOutputMetaData *_meta,unsigned _actid, unsigned _heapFlags, ICodeContext *_context)
+            : meta(_meta), heapFlags(_heapFlags)
         {
             context = _context;
             actid = _actid;
@@ -1083,7 +1084,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICode
         {
             if (allocatorlock.lock()) {
                 if (!allocator&&meta) 
-                    allocator.setown(context->getRowAllocator(meta, actid));
+                    allocator.setown(context->getRowAllocatorEx(meta, actid, heapFlags));
                 allocatorlock.unlock();
             }
             return allocator;
@@ -1119,7 +1120,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICode
             return context;
         }
     };
-    return new cRowInterfaces(meta,actid,context);
+    return new cRowInterfaces(meta,actid,heapFlags,context);
 };
 
 class CRowStreamReader : implements IExtRowStream, public CSimpleInterface

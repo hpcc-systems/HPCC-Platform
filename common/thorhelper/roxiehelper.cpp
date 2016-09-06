@@ -1162,7 +1162,8 @@ protected:
             StringBuffer spillBasename;
             spillBasename.append(tempDirectory).append(PATHSEPCHAR).appendf("spill_sort_%" I64F "u", seq);
             Owned<IRowLinkCounter> linker = new RoxieRowLinkCounter();
-            Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(rowMeta, activityId, ctx);
+            unsigned heapFlags = 0;
+            Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(rowMeta, activityId, heapFlags, ctx);
             diskMerger.setown(createDiskMerger(rowInterfaces, linker, spillBasename));
         }
         return diskMerger;

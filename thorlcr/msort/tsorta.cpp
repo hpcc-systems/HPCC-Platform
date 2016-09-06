@@ -60,7 +60,8 @@ CThorKeyArray::CThorKeyArray(
     keyserializer = NULL;
     if (_serializer) {
         keyserializer = _serializer;
-        keyif.setown(createThorRowInterfaces(rowif->queryRowManager(), keyserializer->queryRecordSize(), rowif->queryActivityId(), rowif->queryCodeContext()));
+        unsigned heapFlags = activity.queryHeapFlags();
+        keyif.setown(createThorRowInterfaces(rowif->queryRowManager(), keyserializer->queryRecordSize(), rowif->queryActivityId(), heapFlags, rowif->queryCodeContext()));
     }
     icompare = _icompare;
     ikeycompare = _ikeycompare?_ikeycompare:(_serializer?NULL:_icompare);

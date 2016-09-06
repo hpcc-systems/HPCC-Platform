@@ -262,7 +262,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
-        aggrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryAggregateRecordSize(),queryId(),queryCodeContext()));
+        aggrowif.setown(createRowInterfaces(helper->queryAggregateRecordSize()));
         partResult.setAllocator(aggrowif->queryRowAllocator()).ensureRow();
         helper->clearAggregate(partResult);
     }

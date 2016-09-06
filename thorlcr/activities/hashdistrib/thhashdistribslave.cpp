@@ -2852,7 +2852,7 @@ public:
         }
         if (extractKey)
         {
-            _keyRowInterfaces.setown(createThorRowInterfaces(queryRowManager(), km, queryId(), queryCodeContext()));
+            _keyRowInterfaces.setown(createRowInterfaces(km));
             keyRowInterfaces = _keyRowInterfaces;
             rowKeyCompare = helper->queryRowKeyCompare();
             iKeyHash = helper->queryKeyHash();
@@ -3764,7 +3764,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
             virtual void stop() { }
         };
         Owned<IOutputMetaData> nodeRowMeta = createOutputMetaDataWithChildRow(activity.queryRowAllocator(), sizeof(size32_t));
-        Owned<IThorRowInterfaces> nodeRowMetaRowIf = createThorRowInterfaces(activity.queryRowManager(), nodeRowMeta, activity.queryId(), activity.queryCodeContext());
+        Owned<IThorRowInterfaces> nodeRowMetaRowIf = activity.createRowInterfaces(nodeRowMeta);
         Owned<IRowStream> localAggregatedStream = new CRowAggregatedStream(activity, nodeRowMetaRowIf, localAggTable);
         class CNodeCompare : implements ICompare, implements IHash
         {

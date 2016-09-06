@@ -654,6 +654,7 @@ interface ICodeContext : public IResourceContext
     virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
     virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) = 0;
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
+    virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned flags) const = 0;
 };
 
 

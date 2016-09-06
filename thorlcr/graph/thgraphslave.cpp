@@ -1460,6 +1460,10 @@ public:
     {
         return sharedAllocator->getRowAllocator(meta, activityId);
     }
+    virtual IEngineRowAllocator *getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const
+    {
+        return sharedAllocator->getRowAllocator(meta, activityId, (roxiemem::RoxieHeapFlags)heapFlags);
+    }
 };
 
 class CSlaveGraphTempHandler : public CGraphTempHandler

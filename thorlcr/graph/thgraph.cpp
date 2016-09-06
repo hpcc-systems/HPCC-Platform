@@ -225,7 +225,7 @@ public:
     virtual void prepareCounterResult(CActivityBase &activity, IThorGraphResults *results, unsigned loopCounter, unsigned pos)
     {
         if (!countRowIf)
-            countRowIf.setown(createThorRowInterfaces(activity.queryRowManager(), counterMeta, activityId, activity.queryCodeContext()));
+            countRowIf.setown(activity.createRowInterfaces(counterMeta));
         RtlDynamicRowBuilder counterRow(countRowIf->queryRowAllocator());
         thor_loop_counter_t * res = (thor_loop_counter_t *)counterRow.ensureCapacity(sizeof(thor_loop_counter_t),NULL);
         *res = loopCounter;
@@ -237,13 +237,13 @@ public:
     virtual void prepareLoopAgainResult(CActivityBase &activity, IThorGraphResults *results, unsigned pos)
     {
         if (!loopAgainRowIf)
-            loopAgainRowIf.setown(createThorRowInterfaces(activity.queryRowManager(), loopAgainMeta, activityId, activity.queryCodeContext()));
+            loopAgainRowIf.setown(activity.createRowInterfaces(loopAgainMeta));
         activity.queryGraph().createResult(activity, pos, results, loopAgainRowIf, !activity.queryGraph().isLocalChild(), SPILL_PRIORITY_DISABLE);
     }
     virtual void prepareLoopResults(CActivityBase &activity, IThorGraphResults *results)
     {
         if (!resultRowIf)
-            resultRowIf.setown(createThorRowInterfaces(activity.queryRowManager(), resultMeta, activityId, activity.queryCodeContext()));
+            resultRowIf.setown(activity.createRowInterfaces(resultMeta));
         IThorResult *loopResult = results->createResult(activity, 0, resultRowIf, !activity.queryGraph().isLocalChild()); // loop output
         IThorResult *inputResult = results->createResult(activity, 1, resultRowIf, !activity.queryGraph().isLocalChild()); // loop input
     }
@@ -2953,6 +2953,11 @@ void CActivityBase::ActPrintLog(IException *e)
     ActPrintLog(e, "%s", "");
 }
 
+IThorRowInterfaces * CActivityBase::createRowInterfaces(IOutputMetaData * meta)
+{
+    return createThorRowInterfaces(queryRowManager(), meta, queryId(), queryHeapFlags(), queryCodeContext());
+}
+
 bool CActivityBase::fireException(IException *e)
 {
     Owned<IThorException> _te;
@@ -2992,7 +2997,10 @@ IEngineRowAllocator * CActivityBase::queryRowAllocator()
 {
     if (CABallocatorlock.lock()) {
         if (!rowAllocator)
-            rowAllocator.setown(getRowAllocator(queryRowMetaData()));
+        {
+            roxiemem::RoxieHeapFlags heapFlags = queryHeapFlags();
+            rowAllocator.setown(getRowAllocator(queryRowMetaData(), heapFlags));
+        }
         CABallocatorlock.unlock();
     }
     return rowAllocator;
@@ -3021,7 +3029,7 @@ IOutputRowDeserializer * CActivityBase::queryRowDeserializer()
 IThorRowInterfaces *CActivityBase::getRowInterfaces()
 {
     // create an independent instance, to avoid circular link dependency problems
-    return createThorRowInterfaces(queryRowManager(), queryRowMetaData(), container.queryId(), queryCodeContext());
+    return createThorRowInterfaces(queryRowManager(), queryRowMetaData(), container.queryId(), queryHeapFlags(), queryCodeContext());
 }
 
 IEngineRowAllocator *CActivityBase::getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags) const

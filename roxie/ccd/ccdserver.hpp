@@ -219,6 +219,7 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual unsigned numInputs() const = 0;
     virtual const StatisticsMapping &queryStatsMapping() const = 0;
     virtual bool isInputOrdered(bool consumerOrdered, unsigned idx) const = 0;
+    virtual roxiemem::RoxieHeapFlags getHeapFlags() const = 0;
 };
 interface IGraphResult : public IInterface
 {

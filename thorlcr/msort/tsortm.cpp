@@ -394,7 +394,8 @@ public:
         keyserializer = _keyserializer;
         if (keyserializer)
         {
-            keyIf.setown(createThorRowInterfaces(rowif->queryRowManager(), keyserializer->queryRecordSize(), activity->queryContainer().queryId(), activity->queryCodeContext()));
+            unsigned heapFlags = 0;
+            keyIf.setown(createThorRowInterfaces(rowif->queryRowManager(), keyserializer->queryRecordSize(), activity->queryContainer().queryId(), heapFlags, activity->queryCodeContext()));
             icompare = keyserializer->queryCompareKey();
         }
         else

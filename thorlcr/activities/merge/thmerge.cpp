@@ -58,7 +58,7 @@ public:
         ActPrintLog("GlobalMergeActivityMaster::process");
         CMasterActivity::process();     
         IHThorMergeArg *helper = (IHThorMergeArg *)queryHelper();   
-        Owned<IThorRowInterfaces> rowif = createThorRowInterfaces(queryRowManager(), helper->queryOutputMeta(),queryId(),queryCodeContext());
+        Owned<IThorRowInterfaces> rowif = createRowInterfaces(helper->queryOutputMeta());
         CThorKeyArray sample(*this, rowif,helper->querySerialize(),helper->queryCompare(),helper->queryCompareKey(),helper->queryCompareRowKey());
 
         unsigned n = container.queryJob().querySlaves();
