@@ -46,6 +46,7 @@ public:
     // serializable
     virtual void serialize(MemoryBuffer &tgt) { UNIMPLEMENTED; }
     virtual void deserialize(MemoryBuffer &src) { UNIMPLEMENTED; }
+    virtual bool isValid() const { return true; }
 
 protected:
     IValue * doCastTo(unsigned osize, const char * text, ITypeInfo *t);     // common code for string casting
@@ -382,6 +383,7 @@ public:
 // serializable
     virtual void serialize(MemoryBuffer &tgt);
     virtual void deserialize(MemoryBuffer &src);
+    virtual bool isValid() const { return rtlIsValidReal(sizeof(val), &val); }
 
 }; 
 

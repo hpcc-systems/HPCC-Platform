@@ -19,3 +19,6 @@ decimal11_3 a := transfer(x'10000000696d',decimal11_3);
 
 (string)a;
 
+decimal11_3 a2 := transfer(nofold(x'10000000696d'),decimal11_3);
+
+(string)a2;

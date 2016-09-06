@@ -9486,18 +9486,16 @@ void HqlCppTranslator::buildReturnCsvValue(BuildCtx & ctx, IHqlExpression * _exp
     buildReturn(ctx, expr, constUnknownVarStringType);
 }
 
-void HqlCppTranslator::buildCsvListFunc(BuildCtx & classctx, const char * func, IHqlExpression * attr, const char * defaultValue)
+void HqlCppTranslator::buildCsvListFunc(BuildCtx & classctx, const char * func, IHqlExpression * value, const char * defaultValue)
 {
     BuildCtx funcctx(classctx);
     StringBuffer s;
 
     s.clear().append("virtual const char * ").append(func).append("(unsigned idx)");
     funcctx.addQuotedCompound(s);
-    if (attr || defaultValue)
+    if (value || defaultValue)
     {
         OwnedHqlExpr idxVar = createVariable("idx", LINK(unsignedType));
-        IHqlExpression * value = attr ? attr->queryChild(0) : NULL;
-
         if (!value || !isEmptyList(value))
         {
             IHqlStmt * caseStmt = funcctx.addSwitch(idxVar);
@@ -9542,13 +9540,49 @@ void HqlCppTranslator::buildCsvListFunc(BuildCtx & classctx, const char * func, 
     funcctx.addReturn(queryQuotedNullExpr());
 }
 
-static void expandDefaultString(StringBuffer & out, IHqlExpression * property, const char * defaultValue)
+static void expandDefaultString(StringBuffer & out, IHqlExpression * value, const char * defaultValue, IAtom * encoding)
 {
-    IHqlExpression * value = property ? property->queryChild(0) : NULL;
+    //If there are multiple alternatives use the first in the list as the default
+    if (value && value->getOperator() == no_list)
+        value = value->queryChild(0);
     if (value && value->queryValue())
-        value->queryValue()->getStringValue(out);
+    {
+        if (encoding == unicodeAtom)
+            getUTF8Value(out, value);
+        else
+            value->queryValue()->getStringValue(out);
+    }
     else
         out.append(defaultValue);
+}
+
+static IHqlExpression * forceToCorrectEncoding(IHqlExpression * expr, IAtom * encoding)
+{
+    //This is ugly.  Really it should cast to a varutf8 type - but that isn't implemented.  So instead it
+    //casts it to a utf8, type transfers it to a string, and then casts that to a varstring!
+    //Reimplement if varutf8 is ever implemented.
+    if (expr && (encoding == unicodeAtom))
+    {
+        if (expr->isList())
+        {
+            assertex(expr->getOperator() == no_list);
+            HqlExprArray args;
+            ForEachChild(i, expr)
+            {
+                IHqlExpression * value = expr->queryChild(i);
+                args.append(*forceToCorrectEncoding(value, encoding));
+            }
+            return expr->clone(args);
+        }
+        else
+        {
+            OwnedHqlExpr cast = ensureExprType(expr, unknownUtf8Type);
+            OwnedHqlExpr transfer = createValue(no_typetransfer, LINK(unknownStringType), LINK(cast));
+            OwnedHqlExpr recast = ensureExprType(transfer, unknownVarStringType);
+            return foldHqlExpression(recast);
+        }
+    }
+    return LINK(expr);
 }
 
 void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * csvAttr, IHqlExpression * record, bool isReading)
@@ -9566,14 +9600,22 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
     bool singleHeader = false;
     bool manyHeader = false;
     IHqlExpression * headerAttr = queryAttribute(headingAtom, attrs);
-    IHqlExpression * terminator = queryAttribute(terminatorAtom, attrs);
-    IHqlExpression * separator = queryAttribute(separatorAtom, attrs);
-    IHqlExpression * escape = queryAttribute(escapeAtom, attrs);
+    IHqlExpression * terminatorAttr = queryAttribute(terminatorAtom, attrs);
+    IHqlExpression * separatorAttr = queryAttribute(separatorAtom, attrs);
+    IHqlExpression * escapeAttr = queryAttribute(escapeAtom, attrs);
+    IHqlExpression * quoteAttr = queryAttribute(quoteAtom, attrs);
+    LinkedHqlExpr terminator = terminatorAttr ? terminatorAttr->queryChild(0) : nullptr;
+    LinkedHqlExpr separator = separatorAttr ? separatorAttr->queryChild(0) : nullptr;
+    LinkedHqlExpr escape = escapeAttr ? escapeAttr->queryChild(0) : nullptr;
+    LinkedHqlExpr quote = quoteAttr ? quoteAttr->queryChild(0) : nullptr;
+
+    IAtom * encoding = queryCsvEncoding(csvAttr);
     if (headerAttr)
     {
-        IHqlExpression * header = queryRealChild(headerAttr, 0);
+        LinkedHqlExpr header = queryRealChild(headerAttr, 0);
         if (header)
         {
+            header.setown(forceToCorrectEncoding(header, encoding));
             if (header->queryType()->isInteger())
             {
                 classctx.addQuotedLiteral("virtual const char * getHeader() { return NULL; }");
@@ -9591,9 +9633,9 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
             if (!isReading)
             {
                 StringBuffer comma;
-                expandDefaultString(comma, separator, ",");
+                expandDefaultString(comma, separator, ",", encoding);
                 expandFieldNames(queryErrorProcessor(), names, record, comma.str(), queryAttributeChild(headerAttr, formatAtom, 0));
-                expandDefaultString(names, terminator, "\n");
+                expandDefaultString(names, terminator, "\n", encoding);
             }
             OwnedHqlExpr namesExpr = createConstant(names.str());
             doBuildVarStringFunction(classctx, "getHeader", namesExpr);
@@ -9624,19 +9666,24 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
 
     doBuildSizetFunction(classctx, "queryMaxSize", getCsvMaxLength(csvAttr));
 
-    buildCsvListFunc(classctx, "getQuote", queryAttribute(quoteAtom, attrs), isReading ? "\"" : NULL);
+    quote.setown(forceToCorrectEncoding(quote, encoding));
+    separator.setown(forceToCorrectEncoding(separator, encoding));
+    terminator.setown(forceToCorrectEncoding(terminator, encoding));
+    escape.setown(forceToCorrectEncoding(escape, encoding));
+
+    buildCsvListFunc(classctx, "getQuote", quote, isReading ? "\"" : NULL);
     buildCsvListFunc(classctx, "getSeparator", separator, ",");
     buildCsvListFunc(classctx, "getTerminator", terminator, isReading ? "\r\n|\n" : "\n");
     buildCsvListFunc(classctx, "getEscape", escape, NULL);
 
     StringBuffer flags;
-    if (!queryAttribute(quoteAtom, attrs))       flags.append("|defaultQuote");
-    if (!queryAttribute(separatorAtom, attrs))   flags.append("|defaultSeparate");
-    if (!queryAttribute(terminatorAtom, attrs))  flags.append("|defaultTerminate");
-    if (!queryAttribute(escapeAtom, attrs))      flags.append("|defaultEscape");
+    if (!quoteAttr)                             flags.append("|defaultQuote");
+    if (!separatorAttr)                         flags.append("|defaultSeparate");
+    if (!terminatorAttr)                        flags.append("|defaultTerminate");
+    if (!escapeAttr)                            flags.append("|defaultEscape");
     if (singleHeader)                           flags.append("|singleHeaderFooter");
     if (manyHeader)                             flags.append("|manyHeaderFooter");
-    if (queryAttribute(noTrimAtom, attrs))       flags.append("|preserveWhitespace");
+    if (queryAttribute(noTrimAtom, attrs))      flags.append("|preserveWhitespace");
     if (flags.length() == 0)                    flags.append("|0");
 
     doBuildUnsignedFunction(classctx, "getFlags", flags.str()+1);

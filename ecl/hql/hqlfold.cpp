@@ -2809,35 +2809,38 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             IValue * childValue = child->queryValue();
             if (childValue)
             {
-                ITypeInfo * exprType = expr->queryType();
+                Linked<ITypeInfo> exprType = expr->queryType();
                 ITypeInfo * childType = child->queryType();
-                if (exprType->getSize() <= childType->getSize())
+                size32_t childSize = childValue->getSize();
+                const void * rawvalue = childValue->queryValue();
+                unsigned newSize = exprType->getSize();
+                if (newSize == UNKNOWN_LENGTH)
                 {
-                    switch (childType->getTypeCode())
+                    unsigned newLen = UNKNOWN_LENGTH;
+                    switch (exprType->getTypeCode())
                     {
                     case type_string:
-                    case type_unicode:
                     case type_varstring:
+                        newLen = childSize;
+                        break;
+                    case type_unicode:
+                        newLen = childSize / sizeof(UChar);
+                        break;
                     case type_utf8:
-                        {
-                            //MORE: Should probably have more protection .....
-                            IValue * transferred = createValueFromMem(expr->getType(), childValue->queryValue());
-                            if (transferred)
-                                return createConstant(transferred);
-                            break;
-                        }
-                    case type_int:
-                        {
-                            __int64 value = childValue->getIntValue();
-                            const byte * ptr = (const byte *)&value;
-                            if (__BYTE_ORDER != __LITTLE_ENDIAN)
-                                ptr += sizeof(value) - childType->getSize();
-                            IValue * transferred = createValueFromMem(expr->getType(), ptr);
-                            if (transferred)
-                                return createConstant(transferred);
-                            break;
-                        }
+                        newLen = rtlUtf8Length(childSize, rawvalue);
+                        break;
                     }
+                    if (newLen != UNKNOWN_LENGTH)
+                    {
+                        newSize = childSize;
+                        exprType.setown(getStretchedType(newLen, exprType));
+                    }
+                }
+                if (newSize <= childSize)
+                {
+                    IValue * transferred = createValueFromMem(LINK(exprType), rawvalue);
+                    if (transferred && transferred->isValid())
+                        return createConstant(transferred);
                 }
             }
             break;

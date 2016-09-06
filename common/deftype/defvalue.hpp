@@ -60,6 +60,7 @@ public:
     virtual void toMem(void * ptr) = 0;
 
     virtual unsigned getHash(unsigned initval)=0;
+    virtual bool isValid() const = 0;
 };
 
 typedef Owned<IValue> OwnedIValue;
