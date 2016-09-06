@@ -1422,34 +1422,58 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
     resp.setXMLDefinition(definition.str());
     if (ver >= 1.2)
     {
-        if (req.getReportMethodsAvailable())
+        if (definition.length() > 0)
         {
-            if (definition.length() > 0)
+            Owned<IPropertyTree> definitionTree = createPTreeFromXMLString(definition.str(), ipt_caseInsensitive);
+            if (req.getReportMethodsAvailable())
+            {
+                if (definitionTree)
+                {
+                    try
+                    {
+                        Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlMethod");
+                        IArrayOf<IEspMethodConfig> list;
+                        ForEach(*iter)
+                        {
+                            Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
+                            IPropertyTree &item = iter->query();
+                            methodconfig->setName(item.queryProp("@name"));
+                            list.append(*methodconfig.getClear());
+                        }
+                        resp.setMethods(list);
+                    }
+                    catch (...)
+                    {
+                        message.append("\nEncountered error while parsing fetching available methods");
+                    }
+                }
+                else
+                    message.append("\nCould not fetch available methods");
+            }
+
+            if (definitionTree)
             {
                 try
                 {
-                    Owned<IPropertyTree> definitionTree = createPTreeFromXMLString(definition.str(), ipt_caseInsensitive);
-                    Owned<IPropertyTreeIterator> iter = definitionTree->getElements("EsdlMethod");
-                    IArrayOf<IEspMethodConfig> list;
-                    ForEach(*iter)
+                    StringArray esdlServices;
+                    Owned<IPropertyTreeIterator> serviceiter = definitionTree->getElements("EsdlService");
+                    ForEach(*serviceiter)
                     {
-                        Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
-                        IPropertyTree &item = iter->query();
-                        methodconfig->setName(item.queryProp("@name"));
-                        list.append(*methodconfig.getClear());
+                        IPropertyTree &item = serviceiter->query();
+                        esdlServices.append(item.queryProp("@name"));
                     }
-                    resp.setMethods(list);
+                    resp.setESDLServices(esdlServices);
                 }
                 catch (...)
                 {
-                    message.append("\nEncountered error while parsing fetching available methods");
+                    message.append("\nEncountered error while parsing fetching EsdlServices");
                 }
             }
             else
-            {
-                message.append("\nCould not fetch available methods");
-            }
+                message.append("\nCould not fetch ESDLServices");
         }
+        else
+            message.append("\nCould not fetch ESDL services definition details");
     }
 
     resp.updateStatus().setCode(respcode);
@@ -1569,8 +1593,35 @@ bool CWsESDLConfigEx::onListDESDLEspBindings(IEspContext &context, IEspListDESDL
                         try
                         {
                             fetchESDLDefinitionFromDaliById(defid.toLowerCase(), definition);
-                            desdlespbinding->updateESDLBinding().updateDefinition().setInterface(definition.str());
-                            msg.append("\nFetched ESDL Biding definition.");
+                            if (definition.length() != 0)
+                            {
+                                desdlespbinding->updateESDLBinding().updateDefinition().setInterface(definition.str());
+                                msg.append("\nFetched ESDL Biding definition.");
+
+                                Owned<IPropertyTree> definitionTree = createPTreeFromXMLString(definition.str(), ipt_caseInsensitive);
+                                if (definitionTree)
+                                {
+                                    try
+                                    {
+                                        Owned<IPropertyTreeIterator> serviceiter = definitionTree->getElements("EsdlService");
+                                        StringArray esdlServices;
+                                        ForEach(*serviceiter)
+                                        {
+                                            IPropertyTree &item = serviceiter->query();
+                                            esdlServices.append(item.queryProp("@name"));
+                                        }
+                                        desdlespbinding->updateESDLBinding().updateDefinition().setESDLServices(esdlServices);
+                                    }
+                                    catch (...)
+                                    {
+                                        msg.append("\nEncountered error while parsing ");
+                                    }
+                                }
+                                else
+                                    msg.append("\nCould not parse ESDL Definition");
+                            }
+                            else
+                                msg.append("\nCould not fetch ESDL Definition");
                         }
                         catch (...)
                         {
