@@ -26,7 +26,11 @@ EXPORT TestDate := MODULE
     ASSERT(Date.FromDaysSince1900(0) = 19000101, CONST);
     ASSERT(Date.ToGregorianDate(1) = 00010101, CONST);
     ASSERT(Date.DaysSince1900(1900,1,1)=0, CONST);
+    ASSERT(Date.DaysSince1900(1900,12,0)=334, CONST);
+    ASSERT(Date.DaysSince1900(1900,12,1)=334, CONST);
+    ASSERT(Date.DaysSince1900(1900,12,31)=364, CONST);
     ASSERT(Date.FromGregorianYMD(1,1,1)=1, CONST);
+    ASSERT(Date.FromGregorianYMD(1,0,0)=1, CONST);
     ASSERT(Date.ToJulianDate(1) = 00010101, CONST);
     ASSERT(Date.FromJulianYMD(1,1,1)=1, CONST);
 
