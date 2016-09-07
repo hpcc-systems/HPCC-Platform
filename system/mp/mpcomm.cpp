@@ -2017,7 +2017,7 @@ int CMPConnectThread::run()
                 PROGLOG("MP: Connect Thread: after read %s",tmp1.str());
 #endif
                 checkSelfDestruct(&id[0],sizeof(id));
-                Linked<CMPChannel> channel = parent->lookup(_remoteep);
+                Owned<CMPChannel> channel = parent->lookup(_remoteep);
                 if (!channel->attachSocket(sock,_remoteep,hostep,false,&rd,addrval)) {
 #ifdef _FULLTRACE       
                     PROGLOG("MP Connect Thread: lookup failed");
@@ -2926,7 +2926,7 @@ public:
     void disconnect(INode *node)
     {
         CriticalBlock block(verifysect);
-        Linked<CMPChannel> channel = parent->lookup(node->endpoint());
+        Owned<CMPChannel> channel = parent->lookup(node->endpoint());
         channel->closeSocket();
         parent->removeChannel(channel);
     }
