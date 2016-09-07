@@ -106,7 +106,30 @@ define([
             if (this.filterDropDown.get("disabled")) {
                 return {};
             }
-            return domForm.toObject(this.filterForm.id);
+            var retVal = {};
+            arrayUtil.forEach(this.filterForm.getDescendants(), function (item, idx) {
+                var name = item.get("name");
+                if (name) {
+                    var value = item.get("value");
+                    if (value) {
+                        retVal[name] = value;
+                    }
+                }
+            });
+            return retVal;
+        },
+
+        fromObject: function (obj) {
+            arrayUtil.forEach(this.filterForm.getDescendants(), function (item, idx) {
+                var value = obj[item.get("name")];
+                if (value) {
+                    item.set("value", value);
+                    if (item.defaultValue !== undefined) {
+                        item.defaultValue = value;
+                    }
+                }
+            });
+            this.refreshState();
         },
 
         init: function (params) {
