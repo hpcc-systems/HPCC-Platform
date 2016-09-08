@@ -40,6 +40,7 @@ private:
     StringAttr   m_firstname;
     StringAttr   m_lastname;
     StringAttr   m_pw;
+    StringAttr   m_employeeID;
     StringAttr   m_Fqdn;
     StringAttr   m_Peer;
     authStatus   m_authenticateStatus;
@@ -79,6 +80,8 @@ public:
     virtual bool setFirstName(const char * fname);
     virtual const char * getLastName();
     virtual bool setLastName(const char * lname);
+    virtual const char * getEmployeeID();
+    virtual bool setEmployeeID(const char * emplID);
     const char * getRealm();
     bool setRealm(const char * name);
     ISecCredentials & credentials();

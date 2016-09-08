@@ -33,6 +33,7 @@ private:
     StringBuffer    m_fullname;
     StringBuffer    m_firstname;
     StringBuffer    m_lastname;
+    StringBuffer    m_employeeID;
     unsigned        m_userID;
     StringBuffer    m_Fqdn;
     StringBuffer    m_Peer;
@@ -101,6 +102,18 @@ public:
         }
         return true;
     }
+
+    const char * getEmployeeID()
+    {
+        return m_employeeID.str();
+    }
+
+    bool setEmployeeID(const char * emplID)
+    {
+        m_employeeID.set(emplID);
+        return true;
+    }
+
     const char * getRealm()
     {
         return m_realm.str();
@@ -209,6 +222,7 @@ public:
         destination.setFullName(getFullName());
         destination.setFirstName(getFirstName());
         destination.setLastName(getLastName());
+        destination.setEmployeeID(getEmployeeID());
         destination.setRealm(getRealm());
         destination.setFqdn(getFqdn());
         destination.setPeer(getPeer());
