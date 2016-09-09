@@ -74,7 +74,7 @@ public:
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return 0; }
 } failure;
 
-class CLazyFileIO : implements ILazyFileIO, implements IDelayedFile, public CInterface
+class CRoxieLazyFileIO : implements ILazyFileIO, implements IDelayedFile, public CInterface
 {
 protected:
     IArrayOf<IFile> sources;
@@ -99,7 +99,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed)
+    CRoxieLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed)
         : logical(_logical), fileSize(size), isCompressed(_isCompressed), fileStats(diskLocalStatistics)
     {
         fileDate.set(_date);
@@ -114,7 +114,7 @@ public:
         cached = NULL;
     }
     
-    ~CLazyFileIO()
+    ~CRoxieLazyFileIO()
     {
         setFailure(); // ensures the open file count properly maintained
     }
@@ -612,7 +612,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
     {
         Owned<IFile> local = createIFile(localLocation);
         bool isCompressed = testMode ? false : pdesc->queryOwner().isCompressed();
-        Owned<CLazyFileIO> ret = new CLazyFileIO(local.getLink(), size, modified, isCompressed);
+        Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO(local.getLink(), size, modified, isCompressed);
         RoxieFileStatus fileStatus = fileUpToDate(local, size, modified, isCompressed);
         if (fileStatus == FileIsValid)
         {
@@ -1257,7 +1257,7 @@ public:
         unsigned numFilesLeft = goers.ordinality(); 
         if (numFilesLeft > maxFilesOpen[remote])
         {
-            goers.sort(CLazyFileIO::compareAccess);
+            goers.sort(CRoxieLazyFileIO::compareAccess);
             DBGLOG("Closing LRU %s files, %d files are open", remote ? "remote" : "local",  numFilesLeft);
             unsigned idx = minFilesOpen[remote];
             while (idx < numFilesLeft)
