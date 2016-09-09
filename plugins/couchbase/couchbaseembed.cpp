@@ -74,7 +74,6 @@ namespace couchbaseembed
         //is there a way to independently step through original result rows?
         for (auto cbrow : *m_CouchBaseQuery)
             m_Rows.append(cbrow.json().to_string().c_str());
-
         if (m_CouchBaseQuery->meta().status().errcode() != LCB_SUCCESS )//rows.length() == 0)
             failx("Embedded couchbase error: %s", m_CouchBaseQuery->meta().body().data());
         else if (m_Rows.length() == 0) // Query errors not reported in meta.status, lets check for errors in meta body
@@ -444,7 +443,6 @@ namespace couchbaseembed
                     typeError("scalar", "");
                 return resultrow->query().queryProp("");
             }
-
             else
                 failx("Could not fetch next result column.");
         }
@@ -512,9 +510,11 @@ namespace couchbaseembed
             unsigned numchars = rtlUtf8Length(strlen(value), value);
             rtlUtf8ToStrX(chars, result, numchars, value);
         }
-
-        NullFieldProcessor p(NULL);
-        rtlStrToStrX(chars, result, p.resultChars, p.stringResult);
+        else
+        {
+            NullFieldProcessor p(NULL);
+            rtlStrToStrX(chars, result, p.resultChars, p.stringResult);
+        }
     }
 
     void CouchbaseEmbedFunctionContext::getUTF8Result(size32_t &chars, char * &result)
@@ -530,9 +530,11 @@ namespace couchbaseembed
             unsigned numchars = rtlUtf8Length(strlen(value), value);
             rtlUtf8ToUnicodeX(chars, result, numchars, value);
         }
-
-        NullFieldProcessor p(NULL);
-        rtlUnicodeToUnicodeX(chars, result, p.resultChars, p.unicodeResult);
+        else
+        {
+            NullFieldProcessor p(NULL);
+            rtlUnicodeToUnicodeX(chars, result, p.resultChars, p.unicodeResult);
+        }
     }
 
     void CouchbaseEmbedFunctionContext::getDecimalResult(Decimal &value)
@@ -551,7 +553,6 @@ namespace couchbaseembed
     {
         Owned<CouchbaseRowStream> cbaseRowStream;
         cbaseRowStream.set(new CouchbaseRowStream(_resultAllocator, m_pQuery));
-
         return cbaseRowStream.getLink();
     }
 
@@ -559,7 +560,6 @@ namespace couchbaseembed
     {
         Owned<CouchbaseRowStream> cbaseRowStream;
         cbaseRowStream.set(new CouchbaseRowStream(_resultAllocator, m_pQuery));
-
         return (byte *)cbaseRowStream->nextRow();
     }
 
