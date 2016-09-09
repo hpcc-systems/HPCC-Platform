@@ -327,10 +327,10 @@ class graphmaster_decl CMasterGraphElement : public CGraphElementBase
     bool initialized = false;
 public:
     CMasterGraphElement(CGraphBase &owner, IPropertyTree &xgmml);
-    void doCreateActivity(size32_t parentExtractSz=0, const byte *parentExtract=NULL, MemoryBuffer *startCtx=nullptr);
+    void doCreateActivity(size32_t parentExtractSz=0, const byte *parentExtract=nullptr, MemoryBuffer *startCtx=nullptr);
     virtual bool checkUpdate();
-
     virtual void initActivity() override;
+    virtual void reset() override;
     virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb);
 };
 
