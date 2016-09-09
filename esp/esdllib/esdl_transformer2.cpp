@@ -25,6 +25,8 @@
 #include "thorxmlwrite.hpp" //JSON WRITER
 #include "eclrtl.hpp"
 
+#define LOGDATASETTAG "LogDatasets"
+
 using namespace std;
 
 // Uncomment this to debug ESDL issues
@@ -1691,7 +1693,7 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
             }
         }
     }
-    logdata.append("<LogDatasets>");
+    logdata.appendf("<%s>", LOGDATASETTAG);
     const char * dataset;
     try
     {
@@ -1730,11 +1732,11 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
                 xpp->skipSubTree();
             }
         }
-        logdata.append("</LogDatasets>");
+        logdata.appendf("</%s>",LOGDATASETTAG);
     }
     catch (...)
     {
-        logdata.append("</LogDatasets>");
+        logdata.appendf("</%s>",LOGDATASETTAG);
         throw;
     }
 }

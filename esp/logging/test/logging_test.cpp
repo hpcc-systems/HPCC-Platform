@@ -124,7 +124,9 @@ void sendRequest()
         IPropertyTree* userContextTree = logContentTree->queryPropTree("MyUserContext");
         IPropertyTree* userRequestTree = logContentTree->queryPropTree("MyUserRequest");
         IPropertyTree* userRespTree = logContentTree->queryPropTree("MyUserResponseEx");
-        StringBuffer userContextXML, userRequestXML, userRespXML;
+        IPropertyTree* logDatasetsTree = logContentTree->queryPropTree("LogDatasets");
+        StringBuffer userContextXML, userRequestXML, userRespXML, logDatasetsXML;
+        toXML(logDatasetsTree, logDatasetsXML);
         toXML(userRespTree, userRespXML);
 
         toXML(userContextTree, userContextXML);
@@ -135,7 +137,7 @@ void sendRequest()
         printf("backEndResp: <%s>.\n", backEndResp);
 
         //Sleep(5000); //Waiting for loggingManager to start
-        loggingManager->updateLog(option.str(), *espContext, userContextTree, userRequestTree, backEndResp, userRespXML.str(), status);
+        loggingManager->updateLog(option.str(), *espContext, userContextTree, userRequestTree, backEndResp, userRespXML.str(), logDatasetsXML.str(), status);
     }
     else if (action.length() && strieq(action.str(), "UpdateLog1"))
     {
