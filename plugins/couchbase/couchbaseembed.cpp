@@ -37,6 +37,7 @@ static const char *g_moduleName = "couchbase";
 static const char *g_moduleDescription = "Couchbase Embed Helper";
 static const char *g_version = "Couchbase Embed Helper 1.0.0";
 static const char *g_compatibleVersions[] = { g_version, nullptr };
+static const NullFieldProcessor NULLFIELD(NULL);
 
 COUCHBASEEMBED_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
@@ -350,7 +351,6 @@ namespace couchbaseembed
        return thisParam++;
     }
 
-
     CouchbaseEmbedFunctionContext::CouchbaseEmbedFunctionContext(const IContextLogger &_logctx, const char *options, unsigned _flags)
     : logctx(_logctx), m_NextRow(), m_nextParam(0), m_numParams(0), m_scriptFlags(_flags)
     {
@@ -470,8 +470,7 @@ namespace couchbaseembed
         }
         else
         {
-            NullFieldProcessor p(NULL);
-            rtlStrToDataX(len, result, p.resultChars, p.stringResult);
+            rtlStrToDataX(len, result, NULLFIELD.resultChars, NULLFIELD.stringResult);
         }
     }
 
@@ -512,8 +511,7 @@ namespace couchbaseembed
         }
         else
         {
-            NullFieldProcessor p(NULL);
-            rtlStrToStrX(chars, result, p.resultChars, p.stringResult);
+            rtlStrToStrX(chars, result, NULLFIELD.resultChars, NULLFIELD.stringResult);
         }
     }
 
@@ -532,8 +530,7 @@ namespace couchbaseembed
         }
         else
         {
-            NullFieldProcessor p(NULL);
-            rtlUnicodeToUnicodeX(chars, result, p.resultChars, p.unicodeResult);
+            rtlUnicodeToUnicodeX(chars, result, NULLFIELD.resultChars, NULLFIELD.unicodeResult);
         }
     }
 
@@ -543,10 +540,7 @@ namespace couchbaseembed
         if (text && *text)
             value.setString(rtlUtf8Length(strlen(text), text), text);
         else
-        {
-            NullFieldProcessor p(NULL);
-            value.set(p.decimalResult);
-        }
+            value.set(NULLFIELD.decimalResult);
     }
 
     IRowStream * CouchbaseEmbedFunctionContext::getDatasetResult(IEngineRowAllocator * _resultAllocator)
