@@ -5791,7 +5791,8 @@ private:
         {
             attrs[ind++] = &username_attr;
             attrs[ind++] = &dispname_attr;
-            attrs[ind++] = &employeeID_attr;
+            if (user.getEmployeeID())
+                attrs[ind++] = &employeeID_attr;
         }
         else
         {

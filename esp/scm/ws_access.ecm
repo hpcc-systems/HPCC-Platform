@@ -243,7 +243,7 @@ ESPrequest AddUserRequest
     [label("Last Name"), cols(20)] string lastname;
     [label("Password"), password, cols(20)] password1;
     [label("Retype password"), password, cols(20)] password2;
-    [label("Employee ID"), cols(20)] string employeeID;
+    [min_ver("1.10"), label("Employee ID"), cols(20)] string employeeID;
 };
 
 ESPresponse AddUserResponse
