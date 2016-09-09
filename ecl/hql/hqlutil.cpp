@@ -7488,7 +7488,14 @@ public:
         if (body->hasAttribute(oldSetFormatAtom))
             return false;
 
-        mangled.append("_Z").append(entrypoint.length()).append(entrypoint);
+        mangled.append("_Z");
+        StringBuffer namespaceValue;
+        getAttribute(body, namespaceAtom, namespaceValue);
+        if (namespaceValue.length())
+            mangled.append("N").append(namespaceValue.length()).append(namespaceValue);
+        mangled.append(entrypoint.length()).append(entrypoint);
+        if (namespaceValue.length())
+            mangled.append("E");
 
         StringBuffer mangledReturn;
         StringBuffer mangledReturnParameters;
@@ -7503,19 +7510,24 @@ public:
 
         mangled.append(mangledReturnParameters);
 
-        ForEachChild(i, formals)
+        if (formals->numChildren())
         {
-            IHqlExpression * param = formals->queryChild(i);
-            ITypeInfo *paramType = param->queryType();
+            ForEachChild(i, formals)
+            {
+                IHqlExpression * param = formals->queryChild(i);
+                ITypeInfo *paramType = param->queryType();
 
-            bool isOut = param->hasAttribute(outAtom);
-            bool isConst = !param->hasAttribute(noConstAtom);
+                bool isOut = param->hasAttribute(outAtom);
+                bool isConst = !param->hasAttribute(noConstAtom);
 
-            if (isOut)
-                mangled.append("R");
-            if (!mangleSimpleType(mangled, paramType, isConst))
-                return false;
+                if (isOut)
+                    mangled.append("R");
+                if (!mangleSimpleType(mangled, paramType, isConst))
+                    return false;
+            }
         }
+        else
+            mangled.append('v');
         return true;
     }
 

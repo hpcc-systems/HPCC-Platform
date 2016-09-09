@@ -77,6 +77,7 @@ extern DEFTYPE_API IValue * createStringValue(const char *val, ITypeInfo *type, 
 extern DEFTYPE_API IValue * createUnicodeValue(char const * value, unsigned size, char const * locale, bool utf8, bool unescape = false); // size is length of ascii or utf8 string; locale is like fr_BE_EURO
 extern DEFTYPE_API IValue * createUnicodeValue(char const * value, ITypeInfo *type); // only for ascii string, use above for utf8
 extern DEFTYPE_API IValue * createUnicodeValue(char const * value, ITypeInfo *type, unsigned srclen); // only for ascii string
+extern DEFTYPE_API IValue * createUnicodeValue(UChar const * text, size32_t len, ITypeInfo * type);
 extern DEFTYPE_API IValue * createUnicodeValue(size32_t len, const void * text, ITypeInfo * type);
 extern DEFTYPE_API IValue * createVarUnicodeValue(char const * value, unsigned size, char const * locale, bool utf8, bool unescape = false); // size is length of ascii or utf8 string; locale is like fr_BE_EURO
 extern DEFTYPE_API IValue * createVarUnicodeValue(size32_t len, const void * text, ITypeInfo * type);
