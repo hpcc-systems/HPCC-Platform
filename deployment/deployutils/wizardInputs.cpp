@@ -111,7 +111,7 @@ void CWizardInputs::setEnvironment()
     m_thorNodes = atoi(m_pXml->queryProp("@thorNodes"));
 
   m_espNodes = 1;
-  if(m_pXml->hasProp("@thorNodes"))
+  if(m_pXml->hasProp("@espNodes"))
     m_espNodes = atoi(m_pXml->queryProp("@espNodes"));
 
 
