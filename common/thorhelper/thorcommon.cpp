@@ -1823,14 +1823,38 @@ void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char
     unsigned numaMap[NUMA_NUM_NODES];
     unsigned numNumaNodes = 0;
 #if defined(LIBNUMA_API_VERSION) && (LIBNUMA_API_VERSION>=2)
+    //Create a bit mask to record which nodes are available to the system
+    //num_all_nodes_ptr contains only nodes with associated memory - which causes issues on misconfigured systems
+    struct bitmask * available_nodes = numa_allocate_nodemask();
+    numa_bitmask_clearall(available_nodes);
+
+    unsigned maxcpus = numa_num_configured_cpus();
+    for (unsigned cpu=0; cpu < maxcpus; cpu++)
+    {
+        //Check the cpu can be used by this process.
+        if (numa_bitmask_isbitset(numa_all_cpus_ptr, cpu))
+        {
+            int node = numa_node_of_cpu(cpu);
+            if (node != -1)
+                numa_bitmask_setbit(available_nodes, node);
+        }
+    }
+
     for (unsigned i=0; i<=numa_max_node(); i++)
     {
-        if (numa_bitmask_isbitset(numa_all_nodes_ptr, i))
+        if (numa_bitmask_isbitset(available_nodes, i))
         {
             numaMap[numNumaNodes] = i;
             numNumaNodes++;
+
+            if (!numa_bitmask_isbitset(numa_all_nodes_ptr, i))
+                DBGLOG("Numa: Potential inefficiency - node %u does not have any associated memory", i);
         }
     }
+
+    numa_bitmask_free(available_nodes);
+
+    DBGLOG("Affinity: Max cpus(%u) nodes(%u) actual nodes(%u)", maxcpus, numa_max_node()+1, numNumaNodes);
 #else
     //On very old versions of numa assume that all nodes are present
     for (unsigned i=0; i<=numa_max_node(); i++)
