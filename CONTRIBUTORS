@@ -2,9 +2,6 @@
 Guide for Contributors
 ======================
 
-Upon contributing code, you agree to the HPCC Systems® Contribution Agreement at
-http://hpccsystems.com/sites/default/files/pdf/hpcc_contributor_agreement.pdf
-
 Our preferred method for accepting contributions is via GitHub pull requests. We
 might in the future (when we are more expert on Git) be able to accept patch
 files via other means, but at present GitHub is all we are set up to deal with.
@@ -18,13 +15,18 @@ http://help.github.com/ . A quick summary is below:
 
 3. Clone the github repo to the machine you will be working on, using a command like
 
+    git clone https://github.com/<your-github-name>/HPCC-Platform.git
+   
+   or
+   
     git clone git@github.com/<your-github-name>/HPCC-Platform.git
-
+   
+   depending on whether you have set up a shared-key login to github or not.
 
 Issues
 ======
 
-Current open issues can be found at https://github.com/hpcc-systems/HPCC-Platform/issues.
+Current open issues can be found at  https://track.hpccsystems.com/secure/Dashboard.jspa.
 If you want to work on one that is currently unassigned, add a comment to the issue to
 indicate that you intend to do so (to help avoid duplicated effort). If the issue is
 already assigned but you think you could help, drop a note to the assignee.
@@ -105,7 +107,7 @@ is likely to be rejected by the maintainers.
 
 To pull in upstream changes:
 
-    git remote add upstream git://github.com/hpcc-systems/HPCC-Platform.git
+    git remote add upstream https://github.com/hpcc-systems/HPCC-Platform.git
     git fetch upstream
     git merge upstream/master
 
@@ -160,7 +162,7 @@ Commit messages
 We follow the same guidelines that many other git projects have adopted for git comments.
 
 1.  The first line of the commit must start HPCC-NNN where NNN is the Jira issue that the
-    commit is adddressing. This should be followed by a space, then a short summary of the
+    commit is addressing. This should be followed by a space, then a short summary of the
     change (this will appear in the condensed form of the changelog generated from the
     git history). Start with a capital, do not end with a full stop.
 
