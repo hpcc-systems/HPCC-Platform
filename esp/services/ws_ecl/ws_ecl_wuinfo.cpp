@@ -209,11 +209,39 @@ bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
         IArrayOf<IPropertyTree> parts;
         if (fields.length())
         {
+            bool addedAdditionalFields = false;
+            unsigned offset = 1;
             ForEachItemIn(i, fields)
             {
-                Owned<IConstWUResult> var = wu->getVariableByName(fields.item(i));
-                if (var)
-                    appendVariableParmInfo(parts, resultSetFactory, *var, i+1);
+                const char *name = fields.item(i);
+                if (!addedAdditionalFields && streq(name, "*")) //name of '*' means insert all unspecified fields here, can only be used once
+                {
+                    addedAdditionalFields=true;
+                    Owned<IConstWUResultIterator> vars = &ensureWorkUnit()->getVariables();
+                    ForEach(*vars)
+                    {
+                        SCMStringBuffer s;
+                        IConstWUResult &var = vars->query();
+                        if (NotFound == fields.find(var.getResultName(s).str()))
+                        {
+                            SCMStringBuffer fieldSeq;
+                            var.getResultFieldOpt("sequence", fieldSeq);
+                            int seq = fieldSeq.length() ? atoi(fieldSeq.str()) : 0;
+                            if (seq < 0)
+                                seq = 0;
+                            seq = seq + i + 1;
+                            if (seq > offset) //track where we need to resume with specified fields
+                                offset = seq;
+                            appendVariableParmInfo(parts, resultSetFactory, vars->query(), seq);
+                        }
+                    }
+                }
+                else
+                {
+                    Owned<IConstWUResult> var = wu->getVariableByName(name);
+                    if (var)
+                        appendVariableParmInfo(parts, resultSetFactory, *var, i+offset);
+                }
             }
         }
         else
