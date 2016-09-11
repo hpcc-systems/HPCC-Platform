@@ -604,7 +604,14 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
 
     if (getEspLogLevel()>LogNormal)
         DBGLOG("Headers processed! content_length = %" I64F "d", m_content_length);
-    
+    StringBuffer expect;
+    getHeader("Expect", expect);
+    if (expect.length() && strieq(expect, "100-continue"))
+    {
+        StringBuffer cont("HTTP/1.1 100 Continue\n\n"); //tell client to send body
+        m_socket.write(cont, cont.length());
+    }
+
     if (isUpload())
         return 0;
 
