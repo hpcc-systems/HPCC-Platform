@@ -1497,6 +1497,12 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                 if ((str = strstr(header, "Content-Type: ")) != NULL)
                     pHttpHelper->setContentType(str+14);
 
+                if (strstr(header, "Expect: 100-continue"))
+                {
+                    StringBuffer cont("HTTP/1.1 100 Continue\n\n"); //tell client to go ahead and send body
+                    sock->write(cont, cont.length());
+                }
+
                 // determine payload length
                 str = strstr(header, "Content-Length: ");
                 if (str)
