@@ -49,7 +49,7 @@ IPropertyTree *CEsdlSvcEngine::createTargetContext(IEspContext &context, IProper
     //removing this entry since the Row/Common/ESP/Config/Method tree should have an attribute @name
     //localCtx->setProp("Row/Common/ESP/MethodName", mthdef.queryMethodName());
     ensurePTree(localCtx, "Row/Common/ESP/Config");
-    localCtx->addPropTree("Row/Common/ESP/Config/Method", tgtcfg);
+    localCtx->addPropTree("Row/Common/ESP/Config/Method", LINK(tgtcfg));
     return localCtx.getLink();
 }
 

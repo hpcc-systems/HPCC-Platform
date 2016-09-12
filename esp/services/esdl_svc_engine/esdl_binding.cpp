@@ -2298,8 +2298,7 @@ int EsdlBindingImpl::onRoxieRequest(CHttpRequest* request, CHttpResponse* respon
     try
     {
         VStringBuffer xpath("Target[@name=\"%s\"]", method);
-        Owned<IPropertyTree> srvinfo;
-        srvinfo.setown( m_pESDLService->m_pServiceMethodTargets.get()->getPropTree(xpath.str()));
+        Owned<IPropertyTree> srvinfo = m_pESDLService->m_pServiceMethodTargets->getPropTree(xpath.str());
 
         if (!srvinfo)
         {
@@ -2307,7 +2306,7 @@ int EsdlBindingImpl::onRoxieRequest(CHttpRequest* request, CHttpResponse* respon
         }
         else
         {
-             m_pESDLService->sendTargetSOAP(*ctx,srvinfo.get(),roxieRequest.str(),roxieResponse, false, roxieUrl.str());
+            m_pESDLService->sendTargetSOAP(*ctx,srvinfo,roxieRequest.str(),roxieResponse, false, roxieUrl.str());
             response->setContent(roxieResponse.str());
             response->setStatus(HTTP_STATUS_OK);
         }
@@ -2464,10 +2463,9 @@ void EsdlBindingImpl::getRequestContent(IEspContext &context, StringBuffer & req
        ESPLOG(LogMax,"params reqxml: %s", xmlstr.str());
 
        VStringBuffer xpath("Target[@name=\"%s\"]", methodname);
-       Owned<IPropertyTree> tgtcfg;
-       tgtcfg.setown( m_pESDLService->m_pServiceMethodTargets.get()->getPropTree(xpath.str()));
+       Owned<IPropertyTree> tgtcfg = m_pESDLService->m_pServiceMethodTargets->getPropTree(xpath.str());
 
-       if (tgtcfg.get())
+       if (tgtcfg)
        {
            const char *tgtQueryName =  tgtcfg->queryProp("@queryname");
 
@@ -2483,7 +2481,6 @@ void EsdlBindingImpl::getRequestContent(IEspContext &context, StringBuffer & req
                req.append(writer->str());
            }
        }
-
        else
        {
            throw MakeStringException(-1, "ESDLBinding::%s::%s: Could not generate request content", servicename, methodname);
@@ -2526,10 +2523,9 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
         if ( m_pESDLService)
         {
             VStringBuffer xpath("Target[@name=\"%s\"]", mthname);
-            Owned<IPropertyTree> tgtcfg;
-            tgtcfg.setown( m_pESDLService->m_pServiceMethodTargets.get()->getPropTree(xpath.str()));
+            Owned<IPropertyTree> tgtcfg = m_pESDLService->m_pServiceMethodTargets->getPropTree(xpath.str());
 
-            if (tgtcfg.get())
+            if (tgtcfg)
             {
                 const char *tgtQueryName =  tgtcfg->queryProp("@queryname");
 
