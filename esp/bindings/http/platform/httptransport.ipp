@@ -268,7 +268,6 @@ typedef enum sub_service_
     sub_serv_wsdl,
     sub_serv_xsd,
     sub_serv_config,
-    sub_serv_php,
     sub_serv_getversion,
     sub_serv_reqsamplexml,
     sub_serv_respsamplexml,
