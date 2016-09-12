@@ -1065,14 +1065,10 @@ public:
     }
     ~CSharedWriteAheadBase()
     {
-        ForEachItemIn(o, outputs)
-        {
-            COutput &output = queryCOutput(o);
-            output.outputOwnedRows.clear();
-        }
+        // clear outputs ahead of inMemRows, because that will prevent reuse() caching inMemRows
+        outputs.kill();
         inMemRows.clear();
     }
-
 
     unsigned anyReaderBehind()
     {
