@@ -3177,6 +3177,8 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
             ForEach(*it)
             {
                 IPropertyTree& pDropZone = it->query();
+                if (!pDropZone.getPropBool("@ECLWatchVisible", true))
+                    continue;
 
                 //get IP Address of the computer associated with this drop zone
                 const char* pszName = pDropZone.queryProp("@name");
