@@ -2174,22 +2174,26 @@ public:
                         {
                             case TAKkeyedjoin:
                             {
-                                if (currentMatchIdx < currentMatched)
+                                row.ensureRow();
+                                loop
                                 {
+                                    if (currentMatchIdx >= currentMatched)
+                                    {
+                                        djg.clear();
+                                        break;
+                                    }
                                     offset_t fpos;
                                     const void *rhs = djg->queryRow(currentMatchIdx, fpos);
-                                    row.ensureRow();
-                                    transformedSize = helper->transform(row, djg->queryLeft(), rhs, fpos, currentMatchIdx+1);
+                                    currentMatchIdx++;
+                                    transformedSize = helper->transform(row, djg->queryLeft(), rhs, fpos, currentMatchIdx);
                                     if (transformedSize)
                                     {
                                         currentAdded++;
                                         if (currentAdded==keepLimit)
                                             djg.clear();
+                                        break;
                                     }
-                                    currentMatchIdx++;
                                 }
-                                else
-                                    djg.clear();
                                 break;
                             }
                             case TAKkeyeddenormalize:
