@@ -157,6 +157,7 @@
                     <xsl:copy-of select="@priority"/>
                 </xsl:copy>
             </xsl:for-each>
+            @XSL_PLUGIN_DEFINITION1@
             <xsl:for-each select="RoxieFarmProcess">
                 <xsl:element name="RoxieFarmProcess">
                     <xsl:copy-of select="@*[name()!='name' and name()!='level']"/>

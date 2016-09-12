@@ -827,6 +827,12 @@ public:
               LoadComboBox("Software/DaliServerProcess", bAddBlank, m_pEnv, m_pEnv, strBuf);
               extraInfo = strBuf.str();
             }
+            else if (strcmp(type, "addrCleanerPluginType")==0)
+            {
+              nCtrlType = 4;//LVC_COMBO;
+              LoadComboBox("Software/AddrCleanerPluginProcess", bAddBlank, m_pEnv, m_pEnv, strBuf);
+              extraInfo = strBuf.str();
+            }
             else if (strcmp(type, "securityManagerType")==0)
             {
               nCtrlType = 4;//LVC_COMBO;

@@ -367,6 +367,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      @XSD_PLUGIN_DEFINITION1@
       <xs:attribute name="daliServers" type="daliServersType" use="required">
         <xs:annotation>
           <xs:appinfo>

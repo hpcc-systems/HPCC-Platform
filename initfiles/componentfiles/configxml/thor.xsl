@@ -191,6 +191,7 @@
       <xsl:apply-templates select="@*[string(.) != '']"/>
       
       <xsl:copy-of select="/Environment/Software/Directories"/> 
+      @XSL_PLUGIN_DEFINITION1@
       <Debug>
         <xsl:for-each select="Debug/@*">
           <xsl:if test="string(.) != ''">
