@@ -1974,7 +1974,7 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", NULL};
+            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", "employeeNumber", NULL};
             CLDAPMessage searchResult;
             int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
 
@@ -2023,6 +2023,8 @@ public:
                                 valind++;
                             }
                         }
+                        else if(stricmp(attribute, "employeeNumber") == 0)
+                            user.setEmployeeID(vals.queryCharValue(0));
                     }
                 }
             }
@@ -2390,7 +2392,7 @@ public:
             filter.appendf(")(|(%s=*%s*)(%s=*%s*)(%s=*%s*)))", act_fieldname, searchstr, "givenName", searchstr, "sn", searchstr);
         }
 
-        char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", NULL};
+        char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", "employeeNumber", NULL};
 
         CPagedLDAPSearch pagedSrch(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
         for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
@@ -2468,6 +2470,12 @@ public:
                         if (vals.hasValues())
                             ((CLdapSecUser*)user.get())->setUserID(atoi(vals.queryCharValue(0)));
                     }
+                }
+                else if(stricmp(attribute, "employeeNumber") == 0)
+                {
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
+                    if (vals.hasValues())
+                        user->setEmployeeID(vals.queryCharValue(0));
                 }
             }
             if (user->getName() && *user->getName())
@@ -2642,7 +2650,17 @@ public:
                 dispname_values
             };
 
-            LDAPMod *attrs[4];
+
+            StringBuffer emplID(user.getEmployeeID());
+            char *employeeID_values[] = {(char*)emplID.str(), NULL };
+            LDAPMod employeeID_attr =
+            {
+                LDAP_MOD_REPLACE,
+                "employeeNumber",
+                employeeID_values
+            };
+
+            LDAPMod *attrs[5];
             int ind = 0;
         
             attrs[ind++] = &gn_attr;
@@ -2656,6 +2674,9 @@ public:
             {
                 attrs[ind++] = &cn_attr;
             }
+
+            if (!emplID.isEmpty())
+                attrs[ind++] = &employeeID_attr;
             
             attrs[ind] = NULL;
             
@@ -5656,6 +5677,8 @@ private:
             fullname = fullname_buf.str();
         }
 
+        const char* employeeID = user.getEmployeeID();
+
         StringBuffer dn;
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
         {
@@ -5745,7 +5768,15 @@ private:
             username_values
         };
 
-        LDAPMod *attrs[8];
+        char* employeeID_values[] = {(char*)employeeID, NULL};
+        LDAPMod employeeID_attr =
+        {
+            LDAP_MOD_ADD,
+            "EmployeeNumber",
+            employeeID_values
+        };
+
+        LDAPMod *attrs[9];
         int ind = 0;
         
         attrs[ind++] = &cn_attr;
@@ -5760,6 +5791,8 @@ private:
         {
             attrs[ind++] = &username_attr;
             attrs[ind++] = &dispname_attr;
+            if (user.getEmployeeID())
+                attrs[ind++] = &employeeID_attr;
         }
         else
         {
