@@ -26,12 +26,12 @@ class CGroupBaseActivityMaster : public CMasterActivity
 public:
     CGroupBaseActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
     {
+        statNumGroups.setown(new CThorStats(queryJob(), StNumGroups));
+        statNumGroupMax.setown(new CThorStats(queryJob(), StNumGroupMax));
     }
     virtual void init()
     {
         CMasterActivity::init();
-        statNumGroups.setown(new CThorStats(queryJob(), StNumGroups));
-        statNumGroupMax.setown(new CThorStats(queryJob(), StNumGroupMax));
     }
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
     {
