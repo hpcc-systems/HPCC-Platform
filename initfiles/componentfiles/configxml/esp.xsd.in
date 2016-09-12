@@ -42,7 +42,31 @@
 			</xs:appinfo>
 		     </xs:annotation>  
                         <xs:sequence>
-                            <xs:element name="Authenticate" minOccurs="0" maxOccurs="unbounded">
+                            <xs:element name="CustomBindingParameter" minOccurs="0" maxOccurs="unbounded">
+                               <xs:annotation>
+                                  <xs:appinfo>
+                                       <viewType>list</viewType>
+                                       <title>Custom Binding Parameters</title>
+                                   </xs:appinfo>
+                               </xs:annotation>
+                               <xs:complexType>
+                                   <xs:attribute name="key" type="xs:string" use="optional">
+                                       <xs:annotation>
+                                           <xs:appinfo>
+                                               <colIndex>1</colIndex>
+                                          </xs:appinfo>
+                                      </xs:annotation>
+                                  </xs:attribute>
+                                  <xs:attribute name="value" type="xs:string" use="optional">
+                                      <xs:annotation>
+                                          <xs:appinfo>
+                                                <colIndex>2</colIndex>
+                                           </xs:appinfo>
+                                      </xs:annotation>
+                                  </xs:attribute>
+                              </xs:complexType>
+                          </xs:element>
+                          <xs:element name="Authenticate" minOccurs="0" maxOccurs="unbounded">
                                 <xs:annotation>
                                     <xs:appinfo>
                                         <viewType>list</viewType>

@@ -5305,6 +5305,19 @@ bool CWsDeployFileInfo::handleRows(IEspContext &context, IEspHandleRowsRequest &
         const char* compType = pRow->queryProp("@compType");
         xpath.clear().appendf("Override[@component='%s'][@instance='%s']", compType, rowName);
       }
+      else if (!strcmp(rowType, "CustomBindingParameter"))
+      {
+          const char* params = pRow->queryProp("@params");
+          StringBuffer decodedParams(params);
+          decodedParams.replaceString("::", "\n");
+
+          Owned<IProperties> pParams = createProperties();
+          pParams->loadProps(decodedParams.str());
+
+          VStringBuffer strXPath("%s%s", pParams->queryProp("subType"), pParams->queryProp("subTypeKey"));
+
+          pComponent->removeProp(strXPath.str());
+      }
       else
       {
         if (!strcmp(rowType, "Notes"))
