@@ -542,7 +542,7 @@ public:
         if (noSortPartitionSide())
         {
             partitionRow.setown(primaryInputStream->ungroupedNextRow());
-            primaryStream.set(new cRowStreamPlus1Adaptor(primaryInputStream, partitionRow));
+            primaryStream.setown(new cRowStreamPlus1Adaptor(primaryInputStream, partitionRow));
         }
         else
         {
