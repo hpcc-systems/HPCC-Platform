@@ -958,6 +958,183 @@ public:
     }
 };
 
+class EsdlUnBindMethodCmd : public EsdlBindMethodCmd
+{
+public:
+    int processCMD()
+    {
+        int success = -1;
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientGetESDLBindingRequest> getrequest = esdlConfigClient->createGetESDLBindingRequest();
+        VStringBuffer bindingid("%s.%s", optTargetESPProcName.get(), optBindingName.get());
+
+        if (optVerbose)
+            fprintf(stdout,"\nFetching current ESDL binging configuration for (%s)\n", bindingid.str());
+        getrequest->setEsdlBindingId(bindingid.str());
+
+        Owned<IClientGetESDLBindingResponse> getresp = esdlConfigClient->GetESDLBinding(getrequest);
+
+        if (getresp->getExceptions().ordinality()>0)
+        {
+            EsdlCmdHelper::outputMultiExceptions(getresp->getExceptions());
+            return success;
+        }
+
+        if (getresp->getStatus().getCode()!=0)
+        {
+            fprintf(stdout, "\n Failed to retrieve '%s' ESDL Binding configuration: %s.\n", optMethod.get(), getresp->getStatus().getDescription());
+            return success;
+        }
+
+        const char * currentconfig = getresp->getConfigXML();
+        if (currentconfig && *currentconfig)
+        {
+            Owned<IPropertyTree> currconfigtree = createPTreeFromXMLString(currentconfig);
+            if (currconfigtree)
+            {
+                VStringBuffer xpath("Definition[1]/Methods/Method[@name='%s']", optMethod.get());
+
+                if (currconfigtree->hasProp(xpath.str()))
+                {
+                    if (currconfigtree->removeProp(xpath.str()))
+                    {
+                        StringBuffer newconfig;
+                        toXML(currconfigtree, newconfig);
+
+                        Owned<IClientPublishESDLBindingRequest> request = esdlConfigClient->createPublishESDLBindingRequest();
+
+                        if (optVerbose)
+                            fprintf(stdout,"\nAttempting to publish ESDL Binding %s sans Method '%s'\n", bindingid.str(), optMethod.get());
+
+                        request->setConfig(newconfig.str());
+                        request->setOverwrite(true);
+
+                        Owned<IClientPublishESDLBindingResponse> resp = esdlConfigClient->PublishESDLBinding(request);
+
+                        if (resp->getExceptions().ordinality() > 0)
+                        {
+                            EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
+                            return success;
+                        }
+
+                        if (resp->getStatus().getCode() == 0)
+                        {
+                            fprintf(stdout, "\nSuccessfully unbound method %s from ESDL Binding %s.", optMethod.get(), bindingid.str());
+                            success = 0;
+                        }
+                        else
+                            fprintf(stdout, "\nCould not unbound method %s from ESDL Binding %s: %s", optMethod.get(), bindingid.str(), resp->getStatus().getDescription());
+                    }
+                    else
+                        fprintf(stdout, "\n Could not remove Method %s from ESDL Binding %s.configuration.\n", optMethod.get(), bindingid.str());
+                }
+                else
+                    fprintf(stdout, "\n Method %s doesn't seem to be associated with ESDL Binding %s.\n", optMethod.get(), bindingid.str());
+            }
+            else
+                fprintf(stdout, "\n Could not interpret configuration for ESDL Binding %s :  %s.\n", bindingid.str(), currentconfig );
+        }
+        else
+            fprintf(stdout, "\n Received empty configuration for ESDL Binding %s.\n", bindingid.str());
+
+        return success;
+    }
+
+    void usage()
+    {
+        printf( "\nUsage:\n\n"
+                "esdl unbind-method <TargetESPProcessName> <TargetESPBindingName> <TargetServiceName> <TargetServiceDefVersion> <TargetMethodName> [\n\n"
+                "   TargetESPProcessName                             The target ESP Process name\n"
+                "   TargetESPBindingName                             The target ESP binding name associated with this service\n"
+                "   TargetServiceName                                The name of the ESDLService name associated with the target method\n"
+                "   TargetMethodName                                 The name of the target method (must exist in the service ESDL definition)\n");
+
+                EsdlPublishCmdCommon::usage();
+
+        printf( "\n   Use this command to unbind a method configuration currently associated with a given ESDL binding.\n"
+                "   To un-bind a method, provide the target ESP process name\n"
+                "   (esp which hosts the service.) \n"
+                "   It is also necessary to provide the Port on which this service is configured to run (ESP Binding),\n"
+                "   and the name of the method you are unbinding.\n");
+
+
+        printf("\nExample:"
+                ">esdl unbind-method myesp mybinding WsMyService mymethod\n"
+                );
+    }
+    bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        //First 4 parameter order is fixed.
+        for (int cur = 0; cur < 4 && !iter.done(); cur++)
+        {
+           const char *arg = iter.query();
+           if (*arg != '-')
+           {
+               switch (cur)
+               {
+                case 0:
+                    optTargetESPProcName.set(arg);
+                    break;
+                case 1:
+                    optBindingName.set(arg);
+                    break;
+                case 2:
+                    optService.set(arg);
+                    break;
+                //case 3:
+                //    optVersionStr.set(arg);
+                //    break;
+                case 3:
+                    optMethod.set(arg);
+                    break;
+               }
+           }
+           else
+           {
+               fprintf(stderr, "\noption detected before required arguments: %s\n", arg);
+               usage();
+               return false;
+           }
+
+           iter.next();
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            if (parseCommandLineOption(iter))
+                continue;
+
+            if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
+                return false;
+        }
+
+        return true;
+    }
+
+    bool finalizeOptions(IProperties *globals)
+    {
+        if(optTargetESPProcName.isEmpty())
+            throw MakeStringException( 0, "Name of Target ESP process must be provided" );
+
+        if (optService.isEmpty())
+            throw MakeStringException( 0, "Name of ESDL based service must be provided" );
+
+        if (optMethod.isEmpty())
+            throw MakeStringException( 0, "Name of ESDL based method must be provided" );
+
+        if (optBindingName.isEmpty())
+            throw MakeStringException( 0, "Name of ESP binding must be provided" );
+
+        return EsdlPublishCmdCommon::finalizeOptions(globals);
+    }
+};
+
 class EsdlGetCmd : public EsdlPublishCmdCommon
 {
     protected:

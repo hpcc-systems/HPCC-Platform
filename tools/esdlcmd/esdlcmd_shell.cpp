@@ -193,6 +193,7 @@ void EsdlCMDShell::usage()
            "   list-bindings     List all ESDL bindings.\n"
            "   unbind-service    Remove ESDL based service binding on target ESP.\n"
            "   bind-method       Configure method associated with existing ESDL binding.\n"
+           "   unbind-method     Remove method associated with existing ESDL binding.\n"
            "   get-binding       Get ESDL binding.\n"
            ""
            "\nRun 'esdl help <command>' for more information on a specific command\n\n"
