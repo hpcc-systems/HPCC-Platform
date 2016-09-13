@@ -2147,7 +2147,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfResolveHostName(const char *hostna
 
 static void checkExternalFileRights(ICodeContext *ctx, CDfsLogicalFileName &lfn, bool rd,bool wr)
 {
-    StringAttr extpath;
+    StringAttr extpath(lfn.get());
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     unsigned auditflags = 0;
     if (rd)
@@ -2160,13 +2160,12 @@ static void checkExternalFileRights(ICodeContext *ctx, CDfsLogicalFileName &lfn,
             throw MakeStringException(-1,"Write permission denied for %s",extpath.get());
         }
     }
-    else if (rd) {
+    if (rd) {
         if (!HASREADPERMISSION(perm)) {
             throw MakeStringException(-1,"Read permission denied for %s",extpath.get());
         }
     }
 }
-
 
 FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext * ctx,const char *location,const char *frompath,const char *topath)
 {
