@@ -608,6 +608,8 @@ void CTpWrapper::getTpDropZones(IArrayOf<IConstTpDropZone>& list)
     ForEach(*services)
     {
         IPropertyTree& serviceTree = services->query();
+        if (!serviceTree.getPropBool("@ECLWatchVisible", true))
+            continue;
 
         Owned<IEspTpDropZone> pService = createTpDropZone("","");
         pService->setName(serviceTree.queryProp("@name"));
