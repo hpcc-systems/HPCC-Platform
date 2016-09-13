@@ -21,6 +21,7 @@
             description="DropZone process"
             directory="${RUNTIME_PATH}/mydropzone"
             name="mydropzone"
+            ECLWatchVisible="true"
             umask="022"/>
   <RoxieCluster allFilesDynamic="true"
                 blindLogging="false"
