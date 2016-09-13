@@ -37,6 +37,7 @@ static const char *g_moduleName = "couchbase";
 static const char *g_moduleDescription = "Couchbase Embed Helper";
 static const char *g_version = "Couchbase Embed Helper 1.0.0";
 static const char *g_compatibleVersions[] = { g_version, nullptr };
+static const NullFieldProcessor NULLFIELD(NULL);
 
 COUCHBASEEMBED_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
@@ -74,7 +75,6 @@ namespace couchbaseembed
         //is there a way to independently step through original result rows?
         for (auto cbrow : *m_CouchBaseQuery)
             m_Rows.append(cbrow.json().to_string().c_str());
-
         if (m_CouchBaseQuery->meta().status().errcode() != LCB_SUCCESS )//rows.length() == 0)
             failx("Embedded couchbase error: %s", m_CouchBaseQuery->meta().body().data());
         else if (m_Rows.length() == 0) // Query errors not reported in meta.status, lets check for errors in meta body
@@ -351,7 +351,6 @@ namespace couchbaseembed
        return thisParam++;
     }
 
-
     CouchbaseEmbedFunctionContext::CouchbaseEmbedFunctionContext(const IContextLogger &_logctx, const char *options, unsigned _flags)
     : logctx(_logctx), m_NextRow(), m_nextParam(0), m_numParams(0), m_scriptFlags(_flags)
     {
@@ -444,7 +443,6 @@ namespace couchbaseembed
                     typeError("scalar", "");
                 return resultrow->query().queryProp("");
             }
-
             else
                 failx("Could not fetch next result column.");
         }
@@ -472,8 +470,7 @@ namespace couchbaseembed
         }
         else
         {
-            NullFieldProcessor p(NULL);
-            rtlStrToDataX(len, result, p.resultChars, p.stringResult);
+            rtlStrToDataX(len, result, NULLFIELD.resultChars, NULLFIELD.stringResult);
         }
     }
 
@@ -512,9 +509,10 @@ namespace couchbaseembed
             unsigned numchars = rtlUtf8Length(strlen(value), value);
             rtlUtf8ToStrX(chars, result, numchars, value);
         }
-
-        NullFieldProcessor p(NULL);
-        rtlStrToStrX(chars, result, p.resultChars, p.stringResult);
+        else
+        {
+            rtlStrToStrX(chars, result, NULLFIELD.resultChars, NULLFIELD.stringResult);
+        }
     }
 
     void CouchbaseEmbedFunctionContext::getUTF8Result(size32_t &chars, char * &result)
@@ -530,9 +528,10 @@ namespace couchbaseembed
             unsigned numchars = rtlUtf8Length(strlen(value), value);
             rtlUtf8ToUnicodeX(chars, result, numchars, value);
         }
-
-        NullFieldProcessor p(NULL);
-        rtlUnicodeToUnicodeX(chars, result, p.resultChars, p.unicodeResult);
+        else
+        {
+            rtlUnicodeToUnicodeX(chars, result, NULLFIELD.resultChars, NULLFIELD.unicodeResult);
+        }
     }
 
     void CouchbaseEmbedFunctionContext::getDecimalResult(Decimal &value)
@@ -541,17 +540,13 @@ namespace couchbaseembed
         if (text && *text)
             value.setString(rtlUtf8Length(strlen(text), text), text);
         else
-        {
-            NullFieldProcessor p(NULL);
-            value.set(p.decimalResult);
-        }
+            value.set(NULLFIELD.decimalResult);
     }
 
     IRowStream * CouchbaseEmbedFunctionContext::getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
         Owned<CouchbaseRowStream> cbaseRowStream;
         cbaseRowStream.set(new CouchbaseRowStream(_resultAllocator, m_pQuery));
-
         return cbaseRowStream.getLink();
     }
 
@@ -559,7 +554,6 @@ namespace couchbaseembed
     {
         Owned<CouchbaseRowStream> cbaseRowStream;
         cbaseRowStream.set(new CouchbaseRowStream(_resultAllocator, m_pQuery));
-
         return (byte *)cbaseRowStream->nextRow();
     }
 
