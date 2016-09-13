@@ -64,6 +64,28 @@ namespace couchbaseembed
     // Plugin Classes
     //--------------------------------------------------------------------------
 
+    void reportIfQueryFailure(Couchbase::Query * query)
+    {
+        auto status = query->meta().status();
+        if (status.errcode())
+        {
+            if (status.isNetworkError())
+                failx("NetworkErr: %s", status.description());
+            else if (status.isDataError())
+                failx("DataErr: %s", status.description());
+            else if (status.isInputError())
+                failx("InputErr: %s", status.description());
+            else if (status.isTemporary())
+                failx("TempErr: %s", status.description());
+            else
+                failx("Couchbase err: %s", status.description());
+        }
+
+        //consider parsing json result
+        if (strstr(query->meta().body().to_string().c_str(), "\"status\": \"errors\""))
+            failx("Err: %s", query->meta().body().to_string().c_str());
+    }
+
     CouchbaseRowStream::CouchbaseRowStream(IEngineRowAllocator* resultAllocator, Couchbase::Query * cbaseQuery)
        :   m_CouchBaseQuery(cbaseQuery),
            m_resultAllocator(resultAllocator)
@@ -75,13 +97,8 @@ namespace couchbaseembed
         //is there a way to independently step through original result rows?
         for (auto cbrow : *m_CouchBaseQuery)
             m_Rows.append(cbrow.json().to_string().c_str());
-        if (m_CouchBaseQuery->meta().status().errcode() != LCB_SUCCESS )//rows.length() == 0)
-            failx("Embedded couchbase error: %s", m_CouchBaseQuery->meta().body().data());
-        else if (m_Rows.length() == 0) // Query errors not reported in meta.status, lets check for errors in meta body
-        {
-            if (strstr(m_CouchBaseQuery->meta().body().data(), "\"status\": \"errors\""))
-                failx("Err: %s", m_CouchBaseQuery->meta().body().data());
-        }
+
+        reportIfQueryFailure(m_CouchBaseQuery);
     }
 
     CouchbaseRowStream::~CouchbaseRowStream() {}
@@ -363,7 +380,7 @@ namespace couchbaseembed
         const char *user = "";
         const char *password = "";
         const char *bucketname = "default";
-        unsigned port = 8093;
+        unsigned port = 8091;
         bool useSSL = false;
         StringBuffer connectionOptions;
 
@@ -414,6 +431,9 @@ namespace couchbaseembed
             Owned<IPropertyTree> contentTree = createPTreeFromJSONString(json.c_str());
             return contentTree.getLink();
         }
+
+        reportIfQueryFailure(m_pQuery);
+
         return nullptr;
     }
 
@@ -428,6 +448,9 @@ namespace couchbaseembed
             failx("Could not fetch next result row.");
             break;
         }
+
+        reportIfQueryFailure(m_pQuery);
+
         return nullptr;
     }
 
@@ -741,14 +764,7 @@ namespace couchbaseembed
         {
             m_pQuery = m_oCBConnection->query(m_pQcmd);
 
-            if (m_pQuery->meta().status().errcode() != LCB_SUCCESS )//rows.length() == 0)
-                failx("Query execution error: %s", m_pQuery->meta().body().to_string().c_str());
-            if (m_pQuery->status().errcode())
-                failx("Query error: %s", m_pQuery->status().description());
-
-            //consider parsing json result
-            if (strstr(m_pQuery->meta().body().to_string().c_str(), "\"status\": \"errors\""))
-                failx("Err: %s", m_pQuery->meta().body().data());
+            reportIfQueryFailure(m_pQuery);
         }
     }
 
