@@ -81,9 +81,6 @@ namespace couchbaseembed
                 failx("Couchbase err: %s", status.description());
         }
 
-        if (status.errcode() != LCB_SUCCESS )//rows.length() == 0)
-            failx("Query execution error: %s", query->meta().body().to_string().c_str());
-
         //consider parsing json result
         if (strstr(query->meta().body().to_string().c_str(), "\"status\": \"errors\""))
             failx("Err: %s", query->meta().body().to_string().c_str());
