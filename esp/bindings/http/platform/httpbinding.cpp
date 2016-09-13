@@ -196,7 +196,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 if (secMgrCfg)
                 {
                     //This is a Pluggable Security Manager
-                    m_secmgr.setown(SecLoader::loadPluggableSecManager(bindname, authcfg, secMgrCfg));
+                    m_secmgr.setown(SecLoader::loadPluggableSecManager(bindname, bnd_cfg, secMgrCfg));
                     m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                 }
                 else
