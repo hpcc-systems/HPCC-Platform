@@ -32,20 +32,24 @@ public:
         if(pwFile.isEmpty())
             throw MakeStringException(-1, "htpasswdFile not found in configuration");
 
-        Owned<IPropertyTree> authcfg = bindConfig->getPropTree("Authenticate");
-        if(authcfg != nullptr)
         {
-            StringBuffer authxml;
-            toXML(authcfg, authxml);
-            DBGLOG("HTPASS Authenticate Config: %s", authxml.str());
+            Owned<IPropertyTree> authcfg = bindConfig->getPropTree("Authenticate");
+            if(authcfg != nullptr)
+            {
+                StringBuffer authxml;
+                toXML(authcfg, authxml);
+                DBGLOG("HTPASS Authenticate Config: %s", authxml.str());
+            }
         }
 
-        Owned<IPropertyTree> custombindingconfig = bindConfig->getPropTree("CustomBindingParameters");
-        if(custombindingconfig != nullptr)
         {
-            StringBuffer custconfigxml;
-            toXML(custombindingconfig, custconfigxml);
-            DBGLOG("HTPASS Custom Binding Config: %s", custconfigxml.str());
+            Owned<IPropertyTree> custombindingconfig = bindConfig->getPropTree("CustomBindingParameters");
+            if(custombindingconfig != nullptr)
+            {
+                StringBuffer custconfigxml;
+                toXML(custombindingconfig, custconfigxml);
+                DBGLOG("HTPASS Custom Binding Config: %s", custconfigxml.str());
+            }
         }
 
         apr_initialized = false;

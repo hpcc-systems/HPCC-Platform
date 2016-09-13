@@ -35,12 +35,12 @@ public:
     /// for the given ESP service
     ///
     /// @param  bindingName     Binding name ie 'WsTopology_smc_myesp'
-    /// @param  bnd_cfg         'Binding' IPropertyTree associated with ESPService
+    /// @param  bindingCfg      'Binding' IPropertyTree associated with ESPService
     /// @param  secMgrCfg       'SecurityManager' IPropertyTree from component config file
     ///
     /// @return an ISecManager Security Manager instance
     ///
-    static ISecManager* loadPluggableSecManager(const char * bindingName, IPropertyTree* bnd_cfg, IPropertyTree* secMgrCfg)
+    static ISecManager* loadPluggableSecManager(const char * bindingName, IPropertyTree* bindingCfg, IPropertyTree* secMgrCfg)
     {
         const char * lsm = "Load Security Manager :";
 
@@ -67,7 +67,7 @@ public:
 
         //Call ISecManager instance factory and return the new instance
         DBGLOG("Calling '%s' in pluggable security manager '%s'", instFactory.str(), libName.str());
-        return xproc(bindingName, *secMgrCfg, *bnd_cfg);
+        return xproc(bindingName, *secMgrCfg, *bindingCfg);
     }
 
     static ISecManager* loadSecManager(const char* model_name, const char* servicename, IPropertyTree* cfg)
