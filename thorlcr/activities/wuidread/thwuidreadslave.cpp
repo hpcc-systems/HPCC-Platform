@@ -36,29 +36,13 @@ class CWuidReadSlaveActivity : public CSlaveActivity
     bool eogPending;
     mptag_t replyTag;
     CMessageBuffer masterReplyMsg;
+    bool resultFetched;
 
-public:
-    CWuidReadSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container)
+    void getWuidResult()
     {
-        helper = (IHThorWorkunitReadArg *)queryHelper();
-        replyTag = queryMPServer().createReplyTag();
-        replyStream.setown(createMemoryBufferSerialStream(masterReplyMsg));
-        rowSource.setStream(replyStream);
-        appendOutputLinked(this);
-    }
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
-    {
-        grouped = helper->queryOutputMeta()->isGrouped();
-    } 
-    virtual void start() override
-    {
-        ActivityTimer s(totalCycles, timeActivities);
-        PARENT::start();
-
-        eogPending = false;
-        if (container.queryLocal() || firstNode())
+        if (!resultFetched)
         {
+            resultFetched = true;
             CMessageBuffer reqMsg;
             reqMsg.setReplyTag(replyTag);
             reqMsg.append(smt_actMsg);
@@ -70,6 +54,30 @@ public:
 
             masterReplyMsg.swapWith(reqMsg);
         }
+        masterReplyMsg.reset();
+    }
+public:
+    CWuidReadSlaveActivity(CGraphElementBase *_container) 
+        : CSlaveActivity(_container)
+    {
+        helper = (IHThorWorkunitReadArg *)queryHelper();
+        replyTag = queryMPServer().createReplyTag();
+        replyStream.setown(createMemoryBufferSerialStream(masterReplyMsg));
+        rowSource.setStream(replyStream);
+        appendOutputLinked(this);
+        resultFetched = false;
+    }
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
+    {
+        grouped = helper->queryOutputMeta()->isGrouped();
+    } 
+    virtual void start() override
+    {
+        ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
+        eogPending = false;
+        if (container.queryLocal() || firstNode())
+            getWuidResult();
     }
     CATCH_NEXTROW()
     {
