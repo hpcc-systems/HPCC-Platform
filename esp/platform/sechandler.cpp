@@ -173,14 +173,10 @@ bool SecHandler::validateSecFeaturesAccess(MapStringTo<SecAccessFlags> & accessm
     ForEach(iter)
     {
         IMapping &cur = iter.query();
-
         const char * key = (const char *)cur.getKey();
         SecAccessFlags val = *accessmap.getValue(key);
-        features.append((const char *)cur.getKey());
-        reqarray[index++] = *accessmap.getValue(key);
-
-        DBGLOG("ITERATING: key: %s val: %d", key, val);
-        DBGLOG("reqarray[%d]: val: %d", index-1, reqarray[index-1]);
+        features.append(key);
+        reqarray[index++] = val;
     }
 
     Owned<IEspStringIntMap> pmap=createStringIntMap();

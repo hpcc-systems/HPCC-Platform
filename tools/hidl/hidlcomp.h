@@ -28,7 +28,7 @@
 #define HIDLVER "1.3"
 
 #define RETURNNAME "_return"
-#define FEATEACCESSATTRIBUTE "requiredaccess"
+#define FEATEACCESSATTRIBUTE "autofeatureauth"
 
 #ifndef _WIN32
 #define stricmp strcasecmp

@@ -115,7 +115,7 @@ TransactionSeedResponse
     bool SeedAvailable;
 };
 
-ESPService [requiredaccess("NONE"),noforms] WsLogService
+ESPService [autofeatureauth("NONE"),noforms] WsLogService
 {
     ESPuses ESPStruct LogInfo;
     ESPmethod UpdateLogService(LOGServiceUpdateRequest, LOGServiceUpdateResponse);

@@ -5401,9 +5401,9 @@ const char * translateAuthLevel(const char * level)
         return "SecAccess_None";
     }
 
-    if (strieq(level, "INMETHOD"))
+    if (strieq(level, "DEFERRED"))
     {
-        outs(2, "\n//WARNING: FEATURE LEVEL AUTHORIZATION HAS BEEN DEFERED TO INMETHOD!!\n");
+        outs(2, "\n//WARNING: AUTOMATIC FEATURE LEVEL AUTHORIZATION LOGIC HAS BEEN DEFERED TO IN METHOD(DEVELOPER'S RESPONSIBILITY)!!\n");
         return "SecAccess_None";
     }
 
@@ -5417,8 +5417,8 @@ const char * translateAuthLevel(const char * level)
         return "SecAccess_Access";
 
     //we might need to throw here...
-    outs(2, "\n//FEATURE LEVEL VALUE INVALID: DEFAULTING REQUIRED LEVEL to 'READ'!\n//Valid values are NONE INMETHOD, ACCESS, READ, WRITE, FULL\n");
-    return "SecAccess_Read";
+    outs(2, "\n//FEATURE LEVEL VALUE INVALID: DEFAULTING REQUIRED LEVEL to 'FULL'!\n//Valid values are NONE, DEFERRED, ACCESS, READ, WRITE, FULL\n");
+    return "SecAccess_Full";
 }
 
 void writeAccessMap(const char * rawServiceAccessList, const char * methodname, int tabs)
@@ -5440,10 +5440,9 @@ void writeAccessMap(const char * rawServiceAccessList, const char * methodname, 
             {
                 if (nameComplete == false)
                 {
-                    if (strieq(currAccessName, "NONE") || strieq(currAccessName, "INMETHOD"))
+                    if (strieq(currAccessName, "NONE") || strieq(currAccessName, "DEFERRED"))
                     {
-                        //outf("\n%sm_accessmap.setValue(\"%sAccess\", %s);\n", indent.str(), methodname, translateAuthLevel("NONE"));
-                        //outf("\n%sm_accessmap.kill();\n", indent.str());
+                        outf("\n//WARNING: Developer has suppressed automatic feature level authorization, ensure this behavior is correct!");
                         continue;
                     }
                     else

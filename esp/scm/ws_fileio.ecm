@@ -72,7 +72,7 @@ ReadFileDataResponse
 };
 
 
-ESPservice [requiredaccess("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsFileIO
+ESPservice [autofeatureauth("DEFERRED"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsFileIO
 {
     //ESPuses ESPstruct DFUException;
     ESPmethod CreateFile(CreateFileRequest, CreateFileResponse);

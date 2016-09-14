@@ -418,9 +418,6 @@ bool CWsWorkunitsEx::onWUCreate(IEspContext &context, IEspWUCreateRequest &req, 
 {
     try
     {
-        //if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
-        //    throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
-
         NewWsWorkunit wu(context);
         resp.updateWorkunit().setWuid(wu->queryWuid());
         AuditSystemAccess(context.queryUserId(), true, "Updated %s", wu->queryWuid());
@@ -599,9 +596,6 @@ bool CWsWorkunitsEx::onWUCreateAndUpdate(IEspContext &context, IEspWUUpdateReque
 {
     try
     {
-         //if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
-         //           throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
-
         const char* wuid = req.getWuid();
         if (!wuid || !*wuid)
         {

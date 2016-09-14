@@ -397,37 +397,37 @@ ESPresponse [exceptions_inline] LockQueryResponse
     int NumLocks;
 };
 
-ESPservice [requiredaccess("NONE"), noforms, version("1.19"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [autofeatureauth("DEFERRED"), noforms, version("1.19"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
-    ESPmethod [requiredaccess("NONE")] Index(SMCIndexRequest, SMCIndexResponse);
-    ESPmethod [requiredaccess("INMETHOD"), resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
+    ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
 
-    ESPmethod [requiredaccess("INMETHOD")] ClearQueue(SMCQueueRequest, SMCQueueResponse);
-    ESPmethod [requiredaccess("INMETHOD")] PauseQueue(SMCQueueRequest, SMCQueueResponse);
-    ESPmethod [requiredaccess("INMETHOD")] ResumeQueue(SMCQueueRequest, SMCQueueResponse);
-    ESPmethod [requiredaccess("INMETHOD")] StopQueue(SMCQueueRequest, SMCQueueResponse);
+    ESPmethod ClearQueue(SMCQueueRequest, SMCQueueResponse);
+    ESPmethod PauseQueue(SMCQueueRequest, SMCQueueResponse);
+    ESPmethod ResumeQueue(SMCQueueRequest, SMCQueueResponse);
+    ESPmethod StopQueue(SMCQueueRequest, SMCQueueResponse);
 
-    ESPmethod [requiredaccess("INMETHOD")] RemoveJob(SMCJobRequest, SMCJobResponse);
-    ESPmethod [requiredaccess("INMETHOD")] MoveJobFront(SMCJobRequest, SMCJobResponse);
-    ESPmethod [requiredaccess("INMETHOD")] MoveJobBack(SMCJobRequest, SMCJobResponse);
-    ESPmethod [requiredaccess("INMETHOD")] MoveJobUp(SMCJobRequest, SMCJobResponse);
-    ESPmethod [requiredaccess("INMETHOD")] MoveJobDown(SMCJobRequest, SMCJobResponse);
+    ESPmethod RemoveJob(SMCJobRequest, SMCJobResponse);
+    ESPmethod MoveJobFront(SMCJobRequest, SMCJobResponse);
+    ESPmethod MoveJobBack(SMCJobRequest, SMCJobResponse);
+    ESPmethod MoveJobUp(SMCJobRequest, SMCJobResponse);
+    ESPmethod MoveJobDown(SMCJobRequest, SMCJobResponse);
 
 //this one doesn't seem to do any feature level check, Kevin/Tony?
-    ESPmethod [requiredaccess("NONE")] SetJobPriority(SMCPriorityRequest, SMCPriorityResponse);
-    ESPmethod [requiredaccess("INMETHOD")] GetThorQueueAvailability(GetThorQueueAvailabilityRequest, GetThorQueueAvailabilityResponse);
+    ESPmethod [autofeatureauth("NONE")] SetJobPriority(SMCPriorityRequest, SMCPriorityResponse);
+    ESPmethod GetThorQueueAvailability(GetThorQueueAvailabilityRequest, GetThorQueueAvailabilityResponse);
 //this one ensures superuser, but no feature check is done, Kevin/Tony?
-    ESPmethod [requiredaccess("INMETHOD")] SetBanner(SetBannerRequest, SetBannerResponse);
+    ESPmethod [autofeatureauth("NONE")] SetBanner(SetBannerRequest, SetBannerResponse);
 
-    ESPmethod [requiredaccess("NONE")] NotInCommunityEdition(NotInCommunityEditionRequest, NotInCommunityEditionResponse);
+    ESPmethod [autofeatureauth("NONE")] NotInCommunityEdition(NotInCommunityEditionRequest, NotInCommunityEditionResponse);
 
-    ESPmethod [requiredaccess("INMETHOD"), resp_xsl_default("/esp/xslt/hpccresourcelist.xslt")] BrowseResources(BrowseResourcesRequest, BrowseResourcesResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/hpccresourcelist.xslt")] BrowseResources(BrowseResourcesRequest, BrowseResourcesResponse);
 
-    ESPmethod [requiredaccess("INMETHOD")] RoxieControlCmd(RoxieControlCmdRequest, RoxieControlCmdResponse);
+    ESPmethod RoxieControlCmd(RoxieControlCmdRequest, RoxieControlCmdResponse);
 //this one doesn't seem to do any feature level check, Kevin/Tony?
-    ESPmethod [requiredaccess("NONE")] GetStatusServerInfo(GetStatusServerInfoRequest, GetStatusServerInfoResponse);
+    ESPmethod [autofeatureauth("NONE")] GetStatusServerInfo(GetStatusServerInfoRequest, GetStatusServerInfoResponse);
 //this one doesn't seem to do any feature level check, Kevin/Tony?
-    ESPmethod LockQuery(LockQueryRequest, LockQueryResponse);
+    ESPmethod [autofeatureauth("NONE")] LockQuery(LockQueryRequest, LockQueryResponse);
 };
 
 SCMexportdef(WSSMC);

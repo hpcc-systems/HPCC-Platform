@@ -288,7 +288,7 @@ ESPresponse [exceptions_inline] GetPartFromPackageMapResponse
     string Content;
 };
 
-ESPservice [requiredaccess("NONE"), version("1.02"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
+ESPservice [autofeatureauth("NONE"), version("1.02"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod AddPackage(AddPackageRequest, AddPackageResponse);
