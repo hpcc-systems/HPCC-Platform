@@ -2147,26 +2147,24 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfResolveHostName(const char *hostna
 
 static void checkExternalFileRights(ICodeContext *ctx, CDfsLogicalFileName &lfn, bool rd,bool wr)
 {
-    StringAttr extpath;
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     unsigned auditflags = 0;
     if (rd)
         auditflags |= (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED);
     if (wr)
         auditflags |= (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_WRITE_WANTED);
-    int perm = queryDistributedFileDirectory().getFilePermissions(extpath.get(),udesc,auditflags);
+    int perm = queryDistributedFileDirectory().getFilePermissions(lfn.get(),udesc,auditflags);
     if (wr) {
         if (!HASWRITEPERMISSION(perm)) {
-            throw MakeStringException(-1,"Write permission denied for %s",extpath.get());
+            throw MakeStringException(-1,"Write permission denied for %s", lfn.get());
         }
     }
-    else if (rd) {
+    if (rd) {
         if (!HASREADPERMISSION(perm)) {
-            throw MakeStringException(-1,"Read permission denied for %s",extpath.get());
+            throw MakeStringException(-1,"Read permission denied for %s", lfn.get());
         }
     }
 }
-
 
 FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext * ctx,const char *location,const char *frompath,const char *topath)
 {
