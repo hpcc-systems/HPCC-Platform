@@ -126,6 +126,7 @@ public:
 class SoapDatasetCallSlaveActivity : public CSlaveActivity, public CThorDataLink, implements IWSCRowProvider
 {
     bool eof;
+    StringBuffer authToken;
     Owned<IWSCHelper> wscHelper;
     CriticalSection crit;
     IThorDataLink *input;
@@ -138,10 +139,8 @@ public:
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        StringBuffer authToken;
         buildAuthToken(queryJob().queryUserDescriptor(), authToken);
         appendOutputLinked(this);
-        wscHelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCdataset, NULL, queryDummyContextLogger(),NULL));
     }
     // IThorDataLink methods
     virtual void start()
@@ -151,10 +150,16 @@ public:
         input = inputs.item(0);
         startInput(input);
         dataLinkStart();
+        wscHelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCdataset, NULL, queryDummyContextLogger(),NULL));
         wscHelper->start();
     }
     virtual void stop()
     {
+        if (wscHelper)
+        {
+            wscHelper->waitUntilDone();
+            wscHelper.clear();
+        }
         eof = true;
         stopInput(input);
         dataLinkStop();
@@ -212,6 +217,7 @@ public:
 
 class SoapRowActionSlaveActivity : public ProcessSlaveActivity, implements IWSCRowProvider
 {
+    StringBuffer authToken;
     Owned<IWSCHelper> wscHelper;
 
 public:
@@ -222,17 +228,15 @@ public:
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        StringBuffer authToken;
         buildAuthToken(queryJob().queryUserDescriptor(), authToken);
-        if (container.queryLocalOrGrouped() || firstNode())
-            wscHelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
     }
 
     // IThorSlaveProcess overloaded methods
     virtual void process()
     {
-        if (wscHelper)
+        if (container.queryLocalOrGrouped() || firstNode())
         {
+            wscHelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
             wscHelper->start();
             wscHelper->waitUntilDone();
             IException *e = wscHelper->getError();
@@ -263,6 +267,7 @@ public:
 class SoapDatasetActionSlaveActivity : public ProcessSlaveActivity, implements IWSCRowProvider
 {
     Owned<IWSCHelper> wscHelper;
+    StringBuffer authToken;
     CriticalSection crit;
     IThorDataLink *input;
 
@@ -274,9 +279,7 @@ public:
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        StringBuffer authToken;
         buildAuthToken(queryJob().queryUserDescriptor(), authToken);
-        wscHelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCdataset, NULL, queryDummyContextLogger(),NULL));
     }
 
     // IThorSlaveProcess overloaded methods
@@ -288,6 +291,7 @@ public:
         startInput(input);
         processed = THORDATALINK_STARTED;
 
+        wscHelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCdataset, NULL, queryDummyContextLogger(),NULL));
         wscHelper->start();
         wscHelper->waitUntilDone();
         IException *e = wscHelper->getError();
