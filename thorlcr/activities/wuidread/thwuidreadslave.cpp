@@ -34,31 +34,13 @@ class CWuidReadSlaveActivity : public CSlaveActivity, public CThorDataLink
     bool eogPending;
     mptag_t replyTag;
     CMessageBuffer masterReplyMsg;
+    bool resultFetched;
 
-public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-    CWuidReadSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container), CThorDataLink(this)
+    void getWuidResult()
     {
-        replyTag = createReplyTag();
-        replyStream.setown(createMemoryBufferSerialStream(masterReplyMsg));
-        rowSource.setStream(replyStream);
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        appendOutputLinked(this);
-        helper = (IHThorWorkunitReadArg *)queryHelper();
-        grouped = helper->queryOutputMeta()->isGrouped();
-    } 
-    void start()
-    {
-        ActivityTimer s(totalCycles, timeActivities);
-        dataLinkStart();
-
-        eogPending = false;
-        if (container.queryLocal() || firstNode())
+        if (!resultFetched)
         {
+            resultFetched = true;
             CMessageBuffer reqMsg;
             reqMsg.setReplyTag(replyTag);
             reqMsg.append(smt_actMsg);
@@ -70,6 +52,32 @@ public:
 
             masterReplyMsg.swapWith(reqMsg);
         }
+        masterReplyMsg.reset();
+    }
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CWuidReadSlaveActivity(CGraphElementBase *_container) 
+        : CSlaveActivity(_container), CThorDataLink(this)
+    {
+        replyTag = createReplyTag();
+        replyStream.setown(createMemoryBufferSerialStream(masterReplyMsg));
+        rowSource.setStream(replyStream);
+        resultFetched = false;
+    }
+    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    {
+        appendOutputLinked(this);
+        helper = (IHThorWorkunitReadArg *)queryHelper();
+        grouped = helper->queryOutputMeta()->isGrouped();
+    } 
+    void start()
+    {
+        ActivityTimer s(totalCycles, timeActivities);
+        eogPending = false;
+        if (container.queryLocal() || firstNode())
+            getWuidResult();
+        dataLinkStart();
     }
     void stop() { dataLinkStop(); }
 
