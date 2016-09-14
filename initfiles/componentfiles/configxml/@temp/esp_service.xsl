@@ -912,7 +912,13 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                                     <xsl:otherwise>true</xsl:otherwise>
                                 </xsl:choose>
                             </xsl:variable>
-                            <ProcessCluster name="{$roxie}" vip="{$vip}" includeTargetInURL="{$sendTarget}"></ProcessCluster>
+                            <xsl:variable name="dnsInterval">
+                              <xsl:choose>
+                                <xsl:when test="@dnsInterval and @dnsInterval!=''"><xsl:value-of select="@dnsInterval"/></xsl:when>
+                                <xsl:otherwise>-1</xsl:otherwise>
+                              </xsl:choose>
+                            </xsl:variable>
+                            <ProcessCluster name="{$roxie}" vip="{$vip}" includeTargetInURL="{$sendTarget}" dnsInterval="{$dnsInterval}"></ProcessCluster>
                         </xsl:if>
                     </xsl:for-each>
                 </VIPS>
