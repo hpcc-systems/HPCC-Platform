@@ -3828,17 +3828,11 @@ SetResultToExtractTransformer::SetResultToExtractTransformer()
 IHqlExpression * SetResultToExtractTransformer::createTransformed(IHqlExpression * expr)
 {
     OwnedHqlExpr transformed = PARENT::createTransformed(expr);
-    updateOrphanedSelectors(transformed, expr);
-
-    IHqlExpression * normalized = NULL;
     if (transformed->getOperator() == no_setresult)
     {
-        normalized = convertSetResultToExtract(transformed);
+        OwnedHqlExpr normalized = convertSetResultToExtract(transformed);
         if (normalized && (normalized != transformed))
-        {
             transformed.setown(transform(normalized));
-            normalized->Release();
-        }
     }
 
     return transformed.getClear();
