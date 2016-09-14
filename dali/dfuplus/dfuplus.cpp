@@ -54,7 +54,7 @@ class CDafsThread: public Thread
     Owned<IException> exc;
 
 public:
-    CDafsThread(SocketEndpoint &_listenep,bool requireauthenticate) 
+    CDafsThread(SocketEndpoint &_listenep,bool requireauthenticate)
         : listenep(_listenep)
     {
         if (listenep.port==0)
@@ -88,7 +88,7 @@ public:
     void stop()
     {
         try {
-            if (server) 
+            if (server)
                 server->stop();
         }
         catch (IException *e) {
@@ -107,7 +107,7 @@ public:
 
 bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauthenticate, unsigned timeout)
 {
-    Owned<CDafsThread> thr = new CDafsThread(listenep,requireauthenticate); 
+    Owned<CDafsThread> thr = new CDafsThread(listenep,requireauthenticate);
     if (!thr->ok())
         return false;
     thr->start();
@@ -123,7 +123,7 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
     else {
         loop {
             Sleep(500);
-            if (thr->idleTime()>timeout) { 
+            if (thr->idleTime()>timeout) {
                 thr->stop();
                 break;
             }
@@ -172,7 +172,7 @@ CDfuPlusHelper::CDfuPlusHelper(IProperties* _globals,   CDfuPlusMessagerIntercep
     const char* server = globals->queryProp("server");
     if(server == NULL)
         throw MakeStringException(-1, "Server url not specified");
-    
+
     StringBuffer url;
     if(Utils::strncasecmp(server, "http://", 7) != 0 && Utils::strncasecmp(server, "https://", 8) != 0)
         url.append("http://");
@@ -187,7 +187,7 @@ CDfuPlusHelper::CDfuPlusHelper(IProperties* _globals,   CDfuPlusMessagerIntercep
     StringBuffer fsurl(url.str());
     fsurl.append("FileSpray");
     sprayclient->addServiceUrl(fsurl.str());
-    
+
     dfuclient.setown(createWsDfuClient());
     StringBuffer dfuurl(url.str());
     dfuurl.append("WsDfu");
@@ -264,6 +264,10 @@ int CDfuPlusHelper::doit()
         return resubmit();
     else if(stricmp(action, "monitor") == 0)
         return monitor();
+    else if(stricmp(action, "listhistory") == 0)
+        return listhistory();
+    else if(stricmp(action, "erasehistory") == 0)
+        return erasehistory();
 #ifdef DAFILESRV_LOCAL
     else if(stricmp(action, "dafilesrv") == 0)
         return rundafs();
@@ -277,13 +281,13 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
 {
     int recordsize;
     if(stricmp(format, "recfmvb") == 0) {
-        recordsize = RECFMVB_RECSIZE_ESCAPE;  // special value for recfmvb 
+        recordsize = RECFMVB_RECSIZE_ESCAPE;  // special value for recfmvb
     }
     else if(stricmp(format, "recfmv") == 0) {
         recordsize = RECFMV_RECSIZE_ESCAPE;  // special value for recfmv
     }
     else if(stricmp(format, "variable") == 0) {
-        recordsize = PREFIX_VARIABLE_RECSIZE_ESCAPE;  // special value for variable 
+        recordsize = PREFIX_VARIABLE_RECSIZE_ESCAPE;  // special value for variable
     }
     else if(stricmp(format, "variablebigendian") == 0) {
         recordsize = PREFIX_VARIABLE_BIGENDIAN_RECSIZE_ESCAPE;  // special value for variable bigendian
@@ -328,14 +332,14 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
     if(globals->hasProp("push")) {
         if (globals->getPropBool("push"))
             req->setPush(true);
-        else 
+        else
             req->setPull(true);
     }
     if(globals->hasProp("norecover"))
         req->setNorecover(globals->getPropBool("norecover", false));
     else if(globals->hasProp("noRecover"))
         req->setNorecover(globals->getPropBool("noRecover", false));
-    
+
     if(globals->hasProp("connect"))
         req->setMaxConnections(globals->getPropInt("connect"));
     if(globals->hasProp("throttle"))
@@ -439,7 +443,7 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
         if(escape && *escape)
             req->setSourceCsvEscape(escape);
     }
-    else 
+    else
         encoding = format; // may need extra later
 
     req->setSourceFormat(CDFUfileformat::decode(encoding));
@@ -459,7 +463,7 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
     if(globals->hasProp("push")) {
         if (globals->getPropBool("push"))
             req->setPush(true);
-        else 
+        else
             req->setPull(true);
     }
     if(globals->hasProp("compress"))
@@ -509,7 +513,7 @@ int CDfuPlusHelper::spray()
     const char* srcxml = globals->queryProp("srcxml");
     const char* srcip = globals->queryProp("srcip");
     const char* srcfile = globals->queryProp("srcfile");
-    
+
     bool nowait = globals->getPropBool("nowait", false);
 
     MemoryBuffer xmlbuf;
@@ -596,15 +600,15 @@ int CDfuPlusHelper::replicate()
     bool onlyrepeated = repeatlast&&globals->getPropBool("onlyrepeated");
     StringBuffer cluster;
     globals->getProp("cluster",cluster);
-    if (cluster.length()) 
+    if (cluster.length())
         req->setCluster(cluster.str());
     else if (repeatlast) {
         error("replicate repeatlast specified with no cluster\n");
         return 0;
     }
-    if (repeatlast) 
+    if (repeatlast)
         req->setRepeatLast(true);
-    if (onlyrepeated) 
+    if (onlyrepeated)
         req->setOnlyRepeated(true);
 
     Owned<IClientReplicateResponse> result = sprayclient->Replicate(req);
@@ -630,7 +634,7 @@ int CDfuPlusHelper::despray()
     const char* srcname = globals->queryProp("srcname");
     if(srcname == NULL)
         throw MakeStringException(-1, "srcname not specified");
-    
+
     const char* dstxml = globals->queryProp("dstxml");
     const char* dstip = globals->queryProp("dstip");
     const char* dstfile = globals->queryProp("dstfile");
@@ -748,7 +752,7 @@ int CDfuPlusHelper::copy()
     const char* diffkeysrc = globals->queryProp("diffkeydst");
 
     bool nowait = globals->getPropBool("nowait", false);
-    
+
     info("\nCopying from %s to %s\n", srcname, dstname);
 
     Owned<IClientCopy> req = sprayclient->createCopyRequest();
@@ -776,7 +780,7 @@ int CDfuPlusHelper::copy()
     if(globals->hasProp("push")) {
         if (globals->getPropBool("push"))
             req->setPush(true);
-        else 
+        else
             req->setPull(true);
     }
     if(globals->hasProp("compress"))
@@ -842,7 +846,7 @@ int CDfuPlusHelper::copysuper()
     const char* srcpassword = globals->queryProp("srcpassword");
 
     bool nowait = globals->getPropBool("nowait", false);
-    
+
     info("\nCopying superfile from %s to %s\n", srcname, dstname);
 
     Owned<IClientCopy> req = sprayclient->createCopyRequest();
@@ -866,7 +870,7 @@ int CDfuPlusHelper::copysuper()
     if(globals->hasProp("push")) {
         if (globals->getPropBool("push"))
             req->setPush(true);
-        else 
+        else
             req->setPull(true);
     }
     if(globals->hasProp("compress"))
@@ -889,7 +893,7 @@ int CDfuPlusHelper::copysuper()
         req->setNorecover(globals->getPropBool("noRecover", false));
 
     Owned<IClientCopyResponse> result = sprayclient->Copy(req);
-    const char* ret = result->getResult();  
+    const char* ret = result->getResult();
     if(ret == NULL || *ret == '\0')
         exc(result->getExceptions(),"copying");
     else if (stricmp(ret,"OK")==0)
@@ -911,7 +915,7 @@ int CDfuPlusHelper::monitor()
         throw MakeStringException(-1, "neither lfn nor filename specified");
     int shotlimit = globals->getPropInt("shotlimit");
     if (shotlimit == 0)
-        shotlimit = 1;  
+        shotlimit = 1;
     if (lfn)
         info("\nEvent %s: Monitoring logical file name %s\n", eventname?eventname:"", lfn);
     else if (eps)
@@ -925,7 +929,7 @@ int CDfuPlusHelper::monitor()
         req->setEventName(eventname);
     if (lfn)
         req->setLogicalName(lfn);
-    if (eps) 
+    if (eps)
         req->setIp(eps);
     if (filename)
         req->setFilename(filename);
@@ -947,7 +951,7 @@ int CDfuPlusHelper::rundafs()
 {
     unsigned idletimeoutsecs = (unsigned)globals->getPropInt("idletimeout",INFINITE);
     SocketEndpoint listenep;
-    if (runLocalDaFileSvr(listenep,false,(idletimeoutsecs!=INFINITE)?idletimeoutsecs*1000:INFINITE)) 
+    if (runLocalDaFileSvr(listenep,false,(idletimeoutsecs!=INFINITE)?idletimeoutsecs*1000:INFINITE))
         return 0;
     return 1;
 }
@@ -1018,7 +1022,7 @@ int CDfuPlusHelper::remove()
 
     if(files.length() < 1)
         throw MakeStringException(-1, "file name not specified");
-    
+
     Owned<IClientDFUArrayActionRequest> req = dfuclient->createDFUArrayActionRequest();
     req->setType("Delete");
     req->setLogicalFiles(files);
@@ -1085,7 +1089,7 @@ int CDfuPlusHelper::rename()
         throw MakeStringException(-1, "dstname not specified");
 
     bool nowait = globals->getPropBool("nowait", false);
-    
+
     info("\nRenaming from %s to %s\n", srcname, dstname);
 
     Owned<IClientRename> req = sprayclient->createRenameRequest();
@@ -1123,7 +1127,7 @@ int CDfuPlusHelper::list()
     Owned<IClientDFUQueryRequest> req = dfuclient->createDFUQueryRequest();
     if(name != NULL)
         req->setLogicalName(name);
-    
+
     req->setPageSize(-1);
 
     Owned<IClientDFUQueryResponse> resp = dfuclient->DFUQuery(req);
@@ -1180,7 +1184,7 @@ int CDfuPlusHelper::superfile(const char* action)
     const char* superfile = globals->queryProp("superfile");
     if(superfile == NULL || *superfile == '\0')
         throw MakeStringException(-1, "superfile name is not specified");
-    
+
     if(stricmp(action, "add") == 0 || stricmp(action, "remove") == 0)
     {
         const char* before = globals->queryProp("before");
@@ -1236,7 +1240,7 @@ int CDfuPlusHelper::superfile(const char* action)
         Owned<IClientSuperfileListRequest> req = dfuclient->createSuperfileListRequest();
         req->setSuperfile(superfile);
         Owned<IClientSuperfileListResponse> resp = dfuclient->SuperfileList(req);
-        
+
         const IMultiException* excep = &resp->getExceptions();
         if(excep != NULL && excep->ordinality() > 0)
         {
@@ -1261,12 +1265,12 @@ int CDfuPlusHelper::savexml()
     const char* lfn = globals->queryProp("srcname");
     if(lfn == NULL || *lfn == '\0')
         throw MakeStringException(-1, "srcname not specified");
-    
+
     Owned<IClientSavexmlRequest> req = dfuclient->createSavexmlRequest();
     req->setName(lfn);
-    
+
     Owned<IClientSavexmlResponse> resp = dfuclient->Savexml(req);
-    
+
     const IMultiException* excep = &resp->getExceptions();
     if(excep != NULL && excep->ordinality() > 0)
     {
@@ -1284,7 +1288,7 @@ int CDfuPlusHelper::savexml()
         if(ofile == -1)
             throw MakeStringException(-1, "can't open file %s\n", dstxml);
     }
-    
+
     const MemoryBuffer& xmlmap = resp->getXmlmap();
     ssize_t written = write(ofile, xmlmap.toByteArray(), xmlmap.length());
     if (written < 0)
@@ -1300,7 +1304,7 @@ int CDfuPlusHelper::add()
     const char* lfn = globals->queryProp("dstname");
     if(lfn == NULL || *lfn == '\0')
         throw MakeStringException(-1, "dstname not specified");
-    
+
     bool isRemote = false;
     const char* xmlfname = globals->queryProp("srcxml");
     const char* srcname = globals->queryProp("srcname");
@@ -1330,9 +1334,9 @@ int CDfuPlusHelper::add()
         Owned<IClientAddRequest> req = dfuclient->createAddRequest();
         req->setDstname(lfn);
         req->setXmlmap(xmlbuf);
-        
+
         Owned<IClientAddResponse> resp = dfuclient->Add(req);
-        
+
         const IMultiException* excep = &resp->getExceptions();
         if(excep != NULL && excep->ordinality() > 0)
         {
@@ -1354,7 +1358,7 @@ int CDfuPlusHelper::add()
             req->setSrcpassword(srcpassword);
 
         Owned<IClientAddRemoteResponse> resp = dfuclient->AddRemote(req);
-        
+
         const IMultiException* excep = &resp->getExceptions();
         if(excep != NULL && excep->ordinality() > 0)
         {
@@ -1390,7 +1394,7 @@ int CDfuPlusHelper::status()
     }
 
     IConstDFUWorkunit & dfuwu = resp->getResult();
-    
+
     switch(dfuwu.getState())
     {
         case DFUstate_unknown:
@@ -1436,7 +1440,7 @@ int CDfuPlusHelper::abort()
     req->setWuid(wuid);
 
     Owned<IClientAbortDFUWorkunitResponse> resp = sprayclient->AbortDFUWorkunit(req);
-    
+
     const IMultiException* excep = &resp->getExceptions();
     if(excep != NULL && excep->ordinality() > 0)
     {
@@ -1448,7 +1452,256 @@ int CDfuPlusHelper::abort()
     {
         error("Aborted %s\n", wuid);
     }
-    
+
+    return 0;
+}
+
+int CDfuPlusHelper::listhistory()
+{
+    const char* lfn = globals->queryProp("lfn");
+    if(lfn == NULL || *lfn == '\0')
+            throw MakeStringException(-1, "srcname not specified");
+
+    Owned<IClientListHistoryRequest> req = dfuclient->createListHistoryRequest();
+    req->setName(lfn);
+
+    Owned<IClientListHistoryResponse> resp = dfuclient->ListHistory(req);
+
+    const IMultiException* excep = &resp->getExceptions();
+    if(excep != NULL && excep->ordinality() > 0)
+    {
+        StringBuffer errmsg;
+        excep->errorMessage(errmsg);
+        error("%s\n", errmsg.str());
+        return -1;
+    }
+
+    typedef enum
+    {
+        xml = 0,
+        ascii = 1,
+        csv = 2,
+        json = 3,
+    }out_t;
+
+    out_t format;
+
+    const char *formatPar = globals->queryProp("outformat");
+    if(formatPar == nullptr)
+        format = xml;
+    else if (stricmp(formatPar, "csv") == 0)
+        format=csv;
+    else if (stricmp(formatPar, "xml") == 0)
+        format=xml;
+    else if (stricmp(formatPar, "json") == 0)
+        format=json;
+    else if (stricmp(formatPar, "ascii") == 0)
+        format=ascii;
+    else
+    {
+        error("Unsupported output format: '%s'\n",formatPar);
+        return -1;
+    }
+
+    MemoryBuffer tmp;
+    tmp.append(resp->getXmlmap());
+    if (0 == *tmp.toByteArray())
+    {
+        error("%s doesn't have stored history!\n", lfn);
+        return -2;
+    }
+
+    Owned<IPropertyTree>    history;
+    history.setown(createPTree("History"));
+    history->deserialize(tmp);
+    bool sorted = true;
+
+    switch (format)
+    {
+    case xml:
+        {
+            StringBuffer out;
+            toXML(history, out, true);
+            info("\n%s\n",out.trim().str());
+        }
+        break;
+
+    case ascii:
+        {
+            progress("\nHistory of %s:\n", lfn);
+            unsigned index = 1;
+            Owned<IPropertyTreeIterator> historyIter = history->getElements("*");
+            ForEach(*historyIter)
+            {
+                info("%d", index++);
+                Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
+                ForEach(*attribIter)
+                {
+                    info(", ");
+                    const char *propName = attribIter->queryName();
+                    if (*propName == '@')
+                        propName++;
+                    const char *propVal =  attribIter->queryValue();
+                    info("%s=%s",propName, propVal);
+                }
+                info("\n");
+            }
+        }
+        break;
+
+    case csv:
+        {
+            // TODO We need more sophisticated method if the record structure change in the future
+            bool showCsvHeader = globals->getPropBool("csvheader", true);
+            info("\n");
+            unsigned index = 1;
+            Owned<IPropertyTreeIterator> historyIter = history->getElements("*");
+            bool first = true;
+            if (showCsvHeader)
+            {
+                // Get header from the first record
+                (*historyIter).first();
+                Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
+                ForEach(*attribIter)
+                {
+                    if(!first)
+                        info(",");
+                    else
+                        first = false;
+
+                    const char *propName = attribIter->queryName();
+                    if (*propName == '@')
+                        propName++;
+                    info("%s",propName);
+                }
+                info("\n");
+            }
+
+            ForEach(*historyIter)
+            {
+                first = true;
+                Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
+                ForEach(*attribIter)
+                {
+                    if(!first)
+                        info(",");
+                    else
+                        first = false;
+
+                    const char *propVal =  attribIter->queryValue();
+                    info("%s", propVal);
+                }
+                info("\n");
+            }
+        }
+        break;
+
+    case json:
+        {
+            const char * level1 = "   ";        // 3 space 'tab'
+            const char * level2 = "      ";
+            const char * level3 = "         ";
+            //                     123456789
+
+            unsigned index = 1;
+
+            info("{\n");       // Level 0: Start History object
+            StringBuffer temp;
+            history->getName(temp);
+            info("%s\"%s\": [", level1, temp.str());   // Begin History object's array of historical records
+            Owned<IPropertyTreeIterator> historyIter = history->getElements("*");
+            ForEach(*historyIter)
+            {
+                if (index++ != 1)
+                    info(",");
+
+                info("\n%s{\n", level2);    // Historical record object begin
+
+                bool first = true;
+                Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
+                ForEach(*attribIter)
+                {
+                    if (!first)
+                        info(",\n");
+                    else
+                        first = false;
+
+                    const char *propName = attribIter->queryName();
+                    if (*propName == '@')
+                        propName++;
+                    const char *propVal =  attribIter->queryValue();
+                    info("%s\"%s\" : \"%s\"",level3, propName, propVal);    // Historical record item object
+                }
+                info("\n%s}", level2);   // Historical record object end
+            }
+            info("\n%s]\n", level1);   // History object array end
+
+            info("}\n");       // Level 0 : History object end
+        }
+        break;
+    }
+
+    return 0;
+}
+
+int CDfuPlusHelper::erasehistory()
+{
+    const char* lfn = globals->queryProp("lfn");
+    if(lfn == NULL || *lfn == '\0')
+        throw MakeStringException(-1, "srcname not specified");
+
+    bool backup = globals->getPropBool("backup", true);
+    const char* dstxml = globals->queryProp("dstxml");
+    if(backup && (dstxml == NULL || *dstxml == '\0'))
+        throw MakeStringException(-1, "dstxml not specified");
+
+    progress("\nErase history of '%s' with%s backup.\n", lfn, (backup ? "" : "out"));
+
+    Owned<IClientEraseHistoryRequest> req = dfuclient->createEraseHistoryRequest();
+    req->setName(lfn);
+
+    Owned<IClientEraseHistoryResponse> resp = dfuclient->EraseHistory(req);
+
+    const IMultiException* excep = &resp->getExceptions();
+    if(excep != NULL && excep->ordinality() > 0)
+    {
+        StringBuffer errmsg;
+        excep->errorMessage(errmsg);
+        error("%s\n", errmsg.str());
+        return -1;
+    }
+
+    if (backup)
+    {
+        MemoryBuffer tmp;
+        tmp.append(resp->getXmlmap());
+
+        if (0 == *tmp.toByteArray())
+        {
+            error("%s doesn't have stored history!\n", lfn);
+            return -2;
+        }
+
+        int ofile = open(dstxml, _O_WRONLY | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
+        if(ofile == -1)
+            throw MakeStringException(-1, "can't open file %s\n", dstxml);
+
+        Owned<IPropertyTree>    history;
+        history.setown(createPTree("History"));
+        history->deserialize(tmp);
+
+        StringBuffer out;
+        toXML(history, out, true);
+
+        ssize_t written = write(ofile, out.str(), out.length());
+        if (written < 0)
+            throw MakeStringException(-1, "can't write to file %s\n", dstxml);
+        if (written != out.length())
+            throw MakeStringException(-1, "truncated write to file %s\n", dstxml);
+        close(ofile);
+        info("History written into %s.\n",dstxml);
+    }
+
     return 0;
 }
 
@@ -1462,7 +1715,7 @@ int CDfuPlusHelper::resubmit()
     req->setWuid(wuid);
 
     Owned<IClientSubmitDFUWorkunitResponse> resp = sprayclient->SubmitDFUWorkunit(req);
-    
+
     const IMultiException* excep = &resp->getExceptions();
     if(excep != NULL &&  excep->ordinality() > 0)
     {
@@ -1474,7 +1727,7 @@ int CDfuPlusHelper::resubmit()
     {
         info("Resubmitted %s\n", wuid);
     }
-    
+
     return 0;
 }
 
@@ -1501,7 +1754,7 @@ int CDfuPlusHelper::waitToFinish(const char* wuid)
 
         IConstDFUWorkunit & dfuwu = resp->getResult();
 
-        
+
         switch(dfuwu.getState())
         {
             case DFUstate_unknown:
@@ -1588,7 +1841,7 @@ void CDfuPlusHelper::exc(const IMultiException& excep,const char *title)
     error("%s\n",errmsg.str());
 }
 
-void CDfuPlusHelper::info(const char *fmt, ...) 
+void CDfuPlusHelper::info(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
@@ -1608,7 +1861,7 @@ void CDfuPlusHelper::info(const char *fmt, ...)
         printf("%s",buf.str());
 }
 
-void CDfuPlusHelper::progress(const char *fmt, ...) 
+void CDfuPlusHelper::progress(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
@@ -1628,7 +1881,7 @@ void CDfuPlusHelper::progress(const char *fmt, ...)
         printf("%s",buf.str());
 }
 
-void CDfuPlusHelper::error(const char *fmt, ...) 
+void CDfuPlusHelper::error(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);

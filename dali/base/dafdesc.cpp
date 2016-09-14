@@ -589,6 +589,7 @@ public:
     IArrayOf<IClusterInfo> clusters;
 
     Owned<IPropertyTree> attr;
+    Owned<IPropertyTree> history;
     StringAttr directory;
     StringAttr partmask;
     virtual unsigned numParts() = 0;                                            // number of parts
@@ -1137,7 +1138,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 if (pt.isMulti()) {
                     StringBuffer tmpon; // bit messy but need to ensure dir put back on before removing!
                     const char *on = pt.overridename.get();
-                    if (on&&*on&&!isAbsolutePath(on)&&!directory.isEmpty()) 
+                    if (on&&*on&&!isAbsolutePath(on)&&!directory.isEmpty())
                         on = addPathSepChar(tmpon.append(directory)).append(on).str();
                     StringBuffer tmp2;
                     splitDirMultiTail(on,tmp1,tmp2);
@@ -1323,6 +1324,9 @@ public:
         attr.setown(createPTree(mb));
         if (!attr)
             attr.setown(createPTree("Attr")); // doubt can happen
+        history.setown(createPTree(mb));
+        if (!history)
+            history.setown(createPTree("History"));
         if (version==SERIALIZATION_VERSION2) {
             if (subcounts)
                 *subcounts = new UnsignedArray;
@@ -1351,6 +1355,7 @@ public:
             if (!tree)
                 tree = createPTree("Attr");
             attr.setown(tree);
+            history.setown(createPTree("History"));
             setupdone = false;
             return;
         }
@@ -1366,6 +1371,7 @@ public:
         Owned<IPropertyTreeIterator> piter;
         MemoryBuffer mb;
         IPropertyTree *at = pt.queryPropTree("Attr");
+        IPropertyTree *hist = pt.queryPropTree("History");
         getClusterInfo(pt,resolver,flags,clusters);
         offset_t totalsize = (offset_t)-1;
         if (flags&IFDSF_EXCLUDE_PARTS) {
@@ -1424,6 +1430,11 @@ public:
             attr.setown(createPTreeFromIPT(at));
         else
             attr.setown(createPTree("Attr"));
+        if (hist)
+            history.setown(createPTreeFromIPT(hist));
+        else
+            history.setown(createPTree("History"));
+
         if (totalsize!=(offset_t)-1)
             attr->setPropInt64("@size",totalsize);
     }
@@ -1505,6 +1516,9 @@ public:
         IPropertyTree *t = &queryProperties();
         if (!isEmptyPTree(t))
             pt.addPropTree("Attr",createPTreeFromIPT(t));
+        t = &queryHistory();
+        if (!isEmptyPTree(t))
+            pt.addPropTree("History",createPTreeFromIPT(t));
     }
 
     IPropertyTree *getFileTree(unsigned flags)
@@ -1700,6 +1714,18 @@ public:
     {
         closePending();
         return *attr.get();
+    }
+
+    virtual IPropertyTree *getHistory()
+    {
+        closePending();
+        return history.getLink();
+    }
+
+    IPropertyTree &queryHistory()
+    {
+        closePending();
+        return *history.get();
     }
 
     bool isMulti(unsigned partidx=(unsigned)-1)
@@ -1959,10 +1985,10 @@ public:
 class CSuperFileDescriptor:  public CFileDescriptor
 {
     UnsignedArray *subfilecounts;
-    bool interleaved; 
+    bool interleaved;
 public:
 
-    CSuperFileDescriptor(MemoryBuffer &mb, IArrayOf<IPartDescriptor> *partsret) 
+    CSuperFileDescriptor(MemoryBuffer &mb, IArrayOf<IPartDescriptor> *partsret)
         : CFileDescriptor(mb,partsret,&subfilecounts,&interleaved)
     {
     }
@@ -1989,7 +2015,7 @@ public:
         subfile = 0;
         if (!subfilecounts)  // its a file!
             return true;
-        if (interleaved) { 
+        if (interleaved) {
             unsigned p = 0;
             unsigned f = 0;
             bool found = false;
@@ -2015,7 +2041,7 @@ public:
         }
         else { // sequential
             while (subfile<subfilecounts->ordinality()) {
-                if (subpartnum<subfilecounts->item(subfile)) 
+                if (subpartnum<subfilecounts->item(subfile))
                     return true;
                 subpartnum -= subfilecounts->item(subfile);
                 subfile++;
@@ -2097,6 +2123,7 @@ void CFileDescriptor::serializeParts(MemoryBuffer &mb,unsigned *partlist, unsign
             part(partlist[i4])->subserialize(mb);
     }
     queryProperties().serialize(mb);
+    queryHistory().serialize(mb);
     if (sdesc)
         sdesc->serializeSub(mb);
 }
@@ -2431,7 +2458,7 @@ void setBaseDirectory(const char * dir, unsigned replicateLevel, DFD_OS os)
 {
     // 2 possibilities
     // either its an absolute path
-    // or use /c$/thordata and /d$/thordata 
+    // or use /c$/thordata and /d$/thordata
     if (os==DFD_OSdefault)
 #ifdef _WIN32
         os = DFD_OSwindows;
@@ -2822,7 +2849,7 @@ IGroup *shrinkRepeatedGroup(IGroup *grp)
     unsigned w = grp->ordinality();
     for (unsigned i=1;i<w;i++) {
         unsigned j;
-        for (j=i;j<w;j++) 
+        for (j=i;j<w;j++)
             if (!grp->queryNode(j).equals(&grp->queryNode(j%i)))
                 break;
         if (j==w)
@@ -2846,19 +2873,19 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
             id++;
         res->setTraceName(id);
     }
-    else 
+    else
         id = "";
     const char *dir = tree->queryProp("@directory");
     if (!dir||!*dir)
-        throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing directory",id); 
+        throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing directory",id);
     const char *mask = tree->queryProp("@partmask");
     if (!mask||!*mask)
-        throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part mask",id); 
+        throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part mask",id);
     unsigned np = tree->getPropInt("@numparts");
     IPropertyTree *part1 = tree->queryPropTree("Part_1");
     if (!part1)
-        throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part 1",id); 
-    
+        throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part 1",id);
+
     // assume same number of copies for all parts
     unsigned nc = 0;
     StringBuffer xpath;
@@ -2870,10 +2897,10 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
             break;
         const char *path = loc->queryProp("@path");
         if (!path)
-            throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part 1 loc path",id); 
+            throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part 1 loc path",id);
         RemoteFilename rfn;
         rfn.setRemotePath(path);
-        if (rfn.queryEndpoint().isNull()) 
+        if (rfn.queryEndpoint().isNull())
             break;
         locdirs.append(rfn.getLocalPath(locpath.clear()).str());
         nc++;
@@ -2888,7 +2915,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
     for (unsigned p=1;p<=np;p++) {
         IPropertyTree *part = tree->queryPropTree(xpath.clear().appendf("Part_%d",p));
         if (!part)
-            throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part %d",id,p); 
+            throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part %d",id,p);
         if (iskey&&(p==np)&&(np>1)) // leave off tlk
             continue;
         unsigned c;
@@ -2897,7 +2924,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
             if (loc) {
                 const char *path = loc->queryProp("@path");
                 if (!path)
-                    throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part %d loc path",id,p); 
+                    throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part %d loc path",id,p);
                 RemoteFilename rfn;
                 rfn.setRemotePath(path);
                 bool found = false;
@@ -2913,7 +2940,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
                 }
             }
             else
-                ERRLOG("createFileDescriptorFromRoxie: %s missing part %s",id,xpath.str()); 
+                ERRLOG("createFileDescriptorFromRoxie: %s missing part %s",id,xpath.str());
         }
     }
     res->setPartMask(mask);
@@ -2966,7 +2993,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
     if (clustername) {
 #if 0
         Owned<IGroup> cgrp = queryNamedGroupStore().lookup(clustername);
-        if (!cgrp) 
+        if (!cgrp)
             throw MakeStringException(-1,"createFileDescriptorFromRoxieXML: Cluster %s not found",clustername);
         if (!cgrp->equals(grp))
             throw MakeStringException(-1,"createFileDescriptorFromRoxieXML: Cluster %s does not match XML",clustername);
@@ -2998,7 +3025,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
             if (loc) {
                 const char *path = loc->queryProp("@path");
                 if (!path)
-                    throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part %d loc path",id,c+1); 
+                    throw MakeStringException(-1,"createFileDescriptorFromRoxie: %s missing part %d loc path",id,c+1);
                 StringBuffer fullpath(path);
                 addPathSepChar(fullpath).append(tree->queryProp("@directory"));
                 expandMask(addPathSepChar(fullpath),mask,p-1,np);

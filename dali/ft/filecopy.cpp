@@ -2493,6 +2493,7 @@ void FileSprayer::setSource(IDistributedFile * source)
 {
     distributedSource.set(source);
     srcAttr.setown(createPTreeFromIPT(&source->queryAttributes()));
+    srcHistory.setown(createPTreeFromIPT(&source->queryHistory()));
     extractSourceFormat(srcAttr);
     unsigned numParts = source->numParts();
     for (unsigned idx=0; idx < numParts; idx++)
@@ -2529,6 +2530,7 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
     IPropertyTree *attr = &source->queryProperties();
     extractSourceFormat(attr);
     srcAttr.setown(createPTreeFromIPT(&source->queryProperties()));
+    srcHistory.setown(createPTreeFromIPT(&source->queryHistory()));
     extractSourceFormat(srcAttr);
 
     RemoteFilename filename;
@@ -3249,13 +3251,104 @@ void FileSprayer::updateTargetProperties()
                 if (stricmp(aname, "Protect") != 0)
                     curProps.addPropTree(aname, createPTreeFromIPT(&iter->query()));
             }
+
+            IPropertyTree &curHistory = lock.queryHistory();
+            // copy history records
+            Owned<IPropertyTreeIterator> historyIter = srcHistory->getElements("*");
+            ForEach(*historyIter)
+            {
+                const char *aname = historyIter->query().queryName();
+                curHistory.addPropTree(aname, createPTreeFromIPT(&historyIter->query()));
+            }
+
+            // Add new record about this operation
+            IPropertyTree * newRecord = createPTree("Origin");
+
+            CDateTime temp;
+            temp.setNow();
+            unsigned hour, min, sec, nanosec;
+            temp.getTime(hour, min, sec, nanosec);
+            temp.setTime(hour, min, sec, 0);
+
+            StringBuffer timestr;
+            newRecord->addProp("@timestamp",temp.getString(timestr).str());
+
+            StringBuffer val;
+            srcAttr->getProp("@owner", val);
+            newRecord->addProp("@owner", val.str());
+
+            srcAttr->getProp("@workunit", val.clear());
+            newRecord->addProp("@workunit", val.str());
+
+            newRecord->addProp("@operation", getOperationTypeString());
+
+            // add original file name
+            if (distributedSource)
+            {
+                distributedSource->getLogicalName(val.clear());
+                newRecord->addProp("@name", val.str());
+                RemoteFilename remoteFile;
+                distributedSource->getPart(0)->getFilename(remoteFile, 0 );
+                StringBuffer drive;
+                StringBuffer path;
+                StringBuffer fileName;
+                remoteFile.split(&drive, &path, &fileName, nullptr);
+                if(drive.isEmpty())
+                {
+                    remoteFile.queryIP().getIpText(drive.clear());
+                    newRecord->addProp("@ip", drive.str());
+                }
+                else
+                    newRecord->addProp("@drive", drive.str());
+
+                newRecord->addProp("@path", path.str());
+            }
+            else
+            {
+                val.clear();
+                StringBuffer drive;
+                StringBuffer path;
+                ForEachItemIn(idx, sources)
+                {
+                    StringBuffer fileName;
+                    FilePartInfo & curSource = sources.item(idx);
+                    curSource.filename.split(&drive, &path, &fileName, nullptr);
+                    if (idx == 0)
+                    {
+                        if(drive.isEmpty())
+                        {
+                            curSource.filename.queryIP().getIpText(drive.clear());
+                            newRecord->addProp("@ip", drive.str());
+                        }
+                        else
+                            newRecord->addProp("@drive", drive.str());
+
+                        newRecord->addProp("@path", path.str());
+                    }
+                    newRecord->addProp("@name", fileName.str());
+                }
+            }
+            curHistory.addPropTree("Origin",newRecord);
         }
     }
     if (error)
         throw error.getClear();
 }
 
+void FileSprayer::setOperation(dfu_operation op)
+{
+    operation = op;
+}
 
+dfu_operation FileSprayer::getOperation(void)
+{
+    return operation;
+}
+
+const char * FileSprayer::getOperationTypeString() const
+{
+    return DfuOperatonStr[operation];
+}
 
 bool FileSprayer::usePullOperation()
 {

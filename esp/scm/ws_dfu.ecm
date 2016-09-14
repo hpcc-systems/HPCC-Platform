@@ -707,6 +707,28 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
 };
 
 
+ESPrequest ListHistoryRequest
+{
+    string name;
+};
+
+ESPresponse [exceptions_inline, nil_remove] ListHistoryResponse
+{
+    binary xmlmap;
+};
+
+ESPrequest EraseHistoryRequest
+{
+    string name;
+};
+
+ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
+{
+    binary xmlmap;
+};
+
+
+
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
@@ -735,9 +757,13 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/addto_superfile.xslt")] AddtoSuperfile(AddtoSuperfileRequest, AddtoSuperfileResponse);
     ESPmethod [auth_feature("DfuAccess:READ"), resp_xsl_default("/esp/xslt/dfu_superedit.xslt")] SuperfileList(SuperfileListRequest, SuperfileListResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_superresult.xslt")] SuperfileAction(SuperfileActionRequest, SuperfileActionResponse);
+
     ESPmethod [auth_feature("DfuAccess:READ")] Savexml(SavexmlRequest, SavexmlResponse);
     ESPmethod [auth_feature("DfuAccess:WRITE")] Add(AddRequest, AddResponse);
     ESPmethod [auth_feature("DfuAccess:WRITE")] AddRemote(AddRemoteRequest, AddRemoteResponse);
+
+    ESPmethod ListHistory(ListHistoryRequest, ListHistoryResponse);
+    ESPmethod EraseHistory(EraseHistoryRequest, EraseHistoryResponse);
 };
 
 SCMexportdef(WSDFU);

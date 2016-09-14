@@ -367,7 +367,7 @@ public:
                             got = getFileInfo(dstfn,dstf,dstsize,dstmodtime);
                             // check size/date TBD
                             sem.signal();
-                            if (got&&(srcsize==dstsize)&&srcmodtime.equals(dstmodtime)) 
+                            if (got&&(srcsize==dstsize)&&srcmodtime.equals(dstmodtime))
                                 continue;
                         }
 
@@ -1294,6 +1294,24 @@ public:
                 }
             }
         }
+    }
+
+    MemoryBuffer &getFileHistory(const char *lfn,MemoryBuffer &out, IUserDescriptor *user)
+    {
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user);
+        if (!file) {
+            throwError1(DFUERR_DFileNotFound, lfn);
+        }
+        else
+        {
+            Owned<IPropertyTree> t = queryDistributedFileDirectory().getFileTree(lfn, user)->getPropTree("History");
+            if (t)
+                t->serialize(out);
+            else
+                // For old file which has not History
+                out.clear().append(0);
+        }
+        return out;
     }
 
 };

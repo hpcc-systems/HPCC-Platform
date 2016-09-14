@@ -203,6 +203,9 @@ public:
     void setError(const SocketEndpoint & ep, IException * e);
     bool canLocateSlaveForNode(const IpAddress &ip);
     void checkSourceTarget(IFileDescriptor * file);
+    void setOperation(dfu_operation op);
+    dfu_operation getOperation(void);
+    const char * getOperationTypeString() const;
 
 protected:
     void addEmptyFilesToPartition(unsigned from, unsigned to);
@@ -326,6 +329,8 @@ protected:
     offset_t                headerSize;
     offset_t                footerSize;
     int                     fileUmask;
+    Owned<IPropertyTree>    srcHistory;
+    dfu_operation           operation = dfu_unknown;
 };
 
 
