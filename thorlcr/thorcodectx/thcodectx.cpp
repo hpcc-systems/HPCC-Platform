@@ -114,6 +114,11 @@ IEngineRowAllocator * CThorCodeContextBase::getRowAllocator(IOutputMetaData * me
     return jobChannel.getRowAllocator(meta, activityId);
 }
 
+IEngineRowAllocator * CThorCodeContextBase::getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const
+{
+    return jobChannel.getRowAllocator(meta, activityId, (roxiemem::RoxieHeapFlags)heapFlags);
+}
+
 const char * CThorCodeContextBase::cloneVString(const char * str) const
 {
     return jobChannel.queryRowManager()->cloneVString(str);

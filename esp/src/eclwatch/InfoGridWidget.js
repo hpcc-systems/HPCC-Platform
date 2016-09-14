@@ -137,7 +137,9 @@ define([
                                     case "Error":
                                         domClass.add(node, "ErrorCell");
                                         break;
-
+                                    case "Alert":
+                                        domClass.add(node, "AlertCell");
+                                        break;
                                     case "Warning":
                                         domClass.add(node, "WarningCell");
                                         break;
@@ -318,6 +320,8 @@ define([
                     var severity = this.store.getValue(item, "Severity", null);
                     if (severity == "Error") {
                         row.customStyles += "background-color: red;";
+                    } else if (severity === "Alert") {
+                        row.customStyles += "background-color: #febe47;";
                     } else if (severity == "Warning") {
                         row.customStyles += "background-color: yellow;";
                     }
@@ -370,7 +374,8 @@ define([
                     error: 0,
                     warning: 0,
                     errorWarning: 0,
-                    info: 0
+                    info: 0,
+                    alert: 0
                 };
                 arrayUtil.forEach(this.infoData, function (item, idx) {
                     lang.mixin(item, {
@@ -398,6 +403,12 @@ define([
                                 data.push(item);
                             }
                             break;
+                        case "Alert":
+                            this._counts.alert++;
+                            if (errorChecked) {
+                                data.push(item);
+                            }
+                            break;
                     }
                 }, this);
                 this.infoStore.setData(data);
@@ -422,6 +433,10 @@ define([
                     } else if (l.Severity === "Error") {
                         return -1;
                     } else if (r.Severity === "Error") {
+                        return 1;
+                    } else if (l.Severity === "Alert") {
+                        return -1;
+                    } else if (r.Severity === "Alert") {
                         return 1;
                     } else if (l.Severity === "Warning") {
                         return -1;

@@ -286,7 +286,7 @@ distrib_check
 if [ "${DISTRIB_NAME}" = "ubuntu" ] &&
    [ ${DISTRIB_MAJOR_VERSION} -ge 15 ]; then
 
-   dpkg -l | grep -q -e "^ii[[:space:]]*systemd "
+   dpkg -S /sbin/init | grep -q systemd
    if [ $? -eq 0 ]; then
       cp ${INSTALL_DIR}/etc/init.d/hpcc-init.service /lib/systemd/system/
       cp ${INSTALL_DIR}/etc/init.d/hpcc-init@.service /lib/systemd/system/

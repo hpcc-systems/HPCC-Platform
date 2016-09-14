@@ -118,7 +118,7 @@ public:
     GroupProcessSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = static_cast <IHThorProcessArg *> (queryHelper());
-        rightrowif.setown(createThorRowInterfaces(queryRowManager(), helper->queryRightRecordSize(),queryId(),queryCodeContext()));
+        rightrowif.setown(createRowInterfaces(helper->queryRightRecordSize()));
         rightAllocator.set(rightrowif->queryRowAllocator());
         appendOutputLinked(this);   // adding 'me' to outputs array
     }

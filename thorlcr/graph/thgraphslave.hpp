@@ -161,7 +161,7 @@ public:
     ~CSlaveActivity();
     void setRequireInitData(bool tf)
     {
-        // If not required sets sentActInitdata to true, to prevent it being request at graph initialization time.
+        // If not required, sets sentActInitdata to true, to prevent it being requested at graph initialization time.
         container.sentActInitData->set(0, !tf);
     }
     virtual void clearConnections();

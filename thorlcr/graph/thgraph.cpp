@@ -225,7 +225,7 @@ public:
     virtual void prepareCounterResult(CActivityBase &activity, IThorGraphResults *results, unsigned loopCounter, unsigned pos)
     {
         if (!countRowIf)
-            countRowIf.setown(createThorRowInterfaces(activity.queryRowManager(), counterMeta, activityId, activity.queryCodeContext()));
+            countRowIf.setown(activity.createRowInterfaces(counterMeta));
         RtlDynamicRowBuilder counterRow(countRowIf->queryRowAllocator());
         thor_loop_counter_t * res = (thor_loop_counter_t *)counterRow.ensureCapacity(sizeof(thor_loop_counter_t),NULL);
         *res = loopCounter;
@@ -237,13 +237,13 @@ public:
     virtual void prepareLoopAgainResult(CActivityBase &activity, IThorGraphResults *results, unsigned pos)
     {
         if (!loopAgainRowIf)
-            loopAgainRowIf.setown(createThorRowInterfaces(activity.queryRowManager(), loopAgainMeta, activityId, activity.queryCodeContext()));
+            loopAgainRowIf.setown(activity.createRowInterfaces(loopAgainMeta));
         activity.queryGraph().createResult(activity, pos, results, loopAgainRowIf, !activity.queryGraph().isLocalChild(), SPILL_PRIORITY_DISABLE);
     }
     virtual void prepareLoopResults(CActivityBase &activity, IThorGraphResults *results)
     {
         if (!resultRowIf)
-            resultRowIf.setown(createThorRowInterfaces(activity.queryRowManager(), resultMeta, activityId, activity.queryCodeContext()));
+            resultRowIf.setown(activity.createRowInterfaces(resultMeta));
         IThorResult *loopResult = results->createResult(activity, 0, resultRowIf, !activity.queryGraph().isLocalChild()); // loop output
         IThorResult *inputResult = results->createResult(activity, 1, resultRowIf, !activity.queryGraph().isLocalChild()); // loop input
     }
@@ -361,7 +361,7 @@ CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml) 
     isGrouped = xgmml->getPropBool("att[@name=\"grouped\"]/@value", false);
     resultsGraph = NULL;
     ownerId = xgmml->getPropInt("att[@name=\"_parentActivity\"]/@value", 0);
-    onCreateCalled = onStartCalled = prepared = haveCreateCtx = haveStartCtx = nullAct = false;
+    onCreateCalled = prepared = haveCreateCtx = nullAct = false;
     onlyUpdateIfChanged = xgmml->getPropBool("att[@name=\"_updateIfChanged\"]/@value", false);
 
     StringBuffer helperName("fAc");
@@ -467,7 +467,6 @@ IThorGraphDependencyIterator *CGraphElementBase::getDependsIterator() const
 void CGraphElementBase::reset()
 {
     alreadyUpdated = false;
-    onStartCalled = false;
     if (activity)
         activity->reset();
 }
@@ -556,14 +555,6 @@ void CGraphElementBase::serializeCreateContext(MemoryBuffer &mb)
         mb.append(alreadyUpdated);
 }
 
-void CGraphElementBase::serializeStartContext(MemoryBuffer &mb)
-{
-    if (!onStartCalled) return;
-    DelayedSizeMarker sizeMark(mb);
-    queryHelper()->serializeStartContext(mb);
-    sizeMark.write();
-}
-
 void CGraphElementBase::deserializeCreateContext(MemoryBuffer &mb)
 {
     size32_t createCtxLen;
@@ -574,13 +565,11 @@ void CGraphElementBase::deserializeCreateContext(MemoryBuffer &mb)
         mb.read(alreadyUpdated);
 }
 
-void CGraphElementBase::deserializeStartContext(MemoryBuffer &mb)
+void CGraphElementBase::serializeStartContext(MemoryBuffer &mb)
 {
-    size32_t startCtxLen;
-    mb.read(startCtxLen);
-    startCtxMb.clear().append(startCtxLen, mb.readDirect(startCtxLen));
-    haveStartCtx = true;
-    onStartCalled = false; // allow to be called again
+    DelayedSizeMarker sizeMark(mb);
+    queryHelper()->serializeStartContext(mb);
+    sizeMark.write();
 }
 
 void CGraphElementBase::onCreate()
@@ -609,22 +598,12 @@ void CGraphElementBase::onCreate()
     }
 }
 
-void CGraphElementBase::onStart(size32_t parentExtractSz, const byte *parentExtract)
+void CGraphElementBase::onStart(size32_t parentExtractSz, const byte *parentExtract, MemoryBuffer *startCtx)
 {
-    if (onStartCalled)
+    if (nullAct)
         return;
-    onStartCalled = true;
-    if (!nullAct)
-    {
-        if (haveStartCtx)
-        {
-            baseHelper->onStart(parentExtract, &startCtxMb);
-            startCtxMb.reset();
-            haveStartCtx = false;
-        }
-        else
-            baseHelper->onStart(parentExtract, NULL);
-    }
+    CriticalBlock b(crit);
+    baseHelper->onStart(parentExtract, startCtx);
 }
 
 bool CGraphElementBase::executeDependencies(size32_t parentExtractSz, const byte *parentExtract, int controlId, bool async)
@@ -647,7 +626,7 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
         bool create = true;
         if (connectOnly)
         {
-            if (activity)
+            if (prepared)
                 return true;
             ForEachItemIn(i, inputs)
             {
@@ -799,10 +778,7 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                 CIOConnection *inputIO = inputs.item(i2);
                 connectInput(i2, inputIO->activity, inputIO->index);
             }
-            if (isSink())
-                owner->addActiveSink(*this);
-            assertex(!activity);
-            activity.setown(factory());
+            createActivity();
         }
         return true;
     }
@@ -828,11 +804,14 @@ void CGraphElementBase::preStart(size32_t parentExtractSz, const byte *parentExt
     activity->preStart(parentExtractSz, parentExtract);
 }
 
-void CGraphElementBase::initActivity()
+void CGraphElementBase::createActivity()
 {
+    CriticalBlock b(crit);
     if (activity)
         return;
     activity.setown(factory());
+    if (isSink())
+        owner->addActiveSink(*this);
 }
 
 ICodeContext *CGraphElementBase::queryCodeContext()
@@ -1104,23 +1083,6 @@ void CGraphBase::serializeCreateContexts(MemoryBuffer &mb)
     sizeMark.write();
 }
 
-void CGraphBase::serializeStartContexts(MemoryBuffer &mb)
-{
-    DelayedSizeMarker sizeMark(mb);
-    Owned<IThorActivityIterator> iter = getIterator();
-    ForEach (*iter)
-    {
-        CGraphElementBase &element = iter->query();
-        if (element.isOnStarted())
-        {
-            mb.append(element.queryId());
-            element.serializeStartContext(mb);
-        }
-    }
-    mb.append((activity_id)0);
-    sizeMark.write();
-}
-
 void CGraphBase::deserializeCreateContexts(MemoryBuffer &mb)
 {
     activity_id id;
@@ -1131,19 +1093,6 @@ void CGraphBase::deserializeCreateContexts(MemoryBuffer &mb)
         CGraphElementBase *element = queryElement(id);
         assertex(element);
         element->deserializeCreateContext(mb);
-    }
-}
-
-void CGraphBase::deserializeStartContexts(MemoryBuffer &mb)
-{
-    activity_id id;
-    loop
-    {
-        mb.read(id);
-        if (0 == id) break;
-        CGraphElementBase *element = queryElement(id);
-        assertex(element);
-        element->deserializeStartContext(mb);
     }
 }
 
@@ -1194,7 +1143,6 @@ bool CGraphBase::fireException(IException *e)
 
 bool CGraphBase::preStart(size32_t parentExtractSz, const byte *parentExtract)
 {
-    started = true; // causes reset() to be called on all subsequent executions of this subgraph.
     Owned<IThorActivityIterator> iter = getConnectedIterator();
     ForEach(*iter)
     {
@@ -1274,11 +1222,14 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
             throw abortException.getLink();
         throw MakeGraphException(this, 0, "subgraph aborted");
     }
+    GraphPrintLog("Processing graph");
     Owned<IException> exception;
     try
     {
         if (started)
             reset();
+        else
+            started = true;
         Owned<IThorActivityIterator> iter = getConnectedIterator();
         ForEach(*iter)
         {
@@ -1286,6 +1237,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
             element.onStart(parentExtractSz, parentExtract);
             element.initActivity();
         }
+        initialized = true;
         if (!preStart(parentExtractSz, parentExtract)) return;
         start();
         if (!wait(aborted?MEDIUMTIMEOUT:INFINITE)) // can't wait indefinitely, query may have aborted and stall, but prudent to wait a short time for underlying graphs to unwind.
@@ -2953,6 +2905,11 @@ void CActivityBase::ActPrintLog(IException *e)
     ActPrintLog(e, "%s", "");
 }
 
+IThorRowInterfaces * CActivityBase::createRowInterfaces(IOutputMetaData * meta)
+{
+    return createThorRowInterfaces(queryRowManager(), meta, queryId(), queryHeapFlags(), queryCodeContext());
+}
+
 bool CActivityBase::fireException(IException *e)
 {
     Owned<IThorException> _te;
@@ -2992,7 +2949,10 @@ IEngineRowAllocator * CActivityBase::queryRowAllocator()
 {
     if (CABallocatorlock.lock()) {
         if (!rowAllocator)
-            rowAllocator.setown(getRowAllocator(queryRowMetaData()));
+        {
+            roxiemem::RoxieHeapFlags heapFlags = queryHeapFlags();
+            rowAllocator.setown(getRowAllocator(queryRowMetaData(), heapFlags));
+        }
         CABallocatorlock.unlock();
     }
     return rowAllocator;
@@ -3021,7 +2981,7 @@ IOutputRowDeserializer * CActivityBase::queryRowDeserializer()
 IThorRowInterfaces *CActivityBase::getRowInterfaces()
 {
     // create an independent instance, to avoid circular link dependency problems
-    return createThorRowInterfaces(queryRowManager(), queryRowMetaData(), container.queryId(), queryCodeContext());
+    return createThorRowInterfaces(queryRowManager(), queryRowMetaData(), container.queryId(), queryHeapFlags(), queryCodeContext());
 }
 
 IEngineRowAllocator *CActivityBase::getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags) const

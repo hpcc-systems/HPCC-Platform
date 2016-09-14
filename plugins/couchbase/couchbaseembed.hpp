@@ -194,7 +194,7 @@ namespace couchbaseembed
     public:
         inline CouchbaseConnection(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * user, const char * password, const char * connOptions)
         {
-            m_connectionString.setf("couchbase%s://%s/%s%s", useSSL ? "s" : "", host, bucketname, connOptions);
+            m_connectionString.setf("couchbase%s://%s:%d/%s%s", useSSL ? "s" : "", host, port, bucketname, connOptions);
             m_pCouchbaseClient = new Couchbase::Client(m_connectionString.str());//USER/PASS still needed
             m_pQuery = nullptr;
         }

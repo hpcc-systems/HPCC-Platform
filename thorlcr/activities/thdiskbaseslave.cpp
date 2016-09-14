@@ -74,7 +74,7 @@ CDiskPartHandlerBase::CDiskPartHandlerBase(CDiskReadSlaveActivityBase &_activity
 
 }
 
-void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc, unsigned partNoSerialized)
+void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc)
 {
     partDesc.set(_partDesc);
     compressed = partDesc->queryOwner().isCompressed(&blockCompressed);
@@ -83,6 +83,7 @@ void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc, unsigned partNoSe
     checkFileCrc = activity.checkFileCrc?partDesc->getCrc(storedCrc):false;
     fileBaseOffset = partDesc->queryProperties().getPropInt64("@offset");
 
+    which = partDesc->queryPartIndex();
     if (0 != (activity.helper->getFlags() & TDRfilenamecallback)) // only get/serialize if using virtual file name fields
     {
         IFileDescriptor &fileDesc = partDesc->queryOwner();
@@ -91,7 +92,7 @@ void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc, unsigned partNoSe
         {
             unsigned subfile;
             unsigned lnum;
-            if (superFDesc->mapSubPart(partNoSerialized, subfile, lnum))
+            if (superFDesc->mapSubPart(which, subfile, lnum))
                 logicalFilename.set(activity.queryLogicalFilename(subfile));
             else
                 logicalFilename.set("UNKNOWN"); // shouldn't happen, but will prevent query fault if did.
@@ -105,7 +106,6 @@ void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc, unsigned partNoSe
         logicalFilename.set(activity.logicalFilename);
     eoi = false;
     firstInGroup = true;
-    which = partDesc->queryPartIndex();
 
     activity.helper->setCallback(this); // NB, if we were to have >1 of these objects, would prob. need separate helper instances also
     open();
@@ -279,7 +279,7 @@ void CDiskReadSlaveActivityBase::kill()
 IThorRowInterfaces * CDiskReadSlaveActivityBase::queryDiskRowInterfaces()
 {
     if (!diskRowIf) 
-        diskRowIf.setown(createThorRowInterfaces(queryRowManager(), helper->queryDiskRecordSize(),queryId(),queryCodeContext()));
+        diskRowIf.setown(createRowInterfaces(helper->queryDiskRecordSize()));
     return diskRowIf;
 }
 

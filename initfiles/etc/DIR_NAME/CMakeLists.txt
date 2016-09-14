@@ -33,9 +33,19 @@ ADD_SUBDIRECTORY(configmgr)
 
 if(NOT "${DESTDIR}" STREQUAL "")
     message(STATUS "DESTDIR is set to ${DESTDIR}. Enabling configure target.")
+    add_custom_command(OUTPUT 
+        ${HOME_DIR}/${RUNTIME_USER}/.ssh/authorized_keys
+        ${HOME_DIR}/${RUNTIME_USER}/.ssh/id_rsa.pub
+        ${HOME_DIR}/${RUNTIME_USER}/.ssh/id_rsa
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/configure_keys.sh
+        COMMENT "Attempting to generate ssh keys if not present"
+        WORKING_DIRECTORY ${HOME_DIR}/${RUNTIME_USER}/.ssh VERBATIM)
     add_custom_target(configure
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CONFIG_DIR}
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_XML_FILE} ${CONFIG_DIR}
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_CONF_FILE} ${CONFIG_DIR}
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf ${CONFIG_DIR})
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf ${CONFIG_DIR}
+        DEPENDS ${HOME_DIR}/${RUNTIME_USER}/.ssh/authorized_keys
+        ${HOME_DIR}/${RUNTIME_USER}/.ssh/id_rsa.pub
+        ${HOME_DIR}/${RUNTIME_USER}/.ssh/id_rsa)
 endif()

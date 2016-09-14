@@ -1350,6 +1350,42 @@ IHqlExpression * HqlGram::leaveService(const attribute & errpos)
 
 /* this func does not affect linkage */
 /* Assume: field is of the form: (((self.r1).r2...).rn). */
+IHqlExpression * HqlGram::queryAlreadyAssigned(IHqlExpression * select)
+{
+    IHqlExpression * match = (IHqlExpression *)select->queryTransformExtra();
+    if (match && !match->isAttribute())
+        return select;
+    if (select->getOperator() == no_select)
+    {
+        IHqlExpression * lhs = select->queryChild(0);
+        if (lhs->getOperator() == no_select)
+            return queryAlreadyAssigned(lhs);
+    }
+    return nullptr;
+}
+
+bool HqlGram::checkAlreadyAssigned(const attribute & errpos, IHqlExpression * select)
+{
+    IHqlExpression * assigned = queryAlreadyAssigned(select);
+    if (!assigned)
+        return false;
+
+    StringBuffer s;
+    getFldName(assigned,s);
+    if (assigned == select)
+    {
+        reportError(ERR_VALUEDEFINED, errpos, "A value for \"%s\" has already been specified", s.str());
+    }
+    else
+    {
+        reportWarning(CategorySyntax, ERR_VALUEDEFINED, errpos.pos, "A value for \"%s\" has already been specified", s.str());
+        // MORE: Report this as an error in 7.0
+        //reportWarning(CategorySyntax, SeverityError, ERR_VALUEDEFINED, errpos.pos, "A value for \"%s\" has already been specified", s.str());
+    }
+
+    return true;
+}
+
 IHqlExpression * HqlGram::findAssignment(IHqlExpression *field)
 {
 //  assertex(field->getOperator() == no_select);
@@ -1434,11 +1470,9 @@ void HqlGram::addAssignment(attribute & target, attribute &source)
     }
     else if (targetOp == no_select)
     {
-        // self.* := expr;      assertex(targetExpr->getOperator()==no_select);
-        if (findAssignment(targetExpr))
+        // self.* := expr;
+        if (checkAlreadyAssigned(target, targetExpr))
         {
-            StringBuffer s;
-            reportError(ERR_VALUEDEFINED, target, "A value for \"%s\" has already been specified", getFldName(targetExpr,s).str());
         }
         else if (targetExpr->queryType()->getTypeCode() == type_row)
         {
@@ -1481,10 +1515,8 @@ void HqlGram::addAssignment(const attribute & errpos, IHqlExpression * targetExp
     else if (targetOp == no_select)
     {
         // self.* := expr;      assertex(targetExpr->getOperator()==no_select);
-        if (findAssignment(targetExpr))
+        if (checkAlreadyAssigned(errpos, targetExpr))
         {
-            StringBuffer s;
-            reportError(ERR_VALUEDEFINED, errpos, "A value for \"%s\" has already been specified", getFldName(targetExpr,s).str());
         }
         else if (targetExpr->queryType()->getTypeCode() == type_row)
         {
@@ -1805,11 +1837,8 @@ void HqlGram::addAssignall(IHqlExpression *tgt, IHqlExpression *src, const attri
     assertex(src);
 
     node_operator tgtOp = tgt->getOperator();
-    if ((tgtOp == no_select) && findAssignment(tgt))
-    {
-        StringBuffer s;
-        reportError(ERR_VALUEDEFINED, errpos, "A value for \"%s\" has already been specified", getFldName(tgt,s).str());
-    }
+    if (tgtOp == no_select)
+        checkAlreadyAssigned(errpos, tgt);
 
     IHqlExpression * srcRecord = src->queryRecord();
     IHqlExpression * tgtRecord = tgt->queryRecord();

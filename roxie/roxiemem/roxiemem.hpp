@@ -385,6 +385,7 @@ interface IFixedRowHeap : extends IInterface
 {
     virtual void *allocate() = 0;
     virtual void *finalizeRow(void *final) = 0;
+    virtual void emptyCache() = 0;
 };
 
 interface IVariableRowHeap : extends IInterface
@@ -402,6 +403,8 @@ enum RoxieHeapFlags
     RHFunique           = 0x0004,  // create a separate fixed size allocator
     RHFoldfixed         = 0x0008,  // Don't create a special fixed size heap for this
     RHFvariable         = 0x0010,  // only used for tracing
+    RHFblocked          = 0x0040,  // allocate blocks of rows
+    RHFnofragment       = 0x0080,  // the allocated records will not be fragmented
 
     //internal flags
     RHForphaned         = 0x80000000,   // heap will no longer be used, can be deleted

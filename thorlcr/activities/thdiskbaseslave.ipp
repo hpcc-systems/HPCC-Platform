@@ -63,7 +63,7 @@ public:
     virtual const char * queryLogicalFilename(const void * row);
 
 // CPartHandler
-    virtual void setPart(IPartDescriptor *_partDesc, unsigned partNoSerialized);
+    virtual void setPart(IPartDescriptor *_partDesc);
 
     virtual offset_t getLocalOffset()=0;
 };

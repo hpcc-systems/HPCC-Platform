@@ -738,7 +738,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     unsigned endRequestsCount = owner.container.queryJob().querySlaves();
                     Owned<IBitSet> endRequests = createThreadSafeBitSet(); // NB: verification only
 
-                    Owned<IThorRowInterfaces> fetchDiskRowIf = createThorRowInterfaces(owner.queryRowManager(), owner.helper->queryDiskRecordSize(),owner.queryId(),owner.queryCodeContext());
+                    Owned<IThorRowInterfaces> fetchDiskRowIf = owner.createRowInterfaces(owner.helper->queryDiskRecordSize());
                     while (!aborted)
                     {
                         CMessageBuffer replyMb;
@@ -1964,11 +1964,11 @@ public:
                 }
                 else
                     fetchInputMeta.setown(createFixedSizeMetaData(FETCHKEY_HEADER_SIZE));
-                fetchInputMetaRowIf.setown(createThorRowInterfaces(queryRowManager(), fetchInputMeta,queryId(),queryCodeContext()));
+                fetchInputMetaRowIf.setown(createRowInterfaces(fetchInputMeta));
                 fetchInputMetaAllocator.set(fetchInputMetaRowIf->queryRowAllocator());
 
                 Owned<IOutputMetaData> fetchOutputMeta = createOutputMetaDataWithChildRow(joinFieldsAllocator, FETCHKEY_HEADER_SIZE);
-                fetchOutputRowIf.setown(createThorRowInterfaces(queryRowManager(), fetchOutputMeta,queryId(),queryCodeContext()));
+                fetchOutputRowIf.setown(createRowInterfaces(fetchOutputMeta));
 
                 fetchHandler = new CKeyedFetchHandler(*this);
 

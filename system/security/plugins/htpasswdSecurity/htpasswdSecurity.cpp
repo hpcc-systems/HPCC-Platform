@@ -25,12 +25,33 @@
 class CHtpasswdSecurityManager : public CBaseSecurityManager
 {
 public:
-    CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *secMgrCfg, IPropertyTree *authConfig) : CBaseSecurityManager(serviceName, (IPropertyTree *)NULL)
+    CHtpasswdSecurityManager(const char *serviceName, IPropertyTree *secMgrCfg, IPropertyTree *bindConfig) : CBaseSecurityManager(serviceName, (IPropertyTree *)NULL)
 	{
         if (secMgrCfg)
             pwFile.set(secMgrCfg->queryProp("@htpasswdFile"));
         if(pwFile.isEmpty())
             throw MakeStringException(-1, "htpasswdFile not found in configuration");
+
+        {
+            Owned<IPropertyTree> authcfg = bindConfig->getPropTree("Authenticate");
+            if(authcfg != nullptr)
+            {
+                StringBuffer authxml;
+                toXML(authcfg, authxml);
+                DBGLOG("HTPASS Authenticate Config: %s", authxml.str());
+            }
+        }
+
+        {
+            Owned<IPropertyTree> custombindingconfig = bindConfig->getPropTree("CustomBindingParameters");
+            if(custombindingconfig != nullptr)
+            {
+                StringBuffer custconfigxml;
+                toXML(custombindingconfig, custconfigxml);
+                DBGLOG("HTPASS Custom Binding Config: %s", custconfigxml.str());
+            }
+        }
+
         apr_initialized = false;
 	}
 
@@ -259,9 +280,9 @@ private:
 
 extern "C"
 {
-    HTPASSWDSECURITY_API ISecManager * createInstance(const char *serviceName, IPropertyTree &secMgrCfg, IPropertyTree &authCfg)
+    HTPASSWDSECURITY_API ISecManager * createInstance(const char *serviceName, IPropertyTree &secMgrCfg, IPropertyTree &bndCfg)
     {
-        return new CHtpasswdSecurityManager(serviceName, &secMgrCfg, &authCfg);
+        return new CHtpasswdSecurityManager(serviceName, &secMgrCfg, &bndCfg);
     }
 
 }

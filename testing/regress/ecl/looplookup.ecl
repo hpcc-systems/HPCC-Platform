@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,26 +15,18 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef HTPASSWDSECURITY_HPP_
-#define HTPASSWDSECURITY_HPP_
+//noroxie TBD
+//nohthor TBD
 
-#ifndef HTPASSWDSECURITY_API
+rec := RECORD  
+ unsigned id;
+END;
 
-#ifdef _WIN32
-    #ifndef HTPASSWDSECURITY_EXPORTS
-        #define HTPASSWDSECURITY_API __declspec(dllimport)
-    #else
-        #define HTPASSWDSECURITY_API __declspec(dllexport)
-    #endif //HTPASSWDSECURITY_EXPORTS
-#else
-    #define HTPASSWDSECURITY_API
-#endif //_WIN32
+rhs := DATASET(10000, TRANSFORM(rec, SELF.id := COUNTER) , DISTRIBUTED) : INDEPENDENT;
+lhs := DATASET([{1}, {2}, {3}], rec);
 
-#endif 
 
-extern "C" 
-{
-    HTPASSWDSECURITY_API ISecManager * createInstance(const char *serviceName, IPropertyTree &secMgrCfg, IPropertyTree &bndCfg);
-}
+loopBody(DATASET(rec) currentlhs) := JOIN(currentlhs, rhs, LEFT.id=RIGHT.id, TRANSFORM(rec, SELF.id := RIGHT.id+1), SMART, HINT(lookupRhsConstant(true)));
+doloop := LOOP(lhs, 200, loopBody(ROWS(LEFT)));
 
-#endif // HTPASSWDSECURITY_HPP_
+doloop;

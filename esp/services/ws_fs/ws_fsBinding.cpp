@@ -233,6 +233,8 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, c
         Owned<IPropertyTreeIterator> it = pEnvSoftware->getElements("DropZone");
         ForEach(*it)
         {
+            if (!it->query().getPropBool("@ECLWatchVisible", true))
+                continue;
             IPropertyTree* pDropZone = pSoftware->addPropTree("DropZone", &it->get());
             //get IP Address of the computer associated with this drop zone
             const char* pszComputer = it->query().queryProp("@computer");

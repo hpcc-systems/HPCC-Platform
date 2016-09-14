@@ -735,6 +735,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 udpRequestToSendTimeout = 5000;
         }
         // MORE: might want to check socket buffer sizes against sys max here instead of udp threads ?
+        udpSnifferReadThreadPriority = topology->getPropInt("@udpSnifferReadThreadPriority", 3);
+        udpSnifferSendThreadPriority = topology->getPropInt("@udpSnifferSendThreadPriority", 3);
+
         udpMulticastBufferSize = topology->getPropInt("@udpMulticastBufferSize", 262142);
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", 131072);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", 1024000);

@@ -105,7 +105,7 @@ public:
             }
             
             Linked<IThorRowInterfaces> rowif = queryRowInterfaces(input);
-            Owned<IThorRowInterfaces> auxrowif = createThorRowInterfaces(queryRowManager(), helper->querySortedRecordSize(),queryId(),queryCodeContext());
+            Owned<IThorRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize());
             sorter->Gather(
                 rowif,
                 inputStream,

@@ -31,7 +31,7 @@
 { 
     ISecManager * createInstance(const char *serviceName,
                                  IPropertyTree &amp;secMgrCfg,
-                                 IPropertyTree &amp;authCfg); 
+                                 IPropertyTree &amp;bndCfg);
 } </programlisting>
 
           <para>The framework expects to have access to the "createInstance()"

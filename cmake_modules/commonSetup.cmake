@@ -113,6 +113,43 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   #"cmake -DEXAMPLEPLUGIN=ON <path-to/HPCC-Platform/>" will configure the plugin makefiles to be built with "make".
   option(EXAMPLEPLUGIN "Create a package with ONLY the exampleplugin plugin" OFF)
   option(COUCHBASEEMBED "Create a package with ONLY the couchbaseembed plugin" OFF)
+  option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
+
+  if(REMBED OR V8EMBED OR MEMCACHED OR PYEMBED OR REDIS OR JAVAEMBED OR MYSQLEMBED
+      OR SQLITE3EMBED OR KAFKA OR EXAMPLEPLUGIN OR COUCHBASEEMBED)
+      set(PLUGIN ON)
+      set(CLIENTTOOLS OFF)
+      set(PLATFORM OFF)
+      set(INCLUDE_PLUGINS OFF)
+      set(SIGN_MODULES OFF)
+      set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
+  endif()
+
+  if (SIGN_MODULES)
+      message(STATUS "GPG signing check")
+      if(DEFINED SIGN_MODULES_PASSPHRASE)
+          set(GPG_PASSPHRASE_OPTION --passphrase)
+      endif()
+      if(DEFINED SIGN_MODULES_KEYID)
+        set(GPG_DEFAULT_KEY_OPTION --default-key)
+      endif()
+      execute_process(
+          COMMAND rm -f sm_keycheck.tmp sm_keycheck.asc
+          COMMAND touch sm_keycheck.tmp
+          COMMAND gpg --output sm_keycheck.asc ${GPG_DEFAULT_KEY_OPTION} ${SIGN_MODULES_KEYID}  --clearsign ${GPG_PASSPHRASE_OPTION} ${SIGN_MODULES_PASSPHRASE} --batch --no-tty sm_keycheck.tmp
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+          RESULT_VARIABLE rc_var
+          ERROR_VARIABLE err_var
+          OUTPUT_QUIET)
+      if(NOT "${rc_var}" STREQUAL "0")
+          message(STATUS "GPG signing check - failed")
+          message(FATAL_ERROR "gpg signing of std ecllibrary unsupported in current environment. \
+          If you wish to build without a signed std ecllibrary add -DSIGN_MODULES=OFF to your \
+          cmake invocation.\n${err_var}")
+      else()
+          message(STATUS "GPG signing check - done")
+      endif()
+  endif()
 
   if (APPLE OR WIN32)
       option(USE_TBB "Enable Threading Building Block support" OFF)
@@ -123,16 +160,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   option(LOGGING_SERVICE "Configure use of logging service" ON)
 
-  option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
-
-    if(REMBED OR V8EMBED OR MEMCACHED OR PYEMBED OR REDIS OR JAVAEMBED OR MYSQLEMBED
-        OR SQLITE3EMBED OR KAFKA OR EXAMPLEPLUGIN OR COUCHBASEEMBED)
-        set(PLUGIN ON)
-        set(CLIENTTOOLS OFF)
-        set(PLATFORM OFF)
-        set(INCLUDE_PLUGINS OFF)
-        set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
-    endif()
 
     if(REMBED)
 	if(DEFINED pluginname)

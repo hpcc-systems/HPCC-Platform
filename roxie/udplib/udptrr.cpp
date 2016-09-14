@@ -450,6 +450,14 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         virtual int run() 
         {
             DBGLOG("UdpReceiver: ReceiveFlowManager started");
+            if (udpSnifferSendThreadPriority)
+            {
+#ifdef __linux__
+                setLinuxThreadPriority(udpSnifferSendThreadPriority);
+#else
+                adjustPriority(1);
+#endif
+            }
             while (running)
             {
                 requestPending.wait();
@@ -501,7 +509,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             {
                 StringBuffer ipStr;
                 snifferIP.getIpText(ipStr);
-                DBGLOG("UdpReceiver: receive_sniffer port open %s:%i", ipStr.str(), snifferPort);
+                size32_t actualSize = sniffer_socket->get_receive_buffer_size();
+                DBGLOG("UdpReceiver: receive_sniffer port open %s:%i sockbuffsize=%d actual %d", ipStr.str(), snifferPort, udpFlowSocketsSize, actualSize);
             }
         }
 
@@ -529,6 +538,14 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         virtual int run() 
         {
             DBGLOG("UdpReceiver: sniffer started");
+            if (udpSnifferReadThreadPriority)
+            {
+#ifdef __linux__
+                setLinuxThreadPriority(udpSnifferReadThreadPriority);
+#else
+                adjustPriority(1);
+#endif
+            }
             while (running) 
             {
                 try 

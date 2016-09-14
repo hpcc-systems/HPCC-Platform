@@ -92,10 +92,10 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
             csvSplitter.init(activity.helper->getMaxColumns(), csvInfo, activity.csvQuote, activity.csvSeparate, activity.csvTerminate, activity.csvEscape);
             maxRowSize = activity.getOptInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
         }
-        virtual void setPart(IPartDescriptor *partDesc, unsigned partNoSerialized)
+        virtual void setPart(IPartDescriptor *partDesc)
         {
             inputCRC.reset();
-            CDiskPartHandlerBase::setPart(partDesc, partNoSerialized);
+            CDiskPartHandlerBase::setPart(partDesc);
         }
         virtual void open() 
         {

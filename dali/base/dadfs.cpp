@@ -1046,7 +1046,7 @@ public:
     IDistributedFile *createNew(IFileDescriptor * fdesc, bool includeports=false);
     IDistributedFile *createExternal(IFileDescriptor *desc, const char *name, bool includeports=false);
     IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist,IDistributedFileTransaction *transaction=NULL);
-    IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree);
+    IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree, const char *optionalName=nullptr);
     void removeSuperFile(const char *_logicalname, bool delSubs, IUserDescriptor *user, IDistributedFileTransaction *transaction);
 
     IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user);
@@ -5071,10 +5071,16 @@ protected:
                     cdfsl.set(subname);
                     if (cdfsl.isForeign())
                     {
-                        // MORE - This foreign treatment seems flaky at best
-                        WARNLOG("CDistributedSuperFile: SuperFile %s's sub-file file '%s' is foreign, removing it from super", logicalName.get(), subname.str());
-                        root->removeTree(&sub);
-                        continue;
+                        WARNLOG("CDistributedSuperFile: SuperFile %s's sub-file file '%s' is foreign, but missing", logicalName.get(), subname.str());
+                        // Create a dummy empty superfile as a placeholder for the missing foreign file
+                        Owned<IPropertyTree> dummySuperRoot = createPTree();
+                        dummySuperRoot->setPropInt("@interleaved", 0);
+                        subfile.setown(queryDistributedFileDirectory().createNewSuperFile(dummySuperRoot, subname));
+                        if (transaction)
+                        {
+                            IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+                            _transaction->ensureFile(subfile);
+                        }
                     }
                     else
                         ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile file '%s' cannot be found", logicalName.get(), subname.str());
@@ -5306,9 +5312,11 @@ public:
         init(_parent,tree,_name,user,transaction);
     }
 
-    CDistributedSuperFile(CDistributedFileDirectory *_parent, IPropertyTree *_root)
+    CDistributedSuperFile(CDistributedFileDirectory *_parent, IPropertyTree *_root, const char *optionalName)
     {
         commonInit(_parent, _root);
+        if (optionalName)
+            logicalName.set(optionalName);
     }
 
     ~CDistributedSuperFile()
@@ -8054,9 +8062,9 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
 }
 
 // MORE: This should be implemented in DFSAccess later on
-IDistributedSuperFile *CDistributedFileDirectory::createNewSuperFile(IPropertyTree *tree)
+IDistributedSuperFile *CDistributedFileDirectory::createNewSuperFile(IPropertyTree *tree, const char *optionalName)
 {
-    return new CDistributedSuperFile(this, tree);
+    return new CDistributedSuperFile(this, tree, optionalName);
 }
 
 // MORE: This should be implemented in DFSAccess later on

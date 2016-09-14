@@ -1071,6 +1071,20 @@
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="udpSnifferReadThreadPriority" type="nonNegativeInteger" use="optional" default="3">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>If non-zero, run the sniffer read thread at elevated priority level</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="udpSnifferSendThreadPriority" type="nonNegativeInteger" use="optional" default="3">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>If non-zero, run the sniffer send thread at elevated priority level</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
     </xs:attributeGroup>
   <xs:attributeGroup name="Cache">
     <xs:attribute name="blobCacheMem" type="xs:nonNegativeInteger" use="optional" default="0">
