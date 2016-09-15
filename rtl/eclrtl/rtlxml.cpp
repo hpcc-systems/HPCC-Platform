@@ -38,6 +38,8 @@
 #include "jmd5.hpp"
 #include "rtlqstr.ipp"
 
+#include "nbcd.hpp"
+
 //---------------------------------------------------------------------------
 
 void outputXmlString(unsigned len, const char *field, const char *fieldname, StringBuffer &out)
@@ -95,42 +97,46 @@ void outputXmlReal(double field, const char *fieldname, StringBuffer &out)
 }
 void outputXmlDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname, StringBuffer &out)
 {
-    char dec[50];
     if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>');
-    DecLock();
+
     if (DecValid(true, size*2-1, field))
     {
-        DecPushDecimal(field, size, precision);
-        DecPopCString(sizeof(dec), dec);
+        Decimal temp;
+        char dec[50];
+        temp.setDecimal(size, precision, field);
+        temp.getCString(sizeof(dec), dec);
+
         const char *finger = dec;
         while(isspace(*finger)) finger++;
         out.append(finger);
     }
     else
         out.append("####");
-    DecUnlock();
+
     if (fieldname && *fieldname)
         out.append("</").append(fieldname).append('>');
 }
 
 void outputXmlUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname, StringBuffer &out)
 {
-    char dec[50];
     if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>');
-    DecLock();
+
     if (DecValid(false, size*2, field))
     {
-        DecPushUDecimal(field, size, precision);
-        DecPopCString(sizeof(dec), dec);
+        Decimal temp;
+        char dec[50];
+        temp.setUDecimal(size, precision, field);
+        temp.getCString(sizeof(dec), dec);
+
         const char *finger = dec;
         while(isspace(*finger)) finger++;
         out.append(finger);
     }
     else
         out.append("####");
-    DecUnlock();
+
     if (fieldname && *fieldname)
         out.append("</").append(fieldname).append('>');
 }
