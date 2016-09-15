@@ -24,8 +24,8 @@ class CSecurityResource : implements ISecResource, public CInterface
 private:
     StringAttr m_name;
     StringBuffer m_value;
-    int        m_access;
-    int        m_required_access;
+    SecAccessFlags    m_access;
+    SecAccessFlags    m_required_access;
     Owned<IProperties> m_parameters;
 
     StringBuffer m_description;
@@ -41,7 +41,7 @@ public:
 
     void addAccess(int flags)
     {
-        m_access |= flags;
+        m_access =  SecAccessFlags((int)m_access | flags);
     }
     
 //interface ISecResource : extends IInterface
@@ -50,12 +50,12 @@ public:
         return m_name.get();
     }
 
-    void setAccessFlags(int flags)
+    void setAccessFlags(SecAccessFlags flags)
     {
         m_access = flags;
     }
         
-    int getAccessFlags()
+    SecAccessFlags getAccessFlags()
     {
         return m_access;
     }
@@ -79,12 +79,12 @@ public:
         return NULL;
 
     }
-    virtual void setRequiredAccessFlags(int flags)
+    virtual void setRequiredAccessFlags(SecAccessFlags flags)
     {
         m_required_access = flags;
     }
 
-    virtual int getRequiredAccessFlags()
+    virtual SecAccessFlags getRequiredAccessFlags()
     {
         return m_required_access;
     }

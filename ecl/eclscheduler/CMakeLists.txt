@@ -41,6 +41,7 @@ include_directories (
          ./../../dali/base 
          ./../../system/jlib 
          ./../../ecl/schedulectrl
+         ./../../system/security/shared
     )
 
 HPCC_ADD_EXECUTABLE ( eclscheduler ${SRCS} ${INCLUDES} )

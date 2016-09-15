@@ -1081,9 +1081,9 @@ public:
 
     IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,IDistributedFileTransaction *transaction,unsigned timeout=INFINITE);
 
-    int getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags);
-    int getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags);
-    int getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0);
+    SecAccessFlags getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags);
+    SecAccessFlags getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags);
+    SecAccessFlags getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0);
     void setDefaultUser(IUserDescriptor *user);
     IUserDescriptor* queryDefaultUser();
 
@@ -1241,12 +1241,12 @@ static void setUserDescriptor(Linked<IUserDescriptor> &udesc,IUserDescriptor *us
     udesc.set(user);
 }
 
-static int getScopePermissions(const char *scopename,IUserDescriptor *user,unsigned auditflags)
+static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor *user,unsigned auditflags)
 {  // scope must be normalized already
     static bool permissionsavail=true;
     if (auditflags==(unsigned)-1) 
-        return permissionsavail?1:0;
-    int perms = SecAccess_Full;
+        return permissionsavail ? SecAccess_Access : SecAccess_None;
+    SecAccessFlags perms = SecAccess_Full;
     if (permissionsavail&&scopename&&*scopename&&((*scopename!='.')||scopename[1])) {
         if (!user)
         {
@@ -1288,7 +1288,7 @@ static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool r
     }
 #endif
 
-    int perm = getScopePermissions(scopename,user,auditflags);
+    SecAccessFlags perm = getScopePermissions(scopename,user,auditflags);
     IDFS_Exception *e = NULL;
     if (readreq&&!HASREADPERMISSION(perm)) 
         e = new CDFS_Exception(DFSERR_LookupAccessDenied,scopename);
@@ -9060,7 +9060,7 @@ public:
     {
         if (auth)
         {
-            int perm = getScopePermissions(scope.getName(),user,0);     // don't audit
+            SecAccessFlags perm = getScopePermissions(scope.getName(),user,0);     // don't audit
             if (!HASREADPERMISSION(perm))
                 return;
             authScopes.append(scope.getName());
@@ -10615,7 +10615,7 @@ void CDistributedFileDirectory::resolveForeignFiles(IPropertyTree *tree,const IN
     // do origname?
 }
 
-int CDistributedFileDirectory::getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags)
+SecAccessFlags CDistributedFileDirectory::getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags)
 {
     CDfsLogicalFileName dlfn;
     dlfn.set(lname);
@@ -10624,10 +10624,10 @@ int CDistributedFileDirectory::getFilePermissions(const char *lname,IUserDescrip
     return getScopePermissions(scopes.str(),user,auditflags);
 }
 
-int CDistributedFileDirectory::getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags)
+SecAccessFlags CDistributedFileDirectory::getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags)
 {
     if (ip.isNull())
-        return 0;
+        return SecAccess_None;
     CDfsLogicalFileName dlfn;
     SocketEndpoint ep(0,ip);
     dlfn.setExternal(ep,"/x");
@@ -10636,10 +10636,10 @@ int CDistributedFileDirectory::getNodePermissions(const IpAddress &ip,IUserDescr
     return getScopePermissions(scopes.str(),user,auditflags);
 }
 
-int CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *fdesc,IUserDescriptor *user,unsigned auditflags)
+SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *fdesc,IUserDescriptor *user,unsigned auditflags)
 {
     // this checks have access to the nodes in the file descriptor
-    int retPerms = SecAccess_Full;
+    SecAccessFlags retPerms = SecAccess_Full;
     unsigned np = fdesc->numParts();
     for (unsigned i=0;i<np;i++) {
         INode *node = fdesc->queryNode(i);
@@ -10669,7 +10669,7 @@ int CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *fdesc,IUserD
                 dlfn.setExternal(rfn.queryEndpoint(),localpath.str());          
                 StringBuffer scopes;
                 dlfn.getScopes(scopes);
-                int perm = getScopePermissions(scopes.str(),user,auditflags);
+                SecAccessFlags perm = getScopePermissions(scopes.str(),user,auditflags);
                 if (perm < retPerms) {
                     retPerms = perm;
                     if (retPerms == SecAccess_None)

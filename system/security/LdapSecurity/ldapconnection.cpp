@@ -58,6 +58,8 @@
 
 #define PWD_NEVER_EXPIRES (__int64)0x8000000000000000
 
+#define UNK_PERM_VALUE (SecAccessFlags)-2	//used to initialize "default" permission, which we later try to deduce
+
 const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration" };
 
 const char* getUserFieldNames(UserField field)
@@ -1723,7 +1725,7 @@ public:
                     if(count != 0)
                         res->setAccessFlags(SecAccess_Full);
                     else
-                        res->setAccessFlags(-1);
+                        res->setAccessFlags(SecAccess_Unavailable);
                 }
                 else
                     res->setAccessFlags(SecAccess_Full);
@@ -1733,7 +1735,7 @@ public:
 
         if(rtype == RT_FILE_SCOPE)
         {
-            int defaultFileScopePermission = queryDefaultPermission(user);
+            SecAccessFlags defaultFileScopePermission = queryDefaultPermission(user);
             IArrayOf<ISecResource> non_emptylist;
             ForEachItemIn(x, resources)
             {
@@ -1747,7 +1749,7 @@ public:
 
             ok = authorizeScope(user, non_emptylist, basedn);
             //if(ok && m_defaultFileScopePermission != -2)
-            if(ok && defaultFileScopePermission != -2)
+            if(ok && defaultFileScopePermission != UNK_PERM_VALUE)
             {
                 ForEachItemIn(x, non_emptylist)
                 {
@@ -1761,7 +1763,7 @@ public:
         }
         else if(rtype == RT_WORKUNIT_SCOPE)
         {
-            int defaultWorkunitScopePermission = -2;
+            SecAccessFlags defaultWorkunitScopePermission = UNK_PERM_VALUE;//init to invalid SecAccessFlags value
             //if(m_defaultWorkunitScopePermission == -2)
             {
                 const char* basebasedn = strchr(basedn, ',') + 1;
@@ -1772,7 +1774,7 @@ public:
                 bool baseok = authorizeScope(user, base_resources, basebasedn);
                 if(baseok)
                 {
-                    defaultWorkunitScopePermission = base_resources.item(0).getAccessFlags();
+                    defaultWorkunitScopePermission = base_resources.item(0).getAccessFlags();//replace UNK_PERM_VALUE with a valid flag
                 }
             }
             IArrayOf<ISecResource> non_emptylist;
@@ -1786,7 +1788,7 @@ public:
                     non_emptylist.append(*LINK(&res));
             }
             ok = authorizeScope(user, non_emptylist, basedn);
-            if(ok && defaultWorkunitScopePermission != -2)
+            if(ok && defaultWorkunitScopePermission != UNK_PERM_VALUE)//if default perm is known, use it
             {
                 ForEachItemIn(x, non_emptylist)
                 {
@@ -1800,7 +1802,7 @@ public:
         }
         else if (rtype == RT_VIEW_SCOPE)
         {
-            int defPerm = queryDefaultPermission(user); //default perm to be applied when no lfn or column provided
+            SecAccessFlags defPerm = queryDefaultPermission(user); //default perm to be applied when no lfn or column provided
 
             //Get view lfn/col mappings for this view
             assertex(resources.ordinality() > 0);
@@ -5827,13 +5829,13 @@ private:
         return scopes.length();
     }
 
-    virtual int queryDefaultPermission(ISecUser& user)
+    virtual SecAccessFlags queryDefaultPermission(ISecUser& user)
     {
         const char* basedn = m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE);
         if(basedn == NULL || *basedn == '\0')
         {
             DBGLOG("corresponding basedn is not defined");
-            return -2;
+            return SecAccess_Unavailable;
         }
         const char* basebasedn = strchr(basedn, ',') + 1;
         StringBuffer baseresource;
@@ -5844,7 +5846,7 @@ private:
         if(baseok)
             return base_resources.item(0).getAccessFlags();
         else
-            return -2;
+            return UNK_PERM_VALUE;
     }
 
     bool isReservedGroupName(const char * groupName)

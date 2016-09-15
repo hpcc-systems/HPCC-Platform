@@ -238,7 +238,7 @@ void CAuthorDlg::AddResPermissions(const char *name)
     
     if (res)
     {
-        unsigned flags = res->getAccessFlags();
+        SecAccessFlags flags = res->getAccessFlags();
 
         if ((flags & allperms))
         {

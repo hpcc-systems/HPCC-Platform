@@ -94,6 +94,7 @@ include_directories (
          ./../../roxie/roxiemem
          ./../../testing/unittests
          ${TBB_INCLUDE_DIR}
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -DTHORHELPER_EXPORTS -D_USRDLL )

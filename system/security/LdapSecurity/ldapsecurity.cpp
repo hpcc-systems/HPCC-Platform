@@ -213,27 +213,27 @@ ISecUser * CLdapSecUser::clone()
  *     CLdapSecResource                                   *
  **********************************************************/
 
-CLdapSecResource::CLdapSecResource(const char *name) : m_name(name), m_access(0), m_required_access(0)
+CLdapSecResource::CLdapSecResource(const char *name) : m_name(name), m_access(SecAccess_None), m_required_access(SecAccess_None)
 {
     m_resourcetype = RT_DEFAULT;
 }
 
-void CLdapSecResource::addAccess(int flags)
+void CLdapSecResource::addAccess(SecAccessFlags flags)
 {
-    m_access |= flags;
+    m_access = (SecAccessFlags)((int)m_access | (int)flags);
 }
 
-void CLdapSecResource::setAccessFlags(int flags)
+void CLdapSecResource::setAccessFlags(SecAccessFlags flags)
 {
     m_access = flags;
 }
 
-void CLdapSecResource::setRequiredAccessFlags(int flags)
+void CLdapSecResource::setRequiredAccessFlags(SecAccessFlags flags)
 {
     m_required_access = flags;
 }
 
-int CLdapSecResource::getRequiredAccessFlags()
+SecAccessFlags CLdapSecResource::getRequiredAccessFlags()
 {
     return m_required_access;
 }
@@ -244,7 +244,7 @@ const char * CLdapSecResource::getName()
     return m_name.get();
 }
 
-int CLdapSecResource::getAccessFlags()
+SecAccessFlags CLdapSecResource::getAccessFlags()
 {
     return m_access;
 }
@@ -668,7 +668,7 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
     return rc;
 }
 
-int CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
+SecAccessFlags CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
 {
     if(!resourcename || !*resourcename)
         return SecAccess_Full;
@@ -681,7 +681,7 @@ int CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const c
     if(ok)
         return rlist->queryResource(0)->getAccessFlags();
     else
-        return -1;
+        return SecAccess_Unavailable;
 }
 
 bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, bool doAuthentication)
@@ -743,7 +743,7 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
     return rc;
 }
 
-int CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, bool doAuthentication)
+SecAccessFlags CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, bool doAuthentication)
 {
     if(!resourcename || !*resourcename)
         return SecAccess_Full;
@@ -756,13 +756,13 @@ int CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const c
     if(ok)
         return rlist->queryResource(0)->getAccessFlags();
     else
-        return -1;
+        return SecAccess_Unavailable;
 }
 
-int CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
+SecAccessFlags CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
 {
     if(!resourcename || !*resourcename)
-        return -1;
+        return SecAccess_Unavailable;
 
     Owned<ISecResourceList> rlist0;
     rlist0.setown(createResourceList("resources"));
@@ -770,7 +770,7 @@ int CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser & user, co
     
     CLdapSecResourceList * reslist = (CLdapSecResourceList*)rlist0.get();
     if(!reslist)
-        return -1;
+        return SecAccess_Unavailable;
     IArrayOf<ISecResource>& rlist = reslist->getResourceList();
     int nResources = rlist.length();
     int ri;
@@ -782,7 +782,7 @@ int CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser & user, co
     }
 
     if (nResources <= 0)
-        return -1;
+        return SecAccess_Unavailable;
 
     bool ok = false;
 
@@ -822,7 +822,7 @@ int CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser & user, co
     if(ok)
         return rlist0->queryResource(0)->getAccessFlags();
     else
-        return -1;
+        return SecAccess_Unavailable;
 }
 
 bool CLdapSecManager::authorize(ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext)
@@ -831,7 +831,7 @@ bool CLdapSecManager::authorize(ISecUser& sec_user, ISecResourceList * Resources
 }
 
 
-int CLdapSecManager::authorizeFileScope(ISecUser & user, const char * filescope)
+SecAccessFlags CLdapSecManager::authorizeFileScope(ISecUser & user, const char * filescope)
 {
     if(filescope == 0 || filescope[0] == '\0')
         return SecAccess_Full;
@@ -839,7 +839,7 @@ int CLdapSecManager::authorizeFileScope(ISecUser & user, const char * filescope)
     StringBuffer managedFilescope;
     if(m_permissionsCache->isCacheEnabled() && !m_usercache_off)
     {
-        int accessFlags;
+        SecAccessFlags accessFlags;
         //See if file scope in question is managed by LDAP permissions.
         //  If not, return default file permission (dont call out to LDAP)
         //  If is, look in cache for permission of longest matching managed scope strings. If found return that permission (no call to LDAP),
@@ -857,7 +857,7 @@ int CLdapSecManager::authorizeFileScope(ISecUser & user, const char * filescope)
     if(ok)
         return rlist->queryResource(0)->getAccessFlags();
     else
-        return -1;
+        return SecAccess_Unavailable;
 }
 
 bool CLdapSecManager::authorizeFileScope(ISecUser & user, ISecResourceList * resources)
@@ -870,7 +870,7 @@ bool CLdapSecManager::authorizeViewScope(ISecUser & user, ISecResourceList * res
     return authorizeEx(RT_VIEW_SCOPE, user, resources);
 }
 
-int CLdapSecManager::authorizeWorkunitScope(ISecUser & user, const char * wuscope)
+SecAccessFlags CLdapSecManager::authorizeWorkunitScope(ISecUser & user, const char * wuscope)
 {
     if(wuscope == 0 || wuscope[0] == '\0')
         return SecAccess_Full;
@@ -883,7 +883,7 @@ int CLdapSecManager::authorizeWorkunitScope(ISecUser & user, const char * wuscop
     if(ok)
         return rlist->queryResource(0)->getAccessFlags();
     else
-        return -1;
+        return SecAccess_Unavailable;
 }
     
 bool CLdapSecManager::authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources)
@@ -1058,7 +1058,7 @@ IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig)
                     authmap->add(pathstr.str(), rlist);
                 }
                 ISecResource* rs = rlist->addResource(rstr.str());
-                unsigned requiredaccess = str2perm(required.str());
+                SecAccessFlags requiredaccess = str2perm(required.str());
                 rs->setRequiredAccessFlags(requiredaccess);
                 rs->setDescription(description.str());
             }
@@ -1101,7 +1101,7 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig)
                     feature_authmap->add(pathstr.str(), rlist);
                 }
                 ISecResource* rs = rlist->addResource(rstr.str());
-                unsigned requiredaccess = str2perm(required.str());
+                SecAccessFlags requiredaccess = str2perm(required.str());
                 rs->setRequiredAccessFlags(requiredaccess);
                 rs->setDescription(description.str());
             }
@@ -1290,7 +1290,7 @@ aindex_t CLdapSecManager::getManagedFileScopes(IArrayOf<ISecResource>& scopes)
     return m_ldap_client->getManagedFileScopes(scopes);
 }
 
-int CLdapSecManager::queryDefaultPermission(ISecUser& user)
+SecAccessFlags CLdapSecManager::queryDefaultPermission(ISecUser& user)
 {
     return m_ldap_client->queryDefaultPermission(user);
 }

@@ -37,7 +37,7 @@
 #include "jptree.hpp"
 #include "mpbase.hpp"
 #include "dafdesc.hpp"
-
+#include "seclib.hpp"
 
 typedef __int64 DistributedLockID;
 #define FOREIGN_DALI_TIMEOUT (1000*60*5)
@@ -590,11 +590,11 @@ interface IDistributedFileDirectory: extends IInterface
                                                     unsigned timeout=INFINITE) = 0;  // NB lookup will also return superfiles
     virtual void removeSuperFile(const char *_logicalname, bool delSubs=false, IUserDescriptor *user=NULL, IDistributedFileTransaction *transaction=NULL)=0;
 
-    virtual int getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags=0)=0; // see dasess for auditflags values
+    virtual SecAccessFlags getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags=0)=0; // see dasess for auditflags values
     virtual void setDefaultUser(IUserDescriptor *user)=0;
     virtual IUserDescriptor* queryDefaultUser()=0;
-    virtual int getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags=0)=0;
-    virtual int getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0)=0;
+    virtual SecAccessFlags getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags=0)=0;
+    virtual SecAccessFlags getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0)=0;
 
     virtual DistributedFileCompareResult fileCompare(const char *lfn1,const char *lfn2,DistributedFileCompareMode mode,StringBuffer &errstr,IUserDescriptor *user)=0;
     virtual bool filePhysicalVerify(const char *lfn1,IUserDescriptor *user,bool includecrc,StringBuffer &errstr)=0;

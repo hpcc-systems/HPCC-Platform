@@ -36,7 +36,8 @@ include_directories (
          ./../../system/jlib 
          ./../../common/environment 
          ./../../common/workunit 
-         ./../../testing/unittests 
+         ./../../testing/unittests
+         ./../../system/security/shared
     )
 
 if ( USE_CPPUNIT )

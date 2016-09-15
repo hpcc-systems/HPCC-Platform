@@ -588,9 +588,9 @@ public:
 };
 
 //Translates ACI permission settings to SecAccessFlags
-int NewSec2Sec(int newsec)
+SecAccessFlags NewSec2Sec(int newsec)
 {
-    int sec = 0;
+    int sec = SecAccess_None;
     if(newsec == -1)
         return SecAccess_Unavailable;
     if(newsec == NewSecAccess_Full)
@@ -603,7 +603,7 @@ int NewSec2Sec(int newsec)
     if((newsec & NewSecAccess_Access) == NewSecAccess_Access)
         sec |= SecAccess_Access;
 
-    return sec;
+    return (SecAccessFlags)sec;
 }
 
 /****************************************************************
@@ -654,6 +654,7 @@ public:
         }
 
         int perm = 0;
+        SecAccessFlags perms = SecAccess_None;
         if(m_acilist.length() == 0)
         {
             perm = SecAccess_Unavailable;
@@ -712,10 +713,10 @@ public:
 
             perm = allow & (~deny);
 
-            perm = NewSec2Sec(perm);
+            perms = NewSec2Sec(perm);
         }
         
-        resource.setAccessFlags(perm);
+        resource.setAccessFlags(perms);
         return true;
     }
 

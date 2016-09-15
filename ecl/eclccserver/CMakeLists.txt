@@ -41,7 +41,8 @@ include_directories (
          ./../../system/mp 
          ./../../dali/base 
          ./../../common/dllserver 
-         ./../../system/jlib 
+         ./../../system/jlib
+         ./../../system/security/shared
     )
 
 HPCC_ADD_EXECUTABLE ( eclccserver ${SRCS} ${INCLUDES} )

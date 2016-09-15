@@ -36,6 +36,7 @@ include_directories (
          ./../../dali/base
          ./../../system/jhtree
          ./../../rtl/eclrtl
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

@@ -39,7 +39,8 @@ include_directories (
          ./../../system/mp 
          ./../../system/include 
          ./../../dali/base 
-         ./../../system/jlib 
+         ./../../system/jlib
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DENVIRONMENT_EXPORTS )
