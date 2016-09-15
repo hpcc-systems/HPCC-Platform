@@ -122,10 +122,10 @@ proc copyPayload {} {
 }
 
 proc expandPayload {} {
-   global ip user password prompt
+   global ip user password prompt remote_install
 
    set timeout 180
-   eval "spawn [sshcmd ssh "${user}@${ip} \"cd /; tar -zxf ~/remote_install.tgz\""]"
+   eval "spawn [sshcmd ssh "${user}@${ip} \"cd /; tar -zxf ~/remote_install.tgz; cp ${remote_install}/remote-install-engine.sh ~/ \""]"
    expect {
       *?assword:* {
          send "${password}\r"
@@ -174,7 +174,7 @@ proc runPayload {} {
    }
 
    expect -re $
-   send "${cmd_prefix} ${remote_install}/remote-install-engine.sh ${remote_install}/${basepkg}\r"
+   send "${cmd_prefix} ~/remote-install-engine.sh ${remote_install}/${basepkg}\r"
    expect {
       "*password for*" {
          send "${password}\r"
