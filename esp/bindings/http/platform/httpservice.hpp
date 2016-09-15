@@ -67,6 +67,7 @@ public:
 
     virtual int onPost();
     virtual int onGet();
+    virtual int onOptions();
 
     virtual int onGetFile(CHttpRequest* request, CHttpResponse* response, const char *path);
     virtual int onGetXslt(CHttpRequest* request, CHttpResponse* response, const char *path);
