@@ -35,6 +35,7 @@
 #define POST_METHOD "POST"
 #define GET_METHOD "GET"
 #define HEAD_METHOD "HEAD"
+#define OPTIONS_METHOD "OPTIONS"
 
 #define UNKNOWN_METHOD_ERROR -1;
 

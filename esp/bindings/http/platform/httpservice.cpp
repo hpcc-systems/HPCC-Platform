@@ -215,6 +215,18 @@ EspHttpBinding* CEspHttpServer::getBinding()
     return thebinding;
 }
 
+//CORS allow headers for interoperability, we do not rely on this for security since
+//that only means treating the browser as a trusted entity.  We need to be diligent and secure
+//for every request whether it comes from a cross domain browser or any other source
+
+void checkSetCORSAllowOrigin(CHttpRequest *req, CHttpResponse *resp)
+{
+    StringBuffer origin;
+    req->getHeader("Origin", origin);
+    if (origin.length())
+        resp->setHeader("Access-Control-Allow-Origin", "*");
+}
+
 int CEspHttpServer::processRequest()
 {
     try
@@ -312,6 +324,8 @@ int CEspHttpServer::processRequest()
 #endif
                 if (!rootAuth(ctx) )
                     return 0;
+
+                checkSetCORSAllowOrigin(m_request, m_response);
                 if (methodName.charAt(methodName.length()-1)=='_')
                     methodName.setCharAt(methodName.length()-1, 0);
                 if (!stricmp(methodName.str(), "files"))
@@ -405,7 +419,7 @@ int CEspHttpServer::processRequest()
                         authState = authSucceeded;
                 }
             }
-                    
+
             if (authState==authRequired)
             {
                 ISecUser *user = ctx->queryUser();
@@ -432,6 +446,12 @@ int CEspHttpServer::processRequest()
             // authenticate optional groups
             if (authenticateOptionalFailed(*ctx,thebinding))
                 throw createEspHttpException(401,"Unauthorized Access","Unauthorized Access");
+
+
+            if(strieq(method.str(), OPTIONS_METHOD))
+                return onOptions();
+
+            checkSetCORSAllowOrigin(m_request, m_response);
 
             if (thebinding!=NULL)
             {
@@ -848,6 +868,29 @@ int CEspHttpServer::unsupported()
     m_response->setContent(content.length(), content.str());
     m_response->setContentType("text/html; charset=UTF-8");
     m_response->setStatus(HTTP_STATUS_OK);
+
+    m_response->send();
+
+    return 0;
+}
+
+int CEspHttpServer::onOptions()
+{
+    m_response->setVersion(HTTP_VERSION);
+    m_response->setStatus(HTTP_STATUS_OK);
+
+    //CORS allow headers for interoperability, we do not rely on this for security since
+    //that only means treating the browser as a trusted entity.  We need to be diligent and secure
+    //for every request whether it comes from a cross domain browser or any other source
+    StringBuffer allowHeaders;
+    m_request->getHeader("Access-Control-Request-Headers", allowHeaders);
+    if (allowHeaders.length())
+        m_response->setHeader("Access-Control-Allow-Headers", allowHeaders);
+    m_response->setHeader("Access-Control-Allow-Origin", "*");
+    m_response->setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+    m_response->setHeader("Access-Control-Max-Age", "86400"); //arbitrary 24 hours
+    m_response->setContentType("text/plain");
+    m_response->setContent("");
 
     m_response->send();
 
