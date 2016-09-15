@@ -36,27 +36,13 @@ class CWuidReadSlaveActivity : public CSlaveActivity
     bool eogPending;
     mptag_t replyTag;
     CMessageBuffer masterReplyMsg;
+    bool resultFetched;
 
-public:
-    CWuidReadSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container)
+    void getWuidResult()
     {
-        helper = (IHThorWorkunitReadArg *)queryHelper();
-        replyTag = queryMPServer().createReplyTag();
-        replyStream.setown(createMemoryBufferSerialStream(masterReplyMsg));
-        rowSource.setStream(replyStream);
-        grouped = helper->queryOutputMeta()->isGrouped();
-        setRequireInitData(false);
-        appendOutputLinked(this);
-    }
-    virtual void start() override
-    {
-        ActivityTimer s(totalCycles, timeActivities);
-        PARENT::start();
-
-        eogPending = false;
-        if (container.queryLocal() || firstNode())
+        if (!resultFetched)
         {
+            resultFetched = true;
             CMessageBuffer reqMsg;
             reqMsg.setReplyTag(replyTag);
             reqMsg.append(smt_actMsg);
@@ -68,6 +54,28 @@ public:
 
             masterReplyMsg.swapWith(reqMsg);
         }
+        masterReplyMsg.reset();
+    }
+public:
+    CWuidReadSlaveActivity(CGraphElementBase *_container) 
+        : CSlaveActivity(_container)
+    {
+        helper = (IHThorWorkunitReadArg *)queryHelper();
+        replyTag = queryMPServer().createReplyTag();
+        replyStream.setown(createMemoryBufferSerialStream(masterReplyMsg));
+        rowSource.setStream(replyStream);
+        grouped = helper->queryOutputMeta()->isGrouped();
+        setRequireInitData(false);
+        appendOutputLinked(this);
+        resultFetched = false;
+    }
+    virtual void start() override
+    {
+        ActivityTimer s(totalCycles, timeActivities);
+        PARENT::start();
+        eogPending = false;
+        if (container.queryLocal() || firstNode())
+            getWuidResult();
     }
     CATCH_NEXTROW()
     {

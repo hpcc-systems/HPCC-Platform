@@ -19,6 +19,7 @@ define([
     "dojo/_base/array",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
+    "dojo/io-query",
     "dojo/dom",
 
     "dijit/registry",
@@ -48,7 +49,7 @@ define([
     "dijit/Toolbar",
     "dijit/form/Button",
     "dijit/ToolbarSeparator"
-], function (declare, lang, arrayUtil, i18n, nlsHPCC, dom,
+], function (declare, lang, arrayUtil, i18n, nlsHPCC, ioQuery, dom,
                 registry, TextBox,
                 Grid, Keyboard, Selection, selector, ColumnResizer, ColumnHider, CompoundColumns, DijitRegistry, Pagination,
                 _Widget, ESPBase, ESPWorkunit, ESPLogicalFile, FilterDropDownWidget, TableContainer,
@@ -70,6 +71,7 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.borderContainer = registry.byId(this.id + "BorderContainer");
+            this.filter = registry.byId(this.id + "Filter");
             this.grid = registry.byId(this.id + "Grid");
         },
 
@@ -120,6 +122,7 @@ define([
         },
 
         init: function (params) {
+            this.__filter = params.__filter;
             if (this.inherited(arguments))
                 return;
 
@@ -162,6 +165,36 @@ define([
             if (result) {
                 var context = this;
                 result.fetchStructure(function (structure) {
+                    var filterForm = registry.byId(context.filter.id + "FilterForm");
+                    var origTableContainer = registry.byId(context.filter.id + "TableContainer");
+                    var tableContainer = new TableContainer({
+                    });
+                    var filterObj = {};
+                    if (lang.exists("__filter", context) && lang.exists("filter.toObject", context)) {
+                        filterObj = ioQuery.queryToObject(context.__filter);
+                    }
+                    arrayUtil.forEach(structure, function (item, idx) {
+                        if (item.label !== "##") {
+                            var textBox = new TextBox({
+                                title: item.label,
+                                label: item.label + (item.__hpcc_keyed ? " (i)" : ""),
+                                name: item.field,
+                                value: filterObj[item.field],
+                                colSpan: 2
+                            });
+                            tableContainer.addChild(textBox);
+                        }
+                    });
+                    tableContainer.placeAt(origTableContainer.domNode, "replace");
+                    origTableContainer.destroyRecursive();
+                    context.filter.on("clear", function (evt) {
+                        context.refresh();
+                    });
+                    context.filter.on("apply", function (evt) {
+                        context.refresh();
+                    });
+                    context.filter.refreshState();
+
                     context.grid = new declare([Grid, Pagination, Keyboard, ColumnResizer, ColumnHider, CompoundColumns, DijitRegistry])({
                         columns: structure,
                         rowsPerPage: 50,
@@ -171,31 +204,10 @@ define([
                         pageSizeOptions: [25, 50, 100],
                         store: result.getStore()
                     }, context.id + "Grid");
+                    context.grid.set("query", {
+                        FilterBy: context.getFilter()
+                    });
                     context.grid.startup();
-                    var filterForm = registry.byId(context.widget.Filter.id + "FilterForm");
-                    var origTableContainer = registry.byId(context.widget.Filter.id + "TableContainer");
-                    var tableContainer = new TableContainer({
-                    });
-                    arrayUtil.forEach(structure, function (item, idx) {
-                        if (item.label !== "##") {
-                            var textBox = new TextBox({
-                                title: item.label,
-                                label: item.label + (item.__hpcc_keyed ? " (i)" : ""),
-                                name: item.field,
-                                colSpan: 2
-                            });
-                            tableContainer.addChild(textBox);
-                        }
-                    });
-                    tableContainer.placeAt(origTableContainer.domNode, "replace");
-                    origTableContainer.destroyRecursive();
-                    context.widget.Filter.on("clear", function (evt) {
-                        context.refresh();
-                    });
-                    context.widget.Filter.on("apply", function (evt) {
-                        context.refresh();
-                    });
-
                 });
             } else {
                 this.grid = new declare([Grid, DijitRegistry])({
@@ -212,7 +224,7 @@ define([
         },
 
         getFilter: function () {
-            return this.widget.Filter.toObject();
+            return this.filter.toObject();
         },
 
         refresh: function () {

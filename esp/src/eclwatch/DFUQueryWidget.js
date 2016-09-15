@@ -511,6 +511,7 @@ define([
             this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
                 deselectOnRefresh: true,
                 store: this.listStore,
+                query: this.getFilter(),
                 columns: {
                     col1: selector({
                         width: 27,
