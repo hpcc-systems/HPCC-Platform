@@ -1078,7 +1078,6 @@ public:
         inMemRows.clear();
     }
 
-
     unsigned anyReaderBehind()
     {
         unsigned reader=0;
