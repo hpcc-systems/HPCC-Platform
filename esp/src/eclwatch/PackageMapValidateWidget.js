@@ -54,8 +54,8 @@ define([
         validatePackageMapContentWidgetLoaded: false,
 
         constructor: function() {
-            this.processes = new Array();
-            this.targets = new Array();
+            this.processes = [];
+            this.targets = [];
         },
 
         buildRendering: function (args) {

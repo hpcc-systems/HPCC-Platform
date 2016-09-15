@@ -101,7 +101,7 @@ define([
                 else {
                     WsPackageMaps.validatePackage(params).then(function (response) {
                         var responseText = context.validateResponseToText(response.ValidatePackageResponse);
-                        if (responseText == '')
+                        if (responseText === '')
                             context.editor.setValue("(Empty)");
                         else
                             context.editor.setValue(responseText);
@@ -120,7 +120,7 @@ define([
             },
 
             addArrayToText: function (arrayTitle, arrayItems, text) {
-                if ((arrayItems.Item != undefined) && (arrayItems.Item.length > 0)) {
+                if ((arrayItems.Item !== undefined) && (arrayItems.Item.length > 0)) {
                     text += arrayTitle + ":\n";
                     for (i=0;i<arrayItems.Item.length;i++)
                         text += "  " + arrayItems.Item[i] + "\n";

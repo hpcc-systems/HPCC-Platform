@@ -71,7 +71,7 @@ define([
                 var monitorCount = 4;
                 var context = this;
                 this.wu.monitor(function () {
-                    if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
+                    if (context.wu.isComplete() || ++monitorCount % 5 === 0) {
                         context.refreshGrid();
                     }
                 });
@@ -155,15 +155,6 @@ define([
                 }
             });
             return retVal;
-        },
-
-        getDetailID: function (row, params) {
-            if (row.FileName && params && params.logicalFile) {
-                return "File" + row[this.idProperty];
-            } else if (params && params.resultView && params.viewName) {
-                return params.viewName + row[this.idProperty];
-            }
-            return this.inherited(arguments);
         },
 
         getDetailID: function (row, params) {

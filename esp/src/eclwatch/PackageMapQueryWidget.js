@@ -69,8 +69,8 @@ define([
         packagesGrid: null,
         tabMap: [],
         targets: null,
-        processesToList: new Array(),
-        processesToAdd: new Array(),
+        processesToList: [],
+        processesToAdd: [],
         targetSelected: 'ANY',
         processSelected: 'ANY',
         processFilters: null,
@@ -162,7 +162,7 @@ define([
                     active: selections[i].Active,
                     packageMap: selections[i].Id
                 });
-                if (i == 0) {
+                if (i === 0) {
                     firstTab = tab;
                 }
             }
@@ -205,7 +205,7 @@ define([
             }
             if (defaultTarget != null) {
                 this.addPackageMapTargetSelect.set("value", defaultTarget.Name);
-                if (defaultTarget.Processes != undefined)
+                if (defaultTarget.Processes !== undefined)
                     this.addProcessSelections(this.addPackageMapProcessSelect, this.processesToAdd, defaultTarget.Processes.Item);
             }
             registry.byId(this.id+"AddProcessMapId").set('value', '');
@@ -230,10 +230,10 @@ define([
             var fileName = '';
             if (files.length > 0)
                 fileName = files[0].name;
-            if ((fileName != '') && (id == '')) {
+            if ((fileName !== '') && (id === '')) {
                 registry.byId(this.id+"AddProcessMapId").set('value', fileName);
                 registry.byId(this.id+"AddProcessMapDialogSubmit").set('disabled', false);
-            } else if ((id == '') || (files.length < 1))
+            } else if ((id === '') || (files.length < 1))
                 registry.byId(this.id+"AddProcessMapDialogSubmit").set('disabled', true);
             else
                 registry.byId(this.id+"AddProcessMapDialogSubmit").set('disabled', false);
@@ -246,15 +246,15 @@ define([
             var daliIp = registry.byId(this.id+"AddProcessMapDaliIP").get('value');
             var activate = registry.byId(this.id+"AddProcessMapActivate").get('checked');
             var overwrite = registry.byId(this.id+"AddProcessMapOverWrite").get('checked');
-            if ((id == '') || (target == ''))
+            if ((id === '') || (target === ''))
                 return false;
-            if  ((process == '') || (process == this.i18n.ANY))
+            if  ((process === '') || (process === this.i18n.ANY))
                 process = '*';
 
             var action = "/WsPackageProcess/AddPackage?upload_&PackageMap="+id+"&Target="+target;
-            if (process != '')
+            if (process !== '')
                 action += "&Process="+process;
-            if (daliIp != '')
+            if (daliIp !== '')
                 action += "&DaliIp="+daliIp;
             if (activate)
                 action += "&Activate=1";
@@ -265,7 +265,7 @@ define([
             else
                 action += "&OverWrite=0";
             var theForm = registry.byId(this.id+"AddProcessMapForm");
-            if (theForm == undefined)
+            if (theForm === undefined)
                 return false;
             theForm.set('action', action);
             return true;
@@ -315,9 +315,9 @@ define([
         },
 
         getSelections: function () {
-            this.targets = new Array();
+            this.targets = [];
             ///this.processes = new Array();
-            this.processFilters = new Array();
+            this.processFilters = [];
 
             var context = this;
             WsPackageMaps.GetPackageMapSelectOptions({
@@ -363,7 +363,7 @@ define([
             processes.length = 0;
             for (var i = 0; i < this.targets.length; ++i) {
                 var target = this.targets[i];
-                if ((target.Processes != undefined) && ((targetName == 'ANY') || (targetName == target.Name))) {
+                if ((target.Processes !== undefined) && ((targetName == 'ANY') || (targetName == target.Name))) {
                     this.addProcessSelections(processSelect, processes, target.Processes.Item);
                     if (targetName != 'ANY') {
                         defaultProcess = target.Processes.Item[0];
@@ -391,7 +391,7 @@ define([
                     if (target.Type == 'roxie')
                         foundRoxie = true;
                 }
-                if (target.Processes != undefined)
+                if (target.Processes !== undefined)
                     this.addProcessSelections(this.processSelect, this.processesToList, target.Processes.Item);
             }
             this.targetSelect.options.push({label: this.i18n.ANY, value: 'ANY' });
@@ -441,7 +441,7 @@ define([
                     field: "Active",
                     width: "10%",
                     formatter: function (active) {
-                        if (active == true) {
+                        if (active === true) {
                             return "A";
                         }
                         return "";
@@ -480,7 +480,7 @@ define([
                 this.targetSelected = "";
             if ((this.processSelected == " ") || (this.processSelected == "ANY"))
                 this.processSelected = "";
-            if (processFilterSelected == "")
+            if (processFilterSelected === "")
                 processFilterSelected = "*";
             return {Target: this.targetSelected, Process: this.processSelected, ProcessFilter: processFilterSelected};
         },

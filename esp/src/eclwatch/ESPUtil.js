@@ -339,7 +339,7 @@ define([
             }
 
             function isHidden() {
-                for (key in watchList) {
+                for (var key in watchList) {
                     if (watchList[key] === true) {
                         return true;
                     }

@@ -51,13 +51,6 @@ define([
                         arrayUtil.forEach(response.TpLogFileResponse.LogData.split("\n"), function (item, idx) {
                             if (options.start === 0 || idx > 0) {
                                 //  Throw away first line as it will probably only be a partial line  ---
-                                function nextItem(itemParts) {
-                                    var part = "";
-                                    while (itemParts.length && part.trim() === "") {
-                                        part = itemParts[0]; itemParts.shift();
-                                    }
-                                    return part;
-                                }
                                 var itemParts = item.split(" ");
                                 var lineNo, date, time, pid, tid, details;
                                 if (itemParts.length) lineNo = nextItem(itemParts);
@@ -87,6 +80,15 @@ define([
                     return deferredResults.resolve(this.data);
                 }));
             }
+
+            function nextItem(itemParts) {
+                var part = "";
+                while (itemParts.length && part.trim() === "") {
+                    part = itemParts[0]; itemParts.shift();
+                }
+                return part;
+            }
+
             return QueryResults(deferredResults);
         }
     });

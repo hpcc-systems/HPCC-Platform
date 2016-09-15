@@ -661,6 +661,7 @@ define([
                     case 10:    //	DOCUMENT_TYPE_NODE
                     case 11:    //	DOCUMENT_FRAGMENT_NODE
                     case 12:    //	NOTATION_NODE
+                        break;
                     default:
                         break;
                 }

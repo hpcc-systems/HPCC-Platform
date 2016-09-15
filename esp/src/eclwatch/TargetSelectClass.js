@@ -349,7 +349,7 @@ define([
                         });
                     }
 
-                    if (!context.includeBlank && context._value == "") {
+                    if (!context.includeBlank && context._value === "") {
                         if (response.TpLogicalClusterQueryResponse["default"]) {
                             context._value = response.TpLogicalClusterQueryResponse["default"].Name;
                         } else {

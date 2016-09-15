@@ -95,7 +95,7 @@ define([
         exists: function () {
             var filter = this.toObject();
             for (var key in filter) {
-                if (filter[key] != "") {
+                if (filter[key] !== "") {
                     return true;
                 }
             }

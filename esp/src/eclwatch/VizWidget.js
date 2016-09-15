@@ -265,7 +265,7 @@ define([
                         context.refreshData();
                     }, 1);
                 } else {
-                    var isVisible = document.getElementById(context.id).offsetHeight != 0;
+                    var isVisible = document.getElementById(context.id).offsetHeight !== 0;
                     if (isVisible) {
                         context.mappingDropDown.focus();
                         context.mappingDropDown.loadAndOpenDropDown();
@@ -383,18 +383,18 @@ define([
                         });
                     });
                 }
+            }
 
-                function requireWidget() {
-                    require(["src/layout/Grid", "hpcc/viz/" + context.vizType], function (Grid, D3Viz) {
-                        context.d3Viz = new D3Viz();
-                        context.d3Viz._chartType = chartType;
-                        domConstruct.empty(context.id + "VizCP");
-                        context.d3Viz.renderTo({
-                            domNodeID: context.id + "VizCP"
-                        });
-                        deferred.resolve(context.vizType);
+            function requireWidget() {
+                require(["src/layout/Grid", "hpcc/viz/" + context.vizType], function (Grid, D3Viz) {
+                    context.d3Viz = new D3Viz();
+                    context.d3Viz._chartType = chartType;
+                    domConstruct.empty(context.id + "VizCP");
+                    context.d3Viz.renderTo({
+                        domNodeID: context.id + "VizCP"
                     });
-                }
+                    deferred.resolve(context.vizType);
+                });
             }
             return deferred.promise;
         },

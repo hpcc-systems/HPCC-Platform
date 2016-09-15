@@ -225,7 +225,7 @@ define([
                 this.graphsTab.set("title", this.i18n.Graphs + " (" + newValue.length + ")");
                 var tooltip = "";
                 for (var i = 0; i < newValue.length; ++i) {
-                    if (tooltip != "")
+                    if (tooltip !== "")
                         tooltip += "\n";
                     tooltip += newValue[i].Name;
                     if (newValue[i].Time)
@@ -239,7 +239,7 @@ define([
                     this.superFilesTab.set("title", this.i18n.SuperFiles + " (" + newValue.SuperFile.length + ")");
                     var superFileToolTip = "";
                     for (var i = 0; i < newValue.SuperFile.length; ++i) {
-                        if (superFileToolTip != "")
+                        if (superFileToolTip !== "")
                             superFileToolTip += "\n";
                         superFileToolTip += newValue.SuperFile[i].Name;
                     }
@@ -256,7 +256,7 @@ define([
                     this.logicalFilesTab.set("title", this.i18n.LogicalFiles + " (" + context.query.LogicalFiles.Item.length + ")");
                     var logicalFileToolTip = "";
                     for (var i = 0; i < newValue.Item.length; ++i) {
-                        if (logicalFileToolTip != "")
+                        if (logicalFileToolTip !== "")
                             logicalFileToolTip += "\n";
                         logicalFileToolTip += newValue.Item[i];
                     }
@@ -266,7 +266,7 @@ define([
                 this.librariesUsedTab.set("title", this.i18n.LibrariesUsed + " (" + newValue.Item.length + ")");
                 var tooltip = "";
                 for (var i = 0; i < newValue.Item.length; ++i) {
-                    if (tooltip != "")
+                    if (tooltip !== "")
                         tooltip += "\n";
                     tooltip += newValue.Item[i];
                 }
@@ -286,7 +286,7 @@ define([
                     this.errorsTab.set("title", this.i18n.ErrorsStatus + " (" + newValue.ClusterQueryState.length + ")");
                     var tooltip = "";
                     for (var i = 0; i < newValue.ClusterQueryState.length; ++i) {
-                        if (tooltip != "")
+                        if (tooltip !== "")
                             tooltip += "\n";
                         tooltip += newValue.ClusterQueryState[i].Cluster + " (" + newValue.ClusterQueryState[i].State + ")";
                     }

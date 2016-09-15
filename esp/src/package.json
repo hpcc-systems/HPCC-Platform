@@ -1,0 +1,17 @@
+{
+  "name": "hpcc-platform-eclwatch",
+  "version": "1.0.0",
+  "description": "'ECL Watch' Web interface for HPCC Platform.",
+  "devDependencies": {
+    "gulp": "~3.9.1",
+    "gulp-filter": "~3.0.1",
+    "jshint-stylish": "~2.1.0",
+    "gulp-jshint": "~2.0.0"
+  },
+  "main": "src/stub.js",
+  "scripts": {
+    "test": "gulp lint"
+  },
+  "author": "HPCC Systems",
+  "license": "Apache-2.0"
+}
