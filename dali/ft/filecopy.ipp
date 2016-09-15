@@ -265,6 +265,8 @@ protected:
     void addPrefix(size32_t len, const void * data, unsigned idx, PartitionPointArray & partitionWork);
     bool isSameSizeHeaderFooter();
     void checkFilePath(RemoteFilename & filename);
+    void StoreCsvRecordStructure(IFormatPartitioner &partitioner);
+    void ExamineCsvStructure();
     
 private:
     bool calcUsePull();
