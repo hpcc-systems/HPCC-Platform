@@ -1768,7 +1768,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetArchiveFileResponse
 };
 
 ESPservice [
-    autofeatureauth("DEFERRED"), //This declares that the method logic handles feature level authorization
+    auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
     version("1.60"), default_client_version("1.60"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
@@ -1793,8 +1793,8 @@ ESPservice [
     ESPmethod WUClusterJobQueueLOG(WUClusterJobQueueLOGRequest, WUClusterJobQueueLOGResponse);
     ESPmethod WUClusterJobXLS(WUClusterJobXLSRequest, WUClusterJobXLSResponse);
     ESPmethod WUClusterJobSummaryXLS(WUClusterJobSummaryXLSRequest, WUClusterJobSummaryXLSResponse);
-    ESPmethod [autofeatureauth("OwnWorkunitsAccess:WRITE")] WUCreate(WUCreateRequest, WUCreateResponse);
-    ESPmethod [autofeatureauth("OwnWorkunitsAccess:WRITE")] WUCreateAndUpdate(WUUpdateRequest, WUUpdateResponse);
+    ESPmethod [auth_feature("OwnWorkunitsAccess:WRITE")] WUCreate(WUCreateRequest, WUCreateResponse);
+    ESPmethod [auth_feature("OwnWorkunitsAccess:WRITE")] WUCreateAndUpdate(WUUpdateRequest, WUUpdateResponse);
     ESPmethod WUUpdate(WUUpdateRequest, WUUpdateResponse);
     ESPmethod WUDelete(WUDeleteRequest, WUDeleteResponse);
     ESPmethod WUSubmit(WUSubmitRequest, WUSubmitResponse);

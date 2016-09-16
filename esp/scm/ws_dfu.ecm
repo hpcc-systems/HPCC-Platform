@@ -709,7 +709,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
 
 //  ===========================================================================
 ESPservice [
-    autofeatureauth("DEFERRED"),
+    auth_feature("DEFERRED"),
     version("1.34"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
@@ -729,15 +729,15 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_getdatacolumns.xslt")] DFUGetDataColumns(DFUGetDataColumnsRequest, DFUGetDataColumnsResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_viewdata.xslt")] DFUBrowseData(DFUBrowseDataRequest, DFUBrowseDataResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_searchdata.xslt")] DFUSearchData(DFUSearchDataRequest, DFUSearchDataResponse);
-    ESPmethod [autofeatureauth("DfuAccess:READ")]DFUGetFileMetaData(DFUGetFileMetaDataRequest, DFUGetFileMetaDataResponse);
+    ESPmethod [auth_feature("DfuAccess:READ")]DFUGetFileMetaData(DFUGetFileMetaDataRequest, DFUGetFileMetaDataResponse);
     ESPmethod DFUDefFile(DFUDefFileRequest, DFUDefFileResponse);
 
     ESPmethod [resp_xsl_default("/esp/xslt/addto_superfile.xslt")] AddtoSuperfile(AddtoSuperfileRequest, AddtoSuperfileResponse);
-    ESPmethod [autofeatureauth("DfuAccess:READ"), resp_xsl_default("/esp/xslt/dfu_superedit.xslt")] SuperfileList(SuperfileListRequest, SuperfileListResponse);
+    ESPmethod [auth_feature("DfuAccess:READ"), resp_xsl_default("/esp/xslt/dfu_superedit.xslt")] SuperfileList(SuperfileListRequest, SuperfileListResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_superresult.xslt")] SuperfileAction(SuperfileActionRequest, SuperfileActionResponse);
-    ESPmethod [autofeatureauth("DfuAccess:READ")] Savexml(SavexmlRequest, SavexmlResponse);
-    ESPmethod [autofeatureauth("DfuAccess:WRITE")] Add(AddRequest, AddResponse);
-    ESPmethod [autofeatureauth("DfuAccess:WRITE")] AddRemote(AddRemoteRequest, AddRemoteResponse);
+    ESPmethod [auth_feature("DfuAccess:READ")] Savexml(SavexmlRequest, SavexmlResponse);
+    ESPmethod [auth_feature("DfuAccess:WRITE")] Add(AddRequest, AddResponse);
+    ESPmethod [auth_feature("DfuAccess:WRITE")] AddRemote(AddRemoteRequest, AddRemoteResponse);
 };
 
 SCMexportdef(WSDFU);

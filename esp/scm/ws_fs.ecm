@@ -651,7 +651,7 @@ ESPresponse [exceptions_inline, nil_remove] GetSprayTargetsResponse
 };
 
 ESPservice [
-    autofeatureauth("DEFERRED"),
+    auth_feature("DEFERRED"),
     version("1.13"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {

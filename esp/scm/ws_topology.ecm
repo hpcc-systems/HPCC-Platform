@@ -598,7 +598,7 @@ ESPresponse [exceptions_inline,encode(0)] TpGetServicePluginsResponse
     ESParray<ESPstruct TpEspServicePlugin, Plugin> Plugins;
 };
 
-ESPservice [autofeatureauth("DEFERRED"), noforms, version("1.25"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.25"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPuses ESPStruct TpBinding;
     ESPuses ESPstruct TpCluster;

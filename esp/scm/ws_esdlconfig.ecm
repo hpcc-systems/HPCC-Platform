@@ -240,19 +240,19 @@ ESPresponse [exceptions_inline] ListESDLBindingsResponse
     ESParray<ESPstruct ESDLBinding, Binding> Bindings;
 };
 
-ESPservice [autofeatureauth("ESDLConfigAccess:ACCESS"), version("1.2"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
+ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.2"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
 {
-    ESPmethod  Echo(EchoRequest, EchoResponse);
-    ESPmethod [autofeatureauth("ESDLConfigAccess:WRITE")] PublishESDLDefinition(PublishESDLDefinitionRequest, PublishESDLDefinitionResponse);
-    ESPmethod [autofeatureauth("ESDLConfigAccess:WRITE")] PublishESDLBinding(PublishESDLBindingRequest, PublishESDLBindingResponse);
-    ESPmethod [autofeatureauth("ESDLConfigAccess:WRITE")] ConfigureESDLBindingMethod(ConfigureESDLBindingMethodRequest, ConfigureESDLBindingMethodResponse);
-    ESPmethod [autofeatureauth("ESDLConfigAccess:READ")]  GetESDLBinding(GetESDLBindingRequest, GetESDLBindingResponse);
-    ESPmethod [autofeatureauth("ESDLConfigAccess:FULL")]  DeleteESDLBinding(DeleteESDLBindingRequest, DeleteESDLRegistryEntryResponse);
-    ESPmethod [autofeatureauth("ESDLConfigAccess:FULL")]  DeleteESDLDefinition(DeleteESDLDefinitionRequest, DeleteESDLRegistryEntryResponse);
-    ESPmethod [autofeatureauth("ESDLConfigAccess:READ")]  GetESDLDefinition(GetESDLDefinitionRequest, GetESDLDefinitionResponse);
-    ESPmethod [autofeatureauth("ESDLConfigAccess:READ")]  ListESDLDefinitions(ListESDLDefinitionsRequest, ListESDLDefinitionsResponse);
-    ESPmethod [autofeatureauth("ESDLConfigAccess:READ")]  ListESDLBindings(ListESDLBindingsRequest, ListESDLBindingsResponse);
-    ESPmethod [autofeatureauth("ESDLConfigAccess:READ,ClusterTopologyAccess:READ"), min_ver("1.2")] ListDESDLEspBindings(ListDESDLEspBindingsReq, ListDESDLEspBindingsResp);
+    ESPmethod Echo(EchoRequest, EchoResponse);
+    ESPmethod [auth_feature("ESDLConfigAccess:WRITE")] PublishESDLDefinition(PublishESDLDefinitionRequest, PublishESDLDefinitionResponse);
+    ESPmethod [auth_feature("ESDLConfigAccess:WRITE")] PublishESDLBinding(PublishESDLBindingRequest, PublishESDLBindingResponse);
+    ESPmethod [auth_feature("ESDLConfigAccess:WRITE")] ConfigureESDLBindingMethod(ConfigureESDLBindingMethodRequest, ConfigureESDLBindingMethodResponse);
+    ESPmethod [auth_feature("ESDLConfigAccess:READ")]  GetESDLBinding(GetESDLBindingRequest, GetESDLBindingResponse);
+    ESPmethod [auth_feature("ESDLConfigAccess:FULL")]  DeleteESDLBinding(DeleteESDLBindingRequest, DeleteESDLRegistryEntryResponse);
+    ESPmethod [auth_feature("ESDLConfigAccess:FULL")]  DeleteESDLDefinition(DeleteESDLDefinitionRequest, DeleteESDLRegistryEntryResponse);
+    ESPmethod [auth_feature("ESDLConfigAccess:READ")]  GetESDLDefinition(GetESDLDefinitionRequest, GetESDLDefinitionResponse);
+    ESPmethod [auth_feature("ESDLConfigAccess:READ")]  ListESDLDefinitions(ListESDLDefinitionsRequest, ListESDLDefinitionsResponse);
+    ESPmethod [auth_feature("ESDLConfigAccess:READ")]  ListESDLBindings(ListESDLBindingsRequest, ListESDLBindingsResponse);
+    ESPmethod [auth_feature("ESDLConfigAccess:READ,ClusterTopologyAccess:READ"), min_ver("1.2")] ListDESDLEspBindings(ListDESDLEspBindingsReq, ListDESDLEspBindingsResp);
 };
 
 SCMexportdef(WsESDLConfig);

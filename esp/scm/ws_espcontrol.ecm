@@ -30,7 +30,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SetLoggingResponse
     string Message;
 };
 
-ESPservice [autofeatureauth("NONE"), version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSESPControl
+ESPservice [auth_feature("NONE"), version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSESPControl
 {
     ESPmethod SetLogging(SetLoggingRequest, SetLoggingResponse);
 };
