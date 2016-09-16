@@ -123,7 +123,7 @@ void usage(const char *exe)
   printf("  validatestore [fix=<true|false>]\n"
          "                [verbose=<true|false>]\n"
          "                [deletefiles=<true|false>]-- perform some checks on dali meta data an optionally fix or remove redundant info \n");
-  printf("  stats <workunit> [<creator-type> <creator> <scope-type> <scope> <kind>]\n"
+  printf("  stats <workunit> [<creator-type> <creator> <scope-type> <scope> <kind>|category'['value']',...]\n"
          "                                  -- dump the statistics for a workunit\n");
   printf("  workunit <workunit> [true]      -- dump workunit xml, if 2nd parameter equals true, will also include progress data\n");
   printf("  wuidcompress <wildcard> <type>  --  scan workunits that match <wildcard> and compress resources of <type>\n");
@@ -2530,9 +2530,12 @@ static const char * checkDash(const char * s)
     return s;
 }
 
-static void dumpStats(IConstWorkUnit * workunit, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText, bool csv)
+static void dumpStats(IConstWorkUnit * workunit, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText, const char * userFilter, bool csv)
 {
     StatisticsFilter filter(checkDash(creatorTypeText), checkDash(creator), checkDash(scopeTypeText), checkDash(scope), NULL, checkDash(kindText));
+    if (userFilter)
+        filter.setFilter(userFilter);
+
     Owned<IConstWUStatisticIterator> stats = &workunit->getStatistics(&filter);
     if (!csv)
         printf("<Statistics wuid=\"%s\">\n", workunit->queryWuid());
@@ -2632,7 +2635,7 @@ static void dumpStats(IConstWorkUnit * workunit, const char * creatorTypeText, c
         printf("</Statistics>\n");
 }
 
-static void dumpStats(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText, bool csv)
+static void dumpStats(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText, const char * userFilter, bool csv)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     const char * star = strchr(wuid, '*');
@@ -2649,7 +2652,7 @@ static void dumpStats(const char *wuid, const char * creatorTypeText, const char
         {
             Owned<IConstWorkUnit> workunit = factory->openWorkUnit(iter->query().queryWuid());
             if (workunit)
-                dumpStats(workunit, creatorTypeText, creator, scopeTypeText, scope, kindText, csv);
+                dumpStats(workunit, creatorTypeText, creator, scopeTypeText, scope, kindText, userFilter, csv);
         }
     }
     else
@@ -2657,7 +2660,7 @@ static void dumpStats(const char *wuid, const char * creatorTypeText, const char
         Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
         if (!workunit)
             return;
-        dumpStats(workunit, creatorTypeText, creator, scopeTypeText, scope, kindText, csv);
+        dumpStats(workunit, creatorTypeText, creator, scopeTypeText, scope, kindText, userFilter, csv);
     }
 }
 
@@ -3198,11 +3201,19 @@ int main(int argc, char* argv[])
                         dumpProgress(params.item(1), params.item(2));
                     }
                     else if (stricmp(cmd, "stats") == 0) {
-                        CHECKPARAMS(1,7);
-                        while (params.ordinality() < 7)
-                            params.append("*");
-                        bool csv = params.isItem(7) && strieq(params.item(7), "csv");
-                        dumpStats(params.item(1), params.item(2), params.item(3), params.item(4), params.item(5), params.item(6), csv);
+                        CHECKPARAMS(1, 7);
+                        if ((params.ordinality() >= 3) && (strchr(params.item(2), '[')))
+                        {
+                            bool csv = params.isItem(3) && strieq(params.item(3), "csv");
+                            dumpStats(params.item(1), "-", "-", "-", "-", "-", params.item(2), csv);
+                        }
+                        else
+                        {
+                            while (params.ordinality() < 7)
+                                params.append("*");
+                            bool csv = params.isItem(7) && strieq(params.item(7), "csv");
+                            dumpStats(params.item(1), params.item(2), params.item(3), params.item(4), params.item(5), params.item(6), nullptr, csv);
+                        }
                     }
                     else
                         ERRLOG("Unknown command %s",cmd);

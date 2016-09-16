@@ -83,7 +83,7 @@ static unsigned matchString(const char * const * names, const char * search)
         const char * next = names[i];
         if (!next)
             return 0;
-        if (streq(next, search))
+        if (strieq(next, search))
             return i;
         i++;
     }
@@ -405,13 +405,27 @@ const char * queryMeasureName(StatisticMeasure measure)
     return measureNames[measure];
 }
 
-StatisticMeasure queryMeasure(const char *  measure)
+StatisticMeasure queryMeasure(const char * measure)
 {
     //MORE: Use a hash table??
     StatisticMeasure ret = (StatisticMeasure)matchString(measureNames, measure);
     //Legacy support for an unusual statistic - pretend the sizes are in bytes instead of kb.
-    if ((ret == SMeasureNone) && measure && streq(measure, "kb"))
-        ret = SMeasureSize;
+    if ((ret == SMeasureNone) && measure)
+    {
+        if (streq(measure, "kb"))
+        {
+            ret = SMeasureSize;
+        }
+        else
+        {
+            for (unsigned i1=SMeasureAll+1; i1 < SMeasureMax; i1++)
+            {
+                const char * prefix = queryMeasurePrefix((StatisticMeasure)i1);
+                if (strieq(measure, prefix))
+                    return (StatisticMeasure)i1;
+            }
+        }
+    }
     return ret;
 }
 
@@ -2249,9 +2263,62 @@ void StatisticsFilter::setCreatorType(StatisticCreatorType _creatorType)
     creatorType = _creatorType;
 }
 
+void StatisticsFilter::addFilter(const char * filter)
+{
+    //Match a filter of the form category[value]  (use square brackets to avoid bash grief)
+    const char * openBra = strchr(filter, '[');
+    if (!openBra)
+        return;
+    const char * closeBra = strchr(openBra, ']');
+    if (!closeBra)
+        return;
+
+    const char * start = openBra + 1;
+    StringBuffer value(closeBra - start, start);
+    if (hasPrefix(filter, "creator[", false))
+        setCreator(value);
+    else if (hasPrefix(filter, "creatortype[", false))
+        setCreatorType(queryCreatorType(value));
+    else if (hasPrefix(filter, "depth[", false))
+    {
+        const char * comma = strchr(value, ',');
+        if (comma)
+            setScopeDepth(atoi(value), atoi(comma+1));
+        else
+            setScopeDepth(atoi(value));
+    }
+    else if (hasPrefix(filter, "kind[", false))
+        setKind(value);
+    else if (hasPrefix(filter, "measure[", false))
+        setMeasure(queryMeasure(value));
+    else if (hasPrefix(filter, "scope[", false))
+        setScope(value);
+    else if (hasPrefix(filter, "scopetype[", false))
+        setScopeType(queryScopeType(value));
+    else
+        throw MakeStringException(1, "Unknown stats filter '%s' - expected creator,creatortype,depth,kind,measure,scope,scopetype", filter);
+}
+
+
 void StatisticsFilter::setFilter(const char * filter)
 {
-    //MORE: Process the filter from a text representation
+    loop
+    {
+        const char * closeBra = strchr(filter, ']');
+        const char * comma = strchr(closeBra, ',');
+        if (comma)
+        {
+            //Take a copy - simplicity rather than efficiency
+            StringBuffer temp(comma - filter, filter);
+            addFilter(temp);
+            filter = comma + 1;
+        }
+        else
+        {
+            addFilter(filter);
+            return;
+        }
+    }
 }
 
 void StatisticsFilter::setScopeDepth(unsigned _scopeDepth)

@@ -230,6 +230,7 @@ public:
     void setMeasure(StatisticMeasure _measure);
 
 protected:
+    void addFilter(const char * filter);
     void init();
 
 protected:
