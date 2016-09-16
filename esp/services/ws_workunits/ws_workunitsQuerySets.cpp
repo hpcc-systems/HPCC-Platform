@@ -2184,6 +2184,10 @@ public:
         factory.setown(getWorkUnitFactory(context->querySecManager(), context->queryUser()));
     }
 
+    void setQueryDirectory(const char *dir)
+    {
+        queryDirectory.set(dir);
+    }
     void cloneQueryRemote(IPropertyTree *query, bool makeActive)
     {
         StringBuffer wuid = query->queryProp("Wuid");
@@ -2199,7 +2203,7 @@ public:
         StringBuffer fetchedName;
         StringBuffer remoteDfs;
         fetchRemoteWorkunit(NULL, context, srcAddress.str(), NULL, NULL, wuid, fetchedName, xml, dllname, dll, remoteDfs);
-        deploySharedObject(*context, wuid, dllname, target, queryName, dll, NULL, xml.str());
+        deploySharedObject(*context, wuid, dllname, target, queryName, dll, queryDirectory, xml.str());
 
         SCMStringBuffer existingQueryId;
         queryIdFromQuerySetWuid(destQuerySet, wuid, queryName, existingQueryId);
@@ -2383,6 +2387,7 @@ private:
     StringBuffer srcPrefix;
     StringAttr target;
     StringAttr process;
+    StringAttr queryDirectory;
     bool cloneFilesEnabled;
     unsigned updateFlags;
 
@@ -2413,6 +2418,7 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
     DBGLOG("%s copying queryset %s from %s target %s", context.queryUserId(), target, srcAddress.str(), srcTarget.str());
 
     QueryCloner cloner(&context, srcAddress, srcTarget, target);
+    cloner.setQueryDirectory(queryDirectory);
 
     SCMStringBuffer process;
     if (req.getCopyFiles())
