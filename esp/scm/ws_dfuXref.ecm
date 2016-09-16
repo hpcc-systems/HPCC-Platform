@@ -231,11 +231,9 @@ ESPservice [autofeatureauth("DEFERRED"), exceptions_inline("./smc_xslt/exception
     ESPmethod [resp_xsl_default("/esp/xslt/xref_orphan.xslt")] DFUXRefOrphanFiles(DFUXRefOrphanFilesQueryRequest, DFUXRefOrphanFilesQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/xref_errwarn.xslt")] DFUXRefMessages(DFUXRefMessagesQueryRequest, DFUXRefMessagesQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/xref_directories.xslt")] DFUXRefDirectories(DFUXRefDirectoriesQueryRequest, DFUXRefDirectoriesQueryResponse);
-    //Tony/kevin, this method is not protected, should it be?
     ESPmethod [autofeatureauth("DfuXrefAccess:access"), resp_xsl_default("/esp/xslt/action.xslt")] DFUXRefArrayAction(DFUXRefArrayActionRequest, DFUXRefArrayActionResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/action.xslt")] DFUXRefBuildCancel(DFUXRefBuildCancelRequest, DFUXRefBuildCancelResponse);
     ESPmethod DFUXRefCleanDirectories(DFUXRefCleanDirectoriesRequest, DFUXRefCleanDirectoriesResponse);
-    //Tony/kevin, this method is not protected, should it be?
     ESPmethod [autofeatureauth("DfuXrefAccess:access")] DFUXRefUnusedFiles(DFUXRefUnusedFilesRequest, DFUXRefUnusedFilesResponse);
 };
 

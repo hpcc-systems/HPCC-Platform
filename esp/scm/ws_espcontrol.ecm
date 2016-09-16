@@ -30,7 +30,6 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SetLoggingResponse
     string Message;
 };
 
-//no authfeature is performed, however in cpp, there's a check to see if user is superuser
 ESPservice [autofeatureauth("NONE"), version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSESPControl
 {
     ESPmethod SetLogging(SetLoggingRequest, SetLoggingResponse);

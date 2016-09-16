@@ -729,20 +729,15 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_getdatacolumns.xslt")] DFUGetDataColumns(DFUGetDataColumnsRequest, DFUGetDataColumnsResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_viewdata.xslt")] DFUBrowseData(DFUBrowseDataRequest, DFUBrowseDataResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_searchdata.xslt")] DFUSearchData(DFUSearchDataRequest, DFUSearchDataResponse);
-    //Kevin I didn't see feature level check for DFUGetFileMetaData
-    ESPmethod DFUGetFileMetaData(DFUGetFileMetaDataRequest, DFUGetFileMetaDataResponse);
+    ESPmethod [autofeatureauth("DfuAccess:READ")]DFUGetFileMetaData(DFUGetFileMetaDataRequest, DFUGetFileMetaDataResponse);
     ESPmethod DFUDefFile(DFUDefFileRequest, DFUDefFileResponse);
 
     ESPmethod [resp_xsl_default("/esp/xslt/addto_superfile.xslt")] AddtoSuperfile(AddtoSuperfileRequest, AddtoSuperfileResponse);
-    //Kevin I didn't see feature level check for SuperfileList
-    ESPmethod [resp_xsl_default("/esp/xslt/dfu_superedit.xslt")] SuperfileList(SuperfileListRequest, SuperfileListResponse);
+    ESPmethod [autofeatureauth("DfuAccess:READ"), resp_xsl_default("/esp/xslt/dfu_superedit.xslt")] SuperfileList(SuperfileListRequest, SuperfileListResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_superresult.xslt")] SuperfileAction(SuperfileActionRequest, SuperfileActionResponse);
-    //Kevin I didn't see feature level check for savexml
-    ESPmethod Savexml(SavexmlRequest, SavexmlResponse);
-    //Kevin I didn't see feature level check for add
-    ESPmethod Add(AddRequest, AddResponse);
-    //Kevin I didn't see feature level check for addremore
-    ESPmethod AddRemote(AddRemoteRequest, AddRemoteResponse);
+    ESPmethod [autofeatureauth("DfuAccess:READ")] Savexml(SavexmlRequest, SavexmlResponse);
+    ESPmethod [autofeatureauth("DfuAccess:WRITE")] Add(AddRequest, AddResponse);
+    ESPmethod [autofeatureauth("DfuAccess:WRITE")] AddRemote(AddRemoteRequest, AddRemoteResponse);
 };
 
 SCMexportdef(WSDFU);
