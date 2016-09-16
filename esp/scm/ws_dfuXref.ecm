@@ -31,7 +31,7 @@ ESPresponse
 ]
 DFUXRefListResponse
 {
-    string DFUXRefListResult;
+    [json_inline(1)] string DFUXRefListResult;
 };
 
 ESPrequest 
@@ -49,7 +49,7 @@ ESPresponse
 ]
 DFUXRefBuildResponse
 {
-    string DFUXRefActionResult;
+    [json_inline(1)] string DFUXRefActionResult;
 };
 
 
@@ -68,7 +68,7 @@ ESPresponse
 ]
 DFUXRefLostFilesQueryResponse
 {
-    string DFUXRefLostFilesQueryResult;
+    [json_inline(1)] string DFUXRefLostFilesQueryResult;
 };
 
 
@@ -87,7 +87,7 @@ ESPresponse
 ]
 DFUXRefOrphanFilesQueryResponse
 {
-    string DFUXRefOrphanFilesQueryResult;
+    [json_inline(1)] string DFUXRefOrphanFilesQueryResult;
 };
 
 
@@ -106,7 +106,7 @@ ESPresponse
 ]
 DFUXRefMessagesQueryResponse
 {
-    string DFUXRefMessagesQueryResult;
+    [json_inline(1)] string DFUXRefMessagesQueryResult;
 };
 
 /*ESPstruct [nil_remove] Directory
@@ -135,8 +135,7 @@ ESPresponse
 ]
 DFUXRefDirectoriesQueryResponse
 {
-    string DFUXRefDirectoriesQueryResult;
-    //ESParray<ESPstruct Directory> Directories;
+    [json_inline(1)] string DFUXRefDirectoriesQueryResult;
 };
 
 
@@ -155,7 +154,7 @@ ESPresponse
 ]
 DFUXRefFoundFilesQueryResponse
 {
-    string DFUXRefFoundFilesQueryResult;
+    [json_inline(1)] string DFUXRefFoundFilesQueryResult;
 };
 
 ESPrequest
@@ -176,7 +175,7 @@ ESPresponse
 ] 
 DFUXRefArrayActionResponse
 {
-    string DFUXRefArrayActionResult;
+    [json_inline(1)] string DFUXRefArrayActionResult;
 };
 
 ESPrequest 
@@ -194,7 +193,7 @@ ESPresponse
 ]
 DFUXRefBuildCancelResponse
 {
-    string DFUXRefBuildCancelResult;
+    [json_inline(1)] string DFUXRefBuildCancelResult;
 };
 
 ESPrequest DFUXRefCleanDirectoriesRequest
