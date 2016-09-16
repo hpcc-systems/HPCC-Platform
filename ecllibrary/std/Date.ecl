@@ -236,17 +236,19 @@ SHARED GregorianDateOrigin := -1753469;      // 1 Jan 1AD = 1
  * days since 31st December 1BC.
  *
  * @param year          The year (-4713..9999).
- * @param month         The month (1-12).
- * @param day           The day (1..daysInMonth).
+ * @param month         The month (1-12).  A missing value (0) is treated as 1.
+ * @param day           The day (1..daysInMonth).  A missing value (0) is treated as 1.
  * @return              The number of elapsed days (1 Jan 1AD = 1)
  */
 
 EXPORT Days_t FromGregorianYMD(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) := FUNCTION
     //See Frequently Asked Questions about Calendars by Claus Toendering
-    a := (14 - month) DIV 12;
+    safeDay := MAX(1, day); // treat 0 as 1
+    safeMonth := MAX(1, month); // treat 0 as 1
+    a := (14 - safeMonth) DIV 12;
     y := year + YearDelta - a;
-    m := month + 12*a - 3;
-    jd := day + (153 * m + 2) DIV 5 + 365 * y + y DIV 4 - y DIV 100 + y DIV 400;
+    m := safeMonth + 12*a - 3;
+    jd := safeDay + (153 * m + 2) DIV 5 + 365 * y + y DIV 4 - y DIV 100 + y DIV 400;
 
     RETURN jd + (GregorianDateOrigin - 1);
 END;
@@ -447,8 +449,8 @@ SHARED Date1900Delta := 693596;      // 1 Jan 1900 = 0
  * Returns the number of days since 1st January 1900 (using the Gregorian Calendar)
  *
  * @param year          The year (-4713..9999).
- * @param month         The month (1-12).
- * @param day           The day (1..daysInMonth).
+ * @param month         The month (1-12).  A missing value (0) is treated as 1.
+ * @param day           The day (1..daysInMonth).  A missing value (0) is treated as 1.
  * @return              The number of elapsed days since 1st January 1900
  */
 
