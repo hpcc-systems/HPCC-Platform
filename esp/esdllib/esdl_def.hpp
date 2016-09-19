@@ -144,6 +144,7 @@ interface IEsdlDefMethod : extends IEsdlDefObject
 {
     virtual const char *queryRequestType()=0;
     virtual const char *queryResponseType()=0;
+    virtual const char *queryMetaData(const char* tag)=0;
     virtual const char *queryProductAssociation()=0;
     virtual bool isProductDefault()=0;
     virtual const char *queryLogMethodName()=0;
