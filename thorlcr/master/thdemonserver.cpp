@@ -74,7 +74,7 @@ private:
             StatsSubgraphScope subgraph(stats, graph->queryGraphId());
             if (graph->isInitialized())
                 doReportGraph(stats, graph, finished);
-            Owned<IThorGraphIterator> graphIter = graph->getChildGraphs();
+            Owned<IThorGraphIterator> graphIter = graph->getChildGraphIterator();
             ForEach (*graphIter)
                 reportGraph(stats, &graphIter->query(), finished);
         }

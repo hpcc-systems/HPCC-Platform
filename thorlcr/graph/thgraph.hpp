@@ -230,13 +230,18 @@ public:
     }
 };
 
+class CGraphStub;
 typedef SimpleHashTableOf<CGraphBase, graph_id> CGraphTableCopy;
 typedef OwningSimpleHashTableOf<CGraphBase, graph_id> CGraphTable;
+typedef OwningSimpleHashTableOf<CGraphStub, graph_id> CChildGraphTable;
 typedef CIArrayOf<CGraphBase> CGraphArray;
 typedef CICopyArrayOf<CGraphBase> CGraphArrayCopy;
 typedef IIteratorOf<CGraphBase> IThorGraphIterator;
 typedef ArrayIIteratorOf<const CGraphArray, CGraphBase, IThorGraphIterator> CGraphArrayIterator;
 typedef ArrayIIteratorOf<const CGraphArrayCopy, CGraphBase, IThorGraphIterator> CGraphArrayCopyIterator;
+
+
+typedef IIteratorOf<CGraphStub> IThorGraphStubIterator;
 
 class CJobBase;
 class CJobChannel;
@@ -268,7 +273,6 @@ public:
 
     CIOConnectionArray inputs, outputs, connectedInputs, connectedOutputs;
 
-    CGraphArray associatedChildGraphs;
     unsigned whichBranch;
     Owned<IBitSet> sentActInitData;
 
@@ -280,7 +284,6 @@ public:
     void clearConnections();
     virtual void connectInput(unsigned which, CGraphElementBase *input, unsigned inputOutIdx);
     void setResultsGraph(CGraphBase *_resultsGraph) { resultsGraph = _resultsGraph; }
-    void addAssociatedChildGraph(CGraphBase *childGraph);
     void releaseIOs();
     void addDependsOn(CGraphBase *graph, int controlId);
     IThorGraphDependencyIterator *getDependsIterator() const;
@@ -310,7 +313,6 @@ public:
 
     CGraphBase &queryOwner() const { return *owner; }
     CGraphBase *queryResultsGraph() const { return resultsGraph; }
-    IThorGraphIterator *getAssociatedChildGraphs() const;
     IGraphTempHandler *queryTempHandler() const;
     CJobBase &queryJob() const;
     CJobChannel &queryJobChannel() const;
@@ -419,9 +421,28 @@ public:
     }
 };
 
+class graph_decl CGraphStub : public CInterface, implements IThorChildGraph
+{
+protected:
+    graph_id graphId = 0;
+public:
+    IMPLEMENT_IINTERFACE;
+
+    const void *queryFindParam() const { return &graphId; } // for SimpleHashTableOf
+
+    const graph_id &queryGraphId() const { return graphId; }
+    virtual CGraphBase &queryOriginalGraph() = 0;
+
+    virtual void abort(IException *e) = 0;
+    virtual bool serializeStats(MemoryBuffer &mb) = 0;
+
+// IThorChildGraph
+    virtual IEclGraphResults *evaluate(unsigned parentExtractSz, const byte * parentExtract) = 0;
+};
+
 class CJobBase;
 interface IPropertyTree;
-class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, implements IThorChildGraph, implements IExceptionHandler
+class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
 {
     mutable CriticalSection crit;
     CriticalSection evaluateCrit, executeCrit;
@@ -431,8 +452,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
     mutable int localOnly;
     activity_id parentActivityId;
     IPropertyTree *xgmml;
-    CGraphTable childGraphsTable;
-    CGraphArrayCopy childGraphs;
+    CChildGraphTable childGraphsTable;
     Owned<IGraphTempHandler> tmpHandler;
     bool initialized = false;
 
@@ -441,12 +461,13 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
     class CGraphCodeContext : implements ICodeContextExt
     {
         ICodeContextExt *ctx;
-        CGraphBase *graph;
+        CGraphBase *containerGraph, *parent;
     public:
-        CGraphCodeContext() : graph(NULL), ctx(NULL) { }
-        void setContext(CGraphBase *_graph, ICodeContextExt *_ctx)
+        CGraphCodeContext() : parent(nullptr), containerGraph(nullptr), ctx(nullptr) { }
+        void setContext(CGraphBase *_parent, CGraphBase *_containerGraph, ICodeContextExt *_ctx)
         {
-            graph = _graph;
+            parent = _parent;
+            containerGraph = _containerGraph;
             ctx = _ctx;
         }
         virtual const char *loadResource(unsigned id) { return ctx->loadResource(id); }
@@ -485,7 +506,6 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source) { ctx->addWuException(text, code, severity, source); }
         virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) { ctx->addWuAssertFailure(code, text, filename, lineno, column, isAbort); }
         virtual IUserDescriptor *queryUserDescriptor() { return ctx->queryUserDescriptor(); }
-        virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal) { return ctx->resolveChildQuery(activityId, colocal); }
         virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash) { return ctx->getDatasetHash(name, hash); }
         virtual unsigned getNodes() { return ctx->getNodes(); }
         virtual unsigned getNodeNum() { return ctx->getNodeNum(); }
@@ -501,7 +521,17 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual char *getPlatform() { return ctx->getPlatform(); }
         virtual char *getEnv(const char *name, const char *defaultValue) const { return ctx->getEnv(name, defaultValue); }
         virtual char *getOS() { return ctx->getOS(); }
-        virtual IEclGraphResults * resolveLocalQuery(__int64 activityId) { return ctx->resolveLocalQuery(activityId); }
+        virtual IThorChildGraph * resolveChildQuery(__int64 gid, IHThorArg * colocal)
+        {
+            return parent->getChildGraph((graph_id)gid);
+        }
+        virtual IEclGraphResults * resolveLocalQuery(__int64 gid)
+        {
+            if (gid == containerGraph->queryGraphId())
+                return containerGraph;
+            else
+                return ctx->resolveLocalQuery(gid);
+        }
         virtual char *getEnv(const char *name, const char *defaultValue) { return ctx->getEnv(name, defaultValue); }
         virtual unsigned logString(const char * text) const { return ctx->logString(text); }
         virtual const IContextLogger &queryContextLogger() const { return ctx->queryContextLogger(); }
@@ -514,7 +544,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToJSON(lenResult, result, info, row, flags); }
         virtual unsigned getGraphLoopCounter() const
         {
-            return graph->queryLoopCounter();           // only called if value is valid
+            return containerGraph->queryLoopCounter();           // only called if value is valid
         }
         virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence) { return ctx->getExternalResult(wuid, name, sequence); }
         virtual IConstWUResult *getResultForGet(const char *name, unsigned sequence) { return ctx->getResultForGet(name, sequence); }
@@ -543,7 +573,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
 
 protected:
     Owned<IThorGraphResults> localResults, graphLoopResults;
-    CGraphBase *owner, *parent;
+    CGraphBase *owner, *parent, *graphResultsContainer;
     Owned<IException> abortException;
     Owned<IPropertyTree> node;
     IBarrier *startBarrier, *waitBarrier, *doneBarrier;
@@ -551,7 +581,6 @@ protected:
     bool connected, started, aborted, graphDone, sequential;
     CJobBase &job;
     CJobChannel &jobChannel;
-    graph_id graphId;
     mptag_t executeReplyTag;
     size32_t parentExtractSz; // keep track of sz when passed in, as may need to serialize later
     MemoryBuffer parentExtractMb; // retain copy, used if slave transmits to master (child graph 1st time initialization of global graph)
@@ -560,21 +589,22 @@ protected:
     bool loopBodySubgraph;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(CGraphStub);
 
     CGraphArrayCopy dependentSubGraphs;
 
     CGraphBase(CJobChannel &jobChannel);
     ~CGraphBase();
 
-    const void *queryFindParam() const { return &queryGraphId(); } // for SimpleHashTableOf
+    CGraphBase *cloneGraph();
 
-    virtual void init() { }
+    virtual CGraphBase &queryOriginalGraph() override { return *this; }
+    virtual void init();
     void onCreate();
     void GraphPrintLog(const char *msg, ...) __attribute__((format(printf, 2, 3)));
     void GraphPrintLog(IException *e, const char *msg, ...) __attribute__((format(printf, 3, 4)));
     void GraphPrintLog(IException *e);
-    void createFromXGMML(IPropertyTree *node, CGraphBase *owner, CGraphBase *parent, CGraphBase *resultsGraph);
+    void createFromXGMML(IPropertyTree *node, CGraphBase *owner, CGraphBase *parent, CGraphBase *resultsGraph, CGraphTableCopy &newGraphs);
     bool queryAborted() const { return aborted; }
     CJobBase &queryJob() const { return job; }
     CJobChannel &queryJobChannel() const { return jobChannel; }
@@ -675,15 +705,15 @@ public:
         xgmml->setPropBool("att[@name=\"rootGraph\"]/@value", tf);
     }
     const activity_id &queryParentActivityId() const { return parentActivityId; }
-    const graph_id &queryGraphId() const { return graphId; }
-    void addChildGraph(CGraphBase &graph);
-    unsigned queryChildGraphCount() { return childGraphs.ordinality(); }
-    CGraphBase *getChildGraph(graph_id gid)
+    void addChildGraph(CGraphStub *stub);
+    unsigned queryChildGraphCount() { return childGraphsTable.ordinality(); }
+    CGraphStub *getChildGraph(graph_id gid)
     {
         CriticalBlock b(crit);
         return LINK(childGraphsTable.find(gid));
     }
-    IThorGraphIterator *getChildGraphs() const;
+    IThorGraphIterator *getChildGraphIterator() const; // retrieves original child graphs
+    IThorGraphStubIterator *getChildStubIterator() const; // retrieves child graph stubs, which redirect to parallel instances
 
     void executeChildGraphs(size32_t parentExtractSz, const byte *parentExtract);
     void doExecute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies);
@@ -692,14 +722,14 @@ public:
     void setResults(IThorGraphResults *results);
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract, IThorGraphResults *results, IThorGraphResults *graphLoopResults);
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract);
-    virtual bool serializeStats(MemoryBuffer &mb) { return false; }
+    virtual bool serializeStats(MemoryBuffer &mb) override { return false; }
     virtual bool prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async);
     virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract);
     virtual void start() = 0;
     virtual bool wait(unsigned timeout);
     virtual void done();
     virtual void end();
-    virtual void abort(IException *e);
+    virtual void abort(IException *e) override;
     virtual IThorGraphResults *createThorGraphResults(unsigned num);
 
 // IExceptionHandler
@@ -754,8 +784,6 @@ protected:
     StringBuffer wuid, user, scope, token;
     mutable CriticalSection wuDirty;
     mutable bool dirty;
-    CGraphTable subGraphs;
-    CGraphTableCopy allGraphs; // for lookup, includes all childGraphs
     mptag_t mpJobTag, slavemptag;
     Owned<IGroup> jobGroup, slaveGroup, nodeGroup;
     Owned<IPropertyTree> xgmml;
@@ -790,17 +818,6 @@ protected:
         }
     } pluginCtx;
     SafePluginMap *pluginMap;
-    void removeAssociates(CGraphBase &graph)
-    {
-        CriticalBlock b(crit);
-        allGraphs.removeExact(&graph);
-        Owned<IThorGraphIterator> iter = graph.getChildGraphs();
-        ForEach(*iter)
-        {
-            CGraphBase &child = iter->query();
-            removeAssociates(child);
-        }
-    }
     void endJob();
 public:
     IMPLEMENT_IINTERFACE;
@@ -905,7 +922,7 @@ protected:
     ITimeReporter *timeReporter;
     CriticalSection crit;
     CGraphTable subGraphs;
-    CGraphTableCopy allGraphs; // for lookup, includes all childGraphs
+    CGraphTableCopy allGraphs; // for lookup, includes all child graphs
     Owned<ICommunicator> jobComm;
     rank_t myrank;
     Linked<IMPServer> mpServer;
@@ -918,7 +935,7 @@ protected:
     {
         CriticalBlock b(crit);
         allGraphs.removeExact(&graph);
-        Owned<IThorGraphIterator> iter = graph.getChildGraphs();
+        Owned<IThorGraphIterator> iter = graph.getChildGraphIterator();
         ForEach(*iter)
         {
             CGraphBase &child = iter->query();
@@ -948,17 +965,13 @@ public:
         subGraphs.replace(graph);
         allGraphs.replace(graph);
     }
-    void associateGraph(CGraphBase &graph)
-    {
-        CriticalBlock b(crit);
-        allGraphs.replace(graph);
-    }
     void removeSubGraph(CGraphBase &graph)
     {
         CriticalBlock b(crit);
         removeAssociates(graph);
         subGraphs.removeExact(&graph);
     }
+    CGraphTableCopy &queryAllGraphs() { return allGraphs; }
     IThorGraphIterator *getSubGraphs();
     CGraphBase *getGraph(graph_id gid)
     {

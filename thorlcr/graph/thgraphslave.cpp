@@ -1139,11 +1139,11 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
         unsigned cqCountPos = mb.length();
         unsigned cq=0;
         mb.append(cq);
-        Owned<IThorGraphIterator> childIter = getChildGraphs();
+        Owned<IThorGraphStubIterator> childIter = getChildStubIterator();
         ForEach(*childIter)
         {
-            CSlaveGraph &graph = (CSlaveGraph &)childIter->query();
-            if (graph.serializeStats(mb))
+            CGraphStub &stub = childIter->query();
+            if (stub.serializeStats(mb))
                 ++cq;
         }
         if (count || cq)
