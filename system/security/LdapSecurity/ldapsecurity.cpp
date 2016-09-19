@@ -116,6 +116,17 @@ bool CLdapSecUser::setLastName(const char * lname)
     return true;
 }
 
+const char * CLdapSecUser::getEmployeeID()
+{
+    return m_employeeID.get();
+}
+
+bool CLdapSecUser::setEmployeeID(const char * emplID)
+{
+    m_employeeID.set(emplID);
+    return true;
+}
+
 const char * CLdapSecUser::getRealm()
 {
     return m_realm.get();
@@ -194,6 +205,7 @@ void CLdapSecUser::copyTo(ISecUser& destination)
     dest->setFullName(getFullName());
     dest->setFirstName(getFirstName());
     dest->setLastName(getLastName());
+    dest->setEmployeeID(getEmployeeID());
     dest->setRealm(getRealm());
     dest->credentials().setPassword(credentials().getPassword());
     dest->setUserSid(m_usersid.length(), m_usersid.toByteArray());
