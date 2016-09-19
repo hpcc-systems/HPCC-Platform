@@ -84,15 +84,14 @@ define([
         var colLenBefore = {};
         arrayUtil.forEach(columns, function (column) {
             if (!column.children && context._formattedRow[column.field] !== undefined) {
-                colLenBefore[column.field] = context._formattedRow[column.field].split(LINE_SPLITTER).length;
+                colLenBefore[column.field] = ("" + context._formattedRow[column.field]).split(LINE_SPLITTER).length;
             }
             maxChildLen = Math.max(maxChildLen, context.formatCell(column, row[column.leafID], rowIdx));
         });
         arrayUtil.forEach(columns, function (column) {
             if (!column.children) {
-                var cellLength = context._formattedRow[column.field].split(LINE_SPLITTER).length - colLenBefore[column.field];
+                var cellLength = ("" + context._formattedRow[column.field]).split(LINE_SPLITTER).length - (colLenBefore[column.field] || 0);
                 var delta = maxChildLen - cellLength;
-                console.log(delta);
                 if (delta > 0) {
                     var paddingArr = [];
                     paddingArr.length = delta + 1;
