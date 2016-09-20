@@ -115,7 +115,7 @@ define([
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
                 var tab = this.ensureLFPane(selections[i].Name, selections[i]);
-                if (i == 0) {
+                if (i === 0) {
                     firstTab = tab;
                 }
             }
@@ -190,7 +190,7 @@ define([
                             node.innerHTML = dojoConfig.getImageHTML("compressed.png", context.i18n.Compressed);
                         },
                         formatter: function (compressed) {
-                            if (compressed == true) {
+                            if (compressed === true) {
                                 return dojoConfig.getImageHTML("compressed.png");
                             }
                             return "";
@@ -214,7 +214,7 @@ define([
                             node.innerHTML = dojoConfig.getImageHTML("superfile.png", context.i18n.Superfile);
                         },
                         formatter: function (superfile) {
-                            if (superfile == true) {
+                            if (superfile === true) {
                                 return dojoConfig.getImageHTML("superfile.png");
                             }
                             return "";

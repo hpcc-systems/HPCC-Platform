@@ -213,7 +213,7 @@ define([
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
                 var tab = this.ensurePane(selections[i].Wuid, selections[i]);
-                if (i == 0) {
+                if (i === 0) {
                     firstTab = tab;
                 }
             }

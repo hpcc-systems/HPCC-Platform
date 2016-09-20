@@ -20,16 +20,6 @@ define([
         },
 
         constructor: function (mappings, target) {
-            this.mappedData = d3.map();
-
-            if (mappings)
-                this.setFieldMappings(mappings);
-
-            if (target)
-                this.renderTo(target);
-        },
-
-        constructor: function (mappings, target) {
             if (mappings)
                 this.setFieldMappings(mappings);
 

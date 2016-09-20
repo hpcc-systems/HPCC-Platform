@@ -83,13 +83,13 @@ define([
                         StatusMessage = context.i18n.SuspendedByCluster;
                         return false;
                     }
-                    if (lang.exists("MixedNodeStates", cqs) && cqs.MixedNodeStates == true) {
+                    if (lang.exists("MixedNodeStates", cqs) && cqs.MixedNodeStates === true) {
                         StatusMessage =  context.i18n.MixedNodeStates;
                         MixedNodeStates = true;
                     }
                 });
             }
-            if (item.Suspended == true){
+            if (item.Suspended === true){
                 StatusMessage = this.i18n.SuspendedByUser;
             }
 

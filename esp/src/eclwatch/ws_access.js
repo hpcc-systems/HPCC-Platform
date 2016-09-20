@@ -95,7 +95,7 @@ define([
                 var deferred = new Deferred;
                 deferred.resolve([]);
                 return deferred.promise;
-            };
+            }
             return self.GroupEdit({
                 request: {
                     groupname: this.groupname

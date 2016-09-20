@@ -243,7 +243,7 @@ define([
         canShowResults: function () {
             if (lang.exists("Sequence", this)) { //  Regular WU result
                 return true;
-            } else if (lang.exists("RecordCount", this) && this.RecordCount != "") { //  DFU Sprayed CSV File will fail here
+            } else if (lang.exists("RecordCount", this) && this.RecordCount !== "") { //  DFU Sprayed CSV File will fail here
                 return true;
             }
             return false;
@@ -620,7 +620,7 @@ define([
                     if (i + 1 < length) {
                         retVal = parseInt(type.substring(i + 1, length));
                     }
-                    if (type.indexOf("data") == 0) {
+                    if (type.indexOf("data") === 0) {
                         retVal *= 2;
                     }
                     break;

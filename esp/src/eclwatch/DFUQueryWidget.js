@@ -186,7 +186,7 @@ define([
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
                 var tab = this.ensureLFPane(selections[i].__hpcc_id, selections[i]);
-                if (i == 0) {
+                if (i === 0) {
                     firstTab = tab;
                 }
             }
@@ -320,11 +320,11 @@ define([
                 this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + item.NodeGroup);
                 this.menuFilterCluster.set("hpcc_value", item.NodeGroup);
             }
-            if (item.Owner == "") {
+            if (item.Owner === "") {
                 this.menuFilterOwner.set("disabled", true);
                 this.menuFilterOwner.set("label", this.i18n.Owner + ":  " + this.i18n.NA);
             }
-            if (item.NodeGroup == "") {
+            if (item.NodeGroup === "") {
                 this.menuFilterCluster.set("disabled", true);
                 this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + this.i18n.NA);
             }
@@ -527,7 +527,7 @@ define([
                         width: 25,
                         sortable: false,
                         formatter: function (_protected) {
-                            if (_protected == true) {
+                            if (_protected === true) {
                                 return dojoConfig.getImageHTML("locked.png");
                             }
                             return "";
@@ -539,7 +539,7 @@ define([
                             node.innerHTML = dojoConfig.getImageHTML("compressed.png", context.i18n.Compressed);
                         },
                         formatter: function (compressed) {
-                            if (compressed == true) {
+                            if (compressed === true) {
                                 return dojoConfig.getImageHTML("compressed.png");
                             }
                             return "";
