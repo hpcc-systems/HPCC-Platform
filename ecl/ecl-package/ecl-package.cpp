@@ -716,6 +716,32 @@ public:
         }
         return true;
     }
+
+    void outputLfnCategoryTree(IPropertyTree &querynode, const char *name)
+    {
+        StringBuffer lcname(name);
+        IPropertyTree *catnode = querynode.queryPropTree(lcname.toLowerCase());
+        if (!catnode)
+            return;
+        fprintf(stderr, "        [%s]\n", name);
+
+        Owned<IPropertyTreeIterator> lfnnodes = catnode->getElements("*");
+        ForEach(*lfnnodes)
+            fprintf(stderr, "          %s\n", lfnnodes->query().queryName());
+    }
+    void outputLfnTree(IPropertyTree *lfntree)
+    {
+        Owned<IPropertyTreeIterator> querynodes = lfntree->getElements("*");
+        ForEach(*querynodes)
+        {
+            IPropertyTree &querynode = querynodes->query();
+            fprintf(stderr, "     --%s\n", querynode.queryName());
+            outputLfnCategoryTree(querynode, "Compulsory");
+            outputLfnCategoryTree(querynode, "Required");
+            outputLfnCategoryTree(querynode, "Optional");
+        }
+    }
+
     virtual int processCMD()
     {
         Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
@@ -778,9 +804,25 @@ public:
         if (unusedFiles.ordinality()>0)
         {
             validateMessages = true;
-            fputs("\n   Files without matching package definitions:\n", stderr);
+            fputs("\n   Query files without matching package definitions:\n", stderr);
+            Owned<IPropertyTree> filetree = createPTree();
             ForEachItemIn(i, unusedFiles)
-                fprintf(stderr, "      %s\n", unusedFiles.item(i));
+            {
+                StringArray info;
+                info.appendList(unusedFiles.item(i), "/");
+                if (info.length()>=2)
+                {
+                    IPropertyTree *querynode = ensurePTree(filetree, info.item(0));
+                    if (querynode)
+                    {
+                        StringBuffer category = (info.length()>=3) ? info.item(2) : "required";
+                        IPropertyTree *cat = ensurePTree(querynode, category.toLowerCase());
+                        if (cat)
+                            ensurePTree(cat, info.item(1));
+                    }
+                }
+            }
+            outputLfnTree(filetree);
         }
 
         StringArray &notInDFS = resp->getFiles().getNotInDFS();
