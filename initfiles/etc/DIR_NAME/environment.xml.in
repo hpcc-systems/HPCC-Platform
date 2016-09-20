@@ -314,11 +314,6 @@
                          resource="RoxieControlAccess"
                          service="ws_smc"/>
     <AuthenticateFeature authenticate="Yes"
-                         description="Access to super computer environment"
-                         path="ConfigAccess"
-                         resource="ConfigAccess"
-                         service="ws_config"/>
-    <AuthenticateFeature authenticate="Yes"
                          description="Access to DFU"
                          path="DfuAccess"
                          resource="DfuAccess"
@@ -357,11 +352,6 @@
                          description="Access to despraying of files"
                          path="FileDesprayAccess"
                          resource="FileDesprayAccess"
-                         service="ws_fs"/>
-    <AuthenticateFeature authenticate="Yes"
-                         description="Access to dkcing of key files"
-                         path="FileDkcAccess"
-                         resource="FileDkcAccess"
                          service="ws_fs"/>
     <AuthenticateFeature authenticate="Yes"
                          description="Access to upload files to dropzone"
@@ -574,10 +564,6 @@
                          path="RoxieControlAccess"
                          resource="RoxieControlAccess"
                          service="ws_smc"/>
-    <AuthenticateFeature description="Access to super computer environment"
-                         path="ConfigAccess"
-                         resource="ConfigAccess"
-                         service="ws_config"/>
     <AuthenticateFeature description="Access to DFU"
                          path="DfuAccess"
                          resource="DfuAccess"
@@ -609,10 +595,6 @@
     <AuthenticateFeature description="Access to despraying of files"
                          path="FileDesprayAccess"
                          resource="FileDesprayAccess"
-                         service="ws_fs"/>
-    <AuthenticateFeature description="Access to dkcing of key files"
-                         path="FileDkcAccess"
-                         resource="FileDkcAccess"
                          service="ws_fs"/>
     <AuthenticateFeature description="Access to upload files to dropzone"
                          path="FileUploadAccess"
@@ -875,10 +857,6 @@
                           path="RoxieControlAccess"
                           resource="RoxieControlAccess"
                           service="ws_smc"/>
-     <AuthenticateFeature description="Access to super computer environment"
-                          path="ConfigAccess"
-                          resource="ConfigAccess"
-                          service="ws_config"/>
      <AuthenticateFeature description="Access to DFU"
                           path="DfuAccess"
                           resource="DfuAccess"
@@ -910,10 +888,6 @@
      <AuthenticateFeature description="Access to despraying of files"
                           path="FileDesprayAccess"
                           resource="FileDesprayAccess"
-                          service="ws_fs"/>
-     <AuthenticateFeature description="Access to dkcing of key files"
-                          path="FileDkcAccess"
-                          resource="FileDkcAccess"
                           service="ws_fs"/>
      <AuthenticateFeature description="Access to upload files to dropzone"
                           path="FileUploadAccess"

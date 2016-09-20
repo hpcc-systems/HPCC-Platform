@@ -19,8 +19,6 @@
 
 #include "ws_configService.hpp"
 
-static const char* FEATURE_URL = "ConfigAccess";
-
 void Cws_configEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
 }
@@ -31,8 +29,6 @@ Cws_configEx::~Cws_configEx()
 
 bool Cws_configEx::onGetConfigAccess(IEspContext &context, IEspConfigAccessRequest& req, IEspConfigAccessResponse& resp)
 {
-    SecAccessFlags access = SecAccess_None;
-    context.authorizeFeature(FEATURE_URL, access);
-    resp.setAccessLevel( access );
+    resp.setAccessLevel( SecAccess_Full );
     return true;
 }
