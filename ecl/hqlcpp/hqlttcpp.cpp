@@ -6200,11 +6200,6 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     return getValue.getClear();
 }
 
-static bool isInternalEmbedAttr(IAtom *name)
-{
-    return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom ||name == importAtom;
-}
-
 IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression * newFuncDef)
 {
     IHqlExpression * body = newFuncDef->queryChild(0);

@@ -210,6 +210,12 @@ extern HQL_API bool splitResultValue(SharedHqlExpr & dataset, SharedHqlExpr & at
 //Is 'expr' really dependent on a parameter - expr->isFullyBound() can give false negatives.
 extern HQL_API bool isDependentOnParameter(IHqlExpression * expr);
 
+inline bool isInternalEmbedAttr(IAtom *name)
+{
+    return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom || name == importAtom || name==foldAtom;
+}
+
+
 inline void extendConditionOwn(SharedHqlExpr & cond, node_operator op, IHqlExpression * r)
 {
     cond.setown(extendConditionOwn(op, cond.getClear(), r));
