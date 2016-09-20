@@ -1043,7 +1043,7 @@ public:
     void usage()
     {
         printf( "\nUsage:\n\n"
-                "esdl unbind-method <TargetESPProcessName> <TargetESPBindingName> <TargetServiceName> <TargetServiceDefVersion> <TargetMethodName> [\n\n"
+                "esdl unbind-method <TargetESPProcessName> <TargetESPBindingName> <TargetServiceName> <TargetMethodName> [\n\n"
                 "   TargetESPProcessName                             The target ESP Process name\n"
                 "   TargetESPBindingName                             The target ESP binding name associated with this service\n"
                 "   TargetServiceName                                The name of the ESDLService name associated with the target method\n"
@@ -1087,9 +1087,6 @@ public:
                 case 2:
                     optService.set(arg);
                     break;
-                //case 3:
-                //    optVersionStr.set(arg);
-                //    break;
                 case 3:
                     optMethod.set(arg);
                     break;
