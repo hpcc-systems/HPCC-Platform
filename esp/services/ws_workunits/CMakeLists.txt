@@ -63,6 +63,7 @@ include_directories (
          ./../../../system/security/securesocket
          ./../../../system/security/shared
          ./../../../system/include
+         ./../../../common/thorhelper
          ./../../../common/workunit
          ./../../../common/wuwebview
          ./../../../ecl/schedulectrl
@@ -106,6 +107,7 @@ target_link_libraries ( ws_workunits
          hql
          jhtree
          fileview2
+         thorhelper
     )
 
 IF (USE_OPENSSL)

@@ -51,7 +51,8 @@ typedef enum ESPSerializationFormat_
 {
     ESPSerializationANY,
     ESPSerializationXML,
-    ESPSerializationJSON
+    ESPSerializationJSON,
+    ESPSerializationCSV
 } ESPSerializationFormat;
 
 #define ESPCTX_NO_NAMESPACES    0x00000001
