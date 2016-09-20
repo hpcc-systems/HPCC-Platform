@@ -1509,6 +1509,25 @@ int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char
     return rc;
 };
 
+static SecAccessFlags strToAccessFlag(const char* flag)
+{
+    if (!flag || !*flag)
+        return SecAccess_Full;
+    if (!stricmp(flag,"None"))
+        return SecAccess_None;
+    if (!stricmp(flag,"Access"))
+        return SecAccess_Access;
+    if (!stricmp(flag,"Read"))
+        return SecAccess_Read;
+    if (!stricmp(flag,"Write"))
+        return SecAccess_Write;
+    if (!stricmp(flag,"Full"))
+        return SecAccess_Full;
+
+    DBGLOG("Unknown access level: %s", flag);
+    return SecAccess_Full;
+}
+
 int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char* service, const char *method, IPropertyTree &in, IXmlWriterExt* writer, unsigned int flags, const char *ns)
 {
     IEsdlMethodInfo *mi = queryMethodInfo(service,method);
@@ -1521,8 +1540,10 @@ int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char
         const char* auth_feature = mi->queryMetaData("auth_feature");
         if (auth_feature && *auth_feature)
         {
-            SecAccessFlags access;
-            if (!ctx.authorizeFeature(auth_feature,access) || access!=SecAccess_Full)
+            const char* level = strchr(auth_feature,':');
+            SecAccessFlags requiredAccess = strToAccessFlag(level?level+1:NULL);
+            SecAccessFlags grantAccess;
+            if (!ctx.authorizeFeature(auth_feature,grantAccess) || grantAccess<requiredAccess)
                 throw MakeStringException(-1, "Access Denied to %s",auth_feature);
         }
     }
