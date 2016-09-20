@@ -435,6 +435,12 @@ bool Cws_accessEx::onUsers(IEspContext &context, IEspUserRequest &req, IEspUserR
                 oneusr->setFullname(usr->getFullName());
 
                 double version = context.getClientVersion();
+
+                if (version >= 1.10)
+                {
+                    oneusr->setEmployeeID(usr->getEmployeeID());
+                }
+
                 if (version >= 1.07)
                 {
                     StringBuffer sb;
@@ -525,7 +531,6 @@ bool Cws_accessEx::onUserQuery(IEspContext &context, IEspUserQueryRequest &req, 
             const char* passwordExpiration = usr.queryProp(getUserFieldNames(UFPasswordExpiration));
             if (passwordExpiration && *passwordExpiration)
                 userInfo->setPasswordexpiration(passwordExpiration);
-
             espUsers.append(*userInfo.getClear());
         }
 
@@ -863,6 +868,12 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
             return false;
         }
 
+        const char * employeeID = NULL;
+        if (context.getClientVersion() >= 1.10)
+        {
+            employeeID = req.getEmployeeID();
+        }
+
         Owned<ISecUser> user = secmgr->createUser(username);
         ISecCredentials& cred = user->credentials();
         const char* firstname = req.getFirstname();
@@ -871,6 +882,8 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
             user->setFirstName(firstname);
         if(lastname != NULL)
             user->setLastName(lastname);
+        if(employeeID != NULL)
+            user->setEmployeeID(employeeID);
         if(pass1 != NULL)
             cred.setPassword(pass1);
         try
@@ -2568,7 +2581,7 @@ bool Cws_accessEx::onPermissionsReset(IEspContext &context, IEspPermissionsReset
 }
 
 //For every resources inside a baseDN, if there is no permission for this account, add the baseDN name to the basednNames list
-void Cws_accessEx::getBaseDNsForAddingPermssionToAccount(CLdapSecManager* secmgr, const char* prefix, const char* accountName, 
+void Cws_accessEx::getBaseDNsForAddingPermssionToAccount(CLdapSecManager* secmgr, const char* prefix, const char* accountName,
                                            int accountType, StringArray& basednNames)
 {
     if(secmgr == NULL)
@@ -3193,6 +3206,10 @@ bool Cws_accessEx::onUserInfoEdit(IEspContext &context, IEspUserInfoEditRequest 
 
         user->setFirstName(firstname);
         user->setLastName(lastname);
+        if (context.getClientVersion() >= 1.10)
+        {
+            user->setEmployeeID(req.getEmployeeID());
+        }
 
         try
         {
@@ -3242,6 +3259,10 @@ bool Cws_accessEx::onUserInfoEditInput(IEspContext &context, IEspUserInfoEditInp
 
         resp.setFirstname(user->getFirstName());
         resp.setLastname(user->getLastName());
+        if (context.getClientVersion() >= 1.10)
+        {
+            resp.setEmployeeID(user->getEmployeeID());
+        }
     }
     catch(IException* e)
     {

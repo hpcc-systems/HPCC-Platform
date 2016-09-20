@@ -28,8 +28,8 @@
 
 static const char* FEATURE_URL = "DfuXrefAccess";
 
-static void appendReplyMessage(StringBuffer &reply, const char *href,const char *format,...) __attribute__((format(printf, 3, 4)));
-static void appendReplyMessage(StringBuffer &reply, const char *href,const char *format,...) 
+static void appendReplyMessage(bool json, StringBuffer &reply, const char *href,const char *format,...) __attribute__((format(printf, 4, 5)));
+static void appendReplyMessage(bool json, StringBuffer &reply, const char *href,const char *format,...)
 {
     va_list args;
     va_start(args, format);
@@ -47,13 +47,33 @@ static void appendReplyMessage(StringBuffer &reply, const char *href,const char 
                 tree->addProp("href",href);
                 href = NULL;
             }
-            toXML(tree,reply);
+            if (json)
+                toJSON(tree,reply);
+            else
+                toXML(tree,reply);
             if (!c)
                 break;
             fmsg.clear();
         }
         else
             fmsg.append(c);
+    }
+}
+
+static void dfuXrefXMLToJSON(StringBuffer& buf)
+{
+    try
+    {
+        Owned<IPropertyTree> result = createPTreeFromXMLString(buf.str());
+        if (result)
+            toJSON(result, buf.clear());
+        else
+            PROGLOG("dfuXrefXMLToJSON() failed in creating PTree.");
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e,"dfuXrefXMLToJSON() failed");
+        e->Release();
     }
 }
 
@@ -123,31 +143,32 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
        
         StringBuffer returnStr,UserName;
         const char* ActionType = req.getAction();
+        ESPSerializationFormat fmt = context.getResponseFormat();
         for(unsigned i = 0; i < req.getXRefFiles().length();i++)
         {
             StringBuffer errstr;
             if (strcmp("Delete" ,ActionType) == 0)
             {
                 if (_fileNode->RemovePhysical(req.getXRefFiles().item(i),userdesc,req.getCluster(),errstr))
-                    appendReplyMessage(returnStr,NULL,"Removed Physical part %s",req.getXRefFiles().item(i));
+                    appendReplyMessage(fmt==ESPSerializationJSON, returnStr,NULL,"Removed Physical part %s",req.getXRefFiles().item(i));
                 else
-                    appendReplyMessage(returnStr,NULL,"Error(s) removing physical part %s\n%s",req.getXRefFiles().item(i),errstr.str());
+                    appendReplyMessage(fmt==ESPSerializationJSON, returnStr,NULL,"Error(s) removing physical part %s\n%s",req.getXRefFiles().item(i),errstr.str());
             }
             else if (strcmp("Attach" ,ActionType) == 0)
             {
                 if(_fileNode->AttachPhysical(req.getXRefFiles().item(i),userdesc,req.getCluster(),errstr) )
-                    appendReplyMessage(returnStr,NULL,"Reattached Physical part %s",req.getXRefFiles().item(i));
+                    appendReplyMessage(fmt==ESPSerializationJSON, returnStr,NULL,"Reattached Physical part %s",req.getXRefFiles().item(i));
                 else
-                    appendReplyMessage(returnStr,NULL,"Error(s) attaching physical part %s\n%s",req.getXRefFiles().item(i),errstr.str());
+                    appendReplyMessage(fmt==ESPSerializationJSON, returnStr,NULL,"Error(s) attaching physical part %s\n%s",req.getXRefFiles().item(i),errstr.str());
             }
             if (strcmp("DeleteLogical" ,ActionType) == 0)
             {
                 // Note we don't want to physically delete 'lost' files - this will end up with orphans on next time round but that is safer
                 if (_fileNode->RemoveLogical(req.getXRefFiles().item(i),userdesc,req.getCluster(),errstr)) {
-                    appendReplyMessage(returnStr,NULL,"Removed Logical File %s",req.getXRefFiles().item(i));
+                    appendReplyMessage(fmt==ESPSerializationJSON, returnStr,NULL,"Removed Logical File %s",req.getXRefFiles().item(i));
                 }
                 else
-                    appendReplyMessage(returnStr,NULL,"Error(s) removing File %s\n%s",req.getXRefFiles().item(i),errstr.str());
+                    appendReplyMessage(fmt==ESPSerializationJSON, returnStr,NULL,"Error(s) removing File %s\n%s",req.getXRefFiles().item(i),errstr.str());
             }
         }
 
@@ -189,11 +210,21 @@ bool CWsDfuXRefEx::onDFUXRefLostFiles(IEspContext &context, IEspDFUXRefLostFiles
 
         Owned<IXRefNode> xRefNode = XRefNodeManager->getXRefNode(req.getCluster());
         if (xRefNode.get() == 0)
-            return false;
+            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_FIND_IXREFFILESNODE, "XRefNode not found.");
 
-      Owned<IXRefFilesNode> _lost = xRefNode->getLostFiles();
-      StringBuffer buf;
-      resp.setDFUXRefLostFilesQueryResult(_lost->Serialize(buf).str());
+        StringBuffer buf;
+        Owned<IXRefFilesNode> _lost = xRefNode->getLostFiles();
+        if (_lost)
+        {
+            _lost->Serialize(buf);
+            if (!buf.isEmpty())
+            {
+                ESPSerializationFormat fmt = context.getResponseFormat();
+                if (fmt == ESPSerializationJSON)
+                    dfuXrefXMLToJSON(buf);
+            }
+        }
+        resp.setDFUXRefLostFilesQueryResult(buf.str());
     }
     catch(IException* e)
     {   
@@ -218,10 +249,21 @@ bool CWsDfuXRefEx::onDFUXRefFoundFiles(IEspContext &context, IEspDFUXRefFoundFil
 
         Owned<IXRefNode> xRefNode = XRefNodeManager->getXRefNode(req.getCluster());
         if (xRefNode.get() == 0)
-            return false;
-        Owned<IXRefFilesNode> _found = xRefNode->getFoundFiles();
+            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_FIND_IXREFFILESNODE, "XRefNode not found.");
+
         StringBuffer buf;
-        resp.setDFUXRefFoundFilesQueryResult(_found->Serialize(buf).str());
+        Owned<IXRefFilesNode> _found = xRefNode->getFoundFiles();
+        if (_found)
+        {
+            _found->Serialize(buf);
+            if (!buf.isEmpty())
+            {
+                ESPSerializationFormat fmt = context.getResponseFormat();
+                if (fmt == ESPSerializationJSON)
+                    dfuXrefXMLToJSON(buf);
+            }
+        }
+        resp.setDFUXRefFoundFilesQueryResult(buf.str());
     }
     catch(IException* e)
     {   
@@ -245,11 +287,20 @@ bool CWsDfuXRefEx::onDFUXRefOrphanFiles(IEspContext &context, IEspDFUXRefOrphanF
 
         Owned<IXRefNode> xRefNode = XRefNodeManager->getXRefNode(req.getCluster());
         if (xRefNode.get() == 0)
-            return false;
+            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_FIND_IXREFFILESNODE, "XRefNode not found.");
 
-        Owned<IXRefFilesNode> _orphan = xRefNode->getOrphanFiles();
         StringBuffer buf;
-        _orphan->Serialize(buf);
+        Owned<IXRefFilesNode> _orphan = xRefNode->getOrphanFiles();
+        if (_orphan)
+        {
+            _orphan->Serialize(buf);
+            if (!buf.isEmpty())
+            {
+                ESPSerializationFormat fmt = context.getResponseFormat();
+                if (fmt == ESPSerializationJSON)
+                    dfuXrefXMLToJSON(buf);
+            }
+        }
         resp.setDFUXRefOrphanFilesQueryResult(buf.str());
     }
     catch(IException* e)
@@ -274,10 +325,16 @@ bool CWsDfuXRefEx::onDFUXRefMessages(IEspContext &context, IEspDFUXRefMessagesQu
 
         Owned<IXRefNode> xRefNode = XRefNodeManager->getXRefNode(req.getCluster());
         if (xRefNode.get() == 0)
-            return false;
+            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_FIND_IXREFFILESNODE, "XRefNode not found.");
 
         StringBuffer buf;
         xRefNode->serializeMessages(buf);
+        if (!buf.isEmpty())
+        {
+            ESPSerializationFormat fmt = context.getResponseFormat();
+            if (fmt == ESPSerializationJSON)
+                dfuXrefXMLToJSON(buf);
+        }
         resp.setDFUXRefMessagesQueryResult(buf.str());
     }
     catch(IException* e)
@@ -302,7 +359,7 @@ bool CWsDfuXRefEx::onDFUXRefCleanDirectories(IEspContext &context, IEspDFUXRefCl
 
         Owned<IXRefNode> xRefNode = XRefNodeManager->getXRefNode(req.getCluster());
         if (xRefNode.get() == 0)
-            return false;
+            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_FIND_IXREFFILESNODE, "XRefNode not found.");
 
         StringBuffer buf;
         xRefNode->removeEmptyDirectories(buf);
@@ -330,53 +387,61 @@ bool CWsDfuXRefEx::onDFUXRefDirectories(IEspContext &context, IEspDFUXRefDirecto
 
         Owned<IXRefNode> xRefNode = XRefNodeManager->getXRefNode(req.getCluster());
         if (xRefNode.get() == 0)
-            return false;
+            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_FIND_IXREFFILESNODE, "XRefNode not found.");
 
-        StringBuffer buf0;
+        StringBuffer buf, buf0;
         xRefNode->serializeDirectories(buf0);
-
-        Owned <IPropertyTree> dirs = createPTreeFromXMLString(buf0.str()); // Why are we doing this?
-        Owned<IPropertyTreeIterator> iter = dirs->getElements("Directory");
-        ForEach(*iter)
+        if (!buf0.isEmpty())
         {
-            IPropertyTree &node = iter->query();
+            Owned <IPropertyTree> dirs = createPTreeFromXMLString(buf0.str()); // Why are we doing this?
+            if (!dirs)
+                throw MakeStringExceptionDirect(ECLWATCH_INVALID_COMPONENT_INFO, "Failed in creating PTree for XRefNode Directories.");
 
-            StringBuffer positive, negative;
-            char* skew = (char*) node.queryProp("Skew");
-            if (!skew || !*skew)
-                continue;
-
-            char* skewPtr = strchr(skew, '/');
-            if (skewPtr)
+            Owned<IPropertyTreeIterator> iter = dirs->getElements("Directory");
+            ForEach(*iter)
             {
-                if (skew[0] == '+' && (strlen(skew) > 1))
-                    positive.append(skewPtr - skew - 1, skew+1);
-                else
-                    positive.append(skewPtr - skew, skew);
-                skewPtr++;
+                IPropertyTree &node = iter->query();
+
+                StringBuffer positive, negative;
+                char* skew = (char*) node.queryProp("Skew");
+                if (!skew || !*skew)
+                    continue;
+
+                char* skewPtr = strchr(skew, '/');
                 if (skewPtr)
                 {
-                    if (skewPtr[0] == '-')
-                        negative.append(skewPtr+1);
+                    if (skew[0] == '+' && (strlen(skew) > 1))
+                        positive.append(skewPtr - skew - 1, skew+1);
                     else
-                        negative.append(skewPtr);
+                        positive.append(skewPtr - skew, skew);
+                    skewPtr++;
+                    if (skewPtr)
+                    {
+                        if (skewPtr[0] == '-')
+                            negative.append(skewPtr+1);
+                        else
+                            negative.append(skewPtr);
+                    }
                 }
-            }
-            else
-            {
-                if (skew[0] == '+' && (strlen(skew) > 1))
-                    positive.append(skew+1);
                 else
-                    positive.append(skew);
+                {
+                    if (skew[0] == '+' && (strlen(skew) > 1))
+                        positive.append(skew+1);
+                    else
+                        positive.append(skew);
+                }
+
+                node.removeProp("Skew");
+                node.addProp("PositiveSkew", positive);
+                node.addProp("NegativeSkew", negative);
             }
 
-            node.removeProp("Skew");
-            node.addProp("PositiveSkew", positive);
-            node.addProp("NegativeSkew", negative);
+            ESPSerializationFormat fmt = context.getResponseFormat();
+            if (fmt == ESPSerializationJSON)
+                toJSON(dirs, buf);
+            else
+                toXML(dirs, buf);
         }
-        
-        StringBuffer buf;
-        toXML(dirs, buf);
         resp.setDFUXRefDirectoriesQueryResult(buf.str());
     }
     catch(IException* e)
@@ -406,12 +471,13 @@ bool CWsDfuXRefEx::onDFUXRefBuild(IEspContext &context, IEspDFUXRefBuildRequest 
             xRefNode.setown( XRefNodeManager->CreateXRefNode(req.getCluster()));
         }
         StringBuffer returnStr;
+        ESPSerializationFormat fmt = context.getResponseFormat();
         if (m_XRefbuilder->IsQueued(req.getCluster()) )
-            appendReplyMessage(returnStr,"/WsDFUXRef/DFUXRefList","An XRef build for cluster %s is in process. Click here to return to the main XRef List.",req.getCluster());
+            appendReplyMessage(fmt == ESPSerializationJSON, returnStr,"/WsDFUXRef/DFUXRefList","An XRef build for cluster %s is in process. Click here to return to the main XRef List.",req.getCluster());
         else if (!m_XRefbuilder->IsRunning())
-            appendReplyMessage(returnStr,"/WsDFUXRef/DFUXRefList","Running XRef Process. Click here to return to the main XRef List.");
+            appendReplyMessage(fmt == ESPSerializationJSON, returnStr,"/WsDFUXRef/DFUXRefList","Running XRef Process. Click here to return to the main XRef List.");
         else
-            appendReplyMessage(returnStr,"/WsDFUXRef/DFUXRefList","someone is currently running a Xref build. Your request will be added to the queue. Please click here to return to the main page.");
+            appendReplyMessage(fmt == ESPSerializationJSON, returnStr,"/WsDFUXRef/DFUXRefList","someone is currently running a Xref build. Your request will be added to the queue. Please click here to return to the main page.");
 
 
         m_XRefbuilder->QueueRequest(xRefNode,req.getCluster());
@@ -436,7 +502,15 @@ bool CWsDfuXRefEx::onDFUXRefBuildCancel(IEspContext &context, IEspDFUXRefBuildCa
 
         m_XRefbuilder->Cancel();
         StringBuffer returnStr;
-        returnStr.appendf("<Message><Value>All Queued items have been cleared. The current running job will continue to execute.</Value><href>/WsDFUXRef/DFUXRefList</href></Message>");    
+        ESPSerializationFormat fmt = context.getResponseFormat();
+        if (fmt == ESPSerializationJSON)
+        {
+            returnStr.append("{ \"Message\": { \"Value\": ");
+            returnStr.append("\"All Queued items have been cleared. The current running job will continue to execute.\",");
+            returnStr.append("\"href\": \"/WsDFUXRef/DFUXRefList\" } }");
+        }
+        else
+            returnStr.appendf("<Message><Value>All Queued items have been cleared. The current running job will continue to execute.</Value><href>/WsDFUXRef/DFUXRefList</href></Message>");
         resp.setDFUXRefBuildCancelResult(returnStr.str());
     }
     catch(IException* e)
@@ -498,7 +572,11 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
         addXRefNode("SuperFiles", pXRefNodeTree);
 
         StringBuffer buf;
-        resp.setDFUXRefListResult(toXML(pXRefNodeTree, buf).str());
+        ESPSerializationFormat fmt = context.getResponseFormat();
+        if (fmt == ESPSerializationJSON)
+            resp.setDFUXRefListResult(toJSON(pXRefNodeTree, buf).str());
+        else
+            resp.setDFUXRefListResult(toXML(pXRefNodeTree, buf).str());
     }
     catch(IException* e)
     {   

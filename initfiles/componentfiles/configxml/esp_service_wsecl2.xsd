@@ -58,12 +58,21 @@
                       </xs:appinfo>
                     </xs:annotation>
                   </xs:attribute>
+                  <xs:attribute name="dnsInterval" type="xs:integer" use="optional" default="-1">
+                      <xs:annotation>
+                          <xs:appinfo>
+                              <tooltip>DNS lookup cache timeout in seconds. Set to 0 to resolve DNS for every transaction.  Set to -1 (default) to keep DNS lookup cached indefinitely.</tooltip>
+                              <title>DNS Cache timeout interval</title>
+                              <colIndex>3</colIndex>
+                          </xs:appinfo>
+                      </xs:annotation>
+                  </xs:attribute>
                   <xs:attribute name="sendTargetToRoxie" use="optional" default="true">
                       <xs:annotation>
                           <xs:appinfo>
                               <tooltip>Send roxie the target from which to run query (disable for backward compatibility issues)</tooltip>
                               <title>Send Target To Roxie</title>
-                              <colIndex>3</colIndex>
+                              <colIndex>4</colIndex>
                           </xs:appinfo>
                       </xs:annotation>
                       <xs:simpleType>

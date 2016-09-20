@@ -254,6 +254,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
             continue;
         const char *vip = NULL;
         bool includeTargetInURL = true;
+        unsigned dnsInterval = (unsigned) -1;
         if (vips)
         {
             IPropertyTree *pc = vips->queryPropTree(xpath.clear().appendf("ProcessCluster[@name='%s']", process.str()));
@@ -261,6 +262,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
             {
                 vip = pc->queryProp("@vip");
                 includeTargetInURL = pc->getPropBool("@includeTargetInURL", true);
+                dnsInterval = (unsigned) pc->getPropInt("@dnsInterval", -1);
 
             }
         }
@@ -285,7 +287,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         if (list.length())
         {
             StringAttr alias(clusterInfo->getAlias());
-            Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(list.str(), !loadBalanced, includeTargetInURL, loadBalanced ? alias.str() : NULL);
+            Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(list.str(), !loadBalanced, includeTargetInURL, loadBalanced ? alias.str() : NULL, dnsInterval);
             connMap.setValue(target.str(), sf.get());
             if (alias.length() && !connMap.getValue(alias.str())) //only need one vip per alias for routing purposes
                 connMap.setValue(alias.str(), sf.get());

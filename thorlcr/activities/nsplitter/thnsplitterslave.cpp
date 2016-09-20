@@ -57,7 +57,7 @@ public:
     virtual void setOutputStream(unsigned index, IEngineRowStream *stream) override;
     virtual IStrandJunction *getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override;
     virtual unsigned __int64 queryTotalCycles() const override { return COutputTiming::queryTotalCycles(); }
-    virtual unsigned __int64 queryEndCycles() const { return COutputTiming::queryEndCycles(); }
+    virtual unsigned __int64 queryEndCycles() const override { return COutputTiming::queryEndCycles(); }
     virtual void debugRequest(MemoryBuffer &mb) override;
 // Stepping methods
     virtual IInputSteppingMeta *querySteppingMeta() { return nullptr; }
@@ -340,12 +340,7 @@ public:
     }
 
 // IEngineRowStream
-    virtual const void *nextRow() override
-    {
-        ActivityTimer t(totalCycles, queryTimeActivities());
-        return inputStream->nextRow();
-    }
-    virtual void stop() override{ inputStream->stop(); }
+    virtual void stop() override{ throwUnexpected(); } // CSplitterOutput deals with stopping inputStream
 
 // IThorDataLink (if single output connected)
     virtual IStrandJunction *getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
@@ -444,12 +439,12 @@ void CSplitterOutput::stop()
 
 const void *CSplitterOutput::nextRow()
 {
+    ActivityTimer t(totalCycles, activity.queryTimeActivities());
     if (rec == max)
     {
         max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem, outIdx);
         // NB: if this is sole input that actually started, writeahead will have returned RCMAX and calls to activity.nextRow will go directly to splitter input
     }
-    ActivityTimer t(totalCycles, activity.queryTimeActivities());
     const void *row = activity.nextRow(outIdx); // pass ptr to max if need more
     ++rec;
     if (row)

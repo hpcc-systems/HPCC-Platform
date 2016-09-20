@@ -1235,6 +1235,10 @@ int CHttpRequest::parseFirstLine(char* oneline)
     {
         setMethod(HEAD_METHOD);
     }
+    else if(!stricmp(method.str(), OPTIONS_METHOD))
+    {
+        setMethod(OPTIONS_METHOD);
+    }
 
     StringBuffer pathbuf;
     curptr = Utils::getWord(curptr, pathbuf);

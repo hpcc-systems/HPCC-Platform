@@ -93,7 +93,7 @@ public:
     bool includeTargetInURL;
     StringAttr alias;
 
-    RoxieSocketFactory(const char *_socklist, bool _retry, bool includeTarget, const char *_alias) : CSmartSocketFactory(_socklist, _retry), includeTargetInURL(includeTarget), alias(_alias)
+    RoxieSocketFactory(const char *_socklist, bool _retry, bool includeTarget, const char *_alias, unsigned _dnsInterval) : CSmartSocketFactory(_socklist, _retry, 60, _dnsInterval), includeTargetInURL(includeTarget), alias(_alias)
     {
     }
 };
