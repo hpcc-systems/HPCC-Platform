@@ -2738,11 +2738,15 @@ public:
         return *t;
     }
 
-    IPropertyTree &queryHistory()
+    IPropertyTree &queryHistory() const
     {
         IPropertyTree *t = root->queryPropTree("History");
-        if (!t)
-            t = root->setPropTree("History",createPTree("History")); // takes ownership
+        return *t;
+    }
+
+    IPropertyTree &createHistory()
+    {
+        IPropertyTree *t = root->setPropTree("History",createPTree("History")); // takes ownership
         return *t;
     }
 

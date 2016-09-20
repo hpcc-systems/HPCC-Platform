@@ -5014,7 +5014,7 @@ bool CWsDfuEx::onListHistory(IEspContext &context, IEspListHistoryRequest &req, 
         StringBuffer username;
         context.getUserID(username);
         Owned<IUserDescriptor> userdesc;
-        if(username.length() > 0)
+        if (username.length() > 0)
         {
             const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
@@ -5025,9 +5025,15 @@ bool CWsDfuEx::onListHistory(IEspContext &context, IEspListHistoryRequest &req, 
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Name required");
         PROGLOG("onListHistory: %s", req.getName());
 
-        Owned<IDFUhelper> dfuhelper = createIDFUhelper();
         MemoryBuffer xmlmap;
-        dfuhelper->getFileHistory(req.getName(), xmlmap, userdesc.get());
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get());
+        IPropertyTree &history = file->queryHistory();
+        if (&history)
+            history.serialize(xmlmap);
+        else
+            // For old file which has not History
+            xmlmap.clear().append(0);
+
         resp.setXmlmap(xmlmap);
     }
     catch(IException* e)
@@ -5044,7 +5050,7 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
         StringBuffer username;
         context.getUserID(username);
         Owned<IUserDescriptor> userdesc;
-        if(username.length() > 0)
+        if (username.length() > 0)
         {
             const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
@@ -5055,12 +5061,16 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Name required");
         PROGLOG("onEraseHistory: %s", req.getName());
 
-        Owned<IDFUhelper> dfuhelper = createIDFUhelper();
         MemoryBuffer xmlmap;
-        dfuhelper->getFileHistory(req.getName(), xmlmap, userdesc.get());
-        resp.setXmlmap(xmlmap);
-
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get());
+        IPropertyTree &history = file->queryHistory();
+        if (&history)
+            history.serialize(xmlmap);
+        else
+            // For old file which has not History
+            xmlmap.clear().append(0);
+
+        resp.setXmlmap(xmlmap);
         file->eraseHistory();
     }
     catch(IException* e)

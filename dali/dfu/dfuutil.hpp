@@ -101,7 +101,6 @@ interface IDFUhelper: extends IInterface
         IUserDescriptor *user
     ) = 0;
 
-    virtual MemoryBuffer &getFileHistory(const char *lfn, MemoryBuffer &out, IUserDescriptor *user) = 0;
 };
 
 IDFUhelper *createIDFUhelper();

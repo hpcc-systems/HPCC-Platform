@@ -1514,6 +1514,12 @@ int CDfuPlusHelper::listhistory()
     Owned<IPropertyTree>    history;
     history.setown(createPTree("History"));
     history->deserialize(tmp);
+    if (!history->hasProp("Origin"))
+    {
+        error("%s doesn't have stored history!\n", lfn);
+        return -2;
+    }
+
     bool sorted = true;
 
     switch (format)

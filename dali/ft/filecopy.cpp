@@ -2493,7 +2493,10 @@ void FileSprayer::setSource(IDistributedFile * source)
 {
     distributedSource.set(source);
     srcAttr.setown(createPTreeFromIPT(&source->queryAttributes()));
-    srcHistory.setown(createPTreeFromIPT(&source->queryHistory()));
+    IPropertyTree *history = &source->queryHistory();
+    if (history)
+        srcHistory.setown(createPTreeFromIPT(history));
+
     extractSourceFormat(srcAttr);
     unsigned numParts = source->numParts();
     for (unsigned idx=0; idx < numParts; idx++)
@@ -2530,7 +2533,9 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
     IPropertyTree *attr = &source->queryProperties();
     extractSourceFormat(attr);
     srcAttr.setown(createPTreeFromIPT(&source->queryProperties()));
-    srcHistory.setown(createPTreeFromIPT(&source->queryHistory()));
+    IPropertyTree *history = &source->queryHistory();
+    if (history)
+        srcHistory.setown(createPTreeFromIPT(history));
     extractSourceFormat(srcAttr);
 
     RemoteFilename filename;
@@ -3252,13 +3257,18 @@ void FileSprayer::updateTargetProperties()
                     curProps.addPropTree(aname, createPTreeFromIPT(&iter->query()));
             }
 
+            // Handle history
             IPropertyTree &curHistory = lock.queryHistory();
-            // copy history records
-            Owned<IPropertyTreeIterator> historyIter = srcHistory->getElements("*");
-            ForEach(*historyIter)
+
+            if (srcHistory)
             {
-                const char *aname = historyIter->query().queryName();
-                curHistory.addPropTree(aname, createPTreeFromIPT(&historyIter->query()));
+                // copy history records from source file
+                Owned<IPropertyTreeIterator> historyIter = srcHistory->getElements("*");
+                ForEach(*historyIter)
+                {
+                    const char *aname = historyIter->query().queryName();
+                    curHistory.addPropTree(aname, createPTreeFromIPT(&historyIter->query()));
+                }
             }
 
             // Add new record about this operation
@@ -3278,6 +3288,8 @@ void FileSprayer::updateTargetProperties()
             newRecord->addProp("@owner", val.str());
 
             srcAttr->getProp("@workunit", val.clear());
+            if (0 == val.length())
+                val.set("N/A");
             newRecord->addProp("@workunit", val.str());
 
             newRecord->addProp("@operation", getOperationTypeString());

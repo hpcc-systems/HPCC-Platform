@@ -399,8 +399,9 @@ interface IDistributedFile: extends IInterface
 
     virtual void validate() = 0;
 
-    virtual IPropertyTree &queryHistory() = 0;                               // DFile History records
+    virtual IPropertyTree &queryHistory() const = 0;                         // DFile History records
     virtual void eraseHistory() = 0;                                         // Erase DFile History records
+    virtual IPropertyTree &createHistory() = 0;
 };
 
 
@@ -460,7 +461,7 @@ interface ISimpleSuperFileEnquiry: extends IInterface // lightweight local
 // ==DISTRIBUTED FILE PROPERTY LOCKS============================================================================
 /*
  * Context-based file property locking mechanism. Allows early unlocking for special cases,
- * stores the reload flag and allows you to query the 'Attr' section of the file property,
+ * stores the reload flag and allows you to query the 'Attr' and 'History' sections of the file property,
  * which is the only part external consumers are allowed to change.
  *
  * Use this instead of locking/unlocking manually. Manual lock is deprecated and will
@@ -499,7 +500,10 @@ public:
     }
     IPropertyTree &queryHistory()
     {
-        return file->queryHistory();
+        IPropertyTree *temp = &file->queryHistory();
+        if (!temp)
+            temp = &file->createHistory(); // takes ownership
+        return *temp;
     }
     bool needsReload()
     {

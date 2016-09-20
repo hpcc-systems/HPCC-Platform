@@ -1295,25 +1295,6 @@ public:
             }
         }
     }
-
-    MemoryBuffer &getFileHistory(const char *lfn,MemoryBuffer &out, IUserDescriptor *user)
-    {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user);
-        if (!file) {
-            throwError1(DFUERR_DFileNotFound, lfn);
-        }
-        else
-        {
-            Owned<IPropertyTree> t = queryDistributedFileDirectory().getFileTree(lfn, user)->getPropTree("History");
-            if (t)
-                t->serialize(out);
-            else
-                // For old file which has not History
-                out.clear().append(0);
-        }
-        return out;
-    }
-
 };
 
 

@@ -38,7 +38,7 @@
 #define SDS_CONNECT_TIMEOUT  (1000*60*60*2)     // better than infinite
 
 #define SERIALIZATION_VERSION ((byte)0xd4)
-#define SERIALIZATION_VERSION2 ((byte)0xd5) // with trailing superfile info
+#define SERIALIZATION_VERSION2 ((byte)0xd5) // with trailing superfile info (11010101b)
 
 bool isMulti(const char *str)
 {
@@ -1267,41 +1267,47 @@ public:
         pending = NULL;
         setupdone = true;
         mb.read(version);
-        if ((version!=SERIALIZATION_VERSION)&&(version!=SERIALIZATION_VERSION2)) // check seialization matched
+        if ((version != SERIALIZATION_VERSION) && (version != SERIALIZATION_VERSION2)) // check serialization matched
             throw MakeStringException(-1,"FileDescriptor serialization version mismatch %d/%d",(int)SERIALIZATION_VERSION,(int)version);
         mb.read(tracename);
         mb.read(directory);
         mb.read(partmask);
         unsigned n;
         mb.read(n);
-        for (unsigned i1=0;i1<n;i1++)
+        for (unsigned i1 = 0; i1 < n; i1++)
             clusters.append(*deserializeClusterInfo(mb));
         unsigned partidx;
         mb.read(partidx);   // -1 if all parts, -2 if multiple parts
         mb.read(n); // numparts
         CPartDescriptor *part;
-        if (partidx==(unsigned)-2) {
+        if (partidx == (unsigned)-2)
+        {
             UnsignedArray pia;
             unsigned pi;
-            loop {
+            loop
+            {
                 mb.read(pi);
-                if (pi==(unsigned)-1)
+                if (pi == (unsigned)-1)
                     break;
                 pia.append(pi);
             }
-            for (unsigned i3=0;i3<n;i3++)
+            for (unsigned i3 = 0; i3 < n; i3++)
                 parts.append(NULL);
-            ForEachItemIn(i4,pia) {
+            ForEachItemIn(i4, pia)
+            {
                 unsigned p = pia.item(i4);
-                if (p<n) {
-                    part = new CPartDescriptor(*this,p,mb);
-                    parts.replace(part,p);
+                if (p < n) {
+                    part = new CPartDescriptor(*this, p, mb);
+                    parts.replace(part, p);
                 }
             }
-            if (partsret) {
-                ForEachItemIn(i5,pia) {
+            if (partsret)
+            {
+                ForEachItemIn(i5, pia)
+                {
                     unsigned p = pia.item(i5);
-                    if (p<parts.ordinality()) {
+                    if (p < parts.ordinality())
+                    {
                         CPartDescriptor *pt = (CPartDescriptor *)parts.item(p);
                         partsret->append(*LINK(pt));
                     }
@@ -1309,30 +1315,32 @@ public:
             }
 
         }
-        else {
-            for (unsigned i2=0;i2<n;i2++) {
-                if ((partidx==(unsigned)-1)||(partidx==i2)) {
-                    part = new CPartDescriptor(*this,i2,mb);
+        else
+        {
+            for (unsigned i2=0; i2 < n; i2++)
+            {
+                if ((partidx == (unsigned)-1) || (partidx == i2))
+                {
+                    part = new CPartDescriptor(*this, i2, mb);
                     if (partsret)
                         partsret->append(*LINK(part));
                 }
                 else
-                    part = NULL; // new CPartDescriptor(*this,i2,NULL);
+                    part = NULL; // new CPartDescriptor(*this, i2, NULL);
                 parts.append(part);
             }
         }
         attr.setown(createPTree(mb));
         if (!attr)
             attr.setown(createPTree("Attr")); // doubt can happen
-        history.setown(createPTree(mb));
-        if (!history)
-            history.setown(createPTree("History"));
-        if (version==SERIALIZATION_VERSION2) {
+        if (version == SERIALIZATION_VERSION2)
+        {
             if (subcounts)
                 *subcounts = new UnsignedArray;
             unsigned n;
             mb.read(n);
-            while (n) {
+            while (n)
+            {
                 unsigned np;
                 mb.read(np);
                 if (subcounts)
@@ -1344,6 +1352,13 @@ public:
             if (_interleaved)
                 *_interleaved = interleaved;
         }
+        const char * buffer = mb.toByteArray()+mb.getPos();
+        const char * historyStr = "History";
+        bool hasEnoughData = (mb.length() - mb.getPos()) > strlen(historyStr);
+        if( hasEnoughData && (nullptr != strstr(buffer, historyStr)))
+            history.setown(createPTree(mb));
+        else
+            history.setown(createPTree(historyStr));
     }
 
 
@@ -1719,7 +1734,10 @@ public:
     virtual IPropertyTree *getHistory()
     {
         closePending();
-        return history.getLink();
+        if (history)
+            return history.getLink();
+        else
+            return nullptr;
     }
 
     IPropertyTree &queryHistory()
@@ -2123,9 +2141,11 @@ void CFileDescriptor::serializeParts(MemoryBuffer &mb,unsigned *partlist, unsign
             part(partlist[i4])->subserialize(mb);
     }
     queryProperties().serialize(mb);
-    queryHistory().serialize(mb);
     if (sdesc)
         sdesc->serializeSub(mb);
+    IPropertyTree *t = &queryHistory();
+    if (t)
+        t->serialize(mb);
 }
 
 
