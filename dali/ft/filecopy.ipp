@@ -267,6 +267,7 @@ protected:
     void checkFilePath(RemoteFilename & filename);
     void StoreCsvRecordStructure(IFormatPartitioner &partitioner);
     void ExamineCsvStructure();
+    IFormatPartitioner * createPartitioner(aindex_t index, bool calcOutput, unsigned numParts);
     
 private:
     bool calcUsePull();
