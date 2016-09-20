@@ -117,7 +117,7 @@ struct roxiemem_decl HeapletBase
 {
     friend class DataBufferBottom;
 protected:
-    std::atomic_uint count;
+    mutable std::atomic_uint count;
 
     HeapletBase() : count(1) // Starts off active
     {
@@ -173,7 +173,8 @@ public:
         return count.load(std::memory_order_relaxed);
     }
 
-    inline bool isEmpty() const
+    virtual unsigned calcNumAllocated(bool updateCount) const;
+    virtual bool isEmpty()
     {
         return queryCount() == 1;
     }
@@ -407,6 +408,7 @@ enum RoxieHeapFlags
     RHFvariable         = 0x0010,  // only used for tracing
     RHFblocked          = 0x0040,  // allocate blocks of rows
     RHFnofragment       = 0x0080,  // the allocated records will not be fragmented
+    RHFdelayrelease     = 0x0100,
 
     //internal flags
     RHForphaned         = 0x80000000,   // heap will no longer be used, can be deleted
