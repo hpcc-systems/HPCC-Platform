@@ -943,7 +943,7 @@ public:
     }
     virtual bool isECLWatchVisible() const
     {
-        return root->getPropBool("@ECLWatchVisible", false);
+        return root->getPropBool("@ECLWatchVisible", true);
     }
 };
 
