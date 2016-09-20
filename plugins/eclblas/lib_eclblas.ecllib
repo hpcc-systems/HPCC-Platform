@@ -1,0 +1,63 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the License);
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an AS IS BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+EXPORT dimension_t  := UNSIGNED4;
+EXPORT value_t      := REAL8;
+EXPORT matrix_t     := SET OF REAL8;
+EXPORT Triangle     := ENUM(UNSIGNED1, Upper=1, Lower=2);
+EXPORT Diagonal     := ENUM(UNSIGNED1, UnitTri=1, NotUnitTri=2);
+EXPORT Side         := ENUM(UNSIGNED1, Ax=1, xA=2);
+
+
+EXPORT eclblas := SERVICE : plugin('eclblasplugin') library(eclblas) include('eclblas.hpp')
+  value_t dasum(dimension_t m, matrix_t x, dimension_t incx,
+                dimension_t skipped=0) : C, PURE;
+  matrix_t daxpy(dimension_t N, value_t alpha, const matrix_t X,
+                 dimension_t incX, matrix_t Y, dimension_t incY,
+                 dimension_t x_skipped=0, dimension_t y_skipped=0)
+                 : C, PURE;
+  matrix_t daxpy(dimension_t N, value_t alpha, const matrix_t X,
+                 dimension_t incX, const matrix_t Y, dimension_t incY,
+                 dimension_t x_skipped=0, dimension_t y_skipped=0)
+                 : C, PURE;
+  matrix_t dgemm(BOOLEAN transposeA, BOOLEAN transposeB,
+                 dimension_t M, dimension_t N, dimension_t K,
+                 value_t alpha, const matrix_t A, const matrix_t B,
+                 value_t beta=0.0, const matrix_t C=[]) : C, PURE;
+  matrix_t dgetf2(dimension_t m, dimension_t n, const matrix_t a)
+                 : C, PURE;
+  matrix_t dpotf2(Triangle tri, dimension_t r, matrix_t A,
+                  BOOLEAN clear=TRUE) : C, PURE;
+  matrix_t dscal(dimension_t N, value_t alpha, const matrix_t X,
+                 dimension_t incX, dimension_t skipped=0) : C, PURE;
+  matrix_t dsyrk(Triangle tri, BOOLEAN transposeA,
+                 dimension_t N, dimension_t K,
+                 value_t alpha, const matrix_t A,
+                 value_t beta, const matrix_t C, BOOLEAN clear=FALSE)
+                 : C, PURE;
+  matrix_t dsyrk(Triangle tri, BOOLEAN transposeA, dimension_t N,
+                 dimension_t K, value_t alpha, const matrix_t A,
+                 value_t beta, const matrix_t C, BOOLEAN clear=FALSE)
+                 : C, PURE;
+  matrix_t dtrsm(Side side, Triangle tri,
+                 BOOLEAN transposeA, Diagonal diag,
+                 dimension_t M, dimension_t N,  dimension_t lda,
+                 value_t alpha, const matrix_t A, const matrix_t B) : C, PURE
+  matrix_t Extract_Tri(dimension_t m, dimension_t n, Triangle tri,
+                       Diagonal dt, const matrix_t a) : C, PURE;
+  matrix_t make_diag(dimension_t m, value_t v=1.0, const matrix_t X=[]) : C, PURE;
+END;
