@@ -544,8 +544,8 @@ protected:
         if (!splitOffset) //header + 0 is first offset
             return;
 
-        offset_t prevRowEnd;
-        json->findRowEnd(splitOffset-thisOffset + thisHeaderSize, prevRowEnd);
+        offset_t prevRowEnd = 0;
+        json->findRowEnd(splitOffset-thisOffset + thisHeaderSize, prevRowEnd); //false return just means we're processing the end
         if (!json->checkFoundRowStart())
             return;
         if (!json->newRowSet) //get rid of extra delimiter if we haven't closed and reopened in the meantime
