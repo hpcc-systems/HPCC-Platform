@@ -967,7 +967,19 @@ int EspHttpBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request
 int EspHttpBinding::onFeaturesAuthorize(IEspContext &context, MapStringTo<SecAccessFlags> & pmap, const char *serviceName, const char *methodName)
 {
     if (!context.validateFeaturesAccess(pmap, false))
-        throw MakeStringException(-1, "%s::%s access denied.", serviceName, methodName);
+    {
+        StringBuffer features;
+        HashIterator iter(pmap);
+        int index = 0;
+        ForEach(iter)
+        {
+            IMapping &cur = iter.query();
+            const char * key = (const char *)cur.getKey();
+            SecAccessFlags val = *pmap.getValue(key);
+            features.appendf("%s%s:%s", (index++ == 0 ? "" : ", "), key, getSecAccessFlagName(val));
+        }
+        throw MakeStringException(-1, "%s::%s access denied - Required features: %s.", serviceName, methodName, features.str());
+    }
     return 0;
 }
 
