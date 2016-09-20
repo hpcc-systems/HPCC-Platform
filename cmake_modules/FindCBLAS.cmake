@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,23 +14,20 @@
 #    limitations under the License.
 ################################################################################
 
-add_subdirectory(system)
+if(NOT CBLAS_FOUND)
+    if(WIN32)
+        set(cblas_lib "cblas")
+    else()
+        set(cblas_lib cblas tatlas satlas)
+    endif()
 
-set(
-    SRCS
-    Audit.ecl
-    BLAS.ecl
-    BundleBase.ecl
-    Date.ecl
-    File.ecl
-    Metaphone3.ecl
-    Metaphone.ecl
-    Str.ecl
-    Uni.ecl
-    )
+    find_path(CBLAS_INCLUDE_DIR NAMES cblas.h)
+    find_library(CBLAS_LIBRARIES NAMES ${cblas_lib} PATHS /usr/lib/atlas /usr/lib64/atlas)
 
-foreach(module ${SRCS})
-    SIGN_MODULE(${module})
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${module} DESTINATION share/ecllibrary/std COMPONENT Runtime)
-endforeach()
-  
+    include(FindPackageHandleStandardArgs)
+    find_package_handle_standard_args(CBLAS
+        DEFAULT_MSG
+        CBLAS_LIBRARIES 
+        CBLAS_INCLUDE_DIR)
+    mark_as_advanced(CBLAS_INCLUDE_DIR CBLAS_LIBRARIES)
+endif()
