@@ -107,7 +107,7 @@ bool CLoggingManager::updateLog(const char* option, const char* logContent, Stri
 }
 
 bool CLoggingManager::updateLog(const char* option, IEspContext& espContext, IPropertyTree* userContext, IPropertyTree* userRequest,
-        const char* backEndResp, const char* userResp, StringBuffer& status)
+        const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status)
 {
     if (!initialized)
         throw MakeStringException(-1,"LoggingManager not initialized");
@@ -125,7 +125,7 @@ bool CLoggingManager::updateLog(const char* option, IEspContext& espContext, IPr
             espContextTree->addProp("UserName", userId);
 
         Owned<IEspUpdateLogRequestWrap> req =  new CUpdateLogRequestWrap(NULL, option, espContextTree.getClear(), LINK(userContext), LINK(userRequest),
-            backEndResp, userResp);
+            backEndResp, userResp, logDatasets);
         Owned<IEspUpdateLogResponse> resp =  createUpdateLogResponse();
         bRet = updateLog(*req, *resp, status);
     }
