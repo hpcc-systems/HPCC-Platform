@@ -18,5 +18,5 @@
 //class=embedded
 
 import python;
-string pcat(string a, string b) := IMPORT(Python, '/opt/HPCCSystems/examples/embed/python_cat.cat');
+string pcat(string a, string b) := IMPORT(Python, '/opt/HPCCSystems/examples/embed/python_cat.cat':time);
 pcat('Hello ', 'world!');
