@@ -107,6 +107,13 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
   option(LOGGING_SERVICE "Configure use of logging service" ON)
 
+  option(MAKE_CONFIGURATOR "Build Configurator" ON)
+  option(CONFIGURATOR_LIB "Build Configurator static library (.a)" OFF)
+
+  if ( CONFIGURATOR_LIB )
+        set( MAKE_CONFIGURATOR ON )
+  endif()
+
     MACRO(SET_PLUGIN_PACKAGE plugin)
         string(TOLOWER "${plugin}" pname)
 	    if(DEFINED pluginname)

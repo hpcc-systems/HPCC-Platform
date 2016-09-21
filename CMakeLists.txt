@@ -466,6 +466,11 @@ if(TOP_LEVEL_PROJECT)
     endif(PLATFORM OR PLUGIN)
 endif(TOP_LEVEL_PROJECT)
 
+if (MAKE_CONFIGURATOR)
+    MESSAGE( "Configurator app build ON" )
+    HPCC_ADD_SUBDIRECTORY (configuration)
+endif()
+
 ###
 ## Below are the non-compile based install scripts required for
 ## the hpcc platform.
