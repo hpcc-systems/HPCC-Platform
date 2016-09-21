@@ -68,7 +68,7 @@ extern "C" void getJSON(void *pData, char **pOutput, int nIdx);
 extern "C" void getNavigatorJSON(char **pOutput);
 extern "C" void getJSONByComponentName(const char *pComponentName, char **pOutput, int nIdx);
 extern "C" void getJSONByComponentKey(const char *pKey, char **pOutput);
-extern "C" const char* getDocBookByIndex(int idx);
+extern "C" void getDocBookByIndex(int idx, char **pOutput);
 extern "C" bool saveConfigurationFile();
 extern "C" bool saveConfigurationFileAs(const char *pFilePath);
 extern "C" int getNumberOfNotificationTypes();

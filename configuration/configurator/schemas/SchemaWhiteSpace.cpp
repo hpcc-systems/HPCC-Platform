@@ -15,40 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
-#include "jexcept.hpp"
-#include "ConfigFileComponentUtils.hpp"
+#include "SchemaWhiteSpace.hpp"
 
+using namespace CONFIGURATOR;
 
-CConfigFileComponentUtils::CConfigFileComponentUtils()
+CWhiteSpace* CWhiteSpace::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath)
 {
-    UNIMPLEMENTED;
-}
-
-CConfigFileComponentUtils::~CConfigFileComponentUtils()
-{
-    UNIMPLEMENTED;
-}
-
-void CConfigFileComponentUtils::getAvailableComponets(StringArray& compArray) const
-{
-    UNIMPLEMENTED;
-}
-
-void CConfigFileComponentUtils::getAvailableESPServices(StringArray& compArray) const
-{
-    UNIMPLEMENTED;
-}
-
-void CConfigFileComponentUtils::getDefinedDirectories(StringArray& definedDirectoriesArray) const
-{
-    UNIMPLEMENTED;
-}
-
-void CConfigFileComponentUtils::getDirectoryPath(const char *pkey, StringBuffer& path) const
-{
-    UNIMPLEMENTED;
-}
-
-void CConfigFileComponentUtils::setDirectoryPath(const char* pkey, const char* pval)
-{
+    return CXSDNodeWithRestrictions<CWhiteSpace>::load(pParentNode, pSchemaRoot, xpath);
 }

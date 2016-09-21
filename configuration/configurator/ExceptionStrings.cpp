@@ -24,7 +24,7 @@ const int nDefaultCode = 99;
 
 ::IException *CONFIGURATOR::MakeExceptionFromMap(int code, enum eExceptionCodes eCode, const char* pMsg)
 {
-    static StringBuffer strExceptionMessage;
+    StringBuffer strExceptionMessage;
     strExceptionMessage.setf("Exception: %s\nPossible Action(s): %s\n",  pExceptionStringArray[eCode-1], pExceptionStringActionArray[eCode-1]);
 
     if (pMsg != NULL)

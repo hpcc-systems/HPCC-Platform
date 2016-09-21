@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -22,38 +22,35 @@
 
 using namespace CONFIGURATOR;
 
-#define LOOP_THRU_BUILD_SET for (int idx = 0; idx < m_buildSetArray.length(); idx++)
+#define LOOP_THRU_BUILD_SET int len = m_buildSetArray.length(); for (int idx = 0; idx < len; idx++)
 
-static CBuildSetManager *s_pBuildSetManager = NULL;
+static CBuildSetManager *s_pBuildSetManager = nullptr;
 
 CBuildSetManager* CBuildSetManager::getInstance(const char* pBuildSetFile, const char* pBuildSetDirectory)
 {
-    if (s_pBuildSetManager == NULL)
+    if (s_pBuildSetManager == nullptr)
     {
         s_pBuildSetManager = new CBuildSetManager();
 
-        if (pBuildSetFile != NULL)
-            s_pBuildSetManager->m_buildSetFile.set(pBuildSetFile);
-        else
-            s_pBuildSetManager->m_buildSetFile.set(DEFAULT_BUILD_SET_XML_FILE);
-
-        if (pBuildSetDirectory != NULL)
-            s_pBuildSetManager->m_buildSetDir.set(pBuildSetDirectory);
-        else
-            s_pBuildSetManager->m_buildSetDir.set(DEFAULT_BUILD_SET_DIRECTORY);
+        s_pBuildSetManager->m_buildSetFile.set(pBuildSetFile != nullptr ? pBuildSetFile : DEFAULT_BUILD_SET_XML_FILE);
+        s_pBuildSetManager->m_buildSetDir.set(pBuildSetDirectory != nullptr ? pBuildSetDirectory : DEFAULT_BUILD_SET_DIRECTORY);
 
         pBuildSetFile = s_pBuildSetManager->m_buildSetFile;
         pBuildSetDirectory = s_pBuildSetManager->m_buildSetDir;
 
-        s_pBuildSetManager->m_buildSetPath.clear().appendf("%s%s%s", pBuildSetDirectory, pBuildSetDirectory[strlen(pBuildSetDirectory)-1] == '/' ? "" : "/", pBuildSetFile);
-        s_pBuildSetManager->populateBuildSet();
+        s_pBuildSetManager->m_buildSetPath.setf("%s%s%s", pBuildSetDirectory, pBuildSetDirectory[strlen(pBuildSetDirectory)-1] == '/' ? "" : "/", pBuildSetFile);
+        if (s_pBuildSetManager->populateBuildSet() == false)
+        {
+            delete s_pBuildSetManager;
+            s_pBuildSetManager = nullptr;
+        }
     }
     return s_pBuildSetManager;
 }
 
 CBuildSetManager::CBuildSetManager(const char* pBuildSetFile, const char* pBuildSetDir) : m_buildSetFile(pBuildSetFile), m_buildSetDir(pBuildSetDir)
 {
-    if (pBuildSetFile != NULL && pBuildSetDir != NULL)
+    if (pBuildSetFile != nullptr && pBuildSetDir != nullptr)
        m_buildSetPath.clear().appendf("%s%s%s", pBuildSetDir, pBuildSetDir[strlen(pBuildSetDir)-1] == '/' ? "" : "/", pBuildSetFile);
 }
 
@@ -88,26 +85,36 @@ void CBuildSetManager::getBuildSetServices(StringArray& buildSetArray) const
 
 const char* CBuildSetManager::getBuildSetServiceName(int index) const
 {
+    if (index >= getBuildSetServiceCount())
+        return nullptr;
     return this->getBuildSetService(index)->getName();
 }
 
 const char* CBuildSetManager::getBuildSetServiceFileName(int index) const
 {
+    if (index >= getBuildSetServiceCount())
+        return nullptr;
     return this->getBuildSetService(index)->getSchema();
 }
 
 const char* CBuildSetManager::getBuildSetComponentTypeName(int index) const
 {
+    if (index >= this->getBuildSetComponentCount())
+        return nullptr;
     return this->getBuildSetComponent(index)->getName();
 }
 
 const char* CBuildSetManager::getBuildSetComponentFileName(int index) const
 {
+    if (index >= this->getBuildSetComponentCount())
+        return nullptr;
     return this->getBuildSetComponent(index)->getSchema();
 }
 
 const char* CBuildSetManager::getBuildSetProcessName(int index) const
 {
+    if (index >= this->getBuildSetComponentCount())
+        return nullptr;
     return this->getBuildSetComponent(index)->getProcessName();
 }
 
@@ -115,7 +122,7 @@ bool CBuildSetManager::populateBuildSet()
 {
     StringBuffer xpath;
 
-    if (m_buildSetTree.get() != NULL)
+    if (m_buildSetTree.get() != nullptr)
         return false;
 
     try
@@ -127,7 +134,7 @@ bool CBuildSetManager::populateBuildSet()
         return false;
     }
 
-    xpath.appendf("./%s/%s/%s", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET);
+    xpath.setf("./%s/%s/%s", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET);
 
     Owned<IPropertyTreeIterator> iter = m_buildSetTree->getElements(xpath.str());
 
@@ -135,12 +142,12 @@ bool CBuildSetManager::populateBuildSet()
     {
         IPropertyTree* pTree = &iter->query();
 
-        if ( pTree->queryProp(XML_ATTR_PROCESS_NAME) == NULL || pTree->queryProp(XML_ATTR_OVERIDE) != NULL || ( (pTree->queryProp(XML_ATTR_DEPLOYABLE) != NULL && \
+        if ( pTree->queryProp(XML_ATTR_PROCESS_NAME) == nullptr || pTree->queryProp(XML_ATTR_OVERRIDE) != nullptr || ( (pTree->queryProp(XML_ATTR_DEPLOYABLE) != nullptr && \
                 stricmp(pTree->queryProp(XML_ATTR_DEPLOYABLE), "no") == 0 && stricmp(pTree->queryProp(XML_ATTR_PROCESS_NAME), XML_TAG_ESPSERVICE) != 0) ) )
             continue;
 
         Owned<CBuildSet> pBuildSet = new CBuildSet(pTree->queryProp(XML_ATTR_INSTALLSET), pTree->queryProp(XML_ATTR_NAME), pTree->queryProp(XML_ATTR_PROCESS_NAME),\
-                                                   pTree->queryProp(XML_ATTR_SCHEMA), pTree->queryProp(XML_ATTR_DEPLOYABLE), pTree->queryProp(XML_ATTR_OVERIDE));
+                                                   pTree->queryProp(XML_ATTR_SCHEMA), pTree->queryProp(XML_ATTR_DEPLOYABLE), pTree->queryProp(XML_ATTR_OVERRIDE));
 
         m_buildSetArray.append(*pBuildSet.getLink());
     }
@@ -153,8 +160,8 @@ void CBuildSetManager::setBuildSetArray(const StringArray &strArray)
 
     for (int idx = 0; idx < strArray.length(); idx++)
     {
-        Owned<CBuildSet> pBSet = new CBuildSet(NULL, strArray.item(idx), NULL, strArray.item(idx));
-        assert (pBSet != NULL);
+        Owned<CBuildSet> pBSet = new CBuildSet(nullptr, strArray.item(idx), nullptr, strArray.item(idx));
+        assert (pBSet != nullptr);
         m_buildSetArray.append(*pBSet.getClear());
     }
 }
@@ -165,7 +172,7 @@ const char* CBuildSetManager::getBuildSetSchema(int index) const
     if (index < m_buildSetArray.length())
         return m_buildSetArray.item(index).getSchema();
     else
-        return NULL;
+        return nullptr;
 }
 
 const int CBuildSetManager::getBuildSetSchemaCount() const
@@ -179,8 +186,8 @@ const int CBuildSetManager::getBuildSetServiceCount() const
 
     LOOP_THRU_BUILD_SET
     {
-        if (m_buildSetArray.item(idx).getProcessName() != NULL && strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) == 0 && \
-                (m_buildSetArray.item(idx).getDeployable() != NULL && stricmp(m_buildSetArray.item(idx).getDeployable(), "no") == 0))
+        if (m_buildSetArray.item(idx).getProcessName() != nullptr && strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) == 0 && \
+                (m_buildSetArray.item(idx).getDeployable() != nullptr && stricmp(m_buildSetArray.item(idx).getDeployable(), "no") == 0))
             nCount++;
     }
     return nCount;
@@ -192,9 +199,9 @@ const int CBuildSetManager::getBuildSetComponentCount() const
 
     LOOP_THRU_BUILD_SET
     {
-        if ( ((m_buildSetArray.item(idx).getProcessName() == NULL) || (strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) != 0)) && \
-                ( (m_buildSetArray.item(idx).getDeployable() == NULL) || (stricmp(m_buildSetArray.item(idx).getDeployable(), "no") != 0) ) && \
-                ( (m_buildSetArray.item(idx).getOveride() == NULL) || (stricmp(m_buildSetArray.item(idx).getOveride(), "no")    != 0) ) )
+        if ( ((m_buildSetArray.item(idx).getProcessName() == nullptr) || (strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) != 0)) && \
+                ( (m_buildSetArray.item(idx).getDeployable() == nullptr) || (stricmp(m_buildSetArray.item(idx).getDeployable(), "no") != 0) ) && \
+                ( (m_buildSetArray.item(idx).getOverride() == nullptr) || (stricmp(m_buildSetArray.item(idx).getOverride(), "no")    != 0) ) )
             nCount++;
     }
     return nCount;
@@ -202,26 +209,24 @@ const int CBuildSetManager::getBuildSetComponentCount() const
 
 const CBuildSet* CBuildSetManager::getBuildSetComponent(int index) const
 {
-    int nCount = 0;
-
     LOOP_THRU_BUILD_SET
     {
         if (index == 0)
         {
-            if ( ((m_buildSetArray.item(idx).getProcessName() == NULL) || (strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) != 0)) && \
-                    ( (m_buildSetArray.item(idx).getDeployable() == NULL) || (stricmp(m_buildSetArray.item(idx).getDeployable(), "no") != 0) ) && \
-                    ( (m_buildSetArray.item(idx).getOveride() == NULL) || (stricmp(m_buildSetArray.item(idx).getOveride(), "no") != 0) ) )
+            if ( ((m_buildSetArray.item(idx).getProcessName() == nullptr) || (strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) != 0)) && \
+                    ( (m_buildSetArray.item(idx).getDeployable() == nullptr) || (stricmp(m_buildSetArray.item(idx).getDeployable(), "no") != 0) ) && \
+                    ( (m_buildSetArray.item(idx).getOverride() == nullptr) || (stricmp(m_buildSetArray.item(idx).getOverride(), "no") != 0) ) )
                 return &(m_buildSetArray.item(idx));
             else
                 continue;
         }
-        if ( ((m_buildSetArray.item(idx).getProcessName() == NULL) || (strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) != 0)) && \
-                ( (m_buildSetArray.item(idx).getDeployable() == NULL)|| (stricmp(m_buildSetArray.item(idx).getDeployable(), "no") != 0) ) && \
-                ( (m_buildSetArray.item(idx).getOveride() == NULL) || (stricmp(m_buildSetArray.item(idx).getOveride(), "no") != 0) ) )
+        if ( ((m_buildSetArray.item(idx).getProcessName() == nullptr) || (strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) != 0)) && \
+                ( (m_buildSetArray.item(idx).getDeployable() == nullptr)|| (stricmp(m_buildSetArray.item(idx).getDeployable(), "no") != 0) ) && \
+                ( (m_buildSetArray.item(idx).getOverride() == nullptr) || (stricmp(m_buildSetArray.item(idx).getOverride(), "no") != 0) ) )
             index--;
     }
     assert(!"index invalid");
-    return NULL;
+    return nullptr;
 }
 
 const CBuildSet* CBuildSetManager::getBuildSetService(int index) const
@@ -230,17 +235,17 @@ const CBuildSet* CBuildSetManager::getBuildSetService(int index) const
     {
         if (index == 0)
         {
-            if (m_buildSetArray.item(idx).getProcessName() != NULL && strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) == 0 && \
-                    (m_buildSetArray.item(idx).getDeployable() != NULL && stricmp(m_buildSetArray.item(idx).getDeployable(), "no") == 0))
+            if (m_buildSetArray.item(idx).getProcessName() != nullptr && strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) == 0 && \
+                    (m_buildSetArray.item(idx).getDeployable() != nullptr && stricmp(m_buildSetArray.item(idx).getDeployable(), "no") == 0))
                 return &(m_buildSetArray.item(idx));
             else
                 continue;
         }
-        if (m_buildSetArray.item(idx).getProcessName() != NULL && strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) == 0 && \
-                (m_buildSetArray.item(idx).getDeployable() != NULL && stricmp(m_buildSetArray.item(idx).getDeployable(), "no") == 0))
+        if (m_buildSetArray.item(idx).getProcessName() != nullptr && strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) == 0 && \
+                (m_buildSetArray.item(idx).getDeployable() != nullptr && stricmp(m_buildSetArray.item(idx).getDeployable(), "no") == 0))
             index--;
     }
 
     assert(!"index invalid");
-    return NULL;
+    return nullptr;
 }

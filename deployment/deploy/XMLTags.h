@@ -232,14 +232,57 @@
 #define XML_ATTR_WATCHDOGENABLED       "@watchdogEnabled"
 #define XML_ATTR_WATCHDOGPROGRESSENABLED  "@watchdogProgressEnabled"
 #define XML_ATTR_WATCHDOGPROGRESSINTERVAL "@watchdogProgressInterval"
+#define NAME_SPACE_FOR_XSD_SCHEMA      "xs:"
 
-#define XSD_TAG_ELEMENT                "xs:element"
-#define XSD_TAG_SEQUENCE               "xs:sequence"
-#define XSD_TAG_CHOICE                 "xs:choice"
-#define XSD_TAG_COMPLEX_TYPE           "xs:complexType"
-#define XSD_TAG_COMPLEX_CONTENT        "xs:complexContent"
-#define XSD_TAG_ATTRIBUTE              "xs:attribute"
-#define XSD_TAG_ATTRIBUTE_GROUP        "xs:attributeGroup"
+static const char* XSD_TAG_ANNOTATION(NAME_SPACE_FOR_XSD_SCHEMA "annotation");
+static const char* XSD_TAG_APP_INFO(NAME_SPACE_FOR_XSD_SCHEMA "appinfo");
+static const char* XSD_TAG_ATTRIBUTE(NAME_SPACE_FOR_XSD_SCHEMA "attribute");
+static const char* XSD_TAG_ATTRIBUTE_GROUP(NAME_SPACE_FOR_XSD_SCHEMA "attributeGroup");
+static const char* XSD_TAG_CHOICE(NAME_SPACE_FOR_XSD_SCHEMA "choice");
+static const char* XSD_TAG_COMPLEX_CONTENT(NAME_SPACE_FOR_XSD_SCHEMA "complexContent");
+static const char* XSD_TAG_COMPLEX_TYPE(NAME_SPACE_FOR_XSD_SCHEMA "complexType");
+static const char* XSD_TAG_DOCUMENTATION(NAME_SPACE_FOR_XSD_SCHEMA "documentation");
+static const char* XSD_TAG_ELEMENT(NAME_SPACE_FOR_XSD_SCHEMA "element");
+static const char* XSD_TAG_EXTENSION(NAME_SPACE_FOR_XSD_SCHEMA "extension");
+static const char* XSD_TAG_KEY(NAME_SPACE_FOR_XSD_SCHEMA "key");
+static const char* XSD_TAG_KEYREF(NAME_SPACE_FOR_XSD_SCHEMA "keyref");
+static const char* XSD_TAG_SELECTOR(NAME_SPACE_FOR_XSD_SCHEMA "selector");
+static const char* XSD_TAG_FIELD(NAME_SPACE_FOR_XSD_SCHEMA "field");
+static const char* XSD_TAG_INCLUDE(NAME_SPACE_FOR_XSD_SCHEMA "include");
+static const char* XSD_TAG_RESTRICTION(NAME_SPACE_FOR_XSD_SCHEMA "restriction");
+static const char* XSD_TAG_SCHEMA("");
+static const char* XSD_TAG_SIMPLE_CONTENT(NAME_SPACE_FOR_XSD_SCHEMA "simpleContent");
+static const char* XSD_TAG_SEQUENCE(NAME_SPACE_FOR_XSD_SCHEMA "sequence");
+static const char* XSD_TAG_SIMPLE_TYPE(NAME_SPACE_FOR_XSD_SCHEMA "simpleType");
+static const char* XSD_TAG_ENUMERATION(NAME_SPACE_FOR_XSD_SCHEMA "enumeration");
+static const char* XSD_TAG_FRACTION_DIGITS(NAME_SPACE_FOR_XSD_SCHEMA "fractionDigits");
+static const char* XSD_TAG_LENGTH(NAME_SPACE_FOR_XSD_SCHEMA "length");
+static const char* XSD_TAG_MAX_EXCLUSIVE(NAME_SPACE_FOR_XSD_SCHEMA "maxExclusive");
+static const char* XSD_TAG_MAX_INCLUSIVE(NAME_SPACE_FOR_XSD_SCHEMA "maxInclusive");
+static const char* XSD_TAG_MIN_EXCLUSIVE(NAME_SPACE_FOR_XSD_SCHEMA "minExlusive");
+static const char* XSD_TAG_MIN_INCLUSIVE(NAME_SPACE_FOR_XSD_SCHEMA "minExclusive");
+static const char* XSD_TAG_MAX_LENGTH(NAME_SPACE_FOR_XSD_SCHEMA "maxLength");
+static const char* XSD_TAG_MIN_LENGTH(NAME_SPACE_FOR_XSD_SCHEMA "minLength");
+static const char* XSD_TAG_PATTERN(NAME_SPACE_FOR_XSD_SCHEMA "pattern");
+static const char* XSD_TAG_TOTAL_DIGITS(NAME_SPACE_FOR_XSD_SCHEMA "totalDigits");
+static const char* XSD_TAG_UNQIUE(NAME_SPACE_FOR_XSD_SCHEMA "unique");
+static const char* XSD_TAG_WHITE_SPACE(NAME_SPACE_FOR_XSD_SCHEMA "whiteSpace");
+
+static const char* XSD_DATA_TYPE_NORMALIZED_STRING(NAME_SPACE_FOR_XSD_SCHEMA "normalizedString");
+static const char* XSD_DATA_TYPE_STRING(NAME_SPACE_FOR_XSD_SCHEMA "string");
+static const char* XSD_DATA_TYPE_TOKEN(NAME_SPACE_FOR_XSD_SCHEMA "token");
+static const char* XSD_DATA_TYPE_DATE(NAME_SPACE_FOR_XSD_SCHEMA "date");
+static const char* XSD_DATA_TYPE_TIME(NAME_SPACE_FOR_XSD_SCHEMA "time");
+static const char* XSD_DATA_TYPE_DATE_TIME(NAME_SPACE_FOR_XSD_SCHEMA "dateTime");
+static const char* XSD_DATA_TYPE_DECIMAL(NAME_SPACE_FOR_XSD_SCHEMA "decimal"); // A decimal value
+static const char* XSD_DATA_TYPE_INTEGER(NAME_SPACE_FOR_XSD_SCHEMA "integer"); // An integer value
+static const char* XSD_DATA_TYPE_INT(NAME_SPACE_FOR_XSD_SCHEMA "int"); // A signed 32-bit integer
+static const char* XSD_DATA_TYPE_LONG(NAME_SPACE_FOR_XSD_SCHEMA "long"); // A signed 64-bit integer
+static const char* XSD_DATA_TYPE_NON_NEGATIVE_INTEGER(NAME_SPACE_FOR_XSD_SCHEMA "nonNegativeInteger");
+static const char* XSD_DATA_TYPE_NON_POSITIVE_INTEGER(NAME_SPACE_FOR_XSD_SCHEMA "nonPositiveInteger");
+static const char* XSD_DATA_TYPE_NEGATIVE_INTEGER(NAME_SPACE_FOR_XSD_SCHEMA "negativeInteger");
+static const char* XSD_DATA_TYPE_POSITIVE_INTEGER(NAME_SPACE_FOR_XSD_SCHEMA "positiveInteger");
+static const char* XSD_DATA_TYPE_BOOLEAN(NAME_SPACE_FOR_XSD_SCHEMA "boolean");
 
 #define UI_FIELD_ATTR_NAME              "@Name"
 #define UI_FIELD_ATTR_VALUE             "@Value"
@@ -285,7 +328,7 @@
 #define TAG_URL                         "url"
 #define TAG_INSTALLSET                  "installSet"
 #define TAG_PROCESSNAME                 "processName"
-#define TAG_SCHEMA                      "schema"
+#define TAG_SCHEMA                      "SCHEMA "
 #define TAG_DEPLOYABLE                  "deployable"
 #define TAG_VALUE                       "value"
 #define TAG_ATTRIBUTE                   "Attribute"

@@ -52,7 +52,7 @@ enum CEnvironmentConfiguration::CEF_ERROR_CODES CEnvironmentConfiguration::gener
 {
     StringBuffer xpath;
 
-    xpath.clear().appendf("<%s><%s></%s>", XML_HEADER, XML_TAG_ENVIRONMENT, XML_TAG_ENVIRONMENT);
+    xpath.setf("<%s><%s></%s>", XML_HEADER, XML_TAG_ENVIRONMENT, XML_TAG_ENVIRONMENT);
 
     if (m_pEnv.get() != NULL)
         m_pEnv.clear();

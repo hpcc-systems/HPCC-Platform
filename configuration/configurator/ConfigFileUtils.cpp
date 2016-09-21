@@ -29,10 +29,10 @@ CConfigFileUtils* CConfigFileUtils::getInstance()
 
     if (slock.lock() == true)
     {
-      if (s_configFileSingleton.get() == NULL)
-        s_configFileSingleton.setown(new CConfigFileUtils(DEFAULT_CONFIGURATION_PATH));
+        if (s_configFileSingleton.get() == NULL)
+            s_configFileSingleton.setown(new CConfigFileUtils(DEFAULT_CONFIGURATION_PATH));
 
-      slock.unlock();
+        slock.unlock();
     }
     return s_configFileSingleton.get();
 }
@@ -151,7 +151,6 @@ enum CConfigFileUtils::CF_ERROR_CODES CConfigFileUtils::writeConfigurationToFile
 
     pFileIO.setown(pFIO);
     pFileIO->write(0, length, pBuffer);
-    //notify(IConfigFileUtilsObserver::CF_FILE_WRITE_NO_CHECK);
     notify(CONFIGURATOR::IConfigFileUtilsObserver::CF_FILE_WRITE_NO_CHECK);
 
     return CF_NO_ERROR;
