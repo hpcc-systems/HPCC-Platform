@@ -470,7 +470,7 @@ then
    [ "$target" != "/" ] && target=$(echo $target | sed 's/[\/]*$//')
 fi
 
-SCRIPT_FILE=/tmp/deploy-java-files_$$
+SCRIPT_FILE=~/deploy-java-files_$$
 createScriptFileHead
 
 EXPECT_SCRIPT_FILE=
