@@ -6218,6 +6218,9 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
     unwindChildren(bodyArgs, body, 0);
     bodyArgs.append(*createLocalAttribute());
     bodyArgs.append(*createExprAttribute(entrypointAtom, LINK(funcNameExpr)));
+    IHqlExpression *timeAttr = ecl->queryAttribute(timeAtom);
+    if (timeAttr)
+        bodyArgs.append(*LINK(timeAttr));
     OwnedHqlExpr newBody = body->clone(bodyArgs);
     inheritDependencies(newBody);
     copyDependencies(queryBodyExtra(ecl), queryBodyExtra(newBody));
