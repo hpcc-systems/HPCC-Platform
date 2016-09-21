@@ -737,6 +737,20 @@ define([
             },
 
             displayProperties: function (wu, globalID, place) {
+                var first = true;
+                var table = {};
+                var tr = {};
+                var context = this;
+                function ensureHeader() {
+                    if (first) {
+                        first = false;
+                        table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, place);
+                        tr = domConstruct.create("tr", null, table);
+                        domConstruct.create("th", { innerHTML: context.i18n.Property }, tr);
+                        domConstruct.create("th", { innerHTML: context.i18n.Value }, tr);
+                    }
+                }
+
                 if (this.hasPlugin()) {
                     var item = this.getItem(globalID);
                     if (item) {
@@ -799,10 +813,7 @@ define([
                             delete props.stopped;
                             domConstruct.create("br", null, place);
                         }
-                        var first = true;
-                        var table = {};
-                        var tr = {};
-                        var context = this;
+
                         for (var key in props) {
                             if (key[0] == "_")
                                 continue;
@@ -821,17 +832,8 @@ define([
                         }, this);
                         if (first === false) {
                             domConstruct.create("br", null, place);
-                        }
                     }
                 }
-
-                function ensureHeader() {
-                    if (first) {
-                        first = false;
-                        table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, place);
-                        tr = domConstruct.create("tr", null, table);
-                        domConstruct.create("th", { innerHTML: context.i18n.Property }, tr);
-                        domConstruct.create("th", { innerHTML: context.i18n.Value }, tr);
                     }
                 }
             },
