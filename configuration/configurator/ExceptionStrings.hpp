@@ -49,6 +49,7 @@ catch (::IException *except) \
     StringBuffer strErrMsg;\
     except->errorMessage(strErrMsg);\
     ::std::cout << ::std::endl << strErrMsg.str() << ::std::endl << ::std::endl;\
+    except->Release();\
     exit(-1);\
 }
 
@@ -83,7 +84,7 @@ const char pExceptionStringActionArray[EX_STR_LAST_ENTRY*2][MAX_EXCEPTION_STRING
                                                                                             /* 15 */ "The XSD has a node xs:maxLength @value is not greater than or equal to 0",
                                                                                             /* 16 */ "The XSD has a node xs:pattern @value is not set",
                                                                                             /* 17 */ "The XSD has a node xs:totalDigits @value is not greater than or equal to 0",
-                                                                                            /* 17 */ "The XSD has a node xs:whitespace @value is not valid",
+                                                                                            /* 18 */ "The XSD has a node xs:whitespace @value is not valid",
                                                                                             /*** ADD CORRESPONDING ENTRY TO pExceptionStringActionArray ***/
                                                                                         };
 

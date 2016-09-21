@@ -32,7 +32,7 @@ enum ENotificationType
     eWarning,
     eError,
     eCritical,
-    eUnknown // needs to be last
+    eUnknown // needs to be last, and all enumaration element indexes must be sequential
 };
 
 static const char NotificationTypeNames[eUnknown][1024] = {     "Informational",
@@ -45,7 +45,7 @@ static const char NotificationTypeNames[eUnknown][1024] = {     "Informational",
 class CNotification;
 class CNotificationManager;
 
-class CNotificationManager : public InterfaceImpl
+class CNotificationManager : public CInterface
 {
 public:
 
@@ -84,7 +84,7 @@ private:
     static CNotificationManager *s_pNotificationManager;
 };
 
-class CNotification : public InterfaceImpl
+class CNotification : public CInterfaceOf<IInterface>
 {
     friend class CNotificationManager;
 

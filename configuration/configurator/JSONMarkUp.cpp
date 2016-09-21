@@ -6,13 +6,6 @@
 
 using namespace CONFIGURATOR;
 
-void CJSONMarkUpHelper::markUpString(::StringBuffer &str)
-{
-    //str.replaceString("\"","\\\"");
-    //str.replace("[","\\[");
-    //str.replace("]","/]");
-}
-
 void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, \
                                         const char *pToolTip, const char *pDefaultValue, const char *pValues, const char *pValue)
 {

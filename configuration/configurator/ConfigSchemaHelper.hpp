@@ -34,6 +34,7 @@
 
 namespace CONFIGURATOR
 {
+static const char* CONFIGURATOR_HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Environment>\n\t<Software>";
 
 class CSchemaMapManager;
 class CSimpleType;
@@ -44,9 +45,9 @@ public:
 
     IMPLEMENT_IINTERFACE
 
-    static CConfigSchemaHelper* getInstance(const char* pDefaultDirOverride =  NULL);
-    static CConfigSchemaHelper* getInstance(const char* pBuildSetFileName, const char *pBaseDirectory, const char *pDefaultDirOverride = NULL);
-    static CConfigSchemaHelper* getNewInstance(const char* pDefaultDirOverride =  NULL);
+    static CConfigSchemaHelper* getInstance(const char* pDefaultDirOverride =  nullptr);
+    static CConfigSchemaHelper* getInstance(const char* pBuildSetFileName, const char *pBaseDirectory, const char *pDefaultDirOverride = nullptr);
+    static CConfigSchemaHelper* getNewInstance(const char* pDefaultDirOverride =  nullptr);
 
     virtual ~CConfigSchemaHelper();
 
@@ -68,10 +69,10 @@ public:
     void processNodeWithBaseArr();
 
     void addNodeForTypeProcessing(CXSDNodeWithType *pNode);
-    void processNodeWithTypeArr(CXSDNodeBase *pParentNode = NULL);
+    void processNodeWithTypeArr(CXSDNodeBase *pParentNode = nullptr);
 
     void addElementForRefProcessing(CElement *pElement);
-    void processElementArr(CElement *pElement);
+    void processElementArr();
 
     void addKeyRefForReverseAssociation(const CKeyRef *pKeyRef) const;
     void processKeyRefReverseAssociation() const;
@@ -82,14 +83,12 @@ public:
     bool getXMLFromSchema(StringBuffer& strXML, const char* pXSD); //test purposes
     void populateEnvXPath();
     void loadEnvFromConfig(const char *pEnvFile);
-    const char* printDocumentation(const char* comp);
+    void printDocumentation(const char* comp, char **pOutput) const;
     void printJSON(const char* comp, char **pOutput, int nIdx = -1, bool bCleanUp = false) const;
     void printJSONByKey(const char* key, char **pOutput, bool bCleanUp = false) const;
     void printNavigatorJSON(char **pOutput, bool bCleanUp = false) const;
     void printDump(const char* comp) const;
     void dumpStdOut() const;
-    void addToolTip(const char *js);
-    const char* getToolTipJS() const;
 
     const char* getBasePath() const
     {
@@ -141,7 +140,7 @@ public:
         m_nTables = 0;
     }
     bool saveConfigurationFile() const;
-    bool saveConfigurationFileAs(const char *pFilePath = NULL);
+    bool saveConfigurationFileAs(const char *pFilePath = nullptr);
 
     const char* getEnvFilePath() const
     {
@@ -154,7 +153,7 @@ public:
 
 protected:
 
-    CConfigSchemaHelper(const char* pBuildSetFile = DEFAULT_BUILD_SET_XML_FILE, const char* pBuildSetDir = DEFAULT_BUILD_SET_DIRECTORY, const char* pDefaultDirOverride = NULL);
+    CConfigSchemaHelper(const char* pBuildSetFile = DEFAULT_BUILD_SET_XML_FILE, const char* pBuildSetDir = DEFAULT_BUILD_SET_DIRECTORY, const char* pDefaultDirOverride = nullptr);
 
     CSchemaMapManager *m_pSchemaMapManager;
     ::CIArrayOf<CExtension> m_extensionArr;
@@ -163,7 +162,6 @@ protected:
     ::CIArrayOf<CXSDNodeWithBase> m_nodeWithBaseArr;
     ::CIArrayOf<CElement> m_ElementArr;
     ::CIArrayOf<CKeyRef> m_KeyRefArr;
-    ::StringArray m_strToolTipsJS;
     ::StringArray m_strArrayEnvXPaths;
     ::StringArray m_strArrayEnvXMLComponentInstances;
 
@@ -173,13 +171,14 @@ protected:
     }
     void setEnvFilePath(const char* pEnvFilePath)
     {
-        assert(pEnvFilePath != NULL);
+        assert(pEnvFilePath != nullptr);
         m_strEnvFilePath.set(pEnvFilePath);
     }
 
-private:
-
     static void clearLF(StringBuffer& strToClear);
+    static size_t getXPathIndexLength(const char *pXPath);
+
+private:
 
     static CConfigSchemaHelper* s_pCConfigSchemaHelper;
     mutable int m_nTables;

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -33,26 +33,26 @@ const char *pDefaultJSONExt =  ".json";
 
 void usage()
 {
-    ::std::cout << "configurator -use <xsd files>  -b <base dir path>" << ::std::endl;
-    ::std::cout << "Example Usage: ./configurator -use dali.xsd -b /opt/HPCCSystems/componentfiles/configxml -d -t /tmp " << ::std::endl;
-    ::std::cout << "-d -doc                           : generate docs" << ::std::endl;
-    ::std::cout << "-b -base <base dir path>          : base directory path to use with -use option and for xs:include references in xsd files" << ::std::endl;
-    ::std::cout << "-t -target <target directory>     : directory to which to docs will be written. If not specified, then output will go to ::std::out" << ::std::endl;
-    ::std::cout << "-u -use <schema xsd>              : use specified xsd schema instead of buildset file" << ::std::endl;
+    ::std::cout << "configurator --use <xsd files>  -b <base dir path>" << ::std::endl;
+    ::std::cout << "Example Usage: ./configurator --use dali.xsd -b /opt/HPCCSystems/componentfiles/configxml -d -t /tmp " << ::std::endl;
+    ::std::cout << "-d --doc                           : generate docs" << ::std::endl;
+    ::std::cout << "-b --base <base dir path>          : base directory path to use with --use option and for xs:include references in xsd files" << ::std::endl;
+    ::std::cout << "-t --target <target directory>     : directory to which to docs will be written. If not specified, then output will go to ::std::out" << ::std::endl;
+    ::std::cout << "-u --use <schema xsd>              : use specified xsd schema instead of buildset file" << ::std::endl;
     ::std::cout << "-h -help                          : prints out this usage" << ::std::endl;
 
     ::std::cout << ::std::endl;
 
     ::std::cout << ::std::endl << "** Experimental **" << ::std::endl;
-    ::std::cout <<"Example Usage: ./configurator -use esp.xsd -b /opt/HPCCSystems/componentfiles/configxml/ -doc" << ::std::endl;
-    ::std::cout << "-f -file <build set file>         : buildset file name (required if base directory is specfied" << ::std::endl;
-    ::std::cout << "-p -path <base dir path>          : base directory path (required if buildset file name is specified)" << ::std::endl;
-    ::std::cout << "-x -xsd  <xsd file name>          : xsd file name (can be more than one) - For use with buildset file" << ::std::endl;
-    ::std::cout << "-l -list                          : list available xsd files" << ::std::endl;
-    ::std::cout << "-m -xml                           : generate XML configuration file" << ::std::endl;
-    ::std::cout << "-j -json <component key>          : prints JSON" << ::std::endl;
-    ::std::cout << "-c -env -config <path to env xml file> : load environment config xml file (e.g. environment.xml) " << ::std::endl;
-    ::std::cout << "-dump                             : dump out xsd internal structure and values" << ::std::endl;
+    ::std::cout <<"Example Usage: ./configurator --use esp.xsd -b /opt/HPCCSystems/componentfiles/configxml/ --doc" << ::std::endl;
+    ::std::cout << "-f --file <build set file>         : buildset file name (required if base directory is specfied" << ::std::endl;
+    ::std::cout << "-p --path <base dir path>          : base directory path (required if buildset file name is specified)" << ::std::endl;
+    ::std::cout << "-x --xsd  <xsd file name>          : xsd file name (can be more than one) - For use with buildset file" << ::std::endl;
+    ::std::cout << "-l --list                          : list available xsd files" << ::std::endl;
+    ::std::cout << "-m --xml                           : generate XML configuration file" << ::std::endl;
+    ::std::cout << "-j --json <component key>          : prints JSON" << ::std::endl;
+    ::std::cout << "-c --env -config <path to env xml file> : load environment config xml file (e.g. environment.xml) " << ::std::endl;
+    ::std::cout << "--dump                             : dump out xsd internal structure and values" << ::std::endl;
 }
 
 #ifndef CONFIGURATOR_LIB
@@ -65,7 +65,7 @@ void usage()
 
     int idx = 1;
 
-    CConfigSchemaHelper *pSchemaHelper = NULL;
+    CConfigSchemaHelper *pSchemaHelper = nullptr;
 
     char pBuildSetFile[BUFF_SIZE];
     char pBuildSetFileDir[BUFF_SIZE];
@@ -88,7 +88,7 @@ void usage()
 
     bool bListXSDs      = false;
     bool bGenDocs       = false;
-	bool bGenJSON       = false;
+    bool bGenJSON       = false;
     bool bDump          = false;
     bool bLoadEnvXML    = false;
 
@@ -107,78 +107,78 @@ void usage()
             usage();
             return 0;
         }
-        if (stricmp(argv[idx], "-dump") == 0)
+        if (stricmp(argv[idx], "--dump") == 0)
             bDump = true;
-        if (stricmp(argv[idx], "-config") == 0 || stricmp(argv[idx], "-c") == 0 || stricmp(argv[idx], "-env") == 0)
+        if (stricmp(argv[idx], "-config") == 0 || stricmp(argv[idx], "-c") == 0 || stricmp(argv[idx], "--env") == 0)
         {
             idx++;
             bLoadEnvXML = true;
 
-            if (argv[idx] == NULL)
+            if (argv[idx] == nullptr)
             {
                 ::std::cout << "Missing env xml file parameter!" << ::std::endl;
                 return 0;
             }
             strncpy(pEnvXMLPath, argv[idx], BUFF_SIZE);
         }
-        else if (stricmp(argv[idx], "-file") == 0 || stricmp(argv[idx], "-f") == 0)
+        else if (stricmp(argv[idx], "--file") == 0 || stricmp(argv[idx], "-f") == 0)
         {
             idx++;
 
             assert(argv[idx]);
-            if (argv[idx] == NULL)
+            if (argv[idx] == nullptr)
             {
                 ::std::cout << "Missing file parameter!" << ::std::endl;
                 return 0;
             }
             strncpy(pBuildSetFile, argv[idx], BUFF_SIZE);
         }
-        else if (stricmp(argv[idx], "-path") == 0 || stricmp(argv[idx], "-p") == 0)
+        else if (stricmp(argv[idx], "--path") == 0 || stricmp(argv[idx], "-p") == 0)
         {
             idx++;
 
             assert(argv[idx]);
-            if (argv[idx] == NULL)
+            if (argv[idx] == nullptr)
             {
                 ::std::cout << "Missing path parameter!" << ::std::endl;
                 return 0;
             }
             strncpy(pBuildSetFileDir, argv[idx], BUFF_SIZE);
         }
-        else if (stricmp(argv[idx], "-base") == 0 || stricmp(argv[idx], "-b") == 0)
+        else if (stricmp(argv[idx], "--base") == 0 || stricmp(argv[idx], "-b") == 0)
         {
             idx++;
 
             assert(argv[idx]);
-            if (argv[idx] == NULL)
+            if (argv[idx] == nullptr)
             {
                 ::std::cout << "Missing base dir parameter!" << ::std::endl;
                 return 0;
             }
             strncpy(pBasePath, argv[idx], BUFF_SIZE);
         }
-        else if (stricmp(argv[idx], "-xsd") == 0 || stricmp(argv[idx], "-x") == 0)
+        else if (stricmp(argv[idx], "--xsd") == 0 || stricmp(argv[idx], "-x") == 0)
         {
             idx++;
 
             assert(argv[idx]);
-            if (argv[idx] == NULL)
+            if (argv[idx] == nullptr)
             {
                 ::std::cout << "Missing XSD file!" << ::std::endl;
                 return 0;
             }
             arrXSDs.append(argv[idx]);
         }
-        else if (stricmp(argv[idx], "-list") == 0 || stricmp(argv[idx], "-l") == 0)
+        else if (stricmp(argv[idx], "--list") == 0 || stricmp(argv[idx], "-l") == 0)
             bListXSDs = true;
-        else if (stricmp(argv[idx], "-doc") == 0 || stricmp(argv[idx], "-d") == 0)
+        else if (stricmp(argv[idx], "--doc") == 0 || stricmp(argv[idx], "-d") == 0)
             bGenDocs = true;
-        else if (stricmp(argv[idx], "-target") == 0 || stricmp(argv[idx], "-t") == 0)
+        else if (stricmp(argv[idx], "--target") == 0 || stricmp(argv[idx], "-t") == 0)
         {
             idx++;
 
             assert(argv[idx]);
-            if (argv[idx] == NULL)
+            if (argv[idx] == nullptr)
             {
                 ::std::cout << "Missing target!" << ::std::endl;
                 return 0;
@@ -190,7 +190,7 @@ void usage()
             idx++;
 
             assert(argv[idx]);
-            if (argv[idx] == NULL)
+            if (argv[idx] == nullptr)
             {
                 ::std::cout << "Missing extension!" << ::std::endl;
                 return 0;
@@ -205,12 +205,12 @@ void usage()
             else
                 strcpy(pTargetDocExt,argv[idx]);
         }
-        else if (stricmp(argv[idx], "-use") == 0 || stricmp(argv[idx], "-u") == 0)
+        else if (stricmp(argv[idx], "--use") == 0 || stricmp(argv[idx], "-u") == 0)
         {
             idx++;
 
             assert(argv[idx]);
-            if (argv[idx] == NULL)
+            if (argv[idx] == nullptr)
             {
                 ::std::cout << "Missing schema xsd!" << ::std::endl;
                 return 0;
@@ -221,7 +221,7 @@ void usage()
                 arrXSDs.append(argv[idx]);
             }
         }
-        else if (stricmp(argv[idx], "-json") == 0 || stricmp(argv[idx], "-j") == 0)
+        else if (stricmp(argv[idx], "--json") == 0 || stricmp(argv[idx], "-j") == 0)
         {
             bGenJSON = true;
             idx++;
@@ -232,7 +232,7 @@ void usage()
 
     if ((pBuildSetFile[0] != 0) ^ (pBuildSetFileDir[0] != 0))
     {
-        puts("-file and -path need to be both set or neither one!");
+        puts("--file and --path need to be both set or neither one!");
         return 0;
     }
     if (bGenDocs == true && arrXSDs.length() == 0)
@@ -267,35 +267,43 @@ void usage()
     {
         StringArray arrXSDs;
         CBuildSetManager::getInstance()->getBuildSetComponents(arrXSDs);
+        int length  = arrXSDs.length();
 
-        if (arrXSDs.length() > 0)
-            ::std::cout << "XSD files (" << arrXSDs.length() << ")" << ::std::endl;
+        if (length > 0)
+            ::std::cout << "XSD files (" << length << ")" << ::std::endl;
 
-        for (int idx = 0; idx < arrXSDs.length(); idx++)
+        for (int idx = 0; idx < length; idx++)
             ::std::cout << "(" << idx+1 << ") " << arrXSDs.item(idx) << ::std::endl;
     }
 
     for (int idx =  0; bGenDocs == true && idx < arrXSDs.length(); idx++)
     {
+        char *pDoc = nullptr;
         if (pTargetDocDir[0] == 0)
-            ::std::cout << pSchemaHelper->printDocumentation(arrXSDs.item(idx));
+        {
+            pSchemaHelper->printDocumentation(arrXSDs.item(idx), &pDoc);
+            ::std::cout << pDoc;
+        }
         else
         {
             Owned<IFile>   pFile;
             Owned<IFileIO> pFileIO;
             StringBuffer strTargetPath;
-            const char *pXSDFile = strrchr(arrXSDs.item(idx), '/') == NULL ? arrXSDs.item(idx) : strrchr(arrXSDs.item(idx),'/');
+            const char *pXSDFile = strrchr(arrXSDs.item(idx), '/') == nullptr ? arrXSDs.item(idx) : strrchr(arrXSDs.item(idx),'/');
 
             strTargetPath.append(pTargetDocDir).append("/").append(pXSDFile).append(pTargetDocExt);
             pFile.setown(createIFile(strTargetPath.str()));
             pFileIO.setown(pFile->open(IFOcreaterw));
 
-            const char *pDoc = pSchemaHelper->printDocumentation(arrXSDs.item(idx));
+            char *pDoc = nullptr;
 
-            if (pDoc == NULL)
+            pSchemaHelper->printDocumentation(arrXSDs.item(idx), &pDoc);
+
+            if (pDoc == nullptr)
                 continue;
 
             pFileIO->write(0, strlen(pDoc), pDoc);
+            delete[] pDoc;
         }
     }
     for (int idx =  0; bGenJSON == true && idx < arrXSDs.length(); idx++)
@@ -303,16 +311,12 @@ void usage()
         if (bLoadEnvXML == true)
             pSchemaHelper->loadEnvFromConfig(pEnvXMLPath);
 
+        char *pJSON = nullptr;
+
         if (pTargetDocDir[0] == 0)
         {
-            char *pOutput = NULL;
-
-            //pSchemaHelper->printJSONByKey(/*arrXSDs.item(idx)*/"DaliServerProcess[2]", &pOutput);
-            //pSchemaHelper->printJSONByKey(strComponentKey.str(), &pOutput);
-            pSchemaHelper->printJSON(strComponentKey.str(), &pOutput);
-            ::std::cout << pOutput;
-
-            free(pOutput);
+            pSchemaHelper->printJSON(strComponentKey.str(), &pJSON);
+            ::std::cout << pJSON;
         }
         else
         {
@@ -320,25 +324,20 @@ void usage()
             Owned<IFileIO> pFileIO;
             StringBuffer strTargetPath;
 
-            const char *pXSDFile = strrchr(arrXSDs.item(idx), '/') == NULL ? arrXSDs.item(idx) : strrchr(arrXSDs.item(idx),'/');
+            const char *pXSDFile = strrchr(arrXSDs.item(idx), '/') == nullptr ? arrXSDs.item(idx) : strrchr(arrXSDs.item(idx),'/');
 
             strTargetPath.append(pTargetDocDir).append("/").append(pXSDFile).append(pDefaultJSONExt);
             pFile.setown(createIFile(strTargetPath.str()));
             pFileIO.setown(pFile->open(IFOcreaterw));
 
-            char *pJSON = NULL;
-            //pSchemaHelper->printJSON(arrXSDs.item(idx), &pJSON);
-            //pSchemaHelper->printJSONByKey(/*arrXSDs.item(idx)*/"#DaliServerProcess[2]", &pJSON);
             pSchemaHelper->printJSONByKey(strComponentKey.str(), &pJSON);
 
-            if (pJSON == NULL)
-            {
-                free(pJSON);
+            if (pJSON == nullptr)
                 continue;
-            }
+
             pFileIO->write(0, strlen(pJSON), pJSON);
-            free(pJSON);
         }
+        delete[] pJSON;
     }
 
     for (int idx =  0; (bDump == true || bLoadEnvXML == true) && idx < arrXSDs.length(); idx++)
@@ -348,5 +347,7 @@ void usage()
         if (bDump == true)
             pSchemaHelper->printDump(arrXSDs.item(idx));
     }
+    releaseAtoms();
+
     return 0;
 }

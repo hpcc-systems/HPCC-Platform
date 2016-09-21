@@ -20,12 +20,13 @@
 
 #include "jstring.hpp"
 #include "jlib.hpp"
+#include "build-config.h"
 
 namespace CONFIGURATOR
 {
 
 static const char* DEFAULT_BUILD_SET_XML_FILE("buildset.xml");
-static const char* DEFAULT_BUILD_SET_DIRECTORY("/opt/HPCCSystems/componentfiles/configxml/");
+static const char* DEFAULT_BUILD_SET_DIRECTORY(COMPONENTFILES_DIR"/configxml/");
 
 class CBuildSet;
 
@@ -70,7 +71,7 @@ public:
 
     IMPLEMENT_IINTERFACE
 
-    CBuildSet(const char* pInstallSet = NULL, const char* pName = NULL, const char* pProcessName = NULL, const char* pSchema = NULL, const char* pDeployable = NULL, const char *pOveride = NULL) : m_pInstallSet(pInstallSet), m_pName(pName), m_pProcessName(pProcessName), m_pSchema(pSchema), m_pDeployable(pDeployable), m_pOveride(pOveride)
+    CBuildSet(const char* pInstallSet = NULL, const char* pName = NULL, const char* pProcessName = NULL, const char* pSchema = NULL, const char* pDeployable = NULL, const char *pOverride = NULL) : m_pInstallSet(pInstallSet), m_pName(pName), m_pProcessName(pProcessName), m_pSchema(pSchema), m_pDeployable(pDeployable), m_pOverride(pOverride)
     {
     }
 
@@ -98,9 +99,9 @@ public:
     {
         return m_pDeployable;
     }
-    const char* getOveride() const
+    const char* getOverride() const
     {
-        return m_pOveride;
+        return m_pOverride;
     }
 
 protected:
@@ -113,7 +114,7 @@ protected:
     const char* m_pProcessName;
     const char* m_pSchema;
     const char* m_pDeployable;
-    const char* m_pOveride;
+    const char* m_pOverride;
 
 private:
 };

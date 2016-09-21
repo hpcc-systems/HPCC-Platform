@@ -1,14 +1,45 @@
 project ( configurator )
 
-SET(  SRCS ConfiguratorMain.cpp ConfigFileComponentUtils.cpp ConfigFileUtils.cpp
-      ConfigFileUtilsObservable.cpp EnvironmentConfiguration.cpp WizardBase.cpp ConfigSchemaHelper.cpp
-      SchemaAttributes.cpp SchemaComplexType.cpp SchemaSequence.cpp SchemaElement.cpp
-      SchemaAppInfo.cpp SchemaAnnotation.cpp SchemaComplexContent.cpp SchemaComplexType.cpp SchemaDocumentation.cpp
-      SchemaExtension.cpp SchemaChoice.cpp SchemaInclude.cpp SchemaSchema.cpp SchemaSimpleType.cpp SchemaRestriction.cpp 
-      SchemaEnumeration.cpp SchemaCommon.cpp ExceptionStrings.cpp SchemaEnumeration.cpp SchemaAttributeGroup.cpp DocumentationMarkup.hpp
-      SchemaCommon.hpp BuildSet.cpp ConfiguratorAPI.cpp SchemaMapManager.cpp EnvironmentModel.cpp SchemaFractionDigits.cpp SchemaLength.cpp SchemaMaxExclusive.cpp
-      SchemaMaxInclusive.cpp SchemaMaxLength.cpp SchemaMinInclusive.cpp SchemaMinExclusive.cpp SchemaMinLength.cpp SchemaPattern.cpp SchemaTotalDigits.cpp SchemaWhiteSpace.cpp
-      SchemaKey.cpp SchemaKeyRef.cpp SchemaSelector.cpp SchemaUnique.cpp SchemaField.cpp SchemaSimpleContent.cpp ConfigNotifications.cpp JSONMarkUp.cpp)
+SET(  SRCS ConfiguratorMain.cpp ConfigFileComponentUtils.cpp ConfigFileUtils.cpp BuildSet.cpp ConfiguratorAPI.cpp EnvironmentModel.cpp JSONMarkUp.cpp
+      ConfigFileUtilsObservable.cpp EnvironmentConfiguration.cpp WizardBase.cpp ConfigSchemaHelper.cpp ExceptionStrings.cpp DocumentationMarkup.hpp ConfigNotifications.cpp
+      ./schemas/SchemaAttributes.cpp
+      ./schemas/SchemaComplexType.cpp
+      ./schemas/SchemaSequence.cpp
+      ./schemas/SchemaElement.cpp
+      ./schemas/SchemaAppInfo.cpp
+      ./schemas/SchemaAnnotation.cpp
+      ./schemas/SchemaComplexContent.cpp
+      ./schemas/SchemaComplexType.cpp
+      ./schemas/SchemaDocumentation.cpp
+      ./schemas/SchemaExtension.cpp
+      ./schemas/SchemaChoice.cpp
+      ./schemas/SchemaInclude.cpp
+      ./schemas/SchemaSchema.cpp
+      ./schemas/SchemaSimpleType.cpp
+      ./schemas/SchemaRestriction.cpp
+      ./schemas/SchemaEnumeration.cpp
+      ./schemas/SchemaCommon.cpp
+      ./schemas/SchemaEnumeration.cpp
+      ./schemas/SchemaAttributeGroup.cpp
+      ./schemas/SchemaMapManager.cpp
+      ./schemas/SchemaFractionDigits.cpp
+      ./schemas/SchemaLength.cpp
+      ./schemas/SchemaMaxExclusive.cpp
+      ./schemas/SchemaMaxInclusive.cpp
+      ./schemas/SchemaMaxLength.cpp
+      ./schemas/SchemaMinInclusive.cpp
+      ./schemas/SchemaMinExclusive.cpp
+      ./schemas/SchemaMinLength.cpp
+      ./schemas/SchemaPattern.cpp
+      ./schemas/SchemaTotalDigits.cpp
+      ./schemas/SchemaWhiteSpace.cpp
+      ./schemas/SchemaKey.cpp
+      ./schemas/SchemaKeyRef.cpp
+      ./schemas/SchemaSelector.cpp
+      ./schemas/SchemaUnique.cpp
+      ./schemas/SchemaField.cpp
+      ./schemas/SchemaSimpleContent.cpp
+      )
 
   INCLUDE_DIRECTORIES(
         ${HPCC_SOURCE_DIR}/system/include
@@ -17,6 +48,10 @@ SET(  SRCS ConfiguratorMain.cpp ConfigFileComponentUtils.cpp ConfigFileUtils.cpp
         ${CMAKE_PREFIX_PATH}/mkspecs/linux-g++
         ${CMAKE_CURRENT_SOURCE_DIR}/configurator_ui
         ${CMAKE_CURRENT_SOURCE_DIR}/configurator_app
+        ${CMAKE_CURRENT_SOURCE_DIR}/schemas
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_BINARY_DIR}
+        ${CMAKE_BINARY_DIR}/oss
 )
 
 IF( CONFIGURATOR_LIB )

@@ -52,6 +52,7 @@ void deleteTableModels()
     while (nAllocatedTables > 0)
     {
         delete[] modelName[nAllocatedTables];
+        nAllocatedTables--;
     }
 }
 
@@ -95,9 +96,7 @@ int initialize()
     if (bOnce == true)
     {
         bOnce = false;
-
         InitModuleObjects();
-
     }
 
     s_pConfigSchemaHelper = CConfigSchemaHelper::getInstance();
@@ -221,6 +220,11 @@ const char* getTableValue(const char *pXPath, int nRow)
 
             strXPath.appendf("[%d]", nRow);
             strXPath.append(strXPathOriginal, offset, strXPathOriginal.length() - offset);
+
+            //confirm the next 2 lines are sufficient
+            //CConfigSchemaHelper::stripXPathIndex(strXPath);
+            //strXPath.appendf("[%d]", nRow);
+
             pAttribute =  CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getAttributeFromXPath(strXPath.str());
 
             if (STRICTNESS_LEVEL >= DEFAULT_STRICTNESS)
@@ -513,10 +517,10 @@ void getJSONByComponentKey(const char *pKey, char **pOutput)
     CConfigSchemaHelper::getInstance()->printJSONByKey(pKey, pOutput, true);
 }
 
-const char* getDocBookByIndex(int idx)
+void getDocBookByIndex(int idx, char **pOutput)
 {
     const char *pFileName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
-    return CConfigSchemaHelper::getInstance()->printDocumentation(pFileName);
+    CConfigSchemaHelper::getInstance()->printDocumentation(pFileName, pOutput);
 }
 
 bool saveConfigurationFile()

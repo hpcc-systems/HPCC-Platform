@@ -59,7 +59,7 @@ static const char* JSON_NAVIGATOR_SELECTABLE("\"selectable\":");
 static const char* JSON_NAVIGATOR_NODES("\"nodes\":");
 
 
-#define CONTENT_INNER_CONTENT_BEGIN strJSON.append(JSON_CONTENT_BEGIN);offset += STANDARD_OFFSET_1;QuickOutPad(strJSON, offset);strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
+#define CONTENT_INNER_CONTENT_BEGIN strJSON.append(JSON_CONTENT_BEGIN);offset += STANDARD_OFFSET_1;quickOutPad(strJSON, offset);strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
 #define INNER_CONTENT_END offset -= STANDARD_OFFSET_1;strJSON.append(JSON_INNER_CONTENT_END);
 #define CONTENT_CONTENT_END offset -= STANDARD_OFFSET_1;strJSON.append(JSON_CONTENT_END);
 
@@ -70,8 +70,6 @@ public:
     static void createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, const char *pToolTip = "", const char *pDefaultValue = "", const char* pValues = "", const char*  pValue = "");
     //static void createUIContent(::StringBuffer &strJSON, unsigned int &offset, ::StringBuffer strUIType, ::StringBuffer strLabel, ::StringBuffer strKey, ::StringBuffer strToolTip = "", ::StringBuffer strDefaultValue = "", ::StringBuffer strValues = "", ::StringBuffer strValue = "");
     static void getNavigatorJSON(::StringBuffer &strJSON);
-private:
-    static void markUpString(::StringBuffer &str);
 };
 }
 #endif // _JSONMARKUP_HPP_
