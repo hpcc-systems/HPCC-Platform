@@ -302,6 +302,13 @@ ESPStruct NetworkNode
     string id;
 };
 
+ESPStruct [nil_remove] ClusterEndpoint
+{
+    string URL;
+    string Status;
+    int NumQueryFileToCopy;
+};
+
 ESPStruct LogicalFileUpload
 {
     int     Type;
@@ -1767,9 +1774,20 @@ ESPresponse [exceptions_inline, nil_remove] WUGetArchiveFileResponse
     string Message;
 };
 
+ESPrequest [nil_remove] WUGetNumFileToCopyRequest
+{
+    string ClusterName; //for AllNodes
+    string ClusterURL;
+};
+
+ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
+{
+    ESParray<ESPstruct ClusterEndpoint, Endpoint> Endpoints;
+};
+
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.60"), default_client_version("1.60"),
+    version("1.61"), default_client_version("1.61"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -1846,6 +1864,7 @@ ESPservice [
     ESPmethod WUGetStats(WUGetStatsRequest, WUGetStatsResponse);
     ESPmethod [min_ver("1.57")] WUListArchiveFiles(WUListArchiveFilesRequest, WUListArchiveFilesResponse);
     ESPmethod [min_ver("1.57")] WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
+    ESPmethod [min_ver("1.61")] WUGetNumFileToCopy(WUGetNumFileToCopyRequest, WUGetNumFileToCopyResponse);
 };
 
 
