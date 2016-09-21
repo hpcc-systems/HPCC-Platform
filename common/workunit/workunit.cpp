@@ -2209,14 +2209,14 @@ private:
     bool checkScope(const char *scopeName)
     {
         int *perms = scopePermissions.getValue(scopeName);
-        int perm;
+        SecAccessFlags perm;
         if (!perms)
         {
-            perm = secuser.get() ? secmgr->authorizeWorkunitScope(*secuser, scopeName):-1;
+            perm = secuser.get() ? secmgr->authorizeWorkunitScope(*secuser, scopeName) : SecAccess_Unavailable;
             scopePermissions.setValue(scopeName, perm);
         }
         else
-            perm = *perms;
+            perm = (SecAccessFlags)*perms;
         return perm >= SecAccess_Read;
     }
 };

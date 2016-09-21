@@ -100,7 +100,7 @@ public:
 						authmap->add(pathstr.str(), rlist);
 					}
 					ISecResource* rs = rlist->addResource(rstr.str());
-					unsigned requiredaccess = str2perm(required.str());
+                    SecAccessFlags requiredaccess = str2perm(required.str());
 					rs->setRequiredAccessFlags(requiredaccess);
 					rs->setDescription(description.str());
                     rs->setAccessFlags(SecAccess_Full);//grant full access to authenticated users
@@ -153,17 +153,17 @@ protected:
         return -2;//never expires
     }
 
-    int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext) override
+    SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
 
-    int getAccessFlagsEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename) override
+    SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
 
-    int authorizeFileScope(ISecUser & user, const char * filescope) override
+    SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
@@ -183,7 +183,7 @@ protected:
         return true;//success
     }
 
-    int authorizeWorkunitScope(ISecUser & user, const char * filescope) override
+    SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * filescope) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }

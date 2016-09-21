@@ -1688,7 +1688,7 @@ static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser & user, IUserD
     }
     else
     {
-        int permissionTemp;
+        SecAccessFlags permissionTemp;
         if (dlfn.isForeign())
         {
             permissionTemp = queryDistributedFileDirectory().getFilePermissions(dlfn.get(), udesc);

@@ -81,22 +81,22 @@ public:
         return false;
     }
 
-    int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
+    SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
     {
         UNIMPLEMENTED;
-        return 0;
+        return SecAccess_None;
     }
 
-    int getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
+    SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
     {
         UNIMPLEMENTED;
-        return 0;
+        return SecAccess_None;
     }
 
-    int authorizeFileScope(ISecUser & user, const char * filescope)
+    SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope)
     {
         UNIMPLEMENTED;
-        return 0;
+        return SecAccess_None;
     }
 
     bool authorizeFileScope(ISecUser & user, ISecResourceList * resources)
@@ -237,10 +237,10 @@ public:
         return false;
     }
 
-    int authorizeWorkunitScope(ISecUser & user, const char * filescope)
+    SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * filescope)
     {
         UNIMPLEMENTED;
-        return 0;
+        return SecAccess_None;
     }
 
     bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources)
@@ -273,10 +273,10 @@ public:
         return 0;
     }
 
-    int queryDefaultPermission(ISecUser& user)
+    SecAccessFlags queryDefaultPermission(ISecUser& user)
     {
         UNIMPLEMENTED;
-        return 0;
+        return SecAccess_None;
     }
 
     bool clearPermissionsCache(ISecUser & user)

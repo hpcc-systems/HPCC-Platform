@@ -53,6 +53,7 @@ include_directories (
          ./../../rtl/eclrtl 
          ./../../common/thorhelper 
          ./../../roxie/roxiemem
+         ./../../system/security/shared
     )
 
 HPCC_ADD_LIBRARY( graph_lcr SHARED ${SRCS} )

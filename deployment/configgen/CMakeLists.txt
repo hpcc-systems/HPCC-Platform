@@ -35,6 +35,7 @@ include_directories (
          ./../../dali/base 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS ( -D_CONSOLE )

@@ -55,6 +55,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/plugins/workunitservices 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
+         ${HPCC_SOURCE_DIR}/system/security/shared
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

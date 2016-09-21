@@ -236,8 +236,8 @@ class CLdapSecResource : implements ISecResource, public CInterface
 {
 private:
     StringAttr         m_name;
-    int                m_access;
-    int                m_required_access;
+    SecAccessFlags     m_access;
+    SecAccessFlags     m_required_access;
     Owned<IProperties> m_parameters;
     StringBuffer       m_description;
     StringBuffer       m_value;
@@ -247,13 +247,13 @@ public:
     IMPLEMENT_IINTERFACE
 
     CLdapSecResource(const char *name);
-    void addAccess(int flags);
-    void setAccessFlags(int flags);
-    virtual void setRequiredAccessFlags(int flags);
-    virtual int getRequiredAccessFlags();
+    void addAccess(SecAccessFlags flags);
+    void setAccessFlags(SecAccessFlags flags);
+    virtual void setRequiredAccessFlags(SecAccessFlags flags);
+    virtual SecAccessFlags getRequiredAccessFlags();
 //interface ISecResource : extends IInterface
     virtual const char * getName();
-    virtual int  getAccessFlags();
+    virtual SecAccessFlags getAccessFlags();
     virtual int addParameter(const char* name, const char* value);
     virtual const char * getParameter(const char * name);
     virtual void setDescription(const char* description);
@@ -354,14 +354,14 @@ public:
     bool unsubscribe(ISecAuthenticEvents & events);
     bool authorize(ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext);
     bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext = NULL);
-    int authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, IEspSecureContext* secureContext = NULL);
-    virtual int authorizeFileScope(ISecUser & user, const char * filescope);
+    SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, IEspSecureContext* secureContext = NULL);
+    virtual SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope);
     virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources);
     virtual bool authorizeViewScope(ISecUser & user, ISecResourceList * resources);
-    virtual int authorizeWorkunitScope(ISecUser & user, const char * wuscope);
+    virtual SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * wuscope);
     virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources);
     virtual bool addResources(ISecUser& sec_user, ISecResourceList * resources);
-    virtual int getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename);
+    virtual SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename);
     virtual bool addResourcesEx(SecResourceType rtype, ISecUser &user, ISecResourceList* resources, SecPermissionType ptype = PT_ADMINISTRATORS_ONLY, const char* basedn = NULL);
     virtual bool addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype = PT_ADMINISTRATORS_ONLY, const char* basedn = NULL);
     virtual bool updateResources(ISecUser& sec_user, ISecResourceList * resources){return false;}
@@ -404,7 +404,7 @@ public:
     virtual void copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn);
 
     virtual bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, bool doAuthentication);
-    virtual int authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, bool doAuthentication);
+    virtual SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, bool doAuthentication);
 
     virtual void normalizeDn(const char* dn, StringBuffer& ndn);
     virtual bool isSuperUser(ISecUser* user);
@@ -443,7 +443,7 @@ public:
     }
     virtual bool createUserScopes();
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes);
-    virtual int queryDefaultPermission(ISecUser& user);
+    virtual SecAccessFlags queryDefaultPermission(ISecUser& user);
     virtual bool clearPermissionsCache(ISecUser &user);
     virtual bool authenticateUser(ISecUser & user, bool * superUser);
     virtual secManagerType querySecMgrType() { return SMT_LDAP; }

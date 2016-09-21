@@ -44,7 +44,8 @@ include_directories (
          ./../../system/jlib 
          ./../ft 
          ./../../common/environment 
-         ./../../common/workunit 
+         ./../../common/workunit
+         ./../../system/security/shared
     )
 
 HPCC_ADD_EXECUTABLE ( dfuserver ${SRCS} )

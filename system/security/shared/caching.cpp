@@ -527,7 +527,7 @@ inline void CPermissionsCache::removeAllManagedFileScopes()
 
     etc. Until full scope path checked, or no read permissions hit on ancestor scope.
 */
-bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, int * accessFlags)
+bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, SecAccessFlags * accessFlags)
 {
     if (!fullScope || !*fullScope)
     {
@@ -639,7 +639,7 @@ bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const cha
     return rc;
 }
 
-int CPermissionsCache::queryDefaultPermission(ISecUser& user)
+SecAccessFlags CPermissionsCache::queryDefaultPermission(ISecUser& user)
 {
     if (m_defaultPermission == SecAccess_Unknown)
     {

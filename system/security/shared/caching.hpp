@@ -205,9 +205,9 @@ public:
     bool addManagedFileScopes(IArrayOf<ISecResource>& scopes);
     void removeManagedFileScopes(IArrayOf<ISecResource>& scopes);
     void removeAllManagedFileScopes();
-    bool queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, int * accessFlags);
+    bool queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, SecAccessFlags * accessFlags);
     void setSecManager(ISecManager * secMgr) { m_secMgr = secMgr; }
-    int  queryDefaultPermission(ISecUser& user);
+    SecAccessFlags  queryDefaultPermission(ISecUser& user);
 private:
 
     typedef std::map<string, CResPermissionsCache*> MapResPermissionsCache;
@@ -226,7 +226,7 @@ private:
     StringAttr                  m_secMgrClass;
 
     //Managed File Scope support
-    int                         m_defaultPermission;
+    SecAccessFlags              m_defaultPermission;
     map<string, ISecResource*>  m_managedFileScopesMap;
     mutable ReadWriteLock       m_scopesRWLock;//guards m_managedFileScopesMap
     ISecManager *               m_secMgr;
