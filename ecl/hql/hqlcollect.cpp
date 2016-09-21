@@ -264,7 +264,7 @@ FileSystemFile::FileSystemFile(EclSourceType _type, IFile & _file, bool _allowPl
 : CEclSource(deriveEclName(_file.queryFilename()), _type), file(&_file)
 {
     Owned<ISourcePath> path = createSourcePath(file->queryFilename());
-    fileContents.setown(createFileContents(file, path, _allowPlugins));
+    fileContents.setown(createFileContents(file, path, _allowPlugins, NULL));
     extraFlags = 0;
     switch (type)
     {
@@ -306,7 +306,7 @@ bool FileSystemFile::checkValid()
                         version.set(pb.version);
 
                         Owned<ISourcePath> pluginPath = createSourcePath(pb.moduleName);
-                        fileContents.setown(createFileContentsFromText(pb.ECL, pluginPath, true));
+                        fileContents.setown(createFileContentsFromText(pb.ECL, pluginPath, true, NULL));
 
                         //if (traceMask & PLUGIN_DLL_MODULE)
                         DBGLOG("Loading plugin %s[%s] version = %s", filename, pb.moduleName, version.get());
@@ -682,7 +682,7 @@ IFileContents * CXmlEclElement::queryFileContents()
                 getFullName(defaultName);
                 sourcePath.setown(createSourcePath(defaultName));
             }
-            fileContents.setown(createFileContentsFromText(text, sourcePath, false));
+            fileContents.setown(createFileContentsFromText(text, sourcePath, false, NULL));
         }
     }
     return fileContents;

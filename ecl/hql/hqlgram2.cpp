@@ -1033,6 +1033,10 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     return result.getClear();
 }
 
+IHqlExpression * HqlGram::getGpgSignature()
+{
+    return LINK(gpgSignature);
+}
 
 IHqlExpression * HqlGram::processUserAggregate(const attribute & mainPos, attribute & dsAttr, attribute & recordAttr, attribute & transformAttr, attribute * mergeAttr,
                                       attribute *itemsAttr, attribute &rowsAttr, attribute &seqAttr)
@@ -1118,6 +1122,9 @@ IHqlExpression * HqlGram::processIndexBuild(attribute & indexAttr, attribute * r
     args.append(*filenameAttr.getExpr());
     if (flags)
         flags->unwindList(args, no_comma);
+    IHqlExpression * sig = getGpgSignature();
+    if (sig)
+        args.append(*sig);
 
     checkDistributer(flagsAttr.pos, args);
     return createValue(no_buildindex, makeVoidType(), args);
@@ -6925,6 +6932,10 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
     if (distribution)
         args.append(*distribution.getClear());
 
+    IHqlExpression * sig = getGpgSignature();
+    if (sig)
+        args.append(*sig);
+
     checkDistributer(flagsAttr.pos, args);
     return createValue(no_buildindex, makeVoidType(), args);
 }
@@ -11761,7 +11772,7 @@ IHqlExpression * reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *sc
     text.append("=>").append(contents->length(), contents->getText());
 
     //Could use a merge string implementation of IFileContents instead of expanding...
-    Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath(), contents->isImplicitlySigned());
+    Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath(), contents->isImplicitlySigned(), contents->queryGpgSignature());
     HqlGram parser(scope, scope, parseContents, ctx, NULL, hasFieldMap, true);
     unsigned startLine = funcdef->getStartLine();
 
@@ -11885,7 +11896,7 @@ extern HQL_API IHqlExpression * parseQuery(const char * text, IErrorReceiver * e
 {
     Owned<IHqlScope> scope = createScope();
     HqlDummyLookupContext ctx(errs);
-    Owned<IFileContents> contents = createFileContentsFromText(text, NULL, false);
+    Owned<IFileContents> contents = createFileContentsFromText(text, NULL, false, NULL);
     return parseQuery(scope, contents, ctx, NULL, NULL, true);
 }
 

@@ -317,7 +317,7 @@ void HqlLex::pushText(IFileContents * text, int startLineNo, int startColumn)
 
 void HqlLex::pushText(const char *s, int startLineNo, int startColumn)
 {
-    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule);
+    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
     pushText(macroContents, startLineNo, startColumn);
 }
 
@@ -327,7 +327,7 @@ void HqlLex::pushText(const char *s)
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::pushText");
 #endif
-    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule);
+    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
     inmacro = new HqlLex(yyParser, macroContents, NULL, NULL);
     inmacro->set_yyLineNo(yyLineNo);
     inmacro->set_yyColumn(yyColumn);
@@ -580,21 +580,22 @@ void HqlLex::checkSignature()
         pipe->write(text->length(), text->getText());
         pipe->closeInput();
         unsigned retcode = pipe->wait();
+
+        StringBuffer buf;
+        Owned<ISimpleReadStream> pipeReader = pipe->getErrorStream();
+        const size32_t chunkSize = 8192;
+        for (;;)
+        {
+            size32_t sizeRead = pipeReader->read(chunkSize, buf.reserve(chunkSize));
+            if (sizeRead < chunkSize)
+            {
+                buf.setLength(buf.length() - (chunkSize - sizeRead));
+                break;
+            }
+        }
+        DBGLOG("GPG %d %s", retcode, buf.str());
         if (retcode)
         {
-            StringBuffer buf;
-            Owned<ISimpleReadStream> pipeReader = pipe->getErrorStream();
-            const size32_t chunkSize = 8192;
-            for (;;)
-            {
-                size32_t sizeRead = pipeReader->read(chunkSize, buf.reserve(chunkSize));
-                if (sizeRead < chunkSize)
-                {
-                    buf.setLength(buf.length() - (chunkSize - sizeRead));
-                    break;
-                }
-            }
-            DBGLOG("GPG %d %s", retcode, buf.str());
             StringArray allErrs;
             allErrs.appendList(buf, "\n");
             ForEachItemIn(idx, allErrs)
@@ -604,7 +605,24 @@ void HqlLex::checkSignature()
             }
         }
         else
+        {
             yyParser->inSignedModule = true;
+            yyParser->gpgSignature.clear();
+            const char * sigprefix = "Good signature from \"";
+            const char * const s = buf.str();
+            const char * match = strstr(s, sigprefix);
+            if (match)
+            {
+                match += strlen(sigprefix);
+                const char * const end = strchr(match, '\"');
+                if (end)
+                {
+                    buf.setLength(end-s);
+                    const char * sig = buf.str() + (match-s);
+                    yyParser->gpgSignature.setown(createExprAttribute(_signed_Atom,createConstant(sig)) );
+                }
+            }
+        }
     }
     catch (IException *e)
     {
@@ -659,7 +677,7 @@ void HqlLex::processEncrypted()
     decryptEclAttribute(decrypted, encoded64.str());
     decrypted.append(0);    // add a null terminator to the string...
     Owned<ISourcePath> sourcePath = createSourcePath("<encrypted>");
-    Owned<IFileContents> decryptedContents = createFileContentsFromText((const char *)decrypted.toByteArray(), sourcePath, yyParser->inSignedModule);
+    Owned<IFileContents> decryptedContents = createFileContentsFromText((const char *)decrypted.toByteArray(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
     inmacro = new HqlLex(yyParser, decryptedContents, NULL, NULL);
     inmacro->setParentLex(this);
     inmacro->encrypted = true;
@@ -1077,7 +1095,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         try
         {
             HqlLookupContext ctx(yyParser->lookupCtx);
-            Owned<IFileContents> exportContents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule);
+            Owned<IFileContents> exportContents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
             expr.setown(parseQuery(scope, exportContents, ctx, xmlScope, NULL, true));
 
             if (expr && (expr->getOperator() == no_sizeof))
@@ -1219,8 +1237,8 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
 
     forLoop = getSubScopes(returnToken, str(name), doAll);
     if (forFilterText.length())
-        forFilter.setown(createFileContentsFromText(forFilterText, sourcePath, yyParser->inSignedModule));
-    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule));
+        forFilter.setown(createFileContentsFromText(forFilterText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature));
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature));
 
     loopTimes = 0;
     if (forLoop && forLoop->first()) // more - check filter
@@ -1269,7 +1287,7 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
     ::Release(forLoop);
     forLoop = new CDummyScopeIterator(ensureTopXmlScope());
     forFilter.clear();
-    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule));
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature));
     loopTimes = 0;
     if (forLoop->first()) // more - check filter
         checkNextLoop(returnToken, true,startLine,startCol);
@@ -1510,7 +1528,7 @@ void HqlLex::doIsValid(YYSTYPE & returnToken)
     {
         HqlLookupContext ctx(yyParser->lookupCtx);
         ctx.errs.clear();   //Deliberately ignore any errors
-        Owned<IFileContents> contents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule);
+        Owned<IFileContents> contents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
         expr = parseQuery(scope, contents, ctx, xmlScope, NULL, true);
 
         if(expr)
@@ -1788,7 +1806,7 @@ IHqlExpression *HqlLex::parseECL(IFileContents * contents, IXmlScope *xmlScope, 
 
 IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int startLine, int startCol)
 {
-    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath(), yyParser->inSignedModule);
+    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath(), yyParser->inSignedModule, yyParser->gpgSignature);
     return parseECL(contents, xmlScope, startLine, startCol);
 }
 

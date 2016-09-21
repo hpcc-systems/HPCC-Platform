@@ -1418,7 +1418,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
             HqlDummyLookupContext ctx(&errs);
             cppSystemScope = createScope();
             Owned<ISourcePath> sysPath = createSourcePath("<system-definitions>");
-            Owned<IFileContents> systemContents = createFileContentsFromText(systemText.str(), sysPath, true);
+            Owned<IFileContents> systemContents = createFileContentsFromText(systemText.str(), sysPath, true, NULL);
             OwnedHqlExpr query = parseQuery(cppSystemScope, systemContents, ctx, NULL, NULL, false);
             if (errs.errCount())
             {
