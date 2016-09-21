@@ -1768,6 +1768,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetArchiveFileResponse
 };
 
 ESPservice [
+    auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
     version("1.60"), default_client_version("1.60"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
@@ -1778,7 +1779,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUGraphTiming(WUGraphTimingRequest, WUGraphTimingResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/graph.xslt")]         WUGraphInfo(WUGraphInfoRequest, WUGraphInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/graph_gvc.xslt")]     WUGVCGraphInfo(WUGVCGraphInfoRequest, WUGVCGraphInfoResponse);
-    ESPmethod[description("Stub for Ajax GVC Graph."), help(""), resp_xsl_default("/esp/xslt/GvcGraph.xslt")] GVCAjaxGraph(GVCAjaxGraphRequest, GVCAjaxGraphResponse);
+    ESPmethod [description("Stub for Ajax GVC Graph."), help(""), resp_xsl_default("/esp/xslt/GvcGraph.xslt")] GVCAjaxGraph(GVCAjaxGraphRequest, GVCAjaxGraphResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/result.xslt")]        WUResult(WUResultRequest, WUResultResponse);
     ESPmethod WUResultView(WUResultViewRequest, WUResultViewResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuid_jobs.xslt")]     WUJobList(WUJobListRequest, WUJobListResponse);
@@ -1792,9 +1793,8 @@ ESPservice [
     ESPmethod WUClusterJobQueueLOG(WUClusterJobQueueLOGRequest, WUClusterJobQueueLOGResponse);
     ESPmethod WUClusterJobXLS(WUClusterJobXLSRequest, WUClusterJobXLSResponse);
     ESPmethod WUClusterJobSummaryXLS(WUClusterJobSummaryXLSRequest, WUClusterJobSummaryXLSResponse);
-
-    ESPmethod WUCreate(WUCreateRequest, WUCreateResponse);
-    ESPmethod WUCreateAndUpdate(WUUpdateRequest, WUUpdateResponse);
+    ESPmethod [auth_feature("OwnWorkunitsAccess:WRITE")] WUCreate(WUCreateRequest, WUCreateResponse);
+    ESPmethod [auth_feature("OwnWorkunitsAccess:WRITE")] WUCreateAndUpdate(WUUpdateRequest, WUUpdateResponse);
     ESPmethod WUUpdate(WUUpdateRequest, WUUpdateResponse);
     ESPmethod WUDelete(WUDeleteRequest, WUDeleteResponse);
     ESPmethod WUSubmit(WUSubmitRequest, WUSubmitResponse);
@@ -1808,10 +1808,8 @@ ESPservice [
     ESPmethod WURun(WURunRequest, WURunResponse);
 
     ESPmethod WUExport(WUExportRequest, WUExportResponse);
-
     ESPmethod WUWaitCompiled(WUWaitRequest, WUWaitResponse);
     ESPmethod WUWaitComplete(WUWaitRequest, WUWaitResponse);
-    
     ESPmethod WUSyntaxCheckECL(WUSyntaxCheckRequest, WUSyntaxCheckResponse);
     ESPmethod WUCompileECL(WUCompileECLRequest, WUCompileECLResponse);
     
@@ -1825,7 +1823,6 @@ ESPservice [
 
     ESPmethod WUListLocalFileRequired(WUListLocalFileRequiredRequest, WUListLocalFileRequiredResponse);
     ESPmethod WUAddLocalFileToWorkunit(WUAddLocalFileToWorkunitRequest, WUAddLocalFileToWorkunitResponse);
-
     ESPmethod WUCDebug(WUDebugRequest, WUDebugResponse);
     
     ESPmethod [resp_xsl_default("/esp/xslt/WUPublishWorkunit.xslt")] WUPublishWorkunit(WUPublishWorkunitRequest, WUPublishWorkunitResponse);

@@ -398,6 +398,11 @@ public:
         return m_SecurityHandler.authorizeSecFeature(pszFeatureUrl, access);
     }
 
+    virtual bool validateFeaturesAccess(MapStringTo<SecAccessFlags> & pmap, bool throwExcpt)
+    {
+        return m_SecurityHandler.validateSecFeaturesAccess(pmap, throwExcpt);
+    }
+
     virtual bool validateFeatureAccess(const char* pszFeatureUrl, unsigned required, bool throwExcpt)
     {
         return m_SecurityHandler.validateSecFeatureAccess(pszFeatureUrl, required, throwExcpt);
