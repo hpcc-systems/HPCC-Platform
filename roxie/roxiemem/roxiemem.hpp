@@ -113,6 +113,7 @@ protected:
 };
 
 class HeapCompactState;
+class NewHeapCompactState;
 struct roxiemem_decl HeapletBase
 {
     friend class DataBufferBottom;
@@ -135,6 +136,8 @@ protected:
     virtual unsigned _rawAllocatorId(const void *ptr) const = 0;
     virtual void noteLinked(const void *ptr) = 0;
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state) = 0;
+    virtual void _prepareToCompactRow(const void * ptr, NewHeapCompactState & state) = 0;
+    virtual const void * _newCompactRow(const void * ptr, NewHeapCompactState & state) = 0;
     virtual void _internalFreeNoDestructor(const void *ptr) = 0;
 
 public:
@@ -150,6 +153,8 @@ public:
     static memsize_t capacity(const void *ptr);
     static bool isWorthCompacting(const void *ptr);
     static const void * compactRow(const void * ptr, HeapCompactState & state);
+    static void prepareToCompactRow(const void * ptr, NewHeapCompactState & state);
+    static const void * newCompactRow(const void * ptr, NewHeapCompactState & state);
 
     static void setDestructorFlag(const void *ptr);
     static bool hasDestructor(const void *ptr);
@@ -245,6 +250,8 @@ private:
     virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
     virtual void noteLinked(const void *ptr);
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state) { return ptr; }
+    virtual void _prepareToCompactRow(const void * ptr, NewHeapCompactState & state) { }
+    virtual const void * _newCompactRow(const void * ptr, NewHeapCompactState & state) { return ptr; }
     virtual void _internalFreeNoDestructor(const void *ptr) { throwUnexpected(); }
 
     inline DataBuffer * queryDataBuffer(const void *ptr) const

@@ -63,6 +63,7 @@ namespace roxiemem {
 #define NOTIFY_UNUSED_PAGES_ON_FREE     // avoid linux swapping 'freed' pages to disk
 //#define ALWAYS_USE_SCAN_HEAP          // option to test out using the scanning heaplets
 //#define ALWAYS_DELAY_RELEASE          // option to test out using delayed releasing with the scanning heaplets
+//#define OLD_ROW_COMPACT
 
 //The following constants should probably be tuned depending on the architecture - see Tuning Test at the end of the file.
 #define DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY       2048        // default
@@ -1141,6 +1142,22 @@ const void * HeapletBase::compactRow(const void * ptr, HeapCompactState & state)
     return h->_compactRow(ptr, state);
 }
 
+void HeapletBase::prepareToCompactRow(const void * ptr, NewHeapCompactState & state)
+{
+    if (!isValidRoxiePtr(ptr))
+        return;
+    HeapletBase *h = findBase(ptr);
+    h->_prepareToCompactRow(ptr, state);
+}
+
+const void * HeapletBase::newCompactRow(const void * ptr, NewHeapCompactState & state)
+{
+    if (!isValidRoxiePtr(ptr))
+        return ptr;
+    HeapletBase *h = findBase(ptr);
+    return h->_newCompactRow(ptr, state);
+}
+
 void HeapletBase::setDestructorFlag(const void *ptr)
 {
     dbgassertex(isValidRoxiePtr(ptr));
@@ -1321,6 +1338,7 @@ public:
     virtual void verifySpaceList();
 
     inline bool isWithinHeap(CHeap * search) const { return heap == search; }
+    const CHeap * queryHeap() const { return heap; }
 };
 
 
@@ -1352,7 +1370,11 @@ protected:
     unsigned nextMatchOffset = 0;
     HeapletStats stats;
 public:
+    bool compacting = false;
+    bool moveRows = false; // only valid if compacting
+    bool hasSharedRow = false;
     std::atomic_bool hadDelayedRelease = {false};
+    unsigned compactingRowCount = 0;  // only valid if compacting
 
     inline char *data() const
     {
@@ -1414,6 +1436,8 @@ public:
     }
 
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state);
+    virtual void _prepareToCompactRow(const void * ptr, NewHeapCompactState & state);
+    virtual const void * _newCompactRow(const void * ptr, NewHeapCompactState & state);
 
     const void * moveRow(const void * row)
     {
@@ -1424,6 +1448,21 @@ public:
         //Don't clone rows into empty pages
         if (isEmpty())
             return NULL;
+
+        char * chunk = allocateChunk();
+        if (!chunk)
+            return NULL;
+        return doMoveRow(chunk, row);
+    }
+
+    const void * newMoveRow(const void * row)
+    {
+        //If this pointer already lives in this page don't move it (but update the current page source)
+        //Shouldn't ever happen with the new code
+        if (findBase(row) == this)
+            return row;
+        if (_isShared(row))
+            return row;
 
         char * chunk = allocateChunk();
         if (!chunk)
@@ -1475,6 +1514,22 @@ public:
     char * allocateChunk();
     unsigned allocateMultiChunk(unsigned max, char * * rows);   // allocates at least 1 row
     virtual void verifySpaceList();
+
+    void startCompacting();
+    void stopCompacting();
+    inline bool isCompacting() const
+    {
+        return compacting;
+    }
+    inline bool isEmptyAfterCompact()
+    {
+        return moveRows && isEmpty();
+    }
+    inline unsigned numCompactingRows() const
+    {
+        return compactingRowCount;
+    }
+    inline void setMoveRows() { moveRows = true; }
 
 protected:
     inline unsigned makeRelative(const char *ptr)
@@ -2144,6 +2199,15 @@ public:
         return ptr;
     }
 
+    virtual void _prepareToCompactRow(const void * ptr, NewHeapCompactState & state)
+    {
+    }
+
+    virtual const void * _newCompactRow(const void * ptr, NewHeapCompactState & state)
+    {
+        return ptr;
+    }
+
     virtual void _internalFreeNoDestructor(const void *ptr)
     {
         throwUnexpected();
@@ -2500,6 +2564,7 @@ protected:
 class CHeap : public CInterface
 {
     friend class HeapCompactState;
+    friend class ChunkedHeaplet;
 public:
     CHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, unsigned _flags)
         : flags(_flags), rowManager(_rowManager), allocatorCache(_allocatorCache), logctx(_logctx)
@@ -2916,8 +2981,16 @@ protected:
         //NOTE: We do not clear next/prev in the heaplet being removed.
     }
 
-    inline void internalLock() { heapletLock.enter(); }
-    inline void internalUnlock() { heapletLock.leave(); }
+    inline void internalLock()
+    {
+        if (compacting++ == 0)
+            heapletLock.enter();
+    }
+    inline void internalUnlock()
+    {
+        if (--compacting == 0)
+            heapletLock.leave();
+    }
 
     void throwHeapExhausted(unsigned allocatorId, unsigned pages) const;
 
@@ -2932,14 +3005,17 @@ protected:
     std::atomic_uint headMaybeSpace{BLOCKLIST_NULL};  // The head of the list of heaplets which potentially have some space.  When adding must use mo_release, when removing must use mo_acquire
     std::atomic_uint possibleEmptyPages{false};  // Are there any pages with 0 records.  Primarily here to avoid walking long page chains.
     HeapletStats stats;
+    mutable unsigned compacting = 0;
 };
 
 
 //---------------------------------------------------------------------------------------------------------------------
+
+static CriticalSection compactCs;
 class HeapCompactState
 {
 public:
-    inline HeapCompactState() : numPagesEmptied(0), heap(NULL), next(NULL)
+    inline HeapCompactState() : lock(compactCs), numPagesEmptied(0), heap(NULL), next(NULL)
     {
     }
 
@@ -2967,9 +3043,59 @@ public:
         }
     }
 public:
+    CriticalBlock lock;
     unsigned numPagesEmptied;
     CHeap * heap;
     Heaplet * next; // which heaplet to try to compact into next.  Not so good if > 1 heaps in use.
+};
+
+class NewHeapCompactState
+{
+public:
+    NewHeapCompactState() : lock(compactCs)
+    {
+    }
+
+    ~NewHeapCompactState()
+    {
+        ForEachItemIn(i, heaplets)
+            heaplets.item(i)->stopCompacting();
+    }
+
+    bool calculateRowsToMove();
+
+    void noteHeaplet(ChunkedHeaplet * heaplet)
+    {
+        if (!heaplet->isCompacting())
+        {
+            //This call will lock access to the heap the heaplet belongs to
+            heaplet->startCompacting();
+            heaplets.append(heaplet);
+        }
+    }
+
+    unsigned numPagesEmptied()
+    {
+        unsigned numEmpty = 0;
+        ForEachItemIn(i, heaplets)
+        {
+            ChunkedHeaplet * cur = heaplets.item(i);
+            if (cur->isEmpty())
+                numEmpty++;
+            else if (heaplets.item(i)->moveRows)
+                cur->isEmpty();
+        }
+        return numEmpty;
+    }
+
+    ChunkedHeaplet * queryHeaplet(unsigned i) { return heaplets.item(i); }
+
+protected:
+    bool processHeap(unsigned low, unsigned max);
+
+protected:
+    CriticalBlock lock;
+    PointerArrayOf<ChunkedHeaplet> heaplets;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -3011,6 +3137,7 @@ public:
     }
 
     const void * compactRow(const void * ptr, HeapCompactState & state);
+    const void * newCompactRow(const void * ptr, NewHeapCompactState & state);
 
     inline unsigned maxChunksPerPage() const { return chunksPerPage; }
 
@@ -3020,11 +3147,14 @@ public:
         dbgassertex(flags & RHFunique);
         flags |= RHForphaned;
     }
-
     void checkScans();
     virtual void reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats) = 0;
 
     void gatherStats(CRuntimeStatisticCollection & stats);
+    void setCompactTarget(unsigned target)
+    {
+        curCompactTarget = target;
+    }
 
 protected:
     void * doAllocateRow(unsigned allocatorId, unsigned maxSpillCost);
@@ -3035,6 +3165,7 @@ protected:
 protected:
     size32_t chunkSize;
     unsigned chunksPerPage;
+    unsigned curCompactTarget = 0;
 };
 
 class CFixedChunkedHeap : public CChunkedHeap
@@ -3293,17 +3424,32 @@ bool ChunkedHeaplet::isFull() const
             return true;
 
         //Scan through all the memory, checking for a block marked as free - should terminate very quickly unless highly fragmented
-        size32_t offset = 0;
+        size32_t offset = nextMatchOffset;
         const size32_t size = chunkSize;
         const unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
         do
         {
             char * ret = data() + offset;
             unsigned tag = ((std::atomic_uint *)ret)->load(std::memory_order_relaxed);
-            if (tag >= FREE_ROW_COUNT_MIN)
+            dbgassertex(tag != FREE_ROW_COUNT);
+            if (tag == DELAYFREE_ROW_COUNT)
+            {
+                /*
+                ((std::atomic_uint *)ret)->store(FREE_ROW_COUNT, std::memory_order_relaxed);
+                //This heap must be locked to be calling this function
+                if (count.fetch_sub(1, std::memory_order_release) == 2)
+                {
+                    //This thread does not access anything else from the object, so no need for an acquire fence!
+                    //I'm not sure this will accomplish anything useful!
+                    heap->noteEmptyPage();
+                }*/
+
                 return false;
+            }
             offset += size;
-        } while (offset < curFreeBase);
+            if (offset == curFreeBase)
+                offset = 0;
+        } while (offset != nextMatchOffset);
     }
     return true;
 }
@@ -3318,37 +3464,19 @@ bool ChunkedHeaplet::isEmpty()
         return false;
 
     //Scan through all the memory, checking for a block marked as free - should terminate very quickly unless highly fragmented
-    const bool updateCount = true;
     size32_t offset = 0;
     const size32_t size = chunkSize;
     const unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
-    unsigned numDelayed = 0;
     do
     {
         char * ret = data() + offset;
         unsigned tag = ((std::atomic_uint *)ret)->load(std::memory_order_relaxed);
         if (tag < FREE_ROW_COUNT_MIN)
-            break;
-
-        if (tag == DELAYFREE_ROW_COUNT)
-        {
-            numDelayed++;
-            if (updateCount)
-                ((std::atomic_uint *)ret)->store(FREE_ROW_COUNT, std::memory_order_relaxed);
-        }
+            return false;
         offset += size;
     } while (offset < curFreeBase);
 
-    if (numDelayed)
-    {
-        if (count.fetch_sub(numDelayed, std::memory_order_release) == numDelayed+1)
-        {
-            //This thread does not access anything else from the object, so no need for an acquire fence!
-            //I'm not sure this will accomplish anything useful!
-            heap->noteEmptyPage();
-        }
-    }
-    return (numAllocs - numDelayed) == 0;
+    return true;
 }
 
 unsigned ChunkedHeaplet::calcNumAllocated(bool updateCount) const
@@ -3379,11 +3507,14 @@ unsigned ChunkedHeaplet::calcNumAllocated(bool updateCount) const
 
         if (numDelayed)
         {
-            if (count.fetch_sub(numDelayed, std::memory_order_release) == numDelayed+1)
+            if (updateCount)
             {
-                //This thread does not access anything else from the object, so no need for an acquire fence!
-                //I'm not sure this will accomplish anything useful!
-                heap->noteEmptyPage();
+                if (count.fetch_sub(numDelayed, std::memory_order_release) == numDelayed+1)
+                {
+                    //This thread does not access anything else from the object, so no need for an acquire fence!
+                    //I'm not sure this will accomplish anything useful!
+                    heap->noteEmptyPage();
+                }
             }
             return numAllocs - numDelayed;
         }
@@ -3399,6 +3530,37 @@ const void * ChunkedHeaplet::_compactRow(const void * ptr, HeapCompactState & st
     if (isFull())
         return ptr;
     return chunkedHeap->compactRow(ptr, state);
+}
+
+void ChunkedHeaplet::startCompacting()
+{
+    heap->internalLock(); // prevent any allocations while this operation is going on.
+    compacting = true;
+    compactingRowCount = calcNumAllocated(false); // Don't update the counts because it will make allocating rows less efficient.
+    moveRows = false;
+    hasSharedRow = false;
+}
+void ChunkedHeaplet::stopCompacting()
+{
+    compacting = false;
+    heap->internalUnlock();
+}
+
+void ChunkedHeaplet::_prepareToCompactRow(const void * ptr, NewHeapCompactState & state)
+{
+    state.noteHeaplet(this);
+    if (_isShared(ptr))
+        hasSharedRow = true;
+}
+
+const void * ChunkedHeaplet::_newCompactRow(const void * ptr, NewHeapCompactState & state)
+{
+    assertex(compacting);
+    if (!moveRows)
+        return ptr;
+
+    CChunkedHeap * chunkedHeap = static_cast<CChunkedHeap *>(heap);
+    return chunkedHeap->newCompactRow(ptr, state);
 }
 
 //================================================================================
@@ -4710,6 +4872,29 @@ protected:
 
     virtual memsize_t compactRows(memsize_t count, const void * * rows)
     {
+#ifndef OLD_ROW_COMPACT
+        NewHeapCompactState state;
+        for (memsize_t i = 0; i < count; i++)
+        {
+            const void * row = rows[i];
+            if (row)
+                HeapletBase::prepareToCompactRow(row, state);
+        }
+
+        if (!state.calculateRowsToMove())
+            return 0;
+
+        for (memsize_t i = 0; i < count; i++)
+        {
+            const void * row = rows[i];
+            if (row)
+            {
+                const void * packed = HeapletBase::newCompactRow(row, state);
+                rows[i] = packed;  // better to always assign
+            }
+        }
+        return state.numPagesEmptied();
+#else
         HeapCompactState state;
         for (memsize_t i = 0; i < count; i++)
         {
@@ -4721,6 +4906,7 @@ protected:
             }
         }
         return state.numPagesEmptied;
+#endif
     }
 
     virtual void reportMemoryUsage(bool peak) const
@@ -4834,6 +5020,87 @@ protected:
     unsigned slaveId;
     CGlobalRowManager * globalManager;
 };
+
+//================================================================================
+
+static int compareHeaplets(void * const * left, void * const * right)
+{
+    ChunkedHeaplet * leftHeaplet = *reinterpret_cast<ChunkedHeaplet * const *>(left);
+    ChunkedHeaplet * rightHeaplet = *reinterpret_cast<ChunkedHeaplet * const *>(right);
+    if (leftHeaplet->queryHeap() != rightHeaplet->queryHeap())
+        return (leftHeaplet->queryHeap() < rightHeaplet->queryHeap()) ? -1 : +1;
+
+    if (leftHeaplet->hasSharedRow)
+    {
+        if (!rightHeaplet->hasSharedRow)
+            return -1;
+    }
+    else
+    {
+        if (rightHeaplet->hasSharedRow)
+            return +1;
+    }
+
+    return rightHeaplet->numCompactingRows() - leftHeaplet->numCompactingRows();
+}
+
+bool NewHeapCompactState::calculateRowsToMove()
+{
+    if (heaplets.ordinality() <= 1)
+        return false;
+
+    //Sort the list of heaplets by heap, heaplet, realCount
+    heaplets.sort(compareHeaplets);
+
+    //Walk through each heaplet in turn, processing a heap at a time.
+    bool foundPossibility = false;
+    unsigned firstHeaplet = 0;
+    const CHeap * curHeap = nullptr;
+    ForEachItemIn(i, heaplets)
+    {
+        ChunkedHeaplet * cur = heaplets.item(i);
+        if (cur->queryHeap() != curHeap)
+        {
+            if (processHeap(firstHeaplet, i))
+                foundPossibility = true;
+            firstHeaplet = i;
+            curHeap = cur->queryHeap();
+        }
+    }
+    if (processHeap(firstHeaplet, heaplets.ordinality()))
+        foundPossibility = true;
+    return foundPossibility;
+}
+
+
+bool NewHeapCompactState::processHeap(unsigned low, unsigned max)
+{
+    //0 or 1 entries - do nothing.
+    const unsigned numHeaplets = (max - low);
+    if (numHeaplets <= 1)
+        return false;
+
+    //Calculate the total number of rows in the heaplet
+    //MORE: This doesn't cover situations where other parts of the heaplet have lots of allocations....
+    //if more than one heaplet for this heap.
+    memsize_t totalRows = 0;
+    for (unsigned i1=low; i1 < max; i1++)
+        totalRows += heaplets.item(i1)->numCompactingRows();
+
+    //work backwards and tag the heaplets that contain rows that should be moved.
+    const CChunkedHeap * curHeap = static_cast<const CChunkedHeap *>(heaplets.item(low)->queryHeap());
+    unsigned maxRows = curHeap->maxChunksPerPage();
+    unsigned heapletsRequired = (unsigned)((totalRows + maxRows - 1) / maxRows);
+    if (heapletsRequired >= numHeaplets)
+        return false;
+
+    //Start cloning rows into the heaplet with the largest number
+    const_cast<CChunkedHeap *>(curHeap)->setCompactTarget(low);
+    for (unsigned i2=low + heapletsRequired; i2 < max; i2++)
+        heaplets.item(i2)->setMoveRows();
+    return true;
+}
+
 
 //================================================================================
 
@@ -5538,6 +5805,23 @@ const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state
                 break;
         }
     }
+    return ptr;
+}
+
+const void * CChunkedHeap::newCompactRow(const void * ptr, NewHeapCompactState & state)
+{
+    loop
+    {
+        ChunkedHeaplet * curTarget = state.queryHeaplet(curCompactTarget);
+        assertex(curTarget->queryHeap() == this);
+        const void * ret = curTarget->newMoveRow(ptr);
+        if (ret)
+            return ret;
+
+        //Heaplet is full.  If allocations are occuring at the same time it is possible that
+        curCompactTarget++;
+    }
+
     return ptr;
 }
 
