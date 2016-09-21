@@ -4167,6 +4167,7 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
         resp.updateWorkunit().setJobname(name.str());
     }
 
+    PROGLOG("WUDeploy generates: %s", wuid.str());
     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
 }
 
@@ -4302,6 +4303,7 @@ void CWsWorkunitsEx::deploySharedObjectReq(IEspContext &context, IEspWUDeployWor
     WsWuInfo winfo(context, wuid.str());
     winfo.getCommon(resp.updateWorkunit(), WUINFO_All);
 
+    PROGLOG("WUDeploy generates: %s", wuid.str());
     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
 }
 
