@@ -3832,7 +3832,7 @@ IHqlExpression * SetResultToExtractTransformer::createTransformed(IHqlExpression
     {
         OwnedHqlExpr normalized = convertSetResultToExtract(transformed);
         if (normalized && (normalized != transformed))
-            transformed.setown(transform(normalized));
+            transformed.set(normalized);
     }
 
     return transformed.getClear();
