@@ -291,6 +291,7 @@ QueryOptions::QueryOptions()
     bindCores = coresPerQuery;
     strandBlockSize = defaultStrandBlockSize;
     forceNumStrands = defaultForceNumStrands;
+    heapFlags = defaultHeapFlags;
 
     checkingHeap = defaultCheckingHeap;
     disableLocalOptimizations = false;  // No global default for this
@@ -320,6 +321,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     bindCores = other.bindCores;
     strandBlockSize = other.strandBlockSize;
     forceNumStrands = other.forceNumStrands;
+    heapFlags = other.heapFlags;
 
     checkingHeap = other.checkingHeap;
     disableLocalOptimizations = other.disableLocalOptimizations;
@@ -359,6 +361,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(bindCores, wu, "bindCores");
     updateFromWorkUnit(strandBlockSize, wu, "strandBlockSize");
     updateFromWorkUnit(forceNumStrands, wu, "forceNumStrands");
+    updateFromWorkUnit(heapFlags, wu, "heapFlags");
 
     updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
     updateFromWorkUnit(disableLocalOptimizations, wu, "disableLocalOptimizations");
@@ -408,6 +411,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(bindCores, ctx, "@bindCores", "_bindCores");
         updateFromContext(strandBlockSize, ctx, "@strandBlockSize", "_strandBlockSize");
         updateFromContext(forceNumStrands, ctx, "@forceNumStrands", "_forceNumStrands");
+        updateFromContext(heapFlags, ctx, "@heapFlags", "_HeapFlags");
 
         updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
         // Note: disableLocalOptimizations is not permitted at context level (too late)

@@ -132,6 +132,7 @@ unsigned dafilesrvLookupTimeout = 10000;
 bool defaultCheckingHeap = false;
 unsigned defaultStrandBlockSize = 512;
 unsigned defaultForceNumStrands = 0;
+unsigned defaultHeapFlags = roxiemem::RHFnofragment;
 
 unsigned slaveQueryReleaseDelaySeconds = 60;
 unsigned coresPerQuery = 0;

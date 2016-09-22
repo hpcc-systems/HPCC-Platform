@@ -1356,7 +1356,7 @@ public:
         return (bytesFree >= chunkSize);
     }
 
-    virtual bool isFull() const;
+    virtual bool isFull() const override;
 
     inline static unsigned dataOffset() { return HEAPLET_DATA_AREA_OFFSET(ChunkedHeaplet); }
 
@@ -2710,7 +2710,7 @@ public:
 
             headHeaplet = blockToHeaplet(head);
             //Is it possible to free this heaplet?
-            if (headHeaplet->queryCount() != 1)
+            if (!headHeaplet->isEmpty())
                 break;
 
             //If this is the only page then only free it if forced to.
@@ -2742,7 +2742,7 @@ public:
                     break;
 
                 Heaplet * heaplet = blockToHeaplet(curSpace);
-                if (heaplet->queryCount() == 1)
+                if (heaplet->isEmpty())
                 {
                     //Remove it directly rather than walking the list to remove it.
                     unsigned nextSpace = heaplet->nextSpace.load(std::memory_order_relaxed);
@@ -2760,7 +2760,7 @@ public:
             //I am not convinced this can ever lead to an extra page being released - except when it is released
             //after the space list has been walked.  Keep for the moment just to be sure.
             assertex(!preserved);
-            if (activeHeaplet->queryCount() == 1)
+            if (activeHeaplet->isEmpty())
                 total += releasePage(activeHeaplet);
         }
         else if (preserved)
@@ -3081,22 +3081,25 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter)
         {
             //Scan through all the memory, checking for a block marked as free - should terminate very quickly unless highly fragmented
             size32_t offset = nextMatchOffset;
-            size32_t delta = 0;
-            //Code as a do..while loop partly to prevent gcc complaining that ret could be uninitialised.
-            do
+            loop
             {
                 ret = data() + offset;
                 offset += size;
                 if (offset == curFreeBase)
                     offset = 0;
+
                 if (((std::atomic_uint *)ret)->load(std::memory_order_relaxed) == FREE_ROW_COUNT)
                     break;
-                delta += size;
-            } while (delta < curFreeBase);
+
+                if (offset == nextMatchOffset)
+                {
+                    //Should never occur...
+                    return nullptr;
+                }
+            }
 
             nextMatchOffset = offset;
             //save offset
-            assertex(delta != curFreeBase);
         }
 done:
         //Mark as allocated before return - while spin lock is still guaranteed to be active
@@ -7095,7 +7098,7 @@ protected:
 
         unsigned finalTime = msTick();
         if ((compacted>0) != (numPagesBefore != numPagesAfter))
-            DBGLOG("Compacted not returned correctly");
+            DBGLOG("Compacted not returned correctly %u %u=%u", (unsigned)compacted, numPagesBefore, numPagesAfter);
         CPPUNIT_ASSERT_EQUAL(compacted != 0, (numPagesBefore != numPagesAfter));
         DBGLOG("Compacting %d[%d] (%d->%d [%d] cf %d) Before: Time taken %u [%u]", numRows, milliFraction, numPagesBefore, numPagesAfter, (unsigned)compacted, expectedPages, endTime-startTime, finalTime-beginTime);
         ASSERT(numPagesAfter == expectedPages);
@@ -7158,7 +7161,7 @@ protected:
             if ((compacted>0) != (numPagesBefore != numPagesAfter))
                 DBGLOG("Compacted not returned correctly");
             CPPUNIT_ASSERT_EQUAL(compacted != 0, (numPagesBefore != numPagesAfter));
-            DBGLOG("Compacting %d[%d] (%d->%d [%d] cf %d) Before: Time taken %u", numRows, milliFraction, numPagesBefore, numPagesAfter, (unsigned)compacted, expectedPages, endTime-startTime);
+            DBGLOG("Compacting %d[%d] (%d->%d [%d] cf %d) locked(%u) Before: Time taken %u", numRows, milliFraction, numPagesBefore, numPagesAfter, (unsigned)compacted, expectedPages, numLocked, endTime-startTime);
 
             if (numLocked == 0)
                 CPPUNIT_ASSERT_EQUAL(expectedPages, numPagesAfter);
