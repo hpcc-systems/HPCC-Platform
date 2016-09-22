@@ -402,6 +402,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      @XSD_PLUGIN_DEFINITION@
       <xs:attribute name="pluginsPath" type="relativePath" use="optional" default="${PLUGINS_PATH}">
         <xs:annotation>
           <xs:appinfo>

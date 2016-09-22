@@ -67,6 +67,7 @@
 #define XML_TAG_NODE                   "Node"
 #define XML_TAG_NODES                  "Nodes"
 #define XML_TAG_NODEREF                "NodeRef"
+#define XML_TAG_PLUGINTYPE             "PluginType"
 #define XML_TAG_PLUGINPROCESS          "PluginProcess"
 #define XML_TAG_PLUGINREF              "PluginRef"
 #define XML_TAG_ROXIE_FARM             "RoxieFarmProcess"
