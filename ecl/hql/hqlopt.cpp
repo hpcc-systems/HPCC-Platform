@@ -2494,6 +2494,30 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 node_operator childOp = child->getOperator();
                 switch (childOp)
                 {
+                case no_selectnth:
+                    {
+                        IHqlExpression * child0 = child->queryChild(0);
+                        if (child0->getOperator()==no_newaggregate && getIntValue(child->queryChild(1),-1)==1 )
+                        {
+                            if (isSimpleCountExistsAggregate(child0, false, true))
+                            {
+                                IHqlExpression * dataset = child0->queryChild(0);
+                                if (!isShared(dataset) && dataset->getOperator() == no_addfiles
+                                    && (dataset->queryChild(0)->getOperator()==no_compound_diskread || dataset->queryChild(1)->getOperator()==no_compound_diskread))
+                                {
+                                    IHqlExpression * field = transformed->queryChild(1);
+                                    OwnedHqlExpr newLeftDS = replaceDataset(child, dataset, dataset->queryChild(0));
+                                    OwnedHqlExpr countLeftDS = createNewSelectExpr(newLeftDS.getClear(), LINK(field));
+
+                                    OwnedHqlExpr newRightDS = replaceDataset(child, dataset, dataset->queryChild(1));
+                                    OwnedHqlExpr countRightDS = createNewSelectExpr(newRightDS.getClear(), LINK(field));
+
+                                    OwnedHqlExpr newexpr = createValue(no_add, transformed->getType(), countLeftDS.getClear(), countRightDS.getClear());
+                                    return transformed->cloneAllAnnotations(newexpr);
+                                }
+                            }
+                        }
+                    }
                 case no_createrow:
                     {
                         OwnedHqlExpr match = getExtractSelect(child->queryChild(0), transformed->queryChild(1), false);
