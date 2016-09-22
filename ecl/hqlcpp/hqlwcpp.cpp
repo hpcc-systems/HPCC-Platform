@@ -441,7 +441,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
                 else
                     isPointer = true;
 
-                if (tc == type_data)
+                if (tc == type_data || tc == type_qstring)
                 {
                     if (isPointer)
                         prefix = "void";
