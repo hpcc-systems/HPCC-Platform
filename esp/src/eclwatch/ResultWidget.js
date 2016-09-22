@@ -113,6 +113,10 @@ define([
             this._doDownload("xls");
         },
 
+        _onDownloadCSV: function (args) {
+            this._doDownload("csv");
+        },
+
         _onFileDetails: function (args) {
             alert("todo");
         },
