@@ -121,7 +121,7 @@ static const char * EclDefinition =
                             " string description;"
                             " string unit;"
                         " end;\n"
-"export WorkunitServices := SERVICE : cpp\n"
+"export WorkunitServices := SERVICE :time, cpp\n"
 "   boolean WorkunitExists(const varstring wuid, boolean online=true, boolean archived=false) : context,entrypoint='wsWorkunitExists'; \n"
 "   dataset(WsWorkunitRecord) WorkunitList("
                                         " const varstring lowwuid='',"

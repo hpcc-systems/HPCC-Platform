@@ -35,7 +35,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 //-------------------------------------------------------------------------------------------------------------------------------------------
 
 static const char * EclDefinition =
-"export ParseLib := SERVICE\n"
+"export ParseLib := SERVICE : time\n"
 "   string getParseTree() : c,volatile,entrypoint='plGetDefaultParseTree',userMatchFunction; \n"
 "   string getXmlParseTree() : c,volatile,entrypoint='plGetXmlParseTree',userMatchFunction; \n"
 "END;";

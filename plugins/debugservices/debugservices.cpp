@@ -22,7 +22,7 @@
 
 static const char * EclDefinition =
 "export DebugServices := SERVICE\n"
-"  Sleep(integer millis) : c,pure,entrypoint='dsSleep',initFunction='dsInitDebugServices'; \n"
+"  Sleep(integer millis) : c,time,pure,entrypoint='dsSleep',initFunction='dsInitDebugServices'; \n"
 "  varstring GetBuildInfo() : c,pure,entrypoint='dsGetBuildInfo',initFunction='dsInitDebugServices';\n"
 "END;";
 

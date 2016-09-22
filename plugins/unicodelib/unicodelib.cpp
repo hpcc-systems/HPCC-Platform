@@ -78,8 +78,8 @@ static const char * EclDefinition =
 "  unicode80 UnicodeCleanSpaces80(const unicode src) : c,pure,entrypoint='ulUnicodeCleanSpaces80', hole; \n"
 "  boolean UnicodeWildMatch(const unicode src, const unicode _pattern, boolean _noCase) : c, pure,entrypoint='ulUnicodeWildMatch', hole; \n"
 "  boolean UnicodeContains(const unicode src, const unicode _pattern, boolean _noCase) : c, pure,entrypoint='ulUnicodeContains', hole; \n"
-"  unsigned4 UnicodeLocaleEditDistance(const unicode left, const unicode right, const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleEditDistance', hole; \n"
-"  boolean UnicodeLocaleEditDistanceWithinRadius(const unicode left, const unicode right, unsigned4 radius,  const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleEditDistanceWithinRadius', hole; \n"
+"  unsigned4 UnicodeLocaleEditDistance(const unicode left, const unicode right, const varstring localename) : c,time,pure,entrypoint='ulUnicodeLocaleEditDistance', hole; \n"
+"  boolean UnicodeLocaleEditDistanceWithinRadius(const unicode left, const unicode right, unsigned4 radius,  const varstring localename) : c,time,pure,entrypoint='ulUnicodeLocaleEditDistanceWithinRadius', hole; \n"
 "  unsigned4 UnicodeLocaleWordCount(const unicode text, const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWordCount', hole; \n"
 "  unicode UnicodeLocaleGetNthWord(const unicode text, unsigned4 n, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleGetNthWord';\n"
 "END;\n";

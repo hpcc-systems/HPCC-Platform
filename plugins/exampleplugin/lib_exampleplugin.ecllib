@@ -17,8 +17,8 @@
 
 
 EXPORT exampleplugin := SERVICE : plugin('exampleplugin'), namespace('ExamplePlugin')
-  UNSIGNED4 func1(CONST VARSTRING param1, CONST VARSTRING param2, UNSIGNED4 param3) : cpp,action,context,entrypoint='func1';
-  STRING func2(CONST VARSTRING param1, CONST VARSTRING param2, CONST STRING param3) : cpp,action,context,entrypoint='func2';
+  UNSIGNED4 func1(CONST VARSTRING param1, CONST VARSTRING param2, UNSIGNED4 param3) : cpp,action,context,time,entrypoint='func1';
+  STRING func2(CONST VARSTRING param1, CONST VARSTRING param2, CONST STRING param3) : cpp,action,context,fold,entrypoint='func2';
 END;
 
 EXPORT Wrapper(VARSTRING param1, VARSTRING  param2 = '') := MODULE

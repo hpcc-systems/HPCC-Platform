@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-EXPORT redis := SERVICE : plugin('redis'), namespace('RedisPlugin')
+EXPORT redis := SERVICE : plugin('redis'), namespace('RedisPlugin'),time
   SetUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncRSetUChar';
   SetString(  CONST VARSTRING key, CONST STRING value,  CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncRSetStr';
   SetUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, INTEGER4 database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', UNSIGNED4 timeout = 1000, BOOLEAN cacheConnections = TRUE) : cpp,action,context,entrypoint='SyncRSetUtf8';
