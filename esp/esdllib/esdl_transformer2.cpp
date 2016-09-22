@@ -923,7 +923,6 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, IPropertyTree *pt, const
                 const char *tagname = child.queryInputName(ctx);
                 if (pt->hasProp(tagname)||child.hasDefaults())
                 {
-                    unsigned numChildren = pt->getCount(tagname);
                     bool isEsdlList = false;
                     IEsdlDefObject*  def = child.queryEsdlDefObject();
                     if (def->getEsdlType() == EsdlTypeArray)
@@ -932,35 +931,19 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, IPropertyTree *pt, const
                         isEsdlList = defArray->checkIsEsdlList();
                     }
                     if (!isEsdlList)
-                    {
-                        if (numChildren < 2)
-                            child.process(ctx, pt->queryPropTree(tagname), child.queryOutputName(ctx), &local, count);
-                        else
-                        {
-                            Owned<IPropertyTreeIterator> iter = pt->getElements(tagname);
-                            ForEach(*iter)
-                                child.process(ctx, &iter->query(), child.queryOutputName(ctx), &local, count);
-                        }
-                    }
+                        child.process(ctx, pt->queryPropTree(tagname), child.queryOutputName(ctx), &local, count);
                     else
                     {
                         Owned<IInterface> prevLocation = ctx.writer->saveLocation();
                         ctx.writer->outputBeginArray(tagname);
                         int curlen = ctx.writer->length();
 
-                        if (numChildren < 2)
-                            child.process(ctx, pt->queryPropTree(tagname), child.queryOutputName(ctx), &local, count);
-                        else
-                        {
-                            Owned<IPropertyTreeIterator> iter = pt->getElements(tagname);
-                            ForEach(*iter)
-                                child.process(ctx, &iter->query(), child.queryOutputName(ctx), &local, count);
-                        }
+                        Owned<IPropertyTreeIterator> iter = pt->getElements(tagname);
+                        ForEach(*iter)
+                            child.process(ctx, &iter->query(), child.queryOutputName(ctx), &local, count);
+
                         if (ctx.writer->length()==curlen) //nothing was added... empty content remove opening tag
-                        {
-                            ///ctx.writer->outputEndArray(tagname);
                             ctx.writer->rewindTo(prevLocation); //rewind
-                        }
                         else
                         {
                             ctx.writer->outputEndArray(tagname);
