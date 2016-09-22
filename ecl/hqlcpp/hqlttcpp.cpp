@@ -2087,9 +2087,6 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
     case NO_AGGREGATE:
         normalized = normalizeScalarAggregate(transformed);
         break;
-    case no_setresult:
-        normalized = convertSetResultToExtract(transformed);
-        break;
     case no_projectrow:
         {
             IHqlExpression * ds = transformed->queryChild(0);
@@ -3819,6 +3816,28 @@ void HqlCppTranslator::convertLogicalToActivities(WorkflowItem & curWorkflow)
     if (queryOptions().normalizeLocations)
         normalizeAnnotations(*this, curWorkflow.queryExprs());
 }
+
+//------------------------------------------------------------------------
+static HqlTransformerInfo setResultToExtractTransformerInfo("SetResultToExtractTransformer");
+SetResultToExtractTransformer::SetResultToExtractTransformer()
+: NewHqlTransformer(setResultToExtractTransformerInfo)
+{
+}
+
+
+IHqlExpression * SetResultToExtractTransformer::createTransformed(IHqlExpression * expr)
+{
+    OwnedHqlExpr transformed = PARENT::createTransformed(expr);
+    if (transformed->getOperator() == no_setresult)
+    {
+        OwnedHqlExpr normalized = convertSetResultToExtract(transformed);
+        if (normalized && (normalized != transformed))
+            transformed.set(normalized);
+    }
+
+    return transformed.getClear();
+}
+
 
 //------------------------------------------------------------------------
 
