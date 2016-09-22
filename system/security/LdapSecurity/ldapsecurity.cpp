@@ -557,6 +557,7 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     m_permissionsCache->setTransactionalEnabled(true);
     m_permissionsCache->setSecManager(this);
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
+    m_checkViewPermissions = cfg->getPropBool(".//@checkViewPermissions", false);
 };
 
 
@@ -877,9 +878,50 @@ bool CLdapSecManager::authorizeFileScope(ISecUser & user, ISecResourceList * res
     return authorizeEx(RT_FILE_SCOPE, user, resources);
 }
 
-bool CLdapSecManager::authorizeViewScope(ISecUser & user, ISecResourceList * resources)
+bool CLdapSecManager::authorizeViewScope(ISecUser & user, StringArray & filenames, StringArray & columnnames)
 {
-    return authorizeEx(RT_VIEW_SCOPE, user, resources);
+    if (filenames.length() != columnnames.length())
+    {
+        PROGLOG("Error authorizing view scope: number of filenames (%d) do not match number of columnnames (%d).", filenames.length(), columnnames.length());
+        return false; 
+    }
+
+    const char* username = user.getName();
+    StringArray viewnames, viewdescriptions, viewManagedBy;
+
+    queryAllViews(viewnames, viewdescriptions, viewManagedBy);
+
+    // All views where user belongs must pass
+    ForEachItemIn(i, viewnames)
+    {
+        const char* viewname = viewnames.item(i);
+
+        if (userInView(username, viewname))
+        {
+            Owned<ISecResourceList> resList;
+            resList.setown(new CLdapSecResourceList(viewname));
+
+            // Inefficient loop because we are adding same used columns all over again for each views.
+            // we can improve the performance later if there is a way to rename and reuse same ISecResourceList for each view.
+            ForEachItemIn(j, filenames)
+            {
+                StringBuffer resourceName;
+                resourceName.append("QueryAccessedColumns");
+                resourceName.append(j);
+                ISecResource* res = resList->addResource(resourceName);
+                res->addParameter("file", filenames.item(j));
+                res->addParameter("column", columnnames.item(j));
+            }
+
+            if (!authorizeEx(RT_VIEW_SCOPE, user, resList.get()))
+            {
+                PROGLOG("View scope authorization denied by a view %s for a user %s", viewname, username);
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 SecAccessFlags CLdapSecManager::authorizeWorkunitScope(ISecUser & user, const char * wuscope)
