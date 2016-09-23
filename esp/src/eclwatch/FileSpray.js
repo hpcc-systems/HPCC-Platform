@@ -119,6 +119,32 @@ define([
         }
     });
 
+    var LandingZonesFilterStore = declare([ESPRequest.Store], {
+        service: "FileSpray",
+        action: "DropZoneFileSearch",
+        responseQualifier: "DropZoneFileSearchResponse.Files.PhysicalFileStruct",
+        idProperty: "calculatedID",
+        constructor: function (options) {
+            if (options) {
+                declare.safeMixin(this, options);
+            }
+        },
+        preProcessRow: function (row) {
+            var fullPath = row.Path + "/" + row.name;
+            lang.mixin(row, {
+                DropZone: {
+                    NetAddress: this.dropZone.machine.Netaddress
+                },
+                calculatedID: this.dropZone.machine.Netaddress + fullPath,
+                partialPath: fullPath,
+                fullPath: fullPath,
+                fullFolderPath: row.Path,
+                displayName: row.name,
+                type: row.isDir ? "folder" : "file"
+            });
+        }
+    });
+
     var LandingZonesStore = declare([ESPRequest.Store], {
         service: "FileSpray",
         action: "DropZoneFiles",
@@ -129,6 +155,14 @@ define([
                 declare.safeMixin(this, options);
             }
             this.userAddedFiles = {};
+        },
+        query: function (query, options) {
+            if (!query.filter) {
+                return this.inherited(arguments);
+            }
+            var landingZonesFilterStore = new LandingZonesFilterStore({ dropZone: query.filter.__dropZone });
+            delete query.filter.__dropZone;
+            return landingZonesFilterStore.query(query.filter, options);
         },
         addUserFile: function (_file) {
             var fileListStore = new FileListStore({
@@ -259,6 +293,11 @@ define([
 
         CreateFileListStore: function (options) {
             var store = new FileListStore(options);
+            return Observable(store);
+        },
+
+        CreateLandingZonesFilterStore: function (options) {
+            var store = new LandingZonesFilterStore(options);
             return Observable(store);
         },
 

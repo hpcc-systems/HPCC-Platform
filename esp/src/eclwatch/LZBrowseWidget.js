@@ -46,6 +46,7 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/TargetComboBoxWidget",
     "hpcc/SelectionGridWidget",
+    "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/LZBrowseWidget.html",
 
@@ -72,12 +73,15 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, iframe, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 tree, editor, selector,
-                _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, SelectionGridWidget,
+                _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, SelectionGridWidget, FilterDropDownWidget,
                 template) {
     return declare("LZBrowseWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "LZBrowseWidget",
         i18n: nlsHPCC,
+
+        filter: null,
+        dropZoneTarget2Select: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -111,6 +115,8 @@ define([
             this.xmlSprayReplicateCheckbox = registry.byId(this.id + "XMLSprayReplicate");
             this.variableSprayReplicateCheckbox = registry.byId(this.id + "VariableSprayReplicate");
             this.blobSprayReplicateCheckbox = registry.byId(this.id + "BlobSprayReplicate");
+            this.filter = registry.byId(this.id + "Filter");
+            this.dropZoneTarget2Select = registry.byId(this.id + "DropZoneName2");
 
             var context = this;
             this.connect(this.uploader, "onComplete", function (response) {
@@ -457,11 +463,34 @@ define([
         },
 
         //  Implementation  ---
+        getFilter: function () {
+            var retVal = this.filter.toObject();
+            var dropZoneInfo = arrayUtil.filter(this.dropZoneTarget2Select.options, function (option) {
+                return option.selected === true;
+            });
+            if (dropZoneInfo.length) {
+                retVal.__dropZone = dropZoneInfo[0];
+            }
+            return retVal;
+        },
+
         init: function (params) {
             if (this.inherited(arguments))
                 return;
+            var context = this;
 
             this.initLandingZonesGrid();
+            this.dropZoneTarget2Select.init({
+                DropZones: true,
+                includeBlank: true
+            });
+
+            this.filter.on("clear", function (evt) {
+                context.refreshGrid();
+            });
+            this.filter.on("apply", function (evt) {
+                context.refreshGrid();
+            });
             this.sprayFixedDestinationSelect.init({
                 SprayTargets: true
             });
@@ -545,9 +574,14 @@ define([
         },
 
         initLandingZonesGrid: function () {
+            var context = this;
             this.landingZoneStore = new FileSpray.CreateLandingZonesStore();
             this.landingZonesGrid = new declare([ESPUtil.Grid(false, true)])({
                 store: this.landingZoneStore,
+                query: {
+                    id: "*",
+                    filter: this.filter.exists() ? this.getFilter() : null
+                },
                 columns: {
                     col1: selector({
                         width: 27,
@@ -592,6 +626,9 @@ define([
                     modifiedtime: { label: this.i18n.Date, width: 180, sortable: false }
                 },
                 getSelected: function () {
+                    if (context.filter.exists()) {
+                        return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore()]);
+                    }
                     return this.inherited(arguments, [FileSpray.CreateFileListStore()]);
                 }
             }, this.id + "LandingZonesGrid");
@@ -711,7 +748,8 @@ define([
 
         refreshGrid: function (clearSelection) {
             this.landingZonesGrid.set("query", {
-                id: "*"
+                id: "*",
+                filter: this.filter.exists() ? this.getFilter() : null
             });
             if (clearSelection) {
                 this.landingZonesGrid.clearSelection();
