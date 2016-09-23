@@ -154,7 +154,7 @@ public:
 
     void setXML(const char * logicalName);
     const char* getPath() const { return xPath.str(); }
-  
+
     void unlockRemote();
     virtual bool isConstEnvironment() const { return true; }
     virtual void clearCache();
@@ -322,7 +322,7 @@ void CLockedEnvironment::commit()
         //     - as opposed to current scheme, where it recoonects in write mode and has to lazy fetch original env to update.
 
         // ensures pDst is equal to pSrc, whilst minimizing changes to pDst
-      
+
         try { synchronizePTree(pDst, pSrc); }
         catch (IException *) { conn2->rollback(); throw; }
         conn2->commit();
@@ -370,8 +370,8 @@ void CLockedEnvironment::rollback()
 }
 
 //==========================================================================================
-// the following class implements notification handler for subscription to dali for environment 
-// updates by other clients and is used by environment factory below.  This also serves as 
+// the following class implements notification handler for subscription to dali for environment
+// updates by other clients and is used by environment factory below.  This also serves as
 // a sample self-contained implementation that can be easily tailored for other purposes.
 //==========================================================================================
 class CSdsSubscription : implements ISDSSubscription, public CInterface
@@ -385,23 +385,23 @@ public:
     }
     virtual ~CSdsSubscription()
     {
-        /* note that ideally, we would make this class automatically 
-           unsubscribe in this destructor.  However, underlying dali client 
-            layer (CDaliSubscriptionManagerStub) links to this object and so 
+        /* note that ideally, we would make this class automatically
+           unsubscribe in this destructor.  However, underlying dali client
+            layer (CDaliSubscriptionManagerStub) links to this object and so
             object would not get destroyed just by an application releasing it.
-           The application either needs to explicitly unsubscribe or close 
+           The application either needs to explicitly unsubscribe or close
             the environment which unsubscribes during close down. */
     }
 
     void unsubscribe()
     {
         synchronized block(m_mutexEnv);
-        if (sub_id) 
-        { 
+        if (sub_id)
+        {
             Owned<IEnvironmentFactory> m_envFactory = getEnvironmentFactory();
-            m_envFactory->unsubscribe(sub_id); 
-            sub_id = 0; 
-        } 
+            m_envFactory->unsubscribe(sub_id);
+            sub_id = 0;
+        }
     }
     IMPLEMENT_IINTERFACE;
 
@@ -437,7 +437,7 @@ private:
 
 //==========================================================================================
 
-class CEnvironmentFactory : public CInterface, 
+class CEnvironmentFactory : public CInterface,
                             implements IEnvironmentFactory, implements IDaliClientShutdown
 {
 public:
@@ -446,7 +446,7 @@ public:
     SubscriptionIDs subIDs;
     Mutex mutex;
     Owned<CSdsSubscription> subscription;
-    
+
     CEnvironmentFactory()
     {
     }
@@ -502,8 +502,8 @@ public:
             cache.clear();
 
             //save the active subscriptions in another array
-            //so they can be unsubscribed without causing deadlock 
-            // since ~CSdsSubscription() would ask us to unsubscribe the 
+            //so they can be unsubscribed without causing deadlock
+            // since ~CSdsSubscription() would ask us to unsubscribe the
             //same requiring a mutex lock (copy is a little price for this
             //normally small/empty array).
             //
@@ -527,7 +527,7 @@ public:
         subIDs.append(sub_id);
         return sub_id;
     }
-         
+
     virtual void unsubscribe(SubscriptionId sub_id)
     {
         synchronized procedure(mutex);
@@ -535,7 +535,7 @@ public:
         aindex_t i = subIDs.find(sub_id);
         if (i != NotFound)
         {
-            querySDS().unsubscribe(sub_id); 
+            querySDS().unsubscribe(sub_id);
             subIDs.remove(i);
         }
     }
@@ -544,7 +544,7 @@ public:
     {
         if (!subscription)
             subscription.setown( new CSdsSubscription() );
-      
+
         subscription->handleEnvironmentChange();
     }
 
@@ -607,7 +607,7 @@ public:
 #define IMPLEMENT_ICONSTENVBASE \
     virtual IStringVal&     getXML(IStringVal &str) const { return CConstEnvBase::getXML(str); } \
     virtual IStringVal&     getName(IStringVal &str) const { return CConstEnvBase::getName(str); } \
-    virtual IPropertyTree&  getPTree() const { return CConstEnvBase::getPTree(); } 
+    virtual IPropertyTree&  getPTree() const { return CConstEnvBase::getPTree(); }
 
 //==========================================================================================
 
@@ -849,9 +849,9 @@ public:
     {
         // this is remote path i.e. path should match *target* nodes format
         Owned<IConstMachineInfo> machine = getMachine();
-        if (!machine) 
+        if (!machine)
             return false;
-        char psep; 
+        char psep;
         bool appendexe;
         switch (machine->getOS())
         {
@@ -895,12 +895,12 @@ public:
             program = tmp.str();
         }
         progpath.set(program);
-        const char *workd = root->queryProp("@workdir"); // if program specified assume absolute 
+        const char *workd = root->queryProp("@workdir"); // if program specified assume absolute
         workdir.set(workd?workd:"");
         return true;
     }
-    
-    
+
+
     virtual bool getRunInfo(IStringVal & progpath, IStringVal & workdir, const char *defprogname) const
     {
         return doGetRunInfo(progpath,workdir,defprogname,true);
@@ -941,6 +941,10 @@ public:
             str.set(root->queryProp("@umask"));
         return str;
     }
+    virtual bool isECLWatchVisible() const
+    {
+        return root->getPropBool("@ECLWatchVisible", true);
+    }
 };
 
 #if 0
@@ -979,7 +983,7 @@ public:
                     if (dm)
                     {
                         StringBuffer thisdomain;
-                        
+
                         //dm->getName(StringBufferAdaptor(thisdomain)); // confuses g++
                         StringBufferAdaptor strval(thisdomain);
                         dm->getName(strval);
@@ -997,7 +1001,7 @@ public:
 
 //==========================================================================================
 
-CLocalEnvironment::CLocalEnvironment(const char* environmentFile) 
+CLocalEnvironment::CLocalEnvironment(const char* environmentFile)
 {
     if (environmentFile && *environmentFile)
     {
@@ -1010,7 +1014,7 @@ CLocalEnvironment::CLocalEnvironment(const char* environmentFile)
 }
 
 CLocalEnvironment::CLocalEnvironment(IRemoteConnection *_conn, IPropertyTree* root/*=nullptr*/,
-                                     const char* path/*="/Environment"*/) 
+                                     const char* path/*="/Environment"*/)
                                      : xPath(path)
 {
     conn.set(_conn);
@@ -1500,7 +1504,7 @@ bool CLocalEnvironment::getRunInfo(IStringVal & path, IStringVal & dir, const ch
             { // this returns full string
                 RemoteFilename rfn;
                 rfn.setRemotePath(testpath.get());
-                Owned<IFile> file = createIFile(rfn); 
+                Owned<IFile> file = createIFile(rfn);
                 if (file->exists())
                 {
                     StringBuffer tmp;
@@ -1517,7 +1521,7 @@ bool CLocalEnvironment::getRunInfo(IStringVal & path, IStringVal & dir, const ch
             LOG(MCdebugInfo, unknownJob, "Unable to find machine for %s", machineaddr);
             return false;
         }
-        
+
         StringAttr targetdomain;
         Owned<IConstDomainInfo> domain = machine->getDomain();
         if (!domain)
@@ -1807,8 +1811,8 @@ extern ENVIRONMENT_API void closeEnvironment()
             pFactory->Release();
         }
     }
-    catch (IException *e) 
-    { 
-        EXCLOG(e); 
+    catch (IException *e)
+    {
+        EXCLOG(e);
     }
 }
