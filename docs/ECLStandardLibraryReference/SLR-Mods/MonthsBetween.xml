@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MonthsBetween">
+  <title>MonthsBetween</title>
+
+  <para><emphasis role="bold">STD.Date.MonthsBetween<indexterm>
+      <primary>STD.Date.MonthsBetween</primary>
+    </indexterm><indexterm>
+      <primary>MonthsBetween</primary>
+    </indexterm>(</emphasis> <emphasis role="bold">fromDate,
+  toDate)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>fromDate</emphasis></entry>
+
+          <entry>The first date value in Date_t format.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toDate</emphasis></entry>
+
+          <entry>The last date value in Date_t format.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>MonthsBetween returns an INTEGER value of the number of whole
+          months between the two dates.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">DayOfYear</emphasis> function calculate the
+  number of whole months between two dates.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+StartDate := 19631122;
+numMonths := STD.Date.MonthsBetween(startDate,STD.Date.Today());
+      // numMonths contains the number of months between the startDate and today's date
+</programlisting>
+
+  <para></para>
+</sect1>
