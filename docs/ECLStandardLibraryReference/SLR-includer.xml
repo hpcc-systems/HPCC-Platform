@@ -170,10 +170,9 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CreateExternalDirectory.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-                
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/RemoteDirectory.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-              
   </chapter>
 
   <chapter id="File_Browsing_Support">
@@ -362,11 +361,12 @@
   </chapter>
 
   <chapter id="Date_Handling">
-    <title><emphasis>Date Handling</emphasis></title>
+    <title><emphasis>Date and Time Handling</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DateDataTypes.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/TimeDataTypes.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Year.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
@@ -375,12 +375,19 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Day.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+   <xi:include href="ECLStandardLibraryReference/SLR-Mods/Hour.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+   <xi:include href="ECLStandardLibraryReference/SLR-Mods/Minute.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+   <xi:include href="ECLStandardLibraryReference/SLR-Mods/Second.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />                
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DateFromParts.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsLeapYear.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsValidDate.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
@@ -389,23 +396,27 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/ToGregorianYMD.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/FromStringToDate.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />            
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Today.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />            
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DayOfYear.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />            
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DaysBetween.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />            
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/MonthsBetween.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />            
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/AdjustDate.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />            
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/AdjustCalendar.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />            
-
-
-                
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Cluster_Handling">
