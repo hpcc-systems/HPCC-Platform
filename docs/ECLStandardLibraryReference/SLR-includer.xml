@@ -376,9 +376,6 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Day.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/DayOfYear.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />                
-
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DateFromParts.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
