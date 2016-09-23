@@ -113,6 +113,13 @@ define([
 
             startup: function (args) {
                 this.inherited(arguments);
+                this.errorsCheckLabel = dom.byId(this.id + "ErrorsLabel");
+                this.errorsCheckLabelOrigText = this.errorsCheckLabel.textContent;
+                this.warningsCheckLabel = dom.byId(this.id + "WarningsLabel");
+                this.warningsCheckLabelOrigText = this.warningsCheckLabel.textContent;
+                this.infoCheckLabel = dom.byId(this.id + "InfoLabel");
+                this.infoCheckLabelOrigText = this.infoCheckLabel.textContent;
+
                 if (this.showToolbar) {
                     if (has("ie") <= 9 || has("ff")) {
                         this.widget.Download.set("disabled", true);
@@ -413,6 +420,9 @@ define([
                 }, this);
                 this.infoStore.setData(data);
                 this.infoGrid.refresh();
+                this.errorsCheckLabel.innerText = this._counts.error + " " + this.errorsCheckLabelOrigText;
+                this.warningsCheckLabel.innerText = this._counts.warning + " " + this.warningsCheckLabelOrigText;
+                this.infoCheckLabel.innerText = this._counts.info + " " + this.infoCheckLabelOrigText;
             },
 
             getSelected: function () {
