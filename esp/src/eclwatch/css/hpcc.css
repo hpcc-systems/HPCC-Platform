@@ -229,6 +229,45 @@ hr.dashedLine {
     text-align: center; 
 }
 
+.layoutTable {
+    vertical-align: left;
+    border: solid 1px #B5BCC7;
+    width:100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+ }
+
+ .layoutTable thead {
+    vertical-align: left;
+    background-color: #e2e2e2;
+    height: 5px;
+    padding:0;
+    border-spacing:0;
+ }
+
+.layoutTable th {
+    vertical-align: left;
+    text-align:left;
+    background-color: #e2e2e2;
+    width:33%;
+    height: 5px;
+    padding-left:10px;
+    border-spacing:0;
+}
+
+.layoutTable tr {
+    vertical-align: left;
+    height: 5px;
+    padding:0;
+    border-spacing:0;
+}
+
+.layoutTable td {
+    text-align: left;
+    padding:10px;
+    border-spacing:0;
+}
+
 #stubTitlebar :focus {
     outline: none;
 }
