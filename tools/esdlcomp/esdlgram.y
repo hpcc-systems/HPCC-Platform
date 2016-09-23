@@ -96,6 +96,7 @@ int  nCommentStartLine = -1;
   ESPMETHODREF
   ESPVERSIONDEF
   ESPTEMPLATE
+  ESPTEMPLATELIST
   ESPMOUNT
   ESPUSES
   ESPDEFEXPORT
@@ -479,7 +480,49 @@ EspPropertyList
  ;
 
 EspPropertyDef
- : EspTemplateStart ESPTEMPLATE '<' EspTemplateParams '>' ID EspPropertyInit ';'
+ : EspTemplateStart ESPTEMPLATELIST '<' EspTemplateParams '>' ID EspPropertyInit ';'
+ {
+    if (CurParam)
+    {
+        if (CurParam->name && ((CurParam->flags & PF_RETURN)==0))
+        {
+            if (CurParam->kind==TK_null)
+            {
+                CurParam->kind = TK_STRUCT;
+                CurParam->typname = CurParam->name;
+            }
+            else
+            {
+                errnum = 9;
+                yyerror("unknown/unexpected ID");
+            }
+        }
+
+        CurParam->flags |= PF_TEMPLATE;
+        CurParam->templ = strdup($2.getName());
+        CurParam->name = strdup($6.getName());
+        CurParam->tags = getClearCurMetaTags();
+    }
+    else
+        CurMetaTags=NULL;
+    AddEspProperty();
+ }
+ | EspTemplateStart ESPTEMPLATELIST '<' EspType ID '>' ID ';'
+ {
+    if (CurParam)
+    {
+        CurParam->flags |= PF_TEMPLATE;
+        CurParam->templ = strdup($2.getName());
+        CurParam->name = strdup($5.getName());
+        CurParam->typname = CurParam->name;
+        CurParam->name = strdup($7.getName());
+        CurParam->tags = getClearCurMetaTags();
+    }
+    else
+        CurMetaTags=NULL;
+    AddEspProperty();
+ }
+ | EspTemplateStart ESPTEMPLATE '<' EspTemplateParams '>' ID EspPropertyInit ';'
  {
     if (CurParam)
     {

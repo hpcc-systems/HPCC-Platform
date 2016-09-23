@@ -114,6 +114,7 @@ interface IEsdlDefElement : extends IEsdlDefObject
 interface IEsdlDefArray : extends IEsdlDefObject
 {
     virtual IProperties *queryRecSelectors()=0;
+    virtual const bool checkIsEsdlList()=0;
 };
 
 interface IEsdlDefEnumDef : extends IEsdlDefObject
