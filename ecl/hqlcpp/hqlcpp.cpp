@@ -1781,7 +1781,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
         DebugOption(options.alwaysReuseGlobalSpills,"alwaysReuseGlobalSpills",true),
         DebugOption(options.forceAllDatasetsParallel,"forceAllDatasetsParallel",false),  // Purely for regression testing.
-        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsAsErrors",true),
+        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsFatal",true),
         DebugOption(options.optimizeCriticalFunctions,"optimizeCriticalFunctions",true),
     };
 
@@ -11717,8 +11717,10 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
         startLine += memcount(body-start, start, '\n');
     }
 
+    bool addPragmas = options.embeddedWarningsAsErrors && !bodyCode->hasAttribute(inlineAtom);
+
     BuildCtx outerctx(funcctx);
-    if (options.embeddedWarningsAsErrors)
+    if (addPragmas)
     {
         funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
                 "#pragma GCC diagnostic error \"-Wall\"\n"
@@ -11729,7 +11731,7 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
 
     funcctx.addQuotedCompound(proto);
 
-    if (options.embeddedWarningsAsErrors)
+    if (addPragmas)
     {
         outerctx.addQuoted("\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
                 "#pragma GCC diagnostic ignored \"-Wall\"\n"
@@ -11964,13 +11966,21 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         else
         {
             bool isInline = bodyCode->hasAttribute(inlineAtom);
-            if (isInline && options.spanMultipleCpp)
+            if (isInline)
             {
-                BuildCtx funcctx2(*code, parentHelpersAtom);
-                buildCppFunctionDefinition(funcctx2, bodyCode, proto);
+                if (options.spanMultipleCpp)
+                {
+                    BuildCtx funcctx2(*code, parentHelpersAtom);
+                    buildCppFunctionDefinition(funcctx2, bodyCode, proto);
+                }
+                else
+                    buildCppFunctionDefinition(funcctx, bodyCode, proto);
             }
             else
-                buildCppFunctionDefinition(funcctx, bodyCode, proto);
+            {
+                BuildCtx funcctx2(*code, userFunctionAtom);
+                buildCppFunctionDefinition(funcctx2, bodyCode, proto);
+            }
         }
     }
     else

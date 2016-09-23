@@ -94,6 +94,7 @@ IAtom * _spillReason_Atom;
 IAtom * _steppedMeta_Atom;
 IAtom * subgraphAtom;
 IAtom * _translated_Atom;
+IAtom * userFunctionAtom;
 IAtom * utf8Atom;
 IAtom * wrapperAtom;
 IAtom * xmlColumnProviderAtom;
@@ -1475,6 +1476,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(skipReturnMarker);
     MAKEATOM(speed);
     MAKEATOM(subgraph);
+    MAKEATOM(userFunction);
     utf8Atom = createAtom("utf-8");
     MAKEATOM(wrapper);
     MAKEATOM(xmlColumnProvider);
