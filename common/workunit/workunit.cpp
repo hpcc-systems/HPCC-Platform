@@ -3951,7 +3951,7 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
     unsigned auditflags = DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED;
     if (writeaccess)
         auditflags |= DALI_LDAP_WRITE_WANTED;
-    int perm = SecAccess_Full;
+    SecAccessFlags perm = SecAccess_Full;
     const char *scopename = p->queryProp("@scope");
     if (scopename&&*scopename) {
         if (!user)
