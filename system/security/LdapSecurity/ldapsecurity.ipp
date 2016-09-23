@@ -339,6 +339,7 @@ private:
     bool authenticate(ISecUser* user);
     StringBuffer m_description;
     unsigned m_passwordExpirationWarningDays;
+    bool m_checkViewPermissions;
 
 public:
     IMPLEMENT_IINTERFACE
@@ -357,8 +358,8 @@ public:
     SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, IEspSecureContext* secureContext = NULL);
     virtual SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope);
     virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources);
-    virtual bool authorizeViewScope(ISecUser & user, ISecResourceList * resources);
     virtual SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * wuscope);
+    virtual bool authorizeViewScope(ISecUser & user, StringArray & filenames, StringArray & columnnames);
     virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources);
     virtual bool addResources(ISecUser& sec_user, ISecResourceList * resources);
     virtual SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename);
@@ -441,6 +442,12 @@ public:
     {
         return m_passwordExpirationWarningDays;
     }
+
+    virtual bool getCheckViewPermissions()
+    {
+        return m_checkViewPermissions;
+    }
+
     virtual bool createUserScopes();
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes);
     virtual SecAccessFlags queryDefaultPermission(ISecUser& user);
