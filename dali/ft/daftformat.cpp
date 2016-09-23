@@ -693,26 +693,29 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
 
 void CCsvPartitioner::getRecordStructure(StringBuffer & _recordStructure)
 {
+    /* Check if record structure has been constructed.
+       In the case of a 1:1 partition scheme, it will never have been constructed when this is 1st called
+    */
     if (nullptr == strstr(recordStructure.str(),"END;"))
     {
         const byte *buffer = bufferBase();
         ensureBuffered(headerSize);
         assertex((headerSize == 0) || (numInBuffer != bufferOffset));
 
-        bool processFullBuffer = false;
-
-        unsigned size = getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, processFullBuffer);
+        unsigned size = getSplitRecordSize(buffer, headerSize, false);
 
         if (size == 0)
             throwError1(DFTERR_PartitioningZeroSizedRowLink,((offset_t)(buffer+bufferOffset)));
 
         if (size > bufferSize)
         {
-            LOG(MCdebugProgressDetail, unknownJob, "Split record size %d (0x%08x) is larger than the buffer size: %d", size, size, bufferSize);
+            LOG(MCdebugProgressDetail, unknownJob, "First record size %d (0x%08x) is larger than the buffer size: %d", size, size, bufferSize);
             throwError2(DFTERR_WrongSplitRecordSize, size, size);
         }
     }
 
+    // NB: recordStrcuture is filled by getSplitRecordSize() call above when processing
+    //     the first record/row of the CSV file
     _recordStructure = recordStructure;
 }
 

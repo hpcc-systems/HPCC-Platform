@@ -988,7 +988,7 @@ void FileSprayer::calculateOne2OnePartition()
     }
 
     if (srcFormat.isCsv())
-        ExamineCsvStructure();
+        examineCsvStructure();
 }
 
 class AsyncExtractBlobInfo : public CAsyncFor
@@ -1103,7 +1103,7 @@ void FileSprayer::calculateMany2OnePartition()
     }
 
     if (srcFormat.isCsv())
-        ExamineCsvStructure();
+        examineCsvStructure();
 }
 
 void FileSprayer::calculateNoSplitPartition()
@@ -1166,7 +1166,7 @@ void FileSprayer::calculateNoSplitPartition()
     }
 #endif
     if (srcFormat.isCsv())
-        ExamineCsvStructure();
+        examineCsvStructure();
 }
 
 void FileSprayer::calculateSprayPartition()
@@ -1178,7 +1178,6 @@ void FileSprayer::calculateSprayPartition()
 
     unsigned numParts = targets.ordinality();
     StringBuffer remoteFilename;
-    StringBuffer slaveName;
     ForEachItemIn(idx, sources)
     {
         IFormatPartitioner * partitioner = createPartitioner(idx, calcOutput, numParts);
@@ -1210,14 +1209,14 @@ void FileSprayer::calculateSprayPartition()
     if ((partitioners.ordinality() > 0) && !srcAttr->hasProp("ECL"))
     {
         // Store discovered CSV record structure into target logical file.
-        StoreCsvRecordStructure(partitioners.item(0));
+        storeCsvRecordStructure(partitioners.item(0));
     }
     if (compressedInput && compressOutput && streq(encryptKey.str(),decryptKey.str()))
         copyCompressed = true;
 
 }
 
-void FileSprayer::StoreCsvRecordStructure(IFormatPartitioner &partitioner)
+void FileSprayer::storeCsvRecordStructure(IFormatPartitioner &partitioner)
 {
     StringBuffer recStru;
     partitioner.getRecordStructure(recStru);
@@ -1252,19 +1251,17 @@ IFormatPartitioner * FileSprayer::createPartitioner(aindex_t index, bool calcOut
     return partitioner;
 }
 
-void FileSprayer::ExamineCsvStructure()
+void FileSprayer::examineCsvStructure()
 {
-    StringBuffer ecl;
-    distributedTarget->getECL(ecl);
-    if (ecl.length() != 0)
+    if (srcAttr->hasProp("ECL"))
         // Already has, keep it.
         return;
 
     bool calcOutput = needToCalcOutput();
-    if ( 0 < (sources).ordinality())
+    if (sources.ordinality())
     {
-        IFormatPartitioner * partitioner = createPartitioner(0, calcOutput, targets.ordinality());
-        StoreCsvRecordStructure(*partitioner);
+        Owned<IFormatPartitioner> partitioner = createPartitioner(0, calcOutput, targets.ordinality());
+        storeCsvRecordStructure(*partitioner);
     }
     else
         LOG(MCdebugInfoDetail, job, "No source CSV file to examine.");
