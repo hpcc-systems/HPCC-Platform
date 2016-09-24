@@ -21,16 +21,22 @@
 #ifdef _WIN32
 #define ECLBLAS_CALL _cdecl
 #ifdef ECLBLAS_EXPORTS
-#define ECLBLAS_API __declspec(dllexport)
+#define ECLBLAS_PLUGIN_API __declspec(dllexport)
 #else
-#define ECLBLAS_API __declspec(dllimport)
+#define ECLBLAS_PLUGIN_API __declspec(dllimport)
 #endif
 #else
 #define ECLBLAS_CALL
-#define ECLBLAS_API
+#define ECLBLAS_PLUGIN_API
 #endif
 
+#include "platform.h"
 #include "hqlplugins.hpp"
+#include "eclinclude4.hpp"
+#include "eclrtl.hpp"
+#include "eclhelper.hpp"
+
+
 // Defines for triangle, diagonal, Side
 #define UPPER_TRIANGLE 1
 #define UPPER 1
@@ -44,7 +50,7 @@ extern "C" {
 }
 
 extern "C" {
-  ECLBLAS_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
+  ECLBLAS_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
 
   ECLBLAS_CALL double dasum(uint32_t m, bool isAllX, size32_t lenX, const void * x,
                             uint32_t incx, uint32_t skipped);
@@ -57,7 +63,7 @@ extern "C" {
                           void * & __result);
 
   ECLBLAS_CALL void dgemm(bool transposeA, bool transposeB,
-                          uint32_t m, uint32_t n, uint32_t n,
+                          uint32_t m, uint32_t n, uint32_t k,
                           double alpha, bool isAllA, size32_t lenA, const void* A,
                           bool isAllB, size32_t lenB, const void* B, double beta,
                           bool isAllC, size32_t lenC, const void* C,
@@ -68,10 +74,12 @@ extern "C" {
                            size32_t & __lenResult, void * & result);
 
   ECLBLAS_CALL void dpotf2(uint8_t tri, uint32_t r, bool isAllA,
-                           size32_t lenA, const void * A, bool & __isAllResult,
+                           size32_t lenA, const void * A, bool clear,
+                           bool & __isAllResult,
                            size32_t & __lenResult, void * & __result);
   ECLBLAS_CALL void dscal(uint32_t n, double alpha, bool isAllX,
-                          size32_t lenX, bool & __isAllResult,
+                          size32_t lenX, const void * X, uint32_t incx,
+                          uint32_t skipped, bool & __isAllResult,
                           size32_t & __lenResult, void * & __result);
   ECLBLAS_CALL void dsyrk(uint8_t tri, bool transposeA, uint32_t N,
                           uint32_t k, double alpha, bool isAllA,

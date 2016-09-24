@@ -23,7 +23,7 @@ EXPORT Diagonal     := ENUM(UNSIGNED1, UnitTri=1, NotUnitTri=2);
 EXPORT Side         := ENUM(UNSIGNED1, Ax=1, xA=2);
 
 
-EXPORT eclblas := SERVICE : plugin('eclblasplugin') library(eclblas)
+EXPORT eclblas := SERVICE : plugin('eclblasplugin') library(eclblas) include('eclblas.hpp')
   value_t dasum(dimension_t m, matrix_t x, dimension_t incx,
                 dimension_t skipped=0) : C, PURE;
   matrix_t daxpy(dimension_t N, value_t alpha, const matrix_t X,

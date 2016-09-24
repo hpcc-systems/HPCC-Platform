@@ -17,6 +17,8 @@
 // Triangular matrix solver.
 //  op( A )*X = alpha*B,   or   X*op( A ) = alpha*B; B is m x n
 //
+#include "eclblas.hpp"
+
 ECLBLAS_CALL void dtrsm(uint8_t side, uint8_t tri, bool transposeA,
                         uint8_t diag, uint32_t m, uint32_t n, uint32_t lda,
                         double alpha, bool isAllA, size32_t lenA,
@@ -31,7 +33,7 @@ ECLBLAS_CALL void dtrsm(uint8_t side, uint8_t tri, bool transposeA,
   cblas_dtrsm(CblasColMajor,
               side==AX ?  CblasLeft  : CblasRight,
               tri==UPPER  ? CblasUpper  : CblasLower,
-              transposea ? CblasTrans : CblasNoTrans,
+              transposeA ? CblasTrans : CblasNoTrans,
               diag==UNIT ? CblasUnit : CblasNonUnit,
               m, n, alpha, (const double *)a, lda, new_b, ldb);
   __result = (void*) new_b;

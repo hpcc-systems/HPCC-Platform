@@ -27,13 +27,14 @@
 #include <math.h>
 
 ECLBLAS_CALL void dpotf2(uint8_t tri, uint32_t r, bool isAllA,
-                         size32_t lenA, const void * A, bool & __isAllResult,
+                         size32_t lenA, const void * A, bool clear,
+                         bool & __isAllResult,
                          size32_t & __lenResult, void * & __result) {
   unsigned int cells = r*r;
   __isAllResult = false;
   __lenResult = cells * sizeof(double);
   double *new_a = (double*) rtlMalloc(__lenResult);
-  memcpy(new_a, a, __lenResult);
+  memcpy(new_a, A, __lenResult);
   double ajj;
   // x and y refer to the embedded vectors for the multiply, not an axis
   unsigned int diag, a_pos, x_pos, y_pos;
@@ -69,4 +70,4 @@ ECLBLAS_CALL void dpotf2(uint8_t tri, uint32_t r, bool isAllA,
     for(unsigned int k=1; clear && k<r-j; k++) new_a[(k*x_step)+diag] = 0.0;
   }
   __result = (void*) new_a;
-ENDC++;
+}

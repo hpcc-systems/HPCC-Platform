@@ -17,7 +17,9 @@
 // Implements symmetric rank update.  C <- alpha A**T * A  + beta C
 //or C <- alpha A * A**T  + beta C.  Triangular parameters says whether
 //the update is upper or lower.  C is N by N
-ECLBLAS_CALL void dsyrk(uint8_t tri, bool transposeA, uint32_t N,
+#include "eclblas.hpp"
+
+ECLBLAS_CALL void dsyrk(uint8_t tri, bool transposeA, uint32_t n,
                         uint32_t k, double alpha, bool isAllA,
                         size32_t lenA, const void * a, double beta,
                         bool isAllC, size32_t lenC, const void * c,
@@ -36,7 +38,7 @@ ECLBLAS_CALL void dsyrk(uint8_t tri, bool transposeA, uint32_t N,
       }
     }
   } else memcpy(new_c, c, __lenResult);
-  unsigned int lda = (transposea)  ? k  : n;
+  unsigned int lda = (transposeA)  ? k  : n;
   cblas_dsyrk(CblasColMajor,
               tri==UPPER  ? CblasUpper  : CblasLower,
               transposeA ? CblasTrans : CblasNoTrans,

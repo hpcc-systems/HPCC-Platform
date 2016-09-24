@@ -16,6 +16,8 @@
 ############################################################################## */
 //Make a diagonal matrix from a vector or a single value
 //If the vector is present the diagonal is the product
+#include "eclblas.hpp"
+
 ECLBLAS_CALL void make_diag(size32_t m, double v, bool isAllX,
                             size32_t lenX, const void * x,
                             bool & __isAllResult, size32_t & __lenResult,

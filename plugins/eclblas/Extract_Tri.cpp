@@ -17,6 +17,8 @@
 //Extract the upper triangular matrix or the lower triangular matrix
 //from a composite.  Composites are produced by some factorizations.
 //
+#include "eclblas.hpp"
+
 ECLBLAS_CALL void Extract_Tri(uint32_t m, uint32_t n, uint8_t tri,
                               uint8_t dt, bool isAllA, size32_t lenA,
                               const void * a, bool & __isAllResult,

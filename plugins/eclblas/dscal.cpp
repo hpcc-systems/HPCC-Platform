@@ -19,12 +19,13 @@
 #include "eclblas.hpp"
 
 ECLBLAS_CALL void dscal(uint32_t n, double alpha, bool isAllX,
-                        size32_t lenX, bool & __isAllResult,
+                        size32_t lenX, const void * x, uint32_t incx,
+                        uint32_t skipped, bool & __isAllResult,
                         size32_t & __lenResult, void * & __result) {
   __isAllResult = false;
   __lenResult = lenX;
   double *result = (double*) rtlMalloc(lenX);
   memcpy(result, x, __lenResult);
-  cblas_dscal(n, alpha, result+skipped, incx);;
+  cblas_dscal(n, alpha, result+skipped, incx);
   __result = (void*) result;
 }

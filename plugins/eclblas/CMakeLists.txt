@@ -34,15 +34,18 @@ set (    SRCS
          dpotf2.cpp
          dscal.cpp
          dsyrk.cpp
-         dttrsm.cpp
+         dtrsm.cpp
          eclblas.cpp
          Extract_Tri.cpp
          make_diag.cpp
     )
 
 include_directories (
-         ./../../rtl/include
-         ./../../rtl/eclrtl
+            ./../../system/include
+            ./../../rtl/eclrtl
+            ./../../rtl/include
+            ./../../common/deftype
+            ./../../system/jlib
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DECLBLAS_EXPORTS )

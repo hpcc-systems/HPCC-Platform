@@ -21,20 +21,20 @@
 #include "eclblas.hpp"
 
 ECLBLAS_CALL void dgemm(bool transposeA, bool transposeB,
-                        uint32_t m, uint32_t n, uint32_t n,
+                        uint32_t m, uint32_t n, uint32_t k,
                         double alpha, bool isAllA, size32_t lenA, void* A,
                         bool isAllB, size32_t lenB, void* B, double beta,
                         bool isAllC, size32_t lenC, void* C,
-                        bool & __isAll_Result, size32_t & __lenResult,
+                        bool & __isAllResult, size32_t & __lenResult,
                         void * & __result) {
   unsigned int lda = transposeA==0 ? m  : k;
   unsigned int ldb = transposeB==0 ? k  : n;
   unsigned int ldc = m;
   __isAllResult = false;
   __lenResult = m * n * sizeof(double);
-  double *result = rtlMalloc(__lenResult);
+  double *result = (double*) rtlMalloc(__lenResult);
   // populate if provided
-  for(uint32_t i=0; i<m*n; i++) result[i] = (__lenResult==lenC) ?((double*)c)[i] :0.0;
+  for(uint32_t i=0; i<m*n; i++) result[i] = (__lenResult==lenC) ?((double*)C)[i] :0.0;
   cblas_dgemm(CblasColMajor,
               transposeA ? CblasTrans : CblasNoTrans,
               transposeB ? CblasTrans : CblasNoTrans,

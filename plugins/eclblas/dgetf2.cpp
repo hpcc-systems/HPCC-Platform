@@ -26,7 +26,7 @@
 
 ECLBLAS_CALL void dgetf2(uint32_t m, uint32_t n, bool isAllA,
                          size32_t lenA, const void* a, bool & __isAllResult,
-                         size32_t & __lenResult, void * & result) {
+                         size32_t & __lenResult, void * & __result) {
   //double sfmin = dlamch('S');   // get safe minimum
   unsigned int cells = m*n;
   __isAllResult = false;
