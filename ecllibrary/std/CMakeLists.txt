@@ -19,6 +19,7 @@ add_subdirectory(system)
 set(
     SRCS
     Audit.ecl
+    BLAS.ecl
     BundleBase.ecl
     Date.ecl
     File.ecl

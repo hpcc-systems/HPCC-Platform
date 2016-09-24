@@ -1,43 +1,32 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
 //DGETF2 computes the LU factorization of a matrix A.  Similar to LAPACK routine
 //of same name.  Result matrix holds both Upper and Lower triangular matrix, with
 //lower matrix diagonal implied since it is a unit triangular matrix.
 //This version does not permute the rows.
 //This version does not support a sub-matrix, hence no LDA argument.
-//
 //This routine would be better if dlamch were available to determine safe min
-//
-IMPORT $.Types AS Types;
-dimension_t := Types.dimension_t;
-Triangle    := Types.Triangle;
-matrix_t    := Types.matrix_t;
 
-/**
- * Compute LU Factorization of matrix A.
- * @param m number of rows of A
- * @param n number of columns of A
- * @return composite matrix of factors, lower triangle has an
- *         implied diagonal of ones.  Upper triangle has the diagonal of the
- *         composite.
- */
-EXPORT matrix_t dgetf2(dimension_t m, dimension_t n, matrix_t a) := BEGINC++
-  #ifndef STD_BLAS_ENUM
-  #define STD_BLAS_ENUM
-  enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102};
-  enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113};
-  enum CBLAS_UPLO {CblasUpper=121, CblasLower=122};
-  enum CBLAS_DIAG {CblasNonUnit=131, CblasUnit=132};
-  enum CBLAS_SIDE {CblasLeft=141, CblasRight=142};
-  #endif
-  #ifndef STD_BLAS_DGER
-  #define STD_BLAS_DGER
-  extern "C" {
-    void cblas_dger(const enum CBLAS_ORDER order, const int M, const int N,
-                const double alpha, const double *X, const int incX,
-                const double *Y, const int incY, double *A, const int lda);
-  }
-  #endif
-  #include <math.h>
-  #body
+#include <math.h>
+#include "eclblas.hpp"
+
+ECLBLAS_CALL void dgetf2(uint32_t m, uint32_t n, bool isAllA,
+                         size32_t lenA, const void* a, bool & __isAllResult,
+                         size32_t & __lenResult, void * & result) {
   //double sfmin = dlamch('S');   // get safe minimum
   unsigned int cells = m*n;
   __isAllResult = false;
@@ -66,4 +55,4 @@ EXPORT matrix_t dgetf2(dimension_t m, dimension_t n, matrix_t a) := BEGINC++
     }
   }
   __result = (void*) new_a;
-ENDC++;
+}

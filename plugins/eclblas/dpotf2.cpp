@@ -1,3 +1,19 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
 //DPOTF2 computes the Cholesky factorization of a real symmetric
 // positive definite matrix A.
 //The factorization has the form
@@ -7,48 +23,12 @@
 // This is the unblocked version of the algorithm, calling Level 2 BLAS.
 //
 
-IMPORT $.Types AS Types;
-dimension_t := Types.dimension_t;
-Triangle    := Types.Triangle;
-matrix_t    := Types.matrix_t;
+#include "eclblas.hpp"
+#include <math.h>
 
-EXPORT matrix_t dpotf2(Triangle tri, dimension_t r, matrix_t A,
-                       BOOLEAN clear=TRUE) := BEGINC++
-  #ifndef STD_BLAS_ENUM
-  #define STD_BLAS_ENUM
-  enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102};
-  enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113};
-  enum CBLAS_UPLO {CblasUpper=121, CblasLower=122};
-  enum CBLAS_DIAG {CblasNonUnit=131, CblasUnit=132};
-  enum CBLAS_SIDE {CblasLeft=141, CblasRight=142};
-  #endif
-  #ifndef STD_BLAS_DDOT
-  #define STD_BLAS_DDOT
-  extern "C" {
-    double cblas_ddot(const int N, const double *X, const int incX,
-                      const double *Y, const int incY);
-  }
-  #endif
-  #ifndef STD_BLAS_DSCAL
-  #define STD_BLAS_DSCAL
-  extern "C" {
-    void cblas_dscal(const int N, const double alpha, double *X, const int incX);
-  }
-  #endif
-  #ifndef STD_BLAS_DGEMV
-  #define STD_BLAS_DGEMV
-  extern "C" {
-    void cblas_dgemv(const enum CBLAS_ORDER order,
-                     const enum CBLAS_TRANSPOSE TransA, const int M, const int N,
-                     const double alpha, const double *A, const int lda,
-                     const double *X, const int incX, const double beta,
-                     double *Y, const int incY);
-  }
-  #endif
-  #include <math.h>
-  #define UPPER_TRIANGLE 1  // See PBblas Types Triangle
-  #option library cblas
-  #body
+ECLBLAS_CALL void dpotf2(uint8_t tri, uint32_t r, bool isAllA,
+                         size32_t lenA, const void * A, bool & __isAllResult,
+                         size32_t & __lenResult, void * & __result) {
   unsigned int cells = r*r;
   __isAllResult = false;
   __lenResult = cells * sizeof(double);
