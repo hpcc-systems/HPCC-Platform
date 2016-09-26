@@ -87,7 +87,8 @@ define([
                     request: {
                         username: this.user,
                         firstname: formInfo.firstname,
-                        lastname: formInfo.lastname
+                        lastname: formInfo.lastname,
+                        employeeID: formInfo.employeeID
                     }
                 });
 
@@ -112,6 +113,7 @@ define([
             this.user = params.Username;
             if (this.user) {
                 this.updateInput("User", null, this.user);
+                this.updateInput("EmployeeID", null, params.EmployeeID);
                 this.updateInput("Username", null, this.user);
                 this.updateInput("PasswordExpiration", null, params.Passwordexpiration);
 

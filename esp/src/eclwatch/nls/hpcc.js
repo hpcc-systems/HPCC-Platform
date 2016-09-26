@@ -142,6 +142,7 @@ define({root:
     EditDOT: "Edit DOT",
     EditGraphAttributes: "Edit Graph Attributes",
     EditXGMML: "Edit XGMML",
+    EmployeeID: "Employee ID",
     Empty: "(Empty)",
     Enable: "Enable",
     EnableScopeScans: "Enable Scope Scans",
