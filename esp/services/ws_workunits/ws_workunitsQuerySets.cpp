@@ -27,6 +27,7 @@
 #include "dfuutil.hpp"
 #include "dautils.hpp"
 #include "httpclient.hpp"
+#include "portlist.h" //ROXIE_SERVER_PORT
 
 #define DALI_FILE_LOOKUP_TIMEOUT (1000*15*1)  // 15 seconds
 
@@ -2733,6 +2734,71 @@ bool CWsWorkunitsEx::onWUUpdateQueryEntry(IEspContext& context, IEspWUUpdateQuer
             tree->removeProp("@comment");
         else
             tree->setProp("@comment", comment.str());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUGetNumFileToCopy(IEspContext& context, IEspWUGetNumFileToCopyRequest& req, IEspWUGetNumFileToCopyResponse& resp)
+{
+    try
+    {
+        Owned<IPropertyTree> result;
+        StringBuffer clusterName = req.getClusterName();
+        if (!clusterName.isEmpty())
+        {
+            SocketEndpointArray servers;
+            getRoxieProcessServers(clusterName.str(), servers);
+            if (servers.length() < 1)
+                throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Process Server not found for %s", clusterName.str());
+            result.setown(sendRoxieControlAllNodes(servers.item(0), "<control:numfilestoprocess/>", false, ROXIELOCKCONNECTIONTIMEOUT));
+        }
+        else
+        {
+            StringBuffer url = req.getClusterURL();
+            if (url.isEmpty())
+                throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Cluster not specified");
+
+            int port;
+            StringBuffer netAddress;
+            const char* start = url.str();
+            const char* split = strchr(start, ':');
+            if (!split)
+            {
+                netAddress.set(start);
+                port = ROXIE_SERVER_PORT;
+            }
+            else
+            {
+                netAddress.append(split - start, start);
+                port = atoi(split+1);
+            }
+
+            SocketEndpoint ep;
+            SocketEndpointArray eps;
+            ep.set(netAddress.str(), port);
+            eps.append(ep);
+            Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIELOCKCONNECTIONTIMEOUT);
+            result.setown(sendRoxieControlQuery(sock, "<control:numfilestoprocess/>", ROXIELOCKCONNECTIONTIMEOUT));
+        }
+        if (!result)
+            throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Empty result received for cluster %s", clusterName.str());
+
+        IArrayOf<IEspClusterEndpoint> endpoints;
+        Owned<IPropertyTreeIterator> it = result->getElements("Endpoint");
+        ForEach(*it)
+        {
+            IPropertyTree& item = it->query();
+            Owned<IEspClusterEndpoint> endpoint = createClusterEndpoint();
+            endpoint->setURL(item.queryProp("@ep"));
+            endpoint->setStatus(item.queryProp("Status"));
+            endpoint->setNumQueryFileToCopy(item.getPropInt("FilesToProcess/@value", 0));
+            endpoints.append(*endpoint.getClear());
+        }
+        resp.setEndpoints(endpoints);
     }
     catch(IException* e)
     {
