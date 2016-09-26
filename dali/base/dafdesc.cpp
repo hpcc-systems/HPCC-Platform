@@ -38,7 +38,7 @@
 #define SDS_CONNECT_TIMEOUT  (1000*60*60*2)     // better than infinite
 
 #define SERIALIZATION_VERSION ((byte)0xd4)
-#define SERIALIZATION_VERSION2 ((byte)0xd5) // with trailing superfile info (11010101b)
+#define SERIALIZATION_VERSION2 ((byte)0xd5) // with trailing superfile info
 
 bool isMulti(const char *str)
 {
@@ -1534,6 +1534,8 @@ public:
         t = &queryHistory();
         if (!isEmptyPTree(t))
             pt.addPropTree("History",createPTreeFromIPT(t));
+        else
+            pt.addPropTree("History",createPTree("History"));
     }
 
     IPropertyTree *getFileTree(unsigned flags)
@@ -1737,13 +1739,22 @@ public:
         if (history)
             return history.getLink();
         else
-            return nullptr;
+        {
+            history.setown(createPTree("History"));
+            return history.getLink();
+        }
     }
 
     IPropertyTree &queryHistory()
     {
         closePending();
-        return *history.get();
+        if (history)
+            return *history.get();
+        else
+        {
+            history.setown(createPTree("History"));
+            return *history.get();
+        }
     }
 
     bool isMulti(unsigned partidx=(unsigned)-1)

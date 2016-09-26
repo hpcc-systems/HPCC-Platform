@@ -3297,47 +3297,18 @@ void FileSprayer::updateTargetProperties()
             // add original file name
             if (distributedSource)
             {
-                distributedSource->getLogicalName(val.clear());
-                newRecord->addProp("@name", val.str());
                 RemoteFilename remoteFile;
                 distributedSource->getPart(0)->getFilename(remoteFile, 0 );
-                StringBuffer drive;
-                StringBuffer path;
-                StringBuffer fileName;
-                remoteFile.split(&drive, &path, &fileName, nullptr);
-                if(drive.isEmpty())
-                {
-                    remoteFile.queryIP().getIpText(drive.clear());
-                    newRecord->addProp("@ip", drive.str());
-                }
-                else
-                    newRecord->addProp("@drive", drive.str());
-
-                newRecord->addProp("@path", path.str());
+                splitAndStoreFileInfo(newRecord, remoteFile);
             }
             else
             {
                 val.clear();
-                StringBuffer drive;
-                StringBuffer path;
                 ForEachItemIn(idx, sources)
                 {
-                    StringBuffer fileName;
                     FilePartInfo & curSource = sources.item(idx);
-                    curSource.filename.split(&drive, &path, &fileName, nullptr);
-                    if (idx == 0)
-                    {
-                        if(drive.isEmpty())
-                        {
-                            curSource.filename.queryIP().getIpText(drive.clear());
-                            newRecord->addProp("@ip", drive.str());
-                        }
-                        else
-                            newRecord->addProp("@drive", drive.str());
-
-                        newRecord->addProp("@path", path.str());
-                    }
-                    newRecord->addProp("@name", fileName.str());
+                    RemoteFilename remoteFile = curSource.filename;
+                    splitAndStoreFileInfo(newRecord, remoteFile, idx, false);
                 }
             }
             curHistory.addPropTree("Origin",newRecord);
@@ -3345,6 +3316,41 @@ void FileSprayer::updateTargetProperties()
     }
     if (error)
         throw error.getClear();
+}
+
+void FileSprayer::splitAndStoreFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName
+                                      , aindex_t idx, bool isDistributedSource)
+{
+    StringBuffer drive;
+    StringBuffer path;
+    StringBuffer fileName;
+    StringBuffer ext;
+    remoteFileName.split(&drive, &path, &fileName, &ext);
+    if (idx == 0)
+    {
+        if(drive.isEmpty())
+        {
+            remoteFileName.queryIP().getIpText(drive.clear());
+            newRecord->addProp("@ip", drive.str());
+        }
+        else
+            newRecord->addProp("@drive", drive.str());
+
+        newRecord->addProp("@path", path.str());
+    }
+    if (!isDistributedSource && ext.length())
+        fileName.append(ext);
+
+    // In spray multiple source files case keep all original filenames
+    if (newRecord->hasProp("@name"))
+    {
+        StringBuffer currentName;
+        newRecord->getProp("@name", currentName);
+        currentName.append(",").append(fileName);
+        fileName = currentName;
+    }
+
+    newRecord->addProp("@name", fileName.str());
 }
 
 void FileSprayer::setOperation(dfu_operation op)
