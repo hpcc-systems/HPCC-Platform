@@ -29,7 +29,7 @@ static const char * compatibleVersions[] = {
     NULL };
 
 static const char * EclDefinition =
-"export Logging := SERVICE\n"
+"export Logging := SERVICE : time\n"
 "  dbglog(const string src) : c,action,entrypoint='logDbgLog'; \n"
 "  addWorkunitInformation(const varstring txt, unsigned code=0, unsigned severity=0, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
 "  addWorkunitWarning(const varstring txt, unsigned code=0, unsigned severity=1, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"

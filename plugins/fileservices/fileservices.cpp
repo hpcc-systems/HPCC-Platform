@@ -59,7 +59,7 @@ static const char * EclDefinition =
 "export integer4 RECFMVB_RECSIZE := -1; // special value for SprayFixed record size \n"
 "export integer4 PREFIX_VARIABLE_RECSIZE := -3; // special value for SprayFixed record size \n"
 "export integer4 PREFIX_VARIABLE_BIGENDIAN_RECSIZE := -4; // special value for SprayFixed record size \n"
-"export FileServices := SERVICE\n"
+"export FileServices := SERVICE : time\n"
 "  boolean FileExists(const varstring lfn, boolean physical=false) : c,context,entrypoint='fsFileExists'; \n"
 "  DeleteLogicalFile(const varstring lfn,boolean ifexists=false) : c,action,context,entrypoint='fsDeleteLogicalFile'; \n"
 "  SetReadOnly(const varstring lfn, boolean ro) : c,action,context,entrypoint='fsSetReadOnly'; \n"
