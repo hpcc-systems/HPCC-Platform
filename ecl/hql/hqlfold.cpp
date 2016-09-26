@@ -450,6 +450,17 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
     if (leftValue)
     {
         ITypeInfo * rType = rightChild->queryType();
+        bool isUnsigned = rType->getTypeCode()==type_int && !rType->isSigned();
+        if (isUnsigned && leftValue->getIntValue()==0)
+        {
+            switch (op)
+            {
+            case no_le:
+                return createConstant(true);
+            case no_ge:
+                return createConstant(false);
+            }
+        }
         if (rType->getTypeCode() == type_boolean)
         {
             bool val = leftValue->getBoolValue();
@@ -481,6 +492,17 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
     else if (rightValue)
     {
         ITypeInfo * lType = leftChild->queryType();
+        bool isUnsigned = lType->getTypeCode()==type_int && !lType->isSigned();
+        if (isUnsigned && rightValue->getIntValue()==0)
+        {
+            switch (op)
+            {
+            case no_ge:
+                return createConstant(true);
+            case no_lt:
+                return createConstant(false);
+            }
+        }
         if (lType->getTypeCode() == type_boolean)
         {
             bool val = rightValue->getBoolValue();
@@ -3900,6 +3922,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
     case no_maxlist:
         {
             IHqlExpression * child = expr->queryChild(0);
+            bool isUnsigned = expr->queryType()->getTypeCode() == type_int && !expr->queryType()->isSigned();
             switch (child->getOperator())
             {
             case no_null:
@@ -3916,6 +3939,11 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                         IValue * value = cur->queryValue();
                         if (value)
                         {
+                            if (isUnsigned && value->getIntValue()==0 && op==no_maxlist)
+                            {
+                                same = false;
+                                continue;
+                            }
                             if (best)
                             {
                                 int c = value->compare(best);
