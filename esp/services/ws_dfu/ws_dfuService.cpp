@@ -1674,7 +1674,7 @@ bool FindInStringArray(StringArray& clusters, const char *cluster)
     return bFound;
 }
 
-static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser & user, IUserDescriptor* udesc, ISecManager* secmgr, int& permission)
+static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser & user, IUserDescriptor* udesc, ISecManager* secmgr, SecAccessFlags& permission)
 {
     if (dlfn.isMulti())
     {
@@ -1709,7 +1709,7 @@ static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser & user, IUserD
     return;
 }
 
-bool CWsDfuEx::getUserFilePermission(IEspContext &context, IUserDescriptor* udesc, const char* logicalName, int& permission)
+bool CWsDfuEx::getUserFilePermission(IEspContext &context, IUserDescriptor* udesc, const char* logicalName, SecAccessFlags& permission)
 {
     ISecManager* secmgr = context.querySecManager();
     if (!secmgr)
@@ -2164,7 +2164,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 
     if (version > 1.08 && udesc)
     {
-        int permission;
+        SecAccessFlags permission;
         if (getUserFilePermission(context, udesc, name, permission))
         {
             switch (permission)

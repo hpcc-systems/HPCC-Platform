@@ -52,7 +52,7 @@ public:
     virtual void lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE acttype=USER_ACT);
     virtual int sdSegments(CSecurityDescriptor* sd);
 
-    virtual StringBuffer& sec2aci(int secperm, StringBuffer& aciperm);
+    virtual StringBuffer& sec2aci(SecAccessFlags secperm, StringBuffer& aciperm);
     virtual bool getPermissionsArray(CSecurityDescriptor *sd, IArrayOf<CPermission>& permissions);
     virtual CSecurityDescriptor* changePermission(CSecurityDescriptor* initialsd, CPermissionAction& action);
 };
@@ -65,7 +65,7 @@ public:
         m_servertype = IPLANET;
     }
 
-    virtual StringBuffer& sec2aci(int secperm, StringBuffer& aciperm);
+    virtual StringBuffer& sec2aci(SecAccessFlags secperm, StringBuffer& aciperm);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd);
 };
@@ -78,7 +78,7 @@ public:
         m_servertype = OPEN_LDAP;
     }
     
-    virtual StringBuffer& sec2aci(int secperm, StringBuffer& aciperm);
+    virtual StringBuffer& sec2aci(SecAccessFlags secperm, StringBuffer& aciperm);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd);
 };

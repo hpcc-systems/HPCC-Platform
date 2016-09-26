@@ -122,7 +122,7 @@ NewSecAccessFlags PermissionProcessor::ldap2newsec(unsigned ldapperm)
     return (NewSecAccessFlags)permission;
 }
 
-unsigned PermissionProcessor::newsec2ldap(SecAccessFlags secperm)
+unsigned PermissionProcessor::newsec2ldap(NewSecAccessFlags secperm)
 {
     if((secperm & NewSecAccess_Full) == NewSecAccess_Full)
     {
@@ -1055,7 +1055,7 @@ bool PermissionProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescr
             granted_access = 0;
         }
 
-        unsigned permission = ldap2sec(granted_access);
+        SecAccessFlags permission = ldap2sec(granted_access);
         resource.setAccessFlags(permission);
     }   
     CloseHandle(usertoken);
@@ -1348,7 +1348,7 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
     if(stricmp(action.m_action.str(), "delete") != 0 && action.m_allows != 0)
     {
         uaccess_allows.grfAccessMode = GRANT_ACCESS;
-        uaccess_allows.grfAccessPermissions = newsec2ldap((SecAccessFlags)action.m_allows);
+        uaccess_allows.grfAccessPermissions = newsec2ldap((NewSecAccessFlags)action.m_allows);
         uaccess_allows.grfInheritance = NO_INHERITANCE;
         uaccess_allows.Trustee.MultipleTrusteeOperation = NO_MULTIPLE_TRUSTEE;
         uaccess_allows.Trustee.pMultipleTrustee = NULL;
@@ -1372,7 +1372,7 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
     if(stricmp(action.m_action.str(), "delete") != 0 && action.m_denies != 0)
     {
         uaccess_denies.grfAccessMode = DENY_ACCESS;
-        uaccess_denies.grfAccessPermissions = newsec2ldap(action.m_denies);
+        uaccess_denies.grfAccessPermissions = newsec2ldap((NewSecAccessFlags)action.m_denies);
         uaccess_denies.grfInheritance = NO_INHERITANCE ;
         uaccess_denies.Trustee.MultipleTrusteeOperation = NO_MULTIPLE_TRUSTEE;
         uaccess_denies.Trustee.pMultipleTrustee = NULL;
@@ -1397,7 +1397,7 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
         DWORD new_dacl_size = dacl_size + newace_size;
         dacl_size = new_dacl_size;
         pnewdacl = (PACL)alloca(new_dacl_size);
-        rc = AddAccessDeniedAce(pnewdacl, &new_dacl_size, pdacl, ACL_REVISION, newsec2ldap((SecAccessFlags)action.m_denies), act_psid);
+        rc = AddAccessDeniedAce(pnewdacl, &new_dacl_size, pdacl, ACL_REVISION, newsec2ldap((NewSecAccessFlags)action.m_denies), act_psid);
         if(rc == 0)
         {
             int error = GetLastError();
@@ -1412,7 +1412,7 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
         DWORD newace_size = sizeof(ACE_HEADER) + sizeof(ACCESS_MASK) + sizeofSid(act_psid);
         DWORD new_dacl_size = dacl_size + newace_size;
         pnewdacl = (PACL)alloca(new_dacl_size);
-        rc = AddAccessAllowedAce(pnewdacl, &new_dacl_size, pdacl, ACL_REVISION, newsec2ldap((SecAccessFlags)action.m_allows), act_psid);
+        rc = AddAccessAllowedAce(pnewdacl, &new_dacl_size, pdacl, ACL_REVISION, newsec2ldap((NewSecAccessFlags)action.m_allows), act_psid);
         if(rc == 0)
         {
             int error = GetLastError();

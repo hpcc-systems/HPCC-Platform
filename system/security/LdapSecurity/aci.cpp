@@ -588,7 +588,7 @@ public:
 };
 
 //Translates ACI permission settings to SecAccessFlags
-SecAccessFlags NewSec2Sec(int newsec)
+SecAccessFlags NewSec2Sec(NewSecAccessFlags newsec)
 {
     int sec = SecAccess_None;
     if(newsec == -1)
@@ -713,7 +713,7 @@ public:
 
             perm = allow & (~deny);
 
-            perms = NewSec2Sec(perm);
+            perms = NewSec2Sec((NewSecAccessFlags)perm);
         }
         
         resource.setAccessFlags(perms);
@@ -916,7 +916,7 @@ CSecurityDescriptor* AciProcessor::createDefaultSD(ISecUser * const user, ISecRe
     return createDefaultSD(user, resource->getName(), ptype);   
 }
 
-StringBuffer& AciProcessor::sec2aci(int secperm, StringBuffer& aciperm)
+StringBuffer& AciProcessor::sec2aci(SecAccessFlags secperm, StringBuffer& aciperm)
 {
     throw MakeStringException(-1, "You should call the implementation of the child class");
 }
@@ -1049,7 +1049,7 @@ CSecurityDescriptor* AciProcessor::changePermission(CSecurityDescriptor* initial
  *    Class CIPlanetAciProcessor 
  ****************************************************************/
 
-StringBuffer& CIPlanetAciProcessor::sec2aci(int secperm, StringBuffer& aciperm)
+StringBuffer& CIPlanetAciProcessor::sec2aci(SecAccessFlags secperm, StringBuffer& aciperm)
 {
     if(secperm == SecAccess_Unavailable || secperm == SecAccess_None)
         return aciperm;
@@ -1134,7 +1134,7 @@ CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser * const user
  *    Class COpenLdapAciProcessor 
  ****************************************************************/
 
-StringBuffer& COpenLdapAciProcessor::sec2aci(int secperm, StringBuffer& aciperm)
+StringBuffer& COpenLdapAciProcessor::sec2aci(SecAccessFlags secperm, StringBuffer& aciperm)
 {
     if(secperm == SecAccess_Unavailable || secperm == SecAccess_None)
         return aciperm;

@@ -703,7 +703,7 @@ protected:
     unsigned sec2ldap(SecAccessFlags secperm);
 
     NewSecAccessFlags ldap2newsec(unsigned ldapperm);
-    unsigned newsec2ldap(SecAccessFlags secperm);
+    unsigned newsec2ldap(NewSecAccessFlags secperm);
 public:
     IMPLEMENT_IINTERFACE;
 

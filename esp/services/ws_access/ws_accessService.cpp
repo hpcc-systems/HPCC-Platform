@@ -4184,7 +4184,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
         if ((!groupName || !*groupName) && (!userName || !*userName))
             throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Either user name or group name has to be specified.");
 
-        int access = SecAccess_Unavailable;
+        SecAccessFlags access = SecAccess_Unavailable;
         if (userName && *userName) //for user
         {
             resp.setFileName(fileName);
@@ -4287,7 +4287,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                     scopes.add(lastFileScope.str(), 0);
                 }
 
-                access = 0;
+                access = SecAccess_None;
                 ForEachItemIn(y, scopes)
                 {
                     StringBuffer namebuf = scopes.item(y);
@@ -4308,7 +4308,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
 
                             int allows = perm.getAllows();
                             int denies = perm.getDenies();
-                            access = allows & (~denies);
+                            access = (SecAccessFlags)(allows & (~denies));
                             break;
                         }
                     }
@@ -4317,7 +4317,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                         e->Release();
                     }
 
-                    if (access != 0)
+                    if (access != SecAccess_None)
                         break;
                 }
             }
@@ -4331,7 +4331,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                 resp.setUserPermission("Read Access Permission");
             else if((access & NewSecAccess_Access) == NewSecAccess_Access)
                 resp.setUserPermission("Access Permission");
-            else if (access == 0)
+            else if (access == (SecAccessFlags)NewSecAccess_None)
                 resp.setUserPermission("None Access Permission");
             else
                 resp.setUserPermission("Permission Unknown");
