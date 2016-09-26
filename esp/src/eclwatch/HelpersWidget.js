@@ -114,7 +114,7 @@ define([
                     this.wu = ESPWorkunit.Get(params.Wuid);
                     var monitorCount = 4;
                     this.wu.monitor(function () {
-                        if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
+                        if (context.wu.isComplete() || ++monitorCount % 5 === 0) {
                             context.refreshGrid();
                         }
                     });

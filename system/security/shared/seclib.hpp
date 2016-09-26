@@ -59,6 +59,28 @@ enum SecAccessFlags
     SecAccess_Full = 255
 };
 
+static const char * getSecAccessFlagName(SecAccessFlags flag)
+{
+	switch (flag)
+	{
+		case SecAccess_Unavailable:
+			return "Unavailable";
+		case SecAccess_None:
+			return "None";
+		case SecAccess_Access:
+			return "Access";
+		case SecAccess_Read:
+			return "Read";
+		case SecAccess_Write:
+			return "Write";
+		case SecAccess_Full:
+			return "Full";
+		case SecAccess_Unknown:
+		default:
+			return "Unknown";
+			break;
+	}
+}
 
 
 enum SecResourceType
@@ -202,10 +224,10 @@ interface ISecProperty : extends IInterface
 
 interface ISecResource : extends ISecProperty
 {
-    virtual void setAccessFlags(int flags) = 0;
-    virtual int getAccessFlags() = 0;
-    virtual void setRequiredAccessFlags(int flags) = 0;
-    virtual int getRequiredAccessFlags() = 0;
+    virtual void setAccessFlags(SecAccessFlags flags) = 0;
+    virtual SecAccessFlags getAccessFlags() = 0;
+    virtual void setRequiredAccessFlags(SecAccessFlags flags) = 0;
+    virtual SecAccessFlags getRequiredAccessFlags() = 0;
     virtual int addParameter(const char * name, const char * value) = 0;
     virtual const char * getParameter(const char * name) = 0;
     virtual void setDescription(const char * description) = 0;
@@ -280,11 +302,10 @@ interface ISecManager : extends IInterface
     virtual bool unsubscribe(ISecAuthenticEvents & events) = 0;
     virtual bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext) = 0;
     virtual bool authorizeEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = NULL) = 0;
-    virtual int authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext = NULL) = 0;
-    virtual int getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename) = 0;
-    virtual int authorizeFileScope(ISecUser & user, const char * filescope) = 0;
+    virtual SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext = NULL) = 0;
+    virtual SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename) = 0;
+    virtual SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope) = 0;
     virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources) = 0;
-    virtual bool authorizeViewScope(ISecUser & user, ISecResourceList * resources) = 0;
     virtual bool addResources(ISecUser & user, ISecResourceList * resources) = 0;
     virtual bool addResourcesEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, SecPermissionType ptype, const char * basedn) = 0;
     virtual bool addResourceEx(SecResourceType rtype, ISecUser & user, const char * resourcename, SecPermissionType ptype, const char * basedn) = 0;
@@ -307,13 +328,13 @@ interface ISecManager : extends IInterface
     virtual void copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn) = 0;
     virtual void cacheSwitch(SecResourceType rtype, bool on) = 0;
     virtual bool authTypeRequired(SecResourceType rtype) = 0;
-    virtual int authorizeWorkunitScope(ISecUser & user, const char * filescope) = 0;
+    virtual SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * filescope) = 0;
     virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources) = 0;
     virtual const char * getDescription() = 0;
     virtual unsigned getPasswordExpirationWarningDays() = 0;
     virtual bool createUserScopes() = 0;
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes) = 0;
-    virtual int queryDefaultPermission(ISecUser& user) = 0;
+    virtual SecAccessFlags queryDefaultPermission(ISecUser& user) = 0;
     virtual bool clearPermissionsCache(ISecUser & user) = 0;
     virtual bool authenticateUser(ISecUser & user, bool * superUser) = 0;
     virtual secManagerType querySecMgrType() = 0;

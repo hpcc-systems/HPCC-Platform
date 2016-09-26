@@ -1522,7 +1522,7 @@ static void listrelationships(const char *primary,const char *secondary)
 
 int dfsperm(const char *obj,IUserDescriptor *user)
 {
-    int perm = SecAccess_None;
+    SecAccessFlags perm = SecAccess_None;
     if (strchr(obj,'\\')||strchr(obj,'/')) {
         Owned<IFileDescriptor> fd = createFileDescriptor();
         RemoteFilename rfn;

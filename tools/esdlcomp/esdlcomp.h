@@ -430,7 +430,7 @@ public:
 
     bool isEspArrayOf(const char *elem_type=NULL, bool def=true)
     {
-        if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
+        if (flags & PF_TEMPLATE && (!strcmp(templ, "ESParray") || streq(templ, "ESPlist")))
         {
             if (!elem_type || !typname)
                 return def;
@@ -441,14 +441,14 @@ public:
 
     bool isEspStringArray()
     {
-        if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
+        if (flags & PF_TEMPLATE && (!strcmp(templ, "ESParray") || streq(templ, "ESPlist")))
             return (!typname||!strcmp(typname, "string")||!strcmp(typname, "EspTextFile"));
         return false;
     }
 
     bool isPrimitiveArray()
     {
-        if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
+        if (flags & PF_TEMPLATE && (!strcmp(templ, "ESParray") || streq(templ, "ESPlist")))
             return (kind != TK_STRUCT && kind != TK_null && kind != TK_ESPENUM && kind != TK_ESPSTRUCT) || !typname;
         return false;
     }
@@ -556,6 +556,15 @@ public:
         if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
         {
             out.appendf("\t\t<EsdlArray name='%s' ", name);
+            toStringXmlAttr(out);
+            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+            {
+                mtag->toStringXmlAttr(out);
+            }
+        }
+        else if (flags & PF_TEMPLATE && !strcmp(templ, "ESPlist"))
+        {
+            out.appendf("\t\t<EsdlList name='%s' ", name);
             toStringXmlAttr(out);
             for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
             {
@@ -1070,7 +1079,6 @@ public:
     {
         return ::getMetaStringValue(tags, val, tag);
     }
-
 
     int getMetaInt(const char *tag, int def_val=0)
     {

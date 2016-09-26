@@ -39,6 +39,7 @@ include_directories (
          ./../../common/environment 
          ./../dfuXRefLib
          ./../base
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS ( -D_CONSOLE -DMAIN_DFUXREF )

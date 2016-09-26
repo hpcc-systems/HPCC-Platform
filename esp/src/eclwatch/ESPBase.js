@@ -45,7 +45,7 @@ define([
 
         getValue: function (domXml, tagName, knownObjectArrays) {
             var retVal = this.getValues(domXml, tagName, knownObjectArrays);
-            if (retVal.length == 0) {
+            if (retVal.length === 0) {
                 return null;
             } else if (retVal.length != 1) {
                 alert("Invalid length:  " + retVal.length);
@@ -75,7 +75,7 @@ define([
                         retValArr.push(this.flattenXml(childNode, knownObjectArrays));
                     } else if (childNode.nodeName == "#text") {
                         retValStr += childNode.nodeValue;
-                    } else if (childNode.childNodes.length == 0) {
+                    } else if (childNode.childNodes.length === 0) {
                         retVal[childNode.nodeName] = null;
                     } else {
                         var value = this.flattenXml(childNode, knownObjectArrays);

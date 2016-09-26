@@ -44,7 +44,8 @@ include_directories (
          ./../../system/include 
          ./../../system/jlib 
          ./../../common/environment 
-         ./../../common/workunit 
+         ./../../common/workunit
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DDFUXREFLIB_EXPORTS )

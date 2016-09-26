@@ -594,7 +594,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
         throwError(HQLERR_ServiceDefinitionNotAllowed);
 
     if (body->hasAttribute(includeAtom) || body->hasAttribute(ctxmethodAtom) || body->hasAttribute(gctxmethodAtom) || body->hasAttribute(methodAtom)
-        || body->hasAttribute(sysAtom) || body->hasAttribute(omethodAtom) || body->hasAttribute(inlineAtom) )
+        || body->hasAttribute(sysAtom) || body->hasAttribute(omethodAtom))
         return false;
 
     IHqlExpression *proto = body->queryAttribute(prototypeAtom);
@@ -610,7 +610,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     bool isLocal = body->hasAttribute(localAtom);
 
     IHqlExpression *child = body->queryChild(0);
-    bool isInline = child?child->hasAttribute(inlineAtom):false;
+    bool isInline = body->hasAttribute(inlineAtom) || (child && child->hasAttribute(inlineAtom));
 
     if (body->hasAttribute(eclrtlAtom))
         api = RtlApi;
@@ -724,7 +724,6 @@ void HqlCppWriter::generateInitializer(IHqlExpression * expr)
     switch (tc)
     {
     case type_data:
-    case type_qstring:
     case type_decimal:
         {
             for (unsigned i=0; i < size; i++)
@@ -737,6 +736,7 @@ void HqlCppWriter::generateInitializer(IHqlExpression * expr)
             break;
         }
     case type_string:
+    case type_qstring:
     case type_varstring:
     case type_utf8:
         {
@@ -745,17 +745,17 @@ void HqlCppWriter::generateInitializer(IHqlExpression * expr)
                 if (i)
                     out.append(",");
                 queryBreakLine();
-                byte next = raw[i];
+                char next = raw[i];
                 switch (next)
                 {
                 case '\\': case '\'':
-                    out.append("'\\").append((char)next).append('\'');
+                    out.append("'\\").append(next).append('\'');
                     break;
                 default:
                     if (isprint(next))
-                        out.append('\'').append((char)next).append('\'');
+                        out.append('\'').append(next).append('\'');
                     else
-                        out.append((int)next);
+                        out.append((int)next);  // this should work whether char is signed or not... so long as target architecture matches host!
                     break;
                 }
             }

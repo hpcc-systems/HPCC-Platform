@@ -40,6 +40,7 @@ include_directories (
          ./../../system/mp
          ./../../common/remote
          ./../../dali/base
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

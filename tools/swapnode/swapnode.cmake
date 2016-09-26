@@ -35,6 +35,7 @@ include_directories (
          ./../../system/jlib
          ./../../common/environment
          ./../../common/workunit
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_CONSOLE -DENABLE_AUTOSWAP )

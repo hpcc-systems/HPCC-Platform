@@ -826,6 +826,7 @@ public:
     virtual const char * getText() = 0;
     virtual size32_t length() = 0;
     virtual bool isImplicitlySigned() = 0;
+    virtual IHqlExpression * queryGpgSignature() = 0;
 };
 
 //This class ensures that the pointer to the owner is cleared before both links are released, which allows
@@ -1262,7 +1263,7 @@ extern HQL_API IHqlExpression *createDatasetF(node_operator op, ...);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, IHqlExpression *initializer, IHqlExpression *recordDef);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, IHqlExpression *dictionary);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms);
-extern HQL_API IHqlExpression *createNewDataset(IHqlExpression *name, IHqlExpression *recorddef, IHqlExpression *mode, IHqlExpression *parent, IHqlExpression *joinCondition, IHqlExpression * options = NULL);
+extern HQL_API IHqlExpression *createNewDataset(IHqlExpression *name, IHqlExpression *recorddef, IHqlExpression *mode, IHqlExpression *parent, IHqlExpression *joinCondition, IHqlExpression * signature, IHqlExpression * options = NULL);
 extern HQL_API IHqlExpression *createRow(node_operator op, IHqlExpression *Dataset, IHqlExpression *element = NULL);
 extern HQL_API IHqlExpression *createRow(node_operator op, HqlExprArray & args);
 extern HQL_API IHqlExpression *createRowF(node_operator op, ...);
@@ -1865,11 +1866,11 @@ extern HQL_API ITypeInfo * getPromotedECLCompareType(ITypeInfo * lType, ITypeInf
 extern HQL_API void extendAdd(SharedHqlExpr & value, IHqlExpression * expr);
 inline bool isOmitted(IHqlExpression * actual) { return !actual || actual->getOperator() == no_omitted; }
 
-extern HQL_API IFileContents * createFileContentsFromText(unsigned len, const char * text, ISourcePath * sourcePath, bool isSigned);
-extern HQL_API IFileContents * createFileContentsFromText(const char * text, ISourcePath * sourcePath, bool isSigned);
-extern HQL_API IFileContents * createFileContentsFromFile(const char * filename, ISourcePath * sourcePath, bool isSigned);
+extern HQL_API IFileContents * createFileContentsFromText(unsigned len, const char * text, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature);
+extern HQL_API IFileContents * createFileContentsFromText(const char * text, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature);
+extern HQL_API IFileContents * createFileContentsFromFile(const char * filename, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature);
 extern HQL_API IFileContents * createFileContentsSubset(IFileContents * contents, size32_t offset, size32_t len);
-extern HQL_API IFileContents * createFileContents(IFile * file, ISourcePath * sourcePath, bool isSigned);
+extern HQL_API IFileContents * createFileContents(IFile* file, ISourcePath* sourcePath, bool isSigned, IHqlExpression * gpgSignature);
 
 void addForwardDefinition(IHqlScope * scope, IIdAtom * symbolName, IIdAtom * moduleName, IFileContents * contents,
                           unsigned symbolFlags, bool isExported, unsigned startLine, unsigned startColumn);

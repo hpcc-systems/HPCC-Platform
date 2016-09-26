@@ -37,11 +37,13 @@ enum ESPLogContentGroup
     ESPLCGUserContext = 1,
     ESPLCGUserReq = 2,
     ESPLCGUserResp = 3,
-    ESPLCGBackEndResp = 4,
-    ESPLCGAll = 5
+    ESPLCGLogDatasets = 4,
+    ESPLCGBackEndResp = 5,
+    ESPLCGAll = 6
 };
 
-static const char * const espLogContentGroupNames[] = { "ESPContext", "UserContext", "UserRequest", "UserResponse", "BackEndResponse", "", NULL };
+static const char * const espLogContentGroupNames[] = { "ESPContext", "UserContext", "UserRequest", "UserResponse",
+    "LogDatasets", "BackEndResponse", "", NULL };
 
 class CTransIDBuilder : public CInterface, implements IInterface
 {

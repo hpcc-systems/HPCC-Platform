@@ -38,7 +38,8 @@ include_directories (
          ./../../dali/base 
          ./../../system/jlib 
          ./../schedulectrl 
-         ./../../common/workunit 
+         ./../../common/workunit
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DSCHEDULECTRL_EXPORTS )

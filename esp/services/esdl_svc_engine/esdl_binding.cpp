@@ -650,17 +650,17 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         }
     }
 
-    handleResultLogging(context, tgtctx.get(), req,  origResp.str(), out.str());
+    handleResultLogging(context, tgtctx.get(), req,  origResp.str(), out.str(), logdata.str());
     ESPLOG(LogMax,"Customer Response: %s", out.str());
 }
 
-bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawresp, const char * finalresp)
+bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IPropertyTree * reqcontext, IPropertyTree * request,const char * rawresp, const char * finalresp, const char * logdata)
 {
     bool success = true;
     if (m_oLoggingManager)
     {
         StringBuffer logresp;
-        success = m_oLoggingManager->updateLog(LOGGINGDBSINGLEINSERT, espcontext, reqcontext, request, rawresp, finalresp, logresp);
+        success = m_oLoggingManager->updateLog(LOGGINGDBSINGLEINSERT, espcontext, reqcontext, request, rawresp, finalresp, logdata, logresp);
         ESPLOG(LogMin,"ESDLService: Attempted to log ESP transaction: %s", logresp.str());
     }
 

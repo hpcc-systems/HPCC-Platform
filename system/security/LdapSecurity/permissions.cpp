@@ -60,16 +60,14 @@ PermissionProcessor::PermissionProcessor(IPropertyTree* config)
     m_cfg->getProp(".//@ldapAddress", m_server);
 }
 
-unsigned PermissionProcessor::ldap2sec(unsigned ldapperm)
+SecAccessFlags PermissionProcessor::ldap2sec(unsigned ldapperm)
 {
-    unsigned permission = 0;
-
     if((ldapperm & 0xFF) == 0xFF)
     {
-        permission |= SecAccess_Full;
-        return permission;
+        return SecAccess_Full;
     }
 
+    unsigned permission = SecAccess_None;
     if(ldapperm & ADS_RIGHT_DS_LIST_OBJECT)
         permission |= SecAccess_Access;
     if(ldapperm & 0x14)
@@ -77,19 +75,17 @@ unsigned PermissionProcessor::ldap2sec(unsigned ldapperm)
     if(ldapperm & 0x28)
         permission |= SecAccess_Write;
 
-    return permission;
+    return (SecAccessFlags)permission;
 }
 
-unsigned PermissionProcessor::sec2ldap(unsigned secperm)
+unsigned PermissionProcessor::sec2ldap(SecAccessFlags secperm)
 {
-    unsigned permission = 0;
-
     if((secperm & SecAccess_Full) == SecAccess_Full)
     {
-        permission |= 0xF01FF;
-        return permission;
+        return 0xF01FF;
     }
 
+    unsigned permission = SecAccess_None;
     if((secperm & SecAccess_Access) == SecAccess_Access)
     {
         permission |=  ADS_RIGHT_DS_LIST_OBJECT;
@@ -108,36 +104,32 @@ unsigned PermissionProcessor::sec2ldap(unsigned secperm)
     return permission;
 }
 
-unsigned PermissionProcessor::ldap2newsec(unsigned ldapperm)
+NewSecAccessFlags PermissionProcessor::ldap2newsec(unsigned ldapperm)
 {
-    unsigned permission = 0;
-
     if((ldapperm & 0xFF) == 0xFF)
     {
-        permission |= NewSecAccess_Full;
-        return permission;
+        return NewSecAccess_Full;
     }
 
+    unsigned permission = NewSecAccess_None;
     if(ldapperm & ADS_RIGHT_DS_LIST_OBJECT)
-        permission |= SecAccess_Access;
+        permission |= NewSecAccess_Access;
     if(ldapperm & 0x14)
         permission |= NewSecAccess_Read;
     if(ldapperm & 0x28)
         permission |= NewSecAccess_Write;
 
-    return permission;
+    return (NewSecAccessFlags)permission;
 }
 
-unsigned PermissionProcessor::newsec2ldap(unsigned secperm)
+unsigned PermissionProcessor::newsec2ldap(NewSecAccessFlags secperm)
 {
-    unsigned permission = 0;
-
     if((secperm & NewSecAccess_Full) == NewSecAccess_Full)
     {
-        permission |= 0xF01FF;
-        return permission;
+        return 0xF01FF;
     }
 
+    unsigned permission = SecAccess_None;
     if((secperm & SecAccess_Access) == SecAccess_Access)
     {
         permission |=  ADS_RIGHT_DS_LIST_OBJECT;
@@ -1063,7 +1055,7 @@ bool PermissionProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescr
             granted_access = 0;
         }
 
-        unsigned permission = ldap2sec(granted_access);
+        SecAccessFlags permission = ldap2sec(granted_access);
         resource.setAccessFlags(permission);
     }   
     CloseHandle(usertoken);
@@ -1086,7 +1078,7 @@ bool PermissionProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescr
         MemoryBuffer& sdbuf = csd.getDescriptor();
         if(sdbuf.length() == 0)
         {
-            resource.setAccessFlags((unsigned)-1);
+            resource.setAccessFlags(SecAccess_Unavailable);
             continue;
         }
         PSECURITY_DESCRIPTOR psd = (PSECURITY_DESCRIPTOR)(sdbuf.toByteArray());
@@ -1150,7 +1142,7 @@ bool PermissionProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescr
         }
 
         unsigned ldapperm = allows & (~denies);
-        unsigned permission = ldap2sec(ldapperm);
+        SecAccessFlags permission = ldap2sec(ldapperm);
         resource.setAccessFlags(permission);
     }
 #endif
@@ -1356,7 +1348,7 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
     if(stricmp(action.m_action.str(), "delete") != 0 && action.m_allows != 0)
     {
         uaccess_allows.grfAccessMode = GRANT_ACCESS;
-        uaccess_allows.grfAccessPermissions = newsec2ldap(action.m_allows);
+        uaccess_allows.grfAccessPermissions = newsec2ldap((NewSecAccessFlags)action.m_allows);
         uaccess_allows.grfInheritance = NO_INHERITANCE;
         uaccess_allows.Trustee.MultipleTrusteeOperation = NO_MULTIPLE_TRUSTEE;
         uaccess_allows.Trustee.pMultipleTrustee = NULL;
@@ -1380,7 +1372,7 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
     if(stricmp(action.m_action.str(), "delete") != 0 && action.m_denies != 0)
     {
         uaccess_denies.grfAccessMode = DENY_ACCESS;
-        uaccess_denies.grfAccessPermissions = newsec2ldap(action.m_denies);
+        uaccess_denies.grfAccessPermissions = newsec2ldap((NewSecAccessFlags)action.m_denies);
         uaccess_denies.grfInheritance = NO_INHERITANCE ;
         uaccess_denies.Trustee.MultipleTrusteeOperation = NO_MULTIPLE_TRUSTEE;
         uaccess_denies.Trustee.pMultipleTrustee = NULL;
@@ -1405,7 +1397,7 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
         DWORD new_dacl_size = dacl_size + newace_size;
         dacl_size = new_dacl_size;
         pnewdacl = (PACL)alloca(new_dacl_size);
-        rc = AddAccessDeniedAce(pnewdacl, &new_dacl_size, pdacl, ACL_REVISION, newsec2ldap(action.m_denies), act_psid);
+        rc = AddAccessDeniedAce(pnewdacl, &new_dacl_size, pdacl, ACL_REVISION, newsec2ldap((NewSecAccessFlags)action.m_denies), act_psid);
         if(rc == 0)
         {
             int error = GetLastError();
@@ -1420,7 +1412,7 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
         DWORD newace_size = sizeof(ACE_HEADER) + sizeof(ACCESS_MASK) + sizeofSid(act_psid);
         DWORD new_dacl_size = dacl_size + newace_size;
         pnewdacl = (PACL)alloca(new_dacl_size);
-        rc = AddAccessAllowedAce(pnewdacl, &new_dacl_size, pdacl, ACL_REVISION, newsec2ldap(action.m_allows), act_psid);
+        rc = AddAccessAllowedAce(pnewdacl, &new_dacl_size, pdacl, ACL_REVISION, newsec2ldap((NewSecAccessFlags)action.m_allows), act_psid);
         if(rc == 0)
         {
             int error = GetLastError();

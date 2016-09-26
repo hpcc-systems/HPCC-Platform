@@ -33,7 +33,8 @@ include_directories (
          ./../../system/mp 
          ./../base 
          ./../../system/include 
-         ./../../system/jlib 
+         ./../../system/jlib
+         ./../../system/security/shared
     )
 
 HPCC_ADD_EXECUTABLE ( ftslave ${SRCS} )

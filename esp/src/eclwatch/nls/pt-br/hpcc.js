@@ -55,7 +55,6 @@
     CloneTooltip: "Unidade de Trabalho Duplicado",
     ClonedWUID: "WUID clonado",
     Close: "Fechar",
-    Cluster: "Aglomerado (Cluster)",
     Cluster: "Cluster (Aglomerado)",
     ClusterName: "Nome do Aglomerado (Cluster)",
     ClusterPlaceholder: "r?x*",
@@ -147,7 +146,7 @@
     ErrorsStatus: "Erros/Estados",
     ErrorWarnings: "Error/Aviso(s)",
     Escape: "Escape",
-    ESPBuildVersion: "Versão‎ do ESP",
+    ESPBuildVersion: "Versão‎ do ESP",  // jshint ignore:line
     ESPNetworkAddress: "Endereço de Rede do ESP",
     EventName: "Nome do Evento",
     EventNamePH: "Nome do Evento",
@@ -368,7 +367,7 @@
     PermissionName: "Nome da Permissão",
     Permissions: "Permissões",
     PhysicalFiles: "Arquivos Físicos",
-    PlaceholderFindText: "Wuid, Usuário‎, Mais...",
+    PlaceholderFindText: "Wuid, Usuário‎, Mais...",  // jshint ignore:line
     PlaceholderFirstName: "João",
     PlaceholderLastName: "da Silva",
     Playground: "Area de Recreio",
@@ -485,7 +484,6 @@
     SOAP: "SOAP",
     SomeDescription: "Alguma descrição",
     somefile: "*::algum_arquivo*",
-    somefile: "*::somefile",
     Source: "Fonte",
     SourceCode: "Código Fonte",
     SourceLogicalFile: "Nome Lógica do arquivo Fonte",

@@ -44,6 +44,7 @@ include_directories (
          ./../../rtl/eclrtl 
          ./../../thorlcr/shared 
          ./../../roxie/roxiemem
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -DTHORCODECTX_EXPORTS -D_USRDLL )

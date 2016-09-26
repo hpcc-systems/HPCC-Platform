@@ -150,6 +150,7 @@ public:
     void addAttribute(const char * name, IHqlExpression * expr);
     void addAttributeInt(const char * name, __int64 value);
     void addAttributeBool(const char * name, bool value, bool alwaysAdd=false);
+    void addSignedAttribute(IHqlExpression * signedAttr);
     void addLocationAttribute(IHqlExpression * location);
     void addNameAttribute(IHqlExpression * location);
     void removeAttribute(const char * name);
@@ -298,5 +299,4 @@ protected:
 IHqlExpression * extractFilterConditions(HqlExprAttr & invariant, IHqlExpression * expr, IHqlExpression * dataset, bool spotCSE, bool spotCseInIfDatasetConditions);
 bool isLibraryScope(IHqlExpression * expr);
 extern IHqlExpression * constantMemberMarkerExpr;
-
 #endif

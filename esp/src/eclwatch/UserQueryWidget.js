@@ -223,7 +223,7 @@ define([
                 var tab = this.ensureGroupPane("Group" + selections[i].name, {
                     Name: selections[i].name
                 });
-                if (i == 0) {
+                if (i === 0) {
                     firstTab = tab;
                 }
             }
@@ -304,7 +304,7 @@ define([
                     Fullname: selections[i].fullname,
                     Passwordexpiration: selections[i].passwordexpiration
                 });
-                if (i == 0) {
+                if (i === 0) {
                     firstTab = tab;
                 }
             }

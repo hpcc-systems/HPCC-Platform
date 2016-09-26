@@ -397,7 +397,7 @@ ESPresponse [exceptions_inline] LockQueryResponse
     int NumLocks;
 };
 
-ESPservice [noforms, version("1.19"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.19"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
@@ -413,17 +413,21 @@ ESPservice [noforms, version("1.19"), exceptions_inline("./smc_xslt/exceptions.x
     ESPmethod MoveJobUp(SMCJobRequest, SMCJobResponse);
     ESPmethod MoveJobDown(SMCJobRequest, SMCJobResponse);
 
-    ESPmethod SetJobPriority(SMCPriorityRequest, SMCPriorityResponse);
+//this one doesn't seem to do any feature level check, Kevin/Tony?
+    ESPmethod [auth_feature("NONE")] SetJobPriority(SMCPriorityRequest, SMCPriorityResponse);
     ESPmethod GetThorQueueAvailability(GetThorQueueAvailabilityRequest, GetThorQueueAvailabilityResponse);
-    ESPmethod SetBanner(SetBannerRequest, SetBannerResponse);
-
-    ESPmethod NotInCommunityEdition(NotInCommunityEditionRequest, NotInCommunityEditionResponse);
+//this one ensures superuser, but no feature check is done, Kevin/Tony?
+    ESPmethod [auth_feature("NONE")] SetBanner(SetBannerRequest, SetBannerResponse);
+//this one ensures superuser, but no feature check is done, Kevin/Tony?
+    ESPmethod [auth_feature("NONE")] NotInCommunityEdition(NotInCommunityEditionRequest, NotInCommunityEditionResponse);
 
     ESPmethod [resp_xsl_default("/esp/xslt/hpccresourcelist.xslt")] BrowseResources(BrowseResourcesRequest, BrowseResourcesResponse);
 
     ESPmethod RoxieControlCmd(RoxieControlCmdRequest, RoxieControlCmdResponse);
-    ESPmethod GetStatusServerInfo(GetStatusServerInfoRequest, GetStatusServerInfoResponse);
-    ESPmethod LockQuery(LockQueryRequest, LockQueryResponse);
+//this one doesn't seem to do any feature level check, Kevin/Tony?
+    ESPmethod [auth_feature("NONE")] GetStatusServerInfo(GetStatusServerInfoRequest, GetStatusServerInfoResponse);
+//this one doesn't seem to do any feature level check, Kevin/Tony?
+    ESPmethod [auth_feature("NONE")] LockQuery(LockQueryRequest, LockQueryResponse);
 };
 
 SCMexportdef(WSSMC);

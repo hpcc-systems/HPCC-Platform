@@ -21,7 +21,7 @@
 #include "jliball.hpp"
 #include "seclib.hpp"
 
-unsigned str2perm(const char* permstr);
+SecAccessFlags str2perm(const char* permstr);
 
 class CSecResourceListHolder : public CInterface, implements IInterface
 {

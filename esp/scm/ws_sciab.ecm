@@ -44,7 +44,7 @@ ESPresponse [exceptions_inline] BoolResponse
     string Status;
 };
 
-ESPservice [exceptions_inline("./smc_xslt/exceptions.xslt")] WsSciab
+ESPservice [auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsSciab
 {
 
     ESPmethod [resp_xsl_default("./smc_xslt/BoolResponse.xslt")] Index(IndexRequest, BoolResponse);

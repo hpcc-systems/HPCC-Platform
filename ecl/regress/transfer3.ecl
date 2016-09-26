@@ -15,4 +15,5 @@
     limitations under the License.
 ############################################################################## */
 
-(integer) transfer(x'12345678', unsigned decimal8)
+(integer) transfer(x'12345678', unsigned decimal8);
+(integer) transfer(nofold(x'12345678'), unsigned decimal8);

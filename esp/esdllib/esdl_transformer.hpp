@@ -34,6 +34,7 @@ interface IEsdlMethodInfo : extends IInterface
     virtual const char *queryMethodName()=0;
     virtual const char *queryRequestType()=0;
     virtual const char *queryResponseType()=0;
+    virtual const char *queryMetaData(const char* tag)=0;
 };
 
 typedef void REQUEST_HOOK (IEspContext& ctx, IEspStruct& req, StringBuffer& query, void* parm);

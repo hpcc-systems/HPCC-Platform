@@ -123,7 +123,7 @@ public:
     {
         fprintf(stdout,
             "   --help                 display usage information for the given command\n"
-            "   -v,--verbose          output additional tracing information\n"
+            "   -v,--verbose           output additional tracing information\n"
         );
     }
 public:

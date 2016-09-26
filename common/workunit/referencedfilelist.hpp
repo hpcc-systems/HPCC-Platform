@@ -23,18 +23,21 @@
 #include "package.h"
 #include "dfuutil.hpp"
 
-#define RefFileNone           0x000
-#define RefFileIndex          0x001
-#define RefFileNotOnCluster   0x002
-#define RefFileNotFound       0x004
-#define RefFileRemote         0x008
-#define RefFileForeign        0x010
-#define RefFileSuper          0x020
-#define RefSubFile            0x040
-#define RefFileCopyInfoFailed 0x080
-#define RefFileCloned         0x100
-#define RefFileInPackage      0x200
-#define RefFileNotOnSource    0x400
+#define RefFileNone           0x0000
+#define RefFileIndex          0x0001
+#define RefFileNotOnCluster   0x0002
+#define RefFileNotFound       0x0004
+#define RefFileRemote         0x0008
+#define RefFileForeign        0x0010
+#define RefFileSuper          0x0020
+#define RefSubFile            0x0040
+#define RefFileCopyInfoFailed 0x0080
+#define RefFileCloned         0x0100
+#define RefFileInPackage      0x0200
+#define RefFileNotOnSource    0x0400
+#define RefFileOptional       0x0800 //File referenced in more than one place can be both optional and not optional
+#define RefFileNotOptional    0x1000
+
 
 interface IReferencedFile : extends IInterface
 {
@@ -52,8 +55,8 @@ interface IReferencedFileIterator : extends IIteratorOf<IReferencedFile> { };
 interface IReferencedFileList : extends IInterface
 {
     virtual void addFilesFromWorkUnit(IConstWorkUnit *cw)=0;
-    virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid)=0;
-    virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)=0;
+    virtual bool addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid)=0;
+    virtual bool addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)=0;
     virtual void addFilesFromPackageMap(IPropertyTree *pm)=0;
 
     virtual void addFile(const char *ln, const char *daliip=NULL, const char *sourceProcessCluster=NULL, const char *remotePrefix=NULL)=0;

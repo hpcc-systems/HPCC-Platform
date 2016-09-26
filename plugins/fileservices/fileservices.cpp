@@ -2153,7 +2153,7 @@ static void checkExternalFileRights(ICodeContext *ctx, CDfsLogicalFileName &lfn,
         auditflags |= (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED);
     if (wr)
         auditflags |= (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_WRITE_WANTED);
-    int perm = queryDistributedFileDirectory().getFilePermissions(lfn.get(),udesc,auditflags);
+    SecAccessFlags perm = queryDistributedFileDirectory().getFilePermissions(lfn.get(),udesc,auditflags);
     if (wr) {
         if (!HASWRITEPERMISSION(perm)) {
             throw MakeStringException(-1,"Write permission denied for %s", lfn.get());

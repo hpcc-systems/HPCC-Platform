@@ -114,6 +114,7 @@ interface IConstDropZoneInfo : extends IConstEnvBase
     virtual IStringVal & getDescription(IStringVal & str) const = 0;
     virtual IStringVal & getDirectory(IStringVal & str) const = 0;
     virtual IStringVal & getUMask(IStringVal & str) const = 0;
+    virtual bool isECLWatchVisible() const = 0;
 };
 
 interface  IConstDropZoneInfoIterator : extends IIteratorOf<IConstDropZoneInfo>

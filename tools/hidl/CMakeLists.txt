@@ -44,7 +44,7 @@ set (    SRCS
 
 include_directories ( 
          ${CMAKE_CURRENT_BINARY_DIR}   # for generated .h file
-         ${HPCC_SOURCE_DIR}/system/include 
+         ${HPCC_SOURCE_DIR}/system/include
          ${CMAKE_CURRENT_SOURCE_DIR}
     )
 

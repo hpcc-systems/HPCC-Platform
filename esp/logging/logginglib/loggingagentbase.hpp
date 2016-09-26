@@ -44,6 +44,7 @@ interface IEspUpdateLogRequestWrap : extends IInterface
     virtual IPropertyTree* getUserRequest()=0;
     virtual const char* getBackEndResponse()=0;
     virtual const char* getUserResponse()=0;
+    virtual const char* getLogDatasets()=0;
     virtual void setGUID(const char* val)=0;
     virtual void setOption(const char* val)=0;
     virtual void setUpdateLogRequest(const char* val)=0;
@@ -52,6 +53,7 @@ interface IEspUpdateLogRequestWrap : extends IInterface
     virtual void setUserRequest(IPropertyTree* val)=0;
     virtual void setBackEndResponse(const char* val)=0;
     virtual void setUserResponse(const char* val)=0;
+    virtual void setLogDatasets(const char* val)=0;
     virtual unsigned incrementRetryCount() = 0;
     virtual void clearOriginalContent() = 0;
 };
@@ -66,6 +68,7 @@ class CUpdateLogRequestWrap : implements IEspUpdateLogRequestWrap, public CInter
     Owned<IPropertyTree> userRequest;
     StringAttr  backEndResponse;
     StringAttr  userResponse;
+    StringAttr  logDatasets;
     unsigned    retryCount;
 
 public:
@@ -74,8 +77,10 @@ public:
     CUpdateLogRequestWrap(const char* _GUID, const char* _option, const char* _updateLogRequest)
         : GUID(_GUID), option(_option), updateLogRequest(_updateLogRequest), retryCount(0) {};
     CUpdateLogRequestWrap(const char* _GUID, const char* _option, IPropertyTree* _espContext,
-        IPropertyTree*_userContext, IPropertyTree*_userRequest, const char *_backEndResponse, const char *_userResponse)
-        : GUID(_GUID), option(_option), backEndResponse(_backEndResponse), userResponse(_userResponse), retryCount(0)
+        IPropertyTree*_userContext, IPropertyTree*_userRequest, const char *_backEndResponse, const char *_userResponse,
+        const char *_logDatasets)
+        : GUID(_GUID), option(_option), backEndResponse(_backEndResponse), userResponse(_userResponse),
+        logDatasets(_logDatasets), retryCount(0)
     {
         userContext.setown(_userContext);
         espContext.setown(_espContext);
@@ -93,6 +98,7 @@ public:
         userRequest.clear();
         userContext.clear();
         userResponse.clear();
+        logDatasets.clear();
         backEndResponse.clear();
         updateLogRequest.clear();
     };
@@ -105,6 +111,7 @@ public:
     IPropertyTree* getUserRequest() {return userRequest.getLink();};
     const char* getBackEndResponse() {return backEndResponse.get();};
     const char* getUserResponse() {return userResponse.get();};
+    const char* getLogDatasets() {return logDatasets.get();};
     void setGUID(const char* val) {GUID.set(val);};
     void setOption(const char* val) {option.set(val);};
     void setUpdateLogRequest(const char* val) {updateLogRequest.set(val);};
@@ -113,6 +120,7 @@ public:
     void setUserRequest(IPropertyTree* val) {userRequest.setown(val);};
     void setBackEndResponse(const char* val) {backEndResponse.set(val);};
     void setUserResponse(const char* val) {userResponse.set(val);};
+    void setLogDatasets(const char* val) {logDatasets.set(val);};
     unsigned incrementRetryCount() { retryCount++; return retryCount;};
 };
 

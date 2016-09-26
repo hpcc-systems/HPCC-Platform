@@ -99,6 +99,7 @@ include_directories (
          ./../../system/hrpc 
          ./../../common/thorhelper 
          ./../../rtl/eclrtl 
+         ./../../rtl/include 
          ./../eclagent 
          ./../../system/include 
          ./../../common/workunit

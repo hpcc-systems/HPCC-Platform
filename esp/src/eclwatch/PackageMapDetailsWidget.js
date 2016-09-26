@@ -114,7 +114,7 @@ define([
                 domAttr.set(this.id + "PMID", "innerHTML", params.packageMap);
                 domAttr.set(this.id + "Target", "value", params.target);
                 domAttr.set(this.id + "Process", "value", params.process);
-                if (params.active == true)
+                if (params.active === true)
                     domClass.add(this.id + "StateIdImage", "iconRunning");
                 else
                     domClass.add(this.id + "StateIdImage", "iconArchived");

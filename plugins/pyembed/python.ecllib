@@ -16,7 +16,7 @@
 ############################################################################## */
 
 EXPORT Language := SERVICE : plugin('pyembed')
-  boolean getEmbedContext():cpp,pure,namespace='pyembed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
+  integer getEmbedContext():cpp,pure,fold,namespace='pyembed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
   boolean syntaxCheck(const varstring src):cpp,pure,namespace='pyembed',entrypoint='syntaxCheck';
 END;
 EXPORT getEmbedContext := Language.getEmbedContext;

@@ -108,6 +108,7 @@ public:
     bool authorizeFeature(const char * pszFeatureUrl, const char* UserID, const char* CompanyID, SecAccessFlags & access,bool bCheckTrial , SecUserStatus& user_status){return true;}
     bool authorizeFeature(const char * pszFeatureUrl, const char* UserID, const char* CompanyID, SecAccessFlags & access,bool bCheckTrial ,int DebitUnits,  SecUserStatus& user_status) {return true;}
 
+    bool validateFeaturesAccess(MapStringTo<SecAccessFlags> & pmap, bool throwExcpt) {return true;}
     bool validateFeatureAccess(const char * pszFeatureUrl, unsigned required, bool throwExcpt){return true;}
     void setServAddress(const char * host, short port){}
     void getServAddress(StringBuffer & host, short & port){}

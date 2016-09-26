@@ -52,8 +52,8 @@ define([
         resultControl: null,
 
         constructor: function() {
-            this.targets = new Array();
-            this.processes = new Array();
+            this.targets = [];
+            this.processes = [];
         },
 
         buildRendering: function (args) {

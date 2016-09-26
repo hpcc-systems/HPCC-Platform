@@ -85,6 +85,7 @@ define({root:
     ClearPermissionsCache: "Clear Permissions Cache",
     ClearPermissionsCacheConfirm: "Are you sure you want to clear the DALI and ESP permissions caches? Running workunit performance might degrade significantly until the caches have been refreshed.",
     ClonedWUID: "Cloned WUID",
+    CSV: "CSV",
     Dali: "Dali",
     dataset: ":=dataset*",
     Date: "Date",

@@ -170,6 +170,7 @@ IAtom * fewAtom;
 IAtom * fieldAtom;
 IAtom * fieldsAtom;
 IAtom * __fileposAtom;
+IAtom * _signed_Atom;
 IAtom * filenameAtom;
 IAtom * filepositionAtom;
 IAtom * _files_Atom;
@@ -622,6 +623,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(fields);
     MAKEATOM(filename);
     MAKEATOM(__filepos);
+    MAKESYSATOM(signed);
     MAKEATOM(fileposition);
     MAKESYSATOM(files);
     MAKEATOM(filter);

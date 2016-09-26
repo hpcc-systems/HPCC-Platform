@@ -406,7 +406,7 @@ define([
                         onGetApplicationValues: function (applicationValues) {
                         },
                         onGetGraphs: function (graphs) {
-                            if (firstLoad == true) {
+                            if (firstLoad === true) {
                                 firstLoad = false;
                                 context.loadGraphFromWu(context.wu, context.graphName);
                             } else {
@@ -731,8 +731,8 @@ define([
         },
 
         refreshActionState: function (selection) {
-            this.setDisabled(this.id + "FindPrevious", !(this.foundIndex > 0), "iconLeft", "iconLeftDisabled");
-            this.setDisabled(this.id + "FindNext", !(this.foundIndex < this.found.length - 1), "iconRight", "iconRightDisabled");
+            this.setDisabled(this.id + "FindPrevious", this.foundIndex <= 0, "iconLeft", "iconLeftDisabled");
+            this.setDisabled(this.id + "FindNext", this.foundIndex >= this.found.length - 1, "iconRight", "iconRightDisabled");
         }
     });
 });

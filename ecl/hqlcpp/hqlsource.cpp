@@ -2032,6 +2032,9 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
         instance->addAttribute("spillReason", text.str());
     }
 
+    if (tableExpr)
+        instance->addSignedAttribute(tableExpr->queryAttribute(_signed_Atom));
+
     checkDependencies(ctx, expr);
     translator.buildInstanceSuffix(localInstance);
     if (input)

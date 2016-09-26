@@ -36,7 +36,8 @@ include_directories (
          ./../../dali/remote 
          ./../../common/workunit 
          ./../../system/mp 
-         ./../../dali/base 
+         ./../../dali/base
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

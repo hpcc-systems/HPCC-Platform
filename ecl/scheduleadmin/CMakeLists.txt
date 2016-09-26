@@ -35,7 +35,8 @@ include_directories (
          ./../../dali/base 
          ./../../system/jlib 
          ./../schedulectrl 
-         ./../../common/workunit 
+         ./../../common/workunit
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )

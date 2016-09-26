@@ -220,8 +220,8 @@ public:
     virtual void addFile(const char *ln, const char *daliip=NULL, const char *srcCluster=NULL, const char *remotePrefix=NULL);
     virtual void addFiles(StringArray &files);
     virtual void addFilesFromWorkUnit(IConstWorkUnit *cw);
-    virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid);
-    virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg);
+    virtual bool addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid);
+    virtual bool addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg);
     virtual void addFilesFromPackageMap(IPropertyTree *pm);
 
     void addFileFromSubFile(IPropertyTree &subFile, const char *_daliip, const char *srcCluster, const char *_remotePrefix);
@@ -612,7 +612,7 @@ void ReferencedFileList::addFilesFromPackageMap(IPropertyTree *pm)
         addFilesFromPackage(packages->query(), ip, cluster, prefix);
 }
 
-void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)
+bool ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)
 {
     Owned<IConstWUGraphIterator> graphs = &cw->getGraphs(GraphTypeActivities);
     ForEach(*graphs)
@@ -622,11 +622,15 @@ void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
         ForEach(*iter)
         {
             IPropertyTree &node = iter->query();
+            bool isOpt = false;
             const char *logicalName = node.queryProp("att[@name='_fileName']/@value");
             if (!logicalName)
-                logicalName = node.queryProp("att[@name='_indexFileName']/@value");
-            if (!logicalName)
                 continue;
+
+            isOpt = node.getPropBool("att[@name='_isIndexOpt']/@value");
+            if (!isOpt)
+                isOpt = node.getPropBool("att[@name='_isOpt']/@value");
+
             ThorActivityKind kind = (ThorActivityKind) node.getPropInt("att[@name='_kind']/@value", TAKnone);
             //not likely to be part of roxie queries, but for forward compatibility:
             if(kind==TAKdiskwrite || kind==TAKindexwrite || kind==TAKcsvwrite || kind==TAKxmlwrite || kind==TAKjsonwrite)
@@ -634,7 +638,7 @@ void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
             if (node.getPropBool("att[@name='_isSpill']/@value") ||
                 node.getPropBool("att[@name='_isTransformSpill']/@value"))
                 continue;
-            unsigned flags = 0;
+            unsigned flags = isOpt ? RefFileOptional : RefFileNotOptional;
             if (pkg)
             {
                 const char *pkgid = pkg->locateSuperFile(logicalName);
@@ -659,14 +663,17 @@ void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
                 ensureFile(logicalName, flags, NULL, false);
         }
     }
+    return pkg ? pkg->isCompulsory() : false;
 }
 
-void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid)
+bool ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid)
 {
     const IHpccPackage *pkg = NULL;
     if (pm && queryid && *queryid)
+    {
         pkg = pm->matchPackage(queryid);
-    addFilesFromQuery(cw, pkg);
+    }
+    return addFilesFromQuery(cw, pkg);
 }
 
 void ReferencedFileList::addFilesFromWorkUnit(IConstWorkUnit *cw)

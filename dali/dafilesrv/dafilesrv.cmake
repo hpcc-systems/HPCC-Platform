@@ -34,6 +34,7 @@ include_directories (
          ./../../system/jlib 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
+         ./../../system/security/shared
     )
 
 if (WIN32)

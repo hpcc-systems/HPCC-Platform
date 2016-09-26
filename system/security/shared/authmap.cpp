@@ -131,9 +131,9 @@ bool CAuthMap::addToBackend()
     return ok;
 }
 
-unsigned str2perm(const char* permstr)
+SecAccessFlags str2perm(const char* permstr)
 {
-    unsigned perm;
+    SecAccessFlags perm;
     if(permstr == NULL)
     {
         PROGLOG("permission string is NULL, using default");

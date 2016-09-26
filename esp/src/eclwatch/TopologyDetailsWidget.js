@@ -164,13 +164,13 @@ define([
                     tpMachine = this.params.__hpcc_treeItem;
                 } else if (this.params.__hpcc_parentNode && this.params.__hpcc_parentNode.__hpcc_treeItem.__hpcc_type === "TpMachine") {
                     tpMachine = this.params.__hpcc_parentNode.__hpcc_treeItem;
-                };
+                }
                 var tpBinding = null;
                 if (this.params.__hpcc_treeItem.__hpcc_type === "TpBinding") {
                     tpBinding = this.params.__hpcc_treeItem;
                 } else if (this.params.__hpcc_parentNode && this.params.__hpcc_parentNode.__hpcc_treeItem.__hpcc_type === "TpBinding") {
                     tpBinding = this.params.__hpcc_parentNode.__hpcc_treeItem;
-                };
+                }
                 if (tpBinding && tpMachine) {
                     var tr = domConstruct.create("tr", {}, table);
                     domConstruct.create("td", {

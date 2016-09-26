@@ -159,7 +159,7 @@ runScript() {
 
 doSetup() {
     init setup
-    scriptFile=/tmp/${action}_setup_$$
+    scriptFile=~/${action}_setup_$$
     createScript $scriptFile $action $args setup
     runScript
     report "${action} setup"
@@ -167,7 +167,7 @@ doSetup() {
 
 doStatus() {
     init status
-    scriptFile=/tmp/${action}_status_$$
+    scriptFile=~/${action}_status_$$
     createScript $scriptFile $action $args status
     runScript
     report "${action} status"
@@ -176,7 +176,7 @@ doStatus() {
 doStop() {
     echo "$action stop in the cluster ..."
     init stop
-    scriptFile=/tmp/${action}_stop_$$
+    scriptFile=~/${action}_stop_$$
     if [[ -n "${comp}" ]]; then
         createScript $scriptFile $action $args stop
         OPTIONS="${DEFAULT_OPTIONS} -h $IPsFile"
@@ -220,7 +220,7 @@ doStart() {
         local numIPs=$(wc -l $startFile | awk '{ print $1 }')
         if [[ $numIPs -gt 0 ]]; then
             echo "$action start in the cluster ..."
-            scriptFile=/tmp/${action}_start_$$
+            scriptFile=~/${action}_start_$$
             createScript $scriptFile $action $args start
             OPTIONS="${DEFAULT_OPTIONS} -h $startFile"
             runScript $startFile

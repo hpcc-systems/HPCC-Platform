@@ -12,6 +12,11 @@
                     <div id="${id}Download" data-dojo-attach-event="onClick:_onDownload" data-dojo-type="dijit.form.Button">${i18n.Download}</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}Filter" data-dojo-type="FilterDropDownWidget">
+                        <input id="${id}DropZoneName2" title="${i18n.DropZone}:" name="DropZoneName" colspan="2" data-dojo-props="trim: true, placeHolder:'${i18n.Created}'" data-dojo-type="TargetSelectWidget" />
+                        <input id="${id}NameFilter" title="${i18n.FileName}:" name="NameFilter" colspan="2" style="width:100%" data-dojo-props="trim: true, required:true" data-dojo-type="dijit.form.TextBox" />
+                    </div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}AddFileDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.AddFile}</span>
                         <div data-dojo-type="dijit.TooltipDialog">

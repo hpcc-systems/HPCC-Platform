@@ -1418,7 +1418,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
             HqlDummyLookupContext ctx(&errs);
             cppSystemScope = createScope();
             Owned<ISourcePath> sysPath = createSourcePath("<system-definitions>");
-            Owned<IFileContents> systemContents = createFileContentsFromText(systemText.str(), sysPath, true);
+            Owned<IFileContents> systemContents = createFileContentsFromText(systemText.str(), sysPath, true, NULL);
             OwnedHqlExpr query = parseQuery(cppSystemScope, systemContents, ctx, NULL, NULL, false);
             if (errs.errCount())
             {
@@ -1790,7 +1790,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
         DebugOption(options.alwaysReuseGlobalSpills,"alwaysReuseGlobalSpills",true),
         DebugOption(options.forceAllDatasetsParallel,"forceAllDatasetsParallel",false),  // Purely for regression testing.
-        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsAsErrors",true),
+        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsFatal",true),
         DebugOption(options.optimizeCriticalFunctions,"optimizeCriticalFunctions",true),
         DebugOption(options.addLikelihoodToGraph,"addLikelihoodToGraph", true),
     };
@@ -11740,8 +11740,10 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
         startLine += memcount(body-start, start, '\n');
     }
 
+    bool addPragmas = options.embeddedWarningsAsErrors && !bodyCode->hasAttribute(inlineAtom);
+
     BuildCtx outerctx(funcctx);
-    if (options.embeddedWarningsAsErrors)
+    if (addPragmas)
     {
         funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
                 "#pragma GCC diagnostic error \"-Wall\"\n"
@@ -11752,7 +11754,7 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
 
     funcctx.addQuotedCompound(proto);
 
-    if (options.embeddedWarningsAsErrors)
+    if (addPragmas)
     {
         outerctx.addQuoted("\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
                 "#pragma GCC diagnostic ignored \"-Wall\"\n"
@@ -11784,7 +11786,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
 
     HqlExprArray noargs;
     OwnedHqlExpr getPlugin = bindFunctionCall(language, noargs);
-    OwnedHqlExpr pluginPtr = createQuoted("Owned<IEmbedContext> __plugin", makeBoolType());  // Not really bool - at some point ECL may support without this aliasing...
+    OwnedHqlExpr pluginPtr = createQuoted("Owned<IEmbedContext> __plugin", getPlugin->getType());
     buildAssignToTemp(funcctx, pluginPtr, getPlugin);
     StringBuffer createParam;
     createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(ctx,");
@@ -12046,13 +12048,21 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         else
         {
             bool isInline = bodyCode->hasAttribute(inlineAtom);
-            if (isInline && options.spanMultipleCpp)
+            if (isInline)
             {
-                BuildCtx funcctx2(*code, parentHelpersAtom);
-                buildCppFunctionDefinition(funcctx2, bodyCode, proto);
+                if (options.spanMultipleCpp)
+                {
+                    BuildCtx funcctx2(*code, parentHelpersAtom);
+                    buildCppFunctionDefinition(funcctx2, bodyCode, proto);
+                }
+                else
+                    buildCppFunctionDefinition(funcctx, bodyCode, proto);
             }
             else
-                buildCppFunctionDefinition(funcctx, bodyCode, proto);
+            {
+                BuildCtx funcctx2(*code, userFunctionAtom);
+                buildCppFunctionDefinition(funcctx2, bodyCode, proto);
+            }
         }
     }
     else

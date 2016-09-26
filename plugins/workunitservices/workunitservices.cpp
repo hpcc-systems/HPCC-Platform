@@ -222,7 +222,7 @@ static bool checkScopeAuthorized(IUserDescriptor *user, const char *scopename)
     if (securityDisabled)
         return true;
     unsigned auditflags = DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED;
-    int perm = SecAccess_Full;
+    SecAccessFlags perm = SecAccess_Full;
     if (scopename && *scopename)
     {
         perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags);

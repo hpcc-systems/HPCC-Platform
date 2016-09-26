@@ -27,3 +27,4 @@ $?$/* Template for generating a child module for query */
 #include "$headerName$"
 
 @helper@
+@userFunction@

@@ -39,7 +39,8 @@ include_directories (
          ./../../system/include 
          ./../../dali/base 
          ./../../system/jlib 
-         ./../../common/environment 
+         ./../../common/environment
+         ./../../system/security/shared
     )
 
 IF (NOT WIN32)

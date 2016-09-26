@@ -320,12 +320,23 @@
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
+    <xsl:template match="EsdlList">
+        <xsd:element minOccurs="0" maxOccurs="unbounded">
+            <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
+	    <xsl:attribute name="type">
+            	<xsl:choose>
+                    <xsl:when test="@type='string'">xsd:string</xsl:when>
+                    <xsl:otherwise>tns:<xsl:value-of select="@type"/></xsl:otherwise>
+            	</xsl:choose>
+	    </xsl:attribute>
+	</xsd:element>
+    </xsl:template>
     <xsl:template match="EsdlRequest">
         <xsd:element>
             <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
             <xsd:complexType>
                 <xsd:all>
-                    <xsl:apply-templates select="EsdlElement|EsdlArray|EsdlEnum"/>
+                    <xsl:apply-templates select="EsdlElement|EsdlArray|EsdlList|EsdlEnum"/>
                 </xsd:all>
             </xsd:complexType>
         </xsd:element>
@@ -335,7 +346,7 @@
             <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
             <xsd:complexType>
                 <xsd:all>
-                    <xsl:apply-templates select="EsdlElement|EsdlArray|EsdlEnum"/>
+                    <xsl:apply-templates select="EsdlElement|EsdlArray|EsdlList|EsdlEnum"/>
                 </xsd:all>
             </xsd:complexType>
         </xsd:element>

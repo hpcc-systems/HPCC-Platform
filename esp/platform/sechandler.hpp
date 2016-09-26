@@ -44,9 +44,8 @@ public:
     bool authorizeSecFeature(const char* pszFeatureUrl, SecAccessFlags& access);
     bool authorizeSecFeatures(StringArray & features, IEspStringIntMap & pmap);
     bool validateSecFeatureAccess(const char* pszFeatureUrl, unsigned required, bool throwExcpt);
+    bool validateSecFeaturesAccess(MapStringTo<SecAccessFlags> & accessmap, bool throwExcpt);
     bool authorizeSecReqFeatures(StringArray & features, IEspStringIntMap & pmap, unsigned *required);
-
-
     bool authorizeSecFeature(const char * pszFeatureUrl, const char* UserID, const char* CompanyID, SecAccessFlags & access,bool bCheckTrial,int DebitUnits, SecUserStatus & user_status);
 
     void setSecManger(ISecManager* mgr);

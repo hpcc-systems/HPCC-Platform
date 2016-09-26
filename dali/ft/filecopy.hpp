@@ -23,10 +23,10 @@
 #include "daft.hpp"
 #include "junicode.hpp"
 
-typedef enum 
-{ 
-    FFTunknown, 
-    FFTfixed, FFTvariable, FFTblocked, 
+typedef enum
+{
+    FFTunknown,
+    FFTfixed, FFTvariable, FFTblocked,
     FFTcsv,
     FFTutf,                             // any format, default to utf-8n
     FFTutf8, FFTutf8n,
@@ -89,6 +89,7 @@ public:
     const char * getFileFormatTypeString() const        { return FileFormatTypeStr[type]; }
     void updateMarkupType(const char *rowLocator, const char *kind);
     const char *getPartSeparatorString(){return (markup==FMTjson) ? ",\n" : NULL;}
+    bool isCsv() const                              { return (type == FFTcsv); }
 
 public:
     FileFormatType      type;

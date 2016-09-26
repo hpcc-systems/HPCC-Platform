@@ -2176,6 +2176,378 @@ bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermi
     return true;
 }
 
+bool Cws_accessEx::onQueryViews(IEspContext &context, IEspQueryViewsRequest &req, IEspQueryViewsResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+
+        if(secmgr == NULL)
+            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+        checkUser(context);
+
+        IArrayOf<IEspView> views;
+        StringArray names, descriptions, viewManagedBy;
+
+        secmgr->queryAllViews(names, descriptions, viewManagedBy);
+
+        ForEachItemIn(i, names)
+        {
+            Owned<IEspView> oneView = createView();
+            oneView->setViewname(names.item(i));
+            oneView->setDescription(descriptions.item(i));
+            views.append(*oneView.getLink());
+        }
+
+        resp.setViews(views);
+    }
+    catch (IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onAddView(IEspContext &context, IEspAddViewRequest &req, IEspAddViewResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(secmgr == NULL)
+            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+        checkUser(context);
+
+        const char* viewname = req.getViewname();
+        const char* description = req.getDescription();
+
+        secmgr->createView(viewname, description);
+        resp.setViewname(viewname);
+        resp.setDescription(description);
+    }
+    catch (IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onDeleteView(IEspContext &context, IEspDeleteViewRequest &req, IEspDeleteViewResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(secmgr == NULL)
+            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+        checkUser(context);
+
+        const char* viewname = req.getViewname();
+        secmgr->deleteView(req.getViewname());
+
+        resp.setViewname(viewname);
+    }
+    catch (IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onQueryViewColumns(IEspContext &context, IEspQueryViewColumnsRequest &req, IEspQueryViewColumnsResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(secmgr == NULL)
+            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+        checkUser(context);
+
+        IArrayOf<IEspViewColumn> viewColumns;
+        StringArray files, columns;
+
+        const char* viewname = req.getViewname();
+
+        secmgr->queryViewColumns(viewname, files, columns);
+
+        ForEachItemIn(i, files)
+        {
+            Owned<IEspViewColumn> oneViewColumn = createViewColumn();
+            oneViewColumn->setViewname(req.getViewname());
+            oneViewColumn->setFilename(files.item(i));
+            oneViewColumn->setColumnname(columns.item(i));
+            viewColumns.append(*oneViewColumn.getLink());
+        }
+
+        resp.setViewname(viewname);
+        resp.setViewcolumns(viewColumns);
+    }
+    catch (IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onAddViewColumn(IEspContext &context, IEspAddViewColumnRequest &req, IEspAddViewColumnResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(secmgr == NULL)
+            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+        checkUser(context);
+
+        const char* filename = req.getFilename();
+        const char* columnname = req.getColumnname();
+
+        if (!filename || *filename == '\0')
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Filename cannot be empty.");
+
+        if (!columnname || *columnname == '\0')
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Columnname cannot be empty.");
+
+        // View column filename MUST be a full path including the scope, with a leading tilde (~)
+        if (filename[0] != '~')
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Filename must include a scope name, with a leading tilde (~)");
+
+        StringArray files, columns;
+        const char* viewname = req.getViewname();
+
+        files.append(filename);
+        columns.append(columnname);
+
+        secmgr->addViewColumns(viewname, files, columns);
+
+        resp.setViewname(viewname);
+        resp.setFilename(filename);
+        resp.setColumnname(columnname);
+    }
+    catch (IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onDeleteViewColumn(IEspContext &context, IEspDeleteViewColumnRequest &req, IEspDeleteViewColumnResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(secmgr == NULL)
+            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+        checkUser(context);
+
+        StringArray files, columns;
+
+        const char* viewname = req.getViewname();
+        const char* filename = req.getFilename();
+        const char* columnname = req.getColumnname();
+
+        files.append(filename);
+        columns.append(columnname);
+
+        secmgr->removeViewColumns(req.getViewname(), files, columns);
+
+        resp.setViewname(viewname);
+        resp.setFilename(filename);
+        resp.setColumnname(columnname);
+    }
+    catch (IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onQueryViewMembers(IEspContext &context, IEspQueryViewMembersRequest &req, IEspQueryViewMembersResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(secmgr == NULL)
+            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+        checkUser(context);
+
+        const char* reqViewname = req.getViewname();
+        StringArray users, groups;
+        IArrayOf<IEspViewMember> viewMembers;
+
+        secmgr->queryViewMembers(reqViewname, users, groups);
+
+        ForEachItemIn(i, users)
+        {
+            Owned<IEspViewMember> oneViewMember = createViewMember();
+            oneViewMember->setViewname(reqViewname);
+            oneViewMember->setName(users.item(i));
+            oneViewMember->setMembertype(CViewMemberType_User);
+            viewMembers.append(*oneViewMember.getLink());
+        }
+
+        ForEachItemIn(j, groups)
+        {
+            Owned<IEspViewMember> oneViewMember = createViewMember();
+            oneViewMember->setViewname(reqViewname);
+            oneViewMember->setName(groups.item(j));
+            oneViewMember->setMembertype(CViewMemberType_Group);
+            viewMembers.append(*oneViewMember.getLink());
+        }
+
+        resp.setViewname(reqViewname);
+        resp.setViewmembers(viewMembers);
+    }
+    catch (IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onAddViewMember(IEspContext &context, IEspAddViewMemberRequest &req, IEspAddViewMemberResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(secmgr == NULL)
+            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+        checkUser(context);
+
+        StringArray users, groups;
+        const char* viewname = req.getViewname();
+        const char* membername = req.getMembername();
+        CViewMemberType membertype = req.getMembertype();
+
+        if (membertype == CViewMemberType_User)
+        {
+            users.append(membername);
+        }
+        else if (membertype == CViewMemberType_Group)
+        {
+            groups.append(membername);
+        }
+        else
+        {
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unknown view member type specified (Must be User or Group)");
+        }
+
+        secmgr->addViewMembers(viewname, users, groups);
+
+        resp.setViewname(viewname);
+        resp.setMembername(membername);
+        resp.setMembertype(membertype);
+    }
+    catch (IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onDeleteViewMember(IEspContext &context, IEspDeleteViewMemberRequest &req, IEspDeleteViewMemberResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(secmgr == NULL)
+            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+        checkUser(context);
+
+        StringArray users, groups;
+        const char* viewname = req.getViewname();
+        const char* membername = req.getMembername();
+        CViewMemberType membertype = req.getMembertype();
+
+        if (membertype == CViewMemberType_User)
+        {
+            users.append(membername);
+        }
+        else if (membertype == CViewMemberType_Group)
+        {
+            groups.append(membername);
+        }
+        else
+        {
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unknown view member type specified (Must be User' or Group)");
+        }
+
+        secmgr->removeViewMembers(req.getViewname(), users, groups);
+
+        resp.setViewname(viewname);
+        resp.setMembername(membername);
+        resp.setMembertype(membertype);
+    }
+    catch (IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onQueryUserViewColumns(IEspContext &context, IEspQueryUserViewColumnsRequest &req, IEspQueryUserViewColumnsResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+        if(secmgr == NULL)
+            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+        checkUser(context);
+
+        const char* username = req.getUsername();
+
+        IArrayOf<IEspViewColumn> viewColumns;
+
+        StringArray viewnames, viewdescriptions, viewManagedBy;
+        secmgr->queryAllViews(viewnames, viewdescriptions, viewManagedBy);
+
+        ForEachItemIn(i, viewnames)
+        {
+            const char* viewname = viewnames.item(i);
+
+            if (secmgr->userInView(username, viewname))
+            {
+                StringArray files, columns;
+                secmgr->queryViewColumns(viewname, files, columns);
+
+                ForEachItemIn(j, files)
+                {
+                    Owned<IEspViewColumn> oneViewColumn = createViewColumn();
+                    oneViewColumn->setViewname(viewname);
+                    oneViewColumn->setFilename(files.item(j));
+                    oneViewColumn->setColumnname(columns.item(j));
+                    viewColumns.append(*oneViewColumn.getLink());
+                }
+            }
+        }
+
+        resp.setUsername(username);
+        resp.setViewcolumns(viewColumns);
+    }
+    catch (IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
 bool Cws_accessEx::onPermissionAddInput(IEspContext &context, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp)
 {
     try
@@ -3812,7 +4184,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
         if ((!groupName || !*groupName) && (!userName || !*userName))
             throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Either user name or group name has to be specified.");
 
-        int access = SecAccess_Unavailable;
+        SecAccessFlags access = SecAccess_Unavailable;
         if (userName && *userName) //for user
         {
             resp.setFileName(fileName);
@@ -3915,7 +4287,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                     scopes.add(lastFileScope.str(), 0);
                 }
 
-                access = 0;
+                access = SecAccess_None;
                 ForEachItemIn(y, scopes)
                 {
                     StringBuffer namebuf = scopes.item(y);
@@ -3936,7 +4308,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
 
                             int allows = perm.getAllows();
                             int denies = perm.getDenies();
-                            access = allows & (~denies);
+                            access = (SecAccessFlags)(allows & (~denies));
                             break;
                         }
                     }
@@ -3945,7 +4317,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                         e->Release();
                     }
 
-                    if (access != 0)
+                    if (access != SecAccess_None)
                         break;
                 }
             }
@@ -3959,7 +4331,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                 resp.setUserPermission("Read Access Permission");
             else if((access & NewSecAccess_Access) == NewSecAccess_Access)
                 resp.setUserPermission("Access Permission");
-            else if (access == 0)
+            else if (access == (SecAccessFlags)NewSecAccess_None)
                 resp.setUserPermission("None Access Permission");
             else
                 resp.setUserPermission("Permission Unknown");

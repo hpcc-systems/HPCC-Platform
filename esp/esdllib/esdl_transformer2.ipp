@@ -310,6 +310,8 @@ class Esdl2Array : public Esdl2Base
 
     bool inited;
     bool type_unknown;
+    bool isEsdlList;
+
 public:
     Esdl2Array(Esdl2Transformer *xformer, IEsdlDefObject *def);
     virtual ~Esdl2Array(){}
@@ -432,6 +434,7 @@ public:
     virtual const char *queryMethodName() { return queryName();}
     virtual const char *queryRequestType() { return m_methodDef->queryRequestType(); }
     virtual const char *queryResponseType() { return m_methodDef->queryResponseType(); }
+    virtual const char *queryMetaData(const char* tag) { return m_methodDef->queryMetaData(tag); }
 };
 
 

@@ -199,13 +199,13 @@ define([
         },
         _onPublish: function (event) {
             var allowForeign = registry.byId(this.id + "AllowForeignFiles");
-            if (allowForeign.checked == true) {
+            if (allowForeign.checked === true) {
                 allowForeign.value = 1;
             } else {
                 allowForeign.value = 0;
             }
             var updateSupers = registry.byId(this.id + "UpdateSuperFiles");
-            if (updateSupers.checked == true) {
+            if (updateSupers.checked === true) {
                 updateSupers.value = 1;
             } else {
                 updateSupers.value = 0;
@@ -458,7 +458,7 @@ define([
             } else if (name === "variables") {
                 var tooltip = "";
                 for (var key in newValue) {
-                    if (tooltip != "")
+                    if (tooltip !== "")
                         tooltip += "\n";
                     tooltip += newValue[key].Name;
                     if (newValue[key].Value)
@@ -472,7 +472,7 @@ define([
                 this.resultsWidget.set("title", this.i18n.Outputs + " (" + newValue.length + ")");
                 var tooltip = "";
                 for (var key in newValue) {
-                    if (tooltip != "")
+                    if (tooltip !== "")
                         tooltip += "\n";
                     tooltip += newValue[key].Name;
                     if (newValue[key].Value)
@@ -487,7 +487,7 @@ define([
                 this.filesWidget.set("title", this.i18n.Inputs + " (" + newValue.length + ")");
                 var tooltip = "";
                 for (var i = 0; i < newValue.length; ++i) {
-                    if (tooltip != "")
+                    if (tooltip !== "")
                         tooltip += "\n";
                     tooltip += newValue[i].Name;
                 }
@@ -502,7 +502,7 @@ define([
                 for (var i = 0; i < newValue.length; ++i) {
                     if (newValue[i].GraphName)
                         continue;
-                    if (tooltip != "")
+                    if (tooltip !== "")
                         tooltip += "\n";
                     tooltip += newValue[i].Name;
                     if (newValue[i].Value)
@@ -517,7 +517,7 @@ define([
                 this.graphsWidget.set("title", this.i18n.Graphs + " (" + newValue.length + ")");
                 var tooltip = "";
                 for (var i = 0; i < newValue.length; ++i) {
-                    if (tooltip != "")
+                    if (tooltip !== "")
                         tooltip += "\n";
                     tooltip += newValue[i].Name;
                     if (newValue[i].Time)
