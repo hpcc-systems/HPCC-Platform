@@ -1650,12 +1650,15 @@ bool CJobMaster::go()
                 return;
             if (flags & SubscribeOptionAbort)
             {
-                if (wu.aborting())
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                if (factory->isAborting(wu.queryWuid()))
                 {
                     LOG(MCwarning, thorJob, "ABORT detected from user");
                     Owned <IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort");
                     job.fireException(e);
                 }
+                else
+                    PROGLOG("CWorkunitPauseHandler [SubscribeOptionAbort] notifier called, workunit was not aborting");
             }
             if (flags & SubscribeOptionAction)
             {

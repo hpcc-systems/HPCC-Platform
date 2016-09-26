@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Time_Data_Types">
+  <title>Time Data Types</title>
+
+  <para><emphasis role="bold">STD.Date.Time_rec<indexterm>
+      <primary>STD.Date.Time_rec</primary>
+    </indexterm><indexterm>
+      <primary>Date.Time_rec</primary>
+    </indexterm></emphasis></para>
+
+  <para><emphasis role="bold">STD.Date.Time_t<indexterm>
+      <primary>STD.Date.Time_t</primary>
+    </indexterm><indexterm>
+      <primary>Date.Time_t</primary>
+    </indexterm></emphasis></para>
+
+  <para><emphasis role="bold">STD.DateTime_rec <indexterm>
+      <primary><emphasis role="bold">STD.DateTime_rec</emphasis></primary>
+    </indexterm><indexterm>
+      <primary><emphasis role="bold">DateTime_rec</emphasis></primary>
+    </indexterm></emphasis></para>
+
+  <para><emphasis role="bold">STD.Timestamp_t <indexterm>
+      <primary><emphasis role="bold">STD.Timestamp_t</emphasis></primary>
+    </indexterm><indexterm>
+      <primary><emphasis role="bold">Timestamp_t</emphasis></primary>
+    </indexterm></emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis role="bold">Time_rec</emphasis></entry>
+
+          <entry>A RECORD structure containing three fields, and INTEGER1
+          hour, an UNSIGNED1 minute, and an UNSIGNED1 second.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">Time_t</emphasis></entry>
+
+          <entry>An UNSIGNED3 holding a time of day in the decimal form
+          HHMMDD.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">Seconds_t</emphasis></entry>
+
+          <entry>An INTEGER8 holding holding a number of seconds. Can be used
+          to represent either a duration or the number of seconds since epoch
+          (Jan 1, 1970). </entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">DateTime_rec</emphasis></entry>
+
+          <entry>A RECORD structure containing both a Date_rec and a
+          Time_rec</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">Timestamp_t </emphasis></entry>
+
+          <entry>An INTEGER8 holding a number of microseconds. Can be used to
+          represent // either a duration or the number of microseconds since
+          epoch (Jan 1, 1970).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The Time data types defined in the Date Standard Library are:</para>
+
+  <programlisting format="linespecific">// A record structure with the different time elements separated out.
+EXPORT Time_rec := RECORD
+    UNSIGNED1   hour;
+    UNSIGNED1   minute;
+    UNSIGNED1   second;
+END;
+
+// An unsigned number holding a time of day in the decimal form HHMMDD.
+EXPORT Time_t := UNSIGNED3;
+// A signed number holding a number of seconds.  Can be used to represent either
+// a duration or the number of seconds since epoch (Jan 1, 1970).
+EXPORT Seconds_t := INTEGER8;
+
+
+// A record structure with the different date and time elements separated out.
+EXPORT DateTime_rec := RECORD
+    Date_rec;
+    Time_Rec;
+END;
+
+// A signed number holding a number of microseconds.  Can be used to represent
+// either a duration or the number of microseconds since epoch (Jan 1, 1970).
+EXPORT Timestamp_t := INTEGER8;
+</programlisting>
+
+  <para>See Also: <link linkend="Date_Data_Types">Date Data
+  Types</link></para>
+</sect1>

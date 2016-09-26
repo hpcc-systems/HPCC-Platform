@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AdjustCalendar">
+  <title>AdjustCalendar</title>
+
+  <para><emphasis role="bold">STD.Date.AdjustCalendar<indexterm>
+      <primary>STD.Date.AdjustCalendar</primary>
+    </indexterm><indexterm>
+      <primary>Date.AdjustCalendar</primary>
+    </indexterm>(</emphasis> <emphasis>date</emphasis> ,
+  [<emphasis>year_delta</emphasis>],[<emphasis>month_delta</emphasis>]
+  ,[<emphasis>day_delta</emphasis>] <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>A date value in the Date_t format.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>year_delta</emphasis></entry>
+
+          <entry>The minimum acceptable year. Optional; defaults to
+          zero.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>month_delta</emphasis></entry>
+
+          <entry>The minimum acceptable year. Optional; defaults to
+          zero.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>day_delta</emphasis></entry>
+
+          <entry>The maximum acceptable year. Optional; defaults to
+          zero.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>AdjustDate returns date_t representing the adjusted
+          date.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The AdjustCalendar function adjusts a date by incrementing or
+  decrementing months and/or years. The date must be in the Gregorian calendar
+  after the year 1600. </para>
+
+  <para>This uses the rule outlined in McGinn v. State, 46 Neb. 427, 65 N.W.
+  46 (1895):</para>
+
+  <blockquote>
+    <para>"The term calendar month, whether employed in statutes or contracts,
+    and not appearing to have been used in a different sense, denotes a period
+    terminating with the day of the succeeding month numerically corresponding
+    to the day of its beginning, less one. If there be no corresponding day of
+    the succeeding month, it terminates with the last day thereof." </para>
+  </blockquote>
+
+  <para>Note that day adjustments are performed after year and month
+  adjustments using the preceding rules. </para>
+
+  <para>As an example, Jan. 31, 2014 + 1 month results in Feb. 28, 2014; Jan.
+  31, 2014 + 1 month + 1 day results in Mar. 1, 2014.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT std;
+inDate :=19631123;
+Std.Date.AdjustCalendar(inDate,5,1,3);  //returns 19681226
+</programlisting>
+
+  <para>See Also: <link linkend="AdjustDate">AdjustDate</link></para>
+</sect1>
