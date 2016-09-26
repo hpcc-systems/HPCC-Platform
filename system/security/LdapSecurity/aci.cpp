@@ -591,7 +591,7 @@ public:
 SecAccessFlags NewSec2Sec(NewSecAccessFlags newsec)
 {
     int sec = SecAccess_None;
-    if(newsec == -1)
+    if(newsec == (NewSecAccessFlags) -1)
         return SecAccess_Unavailable;
     if(newsec == NewSecAccess_Full)
         return SecAccess_Full;
