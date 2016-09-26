@@ -39,7 +39,7 @@
 //----------------------------------------------------------------------------
 
 /*
-  This needs to partition with split points from (thisOffset/numParts) to (thisOffset+thisSize-1/numParts).  
+  This needs to partition with split points from (thisOffset/numParts) to (thisOffset+thisSize-1/numParts).
   It returns the point just before the expected point, rather than the closest.
   NB: It assumes records cannot be split between parts!
 */
@@ -116,7 +116,7 @@ void CPartitioner::commonCalcPartitions()
     for (unsigned split=firstSplit; split <= lastSplit; split++)
     {
         offset_t splitPoint;
-        if (split == numParts) 
+        if (split == numParts)
             splitPoint = endOffset;
         else if (partSize==0)
             splitPoint =  (split * totalSize) / numParts;
@@ -139,7 +139,7 @@ void CPartitioner::commonCalcPartitions()
     findSplitPoint(endOffset, cursor);
 
     killBuffer(); // don't keep buffer longer than needed
-    
+
     results.append(*new PartitionPoint(whichInput, lastSplit, startInputOffset-thisOffset+thisHeaderSize, endOffset - startInputOffset, cursor.outputOffset-startOutputOffset));
 }
 
@@ -340,7 +340,7 @@ CInputBasePartitioner::CInputBasePartitioner(unsigned _headerSize, unsigned expe
     bufferSize = 4 * blockSize + expectedRecordSize;
     doInputCRC = false;
     CriticalBlock block(openfilecachesect);
-    if (!openfilecache) 
+    if (!openfilecache)
         openfilecache = createFileIOCache(16);
     else
         openfilecache->Link();
@@ -356,7 +356,7 @@ CInputBasePartitioner::~CInputBasePartitioner()
     inStream.clear();
     if (openfilecache) {
         CriticalBlock block(openfilecachesect);
-        if (openfilecache->Release()) 
+        if (openfilecache->Release())
             openfilecache = NULL;
     }
 }
@@ -380,7 +380,7 @@ void CInputBasePartitioner::setSource(unsigned _whichInput, const RemoteFilename
             decrypt(key,_decryptKey);
             expander.setown(createAESExpander256(key.length(),key.str()));
         }
-        inIO.setown(createCompressedFileReader(inIO,expander)); 
+        inIO.setown(createCompressedFileReader(inIO,expander));
     }
 
     if (thisSize != noSizeLimit)
@@ -689,6 +689,34 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
     fieldCount = 0;
     isFirstRow = true;
     fields.setown(new KeptAtomTable);
+}
+
+void CCsvPartitioner::getRecordStructure(StringBuffer & _recordStructure)
+{
+    /* Check if record structure has been constructed.
+       In the case of a 1:1 partition scheme, it will never have been constructed when this is 1st called
+    */
+    if (nullptr == strstr(recordStructure.str(),"END;"))
+    {
+        const byte *buffer = bufferBase();
+        ensureBuffered(headerSize);
+        assertex((headerSize == 0) || (numInBuffer != bufferOffset));
+
+        unsigned size = getSplitRecordSize(buffer, headerSize, false);
+
+        if (size == 0)
+            throwError1(DFTERR_PartitioningZeroSizedRowLink,((offset_t)(buffer+bufferOffset)));
+
+        if (size > bufferSize)
+        {
+            LOG(MCdebugProgressDetail, unknownJob, "First record size %d (0x%08x) is larger than the buffer size: %d", size, size, bufferSize);
+            throwError2(DFTERR_WrongSplitRecordSize, size, size);
+        }
+    }
+
+    // NB: recordStrcuture is filled by getSplitRecordSize() call above when processing
+    //     the first record/row of the CSV file
+    _recordStructure = recordStructure;
 }
 
 void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
@@ -1290,7 +1318,7 @@ void CUtfQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                     bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
                 else
                 {
-                    //For large 
+                    //For large
                     size32_t ensureSize = numInBuffer-bufferOffset;
                     loop
                     {
@@ -1429,7 +1457,7 @@ size32_t XmlSplitter::getRecordSize(const byte * start, unsigned maxToRead, bool
                 case NEWLINE:
                 case ENDTAG:
                 case ENDCLOSETAG:
-                    //Only start 
+                    //Only start
                     inTag = true;
                     break;
                 }
@@ -1569,7 +1597,7 @@ offset_t XmlSplitter::getFooterLength(BufferedDirectReader & reader, offset_t si
                 case NEWLINE:
                 case ENDTAG:
                 case ENDCLOSETAG:
-                    //Only start 
+                    //Only start
                     inTag = true;
                     break;
                 }
@@ -2096,9 +2124,9 @@ void COutputProcessorHook::setOutput(offset_t startOffset, IFileIOStream * _out)
     target->setOutput(startOffset, _out);
 }
 
-void COutputProcessorHook::finishOutputOffset() 
-{ 
-    target->finishOutputOffset(); 
+void COutputProcessorHook::finishOutputOffset()
+{
+    target->finishOutputOffset();
 }
 
 void COutputProcessorHook::finishOutputRecords()
@@ -2108,24 +2136,24 @@ void COutputProcessorHook::finishOutputRecords()
 
 void CVariableProcessorHook::outputRecord(size32_t len, const byte * data)
 {
-    target->outputRecord(len-sizeof(VARIABLE_LENGTH_TYPE), data+sizeof(VARIABLE_LENGTH_TYPE)); 
+    target->outputRecord(len-sizeof(VARIABLE_LENGTH_TYPE), data+sizeof(VARIABLE_LENGTH_TYPE));
 }
 
-void CVariableProcessorHook::updateOutputOffset(size32_t len, const byte * data) 
-{ 
-    target->updateOutputOffset(len-sizeof(VARIABLE_LENGTH_TYPE), data+sizeof(VARIABLE_LENGTH_TYPE)); 
+void CVariableProcessorHook::updateOutputOffset(size32_t len, const byte * data)
+{
+    target->updateOutputOffset(len-sizeof(VARIABLE_LENGTH_TYPE), data+sizeof(VARIABLE_LENGTH_TYPE));
 }
 
 void CCsvProcessorHook::outputRecord(size32_t len, const byte * data)
 {
     UNIMPLEMENTED;
-    //target->outputRecord(len-sizeof(terminator-that-matched), data); 
+    //target->outputRecord(len-sizeof(terminator-that-matched), data);
 }
 
-void CCsvProcessorHook::updateOutputOffset(size32_t len, const byte * data) 
-{ 
+void CCsvProcessorHook::updateOutputOffset(size32_t len, const byte * data)
+{
     UNIMPLEMENTED;
-    //target->updateOutputOffset(len-sizeof(terminator-that-macthed), data); 
+    //target->updateOutputOffset(len-sizeof(terminator-that-macthed), data);
 }
 
 void CUtfProcessorHook::outputRecord(size32_t len, const byte * data)
@@ -2134,8 +2162,8 @@ void CUtfProcessorHook::outputRecord(size32_t len, const byte * data)
     target->outputRecord(transformed.length(), (const byte *)transformed.toByteArray());
 }
 
-void CUtfProcessorHook::updateOutputOffset(size32_t len, const byte * data) 
-{ 
+void CUtfProcessorHook::updateOutputOffset(size32_t len, const byte * data)
+{
     convertUtf(transformed.clear(), UtfReader::Utf32le, len, data, utfFormat);
     target->updateOutputOffset(transformed.length(), (const byte *)transformed.toByteArray());
 }

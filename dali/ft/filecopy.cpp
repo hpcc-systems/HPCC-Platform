@@ -986,6 +986,9 @@ void FileSprayer::calculateOne2OnePartition()
         partition.append(*new PartitionPoint(idx, idx, cur.headerSize, copyCompressed?cur.psize:cur.size, copyCompressed?cur.psize:cur.size));  // outputoffset == 0
         targets.item(idx).modifiedTime.set(cur.modifiedTime);
     }
+
+    if (srcFormat.isCsv())
+        examineCsvStructure();
 }
 
 class AsyncExtractBlobInfo : public CAsyncFor
@@ -1098,6 +1101,9 @@ void FileSprayer::calculateMany2OnePartition()
         }
         partition.append(*new PartitionPoint(idx, 0, cur.headerSize, cur.size, cur.size));
     }
+
+    if (srcFormat.isCsv())
+        examineCsvStructure();
 }
 
 void FileSprayer::calculateNoSplitPartition()
@@ -1159,6 +1165,8 @@ void FileSprayer::calculateNoSplitPartition()
         sizeSoFar = nextSize;
     }
 #endif
+    if (srcFormat.isCsv())
+        examineCsvStructure();
 }
 
 void FileSprayer::calculateSprayPartition()
@@ -1170,27 +1178,9 @@ void FileSprayer::calculateSprayPartition()
 
     unsigned numParts = targets.ordinality();
     StringBuffer remoteFilename;
-    StringBuffer slaveName;
     ForEachItemIn(idx, sources)
     {
-        FilePartInfo & cur = sources.item(idx);
-        cur.filename.getRemotePath(remoteFilename.clear());
-
-        srcFormat.quotedTerminator = options->getPropBool("@quotedTerminator", true);
-        LOG(MCdebugInfoDetail, job, "Partition %d(%s)", idx, remoteFilename.str());
-        const SocketEndpoint & ep = cur.filename.queryEndpoint();
-        IFormatPartitioner * partitioner = createFormatPartitioner(ep, srcFormat, tgtFormat, calcOutput, queryFixedSlave(), wuid);
-
-
-        // CSV record structure discovery of every source
-        bool isRecordStructurePresent = options->getPropBool("@recordStructurePresent", false);
-        partitioner->setRecordStructurePresent(isRecordStructurePresent);
-
-        RemoteFilename name;
-        name.set(cur.filename);
-        setCanAccessDirectly(name);
-        partitioner->setPartitionRange(totalSize, cur.offset, cur.size, cur.headerSize, numParts);
-        partitioner->setSource(idx, name, compressedInput, decryptKey);
+        IFormatPartitioner * partitioner = createPartitioner(idx, calcOutput, numParts);
         partitioners.append(*partitioner);
     }
 
@@ -1219,17 +1209,62 @@ void FileSprayer::calculateSprayPartition()
     if ((partitioners.ordinality() > 0) && !srcAttr->hasProp("ECL"))
     {
         // Store discovered CSV record structure into target logical file.
-        StringBuffer recStru;
-        partitioners.item(0).getRecordStructure(recStru);
-        if ((recStru.length() > 0) && strstr(recStru.str(),"END;"))
-        {
-            if (distributedTarget)
-                distributedTarget->setECL(recStru.str());
-        }
+        storeCsvRecordStructure(partitioners.item(0));
     }
     if (compressedInput && compressOutput && streq(encryptKey.str(),decryptKey.str()))
         copyCompressed = true;
 
+}
+
+void FileSprayer::storeCsvRecordStructure(IFormatPartitioner &partitioner)
+{
+    StringBuffer recStru;
+    partitioner.getRecordStructure(recStru);
+    if ((recStru.length() > 0) && strstr(recStru.str(),"END;"))
+    {
+        if (distributedTarget)
+            distributedTarget->setECL(recStru.str());
+    }
+}
+
+IFormatPartitioner * FileSprayer::createPartitioner(aindex_t index, bool calcOutput, unsigned numParts)
+{
+    StringBuffer remoteFilename;
+    FilePartInfo & cur = sources.item(index);
+    cur.filename.getRemotePath(remoteFilename.clear());
+    LOG(MCdebugInfoDetail, job, "Partition %d(%s)", index, remoteFilename.str());
+
+    srcFormat.quotedTerminator = options->getPropBool("@quotedTerminator", true);
+    const SocketEndpoint & ep = cur.filename.queryEndpoint();
+    IFormatPartitioner * partitioner = createFormatPartitioner(ep, srcFormat, tgtFormat, calcOutput, queryFixedSlave(), wuid);
+
+    // CSV record structure discovery of the first source
+    bool isRecordStructurePresent = options->getPropBool("@recordStructurePresent", false);
+    partitioner->setRecordStructurePresent(isRecordStructurePresent);
+
+    RemoteFilename name;
+    name.set(cur.filename);
+    setCanAccessDirectly(name);
+    partitioner->setPartitionRange(totalSize, cur.offset, cur.size, cur.headerSize, numParts);
+    partitioner->setSource(index, name, compressedInput, decryptKey);
+
+    return partitioner;
+}
+
+void FileSprayer::examineCsvStructure()
+{
+    if (srcAttr->hasProp("ECL"))
+        // Already has, keep it.
+        return;
+
+    bool calcOutput = needToCalcOutput();
+    if (sources.ordinality())
+    {
+        Owned<IFormatPartitioner> partitioner = createPartitioner(0, calcOutput, targets.ordinality());
+        storeCsvRecordStructure(*partitioner);
+    }
+    else
+        LOG(MCdebugInfoDetail, job, "No source CSV file to examine.");
 }
 
 void FileSprayer::calculateOutputOffsets()

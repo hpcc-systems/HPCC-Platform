@@ -239,7 +239,7 @@ public:
 
     virtual void setTarget(IOutputProcessor * _target);
 
-    virtual void getRecordStructure(StringBuffer & _recordStructure) { _recordStructure = recordStructure; }
+    virtual void getRecordStructure(StringBuffer & _recordStructure);
     virtual void setRecordStructurePresent( bool _isRecordStructurePresent) {isRecordStructurePresent = _isRecordStructurePresent;}
 
 protected:
