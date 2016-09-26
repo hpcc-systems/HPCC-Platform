@@ -32,9 +32,9 @@ outRecord := RECORD
 STRING30    fullname;
              END;
 
-transform(outRecord) createName(namesRecord l) := BEGINC++
+transform(outRecord) createName(namesRecord l) := EMBED(C++ : inline)
     memcpy(__self.getSelf(), l, 30);
     return 30;
-ENDC++;
+ENDEMBED;
 
 output(project(namesTable2, createName(LEFT)));

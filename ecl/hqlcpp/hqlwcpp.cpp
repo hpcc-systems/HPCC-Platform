@@ -594,7 +594,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
         throwError(HQLERR_ServiceDefinitionNotAllowed);
 
     if (body->hasAttribute(includeAtom) || body->hasAttribute(ctxmethodAtom) || body->hasAttribute(gctxmethodAtom) || body->hasAttribute(methodAtom)
-        || body->hasAttribute(sysAtom) || body->hasAttribute(omethodAtom) || body->hasAttribute(inlineAtom) )
+        || body->hasAttribute(sysAtom) || body->hasAttribute(omethodAtom))
         return false;
 
     IHqlExpression *proto = body->queryAttribute(prototypeAtom);
@@ -610,7 +610,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     bool isLocal = body->hasAttribute(localAtom);
 
     IHqlExpression *child = body->queryChild(0);
-    bool isInline = child?child->hasAttribute(inlineAtom):false;
+    bool isInline = body->hasAttribute(inlineAtom) || (child && child->hasAttribute(inlineAtom));
 
     if (body->hasAttribute(eclrtlAtom))
         api = RtlApi;
