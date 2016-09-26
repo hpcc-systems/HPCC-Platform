@@ -442,7 +442,6 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
 
     if (op == no_order)
         return NULL;
-    //MORE: Optimize <unsigned> >=|< 0 and 0 >|<= <unsigned>
     
     bool swap = false;
     IHqlExpression * castChild = NULL;
@@ -450,6 +449,16 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
     if (leftValue)
     {
         ITypeInfo * rType = rightChild->queryType();
+        if (rType->isUnsignedNumeric() && isZero(leftChild))
+        {
+            switch (op)
+            {
+            case no_le:
+                return createConstant(true);
+            case no_gt:
+                return createConstant(false);
+            }
+        }
         if (rType->getTypeCode() == type_boolean)
         {
             bool val = leftValue->getBoolValue();
@@ -481,6 +490,16 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
     else if (rightValue)
     {
         ITypeInfo * lType = leftChild->queryType();
+        if (lType->isUnsignedNumeric() && isZero(rightChild))
+        {
+            switch (op)
+            {
+            case no_ge:
+                return createConstant(true);
+            case no_lt:
+                return createConstant(false);
+            }
+        }
         if (lType->getTypeCode() == type_boolean)
         {
             bool val = rightValue->getBoolValue();
@@ -3900,6 +3919,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
     case no_maxlist:
         {
             IHqlExpression * child = expr->queryChild(0);
+            bool isUnsigned = expr->queryType()->isUnsignedNumeric();
             switch (child->getOperator())
             {
             case no_null:
@@ -3916,6 +3936,16 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                         IValue * value = cur->queryValue();
                         if (value)
                         {
+                            if (isUnsigned && isZero(cur))
+                            {
+                                if (op==no_minlist)
+                                    return LINK(cur);  // Nothing can be lower than zero in an unsigned minlist...
+                                else
+                                {
+                                    same = false;
+                                    continue;
+                                }
+                            }
                             if (best)
                             {
                                 int c = value->compare(best);
