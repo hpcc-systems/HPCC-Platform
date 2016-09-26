@@ -166,7 +166,9 @@ bool SecHandler::authorizeSecFeatures(StringArray & features, IEspStringIntMap &
 bool SecHandler::validateSecFeaturesAccess(MapStringTo<SecAccessFlags> & accessmap, bool throwExcpt)
 {
     StringArray features;
-    unsigned reqarray[accessmap.ordinality()];
+    unsigned reqarray[100];
+    if (accessmap.ordinality() >= 100)
+        throw MakeStringException(-1, "Attempting to validate too many security features!");
 
     HashIterator iter(accessmap);
     int index = 0;
@@ -196,6 +198,7 @@ bool SecHandler::validateSecFeaturesAccess(MapStringTo<SecAccessFlags> & accessm
 
         return true;
     }
+
     if (throwExcpt)
         throw MakeStringException(-1, "Access Denied!");
 
