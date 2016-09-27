@@ -7547,6 +7547,7 @@ void ScalarGlobalTransformer::doAnalyseExpr(IHqlExpression * expr)
     case no_null:
     case no_all:
     case no_funcdef:
+    case no_assert:
         return;
     case no_persist_check:
         //No point spotting global within this since it will not create a subquery..
