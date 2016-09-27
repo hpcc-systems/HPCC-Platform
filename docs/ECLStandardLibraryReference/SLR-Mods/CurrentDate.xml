@@ -30,8 +30,8 @@
         <row>
           <entry>Return:</entry>
 
-          <entry>Today returns a Date_t (An UNSIGNED3 holding a time of day in
-          the decimal form HHMMDD.)</entry>
+          <entry>Today returns a Date_t representing the current date.
+          </entry>
         </row>
       </tbody>
     </tgroup>

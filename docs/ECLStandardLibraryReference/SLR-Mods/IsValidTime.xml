@@ -27,15 +27,14 @@
         <row>
           <entry>Return:</entry>
 
-          <entry>IsValidDateLeapYear returns a BOOLEAN value.</entry>
+          <entry>IsValidTime returns a BOOLEAN value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
   <para>The <emphasis role="bold">IsValidDate</emphasis> function returns TRUE
-  if the date is valid, both by range-checking the year and by validating each
-  of the other individual components.</para>
+  if the time is valid.</para>
 
   <para>Example:</para>
 
