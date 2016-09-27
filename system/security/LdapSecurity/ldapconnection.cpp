@@ -1468,7 +1468,7 @@ public:
                 filter.append("uid=");
             filter.append(username);
 
-            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", NULL};
+            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", "employeeNumber", NULL};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -1577,6 +1577,12 @@ public:
                         }
                         user.setPasswordExpiration(expiry);
                     }
+                }
+                else if(stricmp(attribute, "employeeNumber") == 0)
+                {
+                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
+                    if (vals.hasValues())
+                        user.setEmployeeID(vals.queryCharValue(0));
                 }
             }
 
