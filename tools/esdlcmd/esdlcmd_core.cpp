@@ -189,6 +189,7 @@ public:
         {
             optTargetNamespace.set(DEFAULT_NAMESPACE_BASE);
         }
+        cmdHelper.verbose = optVerbose;
 
         return true;
     }
@@ -720,6 +721,7 @@ public:
             else
                 optXsltPath.set(temp.set(COMPONENTFILES_DIR).append("/xslt/"));
         }
+        cmdHelper.verbose = optVerbose;
         return true;
     }
 
@@ -875,6 +877,10 @@ IEsdlCommand *createCoreEsdlCommand(const char *cmdname)
         return new EsdlListESDLDefCmd();
     if (strieq(cmdname, "LIST-BINDINGS"))
         return new EsdlListESDLBindingsCmd();
+    if (strieq(cmdname, "MONITOR"))
+        return createEsdlMonitorCommand(cmdname);
+    if (strieq(cmdname, "MONITOR-TEMPLATE"))
+        return createEsdlMonitorCommand(cmdname);
 
     return NULL;
 }

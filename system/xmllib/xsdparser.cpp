@@ -586,7 +586,7 @@ public:
     virtual ~CXmlSchema();
 
     IXmlType* queryElementType(const char* name);
-    IXmlType* queryTypeByName(const char* typeName) { return queryTypeByName(typeName); }
+    IXmlType* queryTypeByName(const char* typeName) { return queryTypeByName(typeName, nullptr); }
 };
 
 XMLLIB_API IXmlSchema* createXmlSchemaFromFile(const char* file)

@@ -36,6 +36,36 @@ void outputMultiExceptions(const IMultiException &me)
     }
     fprintf(stderr, "\n");
 }
+static inline void appendFileName(StringBuffer &path, const char *filename)
+{
+    if (!filename)
+        return;
+    while (*filename==PATHSEPCHAR)
+        filename++;
+    if (!*filename)
+        return;
+    if (path.length() && path.charAt(path.length()-1) != PATHSEPCHAR)
+        path.append(PATHSEPCHAR);
+    path.append(filename);
+}
+void saveAsFile(const char * filepath, const char *filename, const char *text, const char *ext)
+{
+    StringBuffer path(filepath);
+
+    appendFileName(path, filename);
+    if(ext && *ext)
+        path.append(ext);
+
+    Owned<IFile> file = createIFile(path.str());
+    Owned<IFileIO> io = file->open(IFOcreaterw);
+
+    DBGLOG("Writing to file %s", file->queryFilename());
+
+    if (io.get())
+        io->write(0, strlen(text), text);
+    else
+        DBGLOG("File %s can't be created", file->queryFilename());
+}
 
 //=========================================================================================
 

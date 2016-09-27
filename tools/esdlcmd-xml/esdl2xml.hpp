@@ -54,12 +54,11 @@ public:
                     fprintf(stdout, "Output directory not specified\n");
             }
 
+            //prevent recursive adding of this same content
+            added.setValue(source, true);
+
             ESDLcompiler hc(source, out==NULL, outdir, outputIncludes, includedESDL);
             hc.Process();
-            if (out != NULL)
-                out->append(hc.getEsxdlContent());
-
-            added.setValue(source, true);
 
             if (optRecursive && hc.includes)
             {
@@ -73,6 +72,10 @@ public:
                    transform(subfile, outdir, out, outputIncludes, true);
                 }
             }
+
+            if (out != NULL) //includes must come before body to handle ESDLDefVersions correctly
+                out->append(hc.getEsxdlContent());
+
             if (optVerbose)
                 fprintf(stdout, "Finished processing ESDL definition: %s\n", source);
         }

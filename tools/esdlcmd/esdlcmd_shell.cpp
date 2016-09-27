@@ -194,6 +194,8 @@ void EsdlCMDShell::usage()
            "   unbind-service    Remove ESDL based service binding on target ESP.\n"
            "   bind-method       Configure method associated with existing ESDL binding.\n"
            "   get-binding       Get ESDL binding.\n"
+           "   monitor           Generate ECL code for result monitoring / differencing\n"
+           "   monitor-template  Generate a template for use with 'monitor' command\n"
            ""
            "\nRun 'esdl help <command>' for more information on a specific command\n\n"
     );

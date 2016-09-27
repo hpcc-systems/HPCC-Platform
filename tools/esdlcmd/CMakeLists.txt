@@ -34,6 +34,7 @@ set ( SRCS
          ${CMAKE_CURRENT_SOURCE_DIR}/esdlcmd_core.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/esdlcmd_common.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/esdl2ecl.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/esdlcmd_monitor.cpp
          ${CMAKE_CURRENT_SOURCE_DIR}/esdl-publish.cpp
          ${ESPSCM_GENERATED_DIR}/ws_esdlconfig_esp.cpp
     )
