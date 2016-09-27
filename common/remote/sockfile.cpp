@@ -363,10 +363,89 @@ const char *RFCStrings[] =
     RFCText(RFCsetfileperms),
     RFCText(RFCunknown),
 };
-static const char *getRFCText(RemoteFileCommandType cmd)
+static const char *getRFCText(unsigned cmd)
 {
+    switch (cmd)
+    {
+        case RFSERR_InvalidCommand:
+            return "RFSERR_InvalidCommand";
+        case RFSERR_NullFileIOHandle:
+            return "RFSERR_NullFileIOHandle";
+        case RFSERR_InvalidFileIOHandle:
+            return "RFSERR_InvalidFileIOHandle";
+        case RFSERR_TimeoutFileIOHandle:
+            return "RFSERR_TimeoutFileIOHandle";
+        case RFSERR_OpenFailed:
+            return "RFSERR_OpenFailed";
+        case RFSERR_ReadFailed:
+            return "RFSERR_ReadFailed";
+        case RFSERR_WriteFailed:
+            return "RFSERR_WriteFailed";
+        case RFSERR_RenameFailed:
+            return "RFSERR_RenameFailed";
+        case RFSERR_ExistsFailed:
+            return "RFSERR_ExistsFailed";
+        case RFSERR_RemoveFailed:
+            return "RFSERR_RemoveFailed";
+        case RFSERR_CloseFailed:
+            return "RFSERR_CloseFailed";
+        case RFSERR_IsFileFailed:
+            return "RFSERR_IsFileFailed";
+        case RFSERR_IsDirectoryFailed:
+            return "RFSERR_IsDirectoryFailed";
+        case RFSERR_IsReadOnlyFailed:
+            return "RFSERR_IsReadOnlyFailed";
+        case RFSERR_SetReadOnlyFailed:
+            return "RFSERR_SetReadOnlyFailed";
+        case RFSERR_GetTimeFailed:
+            return "RFSERR_GetTimeFailed";
+        case RFSERR_SetTimeFailed:
+            return "RFSERR_SetTimeFailed";
+        case RFSERR_CreateDirFailed:
+            return "RFSERR_CreateDirFailed";
+        case RFSERR_GetDirFailed:
+            return "RFSERR_GetDirFailed";
+        case RFSERR_GetCrcFailed:
+            return "RFSERR_GetCrcFailed";
+        case RFSERR_MoveFailed:
+            return "RFSERR_MoveFailed";
+        case RFSERR_ExtractBlobElementsFailed:
+            return "RFSERR_ExtractBlobElementsFailed";
+        case RFSERR_CopyFailed:
+            return "RFSERR_CopyFailed";
+        case RFSERR_AppendFailed:
+            return "RFSERR_AppendFailed";
+        case RFSERR_AuthenticateFailed:
+            return "RFSERR_AuthenticateFailed";
+        case RFSERR_CopySectionFailed:
+            return "RFSERR_CopySectionFailed";
+        case RFSERR_TreeCopyFailed:
+            return "RFSERR_TreeCopyFailed";
+        case RAERR_InvalidUsernamePassword:
+            return "RAERR_InvalidUsernamePassword";
+        case RFSERR_MasterSeemsToHaveDied:
+            return "RFSERR_MasterSeemsToHaveDied";
+        case RFSERR_TimeoutWaitSlave:
+            return "RFSERR_TimeoutWaitSlave";
+        case RFSERR_TimeoutWaitConnect:
+            return "RFSERR_TimeoutWaitConnect";
+        case RFSERR_TimeoutWaitMaster:
+            return "RFSERR_TimeoutWaitMaster";
+        case RFSERR_NoConnectSlave:
+            return "RFSERR_NoConnectSlave";
+        case RFSERR_NoConnectSlaveXY:
+            return "RFSERR_NoConnectSlaveXY";
+        case RFSERR_VersionMismatch:
+            return "RFSERR_VersionMismatch";
+        case RFSERR_SetThrottleFailed:
+            return "RFSERR_SetThrottleFailed";
+        case RFSERR_MaxQueueRequests:
+            return "RFSERR_MaxQueueRequests";
+    }
+
     if (cmd > RFCmax)
-        cmd = RFCmax;
+        return "RFSERR_UnknownCmd/Error";
+
     return RFCStrings[cmd];
 }
 
@@ -2885,25 +2964,25 @@ public:
 
 
 
-inline void appendErr(MemoryBuffer &reply, RemoteFileCommandType e)
+inline void appendErr(MemoryBuffer &reply, unsigned e)
 {
-    reply.append((unsigned)e).append(getRFCText(e));
+    reply.append(e).append(getRFCText(e));
 }
-inline void appendErr2(MemoryBuffer &reply, RemoteFileCommandType e, unsigned v)
+inline void appendErr2(MemoryBuffer &reply, unsigned e, unsigned v)
 {
     StringBuffer msg;
     msg.append(getRFCText(e)).append(':').append(v);
-    reply.append((unsigned)e).append(msg.str());
+    reply.append(e).append(msg.str());
 }
-inline void appendErr3(MemoryBuffer &reply, RemoteFileCommandType e, int code, const char *errMsg)
+inline void appendErr3(MemoryBuffer &reply, unsigned e, int code, const char *errMsg)
 {
     StringBuffer msg;
     msg.appendf("ERROR: %s(%d) '%s'", getRFCText(e), code, errMsg?errMsg:"");
     // some errors are RemoteFileCommandType, some are RFSERR_*
     // RFCOpenIO needs remapping to non-zero for client to know its an error
     if ((RemoteFileCommandType)e == RFCopenIO)
-        e = (RemoteFileCommandType)RFSERR_OpenFailed;
-    reply.append((unsigned)e);
+        e = RFSERR_OpenFailed;
+    reply.append(e);
     reply.append(msg.str());
 }
 
@@ -3865,7 +3944,7 @@ public:
         CriticalBlock block(sect);
         fileio = NULL;
         if (handle<=0) {
-            appendErr(reply, (RemoteFileCommandType)RFSERR_NullFileIOHandle);
+            appendErr(reply, RFSERR_NullFileIOHandle);
             return false;
         }
         unsigned clientidx;
@@ -3884,7 +3963,7 @@ public:
             }
             return true;
         }
-        appendErr(reply, (RemoteFileCommandType)RFSERR_InvalidFileIOHandle);
+        appendErr(reply, RFSERR_InvalidFileIOHandle);
         return false;
     }
 
@@ -4035,7 +4114,7 @@ public:
             reply.setWritePos(posOfErr);
             StringBuffer s;
             e->errorMessage(s);
-            appendErr3(reply, (RemoteFileCommandType)RFSERR_ReadFailed,e->errorCode(),s.str());
+            appendErr3(reply, RFSERR_ReadFailed, e->errorCode(), s.str());
             e->Release();
             return false;
         }
@@ -4722,13 +4801,13 @@ public:
     bool cmdKill(MemoryBuffer & msg, MemoryBuffer & reply)
     {
         // TBD
-        appendErr2(reply, (RemoteFileCommandType)RFSERR_InvalidCommand, RFCkill);
+        appendErr2(reply, RFSERR_InvalidCommand, RFCkill);
         return false;
     }
 
     bool cmdUnknown(MemoryBuffer & msg, MemoryBuffer & reply,RemoteFileCommandType cmd)
     {
-        appendErr2(reply, (RemoteFileCommandType)RFSERR_InvalidCommand, cmd);
+        appendErr2(reply, RFSERR_InvalidCommand, cmd);
         return false;
     }
 
@@ -4740,7 +4819,7 @@ public:
             StringBuffer s(client.queryPeerName());
             PROGLOG("Connect from %s",s.str());
         }
-        appendErr2(reply, (RemoteFileCommandType)RFSERR_InvalidCommand, RFCunlock);
+        appendErr2(reply, RFSERR_InvalidCommand, RFCunlock);
         return false;
     }
 
@@ -5123,7 +5202,7 @@ public:
             }
         }
         reply.clear();
-        appendErr(reply, (RemoteFileCommandType)RFSERR_AuthenticateFailed);
+        appendErr(reply, RFSERR_AuthenticateFailed);
         sendBuffer(socket, reply); // send OK
         return false;
     }
