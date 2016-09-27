@@ -1,4 +1,4 @@
-integer c(integer val) := BEGINC++ return val-3; ENDC++;
+integer c(integer val) := EMBED(c++: inline) return val-3; ENDEMBED;
 c(10);
 
 set of any s(set of any d) := BEGINC++
