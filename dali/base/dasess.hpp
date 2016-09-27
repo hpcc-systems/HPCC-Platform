@@ -27,7 +27,6 @@
 #endif
 
 #include "dacoven.hpp"
-#include "seclib.hpp"
 
 typedef DALI_UID SessionId;
 typedef DALI_UID SubscriptionId;
@@ -89,6 +88,8 @@ interface ISessionNotify: extends IInterface
     virtual void closed(SessionId id) = 0;
     virtual void aborted(SessionId id) = 0;
 };
+
+enum SecAccessFlags : int;
 
 interface ISessionManager: extends IInterface
 {
