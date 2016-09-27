@@ -2,15 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="IsValidDate">
-  <title>IsValidDate</title>
+  <title>IsValidTime</title>
 
-  <para><emphasis role="bold">STD.Date.IsValidDate<indexterm>
-      <primary>STD.Date.IsValidDate</primary>
+  <para><emphasis role="bold">STD.Date.IsValidTime<indexterm>
+      <primary>STD.Date.IsValidTime</primary>
     </indexterm><indexterm>
-      <primary>Date.IsValidDate</primary>
-    </indexterm>(</emphasis> <emphasis>date</emphasis> ,
-  [<emphasis>yearLowerBound</emphasis>],[<emphasis>yearUpperBound</emphasis>]
-  <emphasis role="bold">)</emphasis></para>
+      <primary>Date.IsValidTime</primary>
+    </indexterm>(</emphasis> <emphasis>time</emphasis> <emphasis
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -20,29 +19,15 @@
 
       <tbody>
         <row>
-          <entry><emphasis>date</emphasis></entry>
+          <entry><emphasis>time</emphasis></entry>
 
-          <entry>A date value in the Date_t format.</entry>
-        </row>
-
-        <row>
-          <entry><emphasis>yearLowerBound</emphasis></entry>
-
-          <entry>The minimum acceptable year. Optional; defaults to
-          1800.</entry>
-        </row>
-
-        <row>
-          <entry><emphasis><emphasis>yearUpperBound</emphasis></emphasis></entry>
-
-          <entry>The maximum acceptable year. Optional; defaults to
-          2100.</entry>
+          <entry>A time value in the Time_t format.</entry>
         </row>
 
         <row>
           <entry>Return:</entry>
 
-          <entry>IsValidDateYear returns a BOOLEAN value.</entry>
+          <entry>IsValidDateLeapYear returns a BOOLEAN value.</entry>
         </row>
       </tbody>
     </tgroup>

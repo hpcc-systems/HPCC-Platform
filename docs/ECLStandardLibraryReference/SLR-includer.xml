@@ -384,11 +384,20 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DateFromParts.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/TimeFromParts.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsLeapYear.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsDateLeapYear.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsValidDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsValidTime.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsValidGregorianDate.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/FromGregorianYMD.xml"
@@ -401,6 +410,8 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Today.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/CurrentDate.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CurrentTime.xml"
