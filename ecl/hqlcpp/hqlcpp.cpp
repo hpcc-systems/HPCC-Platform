@@ -12061,6 +12061,11 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
             else
             {
                 BuildCtx funcctx2(*code, userFunctionAtom);
+                if (options.spanMultipleCpp)
+                {
+                    OwnedHqlExpr pass = getSizetConstant(beginFunctionGetCppIndex(0, false));
+                    funcctx2.addGroupPass(pass);
+                }
                 buildCppFunctionDefinition(funcctx2, bodyCode, proto);
             }
         }
