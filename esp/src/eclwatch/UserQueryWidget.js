@@ -301,6 +301,7 @@ define([
             for (var i = selections.length - 1; i >= 0; --i) {
                 var tab = this.ensureUserPane(selections[i].username, {
                     Username: selections[i].username,
+                    EmployeeID: selections[i].employeeID,
                     Fullname: selections[i].fullname,
                     Passwordexpiration: selections[i].passwordexpiration
                 });
@@ -345,9 +346,10 @@ define([
             window.open(base.getBaseURL("ws_access") + "/UserAccountExport?" + usernames);
         },
 
-        _onUsersRowDblClick: function (username, fullname, passwordexpiration) {
+        _onUsersRowDblClick: function (username, employeeID, fullname, passwordexpiration) {
             var userTab = this.ensureUserPane(username, {
                 Username: username,
+                EmployeeID: employeeID,
                 Fullname: fullname,
                 Passwordexpiration: passwordexpiration
             });
@@ -609,6 +611,10 @@ define([
                             return "<a href='#' class='dgrid-row-url'>" + _name + "</a>"
                         }
                     },
+                    employeeID: {
+                        width: 180,
+                        label: this.i18n.EmployeeID
+                    },
                     fullname: {
                         label: this.i18n.FullName
                     },
@@ -623,13 +629,13 @@ define([
             this.usersGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onUsersRowDblClick) {
                     var item = context.usersGrid.row(evt).data;
-                    context._onUsersRowDblClick(item.username,item.fullname,item.passwordexpiration);
+                    context._onUsersRowDblClick(item.username,item.employeeID,item.fullname,item.passwordexpiration);
                 }
             });
             this.usersGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onUsersRowDblClick) {
                     var item = context.usersGrid.row(evt).data;
-                    context._onUsersRowDblClick(item.username,item.fullname,item.passwordexpiration);
+                    context._onUsersRowDblClick(item.username,item.employeeID,item.fullname,item.passwordexpiration);
                 }
             });
             this.usersGrid.onSelectionChanged(function (event) {
@@ -825,6 +831,7 @@ define([
             if (currSel && !currSel.initalized) {
                 if (currSel.id === this.groupsTab.id) {
                 } else if (currSel.id === this.usersTab.id) {
+                    this.refreshUsersGrid();
                 } else if (currSel.id === this.permissionsTab.id) {
                 } else {
                     if (!currSel.initalized) {
