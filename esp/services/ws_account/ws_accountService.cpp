@@ -172,6 +172,9 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
             double version = context.getClientVersion();
             if (version >= 1.01)
                 resp.setPasswordExpirationWarningDays(context.querySecManager()->getPasswordExpirationWarningDays());
+
+            if (version >= 1.02)
+                resp.setEmployeeID(user->getEmployeeID());
         }
     }
     catch(IException* e)

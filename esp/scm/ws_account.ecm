@@ -39,6 +39,7 @@ ESPresponse [exceptions_inline] MyAccountResponse
     string passwordExpiration;
     int    passwordDaysRemaining;
     [min_ver("1.01")] int passwordExpirationWarningDays;
+    [min_ver("1.02")] string employeeID;
 };
 
 
@@ -68,7 +69,7 @@ ESPresponse [exceptions_inline] VerifyUserResponse
 };
 
 //Kevin/russ does this method need feature level check?
-ESPservice [auth_feature("NONE"), version("1.01"), default_client_version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_account
+ESPservice [auth_feature("NONE"), version("1.02"), default_client_version("1.02"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_account
 {
     ESPmethod [client_xslt("/esp/xslt/account_myaccount.xslt")] MyAccount(MyAccountRequest, MyAccountResponse);
     ESPmethod [client_xslt("/esp/xslt/account_input.xslt")] UpdateUserInput(UpdateUserInputRequest, UpdateUserInputResponse);
