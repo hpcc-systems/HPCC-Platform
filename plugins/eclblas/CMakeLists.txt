@@ -58,3 +58,10 @@ if(USE_CBLAS)
 else()
     message(WARNING "Not building eclblas library for standard library due to lacking libcblas")
 endif(USE_CBLAS)
+
+if(PLATFORM OR CLIENTTOOLS_ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_eclblas.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()
