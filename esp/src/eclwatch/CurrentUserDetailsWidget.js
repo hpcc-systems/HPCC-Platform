@@ -102,6 +102,9 @@ define([
                     if (lang.exists("MyAccountResponse.firstName", response)) {
                         context.updateInput("FirstName", null, response.MyAccountResponse.firstName);
                     }
+                    if (lang.exists("MyAccountResponse.employeeID", response)) {
+                        context.updateInput("EmployeeID", null, response.MyAccountResponse.employeeID);
+                    }
                     if (lang.exists("MyAccountResponse.lastName", response)) {
                         context.updateInput("LastName", null, response.MyAccountResponse.lastName);
                     }
