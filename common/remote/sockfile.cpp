@@ -365,7 +365,14 @@ const char *RFCStrings[] =
 };
 static const char *getRFCText(unsigned cmd)
 {
-    switch (cmd)
+    if (cmd > RFCmax)
+        cmd = RFCmax;
+    return RFCStrings[cmd];
+}
+
+static const char *getRFSERRText(unsigned err)
+{
+    switch (err)
     {
         case RFSERR_InvalidCommand:
             return "RFSERR_InvalidCommand";
@@ -442,11 +449,7 @@ static const char *getRFCText(unsigned cmd)
         case RFSERR_MaxQueueRequests:
             return "RFSERR_MaxQueueRequests";
     }
-
-    if (cmd > RFCmax)
-        return "RFSERR_UnknownCmd/Error";
-
-    return RFCStrings[cmd];
+    return "RFSERR_Unknown";
 }
 
 #define ThrottleText(throttleClass) #throttleClass
@@ -2966,20 +2969,27 @@ public:
 
 inline void appendErr(MemoryBuffer &reply, unsigned e)
 {
-    reply.append(e).append(getRFCText(e));
+    reply.append(e).append(getRFSERRText(e));
 }
 inline void appendErr2(MemoryBuffer &reply, unsigned e, unsigned v)
 {
     StringBuffer msg;
-    msg.append(getRFCText(e)).append(':').append(v);
+    msg.append(getRFSERRText(e)).append(':').append(v);
     reply.append(e).append(msg.str());
 }
 inline void appendErr3(MemoryBuffer &reply, unsigned e, int code, const char *errMsg)
 {
     StringBuffer msg;
+    msg.appendf("ERROR: %s(%d) '%s'", getRFSERRText(e), code, errMsg?errMsg:"");
+    reply.append(e);
+    reply.append(msg.str());
+}
+inline void appendCmdErr(MemoryBuffer &reply, unsigned e, int code, const char *errMsg)
+{
+    StringBuffer msg;
     msg.appendf("ERROR: %s(%d) '%s'", getRFCText(e), code, errMsg?errMsg:"");
-    // some errors are RemoteFileCommandType, some are RFSERR_*
     // RFCOpenIO needs remapping to non-zero for client to know its an error
+    // perhaps we should use code here instead of e ?
     if ((RemoteFileCommandType)e == RFCopenIO)
         e = RFSERR_OpenFailed;
     reply.append(e);
@@ -3324,7 +3334,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             initSendBuffer(reply);
             StringBuffer s;
             e->errorMessage(s);
-            appendErr3(reply, cmd, e->errorCode(), s.str());
+            appendCmdErr(reply, cmd, e->errorCode(), s.str());
             parent->appendError(cmd, this, cmd, reply);
             sendBuffer(socket, reply);
             return false;
@@ -4989,7 +4999,7 @@ public:
             ret = false;
             StringBuffer s;
             e->errorMessage(s);
-            appendErr3(reply, cmd, e->errorCode(), s.str());
+            appendCmdErr(reply, cmd, e->errorCode(), s.str());
             e->Release();
         }
         if (!ret) // append error string

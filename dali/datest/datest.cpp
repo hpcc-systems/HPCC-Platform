@@ -710,19 +710,16 @@ struct RecordStruct
 // #define NRECS ((__int64)1024*1024*500/sizeof(RecordStruct)) // i.e. ~500MB
 // #define NRECS ((__int64)1024*500/sizeof(RecordStruct)) // i.e. ~500KB
 
-void TestCopyFile(char *srcfname, char *dstfname)
+void TestCopyFile(char *srcfname, char *dstfname) // TEST_COPYFILE
 {
     // example cmdline: datest srcfile //1.2.3.4:7100/home/username/dstfile
-    IFile *srcfile = createIFile(srcfname);
-    IFileIO *srcio = srcfile->open(IFOcreate);
+    Owned<IFile> srcfile = createIFile(srcfname);
+    Owned<IFileIO> srcio = srcfile->open(IFOcreate);
     char buf[100] = { "TestCopyFile" };
     srcio->write(0, 18, buf);
     srcio->close();
-    srcio->Release();
-    IFile *dstfile = createIFile(dstfname);
+    Owned<IFile> dstfile = createIFile(dstfname);
     srcfile->copyTo(dstfile,0x100000,NULL,false);
-    srcfile->Release();
-    dstfile->Release();
 }
 
 void TestRemoteFile3(int nfiles, int fsizemb)
