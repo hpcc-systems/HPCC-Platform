@@ -4495,13 +4495,21 @@ public:
         validateerrcount = 0;
         offset = 0;
         selecttrace = trc;
-        epfd = ::epoll_create1(EPOLL_CLOEXEC);
+        epfd = ::epoll_create(MAX_RET_EVENTS);
         if (epfd < 0)
         {
             int err = ERRNO();
             LOGERR(err,1,"epoll_create()");
             THROWJSOCKEXCEPTION2(err);
         }
+# ifdef FD_CLOEXEC
+        int epflags = fcntl(epfd, F_GETFD, 0);
+        if (epflags != -1)
+        {
+            epflags |= FD_CLOEXEC;
+            fcntl(epfd, F_SETFD, epflags);
+        }
+# endif
 # ifdef EPOLLTRACE
         DBGLOG("CSocketEpollThread: creating epoll fd %d", epfd );
 # endif
