@@ -53,7 +53,7 @@ define([
         },
 
         createGrid: function (domID) {
-            var retVal = new declare([ESPUtil.Grid(false, false)])({
+            var retVal = new declare([ESPUtil.Grid(true, false)])({
                 store: this.store,
                 columns: {
                     isMember: editor({
