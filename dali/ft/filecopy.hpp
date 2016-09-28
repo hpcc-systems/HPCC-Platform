@@ -110,6 +110,28 @@ public:
 UtfReader::UtfFormat getUtfFormatType(FileFormatType type);
 bool sameEncoding(const FileFormat & src, const FileFormat & tgt);
 
+typedef enum {
+        dfu_unknown,
+        dfu_copy,
+        dfu_export,
+        dfu_import,
+        dfu_move,
+        dfu_replicate_distributed,
+        dfu_replicate,
+        dfu_transfer,
+    } dfu_operation;
+
+static const char * DfuOperatonStr[] =
+    {
+        "DFUunknown",
+        "DFUcopy",
+        "DFUexport",
+        "DFUimport",
+        "DFUmove",
+        "DFUreplicate_distributed",
+        "DFUreplicate",
+        "DFUtransfer"
+    };
 interface IFileSprayer : public IInterface
 {
 public:
@@ -129,6 +151,10 @@ public:
     virtual void setTarget(INode * target) = 0;
     virtual void spray() = 0;
     virtual void checkSourceTarget(IFileDescriptor * file) = 0;
+    virtual void setOperation(dfu_operation op) = 0;
+    virtual dfu_operation getOperation(void) = 0;
+    virtual const char * getOperationTypeString() const = 0;
+
 };
 
 extern DALIFT_API IFileSprayer * createFileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IRemoteConnection * recoveryConnection, const char *wuid);

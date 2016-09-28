@@ -63,6 +63,8 @@ private:
     int rundafs();
     int copysuper();
     int updatejobname(const char* wuid, const char* jobname);
+    int listhistory();
+    int erasehistory();
 
     bool fixedSpray(const char* srcxml,const char* srcip,const char* srcfile,const MemoryBuffer &xmlbuf,const char* dstcluster,const char* dstname,const char *format,StringBuffer &retwuid,StringBuffer &except );
     bool variableSpray(const char* srcxml,const char* srcip,const char* srcfile,const MemoryBuffer &xmlbuf,const char* dstcluster,const char* dstname,const char *format,StringBuffer &retwuid,StringBuffer &except );
