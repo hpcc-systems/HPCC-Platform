@@ -370,63 +370,64 @@
 
         <itemizedlist>
           <listitem>
-            <para>Press the<emphasis role="bold"> Refresh </emphasis>button to
-            refresh the workunit details.</para>
+            <para><emphasis role="bold">Refresh - </emphasis>Redisplays the
+            workunit details.</para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Save </emphasis>button to
-            save any changes to the workunit.</para>
+            <para><emphasis role="bold">Save - </emphasis>Saves any changes to
+            the workunit.</para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Delete</emphasis> button to
-            delete the workunit.</para>
+            <para><emphasis role="bold">Delete</emphasis> - Deletes the
+            workunit.</para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Restore</emphasis> button to
-            restore a workunit that has been archived by Sasha.</para>
+            <para><emphasis role="bold">Restore</emphasis> - Restores an
+            archived workunit. (Workunits are archived by Sasha).</para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Set To Failed</emphasis>
-            button to change the workunit state to failed.</para>
+            <para><emphasis role="bold">Set To Failed</emphasis> - Changes the
+            workunit state to failed.</para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Abort</emphasis> button to
-            stop a running workunit and abort the job.</para>
+            <para><emphasis role="bold">Abort</emphasis> - Stops a running
+            workunit and aborts the job.</para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Recover</emphasis> button to
-            resubmit the same workunit without resetting the workflow. This
-            will then attempt to resume processing from the same point in the
-            process where it had previously reached. </para>
+            <para><emphasis role="bold">Recover</emphasis> - Resubmits the
+            workunit without resetting the workflow. This resumes processing
+            from the same point in the process where it ended
+            previously.</para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Resubmit</emphasis> button
-            to resubmit the job. This option resets the workflow and starts it
-            over from the beginning. </para>
+            <para><emphasis role="bold">Resubmit</emphasis> - Resubmits the
+            workunit. This resets the workflow and starts it over from the
+            beginning.</para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Clone</emphasis> button to
-            create a new workunit based on the current workunit, which is then
-            owned by the user who cloned and submit it. </para>
+            <para><emphasis role="bold">Clone</emphasis> - Creates a new copy
+            of the workunit. The new workunit is now owned by the user who
+            cloned it.</para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Publish</emphasis> button to
-            publish the workunit.</para>
+            <para><emphasis role="bold">Publish</emphasis> - Publishes the
+            workunit as a published query.</para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Z.A.P.</emphasis> button to
-            package up system information for analysis. This is useful for bug
-            reporting or troubleshooting.</para>
+            <para><emphasis role="bold">Z.A.P.</emphasis> - Packages up
+            workunit and system information into a Zip file that can be
+            shared. This is useful for troubleshooting and bug
+            reporting.</para>
           </listitem>
         </itemizedlist>
 
