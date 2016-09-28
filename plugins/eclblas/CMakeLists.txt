@@ -24,35 +24,44 @@
 #####################################################
 
 
-project( eclblas )
+project(eclblas)
 
-set (    SRCS
-         dasum.cpp
-         daxpy.cpp
-         dgemm.cpp
-         dgetf2.cpp
-         dpotf2.cpp
-         dscal.cpp
-         dsyrk.cpp
-         dtrsm.cpp
-         eclblas.cpp
-         Extract_Tri.cpp
-         make_diag.cpp
-    )
+if(USE_CBLAS)
+    set(SRCS
+        dasum.cpp
+        daxpy.cpp
+        dgemm.cpp
+        dgetf2.cpp
+        dpotf2.cpp
+        dscal.cpp
+        dsyrk.cpp
+        dtrsm.cpp
+        eclblas.cpp
+        Extract_Tri.cpp
+        make_diag.cpp)
 
-include_directories (
-            ./../../system/include
-            ./../../rtl/eclrtl
-            ./../../rtl/include
-            ./../../common/deftype
-            ./../../system/jlib
-    )
+    include_directories(
+        ./../../system/include
+        ./../../rtl/eclrtl
+        ./../../rtl/include
+        ./../../common/deftype
+        ./../../system/jlib
+        ${CBLAS_INCLUDE_DIR})
 
-ADD_DEFINITIONS( -D_USRDLL -DECLBLAS_EXPORTS )
+    ADD_DEFINITIONS(-D_USRDLL -DECLBLAS_EXPORTS)
 
-HPCC_ADD_LIBRARY( eclblas SHARED ${SRCS} )
-install ( TARGETS eclblas DESTINATION plugins )
-target_link_libraries ( eclblas
-         eclrtl
-         cblas
-    )
+    HPCC_ADD_LIBRARY(eclblas SHARED ${SRCS})
+    install(TARGETS eclblas DESTINATION plugins )
+    target_link_libraries(eclblas
+        eclrtl
+        ${CBLAS_LIBRARIES})
+else()
+    message(WARNING "Not building eclblas library for standard library due to lacking libcblas")
+endif(USE_CBLAS)
+
+if(PLATFORM OR CLIENTTOOLS_ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_eclblas.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()

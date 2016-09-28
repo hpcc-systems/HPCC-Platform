@@ -1143,8 +1143,8 @@ public:
                 name.append("Response");
             appendJSONName(responseHead, name.str()).append(" {");
             appendJSONValue(responseHead, "sequence", seqNo);
-            if (contentsMap.length() || results)
-                delimitJSON(responseHead);
+            appendJSONName(responseHead, "Results").append(" {");
+
             unsigned len = responseHead.length();
             client->write(responseHead.detach(), len, true);
         }
@@ -1154,7 +1154,7 @@ public:
             results->finalize(seqNo, ",", resultFilter.ordinality() ? resultFilter.item(0) : NULL);
         if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
         {
-            responseTail.append("}");
+            responseTail.append("}}");
             unsigned len = responseTail.length();
             client->write(responseTail.detach(), len, true);
         }

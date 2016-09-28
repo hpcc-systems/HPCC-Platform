@@ -557,6 +557,7 @@ public:
     IHqlExpression * processIndexBuild(attribute & indexAttr, attribute * recordAttr, attribute * payloadAttr, attribute & filenameAttr, attribute & flagsAttr);
     IHqlExpression * processCompoundFunction(attribute & result, bool outOfLine);
     IHqlExpression * processEmbedBody(const attribute & errpos, IHqlExpression * embedText, IHqlExpression * language, IHqlExpression *attribs);
+    IHqlExpression * getGpgSignature();
     void processEnum(attribute & idAttr, IHqlExpression * value);
     void processError(bool full);
     void processLoadXML(attribute & a1, attribute * a2);
@@ -876,6 +877,7 @@ protected:
     bool parseConstantText;
     bool expandingMacroPosition;
     bool inSignedModule;
+    OwnedHqlExpr gpgSignature;
 
     IErrorArray pendingWarnings;
     Linked<ISourcePath> sourcePath;

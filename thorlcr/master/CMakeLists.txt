@@ -55,6 +55,7 @@ include_directories (
          ./../../roxie/roxiemem
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

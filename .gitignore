@@ -3,3 +3,4 @@ externals/
 .svn/
 ln/
 .cproject
+node_modules

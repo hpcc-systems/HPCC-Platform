@@ -76,7 +76,7 @@ interface ISessionManagerServer: implements IConnectionMonitor
     virtual void addSession(SessionId id) = 0;
     virtual SessionId lookupProcessSession(INode *node) = 0;
     virtual INode *getProcessSessionNode(SessionId id) =0;
-    virtual int getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags, int *err)=0;
+    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags, int *err)=0;
     virtual bool clearPermissionsCache(IUserDescriptor *udesc) = 0;
     virtual void stopSession(SessionId sessid,bool failed) = 0;
     virtual void setClientAuth(IDaliClientAuthConnection *authconn) = 0;
@@ -603,8 +603,8 @@ public:
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
                 int err = 0;
-                int ret=manager.getPermissionsLDAP(key,obj,udesc,auditflags,&err);
-                mb.clear().append(ret);
+                SecAccessFlags perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,&err);
+                mb.clear().append((int)perms);
                 if (err)
                     mb.append(err);
                 coven.reply(mb);
@@ -882,7 +882,7 @@ public:
     }
 
 
-    int getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags,int *err)
+    SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags,int *err)
     {
         if (err)
             *err = 0;
@@ -909,10 +909,10 @@ public:
         udesc->serialize(mb);
         mb.append(auditflags);
         if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
-            return 0;
-        int ret=-1;
-        if (mb.remaining()>=sizeof(ret)) {
-            mb.read(ret);
+            return SecAccess_None;
+        SecAccessFlags perms = SecAccess_Unavailable;
+        if (mb.remaining()>=sizeof(perms)) {
+            mb.read((int &)perms);
             if (mb.remaining()>=sizeof(int)) {
                 int e = 0;
                 mb.read(e);
@@ -922,9 +922,9 @@ public:
                     throw new CDaliLDAP_Exception(e);
             }
         }
-        if (ret == SecAccess_Unavailable)
+        if (perms == SecAccess_Unavailable)
             securitydisabled = true;
-        return ret;
+        return perms;
     }
 
     bool clearPermissionsCache(IUserDescriptor *udesc)
@@ -1400,7 +1400,7 @@ public:
         return NULL;
     }
 
-    virtual int getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags, int *err)
+    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags, int *err)
     {
         if (err)
             *err = 0;
@@ -1433,14 +1433,14 @@ public:
                     for (unsigned i=0;i<10;i++) {
                         if (i)
                             WARNLOG("LDAP stalled(%d) - retrying",i);
-                        int ret;
-                        if (ldapworker->wait(1000*20,ret)) {
+                        SecAccessFlags ret;
+                        if (ldapworker->wait(1000*20,(int&)ret)) {
                             if (ret==CLDAPE_ldapfailure) {
                                 LOG(MCoperatorError, unknownJob, "LDAP - failure (returning no access for %s)",obj); 
                                 ldapsig.signal();
                                 if (err)
                                     *err = CLDAPE_ldapfailure;
-                                return 0;
+                                return SecAccess_None;
                             }
                             else {
                                 ldapsig.signal();
@@ -1465,7 +1465,7 @@ public:
                 ldapsig.signal();
                 if (err)
                     *err = CLDAPE_getpermtimeout;
-                return 0;
+                return SecAccess_None;
             }
             else {
                 unsigned waiting = atomic_read(&ldapwaiting);
@@ -1492,7 +1492,7 @@ public:
             }
         }
         atomic_dec(&ldapwaiting);
-        return 0;
+        return SecAccess_None;
 #endif
     }
 

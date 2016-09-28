@@ -685,6 +685,686 @@ StringBuffer &buildJsonFooter(StringBuffer  &footer, const char *suppliedFooter,
     return footer.append((rowTag && *rowTag) ? "]}" : "]");
 }
 
+static char thorHelperhexchar[] = "0123456789ABCDEF";
+//=====================================================================================
+
+static char csvQuote = '\"';
+
+CommonCSVWriter::CommonCSVWriter(unsigned _flags, CSVOptions& _options, IXmlStreamFlusher* _flusher)
+{
+    flusher = _flusher;
+    flags = _flags;
+
+    options.terminator.set(_options.terminator.get());
+    options.delimiter.set(_options.delimiter.get());
+    options.includeHeader = _options.includeHeader;  //output CSV headers
+    recordCount = headerColumnID = 0;
+    nestedHeaderLayerID = 0;
+    readingCSVHeader = true;
+    addingSimpleNestedContent = false; //Set by CommonCSVWriter::checkHeaderName()
+}
+
+CommonCSVWriter::~CommonCSVWriter()
+{
+    flush(true);
+}
+
+void CommonCSVWriter::outputString(unsigned len, const char* field, const char* fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+    addStringField(len, field, fieldName);
+}
+
+void CommonCSVWriter::outputBool(bool field, const char* fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+    addContentField((field) ? "true" : "false", fieldName);
+}
+
+void CommonCSVWriter::outputData(unsigned len, const void* field, const char* fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+
+    StringBuffer v;
+    const unsigned char *value = (const unsigned char *) field;
+    for (unsigned int i = 0; i < len; i++)
+        v.append(thorHelperhexchar[value[i] >> 4]).append(thorHelperhexchar[value[i] & 0x0f]);
+    addContentField(v.str(), fieldName);
+}
+
+void CommonCSVWriter::outputInt(__int64 field, unsigned size, const char* fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+
+    StringBuffer v;
+    v.append(field);
+    addContentField(v.str(), fieldName);
+}
+
+void CommonCSVWriter::outputUInt(unsigned __int64 field, unsigned size, const char* fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+
+    StringBuffer v;
+    v.append(field);
+    addContentField(v.str(), fieldName);
+}
+
+void CommonCSVWriter::outputReal(double field, const char *fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+
+    StringBuffer v;
+    v.append(field);
+    addContentField(v.str(), fieldName);
+}
+
+void CommonCSVWriter::outputDecimal(const void* field, unsigned size, unsigned precision, const char* fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+
+    StringBuffer v;
+    char dec[50];
+    BcdCriticalBlock bcdBlock;
+    if (DecValid(true, size*2-1, field))
+    {
+        DecPushDecimal(field, size, precision);
+        DecPopCString(sizeof(dec), dec);
+        const char *finger = dec;
+        while(isspace(*finger)) finger++;
+        v.append(finger);
+    }
+    addContentField(v.str(), fieldName);
+}
+
+void CommonCSVWriter::outputUDecimal(const void* field, unsigned size, unsigned precision, const char* fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+
+    StringBuffer v;
+    char dec[50];
+    BcdCriticalBlock bcdBlock;
+    if (DecValid(false, size*2, field))
+    {
+        DecPushUDecimal(field, size, precision);
+        DecPopCString(sizeof(dec), dec);
+        const char *finger = dec;
+        while(isspace(*finger)) finger++;
+        v.append(finger);
+    }
+    addContentField(v.str(), fieldName);
+}
+
+void CommonCSVWriter::outputUnicode(unsigned len, const UChar* field, const char* fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+
+    StringBuffer v;
+    char * buff = 0;
+    unsigned bufflen = 0;
+    rtlUnicodeToCodepageX(bufflen, buff, len, field, "utf-8");
+    addStringField(bufflen, buff, fieldName);
+    rtlFree(buff);
+}
+
+void CommonCSVWriter::outputQString(unsigned len, const char* field, const char* fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+
+    MemoryAttr tempBuffer;
+    char * temp;
+    if (len <= 100)
+        temp = (char *)alloca(len);
+    else
+        temp = (char *)tempBuffer.allocate(len);
+    rtlQStrToStr(len, temp, len, field);
+    addStringField(len, temp, fieldName);
+}
+
+void CommonCSVWriter::outputUtf8(unsigned len, const char* field, const char* fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+
+    addStringField(rtlUtf8Size(len, field), field, fieldName);
+}
+
+void CommonCSVWriter::outputNumericString(const char* field, const char* fieldName)
+{
+    if (!checkHeaderName(fieldName))
+        return;
+
+    addStringField((size32_t)strlen(field), field, fieldName);
+}
+
+void CommonCSVWriter::appendDataXPathItem(const char* fieldName, bool isArray)
+{
+    Owned<CXPathItem> item = new CXPathItem(fieldName, isArray);
+    dataXPath.append(*item.getClear());
+}
+
+bool CommonCSVWriter::isDataRow(const char* fieldName)
+{
+    if (dataXPath.empty())
+        return false;
+
+    CXPathItem& xPathItem = dataXPath.item(dataXPath.length() - 1);
+    return xPathItem.getIsArray() && strieq(fieldName, xPathItem.getPath());
+}
+
+void CommonCSVWriter::outputBeginNested(const char* fieldName, bool simpleNested, bool outputHeader)
+{
+    //This method is called when retrieving csv headers.
+    if (!fieldName || !*fieldName || !readingCSVHeader)
+        return;
+
+    addCSVHeader(fieldName, NULL, true, simpleNested, outputHeader);
+    if (simpleNested) //ECL SET has only one column (parent name should be used as column name).
+        headerColumnID++;
+
+    //nestedHeaderLayerID is used as row ID when output CSV headers.
+    if (outputHeader)
+        nestedHeaderLayerID++;
+    addFieldToParentXPath(fieldName);
+}
+
+void CommonCSVWriter::outputEndNested(const char* fieldName, bool outputHeader)
+{
+    //This method is called when retrieving csv headers.
+    if (!fieldName || !*fieldName || !readingCSVHeader)
+        return;
+
+    removeFieldFromCurrentParentXPath(fieldName);
+    if (outputHeader)
+        nestedHeaderLayerID--;
+}
+
+void CommonCSVWriter::outputBeginNested(const char* fieldName, bool simpleNested)
+{
+    if (!fieldName || !*fieldName || readingCSVHeader)
+        return;
+
+    if (!isDataRow(fieldName))
+    {//A nested item begins.
+        //Call appendDataXPathItem() after the isDataRpw()
+        //because previous data xpath is used in isDataRpw().
+        appendDataXPathItem(fieldName, false);
+        addFieldToParentXPath(fieldName);
+    }
+    else
+    {//A new row begins inside a nested item.
+        appendDataXPathItem(fieldName, false);
+
+        if (!currentParentXPath.isEmpty())
+        {
+            //Add row xpath if it is not the 1st xpath.
+            addFieldToParentXPath(fieldName);
+
+            CCSVItem* item = getParentCSVItem();
+            if (!item)
+                return;
+
+            //Check row count for the ParentCSVItem.
+            //If this is not the first row, all children of the ParentCSVItem should
+            //start from the MaxNextRowID of the last row.
+            unsigned rowCount = item->getRowCount();
+            if (rowCount > 0)
+            {//Starting from the second result row, the NextRowIDs of every children are reset based on the last result row.
+                StringBuffer path = currentParentXPath;
+                path.setLength(path.length() - 1);
+                setChildrenNextRowID(path.str(), getChildrenMaxNextRowID(path.str()));
+            }
+
+            item->setCurrentRowEmpty(true);
+        }
+    }
+}
+
+void CommonCSVWriter::outputEndNested(const char* fieldName)
+{
+    if (!fieldName || !*fieldName || readingCSVHeader)
+        return;
+
+    dataXPath.pop();
+    if (!isDataRow(fieldName))
+    {//This is an end of a nested item.
+        removeFieldFromCurrentParentXPath(fieldName);
+    }
+    else
+    {//A row ends inside the nested item
+        //Set row count for ParentCSVItem of this field.
+        if (!currentParentXPath.isEmpty())
+        {
+            CCSVItem* item = getParentCSVItem();
+            if (item && !item->getCurrentRowEmpty())
+            {
+                //Increase row count for this item
+                item->incrementRowCount();
+                item->setCurrentRowEmpty(true);
+            }
+        }
+
+        removeFieldFromCurrentParentXPath(fieldName);
+        //if dataXPath.length() back to 1, this should be the end of a content result row.
+        if (dataXPath.length() == 1)
+            finishContentResultRow();
+    }
+}
+
+void CommonCSVWriter::outputBeginArray(const char* fieldName)
+{
+    appendDataXPathItem(fieldName, true);
+};
+
+void CommonCSVWriter::outputEndArray(const char* fieldName)
+{
+    dataXPath.pop();
+};
+
+void CommonCSVWriter::outputBeginDataset(const char* dsname, bool nestChildren)
+{
+    //This is called to add a <Dataset> tag outside of a wu result xml. No need for csv.
+};
+
+void CommonCSVWriter::outputEndDataset(const char* dsname)
+{
+};
+
+IXmlWriterExt& CommonCSVWriter::clear()
+{
+    recordCount = /*rowCount =*/ headerColumnID = 0;
+    nestedHeaderLayerID = 0;
+    readingCSVHeader = true;
+
+    addingSimpleNestedContent = false;
+    currentParentXPath.clear();
+    headerXPathList.kill();
+    topHeaderNameMap.kill();
+    contentRowsBuffer.clear();
+    csvItems.kill();
+    out.clear();
+    auditOut.clear();
+    return *this;
+};
+
+void CommonCSVWriter::outputCSVHeader(const char* name, const char* type)
+{
+    if (!name || !*name)
+        return;
+
+    addCSVHeader(name, type, false, false, true);
+    headerColumnID++;
+}
+
+void CommonCSVWriter::finishCSVHeaders()
+{
+    if (options.includeHeader)
+        outputHeadersToBuffer();
+    readingCSVHeader = false;
+    currentParentXPath.clear();
+
+#ifdef _DEBUG
+    auditHeaderInfo();
+#endif
+}
+
+void CommonCSVWriter::outputHeadersToBuffer()
+{
+    CIArrayOf<CCSVRow> rows;
+    ForEachItemIn(i, headerXPathList)
+    {
+        const char* path = headerXPathList.item(i);
+        CCSVItem* item = csvItems.getValue(path);
+        if (!item || !item->checkOutputHeader())
+            continue;
+
+        unsigned colID = item->getColumnID();
+        if (item->checkIsNestedItem())
+        {
+            unsigned maxColumnID = colID;
+            getChildrenMaxColumnID(item, maxColumnID);
+            colID += (maxColumnID - colID)/2;
+        }
+        addColumnToRow(rows, item->getNestedLayer(), colID, item->getName(), NULL);
+    }
+
+    outputCSVRows(rows, true);
+}
+
+//Go through every children to find out MaxColumnID.
+unsigned CommonCSVWriter::getChildrenMaxColumnID(CCSVItem* item, unsigned& maxColumnID)
+{
+    StringBuffer path = item->getParentXPath();
+    path.append(item->getName());
+
+    StringArray& names = item->getChildrenNames();
+    ForEachItemIn(i, names)
+    {
+        StringBuffer childPath = path;
+        childPath.append("/").append(names.item(i));
+        CCSVItem* childItem = csvItems.getValue(childPath.str());
+        if (!childItem)
+            continue;
+
+        if (childItem->checkIsNestedItem())
+            maxColumnID = getChildrenMaxColumnID(childItem, maxColumnID);
+        else
+        {
+            unsigned columnID = childItem->getColumnID();
+            if (columnID > maxColumnID)
+                maxColumnID = columnID;
+        }
+    }
+    return maxColumnID;
+}
+
+void CommonCSVWriter::escapeQuoted(unsigned len, char const* in, StringBuffer& out)
+{
+    char const* finger = in;
+    while (len--)
+    {
+        //RFC-4180, paragraph "If double-quotes are used to enclose fields, then a double-quote
+        //appearing inside a field must be escaped by preceding it with another double quote."
+        //unsigned newLen = 0;
+        if (*finger == '"')
+            out.append('"');
+        out.append(*finger);
+        finger++;
+    }
+}
+
+CCSVItem* CommonCSVWriter::getParentCSVItem()
+{
+    if (currentParentXPath.isEmpty())
+        return NULL;
+
+    StringBuffer path = currentParentXPath;
+    path.setLength(path.length() - 1);
+    return csvItems.getValue(path.str());
+}
+
+CCSVItem* CommonCSVWriter::getCSVItemByFieldName(const char* name)
+{
+    StringBuffer path;
+    if (currentParentXPath.isEmpty())
+        path.append(name);
+    else
+        path.append(currentParentXPath.str()).append(name);
+    return csvItems.getValue(path.str());
+}
+
+bool CommonCSVWriter::checkHeaderName(const char* name)
+{
+    if (!name || !*name)
+        return false;
+
+    if (currentParentXPath.isEmpty())
+    {
+        bool* found = topHeaderNameMap.getValue(name);
+        return (found && *found);
+    }
+
+    CCSVItem* item = getParentCSVItem();
+    if (!item)
+        return false;
+
+    addingSimpleNestedContent = item->checkSimpleNested();
+    if (addingSimpleNestedContent) //ECL: SET OF string, int, etc
+        return true;
+
+    return item->hasChildName(name);
+}
+
+void CommonCSVWriter::addColumnToRow(CIArrayOf<CCSVRow>& rows, unsigned rowID, unsigned colID, const char* columnValue, const char* columnName)
+{
+    if (!columnValue)
+        columnValue = "";
+    if (rowID < rows.length())
+    { //add the column to existing row
+        CCSVRow& row = rows.item(rowID);
+        row.setColumn(colID, NULL, columnValue);
+    }
+    else
+    { //new row
+        Owned<CCSVRow> newRow = new CCSVRow(rowID);
+        newRow->setColumn(colID, NULL, columnValue);
+        rows.append(*newRow.getClear());
+    }
+
+    if (currentParentXPath.isEmpty())
+        return;
+
+    if (!addingSimpleNestedContent && columnName && *columnName)
+    {
+        CCSVItem* item = getCSVItemByFieldName(columnName);
+        if (item)
+            item->incrementNextRowID();
+    }
+
+    CCSVItem* parentItem = getParentCSVItem();
+    if (parentItem)
+    {
+        if (addingSimpleNestedContent) //ECL: SET OF string, int, etc. NextRowID should be stored in Parent item.
+            parentItem->incrementNextRowID();
+        setParentItemRowEmpty(parentItem, false);
+    }
+}
+
+void CommonCSVWriter::setParentItemRowEmpty(CCSVItem* item, bool empty)
+{
+    item->setCurrentRowEmpty(empty);
+    StringBuffer parentXPath = item->getParentXPath();
+    if (parentXPath.isEmpty())
+        return;
+    //If this item is not empty, its parent is not empty.
+    parentXPath.setLength(parentXPath.length() - 1);
+    setParentItemRowEmpty(csvItems.getValue(parentXPath), empty);
+}
+
+void CommonCSVWriter::addCSVHeader(const char* name, const char* type, bool isNested, bool simpleNested, bool outputHeader)
+{
+    if (checkHeaderName(name))
+        return;//Duplicated header. Should never happen.
+
+    Owned<CCSVItem> headerItem = new CCSVItem();
+    headerItem->setName(name);
+    headerItem->setIsNestedItem(isNested);
+    headerItem->setSimpleNested(simpleNested);
+    headerItem->setOutputHeader(outputHeader);
+    headerItem->setColumnID(headerColumnID);
+    headerItem->setNestedLayer(nestedHeaderLayerID);
+    headerItem->setParentXPath(currentParentXPath.str());
+    StringBuffer xPath = currentParentXPath;
+    xPath.append(name);
+    csvItems.setValue(xPath.str(), headerItem);
+
+    headerXPathList.append(xPath.str());
+    addChildNameToParentCSVItem(name);
+    if (currentParentXPath.isEmpty())
+        topHeaderNameMap.setValue(name, true);
+}
+
+void CommonCSVWriter::addContentField(const char* field, const char* fieldName)
+{
+    CCSVItem* item = NULL;
+    if (addingSimpleNestedContent) //ECL: SET OF string, int, etc. ColumnID should be stored in Parent item.
+        item = getParentCSVItem();
+    else
+        item = getCSVItemByFieldName(fieldName);
+
+    addColumnToRow(contentRowsBuffer, item ? item->getNextRowID() : 0, item ? item->getColumnID() : 0, field, fieldName);
+}
+
+void CommonCSVWriter::addStringField(unsigned len, const char* field, const char* fieldName)
+{
+    StringBuffer v;
+    v.append(csvQuote);
+    escapeQuoted(len, field, v);
+    v.append(csvQuote);
+    addContentField(v.str(), fieldName);
+}
+
+unsigned CommonCSVWriter::getChildrenMaxNextRowID(const char* path)
+{
+    CCSVItem* item = csvItems.getValue(path);
+    if (!item)
+        return 0; //Should never happen
+
+    if (!item->checkIsNestedItem())
+        return item->getNextRowID();
+
+    unsigned maxRowID = item->getNextRowID();
+    StringBuffer basePath = path;
+    basePath.append("/");
+    StringArray& names = item->getChildrenNames();
+    ForEachItemIn(i, names)
+    {
+        StringBuffer childPath = basePath;
+        childPath.append(names.item(i));
+        unsigned rowID = getChildrenMaxNextRowID(childPath.str());
+        if (rowID > maxRowID)
+            maxRowID = rowID;
+    }
+    return maxRowID;
+}
+
+void CommonCSVWriter::setChildrenNextRowID(const char* path, unsigned rowID)
+{
+    CCSVItem* item = csvItems.getValue(path);
+    if (!item)
+        return;
+
+    if (!item->checkIsNestedItem())
+    {
+        item->setNextRowID(rowID);
+        return;
+    }
+
+    StringArray& names = item->getChildrenNames();
+    ForEachItemIn(i, names)
+    {
+        StringBuffer childPath = path;
+        childPath.append("/").append(names.item(i));
+        CCSVItem* childItem = csvItems.getValue(childPath.str());
+        if (!childItem)
+            continue;
+
+        childItem->setNextRowID(rowID);//for possible new row
+        if (childItem->checkIsNestedItem())
+        {
+            childItem->setRowCount(0);
+            setChildrenNextRowID(childPath.str(), rowID);
+        }
+    }
+}
+
+void CommonCSVWriter::addChildNameToParentCSVItem(const char* name)
+{
+    if (!name || !*name)
+        return;
+
+    if (currentParentXPath.isEmpty())
+        return;
+
+    CCSVItem* item = getParentCSVItem();
+    if (item)
+        item->addChildName(name);
+}
+
+void CommonCSVWriter::addFieldToParentXPath(const char* fieldName)
+{
+    currentParentXPath.append(fieldName).append("/");
+}
+
+void CommonCSVWriter::removeFieldFromCurrentParentXPath(const char* fieldName)
+{
+    unsigned len = strlen(fieldName);
+    if (currentParentXPath.length() > len+1)
+        currentParentXPath.setLength(currentParentXPath.length() - len - 1);
+    else
+        currentParentXPath.setLength(0);
+}
+
+void CommonCSVWriter::outputCSVRows(CIArrayOf<CCSVRow>& rows, bool isHeader)
+{
+    bool firstRow = true;
+    ForEachItemIn(i, rows)
+    {
+        if (firstRow && !isHeader)
+        {
+            out.append(recordCount);
+            firstRow = false;
+        }
+
+        CCSVRow& row = rows.item(i);
+        unsigned len = row.getColumnCount();
+        for (unsigned col = 0; col < len; col++)
+            out.append(options.delimiter.get()).append(row.getColumnValue(col));
+        out.append(options.terminator.get());
+    }
+}
+
+void CommonCSVWriter::finishContentResultRow()
+{
+    recordCount++;
+    outputCSVRows(contentRowsBuffer, false);
+
+    //Prepare for possible next record
+    currentParentXPath.setLength(0);
+    contentRowsBuffer.kill();
+    ForEachItemIn(i, headerXPathList)
+    {
+        const char* path = headerXPathList.item(i);
+        CCSVItem* item = csvItems.getValue(path);
+        if (item)
+            item->clearContentVariables();
+    }
+};
+
+void CCSVRow::setColumn(unsigned columnID, const char* columnName, const char* columnValue)
+{
+    unsigned len = columns.length();
+    if (columnID < len)
+    {
+        CCSVItem& column = columns.item(columnID);
+        if (columnName && *columnName)
+            column.setName(columnName);
+        column.setValue(columnValue);
+    }
+    else
+    {
+        for (unsigned i = len; i <= columnID; i++)
+        {
+            Owned<CCSVItem> column = new CCSVItem();
+            if (i == columnID)
+            {
+                if (columnName && *columnName)
+                    column->setName(columnName);
+                column->setValue(columnValue);
+            }
+            columns.append(*column.getClear());
+        }
+    }
+}
+
+const char* CCSVRow::getColumnValue(unsigned columnID) const
+{
+    if (columnID >= columns.length())
+        return ""; //This should never happens.
+    CCSVItem& column = columns.item(columnID);
+    return column.getValue();
+};
+
 //=====================================================================================
 
 inline void outputEncodedXmlString(unsigned len, const char *field, const char *fieldname, StringBuffer &out)
@@ -705,7 +1385,6 @@ inline void outputEncodedXmlBool(bool field, const char *fieldname, StringBuffer
         out.append(text);
 }
 
-static char thorHelperhexchar[] = "0123456789ABCDEF";
 inline void outputEncodedXmlData(unsigned len, const void *_field, const char *fieldname, StringBuffer &out)
 {
     const unsigned char *field = (const unsigned char *) _field;

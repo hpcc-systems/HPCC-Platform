@@ -227,6 +227,20 @@ protected:
 
 //---------------------------------------------------------------------------
 
+class SetResultToExtractTransformer : public NewHqlTransformer
+{
+public:
+    SetResultToExtractTransformer();
+
+protected:
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
+
+protected:
+    typedef NewHqlTransformer PARENT;
+};
+
+//---------------------------------------------------------------------------
+
 class CompoundSourceInfo : public NewTransformInfo
 {
 public:

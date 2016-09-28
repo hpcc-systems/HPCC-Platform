@@ -26,7 +26,7 @@ interface IUserDescriptor;
 
 interface IDaliLdapConnection: extends IInterface
 {
-    virtual int getPermissions(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags)=0;
+    virtual SecAccessFlags getPermissions(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags)=0;
     virtual bool checkScopeScans() = 0;
     virtual unsigned getLDAPflags() = 0;
     virtual void setLDAPflags(unsigned flags) = 0;

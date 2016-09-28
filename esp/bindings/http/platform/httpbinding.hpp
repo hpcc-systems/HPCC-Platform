@@ -82,6 +82,8 @@ interface IEspHttpBinding
     virtual int onGetForm(IEspContext &context, CHttpRequest* request,   CHttpResponse* response, const char *servName, const char *methodName)=0;
     virtual int onGetXForm(IEspContext &context, CHttpRequest* request,   CHttpResponse* response, const char *servName, const char *methodName)=0;
     virtual int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName)=0;
+    virtual int onFeaturesAuthorize(IEspContext &context, MapStringTo<SecAccessFlags> & pmap, const char *serviceName, const char *methodName)=0;
+
     virtual int onGetQuery(IEspContext &context, CHttpRequest* request,  CHttpResponse* response, const char *servName, const char *methodName)=0;
     virtual int onGetResult(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *servName, const char *methodName, const char *resultPath)=0;
     virtual int onGetResultPresentation(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName, StringBuffer &xmlResult)=0;
@@ -94,7 +96,7 @@ interface IEspHttpBinding
     virtual int onGetRespSampleXml(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method)=0;
     virtual int onStartUpload(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)=0;
     virtual int onFinishUpload(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method,
-        StringArray& fileNames, StringArray& files, IMultiException *me)=0;
+    StringArray& fileNames, StringArray& files, IMultiException *me)=0;
 };
 
 typedef MapStringTo<int> wsdlIncludedTable;
@@ -217,6 +219,7 @@ public:
     virtual int onGetForm(IEspContext &context, CHttpRequest* request,   CHttpResponse* response, const char *serv, const char *method);
     virtual int onGetXForm(IEspContext &context, CHttpRequest* request,   CHttpResponse* response, const char *serv, const char *method);
     virtual int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
+    virtual int onFeaturesAuthorize(IEspContext &context, MapStringTo<SecAccessFlags> & pmap, const char *serviceName, const char *methodName);
     virtual int onGetResult(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method, const char *pathex);
     virtual int onGetResultPresentation(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method, StringBuffer &xmlResult);
     virtual int onGetFile(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *path);

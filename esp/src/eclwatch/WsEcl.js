@@ -92,7 +92,7 @@ define([
                     results = context._flattenResults(results);
                     if (lang.exists("Exceptions.Exception", response)) {
                         results.Exception = response.Exceptions.Exception;
-                    };
+                    }
                     deferred.resolve(results);
                 });
             });

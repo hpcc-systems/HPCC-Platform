@@ -22,7 +22,7 @@ outRecord := RECORD
     unsigned1  id;
 END;
 
-streamed dataset(outRecord) doRead(const varstring name) := EMBED(C++ : distributed)
+streamed dataset(outRecord) doRead(const varstring name) := EMBED(C++ : distributed,time)
 
     const char * rows[] = {
         "Gavin     \x01",
@@ -67,7 +67,7 @@ ds := doRead('C:\\temp\\simple');
 count(ds) = CLUSTERSIZE * 4;
 
 
-linkcounted dataset(outRecord) doReadRows(const varstring name) := EMBED(C++ : distributed)
+linkcounted dataset(outRecord) doReadRows(const varstring name) := EMBED(C++ : distributed,time)
 
     static const char * rows2[] = {
         "Gavin     \x01",
@@ -86,7 +86,7 @@ dsRows := doReadRows('C:\\temp\\simple');
 
 count(dsRows) = CLUSTERSIZE * 4;
 
-dataset(outRecord) doReadBlock(const varstring name) := EMBED(C++ : distributed)
+dataset(outRecord) doReadBlock(const varstring name) := EMBED(C++ : distributed,time)
 
     static const char * rows3 = "Gavin     \x01Simon     \002Charlotte \x09TheEnd    \x00";
 

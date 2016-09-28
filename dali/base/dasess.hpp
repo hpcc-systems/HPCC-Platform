@@ -27,6 +27,7 @@
 #endif
 
 #include "dacoven.hpp"
+#include "seclib.hpp"
 
 typedef DALI_UID SessionId;
 typedef DALI_UID SubscriptionId;
@@ -107,7 +108,7 @@ interface ISessionManager: extends IInterface
     virtual StringBuffer &getClientProcessEndpoint(SessionId id,StringBuffer &buf)=0; // for diagnostics
     virtual unsigned queryClientCount() = 0; // for SNMP
 
-    virtual int getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags, int *err=NULL)=0;
+    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags, int *err=NULL)=0;
     virtual bool checkScopeScansLDAP()=0;
     virtual unsigned getLDAPflags()=0;
     virtual void setLDAPflags(unsigned flags)=0;
@@ -121,9 +122,9 @@ interface ISessionManager: extends IInterface
 #define DALI_LDAP_READ_WANTED               (2)
 #define DALI_LDAP_WRITE_WANTED              (4)
 
-#define HASREADPERMISSION(p)        (((p)&3)==3)        
-#define HASWRITEPERMISSION(p)       (((p)&5)==5)
-#define HASNOSECURITY(p)            ((p)==-1)           // security is disabled
+#define HASREADPERMISSION(p)        (((p) & (NewSecAccess_Access & NewSecAccess_Read)) == (NewSecAccess_Access & NewSecAccess_Read))
+#define HASWRITEPERMISSION(p)       (((p) & (NewSecAccess_Access & NewSecAccess_Write)) == (NewSecAccess_Access & NewSecAccess_Write))
+
 
 extern da_decl ISessionManager &querySessionManager();
 

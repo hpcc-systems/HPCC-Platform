@@ -146,7 +146,7 @@ define([
                 var tab = this.ensurePane(selections[i].Wuid, {
                     Wuid: selections[i].Wuid
                 });
-                if (i == 0) {
+                if (i === 0) {
                     firstTab = tab;
                 }
             }
@@ -216,19 +216,19 @@ define([
                 this.menuFilterState.set("hpcc_value", item.State);
             }
 
-            if (item.Owner == "") {
+            if (item.Owner === "") {
                 this.menuFilterOwner.set("disabled", true);
                 this.menuFilterOwner.set("label", this.i18n.Owner + ":  " + this.i18n.NA);
             }
-            if (item.Jobname == "") {
+            if (item.Jobname === "") {
                 this.menuFilterJobname.set("disabled", true);
                 this.menuFilterJobname.set("label", this.i18n.JobName + ":  " + this.i18n.NA);
             }
-            if (item.Cluster == "") {
+            if (item.Cluster === "") {
                 this.menuFilterCluster.set("disabled", true);
                 this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + this.i18n.NA);
             }
-            if (item.State == "") {
+            if (item.State === "") {
                 this.menuFilterState.set("disabled", true);
                 this.menuFilterState.set("label", this.i18n.State + ":  " + this.i18n.NA);
             }
@@ -439,7 +439,7 @@ define([
                         width: 25,
                         sortable: false,
                         formatter: function (_protected) {
-                            if (_protected == true) {
+                            if (_protected === true) {
                                 return dojoConfig.getImageHTML("locked.png");
                             }
                             return "";

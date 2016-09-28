@@ -374,6 +374,7 @@ void CESPServerLoggingAgent::filterLogContent(IEspUpdateLogRequestWrap* req)
             Owned<IPropertyTree> userContext = req->getUserContext();
             Owned<IPropertyTree> userRequest = req->getUserRequest();
             const char* userResp = req->getUserResponse();
+            const char* logDatasets = req->getLogDatasets();
             const char* backEndResp = req->getBackEndResponse();
             if (!espContext && !userContext && !userRequest && (!userResp || !*userResp) && (!backEndResp || !*backEndResp))
                 throw MakeStringException(EspLoggingErrors::UpdateLogFailed, "Failed to read log content");
@@ -400,6 +401,12 @@ void CESPServerLoggingAgent::filterLogContent(IEspUpdateLogRequestWrap* req)
                 IPropertyTree* pTree = ensurePTree(logContentTree, espLogContentGroupNames[ESPLCGUserResp]);
                 Owned<IPropertyTree> userRespTree = createPTreeFromXMLString(userResp);
                 pTree->addPropTree(userRespTree->queryName(), LINK(userRespTree));
+            }
+            if (logDatasets && *logDatasets)
+            {
+                IPropertyTree* pTree = ensurePTree(logContentTree, espLogContentGroupNames[ESPLCGLogDatasets]);
+                Owned<IPropertyTree> logDatasetTree = createPTreeFromXMLString(logDatasets);
+                pTree->addPropTree(logDatasetTree->queryName(), LINK(logDatasetTree));
             }
             if (backEndResp && *backEndResp)
                 logContentTree->addProp(espLogContentGroupNames[ESPLCGBackEndResp], backEndResp);
@@ -429,6 +436,12 @@ void CESPServerLoggingAgent::filterLogContent(IEspUpdateLogRequestWrap* req)
                 }
                 else if (group == ESPLCGUserReq)
                     originalContentTree.setown(req->getUserRequest());
+                else if (group == ESPLCGLogDatasets)
+                {
+                    const char* logDatasets = req->getLogDatasets();
+                    if (logDatasets && *logDatasets)
+                        originalContentTree.setown(createPTreeFromXMLString(logDatasets));
+                }
                 else //group = ESPLCGUserResp
                 {
                     const char* resp = req->getUserResponse();

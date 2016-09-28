@@ -92,6 +92,10 @@ define([
             this.inherited(arguments);
         },
 
+        _onRefresh: function () {
+            this.refresh(true);
+        },
+
         _doDownload: function (type) {
             var base = new ESPBase();
             if (lang.exists("params.Sequence", this)) {
@@ -111,6 +115,10 @@ define([
 
         _onDownloadXLS: function (args) {
             this._doDownload("xls");
+        },
+
+        _onDownloadCSV: function (args) {
+            this._doDownload("csv");
         },
 
         _onFileDetails: function (args) {
@@ -227,13 +235,15 @@ define([
             return this.filter.toObject();
         },
 
-        refresh: function () {
+        refresh: function (bypassCachedResult) {
+            bypassCachedResult = bypassCachedResult || false;
             if (this.result && !this.result.isComplete()) {
                 this.grid.showMessage(this.result.getLoadingMessage());
-            } else if (this.loaded !== this.getFilter()) {
+            } else if (this.loaded !== this.getFilter() || bypassCachedResult) {
                 this.loaded = this.getFilter();
                 this.grid.set("query", {
-                    FilterBy: this.getFilter()
+                    FilterBy: this.getFilter(),
+                    BypassCachedResult: bypassCachedResult
                 });
             }
         }

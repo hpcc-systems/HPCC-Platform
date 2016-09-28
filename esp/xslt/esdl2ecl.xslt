@@ -107,17 +107,26 @@ end;
 <xsl:text disable-output-escaping="yes">
 </xsl:text>
 	</xsl:template>
-	<xsl:template match="EsdlArray[@type='string']">
+	<xsl:template match="EsdlArray[@type='string']|EsdlList[@type='string']">
 		<xsl:if test="not(@ecl_hide) and (@ecl_keep or not(@get_data_from))">
 		<xsl:text disable-output-escaping="yes">	set of string </xsl:text><xsl:call-template name="output_ecl_name"/>
 		<xsl:text disable-output-escaping="yes"> {xpath('</xsl:text>
-		<xsl:if test="not(@flat_array)"><xsl:value-of select="@name"/></xsl:if><xsl:text disable-output-escaping="yes">/</xsl:text><xsl:call-template name="output_item_tag"/><xsl:text disable-output-escaping="yes">')</xsl:text>
 		<xsl:choose>
-			<xsl:when test="@max_count_var"><xsl:text disable-output-escaping="yes">, MAXCOUNT(</xsl:text><xsl:value-of select="@max_count_var"/><xsl:text disable-output-escaping="yes">)</xsl:text></xsl:when>
-			<xsl:when test="@max_count"><xsl:text disable-output-escaping="yes">, MAXCOUNT(</xsl:text><xsl:value-of select="@max_count"/><xsl:text disable-output-escaping="yes">)</xsl:text></xsl:when>
-				<xsl:otherwise><xsl:text disable-output-escaping="yes">, MAXCOUNT(1)</xsl:text></xsl:otherwise>
+			<xsl:when test="name(.) ='EsdlArray'">
+				<xsl:if test="not(@flat_array)"><xsl:value-of select="@name"/></xsl:if><xsl:text disable-output-escaping="yes">/</xsl:text><xsl:call-template name="output_item_tag"/>
+			</xsl:when>
+			<xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
 		</xsl:choose>
-		<xsl:text disable-output-escaping="yes">};</xsl:text><xsl:call-template name="output_comments"/>
+                <xsl:text disable-output-escaping="yes">')</xsl:text>
+		<xsl:choose>
+			<xsl:when test="@max_count_var"><xsl:text disable-output-escaping="yes">, MAXCOUNT(</xsl:text><xsl:value-of select="@max_count_var"/><xsl:text disable-output-escaping="yes">)};</xsl:text></xsl:when>
+			<xsl:when test="@max_count"><xsl:text disable-output-escaping="yes">, MAXCOUNT(</xsl:text><xsl:value-of select="@max_count"/><xsl:text disable-output-escaping="yes">)};</xsl:text></xsl:when>
+		    <xsl:otherwise>
+                <xsl:text disable-output-escaping="yes">, MAXCOUNT(1)}; // max_count must be specified in ESDL defintion! </xsl:text>
+                <xsl:message terminate="no">EsdlArray MUST SPECIFY max_count</xsl:message>
+		    </xsl:otherwise>
+		</xsl:choose>
+		<xsl:call-template name="output_comments"/>
 		<xsl:text disable-output-escaping="yes">&#xa;</xsl:text>
 	</xsl:if>
 	</xsl:template>
@@ -132,17 +141,28 @@ end;
 		  <xsl:text disable-output-escaping="yes">&#xa;</xsl:text>
         </xsl:if>
 	</xsl:template>
-	<xsl:template match="EsdlArray">
+	<xsl:template match="EsdlArray|EsdlList">
 		<xsl:if test="not(@ecl_hide) and (@ecl_keep or not(@get_data_from))">
 			<xsl:text disable-output-escaping="yes">	dataset(</xsl:text> <xsl:call-template name="output_ecl_array_type"/><xsl:text disable-output-escaping="yes">) </xsl:text><xsl:call-template name="output_ecl_name"/>
-            <xsl:text disable-output-escaping="yes"> {xpath('</xsl:text>
-			<xsl:if test="not(@flat_array)"><xsl:value-of select="@name"/></xsl:if><xsl:text disable-output-escaping="yes">/</xsl:text><xsl:call-template name="output_item_tag"/><xsl:text disable-output-escaping="yes">')</xsl:text>
+            		<xsl:text disable-output-escaping="yes"> {xpath('</xsl:text>
 			<xsl:choose>
-				<xsl:when test="@max_count_var"><xsl:text disable-output-escaping="yes">, MAXCOUNT(</xsl:text><xsl:value-of select="@max_count_var"/><xsl:text disable-output-escaping="yes">)</xsl:text></xsl:when>
-				<xsl:when test="@max_count"><xsl:text disable-output-escaping="yes">, MAXCOUNT(</xsl:text><xsl:value-of select="@max_count"/><xsl:text disable-output-escaping="yes">)</xsl:text></xsl:when>
-				<xsl:otherwise><xsl:text disable-output-escaping="yes">, MAXCOUNT(1)</xsl:text></xsl:otherwise>
+				<xsl:when test="name(.) ='EsdlArray'">
+ 					<xsl:if test="not(@flat_array)"><xsl:value-of select="@name"/></xsl:if>
+					<xsl:text disable-output-escaping="yes">/</xsl:text>
+					<xsl:call-template name="output_item_tag"/>
+                                </xsl:when>
+                        	<xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
 			</xsl:choose>
-		<xsl:text disable-output-escaping="yes">};</xsl:text><xsl:call-template name="output_comments"/>
+            		<xsl:text disable-output-escaping="yes">')</xsl:text>
+			<xsl:choose>
+				<xsl:when test="@max_count_var"><xsl:text disable-output-escaping="yes">, MAXCOUNT(</xsl:text><xsl:value-of select="@max_count_var"/><xsl:text disable-output-escaping="yes">)};</xsl:text></xsl:when>
+				<xsl:when test="@max_count"><xsl:text disable-output-escaping="yes">, MAXCOUNT(</xsl:text><xsl:value-of select="@max_count"/><xsl:text disable-output-escaping="yes">)};</xsl:text></xsl:when>
+				<xsl:otherwise>
+					<xsl:text disable-output-escaping="yes">, MAXCOUNT(1)}; // max_count must be specified in ESDL defintion! </xsl:text>
+					<xsl:message terminate="no">EsdlArray MUST SPECIFY max_count</xsl:message>
+				</xsl:otherwise>
+			</xsl:choose>
+		<xsl:call-template name="output_comments"/>
 		<xsl:text disable-output-escaping="yes">
 </xsl:text>
 		</xsl:if>
@@ -296,16 +316,23 @@ end;
 	</xsl:if>
 	<xsl:if test="@ecl_type and (@type or @complex_type)">
         <xsl:choose>
-         <xsl:when test="name()='EsdlArray'">
+         <xsl:when test="name()='EsdlArray|EsdlList'">
            <xsl:text disable-output-escaping="yes"> // Real type: </xsl:text>
            <xsl:text disable-output-escaping="yes">dataset(t_</xsl:text>
            <xsl:value-of select="@type"/>
            <xsl:text disable-output-escaping="yes">) </xsl:text>
            <xsl:call-template name="output_ecl_name"/>
            <xsl:text disable-output-escaping="yes"> {xpath('</xsl:text>
-           <xsl:value-of select="@name"/>
-           <xsl:text disable-output-escaping="yes">/</xsl:text>
-           <xsl:call-template name="output_item_tag"/>
+           <xsl:choose>
+		<xsl:when test="name() ='EsdlArray'">
+                  <xsl:if test="not(@flat_array)"><xsl:value-of select="@name"/></xsl:if>
+                  <xsl:text disable-output-escaping="yes">/</xsl:text>
+                  <xsl:call-template name="output_item_tag"/>
+                </xsl:when>
+		<xsl:otherwise>
+                  <xsl:value-of select="@name"/>
+	        </xsl:otherwise>
+             </xsl:choose>
            <xsl:text disable-output-escaping="yes">')};</xsl:text>
          </xsl:when>
          <xsl:when test="name()='EsdlElement' and starts-with(@ecl_type,'tns:')">

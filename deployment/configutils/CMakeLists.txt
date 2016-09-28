@@ -37,6 +37,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/deployment/deploy
          ${CMAKE_BINARY_DIR}/oss
          ${CMAKE_BINARY_DIR}
+         ${HPCC_SOURCE_DIR}/system/security/shared
     )
 
 ADD_DEFINITIONS ( -D_USRDLL -DCONFIGUTILS_EXPORTS )

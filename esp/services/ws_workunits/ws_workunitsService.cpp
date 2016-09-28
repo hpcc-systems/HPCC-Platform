@@ -40,6 +40,11 @@
 #include "thorplugin.hpp"
 #include "roxiecontrol.hpp"
 
+#include "deftype.hpp"
+#include "thorxmlwrite.hpp"
+#include "fvdatasource.hpp"
+#include "fvresultset.ipp"
+
 #include "package.h"
 
 #ifdef _USE_ZLIB
@@ -418,9 +423,6 @@ bool CWsWorkunitsEx::onWUCreate(IEspContext &context, IEspWUCreateRequest &req, 
 {
     try
     {
-        if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
-
         NewWsWorkunit wu(context);
         resp.updateWorkunit().setWuid(wu->queryWuid());
         AuditSystemAccess(context.queryUserId(), true, "Updated %s", wu->queryWuid());
@@ -599,9 +601,6 @@ bool CWsWorkunitsEx::onWUCreateAndUpdate(IEspContext &context, IEspWUUpdateReque
 {
     try
     {
-        if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
-            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
-
         const char* wuid = req.getWuid();
         if (!wuid || !*wuid)
         {
@@ -2470,6 +2469,146 @@ bool CWsWorkunitsEx::onWULightWeightQuery(IEspContext &context, IEspWULightWeigh
     return true;
 }
 
+ITypeInfo * containsSingleSimpleFieldBlankXPath(IResultSetMetaData * meta)
+{
+    if (meta->getColumnCount() != 1)
+        return NULL;
+
+    CResultSetMetaData * castMeta = static_cast<CResultSetMetaData *>(meta);
+    const char * xpath = castMeta->queryXPath(0);
+    if (xpath && (*xpath == 0))
+    {
+        return castMeta->queryType(0);
+    }
+    return NULL;
+}
+
+void csvSplitXPath(const char *xpath, StringBuffer &s, const char *&name, const char **childname=NULL)
+{
+    if (!xpath)
+        return;
+    const char * slash = strchr(xpath, '/');
+    if (!slash)
+    {
+        name = xpath;
+        if (childname)
+            *childname = NULL;
+    }
+    else
+    {
+        if (!childname || strchr(slash+1, '/')) //output ignores xpaths that are too deep
+            return;
+        name = s.clear().append(slash-xpath, xpath).str();
+        *childname = slash+1;
+    }
+}
+
+void getCSVHeaders(const IResultSetMetaData& metaIn, CommonCSVWriter* writer, unsigned& layer)
+{
+    StringBuffer xname;
+    const CResultSetMetaData& cMeta = static_cast<const CResultSetMetaData &>(metaIn);
+    IFvDataSourceMetaData* meta = cMeta.getMeta();
+
+    int columnCount = metaIn.getColumnCount();
+    for (unsigned idx = 0; idx < columnCount; idx++)
+    {
+        const CResultSetColumnInfo& column = cMeta.getColumn(idx);
+        unsigned flag = column.flag;
+        const char * name = meta->queryName(idx);
+        const char * childname = NULL;
+        switch (flag)
+        {
+        case FVFFbeginif:
+        case FVFFendif:
+            break;
+        case FVFFbeginrecord:
+            csvSplitXPath(meta->queryXPath(idx), xname, name);
+            writer->outputBeginNested(name, false, true);
+            break;
+        case FVFFendrecord:
+            csvSplitXPath(meta->queryXPath(idx), xname, name);
+            writer->outputEndNested(name, true);
+            break;
+        case FVFFdataset:
+            {
+                childname = "Row";
+                csvSplitXPath(meta->queryXPath(idx), xname, name, &childname);
+                ITypeInfo* singleFieldType = (name && *name && childname && *childname)
+                    ? containsSingleSimpleFieldBlankXPath(column.childMeta.get()) : NULL;
+                if (!singleFieldType)
+                {
+                    bool nameValid = (name && *name);
+                    if (nameValid || (childname && *childname))
+                    {
+                        if (nameValid)
+                            writer->outputBeginNested(name, false, true);
+                        if (childname && *childname)
+                            writer->outputBeginNested(childname, false, !nameValid);
+
+                        const CResultSetMetaData *childMeta = static_cast<const CResultSetMetaData *>(column.childMeta.get());
+                        getCSVHeaders(*childMeta, writer, ++layer);
+                        layer--;
+
+                        if (childname && *childname)
+                            writer->outputEndNested(childname, !nameValid);
+                        if (nameValid)
+                            writer->outputEndNested(name, true);
+                    }
+                }
+                break;
+            }
+        case FVFFblob: //for now FileViewer will output the string "[blob]"
+            {
+                Owned<ITypeInfo> stringType = makeStringType(UNKNOWN_LENGTH, NULL, NULL);
+                csvSplitXPath(meta->queryXPath(idx), xname, name);
+
+                StringBuffer eclTypeName;
+                stringType->getECLType(eclTypeName);
+                writer->outputCSVHeader(name, eclTypeName.str());
+            }
+            break;
+        default:
+            {
+                ITypeInfo & type = *column.type;
+                if (type.getTypeCode() == type_set)
+                {
+                    childname = "Item";
+                    csvSplitXPath(meta->queryXPath(idx), xname, name, &childname);
+                    writer->outputBeginNested(name, true, true);
+                    writer->outputEndNested(name, true);
+                }
+                else
+                {
+                    csvSplitXPath(meta->queryXPath(idx), xname, name);
+
+                    StringBuffer eclTypeName;
+                    type.getECLType(eclTypeName);
+                    writer->outputCSVHeader(name, eclTypeName.str());
+                }
+                break;
+            }
+        }
+    }
+}
+
+unsigned getResultCSV(IStringVal& ret, INewResultSet* result, const char* name, __int64 start, unsigned& count)
+{
+    unsigned headerLayer = 0;
+    CSVOptions csvOptions;
+    csvOptions.delimiter.set(",");
+    csvOptions.terminator.set("\n");
+    csvOptions.includeHeader = true;
+    Owned<CommonCSVWriter> writer = new CommonCSVWriter(XWFtrim, csvOptions);
+    Owned<IResultSetCursor> cursor = result->createCursor();
+    const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
+    getCSVHeaders(meta, writer, headerLayer);
+    writer->finishCSVHeaders();
+
+    count = writeResultCursorXml(*writer, cursor, name, start, count, NULL);
+    ret.set(writer->str());
+    return count;
+}
+
 void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd, ESPSerializationFormat fmt, const IProperties *xmlns)
 {
     if (!result)
@@ -2495,7 +2634,9 @@ void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, 
             MemoryBuffer & buffer;
         } adaptor(mb);
 
-        if (fmt==ESPSerializationJSON)
+        if (fmt==ESPSerializationCSV)
+            count = getResultCSV(adaptor, result, name, (unsigned) start, count);
+        else if (fmt==ESPSerializationJSON)
             count = getResultJSON(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL);
         else
             count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, xmlns);
@@ -2840,6 +2981,9 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
         IArrayOf<IConstNamedValue>* filterBy = &req.getFilterBy();
         SCMStringBuffer name;
 
+        if(strieq(req.getFormat(),"csv"))
+            context.setResponseFormat(ESPSerializationCSV);
+
         WUState wuState = WUStateUnknown;
         bool bin = (req.getFormat() && strieq(req.getFormat(),"raw"));
         if (notEmpty(wuidIn) && notEmpty(req.getResultName()))
@@ -2865,7 +3009,13 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
         else
             throw MakeStringException(ECLWATCH_CANNOT_GET_WU_RESULT,"Cannot open the workunit result.");
 
-        if(stricmp(req.getFormat(),"xls")==0)
+        if(strieq(req.getFormat(),"csv"))
+        {
+            resp.setResult(mb);
+            resp.setResult_mimetype("text/csv");
+            context.addCustomerHeader("Content-disposition", "attachment;filename=WUResult.csv");
+        }
+        else if(stricmp(req.getFormat(),"xls")==0)
         {
             Owned<IProperties> params(createProperties());
             params->setProp("showCount",0);
@@ -4017,6 +4167,7 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
         resp.updateWorkunit().setJobname(name.str());
     }
 
+    PROGLOG("WUDeploy generates: %s", wuid.str());
     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
 }
 
@@ -4152,6 +4303,7 @@ void CWsWorkunitsEx::deploySharedObjectReq(IEspContext &context, IEspWUDeployWor
     WsWuInfo winfo(context, wuid.str());
     winfo.getCommon(resp.updateWorkunit(), WUINFO_All);
 
+    PROGLOG("WUDeploy generates: %s", wuid.str());
     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
 }
 

@@ -57,7 +57,7 @@ ENDEMBED;
 
 // Test use of Python generator object for lazy evaluation...
 
-dataset(childrec) testGenerator(unsigned lim) := EMBED(Python)
+dataset(childrec) testGenerator(unsigned lim) := EMBED(Python:time)
   num = 0
   while num < lim:
     yield ("Generate:", num)

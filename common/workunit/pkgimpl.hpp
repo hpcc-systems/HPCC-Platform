@@ -528,7 +528,7 @@ public:
                         unmatchedQueries.append(libname);
                 }
 
-                filelist->addFilesFromQuery(cw, this, queryid);
+                bool isCompulsory = filelist->addFilesFromQuery(cw, this, queryid);
 
                 unsigned unmatchedCount=0;
                 Owned<IReferencedFileIterator> refFiles = filelist->getFiles();
@@ -559,6 +559,10 @@ public:
                         continue;
                     }
                     VStringBuffer fullname("%s/%s", queryid, rf.getLogicalName());
+                    if (!(flags & RefFileNotOptional))
+                        fullname.append("/Optional");
+                    else if (isCompulsory)
+                        fullname.append("/Compulsory");
                     unmatchedFiles.append(fullname);
                     unmatchedCount++;
                 }

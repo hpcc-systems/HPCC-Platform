@@ -498,7 +498,7 @@ public:
         unsigned auditflags = (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED);
         if (write)
             auditflags |= DALI_LDAP_WRITE_WANTED;
-        int perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
+        SecAccessFlags perm = queryDistributedFileDirectory().getFDescPermissions(fd,user,auditflags);
         IDFS_Exception *e = NULL;
         if (!HASREADPERMISSION(perm)) 
             throw MakeStringException(DFSERR_LookupAccessDenied,"Lookup permission denied for physical file(s)");

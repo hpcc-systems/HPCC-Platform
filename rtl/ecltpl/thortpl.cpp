@@ -36,3 +36,4 @@ extern "C" ECL_API IEclProcess* createProcess()
     return new MyEclProcess;
 }
 
+@userFunction@

@@ -123,7 +123,7 @@ if [ -z "$source"  ] || [ -z "$target" ]; then
 fi
 
 
-SCRIPT_FILE=/tmp/hpcc-push_$$
+SCRIPT_FILE=~/hpcc-push_$$
 createScriptFile
 
 python_expected_version=2.6

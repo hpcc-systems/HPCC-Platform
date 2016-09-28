@@ -244,7 +244,7 @@ define([
                         scopeItem.__data = row;
                         scopeItem.label = row.key;
                         scopeItem.value = row.value;
-                    };
+                    }
                 });
             });
             function trimTree(node) {

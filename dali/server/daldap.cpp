@@ -117,7 +117,7 @@ public:
     }
 
 
-    int getPermissions(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags)
+    SecAccessFlags getPermissions(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags)
     {
         if (!ldapsecurity||((getLDAPflags()&DLF_ENABLED)==0)) 
             return SecAccess_Full;
@@ -151,7 +151,7 @@ public:
         bool wuscope = stricmp(key,"workunit")==0;
 
         if (checkScopeScans() && (filescope || wuscope)) {
-            int perm = SecAccess_None;
+            SecAccessFlags perm = SecAccess_None;
             unsigned start = msTick();
             if (filescope)
                 perm=ldapsecurity->authorizeFileScope(*user, obj);

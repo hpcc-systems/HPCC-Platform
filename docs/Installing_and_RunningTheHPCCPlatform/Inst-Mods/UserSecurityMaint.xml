@@ -1273,15 +1273,6 @@
               </row>
 
               <row>
-                <entry>ConfigAccess</entry>
-
-                <entry>Access to super computer environment
-                (deprecated)</entry>
-
-                <entry>Read</entry>
-              </row>
-
-              <row>
                 <entry>DfuAccess</entry>
 
                 <entry>Access to DFU Logical Files</entry>
@@ -1381,28 +1372,11 @@
               </row>
 
               <row>
-                <entry>ExecuteAccess</entry>
-
-                <entry>Access to Remote Execution in ECL Watch
-                (deprecated)</entry>
-
-                <entry>Full</entry>
-              </row>
-
-              <row>
                 <entry>FileDesprayAccess</entry>
 
                 <entry>Allows a user to despray logical files.</entry>
 
                 <entry>Write</entry>
-              </row>
-
-              <row>
-                <entry>FileDkcAccess</entry>
-
-                <entry>Access to dkcing of key files (deprecated)</entry>
-
-                <entry>Read</entry>
               </row>
 
               <row>

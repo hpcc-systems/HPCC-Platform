@@ -515,12 +515,13 @@ class EsdlDefArray : public EsdlDefObject, implements IEsdlDefArray
 {
 private:
     Owned<IProperties> recSelectors;
+    bool isEsdlList;
 
 public:
     IMPLEMENT_IINTERFACE;
     IMPLEMENT_ESDL_DEFOBJ;
 
-    EsdlDefArray(StartTag &tag, EsdlDefinition *esdl) : EsdlDefObject(tag, esdl){}
+    EsdlDefArray(StartTag &tag, EsdlDefinition *esdl, const bool _isEsdlList) : EsdlDefObject(tag, esdl), isEsdlList(_isEsdlList){}
     virtual EsdlDefTypeId getEsdlType(){return EsdlTypeArray;}
 
     void load(XmlPullParser *xpp, StartTag &struct_tag)
@@ -534,7 +535,10 @@ public:
         {
             if( this->checkOptional(opts) )
             {
-                xml.append("<EsdlArray ");
+                if (isEsdlList)
+                    xml.append("<EsdlList ");
+                else
+                    xml.append("<EsdlArray ");
                 toXMLAttributes(xml);
                 xml.append("/>");
             }
@@ -554,6 +558,8 @@ public:
 
         return recSelectors.get();
     }
+
+    inline const bool checkIsEsdlList() { return isEsdlList; };
 };
 
 class EsdlDefAttribute : public EsdlDefObject, implements IEsdlDefAttribute
@@ -815,9 +821,9 @@ public:
         et->load(xpp, tag);
     }
 
-    void loadArray(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &tag)
+    void loadArray(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &tag, const bool isEsdlList)
     {
-        EsdlDefArray *art = new EsdlDefArray(tag, esdl);
+        EsdlDefArray *art = new EsdlDefArray(tag, esdl, isEsdlList);
         children.append(*dynamic_cast<IEsdlDefObject*>(art));
         art->load(xpp, tag);
     }
@@ -919,7 +925,9 @@ void EsdlDefStruct::load(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &str
                 else if(!stricmp(localname, "EsdlEnum"))
                     loadEnumRef(esdl, xpp, stag);
                 else if(!stricmp(localname, "EsdlArray"))
-                    loadArray(esdl, xpp, stag);
+                    loadArray(esdl, xpp, stag, false);
+                else if(!stricmp(localname, "EsdlList"))
+                    loadArray(esdl, xpp, stag, true);
                 else if(!stricmp(localname, "EsdlAttribute"))
                     loadAttribute(esdl, xpp, stag);
                 else
@@ -970,6 +978,7 @@ public:
 
     virtual const char *queryRequestType(){return queryProp("request_type");}
     virtual const char *queryResponseType(){return queryProp("response_type");}
+    virtual const char *queryMetaData(const char* tag) { return queryProp(tag); }
     virtual const char *queryProductAssociation(){return queryProp("product_");}
     /*{
         String prod(queryProp("productAssociation"));

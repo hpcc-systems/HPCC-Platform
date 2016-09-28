@@ -25,6 +25,8 @@
 #include "thorxmlwrite.hpp" //JSON WRITER
 #include "eclrtl.hpp"
 
+#define LOGDATASETTAG "LogDatasets"
+
 using namespace std;
 
 // Uncomment this to debug ESDL issues
@@ -631,6 +633,9 @@ Esdl2Array::Esdl2Array(Esdl2Transformer *xformer, IEsdlDefObject *def) : Esdl2Ba
     type_unknown=false;
     inited=false;
 
+    IEsdlDefArray* defArray = dynamic_cast<IEsdlDefArray*>(def);
+    isEsdlList = defArray->checkIsEsdlList();
+
     const char *atype = def->queryProp("type");
     if (atype)
     {
@@ -696,6 +701,18 @@ void Esdl2Array::process(Esdl2TransformerContext &ctx, IPropertyTree *pt, const 
             esdl_type->process(ctx, item_tag.get(), local, count_output);
         else
             output_content(ctx, item_tag.get());
+
+        if (ctx.writer->length() != curlen && count)
+            ctx.counter++;
+    }
+    else if (isEsdlList)
+    {
+        int curlen = ctx.writer->length();
+        const char *tagname = queryOutputName(ctx);
+        if (esdl_type)
+            esdl_type->process(ctx, pt, tagname, NULL, count_output);
+        else
+            output_content(ctx, pt, tagname);
 
         if (ctx.writer->length() != curlen && count)
             ctx.counter++;
@@ -769,6 +786,18 @@ void Esdl2Array::process(Esdl2TransformerContext &ctx, const char *out_name, Esd
             esdl_type->process(ctx, item_tag.get(), local, count_output);
         else
             output_content(ctx, item_tag.get());
+
+        if (ctx.writer->length() != curlen && count)
+            ctx.counter++;
+    }
+    else if (isEsdlList)
+    {
+        int curlen = ctx.writer->length();
+        const char *tagname = queryOutputName(ctx);
+        if (esdl_type)
+            esdl_type->process(ctx, tagname, NULL, count_output);
+        else
+            output_content(ctx, tagname);
 
         if (ctx.writer->length() != curlen && count)
             ctx.counter++;
@@ -895,7 +924,36 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, IPropertyTree *pt, const
             {
                 const char *tagname = child.queryInputName(ctx);
                 if (pt->hasProp(tagname)||child.hasDefaults())
-                    child.process(ctx, pt->queryPropTree(tagname), child.queryOutputName(ctx), &local, count);
+                {
+                    bool isEsdlList = false;
+                    IEsdlDefObject*  def = child.queryEsdlDefObject();
+                    if (def->getEsdlType() == EsdlTypeArray)
+                    {
+                        IEsdlDefArray* defArray = dynamic_cast<IEsdlDefArray*>(def);
+                        isEsdlList = defArray->checkIsEsdlList();
+                    }
+                    if (!isEsdlList)
+                        child.process(ctx, pt->queryPropTree(tagname), child.queryOutputName(ctx), &local, count);
+                    else
+                    {
+                        Owned<IInterface> prevLocation = ctx.writer->saveLocation();
+                        ctx.writer->outputBeginArray(tagname);
+                        int curlen = ctx.writer->length();
+
+                        Owned<IPropertyTreeIterator> iter = pt->getElements(tagname);
+                        ForEach(*iter)
+                            child.process(ctx, &iter->query(), child.queryOutputName(ctx), &local, count);
+
+                        if (ctx.writer->length()==curlen) //nothing was added... empty content remove opening tag
+                            ctx.writer->rewindTo(prevLocation); //rewind
+                        else
+                        {
+                            ctx.writer->outputEndArray(tagname);
+                            if (count)
+                                ctx.counter++;
+                        }
+                    }
+                }
             }
         }
 
@@ -955,6 +1013,8 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
             }
         }
 
+        StringBuffer esdlListName;
+        unsigned esdlListItemCount = 0;
         Esdl2LocalContext local;
         StringBuffer completeContent;
         for (int type=ctx.xppp->next(); type!=XmlPullParser::END_TAG; type=ctx.xppp->next())
@@ -1013,6 +1073,34 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
                             Owned<IInterface> location = ctx.writer->saveLocation();
                             local.dataForProcessed = false;
 
+                            const char* tagName = child_start.getLocalName();
+                            if (!esdlListName.isEmpty())
+                            {
+                                if (streq(tagName, esdlListName.str()))
+                                    esdlListItemCount++;
+                                else
+                                { //A different esdl tag is coming. We need to close the last EsdlList.
+                                    ctx.writer->outputEndArray(esdlListName.str());
+                                    esdlListName.clear();
+                                    esdlListItemCount = 0;
+                                    location.setown(ctx.writer->saveLocation());
+                                }
+                            }
+
+                            if (esdlListName.isEmpty())
+                            {
+                                IEsdlDefObject*  def = child->queryEsdlDefObject();
+                                if (def->getEsdlType() == EsdlTypeArray)
+                                {
+                                    IEsdlDefArray* defArray = dynamic_cast<IEsdlDefArray*>(def);
+                                    if (defArray->checkIsEsdlList())
+                                    {
+                                        ctx.writer->outputBeginArray(tagName);
+                                        esdlListName.set(tagName);
+                                        esdlListItemCount++;
+                                    }
+                                }
+                            }
                             chd.process(ctx, NULL, &local);
 
                             if (local.dataForProcessed)
@@ -1024,6 +1112,11 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
                                     ESDL_DBG("Taking out data for DataFor '%s' from out buffer", chd.queryDataFor()->queryName());
                                     local.setDataFor(chd.queryDataFor()->queryName(), ctx.writer->str()+len);
                                     ctx.writer->rewindTo(location);
+                                    if (esdlListItemCount == 1)
+                                    {// Not call outputEndArray()
+                                        esdlListName.clear();
+                                        esdlListItemCount = 0;
+                                    }
                                 }
                             }
 
@@ -1043,6 +1136,8 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
                 }
             }
         }
+        if (!esdlListName.isEmpty())
+            ctx.writer->outputEndArray(esdlListName.str());
 
         if (completeContent.length()>0)
             ctx.writer->outputUtf8(rtlUtf8Length(completeContent.length(),completeContent.str()),completeContent.str(),NULL);
@@ -1509,11 +1604,44 @@ int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char
     return rc;
 };
 
+static SecAccessFlags strToAccessFlag(const char* flag)
+{
+    if (!flag || !*flag)
+        return SecAccess_Full;
+    if (!stricmp(flag,"None"))
+        return SecAccess_None;
+    if (!stricmp(flag,"Access"))
+        return SecAccess_Access;
+    if (!stricmp(flag,"Read"))
+        return SecAccess_Read;
+    if (!stricmp(flag,"Write"))
+        return SecAccess_Write;
+    if (!stricmp(flag,"Full"))
+        return SecAccess_Full;
+
+    DBGLOG("Unknown access level: %s", flag);
+    return SecAccess_Full;
+}
+
 int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char* service, const char *method, IPropertyTree &in, IXmlWriterExt* writer, unsigned int flags, const char *ns)
 {
     IEsdlMethodInfo *mi = queryMethodInfo(service,method);
     if (!mi)
         throw MakeStringException(-1, "ESDL - method '%s::%s'not found", service, method);
+
+    // check the auth_feature
+    if (mode==EsdlRequestMode)
+    {
+        const char* auth_feature = mi->queryMetaData("auth_feature");
+        if (auth_feature && *auth_feature)
+        {
+            const char* level = strchr(auth_feature,':');
+            SecAccessFlags requiredAccess = strToAccessFlag(level?level+1:NULL);
+            SecAccessFlags grantAccess;
+            if (!ctx.authorizeFeature(auth_feature,grantAccess) || grantAccess<requiredAccess)
+                throw MakeStringException(-1, "Access Denied to %s",auth_feature);
+        }
+    }
 
     const char *root_type=NULL;
     if (mode==EsdlRequestMode)
@@ -1691,7 +1819,7 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
             }
         }
     }
-    logdata.append("<LogDatasets>");
+    logdata.appendf("<%s>", LOGDATASETTAG);
     const char * dataset;
     try
     {
@@ -1730,11 +1858,11 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
                 xpp->skipSubTree();
             }
         }
-        logdata.append("</LogDatasets>");
+        logdata.appendf("</%s>",LOGDATASETTAG);
     }
     catch (...)
     {
-        logdata.append("</LogDatasets>");
+        logdata.appendf("</%s>",LOGDATASETTAG);
         throw;
     }
 }

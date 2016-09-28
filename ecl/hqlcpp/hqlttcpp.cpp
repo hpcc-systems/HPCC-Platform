@@ -2087,9 +2087,6 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
     case NO_AGGREGATE:
         normalized = normalizeScalarAggregate(transformed);
         break;
-    case no_setresult:
-        normalized = convertSetResultToExtract(transformed);
-        break;
     case no_projectrow:
         {
             IHqlExpression * ds = transformed->queryChild(0);
@@ -3819,6 +3816,28 @@ void HqlCppTranslator::convertLogicalToActivities(WorkflowItem & curWorkflow)
     if (queryOptions().normalizeLocations)
         normalizeAnnotations(*this, curWorkflow.queryExprs());
 }
+
+//------------------------------------------------------------------------
+static HqlTransformerInfo setResultToExtractTransformerInfo("SetResultToExtractTransformer");
+SetResultToExtractTransformer::SetResultToExtractTransformer()
+: NewHqlTransformer(setResultToExtractTransformerInfo)
+{
+}
+
+
+IHqlExpression * SetResultToExtractTransformer::createTransformed(IHqlExpression * expr)
+{
+    OwnedHqlExpr transformed = PARENT::createTransformed(expr);
+    if (transformed->getOperator() == no_setresult)
+    {
+        OwnedHqlExpr normalized = convertSetResultToExtract(transformed);
+        if (normalized && (normalized != transformed))
+            transformed.set(normalized);
+    }
+
+    return transformed.getClear();
+}
+
 
 //------------------------------------------------------------------------
 
@@ -6200,11 +6219,6 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     return getValue.getClear();
 }
 
-static bool isInternalEmbedAttr(IAtom *name)
-{
-    return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom ||name == importAtom;
-}
-
 IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression * newFuncDef)
 {
     IHqlExpression * body = newFuncDef->queryChild(0);
@@ -6223,6 +6237,9 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
     unwindChildren(bodyArgs, body, 0);
     bodyArgs.append(*createLocalAttribute());
     bodyArgs.append(*createExprAttribute(entrypointAtom, LINK(funcNameExpr)));
+    IHqlExpression *timeAttr = ecl->queryAttribute(timeAtom);
+    if (timeAttr)
+        bodyArgs.append(*LINK(timeAttr));
     OwnedHqlExpr newBody = body->clone(bodyArgs);
     inheritDependencies(newBody);
     copyDependencies(queryBodyExtra(ecl), queryBodyExtra(newBody));

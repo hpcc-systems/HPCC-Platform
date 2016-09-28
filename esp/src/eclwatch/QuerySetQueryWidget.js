@@ -284,23 +284,23 @@ define([
                 this.menuFilterDeactivate.set("label", this.i18n.Inactive + ":  true" );
                 this.menuFilterDeactivate.set("hpcc_value", 0);
             }
-            if (item.Cluster == "") {
+            if (item.Cluster === "") {
                 this.menuFilterCluster.set("disabled", true);
                 this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + this.i18n.NA);
             }
-            if (item.Suspended == false) {
+            if (item.Suspended === false) {
                 this.menuFilterSuspended.set("disabled", true);
                 this.menuFilterSuspended.set("label", this.i18n.Suspended + ":  " + this.i18n.NA);
             }
-            if (item.Suspended == true) {
+            if (item.Suspended === true) {
                 this.menuFilterUnsuspend.set("disabled", true);
                 this.menuFilterUnsuspend.set("label", this.i18n.Unsuspended + ":  " + this.i18n.NA);
             }
-           if (item.Activated == false) {
+           if (item.Activated === false) {
                 this.menuFilterActive.set("disabled", true);
                 this.menuFilterActive.set("label", this.i18n.Active + ":  " + this.i18n.NA);
             }
-            if (item.Activated == true) {
+            if (item.Activated === true) {
                 this.menuFilterDeactivate.set("disabled", true);
                 this.menuFilterDeactivate.set("label", this.i18n.Inactive + ":  " + this.i18n.NA);
             }
@@ -326,7 +326,7 @@ define([
                         width: 25,
                         sortable: false,
                         formatter: function (suspended) {
-                            if (suspended == true) {
+                            if (suspended === true) {
                                 return dojoConfig.getImageHTML("suspended.png");
                             }
                             return "";
@@ -364,7 +364,7 @@ define([
                         },
                         width: 25,
                         formatter: function (activated) {
-                            if (activated == true) {
+                            if (activated === true) {
                                 return dojoConfig.getImageHTML("active.png");
                             }
                             return dojoConfig.getImageHTML("inactive.png");
@@ -457,12 +457,12 @@ define([
             var isNotActive = false;
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
-                if (selection[i].Suspended != true) {
+                if (selection[i].Suspended !== true) {
                     isSuspended = true;
                 } else {
                     isNotSuspended = true;
                 }
-                if (selection[i].Activated != true) {
+                if (selection[i].Activated !== true) {
                     isActive = true;
                 } else {
                     isNotActive = true;
@@ -538,7 +538,7 @@ define([
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
                 var tab = this.ensurePane(selections[i].Id, selections[i]);
-                if (i == 0) {
+                if (i === 0) {
                     firstTab = tab;
                 }
             }

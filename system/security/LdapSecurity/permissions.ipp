@@ -699,11 +699,11 @@ private:
     ILdapClient*         m_ldap_client;
 
 protected:
-    unsigned ldap2sec(unsigned ldapperm);
-    unsigned sec2ldap(unsigned secperm);
+    SecAccessFlags ldap2sec(unsigned ldapperm);
+    unsigned sec2ldap(SecAccessFlags secperm);
 
-    unsigned ldap2newsec(unsigned ldapperm);
-    unsigned newsec2ldap(unsigned secperm);
+    NewSecAccessFlags ldap2newsec(unsigned ldapperm);
+    unsigned newsec2ldap(NewSecAccessFlags secperm);
 public:
     IMPLEMENT_IINTERFACE;
 

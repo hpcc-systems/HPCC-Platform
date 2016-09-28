@@ -199,7 +199,7 @@ private:
     int GetIndexData(IEspContext &context, bool bSchemaOnly, const char* indexName, const char* parentName, const char* filterBy, __int64 start, 
                                         __int64& count, __int64& read, __int64& total, StringBuffer& message, StringArray& columnLabels, 
                                         StringArray& columnLabelsType, IArrayOf<IEspDFUData>& DataList, bool webDisableUppercaseTranslation);
-    bool getUserFilePermission(IEspContext &context, IUserDescriptor* udesc, const char* logicalName, int& permission);
+    bool getUserFilePermission(IEspContext &context, IUserDescriptor* udesc, const char* logicalName, SecAccessFlags& permission);
     void parseStringArray(const char *input, StringArray& strarray);
     int superfileAction(IEspContext &context, const char* action, const char* superfile, StringArray& subfiles,
         const char* beforeSubFile, bool existingSuperfile, bool autocreatesuper, bool deleteFile, bool removeSuperfile =  true);

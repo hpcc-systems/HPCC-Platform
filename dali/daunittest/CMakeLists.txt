@@ -36,7 +36,8 @@ include_directories (
          ./../../system/mp 
          . 
          ./../../system/include 
-         ./../../system/jlib 
+         ./../../system/jlib
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

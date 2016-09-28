@@ -16,7 +16,7 @@
 ############################################################################## */
 
 EXPORT Language := SERVICE : plugin('javaembed')
-  boolean getEmbedContext():cpp,pure,namespace='javaembed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
+  integer getEmbedContext():cpp,pure,namespace='javaembed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()',fold;
 END;
 EXPORT getEmbedContext := Language.getEmbedContext;
 EXPORT boolean supportsImport := true;

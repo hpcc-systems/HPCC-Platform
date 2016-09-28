@@ -1329,7 +1329,7 @@ void EclCC::processDefinitions(EclRepositoryArray & repositories)
         }
 
         //Create a repository with just that attribute.
-        Owned<IFileContents> contents = createFileContentsFromText(value, NULL, false);
+        Owned<IFileContents> contents = createFileContentsFromText(value, NULL, false, NULL);
         repositories.append(*createSingleDefinitionEclRepository(module, attr, contents));
     }
 }
@@ -1406,7 +1406,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     {
         const char * sourceFilename = archiveTree->queryProp("Query/@originalFilename");
         Owned<ISourcePath> sourcePath = createSourcePath(sourceFilename);
-        contents.setown(createFileContentsFromText(queryText, sourcePath, false));
+        contents.setown(createFileContentsFromText(queryText, sourcePath, false, NULL));
         if (queryAttributePath && queryText && *queryText)
         {
             Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(queryAttributePath, contents);
@@ -1427,7 +1427,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
         queryAttributePath = fullPath.str();
 
         //Create a repository with just that attribute, and place it before the archive in the resolution order.
-        Owned<IFileContents> contents = createFileContentsFromText(queryText, NULL, false);
+        Owned<IFileContents> contents = createFileContentsFromText(queryText, NULL, false, NULL);
         repositories.append(*createSingleDefinitionEclRepository(syntaxCheckModule, syntaxCheckAttribute, contents));
     }
 
@@ -1451,7 +1451,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     assertex(curFilename);
 
     Owned<ISourcePath> sourcePath = optNoSourcePath ? NULL : createSourcePath(curFilename);
-    Owned<IFileContents> queryText = createFileContentsFromFile(curFilename, sourcePath, false);
+    Owned<IFileContents> queryText = createFileContentsFromFile(curFilename, sourcePath, false, NULL);
     const char * queryTxt = queryText->getText();
     if (optArchive || optGenerateDepend || optSaveQueryArchive)
         instance.archive.setown(createAttributeArchive());

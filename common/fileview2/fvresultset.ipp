@@ -108,6 +108,8 @@ public:
 
     void getXmlSchema(ISchemaBuilder & builder, bool useXPath) const;
     unsigned queryColumnIndex(unsigned firstField, const char * fieldName) const;
+    inline IFvDataSourceMetaData* getMeta() const { return meta; };
+    inline CResultSetColumnInfo& getColumn(int column) const { return columns.item(column); };
 
 protected:
     IFvDataSourceMetaData * meta;

@@ -380,7 +380,7 @@ void filePermissions(const char *lname,const char *username,const char *password
 {
     Owned<IUserDescriptor> user = createUserDescriptor();
     user->set(username,password);
-    int perm=queryDistributedFileDirectory().getFilePermissions(lname,user);
+    SecAccessFlags perm=queryDistributedFileDirectory().getFilePermissions(lname,user);
     printf("Permissions for %s = %d\n",lname,perm);
 }
 

@@ -91,6 +91,7 @@ include_directories (
          ./../activities 
          ./../../rtl/eclrtl
          ${HPCC_SOURCE_DIR}/dali/ft
+         ./../../system/security/shared
     )
 
 HPCC_ADD_LIBRARY( activitymasters_lcr SHARED ${SRCS} )

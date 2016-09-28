@@ -54,7 +54,7 @@ public:
     virtual bool init(IPropertyTree* cfg, const char* service);
 
     virtual bool updateLog(const char* option, IEspContext& espContext, IPropertyTree* userContext, IPropertyTree* userRequest,
-        const char* backEndResp, const char* userResp, StringBuffer& status);
+        const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status);
     virtual bool updateLog(const char* option, const char* logContent, StringBuffer& status);
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status);

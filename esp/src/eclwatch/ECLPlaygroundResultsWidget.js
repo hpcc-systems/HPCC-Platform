@@ -84,7 +84,7 @@ define([
 
                 var monitorCount = 4;
                 this.wu.monitor(function () {
-                    if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
+                    if (context.wu.isComplete() || ++monitorCount % 5 === 0) {
                         context.wu.getInfo({
                             onGetResults: function (results) {
                                 if (!params.SourceFiles) {
@@ -93,7 +93,7 @@ define([
                                             Wuid: results[i].Wuid,
                                             Sequence: results[i].Sequence
                                         });
-                                        if (i == 0) {
+                                        if (i === 0) {
                                             context.initTab();
                                         }
                                     }

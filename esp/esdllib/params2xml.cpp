@@ -143,6 +143,8 @@ void child2xml(IEsdlDefinition *esdl, IEsdlDefObject &child, StringBuffer &flexp
                     item_tag = "item";
                 const char *artype = child.queryProp("type");
                 IEsdlDefStruct *cst = esdl->queryStruct(artype);
+                IEsdlDefArray* defArray = dynamic_cast<IEsdlDefArray*>(&child);
+                bool isEsdlList = defArray->checkIsEsdlList();
 
                 flexpath.append(name);
 
@@ -158,7 +160,10 @@ void child2xml(IEsdlDefinition *esdl, IEsdlDefObject &child, StringBuffer &flexp
                     int itemcount = (countstr) ? atoi(countstr) : 0;
                     if (itemcount)
                     {
-                        xmlstr.append('<').append(name).append('>');
+                        if (isEsdlList)
+                            item_tag = name;
+                        else
+                            xmlstr.append('<').append(name).append('>');
                         unsigned arxml_setpoint = xmlstr.length();
                         for (int pos = 0; pos < itemcount; pos++)
                         {
@@ -166,10 +171,13 @@ void child2xml(IEsdlDefinition *esdl, IEsdlDefObject &child, StringBuffer &flexp
                             paramsStruct2xml(esdl, cst, item_tag, params, xmlstr, flexpath, flags, ver, false);
                             flexpath.setLength(arpath_setpoint);
                         }
-                        if (xmlstr.length()>arxml_setpoint)
-                            xmlstr.append("</").append(name).append('>');
-                        else
-                            xmlstr.setLength(arxml_setpoint - strlen(name) - 2);
+                        if (!isEsdlList)
+                        {
+                            if (xmlstr.length()>arxml_setpoint)
+                                xmlstr.append("</").append(name).append('>');
+                            else
+                                xmlstr.setLength(arxml_setpoint - strlen(name) - 2);
+                        }
                     }
                 }
                 else
@@ -177,7 +185,10 @@ void child2xml(IEsdlDefinition *esdl, IEsdlDefObject &child, StringBuffer &flexp
                     const char *val = params->queryProp(flexpath.str());
                     if (val && *val)
                     {
-                        xmlstr.append('<').append(name).append('>');
+                        if (isEsdlList)
+                            item_tag = name;
+                        else
+                            xmlstr.append('<').append(name).append('>');
                         unsigned arxml_setpoint = xmlstr.length();
                         StringBuffer itemval;
                         for (const char *finger=val; *finger; finger++)
@@ -195,10 +206,19 @@ void child2xml(IEsdlDefinition *esdl, IEsdlDefObject &child, StringBuffer &flexp
                             else
                                 itemval.append(*finger);
                         }
-                        if (xmlstr.length()>arxml_setpoint)
-                            xmlstr.append("</").append(name).append('>');
-                        else
-                            xmlstr.setLength(arxml_setpoint - strlen(name) - 2);
+                        if (!itemval.isEmpty()) //Last item has not been added yet!
+                        {
+                            xmlstr.append('<').append(item_tag).append('>');
+                            encodeUtf8XML(itemval.str(), xmlstr);
+                            xmlstr.append("</").append(item_tag).append('>');
+                        }
+                        if (!isEsdlList)
+                        {
+                            if (xmlstr.length()>arxml_setpoint)
+                                xmlstr.append("</").append(name).append('>');
+                            else
+                                xmlstr.setLength(arxml_setpoint - strlen(name) - 2);
+                        }
                     }
                 }
                 flexpath.setLength(flexpath_setpoint);

@@ -26,9 +26,7 @@ ws_smc:
         Full - roxie control commands: attach, detach, reload
 
 ws_config:
-    ConfigAccess: 
-        Read - Read only access to super computer environment
-        Write- Read/write access to super computer environment
+    ConfigAccess: Removed in 6.2.0
 
 ws_dfu:
     DfuAccess: 
@@ -53,8 +51,6 @@ ws_fs:
                   SuperCopy, Rename, FileList, DfuMonitor
     FileDesprayAccess: 
         Write - Access to despraying of files
-    FileDkcAccess: 
-        Write - Access to DKC key files
 
 ws_fileio:
     FileIOAccess:

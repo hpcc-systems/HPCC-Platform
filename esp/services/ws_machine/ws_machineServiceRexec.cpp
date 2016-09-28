@@ -642,6 +642,9 @@ bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, ch
 bool Cws_machineEx::onStartStop( IEspContext &context, IEspStartStopRequest &req, 
                                          IEspStartStopResponse &resp)
 {
+    throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "StartStop feature not supported.");
+    //following code is no longer accessible but will remain for reference
+
     try
     {
         if (!context.validateFeatureAccess(EXEC_FEATURE_URL, SecAccess_Full, false))
@@ -708,6 +711,9 @@ void Cws_machineEx::updatePathInAddress(const char* address, StringBuffer& addrS
 bool Cws_machineEx::onStartStopBegin( IEspContext &context, IEspStartStopBeginRequest &req, 
                                          IEspStartStopBeginResponse &resp)
 {
+    throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "StartStopBegin feature not supported.");
+    //following code is no longer accessible but will remain for reference
+
     try
     {
         if (!context.validateFeatureAccess(EXEC_FEATURE_URL, SecAccess_Full, false))
@@ -751,6 +757,9 @@ bool Cws_machineEx::onStartStopBegin( IEspContext &context, IEspStartStopBeginRe
 bool Cws_machineEx::onStartStopDone( IEspContext &context, IEspStartStopDoneRequest &req, 
                                          IEspStartStopResponse &resp)
 {
+    throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "StartStopDone feature not supported.");
+    //following code is no longer accessible but will remain for reference
+
     try
     {
         if (!context.validateFeatureAccess(EXEC_FEATURE_URL, SecAccess_Full, false))

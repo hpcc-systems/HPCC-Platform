@@ -865,6 +865,8 @@ IEsdlCommand *createCoreEsdlCommand(const char *cmdname)
         return new EsdlBindServiceCmd();
     if (strieq(cmdname, "BIND-METHOD"))
         return new EsdlBindMethodCmd();
+    if (strieq(cmdname, "UNBIND-METHOD"))
+        return new EsdlUnBindMethodCmd();
     if (strieq(cmdname, "GET-BINDING"))
         return new EsdlGetBindingCmd();
     if (strieq(cmdname, "GET-DEFINITION"))

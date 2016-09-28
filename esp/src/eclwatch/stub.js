@@ -68,7 +68,7 @@ define([
                             if (item.Message) {
                                 var MAX_LINES = 10;
                                 if (item.Message.length > MAX_LINES * 80) { 
-                                    item.Message = item.Message.substr(0, length = MAX_LINES * 80);
+                                    item.Message = item.Message.substr(0, MAX_LINES * 80);
                                     item.Message += "...";
                                     clipped = true;
                                 }

@@ -469,11 +469,12 @@ private:
     Linked<ISourcePath> sourcePath;
     bool delayedRead;
     bool implicitlySigned;
+    LinkedHqlExpr gpgSignature;
 
 public:
-    CFileContents(IFile * _file, ISourcePath * _sourcePath, bool _isSigned);
-    CFileContents(const char *query, ISourcePath * _sourcePath, bool _isSigned);
-    CFileContents(unsigned len, const char *query, ISourcePath * _sourcePath, bool _isSigned);
+    CFileContents(IFile * _file, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature);
+    CFileContents(const char *query, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature);
+    CFileContents(unsigned len, const char *query, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature);
 
     virtual IFile * queryFile() { return file; }
     virtual ISourcePath * querySourcePath() { return sourcePath; }
@@ -491,6 +492,10 @@ public:
     virtual bool isImplicitlySigned()
     {
         return implicitlySigned;
+    }
+    virtual IHqlExpression * queryGpgSignature()
+    {
+        return gpgSignature.get();
     }
 private:
     bool preloadFromFile();

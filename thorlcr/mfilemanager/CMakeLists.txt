@@ -49,6 +49,7 @@ include_directories (
          ./../mfilemanager 
          ./../../common/thorhelper 
          ./../../roxie/roxiemem
+         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DMFILEMANAGER_EXPORTS )

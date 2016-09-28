@@ -598,7 +598,7 @@ ESPresponse [exceptions_inline,encode(0)] TpGetServicePluginsResponse
     ESParray<ESPstruct TpEspServicePlugin, Plugin> Plugins;
 };
 
-ESPservice [noforms, version("1.25"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.25"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPuses ESPStruct TpBinding;
     ESPuses ESPstruct TpCluster;
@@ -620,8 +620,7 @@ ESPservice [noforms, version("1.25"), exceptions_inline("./smc_xslt/exceptions.x
     ESPuses ESPstruct TpServices;
     ESPuses ESPstruct TpTargetCluster;
 
-    ESPmethod [resp_xsl_default("/esp/xslt/targetclusters.xslt")]TpTargetClusterQuery(TpTargetClusterQueryRequest, TpTargetClusterQueryResponse);
-    ///ESPmethod TpTargetClusterQuery(TpTargetClusterQueryRequest, TpTargetClusterQueryResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/targetclusters.xslt")] TpTargetClusterQuery(TpTargetClusterQueryRequest, TpTargetClusterQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/topology.xslt")] TpClusterQuery(TpClusterQueryRequest, TpClusterQueryResponse);
     ESPmethod TpLogicalClusterQuery(TpLogicalClusterQueryRequest, TpLogicalClusterQueryResponse);
     ESPmethod TpGroupQuery(TpGroupQueryRequest, TpGroupQueryResponse);
@@ -646,4 +645,3 @@ ESPservice [noforms, version("1.25"), exceptions_inline("./smc_xslt/exceptions.x
 SCMexportdef(WSWU);
 
 SCMapi(WSWU) IClientWsTopology *createWsTopologyClient();
-

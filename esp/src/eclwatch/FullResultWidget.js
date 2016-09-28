@@ -136,7 +136,7 @@ define([
             if (result && result.length) {
                 var columns = [];
                 for (var key in result[0]) {
-                    if (key.indexOf("__") != 0) {
+                    if (key.indexOf("__") !== 0) {
                         columns.push({
                             field: key,
                             label: key

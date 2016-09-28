@@ -85,7 +85,11 @@ kill_slaves()
                 unlock ${LOCK_DIR}/$component/${component}.lock
                 rm -f $INIT_PID_NAME $instancedir/slaves > /dev/null 2>&1
                 exit 255
+            else
+                log "Frunssh successful"
             fi
+        else
+            log "Could not locate $instancedir/uslaves file"
         fi
     fi
 

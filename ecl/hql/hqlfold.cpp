@@ -35,6 +35,7 @@
 
 #include "hqlfold.hpp"
 #include "hqlthql.hpp"
+#include "eclhelper.hpp"
 
 #ifdef __APPLE__
 #include <dlfcn.h>
@@ -678,6 +679,18 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
             library = fullLibraryPath.str();
         }
     }
+#ifdef _DEBUG
+    if (streq(library, "libpyembed.dylib") || streq(library, "libv8embed.dylib") || streq(library, "libjavaembed.dylib"))
+    {
+        Dl_info info;
+        if (dladdr((const void *) rtlStrToUInt4, &info))  // Any function in eclrtl would do...
+        {
+            fullLibraryPath.set(info.dli_fname);
+            fullLibraryPath.replaceString("libeclrtl.dylib", library);
+            library = fullLibraryPath.str();
+        }
+    }
+#endif
 #endif
 
     HINSTANCE hDLL=LoadSharedObject(library, false, false);
@@ -1249,7 +1262,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
         return NULL;
     }
 
-    FreeSharedObject(hDLL);
+    // NOTE - we do not call FreeSharedObject(hDLL); here - the embedded language folding requires that the dll stay loaded, and it's also more efficient for other cases
 
     IValue* result = NULL;
 
@@ -1335,7 +1348,480 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         return NULL;
     return doFoldExternalCall(expr, foldOptions, templateContext, library.str(), entry.str());
 }
+
 //------------------------------------------------------------------------------------------
+
+bool checkEmbeddedFoldable(IHqlExpression* expr, unsigned foldOptions)
+{
+    IHqlExpression * funcdef = expr->queryBody()->queryFunctionDefinition();
+    IHqlExpression * outofline = funcdef->queryChild(0);
+    assertex(outofline->getOperator() == no_outofline);
+    IHqlExpression * body = outofline->queryChild(0);
+    assertex(body->getOperator()==no_embedbody);
+    IHqlExpression * formals = funcdef->queryChild(1);
+
+    ITypeInfo * returnType = funcdef->queryType()->queryChildType();
+
+    if (body->hasAttribute(_disallowed_Atom) || !body->hasAttribute(foldAtom))
+        return false;  // Not allowed
+    ForEachChild(idx, body)
+    {
+        IHqlExpression *child = body->queryChild(idx);
+        if (child->isAttribute() && !isInternalEmbedAttr(child->queryName()) && !child->isConstant())
+            // Note that the language attr is a function call and thus NOT considered constant, hence we can't just
+            // test body->isConstant()
+            return false;
+    }
+    IHqlExpression *languageAttr = body->queryAttribute(languageAtom);
+    if (!languageAttr)
+        return false;  // Can't fold embedded C++
+
+    switch (returnType->getTypeCode())
+    {
+    case type_row:
+    case type_table:
+    case type_groupedtable:
+        // Can't do as yet without the type info
+        return false;
+    }
+
+    // check all the parameters passed in
+    unsigned numParam = formals->numChildren();
+    for(unsigned i = 0; i < numParam; i++)
+    {
+        IHqlExpression * curArg = formals->queryChild(i);
+        assertex(curArg != NULL);
+        ITypeInfo * paramType = curArg->queryType();
+        switch (paramType->getTypeCode())
+        {
+        case type_row:
+        case type_table:
+        case type_groupedtable:
+            // Can't do as yet without the type info
+            return false;
+        }
+    }
+    return true;
+}
+
+class DummyContext: implements ICodeContext
+{
+    // Perhaps this should go into eclrtl - address cleaner uses it too
+
+    virtual const char *loadResource(unsigned id) { throwUnexpected(); }
+
+    // Fetching interim results from workunit/query context
+
+    virtual bool getResultBool(const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) { throwUnexpected(); }
+    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { throwUnexpected(); }
+    virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
+    virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
+    virtual __int64 getResultInt(const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual double getResultReal(const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
+    virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual char *getResultVarString(const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual UChar *getResultVarUnicode(const char * name, unsigned sequence) { throwUnexpected(); }
+
+    // Writing results to workunit/query context/output
+
+    virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
+    virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
+    virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { throwUnexpected(); }
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) { throwUnexpected(); }
+    virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
+    virtual void setResultReal(const char * stepname, unsigned sequence, double value) { throwUnexpected(); }
+    virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) { throwUnexpected(); }
+    virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) { throwUnexpected(); }
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) { throwUnexpected(); }
+    virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) { throwUnexpected(); }
+    virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { throwUnexpected(); }
+    virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { throwUnexpected(); }
+
+    // Checking persists etc are up to date
+
+    virtual unsigned getResultHash(const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 crc) { throwUnexpected(); }
+
+    // Fetching various environment information, typically accessed via std.system
+
+    virtual char *getClusterName() { throwUnexpected(); } // caller frees return string.
+    virtual char *getEnv(const char *name, const char *defaultValue) const { throwUnexpected(); }
+    virtual char *getGroupName() { throwUnexpected(); } // caller frees return string.
+    virtual char *getJobName() { throwUnexpected(); } // caller frees return string.
+    virtual char *getJobOwner() { throwUnexpected(); } // caller frees return string.
+    virtual unsigned getNodeNum() { throwUnexpected(); }
+    virtual unsigned getNodes() { throwUnexpected(); }
+    virtual char *getOS() { throwUnexpected(); } // caller frees return string
+    virtual char *getPlatform() { throwUnexpected(); } // caller frees return string.
+    virtual unsigned getPriority() const { throwUnexpected(); }
+    virtual char *getWuid() { throwUnexpected(); } // caller frees return string.
+
+    // Exception handling
+
+    virtual void addWuException(const char*, unsigned int, unsigned int, const char*) { throwUnexpected(); } //n.b. this might be better named: it should only be used for adding user-generated exceptions (via the logging plug-in) --- there's a call in IAgentContext which takes a source argument too
+    virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) { throwUnexpected(); }
+
+    // File resolution etc
+
+    virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
+    virtual unsigned __int64 getFileOffset(const char *logicalPart) { throwUnexpected(); }
+    virtual char *getFilePart(const char *logicalPart, bool create=false) { throwUnexpected(); } // caller frees return string.
+    virtual IDistributedFileTransaction *querySuperFileTransaction() { throwUnexpected(); }
+    virtual IUserDescriptor *queryUserDescriptor() { throwUnexpected(); }
+
+    // Graphs, child queries etc
+
+    virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { throwUnexpected(); }
+    virtual unsigned getGraphLoopCounter() const { return 0; }
+    virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal) { throwUnexpected(); }
+    virtual IEclGraphResults * resolveLocalQuery(__int64 activityId) { return NULL; }
+
+    // Logging etc
+
+    virtual unsigned logString(const char *text) const { throwUnexpected(); }
+    virtual IDebuggableContext *queryDebugContext() const { return NULL; }
+
+    // Memory management
+
+    virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const { throwUnexpected(); }
+    virtual const char * cloneVString(const char *str) const { throwUnexpected(); }
+    virtual const char * cloneVString(size32_t len, const char *str) const { throwUnexpected(); }
+
+    // Called from generated code for FROMXML/TOXML
+
+    virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) { throwUnexpected(); }
+    virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { throwUnexpected(); }
+
+    // Miscellaneous
+
+    virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }    // shouldn't really be here, but it broke thor.
+    virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { throwUnexpected(); }
+
+    // Called from generated code for FROMJSON
+
+    virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) { throwUnexpected(); }
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { throwUnexpected(); }
+
+    virtual const IContextLogger &queryContextLogger() const
+    {
+        return queryDummyContextLogger();
+    }
+    virtual IEngineContext *queryEngineContext() { return NULL; }
+    virtual char *getDaliServers() { throwUnexpected(); }
+    virtual IWorkUnit* updateWorkUnit() const { throwUnexpected(); }
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) { throwUnexpected(); }
+    virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned flags) const { throwUnexpected(); }
+
+};
+
+IHqlExpression *deserializeConstantSet(ITypeInfo *type, bool isAll, size32_t len, const void *vdata)
+{
+    ITypeInfo *childType = type->queryChildType();
+    if (isAll)
+        return createValue(no_all, LINK(childType));
+    else if (!len)
+        return createValue(no_null, LINK(childType));
+    else
+    {
+        const char *data = (const char *) vdata;
+        const char *end = data + len;
+        HqlExprArray values;
+        while (data < end)
+        {
+            size32_t size = childType->getSize();
+            size32_t numChars = childType->getStringLen();
+            switch (childType->getTypeCode())
+            {
+            case type_int:
+            case type_real:
+            case type_boolean:
+                values.append(*createConstant(createValueFromMem(LINK(childType), data)));
+                break;
+            case type_varstring:
+                values.append(*createConstant(data));
+                if (size==UNKNOWN_LENGTH)
+                    size = strlen(data)+1;
+                break;
+            case type_string:
+                if (size==UNKNOWN_LENGTH)
+                {
+                    size = *(size32_t *) data;
+                    data += sizeof(size32_t);
+                }
+                values.append(*createConstant(createStringValue(data, size)));
+                break;
+            case type_data:
+                if (size==UNKNOWN_LENGTH)
+                {
+                    size = *(size32_t *) data;
+                    data += sizeof(size32_t);
+                }
+                values.append(*createConstant(createDataValue(data, size)));
+                break;
+            case type_unicode:
+                if (size==UNKNOWN_LENGTH)
+                {
+                    numChars = *(size32_t *) data;  // in characters
+                    data += sizeof(size32_t);
+                    values.append(*createConstant(createUnicodeValue((const UChar *) data, numChars, LINK(childType))));
+                    size = numChars * sizeof(UChar);
+                }
+                else
+                {
+                    values.append(*createConstant(createUnicodeValue((const UChar *) data, numChars, LINK(childType))));
+                }
+                break;
+            case type_utf8:
+                // size is always UNKNOWN_LENGTH for uft8
+                assertex(size==UNKNOWN_LENGTH);
+                numChars = *(size32_t *) data;  // in characters
+                data += sizeof(size32_t);
+                values.append(*createConstant(createUtf8Value(numChars, data, LINK(childType))));
+                size = rtlUtf8Size(numChars, data);
+                break;
+            default:
+                return NULL;
+            }
+            if (size != UNKNOWN_LENGTH)
+                data += size;
+        }
+        return createValue(no_list, LINK(type), values);
+    }
+}
+
+IHqlExpression * foldEmbeddedCall(IHqlExpression* expr, unsigned foldOptions, ITemplateContext *templateContext)
+{
+    if (!checkEmbeddedFoldable(expr, foldOptions))
+        return NULL;
+    IHqlExpression * funcdef = expr->queryBody()->queryFunctionDefinition();
+    IHqlExpression * outofline = funcdef->queryChild(0);
+    assertex(outofline->getOperator() == no_outofline);
+    IHqlExpression * body = outofline->queryChild(0);
+    assertex(body->getOperator()==no_embedbody);
+    ITypeInfo * returnType = funcdef->queryType()->queryChildType();
+
+    bool isImport = body->hasAttribute(importAtom);
+    IHqlExpression * formals = funcdef->queryChild(1);
+    assertex(formals->numChildren() == expr->numChildren());  // MORE - do default params change this?
+    unsigned flags = isImport ? EFimport : EFembed;
+    if (formals->numChildren()==0)
+        flags |= EFnoparams;
+    if (returnType->getTypeCode()==type_void)
+        flags |= EFnoreturn;
+
+    StringBuffer optionsStr;
+    ForEachChild(idx, body)
+    {
+        IHqlExpression *child = body->queryChild(idx);
+        if (child->isAttribute() && !isInternalEmbedAttr(child->queryName()))
+        {
+            if (optionsStr.length())
+                optionsStr.append(",");
+            optionsStr.append(child->queryName());
+            IHqlExpression * value = child->queryChild(0);
+            if (value)
+            {
+                optionsStr.append("=");
+                value->queryValue()->getUTF8Value(optionsStr);
+            }
+        }
+    }
+    IHqlExpression *languageAttr = body->queryAttribute(languageAtom);
+    HqlExprArray noParams;
+    OwnedHqlExpr langLoadCall = createTranslatedExternalCall(NULL, languageAttr->queryChild(0), noParams);
+    Owned<IValue> plugin = foldExternalCall(langLoadCall, foldOptions, templateContext);
+    if (plugin == nullptr)
+        return NULL;
+
+    Owned<IEmbedContext> __plugin = (IEmbedContext *) plugin->getIntValue();  // We declared as int since ecl has no pointer type - not sure what the clean fix is here...
+    DummyContext dummyContext;
+    Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(&dummyContext,flags,optionsStr.str());
+
+    IValue *query = body->queryChild(0)->queryValue();
+    assertex(query);
+    StringBuffer queryText;
+    query->getUTF8Value(queryText);
+    if (isImport)
+        __ctx->importFunction(queryText.lengthUtf8(), queryText.str());
+    else
+        __ctx->compileEmbeddedScript(queryText.lengthUtf8(), queryText.str());
+
+    // process all the parameters passed in
+    unsigned numParam = expr->numChildren();
+    for(unsigned i = 0; i < numParam; i++)
+    {
+        IHqlExpression * curParam = expr->queryChild(i);            //NB: Already folded...
+        IHqlExpression * curArg = formals->queryChild(i);
+        assertex(curArg != NULL);
+        ITypeInfo * paramType = curArg->queryType();
+        assertex(paramType != NULL);
+        IValue * paramValue = curParam->queryValue();
+        assertex(curParam->isConstant());
+        unsigned paramSize = paramType->getSize();
+        IIdAtom * paramId = curArg->queryId();
+        const char * name = str(paramId);
+        switch (paramType->getTypeCode())
+        {
+        case type_int:
+        {
+            __int64 value = paramValue->getIntValue();
+            if (paramSize<8)
+            {
+                if (paramType->isSigned())
+                    __ctx->bindSignedSizeParam(name, paramSize, value);
+                else
+                    __ctx->bindUnsignedSizeParam(name, paramSize, value);
+            }
+            else
+            {
+                if (paramType->isSigned())
+                    __ctx->bindSignedParam(name, value);
+                else
+                    __ctx->bindUnsignedParam(name, value);
+            }
+            break;
+        }
+        case type_varstring:
+        {
+            StringBuffer value;
+            paramValue->getStringValue(value);
+            __ctx->bindVStringParam(name, value.str());
+            break;
+        }
+        case type_string:
+        {
+            StringBuffer value;
+            paramValue->getStringValue(value);
+            __ctx->bindStringParam(name, value.length(), value.str());
+            break;
+        }
+        case type_real:
+        {
+            double value = paramValue->getRealValue();
+            if (paramType->getSize()==4)
+                __ctx->bindFloatParam(name, value);
+            else
+                __ctx->bindRealParam(name, value);
+            break;
+        }
+        case type_boolean:
+            __ctx->bindBooleanParam(name, paramValue->getBoolValue());
+            break;
+        case type_utf8:
+        {
+            StringBuffer value;
+            paramValue->getUTF8Value(value);
+            __ctx->bindUTF8Param(name, value.lengthUtf8(), value.str());
+            break;
+        }
+        case type_unicode:
+        {
+            unsigned len = paramValue->queryType()->getStringLen();
+            UChar * value = (UChar *)malloc(len*2);
+            paramValue->getUCharStringValue(len, value);
+            __ctx->bindUnicodeParam(name, len, value);
+            free(value);
+            break;
+        }
+        case type_data:
+        {
+            __ctx->bindDataParam(name, paramValue->getSize(), paramValue->queryValue());
+            break;
+        }
+        case type_row:
+        case type_table:
+        case type_groupedtable:
+            // Can't do as yet without the type info
+            return NULL;
+        case type_set:
+        {
+            MemoryBuffer setValue;
+            if (!createConstantField(setValue, curArg, curParam))
+                return NULL;
+            bool isAll;
+            size32_t totalSize;
+            setValue.read(isAll);
+            setValue.read(totalSize);
+            ITypeInfo *childType = paramType->queryChildType();
+            type_t typeCode = childType->getTypeCode();
+            if (childType->isInteger() && !childType->isSigned())
+                typeCode = type_unsigned;
+            __ctx->bindSetParam(name, (unsigned) typeCode, paramType->queryChildType()->getSize(), isAll, totalSize, setValue.readDirect(totalSize));
+            break;
+        }
+        default:
+            return NULL;
+        }
+    }
+    __ctx->callFunction();
+
+    switch (returnType->getTypeCode())
+    {
+    case type_int:
+        return createConstant(returnType->isSigned() ? __ctx->getSignedResult() : __ctx->getUnsignedResult(), LINK(returnType));
+    case type_varstring:
+    case type_string:
+    {
+        size32_t lenResult;
+        rtlDataAttr result;
+        __ctx->getStringResult(lenResult, result.refstr());
+        return createConstant(createStringValue(result.getstr(), lenResult));
+    }
+    case type_real:
+        return createConstant(createRealValue(__ctx->getRealResult(), LINK(returnType)));
+    case type_boolean:
+        return createConstant(__ctx->getBooleanResult());
+    case type_unicode:
+    {
+        size32_t lenResult;
+        rtlDataAttr result;
+        __ctx->getUnicodeResult(lenResult, result.refustr());
+        return createConstant(createUnicodeValue(result.getustr(), lenResult, LINK(returnType)));
+    }
+    case type_utf8:
+    {
+        size32_t lenResult;
+        rtlDataAttr result;
+        __ctx->getUTF8Result(lenResult, result.refstr());
+        return createConstant(createUtf8Value(lenResult, result.getstr(), LINK(returnType)));
+    }
+    case type_data:
+    {
+        size32_t lenResult;
+        rtlDataAttr result;
+        __ctx->getDataResult(lenResult, result.refdata());
+        return createConstant(createDataValue(result.getstr(), lenResult));
+    }
+    case type_set:
+    {
+        ITypeInfo *childType = returnType->queryChildType();
+        type_t typeCode = childType->getTypeCode();
+        if (childType->isInteger() && !childType->isSigned())
+            typeCode = type_unsigned;
+        bool isAllResult;
+        size32_t resultBytes;
+        rtlDataAttr result;
+        __ctx->getSetResult(isAllResult, resultBytes, result.refdata(), (unsigned) typeCode, returnType->queryChildType()->getSize());
+        return deserializeConstantSet(returnType, isAllResult,resultBytes, result.getdata());
+    }
+    case type_row:
+    case type_table:
+    case type_transform:
+    case type_void:
+        // Can't do yet, maybe never - should probably check this earlier!'
+        return NULL;
+    }
+    return NULL;
+}
+
+//------------------------------------------------------------------------------------------
+
 
 // optimize ((a BAND b) <> 0) OR ((a BAND c) <> 0) to ((a BAND (b BOR c)) <> 0)
 bool isFieldMask(IHqlExpression * expr)
@@ -2809,35 +3295,38 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             IValue * childValue = child->queryValue();
             if (childValue)
             {
-                ITypeInfo * exprType = expr->queryType();
+                Linked<ITypeInfo> exprType = expr->queryType();
                 ITypeInfo * childType = child->queryType();
-                if (exprType->getSize() <= childType->getSize())
+                size32_t childSize = childValue->getSize();
+                const void * rawvalue = childValue->queryValue();
+                unsigned newSize = exprType->getSize();
+                if (newSize == UNKNOWN_LENGTH)
                 {
-                    switch (childType->getTypeCode())
+                    unsigned newLen = UNKNOWN_LENGTH;
+                    switch (exprType->getTypeCode())
                     {
                     case type_string:
-                    case type_unicode:
                     case type_varstring:
+                        newLen = childSize;
+                        break;
+                    case type_unicode:
+                        newLen = childSize / sizeof(UChar);
+                        break;
                     case type_utf8:
-                        {
-                            //MORE: Should probably have more protection .....
-                            IValue * transferred = createValueFromMem(expr->getType(), childValue->queryValue());
-                            if (transferred)
-                                return createConstant(transferred);
-                            break;
-                        }
-                    case type_int:
-                        {
-                            __int64 value = childValue->getIntValue();
-                            const byte * ptr = (const byte *)&value;
-                            if (__BYTE_ORDER != __LITTLE_ENDIAN)
-                                ptr += sizeof(value) - childType->getSize();
-                            IValue * transferred = createValueFromMem(expr->getType(), ptr);
-                            if (transferred)
-                                return createConstant(transferred);
-                            break;
-                        }
+                        newLen = rtlUtf8Length(childSize, rawvalue);
+                        break;
                     }
+                    if (newLen != UNKNOWN_LENGTH)
+                    {
+                        newSize = childSize;
+                        exprType.setown(getStretchedType(newLen, exprType));
+                    }
+                }
+                if (newSize <= childSize)
+                {
+                    IValue * transferred = createValueFromMem(LINK(exprType), rawvalue);
+                    if (transferred && transferred->isValid())
+                        return createConstant(transferred);
                 }
             }
             break;
@@ -3192,7 +3681,16 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             ForEachChild(i, expr)
             {
                 if (!expr->queryChild(i)->isConstant())
-                    break;
+                    return LINK(expr);
+            }
+            IHqlExpression * def = expr->queryBody()->queryFunctionDefinition();
+            IHqlExpression * body = def->queryChild(0);
+            if (body->getOperator() == no_outofline && body->queryChild(0)->getOperator()==no_embedbody)
+            {
+                IHqlExpression * result = foldEmbeddedCall(expr, foldOptions, templateContext);
+                if (result)
+                    return result;
+                break;
             }
             OwnedHqlExpr folded = expandOutOfLineFunctionCall(expr);
             if ((folded != expr) && folded->isConstant())
