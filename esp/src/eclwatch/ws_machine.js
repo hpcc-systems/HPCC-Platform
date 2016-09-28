@@ -41,6 +41,14 @@ define([
             return ESPRequest.send("ws_machine", "GetComponentStatus", params);
         },
 
+        GetTargetClusterInfo: function (params) {
+            return ESPRequest.send("ws_machine", "GetTargetClusterInfo", params);
+        },
+
+        GetMachineInfo: function (params) {
+            return ESPRequest.send("ws_machine", "GetMachineInfo", params);
+        },
+
         MonitorComponentStatus: function (params) {
             var prevResponse = null;
             if (!monitorHandle) {

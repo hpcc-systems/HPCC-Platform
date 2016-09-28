@@ -26,6 +26,7 @@ define([
 
     "dijit/registry",
     "dijit/form/Select",
+    "dijit/form/CheckBox",
 
     "hpcc/_Widget",
 
@@ -39,7 +40,7 @@ define([
     "hpcc/TableContainer"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, domStyle,
-                registry, Select,
+                registry, Select, CheckBox,
                 _Widget,
                 template) {
     return declare("FilterDropDownWidget", [_Widget], {
@@ -52,12 +53,16 @@ define([
         filterDropDown: null,
         filterForm: null,
         filterLabel: null,
+        tableContainer: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
             this.filterDropDown = registry.byId(this.id + "FilterDropDown");
             this.filterForm = registry.byId(this.id + "FilterForm");
             this.filterLabel = registry.byId(this.id + "FilterLabel");
+            this.tableContainer = registry.byId(this.id + "TableContainer");
+            this.filterApply = registry.byId(this.id + "FilterApply");
+            this.filterClear = registry.byId(this.id + "FilterClear");
         },
 
         startup: function (args) {
@@ -147,6 +152,10 @@ define([
 
         disable: function(disable) {
             this.filterDropDown.set("disabled", disable);
+        },
+
+        reset: function(disable) {
+            this.filterForm.reset();
         },
 
         refreshState: function () {

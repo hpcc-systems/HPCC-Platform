@@ -86,6 +86,8 @@ define([
             this.details = registry.byId(this.id + "_Details");
             this.configurationWidget = registry.byId(this.id + "_Configuration");
             this.logsWidget = registry.byId(this.id + "_Logs");
+            this.requestInformationWidget = registry.byId(this.id + "_RequestInformation");
+            this.preflightWidget = registry.byId(this.id + "_Preflight");
         },
 
         startup: function (args) {
@@ -113,7 +115,11 @@ define([
             this.widget._Summary.__hpcc_initalized = false;
             this.widget._Configuration.__hpcc_initalized = false;
             this.widget._Logs.__hpcc_initalized = false;
+            this.widget._RequestInformation.__hpcc_initalized = false;
+            this.widget._RequestInformation.set("disabled", true);
+
             this.inherited(arguments);
+
             if (this.params.hasConfig()) {
                 this.widget._Configuration.set("disabled", false);
             } else {

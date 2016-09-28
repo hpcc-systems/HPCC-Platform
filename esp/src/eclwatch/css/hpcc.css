@@ -525,6 +525,10 @@ hr.dashedLine {
     font-weight:bold;
     color: rgb(237, 28, 36);
 }
+
+table.miniSelect span {  
+     width:20px;
+}
 /*###############################*/
 #appLayout {
     height: 100%;
