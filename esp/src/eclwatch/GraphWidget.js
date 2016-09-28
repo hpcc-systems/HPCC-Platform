@@ -71,6 +71,27 @@ define([
             this.calcColumns();
         },
 
+        query: function (query, options) {
+            var sortSet = options && options.sort;
+            if (sortSet) {
+                this.data.sort(typeof sortSet == "function" ? sortSet : function (a, b) {
+                    for (var sort, i = 0; sort = sortSet[i]; i++) {
+                        var aValue = a[sort.attribute];
+                        var bValue = b[sort.attribute];
+                        // valueOf enables proper comparison of dates
+                        aValue = aValue != null ? aValue.valueOf() : aValue;
+                        bValue = bValue != null ? bValue.valueOf() : bValue;
+                        if (aValue != bValue) {
+                            return !!sort.descending == (bValue == null || aValue > bValue) ? -1 : 1;
+                        }
+                    }
+                    return 0;
+                });
+                return QueryResults(this.data);
+            }
+            return this.inherited(arguments);
+        },
+
         //  Helpers  ---
         isNumber: function (n) {
             return !isNaN(parseFloat(n)) && isFinite(n);
@@ -832,8 +853,7 @@ define([
                         }, this);
                         if (first === false) {
                             domConstruct.create("br", null, place);
-                    }
-                }
+                        }
                     }
                 }
             },
