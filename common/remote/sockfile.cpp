@@ -363,7 +363,7 @@ const char *RFCStrings[] =
     RFCText(RFCsetfileperms),
     RFCText(RFCunknown),
 };
-static const char *getRFCText(unsigned cmd)
+static const char *getRFCText(RemoteFileCommandType cmd)
 {
     if (cmd > RFCmax)
         cmd = RFCmax;
@@ -2984,15 +2984,16 @@ inline void appendErr3(MemoryBuffer &reply, unsigned e, int code, const char *er
     reply.append(e);
     reply.append(msg.str());
 }
-inline void appendCmdErr(MemoryBuffer &reply, unsigned e, int code, const char *errMsg)
+inline void appendCmdErr(MemoryBuffer &reply, RemoteFileCommandType e, int code, const char *errMsg)
 {
     StringBuffer msg;
     msg.appendf("ERROR: %s(%d) '%s'", getRFCText(e), code, errMsg?errMsg:"");
     // RFCOpenIO needs remapping to non-zero for client to know its an error
     // perhaps we should use code here instead of e ?
-    if ((RemoteFileCommandType)e == RFCopenIO)
-        e = RFSERR_OpenFailed;
-    reply.append(e);
+    unsigned err = e;
+    if ((RemoteFileCommandType)err == RFCopenIO)
+        err = RFSERR_OpenFailed;
+    reply.append(err);
     reply.append(msg.str());
 }
 
