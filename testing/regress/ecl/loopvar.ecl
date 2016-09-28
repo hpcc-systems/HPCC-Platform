@@ -46,8 +46,10 @@ saveit2 := OUTPUT(SORT(DISTRIBUTE(dsVal2, id), id, LOCAL), , filename2, OVERWRIT
 dsKey1 := DATASET(filename1, lValKey, THOR);
 dsKey2 := DATASET(filename2, lValKey, THOR);
 
-buildit1 := BUILDINDEX(INDEX(dsKey1,{id}, {val, fpos}, keyname1), SORTED, OVERWRITE);
-buildit2 := BUILDINDEX(INDEX(dsKey2,{id}, {val, fpos}, keyname2), SORTED, OVERWRITE);
+i1 := INDEX(dsKey1, {id}, {val, fpos}, keyname1, DISTRIBUTED);
+i2 := INDEX(dsKey2, {id}, {val, fpos}, keyname2, DISTRIBUTED);
+buildit1 := BUILDINDEX(i1, LOCAL, SORTED, OVERWRITE);
+buildit2 := BUILDINDEX(i2, LOCAL, SORTED, OVERWRITE);
 
 dsQry := DATASET([{100, ''}], lVal);
 
