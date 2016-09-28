@@ -1776,8 +1776,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetArchiveFileResponse
 
 ESPrequest [nil_remove] WUGetNumFileToCopyRequest
 {
-    string ClusterName; //for AllNodes
-    string ClusterURL;
+    string ClusterName;
 };
 
 ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse

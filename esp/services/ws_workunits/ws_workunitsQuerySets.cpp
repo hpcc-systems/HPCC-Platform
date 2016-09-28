@@ -2748,42 +2748,14 @@ bool CWsWorkunitsEx::onWUGetNumFileToCopy(IEspContext& context, IEspWUGetNumFile
     {
         Owned<IPropertyTree> result;
         StringBuffer clusterName = req.getClusterName();
-        if (!clusterName.isEmpty())
-        {
-            SocketEndpointArray servers;
-            getRoxieProcessServers(clusterName.str(), servers);
-            if (servers.length() < 1)
-                throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Process Server not found for %s", clusterName.str());
-            result.setown(sendRoxieControlAllNodes(servers.item(0), "<control:numfilestoprocess/>", false, ROXIELOCKCONNECTIONTIMEOUT));
-        }
-        else
-        {
-            StringBuffer url = req.getClusterURL();
-            if (url.isEmpty())
-                throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Cluster not specified");
+        if (clusterName.isEmpty())
+            throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Cluster not specified");
 
-            int port;
-            StringBuffer netAddress;
-            const char* start = url.str();
-            const char* split = strchr(start, ':');
-            if (!split)
-            {
-                netAddress.set(start);
-                port = ROXIE_SERVER_PORT;
-            }
-            else
-            {
-                netAddress.append(split - start, start);
-                port = atoi(split+1);
-            }
-
-            SocketEndpoint ep;
-            SocketEndpointArray eps;
-            ep.set(netAddress.str(), port);
-            eps.append(ep);
-            Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIELOCKCONNECTIONTIMEOUT);
-            result.setown(sendRoxieControlQuery(sock, "<control:numfilestoprocess/>", ROXIELOCKCONNECTIONTIMEOUT));
-        }
+        SocketEndpointArray servers;
+        getRoxieProcessServers(clusterName.str(), servers);
+        if (servers.length() < 1)
+            throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Process Server not found for %s", clusterName.str());
+        result.setown(sendRoxieControlAllNodes(servers.item(0), "<control:numfilestoprocess/>", false, ROXIELOCKCONNECTIONTIMEOUT));
         if (!result)
             throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Empty result received for cluster %s", clusterName.str());
 
