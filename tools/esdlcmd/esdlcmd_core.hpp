@@ -21,5 +21,7 @@
 #include "esdlcmd_common.hpp"
 
 IEsdlCommand *createCoreEsdlCommand(const char *cmdname);
+IEsdlCommand *createEsdlMonitorCommand(const char *cmdname);
+
 
 #endif

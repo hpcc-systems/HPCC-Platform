@@ -1470,6 +1470,8 @@ IEsdlDefObjectIterator* EsdlDefinition::getDependencies( const char* service, St
         methodIter.setown(serviceDef->getMethods());
         for( methodIter->first(); methodIter->isValid(); methodIter->next() )
         {
+            if ((flags & DEPFLAG_ECL_ONLY) && methodIter->query().getPropInt("ecl_hide"))
+                continue;
             methodArray.append( methodIter->query() );
         }
     }
@@ -1479,20 +1481,18 @@ IEsdlDefObjectIterator* EsdlDefinition::getDependencies( const char* service, St
         {
             methodDef = serviceDef->queryMethodByName(methods.item(i));
 
-            if( NULL == methodDef )
-            {
+            if(!methodDef)
                 throw( MakeStringException(0, "ESDL Method Definition not found for %s in service %s", methods.item(i), service) );
-            }
-
+            if ((flags & DEPFLAG_ECL_ONLY) && methodDef->getPropInt("ecl_hide"))
+                continue;
             methodArray.append( *methodDef );
         }
     }
 
     this->gatherMethodDependencies( *dependencies, methodArray, requestedVer, opts, flags );
 
-    // Put the highest level objects on last- the services
-    // Tony did say that these will be useful
-    if( serviceDef != NULL )
+    bool allTypes = !(flags & DEPFLAG_INCLUDE_TYPES); //not asking for any explicit types indicates all types
+    if(serviceDef && (allTypes || (flags & DEPFLAG_INCLUDE_SERVICE)))
     {
         EsdlDefObjectWrapper* wrapper = new EsdlDefObjectWrapper( *serviceDef );
         dependencies->append( *wrapper );
@@ -1505,13 +1505,8 @@ void EsdlDefinition::gatherMethodDependencies( EsdlDefObjectWrapperArray& depend
 {
     AddedObjs foundByName;
 
-    // At this point all the Methods we want to walk are in this array-
-    // either explicitly passed in to the array, or added by walking the
-    // service definitions passed in and adding all of the services' methods
+    bool allTypes = !(flags & DEPFLAG_INCLUDE_TYPES); //not asking for any explicit types indicates all types
 
-    // Q:
-    // What circumstances do we want to throw an unhandled exception
-    // vs. those that we may just want to log or DBGLOG a warning?
     int numMethods = methods.ordinality();
     for( int i = 0; i<numMethods; i++ )
     {
@@ -1520,26 +1515,29 @@ void EsdlDefinition::gatherMethodDependencies( EsdlDefObjectWrapperArray& depend
 
         if( methodObj->checkOptional(opts) && (requestedVer==0.0 || method->checkVersion(requestedVer)) )
         {
-            const char* request = method->queryRequestType();
-            IEsdlDefObject* requestObj = this->queryObj( request );
-            if( NULL == requestObj )
+            if (allTypes || (flags & DEPFLAG_INCLUDE_REQUEST))
             {
-                throw( MakeStringException(0, "Request struct %s not found in ESDL Definition", request) );
-            } else {
-                this->walkDefinitionDepthFirst( foundByName, dependencies, requestObj, requestedVer, opts, 0, flags );
+                const char* request = method->queryRequestType();
+                IEsdlDefObject* requestObj = this->queryObj( request );
+                if(!requestObj)
+                    throw( MakeStringException(0, "Request struct %s not found in ESDL Definition", request) );
+                walkDefinitionDepthFirst( foundByName, dependencies, requestObj, requestedVer, opts, 0, flags );
             }
 
-            const char* response = method->queryResponseType();
-            IEsdlDefObject* responseObj = this->queryObj( response );
-            if( NULL == responseObj )
+            if (allTypes || (flags & DEPFLAG_INCLUDE_RESPONSE))
             {
-                throw( MakeStringException(0, "Response struct %s not found in ESDL Definition", response) );
-            } else {
-                this->walkDefinitionDepthFirst( foundByName, dependencies, responseObj, requestedVer, opts, 0, flags );
+                const char* response = method->queryResponseType();
+                IEsdlDefObject* responseObj = this->queryObj( response );
+                if(!responseObj)
+                    throw( MakeStringException(0, "Response struct %s not found in ESDL Definition", response) );
+                walkDefinitionDepthFirst( foundByName, dependencies, responseObj, requestedVer, opts, 0, flags );
             }
 
-            EsdlDefObjectWrapper* wrapper = new EsdlDefObjectWrapper( *methodObj );
-            dependencies.append( *wrapper );
+            if (allTypes || (flags & DEPFLAG_INCLUDE_METHOD))
+            {
+                EsdlDefObjectWrapper* wrapper = new EsdlDefObjectWrapper( *methodObj );
+                dependencies.append( *wrapper );
+            }
         }
     }
 }
@@ -1563,6 +1561,11 @@ unsigned EsdlDefinition::walkChildrenDepthFirst( AddedObjs& foundByName, EsdlDef
             while( children->isValid() )
             {
                 IEsdlDefObject& child = children->query();
+                if ((flags & DEPFLAG_ECL_ONLY) && child.getPropInt("ecl_hide"))
+                {
+                    children->next();
+                    continue;
+                }
                 const char *childname = child.queryName();
                 EsdlDefTypeId childType = child.getEsdlType();
                 //DBGLOG("  %s<%s> child", StringBuffer(level*2, " ").str(), childname );
@@ -1593,7 +1596,7 @@ unsigned EsdlDefinition::walkChildrenDepthFirst( AddedObjs& foundByName, EsdlDef
                     }
 
                     // Should this element be included based on ESP version & optional tags?
-                    if( child.checkOptional(opts) && ( requestedVer==0.0 || child.checkVersion(requestedVer)) )
+                    if( child.checkOptional(opts) && ( requestedVer==0.0 || child.checkVersion(requestedVer)))
                     {
                         if( complexType != NULL )
                         {

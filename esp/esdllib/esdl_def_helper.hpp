@@ -47,6 +47,8 @@ interface IEsdlDefinitionHelper : extends IInterface
     virtual void toJavaService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId implType, IProperties *opts=NULL, unsigned flags=0 )=0;
 };
 
+esdl_decl void removeEclHidden(IPropertyTree *depTree);
+esdl_decl void removeEclHidden(StringBuffer &xml);
 
 esdl_decl IEsdlDefinitionHelper* createEsdlDefinitionHelper( );
 

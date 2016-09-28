@@ -113,6 +113,47 @@ void EsdlDefinitionHelper::setTransformParams( EsdlXslTypeId xslId, IProperties 
     parameters.setValue( xslId, params );
 }
 
+void removeEclHiddenStructs(IPropertyTree &depTree)
+{
+    Owned<IPropertyTreeIterator> it = depTree.getElements("*[@ecl_hide='1']");
+    ForEach(*it)
+        depTree.removeTree(&it->query());
+}
+void removeEclHiddenElements(IPropertyTree &depTree)
+{
+    Owned<IPropertyTreeIterator> it = depTree.getElements("*");
+    ForEach(*it)
+    {
+        StringArray names;
+        Owned<IPropertyTreeIterator> elements = it->query().getElements("*[@get_data_from]");
+        ForEach(*elements)
+            names.appendUniq(elements->query().queryProp("@name"));
+        elements.setown(it->query().getElements("*[@ecl_hide='1']"));
+        ForEach(*elements)
+            names.appendUniq(elements->query().queryProp("@name"));
+
+        ForEachItemIn(i, names)
+        {
+            VStringBuffer xpath("*[@name='%s']", names.item(i));
+            it->query().removeProp(xpath);
+        }
+    }
+}
+esdl_decl void removeEclHidden(IPropertyTree *depTree)
+{
+    if (!depTree)
+        return;
+    removeEclHiddenStructs(*depTree);
+    removeEclHiddenElements(*depTree);
+}
+
+esdl_decl void removeEclHidden(StringBuffer &xml)
+{
+    Owned<IPropertyTree> depTree = createPTreeFromXMLString(xml);
+    removeEclHidden(depTree);
+    toXML(depTree, xml.clear());
+}
+
 void EsdlDefinitionHelper::toXML( IEsdlDefObjectIterator& objs, StringBuffer &xml, double version, IProperties *opts, unsigned requestedFlags )
 {
     TimeSection ts("serializing EsdlObjects to XML");
@@ -166,7 +207,7 @@ void EsdlDefinitionHelper::toXML( IEsdlDefObjectIterator& objs, StringBuffer &xm
         }
 
         // Add the serialization of the current structure to the xml output StringBuffer
-        xml.append( curObjXml );
+        xml.append( curObjXml ).append('\n');
     }
 
     return;
@@ -188,6 +229,11 @@ void EsdlDefinitionHelper::toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xs
         xml.appendf("<esxdl name=\"custom\" EsdlXslTypeId=\"%d\" xmlns:tns=\"%s\" ns_uri=\"%s\">", xslId, tns ? tns : "urn:unknown", tns ? tns : "urn:unknown");
         this->toXML( objs, xml, version, opts, flags );
         xml.append("</esxdl>");
+
+        if (flags & DEPFLAG_ECL_ONLY)
+        {
+            removeEclHidden(xml);
+        }
 
         xmlLen = xml.length();
         trans->setXmlSource( xml.str(), xmlLen );

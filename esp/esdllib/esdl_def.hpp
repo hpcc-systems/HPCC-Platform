@@ -72,8 +72,14 @@ typedef enum EsdlDefTypeId_
 
 #define DEPFLAG_COLLAPSE    (0x01)
 #define DEPFLAG_ARRAYOF     (0x02)
-#define DEPFLAG_STRINGARRAY (0x04)    // Set dynamically by gatherDependencies to indicate stylesheet should output
-                                    // an EspStringArray structure definition.
+#define DEPFLAG_STRINGARRAY (0x04)  //Set dynamically by gatherDependencies to indicate stylesheet should output an EspStringArray structure definition.
+#define DEPFLAG_ECL_ONLY    (0x08)  //ignore anything tagged with ecl_hide
+
+#define DEPFLAG_INCLUDE_REQUEST     (0x10)
+#define DEPFLAG_INCLUDE_RESPONSE    (0x20)
+#define DEPFLAG_INCLUDE_METHOD      (0x40)
+#define DEPFLAG_INCLUDE_SERVICE     (0x80)
+#define DEPFLAG_INCLUDE_TYPES       (DEPFLAG_INCLUDE_REQUEST | DEPFLAG_INCLUDE_RESPONSE | DEPFLAG_INCLUDE_METHOD | DEPFLAG_INCLUDE_SERVICE)
 
 interface IEsdlDefObject : extends IInterface
 {

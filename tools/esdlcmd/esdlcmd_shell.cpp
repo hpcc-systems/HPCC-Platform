@@ -195,6 +195,8 @@ void EsdlCMDShell::usage()
            "   bind-method       Configure method associated with existing ESDL binding.\n"
            "   unbind-method     Remove method associated with existing ESDL binding.\n"
            "   get-binding       Get ESDL binding.\n"
+           "   monitor           Generate ECL code for result monitoring / differencing\n"
+           "   monitor-template  Generate a template for use with 'monitor' command\n"
            ""
            "\nRun 'esdl help <command>' for more information on a specific command\n\n"
     );
