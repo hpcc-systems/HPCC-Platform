@@ -42,7 +42,7 @@
         <row>
           <entry>Return:</entry>
 
-          <entry>IsValidDateLeapYear returns a BOOLEAN value.</entry>
+          <entry>IsValidDateYear returns a BOOLEAN value.</entry>
         </row>
       </tbody>
     </tgroup>
