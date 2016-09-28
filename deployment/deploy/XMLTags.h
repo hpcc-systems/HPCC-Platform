@@ -329,7 +329,7 @@ static const char* XSD_DATA_TYPE_BOOLEAN(NAME_SPACE_FOR_XSD_SCHEMA "boolean");
 #define TAG_URL                         "url"
 #define TAG_INSTALLSET                  "installSet"
 #define TAG_PROCESSNAME                 "processName"
-#define TAG_SCHEMA                      "SCHEMA "
+#define TAG_SCHEMA                      "schema"
 #define TAG_DEPLOYABLE                  "deployable"
 #define TAG_VALUE                       "value"
 #define TAG_ATTRIBUTE                   "Attribute"
