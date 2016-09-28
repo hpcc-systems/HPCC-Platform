@@ -351,7 +351,7 @@ void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasur
         out.append(value);
         break;
     default:
-        throwUnexpected();
+        out.append(value).append('?');
     }
 }
 
@@ -396,7 +396,7 @@ const char * queryMeasurePrefix(StatisticMeasure measure)
     case SMeasureIPV4:          return "Ip";
     case SMeasureCycle:         return "Cycle";
     default:
-        throwUnexpected();
+        return "Unknown";
     }
 }
 
@@ -444,7 +444,11 @@ StatsMergeAction queryMergeMode(StatisticMeasure measure)
     case SMeasureIPV4:          return StatsMergeKeepNonZero;
     case SMeasureCycle:         return StatsMergeSum;
     default:
+#ifdef _DEBUG
         throwUnexpected();
+#else
+        return StatsMergeSum;
+#endif
     }
 }
 
@@ -666,7 +670,11 @@ unsigned __int64 convertMeasure(StatisticMeasure from, StatisticMeasure to, unsi
         return cycle_to_nanosec(value);
     if ((from == SMeasureTimeNs) && (to == SMeasureCycle))
         return nanosec_to_cycle(value);
+#ifdef _DEBUG
     throwUnexpected();
+#else
+    return value;
+#endif
 }
 
 unsigned __int64 convertMeasure(StatisticKind from, StatisticKind to, unsigned __int64 value)
@@ -686,7 +694,14 @@ static double convertSquareMeasure(StatisticMeasure from, StatisticMeasure to, d
     else if ((from == SMeasureTimeNs) && (to == SMeasureCycle))
         scale = (double)nanosec_to_cycle(largeValue) / (double)largeValue;
     else
+    {
+#ifdef _DEBUG
         throwUnexpected();
+#else
+        scale = 1.0;
+#endif
+    }
+
     return value * scale * scale;
 }
 
@@ -824,7 +839,11 @@ unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int6
         else
             return prevValue;
     default:
+#ifdef _DEBUG
         throwUnexpected();
+#else
+        return newValue;
+#endif
     }
 }
 
@@ -972,8 +991,10 @@ StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
     case SSTfunction:
         return out.append(FunctionScopePrefix).append(name);
     default:
+#ifdef _DEBUG
         throwUnexpected();
-        break;
+#endif
+        return out.append("????").append(id);
     }
 }
 
