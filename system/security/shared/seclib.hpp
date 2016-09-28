@@ -37,7 +37,7 @@
 #define SECLIB "seclib"
 #define LDAPSECLIB "LdapSecurity"
 
-enum NewSecAccessFlags
+enum NewSecAccessFlags : int
 {
     NewSecAccess_None = 0,
     NewSecAccess_Access = 1,
@@ -48,7 +48,7 @@ enum NewSecAccessFlags
 
 
 
-enum SecAccessFlags
+enum SecAccessFlags : int
 {
     SecAccess_Unavailable = -1,
     SecAccess_Unknown = -255,
@@ -83,7 +83,7 @@ static const char * getSecAccessFlagName(SecAccessFlags flag)
 }
 
 
-enum SecResourceType
+enum SecResourceType : int
 {
     RT_DEFAULT = 0,
     RT_MODULE = 1,
@@ -100,7 +100,7 @@ enum SecResourceType
 
 const char* resTypeDesc(SecResourceType type);
 
-enum SecPermissionType
+enum SecPermissionType : int
 {
     PT_DEFAULT = 0,
     PT_ADMINISTRATORS_ONLY = 1,
@@ -111,7 +111,7 @@ enum SecPermissionType
 
 #define DEFAULT_REQUIRED_ACCESS SecAccess_Read
 
-enum SecPasswordEncoding
+enum SecPasswordEncoding : int
 {
     SecPwEnc_unknown = 0,
     SecPwEnc_plain_text = 1,
@@ -123,7 +123,7 @@ enum SecPasswordEncoding
 
 
  
-enum SecUserStatus
+enum SecUserStatus : int
 {
     SecUserStatus_Inhouse = 0,
     SecUserStatus_Active = 1,
@@ -153,7 +153,7 @@ interface ISecCredentials : extends IInterface
 };
 
 //LDAP authentication status
-enum authStatus
+enum authStatus : int
 {
     AS_AUTHENTICATED = 0,
     AS_UNKNOWN = 1,//have not attempted to authenticate
@@ -284,7 +284,7 @@ interface IAuthMap : extends IInterface
     virtual ISecResourceList * getResourceList(const char * path) = 0;
 };
 
-enum secManagerType
+enum secManagerType : int
 {
     SMT_New,
     SMT_Default,
