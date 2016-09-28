@@ -357,7 +357,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/ECLWA402.jpg"
+                <imagedata fileref="../../images/ECLWA04022.jpg"
                            vendor="eclwatchSS" />
               </imageobject>
             </mediaobject>
@@ -401,17 +401,21 @@
 
           <listitem>
             <para>Press the <emphasis role="bold">Recover</emphasis> button to
-            restart the workunit.</para>
+            resubmit the same workunit without resetting the workflow. This
+            will then attempt to resume processing from the same point in the
+            process where it had previously reached. </para>
           </listitem>
 
           <listitem>
             <para>Press the <emphasis role="bold">Resubmit</emphasis> button
-            to resubmit the job.</para>
+            to resubmit the job. This option resets the workflow and starts it
+            over from the beginning. </para>
           </listitem>
 
           <listitem>
             <para>Press the <emphasis role="bold">Clone</emphasis> button to
-            clone the workunit.</para>
+            create a new workunit based on the current workunit, which is then
+            owned by the user who cloned and submit it. </para>
           </listitem>
 
           <listitem>
