@@ -34,7 +34,8 @@
   </informaltable>
 
   <para>The <emphasis role="bold">IsValidDate</emphasis> function returns TRUE
-  if the time is valid.</para>
+  if the time is valid, by validating each of the individual components
+  (hours, minutes, and seconds)..</para>
 
   <para>Example:</para>
 
