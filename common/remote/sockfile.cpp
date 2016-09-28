@@ -2991,7 +2991,7 @@ inline void appendCmdErr(MemoryBuffer &reply, RemoteFileCommandType e, int code,
     // RFCOpenIO needs remapping to non-zero for client to know its an error
     // perhaps we should use code here instead of e ?
     unsigned err = e;
-    if ((RemoteFileCommandType)err == RFCopenIO)
+    if (e == RFCopenIO)
         err = RFSERR_OpenFailed;
     reply.append(err);
     reply.append(msg.str());
