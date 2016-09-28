@@ -1030,7 +1030,7 @@ bool isLoopActivity(CGraphElementBase &container)
 }
 /////
 
-CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(_jobChannel.queryJob())
+CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(_jobChannel.queryJob()), progressUpdated(false)
 {
     xgmml = NULL;
     parent = owner = NULL;
@@ -1099,6 +1099,7 @@ void CGraphBase::deserializeCreateContexts(MemoryBuffer &mb)
 void CGraphBase::reset()
 {
     setCompleteEx(false);
+    clearProgressUpdated();
     graphCancelHandler.reset();
     if (0 == containers.count())
     {

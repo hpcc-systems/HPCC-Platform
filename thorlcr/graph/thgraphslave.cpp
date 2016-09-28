@@ -739,7 +739,7 @@ void CSlaveLateStartActivity::reset()
 
 // CSlaveGraph
 
-CSlaveGraph::CSlaveGraph(CJobChannel &jobChannel) : CGraphBase(jobChannel)
+CSlaveGraph::CSlaveGraph(CJobChannel &jobChannel) : CGraphBase(jobChannel), progressActive(false)
 {
     jobS = (CJobSlave *)&jobChannel.queryJob();
 }
@@ -754,8 +754,6 @@ void CSlaveGraph::init(MemoryBuffer &mb)
     waitBarrier = queryJobChannel().createBarrier(waitBarrierTag);
     if (doneBarrierTag != TAG_NULL)
         doneBarrier = queryJobChannel().createBarrier(doneBarrierTag);
-    initialized = false;
-    progressActive = progressToCollect = false;
     unsigned subCount;
     mb.read(subCount);
     while (subCount--)
@@ -765,6 +763,12 @@ void CSlaveGraph::init(MemoryBuffer &mb)
         Owned<CSlaveGraph> subGraph = (CSlaveGraph *)queryJobChannel().getGraph(gid);
         subGraph->init(mb);
     }
+}
+
+void CSlaveGraph::reset()
+{
+    CGraphBase::reset();
+    progressActive = false;
 }
 
 void CSlaveGraph::initWithActData(MemoryBuffer &in, MemoryBuffer &out)
@@ -895,7 +899,6 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             MemoryBuffer actInitData;
             actInitData.append(len, msg.readDirect(len));
             CriticalBlock b(progressCrit);
-            initialized = true;
             initWithActData(actInitData, actInitRtnData);
         }
         catch (IException *e)
@@ -944,11 +947,8 @@ bool CSlaveGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
 
 void CSlaveGraph::start()
 {
-    {
-        SpinBlock b(progressActiveLock);
-        progressActive = true;
-        progressToCollect = true;
-    }
+    progressActive.store(true); // remains true whilst graph is running
+    setProgressUpdated(); // may remain true after graph is running
     bool forceAsync = !queryOwner() || isGlobal();
     Owned<IThorActivityIterator> iter = getSinkIterator();
     unsigned sinks = 0;
@@ -1071,11 +1071,8 @@ void CSlaveGraph::abort(IException *e)
 void CSlaveGraph::done()
 {
     GraphPrintLog("End of sub-graph");
-    {
-        SpinBlock b(progressActiveLock);
-        progressActive = false;
-        progressToCollect = true; // NB: ensure collected after end of graph
-    }
+    progressActive.store(false);
+    setProgressUpdated(); // NB: ensure collected after end of graph
     if (!aborted && graphDone && (!queryOwner() || isGlobal()))
         getDoneSem.wait(); // must wait on master
     if (!queryOwner())
@@ -1109,16 +1106,7 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
     // until started and activities initialized, activities are not ready to serlialize stats.
     if ((started&&initialized) || 0 == activityCount())
     {
-        bool collect=false;
-        {
-            SpinBlock b(progressActiveLock);
-            if (progressActive || progressToCollect)
-            {
-                progressToCollect = false;
-                collect = true;
-            }
-        }
-        if (collect)
+        if (checkProgressUpdatedAndClear() || progressActive)
         {
             unsigned sPos = mb.length();
             Owned<IThorActivityIterator> iter = getConnectedIterator();

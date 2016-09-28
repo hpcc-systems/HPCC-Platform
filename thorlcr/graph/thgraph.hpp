@@ -434,7 +434,6 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
     CGraphTable childGraphsTable;
     CGraphArrayCopy childGraphs;
     Owned<IGraphTempHandler> tmpHandler;
-    bool initialized = false;
 
     void clean();
 
@@ -549,6 +548,8 @@ protected:
     IBarrier *startBarrier, *waitBarrier, *doneBarrier;
     mptag_t mpTag, startBarrierTag, waitBarrierTag, doneBarrierTag;
     bool connected, started, aborted, graphDone, sequential;
+    bool initialized = false;
+    std::atomic_bool progressUpdated;
     CJobBase &job;
     CJobChannel &jobChannel;
     graph_id graphId;
@@ -583,9 +584,11 @@ public:
     CGraphBase *queryOwner() { return owner; }
     CGraphBase *queryParent() { return parent?parent:this; }
     IMPServer &queryMPServer() const;
+    void clearProgressUpdated() { progressUpdated.store(false); }
+    void setProgressUpdated() { progressUpdated.store(true); }
+    bool hasProgress() const { return progressUpdated; }
+    bool checkProgressUpdatedAndClear() { return progressUpdated.exchange(false); }
     bool syncInitData();
-    inline void setInitialized() { initialized = true; }
-    inline bool isInitialized() const { return initialized; }
     bool isComplete() const { return complete; }
     bool isGlobal() const { return global; }
     bool isStarted() const { return started; }
