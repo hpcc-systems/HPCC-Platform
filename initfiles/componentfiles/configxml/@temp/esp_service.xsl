@@ -497,11 +497,11 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
             <xsl:when test="$serviceType='WsAttributes'">
                 <!--Note that plugins.xsl already validated that @eclServer is specified-->
                 <xsl:variable name="eclServerNode" select="/Environment/Software/EclServerProcess[@name=current()/@eclServer]"/>
-                <xsl:variable name="mySqlServer" select="string($eclServerNode/@MySQL)"/>
-                 <xsl:if test="$mySqlServer = ''">
+                <xsl:variable name="mySqlServerName" select="string($eclServerNode/@MySQL)"/>
+                 <xsl:if test="$mySqlServerName = ''">
                     <xsl:message terminate="yes">WsAttributes: No MySQL server is defined for the specified ECL server!</xsl:message>
                 </xsl:if>
-                <xsl:variable name="mySqlServer" select="/Environment/Software/MySQLProcess[@name=$mySqlServer]"/>
+                <xsl:variable name="mySqlServer" select="/Environment/Software/MySQLProcess[@name=$mySqlServerName]"/>
                 <xsl:variable name="mySqlServerComputer" select="$mySqlServer/@computer"/>
                 <xsl:variable name="mySqlServerHost">
                     <xsl:choose>
