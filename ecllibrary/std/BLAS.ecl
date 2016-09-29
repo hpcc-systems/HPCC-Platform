@@ -14,17 +14,17 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-IMPORT lib_eclblas AS ECLBLAS;
+IMPORT lib_eclblas AS LIB_ECLBLAS;
 
 EXPORT BLAS := MODULE
   // Types for the Block Basic Linear Algebra Sub-programs support
   EXPORT Types := MODULE
-    EXPORT dimension_t  := ECLBLAS.dimension_t; //UNSIGNED4;
-    EXPORT value_t      := ECLBLAS.value_t;     //REAL8;
-    EXPORT matrix_t     := ECLBLAS.matrix_t;    //SET OF REAL8;
-    EXPORT Triangle     := ECLBLAS.Triangle;    //ENUM(UNSIGNED1, Upper=1, Lower=2)
-    EXPORT Diagonal     := ECLBLAS.Diagonal;    //ENUM(UNSIGNED1, UnitTri=1, NotUnitTri=2)
-    EXPORT Side         := ECLBLAS.Side;        //ENUM(UNSIGNED1, Ax=1, xA=2)
+    EXPORT value_t      := LIB_ECLBLAS.blas_value_t;     //REAL8;
+    EXPORT dimension_t  := LIB_ECLBLAS.blas_dimension_t; //UNSIGNED4;
+    EXPORT matrix_t     := LIB_ECLBLAS.blas_matrix_t;    //SET OF REAL8
+    EXPORT Triangle     := LIB_ECLBLAS.blas_Triangle;    //ENUM(UNSIGNED1, Upper=1, Lower=2)
+    EXPORT Diagonal     := LIB_ECLBLAS.blas_Diagonal;    //ENUM(UNSIGNED1, UnitTri=1, NotUnitTri=2)
+    EXPORT Side         := LIB_ECLBLAS.blas_Side;        //ENUM(UNSIGNED1, Ax=1, xA=2)
   END;
 
   /**
@@ -73,7 +73,7 @@ EXPORT BLAS := MODULE
   EXPORT Types.value_t
       dasum(Types.dimension_t m, Types.matrix_t x,
             Types.dimension_t incx, Types.dimension_t skipped=0)
-      := ECLBLAS.dasum(m, x, incx, skipped);
+      := LIB_ECLBLAS.ECLBLAS.dasum(m, x, incx, skipped);
 
 /**
  * alpha*X + Y
@@ -91,7 +91,7 @@ EXPORT Types.matrix_t
        daxpy(Types.dimension_t N, Types.value_t alpha, Types.matrix_t X,
              Types.dimension_t incX, Types.matrix_t Y, Types.dimension_t incY,
              Types.dimension_t x_skipped=0, Types.dimension_t y_skipped=0)
-      := ECLBLAS.daxpy(N, alpha, X, incX, Y, incY, x_skipped, y_skipped);
+      := LIB_ECLBLAS.ECLBLAS.daxpy(N, alpha, X, incX, Y, incY, x_skipped, y_skipped);
 
   /**
    * alpha*op(A) op(B) + beta*C where op() is transpose
@@ -111,7 +111,7 @@ EXPORT Types.matrix_t
                Types.dimension_t M, Types.dimension_t N, Types.dimension_t K,
                Types.value_t alpha, Types.matrix_t A, Types.matrix_t B,
                Types.value_t beta=0.0, Types.matrix_t C=[])
-     := ECLBLAS.dgemm(transposeA, transposeB, M, N, K, alpha, A, B, beta, C);
+     := LIB_ECLBLAS.ECLBLAS.dgemm(transposeA, transposeB, M, N, K, alpha, A, B, beta, C);
 
   /**
    * Compute LU Factorization of matrix A.
@@ -123,7 +123,7 @@ EXPORT Types.matrix_t
    */
   EXPORT Types.matrix_t
          dgetf2(Types.dimension_t m, Types.dimension_t n, Types.matrix_t a)
-      := ECLBLAS.dgetf2(m, n, a);
+      := LIB_ECLBLAS.ECLBLAS.dgetf2(m, n, a);
 
   /**
    * DPOTF2 computes the Cholesky factorization of a real symmetric
@@ -143,7 +143,7 @@ EXPORT Types.matrix_t
   EXPORT Types.matrix_t
          dpotf2(Types.Triangle tri, Types.dimension_t r, Types.matrix_t A,
                          BOOLEAN clear=TRUE)
-      := ECLBLAS.dpotf2(tri, r, A, clear);
+      := LIB_ECLBLAS.ECLBLAS.dpotf2(tri, r, A, clear);
 
   /**
    * Scale a vector alpha
@@ -157,7 +157,7 @@ EXPORT Types.matrix_t
   EXPORT Types.matrix_t
          dscal(Types.dimension_t N, Types.value_t alpha, Types.matrix_t X,
                Types.dimension_t incX, Types.dimension_t skipped=0)
-      := ECLBLAS.dscal(N, alpha, X, incX, skipped);
+      := LIB_ECLBLAS.ECLBLAS.dscal(N, alpha, X, incX, skipped);
 
   /**
    * Implements symmetric rank update C <- alpha A**T A + beta C or
@@ -179,7 +179,7 @@ EXPORT Types.matrix_t
                Types.dimension_t N, Types.dimension_t K,
                Types.value_t alpha, Types.matrix_t A,
                Types.value_t beta, Types.matrix_t C, BOOLEAN clear=FALSE)
-     := ECLBLAS.dsyrk(tri, transposeA, N, K, alpha, A, beta, C, clear);
+     := LIB_ECLBLAS.ECLBLAS.dsyrk(tri, transposeA, N, K, alpha, A, beta, C, clear);
 
   /**
    * Triangular matrix solver.  op(A) X = alpha B or X op(A) = alpha B
@@ -201,7 +201,7 @@ EXPORT Types.matrix_t
                BOOLEAN transposeA, Types.Diagonal diag,
                Types.dimension_t M, Types.dimension_t N, Types.dimension_t lda,
                Types.value_t alpha, Types.matrix_t A, Types.matrix_t B)
-      := ECLBLAS.dtrsm(side, tri, transposeA, diag, M, N, lda, alpha, A, B);
+      := LIB_ECLBLAS.ECLBLAS.dtrsm(side, tri, transposeA, diag, M, N, lda, alpha, A, B);
 
   /**
    * Extract the diagonal of he matrix
@@ -237,7 +237,7 @@ EXPORT Types.matrix_t
          Extract_Tri(Types.dimension_t m, Types.dimension_t n,
                      Types.Triangle tri, Types.Diagonal dt,
                      Types.matrix_t a)
-       := ECLBLAS.Extract_Tri(m, n, tri, dt, a);
+       := LIB_ECLBLAS.ECLBLAS.Extract_Tri(m, n, tri, dt, a);
 
   /**
    * Generate a diagonal matrix.
@@ -248,7 +248,7 @@ EXPORT Types.matrix_t
    */
   EXPORT Types.matrix_t
          make_diag(Types.dimension_t m, Types.value_t v=1.0,
-                   Types.matrix_t X=[]) := ECLBLAS.make_diag(m, v, X);
+                   Types.matrix_t X=[]) := LIB_ECLBLAS.ECLBLAS.make_diag(m, v, X);
 
   // make_vec helpers
   Cell := RECORD
