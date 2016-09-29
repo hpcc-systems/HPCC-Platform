@@ -46,6 +46,7 @@ static unsigned nIter = 1;
 //#define TEST_REMOTEFILE
 //#define TEST_REMOTEFILE2
 //#define TEST_REMOTEFILE3
+//#define TEST_COPYFILE
 //#define TEST_DEADLOCK
 //#define TEST_THREADS
 #define MDELAY 100
@@ -708,6 +709,18 @@ struct RecordStruct
 // #define NRECS ((__int64)1024*1024*1024*2/sizeof(RecordStruct)) // i.e. ~2GB
 // #define NRECS ((__int64)1024*1024*500/sizeof(RecordStruct)) // i.e. ~500MB
 // #define NRECS ((__int64)1024*500/sizeof(RecordStruct)) // i.e. ~500KB
+
+void TestCopyFile(char *srcfname, char *dstfname) // TEST_COPYFILE
+{
+    // example cmdline: datest srcfile //1.2.3.4:7100/home/username/dstfile
+    Owned<IFile> srcfile = createIFile(srcfname);
+    Owned<IFileIO> srcio = srcfile->open(IFOcreate);
+    char buf[100] = { "TestCopyFile" };
+    srcio->write(0, 18, buf);
+    srcio->close();
+    Owned<IFile> dstfile = createIFile(dstfname);
+    srcfile->copyTo(dstfile,0x100000,NULL,false);
+}
 
 void TestRemoteFile3(int nfiles, int fsizemb)
 {
@@ -3079,6 +3092,13 @@ int main(int argc, char* argv[])
         if(argc >= 3)
             fsizemb = atoi(argv[2]);
         TestRemoteFile3(nfiles, fsizemb);
+        return 0;
+#endif
+#if defined(TEST_COPYFILE)
+        if(argc >= 3)
+            TestCopyFile(argv[1], argv[2]);
+        else
+            DBGLOG("TestCopyFile(src-file, dst-file) missing arguments");
         return 0;
 #endif
         if (argc<2) {
