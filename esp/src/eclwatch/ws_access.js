@@ -31,10 +31,17 @@ define([
 ], function (declare, lang, arrayUtil, Deferred, all, Memory, Observable, QueryResults, SimpleQueryEngine, topic,
     ESPRequest, ESPUtil) {
 
-    var UsersStore = declare([Memory], {
+    var UsersStore = declare([ESPRequest.Store], {
+        service: "ws_access",
+        action: "UserQuery",
+        responseQualifier: "UserQueryResponse.Users.User",
+        responseTotalQualifier: "UserQueryResponse.TotalUsers",
+        idProperty: "username",
+        startProperty: "PageStartFrom",
+        countProperty: "PageSize",
 
         constructor: function () {
-            this.idProperty = "__hpcc_id";
+            this.idProperty = "username";
         },
 
         put: function (object, options) {
@@ -49,40 +56,11 @@ define([
             return retVal;
         },
 
-        query: function (query, options) {
-            var results = all([
-                this.refreshUsers(query),
-                this.refreshGroupUsers()
-            ]).then(lang.hitch(this, function (response) {
-                var groupUsers = {};
-                arrayUtil.forEach(response[1], function (item, idx) {
-                    groupUsers[item.username] = true;
-                }, this);
-
-                var data = [];
-                arrayUtil.forEach(response[0], function (item, idx) {
-                    data.push(lang.mixin(item, {
-                        __hpcc_groupname: this.groupname,
-                        __hpcc_id: item.username,
-                        isMember: groupUsers[item.username] ? true : false
-                    }));
-                }, this);
-                options = options || {};
-                this.setData(SimpleQueryEngine({}, { sort: options.sort })(data));
-                return this.data;
-            }));
-            return QueryResults(results);
-        },
-
         refreshUsers: function (query) {
             var context = this;
             return self.Users({
                 request: query
             }).then(function (response) {
-                context.ldapTooMany = false;
-                if (lang.exists("UserResponse.toomany", response)) {
-                    context.ldapTooMany = response.UserResponse.toomany;
-                }
                 if (lang.exists("UserResponse.Users.User", response)) {
                     return response.UserResponse.Users.User;
                 }
@@ -109,10 +87,19 @@ define([
         }
     });
 
-    var GroupsStore = declare([Memory], {
+    var GroupsStore = declare([ESPRequest.Store], {
+        service: "ws_access",
+        action: "GroupQuery",
+        responseQualifier: "GroupQueryResponse.Groups.Group",
+        responseTotalQualifier: "GroupQueryResponse.TotalGroups",
+        idProperty: "name",
+        startProperty: "PageStartFrom",
+        countProperty: "PageSize",
 
         constructor: function () {
-            this.idProperty = "__hpcc_id";
+            this.idProperty = "name";
+            this.startProperty = "PageStartFrom";
+            this.countProperty = "PageSize";
         },
 
         put: function (object, options) {
@@ -125,33 +112,6 @@ define([
                 }
             });
             return retVal;
-        },
-
-        query: function (query, options) {
-            var results = all([
-                this.refreshGroups(),
-                this.refreshUserGroups()
-            ]).then(lang.hitch(this, function (response) {
-                var userGroups = {};
-                arrayUtil.forEach(response[1], function (item, idx) {
-                    userGroups[item.name] = true;
-                }, this);
-
-                var data = [];
-                arrayUtil.forEach(response[0], function (item, idx) {
-                    if (item.name !== "Authenticated Users") {
-                        data.push(lang.mixin(item, {
-                            __hpcc_id: item.name,
-                            __hpcc_username: this.username,
-                            isMember: userGroups[item.name] ? true : false
-                        }));
-                    }
-                }, this);
-                options = options || {};
-                this.setData(SimpleQueryEngine({}, { sort: options.sort })(data));
-                return this.data;
-            }));
-            return QueryResults(results);
         },
 
         refreshGroups: function () {
