@@ -17925,10 +17925,6 @@ void HqlCppTranslator::buildStartTimer(BuildCtx & ctx, CHqlBoundExpr & boundTime
     BuildCtx * declareCtx = &ctx;
     getInvariantMemberContext(ctx, &declareCtx, &initCtx, true, false);
 
-    Owned<ITypeInfo> timerType = makePointerType(makeClassType("ISectionTimer"));
-    OwnedHqlExpr timer = declareCtx->getTempDeclare(timerType, NULL);
-    boundTimer.expr.set(timer);
-
     unsigned activityId = 0;
     ActivityInstance * activity = queryCurrentActivity(ctx);
     if (activity)
@@ -17938,7 +17934,15 @@ void HqlCppTranslator::buildStartTimer(BuildCtx & ctx, CHqlBoundExpr & boundTime
     registerArgs.append(*getSizetConstant(activityId));
     registerArgs.append(*createConstant(name));
     OwnedHqlExpr call = bindFunctionCall(registerTimerId, registerArgs);
-    initCtx->addAssign(timer, call);
+
+    if (!declareCtx->getMatchExpr(call, boundTimer))
+    {
+        Owned<ITypeInfo> timerType = makePointerType(makeClassType("ISectionTimer"));
+        OwnedHqlExpr timer = declareCtx->getTempDeclare(timerType, NULL);
+        boundTimer.expr.set(timer);
+        declareCtx->associateExpr(call, boundTimer);
+        initCtx->addAssign(boundTimer.expr, call);
+    }
 
     HqlExprArray nowArgs;
     nowArgs.append(*boundTimer.getTranslatedExpr());
