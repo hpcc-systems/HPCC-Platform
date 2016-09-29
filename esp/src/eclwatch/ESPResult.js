@@ -42,7 +42,7 @@ define([
             default:
                 console.log("Unknown cell type.")
         }
-        return "";
+        return item;
     }
 
     function RowFormatter(columns, row) {
