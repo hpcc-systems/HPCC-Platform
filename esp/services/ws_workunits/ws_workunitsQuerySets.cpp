@@ -1588,26 +1588,24 @@ bool CWsWorkunitsEx::onWUQueryFiles(IEspContext &context, IEspWUQueryFilesReques
 bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRequest & req, IEspWUQueryDetailsResponse & resp)
 {
     const char* querySet = req.getQuerySet();
-    const char* queryId = req.getQueryId();
+    const char* queryIdOrAlias = req.getQueryId();
     bool  includeStateOnClusters = req.getIncludeStateOnClusters();
     if (!querySet || !*querySet)
         throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "QuerySet not specified");
-    if (!queryId || !*queryId)
+    if (!queryIdOrAlias || !*queryIdOrAlias)
         throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "QueryId not specified");
-    resp.setQueryId(queryId);
-    resp.setQuerySet(querySet);
-    PROGLOG("WUQueryDetails: QuerySet %s, query %s", querySet, queryId);
 
     Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySet, false);
-
-    StringBuffer xpath;
-    xpath.clear().append("Query[@id='").append(queryId).append("']");
-    IPropertyTree *query = queryRegistry->queryPropTree(xpath.str());
+    Owned<IPropertyTree> query = resolveQueryAlias(queryRegistry, queryIdOrAlias);
     if (!query)
     {
         DBGLOG("No matching Query");
-        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND,"No matching query for query ID %s.", queryId);
+        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND,"No matching query for given id or alias %s.", queryIdOrAlias);
     }
+    const char* queryId = query->queryProp("@id");
+    resp.setQueryId(queryId);
+    resp.setQuerySet(querySet);
+    PROGLOG("WUQueryDetails: QuerySet %s, query %s", querySet, queryId);
 
     const char* queryName = query->queryProp("@name");
     const char* wuid = query->queryProp("@wuid");
@@ -1660,7 +1658,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
 
     if (version >= 1.42)
     {
-        xpath.clear().appendf("Alias[@id='%s']", queryId);
+        VStringBuffer xpath("Alias[@id='%s']", queryId);
         IPropertyTree *alias = queryRegistry->queryPropTree(xpath.str());
         if (!alias)
             resp.setActivated(false);
