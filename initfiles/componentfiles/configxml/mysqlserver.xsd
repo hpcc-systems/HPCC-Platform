@@ -116,11 +116,18 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="computer" type="computerType" use="required">
+            <xs:attribute name="computer" type="computerType" use="optional">
                 <xs:annotation>
                     <xs:appinfo>
-                        <tooltip>The computer on which the MySQL database is deployed.</tooltip>
+                        <tooltip>The computer on which the MySQL database is deployed. This is used before host option.</tooltip>
                         <autogenforwizard>1</autogenforwizard>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="host" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The host name on which the MySQL database is deployed.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
@@ -128,7 +135,6 @@
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>The port on which the MySQL database is listening.</tooltip>
-                        <viewType>hidden</viewType>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
