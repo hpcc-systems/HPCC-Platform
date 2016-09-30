@@ -249,7 +249,6 @@ void CSlaveMessageHandler::main()
                             element->sentActInitData->set(slave, 0); // clear to permit serializeActivityInitData to resend
                         toSerialize.append(*LINK(element));
                     }
-                    graph->setInitialized();
                     msg.clear();
                     mptag_t replyTag = job.queryJobChannel(0).queryMPServer().createReplyTag();
                     msg.append(replyTag); // second reply
@@ -2661,6 +2660,8 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
     CriticalBlock b(createdCrit);
     unsigned count, _count;
     mb.read(count);
+    if (count)
+        setProgressUpdated();
     _count = count;
     while (count--)
     {

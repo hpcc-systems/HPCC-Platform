@@ -359,10 +359,9 @@ class graphslave_decl CSlaveGraph : public CGraphBase
 {
     CJobSlave *jobS;
     Semaphore getDoneSem;
-    bool initialized, progressActive, progressToCollect;
     CriticalSection progressCrit;
-    SpinLock progressActiveLock; // MORE use atomic variables (and progressToCollect.exchange()) to remove this spin lock
     bool doneInit = false;
+    std::atomic_bool progressActive;
 
 public:
 
@@ -383,6 +382,7 @@ public:
     virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract) override;
     virtual void start() override;
     virtual void abort(IException *e) override;
+    virtual void reset() override;
     virtual void done() override;
     virtual IThorGraphResults *createThorGraphResults(unsigned num);
 
