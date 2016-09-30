@@ -62,6 +62,7 @@
 
 
 enum ActivityAttributes { ActAttr_Source=1, ActAttr_Sink=2 };
+const static unsigned defaultHeapFlags = roxiemem::RHFnofragment;
 
 #define INVALID_UNIQ_ID -1;
 typedef activity_id unique_id;
@@ -1026,7 +1027,7 @@ public:
     inline bool queryInitialized() const { return initialized; }
     inline void setInitialized(bool tf) { initialized = tf; }
     inline bool queryTimeActivities() const { return timeActivities; }
-    inline roxiemem::RoxieHeapFlags queryHeapFlags() const { return (roxiemem::RoxieHeapFlags)container.getOptInt("heapflags", 0); }
+    inline roxiemem::RoxieHeapFlags queryHeapFlags() const { return (roxiemem::RoxieHeapFlags)container.getOptInt("heapflags", defaultHeapFlags); }
 
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);

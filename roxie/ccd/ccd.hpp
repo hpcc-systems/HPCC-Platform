@@ -431,6 +431,7 @@ extern unsigned defaultKeyedJoinPreload;
 extern unsigned defaultPrefetchProjectPreload;
 extern unsigned defaultStrandBlockSize;
 extern unsigned defaultForceNumStrands;
+extern unsigned defaultHeapFlags;
 
 extern bool defaultCheckingHeap;
 

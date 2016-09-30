@@ -112,6 +112,7 @@ public:
     int bindCores;
     unsigned strandBlockSize;
     unsigned forceNumStrands;
+    unsigned heapFlags;
 
     bool checkingHeap;
     bool disableLocalOptimizations;

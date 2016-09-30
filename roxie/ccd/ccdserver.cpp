@@ -406,7 +406,7 @@ public:
         dependentCount = 0;
         optParallel = _graphNode.getPropInt("att[@name='parallel']/@value", 0);
         optUnordered = !_graphNode.getPropBool("att[@name='ordered']/@value", true);
-        heapFlags = _graphNode.getPropInt("hint[@name='heapflags']/@value", 0);
+        heapFlags = _graphNode.getPropInt("hint[@name='heapflags']/@value", _queryFactory.queryOptions().heapFlags);
     }
     
     ~CRoxieServerActivityFactoryBase()
