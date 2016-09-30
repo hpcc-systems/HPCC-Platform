@@ -129,7 +129,7 @@ EXPORT _df_DiffString(boolean is_active, string path) := MODULE
                       DiffStatus.State.UNCHANGED);
 
     SELF._diff := IF(is_active, DiffStatus.Convert (_change), '');
-    SELF._diff_ord := IF (is_added, L._diff_ord, R._diff_ord);
+    SELF._diff_ord := IF (is_deleted, R._diff_ord, L._diff_ord);
     SELF := IF (is_deleted, R, L);
 
   END;
@@ -453,7 +453,7 @@ END;
     SELF._diffmeta := IF(is_active, m._diffmeta);
 </xsl:if>
    <xsl:apply-templates select="." mode="ProcessTxChildren"/>
-    SELF._diff_ord := IF (is_added, L._diff_ord, R._diff_ord);
+    SELF._diff_ord := IF (is_deleted, R._diff_ord, L._diff_ord);
     SELF := IF (is_deleted, R, L);
 <xsl:text>
   END;
