@@ -975,6 +975,11 @@ public:
         filename.setf("Monitor_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
+        xform->setParameter("diffmode", "'Compare'");
+        xform->transform(ecl.clear());
+        filename.setf("Compare_%s.ecl", optMethod.str());
+        saveAsFile(".", filename, ecl);
+
         return 0;
     }
 
