@@ -501,6 +501,16 @@
             </row>
 
             <row>
+              <entry><emphasis>hthorMemoryLimit</emphasis></entry>
+
+              <entry>Default 300 [MB]</entry>
+
+              <entry>Override memory usage limit set in ECL Agent's
+              defaultMemoryLimitMB configuration option (for hThor
+              only).</entry>
+            </row>
+
+            <row>
               <entry><emphasis>maxCsvRowSizeMb</emphasis></entry>
 
               <entry>Default 10 [MB]</entry>
