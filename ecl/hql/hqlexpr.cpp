@@ -6612,6 +6612,7 @@ void CHqlDataset::cacheParent()
     case no_unboundselect:
     case no_libraryscopeinstance:
     case no_libraryinput:
+    case no_dataset_from_transform:
         rootTable = this;
         break;
     case no_mergejoin:

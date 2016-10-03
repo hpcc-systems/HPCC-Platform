@@ -749,7 +749,8 @@ protected:
         if (!ignoreInline)
         {
             //Generally this appears to be better to hoist since it involves calling a transform.
-            if (ds->getOperator() == no_dataset_from_transform)
+            IHqlExpression * root = queryRoot(ds);
+            if (root && root->getOperator() == no_dataset_from_transform)
                 return true;
 
             if (canProcessInline(NULL, ds))
