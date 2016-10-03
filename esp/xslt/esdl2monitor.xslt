@@ -21,6 +21,7 @@
     <xsl:param name="sourceFileName" select="'UNKNOWN'"/>
     <xsl:param name="responseType" select="''"/>
     <xsl:param name="requestType" select="''"/>
+    <xsl:param name="diffmode" select="'Monitor'"/>
     <xsl:variable name="docname" select="/esxdl/@name"/>
     <xsl:template match="/">
         <xsl:apply-templates select="esxdl"/>
@@ -33,7 +34,10 @@
 <xsl:template match="esxdl">
   <xsl:call-template name="doNotChangeManuallyComment"/>
 
+<xsl:if test="$diffmode='Monitor'">
 IMPORT cassandra;
+</xsl:if>
+
 IMPORT std;
 IMPORT lib_timelib.TimeLib;
   <xsl:for-each select="ECL/Import">
@@ -112,7 +116,7 @@ difference := MODULE<xsl:text>
 
 </xsl:text>
   <xsl:for-each select="Selectors/Selector">
-<xsl:text>  EXPORT boolean Monitor</xsl:text><xsl:value-of select="."/> := FALSE : STORED('Monitor_<xsl:value-of select="."/>', FORMAT(sequence(<xsl:value-of select="position()+10"/>)));<xsl:text>
+<xsl:text>  EXPORT boolean Monitor</xsl:text><xsl:value-of select="."/> := FALSE : STORED('<xsl:value-of select="$diffmode"/>_<xsl:value-of select="."/>', FORMAT(sequence(<xsl:value-of select="position()+10"/>)));<xsl:text>
 </xsl:text>
     </xsl:for-each><xsl:text>
 </xsl:text>
@@ -172,6 +176,8 @@ END;
   the_requestLayout := request._lt_<xsl:value-of select="$requestType"/>;
   the_responseLayout := layouts._lt_<xsl:value-of select="$responseType"/>;
 
+<xsl:choose>
+  <xsl:when test="$diffmode='Monitor'">
   //Inputs
   string csndServer := '127.0.0.1' : stored('cassandraServer', FORMAT(SEQUENCE(1)));
   string csndUser := '' : stored('cassandraUser', FORMAT(SEQUENCE(2)));
@@ -289,18 +295,6 @@ END;
 //  output(executedAction.prior, NAMED('PRIOR'));
   updateMonitor(DATASET([{executedAction.id, executedAction.responseXML}], monitorStoreRec));
 
-  <xsl:if test="Selectors/Selector">
-  SelectorRec := RECORD
-    string monitor {xpath('@monitor')};
-    boolean active {xpath('@active')};
-  END;
-
-    <xsl:text>OUTPUT(DATASET([</xsl:text>
-    <xsl:for-each select="Selectors/Selector">
-      <xsl:if test="position()!=1"><xsl:text>,</xsl:text></xsl:if>
-      <xsl:text>{'</xsl:text><xsl:value-of select="."/>', difference.Monitor<xsl:value-of select="."/><xsl:text>}</xsl:text>
-    </xsl:for-each>], SelectorRec), NAMED('Selected'));
-  </xsl:if>
 
   <xsl:if test="Template//*[@diff_monitor]">
   CategoryPathsRec := RECORD
@@ -320,6 +314,31 @@ END;
       <xsl:text>'}</xsl:text>
       </xsl:for-each>
     <xsl:text>], CategoryPathsRec), NAMED('Categories'));</xsl:text>
+  </xsl:if>
+
+  </xsl:when>
+  <xsl:when test="$diffmode='Compare'">
+  STRING originalXML := '' : STORED ('original', FORMAT(FIELDWIDTH(100), FIELDHEIGHT(30), sequence(1001)));
+  STRING changedXML := '' : STORED ('changed', FORMAT(FIELDWIDTH(100), FIELDHEIGHT(30), sequence(1002)));
+
+  originalRow := FROMXML (the_responseLayout, originalXML);
+  changedRow := FROMXML (the_responseLayout, changedXML);
+
+  OUTPUT(the_differenceModule(false, '').AsRecord(changedRow, originalRow), NAMED('Difference'));
+
+  </xsl:when>
+</xsl:choose>
+  <xsl:if test="Selectors/Selector">
+  SelectorRec := RECORD
+    string monitor {xpath('@monitor')};
+    boolean active {xpath('@active')};
+  END;
+
+    <xsl:text>OUTPUT(DATASET([</xsl:text>
+    <xsl:for-each select="Selectors/Selector">
+      <xsl:if test="position()!=1"><xsl:text>,</xsl:text></xsl:if>
+      <xsl:text>{'</xsl:text><xsl:value-of select="."/>', difference.Monitor<xsl:value-of select="."/><xsl:text>}</xsl:text>
+    </xsl:for-each>], SelectorRec), NAMED('Selected'));
   </xsl:if>
 
   <xsl:call-template name="doNotChangeManuallyComment"/>
