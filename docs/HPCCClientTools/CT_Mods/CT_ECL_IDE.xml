@@ -2698,7 +2698,7 @@ ENDMACRO;
         </sect3>
       </sect2>
 
-      <sect2>
+      <sect2 id="KeyboardShortcuts">
         <title>Keyboard Shortcuts</title>
 
         <para>The following table lists all the keyboard shortcuts available
