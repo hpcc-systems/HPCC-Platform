@@ -2506,19 +2506,15 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                                 {
                                     IHqlExpression * left = dataset->queryChild(0);
                                     IHqlExpression * right = dataset->queryChild(1);
-                                    if ( left->getOperator()==no_compound_diskread || left->getOperator()== no_addfiles
-                                        || right->getOperator()==no_compound_diskread || right->getOperator()== no_addfiles )
-                                    {
-                                        IHqlExpression * field = transformed->queryChild(1);
-                                        OwnedHqlExpr newLeftDS = replaceDataset(child, dataset, dataset->queryChild(0));
-                                        OwnedHqlExpr countLeftDS = createNewSelectExpr(newLeftDS.getClear(), LINK(field));
+                                    IHqlExpression * field = transformed->queryChild(1);
+                                    OwnedHqlExpr newLeftDS = replaceDataset(child, dataset, dataset->queryChild(0));
+                                    OwnedHqlExpr countLeftDS = createNewSelectExpr(newLeftDS.getClear(), LINK(field));
 
-                                        OwnedHqlExpr newRightDS = replaceDataset(child, dataset, dataset->queryChild(1));
-                                        OwnedHqlExpr countRightDS = createNewSelectExpr(newRightDS.getClear(), LINK(field));
+                                    OwnedHqlExpr newRightDS = replaceDataset(child, dataset, dataset->queryChild(1));
+                                    OwnedHqlExpr countRightDS = createNewSelectExpr(newRightDS.getClear(), LINK(field));
 
-                                        OwnedHqlExpr newexpr = createValue(no_add, transformed->getType(), countLeftDS.getClear(), countRightDS.getClear());
-                                        return transformed->cloneAllAnnotations(newexpr);
-                                    }
+                                    OwnedHqlExpr newexpr = createValue(no_add, transformed->getType(), countLeftDS.getClear(), countRightDS.getClear());
+                                    return transformed->cloneAllAnnotations(newexpr);
                                 }
                             }
                         }
