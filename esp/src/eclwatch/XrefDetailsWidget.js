@@ -172,7 +172,7 @@ define([
             this.foundFilesWidget = registry.byId(this.id + "_FoundFiles").set("disabled", disabled);
             this.orphanFilesWidget = registry.byId(this.id + "_OrphanFiles").set("disabled", disabled);
             this.lostFilesWidget = registry.byId(this.id + "_LostFiles").set("disabled", disabled);
-            this.directoriesWidget = registry.byId(this.id + "_Directories").set("disabled", disabled);;
+            this.directoriesWidget = registry.byId(this.id + "_Directories").set("disabled", disabled);
         }
     });
 });

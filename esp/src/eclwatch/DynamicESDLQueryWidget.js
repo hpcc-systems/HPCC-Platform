@@ -85,7 +85,7 @@ define([
                 store: this.store,
                 columns: {
                     Name: tree({
-                        collapseOnRefresh: false, label: this.i18n.Name, sortable: true, width:200,
+                        collapseOnRefresh: false, label: this.i18n.Name, sortable: true, width:200
                     })
                 }
             }, domID);

@@ -136,11 +136,11 @@ define([
 
             this.result = params.result;
             //TODO:  Encapsulate this IF into ESPResult.js
+            var context = this;
             if (params.result && params.result.canShowResults()) {
                 this.initResult(params.result);
             } else if (params.Wuid && (lang.exists("Sequence", params) || params.Name)) {
                 var wu = ESPWorkunit.Get(params.Wuid);
-                var context = this;
                 wu.fetchSequenceResults(function (results) {
                     if (lang.exists("Sequence", params)) {
                         context.initResult(results[params.Sequence]);
@@ -150,7 +150,6 @@ define([
                 });
             } else if (params.LogicalName) {
                 var logicalFile = ESPLogicalFile.Get(params.NodeGroup, params.LogicalName);
-                var context = this;
                 logicalFile.getInfo({
                     onAfterSend: function (response) {
                         context.initResult(logicalFile.result);
@@ -158,7 +157,6 @@ define([
                 });
             } else if (params.result && params.result.Name) {
                 var logicalFile = ESPLogicalFile.Get(params.result.NodeGroup, params.result.Name);
-                var context = this;
                 logicalFile.getInfo({
                     onAfterSend: function (response) {
                         context.initResult(logicalFile.result);

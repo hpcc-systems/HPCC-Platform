@@ -29,37 +29,30 @@ define([
 
     return {
         ListDESDLEspBindings: function (params) {
-            handleAs: "text"
             return ESPRequest.send("WsESDLConfig", "ListDESDLEspBindings", params);
         },
 
         DeleteESDLBinding: function (params) {
-            handleAs: "text"
             return ESPRequest.send("WsESDLConfig", "DeleteESDLBinding", params);
         },
 
         GetESDLBinding: function (params) {
-            handleAs: "text"
             return ESPRequest.send("WsESDLConfig", "GetESDLBinding", params);
         },
 
         ConfigureESDLBindingMethod: function (params) {
-            handleAs: "text"
             return ESPRequest.send("WsESDLConfig", "ConfigureESDLBindingMethod", params);
         },
 
         ListESDLDefinitions: function (params) {
-            handleAs: "text"
             return ESPRequest.send("WsESDLConfig", "ListESDLDefinitions", params);
         },
 
         GetESDLDefinition: function (params) {
-            handleAs: "text"
             return ESPRequest.send("WsESDLConfig", "GetESDLDefinition", params);
         },
 
         PublishESDLBinding: function (params) {
-            handleAs: "text"
             return ESPRequest.send("WsESDLConfig", "PublishESDLBinding", params);
         }
     };

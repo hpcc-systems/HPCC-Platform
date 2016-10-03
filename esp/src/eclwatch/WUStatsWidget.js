@@ -84,21 +84,6 @@ define([
                 return;
 
             var context = this;
-            if (dojoConfig.vizDebug) {
-                requireWidget();
-            } else {
-                require(["dist-amd/hpcc-viz"], function () {
-                    require(["dist-amd/hpcc-viz-common"], function () {
-                        require(["dist-amd/hpcc-viz-api"], function () {
-                            require(["dist-amd/hpcc-viz-layout"], function () {
-                                require(["dist-amd/hpcc-viz-chart", "dist-amd/hpcc-viz-google", "dist-amd/hpcc-viz-c3chart", "dist-amd/hpcc-viz-amchart", "dist-amd/hpcc-viz-other", "dist-amd/hpcc-viz-tree", "dist-amd/hpcc-viz-composite"], function () {
-                                    requireWidget();
-                                });
-                            });
-                        });
-                    });
-                });
-            }
             function requireWidget() {
                 require(["src/other/Comms", "src/composite/MegaChart", "src/layout/Surface", "src/tree/SunburstPartition", "src/other/Table", "crossfilter"], function (Comms, MegaChart, Surface, SunburstPartition, Table, crossfilterXXX) {
                     function CFGroup(crossfilter, dimensionID, targetID) {
@@ -206,6 +191,22 @@ define([
                     ;
 
                     context.doRefreshData();
+                });
+            }
+
+            if (dojoConfig.vizDebug) {
+                requireWidget();
+            } else {
+                require(["dist-amd/hpcc-viz"], function () {
+                    require(["dist-amd/hpcc-viz-common"], function () {
+                        require(["dist-amd/hpcc-viz-api"], function () {
+                            require(["dist-amd/hpcc-viz-layout"], function () {
+                                require(["dist-amd/hpcc-viz-chart", "dist-amd/hpcc-viz-google", "dist-amd/hpcc-viz-c3chart", "dist-amd/hpcc-viz-amchart", "dist-amd/hpcc-viz-other", "dist-amd/hpcc-viz-tree", "dist-amd/hpcc-viz-composite"], function () {
+                                    requireWidget();
+                                });
+                            });
+                        });
+                    });
                 });
             }
         },

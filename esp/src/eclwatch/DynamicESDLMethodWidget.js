@@ -34,7 +34,7 @@ define([
 
     "dgrid/selector",
     "dgrid/editor",
-    "dgrid/tree",
+    "dgrid/tree"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, domConstruct,
                 registry, Button, ToolbarSeparator, Dialog, TextBox,
@@ -140,7 +140,8 @@ define([
                         sortable: false
                     }),
                     Name: tree({ label: context.i18n.Methods }),
-                    Attribute: editor({ label: context.i18n.Attribute, editor: "text",
+                    Attribute: editor({
+                        label: context.i18n.Attribute,
                         autoSave: true,
                         canEdit: function (object, value) {
                             if (object.Attributes || !object.__hpcc_parentName) {

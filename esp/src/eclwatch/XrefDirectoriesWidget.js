@@ -33,7 +33,7 @@ define([
     "hpcc/WsDFUXref",
     "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil",
-    "hpcc/XrefDetailsWidget",
+    "hpcc/XrefDetailsWidget"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domConstruct, domClass,
                 registry, ToggleButton, ToolbarSeparator, Button,
@@ -118,7 +118,6 @@ define([
                    newRows.push({
                         Name: row.Name,
                         Num: row.Num,
-                        MinSize: row.MinSize,
                         Size: row.Size,
                         MaxIP: row.MaxIP,
                         MaxSize: row.MaxSize,

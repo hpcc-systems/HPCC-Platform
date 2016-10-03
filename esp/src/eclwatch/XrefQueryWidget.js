@@ -154,7 +154,7 @@ define([
                     Status: selections[i].Status
 
                 });
-                if (i == 0) {
+                if (i === 0) {
                     firstTab = tab;
                 }
             }

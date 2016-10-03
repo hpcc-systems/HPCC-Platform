@@ -80,7 +80,7 @@ define([
 
             if (params) {
                 var finalColumns = params.Columns.Item;
-                for (index in finalColumns) {
+                for (var index in finalColumns) {
                     var clean = finalColumns[index].replace(/([~!@#$%^&*()_+=`{}\[\]\|\\:;'<>,.\/? ])+/g, '').replace(/^(-)+|(-)+$/g,'');
                     if (clean === 'Condition') {
                         lang.mixin(dynamicColumns, {
@@ -117,22 +117,16 @@ define([
             switch (row) {
                 case 1:
                     return this.i18n.Normal;
-                    break;
                 case 2:
                     return this.i18n.Warning;
-                    break;
                 case 3:
                     return this.i18n.Minor;
-                    break;
                 case 4:
                     return this.i18n.Major;
-                    break;
                 case 5:
                     return this.i18n.Critical;
-                    break;
                 case 6:
                     return this.i18n.Fatal;
-                    break;
                 default:
                     return this.i18n.Unknown;
             }
@@ -142,25 +136,18 @@ define([
             switch (row) {
                 case 0:
                     return this.i18n.Unknown;
-                    break;
                 case 1:
                     return this.i18n.Starting;
-                    break;
                 case 2:
                     return this.i18n.Stopping;
-                    break;
                 case 3:
                     return this.i18n.Suspended;
-                    break;
                 case 4:
                     return this.i18n.Recycling;
-                    break;
                 case 5:
                     return this.i18n.Ready;
-                    break;
                 case 6:
                     return this.i18n.Busy;
-                    break;
                 default:
                     return this.i18n.Unknown;
             }

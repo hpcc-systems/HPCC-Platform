@@ -32,7 +32,7 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/WsDFUXref",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
+    "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domConstruct, domClass,
                 registry, ToggleButton, ToolbarSeparator, Button,

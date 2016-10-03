@@ -80,6 +80,7 @@ define([
         },
 
         createGrid: function (domID) {
+            var context = this;
             this.openViz = new Button({
                 label: this.i18n.Visualize,
                 onClick: function (event) {
@@ -135,7 +136,6 @@ define([
                 }
             }, domID);
 
-            var context = this;
             retVal.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = context.grid.row(evt).data;
