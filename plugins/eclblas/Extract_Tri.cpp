@@ -27,15 +27,20 @@ ECLBLAS_CALL void Extract_Tri(uint32_t m, uint32_t n, uint8_t tri,
   __isAllResult = false;
   __lenResult = lenA;
   double *new_a = (double*) rtlMalloc(lenA);
-  unsigned int r, c;    //row and column
+  unsigned int r=0;    //row
+  unsigned int c=0;    //column
   for (int i=0; i<cells; i++) {
-    r = i % m;
-    c = i / m;
-    if (r==c) new_a[i] = (dt==UNIT_TRI) ? 1.0  : ((double*)a)[i];
+    double a_element = ((const double*)a)[i];
+    if (r==c) new_a[i] = (dt==UNIT_TRI) ? 1.0  : a_element;
     else if (r > c) { // lower part
-      new_a[i] = (tri==UPPER) ? 0.0  : ((double*)a)[i];
+      new_a[i] = (tri==UPPER) ? 0.0  : a_element;
     } else {          // upper part
-      new_a[i] = (tri==UPPER) ? ((double*)a)[i]  : 0.0;
+      new_a[i] = (tri==UPPER) ? a_element  : 0.0;
+    }
+    r++;
+    if (r==m) {
+      r=0;
+      c++;
     }
   }
   __result = (void*) new_a;

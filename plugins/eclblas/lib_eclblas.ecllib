@@ -24,7 +24,7 @@ EXPORT blas_Side         := ENUM(UNSIGNED1, Ax=1, xA=2);
 
 
 EXPORT eclblas := SERVICE : plugin('eclblasplugin'), library('eclblas')
-  REAL8 dasum(blas_dimension_t m, blas_matrix_t x, blas_dimension_t incx,
+  REAL8 dasum(blas_dimension_t m, const blas_matrix_t x, blas_dimension_t incx,
                 blas_dimension_t skipped=0) : C, PURE;
   SET OF REAL8 daxpy(blas_dimension_t N, blas_value_t alpha, const blas_matrix_t X,
                  blas_dimension_t incX, blas_matrix_t Y, blas_dimension_t incY,

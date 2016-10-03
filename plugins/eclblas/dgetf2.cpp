@@ -43,7 +43,10 @@ ECLBLAS_CALL void dgetf2(uint32_t m, uint32_t n, bool isAllA,
     wpos = diag + m;      // left cell of w vector
     mpos = diag + m + 1;  //upper left of sub-matrix to update
     akk = new_a[diag];
-    if (akk == 0.0) rtlFail(0, "Permute required"); // need to permute
+    if (akk == 0.0) {
+      rtlFree(new_a);
+      rtlFail(0, "Permute required"); // need to permute
+    }
     //Ideally, akk should be tested against sfmin, and dscal used
     // to update the vector for the L cells.
     for (i=vpos; i<vpos+m-k-1; i++) new_a[i] = new_a[i]/akk;

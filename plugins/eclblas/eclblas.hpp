@@ -51,13 +51,14 @@ extern "C" {
 
 extern "C" {
   ECLBLAS_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
+  ECLBLAS_PLUGIN_API void setPluginContext(IPluginContext * _ctx);
 
   ECLBLAS_CALL double dasum(uint32_t m, bool isAllX, size32_t lenX, const void * x,
                             uint32_t incx, uint32_t skipped);
 
   ECLBLAS_CALL void daxpy(uint32_t n, double alpha,
                           bool isAllX, size32_t lenX, const void * x, uint32_t incx,
-                          bool isAllY, size32_t lenY, const void* y, uint32_t incy,
+                          bool isAllY, size32_t lenY, const void * y, uint32_t incy,
                           uint32_t x_skipped, uint32_t y_skipped,
                           bool & __isAllResult, size32_t & __lenResult,
                           void * & __result);

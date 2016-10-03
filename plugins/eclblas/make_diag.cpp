@@ -18,20 +18,25 @@
 //If the vector is present the diagonal is the product
 #include "eclblas.hpp"
 
-ECLBLAS_CALL void make_diag(size32_t m, double v, bool isAllX,
+ECLBLAS_CALL void make_diag(uint32_t m, double v, bool isAllX,
                             size32_t lenX, const void * x,
                             bool & __isAllResult, size32_t & __lenResult,
                             void * & __result) {
   int cells = m * m;
   __isAllResult = false;
   __lenResult = cells * sizeof(double);
+  if (lenX > 0 && m*sizeof(double) != lenX) rtlFail(0,"Bad X vector length");
   double *diag = (double*) rtlMalloc(__lenResult);
-  const double *in_x = (double*)x;
-  unsigned int r, c;    //row and column
+  const double *in_x = (const double*)x;
+  unsigned int r = 0;   // row
+  unsigned int c = 0;   //row and column
   for (int i=0; i<cells; i++) {
-    r = i % m;
-    c = i / m;
     diag[i] = (r==c)?  (lenX!=0 ? v*in_x[r] : v) : 0.0;
+    r++;
+    if (r==m) {
+      r = 0;
+      c++;
+    }
   }
   __result = (void*) diag;
 }

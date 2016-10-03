@@ -50,7 +50,10 @@ ECLBLAS_CALL void dpotf2(uint8_t tri, uint32_t r, bool isAllA,
     // ddot.value <- x'*y
     ajj = new_a[diag] - cblas_ddot(j, (new_a+x_pos), x_step, (new_a+x_pos), x_step);
     //if ajj is 0, negative or NaN, then error
-    if (ajj <= 0.0) rtlFail(0, "Not a positive definite matrix");
+    if (ajj <= 0.0) {
+      rtlFree(new_a);
+      rtlFail(0, "Not a positive definite matrix");
+    }
     ajj = sqrt(ajj);
     new_a[diag] = ajj;
     if ( j < r-1) {

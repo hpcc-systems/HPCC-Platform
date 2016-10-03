@@ -22,9 +22,9 @@
 
 ECLBLAS_CALL void dgemm(bool transposeA, bool transposeB,
                         uint32_t m, uint32_t n, uint32_t k,
-                        double alpha, bool isAllA, size32_t lenA, void* A,
-                        bool isAllB, size32_t lenB, void* B, double beta,
-                        bool isAllC, size32_t lenC, void* C,
+                        double alpha, bool isAllA, size32_t lenA, const void* A,
+                        bool isAllB, size32_t lenB, const void* B, double beta,
+                        bool isAllC, size32_t lenC, const void* C,
                         bool & __isAllResult, size32_t & __lenResult,
                         void * & __result) {
   unsigned int lda = transposeA==0 ? m  : k;

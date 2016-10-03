@@ -20,7 +20,7 @@
 
 #include "eclblas.hpp"
 
-ECLBLAS_CALL double dasum(uint32_t m, bool isAllX, size32_t lenX, void * x,
+ECLBLAS_CALL double dasum(uint32_t m, bool isAllX, size32_t lenX, const void * x,
                           uint32_t incx, uint32_t skipped) {
   const double* X = ((const double*)x) + skipped;
   double rslt = cblas_dasum(m, X, incx);

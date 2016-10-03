@@ -20,14 +20,14 @@
 
 
 ECLBLAS_CALL void daxpy(uint32_t n, double alpha,
-                        bool isAllX, size32_t lenX, void * x, uint32_t incx,
-                        bool isAllY, size32_t lenY, void* y, uint32_t incy,
+                        bool isAllX, size32_t lenX, const void * x, uint32_t incx,
+                        bool isAllY, size32_t lenY, const void* y, uint32_t incy,
                         uint32_t x_skipped, uint32_t y_skipped,
                         bool & __isAllResult, size32_t & __lenResult,
                         void * & __result) {
   __isAllResult = false;
-  __lenResult = (lenX>lenY) ? lenX  : lenY;
-  const double* X = ((double*)x) + x_skipped;
+  __lenResult = lenY;
+  const double* X = ((const double*)x) + x_skipped;
   double *result = (double*) rtlMalloc(__lenResult);
   memcpy(result, y,lenY);
   double* Y = result + y_skipped;

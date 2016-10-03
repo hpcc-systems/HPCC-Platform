@@ -34,3 +34,9 @@ ECLBLAS_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->description = "ECL plugin library for BLAS\n";
     return true;
 }
+
+IPluginContext * ctx;
+
+ECLBLAS_PLUGIN_API void setPluginContext(IPluginContext * _ctx) {
+  ctx = _ctx;
+}
