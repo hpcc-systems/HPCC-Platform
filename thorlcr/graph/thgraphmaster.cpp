@@ -2166,6 +2166,7 @@ void CMasterGraph::reset()
 void CMasterGraph::abort(IException *e)
 {
     if (aborted) return;
+    bool _graphDone = graphDone; // aborting master activities can trigger master graphDone, but want to fire GraphAbort to slaves if graphDone=false at start.
     try { CGraphBase::abort(e); }
     catch (IException *e)
     {
@@ -2175,7 +2176,7 @@ void CMasterGraph::abort(IException *e)
     bcastMsgHandler.cancel(0);
     activityInitMsgHandler.cancel(RANK_ALL);
     executeReplyMsgHandler.cancel(RANK_ALL);
-    if (started && !graphDone)
+    if (started && !_graphDone)
     {
         try
         {
@@ -2359,7 +2360,7 @@ void CMasterGraph::serializeGraphInit(MemoryBuffer &mb)
     mb.append((int)waitBarrierTag);
     mb.append((int)doneBarrierTag);
     mb.append(queryChildGraphCount());
-    Owned<IThorGraphIterator> childIter = getChildGraphs();
+    Owned<IThorGraphIterator> childIter = getChildGraphIterator();
     ForEach (*childIter)
     {
         CMasterGraph &childGraph = (CMasterGraph &)childIter->query();

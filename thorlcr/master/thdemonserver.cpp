@@ -74,7 +74,7 @@ private:
             StatsSubgraphScope subgraph(stats, graph->queryGraphId());
             if (graph->hasProgress()) // if there have ever been any progress, ensure they are republished
                 doReportGraph(stats, graph, finished);
-            Owned<IThorGraphIterator> graphIter = graph->getChildGraphs();
+            Owned<IThorGraphIterator> graphIter = graph->getChildGraphIterator();
             ForEach (*graphIter)
                 reportGraph(stats, &graphIter->query(), finished);
         }

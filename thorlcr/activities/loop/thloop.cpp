@@ -335,8 +335,6 @@ public:
     virtual void createResult() = 0;
     virtual void process()
     {
-        assertex(container.queryResultsGraph());
-        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
         IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
         inputRowIf.setown(createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta()));
         createResult();
@@ -352,7 +350,7 @@ public:
     virtual void createResult()
     {
         IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
-        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
+        CGraphBase *graph = container.queryResultsGraph();
         graph->createResult(*this, helper->querySequence(), this, true); // NB graph owns result
     }
 };
@@ -371,7 +369,7 @@ public:
     virtual void createResult()
     {
         IHThorGraphLoopResultWriteArg *helper = (IHThorGraphLoopResultWriteArg *)queryHelper();
-        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
+        CGraphBase *graph = container.queryResultsGraph();
         graph->createGraphLoopResult(*this, inputRowIf, true); // NB graph owns result
     }
 };
@@ -391,7 +389,7 @@ public:
     virtual void createResult()
     {
         IHThorDictionaryResultWriteArg *helper = (IHThorDictionaryResultWriteArg *)queryHelper();
-        Owned<CGraphBase> graph = queryJobChannel().getGraph(container.queryResultsGraph()->queryGraphId());
+        CGraphBase *graph = container.queryResultsGraph();
         graph->createResult(*this, helper->querySequence(), this, true); // NB graph owns result
     }
 };
