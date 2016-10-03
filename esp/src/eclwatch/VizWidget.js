@@ -366,10 +366,23 @@ define([
             var value = valueParts[0];
             var chartType = valueParts[1];
             var deferred = new Deferred();
+            var context = this;
+
+            function requireWidget() {
+                require(["src/layout/Grid", "hpcc/viz/" + context.vizType], function (Grid, D3Viz) {
+                    context.d3Viz = new D3Viz();
+                    context.d3Viz._chartType = chartType;
+                    domConstruct.empty(context.id + "VizCP");
+                    context.d3Viz.renderTo({
+                        domNodeID: context.id + "VizCP"
+                    });
+                    deferred.resolve(context.vizType);
+                });
+            }
+
             if (this.vizType !== value || this.chartType !== chartType) {
                 this.vizType = value;
                 this.chartType = chartType;
-                var context = this;
                 if (dojoConfig.vizDebug) {
                     requireWidget();
                 } else {
@@ -385,17 +398,6 @@ define([
                 }
             }
 
-            function requireWidget() {
-                require(["src/layout/Grid", "hpcc/viz/" + context.vizType], function (Grid, D3Viz) {
-                    context.d3Viz = new D3Viz();
-                    context.d3Viz._chartType = chartType;
-                    domConstruct.empty(context.id + "VizCP");
-                    context.d3Viz.renderTo({
-                        domNodeID: context.id + "VizCP"
-                    });
-                    deferred.resolve(context.vizType);
-                });
-            }
             return deferred.promise;
         },
 

@@ -492,6 +492,29 @@ define([
         },
         query: function (query, options) {
             var data = [];
+            var instance = {};
+            var machines = {};
+            var context = this;
+
+            function getMachines(treeItem, parentTreeItem) {
+                if (treeItem instanceof TpMachine) {
+                    if (!machines[treeItem.Netaddress]) {
+                        var machineNode = context.createTreeNode(null, treeItem);
+                        machines[treeItem.Netaddress] = machineNode;
+                        data.push(machineNode);
+                    }
+                    if (parentTreeItem) {
+                        if (!instance[treeItem.getUniqueID()]) {
+                            instance[treeItem.getUniqueID()] = true;
+                            context.createTreeNode(machines[treeItem.Netaddress], parentTreeItem);
+                        }
+                    }
+                }
+                arrayUtil.forEach(treeItem.__hpcc_children, function (child) {
+                    getMachines(child, treeItem);
+                }, this);
+            }
+
             if (this.rootItem) {
                 switch (this._viewMode) {
                     case "Debug":
@@ -516,9 +539,8 @@ define([
                         }, this);
                         break;
                     case "Machines":
-                        var instance = {};
-                        var machines = {};
-                        var context = this;
+                        instance = {};
+                        machines = {};
                         getMachines(this.rootItem);
                         data.sort(function (a, b) {
                             aa = a.__hpcc_treeItem.Netaddress.split(".");
@@ -530,26 +552,6 @@ define([
                         break;
                 }
             }
-
-            function getMachines(treeItem, parentTreeItem) {
-                if (treeItem instanceof TpMachine) {
-                    if (!machines[treeItem.Netaddress]) {
-                        var machineNode = context.createTreeNode(null, treeItem);
-                        machines[treeItem.Netaddress] = machineNode;
-                        data.push(machineNode);
-                    }
-                    if (parentTreeItem) {
-                        if (!instance[treeItem.getUniqueID()]) {
-                            instance[treeItem.getUniqueID()] = true;
-                            context.createTreeNode(machines[treeItem.Netaddress], parentTreeItem);
-                        }
-                    }
-                }
-                arrayUtil.forEach(treeItem.__hpcc_children, function (child) {
-                    getMachines(child, treeItem);
-                }, this);
-            }
-
             return QueryResults(this.queryEngine({}, {})(data));
         },
 

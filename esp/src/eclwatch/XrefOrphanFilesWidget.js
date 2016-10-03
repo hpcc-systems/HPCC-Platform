@@ -36,7 +36,7 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil",
     "hpcc/FilterDropDownWidget",
-    "hpcc/XrefDetailsWidget",
+    "hpcc/XrefDetailsWidget"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domConstruct, domClass,
                 registry, ToggleButton, ToolbarSeparator, Button,

@@ -35,6 +35,15 @@ define([
         query: function (query, options) {
             var deferredResults = new Deferred();
             deferredResults.total = new Deferred();
+
+            function nextItem(itemParts) {
+                var part = "";
+                while (itemParts.length && part.trim() === "") {
+                    part = itemParts[0]; itemParts.shift();
+                }
+                return part;
+            }
+
             if (!query.Name) {
                 deferredResults.resolve([]);
                 deferredResults.total.resolve(0);
@@ -79,14 +88,6 @@ define([
                     }
                     return deferredResults.resolve(this.data);
                 }));
-            }
-
-            function nextItem(itemParts) {
-                var part = "";
-                while (itemParts.length && part.trim() === "") {
-                    part = itemParts[0]; itemParts.shift();
-                }
-                return part;
             }
 
             return QueryResults(deferredResults);

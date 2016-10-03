@@ -413,6 +413,7 @@ define([
         },
 
         searchAll: function () {
+            var context = this;
             this.standby.show();
             if (validate.isNumberFormat(this.searchText, { format: ["W########-######", "W########-######-#???"] })) {
                 var tab = this.ensurePane({
@@ -511,7 +512,6 @@ define([
                 }));
             }
 
-            var context = this;
             all(searchArray).then(function (results) {
                 context.standby.hide();
             }, function (error) {

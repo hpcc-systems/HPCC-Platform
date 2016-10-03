@@ -265,7 +265,7 @@ define([
                     context._onAutoRefresh(event);
                 }
             }).placeAt(this.refreshButton.domNode, "before");
-            tmpSplitter = new ToolbarSeparator().placeAt(this.refreshButton.domNode, "before");
+            var tmpSplitter = new ToolbarSeparator().placeAt(this.refreshButton.domNode, "before");
             this.clusterPauseButton = new Button({
                 id: this.id + "PauseButton",
                 label: this.i18n.Pause,
@@ -287,7 +287,7 @@ define([
                     context._onClear(event);
                 }
             }).placeAt(this.openButton.domNode, "before");
-            var tmpSplitter = new ToolbarSeparator().placeAt(this.openButton.domNode, "before");
+            tmpSplitter = new ToolbarSeparator().placeAt(this.openButton.domNode, "before");
 
             this.wuMoveBottomButton = new Button({
                 id: this.id + "MoveBottomButton",
