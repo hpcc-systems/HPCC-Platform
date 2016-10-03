@@ -31,7 +31,21 @@ function kill_process () {
       [[ -e $SENTINEL ]] && rm -f $SENTINEL
     fi
     if [[ -e $PID ]]; then
-        pidwait_fn $PID $PROCESS $TIMEOUT
+        pidwait_fn $PID $PROCESS $TIMEOUT 1
+        local RC_PIDWAIT=$?
+        return $RC_PIDWAIT
+    fi
+}
+function dali_kill_process () {
+    local PID=$1
+    local PROCESS=$2
+    local TIMEOUT=$3
+    if [[ $# -eq 4 ]]; then
+      SENTINEL=$4
+      [[ -e $SENTINEL ]] && rm -f $SENTINEL
+    fi
+    if [[ -e $PID ]]; then
+        pidwait_fn $PID $PROCESS $TIMEOUT 0
         local RC_PIDWAIT=$?
         return $RC_PIDWAIT
     fi
@@ -42,6 +56,7 @@ function pidwait_fn () {
     local WATCH_PID=$( cat $PID )
     local PROCESS=$2
     local TIMEOUT=$(($3*1000))
+    local FORCE=$4
 
     if ps -p $WATCH_PID -o command= | grep -v "${PROCESS}" &>/dev/null ; then
       return 0
@@ -55,6 +70,12 @@ function pidwait_fn () {
 
     if [[ $TIMEOUT -le 0 ]] && ps -p $WATCH_PID -o command= | grep "${PROCESS}" &>/dev/null ; then
       log "Failed to kill ${PROCESS} with SIGTERM"
+      if [[ $FORCE -eq 1 ]]; then
+        kill -SIGKILL $WATCH_PID > /dev/null 2>&1
+        log "killing ${PROCESS} (pid: $WATCH_PID) with SIGKILL"
+        rm -f $PID > /dev/null 2>&1
+        return 0
+      fi
       return 1
     fi
 

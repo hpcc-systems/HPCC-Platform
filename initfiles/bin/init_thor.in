@@ -81,7 +81,7 @@ kill_slaves()
                 log "Please check ${LOG_DIR}/frunssh for more details"
                 # clean up any slaves it was able to reach
                 log "Stopping ${component}"
-                kill_process ${PID_NAME} thormaster_${component} 30
+                kill_process ${PID_NAME} thormaster_${component} 25
                 unlock ${LOCK_DIR}/$component/${component}.lock
                 rm -f $INIT_PID_NAME $instancedir/slaves > /dev/null 2>&1
                 exit 255
@@ -99,16 +99,12 @@ kill_slaves()
 killed()
 {
     log "Stopping ${component}"
-    kill_process ${PID_NAME} thormaster_${component} 30
-    if [[ $? -eq 1 ]]; then
-        log "could not kill $component"
-    else
-        log "$component Stopped"
-        unlock ${LOCK_DIR}/$component/${component}.lock
-        kill_slaves
-        log "removing init.pid file and slaves file"
-        rm -f $INIT_PID_NAME $instancedir/slaves > /dev/null 2>&1
-    fi
+    kill_process ${PID_NAME} thormaster_${component} 25
+    log "$component Stopped"
+    unlock ${LOCK_DIR}/$component/${component}.lock
+    kill_slaves
+    log "removing init.pid file and slaves file"
+    rm -f $INIT_PID_NAME $instancedir/slaves > /dev/null 2>&1
     exit 255
 }
 
