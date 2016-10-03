@@ -62,9 +62,9 @@ enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_hthor, grp_unknown, __
 // repeatedPart flags
 #define CPDMSRP_lastRepeated     (0x20000000) // repeat last part
 #define CPDMSRP_onlyRepeated     (0x40000000) // or with repeatedPart for only repeated parts
-#define CPDMSRP_allRepeated      (0x80000000) // or with repeatedPart for all parts repeated 
+#define CPDMSRP_allRepeated      (0x80000000) // or with repeatedPart for all parts repeated
 #define CPDMSRP_notRepeated      ((unsigned)-1) // value of no repeated parts (i.e. only normal replication)
-#define CPDMSRP_partMask         (0xffffff) 
+#define CPDMSRP_partMask         (0xffffff)
 
 struct da_decl ClusterPartDiskMapSpec
 {
@@ -76,7 +76,7 @@ public:
     byte startDrv;          // normally 0 (c$)
     byte flags;             // CPDMSF_*
     unsigned interleave;    // for superfiles (1..)
-    unsigned repeatedPart;  // if part is repeated on every node (NB maxCopies does not include) 
+    unsigned repeatedPart;  // if part is repeated on every node (NB maxCopies does not include)
                             // ( | CPDMSRP_onlyRepeated for *only* repeats )
     StringAttr defaultBaseDir; // if set overrides *base* directory (i.e. /c$/dir/x/y becomes odir/x/y)
     StringAttr defaultReplicateDir;
@@ -101,7 +101,7 @@ public:
 #define CPDMSF_wrapToNextDrv    (0x01)      // whether should wrap to next drv
 #define CPDMSF_fillWidth        (0x02)      // replicate copies fill cluster serially (when num parts < clusterwidth/2)
 #define CPDMSF_packParts        (0x04)      // whether to save parts as binary
-#define CPDMSF_repeatedPart     (0x08)      // if repeated parts included 
+#define CPDMSF_repeatedPart     (0x08)      // if repeated parts included
 #define CPDMSF_defaultBaseDir   (0x10)      // set if defaultBaseDir present
 #define CPDMSF_defaultReplicateDir  (0x20)      // set if defaultBaseDir present
 #define CPDMSF_overloadedConfig  (0x40)      // set if overloaded mode
@@ -160,19 +160,19 @@ interface IFileDescriptor: extends IInterface
     for each cluster
         addCluster(grp,mapping) (or addCluster(grpname,mapping,resolver)
 
- or: 
+ or:
 
    for each cluster
         for each part
-            setPart(partnum,file,attr);     
+            setPart(partnum,file,attr);
         endCluster(mapping);
 
  or: (single cluster legacy)
 
     for each part
-        setPart(partnum,file,attr);  
- 
-   
+        setPart(partnum,file,attr);
+
+
 note it is an error to set different filenames for the same part on different clusters
 or to set the same part twice in the same cluster
 if endCluster is not called it will assume only one cluster and not replicated
@@ -241,6 +241,8 @@ if endCluster is not called it will assume only one cluster and not replicated
     virtual StringBuffer &getClusterLabel(unsigned clusternum,StringBuffer &ret) = 0; // node group name
 
     virtual void ensureReplicate() = 0;                                             // make sure a file can be replicated
+
+    virtual IPropertyTree &queryHistory() = 0;                                       // query file history records
 };
 
 interface ISuperFileDescriptor: extends IFileDescriptor
@@ -257,7 +259,7 @@ interface ISuperFileDescriptor: extends IFileDescriptor
 
 interface IClusterInfo: extends IInterface  // used by IFileDescriptor and IDistributedFile
 {
-    virtual StringBuffer &getGroupName(StringBuffer &name,IGroupResolver *resolver=NULL)=0; 
+    virtual StringBuffer &getGroupName(StringBuffer &name,IGroupResolver *resolver=NULL)=0;
     virtual const char *queryGroupName()=0;     // may be NULL
     virtual IGroup *queryGroup()=0;           // may be NULL
     virtual ClusterPartDiskMapSpec  &queryPartDiskMapping()=0;
@@ -306,11 +308,11 @@ extern da_decl StringBuffer &makePhysicalPartName(
                                 DFD_OS os=DFD_OSdefault,            // os must be specified if no dir specified
                                 const char *diroverride=NULL);      // override default directory
 extern da_decl StringBuffer &makeSinglePhysicalPartName(const char *lname, // single part file
-                                                        StringBuffer &result, 
-                                                        bool allowospath,   // allow an OS (absolute) file path 
+                                                        StringBuffer &result,
+                                                        bool allowospath,   // allow an OS (absolute) file path
                                                         bool &wasdfs,       // not OS path
                                                         const char *diroverride=NULL
-                                                        );    
+                                                        );
 
 // set/get defaults
 extern da_decl const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel=0, DFD_OS os=DFD_OSdefault);

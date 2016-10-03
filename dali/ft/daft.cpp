@@ -52,6 +52,7 @@ void CDistributedFileSystem::copy(IDistributedFile * from, IDistributedFile * to
 
     OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
 
+    sprayer->setOperation(dfu_copy);
     sprayer->setProgress(progress);
     sprayer->setAbort(abort);
     sprayer->setPartFilter(filter);
@@ -74,6 +75,7 @@ void CDistributedFileSystem::exportFile(IDistributedFile * from, IFileDescriptor
     LOG(MCdebugInfo, unknownJob, "DFS: export(%s,%s)", from->queryLogicalName(), to->getTraceName(temp).str());
 
     OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
+    sprayer->setOperation(dfu_export);
     sprayer->setProgress(progress);
     sprayer->setAbort(abort);
     sprayer->setPartFilter(filter);
@@ -92,6 +94,7 @@ void CDistributedFileSystem::import(IFileDescriptor * from, IDistributedFile * t
         LOG(MCdebugInfo, unknownJob, "DFS: import(%s)", from->getTraceName(temp).str());
 
     OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
+    sprayer->setOperation(dfu_import);
     sprayer->setProgress(progress);
     sprayer->setAbort(abort);
     sprayer->setPartFilter(filter);
@@ -109,6 +112,7 @@ void CDistributedFileSystem::move(IDistributedFile * from, IDistributedFile * to
         LOG(MCdebugInfo, unknownJob, "DFS: move(%s)", from->queryLogicalName());
 
     OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
+    sprayer->setOperation(dfu_move);
     sprayer->setProgress(progress);
     sprayer->setAbort(abort);
     sprayer->setPartFilter(filter);
@@ -124,6 +128,7 @@ void CDistributedFileSystem::replicate(IDistributedFile * from, IGroup *destgrou
     LOG(MCdebugInfo, unknownJob, "DFS: replicate(%s)", from->queryLogicalName());
 
     FileSprayer sprayer(options, recovery, recoveryConnection, wuid);
+    sprayer.setOperation(dfu_replicate_distributed);
     sprayer.setProgress(progress);
     sprayer.setAbort(abort);
     sprayer.setReplicate(true);
@@ -139,6 +144,7 @@ void CDistributedFileSystem::replicate(IFileDescriptor * fd, DaftReplicateMode m
     LOG(MCdebugInfo, unknownJob, "DFS: replicate(%s, %x)", fd->getTraceName(s).str(), (unsigned)mode);
 
     FileSprayer sprayer(options, recovery, recoveryConnection, wuid);
+    sprayer.setOperation(dfu_replicate);
     sprayer.setProgress(progress);
     sprayer.setAbort(abort);
     sprayer.setReplicate(true);
@@ -153,6 +159,7 @@ void CDistributedFileSystem::transfer(IFileDescriptor * from, IFileDescriptor * 
     LOG(MCdebugInfo, unknownJob, "DFS: transfer(%s,%s)", from->getTraceName(s1).str(), to->getTraceName(s1).str());
 
     OwnedIFileSprayer sprayer = createFileSprayer(options, recovery, recoveryConnection, wuid);
+    sprayer->setOperation(dfu_transfer);
     sprayer->setAbort(abort);
     sprayer->setProgress(progress);
     sprayer->setPartFilter(filter);

@@ -377,27 +377,29 @@ interface IDistributedFile: extends IInterface
     virtual void setPreferredClusters(const char *clusters) = 0;
     virtual void setSingleClusterOnly() = 0;
 
-    virtual bool getFormatCrc(unsigned &crc) =0;   // CRC for record format 
-    virtual bool getRecordSize(size32_t &rsz) =0;   
+    virtual bool getFormatCrc(unsigned &crc) =0;   // CRC for record format
+    virtual bool getRecordSize(size32_t &rsz) =0;
     virtual bool getRecordLayout(MemoryBuffer &layout) =0;
 
 
     virtual void enqueueReplicate()=0;
 
-    virtual StringBuffer &getColumnMapping(StringBuffer &mapping) =0;   
-    virtual void setColumnMapping(const char *mapping) =0;   
+    virtual StringBuffer &getColumnMapping(StringBuffer &mapping) =0;
+    virtual void setColumnMapping(const char *mapping) =0;
 
     virtual bool canModify(StringBuffer &reason) = 0;
     virtual bool canRemove(StringBuffer &reason,bool ignoresub=false) = 0;
-    virtual void setProtect(const char *callerid, bool protect=true, unsigned timeoutms=INFINITE) = 0;                  
+    virtual void setProtect(const char *callerid, bool protect=true, unsigned timeoutms=INFINITE) = 0;
                                                                                             // sets or clears deletion protection
                                                                                             // returns true if locked (by anyone) after action
                                                                                             // if callerid NULL and protect=false, clears all
-    
+
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                // sets default timeout for SDS connections and locking
                                                                                             // returns previous value
 
     virtual void validate() = 0;
+
+    virtual IPropertyTree &queryHistory() const = 0;                         // DFile History records
 };
 
 
@@ -494,6 +496,10 @@ public:
     {
         return file->queryAttributes();
     }
+    IDistributedFile *queryFile()
+    {
+        return file;
+    }
     bool needsReload()
     {
         return reload;
@@ -575,7 +581,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual bool removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction=NULL, unsigned timeoutms=INFINITE, bool throwException=false) = 0;
     virtual void renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction) = 0;                         // renames the physical parts as well as entry
     virtual void removeEmptyScope(const char *scope) = 0;   // does nothing if called on non-empty scope
-    
+
 
     virtual bool exists(const char *logicalname,IUserDescriptor *user,bool notsuper=false,bool superonly=false) = 0;                           // logical name exists
     virtual bool existsPhysical(const char *logicalname,IUserDescriptor *user) = 0;                                                    // physical parts exists
@@ -646,11 +652,11 @@ interface IDistributedFileDirectory: extends IInterface
         const char *kind=S_LINK_RELATIONSHIP_KIND
     )=0;
 
-    virtual void removeAllFileRelationships(const char *filename)=0;        
+    virtual void removeAllFileRelationships(const char *filename)=0;
     virtual IFileRelationshipIterator *lookupAllFileRelationships(const char *filename)=0; // either primary or secondary
 
     virtual bool loadScopeContents(const char *scopelfn,
-                                   StringArray *scopes, 
+                                   StringArray *scopes,
                                    StringArray *supers,
                                    StringArray *files,
                                    bool includeemptyscopes=false
@@ -667,7 +673,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual unsigned queryProtectedCount(const CDfsLogicalFileName &logicalname,
                                   const char *callerid=NULL) = 0;                   // if NULL  then sums all
 
-    virtual bool getProtectedInfo (const CDfsLogicalFileName &logicalname, 
+    virtual bool getProtectedInfo (const CDfsLogicalFileName &logicalname,
                                            StringArray &names, UnsignedArray &counts) = 0;
 
     virtual IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false)=0; // if owner = NULL then all
@@ -788,10 +794,10 @@ extern da_decl IDFAttributesIterator *createSubFileFilter(IDFAttributesIterator 
 
 #define DFS_REPLICATE_QUEUE "dfs_replicate_queue"
 #define DRQ_STOP 0
-#define DRQ_REPLICATE 1 
+#define DRQ_REPLICATE 1
 
 
-// Useful property query functions 
+// Useful property query functions
 
 inline bool isFileKey(IPropertyTree &pt) { const char *kind = pt.queryProp("@kind"); return kind&&strieq(kind,"key"); }
 inline bool isFileKey(IDistributedFile *f) { return isFileKey(f->queryAttributes()); }
