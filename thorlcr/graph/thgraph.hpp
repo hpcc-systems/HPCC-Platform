@@ -237,6 +237,7 @@ typedef OwningSimpleHashTableOf<CGraphBase, graph_id> CGraphTable;
 typedef OwningSimpleHashTableOf<CGraphStub, graph_id> CChildGraphTable;
 typedef CIArrayOf<CGraphBase> CGraphArray;
 typedef CICopyArrayOf<CGraphBase> CGraphArrayCopy;
+typedef CICopyArrayOf<CGraphStub> CGraphStubArrayCopy;
 typedef IIteratorOf<CGraphBase> IThorGraphIterator;
 typedef ArrayIIteratorOf<const CGraphArray, CGraphBase, IThorGraphIterator> CGraphArrayIterator;
 typedef ArrayIIteratorOf<const CGraphArrayCopy, CGraphBase, IThorGraphIterator> CGraphArrayCopyIterator;
@@ -454,6 +455,7 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
     activity_id parentActivityId;
     IPropertyTree *xgmml;
     CChildGraphTable childGraphsTable;
+    CGraphStubArrayCopy orderedChildGraphs;
     Owned<IGraphTempHandler> tmpHandler;
 
     void clean();
