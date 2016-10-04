@@ -2939,7 +2939,7 @@ ENDMACRO;
                 <row>
                   <entry>Ctrl+W</entry>
 
-                  <entry>Word Wrap</entry>
+                  <entry>Toggle Word Wrap</entry>
                 </row>
 
                 <row>
@@ -2982,12 +2982,6 @@ ENDMACRO;
                   <entry>Ctrl+Shift+Tab</entry>
 
                   <entry>Previous Tab</entry>
-                </row>
-
-                <row>
-                  <entry>Ctrl+W</entry>
-
-                  <entry>Toggle Horizontal scroll bar</entry>
                 </row>
 
                 <row>
