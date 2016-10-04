@@ -7557,23 +7557,23 @@ protected:
         case type_utf8:
             if (type->getSize() == UNKNOWN_LENGTH)
                 result.append("j");
-            result.append(hasConst ? "PKc" : "Pc");
+            result.append(lookupRepeat(hasConst ? "PKc" : "Pc"));
             return true;
         case type_varstring:
-            result.append(hasConst ? "PKc" : "Pc");
+            result.append(lookupRepeat(hasConst ? "PKc" : "Pc"));
             return true;
         case type_data:
             if (type->getSize() == UNKNOWN_LENGTH)
                 result.append("j");
-            result.append(hasConst ? "PKv" : "Pv");
+            result.append(lookupRepeat(hasConst ? "PKv" : "Pv"));
             return true;
         case type_unicode:
             if (type->getSize() == UNKNOWN_LENGTH)
                 result.append("j");
-            result.append(hasConst ? "PKt" : "Pt");
+            result.append(lookupRepeat(hasConst ? "PKt" : "Pt"));
             return true;
         case type_varunicode:
-            result.append(hasConst ? "PKt" : "Pt");
+            result.append(lookupRepeat(hasConst ? "PKt" : "Pt"));
             return true;
         case type_char:
             result.append("c");
@@ -7589,15 +7589,15 @@ protected:
         case type_table:
         case type_groupedtable:
             result.append("j"); // size32_t
-            result.append(hasConst ? "PKv" : "Pv"); // [const] void *
+            result.append(lookupRepeat(hasConst ? "PKv" : "Pv")); // [const] void *
             return true;
         case type_set:
             result.append("b"); // bool
             result.append("j"); // unsigned
-            result.append(hasConst ? "PKv" : "Pv"); // *
+            result.append(lookupRepeat(hasConst ? "PKv" : "Pv")); // *
             return true;
         case type_row:
-            result.append("Ph");
+            result.append(lookupRepeat("Ph"));
             return true;
         case type_void:
             result.append("v");
@@ -7616,6 +7616,18 @@ protected:
         throwUnexpected();
     }
 
+    StringArray repeatsSeen;
+    StringBuffer thisRepeat;
+    const char *lookupRepeat(const char *typeStr)
+    {
+        ForEachItemIn(idx, repeatsSeen)
+        {
+            if (streq(repeatsSeen.item(idx), typeStr))
+                return thisRepeat.appendf("S%d_", idx).str();
+        }
+        repeatsSeen.append(typeStr);
+        return typeStr;
+    }
 
     bool mangleFunctionReturnType(StringBuffer & returnType, StringBuffer & params, ITypeInfo * retType)
     {
