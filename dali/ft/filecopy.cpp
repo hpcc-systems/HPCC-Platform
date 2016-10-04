@@ -2493,6 +2493,10 @@ void FileSprayer::setSource(IDistributedFile * source)
 {
     distributedSource.set(source);
     srcAttr.setown(createPTreeFromIPT(&source->queryAttributes()));
+    IPropertyTree *history = source->queryHistory();
+    if (history)
+        srcHistory.setown(createPTreeFromIPT(history));
+
     extractSourceFormat(srcAttr);
     unsigned numParts = source->numParts();
     for (unsigned idx=0; idx < numParts; idx++)
@@ -2529,6 +2533,9 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
     IPropertyTree *attr = &source->queryProperties();
     extractSourceFormat(attr);
     srcAttr.setown(createPTreeFromIPT(&source->queryProperties()));
+    IPropertyTree *history = source->queryHistory();
+    if (history)
+        srcHistory.setown(createPTreeFromIPT(history));
     extractSourceFormat(srcAttr);
 
     RemoteFilename filename;
@@ -3242,6 +3249,7 @@ void FileSprayer::updateTargetProperties()
             curProps.setProp("@kind", srcAttr->queryProp("@kind"));
 
             // and simple (top level) elements
+            // History copied as well
             Owned<IPropertyTreeIterator> iter = srcAttr->getElements("*");
             ForEach(*iter)
             {
@@ -3249,13 +3257,110 @@ void FileSprayer::updateTargetProperties()
                 if (stricmp(aname, "Protect") != 0)
                     curProps.addPropTree(aname, createPTreeFromIPT(&iter->query()));
             }
+
+            //
+            // Add new History record
+            //
+            IPropertyTree * curHistory = curProps.queryPropTree("History");
+
+            // If there wasn't previous History (like Spray/Import)
+            if (!curHistory)
+                curHistory = curProps.setPropTree("History", createPTree());
+
+            // Add new record about this operation
+            Owned<IPropertyTree> newRecord = createPTree();
+
+            CDateTime temp;
+            temp.setNow();
+            unsigned hour, min, sec, nanosec;
+            temp.getTime(hour, min, sec, nanosec);
+            temp.setTime(hour, min, sec, 0);
+
+            StringBuffer timestr;
+            newRecord->setProp("@timestamp",temp.getString(timestr).str());
+
+            newRecord->setProp("@owner", srcAttr->queryProp("@owner"));
+
+            if (srcAttr->hasProp("@workunit"))
+                newRecord->setProp("@workunit", srcAttr->queryProp("@workunit"));
+
+            newRecord->setProp("@operation", getOperationTypeString());
+
+            // In Spray case there is not distributedSource
+            if (distributedSource)
+            {
+                // add original file name from a single distributed source (like Copy)
+                RemoteFilename remoteFile;
+                distributedSource->queryPart(0).getFilename(remoteFile, 0);
+                splitAndStoreFileInfo(newRecord, remoteFile);
+            }
+            else
+            {
+                // add original file names from multiple sources (like Spray)
+                ForEachItemIn(idx, sources)
+                {
+                    FilePartInfo & curSource = sources.item(idx);
+                    RemoteFilename &remoteFile = curSource.filename;
+                    splitAndStoreFileInfo(newRecord, remoteFile, idx, false);
+                }
+            }
+            curHistory->addPropTree("Origin",newRecord.getClear());
         }
     }
     if (error)
         throw error.getClear();
 }
 
+void FileSprayer::splitAndStoreFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName,
+                                        aindex_t idx, bool isDistributedSource)
+{
+    StringBuffer drive;
+    StringBuffer path;
+    StringBuffer fileName;
+    StringBuffer ext;
+    remoteFileName.split(&drive, &path, &fileName, &ext);
+    if (idx == 0)
+    {
+        if (drive.isEmpty())
+        {
+            remoteFileName.queryIP().getIpText(drive.clear());
+            newRecord->setProp("@ip", drive.str());
+        }
+        else
+            newRecord->setProp("@drive", drive.str());
 
+        newRecord->setProp("@path", path.str());
+    }
+    // We don't want to store distributed file parts name extension
+    if (!isDistributedSource && ext.length())
+        fileName.append(ext);
+
+    // In spray multiple source files case keep all original filenames
+    if (newRecord->hasProp("@name"))
+    {
+        StringBuffer currentName;
+        newRecord->getProp("@name", currentName);
+        currentName.append(",").append(fileName);
+        fileName = currentName;
+    }
+
+    newRecord->setProp("@name", fileName.str());
+}
+
+void FileSprayer::setOperation(dfu_operation op)
+{
+    operation = op;
+}
+
+dfu_operation FileSprayer::getOperation() const
+{
+    return operation;
+}
+
+const char * FileSprayer::getOperationTypeString() const
+{
+    return DfuOperatonStr[operation];
+}
 
 bool FileSprayer::usePullOperation()
 {

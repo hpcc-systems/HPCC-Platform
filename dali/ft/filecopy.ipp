@@ -203,6 +203,9 @@ public:
     void setError(const SocketEndpoint & ep, IException * e);
     bool canLocateSlaveForNode(const IpAddress &ip);
     void checkSourceTarget(IFileDescriptor * file);
+    void setOperation(dfu_operation op);
+    dfu_operation getOperation() const;
+    const char * getOperationTypeString() const;
 
 protected:
     void addEmptyFilesToPartition(unsigned from, unsigned to);
@@ -271,6 +274,8 @@ protected:
     
 private:
     bool calcUsePull();
+    // Get and store Remote File Name parts into the History record
+    void splitAndStoreFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName, aindex_t idx = 0, bool isDistributedSource = true);
 
 protected:
     CIArrayOf<FilePartInfo> sources;
@@ -326,6 +331,8 @@ protected:
     offset_t                headerSize;
     offset_t                footerSize;
     int                     fileUmask;
+    Owned<IPropertyTree>    srcHistory;
+    dfu_operation           operation = dfu_unknown;
 };
 
 
