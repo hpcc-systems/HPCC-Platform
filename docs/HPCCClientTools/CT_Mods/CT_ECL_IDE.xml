@@ -2698,6 +2698,334 @@ ENDMACRO;
         </sect3>
       </sect2>
 
+      <sect2 id="KeyboardShortcuts">
+        <title>Keyboard Shortcuts</title>
+
+        <para>The following table lists all the keyboard shortcuts available
+        in the IDE.</para>
+
+        <para><informaltable>
+            <tgroup cols="2">
+              <colspec align="left" colwidth="140 pt" />
+
+              <colspec align="left" />
+
+              <thead>
+                <row>
+                  <entry>Keyboard Shortcut</entry>
+
+                  <entry>Action</entry>
+                </row>
+              </thead>
+
+              <tbody>
+                <row>
+                  <entry>F1</entry>
+
+                  <entry>Online Help (Syntax)</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+F</entry>
+
+                  <entry>Find</entry>
+                </row>
+
+                <row>
+                  <entry>F3</entry>
+
+                  <entry>Find Next</entry>
+                </row>
+
+                <row>
+                  <entry>Shift+F3 </entry>
+
+                  <entry>Find Previous</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+H</entry>
+
+                  <entry>Replace</entry>
+                </row>
+
+                <row>
+                  <entry>F4</entry>
+
+                  <entry>Next Error</entry>
+                </row>
+
+                <row>
+                  <entry>Shift+F4</entry>
+
+                  <entry>Previous Error</entry>
+                </row>
+
+                <row>
+                  <entry>F5</entry>
+
+                  <entry>Refresh Repository</entry>
+                </row>
+
+                <row>
+                  <entry>F7</entry>
+
+                  <entry>Check Syntax</entry>
+                </row>
+
+                <row>
+                  <entry>F8</entry>
+
+                  <entry>Locate File in Explorer</entry>
+                </row>
+
+                <row>
+                  <entry>F9</entry>
+
+                  <entry>Locate Current FIle</entry>
+                </row>
+
+                <row>
+                  <entry>F11</entry>
+
+                  <entry>Locate Selected File</entry>
+                </row>
+
+                <row>
+                  <entry>F12</entry>
+
+                  <entry>Open Selected File</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Enter</entry>
+
+                  <entry>Submit ECL</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Alt+Enter</entry>
+
+                  <entry>Submit Selected ECL</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+X / Shift+Delete</entry>
+
+                  <entry>Cut</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+C / Ctrl+Insert</entry>
+
+                  <entry>Copy</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+V / Shift+Insert</entry>
+
+                  <entry>Paste</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Z / Alt+backspace</entry>
+
+                  <entry>Undo</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Y</entry>
+
+                  <entry>Redo</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+F4</entry>
+
+                  <entry>Close File/Builder Window</entry>
+                </row>
+
+                <row>
+                  <entry>Alt+F4</entry>
+
+                  <entry>Close all and exit</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Q</entry>
+
+                  <entry>Toggle Comment with //</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Shift+Q</entry>
+
+                  <entry>Toggle Block Comment /*</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+L</entry>
+
+                  <entry>Toggle Line Numbers</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+S</entry>
+
+                  <entry>Save</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+O</entry>
+
+                  <entry>Open</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+P</entry>
+
+                  <entry>Print</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+N </entry>
+
+                  <entry>New Builder Window</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+G</entry>
+
+                  <entry>Go to Line</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+A</entry>
+
+                  <entry>Select All</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+D </entry>
+
+                  <entry>Duplicate Line</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+T</entry>
+
+                  <entry>Switch the current line position with the previous
+                  line position</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Space</entry>
+
+                  <entry>Complete Word</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+E</entry>
+
+                  <entry>Match Brace</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Shift+E</entry>
+
+                  <entry>Select to Brace</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+W</entry>
+
+                  <entry>Toggle Word Wrap</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Alt+C</entry>
+
+                  <entry>Copy Filename</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Shift+U</entry>
+
+                  <entry>Uppercase</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+U</entry>
+
+                  <entry>Lowercase</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Shift+R</entry>
+
+                  <entry>Record/Stop Macro</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Shift+P</entry>
+
+                  <entry>Play Macro</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Tab</entry>
+
+                  <entry>Next Tab</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Shift+Tab</entry>
+
+                  <entry>Previous Tab</entry>
+                </row>
+
+                <row>
+                  <entry>Alt+Shift+Arrow keys</entry>
+
+                  <entry>Column Mode Select</entry>
+                </row>
+
+                <row>
+                  <entry>Alt + Left Mouse Drag</entry>
+
+                  <entry>Column Mode Select</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+BackSpace</entry>
+
+                  <entry>Delete to start of word</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Delete</entry>
+
+                  <entry>Delete to end of word</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Shift+BackSpace</entry>
+
+                  <entry>Delete to start of line</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Shift+Delete</entry>
+
+                  <entry>Delete to end of line</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para></para>
+      </sect2>
+
       <sect2 id="ECL_Builder_Window" role="brk">
         <title><emphasis>ECL Builder Window</emphasis></title>
 
@@ -2711,7 +3039,7 @@ ENDMACRO;
           <listitem>
             <para><emphasis role="bold">Submit</emphasis> submits the ECL code
             to be compiled and executed on the target cluster. Press the arrow
-            on the submit button to display other options. </para>
+            on the submit button to display other options.</para>
           </listitem>
 
           <listitem>

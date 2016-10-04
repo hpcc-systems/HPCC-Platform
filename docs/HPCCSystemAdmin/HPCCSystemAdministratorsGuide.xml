@@ -410,14 +410,15 @@
   <chapter id="SysAdm_HW_and_SW-Req">
     <title>Hardware and Software Requirements</title>
 
-    <para>This chapter consists of various Hardware and Software requirements
-    that HPCC works well on. HPCC is designed to run on commodity hardware,
-    which makes building and maintaining large scale (petabytes) clusters
-    economically feasible. When planning your cluster hardware, you will need
-    to balance a number of considerations.</para>
+    <para>This chapter describes some of the hardware and software
+    requirements in order to run the HPCC System. HPCC is designed to run on
+    commodity hardware, which makes building and maintaining large scale
+    (petabytes) clusters economically feasible. When planning your cluster
+    hardware, you will need to balance a number of considerations specific to
+    your needs.</para>
 
-    <para>This section provides some insight as to what sort of hardware and
-    infrastructure optimally HPCC works well on. This is not an exclusive
+    <para>This section provides some insight into the hardware and
+    infrastructure that HPCC works well on. This is not an exclusive
     comprehensive set of instructions, nor a mandate on what hardware you must
     have. Consider this as a guide to use when looking to implement or scale
     your HPCC system. These suggestions should be taken into consideration for
@@ -431,20 +432,12 @@
                 xpointer="HW-LoadBalancer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="Nodes-Hardware"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="System_sizings"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
                 xpointer="Nodes-Software"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="workstation-requirements"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
