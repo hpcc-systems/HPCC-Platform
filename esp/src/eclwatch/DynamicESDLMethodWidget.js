@@ -94,7 +94,7 @@ define([
             }).placeAt(this.dialog);
             this.valueTextBox = new TextBox({
                 label: this.i18n.Value,
-                placeholder: this.i18n.Value,
+                placeholder: this.i18n.Value
             }).placeAt(this.dialog);
             this.addAddAttritbuteButton = new Button({
                 disabled: true,
@@ -153,7 +153,7 @@ define([
                         editorArgs: {
                             required: true,
                             placeholder: context.i18n.AttributesAreRequired,
-                            promptMessage: context.i18n.AttributesAreRequired,
+                            promptMessage: context.i18n.AttributesAreRequired
                         }
                     }),
                     Value: editor({ label: context.i18n.Value, editor: "text",

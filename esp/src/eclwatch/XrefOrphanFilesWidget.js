@@ -63,7 +63,7 @@ define([
         createGrid: function (domID) {
             var context = this;
             this.openButton = registry.byId(this.id + "Open");
-            this.delete = new Button({
+            this._delete = new Button({
                 id: this.id + "Delete",
                 disabled: false,
                 onClick: function (val) {

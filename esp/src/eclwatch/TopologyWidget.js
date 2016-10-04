@@ -82,65 +82,69 @@ define([
                 var selection = context.grid.getSelected();
                 var filter = context.getFilter();
 
+                var MachineInformationCount = 0;
+                var TargetClusterCount = 0;
                 for (var i = 0; i < selection.length; ++i) {
                     if (context.viewModeMachines.checked || context.viewModeServices.checked) {
-                        var MachineInformationClean = "Addresses." + [i];
-                        var MachineInformationCount = "Addresses.itemcount";
+                        var MachineInformationClean = "Addresses." + i;
+                        MachineInformationCount++;
                         if (context.viewModeMachines.checked) {
                             filter[MachineInformationClean] = selection[i].getNetaddress() + "|:" + selection[i].__hpcc_parentNode.__hpcc_treeItem.Type + ":" + selection[i].__hpcc_treeItem.Name + ":" + 2 + ":" + selection[i].__hpcc_treeItem.Directory + ":" + 0;
                         } else if (context.viewModeServices.checked) {
                             filter[MachineInformationClean] = selection[i].__hpcc_children[0].__hpcc_treeItem.Netaddress + "|:" + selection[i].__hpcc_treeItem.Type + ":" + selection[i].__hpcc_treeItem.Name + ":" + 2 + ":" + selection[i].__hpcc_children[0].__hpcc_treeItem.Directory;
                         }
-                            WsMachine.GetMachineInfo ({
-                                request: {
-                                    [MachineInformationClean]: filter[MachineInformationClean],
-                                    [MachineInformationCount]: 1000,
-                                    Path: selection[i].__hpcc_treeItem.Path,
-                                    Cluster: selection[i].__hpcc_treeItem.Name,
-                                    AutoRefresh:filter.AutoRefresh,
-                                    MemThreshold:filter.MemThreshold,
-                                    CpuThreshold:filter.CpuThreshold,
-                                    MemThresholdType:filter.MemThreshold,
-                                    GetProcessorInfo:filter.GetProcessorInfo,
-                                    GetStorageInfo:filter.GetStorageInfo,
-                                    LocalFileSystemsOnly:filter.LocalFileSystemsOnly,
-                                    GetSoftwareInfo:filter.GetSoftwareInfo,
-                                    DiskThreshold:filter.DiskThreshold,
-                                    DiskThresholdType:filter.DiskThresholdType,
-                                    ApplyProcessFilter:filter.ApplyProcessFilter,
-                                    AddProcessesToFilter: filter.AddtionalProcessesToFilter,
-                                    cbAutoRefresh: filter.cbAutoRefresh,
-                                }
-                            }).then(function (response) {
-                                var pfTab = context.ensureMIPane(response.GetMachineInfoResponse.Machines.MachineInfoEx[0].Address, {
-                                    params: response.GetMachineInfoResponse
-                                });
-                                context.detailsWidget.requestInformationWidget.set("disabled", false);
-                                context.detailsWidget.requestInformationWidget.init(response.GetMachineInfoResponse);
-                                pfTab.init(response.GetMachineInfoResponse, "machines");
+                        var request = {
+                            Path: selection[i].__hpcc_treeItem.Path,
+                            Cluster: selection[i].__hpcc_treeItem.Name,
+                            AutoRefresh: filter.AutoRefresh,
+                            MemThreshold: filter.MemThreshold,
+                            CpuThreshold: filter.CpuThreshold,
+                            MemThresholdType: filter.MemThreshold,
+                            GetProcessorInfo: filter.GetProcessorInfo,
+                            GetStorageInfo: filter.GetStorageInfo,
+                            LocalFileSystemsOnly: filter.LocalFileSystemsOnly,
+                            GetSoftwareInfo: filter.GetSoftwareInfo,
+                            DiskThreshold: filter.DiskThreshold,
+                            DiskThresholdType: filter.DiskThresholdType,
+                            ApplyProcessFilter: filter.ApplyProcessFilter,
+                            AddProcessesToFilter: filter.AddtionalProcessesToFilter,
+                            cbAutoRefresh: filter.cbAutoRefresh
+                        };
+                        request[MachineInformationClean] = filter[MachineInformationClean];
+                        request["Addresses.itemcount"] = MachineInformationCount;
+                        WsMachine.GetMachineInfo({
+                            request: request
+                        }).then(function (response) {
+                            var pfTab = context.ensureMIPane(response.GetMachineInfoResponse.Machines.MachineInfoEx[0].Address, {
+                                params: response.GetMachineInfoResponse
                             });
+                            context.detailsWidget.requestInformationWidget.set("disabled", false);
+                            context.detailsWidget.requestInformationWidget.init(response.GetMachineInfoResponse);
+                            pfTab.init(response.GetMachineInfoResponse, "machines");
+                        });
                     } else {
-                        var TargetClustersClean = "TargetClusters." + [i];
-                        var TargetClusterCount = "TargetClusters.itemcount";
+                        var TargetClustersClean = "TargetClusters." + i;
+                        TargetClusterCount++;
                         filter[TargetClustersClean] = selection[i].__hpcc_treeItem.Type + ":" + selection[i].__hpcc_treeItem.Name;
-                        WsMachine.GetTargetClusterInfo ({
-                            request: {
-                                [TargetClustersClean]: filter[TargetClustersClean],
-                                [TargetClusterCount]: 1000,
-                                AutoRefresh:filter.AutoRefresh,
-                                MemThreshold:filter.MemThreshold,
-                                CpuThreshold:filter.CpuThreshold,
-                                MemThresholdType:filter.MemThreshold,
-                                GetProcessorInfo:filter.GetProcessorInfo,
-                                GetStorageInfo:filter.GetStorageInfo,
-                                LocalFileSystemsOnly:filter.LocalFileSystemsOnly,
-                                GetSoftwareInfo:filter.GetSoftwareInfo,
-                                DiskThreshold:filter.DiskThreshold,
-                                DiskThresholdType:filter.DiskThresholdType,
-                                ApplyProcessFilter:filter.ApplyProcessFilter,
-                                AddProcessesToFilter: filter.AddtionalProcessesToFilter,
-                                cbAutoRefresh: filter.cbAutoRefresh,
-                            }
+                        var request = {
+                            AutoRefresh: filter.AutoRefresh,
+                            MemThreshold: filter.MemThreshold,
+                            CpuThreshold: filter.CpuThreshold,
+                            MemThresholdType: filter.MemThreshold,
+                            GetProcessorInfo: filter.GetProcessorInfo,
+                            GetStorageInfo: filter.GetStorageInfo,
+                            LocalFileSystemsOnly: filter.LocalFileSystemsOnly,
+                            GetSoftwareInfo: filter.GetSoftwareInfo,
+                            DiskThreshold: filter.DiskThreshold,
+                            DiskThresholdType: filter.DiskThresholdType,
+                            ApplyProcessFilter: filter.ApplyProcessFilter,
+                            AddProcessesToFilter: filter.AddtionalProcessesToFilter,
+                            cbAutoRefresh: filter.cbAutoRefresh
+                        };
+                        request[TargetClustersClean] = filter[TargetClustersClean];
+                        request["TargetClusters.itemcount"] = TargetClusterCount;
+                        WsMachine.GetTargetClusterInfo({
+                            request: request
                         }).then(function (response) {
                             if (lang.exists("GetTargetClusterInfoResponse", response)) {
                                 var pfTab = context.ensureTCPane(response.GetTargetClusterInfoResponse.TargetClusterInfoList.TargetClusterInfo[0].Name + response.GetTargetClusterInfoResponse.TimeStamp, {
@@ -407,7 +411,7 @@ define([
                         id: id,
                         name: id,
                         placeholder: placeholder,
-                        class: "miniSelect",
+                        "class": "miniSelect",
                         options: value
                     });
                 break;
