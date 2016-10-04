@@ -33,7 +33,7 @@ killed()
     log "calling dalistop ."
     dalistop .
     log "Attempting to kill $component"
-    kill_process ${PID_NAME} daserver 3 ${SENTINEL}
+    dali_kill_process ${PID_NAME} daserver 3 ${SENTINEL}
     if [[ $? -eq 1 ]]; then
         log "could not kill $component"
     else
