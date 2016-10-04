@@ -25,6 +25,7 @@
     </para>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="auditlib/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="debugservices/sourcedoc.xml"/>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="eclblas/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="examplelib/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="fileservices/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="logging/sourcedoc.xml"/>
