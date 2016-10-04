@@ -2149,8 +2149,13 @@ void HqlCppWriter::generateStmtLine(IHqlStmt * stmt)
     if (filename && line)
     {
         out.append("#line ");
-        generateExprCpp(line).append(" ");
-        generateExprCpp(filename);
+        generateExprCpp(line).append(" \"");
+        IValue *value = filename->queryValue();
+        assertex(value);
+        StringBuffer fname;
+        value->getStringValue(fname);
+        appendStringAsCPP(out, fname.length(), fname.str(), false).append("\"");
+        // NOTE - don't used generateExprCpp(filename), as that wil split the string at 120 chars
         newline();
     }
     else
