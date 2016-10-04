@@ -1253,6 +1253,8 @@ void CGraphBase::addChildGraph(CGraphStub *stub)
 {
     CriticalBlock b(crit);
     childGraphsTable.replace(*LINK(stub));
+    if (sequential)
+        orderedChildGraphs.append(*stub);
 }
 
 IThorGraphStubIterator *CGraphBase::getChildStubIterator() const
@@ -1900,7 +1902,6 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
             if (subGraphParentActivityId) // JCS - not sure if ever false
             {
                 Owned<CGraphStub> stub = new CChildParallelFactory(subGraph);
-                CGraphElementBase *subGraphParentElement = queryElement(subGraphParentActivityId);
                 addChildGraph(stub);
             }
             else
@@ -1954,14 +1955,25 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
 
 void CGraphBase::executeChildGraphs(size32_t parentExtractSz, const byte *parentExtract)
 {
-    // JCSMORE - would need to respect codegen 'sequential' flag, if these child graphs
-    // could be executed in parallel.
-    Owned<IThorGraphIterator> iter = getChildGraphIterator();
-    ForEach(*iter)
+    if (sequential)
     {
-        CGraphBase &graph = iter->query();
-        if (graph.isSink())
-            graph.execute(parentExtractSz, parentExtract, true, false);
+        // JCSMORE - would need to re-think how this is done if these sibling child queries could be executed in parallel
+        ForEachItemIn(o, orderedChildGraphs)
+        {
+            CGraphBase &graph = orderedChildGraphs.item(o).queryOriginalGraph();
+            if (graph.isSink())
+                graph.execute(parentExtractSz, parentExtract, true, false);
+        }
+    }
+    else
+    {
+        Owned<IThorGraphIterator> iter = getChildGraphIterator();
+        ForEach(*iter)
+        {
+            CGraphBase &graph = iter->query();
+            if (graph.isSink())
+                graph.execute(parentExtractSz, parentExtract, true, false);
+        }
     }
 }
 
