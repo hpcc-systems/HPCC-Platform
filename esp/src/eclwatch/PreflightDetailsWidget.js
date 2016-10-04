@@ -29,7 +29,7 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/ESPUtil",
 
-    "dgrid/selector",
+    "dgrid/selector"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
                 registry, Button, ToolbarSeparator, Dialog, TextBox,
@@ -64,7 +64,7 @@ define([
 
             var retVal = new declare([ESPUtil.Grid(true, true)])({
                 store: this.store,
-                columns: context.setColumns(),
+                columns: context.setColumns()
             }, domID);
             return retVal;
         },
@@ -82,9 +82,9 @@ define([
                 var finalColumns = params.Columns.Item;
                 for (var index in finalColumns) {
                     var clean = finalColumns[index].replace(/([~!@#$%^&*()_+=`{}\[\]\|\\:;'<>,.\/? ])+/g, '').replace(/^(-)+|(-)+$/g,'');
-                    if (clean === 'Condition') {
+                    if (clean === "Condition") {
                         lang.mixin(dynamicColumns, {
-                            [clean] : {
+                            "Condition": {
                                 "label": finalColumns[index],
                                 formatter: function (Name, row) {
                                     return context.formatState(row.Condition);
@@ -94,7 +94,7 @@ define([
                     } 
                     if (clean === 'State') {
                         lang.mixin(dynamicColumns, {
-                            [clean] : {
+                            "State": {
                                 "label": finalColumns[index],
                                 formatter: function (Name, row) {
                                     return context.formatCondition(row.State);
@@ -102,11 +102,11 @@ define([
                             }
                         });
                     } else {
-                        lang.mixin(dynamicColumns, {
-                            [clean] : {
-                                "label": finalColumns[index]
-                            }
-                        });
+                        var tmpObj = {};
+                        tmpObj[clean] = {
+                            "label": finalColumns[index]
+                        };
+                        lang.mixin(dynamicColumns, tmpObj);
                     }
                 }
                 context.grid.set("columns", dynamicColumns);
@@ -178,10 +178,10 @@ define([
                     }
                     if (row.Storage) {
                         arrayUtil.forEach(row.Storage.StorageInfo, function (storage, idx) {
-                            var cleanColumn = storage.Description.replace(/([~!@#$%^&*()_+=`{}\[\]\|\\:;'<>,.\/? ])+/g, '').replace(/^(-)+|(-)+$/g,'');
-                            lang.mixin(dynamicRowsObj, {
-                                [cleanColumn]: storage.PercentAvail + "%"
-                            });
+                            var cleanColumn = storage.Description.replace(/([~!@#$%^&*()_+=`{}\[\]\|\\:;'<>,.\/? ])+/g, '').replace(/^(-)+|(-)+$/g, '');
+                            var tmpObj = {};
+                            tmpObj[cleanColumn] = storage.PercentAvail + "%";
+                            lang.mixin(dynamicRowsObj, tmpObj);
                         });
                     }
                   results.push(dynamicRowsObj);
@@ -217,10 +217,10 @@ define([
                         }
                         if (setRows.Storage) {
                             arrayUtil.forEach(setRows.Storage.StorageInfo, function (storage, idx) {
-                                var cleanColumn = storage.Description.replace(/([~!@#$%^&*()_+=`{}\[\]\|\\:;'<>,.\/? ])+/g, '').replace(/^(-)+|(-)+$/g,'');
-                                lang.mixin(dynamicRowsObj, {
-                                    [cleanColumn]: storage.PercentAvail + "%"
-                                });
+                                var cleanColumn = storage.Description.replace(/([~!@#$%^&*()_+=`{}\[\]\|\\:;'<>,.\/? ])+/g, '').replace(/^(-)+|(-)+$/g, '');
+                                var tmpObj = {};
+                                tmpObj[cleanColumn] = storage.PercentAvail + "%";
+                                lang.mixin(dynamicRowsObj, tmpObj);
                             });
                         }
                       results.push(dynamicRowsObj);
