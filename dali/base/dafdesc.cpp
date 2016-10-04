@@ -41,10 +41,6 @@
 #define SERIALIZATION_VERSION ((byte)0xd4)
 #define SERIALIZATION_VERSION2 ((byte)0xd5) // with trailing superfile info
 
-#define VERSION_MINHISTORY 1  // Add History to serialisation/de-serialisation
-// This version serialised in the extendedVersion of CFileDescriptor
-static const unsigned short serializationVersion = 1;
-
 bool isMulti(const char *str)
 {
     if (str&&!isSpecialPath(str))
@@ -594,7 +590,6 @@ public:
     IArrayOf<IClusterInfo> clusters;
 
     Owned<IPropertyTree> attr;
-    Owned<IPropertyTree> history;
     StringAttr directory;
     StringAttr partmask;
     virtual unsigned numParts() = 0;                                            // number of parts
@@ -1356,26 +1351,11 @@ public:
             if (_interleaved)
                 *_interleaved = interleaved;
         }
-
-        // If we have more serialised data in MemoryBuffer
-        if (mb.remaining() >= sizeof(unsigned short))
-        {
-            unsigned short extendedVersion;
-            mb.read(extendedVersion);
-
-            if (extendedVersion >= VERSION_MINHISTORY)
-            {
-                history.setown(createPTree(mb));
-            }
-            else
-                throw MakeStringException(-1,"FileDescriptor extended serialization version shouldn't be zero!");
-        }
     }
 
     void ensureRequiredStructuresExist()
     {
         if (!attr) attr.setown(createPTree("Attr"));
-        if (!history) history.setown(createPTree("History"));
     }
 
     CFileDescriptor(IPropertyTree *tree, INamedGroupStore *resolver, unsigned flags)
@@ -1400,7 +1380,6 @@ public:
         Owned<IPropertyTreeIterator> piter;
         MemoryBuffer mb;
         IPropertyTree *at = pt.queryPropTree("Attr");
-        IPropertyTree *hist = pt.queryPropTree("History");
         getClusterInfo(pt,resolver,flags,clusters);
         offset_t totalsize = (offset_t)-1;
         if (flags&IFDSF_EXCLUDE_PARTS) {
@@ -1459,11 +1438,6 @@ public:
             attr.setown(createPTreeFromIPT(at));
         else
             attr.setown(createPTree("Attr"));
-
-        if (hist)
-            history.setown(createPTreeFromIPT(hist));
-        else
-            history.setown(createPTree("History"));
 
         if (totalsize!=(offset_t)-1)
             attr->setPropInt64("@size",totalsize);
@@ -1547,11 +1521,6 @@ public:
         if (!isEmptyPTree(t))
             pt.addPropTree("Attr",createPTreeFromIPT(t));
 
-        t = &queryHistory();
-        if (!isEmptyPTree(t))
-            pt.addPropTree("History",createPTreeFromIPT(t));
-        else
-            pt.addPropTree("History",createPTree("History"));
     }
 
     IPropertyTree *getFileTree(unsigned flags)
@@ -1749,10 +1718,10 @@ public:
         return *attr.get();
     }
 
-    IPropertyTree &queryHistory()
+    IPropertyTree *queryHistory()
     {
         closePending();
-        return *history.get();
+        return attr->queryPropTree("History");
     }
 
     bool isMulti(unsigned partidx=(unsigned)-1)
@@ -2152,10 +2121,6 @@ void CFileDescriptor::serializeParts(MemoryBuffer &mb,unsigned *partlist, unsign
     queryProperties().serialize(mb);
     if (sdesc)
         sdesc->serializeSub(mb);
-
-    // Serialisation extensions like History.
-    mb.append(serializationVersion);
-    queryHistory().serialize(mb);
 }
 
 

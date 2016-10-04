@@ -242,7 +242,7 @@ if endCluster is not called it will assume only one cluster and not replicated
 
     virtual void ensureReplicate() = 0;                                             // make sure a file can be replicated
 
-    virtual IPropertyTree &queryHistory() = 0;                                       // query file history records
+    virtual IPropertyTree *queryHistory() = 0;                                       // query file history records
 };
 
 interface ISuperFileDescriptor: extends IFileDescriptor

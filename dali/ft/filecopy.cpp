@@ -2493,7 +2493,9 @@ void FileSprayer::setSource(IDistributedFile * source)
 {
     distributedSource.set(source);
     srcAttr.setown(createPTreeFromIPT(&source->queryAttributes()));
-    srcHistory.setown(createPTreeFromIPT(&source->queryHistory()));
+    IPropertyTree *history = source->queryHistory();
+    if (history)
+        srcHistory.setown(createPTreeFromIPT(history));
 
     extractSourceFormat(srcAttr);
     unsigned numParts = source->numParts();
@@ -2531,7 +2533,9 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
     IPropertyTree *attr = &source->queryProperties();
     extractSourceFormat(attr);
     srcAttr.setown(createPTreeFromIPT(&source->queryProperties()));
-    srcHistory.setown(createPTreeFromIPT(&source->queryHistory()));
+    IPropertyTree *history = source->queryHistory();
+    if (history)
+        srcHistory.setown(createPTreeFromIPT(history));
     extractSourceFormat(srcAttr);
 
     RemoteFilename filename;
@@ -3245,6 +3249,7 @@ void FileSprayer::updateTargetProperties()
             curProps.setProp("@kind", srcAttr->queryProp("@kind"));
 
             // and simple (top level) elements
+            // History copied as well
             Owned<IPropertyTreeIterator> iter = srcAttr->getElements("*");
             ForEach(*iter)
             {
@@ -3253,16 +3258,14 @@ void FileSprayer::updateTargetProperties()
                     curProps.addPropTree(aname, createPTreeFromIPT(&iter->query()));
             }
 
-            // Handle history
-            IPropertyTree &curHistory = lock.queryFile()->queryHistory();
+            //
+            // Add new History record
+            //
+            IPropertyTree * curHistory = curProps.queryPropTree("History");
 
-            // copy history records from source file
-            Owned<IPropertyTreeIterator> historyIter = srcHistory->getElements("*");
-            ForEach(*historyIter)
-            {
-                const char *aname = historyIter->query().queryName();
-                curHistory.addPropTree(aname, createPTreeFromIPT(&historyIter->query()));
-            }
+            // If there wasn't previous History (like Spray/Import)
+            if (!curHistory)
+                curHistory = curProps.setPropTree("History", createPTree());
 
             // Add new record about this operation
             Owned<IPropertyTree> newRecord = createPTree();
@@ -3301,7 +3304,7 @@ void FileSprayer::updateTargetProperties()
                     splitAndStoreFileInfo(newRecord, remoteFile, idx, false);
                 }
             }
-            curHistory.addPropTree("Origin",newRecord.getClear());
+            curHistory->addPropTree("Origin",newRecord.getClear());
         }
     }
     if (error)

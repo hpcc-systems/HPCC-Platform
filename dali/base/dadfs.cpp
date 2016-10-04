@@ -2738,13 +2738,12 @@ public:
         return *t;
     }
 
-    IPropertyTree &queryHistory() const
+    IPropertyTree *queryHistory() const
     {
-        IPropertyTree *history = root->queryPropTree("History");
-        //It can be null if the file created with an older version
-        if (!history)
-            history = root->setPropTree("History",createPTree("History")); // takes ownership
-        return *history;
+        IPropertyTree *attr =  root->queryPropTree("Attr");
+        if (attr)
+            return attr->queryPropTree("History");
+        return nullptr;
     }
 
 protected:
@@ -2794,10 +2793,10 @@ protected:
     IPropertyTree * resetHistory(IPropertyTree *history=NULL)
     {
         if (!history)
-            return root->setPropTree("History",createPTree("History"));
+            return queryAttributes().setPropTree("History",createPTree("History"));
         else
-            // Always create History, but it stored when it is updated only.
-            return root->setPropTree("History", history);
+            queryAttributes().removeTree("History");
+        return nullptr;
     }
     void updateFS(const CDfsLogicalFileName &lfn, unsigned timeoutMs)
     {
@@ -3433,7 +3432,6 @@ public:
         setPreferredClusters(_parent->defprefclusters);
         setParts(fdesc,false);
         //shrinkFileTree(root); // enable when safe!
-        setHistory(fdesc);
     }
 
     CDistributedFile(CDistributedFileDirectory *_parent, IFileDescriptor *fdesc, IUserDescriptor *user, bool includeports)
@@ -3490,7 +3488,6 @@ public:
             queryAttributes().setPropInt64("@size", totalsize);
         if (useableCheckSum)
             queryAttributes().setPropInt64("@checkSum", checkSum);
-        setHistory(fdesc);
         setModified();
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.2",root);
@@ -3529,15 +3526,6 @@ public:
             getClusterNames(cnames);
         fdesc->setClusterOrder(cnames,_clusterName&&*_clusterName);
         return fdesc.getClear();
-    }
-
-    void setHistory(IFileDescriptor *fdesc)
-    {
-        IPropertyTree *history = &fdesc->queryHistory();
-        if (isEmptyPTree(history))
-            resetHistory();
-        else
-            resetHistory(createPTreeFromIPT(history));
     }
 
     void setFileAttrs(IFileDescriptor *fdesc,bool save)
