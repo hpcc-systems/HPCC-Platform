@@ -24,9 +24,9 @@
 #include <math.h>
 #include "eclblas.hpp"
 
-ECLBLAS_CALL void dgetf2(uint32_t m, uint32_t n, bool isAllA,
-                         size32_t lenA, const void* a, bool & __isAllResult,
-                         size32_t & __lenResult, void * & __result) {
+ECLBLAS_CALL void dgetf2(bool & __isAllResult, size32_t & __lenResult,
+                         void * & __result, uint32_t m, uint32_t n,
+                         bool isAllA, size32_t lenA, const void* a) {
   //double sfmin = dlamch('S');   // get safe minimum
   unsigned int cells = m*n;
   __isAllResult = false;

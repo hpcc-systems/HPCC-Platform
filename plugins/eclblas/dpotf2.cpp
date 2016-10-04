@@ -26,10 +26,10 @@
 #include "eclblas.hpp"
 #include <math.h>
 
-ECLBLAS_CALL void dpotf2(uint8_t tri, uint32_t r, bool isAllA,
-                         size32_t lenA, const void * A, bool clear,
-                         bool & __isAllResult,
-                         size32_t & __lenResult, void * & __result) {
+ECLBLAS_CALL void dpotf2(bool & __isAllResult, size32_t & __lenResult,
+                         void * & __result, uint8_t tri, uint32_t r,
+                         bool isAllA, size32_t lenA, const void * A,
+                         bool clear) {
   unsigned int cells = r*r;
   __isAllResult = false;
   __lenResult = cells * sizeof(double);

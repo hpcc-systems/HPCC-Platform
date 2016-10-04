@@ -51,51 +51,54 @@ extern "C" {
 
 extern "C" {
   ECLBLAS_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
-  ECLBLAS_PLUGIN_API void setPluginContext(IPluginContext * _ctx);
 
   ECLBLAS_CALL double dasum(uint32_t m, bool isAllX, size32_t lenX, const void * x,
                             uint32_t incx, uint32_t skipped);
 
-  ECLBLAS_CALL void daxpy(uint32_t n, double alpha,
+  ECLBLAS_CALL void daxpy(bool & __isAllResult, size32_t & __lenResult,
+                          void * & __result, uint32_t n, double alpha,
                           bool isAllX, size32_t lenX, const void * x, uint32_t incx,
                           bool isAllY, size32_t lenY, const void * y, uint32_t incy,
-                          uint32_t x_skipped, uint32_t y_skipped,
-                          bool & __isAllResult, size32_t & __lenResult,
-                          void * & __result);
+                          uint32_t x_skipped, uint32_t y_skipped);
 
-  ECLBLAS_CALL void dgemm(bool transposeA, bool transposeB,
+  ECLBLAS_CALL void dgemm(bool & __isAll_Result, size32_t & __lenResult,
+                          void * & __result, bool transposeA, bool transposeB,
                           uint32_t m, uint32_t n, uint32_t k,
                           double alpha, bool isAllA, size32_t lenA, const void* A,
                           bool isAllB, size32_t lenB, const void* B, double beta,
-                          bool isAllC, size32_t lenC, const void* C,
-                          bool & __isAll_Result, size32_t & __lenResult);
+                          bool isAllC, size32_t lenC, const void* C);
 
-  ECLBLAS_CALL void dgetf2(uint32_t m, uint32_t n, bool isAllA,
-                           size32_t lenA, const void* a, bool & __isAllResult,
-                           size32_t & __lenResult, void * & result);
+  ECLBLAS_CALL void dgetf2(bool & __isAllResult, size32_t & __lenResult,
+                           void * & result, uint32_t m, uint32_t n,
+                           bool isAllA, size32_t lenA, const void* a);
 
-  ECLBLAS_CALL void dpotf2(uint8_t tri, uint32_t r, bool isAllA,
-                           size32_t lenA, const void * A, bool clear,
-                           bool & __isAllResult,
-                           size32_t & __lenResult, void * & __result);
-  ECLBLAS_CALL void dscal(uint32_t n, double alpha, bool isAllX,
-                          size32_t lenX, const void * X, uint32_t incx,
-                          uint32_t skipped, bool & __isAllResult,
-                          size32_t & __lenResult, void * & __result);
-  ECLBLAS_CALL void dsyrk(uint8_t tri, bool transposeA, uint32_t N,
-                          uint32_t k, double alpha, bool isAllA,
+  ECLBLAS_CALL void dpotf2(bool & __isAllResult, size32_t & __lenResult,
+                           void * & __result, uint8_t tri, uint32_t r,
+                           bool isAllA, size32_t lenA, const void * A,
+                           bool clear);
+  ECLBLAS_CALL void dscal(bool & __isAllResult, size32_t & __lenResult,
+                          void * & __result, uint32_t n, double alpha,
+                          bool isAllX, size32_t lenX, const void * X,
+                          uint32_t incx, uint32_t skipped);
+  ECLBLAS_CALL void dsyrk(bool & __isAllResult, size32_t & __lenResult,
+                          void * &__result, uint8_t tri, bool transposeA,
+                          uint32_t N, uint32_t k, double alpha, bool isAllA,
                           size32_t lenA, const void * a, double beta,
                           bool isAllC, size32_t lenC, const void * c,
-                          bool clear, bool & __isAllResult,
-                          size32_t & __lenResult, void * __result);
-  ECLBLAS_CALL void Extract_Tri(uint32_t m, uint32_t n, uint8_t tri,
+                          bool clear);
+  ECLBLAS_CALL void dtrsm(bool & __isAllResult, size32_t & __lenResult,
+                        void * & __result, uint8_t side, uint8_t tri,
+                        bool transposeA, uint8_t diag, uint32_t m,
+                        uint32_t n, uint32_t lda, double alpha, bool isAllA,
+                        size32_t lenA, const void * a, bool isAllB, size32_t lenB,
+                        const void * b);
+  ECLBLAS_CALL void Extract_Tri(bool & __isAllResult, size32_t & __lenResult,
+                                void * & __result, uint32_t m, uint32_t n,
                                 uint8_t dt, bool isAllA, size32_t lenA,
-                                const void * a, bool & __isAllResult,
-                                size32_t & __lenResult, void * & __result);
-  ECLBLAS_CALL void make_diag(size32_t m, double v, bool isAllX,
-                              size32_t lenX, const void * x,
-                              bool & __isAllResult, size32_t & __lenResult,
-                              void * & __result);
+                                const void * a);
+  ECLBLAS_CALL void make_diag(bool & __isAllResult, size32_t & __lenResult,
+                              void * & __result, size32_t m, double v,
+                              bool isAllX, size32_t lenX, const void * x);
 }
 
 

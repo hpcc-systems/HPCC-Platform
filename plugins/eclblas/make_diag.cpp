@@ -18,10 +18,9 @@
 //If the vector is present the diagonal is the product
 #include "eclblas.hpp"
 
-ECLBLAS_CALL void make_diag(uint32_t m, double v, bool isAllX,
-                            size32_t lenX, const void * x,
-                            bool & __isAllResult, size32_t & __lenResult,
-                            void * & __result) {
+ECLBLAS_CALL void make_diag(bool & __isAllResult, size32_t & __lenResult,
+                            void * & __result, uint32_t m, double v,
+                            bool isAllX, size32_t lenX, const void * x) {
   int cells = m * m;
   __isAllResult = false;
   __lenResult = cells * sizeof(double);

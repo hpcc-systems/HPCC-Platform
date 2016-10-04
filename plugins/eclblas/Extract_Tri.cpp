@@ -19,10 +19,9 @@
 //
 #include "eclblas.hpp"
 
-ECLBLAS_CALL void Extract_Tri(uint32_t m, uint32_t n, uint8_t tri,
-                              uint8_t dt, bool isAllA, size32_t lenA,
-                              const void * a, bool & __isAllResult,
-                              size32_t & __lenResult, void * & __result){
+ECLBLAS_CALL void Extract_Tri(bool & __isAllResult, size32_t & __lenResult,
+                              void * & __result, uint32_t m, uint32_t n, uint8_t tri,
+                              uint8_t dt, bool isAllA, size32_t lenA, const void * a){
   int cells = m * n;
   __isAllResult = false;
   __lenResult = lenA;

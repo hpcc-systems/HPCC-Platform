@@ -19,12 +19,12 @@
 //
 #include "eclblas.hpp"
 
-ECLBLAS_CALL void dtrsm(uint8_t side, uint8_t tri, bool transposeA,
-                        uint8_t diag, uint32_t m, uint32_t n, uint32_t lda,
-                        double alpha, bool isAllA, size32_t lenA,
-                        const void * a, bool isAllB, size32_t lenB,
-                        const void * b, bool & __isAllResult,
-                        size32_t & __lenResult, void * & __result) {
+ECLBLAS_CALL void dtrsm(bool & __isAllResult, size32_t & __lenResult,
+                        void * & __result, uint8_t side, uint8_t tri,
+                        bool transposeA, uint8_t diag, uint32_t m,
+                        uint32_t n, uint32_t lda, double alpha, bool isAllA,
+                        size32_t lenA, const void * a, bool isAllB, size32_t lenB,
+                        const void * b) {
   unsigned int ldb = m;
   __isAllResult = false;
   __lenResult = lenB;
