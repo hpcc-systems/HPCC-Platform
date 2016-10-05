@@ -2746,6 +2746,16 @@ public:
         return nullptr;
     }
 
+    IPropertyTree * resetHistory(IPropertyTree *history)
+    {
+        DistributedFilePropertyLock lock(this);
+        if (history)
+            return queryAttributes().setPropTree("History", history);
+        else
+            queryAttributes().removeTree(queryHistory());
+        return nullptr;
+    }
+
 protected:
     class CFileChangeWriteLock
     {
@@ -2789,14 +2799,6 @@ protected:
 
         root->removeProp("Attr");
         return NULL;
-    }
-    IPropertyTree * resetHistory(IPropertyTree *history=NULL)
-    {
-        if (!history)
-            return queryAttributes().setPropTree("History",createPTree("History"));
-        else
-            queryAttributes().removeTree("History");
-        return nullptr;
     }
     void updateFS(const CDfsLogicalFileName &lfn, unsigned timeoutMs)
     {
