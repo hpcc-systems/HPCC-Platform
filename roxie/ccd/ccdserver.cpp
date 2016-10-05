@@ -349,7 +349,8 @@ protected:
 // General activity statistics
 
 static const StatisticsMapping actStatistics(StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
-                                              StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped, StNumStrands, StKindNone);
+                                              StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped, StNumStrands,
+                                              StNumScansPerRow, StNumAllocations, StNumAllocationScans, StKindNone);
 static const StatisticsMapping joinStatistics(&actStatistics, StNumAtmostTriggered, StKindNone);
 static const StatisticsMapping keyedJoinStatistics(&joinStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                     StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
@@ -1329,6 +1330,11 @@ public:
                 }
                 if (inputStream)
                     inputStream->stop();
+                if (rowAllocator)
+                {
+                    stats.reset(heapStatistics);
+                    rowAllocator->gatherStats(stats);
+                }
             }
         }
     }
@@ -1674,6 +1680,10 @@ public:
         {
             if (inputStream)
                 inputStream->stop();
+
+            stats.reset(heapStatistics); // Heap stats are always gathered from scratch each time
+            if (rowAllocator)
+                rowAllocator->gatherStats(stats);
             parent.stop();
             parent.mergeStrandStats(processed, totalCycles, stats);
         }

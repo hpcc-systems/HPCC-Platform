@@ -305,6 +305,11 @@ public:
         return heap->finalizeRow(row);
     }
 
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) override
+    {
+        heap->gatherStats(stats);
+    }
+
 protected:
     Owned<roxiemem::IFixedRowHeap> heap;
 };
@@ -359,6 +364,11 @@ public:
         void * newrow = heap->finalizeRow(row, oldSize, finalSize+CHECKER::extraSize);
         CHECKER::setCheck(finalSize, newrow);
         return newrow;
+    }
+
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) override
+    {
+        heap->gatherStats(stats);
     }
 
 protected:

@@ -381,14 +381,20 @@ private:
     const char * ptr;
 };
 
-interface IFixedRowHeap : extends IInterface
+
+interface IRowHeap : extends IInterface
+{
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) = 0;
+};
+
+interface IFixedRowHeap : extends IRowHeap
 {
     virtual void *allocate() = 0;
     virtual void *finalizeRow(void *final) = 0;
     virtual void emptyCache() = 0;
 };
 
-interface IVariableRowHeap : extends IInterface
+interface IVariableRowHeap : extends IRowHeap
 {
     virtual void *allocate(memsize_t size, memsize_t & capacity) = 0;
     virtual void *resizeRow(void * original, memsize_t copysize, memsize_t newsize, memsize_t &capacity) = 0;

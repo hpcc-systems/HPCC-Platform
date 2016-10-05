@@ -236,6 +236,7 @@ public:
 interface IOutputRowSerializer;
 interface IOutputRowDeserializer;
 
+class CRuntimeStatisticCollection;
 interface IEngineRowAllocator : extends IInterface
 {
     virtual byte * * createRowset(unsigned _numItems) = 0;
@@ -261,6 +262,8 @@ interface IEngineRowAllocator : extends IInterface
     virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx = NULL) = 0;
     virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) = 0;
     virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *childtype) = 0;
+
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) = 0;
 };
 
 interface IRowSerializerTarget

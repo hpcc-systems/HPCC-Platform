@@ -271,6 +271,7 @@ protected:
 };
 
 extern const jlib_decl StatisticsMapping allStatistics;
+extern const jlib_decl StatisticsMapping heapStatistics;
 extern const jlib_decl StatisticsMapping diskLocalStatistics;
 extern const jlib_decl StatisticsMapping diskRemoteStatistics;
 extern const jlib_decl StatisticsMapping diskReadRemoteStatistics;
@@ -363,12 +364,8 @@ public:
     {
         return queryStatistic(kind).get();
     }
-    void reset()
-    {
-        unsigned num = mapping.numStatistics();
-        for (unsigned i = 0; i <= num; i++)
-            values[i].clear();
-    }
+    void reset();
+    void reset(const StatisticsMapping & toClear);
 
     CRuntimeStatisticCollection & registerNested(const StatsScopeId & scope, const StatisticsMapping & mapping);
 
@@ -378,8 +375,10 @@ public:
     inline unsigned __int64 getValue(unsigned i) const { return values[i].get(); }
 
     void merge(const CRuntimeStatisticCollection & other);
+    void updateDelta(CRuntimeStatisticCollection & target, const CRuntimeStatisticCollection & source);
     void rollupStatistics(IContextLogger * target) { rollupStatistics(1, &target); }
     void rollupStatistics(unsigned num, IContextLogger * const * targets) const;
+
 
     virtual void recordStatistics(IStatisticGatherer & target) const;
     void getNodeProgressInfo(IPropertyTree &node) const;
@@ -395,7 +394,7 @@ public:
 
 
 protected:
-    virtual void ensureNested();
+    virtual CNestedRuntimeStatisticMap & ensureNested();
     void reportIgnoredStats() const;
     void mergeStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
     {
@@ -437,7 +436,7 @@ protected:
     };
 
 protected:
-    virtual void ensureNested() override;
+    virtual CNestedRuntimeStatisticMap & ensureNested() override;
 
 protected:
     DerivedStats * derived;
@@ -465,6 +464,7 @@ public:
     void recordStatistics(IStatisticGatherer & target) const;
     StringBuffer & toStr(StringBuffer &str) const;
     StringBuffer & toXML(StringBuffer &str) const;
+    void updateDelta(CNestedRuntimeStatisticCollection & target, const CNestedRuntimeStatisticCollection & source);
 
 public:
     StatsScopeId scope;
@@ -485,6 +485,8 @@ public:
     void recordStatistics(IStatisticGatherer & target) const;
     StringBuffer & toStr(StringBuffer &str) const;
     StringBuffer & toXML(StringBuffer &str) const;
+    void updateDelta(CNestedRuntimeStatisticMap & target, const CNestedRuntimeStatisticMap & source);
+
 
 protected:
     virtual CRuntimeStatisticCollection * createStats(const StatisticsMapping & mapping);

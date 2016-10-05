@@ -2349,6 +2349,8 @@ public:
     {
     }
 
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) override {}
+
     virtual void *allocate();
 
 protected:
@@ -2372,6 +2374,11 @@ public:
             if (flags & RHFunique)
                 heap->noteOrphaned();
         }
+    }
+
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) override
+    {
+        heap->gatherStats(stats);
     }
 
     virtual void *allocate()
@@ -2440,6 +2447,7 @@ public:
     }
     IMPLEMENT_IINTERFACE
 
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) override {}
     virtual void *allocate(memsize_t size, memsize_t & capacity);
     virtual void *resizeRow(void * original, memsize_t copysize, memsize_t newsize, memsize_t &capacity);
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize);
@@ -2978,6 +2986,8 @@ public:
 
     void checkScans();
     virtual void reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats) = 0;
+
+    void gatherStats(CRuntimeStatisticCollection & stats);
 
 protected:
     void * doAllocateRow(unsigned allocatorId, unsigned maxSpillCost);
@@ -5049,6 +5059,31 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
     }
 }
 
+
+void CChunkedHeap::gatherStats(CRuntimeStatisticCollection & result)
+{
+    HeapletStats merged(stats);
+
+    NonReentrantSpinBlock b(heapletLock);
+    Heaplet * start = heaplets;
+    if (start)
+    {
+        Heaplet * finger = start;
+        loop
+        {
+            finger->mergeStats(merged);
+            finger = getNext(finger);
+            if (finger == start)
+                break;
+        }
+    }
+
+    if (merged.totalAllocs)
+    {
+        result.addStatistic(StNumAllocations, merged.totalAllocs);
+        result.addStatistic(StNumAllocationScans, merged.totalDistanceScanned / chunkSize);
+    }
+}
 
 void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
 {
