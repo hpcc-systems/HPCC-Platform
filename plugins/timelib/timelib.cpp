@@ -667,6 +667,9 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustTime(unsigned int time, short hour
     unsigned int    result = 0;
 
     memset(&timeInfo, 0, sizeof(timeInfo));
+#ifdef __APPLE__
+    timeInfo.tm_year = 2;
+#endif
 
     tlInsertTimeIntoTimeStruct(&timeInfo, time);
 
@@ -689,6 +692,9 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustTimeBySeconds(unsigned int time, i
     unsigned int    result = 0;
 
     memset(&timeInfo, 0, sizeof(timeInfo));
+#ifdef __APPLE__
+    timeInfo.tm_year = 2;
+#endif
 
     tlInsertTimeIntoTimeStruct(&timeInfo, time);
     timeInfo.tm_sec += seconds_delta;
