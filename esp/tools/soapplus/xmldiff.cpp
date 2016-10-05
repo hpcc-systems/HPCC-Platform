@@ -822,7 +822,7 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         {
             delete diffmatrix[i];
         }
-        delete diffmatrix;
+        delete [] diffmatrix;
 
         for(i = 0; i < num1; i++)
         {
@@ -1261,7 +1261,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
             {
                 delete diffmatrix[i];
             }
-            delete diffmatrix;
+            delete [] diffmatrix;
         }
         else
         {
