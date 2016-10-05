@@ -13,10 +13,10 @@ Test_vector := BLAS.make_vector(5, 4);
 
 EXPORT Test_helpers := MODULE
   EXPORT TestRuntime := MODULE
-    EXPORT Test01 := ASSERT(Test_norm1=6);
+    EXPORT Test01 := ASSERT(Test_norm1=7);
     EXPORT Test02 := ASSERT(Test_trace=7);
-    EXPORT Test03 := ASSERT(BLAS.dasum(9, Test_Diag1, 1)=4);
-    EXPORT Test04 := ASSERT(BLAS.dasum(9, Test_Diag2, 1)=70);
+    EXPORT Test03 := ASSERT(BLAS.dasum(16, Test_Diag1, 1)=4);
+    EXPORT Test04 := ASSERT(BLAS.dasum(16, Test_Diag2, 1)=70);
     EXPORT Test05 := ASSERT(BLAS.dasum(5, Test_vector, 1)=20);
   END;
 END;
