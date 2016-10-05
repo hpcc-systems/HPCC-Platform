@@ -429,6 +429,12 @@
             shared. This is useful for troubleshooting and bug
             reporting.</para>
           </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Slave Logs</emphasis> - Download the
+            logs for the specified Thor cluster. This is useful for
+            troubleshooting any Thor issues.</para>
+          </listitem>
         </itemizedlist>
 
         <!-- added WU Details stuff here -->
@@ -555,6 +561,26 @@
           into the issue tracking system. Before distributing the file, verify
           that the file does not contain any sensitive data, such as
           personally identifiable information (PII).</para>
+        </sect3>
+
+        <sect3 id="ECLWatchSlaveLogDialog">
+          <title>Slave Logs </title>
+
+          <figure>
+            <title>The Slave Logs Dialog</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWASL01.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>The <emphasis role="bold">Slave Logs</emphasis> action button
+          opens a dialog where you can choose to download the logs for a
+          specified Thor cluster. You can select the cluster, a specific Slave
+          number, and the log file format (plain or compressed). This is
+          useful for troubleshooting any Thor issues.</para>
         </sect3>
 
         <sect3 id="ECLWatch_ECLWorkunitsOutputsTab" role="brk">
