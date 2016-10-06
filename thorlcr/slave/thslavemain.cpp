@@ -399,9 +399,9 @@ int main( int argc, char *argv[]  )
                 overrideBaseDirectory = datadir.str();
             if (getConfigurationDirectory(globals->queryPropTree("Directories"),"mirror","thor",globals->queryProp("@name"),repdir))
                 overrideReplicateDirectory = repdir.str();
-            if (overrideBaseDirectory&&*overrideBaseDirectory)
+            if (!isEmptyString(overrideBaseDirectory))
                 setBaseDirectory(overrideBaseDirectory, false);
-            if (overrideReplicateDirectory&&*overrideBaseDirectory)
+            if (!isEmptyString(overrideReplicateDirectory))
                 setBaseDirectory(overrideReplicateDirectory, true);
             StringBuffer tempDirStr;
             if (getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"), tempDirStr))
