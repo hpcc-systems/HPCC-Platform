@@ -447,8 +447,7 @@ protected:
     bool isBlocked;
     bool isRaw;
     bool isHTTP;
-    bool trim;
-    bool failed;
+    bool trim;   // MORE - this is never set!
     bool adaptiveRoot = false;
     bool onlyUseFirstRow = false;
 
@@ -937,7 +936,6 @@ protected:
     CriticalSection contentsCrit;
     unsigned protocolFlags;
     bool isHTTP;
-    bool failed;
 
 public:
     IMPLEMENT_IINTERFACE;

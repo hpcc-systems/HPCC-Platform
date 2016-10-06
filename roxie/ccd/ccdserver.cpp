@@ -975,6 +975,7 @@ public:
     {
         activityId = 0;
         input = NULL;
+        sourceIdx = 0;
         inputStream = NULL;
         ctx = NULL;
         meta.set(basehelper.queryOutputMeta());
@@ -5871,11 +5872,11 @@ class CRoxieServerStrandedInlineTableActivity : public CRoxieServerStrandedActiv
     protected:
         IHThorInlineTableArg &helper;
         unsigned whichStrand;
-        unsigned numStrands;
+        unsigned numStrands = 0;
         __uint64 sectionSize;
-        __uint64 curRow;
-        __uint64 sectionMaxRows;
-        __uint64 maxRows;
+        __uint64 curRow = 0;
+        __uint64 sectionMaxRows = 0;
+        __uint64 maxRows = 0;
         bool isOrdered;
         bool eosPending;
 
@@ -14325,7 +14326,10 @@ class CRoxieServerPrefetchProjectActivity : public CRoxieServerActivity, impleme
                 recordCount = _recordCount;
             }
             else
+            {
                 ReleaseRoxieRow(_in);
+                recordCount = 0;
+            }
         }
         OwnedConstRoxieRow in;
         unsigned __int64 recordCount;
@@ -18293,8 +18297,8 @@ private:
     protected:
         __uint64 *table;
         ConstPointerArray rowtable;
-        mutable unsigned currentMatch;
-        mutable unsigned matchCount;
+        mutable unsigned currentMatch = 0;
+        mutable unsigned matchCount = 0;
     };
 
     IHThorHashJoinArg &helper;
@@ -22743,11 +22747,11 @@ class CRoxieServerIndexReadActivity : public CRoxieServerIndexReadBaseActivity, 
 {
 protected:
     IHThorCompoundReadExtra & readHelper;
-    ISteppingMeta *rawMeta;
+    ISteppingMeta *rawMeta = nullptr;
     CSteppingMeta steppingMeta;
-    unsigned * seekSizes;
+    unsigned * seekSizes = nullptr;
     bool optimizeSteppedPostFilter;
-    ISteppingMeta * projectedMeta;
+    ISteppingMeta * projectedMeta = nullptr;
     unsigned maxSeekLookahead;
 
 public:

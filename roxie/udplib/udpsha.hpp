@@ -69,7 +69,6 @@ class queue_t
     Semaphore       free_space;
     Semaphore       free_sl;
     unsigned        signal_free_sl;
-    int             total_data;
 
     void removeElement(int ix);
     
@@ -81,7 +80,7 @@ public:
     bool dataQueued(void *key, PKT_CMP_FUN pkCmpFn);
     bool removeData(void *key, PKT_CMP_FUN pkCmpFn);
     int  free_slots(); //block if no free slots
-    void set_queue_size(unsigned int queue_size); //must be called after immitialy after contructor if default contructor is used
+    void set_queue_size(unsigned int queue_size); //must be called immediately after constructor if default constructor is used
     queue_t(unsigned int queue_size);
     queue_t();
     ~queue_t();

@@ -125,7 +125,6 @@ interface IActivityDebugContext : extends IInterface
 
     virtual const char *queryEdgeId() const = 0;
     virtual const char *querySourceId() const = 0;
-    virtual unsigned queryChildGraphId() const = 0;
 
     virtual memsize_t queryProxyId() const = 0;
 };
