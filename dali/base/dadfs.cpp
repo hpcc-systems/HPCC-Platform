@@ -9155,12 +9155,12 @@ class CInitGroups
     }
     bool clusterGroupCompare(IPropertyTree *newClusterGroup, IPropertyTree *oldClusterGroup)
     {
-        if (!newClusterGroup && oldClusterGroup)
-            return false;
-        else if (!oldClusterGroup && newClusterGroup)
-            return false;
-        if (!newClusterGroup) // both null
-            return true;
+        if (!newClusterGroup && !oldClusterGroup)
+            return true; // i.e. both missing, so match
+        else if (!newClusterGroup || !oldClusterGroup)
+            return false; // i.e. one of them (not both) missing, so mismatch
+        // else // neither missing
+
         // see if identical
         const char *oldKind = oldClusterGroup->queryProp("@kind");
         const char *oldDir = oldClusterGroup->queryProp("@dir");
