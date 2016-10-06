@@ -3080,18 +3080,20 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter)
 
         {
             //Scan through all the memory, checking for a block marked as free - should terminate very quickly unless highly fragmented
-            size32_t offset = nextMatchOffset;
+            const size_t startOffset = nextMatchOffset;
+            size32_t offset = startOffset;
             loop
             {
                 ret = data() + offset;
                 offset += size;
                 if (offset == curFreeBase)
                     offset = 0;
+                __builtin_prefetch(data() + offset);
 
                 if (((std::atomic_uint *)ret)->load(std::memory_order_relaxed) == FREE_ROW_COUNT)
                     break;
 
-                if (offset == nextMatchOffset)
+                if (offset == startOffset)
                 {
                     //Should never occur...
                     return nullptr;

@@ -179,7 +179,9 @@ typedef memsize_t rowsize_t;
 #define GetSharedProcedure(h,name) GetProcAddress(h,(char *)name)
 #define LoadSucceeded(h)           ((unsigned)h >= 32)
 #define GetSharedObjectError()     GetLastError()
-#define strtok_r(a,b,c)             j_strtok_r(a,b,c)
+#define strtok_r(a,b,c)            j_strtok_r(a,b,c)
+#define __builtin_prefetch(addr)   _mm_prefetch((const char *)(addr), _MM_HINT_T0)
+
 #define __thread __declspec(thread)
 
 typedef unsigned __int64 off64_t;
