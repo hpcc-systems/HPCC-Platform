@@ -6455,7 +6455,7 @@ public:
         CriticalBlock block (sect);
         ForEachItemIn(i,subfiles) {
             IDistributedFile &f=subfiles.item(i);
-            if (set)
+            if (!set)
                 set = f.getAccessedTime(dt);
             else {
                 CDateTime cmp;
@@ -6465,7 +6465,7 @@ public:
                 }
             }
         }
-        return false;
+        return set;
     }
 
     void setAccessedTime(const CDateTime &dt)
