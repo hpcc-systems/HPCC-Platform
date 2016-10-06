@@ -2703,7 +2703,10 @@ void FileSprayer::checkFilePath(RemoteFilename & filename)
 
             Owned<IConstDropZoneInfo> dropZone = env->getDropZoneByAddressPath(netaddress.str(), pfilePath);
             if (!dropZone)
-                LOG(MCdebugInfo, unknownJob, "No matching drop zone path to file path: '%s'", filePath.str());
+            {
+                LOG(MCdebugInfo, unknownJob, "No matching drop zone path to file path: '%s'", pfilePath);
+                throwError1(DFTERR_NoMatchingDropzonePath, pfilePath);
+            }
             else
             {
                 SCMStringBuffer dropZoneName;
