@@ -6985,7 +6985,7 @@ public:
             logicalgroupname = gname.str();
         }
         StringAttr groupdir;
-        GroupType type;
+        GroupType type = grp_unknown;
         bool cached = false;
         unsigned timeNow = msTick();
         {
@@ -9162,10 +9162,10 @@ class CInitGroups
         if (!newClusterGroup) // both null
             return true;
         // see if identical
-        const char *oldKind = oldClusterGroup?oldClusterGroup->queryProp("@kind"):NULL;
-        const char *oldDir = oldClusterGroup?oldClusterGroup->queryProp("@dir"):NULL;
-        const char *newKind = newClusterGroup?newClusterGroup->queryProp("@kind"):NULL;
-        const char *newDir = newClusterGroup?newClusterGroup->queryProp("@dir"):NULL;
+        const char *oldKind = oldClusterGroup->queryProp("@kind");
+        const char *oldDir = oldClusterGroup->queryProp("@dir");
+        const char *newKind = newClusterGroup->queryProp("@kind");
+        const char *newDir = newClusterGroup->queryProp("@dir");
         if (oldKind) {
             if (newKind) {
                 if (!streq(newKind, newKind))
@@ -9431,7 +9431,7 @@ class CInitGroups
         {
             if (force)
             {
-                VStringBuffer msg("Forcing new group layout for %s [ matched active = %s, matched old environment = %s ]", gname.str(), matchExisting?"true":"false", matchOldEnv?"true":"false");
+                VStringBuffer msg("Forcing new group layout for %s [ matched active = false, matched old environment = %s ]", gname.str(), matchOldEnv?"true":"false");
                 WARNLOG("%s", msg.str());
                 messages.append(msg).newline();
                 matchOldEnv = false;
