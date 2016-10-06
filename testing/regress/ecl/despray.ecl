@@ -143,7 +143,7 @@ c5 := CATCH(NOFOLD(p5), ONFAIL(TRANSFORM(rec,
 #end
 
 
-// This should pass based on HPCC-15787 write log entry instead of thow an exception if
+// This should fail based on
 // not an existing dropzone path used in target file path
 DestFile6 := '/var/lib/HPCCSystems/mydropzona/' + File;
 dst6 := NOFOLD(DATASET([{SourceFile, DestFile6, SrcAddrIp, True, '', ''}], rec));
@@ -163,7 +163,7 @@ c6 := CATCH(NOFOLD(p6), ONFAIL(TRANSFORM(rec,
 #end
 
 
-// This should pass based on HPCC15787 write log entry instead of thow an exception if
+// This should fail based on
 // try to despray out of a drop zone
 DestFile7 := '/var/lib/HPCCSystems/' + File;
 dst7 := NOFOLD(DATASET([{SourceFile, DestFile7, SrcAddrIp, True, '', ''}], rec));
@@ -183,7 +183,7 @@ c7 := CATCH(NOFOLD(p7), ONFAIL(TRANSFORM(rec,
 #end
 
 
-// This should passbased on HPCC15787 write log entry instead of thow an exception if
+// This should fail based on
 // not an existing dropzone path used in target file path
 DestFile8 := '/var/lib/HPCCSystems/mydropzone../' + File;
 dst8 := NOFOLD(DATASET([{SourceFile, DestFile8, SrcAddrIp, True, '', ''}], rec));
