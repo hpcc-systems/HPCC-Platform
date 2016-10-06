@@ -425,8 +425,8 @@ WORKUNITSERVICES_API void wsWorkunitList(
         if (priority && *priority)
         {
             filters[filterCount++] = WUSFpriority;
-            if (!strieq(state, "unknown"))
-                filterbuf.append(state);
+            if (!strieq(priority, "unknown"))
+                filterbuf.append(priority);
             else
                 filterbuf.append("");
         }
