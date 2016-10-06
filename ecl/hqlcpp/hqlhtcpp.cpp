@@ -19226,25 +19226,7 @@ bool needsRealThor(IHqlExpression *expr)
 
 IHqlExpression * HqlCppTranslator::getDefaultOutputAttr(IHqlExpression * expr)
 {
-    return createAttribute(workunitAtom);       // backwards compatibility!
-    IHqlExpression * dataset = expr->queryChild(0);
-    if (dataset->getOperator() == no_selectfields)
-        dataset = dataset->queryChild(0);
-    if (dataset->getOperator()==no_choosen)
-    {
-        //If choosen() is specified, then output to SDS if small enough, else a temporary file.
-        IHqlExpression * count = dataset->queryChild(1);
-        if (count->queryValue())
-        {
-            unsigned __int64 value = count->queryValue()->getIntValue();
-            if (value <= MAX_ROWS_OUTPUT_TO_SDS)
-                return createAttribute(workunitAtom);
-        }
-        return createAttribute(diskAtom);
-    }
-
-    //No support yet in IFileView for delayed browsing - so output to disk.
-    return createAttribute(diskAtom);
+    return createAttribute(workunitAtom);
 }
 
 void HqlCppTranslator::modifyOutputLocations(HqlExprArray & exprs)

@@ -430,7 +430,7 @@ public:
     unsigned numExternalUses;
     unsigned conditionSourceCount;
     unsigned currentSource;
-    unsigned curBalanceLink;
+    unsigned curBalanceLink = 0;
     unsigned lastPass;
     unsigned balancedExternalUses;
     unsigned balancedInternalUses;

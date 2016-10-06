@@ -374,27 +374,33 @@ void TomProduction::buildProduction(LRTableBuilder & builder, IHqlExpression * t
         case no_pat_checkin:
             {
                 UNIMPLEMENTED;
+                /*
                 AsciiDfa * dfa = NULL;
                 builder.addValidator(id, LRVcheckin, 0, 0, dfa);
                 break;
+                */
             }
         case no_pat_x_before_y:
         case no_pat_before_y:
             {
                 UNIMPLEMENTED;
+                /*
                 AsciiDfa * dfa = NULL;
                 builder.addValidator(id, LRVbefore, 0, 0, dfa);
                 break;
+                */
             }
         case no_pat_x_after_y:
         case no_pat_after_y:
             {
                 UNIMPLEMENTED;
+                /*
                 unsigned minLength = 0;
                 unsigned maxLength = 0;
                 AsciiDfa * dfa = NULL;
                 builder.addValidator(id, LRVafter, minLength, maxLength, dfa);
                 break;
+                */
             }
         default:
             UNIMPLEMENTED;

@@ -8219,6 +8219,7 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record, bool &hasMixedContent) 
                     }
                 case type_alien:
                     type = queryAlienType(type)->queryLogicalType();
+                    //fallthrough
                 default:
                     extractName(name.clear(), NULL, NULL, cur, NULL);
                     if (name.length())

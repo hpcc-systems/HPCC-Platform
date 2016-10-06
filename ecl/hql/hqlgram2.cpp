@@ -1819,12 +1819,6 @@ bool haveAssignedToChildren(IHqlExpression * select, IHqlExpression * transform)
             if (haveAssignedToChildren(select, assign))
                 return true;
             break;
-            IHqlExpression * child0 = assign->queryChild(0);
-            //Only need to check the first subfield, or field of originalAttr
-            //if (haveAssignedToChildren(select, assign))
-            if (child0 && containsSelect(child0->queryChild(0), select))
-                return true;
-            break;
         }
     }
     return false;
@@ -11798,13 +11792,13 @@ IHqlExpression * PseudoPatternScope::lookupSymbol(IIdAtom * name, unsigned looku
     const char * text = str(name);
     if (*text == '$')
     {
-        unsigned index = atoi(text+1);
-        IHqlExpression * match = patternList->queryChild(index-1);
+        unsigned index = (unsigned)(atoi(text+1)-1);
+        IHqlExpression * match = patternList->queryChild(index);
         if (match)
         {
             Owned<ITypeInfo> retType;
             ITypeInfo * type = match->queryType()->queryChildType();
-            IHqlExpression * indexExpr = createConstant((__int64)index-1);
+            IHqlExpression * indexExpr = createConstant((__int64)index);
             if (type)
                 return createRow(no_matchattr, LINK(queryOriginalRecord(type)), indexExpr);
 

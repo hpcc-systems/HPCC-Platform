@@ -466,9 +466,9 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
 
     //MORE: This should really use targetCompiler instead
 #if defined(__APPLE__)
-    bool generateClang = true;
+    const bool generateClang = true;
 #else
-    bool generateClang = false;
+    const bool generateClang = false;
 #endif
     ForEachItemIn(idx, resources)
     {
