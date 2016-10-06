@@ -1931,6 +1931,7 @@ public:
                 }
                 retcode = START_FAILURE;
                 started.signal();
+                free(argv);
                 return;
             }
         }
