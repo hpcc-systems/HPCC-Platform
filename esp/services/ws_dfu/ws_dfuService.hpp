@@ -143,6 +143,8 @@ public:
     virtual bool onAddRemote(IEspContext &context, IEspAddRemoteRequest &req, IEspAddRemoteResponse &resp);
     virtual bool onSuperfileList(IEspContext &context, IEspSuperfileListRequest &req, IEspSuperfileListResponse &resp);
     virtual bool onSuperfileAction(IEspContext &context, IEspSuperfileActionRequest &req, IEspSuperfileActionResponse &resp);
+    virtual bool onListHistory(IEspContext &context, IEspListHistoryRequest &req, IEspListHistoryResponse &resp);
+    virtual bool onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req, IEspEraseHistoryResponse &resp);
 
 private:
     const char* getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix);
@@ -161,7 +163,7 @@ private:
     bool doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name,const char *cluster,
         const char *description,IEspDFUFileDetail& FileDetails);
-    bool createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuffer interval, unsigned& yearFrom, 
+    bool createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuffer interval, unsigned& yearFrom,
         unsigned& monthFrom, unsigned& dayFrom, unsigned& yearTo, unsigned& monthTo, unsigned& dayTo);
     bool setSpaceItemByScope(IArrayOf<IEspSpaceItem>& SpaceItems64, const char*scopeName, const char*logicalName, __int64 size);
     bool setSpaceItemByOwner(IArrayOf<IEspSpaceItem>& SpaceItems64, const char *owner, const char *logicalName, __int64 size);
@@ -188,16 +190,16 @@ private:
     void setRootFilter(INewResultSet* result, const char* filterBy, IResultSetFilter* filter, bool disableUppercaseTranslation = true);
     void getMappingColumns(IRelatedBrowseFile * file, bool isPrimary, UnsignedArray& cols);
     void readColumnsForDisplay(StringBuffer& schemaText, StringArray& columnsDisplay, StringArray& columnsDisplayType);
-    void mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, StringBuffer schemaText2, 
+    void mergeSchema(IRelatedBrowseFile * file, StringBuffer& schemaText, StringBuffer schemaText2,
         StringArray& columnsDisplay, StringArray& columnsDisplayType, StringArray& columnsHide);
     void mergeDataRow(StringBuffer& newRow, int depth, IPropertyTreeIterator* it, StringArray& columnsHide, StringArray& columnsUsed);
     void mergeDataRow(StringBuffer& newRow, StringBuffer dataRow1, StringBuffer dataRow2, StringArray& columnsHide);
-    void browseRelatedFileSchema(IRelatedBrowseFile * file, const char* parentName, unsigned depth, StringBuffer& schemaText, 
+    void browseRelatedFileSchema(IRelatedBrowseFile * file, const char* parentName, unsigned depth, StringBuffer& schemaText,
         StringArray& columnsDisplay, StringArray& columnsDisplayType, StringArray& columnsHide);
-    int browseRelatedFileDataSet(double version, IRelatedBrowseFile * file, const char* parentName, unsigned depth, __int64 start, __int64& count, __int64& read, 
+    int browseRelatedFileDataSet(double version, IRelatedBrowseFile * file, const char* parentName, unsigned depth, __int64 start, __int64& count, __int64& read,
                                         StringArray& columnsHide, StringArray& dataSetOutput);
-    int GetIndexData(IEspContext &context, bool bSchemaOnly, const char* indexName, const char* parentName, const char* filterBy, __int64 start, 
-                                        __int64& count, __int64& read, __int64& total, StringBuffer& message, StringArray& columnLabels, 
+    int GetIndexData(IEspContext &context, bool bSchemaOnly, const char* indexName, const char* parentName, const char* filterBy, __int64 start,
+                                        __int64& count, __int64& read, __int64& total, StringBuffer& message, StringArray& columnLabels,
                                         StringArray& columnLabelsType, IArrayOf<IEspDFUData>& DataList, bool webDisableUppercaseTranslation);
     bool getUserFilePermission(IEspContext &context, IUserDescriptor* udesc, const char* logicalName, SecAccessFlags& permission);
     void parseStringArray(const char *input, StringArray& strarray);
