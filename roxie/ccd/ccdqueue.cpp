@@ -1794,7 +1794,7 @@ public:
 #ifdef _DEBUG
         bool udpResendEnabled = topology->getPropBool("@udpResendEnabled", false);
 #else
-        bool udpResendEnabled = false;  // As long as it is known to be broken, we don't want it accidentally enabled in any release version
+        const bool udpResendEnabled = false;  // As long as it is known to be broken, we don't want it accidentally enabled in any release version
 #endif
         maxPacketSize = multicastSocket->get_max_send_size();
         if ((maxPacketSize==0)||(maxPacketSize>65535))

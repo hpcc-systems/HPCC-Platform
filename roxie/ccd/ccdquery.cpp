@@ -1467,7 +1467,7 @@ public:
         }
         else
             result = package.queryEnv(name);
-        if (!result)
+        if (!result && name)
             result = getenv(name);
         return strdup(result ? result : defaultValue);
     }
