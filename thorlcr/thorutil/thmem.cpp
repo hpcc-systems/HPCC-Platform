@@ -1057,7 +1057,7 @@ offset_t CThorExpandingRowArray::serializedSize()
     rowidx_t c = ordinality();
     offset_t total = 0;
     if (diskMeta->isFixedSize())
-        total = c * diskMeta->getFixedSize();
+        total = ((offset_t)c) * diskMeta->getFixedSize();
     else
     {
         Owned<IOutputRowSerializer> diskSerializer = diskMeta->createDiskSerializer(rowIf->queryCodeContext(), rowIf->queryActivityId());
