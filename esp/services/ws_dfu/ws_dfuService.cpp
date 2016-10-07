@@ -2555,22 +2555,15 @@ bool CWsDfuEx::checkDescription(const char *description, const char *description
     if (descriptionFilter[len - 1] == '*')
         filterType += 2;
 
-    char descFilter[256];
+    StringBuffer descFilter;
     if (filterType < 1)
-        strcpy(descFilter, descriptionFilter);
+        descFilter.append(descriptionFilter);
     else if (filterType < 2)
-        strcpy(descFilter, descriptionFilter+1);
+        descFilter.append(descriptionFilter+1);
     else if (filterType < 3)
-    {
-        strncpy(descFilter, descriptionFilter, len - 1);
-        descFilter[len -2] = 0;
-    }
+        descFilter.append(len-1, descriptionFilter);
     else
-    {
-        strncpy(descFilter, descriptionFilter+1, len - 2);
-        descFilter[len -3] = 0;
-    }
-
+        descFilter.append(len-2, descriptionFilter+1);
 
     const char *pos = strstr(description, descFilter);
     if (!pos)
@@ -2650,10 +2643,10 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
         wuTo.appendf("%4d-%02d-%02d %02d:%02d:%02d",year,month,day,hour,minute,second);
     }
 
-    char sortBy[256];
+    StringBuffer sortBy;
     if(req.getSortby() && *req.getSortby())
     {
-        strcpy(sortBy, req.getSortby());
+        sortBy.append(req.getSortby());
     }
 
     unsigned pagesize = req.getPageSize();
@@ -2680,22 +2673,22 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
         displayEnd = nFirstN;
         if (!stricmp(sFirstNType, "newest"))
         {
-            strcpy(sortBy, "Modified");
+            sortBy.set("Modified");
             descending = true;
         }
         else if (!stricmp(sFirstNType, "oldest"))
         {
-            strcpy(sortBy, "Modified");
+            sortBy.set("Modified");
             descending = false;
         }
         else if (!stricmp(sFirstNType, "largest"))
         {
-            strcpy(sortBy, "FileSize");
+            sortBy.set("FileSize");
             descending = true;
         }
         else if (!stricmp(sFirstNType, "smallest"))
         {
-            strcpy(sortBy, "FileSize");
+            sortBy.set("FileSize");
             descending = false;
         }
         pagesize = nFirstN;
@@ -3042,41 +3035,41 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
     if (ParametersForFilters.length() > 0)
         resp.setFilters(ParametersForFilters.str());
 
-    sortBy[0] = 0;
+    sortBy.clear();
     descending = false;
     if ((req.getFirstN() > 0) && req.getFirstNType() && *req.getFirstNType())
     {
         const char *sFirstNType = req.getFirstNType();
         if (!stricmp(sFirstNType, "newest"))
         {
-            strcpy(sortBy, "Modified");
+            sortBy.set("Modified");
             descending = true;
         }
         else if (!stricmp(sFirstNType, "oldest"))
         {
-            strcpy(sortBy, "Modified");
+            sortBy.set("Modified");
             descending = false;
         }
         else if (!stricmp(sFirstNType, "largest"))
         {
-            strcpy(sortBy, "FileSize");
+            sortBy.set("FileSize");
             descending = true;
         }
         else if (!stricmp(sFirstNType, "smallest"))
         {
-            strcpy(sortBy, "FileSize");
+            sortBy.set("FileSize");
             descending = false;
         }
 
     }
     else if (req.getSortby() && *req.getSortby())
     {
-        strcpy(sortBy, req.getSortby());
+        sortBy.set(req.getSortby());
         if (req.getDescending())
             descending = req.getDescending();
     }
 
-    if (sortBy && *sortBy)
+    if (sortBy.length())
     {
         resp.setSortby(sortBy);
         resp.setDescending(descending);

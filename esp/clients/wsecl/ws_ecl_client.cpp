@@ -56,7 +56,8 @@ CClientWsEclService::~CClientWsEclService()
 
 void CClientWsEclService::addServiceUrl(const char * url)
 {
-    strcpy(m_url, url);
+    strncpy(m_url, url, sizeof(m_url));
+    m_url[sizeof(m_url)-1] = 0;
 }
 
 void CClientWsEclService::removeServiceUrl(const char *url)

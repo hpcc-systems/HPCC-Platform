@@ -216,13 +216,15 @@ StringBuffer & StringBuffer::append(const char * value)
     return *this;
 }
 
-StringBuffer & StringBuffer::append(unsigned len, const char * value)
+StringBuffer & StringBuffer::append(size_t len, const char * value)
 {
     if (len)
     {
-        ensureCapacity(len);
-        memcpy(buffer + curLen, value, len);
-        curLen += len;
+        unsigned truncLen = (unsigned)len;
+        assertex(truncLen == len); // MORE: StringBuffer should use size_t throughout
+        ensureCapacity(truncLen);
+        memcpy(buffer + curLen, value, truncLen);
+        curLen += truncLen;
     }
     return *this;
 }

@@ -649,13 +649,10 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
             if (!ep || !*ep)
                 continue;
 
-            char ip[32];
-            strcpy(ip, ep);
+            StringBuffer ip(ep);
             const char* ip0 = strchr(ep, ':');
             if (ip0)
-            {
-                ip[ip0 - ep] = 0;
-            }
+                ip.setLength(ip0 - ep);
 
             Owned<CMetricsParam> pMetricsParam = new CMetricsParam(ip);
             Owned<IPropertyTreeIterator> metrics = endpoint.getElements("Metrics/Metric");

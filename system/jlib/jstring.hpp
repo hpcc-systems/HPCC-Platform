@@ -56,7 +56,7 @@ public:
     StringBuffer &  append(const char * value);
     StringBuffer &  append(const unsigned char * value);
     StringBuffer &  append(const IAtom * value);
-    StringBuffer &  append(unsigned len, const char * value);
+    StringBuffer &  append(size_t len, const char * value);
     StringBuffer &  append(const char * value, int offset, int len);
     StringBuffer &  append(double value);
     StringBuffer &  append(float value);
