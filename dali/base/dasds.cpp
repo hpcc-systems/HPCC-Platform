@@ -220,7 +220,7 @@ public:
                 if (lock.lockWrite(timeout))
                     break;
             }
-            PROGLOG("CLCLockBlock(write=%d) timeout %s(%d), took %d ms",!readLocked,fname,lnum,got-msTick());
+            PROGLOG("CLCLockBlock(write=%d) timeout %s(%d), took %d ms",!readLock,fname,lnum,got-msTick());
             PrintStackReport();
         }
         got = msTick();
@@ -1448,7 +1448,8 @@ public:
         getFilename(filename, name);
 
         const char *_name = owner.queryName();
-        mb.append(_name?_name:"");
+        if (!_name) _name = "";
+        mb.append(_name);
         byte flags = ((PTree &)owner).queryFlags();
         mb.append(IptFlagSet(flags, ipt_binary));
 
@@ -1549,7 +1550,8 @@ public:
         StringBuffer filename;
         getFilename(filename, name);
         const char *_name = owner.queryName();
-        mb.append(_name?_name:"");
+        if (!_name) _name = "";
+        mb.append(_name);
 
         Owned<IFile> iFile = createIFile(filename.str());
         size32_t sz = (size32_t)iFile->size();
@@ -8139,7 +8141,15 @@ void CCovenSDSManager::handleNotify(CSubscriberContainerBase *_subscriber, Memor
             }
             void main()
             {
-                n->notify();
+                try
+                {
+                    n->notify();
+                }
+                catch (IException *e)
+                {
+                    EXCLOG(e, "CNotifyHandler");
+                    e->Release();
+                }
                 n.clear();
             }
             bool canReuse()
@@ -8455,7 +8465,15 @@ void CCovenSDSManager::startNotification(IPropertyTree &changeTree, CPTStack &st
             }
             void main()
             {
-                n->scan();
+                try
+                {
+                    n->scan();
+                }
+                catch (IException *e)
+                {
+                    EXCLOG(e, "CScanNotifyHandler");
+                    e->Release();
+                }
                 n.clear();
             }
             bool canReuse()
@@ -9006,7 +9024,8 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
 void LogRemoteConn(IRemoteConnection *conn)
 {
     CConnectionBase *conbase = QUERYINTERFACE(conn,CConnectionBase);
-    if (!conn) {
+    if (!conbase)
+    {
         PROGLOG("Could not get base for %x",(unsigned)(memsize_t)conn);
         return;
     }
