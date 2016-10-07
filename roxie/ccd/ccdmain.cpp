@@ -433,7 +433,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     init_signals();
     // We need to do the above BEFORE we call InitModuleObjects
     InitModuleObjects();
-    getDaliServixPort();
     init_signals();
 
     // stand alone usage only, not server

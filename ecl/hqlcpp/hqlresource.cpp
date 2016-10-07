@@ -1076,7 +1076,7 @@ void ActivityInvariantHoister::gatherChildSplitPoints(IHqlExpression * expr, Act
 bool ActivityInvariantHoister::findSplitPoints(IHqlExpression * expr, bool isProjected)
 {
     ActivityInvariantInfo * info = queryBodyInfo(expr);
-    if (info && info->visited)
+    if (info->visited)
     {
         if (!isProjected)
             info->clearProjected();

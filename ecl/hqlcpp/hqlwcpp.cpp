@@ -1910,6 +1910,7 @@ void HqlCppWriter::generateStmtAssignModify(IHqlStmt * assign)
         case type_groupedtable:
             //check it is a pointer increment
             assertex(hasReferenceModifier(type));
+            //fallthrough
         case type_int:
         case type_real:
         case type_boolean:

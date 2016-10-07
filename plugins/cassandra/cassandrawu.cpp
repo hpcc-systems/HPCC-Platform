@@ -1705,6 +1705,7 @@ public:
         compareColumn = _compareColumn;
         descending = _descending;
         startRowNum = _startRowNum;
+        rowNum = 0;
     }
     void setStartOffset(unsigned start)
     {
@@ -2132,6 +2133,9 @@ public:
         memset(childLoaded, 0, sizeof(childLoaded));
         if (daliLock)
             createBatch();
+        actionChanged = false;
+        stateChanged = false;
+        abortDirty = false;
     }
     ~CCassandraWorkUnit()
     {
@@ -2513,7 +2517,7 @@ public:
         while (cass_iterator_next(rows))
         {
             const CassRow *row = cass_iterator_get_row(rows);
-            WUGraphIDType subId = subId = getUnsignedResult(NULL, cass_row_get_column(row, 0));
+            WUGraphIDType subId = getUnsignedResult(NULL, cass_row_get_column(row, 0));
             StringBuffer creator, xml;
             getCassString(creator, cass_row_get_column(row, 1));
             getCassString(xml, cass_row_get_column(row, 2));
@@ -3412,7 +3416,8 @@ public:
                     UNSUPPORTED("Workunit filter criteria");
                 }
                 thisFilter++;
-                fv = fv + strlen(fv)+1;
+                if (fv)
+                    fv = fv + strlen(fv)+1;
             }
             if (fileFilters.length())
             {

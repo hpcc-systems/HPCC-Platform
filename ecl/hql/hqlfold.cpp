@@ -2638,9 +2638,12 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     IUStrRegExprFindInstance * match = compiled->find(search, 0, slen);
                     ITypeInfo * type = expr->queryType();
                     if(type->getTypeCode() == type_boolean)
+                    {
                         result = createBoolValue(match->found());
+                    }
                     else
                     {
+                        assertex(c2 && t2);
                         size32_t len;
                         UChar * data;
                         match->getMatchX(len, data, (unsigned)t2->getIntValue());
@@ -2662,9 +2665,12 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     IStrRegExprFindInstance * match = compiled->find(search.str(), 0, search.length(), false);
                     ITypeInfo * type = expr->queryType();
                     if(type->getTypeCode() == type_boolean)
+                    {
                         result = createBoolValue(match->found());
+                    }
                     else
                     {
+                        assertex(c2 && t2);
                         size32_t len;
                         char * data;
                         match->getMatchX(len, data, (unsigned)t2->getIntValue());

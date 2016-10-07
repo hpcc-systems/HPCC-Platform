@@ -953,7 +953,7 @@ public:
           factory(_factory),
           basehelper(_factory->getHelper()),
           activityId(_factory->queryId()),
-          stats(_factory ? _factory->queryStatsMapping() : actStatistics),
+          stats(_factory->queryStatsMapping()),
           probeManager(_probeManager)
     {
         input = NULL;
@@ -975,6 +975,7 @@ public:
     {
         activityId = 0;
         input = NULL;
+        sourceIdx = 0;
         inputStream = NULL;
         ctx = NULL;
         meta.set(basehelper.queryOutputMeta());
@@ -1014,7 +1015,7 @@ public:
                 factory->noteProcessed(0, processed);
             factory->mergeActivityStats(stats, totalCycles, localCycles);
         }
-        if (ctx)
+        if (ctx && factory)
         {
             if (processed)
                 ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed, 0);
@@ -1714,7 +1715,7 @@ public:
         {
             if (factory && !debugging)
                 factory->noteProcessed(0, processed);
-            if (ctx)
+            if (ctx && factory)
                 ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed, strands.ordinality());
             processed = 0;  // To avoid reprocessing in base destructor
         }
@@ -3146,8 +3147,6 @@ public:
     virtual const void *getMessageHeader(unsigned &length) const
     {
         throwUnexpected(); // should never get called - I don't have a header available
-        length = 0;
-        return NULL;
     }
 
     virtual const void *getMessageMetadata(unsigned &length) const
@@ -4246,8 +4245,7 @@ public:
         }
         if (ctx->queryDebugContext() && ctx->queryDebugContext()->getExecuteSequentially())
             deferredStart = true;
-        if (ctx)
-            timeActivities = ctx->queryOptions().timeActivities;
+        timeActivities = ctx->queryOptions().timeActivities;
     }
 
     virtual void onStart(unsigned _parentExtractSize, const byte * _parentExtract)
@@ -5871,11 +5869,11 @@ class CRoxieServerStrandedInlineTableActivity : public CRoxieServerStrandedActiv
     protected:
         IHThorInlineTableArg &helper;
         unsigned whichStrand;
-        unsigned numStrands;
+        unsigned numStrands = 0;
         __uint64 sectionSize;
-        __uint64 curRow;
-        __uint64 sectionMaxRows;
-        __uint64 maxRows;
+        __uint64 curRow = 0;
+        __uint64 sectionMaxRows = 0;
+        __uint64 maxRows = 0;
         bool isOrdered;
         bool eosPending;
 
@@ -14325,7 +14323,10 @@ class CRoxieServerPrefetchProjectActivity : public CRoxieServerActivity, impleme
                 recordCount = _recordCount;
             }
             else
+            {
                 ReleaseRoxieRow(_in);
+                recordCount = 0;
+            }
         }
         OwnedConstRoxieRow in;
         unsigned __int64 recordCount;
@@ -18293,8 +18294,8 @@ private:
     protected:
         __uint64 *table;
         ConstPointerArray rowtable;
-        mutable unsigned currentMatch;
-        mutable unsigned matchCount;
+        mutable unsigned currentMatch = 0;
+        mutable unsigned matchCount = 0;
     };
 
     IHThorHashJoinArg &helper;
@@ -22743,11 +22744,11 @@ class CRoxieServerIndexReadActivity : public CRoxieServerIndexReadBaseActivity, 
 {
 protected:
     IHThorCompoundReadExtra & readHelper;
-    ISteppingMeta *rawMeta;
+    ISteppingMeta *rawMeta = nullptr;
     CSteppingMeta steppingMeta;
-    unsigned * seekSizes;
+    unsigned * seekSizes = nullptr;
     bool optimizeSteppedPostFilter;
-    ISteppingMeta * projectedMeta;
+    ISteppingMeta * projectedMeta = nullptr;
     unsigned maxSeekLookahead;
 
 public:
@@ -24147,7 +24148,7 @@ public:
     virtual void onLimitExceeded(bool isKeyed)
     {
         if (traceLevel > 4)
-            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);DBGLOG("%d  activityid = %d", __LINE__, activityId);
+            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
         throwUnexpected();
     }
 
@@ -27843,11 +27844,13 @@ protected:
                     if (!next)
                     {
                         ASSERT(repeats==0);
-                        ASSERT(output[count++] == NULL);
+                        ASSERT(output[count] == NULL);
+                        count++;
                         next = outStream->nextRow();
                         if (!next)
                         {
-                            ASSERT(output[count++] == NULL);
+                            ASSERT(output[count] == NULL);
+                            count++;
                             break;
                         }
                     }

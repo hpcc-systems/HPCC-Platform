@@ -3143,6 +3143,9 @@ IHqlExpression * ThorHqlTransformer::normalizeScalarAggregate(IHqlExpression * e
 IHqlExpression * ThorHqlTransformer::normalizeSelect(IHqlExpression * expr)
 {
     return NULL;
+
+#if 0
+    //Not used at the moment - for reasons see the comments below.
     /*
     The idea of this code is to convert a.b.c into normalize(a.b, a.b.c) if a.b is an out-of scope dataset
     However the following isn't good enough since the fields from a.b also need to be accessible.  We would
@@ -3178,6 +3181,7 @@ IHqlExpression * ThorHqlTransformer::normalizeSelect(IHqlExpression * expr)
     args.append(*createAttribute(_internal_Atom));
 
     return createDataset(no_normalize, args);
+#endif
 }
 
 
@@ -9365,6 +9369,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
         {
             return QuickHqlTransformer::createTransformedBody(expr);
         }
+        break;
     case no_output:
         //would this be a good idea for output to file?  output to pipe?
         if (false)
@@ -10426,6 +10431,10 @@ IHqlExpression * AnnotationTransformInfo::cloneAnnotations(IHqlExpression * newB
         return LINK(newBody);
 
     return annotations.item(0).cloneAllAnnotations(newBody);
+
+#if 0
+    //This code is not currently used - saved for future reference
+
     LinkedHqlExpr ret = newBody;
 
 #if 1
@@ -10446,6 +10455,7 @@ IHqlExpression * AnnotationTransformInfo::cloneAnnotations(IHqlExpression * newB
 #endif
 
     return ret.getClear();
+#endif
 }
 
 void AnnotationTransformInfo::noteAnnotation(IHqlExpression * annotation)

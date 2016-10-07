@@ -303,13 +303,19 @@ public:
     IMPLEMENT_IINTERFACE;
     virtual IScheduleReaderIterator * getIterator(char const * eventName, char const * eventText)
     {
+        Owned<IPropertyTree> safeScheduleBranch;
+        {
+            CriticalBlock block(treeCrit);
+            safeScheduleBranch.set(scheduleBranch);
+        }
+
         if(eventName)
         {
             StringBuffer xpath;
             ncnameEscape(eventName, xpath);
             StringBuffer childPath;
             childPath.append(rootPath).append('/').append(xpath.str());
-            Owned<IPropertyTree> nameBranch(scheduleBranch->getPropTree(xpath.str()));
+            Owned<IPropertyTree> nameBranch(safeScheduleBranch->getPropTree(xpath.str()));
             if(!nameBranch)
                 return new CScheduleNullEventNameIterator();
             if(eventText)
@@ -328,7 +334,7 @@ public:
         }
         else
         {
-            return new CScheduleEventNameIterator(scheduleBranch.getLink(), rootPath.str(), LINK(this));
+            return new CScheduleEventNameIterator(safeScheduleBranch.getClear(), rootPath.str(), LINK(this));
         }
     }
 
@@ -338,7 +344,11 @@ protected:
         Owned<IRemoteConnection> connection = querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_READ | RTM_CREATE_QUERY, connectionTimeout);
         Owned<IPropertyTree> root(connection->queryRoot()->getBranch("."));
         if(root)
-            scheduleBranch.setown(createPTreeFromIPT(root));
+        {
+            Owned<IPropertyTree> cloned = createPTreeFromIPT(root);
+            CriticalBlock block(treeCrit);
+            scheduleBranch.setown(cloned.getClear());
+        }
         if(subscribeAfter)
             subscribe(rootPath.str());
     }
@@ -346,6 +356,7 @@ protected:
 private:
     StringAttr serverName;
     StringBuffer rootPath;
+    CriticalSection treeCrit;
     Owned<IPropertyTree> scheduleBranch;
 };
 
@@ -362,13 +373,19 @@ public:
     IMPLEMENT_IINTERFACE;
     virtual IScheduleReaderIterator * getIterator(char const * _eventName, char const * eventText)
     {
-        if((!nameBranch) || (_eventName && (strcmp(_eventName, eventName.get())!=0)))
+        Owned<IPropertyTree> safeNameBranch;
+        {
+            CriticalBlock block(treeCrit);
+            safeNameBranch.set(nameBranch);
+        }
+
+        if((!safeNameBranch) || (_eventName && (strcmp(_eventName, eventName.get())!=0)))
             return new CScheduleNullEventNameIterator();
         if(eventText)
         {
             StringBuffer xpath;
             ncnameEscape(eventText, xpath);
-            Owned<IPropertyTree> textBranch(nameBranch->getPropTree(xpath.str()));
+            Owned<IPropertyTree> textBranch(safeNameBranch->getPropTree(xpath.str()));
             if(!textBranch)
                 return new CScheduleNullEventNameIterator();
             StringBuffer childPath;
@@ -377,7 +394,7 @@ public:
         }
         else
         {
-            return new CScheduleSingleEventNameIterator(eventName.get(), nameBranch.getLink(), fullPath.str(), LINK(this));
+            return new CScheduleSingleEventNameIterator(eventName.get(), safeNameBranch.getLink(), fullPath.str(), LINK(this));
         }
     }
 
@@ -387,7 +404,11 @@ protected:
         Owned<IRemoteConnection> connection = querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_READ | RTM_CREATE_QUERY, connectionTimeout);
         Owned<IPropertyTree> root(connection->queryRoot()->getBranch(xpath.str()));
         if(root)
-            nameBranch.setown(createPTreeFromIPT(root));
+        {
+            Owned<IPropertyTree> cloned = createPTreeFromIPT(root);
+            CriticalBlock block(treeCrit);
+            nameBranch.setown(cloned.getClear());
+        }
         if(subscribeAfter)
             subscribe(fullPath.str());
     }
@@ -399,6 +420,7 @@ private:
     StringBuffer xpath; // name
     StringBuffer fullPath; // /Schedule/server/name
     Owned<IPropertyTree> nameBranch;
+    CriticalSection treeCrit;
 };
 
 IScheduleReader * getScheduleReader(char const * serverName, char const * eventName)

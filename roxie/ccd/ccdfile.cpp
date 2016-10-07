@@ -2686,6 +2686,7 @@ protected:
         remotes.append("test.remote");
 
         int f = open("test.remote", _O_WRONLY | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
+        CPPUNIT_ASSERT(f >= 0);
         int val = 1;
         int wrote = write(f, &val, sizeof(int));
         CPPUNIT_ASSERT(wrote==sizeof(int));

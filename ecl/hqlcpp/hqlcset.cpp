@@ -1179,7 +1179,7 @@ void ListSetCursor::buildIterateClass(BuildCtx & ctx, CHqlBoundExpr & tgt)
     translator.buildSimpleExpr(ctx, expr, boundList);
 
     UNIMPLEMENTED;
-    ctx.addQuotedLiteral("create fixed iterate (bound.length, bound.getAddress()");
+    //ctx.addQuotedLiteral("create fixed iterate (bound.length, bound.getAddress()");
 }
 
 void ListSetCursor::gatherSelect(BuildCtx & ctx, IHqlExpression * indexExpr, CHqlBoundExpr & value, HqlExprAttr & cond)
@@ -1237,14 +1237,7 @@ void ListSetCursor::buildExprSelect(BuildCtx & ctx, IHqlExpression * indexExpr, 
     HqlExprAttr cond;
     gatherSelect(ctx, indexExpr, value, cond);
     if (cond)
-    {
         translator.buildTempExpr(ctx, indexExpr, tgt);
-        return;
-        CHqlBoundTarget tempTarget;
-        translator.createTempFor(ctx, indexExpr, tempTarget);
-        buildAssignSelect(ctx, tempTarget, indexExpr);
-        tgt.setFromTarget(tempTarget);
-    }
     else
         tgt.set(value);
 }
@@ -1380,8 +1373,6 @@ void GeneralSetCursor::buildIterateLoop(BuildCtx & ctx, CHqlBoundExpr & curBound
 void GeneralSetCursor::buildIterateClass(BuildCtx & ctx, CHqlBoundExpr & tgt)
 {
     UNIMPLEMENTED;
-    HqlExprAttr row;
-    dsCursor->buildIterateClass(ctx, tgt.expr, row);
 }
 
 IHqlExpression * GeneralSetCursor::createDatasetSelect(IHqlExpression * indexExpr)

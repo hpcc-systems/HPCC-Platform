@@ -62,8 +62,8 @@ public:
         CThorKeyArray sample(*this, rowif,helper->querySerialize(),helper->queryCompare(),helper->queryCompareKey(),helper->queryCompareRowKey());
 
         unsigned n = container.queryJob().querySlaves();
-        mptag_t *replytags = new mptag_t[n];
-        mptag_t *intertags = new mptag_t[n];
+        OwnedMalloc<mptag_t> replytags(n);
+        OwnedMalloc<mptag_t> intertags(n);
         unsigned i;
         for (i=0;i<n;i++) {
             replytags[i] = TAG_NULL;
@@ -110,13 +110,9 @@ public:
         
         }
         catch (IException *e) {
-            delete [] replytags;
-            delete [] intertags;
             ActPrintLog(e, "MERGE");
             throw;
         }
-        delete [] replytags;
-        delete [] intertags;
         ActPrintLog("GlobalMergeActivityMaster::process exit");
     }
     virtual void abort()

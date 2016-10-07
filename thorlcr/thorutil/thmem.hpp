@@ -270,7 +270,7 @@ class graph_decl CThorExpandingRowArray : public CSimpleInterface
     void initCommon();
     bool resizeRowTable(void **&_rows, rowidx_t requiredRows, bool copy, unsigned maxSpillCost, memsize_t &newCapacity, const char *errMsg);
     bool _resize(rowidx_t requiredRows, unsigned maxSpillCost);
-    const void *_allocateRowTable(rowidx_t num, unsigned maxSpillCost);
+    const void **_allocateRowTable(rowidx_t num, unsigned maxSpillCost);
 
 // for direct access by another CThorExpandingRowArray only
     inline void transferRowsCopy(const void **outRows, bool takeOwnership);
@@ -291,8 +291,8 @@ protected:
     rowidx_t numRows;  // High water mark of rows added
     unsigned defaultMaxSpillCost = roxiemem::SpillAllCost;
 
-    const void *allocateRowTable(rowidx_t num);
-    const void *allocateRowTable(rowidx_t num, unsigned maxSpillCost);
+    const void **allocateRowTable(rowidx_t num);
+    const void **allocateRowTable(rowidx_t num, unsigned maxSpillCost);
     rowidx_t getNewSize(rowidx_t requiredRows);
     void serialize(IRowSerializerTarget &out);
     void doSort(rowidx_t n, void **const rows, ICompare &compare, unsigned maxCores);

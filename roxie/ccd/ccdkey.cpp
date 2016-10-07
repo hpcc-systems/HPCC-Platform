@@ -1869,11 +1869,7 @@ public:
                 }
                 ret = GETROW(midx++);
             }
-            if (!ret)
-            {
-                DBGLOG("ERROR: nextMatch found NULL pointer");
-                DBGLOG("midx = %d, lidx=%d, numptrs=%d", midx, lidx, numPtrs);
-            }
+            assertex(ret);
             if ((!postFiltering) || matches(ret, postFilter))
                 return ret;
         }
@@ -2112,6 +2108,7 @@ protected:
 
         Owned<IInMemoryIndexCursor> dd = indexes.createCursor();
         InMemoryIndexCursor *d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
+        ASSERT(d != nullptr);
         dd->append(createSingleKeySegmentMonitor(false, 4, sizeof(unsigned), &searchval));
         dd->append(createSingleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval));
         ASSERT(d->postFilter.length()==2);
@@ -2126,6 +2123,7 @@ protected:
 
         dd.setown(indexes.createCursor());
         d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
+        ASSERT(d != nullptr);
         dd->append(createSingleKeySegmentMonitor(false, 16, sizeof(unsigned), &searchval));
         dd->append(createSingleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval));
         ASSERT(d->postFilter.length()==2);
@@ -2140,6 +2138,7 @@ protected:
     
         dd.setown(indexes.createCursor());
         d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
+        ASSERT(d != nullptr);
         dd->append(createSingleKeySegmentMonitor(false, 12, sizeof(unsigned), &searchval));
         dd->append(createSingleKeySegmentMonitor(false, 16, sizeof(unsigned), &searchval));
         dd->append(createSingleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval));

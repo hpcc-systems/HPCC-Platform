@@ -8933,7 +8933,7 @@ simpleDataSet
                             IHqlExpression * arg = $7.getExpr();
                             if (isStringType(arg->queryType()))
                             {
-                                arg = createAttribute(nameAtom, arg);
+                                arg = createExprAttribute(nameAtom, arg);
                                 arg = createComma(createExprAttribute(sequenceAtom, createConstant(0)), arg);
                             }
                             else

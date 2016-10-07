@@ -49,7 +49,6 @@ include_directories (
          ./../../../system/include 
          ./../../../common/workunit 
          ./../../../common/wuwebview
-         ./../../../roxie/roxieclient 
          ./../../../common/fileview2 
          ./../../../dali/base 
     )

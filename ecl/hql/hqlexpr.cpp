@@ -3763,11 +3763,12 @@ IHqlExpression * CHqlExpression::commonUpExpression()
         if (!static_cast<CHqlExpression *>(match)->isAlive())
         {
             exprCache->replace(*this);
-#ifndef GATHER_COMMON_STATS
-            return this;
-#endif
+#ifdef GATHER_COMMON_STATS
             Link();
             match = this;
+#else
+            return this;
+#endif
         }
     }
 

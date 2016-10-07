@@ -2393,7 +2393,10 @@ public:
             }
         }
         else
+        {
             assertex(selfTestMode);
+            header = nullptr;
+        }
     }
     virtual void beforeDispose()
     {

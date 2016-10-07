@@ -1728,6 +1728,8 @@ public:
                 }
                 rc = cass_collection_append_bytes(*collection, (const cass_byte_t*) inData, thisSize);
                 break;
+            default:
+                fail("Unsupported parameter type");
             }
             checkBind(rc, name);
             inData += thisSize;

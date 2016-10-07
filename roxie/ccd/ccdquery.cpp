@@ -1049,6 +1049,7 @@ public:
         : id(_id), package(_package), dll(_dll), channelNo(_channelNo), hashValue(_hashValue), sharedOnceContext(_sharedOnceContext), dynamic(_dynamic)
     {
         package.Link();
+        targetClusterType = RoxieCluster;
         isSuspended = false;
         isLoadFailed = false;
         libraryInterfaceHash = 0;
@@ -1466,7 +1467,7 @@ public:
         }
         else
             result = package.queryEnv(name);
-        if (!result)
+        if (!result && name)
             result = getenv(name);
         return strdup(result ? result : defaultValue);
     }
