@@ -709,19 +709,15 @@ int main(int argc, char* argv[])
 
         INode *nodes[1000];
 
-        bool has_argfile = false;
-        StringBuffer argfile;
+        const char * argfile = nullptr;
         if (argc > 3)
         {
             if (strcmp(argv[2], "-f") == 0)
-            {
-                has_argfile = true;
-                argfile.append(argv[3]);
-            }
+                argfile = argv[3];
         }
 
         int i = 1;
-        if (has_argfile)
+        if (argfile)
         {
             char hoststr[256] = { "" };
             FILE *fp = fopen(argfile, "r");

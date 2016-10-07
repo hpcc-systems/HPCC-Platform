@@ -491,40 +491,28 @@ bool readECLWUCurrentJob(const char* curjob, const char* clusterName, const char
     wuidStr.clear().append(eptr - bptr, bptr);
 
     //graph number
-    char graph[32];
     bptr = eptr + 1;
     eptr = strchr(bptr, ',');
     if(!eptr)
         return false;
 
-    len = eptr - bptr;
     if (bptr[0] == 'g' && len > 5)
-    {
         bptr += 5;
-        len = eptr - bptr;
-    }
 
-    strncpy(graph, bptr, len);
-    graph[len] = 0;
     graphStr.clear().append(eptr - bptr, bptr);
 
     if (!stricmp(action, "start") || !stricmp(action, "stop"))
         return true;
 
     //subgraph number
-    char subgraph[32];
+    StringBuffer subgraph;
     bptr = eptr + 1;
     eptr = strchr(bptr, ',');
-    if(!eptr)
-    {
-        strcpy(subgraph, bptr);
-    }
+    if (!eptr)
+        subgraph.append(bptr);
     else
-    {
-        len = eptr - bptr;
-        strncpy(subgraph, bptr, len);
-        subgraph[len] = 0;
-    }
+        subgraph.append(eptr - bptr, bptr);
+
     subGraphStr.clear().append(subgraph);
 
     return true;
