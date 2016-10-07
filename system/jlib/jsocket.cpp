@@ -449,6 +449,9 @@ public:
     int         pre_connect(bool block);
     int         post_connect();
 
+    void        setTraceName(const char * prefix, const char * name);
+    void        setTraceName();
+
     CSocket(const SocketEndpoint &_ep,SOCKETMODE smode,const char *name);
     CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned);
 
@@ -1263,12 +1266,7 @@ bool CSocket::connect_timeout( unsigned timeout, bool noexception)
                 STATS.connects++;
                 STATS.connecttime+=usTick()-startt;
 #ifdef _TRACE
-                char peer[256];
-                peer[0] = 'C';
-                peer[1] = '!';
-                strcpy(peer+2,hostname?hostname:"(NULL)");
-                free(tracename);
-                tracename = strdup(peer);
+                setTraceName();
 #endif              
                 return true;
             }
@@ -1422,12 +1420,7 @@ void CSocket::connect_wait(unsigned timems)
                 STATS.connects++;
                 STATS.connecttime+=usTick()-startt;
 #ifdef _TRACE
-                char peer[256];
-                peer[0] = 'C';
-                peer[1] = '!';
-                strcpy(peer+2,hostname?hostname:"(NULL)");
-                free(tracename);
-                tracename = strdup(peer);
+                setTraceName();
 #endif              
                 return;
             }
@@ -1442,6 +1435,24 @@ void CSocket::connect_wait(unsigned timems)
     THROWJSOCKEXCEPTION(JSOCKERR_connection_failed);
 }
 
+void CSocket::setTraceName(const char * prefix, const char * name)
+{
+#ifdef _TRACE
+    StringBuffer peer;
+    peer.append(prefix);
+    peer.append(name?name:"(NULL)");
+
+    free(tracename);
+    tracename = strdup(peer);
+#endif
+}
+
+void CSocket::setTraceName()
+{
+#ifdef _TRACE
+    setTraceName("C!", hostname);
+#endif
+}
 
 
 ISocket*  ISocket::connect_wait( const SocketEndpoint &ep, unsigned timems)
@@ -1479,12 +1490,7 @@ void CSocket::udpconnect()
     nagling = false; // means nothing for UDP
     state = ss_open;
 #ifdef _TRACE
-    char peer[256];
-    peer[0] = 'C';
-    peer[1] = '!';
-    strcpy(peer+2,hostname?hostname:"(NULL)");
-    free(tracename);
-    tracename = strdup(peer);
+    setTraceName();
 #endif
 
 }
@@ -2492,7 +2498,9 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
     hostport = ep.port;
     hostname = NULL;
     mcastreq = NULL;
+#ifdef _TRACE
     tracename = NULL;
+#endif
     StringBuffer tmp;
     if ((smode==sm_multicast_server)&&(name&&*name)) {
         mcastreq = new MCASTREQ(name);
@@ -2509,17 +2517,16 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
     in_accept = false;
     accept_cancel_state = accept_not_cancelled;
 #ifdef _TRACE
-    char peer[256];
-    peer[0] = name?'T':'S';
-    peer[1] = '>';
     if (name)
-        strcpy(peer+2,name);
-    else {
+        setTraceName("T>", name);
+    else
+    {
+        StringBuffer hostname;
         SocketEndpoint self;
         self.setLocalHost(0);
-        self.getUrlStr(peer+2,sizeof(peer)-2);
+        self.getUrlStr(hostname);
+        setTraceName("S>", hostname);
     }
-    tracename = strdup(peer);
 #endif
 }
 
@@ -2536,7 +2543,9 @@ CSocket::CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned)
     hostname = NULL;
     mcastreq = NULL;
     hostport = 0;
+#ifdef _TRACE
     tracename = NULL;
+#endif
     state = ss_open;
     sockmode = smode;
     owned = _owned;
@@ -2547,10 +2556,8 @@ CSocket::CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned)
     //set_linger(DEFAULT_LINGER_TIME); -- experiment with removing this as closesocket should still endevour to send outstanding data
 #ifdef _TRACE
     char peer[256];
-    peer[0] = 'A';
-    peer[1] = '!';
-    peer_name(peer+2,sizeof(peer)-2);
-    tracename = strdup(peer);
+    peer_name(peer,sizeof(peer));
+    setTraceName("A!", peer);
 #endif
 }
 
@@ -6113,12 +6120,7 @@ class CSocketConnectWait: implements ISocketConnectWait, public CInterface
         STATS.connects++;
         STATS.connecttime+=usTick()-startt;
 #ifdef _TRACE
-        char peer[256];
-        peer[0] = 'C';
-        peer[1] = '!';
-        strcpy(peer+2,sock->hostname?sock->hostname:"(NULL)");
-        free(sock->tracename);
-        sock->tracename = strdup(peer);
+        sock->setTraceName();
 #endif              
     }
 

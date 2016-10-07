@@ -710,13 +710,13 @@ int main(int argc, char* argv[])
         INode *nodes[1000];
 
         bool has_argfile = false;
-        char argfile[256] = { "" };
+        StringBuffer argfile;
         if (argc > 3)
         {
             if (strcmp(argv[2], "-f") == 0)
             {
                 has_argfile = true;
-                strcpy(argfile, argv[3]);
+                argfile.append(argv[3]);
             }
         }
 
