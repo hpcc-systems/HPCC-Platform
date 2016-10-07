@@ -348,24 +348,30 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
     struct stat stat_buf;
     VStringBuffer sectname("%s_%u", type, id);
     int fd = open(filename, O_RDONLY);
-    if (fd == -1 || fstat(fd, &stat_buf) == -1)
+    if (fd == -1)
     {
         DBGLOG("Failed to load library %s: %d", filename, errno);
         return false;
     }
 
     bool ok = false;
-    __uint64 size = stat_buf.st_size;
-    const byte *start_addr = (const byte *) mmap(0, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
-    if (start_addr == MAP_FAILED)
+    if (fstat(fd, &stat_buf) != -1)
     {
-        DBGLOG("Failed to load library %s: %d", filename, errno);
+        __uint64 size = stat_buf.st_size;
+        const byte *start_addr = (const byte *) mmap(0, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
+        if (start_addr == MAP_FAILED)
+        {
+            DBGLOG("Failed to load library %s: %d", filename, errno);
+        }
+        else
+        {
+            ok = getResourceFromMappedFile(filename, start_addr, data, type, id);
+            munmap((void *)start_addr, size);
+        }
     }
     else
-    {
-        ok = getResourceFromMappedFile(filename, start_addr, data, type, id);
-        munmap((void *)start_addr, size);
-    }
+        DBGLOG("Failed to load library %s: %d", filename, errno);
+
     close(fd);
     return ok;
 #endif
