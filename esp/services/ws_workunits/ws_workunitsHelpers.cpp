@@ -1914,7 +1914,10 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
     }
 
     if (buf.length() < 1)
-        buf.append(47, "(No logfile entries found for this workunit)");
+    {
+        const char * msg = "(No logfile entries found for this workunit)";
+        buf.append(strlen(msg), msg);
+    }
 }
 
 void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf)
