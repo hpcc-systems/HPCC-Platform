@@ -156,6 +156,8 @@ void CDateTime::getToUtcTm(struct tm & ts) const
     ts.tm_min = utc_min;
     ts.tm_sec = utc_sec;
     ts.tm_isdst = 0;
+    ts.tm_wday = 0;
+    ts.tm_yday = 0;
 }
 
 void CDateTime::deserialize(MemoryBuffer &src)

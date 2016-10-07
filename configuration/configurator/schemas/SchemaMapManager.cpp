@@ -415,7 +415,7 @@ void CSchemaMapManager::removeMapOfXPathToElementArray(const char* pXPath)
     assert(pXPath != nullptr && *pXPath != 0);
     assert(m_pElementArrayPtrsMap->find(pXPath) != nullptr);
 
-    this-m_pElementArrayPtrsMap->remove(pXPath);
+    this->m_pElementArrayPtrsMap->remove(pXPath);
 }
 
 CElementArray* CSchemaMapManager::getElementArrayFromXPath(const char *pXPath)

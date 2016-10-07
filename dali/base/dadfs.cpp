@@ -6455,7 +6455,7 @@ public:
         CriticalBlock block (sect);
         ForEachItemIn(i,subfiles) {
             IDistributedFile &f=subfiles.item(i);
-            if (set)
+            if (!set)
                 set = f.getAccessedTime(dt);
             else {
                 CDateTime cmp;
@@ -6465,7 +6465,7 @@ public:
                 }
             }
         }
-        return false;
+        return set;
     }
 
     void setAccessedTime(const CDateTime &dt)
@@ -6985,7 +6985,7 @@ public:
             logicalgroupname = gname.str();
         }
         StringAttr groupdir;
-        GroupType type;
+        GroupType type = grp_unknown;
         bool cached = false;
         unsigned timeNow = msTick();
         {
@@ -9155,17 +9155,17 @@ class CInitGroups
     }
     bool clusterGroupCompare(IPropertyTree *newClusterGroup, IPropertyTree *oldClusterGroup)
     {
-        if (!newClusterGroup && oldClusterGroup)
-            return false;
-        else if (!oldClusterGroup && newClusterGroup)
-            return false;
-        if (!newClusterGroup) // both null
-            return true;
+        if (!newClusterGroup && !oldClusterGroup)
+            return true; // i.e. both missing, so match
+        else if (!newClusterGroup || !oldClusterGroup)
+            return false; // i.e. one of them (not both) missing, so mismatch
+        // else // neither missing
+
         // see if identical
-        const char *oldKind = oldClusterGroup?oldClusterGroup->queryProp("@kind"):NULL;
-        const char *oldDir = oldClusterGroup?oldClusterGroup->queryProp("@dir"):NULL;
-        const char *newKind = newClusterGroup?newClusterGroup->queryProp("@kind"):NULL;
-        const char *newDir = newClusterGroup?newClusterGroup->queryProp("@dir"):NULL;
+        const char *oldKind = oldClusterGroup->queryProp("@kind");
+        const char *oldDir = oldClusterGroup->queryProp("@dir");
+        const char *newKind = newClusterGroup->queryProp("@kind");
+        const char *newDir = newClusterGroup->queryProp("@dir");
         if (oldKind) {
             if (newKind) {
                 if (!streq(newKind, newKind))
@@ -9431,7 +9431,7 @@ class CInitGroups
         {
             if (force)
             {
-                VStringBuffer msg("Forcing new group layout for %s [ matched active = %s, matched old environment = %s ]", gname.str(), matchExisting?"true":"false", matchOldEnv?"true":"false");
+                VStringBuffer msg("Forcing new group layout for %s [ matched active = false, matched old environment = %s ]", gname.str(), matchOldEnv?"true":"false");
                 WARNLOG("%s", msg.str());
                 messages.append(msg).newline();
                 matchOldEnv = false;

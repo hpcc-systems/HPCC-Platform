@@ -367,7 +367,7 @@ bool CXSDBuiltInDataType::checkConstraint(const char *pValue) const
             const char key[] = "\n\r\t";
             if (strpbrk(pValue, key) != nullptr)
                 return false;
-            if (pValue[0] == ' ' || pValue[strlen(pValue)-1] == ' ' || strstr(pValue, "  ")); // leading/trailing space multiple spaces
+            if (pValue[0] == ' ' || pValue[strlen(pValue)-1] == ' ' || strstr(pValue, "  ")) // leading/trailing space multiple spaces
                 return false;
         }
         else if(XSD_DT_DATE == eNodeType)

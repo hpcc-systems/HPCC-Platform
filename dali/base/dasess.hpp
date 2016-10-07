@@ -123,8 +123,8 @@ interface ISessionManager: extends IInterface
 #define DALI_LDAP_READ_WANTED               (2)
 #define DALI_LDAP_WRITE_WANTED              (4)
 
-#define HASREADPERMISSION(p)        (((p) & (NewSecAccess_Access & NewSecAccess_Read)) == (NewSecAccess_Access & NewSecAccess_Read))
-#define HASWRITEPERMISSION(p)       (((p) & (NewSecAccess_Access & NewSecAccess_Write)) == (NewSecAccess_Access & NewSecAccess_Write))
+#define HASREADPERMISSION(p)        (((p) & (NewSecAccess_Access | NewSecAccess_Read)) == (NewSecAccess_Access | NewSecAccess_Read))
+#define HASWRITEPERMISSION(p)       (((p) & (NewSecAccess_Access | NewSecAccess_Write)) == (NewSecAccess_Access | NewSecAccess_Write))
 
 
 extern da_decl ISessionManager &querySessionManager();

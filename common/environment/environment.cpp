@@ -1556,7 +1556,7 @@ void CLocalEnvironment::clearCache()
     if (conn)
     {
         p.clear();
-        unsigned mode;
+        unsigned mode = 0;
         try
         {
             conn->reload();
