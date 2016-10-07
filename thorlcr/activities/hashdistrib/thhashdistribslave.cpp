@@ -2449,7 +2449,7 @@ public:
         return true;
     }
     void init(rowidx_t sz);
-    const void *allocateNewTable(unsigned maxSpillCost)
+    const void **allocateNewTable(unsigned maxSpillCost)
     {
         rowidx_t newMaxRows = maxRows+HASHDEDUP_HT_INC_SIZE;
         return allocateRowTable(newMaxRows, maxSpillCost);

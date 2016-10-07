@@ -469,12 +469,12 @@ public:
 
 //====
 
-const void *CThorExpandingRowArray::allocateRowTable(rowidx_t num)
+const void **CThorExpandingRowArray::allocateRowTable(rowidx_t num)
 {
     return _allocateRowTable(num, defaultMaxSpillCost);
 }
 
-const void *CThorExpandingRowArray::allocateRowTable(rowidx_t num, unsigned maxSpillCost)
+const void **CThorExpandingRowArray::allocateRowTable(rowidx_t num, unsigned maxSpillCost)
 {
     return _allocateRowTable(num, maxSpillCost);
 }
@@ -567,11 +567,11 @@ void CThorExpandingRowArray::doSort(rowidx_t n, void **const rows, ICompare &com
         parqsortvec((void **const)rows, n, compare, maxCores);
 }
 
-inline const void *CThorExpandingRowArray::_allocateRowTable(rowidx_t num, unsigned maxSpillCost)
+inline const void **CThorExpandingRowArray::_allocateRowTable(rowidx_t num, unsigned maxSpillCost)
 {
     try
     {
-        return rowManager->allocate(num * sizeof(void*), activity.queryContainer().queryId(), maxSpillCost);
+        return (const void **)rowManager->allocate(num * sizeof(void*), activity.queryContainer().queryId(), maxSpillCost);
     }
     catch (IException * e)
     {
