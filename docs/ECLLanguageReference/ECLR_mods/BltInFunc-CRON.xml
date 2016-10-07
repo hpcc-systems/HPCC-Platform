@@ -86,7 +86,7 @@
               <entry><emphasis>dow</emphasis></entry>
 
               <entry>An integer value for the day of the week. Valid values
-              are from 0 to 7 (where both 0 and 7 represent Sunday).</entry>
+              are from 0 to 6 (where 0 represents Sunday).</entry>
             </row>
           </tbody>
         </tgroup>
@@ -96,7 +96,7 @@
     is replaced by an asterisk (*). You may define ranges of times using a
     dash (-), lists using a comma (,), and ‘once every n’ using a slash (/).
     For example, 6-18/3 in the hour field will fire the timer every three
-    hours between 6am and 6pm, and 0-6/3,18-23/3 will fire the timer every
+    hours between 6am and 6pm, and 18-21/3,0-6/3 will fire the timer every
     three hours between 6pm and 6am.</para>
 
     <para>Example:</para>
