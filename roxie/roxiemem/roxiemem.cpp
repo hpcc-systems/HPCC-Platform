@@ -6254,7 +6254,7 @@ protected:
         Semaphore & sem;
         const unsigned size;
         const unsigned numThreads;
-        volatile memsize_t final;
+        volatile memsize_t final = 0;
     };
     void testBitmapThreading(unsigned size, unsigned numThreads)
     {

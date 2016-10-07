@@ -605,6 +605,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             flow_socket->set_receive_buffer_size(udpFlowSocketsSize);
             size32_t actualSize = flow_socket->get_receive_buffer_size();
             DBGLOG("UdpReceiver: rcv_flow_socket created port=%d sockbuffsize=%d actual %d", flow_port, udpFlowSocketsSize, actualSize);
+            running = false;
         }
         
         ~receive_receive_flow() 
@@ -698,6 +699,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             receive_socket->set_receive_buffer_size(ip_buffer);
             size32_t actualSize = receive_socket->get_receive_buffer_size();
             DBGLOG("UdpReceiver: rcv_data_socket created port=%d requested sockbuffsize=%d actual sockbuffsize=%d", parent.data_port, ip_buffer, actualSize);
+            running = false;
         }
 
         virtual void start()
@@ -838,6 +840,8 @@ public:
         receive_flow = new receive_receive_flow(*this, server_flow_port);
         if (udpSnifferEnabled)
             sniffer = new receive_sniffer(*this, snif_port, multicast_ip, getNumNodes());
+        else
+            sniffer = nullptr;
 
         running = true;
         collatorThread.start();

@@ -108,6 +108,12 @@ queue_t::queue_t(unsigned int queue_s)
 queue_t::queue_t() 
 {
     signal_free_sl = 0;
+    queue_size = 0;
+    element_count = 0;
+    elements = nullptr;
+    active_buffers = 0;
+    first = 0;
+    last = 0;
 }
 
 queue_t::~queue_t() 

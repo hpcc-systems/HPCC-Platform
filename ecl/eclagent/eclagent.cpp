@@ -3762,7 +3762,6 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
     unsigned historySize;
     unsigned historyCapacity;
     unsigned nextHistorySlot;
-    unsigned childGraphId;
     
     mutable memsize_t proxyId; // MORE - do we need a critsec to protect too?
 
@@ -3859,11 +3858,6 @@ public:
     virtual memsize_t queryProxyId() const
     {
         return proxyId;
-    }
-
-    virtual unsigned queryChildGraphId() const
-    {
-        return childGraphId;
     }
 
     virtual void resetEOF() 

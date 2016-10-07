@@ -79,16 +79,16 @@ private:
 
     QueueOf<MemoryBuffer, false> outputQ;
 
-    char *inputBuffer;
-    unsigned inputLen;
-    unsigned curInput;
+    char *inputBuffer = nullptr;;
+    unsigned inputLen = 0;
+    unsigned curInput = 0;
 
-    unsigned bytesPerQuery;
-    unsigned recordsPerBlock;
+    unsigned bytesPerQuery = 0;
+    unsigned recordsPerBlock = 0;
 
 public:
-    unsigned recordsRead;
-    unsigned recordsWritten;
+    unsigned recordsRead = 0;
+    unsigned recordsWritten = 0;
 
     RoxieThread(const char *_query, const char *_resultName) : query(_query), resultName(_resultName)
     {
@@ -101,9 +101,7 @@ public:
     void sendQuery()
     {
         MemoryBuffer sendBuffer;
-
         unsigned queryLen = query.length();
-
         unsigned revQueryLen = queryLen;
         _WINREV(revQueryLen);
         sendBuffer.append(revQueryLen);

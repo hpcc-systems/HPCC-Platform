@@ -370,6 +370,7 @@ public:
         retryDataCount = 0;
         retryDataIdx = 0;
         retryData = NULL;
+        maxRetryData = 0;
     }
 
     void init(unsigned destNodeIndex, unsigned _numQueues, unsigned queueSize, unsigned _maxRetryData, unsigned sendFlowPort, unsigned dataPort, bool isLocal)
@@ -1028,7 +1029,6 @@ class CMessagePacker : implements IMessagePacker, public CInterface
     unsigned mem_buffer_size;
     unsigned totalSize;
     bool            packed_request;
-    unsigned        requested_size;
     MemoryBuffer    metaInfo;
     bool            last_message_done;
     int             queue_number;
