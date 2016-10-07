@@ -3415,10 +3415,8 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     StringBuffer msg;
     msg.append("Unexpected operator '").append(getOpString(op)).append("' in: HqlCppTranslator::buildExpr(");
     toECL(expr, msg, true);
-//  expr->toString(msg);
     msg.append(")");
     throw MakeStringException(HQLERR_UnexpectedOperator, "%s", msg.str());
-    doBuildPureSubExpr(ctx, expr, tgt);
 }
 
 

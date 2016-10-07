@@ -2850,6 +2850,7 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
     {
     case type_transform:
         i = i->queryChildType();
+        //fallthrough
     case type_record:
     case type_row:
     {   
