@@ -400,7 +400,7 @@ interface IDistributedFile: extends IInterface
     virtual void validate() = 0;
 
     virtual IPropertyTree *queryHistory() const = 0;                         // DFile History records
-    virtual IPropertyTree *resetHistory(IPropertyTree *history=nullptr) = 0;
+    virtual void resetHistory() = 0;
 };
 
 

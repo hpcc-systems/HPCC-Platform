@@ -5027,12 +5027,14 @@ bool CWsDfuEx::onListHistory(IEspContext &context, IEspListHistoryRequest &req, 
 
         MemoryBuffer xmlmap;
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get());
-        IPropertyTree *history = file->queryHistory();
-        if (history)
-            history->serialize(xmlmap);
+        if (file)
+        {
+            IPropertyTree *history = file->queryHistory();
+            if (history)
+                history->serialize(xmlmap);
+        }
         else
-            // For old file which has not History
-            xmlmap.clear().append(0);
+            throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"CWsDfuEx::onListHistory: Could not find file '%s'.", req.getName());
 
         resp.setXmlmap(xmlmap);
     }
@@ -5063,15 +5065,20 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
 
         MemoryBuffer xmlmap;
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get());
-        IPropertyTree *history = file->queryHistory();
-        if (history)
-            history->serialize(xmlmap);
+        if (file)
+        {
+            IPropertyTree *history = file->queryHistory();
+            if (history)
+            {
+                history->serialize(xmlmap);
+                file->resetHistory();
+            }
+        }
         else
-            // For old file which has not History
-            xmlmap.clear().append(0);
+            throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"CWsDfuEx::onEraseHistory: Could not find file '%s'.", req.getName());
+
 
         resp.setXmlmap(xmlmap);
-        file->resetHistory(nullptr);
     }
     catch(IException* e)
     {

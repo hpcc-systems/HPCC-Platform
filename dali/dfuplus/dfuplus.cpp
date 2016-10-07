@@ -1459,8 +1459,8 @@ int CDfuPlusHelper::abort()
 int CDfuPlusHelper::listhistory()
 {
     const char* lfn = globals->queryProp("lfn");
-    if(lfn == NULL || *lfn == '\0')
-            throw MakeStringException(-1, "srcname not specified");
+    if (isEmptyString(lfn))
+        throw MakeStringException(-1, "srcname not specified");
 
     Owned<IClientListHistoryRequest> req = dfuclient->createListHistoryRequest();
     req->setName(lfn);
@@ -1468,7 +1468,7 @@ int CDfuPlusHelper::listhistory()
     Owned<IClientListHistoryResponse> resp = dfuclient->ListHistory(req);
 
     const IMultiException* excep = &resp->getExceptions();
-    if(excep != NULL && excep->ordinality() > 0)
+    if (excep != nullptr && excep->ordinality() > 0)
     {
         StringBuffer errmsg;
         excep->errorMessage(errmsg);
@@ -1482,12 +1482,12 @@ int CDfuPlusHelper::listhistory()
         ascii = 1,
         csv = 2,
         json = 3,
-    }out_t;
+    } out_t;
 
     out_t format;
 
     const char *formatPar = globals->queryProp("outformat");
-    if(formatPar == nullptr)
+    if (formatPar == nullptr)
         format = xml;
     else if (stricmp(formatPar, "csv") == 0)
         format=csv;
@@ -1503,23 +1503,18 @@ int CDfuPlusHelper::listhistory()
         return -1;
     }
 
-    MemoryBuffer tmp;
-    tmp.append(resp->getXmlmap());
-    if (0 == *tmp.toByteArray())
+    // The generated getXmlmap() returns with const Memory buffer reference
+    const MemoryBuffer &respMsg = resp->getXmlmap();
+    if (0 == respMsg.length())
     {
         error("%s doesn't have stored history!\n", lfn);
         return -2;
     }
 
-    Owned<IPropertyTree>    history;
-    history.setown(createPTree("History"));
-    history->deserialize(tmp);
-    if (!history->hasProp("Origin"))
-    {
-        error("%s doesn't have stored history!\n", lfn);
-        return -2;
-    }
-
+    Owned<IPropertyTree> history;
+    // Based on the missing createPTree( const MemoryBuffer &)
+    // need to cast from const MemeoryBuffer & to MemoryBuffer & to create PTree
+    history.setown(createPTree((MemoryBuffer &)respMsg));
     bool sorted = true;
 
     switch (format)
@@ -1536,22 +1531,23 @@ int CDfuPlusHelper::listhistory()
         {
             progress("\nHistory of %s:\n", lfn);
             unsigned index = 1;
+            StringBuffer asciiDump;
             Owned<IPropertyTreeIterator> historyIter = history->getElements("*");
             ForEach(*historyIter)
             {
-                info("%d", index++);
+                asciiDump.append(index++);
                 Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
                 ForEach(*attribIter)
                 {
-                    info(", ");
+                    asciiDump.append(", ");
                     const char *propName = attribIter->queryName();
-                    if (*propName == '@')
-                        propName++;
+                    propName++;
                     const char *propVal =  attribIter->queryValue();
-                    info("%s=%s",propName, propVal);
+                    asciiDump.append(propName).append("=").append(propVal);
                 }
-                info("\n");
+                asciiDump.append("\n");
             }
+            info("%s", asciiDump.str());
         }
         break;
 
@@ -1559,28 +1555,29 @@ int CDfuPlusHelper::listhistory()
         {
             // TODO We need more sophisticated method if the record structure change in the future
             bool showCsvHeader = globals->getPropBool("csvheader", true);
-            info("\n");
+            StringBuffer csvDump("\n");
             unsigned index = 1;
             Owned<IPropertyTreeIterator> historyIter = history->getElements("*");
             bool first = true;
             if (showCsvHeader)
             {
                 // Get header from the first record
-                (*historyIter).first();
-                Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
-                ForEach(*attribIter)
+                if (historyIter->first())
                 {
-                    if(!first)
-                        info(",");
-                    else
-                        first = false;
+                    Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
+                    ForEach(*attribIter)
+                    {
+                        if (!first)
+                            csvDump.append(",");
+                        else
+                            first = false;
 
-                    const char *propName = attribIter->queryName();
-                    if (*propName == '@')
+                        const char *propName = attribIter->queryName();
                         propName++;
-                    info("%s",propName);
+                        csvDump.append(propName);
+                    }
+                    csvDump.append("\n");
                 }
-                info("\n");
             }
 
             ForEach(*historyIter)
@@ -1589,60 +1586,25 @@ int CDfuPlusHelper::listhistory()
                 Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
                 ForEach(*attribIter)
                 {
-                    if(!first)
-                        info(",");
+                    if (!first)
+                        csvDump.append(",");
                     else
                         first = false;
 
                     const char *propVal =  attribIter->queryValue();
-                    info("%s", propVal);
+                    csvDump.append(propVal);
                 }
-                info("\n");
+                csvDump.append("\n");
             }
+            info("%s", csvDump.str());
         }
         break;
 
     case json:
         {
-            const char * level1 = "   ";        // 3 space 'tab'
-            const char * level2 = "      ";
-            const char * level3 = "         ";
-            //                     123456789
-
-            unsigned index = 1;
-
-            info("{\n");       // Level 0: Start History object
-            StringBuffer temp;
-            history->getName(temp);
-            info("%s\"%s\": [", level1, temp.str());   // Begin History object's array of historical records
-            Owned<IPropertyTreeIterator> historyIter = history->getElements("*");
-            ForEach(*historyIter)
-            {
-                if (index++ != 1)
-                    info(",");
-
-                info("\n%s{\n", level2);    // Historical record object begin
-
-                bool first = true;
-                Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
-                ForEach(*attribIter)
-                {
-                    if (!first)
-                        info(",\n");
-                    else
-                        first = false;
-
-                    const char *propName = attribIter->queryName();
-                    if (*propName == '@')
-                        propName++;
-                    const char *propVal =  attribIter->queryValue();
-                    info("%s\"%s\" : \"%s\"",level3, propName, propVal);    // Historical record item object
-                }
-                info("\n%s}", level2);   // Historical record object end
-            }
-            info("\n%s]\n", level1);   // History object array end
-
-            info("}\n");       // Level 0 : History object end
+            StringBuffer out;
+            toJSON(history, out, 3);
+            info("\n%s\n",out.trim().str());
         }
         break;
     }
@@ -1653,12 +1615,12 @@ int CDfuPlusHelper::listhistory()
 int CDfuPlusHelper::erasehistory()
 {
     const char* lfn = globals->queryProp("lfn");
-    if(lfn == NULL || *lfn == '\0')
+    if (isEmptyString(lfn))
         throw MakeStringException(-1, "srcname not specified");
 
     bool backup = globals->getPropBool("backup", true);
     const char* dstxml = globals->queryProp("dstxml");
-    if(backup && (dstxml == NULL || *dstxml == '\0'))
+    if (backup && isEmptyString(dstxml))
         throw MakeStringException(-1, "dstxml not specified");
 
     progress("\nErase history of '%s' with%s backup.\n", lfn, (backup ? "" : "out"));
@@ -1669,7 +1631,7 @@ int CDfuPlusHelper::erasehistory()
     Owned<IClientEraseHistoryResponse> resp = dfuclient->EraseHistory(req);
 
     const IMultiException* excep = &resp->getExceptions();
-    if(excep != NULL && excep->ordinality() > 0)
+    if (excep != NULL && excep->ordinality() > 0)
     {
         StringBuffer errmsg;
         excep->errorMessage(errmsg);
@@ -1679,32 +1641,20 @@ int CDfuPlusHelper::erasehistory()
 
     if (backup)
     {
-        MemoryBuffer tmp;
-        tmp.append(resp->getXmlmap());
-
-        if (0 == *tmp.toByteArray())
+        // The generated getXmlmap() return with a const Memory buffer reference
+        const MemoryBuffer &respMsg = resp->getXmlmap();
+        if (0 == respMsg.length())
         {
             error("%s doesn't have stored history!\n", lfn);
             return -2;
         }
 
-        int ofile = open(dstxml, _O_WRONLY | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
-        if(ofile == -1)
-            throw MakeStringException(-1, "can't open file %s\n", dstxml);
+        Owned<IPropertyTree> history;
+        // Based on the missing createPTree( const MemoryBuffer &)
+        // need to cast from const MemeoryBuffer & to MemoryBuffer & to create PTree
+        history.setown(createPTree((MemoryBuffer &)respMsg));
 
-        Owned<IPropertyTree>    history;
-        history.setown(createPTree("History"));
-        history->deserialize(tmp);
-
-        StringBuffer out;
-        toXML(history, out, true);
-
-        ssize_t written = write(ofile, out.str(), out.length());
-        if (written < 0)
-            throw MakeStringException(-1, "can't write to file %s\n", dstxml);
-        if (written != out.length())
-            throw MakeStringException(-1, "truncated write to file %s\n", dstxml);
-        close(ofile);
+        saveXML(dstxml, history, 3);
         info("History written into %s.\n",dstxml);
     }
 

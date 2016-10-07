@@ -2746,14 +2746,10 @@ public:
         return nullptr;
     }
 
-    IPropertyTree * resetHistory(IPropertyTree *history)
+    void resetHistory()
     {
         DistributedFilePropertyLock lock(this);
-        if (history)
-            return queryAttributes().setPropTree("History", history);
-        else
-            queryAttributes().removeTree(queryHistory());
-        return nullptr;
+        queryAttributes().removeTree(queryHistory());
     }
 
 protected:
