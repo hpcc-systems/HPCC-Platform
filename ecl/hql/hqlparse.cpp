@@ -569,12 +569,14 @@ void HqlLex::pushMacro(IHqlExpression *expr)
     }
 }
 
-void HqlLex::checkSignature()
+void HqlLex::checkSignature(const attribute & dummyToken)
 {
-    YYSTYPE dummyToken;
-    dummyToken.setPosition(0,0,0,text->querySourcePath());
     Owned<IPipeProcess> pipe = createPipeProcess();
-    pipe->run("gpg", "gpg --verify -", ".", true, false, true, 0, false);
+    if (!pipe->run("gpg", "gpg --verify -", ".", true, false, true, 0, false))
+    {
+        reportWarning(CategorySecurity, dummyToken, WRN_SECURITY_SIGNERROR, "Signature could not be checked because gpg was not found");
+        return;
+    }
     try
     {
         pipe->write(text->length(), text->getText());
