@@ -175,6 +175,10 @@ elseif ( NOT MAKE_DOCS_ONLY )
     HPCC_ADD_SUBDIRECTORY (system)
     HPCC_ADD_SUBDIRECTORY (thorlcr "PLATFORM")
     HPCC_ADD_SUBDIRECTORY (testing)
+    if ( MAKE_CONFIGURATOR )
+        MESSAGE(STATUS "Configurator app build ON")
+        HPCC_ADD_SUBDIRECTORY (configuration "PLATFORM")
+    endif()
     if ( NOT WIN32 )
         HPCC_ADD_SUBDIRECTORY (clienttools "CLIENTTOOLS_ONLY")
     endif()
@@ -466,10 +470,6 @@ if(TOP_LEVEL_PROJECT)
     endif(PLATFORM OR PLUGIN)
 endif(TOP_LEVEL_PROJECT)
 
-if (MAKE_CONFIGURATOR)
-    MESSAGE( "Configurator app build ON" )
-    HPCC_ADD_SUBDIRECTORY (configuration)
-endif()
 
 ###
 ## Below are the non-compile based install scripts required for
