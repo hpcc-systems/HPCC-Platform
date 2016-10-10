@@ -283,13 +283,14 @@ xpathseq      ([^}\r\n])+
                         lexer->reportError(returnToken, ERR_COMMENT_NOTSTARTED,"Comment is not started: \"*/\" is illegal");
                     }                   
 
-"-----BEGIN PGP SIGNED MESSAGE-----"    { setupdatepos; BEGIN(PGPHEADER); lexer->inSignature = true; lexer->checkSignature(); }
+"-----BEGIN PGP SIGNED MESSAGE-----"    { setupdatepos; BEGIN(PGPHEADER); lexer->inSignature = true; lexer->checkSignature(returnToken); }
 <PGPHEADER>^\n                          { setupdatepos; BEGIN(0); lexer->updateNewline(); lexer->inSignature = false; }
+<PGPHEADER>^\r\n                        { setupdatepos; BEGIN(0); lexer->updateNewline(); lexer->inSignature = false; }
 <PGPHEADER>[^\n]+                       { updatepos1; }
 <PGPHEADER>\n                           { updatepos1; lexer->updateNewline(); }
 "-----BEGIN PGP SIGNATURE-----"         { setupdatepos; BEGIN(PGPSIGN); lexer->inSignature = true; }
 <PGPSIGN>"-----END PGP SIGNATURE-----"  { updatepos1; BEGIN(0); lexer->inSignature = false; } 
-<PGPSIGN>[^\n]+                         { updatepos1; }
+<PGPSIGN>[^\n]                          { updatepos1; }
 <PGPSIGN>\n                             { updatepos1; lexer->updateNewline(); }
 
 

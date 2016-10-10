@@ -1198,7 +1198,7 @@ class HqlLex
         void doSkipUntilEnd(YYSTYPE & returnToken, const char * forwhat);
 
         void processEncrypted();
-        void checkSignature();
+        void checkSignature(const attribute & dummyToken);
 
         void declareUniqueName(const char* name, const char * pattern);
         void checkNextLoop(const YYSTYPE & errpos, bool first,int startLine,int startCol);
