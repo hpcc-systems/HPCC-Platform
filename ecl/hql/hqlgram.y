@@ -4751,6 +4751,14 @@ fieldAttr
                             $$.setExpr(getEmbeddedAttr());
                             $$.setPosition($1);
                         }
+    | SET '(' hintList ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(setAtom, args));
+                            $$.setPosition($1);
+                        }
+    | hintAttribute
     ;
 
 

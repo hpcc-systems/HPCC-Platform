@@ -13816,6 +13816,24 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
             thisSize = exportRecord(f, record, flatten);
     }
     f->setPropInt("@size", thisSize);
+
+    StringBuffer userOptions;
+    ForEachChild(i, field)
+    {
+        IHqlExpression * attr = field->queryChild(i);
+        if (attr->isAttribute() && (attr->queryName() == setAtom))
+        {
+            ForEachChild(i2, attr)
+            {
+                if (userOptions.length())
+                    userOptions.append(",");
+                getExprECL(attr->queryChild(i2), userOptions);
+            }
+        }
+    }
+    if (userOptions.length())
+        f->setProp("@options", userOptions.str());
+
     return thisSize;
 }
 
