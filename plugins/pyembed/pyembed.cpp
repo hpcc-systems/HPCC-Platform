@@ -274,6 +274,8 @@ public:
 #endif
         // Initialize the Python Interpreter
         Py_Initialize();
+        const char *argv[] = { nullptr };
+        PySys_SetArgvEx(0, (char **) argv, 0);
         PyEval_InitThreads();
         tstate = PyEval_SaveThread();
         initialized = true;
