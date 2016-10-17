@@ -345,12 +345,9 @@
       <sect2 id="ECLWatch_Workunit_Details" role="brk">
         <title role="brk">Workunit Details</title>
 
-        <para>The Workunit Details page provides more information about a
+        <para>The Workunit Details page provides more information about the
         workunit. You can see more specific information about the selected
         workunit by selecting the various Workunit Details tabs.</para>
-
-        <para>You can also perform certain actions on the selected workunit
-        using the Workunit Action buttons.</para>
 
         <para><figure>
             <title>Workunit Details</title>
@@ -363,10 +360,9 @@
             </mediaobject>
           </figure></para>
 
-        <para>Workunit details Action Buttons allow you to perform an action
-        on the selected workunit.</para>
-
-        <para>Using the Workunit Action Buttons you can:</para>
+        <para>The Workunit Details Action Buttons allow you to perform actions
+        on the selected workunit. Press the corresponding Action button to
+        allow you to perform the following actions. </para>
 
         <itemizedlist>
           <listitem>
@@ -564,7 +560,7 @@
         </sect3>
 
         <sect3 id="ECLWatchSlaveLogDialog">
-          <title>Slave Logs </title>
+          <title>Slave Logs</title>
 
           <figure>
             <title>The Slave Logs Dialog</title>
