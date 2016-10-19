@@ -39,9 +39,9 @@ Layout_Person := RECORD
   BOOLEAN good;
 END;
 
-sprayPrepFileName := '~::spray_prep';
+sprayPrepFileName := '~REGRESS::spray_prep';
 desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
-sprayOutFileName := '~::spray_test';
+sprayOutFileName := '~REGRESS::spray_test';
 
 allPeople := DATASET([ {'foo', 10, 1},
                        {'bar', 12, 0},
@@ -127,7 +127,7 @@ c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
 ds := DATASET(sprayOutFileName, Layout_Person, csv);
 
 string compareDatasets(dataset(Layout_Person) ds1, dataset(Layout_Person) ds2) := FUNCTION
-   boolean result := (0 = COUNT(JOIN(ds1, ds2, left.name=right.name, FULL ONLY, LOCAL)));
+   boolean result := (0 = COUNT(JOIN(ds1, ds2, left.name=right.name, FULL ONLY)));
    RETURN if(result, 'Pass', 'Fail');
 END;
 
