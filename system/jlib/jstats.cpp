@@ -1569,7 +1569,7 @@ public:
     virtual void beginActivityScope(unsigned id) { throwUnexpected(); }
     virtual void beginEdgeScope(unsigned id, unsigned oid) { throwUnexpected(); }
     virtual void endScope()
-    { 
+    {
         node = &stack.popGet();
     }
     virtual void addStatistic(StatisticKind kind, unsigned __int64 value)
@@ -2323,9 +2323,15 @@ void StatisticsFilter::addFilter(const char * filter)
 
 void StatisticsFilter::setFilter(const char * filter)
 {
+    if (isEmptyString(filter))
+        return;
+
     loop
     {
         const char * closeBra = strchr(filter, ']');
+        if (!closeBra)
+            throw MakeStringException(1, "Missing close bracket ']' in '%s' ", filter);
+
         const char * comma = strchr(closeBra, ',');
         if (comma)
         {
