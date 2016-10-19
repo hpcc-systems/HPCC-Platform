@@ -70,6 +70,7 @@ namespace roxiemem {
 
 static unsigned memTraceLevel = 1;
 static memsize_t memTraceSizeLimit = 0;
+static const unsigned ScanReportThreshold = 3; // If average more than 3 scans per allocate then notify us.  More than 10 starts slowing the query down.
 
 void setMemTraceLevel(unsigned value)
 {
@@ -1250,6 +1251,12 @@ void ReleaseRoxieRows(ConstPointerArray &rows)
 
 //================================================================================
 
+struct HeapletStats
+{
+    __uint64 totalAllocs = 0;
+    __uint64 totalDistanceScanned = 0;
+};
+
 class CHeap;
 static void noteEmptyPage(CHeap * heap);
 class Heaplet : public HeapletBase
@@ -1284,7 +1291,7 @@ public:
     virtual void checkHeap() const = 0;
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const = 0;
     virtual bool isFull() const = 0;
-
+    virtual void mergeStats(HeapletStats & stats) const {}
 #ifdef _WIN32
 #ifdef new
 #define __new_was_defined
@@ -1327,6 +1334,7 @@ protected:
     const unsigned heapFlags;
     unsigned sharedAllocatorId;
     unsigned nextMatchOffset = 0;
+    HeapletStats stats;
 
     inline char *data() const
     {
@@ -1354,6 +1362,12 @@ public:
         unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
         size32_t bytesFree = dataAreaSize() - curFreeBase;
         return (bytesFree >= chunkSize);
+    }
+
+    virtual void mergeStats(HeapletStats & merged) const override
+    {
+        merged.totalAllocs += stats.totalAllocs;
+        merged.totalDistanceScanned += stats.totalDistanceScanned;
     }
 
     virtual bool isFull() const override;
@@ -2352,8 +2366,12 @@ public:
     }
     ~CRoxieDirectFixedRowHeap()
     {
-        if (heap && (flags & RHFunique))
-            heap->noteOrphaned();
+        if (heap)
+        {
+            heap->checkScans();
+            if (flags & RHFunique)
+                heap->noteOrphaned();
+        }
     }
 
     virtual void *allocate()
@@ -2363,6 +2381,8 @@ public:
 
     virtual void clearRowManager()
     {
+        if (heap)
+            heap->checkScans();
         heap.clear();
         CRoxieFixedRowHeapBase::clearRowManager();
     }
@@ -2662,6 +2682,7 @@ public:
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%" I64F "u rowMgr=%p",
                     finger, finger->sizeInPages(), (unsigned __int64) finger->_capacity(), this);
 
+        finger->mergeStats(stats);
         removeHeaplet(finger);
         if (finger == activeHeaplet)
             activeHeaplet = NULL;
@@ -2865,6 +2886,7 @@ protected:
     mutable NonReentrantSpinLock heapletLock;
     std::atomic_uint headMaybeSpace{BLOCKLIST_NULL};  // The head of the list of heaplets which potentially have some space.  When adding must use mo_release, when removing must use mo_acquire
     std::atomic_uint possibleEmptyPages{false};  // Are there any pages with 0 records.  Primarily here to avoid walking long page chains.
+    HeapletStats stats;
 };
 
 
@@ -2954,6 +2976,8 @@ public:
         flags |= RHForphaned;
     }
 
+    void checkScans();
+    virtual void reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats) = 0;
 
 protected:
     void * doAllocateRow(unsigned allocatorId, unsigned maxSpillCost);
@@ -2984,6 +3008,8 @@ public:
                (searchFlags == flags);
     }
 
+    virtual void reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats) override;
+
 protected:
     virtual ChunkedHeaplet * allocateHeaplet();
 
@@ -3008,6 +3034,8 @@ public:
                (searchFlags == flags) &&
                (allocatorId == searchActivity);
     }
+
+    virtual void reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats) override;
 
 protected:
     virtual ChunkedHeaplet * allocateHeaplet();
@@ -3096,10 +3124,14 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter)
                 if (offset == startOffset)
                 {
                     //Should never occur...
+                    stats.totalDistanceScanned += curFreeBase;
                     return nullptr;
                 }
             }
 
+            // either (offset - startOffset) or (curFreeBase - startOffset) + offset.  Simplified to...
+            unsigned thisDistance = ((offset > startOffset) ? 0 : curFreeBase) + (offset - startOffset) - size;
+            stats.totalDistanceScanned += thisDistance;
             nextMatchOffset = offset;
             //save offset
         }
@@ -3155,6 +3187,7 @@ done:
     if (incCounter)
         count.fetch_add(1, std::memory_order_relaxed);
 
+    stats.totalAllocs++;
     return ret;
 }
 
@@ -5257,6 +5290,31 @@ void * CChunkedHeap::doAllocate(unsigned activityId, unsigned maxSpillCost)
     return doAllocateRow(activityId, maxSpillCost);
 }
 
+void CChunkedHeap::checkScans()
+{
+    HeapletStats merged(stats);
+
+    {
+        NonReentrantSpinBlock b(heapletLock);
+        Heaplet * start = heaplets;
+        if (start)
+        {
+            Heaplet * finger = start;
+            loop
+            {
+                finger->mergeStats(merged);
+                finger = getNext(finger);
+                if (finger == start)
+                    break;
+            }
+        }
+    }
+
+    unsigned __int64 numScans = merged.totalDistanceScanned / chunkSize;
+    if (numScans && (numScans >= merged.totalAllocs * ScanReportThreshold))
+        reportScanProblem(numScans, merged);
+}
+
 //================================================================================
 
 ChunkedHeaplet * CFixedChunkedHeap::allocateHeaplet()
@@ -5281,6 +5339,12 @@ unsigned CFixedChunkedHeap::allocateBlock(unsigned activityId, unsigned maxRows,
 }
 
 
+void CFixedChunkedHeap::reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats)
+{
+    logctx.CTXLOG("Excessive scans in heap manager (%.2f).  Size(%u) scans(%" I64F "u/%" I64F "u)",
+           (double)numScans / mergedStats.totalAllocs, chunkSize-FixedSizeHeaplet::chunkHeaderSize, numScans, mergedStats.totalAllocs);
+}
+
 ChunkedHeaplet * CPackedChunkingHeap::allocateHeaplet()
 {
     void * memory = suballoc_aligned(1, true);
@@ -5302,6 +5366,13 @@ unsigned CPackedChunkingHeap::allocateBlock(unsigned activityId, unsigned maxRow
     return doAllocateRowBlock(activityId, defaultSpillCost, maxRows, rows);
 }
 
+
+void CPackedChunkingHeap::reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats)
+{
+    unsigned activityId = getRealActivityId(allocatorId, allocatorCache);
+    logctx.CTXLOG("Excessive scans in heap manager for activity %u (%.2f).  Size(%u) scans(%" I64F "u/%" I64F "u)",
+           activityId, (double)numScans / mergedStats.totalAllocs, chunkSize-PackedFixedSizeHeaplet::chunkHeaderSize, numScans, mergedStats.totalAllocs);
+}
 
 //================================================================================
 // Buffer manager - blocked 
