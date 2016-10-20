@@ -1,8 +1,8 @@
 ## Default configuration file for configmgr
 
 [components]
-configmgr=esp;${CONFIG_DIR}/configmgr
+configmgr=esp;@CONFIG_DIR@/configmgr
 brokenconntimeout=60
 buildset=buildset.xml
 wizardalgorithm=genenvrules.conf
-autodetectipscript=${ADMIN_PATH}/get_ip_address_wiz.sh
+autodetectipscript=@ADMIN_PATH@/get_ip_address_wiz.sh

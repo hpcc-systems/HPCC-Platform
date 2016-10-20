@@ -34,7 +34,7 @@ createConf ()
 cleanup ()
 {
     echo "Exiting configMgr"
-    PIDPATH=${pid}/${compName}_init.pid
+    PIDPATH=${pid}/init_${compName}.pid
     stopcmd="${START_STOP_DAEMON} -K -p $PIDPATH"
     eval $stopcmd
     sleep 2
@@ -46,145 +46,168 @@ cleanup ()
 control_c ()
 {
     echo "Ctrl-c was hit. Exiting the process"
-    cleanup
+    if $(which systemctl 1>/dev/null 2>&1); then
+        sudo systemctl stop configmgr.service 1>/dev/null 2>&1
+    else
+        cleanup
+    fi
     exit
 }
 
 print_usage ()
 {
     echo >&2 "Usage : $0 <full path for env file> <port> <full path for conf file>
-              or $0 (will use default files and default port number)"
+    or $0 (will use default files and default port number)"
     exit 0
 }
 
-set_environmentvars
 
-exec_script_path=${path}/bin
-reg_path=${path}/sbin
-
-compName=configmgr
-compPath=${runtime}/${compName}
-
-[[ ! -w "${CONFIG_DIR}" ]] && is_root
-
-# Trapping keyboard interrupt  control-c
-trap control_c SIGINT
-
-# Setting up Environment variables
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${path}/lib
-export PATH=${PATH}:${runtime}/bin:${path}/sbin
-
-# Creating runtime environment for ConfigMgr
-createRuntime
-
-logFile=${log}/${compName}/${compName}.log
-
-initPidFile=${pid}/${compName}_init.pid
-compPidFile=${pid}/${compName}.pid
-lockFile=${lock}/${compName}/${compName}.lock
-defaultEnv=0
-
-# Checking input arguments
-if [ $# -eq 3 ]; then
-    filename=$1
-    portnum=$2
-    conffile=$3
-    echo "<filename> = ${filename}"
-    echo "<portnumber> = ${portnum}"
-    echo "<LocalEnvConfFile> = ${conffile}"
-    #checking where files exists or not
-    if [ ! -e ${filename} ] || [ ! -e ${conffile} ]
-    then
-       echo "File ${filename} or ${conffile} does not exists"
-       exit
-    fi
-elif [ $# -eq 0 ]; then
-    defaultEnv=1
-    filename="${sourcedir}/${environment}"
-    portnum="8015"
-    conffile="${configs}/environment.conf"
-    echo "Using default filename ${sourcedir}/${environment} and default port \"8015\""
-    if [ ! -d ${sourcedir} ];
-    then
-       #creating source directory if not present
-       createDir ${sourcedir}
-       cp ${configs}/${environment} ${sourcedir} > /dev/null 2<&1
-       chmod 755 ${sourcedir}/${environment}
-       chown -R ${user}:${group} ${sourcedir}
+if $(which systemctl 1>/dev/null 2>&1); then
+    # Systemd
+    trap control_c SIGINT
+    sudo systemctl start configmgr.service 1>/dev/null 2>&1
+    echo -n "Verifying configmgr startup ..."
+    sleep 1
+    sudo systemctl is-active configmgr.service 1>/dev/null 2>&1
+    RCSTAT=$?
+    if [[ ${RCSTAT} -ne 0 ]]; then
+        echo "Failure"
+        control_c
     else
-        if [ ! -e ${filename} ];
-        then
-            if [ ${DEBUG:-NO_DEBUG} != "NO_DEBUG" ]; then
-                echo "Default environment file does not exists, copying from ${configs}"
-            fi
-            cp ${configs}/${environment} ${sourcedir}/environment.xml > /dev/null 2<&1
-            chmod 755 ${sourcedir}/environment.xml
-            chown -R ${user}:${group} ${sourcedir}
-        fi
+        echo " Success"
+        echo "Exit by pressing ctrl-c..."
+        while :; do sleep 1; done
     fi
 else
-    print_usage
-fi
+    # SysV
+    set_environmentvars
 
-createConf "${filename}" "${portnum}" "${conffile}"
-chown ${user}:${group} ${conffile}
+    exec_script_path=${path}/bin
+    reg_path=${path}/sbin
 
-# Sanity Check for previous instances of configmgr. This code also takes care if configmgr script/configesp is not running and it killed by kill command
+    compName=configmgr
+    compPath=${runtime}/${compName}
 
-check_status ${initPidFile} ${lockFile} ${compPidFile} 0
-RCSTAT=$?
+    [[ ! -w "${CONFIG_DIR}" ]] && is_root
+    # Trapping keyboard interrupt  control-c
+    trap control_c SIGINT
 
-if [ ${RCSTAT} -eq 0 ]; then
-    checkPid ${initPidFile}
-    echo "Configmgr is already running with Pid $__pidValue"
-    exit 0
-else
-    cleanupRuntimeEnvironment
-fi
+    # Setting up Environment variables
+    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${path}/lib
+    export PATH=${PATH}:${runtime}/bin:${path}/sbin
 
-#-----------------------------------------------------------
-# Actual Processing begins
-#-----------------------------------------------------------
-cd ${runtime}/${compName}
+    # Creating runtime environment for ConfigMgr
+    createRuntime
 
-#start configesp
-EXEC_COMMAND="${exec_script_path}/init_configesp >> $logFile 2>&1"
-startcmd="${START_STOP_DAEMON} -S -p ${initPidFile} -c ${user}:${group} -d ${runtime}/${compName} -m -x ${EXEC_COMMAND} -b"
-eval ${startcmd}
-started=$?
+    logFile=${log}/${compName}/${compName}.log
 
-# Creating a Lock
-lock $lockFile
+    initPidFile=${pid}/init_${compName}.pid
+    compPidFile=${pid}/${compName}.pid
+    lockFile=${lock}/${compName}/${compName}.lock
+    defaultEnv=0
 
-if [ ${DEBUG:-NO_DEBUG} != "NO_DEBUG" ]; then
-    echo $startcmd
-    echo "configesp status = $started"
-fi
-
-echo -n "Verifying configmgr startup ..."
-sleep 2
-
-check_status ${initPidFile} ${lockFile} ${compPidFile} 1
-RCSTAT=$?
-
-if [ ${RCSTAT} -ne 0 ];then
-   echo "Failure"
-   cleanup
-else
-    echo " Success"
-    echo "Exit by pressing ctrl-c..."
-    while :
-        check_status ${initPidFile} ${lockFile} ${compPidFile} 1
-        if [ $? -ne 0 ] ;
+    # Checking input arguments
+    if [ $# -eq 3 ]; then
+        filename=$1
+        portnum=$2
+        conffile=$3
+        echo "<filename> = ${filename}"
+        echo "<portnumber> = ${portnum}"
+        echo "<LocalEnvConfFile> = ${conffile}"
+        #checking where files exists or not
+        if [ ! -e ${filename} ] || [ ! -e ${conffile} ]
         then
-            if [ "${DEBUG}" != "NO_DEBUG" ];
-            then
-                 echo "Init_configesp/Configesp is not running, hence shutting down configmgr script"
-            fi
-            kill -2 $$ > /dev/null 2>&1
+            echo "File ${filename} or ${conffile} does not exists"
+            exit
         fi
-        trap control_c SIGINT
-    do
-        sleep 1
-    done
+    elif [ $# -eq 0 ]; then
+        defaultEnv=1
+        filename="${sourcedir}/${environment}"
+        portnum="8015"
+        conffile="${configs}/environment.conf"
+        echo "Using default filename ${sourcedir}/${environment} and default port \"8015\""
+        if [ ! -d ${sourcedir} ];
+        then
+            #creating source directory if not present
+            createDir ${sourcedir}
+            cp ${configs}/${environment} ${sourcedir} > /dev/null 2<&1
+            chmod 755 ${sourcedir}/${environment}
+            chown -R ${user}:${group} ${sourcedir}
+        else
+            if [ ! -e ${filename} ];
+            then
+                if [ ${DEBUG:-NO_DEBUG} != "NO_DEBUG" ]; then
+                    echo "Default environment file does not exists, copying from ${configs}"
+                fi
+                cp ${configs}/${environment} ${sourcedir}/environment.xml > /dev/null 2<&1
+                chmod 755 ${sourcedir}/environment.xml
+                chown -R ${user}:${group} ${sourcedir}
+            fi
+        fi
+    else
+        print_usage
+    fi
+
+    createConf "${filename}" "${portnum}" "${conffile}"
+    chown ${user}:${group} ${conffile}
+
+    # Sanity Check for previous instances of configmgr. This code also takes care if configmgr script/configesp is not running and it killed by kill command
+
+    check_status configmgr configmgr 0
+    RCSTAT=$?
+
+    if [ ${RCSTAT} -eq 0 ]; then
+        checkPid ${initPidFile}
+        echo "Configmgr is already running with Pid $__pidValue"
+        exit 0
+    else
+        cleanupRuntimeEnvironment
+    fi
+
+    #-----------------------------------------------------------
+    # Actual Processing begins
+    #-----------------------------------------------------------
+    cd ${runtime}/${compName}
+
+    #start configesp
+    EXEC_COMMAND="${exec_script_path}/init_configesp >> $logFile 2>&1"
+    startcmd="${START_STOP_DAEMON} -S -p ${initPidFile} -c ${user}:${group} -d ${runtime}/${compName} -m -x ${EXEC_COMMAND} -b"
+    eval ${startcmd}
+    started=$?
+
+    # Creating a Lock
+    lock $lockFile
+
+    if [ ${DEBUG:-NO_DEBUG} != "NO_DEBUG" ]; then
+        echo $startcmd
+        echo "configesp status = $started"
+    fi
+
+    echo -n "Verifying configmgr startup ..."
+    sleep 2
+
+    check_status configmgr configmgr 0
+    RCSTAT=$?
+
+    if [ ${RCSTAT} -ne 0 ];then
+        echo "Failure"
+        cleanup
+    else
+        echo " Success"
+        echo "Exit by pressing ctrl-c..."
+        while :
+            check_status configmgr configmgr 0
+            if [ $? -ne 0 ] ;
+            then
+                if [ "${DEBUG}" != "NO_DEBUG" ];
+                then
+                    echo "Init_configesp/Configesp is not running, hence shutting down configmgr script"
+                fi
+                kill -2 $$ > /dev/null 2>&1
+            fi
+            trap control_c SIGINT
+        do
+            sleep 1
+        done
+    fi
 fi

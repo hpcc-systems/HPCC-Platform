@@ -18,15 +18,28 @@
 # A series of functions that are common to all hpcc-init processes
 #
 
-## cfg.parser parses an ini format file and when given a section places
-## the associated variables with the section in to local scope.
-##
-## $1="<path to ini file>"
-####
+source  @INSTALL_DIR@/etc/init.d/init-functions
+source  @INSTALL_DIR@/etc/init.d/export-path
+source  @INSTALL_DIR@/etc/init.d/pid.sh
+source  @INSTALL_DIR@/etc/init.d/lock.sh
 
-###<REPLACE>###
+START_STOP_DAEMON=@INSTALL_DIR@/bin/start-stop-daemon
 
-START_STOP_DAEMON=${INSTALL_DIR}/bin/start-stop-daemon
+# general logging message for init scripts
+# expects $logfile to exist within the context of where it's called
+log() {
+  if [[ -z ${logfile+x} ]]; then
+    # logfile isn't set within the context of this function call
+    return 1
+  fi
+
+  local msg=$@
+  local header=$( date +%Y_%m_%d_%H_%M_%S )
+  local header="${header}: "
+  printf "%s%s\n" "$header" "$msg" >> $logfile
+
+  return 0
+}
 
 which_service(){
     SERV=`type --path service`
@@ -52,17 +65,17 @@ which_pidof(){
     fi
 }
 
-source  ${INSTALL_DIR}/etc/init.d/lock.sh
-source  ${INSTALL_DIR}/etc/init.d/pid.sh
-source  ${INSTALL_DIR}/etc/init.d/init-functions
-source  ${INSTALL_DIR}/etc/init.d/export-path
-
-
+## cfg.parser parses an ini format file and when given a section places
+## the associated variables with the section in to local scope.
+##
+## $1="<path to ini file>"
+####
 cfg.parser () {
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_begin_msg "Parsing $1 config file..."
     if [ ! -e $1 ] || [ $# -lt 1 ]; then
-    [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
+        [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
     fi
+    OIFS=${IFS}
     IFS=$'\n' && ini=( $(cat $1 | sed -e 's/[[:blank:]]*=[[:blank:]]*/=/') )              # convert to line-array
     ini=( ${ini[*]//[;#]*/} )                   # remove comments
     ini=( ${ini[*]/#[/\}$'\n'cfg.section.} ) # set section prefix
@@ -75,6 +88,7 @@ cfg.parser () {
     ini[${#ini[*]} + 1]='}'                  # add the last brace
     #echo "${ini[*]}"               # echoing the result
     eval "$(echo "${ini[*]}")"               # eval the result
+    IFS=${OIFS} 
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 0
 }
 
@@ -138,20 +152,22 @@ dir.getByName(){
 ##
 comp.parser() {
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_begin_msg "Parsing configgen data..."
-        if [ $# -lt 1 ]; then
-            [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
-        fi
-        IFS=$'\n' && cmp=( $@ )
-        cmp=( ${cmp[*]/#/comp_} )
-        cmp=( ${cmp[*]/=/= compType=} )
-        cmp=( ${cmp[*]/;/ compPath=} )
-        cmp=( ${cmp[*]/;/ compStat=} )
-        cmp=( ${cmp[*]/=/=\(} )
-        cmp=( ${cmp[*]/%/ \)} )
-        eval "$(echo "${cmp[*]}")"
-        for i in ${!comp_*}; do
-            compArray=( ${compArray[@]} $i )
-        done
+    if [ $# -lt 1 ]; then
+        [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 1 && return 1 || return 1
+    fi
+    OIFS=${IFS}
+    IFS=$'\n' && cmp=( $@ )
+    cmp=( ${cmp[*]/#/comp_} )
+    cmp=( ${cmp[*]/=/= compType=} )
+    cmp=( ${cmp[*]/;/ compPath=} )
+    cmp=( ${cmp[*]/;/ compStat=} )
+    cmp=( ${cmp[*]/=/=\(} )
+    cmp=( ${cmp[*]/%/ \)} )
+    eval "$(echo "${cmp[*]}")"
+    for i in ${!comp_*}; do
+        compArray=( ${compArray[@]} $i )
+    done
+    IFS=${OIFS}
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 0
 }
 
@@ -247,7 +263,7 @@ strstr() {
 }
 
 set_environmentvars() {
-    HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
+    HPCC_CONFIG=${HPCC_CONFIG:-@CONFIG_DIR@/@ENV_CONF_FILE@}
 
     ## Retrieve the Section to use from environment variable and if not set
     ## use default of "DEFAULT"
@@ -262,7 +278,6 @@ set_environmentvars() {
     fi
 }
 
-
 set_componentvars() {
     compName=$1
     comp.getByName ${compName}
@@ -274,7 +289,7 @@ set_componentvars() {
 }
 
 validate_configuration() {
-    if ! validation_error=$(${configgen_path}/configgen -env ${envfile} -validateonly 2>&1); then
+    if ! validation_error=$(${path}/sbin/configgen -env ${envfile} -validateonly 2>&1); then
         log  "validate_configuration(): validation failure ${envfile}"
         log  "${validation_error}"
         echo -e "\033[31merror\033[0m: configgen xml validation failure"
@@ -283,8 +298,7 @@ validate_configuration() {
 }
 
 get_commondirs() {
-    componentFile="${path}/componentfiles/configxml"
-    DIRS=$(${configgen_path}/configgen -env ${envfile} -id ${componentFile} -listcommondirs)
+    DIRS=$(${path}/sbin/configgen -env ${envfile} -id ${path}/componentfiles/configxml -listcommondirs)
     rc=$?
     if [[ $rc -ne 0 ]]; then
         log  "get_commondirs(): failure in configgen call"
@@ -295,12 +309,7 @@ get_commondirs() {
 }
 
 configGenCmd() {
-    componentFile="${path}/componentfiles/configxml"
-
-    # Creating logfiles for component
-    logDir=$log/${compName}
-
-    configcmd="${configgen_path}/configgen -env ${envfile} -od ${runtime} -id ${componentFile} -c ${compName}"
+    configcmd="@ADMIN_PATH@/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -od @RUNTIME_PATH@ -id @COMPONENTFILES_PATH@/configxml -c ${compName}"
     log "$configcmd"
     if [ "$(whoami)" != "${user}" ]; then
         su ${user} -c "$configcmd" 2>/dev/null
@@ -382,6 +391,32 @@ createRuntime() {
     chown -c $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
 }
 
+# Check status of component
+# Arg 1     string compType
+# Arg 2     string compName
+# Arg 2     0:1 sentinel file check
+# rc 0      up
+# rc 1      down
+# rc 2      spawning process
+check_status() {
+    local compType=$1
+    local compName=$2
+    local sentinelCheck=$3
+
+    checkPidExists @PID_PATH@/init_${compName}.pid
+    if [[ $? -eq 0 ]]; then
+        checkPidExists @PID_PATH@/${compName}.pid
+        if [[ $? -eq 0 ]]; then
+            [[ "${sentinelCheck}" -eq 0 ]] && return 0
+            ! checkSentinelFile && return 0
+            return 2
+        fi
+        return 2
+    else
+        return 1
+    fi
+}
+
 # cleanup all standard files made during runtime
 cleanupRuntimeEnvironment() {
     unlock ${lock}/${compName}/${compName}.lock
@@ -389,85 +424,40 @@ cleanupRuntimeEnvironment() {
     removePid ${pid}/${compName}.pid
 }
 
+#--------------------------------------------------------------------------------
+#                        Component Specific Functions
+#--------------------------------------------------------------------------------
 
-start_dafilesrv() {
-   ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
-   if [ $? -ne 0 ];then
-      #Dafilesrv is not running so start it , before starting cleanup the lock and pid file.
-      cleanupRuntimeEnvironment
-      ${INIT_PATH}/dafilesrv setup 1>/dev/null 2>/dev/null
-      startCmd ${compName} 0
-      return $?
-   else
-      log "Component $compName already started ..."
-      printf "Starting %-21s" "$compName ..."
-      log_success_msg "Already started"
-      return 0
-   fi
-}
 
-startCmd() {
-    noStatusCheck=$2
+# Start component specified
+# Arg 1     string compType
+# Arg 2     string compName
+# rc 0      successful
+# rc 1      failed
+start_component() {
+    compType=$1
+    compName=$2
+    local sentinelCheck=1
+    local _rc=0
+    local _wait=120
+
+    # Creating dirs for component if not present
+    createDir @LOG_PATH@/${compName}
+    createDir @RUNTIME_PATH@/${compName}
+
+    # Stepping into new working directory
+    cd @RUNTIME_PATH@/${compName} || return 1
+    
+    # check status and return if already up or spawning 
+    check_status ${compType} ${compName} ${sentinelCheck}
+    _rc=$?
+    [[ ${_rc} -eq 0 ]] && printf "Running  %-21s" "${compName} ..." && log_success_msg && return 0
+    [[ ${_rc} -eq 2 ]] && printf "Spawning %-21s" "${compName} ..." && log_success_msg && return 2
+
     printf "Starting %-21s" "$compName ..."
-    log "compType = $compType"
+    log "Starting $compName"
 
-    local WAITTIME=120
-    local RCSTART=0
-    local SENTINEL_CHECK=1
-
-    if [ ${compType} = "dafilesrv" ]; then
-      SENTINEL_CHECK=0
-    fi
-
-    # Creating logfiles for component
-    logDir=$log/${compName}
-
-    if [[ ${noStatusCheck} -ne 1 ]]; then
-        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${SENTINEL_CHECK}
-        RCSTART=$?
-        if [[ ${RCSTART} -eq 4 ]];then
-            checkPidExist $PIDPATH
-            local initRunning=$__pidExists
-            checkPidExist $COMPPIDPATH
-            local compRunning=$__pidExists
-            if [[ $compRunning -eq 1 || $initRunning -eq 1 ]]; then
-                log "Orphaned Process"
-                cleanup_component
-                if [[ $? -eq 1 ]]; then
-                    log "Attempt to clean up component has failed"
-                    log_failure_msg
-                    return 1
-                fi
-            fi
-            # do cleanup on successful cleanup_component return
-            # and if RCSTART -eq 4 due to lockfile still being present
-            log "Attempt to clean up component was successful"
-            cleanupRuntimeEnvironment
-        elif [[ ${RCSTART} -eq 2 ]]; then
-            log "The component $compName was previously started but is in an unhealthy state"
-            log "   Could possibly still be attempting to start.  Use the force flag to attmpt a restart"
-            if [[ ${FORCE:-NO_FORCE} == "FORCE" ]]; then
-                cleanup_component
-                if [[ $? -eq 1 ]]; then
-                    log "Attempt to clean up unleathy state of $compName failed"
-                    log_failure_msg
-                    return 1
-                else
-                    cleanupRuntimeEnvironment
-                fi
-            else
-                # component is already started but waiting to become healthy
-                log_success_msg "Waiting on sentinel file creation"
-                return 0
-            fi
-        elif [[ ${RCSTART} -eq 0 ]]; then
-            #Since component is already started but current script is failed till returning 0
-            log "$compName ---> already started"
-            log_success_msg
-            return ${RCSTART}
-        fi
-    fi
-
+    # setup limits for environment
     limits=(
       MIN_Hn_nofile="32768"
       MIN_Hc_core="unlimited"
@@ -491,209 +481,130 @@ startCmd() {
         i=$((i+1))
     done
 
-
+    # setup umask
     UMASK_ARG=""
-    if [ -n "${umask}" ]; then
+    if [[ -n "${umask}" ]]; then
         UMASK_ARG="--umask ${umask}"
     fi
 
-    EXEC_COMMAND="${bin_path}/init_${compType} "
-    startcmd="${START_STOP_DAEMON} -S -p ${pid}/init_${compName}.pid -c ${user}:${group} -d ${compPath} ${UMASK_ARG} -m -x ${EXEC_COMMAND} -b"
-
+    # start the process in background
+    startcmd="${START_STOP_DAEMON} -S -p @PID_PATH@/init_${compName}.pid -c ${user}:${group} -d @RUNTIME_PATH@/${compName} ${UMASK_ARG} -m -x @EXEC_PATH@/init_${compType} -b"
     log "${startcmd}"
-
-    # Creating a Lock
-    lockPath=${lock}/${compName}
-    if [ ! -d $lockPath ]; then
-        mkdir -p $lockPath >>/dev/null 2>&1
-    fi
-    chown -c $user:$group $lockPath >> /dev/null 2>&1
-    lock ${lock}/${compName}/${compName}.lock
-
-    if [ $__lockCreated -eq 0 ]; then
-        log "Cannot create the lock file. File locked by subsystem"
-        log_failure_msg "Cannot create the lock file, File locked by subsystem"
-        return 3
-    fi
-
     eval $startcmd
 
-    while [[ ${WAITTIME} -gt 0 ]]; do
-        WAITTIME=`expr ${WAITTIME} - 1`
-        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${SENTINEL_CHECK}
-        RCSTART=$?
-        if [[ ${RCSTART} -eq 0 ]]; then
-            log_success_msg
-            return 0;
-        fi
-        checkPidExist $PIDPATH
-        local initRunning=$__pidExists
-        if [[ $initRunning -eq 0 ]]; then
-            log "${compName} failed to start cleanly"
-            log "Refer to the log file for the binary ${compName} for more information"
-            log_failure_msg
-            cleanupRuntimeEnvironment
-            return 1;
-        fi
+    # check for spawning health
+    while [[ ${_wait} -gt 0 ]]; do
+        _wait=`expr ${_wait} - 1`
+        check_status ${compType} ${compName} ${sentinelCheck} 
+        _rc=$?
+        [[ ${_rc} -eq 0 ]] && log_success_msg && return 0
+        [[ ${_rc} -eq 1 ]] && log_failure_msg && return 1
         sleep 1
     done
 
+    # timeout met and process still spawning
     log_timeout_msg
     log "${compName} has timed out, but may still be starting"
-
-    chmod 644 ${envfile}
-
-    return ${RCSTART}
+    return 2
 }
 
+# Stop component specified
+# Arg 1     string compType
+# Arg 2     string compName
+# rc 0      successful
+# rc 1      failed
 stop_component() {
+    compType=$1
+    compName=$2
+    local sentinelCheck=1
+    local _rc=0
+    local _wait=30
+
+    # Creating dirs for component if not present
     printf "Stopping %-21s" "${compName}... "
 
-    if [ ! -d ${compPath} ] ; then
+    check_status ${compType} ${compName} 0
+    _rc=$?
+    if [[ $_rc -eq 1 ]]; then
         log_success_msg
         return 0;
     fi
-    cd ${compPath}
-    if [ $? -ne 0 ] ; then
-        log_failure_msg
-        return 1;
-    fi
 
-    if [[ -e "${PIDPATH}" ]]; then
-        stopcmd="${START_STOP_DAEMON} -K -p ${PIDPATH}"
-        log "$stopcmd"
-        eval $stopcmd
+    stopcmd="${START_STOP_DAEMON} -K -p @PID_PATH@/init_${compName}.pid"
+    log "$stopcmd"
+    eval $stopcmd
 
-        local RESULT=1
-        local WAITTIME=30
-        [[ $compType = "dali" ]] && WAITTIME=720
-        while [[ $RESULT -ne 0 && $WAITTIME -gt 0 ]]; do
-            checkPidExist $PIDPATH
-            RESULT=$__pidExists
-            ((WAITTIME--))
-            if ! ((WAITTIME % 60)); then
-                echo "still stopping ..."
-            fi
-            [[ $RESULT -ne 0 ]] && sleep 1
-        done
-
-        if [[ $RESULT -ne 0 ]]; then
-            log_failure_msg
-            return $RESULT
+    [[ "${compType}" = "dali" ]] && _wait=720
+    while [[ $_rc -ne 1 && $_wait -gt 0 ]]; do
+        check_status ${compType} ${compName} ${sentinelCheck}    
+        _rc=$?
+        ((WAITTIME--))
+        if ! ((WAITTIME % 60)); then
+            echo "still stopping ..."
         fi
+        [[ $_rc -ne 1 ]] && sleep 1
+    done
+
+    if [[ $_rc -ne 1 ]]; then
+        log_failure_msg
+        return 1
     fi
 
     log_success_msg
-    cleanupRuntimeEnvironment
-    return $RESULT
+    rm -f @PID_PATH@/init_${compName}.pid
+    return 0
 }
 
-
-#--------------------------------------------------------------------------------
-#                        Component Specific Functions
-#--------------------------------------------------------------------------------
-
-
-start_component() {
-
-    # Creating logdirs for component
-    logDir=$log/${compName}
-
-    if [ ! -d $logDir ]; then
-        mkdir -p $logDir || return 1
-        chown $user:$group $logDir || return 1
-    fi
-
-    # Creating Runtime
-    createRuntime $compName $compPath
-
-    # starting Component
-    configGenCmd $compName
-    STAT=0;
-
-    if [ ${runSetupOnly} -ne 1 ]
-    then
-        cd ${compPath} || return 1
-        startCmd ${compName} 0
-        STAT=$?
-    fi
-    return $STAT;
-}
-
-restart_component() {
-    if strstr "${compType}" "dafilesrv" ;then
-      ${INIT_PATH}/dafilesrv status 1>/dev/null 2>/dev/null
-      if [ $? -eq 0 ];then
-        ${INIT_PATH}/dafilesrv stop 2>/dev/null
-      else
-        log  "$compName ---> Stopped.  Now Starting ..."
-        echo "Component $compName was not running. Will start it now for you ..."
-        cleanupRuntimeEnvironment
-      fi
-      ${INIT_PATH}/dafilesrv start 2>/dev/null
-    else
-      check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
-      RCRESTART=$?
-      if [ $RCRESTART -ne 0 ];then
-        log  "$compName ---> Stopped.  Now Starting ..."
-        echo "Component $compName was not running. Will start it now for you ..."
-        cleanupRuntimeEnvironment
-      else
-        stop_component ${compName}
-      fi
-      start_component $compName
-      check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
-      RCRESTART=$?
-      return $RCRESTART
-    fi
-}
-
+# status of component specified
+# Arg 1     string compType
+# Arg 2     string compName
+# rc 0      successful
+# rc 1      failed
 status_component() {
-  check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
-  RCSTATUS=$?
-  getPid ${COMPPIDPATH}
-  if [[ ${RCSTATUS} -ne 0 ]]; then
-    log "${compName} ---> Stopped"
-    printf "%-15s is stopped" "$compName"
-  elif [[ ${compType} == "thor" ]]; then
-    if [[ -e ${runtime}/${compName}/slaves && -e ${runtime}/${compName}/setvars ]]; then
-      source ${runtime}/${compName}/setvars
-      __slaves=$(cat ${runtime}/${compName}/slaves | wc -l)
-      __slaveprocesses=$((${__slaves} * ${slavespernode}))
-      log "${compName} ---> Running ( pid ${__pidValue} ) with {__slaveprocesses} slave process(es)"
-      printf "%-15s ( pid %8s ) is running with %s slave process(es) ..." "${compName}" "${__pidValue}" "${__slaveprocesses}"
-    else
-      log "${compName} missing file in ${runtime}/${compName} necessary for status_component"
-      printf "${compName} missing file in ${runtime}/${compName} necessary for status_component"
-    fi
-  else
-    log "${compName} ---> Running ( pid ${__pidValue} )"
-    printf "%-15s ( pid %8s ) is running ..." "${compName}" "${__pidValue}"
-  fi
-  echo ""
-  return ${RCSTATUS}
-}
+    compType=$1
+    compName=$2
+    local sentinelCheck=1
+    local _rc=0
 
-
-setup_component() {
-    printf "Setting %-22s" "$compName.... "
-    runSetupOnly=1
-    start_component ${compName}
-    runSetupOnly=0
-    if [ $? -eq 0 ];
-    then
-       log_success_msg ""
-       return 0
+    if [[ ${_use_systemd:-1} -eq 0 ]]; then
+        systemctl is-active ${compType}@${compName}.service 1>/dev/null 2>&1
+        _rc=$?
     else
-       log_failure_msg ""
-       return 3
+        check_status ${compType} ${compName} ${sentinelCheck}
+        _rc=$?
     fi
+    # getpid returns __pidValue
+    getPid @PID_PATH@/${compName}.pid
+
+    if [[ $_rc -gt 0 && $_rc -ne 2 ]]; then
+        log "${compName} ---> Stopped"
+        printf "%-15s is stopped" "$compName"
+    elif [[ $_rc -eq 2 ]]; then
+        log "${compName} ---> Spawning"
+        printf "%-15s is spawning" "$compName"
+    elif [[ "${compType}" == "thor" ]]; then
+        if [[ -e @RUNTIME_PATH@/${compName}/slaves && -e @RUNTIME_PATH@/${compName}/setvars ]]; then
+            source @RUNTIME_PATH@/${compName}/setvars
+            __slaves=$(cat @RUNTIME_PATH@/${compName}/slaves | wc -l)
+            __slaveprocesses=$((${__slaves} * ${slavespernode}))
+            log "${compName} ---> Running ( pid ${__pidValue} ) with {__slaveprocesses} slave process(es)"
+            printf "%-15s ( pid %8s ) is running with %s slave process(es) ..." "${compName}" "${__pidValue}" "${__slaveprocesses}"
+        else
+            log "${compName} missing file in @RUNTIME_PATH@/${compName} necessary for status_component"
+            printf "${compName} missing file in @RUNTIME_PATH@/${compName} necessary for status_component"
+        fi
+    else
+        log "${compName} ---> Running ( pid ${__pidValue} )"
+        printf "%-15s ( pid %8s ) is running ..." "${compName}" "${__pidValue}"
+    fi
+    echo ""
+    return $_rc
 }
 
 create_dropzone() {
     OIFS=${IFS}
     unset IFS
-    dropzones=$(${configgen_path}/configgen -env ${envfile} -listdirs)
+    dropzones=$(@ADMIN_PATH@/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -listdirs)
     rc=$?
     if [[ $rc -ne 0 ]]; then
         log  "create_dropzone(): failure in configgen call"
@@ -866,7 +777,7 @@ run_cluster() {
 
     if [[ -z "$3" ]]; then
         validate_configuration
-        t_IP=$(${INSTALL_DIR}/sbin/configgen -env ${CONFIG_DIR}/${ENV_XML_FILE} -machines)
+        t_IP=$(@INSTALL_DIR@/sbin/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -machines)
         rc=$?
         if [[ $rc -ne 0 ]]; then
             log  "run_cluster(): failure in configgen call"
@@ -907,8 +818,8 @@ run_cluster() {
    _num_failed=0
    _num_processed=0
    _pregress=0
-   _log_file=${LOG_DIR}/cluster/se_$(basename $_cmd)_$(date +%Y%m%d_%H%M%S).log
-   [ ! -d ${LOG_DIR}/cluster ] && mkdir -p ${LOG_DIR}/cluster
+   _log_file=@LOG_PATH@/cluster/se_$(basename $_cmd)_$(date +%Y%m%d_%H%M%S).log
+   [ ! -d @LOG_PATH@/cluster ] && mkdir -p @LOG_PATH@/cluster
    [ -e $_log_file ] && rm -rf $_log_file
    if [ "$RUN_CLUSTER_DISPLAY_OUTPUT" != "TRUE" ]
    then
@@ -963,9 +874,9 @@ cluster_tools_init() {
    #[ "$(id -u)" != "0" ] && _cmd_prefix=sudo
 
    # Check and set log directory
-   CLUSTER_LOG_DIR=${LOG_DIR}/cluster
-   #[ ! -d $LOG_DIR ]  && ${_cmd_prefix} ${INIT_PATH}/hpcc-init status > /dev/null 2>&1
-   [ ! -d $LOG_DIR ]  && ${INIT_PATH}/hpcc-init status > /dev/null 2>&1
+   CLUSTER_LOG_DIR=@LOG_PATH@/cluster
+   #[ ! -d $LOG_DIR ]  && ${_cmd_prefix} @INIT_PATH@/hpcc-init status > /dev/null 2>&1
+   [ ! -d $LOG_DIR ]  && @INIT_PATH@/hpcc-init status > /dev/null 2>&1
 
    [ ! -d $CLUSTER_LOG_DIR ] && mkdir -p $CLUSTER_LOG_DIR
    # workaround inconsistency of stat command
@@ -973,6 +884,7 @@ cluster_tools_init() {
    [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${group} $CLUSTER_LOG_DIR
 }
 
+## TODO: get rid of this if possible for update of init system
 ##
 ## Cleanup component
 ##

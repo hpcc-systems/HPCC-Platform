@@ -22,6 +22,7 @@
 //Jlib
 #include "jliball.hpp"
 #include "jstats.h"
+#include "jutil.hpp"
 
 //CRT / OS
 #ifndef _WIN32
@@ -230,6 +231,7 @@ static void usage()
     puts("  esp [options]");
     puts("Options:");
     puts("  -?/-h: show this help page");
+    puts("  --daemon <instance>: start in background as daemon");
     puts("  interactive: start in interactive mode (pop up error dialog when exception occurs)");
     puts("  config=<file>: specify the config file name [default: esp.xml]");
     puts("  process=<name>: specify the process name in the config [default: the 1st process]");
@@ -238,6 +240,15 @@ static void usage()
 
 int init_main(int argc, char* argv[])
 {
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (strcmp("--daemon",argv[i])==0 || strcmp("-d",argv[i])==0) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+            break;
+        }
+    }
     InitModuleObjects();
 
     Owned<IProperties> inputs = createProperties(true);
@@ -249,6 +260,8 @@ int init_main(int argc, char* argv[])
         if (stricmp(argv[i], "-?")==0 || stricmp(argv[i], "-h")==0 || stricmp(argv[i], "-help")==0
              || stricmp(argv[i], "/?")==0 || stricmp(argv[i], "/h")==0)
              usage();
+        else if(stricmp(argv[i], "--daemon")==0 || stricmp(argv[i], "-d")==0)
+            i++; // skip the instance that follows --daemon|-d
         else if(stricmp(argv[i], "interactive") == 0)
             interactive = true;
         else if (strchr(argv[i],'='))

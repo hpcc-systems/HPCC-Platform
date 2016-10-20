@@ -306,7 +306,7 @@ void sighandler(int signum, siginfo_t *info, void *extra)
 
 int initDaemon()
 {
-    int ret = make_daemon(true);
+    int ret = daemon(1,0);
     if (ret)
         return ret;
     struct sigaction act;
@@ -658,6 +658,7 @@ int main(int argc,char **argv)
         lf->beginLogging();
     }
 
+    write_pidfile(instanceName.str());
     PROGLOG("Dafilesrv starting - Build %s", BUILD_TAG);
     PROGLOG("Parallel request limit = %d, throttleDelayMs = %d, throttleCPULimit = %d", parallelRequestLimit, throttleDelayMs, throttleCPULimit);
 

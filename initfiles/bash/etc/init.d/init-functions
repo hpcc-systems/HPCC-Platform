@@ -198,22 +198,6 @@ log_timeout_msg () {
     fi
 }
 
-# general logging message for init scripts
-# expects $logfile to exist within the context of where it's called
-log() {
-  if [[ -z ${logfile+x} ]]; then
-    # logfile isn't set within the context of this function call
-    return 1
-  fi
-
-  local msg=$@
-  local header=$( date +%Y_%m_%d_%H_%M_%S )
-  local header="${header}: "
-  printf "%s%s\n" "$header" "$msg" >> $logfile
-
-  return 0
-}
-
 #log_success_msg () {
 #    if [ -n "${1:-}" ]; then
 #        log_begin_msg $@

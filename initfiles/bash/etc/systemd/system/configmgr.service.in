@@ -1,0 +1,20 @@
+[Unit]
+Description=configmgr
+After=network.target remote-fs.target configmgr-conf.service @dependencies@
+Requires=configmgr-conf.service
+
+[Service]
+Type=forking
+User=@RUNTIME_USER@
+Group=@RUNTIME_GROUP@
+PermissionsStartOnly=true
+WorkingDirectory=@RUNTIME_PATH@/configmgr
+PIDFile=@PID_PATH@/configmgr.pid
+ExecStart=@EXEC_PATH@/esp --daemon configmgr
+Restart=on-failure
+RestartSec=5
+TimeoutSec=30
+
+[Install]
+WantedBy=default.target
+DefaultInstance=configmgr
