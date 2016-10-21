@@ -94,6 +94,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_SIGNED_CHAR "Build system with default char type is signed" OFF)
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
   option(USE_MYSQL "Enable mysql support" ON)
+  option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
   # Generates code that is more efficient, but will cause problems if target platforms do not support it.
   if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     option(USE_INLINE_TSC "Inline calls to read TSC (time stamp counter)" ON)
@@ -162,7 +163,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         endif()
     endforeach()
     #"cmake -DEXAMPLEPLUGIN=ON <path-to/HPCC-Platform/>" will configure the plugin makefiles to be built with "make".
-    option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
   if (SIGN_MODULES)
       message(STATUS "GPG signing check")
