@@ -1258,7 +1258,7 @@ public:
         PyEval_RestoreThread(sharedCtx->threadState);
         locals.setown(PyDict_New());
         globals.setown(PyDict_New());
-        PyDict_SetItemString(locals, "__builtins__", PyEval_GetBuiltins());  // required for import to work
+        PyDict_SetItemString(globals, "__builtins__", PyEval_GetBuiltins());  // required for import to work
     }
     ~Python27EmbedContextBase()
     {
@@ -1522,12 +1522,12 @@ public:
 
     virtual void callFunction()
     {
-        result.setown(PyEval_EvalCode((PyCodeObject *) script.get(), locals, globals));
+        result.setown(PyEval_EvalCode((PyCodeObject *) script.get(), globals, locals));
         checkPythonError();
         if (!result || result == Py_None)
-            result.set(PyDict_GetItemString(locals, "__result__"));
-        if (!result || result == Py_None)
             result.set(PyDict_GetItemString(globals, "__result__"));
+        if (!result || result == Py_None)
+            result.set(PyDict_GetItemString(locals, "__result__"));
     }
 protected:
     virtual void addArg(const char *name, PyObject *arg)
@@ -1535,7 +1535,7 @@ protected:
         if (!arg)
             return;
         assertex(arg);
-        PyDict_SetItemString(locals, name, arg);
+        PyDict_SetItemString(globals, name, arg);
         Py_DECREF(arg);
         checkPythonError();
     }
