@@ -1666,11 +1666,13 @@ IHqlExpression * foldEmbeddedCall(IHqlExpression* expr, unsigned foldOptions, IT
     assertex(query);
     StringBuffer queryText;
     query->getUTF8Value(queryText);
-    if (isImport)
-        __ctx->importFunction(queryText.lengthUtf8(), queryText.str());
-    else
-        __ctx->compileEmbeddedScript(queryText.lengthUtf8(), queryText.str());
-
+    if (!body->hasAttribute(prebindAtom))
+    {
+        if (isImport)
+            __ctx->importFunction(queryText.lengthUtf8(), queryText.str());
+        else
+            __ctx->compileEmbeddedScript(queryText.lengthUtf8(), queryText.str());
+    }
     // process all the parameters passed in
     unsigned numParam = expr->numChildren();
     for(unsigned i = 0; i < numParam; i++)
@@ -1777,6 +1779,13 @@ IHqlExpression * foldEmbeddedCall(IHqlExpression* expr, unsigned foldOptions, IT
         default:
             return NULL;
         }
+    }
+    if (body->hasAttribute(prebindAtom))
+    {
+        if (isImport)
+            __ctx->importFunction(queryText.lengthUtf8(), queryText.str());
+        else
+            __ctx->compileEmbeddedScript(queryText.lengthUtf8(), queryText.str());
     }
     __ctx->callFunction();
 

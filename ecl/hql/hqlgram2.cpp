@@ -931,6 +931,9 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         OwnedHqlExpr checkSupport = pluginScope->lookupSymbol(isImport ? supportsImportId : supportsScriptId, LSFpublic, lookupCtx);
         if (!matchesBoolean(checkSupport, true))
             reportError(ERR_PluginNoScripting, errpos, "Module %s does not support %s", str(moduleId), isImport ? "import" : "script");
+        OwnedHqlExpr prebind = pluginScope->lookupSymbol(prebindId, LSFpublic, lookupCtx);
+        if (matchesBoolean(prebind, true))
+            args.append(*createAttribute(prebindAtom));
         OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckId, LSFpublic, lookupCtx);
         if (syntaxCheckFunc && !isImport)
         {
