@@ -1081,7 +1081,9 @@ static const ChildTableInfo wuGraphMetasTable =
         {"totalrowcount", "bigint", "totalRowCount", bigintColumnMapper},  /* This is the number of rows in value */ \
         {"schemaRaw", "blob", "SchemaRaw", blobColumnMapper},              \
         {"logicalName", "text", "logicalName", stringColumnMapper},        /* either this or value will be present once result status is "calculated" */ \
-        {"value", "blob", "Value", blobColumnMapper}
+        {"value", "blob", "Value", blobColumnMapper}, \
+        {"graph", "text", "@graph", stringColumnMapper}, \
+        {"activity", "int", "@activity", intColumnMapper}
 
 static const CassandraXmlMapping wuResultsMappings [] =
 {
