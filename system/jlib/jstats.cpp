@@ -613,6 +613,9 @@ static const StatisticMeta statsMetaData[StMax] = {
     { TIMESTAT(TotalNested) },
     { CYCLESTAT(LocalExecute) },
     { NUMSTAT(Compares) },
+    { NUMSTAT(ScansPerRow) },
+    { NUMSTAT(Allocations) },
+    { NUMSTAT(AllocationScans) },
 };
 
 
@@ -925,6 +928,7 @@ void StatisticsMapping::createMappings()
 }
 
 const StatisticsMapping allStatistics;
+const StatisticsMapping heapStatistics(StNumAllocations, StNumAllocationScans, StKindNone);
 const StatisticsMapping diskLocalStatistics(StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StKindNone);
 const StatisticsMapping diskRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StKindNone);
 const StatisticsMapping diskReadRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StKindNone);
@@ -1625,10 +1629,11 @@ CRuntimeStatisticCollection::~CRuntimeStatisticCollection()
     delete nested;
 }
 
-void CRuntimeStatisticCollection::ensureNested()
+CNestedRuntimeStatisticMap & CRuntimeStatisticCollection::ensureNested()
 {
     if (!nested)
         nested = new CNestedRuntimeStatisticMap;
+    return *nested;
 }
 
 void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & other)
@@ -1638,12 +1643,38 @@ void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & othe
         StatisticKind kind = other.getKind(i);
         unsigned __int64 value = other.getStatisticValue(kind);
         if (value)
-            mergeStatistic(kind, other.getStatisticValue(kind));
+            mergeStatistic(kind, value);
     }
     if (other.nested)
     {
-        ensureNested();
-        nested->merge(*other.nested);
+        ensureNested().merge(*other.nested);
+    }
+}
+
+void CRuntimeStatisticCollection::updateDelta(CRuntimeStatisticCollection & target, const CRuntimeStatisticCollection & source)
+{
+    ForEachItemIn(i, source)
+    {
+        StatisticKind kind = source.getKind(i);
+        unsigned __int64 sourceValue = source.getStatisticValue(kind);
+        if (queryMergeMode(kind) == StatsMergeSum)
+        {
+            unsigned __int64 prevValue = getStatisticValue(kind);
+            if (sourceValue != prevValue)
+            {
+                target.mergeStatistic(kind, sourceValue - prevValue);
+                setStatistic(kind, sourceValue);
+            }
+        }
+        else
+        {
+            if (sourceValue)
+                target.mergeStatistic(kind, sourceValue);
+        }
+    }
+    if (source.nested)
+    {
+        ensureNested().updateDelta(target.ensureNested(), *source.nested);
     }
 }
 
@@ -1652,10 +1683,23 @@ void CRuntimeStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __
     queryStatistic(kind).merge(value, queryMergeMode(kind));
 }
 
+void CRuntimeStatisticCollection::reset()
+{
+    unsigned num = mapping.numStatistics();
+    for (unsigned i = 0; i <= num; i++)
+        values[i].clear();
+}
+
+void CRuntimeStatisticCollection::reset(const StatisticsMapping & toClear)
+{
+    unsigned num = toClear.numStatistics();
+    for (unsigned i = 0; i < num; i++)
+        queryStatistic(toClear.getKind(i)).clear();
+}
+
 CRuntimeStatisticCollection & CRuntimeStatisticCollection::registerNested(const StatsScopeId & scope, const StatisticsMapping & mapping)
 {
-    ensureNested();
-    return nested->addNested(scope, mapping).queryStats();
+    return ensureNested().addNested(scope, mapping).queryStats();
 }
 
 void CRuntimeStatisticCollection::rollupStatistics(unsigned numTargets, IContextLogger * const * targets) const
@@ -1751,8 +1795,7 @@ void CRuntimeStatisticCollection::deserialize(MemoryBuffer& in)
     in.read(hasNested);
     if (hasNested)
     {
-        ensureNested();
-        nested->deserializeMerge(in);
+        ensureNested().deserializeMerge(in);
     }
 }
 
@@ -1773,8 +1816,7 @@ void CRuntimeStatisticCollection::deserializeMerge(MemoryBuffer& in)
     in.read(hasNested);
     if (hasNested)
     {
-        ensureNested();
-        nested->deserializeMerge(in);
+        ensureNested().deserializeMerge(in);
     }
 }
 
@@ -1859,10 +1901,11 @@ CRuntimeSummaryStatisticCollection::~CRuntimeSummaryStatisticCollection()
     delete[] derived;
 }
 
-void CRuntimeSummaryStatisticCollection::ensureNested()
+CNestedRuntimeStatisticMap & CRuntimeSummaryStatisticCollection::ensureNested()
 {
     if (!nested)
         nested = new CNestedSummaryRuntimeStatisticMap;
+    return *nested;
 }
 
 void CRuntimeSummaryStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __int64 value)
@@ -1992,6 +2035,11 @@ StringBuffer & CNestedRuntimeStatisticCollection::toXML(StringBuffer &str) const
     return str.append("</Scope>");
 }
 
+void CNestedRuntimeStatisticCollection::updateDelta(CNestedRuntimeStatisticCollection & target, const CNestedRuntimeStatisticCollection & source)
+{
+    stats->updateDelta(*target.stats, *source.stats);
+}
+
 //---------------------------------------------------
 
 CNestedRuntimeStatisticCollection & CNestedRuntimeStatisticMap::addNested(const StatsScopeId & scope, const StatisticsMapping & mapping)
@@ -2045,6 +2093,17 @@ void CNestedRuntimeStatisticMap::merge(const CNestedRuntimeStatisticMap & other)
         CNestedRuntimeStatisticCollection & cur = other.map.item(i);
         CNestedRuntimeStatisticCollection & target = addNested(cur.scope, cur.queryMapping());
         target.merge(cur);
+    }
+}
+
+void CNestedRuntimeStatisticMap::updateDelta(CNestedRuntimeStatisticMap & target, const CNestedRuntimeStatisticMap & source)
+{
+    ForEachItemIn(i, source.map)
+    {
+        CNestedRuntimeStatisticCollection & curSource = source.map.item(i);
+        CNestedRuntimeStatisticCollection & curTarget = target.addNested(curSource.scope, curSource.queryMapping());
+        CNestedRuntimeStatisticCollection & curDelta = addNested(curSource.scope, curSource.queryMapping());
+        curDelta.updateDelta(curTarget, curSource);
     }
 }
 

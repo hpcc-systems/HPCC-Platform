@@ -180,6 +180,9 @@ enum StatisticKind
     StTimeTotalNested,
     StCycleLocalExecuteCycles,
     StNumCompares,
+    StNumScansPerRow,
+    StNumAllocations,
+    StNumAllocationScans,
 
     StMax,
 
