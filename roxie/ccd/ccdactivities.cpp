@@ -384,8 +384,14 @@ protected:
 
     ~CRoxieSlaveActivity()
     {
-        basefactory->mergeStats(logctx.queryStats());
         ::Release(basehelper);
+    }
+
+    virtual void beforeDispose() override
+    {
+        CRuntimeStatisticCollection merged(allStatistics);
+        logctx.gatherStats(merged);
+        basefactory->mergeStats(merged);
     }
 
 public:

@@ -506,14 +506,15 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
     "@TimeDelta" # y, \
     "@TimeStdDev" # y,
 
-#define CORESTAT(x, y, m)     St##x##y, m, St##x##y, { NAMES(x, y) }, { TAGS(x, y) }
+#define CORESTAT(x, y, m)     St##x##y, m, St##x##y, St##x##y, { NAMES(x, y) }, { TAGS(x, y) }
 #define STAT(x, y, m)         CORESTAT(x, y, m)
 
 //--------------------------------------------------------------------------------------------------------------------
 
 //These are the macros to use to define the different entries in the stats meta table
-#define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
-#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
+//#define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
+#define TIMESTAT(y) St##Time##y, SMeasureTimeNs, St##Time##y, St##Cycle##y##Cycles, { NAMES(Time, y) }, { TAGS(Time, y) }
+#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
 #define NUMSTAT(y) STAT(Num, y, SMeasureCount)
 #define SIZESTAT(y) STAT(Size, y, SMeasureSize)
 #define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
@@ -521,7 +522,7 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 #define NODESTAT(y) STAT(Node, y, SMeasureNode)
 #define PERSTAT(y) STAT(Per, y, SMeasurePercent)
 #define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4)
-#define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, St##Time##y, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
+#define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, St##Time##y, St##Cycle##y##Cycles, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -531,14 +532,15 @@ public:
     StatisticKind kind;
     StatisticMeasure measure;
     StatisticKind serializeKind;
+    StatisticKind rawKind;
     const char * names[StNextModifier/StVariantScale];
     const char * tags[StNextModifier/StVariantScale];
 };
 
 //The order of entries in this table must match the order in the enumeration
 static const StatisticMeta statsMetaData[StMax] = {
-    { StKindNone, SMeasureNone, StKindNone, { "none" }, { "@none" } },
-    { StKindAll, SMeasureAll, StKindAll, { "all" }, { "@all" } },
+    { StKindNone, SMeasureNone, StKindNone, StKindNone, { "none" }, { "@none" } },
+    { StKindAll, SMeasureAll, StKindAll, StKindAll, { "all" }, { "@all" } },
     { WHENSTAT(GraphStarted) },
     { WHENSTAT(GraphFinished) },
     { WHENSTAT(FirstRow) },
@@ -617,6 +619,11 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(Allocations) },
     { NUMSTAT(AllocationScans) },
     { NUMSTAT(DiskRetries) },
+    { CYCLESTAT(Elapsed) },
+    { CYCLESTAT(Remaining) },
+    { CYCLESTAT(Soapcall) },
+    { CYCLESTAT(FirstExecute) },
+    { CYCLESTAT(TotalNested) },
 };
 
 
@@ -715,13 +722,22 @@ static double convertSquareMeasure(StatisticKind from, StatisticKind to, double 
 }
 
 
-StatisticKind querySerializedKind(StatisticKind kind)
+static StatisticKind querySerializedKind(StatisticKind kind)
 {
     StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
     if (rawkind >= StMax)
         return kind;
     StatisticKind serialKind = statsMetaData[rawkind].serializeKind;
     return (StatisticKind)(serialKind | (kind & ~StKindMask));
+}
+
+static StatisticKind queryRawKind(StatisticKind kind)
+{
+    StatisticKind basekind = (StatisticKind)(kind & StKindMask);
+    if (basekind >= StMax)
+        return kind;
+    StatisticKind rawKind = statsMetaData[basekind].rawKind;
+    return (StatisticKind)(rawKind | (kind & ~StKindMask));
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -1637,14 +1653,39 @@ CNestedRuntimeStatisticMap & CRuntimeStatisticCollection::ensureNested()
     return *nested;
 }
 
+unsigned __int64 CRuntimeStatisticCollection::getSerialStatisticValue(StatisticKind kind) const
+{
+    unsigned __int64 value = getStatisticValue(kind);
+    StatisticKind rawKind= queryRawKind(kind);
+    if (kind == rawKind)
+        return value;
+    unsigned __int64 rawValue = getStatisticValue(rawKind);
+    return value + convertMeasure(rawKind, kind, rawValue);
+}
+
 void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & other)
 {
-    ForEachItemIn(i, other)
+    if (&mapping == &other.mapping)
     {
-        StatisticKind kind = other.getKind(i);
-        unsigned __int64 value = other.getStatisticValue(kind);
-        if (value)
-            mergeStatistic(kind, value);
+        ForEachItemIn(i, other)
+        {
+            unsigned __int64 value = other.values[i].get();
+            if (value)
+            {
+                StatisticKind kind = getKind(i);
+                values[i].merge(value, queryMergeMode(kind));
+            }
+        }
+    }
+    else
+    {
+        ForEachItemIn(i, other)
+        {
+            StatisticKind kind = other.getKind(i);
+            unsigned __int64 value = other.getStatisticValue(kind);
+            if (value)
+                mergeStatistic(kind, value);
+        }
     }
     if (other.nested)
     {
@@ -2575,6 +2616,13 @@ static void checkKind(StatisticKind kind)
         if (meta.kind != kind)
             throw makeStringExceptionV(0, "Statistic %u in the wrong order", kind);
     }
+
+    StatisticKind serialKind = querySerializedKind(kind);
+    StatisticKind rawKind = queryRawKind(kind);
+    if (kind != serialKind)
+        assertex(queryRawKind(serialKind) == kind);
+    if (kind != rawKind)
+        assertex(querySerializedKind(rawKind) == kind);
 
     StatisticMeasure measure = queryMeasure(kind);
     const char * shortName = queryStatisticName(kind);

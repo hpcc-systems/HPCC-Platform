@@ -184,6 +184,11 @@ enum StatisticKind
     StNumAllocations,
     StNumAllocationScans,
     StNumDiskRetries,
+    StCycleElapsedCycles,
+    StCycleRemainingCycles,
+    StCycleSoapcallCycles,
+    StCycleFirstExecuteCycles,
+    StCycleTotalNestedCycles,
 
     StMax,
 
