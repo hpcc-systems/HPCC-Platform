@@ -11878,7 +11878,8 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         else
             scriptArgs.append(*LINK(bodyCode->queryChild(0)));
     }
-    buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
+    if (!bodyCode->hasAttribute(prebindAtom))
+        buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
     ForEachChild(i, formals)
     {
         IHqlExpression * param = formals->queryChild(i);
@@ -11954,6 +11955,8 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         args.append(*createActualFromFormal(param));
         buildFunctionCall(funcctx, bindFunc, args);
     }
+    if (bodyCode->hasAttribute(prebindAtom))
+        buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
     funcctx.addQuotedLiteral("__ctx->callFunction();");
     IIdAtom * returnFunc;
     HqlExprArray retargs;
