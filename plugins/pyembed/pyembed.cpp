@@ -29,6 +29,7 @@
 #include "rtlfield_imp.hpp"
 #include "nbcd.hpp"
 #include "roxiemem.hpp"
+#include "enginecontext.hpp"
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -104,6 +105,19 @@ public:
     inline X **ref()                 { return &ptr; }
 };
 
+
+__declspec(noreturn) static void failx(const char *msg, ...) __attribute__((format(printf, 1, 2), noreturn));
+
+static void failx(const char *message, ...)
+{
+    va_list args;
+    va_start(args,message);
+    StringBuffer msg;
+    msg.append("pyembed: ").valist_appendf(message,args);
+    va_end(args);
+    rtlFail(0, msg.str());
+}
+
 // call checkPythonError to throw an exception if Python error state is set
 
 static void checkPythonError()
@@ -115,8 +129,7 @@ static void checkPythonError()
         PyErr_Fetch(pType.ref(), pValue.ref(), pTraceBack.ref());
         OwnedPyObject valStr = PyObject_Str(pValue);
         PyErr_Clear();
-        VStringBuffer errMessage("pyembed: %s", PyString_AsString(valStr));
-        rtlFail(0, errMessage.str());
+        failx("pyembed: %s", PyString_AsString(valStr));
     }
 }
 
@@ -277,6 +290,7 @@ public:
         const char *argv[] = { nullptr };
         PySys_SetArgvEx(0, (char **) argv, 0);
         PyEval_InitThreads();
+        preservedScopes.setown(PyDict_New());
         tstate = PyEval_SaveThread();
         initialized = true;
     }
@@ -292,6 +306,7 @@ public:
             namedtuple.clear();
             namedtupleTypes.clear();
             compiledScripts.clear();
+            preservedScopes.clear();
             Py_Finalize();
         }
         if (pythonLibrary)
@@ -407,6 +422,31 @@ public:
         }
         return code.getClear();
     }
+    PyObject *getNamedScope(const char *key, bool &isNew)
+    {
+        if (!preservedScopes)
+            preservedScopes.setown(PyDict_New());
+        OwnedPyObject scope;
+        scope.set(PyDict_GetItemString(preservedScopes, key));
+        if (!scope)
+        {
+            scope.setown(PyDict_New());
+            PyDict_SetItemString(preservedScopes, key, scope);
+            isNew = true;
+        }
+        else
+            isNew = false;
+        return scope.getClear();
+    }
+    void releaseNamedScope(const char *key)
+    {
+        if (preservedScopes)
+        {
+            PyDict_DelItemString(preservedScopes, key);
+            PyErr_Clear();  // Should be present, but ignore the error if it is not
+        }
+    }
+    static void unregister(const char *key);
 protected:
     static StringBuffer &wrapPythonText(StringBuffer &out, const char *in, const char *params)
     {
@@ -427,6 +467,7 @@ protected:
     OwnedPyObject namedtuple;      // collections.namedtuple
     OwnedPyObject namedtupleTypes; // dictionary of return values from namedtuple()
     OwnedPyObject compiledScripts; // dictionary of previously compiled scripts
+    OwnedPyObject preservedScopes; // dictionary of preserved scopes
 } globalState;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -1199,6 +1240,13 @@ private:
     PyThreadState * &state;
 };
 
+void Python27GlobalState::unregister(const char *key)
+{
+    checkThreadContext();
+    GILBlock b(threadContext->threadState);
+    globalState.releaseNamedScope(key);
+}
+
 // A Python function that returns a dataset will return a PythonRowStream object that can be
 // interrogated to return each row of the result in turn
 
@@ -1261,9 +1309,71 @@ public:
     : sharedCtx(_sharedCtx)
     {
         PyEval_RestoreThread(sharedCtx->threadState);
+    }
+
+    void setScopes(ICodeContext *codeCtx, const char *_options)
+    {
         locals.setown(PyDict_New());
-        globals.setown(PyDict_New());
-        PyDict_SetItemString(globals, "__builtins__", PyEval_GetBuiltins());  // required for import to work
+        StringArray options;
+        options.appendList(_options, ",");
+        StringBuffer scopeKey;
+        const char *scopeKey2 = nullptr;
+        bool registerCallback = false;
+        bool wuidScope = false;
+        IEngineContext *engine = nullptr;
+        ForEachItemIn(idx, options)
+        {
+            const char *opt = options.item(idx);
+            const char *val = strchr(opt, '=');
+            if (val)
+            {
+                StringBuffer optName(val-opt, opt);
+                val++;
+                if (strieq(optName, "globalscope"))
+                    scopeKey2 = val;
+                else if (strieq(optName, "persist"))
+                {
+                    if (scopeKey.length())
+                        failx("persist option specified more than once");
+                    if (strieq(val, "global"))
+                        scopeKey.append("global");
+                    else if (strieq(val, "workunit"))
+                    {
+                        engine = codeCtx->queryEngineContext();
+                        wuidScope = true;
+                        if (!engine)
+                            failx("Persist mode 'workunit' not supported here");
+                    }
+                    else if (strieq(val, "query"))
+                    {
+                        engine = codeCtx->queryEngineContext();
+                        wuidScope = false;
+                        if (!engine)
+                            failx("Persist mode 'query' not supported here");
+                    }
+                    else
+                        failx("Unrecognized persist mode %s", val);
+                }
+                else
+                    failx("Unrecognized option %s", optName.str());
+            }
+            else
+                failx("Unrecognized option %s", opt);
+        }
+        if (engine)
+            engine->getQueryId(scopeKey, wuidScope);
+        if (scopeKey2)
+            scopeKey.append(':').append(scopeKey2);
+        if (scopeKey.length())
+        {
+            bool isNew;
+            globals.setown(globalState.getNamedScope(scopeKey, isNew));
+            if (isNew && engine)
+                engine->onTermination(Python27GlobalState::unregister, scopeKey.str(), wuidScope);
+        }
+        else
+            globals.setown(PyDict_New());
+        PyDict_SetItemString(globals, "__builtins__",  PyEval_GetBuiltins());  // required for import to work
     }
     ~Python27EmbedContextBase()
     {
@@ -1497,7 +1607,7 @@ protected:
 class Python27EmbedScriptContext : public Python27EmbedContextBase
 {
 public:
-    Python27EmbedScriptContext(PythonThreadContext *_sharedCtx, const char *options)
+    Python27EmbedScriptContext(PythonThreadContext *_sharedCtx)
     : Python27EmbedContextBase(_sharedCtx)
     {
     }
@@ -1514,7 +1624,6 @@ public:
     virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
     {
     }
-
 
     virtual void importFunction(size32_t lenChars, const char *text)
     {
@@ -1555,7 +1664,7 @@ protected:
 class Python27EmbedImportContext : public Python27EmbedContextBase
 {
 public:
-    Python27EmbedImportContext(PythonThreadContext *_sharedCtx, const char *options)
+    Python27EmbedImportContext(PythonThreadContext *_sharedCtx)
     : Python27EmbedContextBase(_sharedCtx)
     {
         argcount = 0;
@@ -1611,10 +1720,13 @@ public:
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
     {
         checkThreadContext();
+        Owned<Python27EmbedContextBase> ret;
         if (flags & EFimport)
-            return new Python27EmbedImportContext(threadContext, options);
+            ret.setown(new Python27EmbedImportContext(threadContext));
         else
-            return new Python27EmbedScriptContext(threadContext, options);
+            ret.setown(new Python27EmbedScriptContext(threadContext));
+        ret->setScopes(ctx, options);
+        return ret.getClear();
     }
     virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
     {

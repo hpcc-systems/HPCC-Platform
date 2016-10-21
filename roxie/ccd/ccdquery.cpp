@@ -500,6 +500,8 @@ protected:
     static SpinLock queriesCrit;
     static CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> queryMap;
 
+    mutable CIArrayOf<TerminationCallbackInfo> callbacks;
+    mutable CriticalSection callbacksCrit;
 public:
     static CriticalSection queryCreateLock;
 
@@ -1536,6 +1538,11 @@ protected:
         }
     }
 
+    virtual void onTermination(TerminationCallbackInfo *info) const override
+    {
+        CriticalBlock b(callbacksCrit);
+        callbacks.append(*info);
+    }
 };
 
 CriticalSection CQueryFactory::queryCreateLock;

@@ -32,6 +32,7 @@
 #include "thorcommon.ipp"
 #include "roxierow.hpp"
 #include "package.h"
+#include "enginecontext.hpp"
 
 class TranslatorArray : public CInterface
 {
@@ -177,6 +178,7 @@ interface IQueryFactory : extends IInterface
     virtual void getQueryInfo(StringBuffer &result, bool full, IArrayOf<IQueryFactory> *slaveQueries,const IRoxieContextLogger &logctx) const = 0;
     virtual bool isDynamic() const = 0;
     virtual void checkSuspended() const = 0;
+    virtual void onTermination(TerminationCallbackInfo *info) const= 0;
 };
 
 class ActivityArray : public CInterface

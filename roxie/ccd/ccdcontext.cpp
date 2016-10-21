@@ -36,6 +36,7 @@
 #include "ccdsnmp.hpp"
 #include "ccdstate.hpp"
 #include "roxiehelper.hpp"
+#include "enginecontext.hpp"
 
 using roxiemem::IRowManager;
 
@@ -2602,7 +2603,7 @@ public:
 
 };
 
-class CRoxieServerContext : public CRoxieContextBase, implements IRoxieServerContext, implements IGlobalCodeContext
+class CRoxieServerContext : public CRoxieContextBase, implements IRoxieServerContext, implements IGlobalCodeContext, implements IEngineContext
 {
     const IQueryFactory *serverQueryFactory = nullptr;
     IHpccProtocolResponse *protocol = nullptr;
@@ -3029,6 +3030,56 @@ public:
     virtual IHpccProtocolResponse *queryProtocol()
     {
         return protocol;
+    }
+    virtual IEngineContext *queryEngineContext() { return this; }
+
+    virtual DALI_UID getGlobalUniqueIds(unsigned num, SocketEndpoint *_foreignNode)
+    {
+        if (num==0)
+            return 0;
+        SocketEndpoint foreignNode;
+        if (_foreignNode && !_foreignNode->isNull())
+            foreignNode.set(*_foreignNode);
+        else
+        {
+            Owned<IRoxieDaliHelper> dali = ::connectToDali();
+            if (!dali)
+                return 0;
+            StringBuffer daliIp;
+            dali->getDaliIp(daliIp);
+            foreignNode.set(daliIp.str());
+        }
+        return ::getGlobalUniqueIds(num, &foreignNode);
+    }
+    virtual bool allowDaliAccess() const
+    {
+        Owned<IRoxieDaliHelper> dali = ::connectToDali();
+        return dali != nullptr;
+    }
+    virtual StringBuffer &getQueryId(StringBuffer &result, bool isShared) const
+    {
+        if (workUnit)
+            result.append(workUnit->queryWuid()); // In workunit mode, this works for both shared and non-shared variants
+        else if (isShared)
+            result.append('Q').append(factory->queryHash());
+        else
+            logctx.getLogPrefix(result);
+        return result;
+    }
+
+    mutable CIArrayOf<TerminationCallbackInfo> callbacks;
+    mutable CriticalSection callbacksCrit;
+
+    virtual void onTermination(QueryTermCallback callback, const char *key, bool isShared) const
+    {
+        TerminationCallbackInfo *term(new TerminationCallbackInfo(callback, key));
+        if (isShared)
+            factory->onTermination(term);
+        else
+        {
+            CriticalBlock b(callbacksCrit);
+            callbacks.append(*term);
+        }
     }
 
     virtual void setResultBool(const char *name, unsigned sequence, bool value)
