@@ -219,16 +219,21 @@ bool ControlHandler(ahType type)
 {
     if (ahInterrupt == type)
         LOG(MCdebugProgress, thorJob, "CTRL-C detected");
-    else if (!jobListenerStopped)
-        LOG(MCdebugProgress, thorJob, "SIGTERM detected");
-    bool unregOK = false;
+    else
+    {
+        if (jobListenerStopped)
+            return false;
+        else
+            LOG(MCdebugProgress, thorJob, "SIGTERM detected");
+    }
+
     if (!jobListenerStopped)
     {
         if (masterNode)
-            unregOK = UnregisterSelf(NULL);
+            UnregisterSelf(NULL);
         abortSlave();
     }
-    return !unregOK;
+    return true;
 }
 
 void usage()

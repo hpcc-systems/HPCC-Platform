@@ -980,6 +980,13 @@ static void throwSigSegV()
 }
 #endif
 
+void termhandler(int signum)
+{
+    // allow time for flush in excsighandler to finish
+    Sleep(12500);
+    _exit(0);
+}
+
 void excsighandler(int signum, siginfo_t *info, void *extra) 
 {
     static byte nested=0;
@@ -987,12 +994,31 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
         return;
 
     excsignal = 0;
-#if defined(NO_LINUX_SEH) && !defined(SA_RESETHAND)
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGBUS, SIG_DFL);
-    signal(SIGILL, SIG_DFL);
-    signal(SIGFPE, SIG_DFL);
-    signal(SIGABRT, SIG_DFL);
+#if defined(NO_LINUX_SEH)
+    sigset_t blockset;
+    sigemptyset(&blockset);
+
+    struct sigaction act;
+    act.sa_mask = blockset;
+    act.sa_flags = 0;
+    act.sa_handler = SIG_DFL;
+    sigaction(SIGSEGV, &act, NULL);
+    sigaction(SIGILL, &act, NULL);
+    sigaction(SIGBUS, &act, NULL);
+    sigaction(SIGFPE, &act, NULL);
+    sigaction(SIGABRT, &act, NULL);
+
+    // don't get pre-empted by inits' as we are ending soon
+    sigaddset(&blockset, SIGINT);
+    sigaddset(&blockset, SIGQUIT);
+    sigaddset(&blockset, SIGTERM);
+    struct sigaction act2;
+    act2.sa_mask = blockset;
+    act2.sa_flags = 0;
+    act2.sa_handler = &termhandler;
+    sigaction(SIGINT, &act2, NULL);
+    sigaction(SIGQUIT, &act2, NULL);
+    sigaction(SIGTERM, &act2, NULL);
 #endif
     StringBuffer s;
 
@@ -1258,14 +1284,17 @@ void jlib_decl enableSEHtoExceptionMapping()
     enableThreadSEH();
     SEHrestore = EnableSEHtranslation();
 #else
-    struct sigaction act;
     sigset_t blockset;
     sigemptyset(&blockset);
+    sigaddset(&blockset, SIGINT);
+    sigaddset(&blockset, SIGQUIT);
+    sigaddset(&blockset, SIGTERM);
+
+    struct sigaction act;
     act.sa_mask = blockset;
-#if defined(SA_RESETHAND)
-    act.sa_flags = SA_SIGINFO | SA_RESETHAND;
-#else
     act.sa_flags = SA_SIGINFO;
+#if defined(SA_RESETHAND)
+    act.sa_flags |= SA_RESETHAND;
 #endif
     act.sa_sigaction = &excsighandler; 
     sigaction(SIGSEGV, &act, NULL);
@@ -1291,11 +1320,18 @@ void  jlib_decl disableSEHtoExceptionMapping()
         _set_se_translator( (_se_translator_function)restore );
     }
 #else
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGBUS, SIG_DFL);
-    signal(SIGILL, SIG_DFL);
-    signal(SIGFPE, SIG_DFL);
-    signal(SIGABRT, SIG_DFL);
+    sigset_t blockset;
+    sigemptyset(&blockset);
+
+    struct sigaction act;
+    act.sa_mask = blockset;
+    act.sa_flags = 0;
+    act.sa_handler = SIG_DFL;
+    sigaction(SIGSEGV, &act, NULL);
+    sigaction(SIGILL, &act, NULL);
+    sigaction(SIGBUS, &act, NULL);
+    sigaction(SIGFPE, &act, NULL);
+    sigaction(SIGABRT, &act, NULL);
 #endif
 }
 
