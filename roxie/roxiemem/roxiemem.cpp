@@ -2453,13 +2453,14 @@ public:
     }
     IMPLEMENT_IINTERFACE
 
-    virtual void gatherStats(CRuntimeStatisticCollection & stats) override {}
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) override;
     virtual void *allocate(memsize_t size, memsize_t & capacity);
     virtual void *resizeRow(void * original, memsize_t copysize, memsize_t newsize, memsize_t &capacity);
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize);
 
 protected:
     CChunkingRowManager * rowManager;       // Lifetime of rowManager is guaranteed to be longer
+    unsigned __int64 numAllocations = 0;    // Not necessary accurate if concurrent calls to allocate
     unsigned allocatorId;
     RoxieHeapFlags flags;
 };
@@ -4959,8 +4960,15 @@ void * CRoxieFixedRowHeap::allocate()
 void * CRoxieVariableRowHeap::allocate(memsize_t size, memsize_t & capacity)
 {
     void * ret = rowManager->allocate(size, allocatorId);
+    dbgassertex(ret);
     capacity = RoxieRowCapacity(ret);
+    numAllocations++; // not thread safe, but missing entries do not matter
     return ret;
+}
+
+void CRoxieVariableRowHeap::gatherStats(CRuntimeStatisticCollection & merged)
+{
+    merged.addStatistic(StNumAllocations, numAllocations);
 }
 
 void * CRoxieVariableRowHeap::resizeRow(void * original, memsize_t copysize, memsize_t newsize, memsize_t &capacity)
