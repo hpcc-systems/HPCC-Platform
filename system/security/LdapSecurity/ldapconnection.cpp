@@ -672,6 +672,8 @@ public:
 
     virtual int connect(const char* ldapserver, const char* protocol)
     {
+        m_connected = false;
+        assertex(m_ld == NULL);
         if(!ldapserver || *ldapserver == '\0')
             return -1;
 
@@ -702,7 +704,7 @@ public:
                 ldap = "unknown";
                 break;
             }
-            DBGLOG("Connected to '%s' LdapServer %s using protocol %s", ldap, ldapserver, protocol);
+            DBGLOG("Connected to '%s' LdapServer %s using protocol %s, m_ld=%lx", ldap, ldapserver, protocol, (unsigned long)m_ld);
         }
         else
         {
@@ -763,8 +765,7 @@ public:
     {
         time_t now;
         time(&now);
-
-        if(!m_connected)
+        if(!m_connected || m_ld == NULL)
             return connect();
         else if(now - m_lastaccesstime <= 300)
             return true;
@@ -772,7 +773,6 @@ public:
         {
             bool ok = false;
             LDAPMessage* msg = NULL;
-            
             TIMEVAL timeOut = {LDAPTIMEOUT,0};
             int err = ldap_search_ext_s(m_ld, NULL, LDAP_SCOPE_BASE, "objectClass=*", NULL, 0, NULL, NULL, &timeOut, 1, &msg);
 
@@ -788,10 +788,19 @@ public:
             {
                 if(m_ld != NULL)
                 {
-                    LDAP_UNBIND(m_ld);
+                    DBGLOG("Releasing invalid CLdapConnection binding %lx", (unsigned long)m_ld);
+                    try
+                    {
+                        LDAP_UNBIND(m_ld);
+                    }
+                    catch(...)
+                    {
+                        DBGLOG("CLdapConnection ldap_unbind_ext() EXCEPTION, inst=%lx, m_ld=%lx, err=%x, msg=%lx, age=%ld ", (unsigned long)this, (unsigned long)m_ld, err, (unsigned long)msg, now - m_lastaccesstime);
+                    }
                     m_ld = NULL;
-                    m_connected = false;
                 }
+                m_connected = false;
+                m_lastaccesstime = 0;
                 DBGLOG("cached connection invalid, creating a new connection");
                 return connect();
             }
