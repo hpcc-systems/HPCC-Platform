@@ -869,11 +869,11 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif ( PLATFORM OR PLUGIN )
   set (CMAKE_SKIP_BUILD_RPATH  FALSE)
   set (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-  set (CMAKE_INSTALL_RPATH "${INSTALL_DIR}/${LIB_DIR}")
+  set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}")
   set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
   if (APPLE)
     # used to locate libraries when compiling ECL
-    set(CMAKE_INSTALL_NAME_DIR "${INSTALL_DIR}/${LIB_DIR}")
+    set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}")
   endif()
   MACRO (FETCH_GIT_TAG workdir edition result)
       execute_process(COMMAND "${GIT_COMMAND}" describe --tags --dirty --abbrev=6 --match ${edition}*
