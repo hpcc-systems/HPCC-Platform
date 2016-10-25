@@ -39,7 +39,6 @@ removeSymlink ()
 echo ""
 
 ## uninstalling files
-removeSymlink "/etc/init.d/hpcc-init"
 removeSymlink "/etc/init.d/dafilesrv"
 removeSymlink "/usr/bin/dfuplus"
 removeSymlink "/usr/bin/ecl"

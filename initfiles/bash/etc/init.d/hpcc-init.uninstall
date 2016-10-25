@@ -1,0 +1,1 @@
+removeSymlink "/etc/init.d/hpcc-init"

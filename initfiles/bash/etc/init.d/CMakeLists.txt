@@ -38,6 +38,11 @@ FOREACH( oFILES
     install ( PROGRAMS ${oFILES} DESTINATION etc/init.d COMPONENT Runtime )
 ENDFOREACH ( oFILES )
 
+if ( PLATFORM )
+    install ( PROGRAMS hpcc-init.install DESTINATION etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS hpcc-init.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
+endif()
+
 FOREACH( sFILES
     ${CMAKE_CURRENT_BINARY_DIR}/hpcc-init.service
     ${CMAKE_CURRENT_BINARY_DIR}/hpcc-init@.service
@@ -47,6 +52,3 @@ FOREACH( sFILES
     install ( FILES ${sFILES} DESTINATION etc/init.d COMPONENT Runtime
         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ )
 ENDFOREACH ( sFILES )
-
-install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/dafilesrv ${CMAKE_CURRENT_BINARY_DIR}/hpcc-init
-    DESTINATION ${CONFIG_PREFIX}/init.d COMPONENT Runtime)
