@@ -2,7 +2,7 @@ ECL Example Plugin
 ================
 
 This is the ECL plugin to utilize the (add plugin name).
-It utilizes the (Related API).
+It utilizes the (Add related API details).
 
 Installation and Dependencies
 ----------------------------
