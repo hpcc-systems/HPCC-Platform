@@ -1,8 +1,8 @@
 ECL Example Plugin
 ================
 
-This is the ECL plugin to utilize the <plugin name>.
-It utilizes the <Related API>.
+This is the ECL plugin to utilize the (add plugin name).
+It utilizes the (Related API).
 
 Installation and Dependencies
 ----------------------------
@@ -18,16 +18,16 @@ sudo apt-get install <dependency>
 Getting started
 ---------------
 
-<Add relevant content>
+(Add relevant content)
 
 The Actual Plugin
 -----------------
 
-<Add relevant content>
+(Add relevant content)
 
 ###Sub Section
 
-<Add details>
+(Add details)
 
 ###An ECL Example
 ```c
@@ -50,4 +50,4 @@ etc etc.
 Behaviour and Implementation Details
 ------------------------------------
 
-<Add relevant content>
+(Add relevant content)
