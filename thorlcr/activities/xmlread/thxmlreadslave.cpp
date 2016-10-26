@@ -100,7 +100,10 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
             xmlParser.clear();
             inputIOstream.clear();
             if (checkFileCrc)
+            {
                 fileCRC.reset(~crcStream->queryCrc()); // MORE should prob. change stream to use CRC32
+                crcStream.clear();
+            }
             mergeStats(fileStats, iFileIO);
             iFileIO.clear();
         }
