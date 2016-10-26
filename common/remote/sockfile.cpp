@@ -2301,7 +2301,16 @@ public:
         size32_t got;
         MemoryBuffer replyBuffer;
         CCycleTimer timer;
-        const void *b = doRead(pos,len,replyBuffer,got,data);
+        const void *b;
+        try
+        {
+            b = doRead(pos,len,replyBuffer,got,data);
+        }
+        catch (...)
+        {
+            ioReadCycles.fetch_add(timer.elapsedCycles());
+            throw;
+        }
         ioReadCycles.fetch_add(timer.elapsedCycles());
         ioReadBytes.fetch_add(got);
         ++ioReads;
@@ -2396,6 +2405,7 @@ public:
                 if (++tries > 3)
                 {
                     ioRetries.fetch_add(tries);
+                    ioWriteCycles.fetch_add(timer.elapsedCycles());
                     throw;
                 }
                 WARNLOG("Retrying write(%" I64F "d,%d) of %s (%d)",pos,len,parent->queryLocalName(),tries);
@@ -2403,6 +2413,7 @@ public:
                 if (!reopen())
                 {
                     ioRetries.fetch_add(tries);
+                    ioWriteCycles.fetch_add(timer.elapsedCycles());
                     throw exc.getClear();
                 }
             }
