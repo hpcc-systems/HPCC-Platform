@@ -183,6 +183,7 @@ enum StatisticKind
     StNumScansPerRow,
     StNumAllocations,
     StNumAllocationScans,
+    StNumDiskRetries,
 
     StMax,
 

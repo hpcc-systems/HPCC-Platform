@@ -2162,6 +2162,7 @@ protected:
     std::atomic<__uint64> ioWriteBytes;
     std::atomic<__uint64> ioReads;
     std::atomic<__uint64> ioWrites;
+    std::atomic<unsigned> ioRetries;
     IFOmode mode;
     compatIFSHmode compatmode;
     IFEflags extraFlags;
@@ -2169,8 +2170,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE
     CRemoteFileIO(CRemoteFile *_parent)
-        : parent(_parent), ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0)
-
+        : parent(_parent), ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0), ioRetries(0)
     {
         handle = 0;
         disconnectonexit = false;
@@ -2290,6 +2290,8 @@ public:
             return ioReads.load(std::memory_order_relaxed);
         case StNumDiskWrites:
             return ioWrites.load(std::memory_order_relaxed);
+        case StNumDiskRetries:
+            return ioRetries.load(std::memory_order_relaxed);
         }
         return 0;
     }
@@ -2352,14 +2354,22 @@ public:
             }
             catch (IJSOCK_Exception *e) {
                 EXCLOG(e,"CRemoteFileIO::read");
-                if (++tries>3)
+                if (++tries > 3)
+                {
+                    ioRetries.fetch_add(tries);
                     throw;
+                }
                 WARNLOG("Retrying read of %s (%d)",parent->queryLocalName(),tries);
                 Owned<IException> exc = e;
                 if (!reopen())
+                {
+                    ioRetries.fetch_add(tries);
                     throw exc.getClear();
+                }
             }
         }
+        if (tries)
+            ioRetries.fetch_add(tries);
         got = 0;
         return NULL;
     }
@@ -2383,15 +2393,24 @@ public:
             }
             catch (IJSOCK_Exception *e) {
                 EXCLOG(e,"CRemoteFileIO::write");
-                if (++tries>3)
+                if (++tries > 3)
+                {
+                    ioRetries.fetch_add(tries);
                     throw;
+                }
                 WARNLOG("Retrying write(%" I64F "d,%d) of %s (%d)",pos,len,parent->queryLocalName(),tries);
                 Owned<IException> exc = e;
                 if (!reopen())
+                {
+                    ioRetries.fetch_add(tries);
                     throw exc.getClear();
-
+                }
             }
         }
+
+         if (tries)
+            ioRetries.fetch_add(tries);
+
         ioWriteCycles.fetch_add(timer.elapsedCycles());
         ioWriteBytes.fetch_add(ret);
         ++ioWrites;
