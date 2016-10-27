@@ -1148,7 +1148,7 @@ protected:
     Owned<IRoxieDaliHelper> daliHelperLink;
     Owned<IDistributedFileTransaction> superfileTransaction;
 
-    CriticalSection statsCrit;
+    mutable CriticalSection statsCrit;
     const IRoxieContextLogger &logctx;
 
 protected:
@@ -2807,6 +2807,7 @@ public:
         {
             if (graphStats)
             {
+                CriticalBlock b(statsCrit);
                 IStatisticGatherer & builder = graphStats->queryStatsBuilder();
                 StatsSubgraphScope graphScope(builder, subgraphId);
                 StatsEdgeScope scope(builder, activityId, _idx);
@@ -2825,6 +2826,7 @@ public:
     {
         if (graphStats)
         {
+            CriticalBlock b(statsCrit);
             IStatisticGatherer & builder = graphStats->queryStatsBuilder();
             StatsSubgraphScope graphScope(builder, subgraphId);
             StatsActivityScope scope(builder, activityId);
