@@ -2197,8 +2197,8 @@ public:
             {
                 unsigned queue = strtoul(cols.item(queueCol), NULL, 16);
                 unsigned drops = 0;
-                if (dropsCol)
-                    drops =  strtoul(cols.item(dropsCol), NULL, 10);
+                if (dropsCol >= 0)
+                    drops = strtoul(cols.item(dropsCol), NULL, 10);
                 if (queue || drops)
                 {
                     unsigned port = strtoul(cols.item(portCol), NULL, 16);
@@ -2270,6 +2270,8 @@ public:
                         if (streq(columnNames.item(idx), "InErrors"))
                             inErrorsCol = idx;
                     }
+                    if (inErrorsCol == -1)
+                        break;
                 }
                 if (fgets(ln, sizeof(ln), netfp))
                 {
