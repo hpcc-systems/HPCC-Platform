@@ -31,6 +31,8 @@
               <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css"/>
               <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css"/>
               <link rel="stylesheet" type="text/css" href="/esp/files/gen_form.css"/>
+              <script type="text/javascript" src="/esp/files/hashtable.js"/>
+              <script type="text/javascript" src="/esp/files/gen_form_wsecl.js"/>
               <script type="text/javascript">
 
       <xsl:text disable-output-escaping="yes">
@@ -55,6 +57,7 @@ function setESPFormAction()
     }
 
     form.action = actionpath;
+    saveInputValues(form);
     return true;
 }
 
@@ -71,7 +74,9 @@ function switchInputForm()
 </script>
 </head>
       <body class="yui-skin-sam" onload="onPageLoad()">
-               <p align="center"/>
+                <input type="hidden" id="esp_html_"/>
+                <input type="hidden" id="esp_vals_"/>
+                <p align="center"/>
                 <table cellSpacing="0" cellPadding="1" width="100%" bgColor="#4775FF" border="0">
                     <tr align="left" class="service">
                         <td height="23">

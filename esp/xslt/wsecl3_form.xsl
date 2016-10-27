@@ -308,7 +308,7 @@ function switchInputForm()
 
                 <tr class='commands'>
                   <td align='left'>
-                    <select id="submit_type">
+                    <select id="submit_type" name="submit_type">
                         <xsl:for-each select="/FormInfo/CustomViews/Result">
                             <option><xsl:attribute name="value"><xsl:value-of select="."/></xsl:attribute><xsl:value-of select="."/></option>
                         </xsl:for-each>
