@@ -297,6 +297,13 @@
     role="bold">initldap</emphasis> utility to create the required default
     HPCC Admin user on your LDAP server.</para>
 
+    <para>If you choose to use LDAP authentication you must enable LDAP
+    security in your HPCC System configuration. With LDAP security enabled on
+    your system you can then choose to enable file scope security. You can
+    choose to use LDAP authentication without enabling file scope security.
+    The following sections describe how to enable LDAP authentication and file
+    scope security for your HPCC system.</para>
+
     <!--***Note: (9/2014) Adding Documentation for initLdap.*** -->
 
     <sect3 id="UsingLDAP_ConnectToConfigMgr">
@@ -606,9 +613,8 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>To enable the file scope permissions, configure security for the
-        Dali Server. If you are not interested in file scope permissions you
-        can skip this step.</para>
+        <para>To enable the file scope permissions, configure the file scope
+        security for the Dali Server.</para>
 
         <para>In the Navigator pane, click on the <emphasis role="bold">Dali
         Server – mydali </emphasis><graphic
@@ -628,8 +634,35 @@
             </listitem>
 
             <listitem>
+              <para>Set the <emphasis role="bold">checkScopeScans</emphasis>
+              value to <emphasis>true</emphasis>.</para>
+
+              <para>Only set this value to true when you want file scope
+              security enabled. Security settings can have three
+              states.</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>None, no authentication and no file scope
+                  security.</para>
+                </listitem>
+
+                <listitem>
+                  <para>LDAP security for authentication only, without
+                  enabling file scope security.</para>
+                </listitem>
+
+                <listitem>
+                  <para>LDAP authentication and file scope security
+                  enabled.</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+
+            <listitem>
               <para>Change the LDAP values as appropriate to match the
-              settings in your LDAP server.</para>
+              settings in your LDAP server component in configuration
+              manager.</para>
 
               <para>For example, change the <emphasis
               role="bold">ldapServer</emphasis> to the value you gave your
@@ -643,8 +676,8 @@
               are supplied. This is similar to a guest account, so it should
               be an account with <emphasis role="bold">very</emphasis> limited
               access, if used at all. To disable access without credentials,
-              leave <emphasis role="bold">filesDefaultUser</emphasis> blank.
-              </para>
+              leave <emphasis role="bold">filesDefaultUser</emphasis>
+              blank.</para>
 
               <para>The <emphasis role="bold">filesDefaultPassword</emphasis>
               is the password for that account.</para>
