@@ -18,6 +18,7 @@
 #include "seclib.hpp"
 #include "ldapsecurity.hpp"
 #include "jliball.hpp"
+#include "dasess.hpp"
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -25,10 +26,10 @@
 
 int main(int argc, char* argv[])
 {
-    if(argc != 2)
+    if(argc < 2  || argc > 3)
     {
-        printf("usage: addScopes daliconf.xml\n");
-        printf("\n\tCreates all user-specific LDAP private file scopes 'hpccinternal::<user>'\n\tand grants users access to their scope. The configuration file\n\tdaliconf.xml is the dali configuration file, typically\n\tfound in /var/lib/HPCCSystems/mydali\n\n");
+        printf("usage: addScopes daliconf.xml [-c]\n");
+        printf("\n\tCreates all user-specific LDAP private file scopes 'hpccinternal::<user>'\n\tand grants users access to their scope. The configuration file\n\tdaliconf.xml is the dali configuration file, typically\n\tfound in /var/lib/HPCCSystems/mydali\n\tSpecify -c to make changes immediately visible by clearing permission caches\n\n");
         return -1;
     }
 
@@ -55,6 +56,31 @@ int main(int argc, char* argv[])
         }
         bool ok = secmgr->createUserScopes();
         printf(ok ? "User scopes added\n" : "Some scopes not added\n");
+
+        //Clear permission caches?
+        if (argc > 2 && 0==stricmp(argv[2], "-c"))
+        {
+            //Clear ESP Cache
+            StringBuffer sysuser;
+            StringBuffer passbuf;
+            seccfg->getProp(".//@systemUser", sysuser);
+            seccfg->getProp(".//@systemPassword", passbuf);
+
+            Owned<ISecUser> user = secmgr->createUser(sysuser.str());
+            ISecCredentials& cred = user->credentials();
+            StringBuffer decPwd;
+            decrypt(decPwd, passbuf.str());
+            cred.setPassword(decPwd.str());
+            secmgr->clearPermissionsCache(*user);
+            printf(ok ? "ESP Cache cleared\n" : "Error clearing ESP Cache\n");
+
+            //Clear Dali cache
+            Owned<IUserDescriptor> userdesc;
+            userdesc.setown(createUserDescriptor());
+            userdesc->set(sysuser, decPwd);
+            ok = querySessionManager().clearPermissionsCache(userdesc);
+            printf(ok ? "Dali Cache cleared\n" : "Error clearing Dali Cache\n");
+        }
 #endif
     }
     catch(IException* e)
