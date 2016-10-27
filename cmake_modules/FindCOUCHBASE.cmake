@@ -37,6 +37,7 @@ IF (NOT LIBCOUCHBASE_FOUND)
    FIND_LIBRARY (
      LIBCOUCHBASE_LIBRARIES
      NAMES couchbase libcouchbase
+     PATHS /usr/lib64
      PATH_SUFFIXES libcouchbase
    )
 
