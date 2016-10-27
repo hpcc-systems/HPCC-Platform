@@ -164,10 +164,14 @@ public:
         channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", 200);
         mpServers.append(* getMPServer());
+        bool reconnect = globals->getPropBool("@MPChannelReconnect");
         for (unsigned sc=1; sc<channelsPerSlave; sc++)
         {
             unsigned port = getMachinePortBase() + (sc * localThorPortInc);
-            mpServers.append(*startNewMPServer(port));
+            IMPServer *mpServer = startNewMPServer(port);
+            if (reconnect)
+                mpServer->setOpt(mpsopt_channelreopen, "true");
+            mpServers.append(*mpServer);
         }
     }
     ~CJobListener()
