@@ -155,20 +155,83 @@ StringBuffer &getRecordString(const void *key, IOutputRowSerializer *serializer,
     return out;
 }
 
+class CSpillable : public CSimpleInterfaceOf<roxiemem::IBufferedRowCallback>
+{
+protected:
+    bool mmRegistered = false;
+    bool mmActivated = false;
+    bool clearCB = false; // if true, deregisters the roxiemem callback on deactivation, otherwise leaves registered but inactive.
+    unsigned spillPriority = SPILL_PRIORITY_DISABLE;
+    IThorRowInterfaces *rowIf = nullptr;
+    roxiemem::IRowManager *rowManager = nullptr;
+    CActivityBase &activity;
+public:
+    CSpillable(CActivityBase &_activity, IThorRowInterfaces *_rowIf, unsigned _spillPriority) : activity(_activity), rowIf(_rowIf), spillPriority(_spillPriority)
+    {
+        if (rowIf)
+            rowManager = rowIf->queryRowManager();
+    }
+    ~CSpillable()
+    {
+        ensureSpillingCallbackRemoved();
+    }
+    inline bool spillingEnabled() const { return SPILL_PRIORITY_DISABLE != spillPriority; }
+    inline void activateSpillingCallback()
+    {
+        if (!mmActivated && spillingEnabled())
+        {
+            ensureSpillingCallbackInstalled();
+            mmActivated = true;
+        }
+    }
+    inline void deactivateSpillingCallback()
+    {
+        if (mmActivated)
+        {
+            if (clearCB)
+                ensureSpillingCallbackRemoved(); // will re-add on next activateSpillingCallback()
+            else // leave registered
+                mmActivated = false;
+        }
+    }
+    inline void ensureSpillingCallbackInstalled()
+    {
+        if (!mmRegistered)
+        {
+            assertex(rowManager);
+            rowManager->addRowBuffer(this);
+            mmRegistered = true;
+        }
+    }
+    inline void ensureSpillingCallbackRemoved()
+    {
+        if (mmRegistered)
+        {
+            rowManager->removeRowBuffer(this);
+            mmActivated = mmRegistered = false;
+        }
+    }
+// IBufferedRowCallback
+    virtual unsigned getSpillCost() const
+    {
+        return spillPriority;
+    }
+    virtual unsigned getActivityId() const
+    {
+        return activity.queryActivityId();
+    }
+};
+
 //====
 
 // NB: rows are transferred into derivatives of CSpillableStreamBase and read or spilt, but are never written to
-class CSpillableStreamBase : public CSimpleInterface, implements roxiemem::IBufferedRowCallback
+class CSpillableStreamBase : public CSpillable
 {
 protected:
-    CActivityBase &activity;
-    IThorRowInterfaces *rowIf;
     bool preserveNulls, ownsRows;
-    unsigned spillPriority;
     unsigned spillCompInfo;
     CThorSpillableRowArray rows;
     OwnedIFile spillFile;
-    bool mmRegistered;
 
     bool spillRows()
     {
@@ -187,30 +250,11 @@ protected:
         rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
         return true;
     }
-    inline void addSpillingCallback()
-    {
-        if (!mmRegistered)
-        {
-            mmRegistered = true;
-            rowIf->queryRowManager()->addRowBuffer(this);
-        }
-    }
-    inline void clearSpillingCallback()
-    {
-        if (mmRegistered)
-        {
-            mmRegistered = false;
-            rowIf->queryRowManager()->removeRowBuffer(this);
-        }
-    }
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CSpillableStreamBase(CActivityBase &_activity, CThorSpillableRowArray &inRows, IThorRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority)
-        : activity(_activity), rowIf(_rowIf), rows(_activity), preserveNulls(_preserveNulls), spillPriority(_spillPriority)
+        : CSpillable(_activity, _rowIf, _spillPriority), rows(_activity), preserveNulls(_preserveNulls)
     {
         assertex(inRows.isFlushed());
-        mmRegistered = false;
         ownsRows = false;
         spillCompInfo = 0x0;
         rows.setup(rowIf, _preserveNulls);
@@ -218,20 +262,11 @@ public:
     }
     ~CSpillableStreamBase()
     {
-        clearSpillingCallback();
+        ensureSpillingCallbackRemoved();
         if (spillFile)
             spillFile->remove();
     }
-
 // IBufferedRowCallback
-    virtual unsigned getSpillCost() const
-    {
-        return spillPriority;
-    }
-    virtual unsigned getActivityId() const
-    {
-        return activity.queryActivityId();
-    }
     virtual bool freeBufferedRows(bool critical)
     {
         if (spillFile) // i.e. if spilt already. NB: this is thread-safe, as 'spillFile' only set by spillRows() call below and can't be called on multiple threads concurrently.
@@ -255,14 +290,14 @@ public:
     {
         owner.rows.unlock();
         if (clearCB)
-            owner.clearSpillingCallback();
+            owner.deactivateSpillingCallback();
     }
     bool clearCB;
 };
 
 // NB: Shared/spillable, holds all rows in mem until needs to spill.
 // spills all to disk, and stream continue reading from row in file
-class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterface
+class CSharedSpillableRowSet : public CSpillableStreamBase
 {
     class CStream : public CSimpleInterface, implements IRowStream, implements IWritePosCallback
     {
@@ -344,12 +379,10 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
     };
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CSharedSpillableRowSet(CActivityBase &_activity, CThorSpillableRowArray &inRows, IThorRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority)
         : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls, _spillPriority)
     {
-        addSpillingCallback();
+        activateSpillingCallback();
     }
     IRowStream *createRowStream()
     {
@@ -378,7 +411,7 @@ class CSpillableStream : public CSpillableStreamBase, implements IRowStream
     Owned<IRowStream> spillStream;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CSpillableStreamBase);
 
     CSpillableStream(CActivityBase &_activity, CThorSpillableRowArray &inRows, IThorRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority, unsigned _spillCompInfo)
         : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls, _spillPriority)
@@ -389,7 +422,7 @@ public:
 
         // a small amount of rows to read from swappable rows
         readRows = static_cast<const void * *>(rowIf->queryRowManager()->allocate(granularity * sizeof(void*), activity.queryContainer().queryId(), inRows.queryDefaultMaxSpillCost()));
-        addSpillingCallback();
+        activateSpillingCallback();
     }
     ~CSpillableStream()
     {
@@ -444,7 +477,7 @@ public:
     }
     virtual void stop()
     {
-        clearSpillingCallback();
+        deactivateSpillingCallback();
     }
 };
 
@@ -1557,16 +1590,14 @@ IRowStream *CThorSpillableRowArray::createRowStream(unsigned spillPriority, unsi
 
 
 
-class CThorRowCollectorBase : public CSimpleInterface, implements roxiemem::IBufferedRowCallback
+class CThorRowCollectorBase : public CSpillable
 {
 protected:
-    CActivityBase &activity;
     CThorSpillableRowArray spillableRows;
     IPointerArrayOf<CFileOwner> spillFiles;
     Owned<IOutputRowSerializer> serializer;
     RowCollectorSpillFlags diskMemMix;
     rowcount_t totalRows;
-    unsigned spillPriority;
     unsigned overflowCount;
     unsigned maxCores;
     unsigned outStreams;
@@ -1574,15 +1605,12 @@ protected:
     ICompare *iCompare;
     StableSortFlag stableSort;
     bool preserveGrouping;
-    IThorRowInterfaces *rowIf;
     CriticalSection readerLock;
-    bool mmRegistered;
     Owned<CSharedSpillableRowSet> spillableRowSet;
     unsigned options;
     unsigned spillCompInfo = 0;
     __uint64 spillCycles;
     __uint64 sortCycles;
-    roxiemem::IRowManager *rowManager;
 
     bool spillRows(bool critical)
     {
@@ -1692,7 +1720,7 @@ protected:
          *    Otherwise, once this section has the lock, the existing callback may be called by roxiemem and block,
          *    causing this section to deadlock inside roxiemem, if it tries to add a new callback.
          */
-        clearSpillingCallback();
+        deactivateSpillingCallback();
 
         // NB: CStreamFileOwner links CFileOwner - last usage will auto delete file
         // which may be one of these streams or CThorRowCollectorBase itself
@@ -1777,39 +1805,20 @@ protected:
         overflowCount = outStreams = 0;
         sizeSpill = 0;
     }
-    inline bool spillingEnabled() const { return SPILL_PRIORITY_DISABLE != spillPriority; }
-    void clearSpillingCallback()
-    {
-        if (mmRegistered)
-        {
-            rowManager->removeRowBuffer(this);
-            mmRegistered = false;
-        }
-    }
-    void enableSpillingCallback()
-    {
-        if (!mmRegistered && spillingEnabled())
-        {
-            rowManager->addRowBuffer(this);
-            mmRegistered = true;
-        }
-    }
 public:
     CThorRowCollectorBase(CActivityBase &_activity, IThorRowInterfaces *_rowIf, ICompare *_iCompare, StableSortFlag _stableSort, RowCollectorSpillFlags _diskMemMix, unsigned _spillPriority)
-        : activity(_activity),
-          rowIf(_rowIf), iCompare(_iCompare), stableSort(_stableSort), diskMemMix(_diskMemMix), spillPriority(_spillPriority),
+        : CSpillable(_activity, _rowIf, _spillPriority),
+          iCompare(_iCompare), stableSort(_stableSort), diskMemMix(_diskMemMix),
           spillableRows(_activity)
     {
-        rowManager = rowIf ? rowIf->queryRowManager() : NULL;
         preserveGrouping = false;
         totalRows = 0;
         overflowCount = outStreams = 0;
         sizeSpill = 0;
-        mmRegistered = false;
         if (rc_allMem == diskMemMix)
             spillPriority = SPILL_PRIORITY_DISABLE; // all mem, implies no spilling
         else
-            enableSpillingCallback();
+            activateSpillingCallback();
         maxCores = activity.queryMaxCores();
         options = 0;
         spillableRows.setup(rowIf, false, stableSort);
@@ -1825,7 +1834,7 @@ public:
     ~CThorRowCollectorBase()
     {
         reset();
-        clearSpillingCallback();
+        ensureSpillingCallbackRemoved();
     }
     void transferRowsOut(CThorExpandingRowArray &out, bool sort)
     {
@@ -1860,13 +1869,13 @@ public:
     {
         reset();
         spillableRows.transferFrom(src);
-        enableSpillingCallback();
+        activateSpillingCallback();
     }
     virtual void transferRowsIn(CThorSpillableRowArray &src)
     {
         reset();
         spillableRows.transferFrom(src);
-        enableSpillingCallback();
+        activateSpillingCallback();
     }
     virtual const void *probeRow(unsigned r)
     {
@@ -1904,17 +1913,9 @@ public:
     virtual void unlock() const { spillableRows.unlock(); }
 
 // IBufferedRowCallback
-    virtual unsigned getSpillCost() const
-    {
-        return spillPriority;
-    }
-    virtual unsigned getActivityId() const
-    {
-        return activity.queryActivityId();
-    }
     virtual bool freeBufferedRows(bool critical)
     {
-        if (!spillingEnabled())
+        if (!mmActivated || !spillingEnabled())
             return false;
         CThorArrayLockBlock block(spillableRows);
         return spillRows(critical);
@@ -1947,7 +1948,7 @@ class CThorRowLoader : public CThorRowCollectorBase, implements IThorRowLoader
     {
         if (doReset)
             reset();
-        enableSpillingCallback();
+        activateSpillingCallback();
         setPreserveGrouping(trl_preserveGrouping == grouping);
         while (!abort)
         {
@@ -1971,7 +1972,7 @@ class CThorRowLoader : public CThorRowCollectorBase, implements IThorRowLoader
     }
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CThorRowCollectorBase);
 
     CThorRowLoader(CActivityBase &activity, IThorRowInterfaces *rowIf, ICompare *iCompare, StableSortFlag stableSort, RowCollectorSpillFlags diskMemMix, unsigned spillPriority)
         : CThorRowCollectorBase(activity, rowIf, iCompare, stableSort, diskMemMix, spillPriority)
@@ -2024,7 +2025,7 @@ IThorRowLoader *createThorRowLoader(CActivityBase &activity, ICompare *iCompare,
 class CThorRowCollector : public CThorRowCollectorBase, implements IThorRowCollector
 {
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    IMPLEMENT_IINTERFACE_USING(CThorRowCollectorBase);
 
     CThorRowCollector(CActivityBase &activity, IThorRowInterfaces *rowIf, ICompare *iCompare, StableSortFlag stableSort, RowCollectorSpillFlags diskMemMix, unsigned spillPriority)
         : CThorRowCollectorBase(activity, rowIf, iCompare, stableSort, diskMemMix, spillPriority)

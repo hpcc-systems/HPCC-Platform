@@ -57,6 +57,7 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
 
     Owned<IRowStream> leftStream, rightStream;
     Owned<IException> secondaryStartException;
+    Owned<IThorRowLoader> iLoaderL;
 
     Owned<IBarrier> barrier;
     SocketEndpoint server;
@@ -77,6 +78,8 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
     bool rightpartition;
     bool islocal;
 
+    bool hintunsortedoutput = false;
+    bool hintparallelmatch = false;
 
     bool noSortPartitionSide()
     {
@@ -167,6 +170,10 @@ public:
         rightpartition = (container.getKind()==TAKjoin)&&((helper->getJoinFlags()&JFpartitionright)!=0);
         if (islocal)
             setRequireInitData(false);
+
+        hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, (JFreorderable & helper->getJoinFlags()) != 0);
+        hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
+
         appendOutputLinked(this);
     }
 
@@ -178,7 +185,9 @@ public:
 
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
-        if (!islocal)
+        if (islocal)
+            iLoaderL.setown(createThorRowLoader(*this, ::queryRowInterfaces(queryInput(0)), leftCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN));
+        else
         {
             mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
             mptag_t barrierTag = container.queryJobChannel().deserializeMPTag(data);
@@ -224,8 +233,6 @@ public:
         {
             case TAKjoin:
             {
-                bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, (JFreorderable & helper->getJoinFlags()) != 0);
-                bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
                 joinhelper.setown(createJoinHelper(*this, helperjn, this, hintparallelmatch, hintunsortedoutput));
                 break;
             }
@@ -449,7 +456,6 @@ public:
         }
         else
         {
-            Owned<IThorRowLoader> iLoaderL = createThorRowLoader(*this, ::queryRowInterfaces(leftInput), leftCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN);
             leftStream.setown(iLoaderL->load(leftInputStream, abortSoon));
             isemptylhs = 0 == iLoaderL->numRows();
             stopLeftInput();
