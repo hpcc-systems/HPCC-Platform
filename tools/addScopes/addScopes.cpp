@@ -52,13 +52,14 @@ int main(int argc, char* argv[])
         if(secmgr == NULL)
         {
             printf("Security manager can't be created\n");
+            releaseAtoms();
             return -1;
         }
         bool ok = secmgr->createUserScopes();
         printf(ok ? "User scopes added\n" : "Some scopes not added\n");
 
         //Clear permission caches?
-        if (argc > 2 && 0==stricmp(argv[2], "-c"))
+        if (argc == 3 && 0==stricmp(argv[2], "-c"))
         {
             //Clear ESP Cache
             StringBuffer sysuser;
@@ -66,17 +67,29 @@ int main(int argc, char* argv[])
             seccfg->getProp(".//@systemUser", sysuser);
             seccfg->getProp(".//@systemPassword", passbuf);
 
+            if (0 == sysuser.length())
+            {
+                printf("Error in configuration file %s - systemUser not specified", argv[1]);
+                releaseAtoms();
+                return -1;
+            }
+
+            if (0 == passbuf.length())
+            {
+                printf("Error in configuration file %s - systemPassword not specified", argv[1]);
+                releaseAtoms();
+                return -1;
+            }
             Owned<ISecUser> user = secmgr->createUser(sysuser.str());
             ISecCredentials& cred = user->credentials();
             StringBuffer decPwd;
             decrypt(decPwd, passbuf.str());
             cred.setPassword(decPwd.str());
-            secmgr->clearPermissionsCache(*user);
+            ok = secmgr->clearPermissionsCache(*user);
             printf(ok ? "ESP Cache cleared\n" : "Error clearing ESP Cache\n");
 
             //Clear Dali cache
-            Owned<IUserDescriptor> userdesc;
-            userdesc.setown(createUserDescriptor());
+            Owned<IUserDescriptor> userdesc(createUserDescriptor());
             userdesc->set(sysuser, decPwd);
             ok = querySessionManager().clearPermissionsCache(userdesc);
             printf(ok ? "Dali Cache cleared\n" : "Error clearing Dali Cache\n");
