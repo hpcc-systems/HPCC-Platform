@@ -89,9 +89,10 @@ define([
                         var MachineInformationClean = "Addresses." + i;
                         MachineInformationCount++;
                         if (context.viewModeMachines.checked) {
-                            filter[MachineInformationClean] = selection[i].getNetaddress() + "|:" + selection[i].__hpcc_parentNode.__hpcc_treeItem.Type + ":" + selection[i].__hpcc_treeItem.Name + ":" + 2 + ":" + selection[i].__hpcc_treeItem.Directory + ":" + 0;
-                        } else if (context.viewModeServices.checked) {
-                            filter[MachineInformationClean] = selection[i].__hpcc_children[0].__hpcc_treeItem.Netaddress + "|:" + selection[i].__hpcc_treeItem.Type + ":" + selection[i].__hpcc_treeItem.Name + ":" + 2 + ":" + selection[i].__hpcc_children[0].__hpcc_treeItem.Directory;
+                            filter[MachineInformationClean] = selection[i].getNetaddress() + "|:" + selection[i].__hpcc_treeItem.Type + ":" + selection[i].__hpcc_treeItem.Name + ":" + 2 + ":" + selection[i].__hpcc_treeItem.Directory + ":" + 0;
+                        }
+                        if (context.viewModeServices.checked) {
+                            filter[MachineInformationClean] = selection[i].getNetaddress() + "|:" + selection[i].getNetaddress() + "|:" + selection[i].__hpcc_treeItem.Type + ":" + selection[i].__hpcc_treeItem.Name + ":" + 2 + ":" + selection[i].__hpcc_treeItem.Directory;
                         }
                         var request = {
                             Path: selection[i].__hpcc_treeItem.Path,
@@ -262,10 +263,20 @@ define([
                         sortable: false,
                         disabled: function (item) {
                             if (item.__hpcc_treeItem) {
-                                if (item.__hpcc_treeItem.Type === "HoleCluster" || item.__hpcc_treeItem.Type === "ThorCluster" || item.__hpcc_treeItem.Type === "RoxieCluster") {
-                                    return false;
-                                } else if (item.__hpcc_parentNode && item.__hpcc_children.length > 0) {
-                                    return false;
+                                if (context.viewModeTargets.checked) {
+                                    if (item.__hpcc_treeItem.Type === "HoleCluster" || item.__hpcc_treeItem.Type === "ThorCluster" || item.__hpcc_treeItem.Type === "RoxieCluster") {
+                                        return false;
+                                    }
+                                }
+                                if (context.viewModeServices.checked) {
+                                    if (item.__hpcc_treeItem.getNetaddress()) {
+                                        return false;
+                                    }
+                                }
+                                if (context.viewModeMachines.checked) {
+                                    if (item.__hpcc_children.length > 0) {
+                                        return false;
+                                    }
                                 }
                             }
                             return true;
@@ -461,7 +472,7 @@ define([
             if (!retVal) {
                 retVal = new PreflightDetailsWidget({
                     id: id,
-                    title: this.i18n.Fetched + params.params.TimeStamp + " <b>("  + params.params.TargetClusterInfoList.TargetClusterInfo[0].Name + ")</b>",
+                    title: this.i18n.Fetched + ": " + params.params.TimeStamp + " <b>("  + params.params.TargetClusterInfoList.TargetClusterInfo[0].Name + ")</b>",
                     closable: true,
                     params: params.params
                 });
