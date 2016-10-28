@@ -346,7 +346,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
         DBGLOG("MEMORY WILL NOT BE RELEASED TO OS");
         if (!retainMemory)
             DBGLOG("Increase HEAP_ALIGNMENT_SIZE so HEAP_ALIGNMENT_SIZE*%u (0x%" I64F "x) is a multiple of system huge page size (0x%" I64F "x)",
-                    (unsigned)sizeof(heap_t), (unsigned __int64)(HEAP_ALIGNMENT_SIZE * sizeof(heap_t)), (unsigned __int64) getHugePageSize());
+                    HEAP_BITS, (unsigned __int64)(HEAP_ALIGNMENT_SIZE * HEAP_BITS), (unsigned __int64) getHugePageSize());
     }
 
     assertex(((memsize_t)heapBase & (HEAP_ALIGNMENT_SIZE-1)) == 0);
@@ -472,10 +472,7 @@ static void dumpHeapState()
     for (unsigned i = 0; i < heapBitmapSize; i++)
     {
         heap_t t = heapBitmap[i];
-        if (sizeof(heap_t) == 8)
-            s.appendf("%08x", (unsigned)t);
-        else
-            s.appendf("%016" I64F "x", (unsigned __int64)t);
+        s.appendf("%0*" I64F "x", (int)(sizeof(heap_t)*2), (unsigned __int64)t);
     }
 
     DBGLOG("Heap: %s", s.str());
@@ -535,14 +532,14 @@ static StringBuffer &memmap(StringBuffer &stats)
         else stats.appendf("\n%p: ", heapBase + i*HEAP_BITS*HEAP_ALIGNMENT_SIZE);
 
         if (heapBitmap[i] == HEAP_ALLBITS) {
-            stats.appendf("11111111111111111111111111111111");
+            stats.appendf("%.*s", HEAP_BITS, "1111111111111111111111111111111111111111111111111111111111111111");
             freePages += HEAP_BITS;
             thisBlock += HEAP_BITS;
             if (thisBlock > maxBlock)
                 maxBlock = thisBlock;
         }
         else if (heapBitmap[i] == 0) {
-            stats.appendf("00000000000000000000000000000000");
+            stats.appendf("%.*s", HEAP_BITS, "0000000000000000000000000000000000000000000000000000000000000000");
             thisBlock = 0;
         }
         else {
