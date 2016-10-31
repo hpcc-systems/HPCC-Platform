@@ -8415,6 +8415,7 @@ protected:
     bool expandAssignChildren(IHqlExpression * expr);
     bool expandAssignElement(IHqlExpression * expr);
 
+    bool doBuildTransformRow(IHqlExpression * transform);
     bool processElement(IHqlExpression * expr, IHqlExpression * parentSelector);
     bool processRecord(IHqlExpression * record, IHqlExpression * parentSelector);
 
@@ -8545,18 +8546,41 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
             IHqlExpression * field = optLhs->queryChild(1);
             if (!field->hasAttribute(countAtom) && !field->hasAttribute(sizeofAtom))
             {
-                if (rhsOp == no_null)
+                if (field->hasAttribute(_linkCounted_Atom))
                 {
-                    if (field->hasAttribute(_linkCounted_Atom))
+                    if (rhsOp == no_null)
                     {
                         rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
                         memset(out.reserve(sizeof(byte * *)), 0, sizeof(byte * *));
+                        return true;
                     }
-                    else
-                        rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
-                    return true;
                 }
-                //MORE: Could expand if doesn't have linkcounted, but less likely these days.
+                else
+                {
+                    switch (rhsOp)
+                    {
+                    case no_null:
+                    {
+                        rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
+                        break;
+                    }
+                    case no_inlinetable:
+                    {
+                        unsigned patchOffset = out.length();
+                        out.reserve(sizeof(size32_t));
+                        unsigned startOffset = out.length();
+                        IHqlExpression * transforms = rhs->queryChild(0);
+                        ForEachChild(i, transforms)
+                        {
+                            if (!buildTransformRow(transforms->queryChild(i)))
+                                return false;
+                        }
+                        byte * patchPos = (byte *)out.bufferBase() + patchOffset;
+                        rtlWriteSize32t(patchPos, out.length() - startOffset);
+                        return true;
+                    }
+                    }
+                }
             }
             return false;
         }
@@ -8680,6 +8704,15 @@ bool ConstantRowCreator::processRecord(IHqlExpression * record, IHqlExpression *
 
 
 bool ConstantRowCreator::buildTransformRow(IHqlExpression * transform)
+{
+    HqlExprCopyArray savedAssigns;
+    savedAssigns.swapWith(assigns);
+    bool result = doBuildTransformRow(transform);
+    savedAssigns.swapWith(assigns);
+    return result;
+}
+
+bool ConstantRowCreator::doBuildTransformRow(IHqlExpression * transform)
 {
     expectedIndex = 0;
     if (!expandAssignChildren(transform))

@@ -24,6 +24,7 @@ source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 component=$(basename $PWD)
 
 PID_NAME="${PID_DIR}/${component}.pid"
+INIT_PID_NAME="${PID_DIR}/init_${component}.pid"
 
 timestamp="$(date +%Y_%m_%d_%H_%M_%S)"
 export logfile="${LOG_DIR}/${component}/init_${component}_${timestamp}.log"

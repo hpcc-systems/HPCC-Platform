@@ -199,7 +199,7 @@ public:
         return script.getLink();
     }
 
-    PyObject *compileEmbeddedScript(size32_t lenChars, const char *utf);
+    PyObject *compileEmbeddedScript(size32_t lenChars, const char *utf, const char *argstring);
     PyObject *getNamedTupleType(const RtlTypeInfo *type);
 private:
     GILstateWrapper GILState;
@@ -274,6 +274,8 @@ public:
 #endif
         // Initialize the Python Interpreter
         Py_Initialize();
+        const char *argv[] = { nullptr };
+        PySys_SetArgvEx(0, (char **) argv, 0);
         PyEval_InitThreads();
         tstate = PyEval_SaveThread();
         initialized = true;
@@ -374,7 +376,7 @@ public:
         assertex(PyCallable_Check(mynamedtupletype));
         return mynamedtupletype.getClear();
     }
-    PyObject *compileScript(const char *text)
+    PyObject *compileScript(const char *text, const char *parameters)
     {
         // Note - we do not need (and must not have) a lock protecting this. It is protected by the Python GIL,
         // and if we add our own lock we are liable to deadlock as the code within Py_CompileStringFlags may
@@ -385,14 +387,19 @@ public:
         code.set(PyDict_GetItemString(compiledScripts, text));
         if (!code)
         {
-            code.setown(Py_CompileString(text, "", Py_eval_input));
+            code.setown(Py_CompileString(text, "", Py_eval_input));   // try compiling as simple expression...
             if (!code)
             {
                 PyErr_Clear();
-                StringBuffer wrapped;
-                wrapPythonText(wrapped, text);
                 PyCompilerFlags flags = { PyCF_SOURCE_IS_UTF8 };
-                code.setown(Py_CompileStringFlags(wrapped, "<embed>", Py_file_input, &flags));
+                code.setown(Py_CompileStringFlags(text, "<embed>", Py_file_input, &flags));  // try compiling as global code
+                if (!code)
+                {
+                    PyErr_Clear();
+                    StringBuffer wrapped;
+                    wrapPythonText(wrapped, text, parameters);
+                    code.setown(Py_CompileStringFlags(wrapped, "<embed>", Py_file_input, &flags)); // try compiling as a function body
+                }
             }
             checkPythonError();
             if (code)
@@ -401,9 +408,9 @@ public:
         return code.getClear();
     }
 protected:
-    static StringBuffer &wrapPythonText(StringBuffer &out, const char *in)
+    static StringBuffer &wrapPythonText(StringBuffer &out, const char *in, const char *params)
     {
-        out.append("def __user__():\n  ");
+        out.appendf("def __user__(%s):\n  ", params);
         char c;
         while ((c = *in++) != '\0')
         {
@@ -411,7 +418,7 @@ protected:
             if (c=='\n')
                 out.append("  ");
         }
-        out.append("\n__result__ = __user__()\n");
+        out.appendf("\n__result__ = __user__(%s)\n", params);
         return out;
     }
     PyThreadState *tstate;
@@ -482,7 +489,7 @@ PyObject *PythonThreadContext::getNamedTupleType(const RtlTypeInfo *type)
     return lru.getLink();
 }
 
-PyObject *PythonThreadContext::compileEmbeddedScript(size32_t lenChars, const char *utf)
+PyObject *PythonThreadContext::compileEmbeddedScript(size32_t lenChars, const char *utf, const char *argstring)
 {
     size32_t bytes = rtlUtf8Size(lenChars, utf);
     StringBuffer text(bytes, utf);
@@ -490,7 +497,7 @@ PyObject *PythonThreadContext::compileEmbeddedScript(size32_t lenChars, const ch
     {
         prevtext.clear();
         text.stripChar('\r');
-        script.setown(globalState.compileScript(text));
+        script.setown(globalState.compileScript(text, argstring));
         prevtext.set(utf, bytes);
     }
     return script.getLink();
@@ -1256,7 +1263,7 @@ public:
         PyEval_RestoreThread(sharedCtx->threadState);
         locals.setown(PyDict_New());
         globals.setown(PyDict_New());
-        PyDict_SetItemString(locals, "__builtins__", PyEval_GetBuiltins());  // required for import to work
+        PyDict_SetItemString(globals, "__builtins__", PyEval_GetBuiltins());  // required for import to work
     }
     ~Python27EmbedContextBase()
     {
@@ -1515,28 +1522,34 @@ public:
     }
     virtual void compileEmbeddedScript(size32_t lenChars, const char *utf)
     {
-        script.setown(sharedCtx->compileEmbeddedScript(lenChars, utf));
+        script.setown(sharedCtx->compileEmbeddedScript(lenChars, utf, argstring));
     }
 
     virtual void callFunction()
     {
-        result.setown(PyEval_EvalCode((PyCodeObject *) script.get(), locals, globals));
+        result.setown(PyEval_EvalCode((PyCodeObject *) script.get(), globals, locals));
         checkPythonError();
         if (!result || result == Py_None)
-            result.set(PyDict_GetItemString(locals, "__result__"));
-        if (!result || result == Py_None)
             result.set(PyDict_GetItemString(globals, "__result__"));
+        if (!result || result == Py_None)
+            result.set(PyDict_GetItemString(locals, "__result__"));
     }
 protected:
     virtual void addArg(const char *name, PyObject *arg)
     {
         if (!arg)
             return;
-        assertex(arg);
-        PyDict_SetItemString(locals, name, arg);
+        if (argstring.length())
+            argstring.append(',');
+        argstring.append(name);
+        if (script)
+            PyDict_SetItemString(globals, name, arg);  // Back compatibility - if compiler did not recognize the prebind flag, we need to use globals
+        else
+            PyDict_SetItemString(locals, name, arg);
         Py_DECREF(arg);
         checkPythonError();
     }
+    StringBuffer argstring;
 };
 
 class Python27EmbedImportContext : public Python27EmbedContextBase

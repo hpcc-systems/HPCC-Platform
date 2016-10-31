@@ -93,6 +93,8 @@ static void replyError(unsigned errorCode, const char *errorMsg)
     queryWorldCommunicator().send(msg, 0, MPTAG_THORREGISTRATION);
 }
 
+static std::atomic<bool> isRegistered {false};
+
 static bool RegisterSelf(SocketEndpoint &masterEp)
 {
     StringBuffer slfStr;
@@ -181,6 +183,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         e->Release();
         return false;
     }
+    isRegistered = true;
     return true;
 }
 
@@ -189,6 +192,9 @@ static bool jobListenerStopped = true;
 bool UnregisterSelf(IException *e)
 {
     if (!hasMPServerStarted())
+        return false;
+
+    if (!isRegistered)
         return false;
 
     StringBuffer slfStr;
@@ -205,6 +211,7 @@ bool UnregisterSelf(IException *e)
             return false;
         }
         LOG(MCdebugProgress, thorJob, "Unregistered slave : %s", slfStr.str());
+        isRegistered = false;
         return true;
     }
     catch (IException *e) {
