@@ -1599,6 +1599,8 @@ void WsWuInfo::getStats(StatisticsFilter& filter, bool createDescriptions, IArra
 
         Owned<IEspWUStatisticItem> wuStatistic = createWUStatisticItem();
 
+        if (version > 1.61)
+            wuStatistic->setWuid(wuid);
         if (curCreatorType != SCTnone)
             wuStatistic->setCreatorType(queryCreatorTypeName(curCreatorType));
         if (curCreator.length())

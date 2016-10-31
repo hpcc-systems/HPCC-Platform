@@ -423,7 +423,7 @@ public:
     }
     virtual bool matches(const IStatisticsFilter * filter) const
     {
-        return filter->matches(creatorType, creator, scopeType, scope, measure, kind);
+        return filter->matches(creatorType, creator, scopeType, scope, measure, kind, value);
     }
 
 public:
@@ -667,7 +667,7 @@ protected:
         IPropertyTree & curSubGraph = subgraphIter->query();
         curStat->creatorType = queryCreatorType(curSubGraph.queryProp("@c"));
         curStat->creator.set(curSubGraph.queryProp("@creator"));
-        return filter->matches(curStat->creatorType, curStat->creator, SSTall, NULL, SMeasureAll, StKindAll);
+        return filter->matches(curStat->creatorType, curStat->creator, SSTall, NULL, SMeasureAll, StKindAll, AnyStatisticValue);
     }
 
     bool checkScope()
@@ -677,7 +677,7 @@ protected:
         IStatisticCollection * collection = &collections.tos();
         curStat->scopeType = collection->queryScopeType();
         collection->getFullScope(curStat->scope.clear());
-        return filter->matches(SCTall, NULL, curStat->scopeType, curStat->scope, SMeasureAll, StKindAll);
+        return filter->matches(SCTall, NULL, curStat->scopeType, curStat->scope, SMeasureAll, StKindAll, AnyStatisticValue);
     }
 
     bool checkStatistic()
@@ -687,7 +687,7 @@ protected:
         curStat->measure = queryMeasure(curStat->kind);
         if (!filter)
             return true;
-        if (!filter->matches(SCTall, NULL, SSTall, NULL, curStat->measure, curStat->kind))
+        if (!filter->matches(SCTall, NULL, SSTall, NULL, curStat->measure, curStat->kind, curStat->value))
             return false;
         return true;
     }
@@ -5781,6 +5781,8 @@ IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(const IStatisticsFilter
 
     statistics.load(p,"Statistics/*");
     Owned<IConstWUStatisticIterator> localStats = new WorkUnitStatisticsIterator(statistics, 0, (IConstWorkUnit *) this, filter);
+    if (!filter->recurseChildScopes(SSTgraph, nullptr))
+        return *localStats.getClear();
 
     const char * wuid = p->queryName();
     Owned<IConstWUStatisticIterator> graphStats = new CConstGraphProgressStatisticsIterator(wuid, filter);
@@ -8734,7 +8736,7 @@ bool CLocalWUStatistic::matches(const IStatisticsFilter * filter) const
         return true;
     const char * creator = p->queryProp("@creator");
     const char * scope = p->queryProp("@scope");
-    return filter->matches(getCreatorType(), creator, getScopeType(), scope, getMeasure(), getKind());
+    return filter->matches(getCreatorType(), creator, getScopeType(), scope, getMeasure(), getKind(), getValue());
 }
 
 //==========================================================================================
@@ -8822,7 +8824,7 @@ bool CLocalWULegacyTiming::matches(const IStatisticsFilter * filter) const
         return true;
     const char * creator = p->queryProp("@creator");
     const char * scope = p->queryProp("@scope");
-    return filter->matches(SCTall, NULL, SSTall, NULL, getMeasure(), getKind());
+    return filter->matches(SCTall, NULL, SSTall, NULL, getMeasure(), getKind(), getValue());
 }
 
 //==========================================================================================

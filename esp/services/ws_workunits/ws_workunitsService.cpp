@@ -4795,12 +4795,6 @@ bool CWsWorkunitsEx::onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &r
 {
     try
     {
-        StringBuffer wuid = req.getWUID();
-        WsWuHelpers::checkAndTrimWorkunit("WUInfo", wuid);
-
-        ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
-        PROGLOG("WUGetStats: %s", wuid.str());
-
         const char* creatorType = checkGetStatsInput(req.getCreatorType());
         const char* creator = checkGetStatsInput(req.getCreator());
         const char* scopeType = checkGetStatsInput(req.getScopeType());
@@ -4813,14 +4807,57 @@ bool CWsWorkunitsEx::onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &r
             filter.setScopeDepth(req.getMinScopeDepth(), req.getMaxScopeDepth());
         else if (!req.getMinScopeDepth_isNull())
             filter.setScopeDepth(req.getMinScopeDepth());
+        if (!req.getMinValue_isNull() || !req.getMaxValue_isNull())
+        {
+            unsigned __int64 lowValue = 0;
+            unsigned __int64 highValue = MaxStatisticValue;
+            if (!req.getMinValue_isNull())
+                lowValue = (unsigned __int64)req.getMinValue();
+            if (!req.getMaxValue_isNull())
+                highValue = (unsigned __int64)req.getMaxValue();
+            filter.setValueRange(lowValue, highValue);
+        }
+
+        const char * textFilter = req.getFilter();
+        if (textFilter)
+            filter.setFilter(textFilter);
 
         bool createDescriptions = false;
         if (!req.getCreateDescriptions_isNull())
             createDescriptions = req.getCreateDescriptions();
 
-        WsWuInfo winfo(context, wuid.str());
+        StringBuffer wuid = req.getWUID();
+        PROGLOG("WUGetStats: %s", wuid.str());
+
         IArrayOf<IEspWUStatisticItem> statistics;
-        winfo.getStats(filter, createDescriptions, statistics);
+        if (strchr(wuid, '*'))
+        {
+            WUSortField filters[2];
+            MemoryBuffer filterbuf;
+            filters[0] = WUSFwildwuid;
+            filterbuf.append(wuid.str());
+            filters[1] = WUSFterm;
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+            Owned<IConstWorkUnitIterator> iter = factory->getWorkUnitsSorted((WUSortField) (WUSFwuid), filters, filterbuf.bufferBase(), 0, INT_MAX, NULL, NULL);
+            ForEach(*iter)
+            {
+                Owned<IConstWorkUnit> workunit = factory->openWorkUnit(iter->query().queryWuid());
+                if (workunit)
+                {
+                    //No need to check for access since the list is already filtered
+                    WsWuInfo winfo(context, workunit->queryWuid());
+                    winfo.getStats(filter, createDescriptions, statistics);
+                }
+            }
+        }
+        else
+        {
+            WsWuHelpers::checkAndTrimWorkunit("WUInfo", wuid);
+            ensureWsWorkunitAccess(context, wuid, SecAccess_Read);
+
+            WsWuInfo winfo(context, wuid);
+            winfo.getStats(filter, createDescriptions, statistics);
+        }
         resp.setStatistics(statistics);
         resp.setWUID(wuid.str());
     }
