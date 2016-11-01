@@ -1831,6 +1831,7 @@ public:
     virtual IStringVal & getExceptionFileName(IStringVal & str) const;
     virtual unsigned    getExceptionLineNo() const;
     virtual unsigned    getExceptionColumn() const;
+    virtual unsigned    getActivityId() const;
     virtual unsigned    getSequence() const;
     virtual void        setExceptionSource(const char *str);
     virtual void        setExceptionMessage(const char *str);
@@ -1840,6 +1841,7 @@ public:
     virtual void        setExceptionFileName(const char *str);
     virtual void        setExceptionLineNo(unsigned r);
     virtual void        setExceptionColumn(unsigned c);
+    virtual void        setActivityId(unsigned _id);
 };
 
 //==========================================================================================
@@ -8533,6 +8535,11 @@ unsigned CLocalWUException::getExceptionColumn() const
     return p->getPropInt("@col", 0);
 }
 
+unsigned CLocalWUException::getActivityId() const
+{
+    return p->getPropInt("@activity", 0);
+}
+
 unsigned CLocalWUException::getSequence() const
 {
     return p->getPropInt("@sequence", 0);
@@ -8576,6 +8583,11 @@ void CLocalWUException::setExceptionLineNo(unsigned r)
 void CLocalWUException::setExceptionColumn(unsigned c)
 {
     p->setPropInt("@col", c);
+}
+
+void CLocalWUException::setActivityId(unsigned _id)
+{
+    p->setPropInt("@activity", _id);
 }
 
 //==========================================================================================
@@ -9883,7 +9895,7 @@ extern WORKUNIT_API const IExtendedWUInterface * queryExtendedWU(const IConstWor
 }
 
 
-extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column)
+extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, unsigned activity)
 {
     Owned<IWUException> we = wu->createException();
     we->setSeverity(severity);
@@ -9900,6 +9912,8 @@ extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, ErrorSeverity se
         if (column)
             we->setExceptionColumn(lineno);
     }
+    if (activity)
+        we->setActivityId(activity);
 }
 
 const char * skipLeadingXml(const char * text)

@@ -145,18 +145,20 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
     Owned<IConstWUExceptionIterator> it = &wu.getExceptions();
     ForEach(*it)
     {
-
+        IConstWUException & cur = it->query();
         SCMStringBuffer src, msg, file;
         Owned<IEspECLException> e= createECLException("","");
-        e->setCode(it->query().getExceptionCode());
-        e->setSource(it->query().getExceptionSource(src).str());
-        e->setMessage(it->query().getExceptionMessage(msg).str());
-        e->setFileName(it->query().getExceptionFileName(file).str());
-        e->setLineNo(it->query().getExceptionLineNo());
-        e->setColumn(it->query().getExceptionColumn());
+        e->setCode(cur.getExceptionCode());
+        e->setSource(cur.getExceptionSource(src).str());
+        e->setMessage(cur.getExceptionMessage(msg).str());
+        e->setFileName(cur.getExceptionFileName(file).str());
+        e->setLineNo(cur.getExceptionLineNo());
+        e->setColumn(cur.getExceptionColumn());
+        if (cur.getActivityId())
+            e->setActivity(cur.getActivityId());
 
         const char * label = "";
-        switch (it->query().getSeverity())
+        switch (cur.getSeverity())
         {
             default:
             case SeverityError: label = "Error"; numerr++; break;

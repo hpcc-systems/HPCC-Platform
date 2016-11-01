@@ -24,6 +24,7 @@ ESPStruct [nil_remove] ECLDirectException
     string FileName;
     int LineNo;
     int Column;
+    int Activity;
 };
 
 ESPrequest RunEclRequest

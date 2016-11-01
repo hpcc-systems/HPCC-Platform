@@ -796,6 +796,8 @@ void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeve
                 we->setExceptionLineNo(line);
                 we->setExceptionColumn(column);
             }
+            if (te->queryActivityId())
+                we->setActivityId(te->queryActivityId());
         }
         else
             we->setSeverity(severity);
