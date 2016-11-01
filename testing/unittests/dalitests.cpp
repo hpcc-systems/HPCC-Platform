@@ -644,7 +644,7 @@ class CDaliTestsStress : public CppUnit::TestFixture
                 io.setown(ifile->open(IFOcreate));
                 io->write(0, 17, "12345678901234567");
                 io->close();
-                Owned<IDistributedFile> dsub = dir.createNew(subd, sub.str());  // GH->JCS second parameter is wrong
+                Owned<IDistributedFile> dsub = dir.createNew(subd);
                 dsub->attach(sub.str(),user);
             } catch (IException *e) {
                 StringBuffer msg;
