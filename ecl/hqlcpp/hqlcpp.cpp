@@ -3028,7 +3028,10 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         return;
     case no_externalcall:
     case no_call:
-        doBuildExprCall(ctx, expr, tgt);
+        if (isTimed(expr))
+            buildTempExpr(ctx, expr, tgt);
+        else
+            doBuildExprCall(ctx, expr, tgt);
         return;
     case no_comma:
     case no_compound:
@@ -12472,6 +12475,8 @@ bool HqlCppTranslator::requiresTemp(BuildCtx & ctx, IHqlExpression * expr, bool 
             case type_utf8:
                 return true;
             }
+            if (isTimed(expr))
+                return true;
             break;
         }
     case no_cast:

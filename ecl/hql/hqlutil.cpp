@@ -2867,6 +2867,32 @@ bool isDependentOnParameter(IHqlExpression * expr)
     return checker.isDependent(expr);
 }
 
+bool isTimed(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_externalcall:
+    {
+        IHqlExpression * funcdef = expr->queryExternalDefinition();
+        assertex(funcdef);
+        IHqlExpression * body = funcdef->queryChild(0);
+        if (body->hasAttribute(timeAtom))
+            return true;
+        break;
+    }
+    case no_call:
+    {
+        IHqlExpression * funcdef = expr->queryBody()->queryFunctionDefinition();
+        assertex(funcdef);
+        IHqlExpression * body = funcdef->queryChild(0);
+        if (body && body->hasAttribute(timeAtom))
+            return true;
+        break;
+    }
+    }
+    return false;
+}
+
 //---------------------------------------------------------------------------
 
 void DependencyGatherer::doGatherDependencies(IHqlExpression * expr)
