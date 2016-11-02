@@ -2755,6 +2755,7 @@ static bool suppressStatisticIfZero(StatisticKind kind)
     case StNumSpills:
     case StSizeSpillFile:
     case StTimeSpillElapsed:
+    case StNumDiskRetries:
         return true;
     }
     return false;

@@ -616,6 +616,7 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(ScansPerRow) },
     { NUMSTAT(Allocations) },
     { NUMSTAT(AllocationScans) },
+    { NUMSTAT(DiskRetries) },
 };
 
 
@@ -929,10 +930,10 @@ void StatisticsMapping::createMappings()
 
 const StatisticsMapping allStatistics;
 const StatisticsMapping heapStatistics(StNumAllocations, StNumAllocationScans, StKindNone);
-const StatisticsMapping diskLocalStatistics(StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StKindNone);
-const StatisticsMapping diskRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StKindNone);
-const StatisticsMapping diskReadRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StKindNone);
-const StatisticsMapping diskWriteRemoteStatistics(StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StKindNone);
+const StatisticsMapping diskLocalStatistics(StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StKindNone);
+const StatisticsMapping diskRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StKindNone);
+const StatisticsMapping diskReadRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StNumDiskRetries, StKindNone);
+const StatisticsMapping diskWriteRemoteStatistics(StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StKindNone);
 
 //--------------------------------------------------------------------------------------------------------------------
 
