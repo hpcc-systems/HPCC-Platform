@@ -443,8 +443,8 @@ unsigned CInputBasePartitioner::transformBlock(offset_t endOffset, TransformCurs
 
 CFixedPartitioner::CFixedPartitioner(size32_t _recordSize) : CInputBasePartitioner(0, _recordSize)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CFixedPartitioner::CFixedPartitioner( recordSize:%d)", recordSize);
     recordSize = _recordSize;
+    LOG(MCdebugProgressDetail, unknownJob, "CFixedPartitioner::CFixedPartitioner( recordSize:%d)", recordSize);
 }
 
 size32_t CFixedPartitioner::getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer)
