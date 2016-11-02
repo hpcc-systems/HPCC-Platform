@@ -80,13 +80,9 @@ int main(int argc, char* argv[])
                 releaseAtoms();
                 return -1;
             }
-            Owned<ISecUser> user = secmgr->createUser(sysuser.str());
-            ISecCredentials& cred = user->credentials();
+
             StringBuffer decPwd;
             decrypt(decPwd, passbuf.str());
-            cred.setPassword(decPwd.str());
-            ok = secmgr->clearPermissionsCache(*user);
-            printf(ok ? "ESP Cache cleared\n" : "Error clearing ESP Cache\n");
 
             //Clear Dali cache
             Owned<IUserDescriptor> userdesc(createUserDescriptor());
