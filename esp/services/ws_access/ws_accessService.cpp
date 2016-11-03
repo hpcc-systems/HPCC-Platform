@@ -504,6 +504,9 @@ bool Cws_accessEx::onUserQuery(IEspContext &context, IEspUserQueryRequest &req, 
         case CUserSortBy_PasswordExpiration:
             sortOrder[0] = UFPasswordExpiration;
             break;
+        case CUserSortBy_EmployeeID:
+            sortOrder[0] = UFEmployeeID;
+            break;
         default:
             break;
         }
@@ -531,6 +534,11 @@ bool Cws_accessEx::onUserQuery(IEspContext &context, IEspUserQueryRequest &req, 
             const char* passwordExpiration = usr.queryProp(getUserFieldNames(UFPasswordExpiration));
             if (passwordExpiration && *passwordExpiration)
                 userInfo->setPasswordexpiration(passwordExpiration);
+
+            const char* employeeID = usr.queryProp(getUserFieldNames(UFEmployeeID));
+            if (employeeID && *employeeID)
+                userInfo->setEmployeeID(employeeID);
+
             espUsers.append(*userInfo.getClear());
         }
 
@@ -1334,6 +1342,9 @@ bool Cws_accessEx::onGroupMemberQuery(IEspContext &context, IEspGroupMemberQuery
         case CUserSortBy_PasswordExpiration:
             sortOrder[0] = UFPasswordExpiration;
             break;
+        case CUserSortBy_EmployeeID:
+            sortOrder[0] = UFEmployeeID;
+            break;
         default:
             break;
         }
@@ -1361,6 +1372,11 @@ bool Cws_accessEx::onGroupMemberQuery(IEspContext &context, IEspGroupMemberQuery
             const char* passwordExpiration = usr.queryProp(getUserFieldNames(UFPasswordExpiration));
             if (passwordExpiration && *passwordExpiration)
                 userInfo->setPasswordexpiration(passwordExpiration);
+
+            const char* employeeID = usr.queryProp(getUserFieldNames(UFEmployeeID));
+            if (employeeID && *employeeID)
+                userInfo->setEmployeeID(employeeID);
+
             users.append(*userInfo.getLink());
         }
 

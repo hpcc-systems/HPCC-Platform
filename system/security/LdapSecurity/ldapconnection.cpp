@@ -60,7 +60,7 @@
 
 #define UNK_PERM_VALUE (SecAccessFlags)-2	//used to initialize "default" permission, which we later try to deduce
 
-const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration" };
+const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration", "@employeeid" };
 
 const char* getUserFieldNames(UserField field)
 {
@@ -2533,6 +2533,7 @@ public:
             userTree->addProp(getUserFieldNames(UFFullName), fullName);
         userTree->addPropInt(getUserFieldNames(UFUserID), usr.getUserID());
         userTree->addProp(getUserFieldNames(UFPasswordExpiration), sb.str());
+        userTree->addProp(getUserFieldNames(UFEmployeeID), usr.getEmployeeID());
         users->addPropTree("User", userTree.getClear());
     }
 
