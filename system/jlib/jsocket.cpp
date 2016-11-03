@@ -140,14 +140,6 @@ static atomic_t pre_conn_unreach_cnt = ATOMIC_INIT(0);    // global count of pre
 
 #define IPV6_SERIALIZE_PREFIX (0x00ff00ff)
 
-inline void LogErr(unsigned err,unsigned ref,const char *info,unsigned lineno,const char *tracename)
-{
-    if (err) 
-        PROGLOG("jsocket(%d,%d)%s%s err = %d%s%s",ref,lineno,
-           (info&&*info)?" ":"",(info&&*info)?info:"",err,
-           (tracename&&*tracename)?" : ":"",(tracename&&*tracename)?tracename:"");
-}
-    
 
 class jlib_thrown_decl SocketException: public CInterface, public IJSOCK_Exception
 {
@@ -672,6 +664,22 @@ typedef union {
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 65
 #endif
+
+inline void LogErr(unsigned err,unsigned ref,const char *info,unsigned lineno,const char *tracename)
+{
+    if (err)
+    {
+        PROGLOG("jsocket(%d,%d)%s%s err = %d%s%s",ref,lineno,
+           (info&&*info)?" ":"",(info&&*info)?info:"",err,
+           (tracename&&*tracename)?" : ":"",(tracename&&*tracename)?tracename:"");
+        if ((JSE_NOTCONN == err) || (JSE_CONNRESET == err) || (JSE_CONNABORTED == err))
+        {
+            PROGLOG("Socket not connected, stack:");
+            PrintStackReport();
+        }
+    }
+}
+
 
 
 inline socklen_t setSockAddr(J_SOCKADDR &u, const IpAddress &ip,unsigned short port)
