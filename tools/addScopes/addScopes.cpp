@@ -18,6 +18,7 @@
 #include "seclib.hpp"
 #include "ldapsecurity.hpp"
 #include "jliball.hpp"
+#include "dasess.hpp"
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -25,10 +26,10 @@
 
 int main(int argc, char* argv[])
 {
-    if(argc != 2)
+    if(argc < 2  || argc > 3)
     {
-        printf("usage: addScopes daliconf.xml\n");
-        printf("\n\tCreates all user-specific LDAP private file scopes 'hpccinternal::<user>'\n\tand grants users access to their scope. The configuration file\n\tdaliconf.xml is the dali configuration file, typically\n\tfound in /var/lib/HPCCSystems/mydali\n\n");
+        printf("usage: addScopes daliconf.xml [-c]\n");
+        printf("\n\tCreates all user-specific LDAP private file scopes 'hpccinternal::<user>'\n\tand grants users access to their scope. The configuration file\n\tdaliconf.xml is the dali configuration file, typically\n\tfound in /var/lib/HPCCSystems/mydali\n\tSpecify -c to make changes immediately visible by clearing permission caches\n\n");
         return -1;
     }
 
@@ -51,10 +52,44 @@ int main(int argc, char* argv[])
         if(secmgr == NULL)
         {
             printf("Security manager can't be created\n");
+            releaseAtoms();
             return -1;
         }
         bool ok = secmgr->createUserScopes();
         printf(ok ? "User scopes added\n" : "Some scopes not added\n");
+
+        //Clear permission caches?
+        if (argc == 3 && 0==stricmp(argv[2], "-c"))
+        {
+            //Clear ESP Cache
+            StringBuffer sysuser;
+            StringBuffer passbuf;
+            seccfg->getProp(".//@systemUser", sysuser);
+            seccfg->getProp(".//@systemPassword", passbuf);
+
+            if (0 == sysuser.length())
+            {
+                printf("Error in configuration file %s - systemUser not specified", argv[1]);
+                releaseAtoms();
+                return -1;
+            }
+
+            if (0 == passbuf.length())
+            {
+                printf("Error in configuration file %s - systemPassword not specified", argv[1]);
+                releaseAtoms();
+                return -1;
+            }
+
+            StringBuffer decPwd;
+            decrypt(decPwd, passbuf.str());
+
+            //Clear Dali cache
+            Owned<IUserDescriptor> userdesc(createUserDescriptor());
+            userdesc->set(sysuser, decPwd);
+            ok = querySessionManager().clearPermissionsCache(userdesc);
+            printf(ok ? "Dali Cache cleared\n" : "Error clearing Dali Cache\n");
+        }
 #endif
     }
     catch(IException* e)
