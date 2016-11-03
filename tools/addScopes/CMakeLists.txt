@@ -34,7 +34,9 @@ include_directories (
          ./../../system/security/LdapSecurity
          ./../../system/security/shared 
          ./../../system/jlib 
-         ./../../system/include 
+         ./../../system/include
+         ./../../dali/base
+         ./../../system/mp
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

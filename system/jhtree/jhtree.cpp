@@ -984,7 +984,7 @@ class CNodeMRUCache : public CMRUCacheOf<CKeyIdAndPos, CJHTreeNode, CNodeMapping
 {
     size32_t sizeInMem, memLimit;
 public:
-    CNodeMRUCache(size32_t _memLimit)
+    CNodeMRUCache(size32_t _memLimit) : memLimit(0)
     {
         sizeInMem = 0;
         setMemLimit(_memLimit);

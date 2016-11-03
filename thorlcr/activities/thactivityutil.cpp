@@ -890,10 +890,10 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
                     someInGroup = false;
                     return NULL;
                 }
-                partHandler->stop();
                 ++part;
                 if (part >= parts)
                 {
+                    partHandler->stop();
                     partHandler.clear();
                     eof = true;
                     return NULL;

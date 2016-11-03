@@ -76,6 +76,7 @@ CDiskPartHandlerBase::CDiskPartHandlerBase(CDiskReadSlaveActivityBase &_activity
 
 void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc)
 {
+    stop(); // close previous if open
     partDesc.set(_partDesc);
     compressed = partDesc->queryOwner().isCompressed(&blockCompressed);
     if (NULL != activity.eexp.get())
@@ -165,6 +166,8 @@ void CDiskPartHandlerBase::open()
 
 void CDiskPartHandlerBase::stop()
 {
+    if (!iFile)
+        return;
     if (!eoi)
         checkFileCrc = false; // cannot perform file CRC if diskread has not read whole file.
     CRC32 fileCRC;
@@ -176,6 +179,7 @@ void CDiskPartHandlerBase::stop()
             throw MakeThorOperatorException(TE_FileCrc, "CRC Failure having read file: %s", filename.get());
         checkFileCrc = false;
     }
+    iFile.clear();
 }
 
 

@@ -360,6 +360,9 @@ int main( int argc, char *argv[]  )
         setSlaveAffinity(globals->getPropInt("@SLAVEPROCESSNUM"));
 
         startMPServer(getFixedPort(TPORT_mp));
+
+        if (globals->getPropBool("@MPChannelReconnect"))
+            getMPServer()->setOpt(mpsopt_channelreopen, "true");
 #ifdef USE_MP_LOG
         startLogMsgParentReceiver();
         LOG(MCdebugProgress, thorJob, "MPServer started on port %d", getFixedPort(TPORT_mp));
