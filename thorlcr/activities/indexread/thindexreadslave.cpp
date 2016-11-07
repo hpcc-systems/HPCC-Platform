@@ -138,7 +138,7 @@ protected:
         rfn.getPath(filePath);
         unsigned crc=0;
         partDesc.getCrc(crc);
-        Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, partDesc);
+        Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, logicalFilename, partDesc);
         return createKeyIndex(filePath.str(), crc, *lfile, false, false);
     }
     const void *nextKey()
