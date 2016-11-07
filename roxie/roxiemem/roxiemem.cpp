@@ -129,10 +129,16 @@ const unsigned maxLeakReport = 20;
 const unsigned maxLeakReport = 4;
 #endif
 
+#ifdef _ARCH_PPC64EL_
+typedef unsigned __int64 heap_t; // huge pages are 16M on power pc - this allow them to be released back to the OS
+#else
+typedef unsigned heap_t; // currently more efficient on intel machines
+#endif
+
 static char *heapBase;
 static char *heapEnd;   // Equal to heapBase + (heapTotalPages * page size)
 static bool heapUseHugePages;
-static unsigned *heapBitmap;
+static heap_t *heapBitmap;
 static unsigned heapBitmapSize;
 static unsigned heapTotalPages; // derived from heapBitmapSize - here for code clarity
 static unsigned heapLWM;
@@ -150,10 +156,10 @@ static unsigned heapAllocated;
 static std::atomic_uint dataBufferPages;
 static std::atomic_uint dataBuffersActive;
 
-const unsigned UNSIGNED_BITS = sizeof(unsigned) * 8;
-const unsigned UNSIGNED_ALLBITS = (unsigned) -1;
-const unsigned TOPBITMASK = 1<<(UNSIGNED_BITS-1);
-const memsize_t heapBlockSize = UNSIGNED_BITS*HEAP_ALIGNMENT_SIZE;
+const unsigned HEAP_BITS = sizeof(heap_t) * 8;
+const heap_t HEAP_ALLBITS = (heap_t) -1;
+const heap_t TOPBITMASK = ((heap_t)1U)<<(HEAP_BITS-1);
+const memsize_t heapBlockSize = HEAP_BITS*HEAP_ALIGNMENT_SIZE;
 
 //Constants used when maintaining a list of blocks.  The blocks are stored as unsigned numbers, null has an unusual number so
 //that block 0 can be the heaplet at address heapBase.  The top bits are used as a mask to prevent the ABA problem in
@@ -200,8 +206,8 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     if (heapBase) return;
 
     // CriticalBlock b(heapBitCrit); // unnecessary - must call this exactly once before any allocations anyway!
-    memsize_t bitmapSize = (pages + UNSIGNED_BITS - 1) / UNSIGNED_BITS;
-    memsize_t totalPages = bitmapSize * UNSIGNED_BITS;
+    memsize_t bitmapSize = (pages + HEAP_BITS - 1) / HEAP_BITS;
+    memsize_t totalPages = bitmapSize * HEAP_BITS;
     memsize_t memsize = totalPages * HEAP_ALIGNMENT_SIZE;
 
     if (totalPages > (unsigned)-1)
@@ -335,20 +341,20 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     if (heapNotifyUnusedEachFree)
         DBGLOG("Memory released to OS on each %uk 'page'", (unsigned)(HEAP_ALIGNMENT_SIZE/1024));
     else if (heapNotifyUnusedEachBlock)
-        DBGLOG("Memory released to OS in %uk blocks", (unsigned)(HEAP_ALIGNMENT_SIZE*UNSIGNED_BITS/1024));
+        DBGLOG("Memory released to OS in %uk blocks", (unsigned)(HEAP_ALIGNMENT_SIZE*HEAP_BITS/1024));
     else
     {
         DBGLOG("MEMORY WILL NOT BE RELEASED TO OS");
         if (!retainMemory)
-            DBGLOG("Increase HEAP_ALIGNMENT_SIZE so HEAP_ALIGNMENT_SIZE*32 (0x%" I64F "x) is a multiple of system huge page size (0x%" I64F "x)",
-                    (unsigned __int64)HEAP_ALIGNMENT_SIZE * 32, (unsigned __int64) getHugePageSize());
+            DBGLOG("Increase HEAP_ALIGNMENT_SIZE so HEAP_ALIGNMENT_SIZE*%u (0x%" I64F "x) is a multiple of system huge page size (0x%" I64F "x)",
+                    HEAP_BITS, (unsigned __int64)(HEAP_ALIGNMENT_SIZE * HEAP_BITS), (unsigned __int64) getHugePageSize());
     }
 
     assertex(((memsize_t)heapBase & (HEAP_ALIGNMENT_SIZE-1)) == 0);
 
     heapEnd = heapBase + memsize;
-    heapBitmap = new unsigned [heapBitmapSize];
-    memset(heapBitmap, 0xff, heapBitmapSize*sizeof(unsigned));
+    heapBitmap = new heap_t [heapBitmapSize];
+    memset(heapBitmap, 0xff, heapBitmapSize*sizeof(heap_t));
     heapLargeBlocks = 1;
     heapLWM = 0;
     heapHWM = heapBitmapSize;
@@ -361,8 +367,8 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
 #ifdef _USE_CPPUNIT
 static void adjustHeapSize(unsigned numPages)
 {
-    memsize_t bitmapSize = (numPages + UNSIGNED_BITS - 1) / UNSIGNED_BITS;
-    memsize_t totalPages = bitmapSize * UNSIGNED_BITS;
+    memsize_t bitmapSize = (numPages + HEAP_BITS - 1) / HEAP_BITS;
+    memsize_t totalPages = bitmapSize * HEAP_BITS;
     memsize_t memsize = totalPages * HEAP_ALIGNMENT_SIZE;
     heapEnd = heapBase + memsize;
     heapBitmapSize = (unsigned)bitmapSize;
@@ -408,13 +414,13 @@ extern void memstats(unsigned &totalpg, unsigned &freepg, unsigned &maxblk)
         CriticalBlock b(heapBitCrit);
         for (unsigned i = 0; i < heapBitmapSize; i++)
         {
-            unsigned t = heapBitmap[i];
+            heap_t t = heapBitmap[i];
             if (t)
             {
-                if (t==UNSIGNED_ALLBITS)
+                if (t==HEAP_ALLBITS)
                 {
-                    thisBlock += UNSIGNED_BITS;
-                    freePages += UNSIGNED_BITS;
+                    thisBlock += HEAP_BITS;
+                    freePages += HEAP_BITS;
                 }
                 else
                 {
@@ -466,8 +472,8 @@ static void dumpHeapState()
     StringBuffer s;
     for (unsigned i = 0; i < heapBitmapSize; i++)
     {
-        unsigned t = heapBitmap[i];
-        s.appendf("%08x", t);
+        heap_t t = heapBitmap[i];
+        s.appendf("%0*" I64F "x", (int)(sizeof(heap_t)*2), (unsigned __int64)t);
     }
 
     DBGLOG("Heap: %s", s.str());
@@ -524,21 +530,21 @@ static StringBuffer &memmap(StringBuffer &stats)
     for (unsigned i = 0; i < heapBitmapSize; i++)
     {
         if (i % 2) stats.appendf("  ");
-        else stats.appendf("\n%p: ", heapBase + i*UNSIGNED_BITS*HEAP_ALIGNMENT_SIZE);
+        else stats.appendf("\n%p: ", heapBase + i*HEAP_BITS*HEAP_ALIGNMENT_SIZE);
 
-        if (heapBitmap[i] == UNSIGNED_ALLBITS) {
-            stats.appendf("11111111111111111111111111111111");
-            freePages += UNSIGNED_BITS;
-            thisBlock += UNSIGNED_BITS;
+        if (heapBitmap[i] == HEAP_ALLBITS) {
+            stats.appendf("%.*s", HEAP_BITS, "1111111111111111111111111111111111111111111111111111111111111111");
+            freePages += HEAP_BITS;
+            thisBlock += HEAP_BITS;
             if (thisBlock > maxBlock)
                 maxBlock = thisBlock;
         }
         else if (heapBitmap[i] == 0) {
-            stats.appendf("00000000000000000000000000000000");
+            stats.appendf("%.*s", HEAP_BITS, "0000000000000000000000000000000000000000000000000000000000000000");
             thisBlock = 0;
         }
         else {
-            unsigned mask = 1;
+            heap_t mask = 1;
             while (mask)
             {
                 if (heapBitmap[i] & mask)
@@ -629,12 +635,12 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
         unsigned i;
         for (i = heapLWM; i < heapBitmapSize; i++)
         {
-            unsigned hbi = heapBitmap[i];
+            heap_t hbi = heapBitmap[i];
             if (hbi)
             {
                 const unsigned pos = countTrailingUnsetBits(hbi);
-                const unsigned mask = 1U << pos;
-                const unsigned match = i*UNSIGNED_BITS + pos;
+                const heap_t mask = ((heap_t)1U) << pos;
+                const unsigned match = i*HEAP_BITS + pos;
                 char *ret = heapBase + match*HEAP_ALIGNMENT_SIZE;
                 hbi &= ~mask;
                 heapBitmap[i] = hbi;
@@ -670,11 +676,11 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
         unsigned matches = 0;
         while (i)
         {
-            unsigned hbi = heapBitmap[--i];
-            unsigned mask = TOPBITMASK;
+            heap_t hbi = heapBitmap[--i];
+            heap_t mask = TOPBITMASK;
             if (hbi)
             {
-                for (unsigned b = UNSIGNED_BITS; b > 0; b--)
+                for (unsigned b = HEAP_BITS; b > 0; b--)
                 {
                     if (hbi & mask)
                     {
@@ -682,8 +688,8 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                         if (matches==pages)
                         {
                             unsigned start = i;
-                            unsigned startHbi = hbi;
-                            char *ret = heapBase + (i*UNSIGNED_BITS+b-1)*HEAP_ALIGNMENT_SIZE;
+                            heap_t startHbi = hbi;
+                            char *ret = heapBase + (i*HEAP_BITS+b-1)*HEAP_ALIGNMENT_SIZE;
                             loop
                             {
                                 hbi &= ~mask;
@@ -754,9 +760,9 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
     if (heapNotifyUnusedEachFree)
         notifyMemoryUnused(ptr, pages*HEAP_ALIGNMENT_SIZE);
 
-    unsigned wordOffset = (unsigned) (pageOffset / UNSIGNED_BITS);
-    unsigned bitOffset = (unsigned) (pageOffset % UNSIGNED_BITS);
-    unsigned mask = 1<<bitOffset;
+    unsigned wordOffset = (unsigned) (pageOffset / HEAP_BITS);
+    unsigned bitOffset = (unsigned) (pageOffset % HEAP_BITS);
+    heap_t mask = ((heap_t)1U)<<bitOffset;
     char * firstReleaseBlock = NULL;
     char * lastReleaseBlock = NULL;
     {
@@ -783,13 +789,13 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
 
         loop
         {
-            unsigned prev = heapBitmap[wordOffset];
+            heap_t prev = heapBitmap[wordOffset];
             if (unlikely((prev & mask) != 0))
                 HEAPERROR("RoxieMemMgr: Page freed twice");
 
-            unsigned next = prev | mask;
+            heap_t next = prev | mask;
             heapBitmap[wordOffset] = next;
-            if ((next == UNSIGNED_ALLBITS) && heapNotifyUnusedEachBlock)
+            if ((next == HEAP_ALLBITS) && heapNotifyUnusedEachBlock)
             {
                 char * address = heapBase + wordOffset * heapBlockSize;
                 if (!firstReleaseBlock)
@@ -824,11 +830,11 @@ static void clearBits(unsigned start, unsigned len)
     // HeapAlignedBitmap class.
     if (len)
     {
-        unsigned wordOffset = (unsigned) (start / UNSIGNED_BITS);
-        unsigned bitOffset = (unsigned) (start % UNSIGNED_BITS);
-        unsigned mask = 1<<bitOffset;
+        unsigned wordOffset = (unsigned) (start / HEAP_BITS);
+        unsigned bitOffset = (unsigned) (start % HEAP_BITS);
+        heap_t mask = ((heap_t)1U)<<bitOffset;
         heapAllocated += len;
-        unsigned heapword = heapBitmap[wordOffset];
+        heap_t heapword = heapBitmap[wordOffset];
         while (len--)
         {
             if (unlikely((heapword & mask) == 0))
@@ -887,12 +893,12 @@ static void *subrealloc_aligned(void *ptr, unsigned pages, unsigned newPages)
         unsigned shortfall = newPages - pages;
         unsigned topOffset = pageOffset + pages;
         // First see if we can find n free bits above the allocated region
-        unsigned wordOffset = (unsigned) (topOffset / UNSIGNED_BITS);
+        unsigned wordOffset = (unsigned) (topOffset / HEAP_BITS);
         if (wordOffset < heapBitmapSize)
         {
-            unsigned bitOffset = (unsigned) (topOffset % UNSIGNED_BITS);
-            unsigned mask = 1<<bitOffset;
-            unsigned heapword = heapBitmap[wordOffset];
+            unsigned bitOffset = (unsigned) (topOffset % HEAP_BITS);
+            heap_t mask = ((heap_t)1U)<<bitOffset;
+            heap_t heapword = heapBitmap[wordOffset];
             while (shortfall)
             {
                 if ((heapword & mask) == 0)
@@ -905,11 +911,11 @@ static void *subrealloc_aligned(void *ptr, unsigned pages, unsigned newPages)
                     if (wordOffset==heapBitmapSize)
                         break;
                     heapword = heapBitmap[wordOffset];
-                    while (shortfall >= UNSIGNED_BITS)
+                    while (shortfall >= HEAP_BITS)
                     {
-                        if (heapword != UNSIGNED_ALLBITS)
+                        if (heapword != HEAP_ALLBITS)
                             break;
-                        shortfall -= UNSIGNED_BITS;
+                        shortfall -= HEAP_BITS;
                         wordOffset++;
                         if (wordOffset==heapBitmapSize)
                             goto doublebreak;
@@ -927,25 +933,25 @@ static void *subrealloc_aligned(void *ptr, unsigned pages, unsigned newPages)
         }
     doublebreak:
         // Then see if we can find remaining free bits below the allocated region
-        wordOffset = (unsigned) (pageOffset / UNSIGNED_BITS);
+        wordOffset = (unsigned) (pageOffset / HEAP_BITS);
         if (wordOffset < heapBitmapSize)
         {
-            unsigned bitOffset = (unsigned) (pageOffset % UNSIGNED_BITS);
-            unsigned mask = 1<<bitOffset;
+            unsigned bitOffset = (unsigned) (pageOffset % HEAP_BITS);
+            heap_t mask = ((heap_t)1U)<<bitOffset;
             unsigned foundAbove = (newPages - pages) - shortfall;
             unsigned needBelow = shortfall;
-            unsigned heapword = heapBitmap[wordOffset];
+            heap_t heapword = heapBitmap[wordOffset];
             while (shortfall)
             {
                 if (mask==1)
                 {
-                    while (shortfall >= UNSIGNED_BITS && wordOffset > 0)
+                    while (shortfall >= HEAP_BITS && wordOffset > 0)
                     {
                         wordOffset--;
                         heapword = heapBitmap[wordOffset];
-                        if (heapword != UNSIGNED_ALLBITS)
+                        if (heapword != HEAP_ALLBITS)
                             return NULL;
-                        shortfall -= UNSIGNED_BITS;
+                        shortfall -= HEAP_BITS;
                     }
                     if (wordOffset==0 || shortfall==0)
                         break;
@@ -3096,8 +3102,6 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter)
     if (heapFlags & RHFnofragment)
     {
         unsigned numAllocs = count.load(std::memory_order_acquire)+allocated-1;
-        CChunkedHeap * chunkHeap = static_cast<CChunkedHeap *>(heap);
-        unsigned maxAllocs = chunkHeap->maxChunksPerPage();
         unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
 
         //If more than half full allocate an entry from the expanding free area
@@ -3112,6 +3116,9 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter)
                 ret = data() + curFreeBase;
                 goto done;
             }
+
+            CChunkedHeap * chunkHeap = static_cast<CChunkedHeap *>(heap);
+            unsigned maxAllocs = chunkHeap->maxChunksPerPage();
             if (numAllocs == maxAllocs)
                 return nullptr;
         }
@@ -6163,7 +6170,7 @@ protected:
         }
         char *_heapBase;
         char *_heapEnd;
-        unsigned *_heapBitmap;
+        heap_t *_heapBitmap;
         unsigned _heapBitmapSize;
         unsigned _heapTotalPages;
         unsigned _heapLWM;
@@ -6176,10 +6183,10 @@ protected:
     void initBitmap(unsigned size)
     {
         heapBase = (char *) (memsize_t) 0x80000000;
-        heapBitmap = new unsigned[size];
-        memset(heapBitmap, 0xff, size*sizeof(unsigned));
+        heapBitmap = new heap_t[size];
+        memset(heapBitmap, 0xff, size*sizeof(heap_t));
         heapBitmapSize = size;
-        heapTotalPages = heapBitmapSize * UNSIGNED_BITS;
+        heapTotalPages = heapBitmapSize * HEAP_BITS;
         heapLWM = 0;
         heapHWM = heapBitmapSize;
         heapAllocated = 0;
@@ -6193,7 +6200,7 @@ protected:
         initBitmap(bitmapSize);
         unsigned i;
         memsize_t minAddr = 0x80000000;
-        memsize_t maxAddr = minAddr + bitmapSize * UNSIGNED_BITS * HEAP_ALIGNMENT_SIZE;
+        memsize_t maxAddr = minAddr + bitmapSize * HEAP_BITS * HEAP_ALIGNMENT_SIZE;
         for (i=0; i < 100; i++)
         {
             ASSERT(suballoc_aligned(1, false)==(void *)(memsize_t)(minAddr + HEAP_ALIGNMENT_SIZE*i));
@@ -6328,10 +6335,10 @@ protected:
 
 #ifdef __64BIT__
     //Testing allocating bits that represent 1Tb of memory.  With 256K pages, that is simulating 4M pages.
-    enum { maxBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFFFF) / HEAP_ALIGNMENT_SIZE / UNSIGNED_BITS) };      // Test larger range - in case we ever reduce the granularity
+    enum { maxBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFFFF) / HEAP_ALIGNMENT_SIZE / HEAP_BITS) };      // Test larger range - in case we ever reduce the granularity
 #else
     // Restrict heap sizes on 32-bit systems
-    enum { maxBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFF) / HEAP_ALIGNMENT_SIZE / UNSIGNED_BITS) };      // 4Gb
+    enum { maxBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFF) / HEAP_ALIGNMENT_SIZE / HEAP_BITS) };      // 4Gb
 #endif
     class BitmapAllocatorThread : public Thread
     {
@@ -6342,7 +6349,7 @@ protected:
 
         int run()
         {
-            unsigned numBitmapIter = (maxBitmapSize * 32 / size) / numThreads;
+            unsigned numBitmapIter = (maxBitmapSize * HEAP_BITS / size) / numThreads;
             sem.wait();
             memsize_t total = 0;
             for (unsigned i=0; i < numBitmapIter; i++)
@@ -6393,9 +6400,9 @@ protected:
         unsigned freePages;
         unsigned maxBlock;
         memstats(totalPages, freePages, maxBlock);
-        ASSERT(totalPages == maxBitmapSize * 32);
-        unsigned numAllocated = ((maxBitmapSize * 32 / size) / numThreads) * numThreads * size;
-        ASSERT(freePages == maxBitmapSize * 32 - numAllocated);
+        ASSERT(totalPages == maxBitmapSize * HEAP_BITS);
+        unsigned numAllocated = ((maxBitmapSize * HEAP_BITS / size) / numThreads) * numThreads * size;
+        ASSERT(freePages == maxBitmapSize * HEAP_BITS - numAllocated);
 
         delete[] heapBitmap;
     }
@@ -7396,9 +7403,9 @@ protected:
         //Test allocating within the heap when the limit is the number of pages
         {
             HeapPreserver preserver;
-            adjustHeapSize(UNSIGNED_BITS);
+            adjustHeapSize(HEAP_BITS);
             Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
-            testFragmentCallbacks(rowManager, UNSIGNED_BITS);
+            testFragmentCallbacks(rowManager, HEAP_BITS);
         }
     }
     void testRecursiveCallbacks()

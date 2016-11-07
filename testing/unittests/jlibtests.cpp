@@ -93,15 +93,16 @@ protected:
 
     void testBitsetHelpers()
     {
-        CPPUNIT_ASSERT_EQUAL(0U, countTrailingUnsetBits(1));
-        CPPUNIT_ASSERT_EQUAL(31U, countLeadingUnsetBits(1));
-        CPPUNIT_ASSERT_EQUAL(1U, getMostSignificantBit(1));
-        CPPUNIT_ASSERT_EQUAL(4U, countTrailingUnsetBits(0x110));
-        CPPUNIT_ASSERT_EQUAL(23U, countLeadingUnsetBits(0x110));
-        CPPUNIT_ASSERT_EQUAL(9U, getMostSignificantBit(0x110));
+        CPPUNIT_ASSERT_EQUAL(0U, countTrailingUnsetBits(1U));
+        CPPUNIT_ASSERT_EQUAL(31U, countLeadingUnsetBits(1U));
+        CPPUNIT_ASSERT_EQUAL(1U, getMostSignificantBit(1U));
+        CPPUNIT_ASSERT_EQUAL(4U, countTrailingUnsetBits(0x110U));
+        CPPUNIT_ASSERT_EQUAL(23U, countLeadingUnsetBits(0x110U));
+        CPPUNIT_ASSERT_EQUAL(9U, getMostSignificantBit(0x110U));
         CPPUNIT_ASSERT_EQUAL(0U, countTrailingUnsetBits(0xFFFFFFFFU));
         CPPUNIT_ASSERT_EQUAL(0U, countLeadingUnsetBits(0xFFFFFFFFU));
         CPPUNIT_ASSERT_EQUAL(32U, getMostSignificantBit(0xFFFFFFFFU));
+        CPPUNIT_ASSERT_EQUAL(52U, countTrailingUnsetBits(I64C(0x1010000000000000U)));
     }
 
     void testSet1(bool initial, IBitSet *bs, unsigned start, unsigned numBits, bool setValue, bool clearValue)

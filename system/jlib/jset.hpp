@@ -49,6 +49,37 @@ inline unsigned countTrailingUnsetBits(unsigned value)
 #endif
 }
 
+inline unsigned countTrailingUnsetBits(unsigned __int64 value)
+{
+    dbgassertex(value != 0);
+#if defined(__GNUC__)
+    return __builtin_ctzll(value);
+#elif defined (_WIN32)
+    //There doesn't seem to be a 64bit version of _BitScanForward() generally available
+    unsigned long index;
+    if ((unsigned)value)
+    {
+        _BitScanForward(&index, (unsigned)value);
+        return (unsigned)index;
+    }
+    else
+    {
+        _BitScanForward(&index, (unsigned)(value >> 32));
+        return (unsigned)index+32;
+    }
+#else
+    unsigned __int64 mask = 1U;
+    unsigned i;
+    for (i=0; i < sizeof(mask)*8; i++)
+    {
+        if (value & mask)
+            return i;
+        mask = mask << 1;
+    }
+    return i;
+#endif
+}
+
 //Return the number of leading zeros. Deliberately undefined if value == 0
 inline unsigned countLeadingUnsetBits(unsigned value)
 {
