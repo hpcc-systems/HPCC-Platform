@@ -549,7 +549,6 @@ int main( int argc, char *argv[]  )
 #endif
     const char *thorname = NULL;
     StringBuffer nodeGroup, logUrl;
-    Owned<IPerfMonHook> perfmonhook;
     unsigned channelsPerSlave = 1;
 
     ILogMsgHandler *logHandler;
@@ -814,6 +813,10 @@ int main( int argc, char *argv[]  )
 
             writeSentinelFile(sentinelFile);
 
+            unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
+            if (pinterval)
+                startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
+
             thorMain(logHandler);
             LOG(daliAuditLogCat, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
         }
@@ -826,6 +829,7 @@ int main( int argc, char *argv[]  )
         FLLOG(MCexception(e), thorJob, e,"ThorMaster");
         e->Release();
     }
+    stopPerformanceMonitor();
     disconnectLogMsgManagerFromDali();
     closeThorServerStatus();
     if (globals) globals->Release();

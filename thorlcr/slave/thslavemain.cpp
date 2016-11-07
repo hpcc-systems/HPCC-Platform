@@ -473,6 +473,11 @@ int main( int argc, char *argv[]  )
                 else
                     multiThorMemoryThreshold = 0;
             }
+
+            unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
+            if (pinterval)
+                startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
+
             slaveMain(jobListenerStopped);
         }
 
@@ -484,6 +489,7 @@ int main( int argc, char *argv[]  )
             FLLOG(MCexception(e), thorJob, e,"ThorSlave");
         unregisterException.setown(e);
     }
+    stopPerformanceMonitor();
     ClearTempDirs();
 
     if (multiThorMemoryThreshold)

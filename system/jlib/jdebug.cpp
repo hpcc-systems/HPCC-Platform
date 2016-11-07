@@ -2305,7 +2305,7 @@ static class CMemoryUsageReporter: public Thread
     unsigned  interval;
     Semaphore sem;
     PerfMonMode traceMode;
-    IPerfMonHook * hook;
+    Linked<IPerfMonHook> hook;
     unsigned latestCPU;
 #if defined(USE_OLD_PU) || defined(_WIN32)
     double                         dbIdleTime;
@@ -2337,7 +2337,7 @@ public:
 
     {
         interval = _interval;
-        hook = _hook;
+        hook.set(_hook);
         term = false;
         latestCPU = 0;
 #ifdef _WIN32
@@ -2364,6 +2364,7 @@ public:
 
     void setPrimaryFileSystem(char const * _primaryfs)
     {
+        CriticalBlock block(sect);
         primaryfs.clear();
         if(_primaryfs)
             primaryfs.append(_primaryfs);
@@ -2371,6 +2372,7 @@ public:
 
     void setSecondaryFileSystem(char const * _secondaryfs)
     {
+        CriticalBlock block(sect);
         secondaryfs.clear();
         if(_secondaryfs)
             secondaryfs.append(_secondaryfs);
@@ -2640,7 +2642,10 @@ public:
                 if (traceMode&PerfMonExtended) {
                     if (extstats.getLine(str.clear()))
                         LOG(MCdebugInfo, unknownJob, "%s", str.str());
-                    extstats.printKLog(hook);
+                    {
+                        CriticalBlock block(sect);
+                        extstats.printKLog(hook);
+                    }
                 }
 #endif
             }
@@ -2660,6 +2665,13 @@ public:
     {
         return latestCPU;
     }
+
+    void setHook(IPerfMonHook *_hook)
+    {
+        CriticalBlock block(sect);
+        hook.set(_hook);
+    }
+
 } *MemoryUsageReporter=NULL;
 
 
@@ -2713,6 +2725,12 @@ void stopPerformanceMonitor()
         delete MemoryUsageReporter;
         MemoryUsageReporter = NULL;
     }
+}
+
+void setPerformanceMonitorHook(IPerfMonHook *hook)
+{
+    if (MemoryUsageReporter)
+        MemoryUsageReporter->setHook(hook);
 }
 
 void setPerformanceMonitorPrimaryFileSystem(char const * fs)

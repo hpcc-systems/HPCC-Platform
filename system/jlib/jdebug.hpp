@@ -325,6 +325,7 @@ typedef unsigned PerfMonMode;
 void jlib_decl getSystemTraceInfo(StringBuffer &str, PerfMonMode mode = PerfMonProcMem);
 void jlib_decl startPerformanceMonitor(unsigned interval, PerfMonMode traceMode = PerfMonStandard, IPerfMonHook * hook = NULL);
 void jlib_decl stopPerformanceMonitor();
+void jlib_decl setPerformanceMonitorHook(IPerfMonHook *hook);
 void jlib_decl setPerformanceMonitorPrimaryFileSystem(char const * fs); // for monitoring disk1, defaults to C: (win) or / (linux)
 void jlib_decl setPerformanceMonitorSecondaryFileSystem(char const * fs); // for monitoring disk2, no default
 unsigned jlib_decl getLatestCPUUsage();
