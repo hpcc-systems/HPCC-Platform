@@ -777,7 +777,7 @@ int main(int argc, const char *argv[])
     Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
     try
     {
-        initClientProcess(serverGroup, DCR_EclServer);
+        initClientProcess(serverGroup, DCR_EclCCServer);
         openLogFile();
         SCMStringBuffer queueNames;
         getEclCCServerQueueNames(queueNames, processName);
