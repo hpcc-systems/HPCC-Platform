@@ -41,6 +41,8 @@ unsigned udpTraceLevel = 0;
 unsigned udpTraceCategories = (unsigned) -1;
 unsigned udpFlowSocketsSize = 131072;
 unsigned udpLocalWriteSocketSize = 1024000;
+unsigned udpSnifferReadThreadPriority = 3;
+unsigned udpSnifferSendThreadPriority = 3;
 
 unsigned multicastTTL = 1;
 
@@ -297,9 +299,9 @@ void setLinuxThreadPriority(int level)
         param.sched_priority = level;
     }
     if(( rc = pthread_setschedparam(self, policy, &param)) != 0) 
-        DBGLOG("pthread_setschedparam error: %d policy=%i pr=%i id=%" I64F "i PID=%i", rc, policy, param.sched_priority, (unsigned __int64) self, getpid());
+        DBGLOG("pthread_setschedparam error: %d policy=%i pr=%i id=%" I64F "i TID=%i", rc, policy, param.sched_priority, (unsigned __int64) self, threadLogID());
     else
-        DBGLOG("priority set id=%" I64F "i policy=%i pri=%i PID=%i", (unsigned __int64) self, policy, param.sched_priority, getpid());
+        DBGLOG("priority set id=%" I64F "i policy=%i pri=%i TID=%i", (unsigned __int64) self, policy, param.sched_priority, threadLogID());
 }
 #endif
 

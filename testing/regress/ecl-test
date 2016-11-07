@@ -154,6 +154,8 @@ class RegressMain:
                                 type=checkPqParam,  default = 0,   metavar="threadNumber")
         commonParser.add_argument('--noversion', help="Avoid version expansion of queries. Execute them as a standard test.",
                                 action = 'store_true')
+        commonParser.add_argument('--server', help="ESP server address. Default value (espIp) defined in ecl-test.json config file.",
+                                nargs='?', default=None,  metavar="networkAddress")
 
         executionParser=argparse.ArgumentParser(add_help=False)
         executionParser.add_argument('--runclass', '-r', help="run subclass(es) of the suite. Default value is 'all'",
@@ -195,6 +197,9 @@ class RegressMain:
 
         # Process config parameter
         self.config = Config(self.args.config).configObj
+        if ('server' in self.args) and (self.args.server != None):
+            self.config.set('espIp',  self.args.server)
+            pass
         setConfig(self.config)
 
         # Process target parameter

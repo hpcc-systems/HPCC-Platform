@@ -267,18 +267,19 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
 {
     class CStream : public CSimpleInterface, implements IRowStream, implements IWritePosCallback
     {
-        rowidx_t pos;
-        offset_t outputOffset;
+        rowidx_t pos = 0;
+        offset_t outputOffset = (offset_t)-1;
         Owned<IRowStream> spillStream;
         Linked<CSharedSpillableRowSet> owner;
+        rowidx_t toRead = 0;
+        bool eos = false;
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CStream(CSharedSpillableRowSet &_owner) : owner(&_owner)
+        CStream(CSharedSpillableRowSet &_owner, rowidx_t _toRead) : owner(&_owner), toRead(_toRead)
         {
-            pos = 0;
-            outputOffset = (offset_t)-1;
-            owner->rows.registerWriteCallback(*this); // NB: CStream constructor called within rows lock
+            // NB: CStream constructor called within rows lock and only called if not yet spilled
+            owner->rows.registerWriteCallback(*this);
         }
         ~CStream()
         {
@@ -289,26 +290,43 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
     // IRowStream
         virtual const void *nextRow()
         {
-            if (spillStream)
-                return spillStream->nextRow();
-            CRowsLockBlock block(*owner);
-            if (owner->spillFile) // i.e. has spilt
+            if (!eos)
             {
-                block.clearCB = true;
-                assertex(((offset_t)-1) != outputOffset);
-                unsigned rwFlags = DEFAULT_RWFLAGS;
-                if (owner->preserveNulls)
-                    rwFlags |= rw_grouped;
-                spillStream.setown(::createRowStreamEx(owner->spillFile, owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, rwFlags));
-                owner->rows.unregisterWriteCallback(*this); // no longer needed
-                return spillStream->nextRow();
+                const void *ret;
+                if (spillStream)
+                    ret = spillStream->nextRow();
+                else
+                {
+                    CRowsLockBlock block(*owner);
+                    if (owner->spillFile) // i.e. has spilt
+                    {
+                        block.clearCB = true;
+                        assertex(((offset_t)-1) != outputOffset);
+                        unsigned rwFlags = DEFAULT_RWFLAGS;
+                        if (owner->preserveNulls)
+                            rwFlags |= rw_grouped;
+                        spillStream.setown(::createRowStreamEx(owner->spillFile, owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, rwFlags));
+                        owner->rows.unregisterWriteCallback(*this); // no longer needed
+                        ret = spillStream->nextRow();
+                    }
+                    else
+                    {
+                        // NB: would not reach here if nothing left to read
+                        ret = owner->rows.get(pos++);
+                        if (pos == toRead)
+                        {
+                            owner->rows.unregisterWriteCallback(*this); // no longer needed
+                            eos = true; // for any subsequent calls
+                        }
+                        return ret;
+                    }
+                }
+                if (ret)
+                    return ret;
+                if (!owner->preserveNulls)
+                    eos = true;
             }
-            else if (pos == owner->rows.numCommitted())
-            {
-                owner->rows.unregisterWriteCallback(*this); // no longer needed
-                return NULL;
-            }
-            return owner->rows.get(pos++);
+            return nullptr;
         }
         virtual void stop()
         {
@@ -345,7 +363,11 @@ public:
                 rwFlags |= rw_grouped;
             return ::createRowStream(spillFile, rowIf, rwFlags);
         }
-        return new CStream(*this);
+        rowidx_t toRead = rows.numCommitted();
+        if (toRead)
+            return new CStream(*this, toRead);
+        else
+            return createNullRowStream();
     }
 };
 
@@ -1237,6 +1259,8 @@ CThorSpillableRowArray::CThorSpillableRowArray(CActivityBase &activity)
     : CThorExpandingRowArray(activity)
 {
     initCommon();
+    commitDelta = CommitStep;
+    throwOnOom = false;
 }
 
 CThorSpillableRowArray::CThorSpillableRowArray(CActivityBase &activity, IThorRowInterfaces *rowIf, bool allowNulls, StableSortFlag stableSort, rowidx_t initialSize, size32_t _commitDelta)
@@ -1254,7 +1278,6 @@ void CThorSpillableRowArray::initCommon()
 {
     commitRows = 0;
     firstRow = 0;
-    resizing = resize_nop;
 }
 
 void CThorSpillableRowArray::clearRows()
@@ -1417,19 +1440,10 @@ bool CThorSpillableRowArray::_flush(bool force)
 
 bool CThorSpillableRowArray::shrink() // NB: if read active should be protected inside a CThorArrayLockBlock
 {
-    CToggleResizingState toggle(resizing);
-    if (!toggle.tryState(resize_shrinking)) // resize() may be in progress, in which case give up this attempt
-        return false;
+    // NB: Should only be called from writer thread
     _flush(true);
     rowidx_t prevMaxRows = maxRows;
-    {
-        /* NB: This method may be called via the roxiemem OOM callback.
-         * As this is shrinking the table, it will not itself invoke an OOM callback.
-         * The CS prevents another thread resizing (see resize()) until this is done.
-         */
-        CriticalBlock b(shrinkingCrit); // can block resize(), but should never be blocked by resize() as have checked/toggled resizing state to get here
-        shrink(numRows);
-    }
+    shrink(numRows);
     return maxRows != prevMaxRows;
 }
 
@@ -1506,14 +1520,6 @@ bool CThorSpillableRowArray::shrink(rowidx_t requiredRows)
 
 bool CThorSpillableRowArray::resize(rowidx_t requiredRows, unsigned maxSpillCost)
 {
-    CToggleResizingState toggle(resizing);
-    loop
-    {
-        if (toggle.tryState(resize_resizing)) // prevent shrink callback clashing
-            break;
-        shrinkingCrit.enter(); // will block if shrinking
-        shrinkingCrit.leave();
-    }
     if (needToMoveRows(false))
     {
         CThorArrayLockBlock block(*this);
@@ -1574,7 +1580,7 @@ protected:
     bool mmRegistered;
     Owned<CSharedSpillableRowSet> spillableRowSet;
     unsigned options;
-    unsigned spillCompInfo;
+    unsigned spillCompInfo = 0;
     __uint64 spillCycles;
     __uint64 sortCycles;
     roxiemem::IRowManager *rowManager;
@@ -1584,14 +1590,7 @@ protected:
         //This must only be called while a lock is held on spillableRows
         rowidx_t numRows = spillableRows.numCommitted();
         if (numRows == 0)
-        {
-            if (!critical)
-                return false;
-            bool res = spillableRows.shrink();
-            if (res)
-                return true;
-            return false;
-        }
+            return false; // cannot shrink(), as requires a flush and only writer thread can do that.
 
         CCycleTimer spillTimer;
         totalRows += numRows;
@@ -1630,7 +1629,7 @@ protected:
         rowidx_t maxRows = spillableRows.queryMaxRows();
         bool ret = spillableRows.shrink();
         if (traceInfo)
-            traceInfo->append("shink() - previous maxRows=").append(maxRows).append(", new maxRows=").append(spillableRows.queryMaxRows());
+            traceInfo->append("shrink() - previous maxRows=").append(maxRows).append(", new maxRows=").append(spillableRows.queryMaxRows());
         return ret;
     }
     void putRow(const void *row)
@@ -1649,9 +1648,11 @@ protected:
                     flush();
                     spillRows(false);
                 }
-                //Ensure new rows are written to the head of the array.  It needs to be a separate call because
-                //spillRows() cannot shift active row pointer since it can be called from any thread
-                flush();
+                // This is a good time to shrink the row table back. shrink() force a flush.
+                StringBuffer info;
+                if (shrink(&info))
+                    activity.ActPrintLog("CThorRowCollectorBase: shrink - %s", info.str());
+
                 if (!spillableRows.append(row))
                     oom = true;
             }
@@ -1897,6 +1898,12 @@ public:
     {
         options = _options;
     }
+    virtual bool hasSpilt() const { return overflowCount >= 1; }
+
+// IThorArrayLock
+    virtual void lock() const { spillableRows.lock(); }
+    virtual void unlock() const { spillableRows.unlock(); }
+
 // IBufferedRowCallback
     virtual unsigned getSpillCost() const
     {
@@ -1986,6 +1993,11 @@ public:
     virtual void resize(rowidx_t max) { CThorRowCollectorBase::resize(max); }
     virtual void setOptions(unsigned options)  { CThorRowCollectorBase::setOptions(options); }
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return CThorRowCollectorBase::getStatistic(kind); }
+    virtual bool hasSpilt() const { return CThorRowCollectorBase::hasSpilt(); }
+
+// IThorArrayLock
+    virtual void lock() const { CThorRowCollectorBase::lock(); }
+    virtual void unlock() const { CThorRowCollectorBase::unlock(); }
 // IThorRowLoader
     virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping, CThorExpandingRowArray *allMemRows, memsize_t *memUsage, bool doReset)
     {
@@ -2039,6 +2051,10 @@ public:
     virtual void resize(rowidx_t max) { CThorRowCollectorBase::resize(max); }
     virtual void setOptions(unsigned options) { CThorRowCollectorBase::setOptions(options); }
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return CThorRowCollectorBase::getStatistic(kind); }
+    virtual bool hasSpilt() const { return CThorRowCollectorBase::hasSpilt(); }
+// IThorArrayLock
+    virtual void lock() const { CThorRowCollectorBase::lock(); }
+    virtual void unlock() const { CThorRowCollectorBase::unlock(); }
 // IThorRowCollector
     virtual IRowWriter *getWriter()
     {

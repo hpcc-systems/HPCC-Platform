@@ -76,6 +76,12 @@ childrec testMySQLRow() := EMBED(mysql : server(myServer),user(myUser),database(
   SELECT * from tbl1 LIMIT 1;
 ENDEMBED;
 
+TRANSFORM(childrec) mysqlTransform(string name) := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  SELECT * from tbl1 WHERE name=? LIMIT 1;
+ENDEMBED;
+
+testMySQLTransform() := PROJECT(init, mySQLTransform(LEFT.name));
+
 childrec testMySQLParms(
    string name,
    integer value,
@@ -158,6 +164,7 @@ sequential (
   OUTPUT(testMySQLData()),
   OUTPUT(testMySQLUtf8()),
   OUTPUT(testMySQLUnicode()),
-  OUTPUT(testMySQLDateTime())
+  OUTPUT(testMySQLDateTime()),
+  OUTPUT(testMySQLTransform())
   )
 );

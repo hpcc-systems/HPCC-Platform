@@ -363,6 +363,11 @@
                          resource="FileDkcAccess"
                          service="ws_fs"/>
     <AuthenticateFeature authenticate="Yes"
+                         description="Access to upload files to dropzone"
+                         path="FileUploadAccess"
+                         resource="FileUploadAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature authenticate="Yes"
                          description="Access to files in dropzone"
                          path="FileIOAccess"
                          resource="FileIOAccess"
@@ -414,7 +419,7 @@
                port="8002"
                protocol="http"
                resourcesBasedn="ou=WsEcl,ou=EspServices,ou=ecl"
-               service="myws_ecl"
+               service="ws_ecl"
                type=""
                workunitsBasedn="ou=workunits,ou=ecl"
                wsdlServiceAddress="">
@@ -608,6 +613,10 @@
                          path="FileDkcAccess"
                          resource="FileDkcAccess"
                          service="ws_fs"/>
+    <AuthenticateFeature description="Access to upload files to dropzone"
+                         path="FileUploadAccess"
+                         resource="FileUploadAccess"
+                         service="ws_fs"/>
     <AuthenticateFeature description="Access to files in dropzone"
                          path="FileIOAccess"
                          resource="FileIOAccess"
@@ -677,7 +686,7 @@
   <EspService build="_"
               buildSet="ws_ecl"
               description="WS ECL Service"
-              name="myws_ecl"
+              name="ws_ecl"
               roxieTimeout="300"
               workunitTimeout="600">
    <Properties bindingType="ws_eclSoapBinding"
@@ -904,6 +913,10 @@
      <AuthenticateFeature description="Access to dkcing of key files"
                           path="FileDkcAccess"
                           resource="FileDkcAccess"
+                          service="ws_fs"/>
+     <AuthenticateFeature description="Access to upload files to dropzone"
+                          path="FileUploadAccess"
+                          resource="FileUploadAccess"
                           service="ws_fs"/>
      <AuthenticateFeature description="Access to files in dropzone"
                           path="FileIOAccess"

@@ -192,8 +192,7 @@ public:
         req->setCommand(attach ? CRoxieControlCmd_ATTACH : CRoxieControlCmd_DETACH);
 
         Owned<IClientRoxieControlCmdResponse> resp = client->RoxieControlCmd(req);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
 
         IArrayOf<IConstRoxieControlEndpointInfo> &endpoints = resp->getEndpoints();
         unsigned reporting = endpoints.length();
@@ -207,7 +206,7 @@ public:
         if (notOk)
             fprintf(stderr, "%d nodes had status != 'ok'\n", notOk);
         fprintf(stdout, "%d Total node(s) reported\n", reporting);
-        return 0;
+        return ret;
     }
     virtual void usage()
     {
@@ -305,8 +304,7 @@ public:
             req->setCommand(CRoxieControlCmd_RELOAD);
 
         Owned<IClientRoxieControlCmdResponse> resp = client->RoxieControlCmd(req);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
         IArrayOf<IConstRoxieControlEndpointInfo> &endpoints = resp->getEndpoints();
 
         unsigned attached=0;
@@ -330,7 +328,7 @@ public:
             hashItem->addPropTree("EndPoint", createPTreeFromXMLString(endpointXML(ep, x.clear()).str()));
         }
         roxieStatusReport(hashTree, endpoints.length(), notOk, noHash, noAddress, attached, detached);
-        return 0;
+        return ret;
     }
     virtual void usage()
     {
@@ -427,8 +425,7 @@ public:
         req->setCheckPackageMaps(optCheckPackageMaps);
 
         Owned<IClientDFUXRefUnusedFilesResponse> resp = client->DFUXRefUnusedFiles(req);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
 
         StringArray filesToDelete;
         StringArray &unusedFiles = resp->getUnusedFiles();
@@ -461,8 +458,9 @@ public:
             dfuReq->setRemoveRecursively(optDeleteRecursive);
 
             Owned<IClientDFUArrayActionResponse> dfuResp = dfuClient->DFUArrayAction(dfuReq);
-            if (dfuResp->getExceptions().ordinality())
-                outputMultiExceptions(dfuResp->getExceptions());
+            int ret2 = outputMultiExceptionsEx(resp->getExceptions());
+            if (ret == 0)
+                ret = ret2;
 
             IArrayOf<IConstDFUActionInfo> &results = dfuResp->getActionResults();
             ForEachItemIn(i1, results) //list successes first
@@ -481,7 +479,7 @@ public:
             fputs("\n", stdout);
         }
 
-        return 0;
+        return ret;
     }
     virtual void usage()
     {

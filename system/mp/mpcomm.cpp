@@ -48,6 +48,11 @@
 
 //#define _TRACE
 //#define _FULLTRACE
+
+#if 1 // #ifdef _FULLTRACE
+#define _TRACELINKCLOSED
+#endif
+#define _TRACEMPSERVERNOTIFYCLOSED
 #define _TRACEORPHANS
 
 
@@ -468,6 +473,7 @@ protected:
     unsigned short              port;
 public:
     bool checkclosed;
+    bool tryReopenChannel = false;
 
 // packet handlers
     PingPacketHandler           *pingpackethandler;         // TAG_SYS_PING
@@ -496,7 +502,7 @@ public:
     bool nextChannel(CMPChannel *&c);
     void addConnectionMonitor(IConnectionMonitor *monitor);
     void removeConnectionMonitor(IConnectionMonitor *monitor);
-    void notifyClosed(SocketEndpoint &ep);
+    void notifyClosed(SocketEndpoint &ep, bool trace);
     StringBuffer &getReceiveQueueDetails(StringBuffer &buf) 
     {
         return receiveq.getReceiveQueueDetails(buf);
@@ -540,6 +546,22 @@ public:
     virtual INode *queryMyNode()
     {
         return myNode;
+    }
+    virtual void setOpt(MPServerOpts opt, const char *value)
+    {
+        switch (opt)
+        {
+            case mpsopt_channelreopen:
+            {
+                bool tf = (nullptr != value) ? strToBool(value) : false;
+                PROGLOG("Setting ChannelReopen = %s", tf ? "true" : "false");
+                tryReopenChannel = tf;
+                break;
+            }
+            default:
+                // ignore
+                break;
+        }
     }
 };
 
@@ -711,6 +733,17 @@ protected: friend class CMPPacketReader;
 #endif
 
 
+    bool checkReconnect(CTimeMon &tm)
+    {
+        if (!parent->tryReopenChannel)
+            return false;
+        ::Release(channelsock);
+        channelsock = nullptr;
+        if (connect(tm))
+            return true;
+        WARNLOG("Failed to reconnect");
+        return false;
+    }
     bool connect(CTimeMon &tm)
     {
         // must be called from connectsect
@@ -972,12 +1005,12 @@ public:
         {
             CriticalBlock block(connectsect);
             if (closed) {
-#ifdef _FULLTRACE
+#ifdef _TRACELINKCLOSED
                 LOG(MCdebugInfo(100), unknownJob, "WritePacket closed on entry");
                 PrintStackReport();
 #endif
-                IMP_Exception *e=new CMPException(MPERR_link_closed,remoteep);
-                throw e;
+                if (!checkReconnect(tm))
+                    throw new CMPException(MPERR_link_closed,remoteep);
             }
             if (!channelsock) {
                 if (!connect(tm)) {
@@ -1038,7 +1071,7 @@ public:
         }
         catch (IException *e) {
             FLLOG(MCoperatorWarning, unknownJob, e,"MP writepacket");
-            closeSocket();
+            closeSocket(false, true);
             throw;
         }
         return true;
@@ -1096,7 +1129,7 @@ public:
     bool send(MemoryBuffer &mb, mptag_t tag, mptag_t replytag, CTimeMon &tm, bool reply);
 
 
-    void closeSocket(bool keepsocket=false)
+    void closeSocket(bool keepsocket=false, bool trace=false)
     {
         ISocket *s;
         bool socketfailed = false;
@@ -1120,13 +1153,15 @@ public:
                 try {
                     s->shutdown();
                 }
-                catch (IException *) { 
+                catch (IException *e) {
                     socketfailed = true; // ignore if the socket has been closed
+                    WARNLOG("closeSocket() : Ignoring shutdown error");
+                    e->Release();
                 }
             }
             parent->querySelectHandler().remove(s);
         }
-        parent->notifyClosed(remoteep);
+        parent->notifyClosed(remoteep, trace);
         if (socketfailed) {
             try {
                 s->Release();
@@ -1437,7 +1472,7 @@ public:
                     }
                 }
                 if (pc) 
-                    pc->closeSocket();
+                    pc->closeSocket(false, true);
                 return false;
             }
             do {
@@ -1537,7 +1572,7 @@ public:
         // error here, so close socket (ignore error as may be closed already)
         try {
             if(parent)
-                parent->closeSocket();
+                parent->closeSocket(false, true);
         }
         catch (IException *e) {
             e->Release();
@@ -1567,7 +1602,7 @@ CMPChannel::CMPChannel(CMPServer *_parent,SocketEndpoint &_remoteep)
 void CMPChannel::reset()
 {
     reader->shutdown(); // clear as early as possible
-    closeSocket();
+    closeSocket(false, true);
     reader->Release();
     channelsock = NULL;
     multitag = TAG_NULL;
@@ -1650,7 +1685,7 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
         try {
             LOG(MCdebugInfo(100), unknownJob, "Message Passing - removing stale socket to %s",ep2.str());
             CriticalUnblock unblock(connectsect);
-            closeSocket(true);
+            closeSocket(true, true);
 #ifdef REFUSE_STALE_CONNECTION
             if (!ismaster)
                 return false;
@@ -1696,12 +1731,12 @@ bool CMPChannel::send(MemoryBuffer &mb, mptag_t tag, mptag_t replytag, CTimeMon 
     size32_t msgsize = mb.length();
     PacketHeader hdr(msgsize+sizeof(PacketHeader),localep,remoteep,tag,replytag);
     if (closed||(reply&&!isConnected())) {  // flag error if has been disconnected
-#ifdef _FULLTRACE
+#ifdef _TRACELINKCLOSED
         LOG(MCdebugInfo(100), unknownJob, "CMPChannel::send closed on entry %d",(int)closed);
         PrintStackReport();
 #endif
-        IMP_Exception *e=new CMPException(MPERR_link_closed,remoteep);
-        throw e;
+        if (!checkReconnect(tm))
+            throw new CMPException(MPERR_link_closed,remoteep);
     }
 
     bool ismulti = (msgsize>MAXDATAPERPACKET);
@@ -2229,7 +2264,7 @@ bool CMPServer::recv(CMessageBuffer &mbuf, const SocketEndpoint *ep, mptag_t tag
         return true;
     }
     if (nfy.aborted) {
-#ifdef _FULLTRACE
+#ifdef _TRACELINKCLOSED
         LOG(MCdebugInfo(100), unknownJob, "CMPserver::recv closed on notify");
         PrintStackReport();
 #endif
@@ -2315,7 +2350,7 @@ unsigned CMPServer::probe(const SocketEndpoint *ep, mptag_t tag,CTimeMon &tm,Soc
         return nfy.cancel?0:nfy.count;
     }
     if (nfy.aborted) {
-#ifdef _FULLTRACE
+#ifdef _TRACELINKCLOSED
         LOG(MCdebugInfo(100), unknownJob, "CMPserver::probe closed on notify");
         PrintStackReport();
 #endif
@@ -2398,11 +2433,15 @@ bool CMPServer::nextChannel(CMPChannel *&cur)
     return cur!=NULL;
 }
 
-void CMPServer::notifyClosed(SocketEndpoint &ep)
+void CMPServer::notifyClosed(SocketEndpoint &ep, bool trace)
 {
-#ifdef _TRACE
-    StringBuffer url;
-    LOG(MCdebugInfo(100), unknownJob, "MP: CMPServer::notifyClosed %s",ep.getUrlStr(url).str());
+#ifdef _TRACEMPSERVERNOTIFYCLOSED
+    if (trace)
+    {
+        StringBuffer url;
+        LOG(MCdebugInfo(100), unknownJob, "MP: CMPServer::notifyClosed %s",ep.getUrlStr(url).str());
+        PrintStackReport();
+    }
 #endif
     notifyclosedthread->notify(ep);
 }

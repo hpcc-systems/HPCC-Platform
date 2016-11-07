@@ -139,7 +139,10 @@ public:
     void setAllowWild(bool b=true) { allowWild = b; } // allow wildcards
     bool isExpanded() const;
     void expand(IUserDescriptor *user);
+
+protected:
     void normalizeName(const char * name, StringAttr &res, bool strict);
+    bool normalizeExternal(const char * name, StringAttr &res, bool strict);
 };
 
 // abstract class, define getCmdText to return tracing text of commands

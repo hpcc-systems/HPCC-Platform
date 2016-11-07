@@ -102,7 +102,7 @@ public:
 class CountProjectActivity : public BaseCountProjectActivity, implements ILookAheadStopNotify
 {
     typedef BaseCountProjectActivity PARENT;
-    bool first;
+    bool first = false; // until start
     Semaphore prevRecCountSem;
     rowcount_t prevRecCount, localRecCount;
 
@@ -167,12 +167,12 @@ public:
     }
     virtual void stop()
     {
-        PARENT::stop();
         if (first) // nextRow, therefore getPrevCount()/sendCount() never called
         {
             prevRecCount = count = getPrevCount();
             signalNext();
         }
+        PARENT::stop();
     }
     virtual void abort()
     {

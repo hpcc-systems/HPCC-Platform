@@ -1529,7 +1529,7 @@ BoundRow * HqlCppTranslator::declareStaticRow(BuildCtx & ctx, IHqlExpression * e
     if (maxRecordSize > options.maxLocalRowSize)
         getInvariantMemberContext(ctx, &declarectx, NULL, false, false);
 
-    if (declarectx != &ctx)
+    if (!declarectx->isSameLocation(ctx))
         rowType.setown(makeModifier(rowType.getClear(), typemod_member, NULL));
     else
         declarectx->setNextPriority(BuildCtx::OutermostScopePrio);
@@ -1552,7 +1552,7 @@ BoundRow * HqlCppTranslator::declareTempRow(BuildCtx & ctx, BuildCtx & codectx, 
     bool createRowDynamically = tempRowRequiresFinalize(record) || (maxRecordSize > options.maxLocalRowSize);
     if (createRowDynamically)
     {
-        return declareLinkedRow(ctx, expr, &ctx != &codectx);
+        return declareLinkedRow(ctx, expr, !ctx.isSameLocation(codectx));
     }
     else
     {
@@ -17961,9 +17961,11 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
     {
         switch (options.targetCompiler)
         {
+#ifndef __APPLE__
         case GccCppCompiler:
             optimizectx.addQuoted("#define OPTIMIZE __attribute__((optimize(3)))");
             break;
+#endif
         default:
             optimizectx.addQuoted("#define OPTIMIZE");
             break;

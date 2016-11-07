@@ -1899,6 +1899,13 @@ public:
         if (haserror)
             if (::pipe(errpipe)==-1)
                 throw makeOsException(errno);
+
+        /* NB: Important to call splitargs (which calls malloc) before the fork()
+         * and not in the child process. Because performing malloc in the child
+         * process, which then calls exec() can cause problems for TBB malloc proxy.
+         */
+        unsigned argc;
+        char **argv=splitargs(prog,argc);
         loop
         {
             pipeProcess = (HANDLE)fork();
@@ -1941,8 +1948,6 @@ public:
                 close(errpipe[1]);
             }
 
-            unsigned argc;
-            char **argv=splitargs(prog,argc);
             if (dir.get()) {
                 if (chdir(dir) == -1)
                     throw MakeStringException(-1, "CLinuxPipeProcess::run: could not change dir to %s", dir.get());
@@ -1954,6 +1959,7 @@ public:
             execvp(argv[0],argv);
             _exit(START_FAILURE);    // must be _exit!!     
         }
+        free(argv);
         if (hasinput) 
             close(inpipe[0]);
         if (hasoutput) 

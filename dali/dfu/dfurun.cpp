@@ -1250,10 +1250,15 @@ public:
                             else {
                                 Owned<IDistributedFile> oldfile = fdir.lookup(tmp.str(),userdesc,true);
                                 if (oldfile) {
+                                    StringBuffer reason;
+                                    bool canRemove = oldfile->canRemove(reason);
                                     oldfile.clear();
+                                    if (!canRemove)
+                                        throw MakeStringException(-1,"%s",reason.str());
                                     if (!options->getOverwrite())
                                         throw MakeStringException(-1,"Destination file %s already exists and overwrite not specified",tmp.str());
-                                    fdir.removeEntry(tmp.str(),userdesc);
+                                    if (!fdir.removeEntry(tmp.str(),userdesc))
+                                        throw MakeStringException(-1,"Internal error in attempt to remove file %s",tmp.str());
                                 }
                             }
                             StringBuffer jobname;

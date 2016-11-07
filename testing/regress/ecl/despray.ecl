@@ -32,7 +32,7 @@ allPeople := DATASET([ {1,'Fred','Smith'},
                        {3,'Jane','Smith'}],Layout_Person);
 
 //  Outputs  ---
-output(allPeople, , '~persons', OVERWRITE);
+setup := output(allPeople, , '~persons', OVERWRITE);
 
 import * from lib_fileservices;
 
@@ -70,9 +70,9 @@ end;
 
 // This should be fine based on valid target file path and SrcAddIp
 DestFile1 := '/var/lib/HPCCSystems/mydropzone/' + File;
-dst0 := NOFOLD(DATASET([{SourceFile, DestFile1, SrcAddrIp, True, '', ''}], rec));
-p0 := PROJECT(NOFOLD(dst0), t(LEFT));
-c0 := CATCH(NOFOLD(p0), ONFAIL(TRANSFORM(rec,
+dst2 := NOFOLD(DATASET([{SourceFile, DestFile1, SrcAddrIp, True, '', ''}], rec));
+p2 := PROJECT(NOFOLD(dst2), t(LEFT));
+c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
                                  SELF.sourceFile := SourceFile,
                                  SELF.destFile := DestFile1,
                                  SELF.ip := SrcAddrIp,
@@ -81,16 +81,16 @@ c0 := CATCH(NOFOLD(p0), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c0);
+    o2 := output(c2);
 #else
-    output(c0, {result});
+    o2 := output(c2, {result});
 #end
 
 
 // This should fail based on 'localhost' used as source address
-dst1 := NOFOLD(DATASET([{SourceFile, DestFile1, SrcAddrLocalhost, True, '', ''}], rec));
-p1 := PROJECT(NOFOLD(dst1), t(LEFT));
-c1 := CATCH(NOFOLD(p1), ONFAIL(TRANSFORM(rec,
+dst3 := NOFOLD(DATASET([{SourceFile, DestFile1, SrcAddrLocalhost, True, '', ''}], rec));
+p3 := PROJECT(NOFOLD(dst3), t(LEFT));
+c3 := CATCH(NOFOLD(p3), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Fail',
                                  SELF.destFile := DestFile1,
                                  SELF.sourceFile := SourceFile,
@@ -99,52 +99,14 @@ c1 := CATCH(NOFOLD(p1), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c1);
+    o3 := output(c3);
 #else
-    output(c1, {result});
+    o3 := output(c3, {result});
 #end
 
 
 // This should fail based on '/./' used in target path
-DestFile2 := '/var/lib/HPCCSystems/mydropzone/./' + File;
-dst2 := NOFOLD(DATASET([{SourceFile, DestFile2, SrcAddrIp, True, '', ''}], rec));
-p2 := PROJECT(NOFOLD(dst2), t(LEFT));
-c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
-                                 SELF.result := 'Fail',
-                                 SELF.destFile := DestFile2,
-                                 SELF.sourceFile := SourceFile,
-                                 SELF.ip := SrcAddrIp,
-                                 SELF.allowOverwrite := True,
-                                 SELF.msg := FAILMESSAGE
-                                )));
-#if (VERBOSE = 1)
-    output(c2);
-#else
-    output(c2, {result});
-#end
-
-
-// This should fail based on '/../' used in target path
-DestFile3 := '/var/lib/HPCCSystems/mydropzone/../' + File;
-dst3 := NOFOLD(DATASET([{SourceFile, DestFile3, SrcAddrIp, True, '', ''}], rec));
-p3 := PROJECT(NOFOLD(dst3), t(LEFT));
-c3 := CATCH(NOFOLD(p3), ONFAIL(TRANSFORM(rec,
-                                 SELF.result := 'Fail',
-                                 SELF.destFile := DestFile3,
-                                 SELF.sourceFile := SourceFile,
-                                 SELF.ip := SrcAddrIp,
-                                 SELF.allowOverwrite := True,
-                                 SELF.msg := FAILMESSAGE
-                                )));
-#if (VERBOSE = 1)
-    output(c3);
-#else
-    output(c3, {result});
-#end
-
-
-// This should fail based on not an existing dropzone path used in target file path
-DestFile4 := '/var/lib/HPCCSystems/mydropzona/' + File;
+DestFile4 := '/var/lib/HPCCSystems/mydropzone/./' + File;
 dst4 := NOFOLD(DATASET([{SourceFile, DestFile4, SrcAddrIp, True, '', ''}], rec));
 p4 := PROJECT(NOFOLD(dst4), t(LEFT));
 c4 := CATCH(NOFOLD(p4), ONFAIL(TRANSFORM(rec,
@@ -156,14 +118,14 @@ c4 := CATCH(NOFOLD(p4), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c4);
+    o4 := output(c4);
 #else
-    output(c4, {result});
+    o4 := output(c4, {result});
 #end
 
 
-// This should fail based on try to despray out of a drop zone
-DestFile5 := '/var/lib/HPCCSystems/' + File;
+// This should fail based on '/../' used in target path
+DestFile5 := '/var/lib/HPCCSystems/mydropzone/../' + File;
 dst5 := NOFOLD(DATASET([{SourceFile, DestFile5, SrcAddrIp, True, '', ''}], rec));
 p5 := PROJECT(NOFOLD(dst5), t(LEFT));
 c5 := CATCH(NOFOLD(p5), ONFAIL(TRANSFORM(rec,
@@ -175,14 +137,15 @@ c5 := CATCH(NOFOLD(p5), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c5);
+    o5 := output(c5);
 #else
-    output(c5, {result});
+    o5 := output(c5, {result});
 #end
 
 
-// This should fail based on not an existing dropzone path used in target file path
-DestFile6 := '/var/lib/HPCCSystems/mydropzone../' + File;
+// This should pass based on HPCC-15787 write log entry instead of thow an exception if
+// not an existing dropzone path used in target file path
+DestFile6 := '/var/lib/HPCCSystems/mydropzona/' + File;
 dst6 := NOFOLD(DATASET([{SourceFile, DestFile6, SrcAddrIp, True, '', ''}], rec));
 p6 := PROJECT(NOFOLD(dst6), t(LEFT));
 c6 := CATCH(NOFOLD(p6), ONFAIL(TRANSFORM(rec,
@@ -194,14 +157,15 @@ c6 := CATCH(NOFOLD(p6), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c6);
+    o6 := output(c6);
 #else
-    output(c6, {result});
+    o6 := output(c6, {result});
 #end
 
 
-// This should pass based on valid target file path and valid source address used
-DestFile7 := '/var/lib/HPCCSystems/mydropzone/test/' + File;
+// This should pass based on HPCC15787 write log entry instead of thow an exception if
+// try to despray out of a drop zone
+DestFile7 := '/var/lib/HPCCSystems/' + File;
 dst7 := NOFOLD(DATASET([{SourceFile, DestFile7, SrcAddrIp, True, '', ''}], rec));
 p7 := PROJECT(NOFOLD(dst7), t(LEFT));
 c7 := CATCH(NOFOLD(p7), ONFAIL(TRANSFORM(rec,
@@ -213,9 +177,48 @@ c7 := CATCH(NOFOLD(p7), ONFAIL(TRANSFORM(rec,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c7);
+    o7 := output(c7);
 #else
-    output(c7, {result});
+    o7 := output(c7, {result});
+#end
+
+
+// This should passbased on HPCC15787 write log entry instead of thow an exception if
+// not an existing dropzone path used in target file path
+DestFile8 := '/var/lib/HPCCSystems/mydropzone../' + File;
+dst8 := NOFOLD(DATASET([{SourceFile, DestFile8, SrcAddrIp, True, '', ''}], rec));
+p8 := PROJECT(NOFOLD(dst8), t(LEFT));
+c8 := CATCH(NOFOLD(p8), ONFAIL(TRANSFORM(rec,
+                                 SELF.result := 'Fail',
+                                 SELF.destFile := DestFile8,
+                                 SELF.sourceFile := SourceFile,
+                                 SELF.ip := SrcAddrIp,
+                                 SELF.allowOverwrite := True,
+                                 SELF.msg := FAILMESSAGE
+                                )));
+#if (VERBOSE = 1)
+    o8 := output(c8);
+#else
+    o8 := output(c8, {result});
+#end
+
+
+// This should pass based on valid target file path and valid source address used
+DestFile9 := '/var/lib/HPCCSystems/mydropzone/test/' + File;
+dst9 := NOFOLD(DATASET([{SourceFile, DestFile9, SrcAddrIp, True, '', ''}], rec));
+p9 := PROJECT(NOFOLD(dst9), t(LEFT));
+c9 := CATCH(NOFOLD(p9), ONFAIL(TRANSFORM(rec,
+                                 SELF.result := 'Fail',
+                                 SELF.destFile := DestFile9,
+                                 SELF.sourceFile := SourceFile,
+                                 SELF.ip := SrcAddrIp,
+                                 SELF.allowOverwrite := True,
+                                 SELF.msg := FAILMESSAGE
+                                )));
+#if (VERBOSE = 1)
+    o9 := output(c9);
+#else
+    o9 := output(c9, {result});
 #end
 
 
@@ -223,18 +226,33 @@ c7 := CATCH(NOFOLD(p7), ONFAIL(TRANSFORM(rec,
 
 // This shoud fail based on the previous despray already created a file on the target path
 // and overwrite not allowed.
-dst8 := NOFOLD(DATASET([{SourceFile, DestFile7, SrcAddrIp, False, '', ''}], rec));
-p8 := PROJECT(NOFOLD(dst8), t(LEFT));
-c8 := CATCH(NOFOLD(p8), ONFAIL(TRANSFORM(rec,
+dst10 := NOFOLD(DATASET([{SourceFile, DestFile9, SrcAddrIp, False, '', ''}], rec));
+p10 := PROJECT(NOFOLD(dst10), t(LEFT));
+c10 := CATCH(NOFOLD(p10), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Fail',
-                                 SELF.destFile := DestFile7,
+                                 SELF.destFile := DestFile9,
                                  SELF.sourceFile := SourceFile,
                                  SELF.ip := SrcAddrIp,
                                  SELF.allowOverwrite := False,
                                  SELF.msg := FAILMESSAGE
                                 )));
 #if (VERBOSE = 1)
-    output(c8);
+    o10 := output(c10);
 #else
-    output(c8, {result});
+    o10 := output(c10, {result});
 #end
+
+SEQUENTIAL(
+  setup,
+  PARALLEL(
+    o2,
+    o3,
+    o4,
+    o5,
+    o6,
+    o7,
+    o8,
+    o9,
+    o10
+  )
+);

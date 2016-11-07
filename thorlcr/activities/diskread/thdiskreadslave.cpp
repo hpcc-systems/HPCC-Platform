@@ -780,7 +780,7 @@ public:
         unsigned part = 0;
         while (!abortSoon && part<partDescs.ordinality())
         {
-            partHandler->setPart(&partDescs.item(part), part);
+            partHandler->setPart(&partDescs.item(part));
             ++part;
             loop
             {
@@ -908,7 +908,7 @@ public:
             unsigned part = 0;
             while (!abortSoon && part<partDescs.ordinality())
             {
-                partHandler->setPart(&partDescs.item(part), part);
+                partHandler->setPart(&partDescs.item(part));
                 ++part;
                 loop {
                     OwnedConstThorRow nextrow = partHandler->nextRow();
@@ -1023,7 +1023,7 @@ public:
                 unsigned part = 0;
                 while (!abortSoon && part<partDescs.ordinality())
                 {
-                    partHandler->setPart(&partDescs.item(part), part);
+                    partHandler->setPart(&partDescs.item(part));
                     ++part;
                     loop
                     {

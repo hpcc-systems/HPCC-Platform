@@ -1070,18 +1070,20 @@ public:
 
     virtual void beforeDispose()
     {
-        SpinBlock b(queriesCrit);
         // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table. 
         // So only remove from hash table if what we find there matches the item that is being deleted.
-        CQueryFactory *goer = queryMap.getValue(hashValue+channelNo);
+        hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
+        SpinBlock b(queriesCrit);
+        CQueryFactory *goer = queryMap.getValue(hv);
         if (goer == this)
-            queryMap.remove(hashValue+channelNo);
+            queryMap.remove(hv);
     }
 
     static IQueryFactory *getQueryFactory(hash64_t hashValue, unsigned channelNo)
     {
+        hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
         SpinBlock b(queriesCrit);
-        CQueryFactory *factory = LINK(queryMap.getValue(hashValue+channelNo));
+        CQueryFactory *factory = LINK(queryMap.getValue(hv));
         if (factory && factory->isAlive())
             return factory;
         else
@@ -1157,6 +1159,7 @@ public:
         }
         if (id)
             hashValue = rtlHash64VStr(id, hashValue);
+        hashValue = rtlHash64VStr("Roxie", hashValue);  // Adds some noise into the hash - otherwise adjacent wuids tend to hash very close together
         if (traceLevel > 8)
             DBGLOG("getQueryHash: %s %" I64F "u from id", id, hashValue);
         if (stateInfo)
@@ -1215,8 +1218,9 @@ public:
                 }
             }
         }
+        hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
         SpinBlock b(queriesCrit);
-        queryMap.setValue(hashValue+channelNo, this);
+        queryMap.setValue(hv, this);
     }
 
     virtual unsigned queryChannel() const

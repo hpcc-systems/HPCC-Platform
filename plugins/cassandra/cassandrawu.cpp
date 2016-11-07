@@ -2096,7 +2096,7 @@ static void lockWuid(Owned<IRemoteConnection> &connection, const char *wuid)
 {
     VStringBuffer wuRoot("/WorkUnitLocks/%s", wuid);
     if (connection)
-        connection->changeMode(RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT); // Would it ever be anything else?
+        connection->changeMode(RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT); // Would it ever be anything else?
     else
         connection.setown(querySDS().connect(wuRoot.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
     if (!connection)
@@ -2121,7 +2121,7 @@ public:
 
     virtual void forceReload()
     {
-        synchronized sync(locked); // protect locked workunits (uncommited writes) from reload
+        synchronized sync(locked); // protect locked workunits (uncommitted writes) from reload
         loadPTree(sessionCache->cassandraToWorkunitXML(queryWuid()));
         memset(childLoaded, 0, sizeof(childLoaded));
         allDirty = false;
@@ -2653,6 +2653,15 @@ public:
         CriticalBlock b(crit);
         noteDirty("*Exceptions/Exception", wuExceptionsMappings);
         CPersistedWorkUnit::clearExceptions();
+    }
+
+    virtual IPropertyTree *getUnpackedTree(bool includeProgress) const
+    {
+        // If anyone wants the whole ptree, we'd better make sure we have fully loaded it...
+        CriticalBlock b(crit);
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
+            checkChildLoaded(**table);
+        return CPersistedWorkUnit::getUnpackedTree(includeProgress);
     }
 
     virtual IPropertyTree *queryPTree() const
@@ -3483,6 +3492,8 @@ public:
         CassandraStatement statement(prepareStatement("select state, agentSession from workunits where partition=? and wuid=?;"));
         statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
         statement.bindString(1, wuid);
+        SessionId agent = 0;
+        bool agentSessionStopped = false;
         unsigned start = msTick();
         loop
         {
@@ -3519,11 +3530,23 @@ public:
             case WUStateDebugRunning:
             case WUStateBlocked:
             case WUStateAborting:
-                SessionId agent = getUnsignedResult(NULL, cass_row_get_column(row, 1));
-                if (agent && checkAbnormalTermination(wuid, state, agent))
+                if (agentSessionStopped)
+                {
+                    reportAbnormalTermination(wuid, state, agent);
                     return state;
+                }
+                if (queryDaliServerVersion().compare("2.1")>=0)
+                {
+                    agent = getUnsignedResult(NULL, cass_row_get_column(row, 1));
+                    if(agent && querySessionManager().sessionStopped(agent, 0))
+                    {
+                        agentSessionStopped = true;
+                        continue;
+                    }
+                }
                 break;
             }
+            agentSessionStopped = false; // reset for state changes such as WUStateWait then WUStateRunning again
             unsigned waited = msTick() - start;
             if (timeout==-1)
             {

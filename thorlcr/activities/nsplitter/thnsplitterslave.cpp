@@ -57,7 +57,7 @@ public:
     virtual void setOutputStream(unsigned index, IEngineRowStream *stream) override;
     virtual IStrandJunction *getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override;
     virtual unsigned __int64 queryTotalCycles() const override { return COutputTiming::queryTotalCycles(); }
-    virtual unsigned __int64 queryEndCycles() const { return COutputTiming::queryEndCycles(); }
+    virtual unsigned __int64 queryEndCycles() const override { return COutputTiming::queryEndCycles(); }
     virtual void debugRequest(MemoryBuffer &mb) override;
 // Stepping methods
     virtual IInputSteppingMeta *querySteppingMeta() { return nullptr; }
@@ -82,8 +82,9 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     bool spill = false;
     bool eofHit = false;
     bool writeBlocked = false, pagedOut = false;
-    CriticalSection startLock, writeAheadCrit;
+    CriticalSection connectLock, prepareInputLock, writeAheadCrit;
     PointerArrayOf<Semaphore> stalledWriters;
+    UnsignedArray stalledWriterIdxs;
     unsigned stoppedOutputs = 0;
     unsigned activeOutputs = 0;
     rowcount_t recsReady = 0;
@@ -112,7 +113,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         {
             Semaphore writeBlockSem;
             while (!stopped && !parent.eofHit)
-                current = parent.writeahead(current, stopped, writeBlockSem);
+                current = parent.writeahead(current, stopped, writeBlockSem, UINT_MAX);
         }
         void start()
         {
@@ -130,7 +131,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     } writer;
     void connectInput(bool consumerOrdered)
     {
-        CriticalBlock block(startLock);
+        CriticalBlock block(connectLock);
         bool inputOrdered = isInputOrdered(consumerOrdered);
         if (!inputConnected)
         {
@@ -155,6 +156,7 @@ public:
         recsReady = 0;
         writeBlocked = false;
         stalledWriters.kill();
+        stalledWriterIdxs.kill();
         ForEachItemIn(o, outputs)
         {
             CSplitterOutput *output = (CSplitterOutput *)outputs.item(o);
@@ -173,7 +175,8 @@ public:
     }
     bool prepareInput()
     {
-        CriticalBlock block(startLock);
+        // NB: called from writeahead by outputs
+        CriticalBlock block(prepareInputLock);
         if (!inputPrepared)
         {
             inputPrepared = true;
@@ -226,7 +229,7 @@ public:
             throw LINK(writeAheadException);
         return row.getClear();
     }
-    rowcount_t writeahead(rowcount_t current, const bool &stopped, Semaphore &writeBlockSem)
+    rowcount_t writeahead(rowcount_t current, const bool &stopped, Semaphore &writeBlockSem, unsigned outIdx)
     {
         // NB: readers call writeahead, which will block others
         CriticalBlock b(writeAheadCrit);
@@ -239,18 +242,31 @@ public:
             else if (writeBlocked) // NB: only used by 'balanced' splitter, which blocks write when too far ahead
             {
                 stalledWriters.append(&writeBlockSem);
-                CriticalUnblock ub(writeAheadCrit);
-                writeBlockSem.wait(); // when active writer unblocks, signals all stalledWriters
+                stalledWriterIdxs.append(outIdx);
+                loop
+                {
+                    {
+                        CriticalUnblock ub(writeAheadCrit);
+                        if (writeBlockSem.wait(60000)) // when active writer unblocks, signals all stalledWriters
+                            break;
+                    }
+                    ForEachItemIn(i, stalledWriterIdxs)
+                    {
+                        unsigned idx = stalledWriterIdxs.item(i);
+                        ActPrintLog("Splitter output(%d) stalled on writeahead", idx);
+                    }
+                }
                 // recsReady or eofHit will have been updated by the blocking thread by now, loop and re-check
             }
             else
                 break;
         }
         ActivityTimer t(totalCycles, queryTimeActivities());
-        if (!prepareInput()) // returns true, if
-        {
+
+        // NB: Avoid calling prepareInput() from writer thread, as a) already setup and b) if last output is stopping, it stops writer thread and would deadlock if in prepareInput() crit
+        if ((UINT_MAX != outIdx) && !prepareInput())
             return RCMAX; // signals to requester that you are the only output
-        }
+
         pagedOut = false;
         OwnedConstThorRow row;
         loop
@@ -285,7 +301,7 @@ public:
     }
     void inputStopped(unsigned outIdx)
     {
-        CriticalBlock block(startLock);
+        CriticalBlock block(prepareInputLock);
         if (smartBuf)
         {
             /* If no output has started reading (nextRow()), then it will not have been prepared
@@ -326,12 +342,7 @@ public:
     }
 
 // IEngineRowStream
-    virtual const void *nextRow() override
-    {
-        ActivityTimer t(totalCycles, queryTimeActivities());
-        return inputStream->nextRow();
-    }
-    virtual void stop() override{ inputStream->stop(); }
+    virtual void stop() override{ throwUnexpected(); } // CSplitterOutput deals with stopping inputStream
 
 // IThorDataLink (if single output connected)
     virtual IStrandJunction *getOutputStreams(CActivityBase &ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const CThorStrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
@@ -342,7 +353,18 @@ public:
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
-        calcMetaInfoSize(info, queryInput(0));
+        initMetaInfo(info);
+        info.fastThrough = true;
+        info.unknownRowsOutput = true;  // remove once calcMetaInfoSize() is called
+
+        //GH->JCS I think the following line is correct and may remove some downstream spilling streams
+        //info.canBufferInput = spill;
+
+        //GH->JCS.  This should call calcMetaInfoSize, but that hits a race condition.
+        //The splitter does not start its input until the first row is requested, but some activities (e.g.,
+        //inline dataset) rely on information in getMetaInfo that is set up in start.
+        //If calcMetaInfoSize() is called, then the result should really be cached in the class
+        //calcMetaInfoSize(info, queryInput(0));
     }
 
 friend class CInputWrapper;
@@ -419,12 +441,12 @@ void CSplitterOutput::stop()
 
 const void *CSplitterOutput::nextRow()
 {
+    ActivityTimer t(totalCycles, activity.queryTimeActivities());
     if (rec == max)
     {
-        max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem);
+        max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem, outIdx);
         // NB: if this is sole input that actually started, writeahead will have returned RCMAX and calls to activity.nextRow will go directly to splitter input
     }
-    ActivityTimer t(totalCycles, activity.queryTimeActivities());
     const void *row = activity.nextRow(outIdx); // pass ptr to max if need more
     ++rec;
     if (row)

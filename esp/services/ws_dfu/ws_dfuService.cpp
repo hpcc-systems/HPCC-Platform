@@ -74,7 +74,6 @@ static const char* FEATURE_URL="DfuAccess";
 
 const unsigned NODE_GROUP_CACHE_DEFAULT_TIMEOUT = 30*60*1000; //30 minutes
 
-const int DESCRIPTION_DISPLAY_LENGTH = 12;
 const unsigned MAX_VIEWKEYFILE_ROWS = 1000;
 const unsigned MAX_KEY_ROWS = 20;
 
@@ -2815,22 +2814,6 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
             else if(recordSize)
                 records = size/recordSize;
 
-            char description[DESCRIPTION_DISPLAY_LENGTH + 1];
-            description[0] = 0;
-            if (desc && *desc)
-            {
-                if (strlen(desc) <= DESCRIPTION_DISPLAY_LENGTH) //Only 12 characters is required for display
-                {
-                    strcpy(description, desc);
-                }
-                else
-                {
-                    strncpy(description, desc, DESCRIPTION_DISPLAY_LENGTH - 3);
-                    description[DESCRIPTION_DISPLAY_LENGTH - 3] = 0;
-                    strcat(description, "...");
-                }
-            }
-
             ForEachItemIn(i, nodeGroups)
             {
                 const char* nodeGroup = nodeGroups.item(i);
@@ -2861,7 +2844,7 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
                 }
                 else if (stricmp(sortBy, "Description")==0)
                 {
-                    addToPos = findPositionByDescription(description, descending, LogicalFileList);
+                    addToPos = findPositionByDescription(desc, descending, LogicalFileList);
                 }
                 else
                 {
@@ -2881,7 +2864,7 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
                     File->setNodeGroup(nodeGroup);
                 File->setName(logicalName);
                 File->setOwner(owner);
-                File->setDescription(description);
+                File->setDescription(desc);
                 File->setModified(modf.str());
                 File->setReplicate(true);
 
@@ -3292,20 +3275,6 @@ const char* CWsDfuEx::getPrefixFromLogicalName(const char* logicalName, StringBu
     return prefix.str();
 }
 
-const char* CWsDfuEx::getShortDescription(const char* description, StringBuffer& shortDesc)
-{
-    if (!description || !*description)
-        return NULL;
-
-    shortDesc.set(description);
-    if (shortDesc.length() > DESCRIPTION_DISPLAY_LENGTH) //Only DESCRIPTION_DISPLAY_LENGTH characters is required for display
-    {
-        shortDesc.setLength(DESCRIPTION_DISPLAY_LENGTH - 3);
-        shortDesc.append("...");
-    }
-    return shortDesc.str();
-}
-
 bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles)
 {
     const char* logicalName = file.queryProp(getDFUQResultFieldName(DFUQRFname));
@@ -3321,7 +3290,7 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, 
         StringBuffer buf(file.queryProp(getDFUQResultFieldName(DFUQRFtimemodified)));
         lFile->setModified(buf.replace('T', ' ').str());
         lFile->setPrefix(getPrefixFromLogicalName(logicalName, buf.clear()));
-        lFile->setDescription(getShortDescription(file.queryProp(getDFUQResultFieldName(DFUQRFdescription)), buf.clear()));
+        lFile->setDescription(file.queryProp(getDFUQResultFieldName(DFUQRFdescription)));
 
         if (!nodeGroup || !*nodeGroup)
                 nodeGroup = file.queryProp(getDFUQResultFieldName(DFUQRFnodegroup));

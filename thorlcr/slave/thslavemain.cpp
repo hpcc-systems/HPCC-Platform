@@ -186,10 +186,10 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
 
 static bool jobListenerStopped = true;
 
-void UnregisterSelf(IException *e)
+bool UnregisterSelf(IException *e)
 {
     if (!hasMPServerStarted())
-        return;
+        return false;
 
     StringBuffer slfStr;
     slfEp.getUrlStr(slfStr);
@@ -202,28 +202,33 @@ void UnregisterSelf(IException *e)
         if (!queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION, 60*1000))
         {
             LOG(MCerror, thorJob, "Failed to unregister slave : %s", slfStr.str());
-            return;
+            return false;
         }
         LOG(MCdebugProgress, thorJob, "Unregistered slave : %s", slfStr.str());
+        return true;
     }
     catch (IException *e) {
         if (!jobListenerStopped)
             FLLOG(MCexception(e), thorJob, e,"slave unregistration error");
         e->Release();
     }
+    return false;
 }
 
 bool ControlHandler(ahType type)
 {
     if (ahInterrupt == type)
-        LOG(MCdebugProgress, thorJob, "CTRL-C pressed");
+        LOG(MCdebugProgress, thorJob, "CTRL-C detected");
+    else if (!jobListenerStopped)
+        LOG(MCdebugProgress, thorJob, "SIGTERM detected");
+    bool unregOK = false;
     if (!jobListenerStopped)
     {
         if (masterNode)
-            UnregisterSelf(NULL);
+            unregOK = UnregisterSelf(NULL);
         abortSlave();
     }
-    return false;
+    return !unregOK;
 }
 
 void usage()
@@ -348,6 +353,9 @@ int main( int argc, char *argv[]  )
         setSlaveAffinity(globals->getPropInt("@SLAVEPROCESSNUM"));
 
         startMPServer(getFixedPort(TPORT_mp));
+
+        if (globals->getPropBool("@MPChannelReconnect"))
+            getMPServer()->setOpt(mpsopt_channelreopen, "true");
 #ifdef USE_MP_LOG
         startLogMsgParentReceiver();
         LOG(MCdebugProgress, thorJob, "MPServer started on port %d", getFixedPort(TPORT_mp));

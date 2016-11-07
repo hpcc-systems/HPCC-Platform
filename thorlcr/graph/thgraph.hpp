@@ -263,7 +263,7 @@ public:
 
     const void *queryFindParam() const { return &queryId(); } // for SimpleHashTableOf
 
-    bool alreadyUpdated;
+    bool alreadyUpdated = false;
     EclHelperFactory helperFactory;
 
     CIOConnectionArray inputs, outputs, connectedInputs, connectedOutputs;
@@ -300,7 +300,7 @@ public:
     virtual void deserializeStartContext(MemoryBuffer &mb);
     virtual void serializeCreateContext(MemoryBuffer &mb); // called after onCreate and create() (of activity)
     virtual void serializeStartContext(MemoryBuffer &mb);
-    virtual bool checkUpdate() { return false; }
+    virtual bool checkUpdate() { return alreadyUpdated; }
     virtual void reset();
     void onStart(size32_t parentExtractSz, const byte *parentExtract);
     void onCreate();

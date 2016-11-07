@@ -2414,10 +2414,10 @@ public:
         throwUnexpected();
     }
 
-    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed) const
+    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed, unsigned _strands) const
     {
         const SlaveContextLogger &slaveLogCtx = static_cast<const SlaveContextLogger &>(logctx);
-        slaveLogCtx.putStatProcessed(subgraphId, activityId, _idx, _processed);
+        slaveLogCtx.putStatProcessed(subgraphId, activityId, _idx, _processed, _strands);
     }
 
     virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
@@ -2633,6 +2633,7 @@ protected:
         isBlocked = false;
         isNative = true;
         sendHeartBeats = false;
+        trim = false;
 
         lastSocketCheckTime = startTime;
         lastHeartBeat = startTime;
@@ -2731,6 +2732,8 @@ public:
         isNative = (flags & HPCC_PROTOCOL_NATIVE);
         isRaw = (flags & HPCC_PROTOCOL_NATIVE_RAW);
         isBlocked = (flags & HPCC_PROTOCOL_BLOCKED);
+        trim = (flags & HPCC_PROTOCOL_TRIM);
+
         xmlStoredDatasetReadFlags = _xmlReadFlags;
         sendHeartBeats = enableHeartBeat && isRaw && isBlocked && options.priority==0;
 
@@ -2761,7 +2764,7 @@ public:
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
     }
 
-    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed) const
+    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed, unsigned _strands) const
     {
         if (_processed)
         {
@@ -2770,6 +2773,8 @@ public:
                 IStatisticGatherer & builder = graphStats->queryStatsBuilder();
                 StatsSubgraphScope graphScope(builder, subgraphId);
                 StatsEdgeScope scope(builder, activityId, _idx);
+                if (_strands)
+                    builder.addStatistic(StNumStrands, _strands);
                 builder.addStatistic(StNumRowsProcessed, _processed);
                 builder.addStatistic(StNumStarted, 1);
                 builder.addStatistic(StNumStopped, 1);
@@ -2966,8 +2971,21 @@ public:
 
     virtual char *getDaliServers()
     {
-        //MORE: Should this now be implemented using IRoxieDaliHelper?
-        throwUnexpected();
+        try
+        {
+            IRoxieDaliHelper *daliHelper = checkDaliConnection();
+            if (daliHelper)
+            {
+                StringBuffer ip;
+                daliHelper->getDaliIp(ip);
+                return ip.detach();
+            }
+        }
+        catch (IException *E)
+        {
+            E->Release();
+        }
+        return strdup("");
     }
     virtual IHpccProtocolResponse *queryProtocol()
     {

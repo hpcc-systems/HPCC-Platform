@@ -55,6 +55,7 @@ IIdAtom * loadId;
 IIdAtom * macroId;
 IIdAtom * maxLengthId;
 IIdAtom * maxSizeId;
+IIdAtom * __optionsId;
 IIdAtom * outputId;
 IIdAtom * physicalLengthId;
 IIdAtom * selfId;
@@ -496,6 +497,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEID(macro);
     MAKEID(maxLength);
     MAKEID(maxSize);
+    MAKEID(__options);
     MAKEID(output);
     MAKEID(physicalLength);
     MAKEID(self);

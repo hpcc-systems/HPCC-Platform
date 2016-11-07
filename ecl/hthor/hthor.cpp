@@ -7999,7 +7999,9 @@ void CHThorDiskReadBaseActivity::resolve()
                         }
                         assertex(fdesc);
                         superfile.set(fdesc->querySuperFileDescriptor());
-                        assertex(superfile);
+                        if (!superfile && numsubs>0)
+                            logicalFileName.set(subfileLogicalFilenames.item(0));
+
                     }
                 }
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)

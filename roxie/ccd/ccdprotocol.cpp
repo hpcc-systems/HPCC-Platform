@@ -1021,11 +1021,15 @@ public:
     }
     virtual bool checkConnection()
     {
-        return client->checkConnection();
+        if (client)
+            return client->checkConnection();
+        else
+            return true;
     }
     virtual void sendHeartBeat()
     {
-        client->sendHeartBeat(logctx);
+        if (client)
+            client->sendHeartBeat(logctx);
     }
     virtual SafeSocket *querySafeSocket()
     {
@@ -1139,8 +1143,8 @@ public:
                 name.append("Response");
             appendJSONName(responseHead, name.str()).append(" {");
             appendJSONValue(responseHead, "sequence", seqNo);
-            if (contentsMap.length() || results)
-                delimitJSON(responseHead);
+            appendJSONName(responseHead, "Results").append(" {");
+
             unsigned len = responseHead.length();
             client->write(responseHead.detach(), len, true);
         }
@@ -1150,7 +1154,7 @@ public:
             results->finalize(seqNo, ",", resultFilter.ordinality() ? resultFilter.item(0) : NULL);
         if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
         {
-            responseTail.append("}");
+            responseTail.append("}}");
             unsigned len = responseTail.length();
             client->write(responseTail.detach(), len, true);
         }
@@ -1246,7 +1250,7 @@ public:
         {
             responseHead.append("<").append(queryName);
             responseHead.append("Response").append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append('\"');
-            responseHead.append(" sequence=\"").append(seqNo).append("\">");
+            responseHead.append(" sequence=\"").append(seqNo).append("\"><Results><Result>");
             unsigned len = responseHead.length();
             client->write(responseHead.detach(), len, true);
         }
@@ -1258,7 +1262,7 @@ public:
 
         if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
         {
-            responseTail.append("</").append(queryName);
+            responseTail.append("</Result></Results></").append(queryName);
             if (isHTTP)
                 responseTail.append("Response");
             responseTail.append('>');
@@ -1745,7 +1749,9 @@ readAnother:
 
                 uid = NULL;
                 sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isRequest, isRequestArray, isBlind, isDebug);
-                if (!uid)
+                if (uid)
+                    msgctx->setTransactionId(uid);
+                else
                     uid = "-";
 
                 sink->checkAccess(peer, queryName, sanitizedText, isBlind);

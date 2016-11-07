@@ -63,7 +63,7 @@ public:
     virtual const char * queryLogicalFilename(const void * row);
 
 // CPartHandler
-    virtual void setPart(IPartDescriptor *_partDesc, unsigned partNoSerialized);
+    virtual void setPart(IPartDescriptor *_partDesc);
 
     virtual offset_t getLocalOffset()=0;
 };
@@ -88,7 +88,7 @@ protected:
     ThorDataLinkMetaInfo cachedMetaInfo;
     Owned<CDiskPartHandlerBase> partHandler;
     Owned<IExpander> eexp;
-    rowcount_t diskProgress;
+    rowcount_t diskProgress = 0;
 
 public:
     CDiskReadSlaveActivityBase(CGraphElementBase *_container);

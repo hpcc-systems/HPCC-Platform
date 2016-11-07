@@ -550,6 +550,7 @@ int main( int argc, char *argv[]  )
     const char *thorname = NULL;
     StringBuffer nodeGroup, logUrl;
     Owned<IPerfMonHook> perfmonhook;
+    unsigned channelsPerSlave = 1;
 
     ILogMsgHandler *logHandler;
     try
@@ -587,6 +588,9 @@ int main( int argc, char *argv[]  )
             }
         }
 
+        if (globals->getPropBool("@MPChannelReconnect"))
+            getMPServer()->setOpt(mpsopt_channelreopen, "true");
+
         setPasswordsFromSDS();
 
         if (globals->getPropBool("@enableSysLog",true))
@@ -606,7 +610,7 @@ int main( int argc, char *argv[]  )
             globals->setProp("@nodeGroup", thorname);
         }
         unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
-        unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+        channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
         unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
         Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
@@ -780,6 +784,25 @@ int main( int argc, char *argv[]  )
 
         if (registry->connect())
         {
+            unsigned totSlaveProcs = queryNodeClusterWidth();
+            for (unsigned s=0; s<totSlaveProcs; s++)
+            {
+                StringBuffer slaveStr;
+                for (unsigned c=0; c<channelsPerSlave; c++)
+                {
+                    unsigned o = s + (c * totSlaveProcs);
+                    if (c)
+                        slaveStr.append(",");
+                    slaveStr.append(o+1);
+                }
+                StringBuffer virtStr;
+                if (channelsPerSlave>1)
+                    virtStr.append("virtual slaves:");
+                else
+                    virtStr.append("slave:");
+                PROGLOG("Slave log %u contains %s %s", s+1, virtStr.str(), slaveStr.str());
+            }
+
             PROGLOG("verifying mp connection to rest of cluster");
             if (!queryNodeComm().verifyAll())
                 ERRLOG("Failed to connect to all nodes");

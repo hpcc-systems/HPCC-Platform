@@ -134,6 +134,7 @@ public:
     HqlExprAssociation *        associateExpr(IHqlExpression * represents, IHqlExpression * expr);
     HqlExprAssociation *        associateExpr(IHqlExpression * represents, const CHqlBoundExpr & bound);
     bool                        hasAssociation(HqlExprAssociation & search, bool unconditional);
+    bool                        isSameLocation(const BuildCtx & other) const;
     HqlExprAssociation *        queryAssociation(IHqlExpression * dataset, AssocKind kind, HqlExprCopyArray * selectors);
     HqlExprAssociation *        queryFirstAssociation(AssocKind kind);
     HqlExprAssociation *        queryFirstCommonAssociation(AssocKind kind);

@@ -34,7 +34,7 @@ define([
         i18n: nlsHPCC,
 
         gridTitle: nlsHPCC.title_QuerySetLogicalFiles,
-        idProperty: "Name",
+        idProperty: "File",
 
         queryId: null,
         querySet: null,

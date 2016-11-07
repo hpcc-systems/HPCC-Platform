@@ -1,6 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/array",
+    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/io-query",
@@ -14,7 +15,7 @@ define([
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry"
 
-], function (declare, arrayUtil, i18n, nlsHPCC, ioQuery, dom, domConstruct, domAttr, domStyle,
+], function (declare, arrayUtil, lang, i18n, nlsHPCC, ioQuery, dom, domConstruct, domAttr, domStyle,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry) {
 
     //  IE8 textContent polyfill  ---
@@ -54,9 +55,30 @@ define([
             this.registerChildWidgets(this.domNode);
         },
 
+        getFilterParams: function() {
+            var retVal = null;
+            if (lang.exists("filter.toObject", this)) {
+                var obj = this.filter.toObject();
+                for (var key in obj) {
+                    if (!retVal) {
+                        retVal = {};
+                    }
+                    if (obj[key]) {
+                        retVal[key] = obj[key];
+                    }
+                }
+            }
+            return retVal;
+        },
+
         getURL: function() {
             var baseUrl = document.URL.split("#")[0];
             baseUrl = baseUrl.split("?")[0];
+            delete this.params.__filter;
+            var filterParams = this.getFilterParams();
+            if (filterParams) {
+                this.params.__filter = ioQuery.objectToQuery(filterParams);
+            }
             var paramsString = ioQuery.objectToQuery(this.params);
             return baseUrl + "?" + paramsString;
         },
@@ -75,6 +97,10 @@ define([
             this.params = params;
             if (!this.params.Widget) {
                 this.params.Widget = this.declaredClass;
+            }
+            if (lang.exists("params.__filter", this) && lang.exists("filter.toObject", this)) {
+                var filterObj = ioQuery.queryToObject(this.params.__filter);
+                this.filter.fromObject(filterObj);
             }
             this.wrapInHRef(this.id + "NewPage", this.getURL());
             return false;

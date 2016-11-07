@@ -133,6 +133,7 @@ static bool heapNotifyUnusedEachFree = true;
 static bool heapNotifyUnusedEachBlock = false;
 static unsigned __int64 lastStatsCycles;
 static unsigned __int64 statsCyclesInterval;
+static std::atomic<unsigned> activeRowManagers;
 
 static unsigned heapAllocated;
 static atomic_t dataBufferPages;
@@ -546,14 +547,14 @@ static StringBuffer &memmap(StringBuffer &stats)
 
 static void throwHeapExhausted(unsigned allocatorId, unsigned pages)
 {
-    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u", allocatorId, heapTotalPages, pages);
+    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u active(%u) heap(%u/%u)", allocatorId, heapTotalPages, pages, activeRowManagers.load(), heapAllocated, heapTotalPages);
     DBGLOG("%s", msg.str());
     throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
 
 static void throwHeapExhausted(unsigned allocatorId, unsigned newPages, unsigned oldPages)
 {
-    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u, had %u", allocatorId, heapTotalPages, newPages, oldPages);
+    VStringBuffer msg("Memory pool exhausted: pool id %u (%u pages) exhausted, requested %u, had %u active(%u) heap(%u/%u)", allocatorId, heapTotalPages, newPages, oldPages, activeRowManagers.load(), heapAllocated, heapTotalPages);
     DBGLOG("%s", msg.str());
     throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
@@ -1281,6 +1282,8 @@ public:
 
     inline void addToSpaceList();
     virtual void verifySpaceList();
+
+    inline bool isWithinHeap(CHeap * search) const { return heap == search; }
 };
 
 
@@ -3152,6 +3155,19 @@ class BufferedRowCallbackManager
             return numSuccess;
         }
 
+        void report(const IContextLogger &logctx) const
+        {
+            StringBuffer msg;
+            msg.appendf(" ac(%u) cost(%u):", activityId, cost);
+            ForEachItemIn(i, callbacks)
+            {
+                if (i == nextCallback)
+                    msg.append(" {").append(callbacks.item(i).first).append("}");
+                else
+                    msg.append(" ").append(callbacks.item(i).first);
+            }
+            logctx.CTXLOG("%s", msg.str());
+        }
         inline unsigned getSpillCost() const { return cost; }
         inline unsigned getActivityId() const { return activityId; }
 
@@ -3270,6 +3286,14 @@ public:
         if (!releaseBuffersThread)
             return releaseBuffersNow(slaveId, maxSpillCost, critical, checkSequence, prevReleaseSeq);
         return releaseBuffersThread->releaseBuffers(slaveId, maxSpillCost, critical);
+    }
+
+    void reportActive(const IContextLogger &logctx) const
+    {
+        logctx.CTXLOG("--Active callbacks--");
+        CriticalBlock block(callbackCrit);
+        ForEachItemIn(i, rowBufferCallbacks)
+            rowBufferCallbacks.item(i).report(logctx);
     }
 
     void runReleaseBufferThread()
@@ -3401,7 +3425,7 @@ protected:
     }
 
 protected:
-    CriticalSection callbackCrit;
+    mutable CriticalSection callbackCrit;
     Semaphore releaseBuffersSem;
     CIArrayOf<CallbackItem> rowBufferCallbacks;
     PointerArrayOf<IBufferedRowCallback> activeCallbacks;
@@ -3473,7 +3497,6 @@ void initAllocSizeMappings(const unsigned * sizes)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static std::atomic<unsigned> activeRowManagers;
 class CChunkingRowManager : public CRowManager
 {
     friend class CRoxieFixedRowHeap;
@@ -3490,7 +3513,6 @@ private:
     CHugeHeap hugeHeap;
     ITimeLimiter *timeLimit;
     DataBufferBase *activeBuffs;
-    const IContextLogger &logctx;
     unsigned peakPages;
     unsigned dataBuffs;
     unsigned dataBuffPages;
@@ -3509,6 +3531,7 @@ private:
     bool minimizeFootprintCritical;
 
 protected:
+    const IContextLogger &logctx;
     unsigned maxPageLimit;
     unsigned spillPageLimit;
 
@@ -4065,7 +4088,7 @@ public:
 
             //Try and directly free up some buffers.  It is worth trying again if one of the release functions thinks it
             //freed up some memory.
-            //The following reduces the nubmer of times the callback is called, but I'm not sure how this affects
+            //The following reduces the number of times the callback is called, but I'm not sure how this affects
             //performance.  I think better if a single free is likely to free up some memory, and worse if not.
             const bool skipReleaseIfAnotherThreadReleases = true;
             if (!releaseCallbackMemory(maxSpillCost, true, skipReleaseIfAnotherThreadReleases, lastReleaseSeq))
@@ -4079,7 +4102,7 @@ public:
                     releaseEmptyPages(querySlaveId(), true);
                     if (numHeapPages == atomic_read(&totalHeapPages))
                     {
-                        VStringBuffer msg("Memory limit exceeded: current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
+                        VStringBuffer msg("Memory limit exceeded: current %u, requested %u, limit %u active(%u) heap(%u/%u)", pageCount, numRequested, pageLimit, activeRowManagers.load(), heapAllocated, heapTotalPages);
                         logctx.CTXLOG("%s", msg.str());
 
                         //Avoid a stack trace if the allocation is optional
@@ -4347,6 +4370,7 @@ public:
     virtual void setMinimizeFootprint(bool value, bool critical) { throwUnexpected(); }
     virtual void setReleaseWhenModifyCallback(bool value, bool critical) { throwUnexpected(); }
     virtual unsigned querySlaveId() const { return slaveId; }
+    virtual void reportMemoryUsage(bool peak) const;
 
 protected:
     virtual unsigned getPageLimit() const;
@@ -4425,6 +4449,12 @@ public:
     }
 
     virtual unsigned querySlaveId() const { return 0; }
+
+    virtual void reportMemoryUsage(bool peak) const
+    {
+        CChunkingRowManager::reportMemoryUsage(peak);
+        callbacks.reportActive(logctx);
+    }
 
 protected:
     virtual void addRowBuffer(IBufferedRowCallback * callback)
@@ -4559,6 +4589,11 @@ unsigned CSlaveRowManager::getPageLimit() const
     return globalManager->getSlavePageLimit(slaveId);
 }
 
+void CSlaveRowManager::reportMemoryUsage(bool peak) const
+{
+    CChunkingRowManager::reportMemoryUsage(peak);
+    globalManager->reportMemoryUsage(peak);
+}
 
 //================================================================================
 
@@ -4672,6 +4707,8 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
     unsigned newPages = PAGES(newsize + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
     unsigned oldPages = PAGES(oldcapacity + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
     void *oldbase =  (void *) ((memsize_t) original & HEAP_ALIGNMENT_MASK);
+    HugeHeaplet * oldHeaplet = (HugeHeaplet *)oldbase;
+    assertex(oldHeaplet->isWithinHeap(this));
 
     //Check if we are shrinking the number of pages.
     if (newPages <= oldPages)
@@ -4887,7 +4924,8 @@ const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state
                 }
                 return ret;
             }
-            dbgassertex((chunkedFinger->numChunks() == maxChunksPerPage()) || (chunkedFinger->numChunks() == 0));
+
+            //heaplet was either empty or full (it may no longer be full if another thread has freed a row)
             finger = getNext(finger);
 
             //Check if we have looped all the way around

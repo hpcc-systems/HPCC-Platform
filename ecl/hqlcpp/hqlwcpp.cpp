@@ -312,13 +312,13 @@ unsigned getPrecedence(IHqlExpression * expr)
         case no_eq: case no_ne:
             return 9;
         case no_band:
-            return 8;
+            return 6;  // Really 8, but generating extra parens for expressions with mixed & and | helps reduce compiler warnings
         case no_bxor:
-            return 7;
+            return 6;  // Really 7, but generating extra parens for expressions with mixed & and | helps reduce compiler warnings
         case no_bor:
             return 6;
         case no_and:
-            return 5;
+            return 4;  // Really 5, but generating extra parens for expressions with mixed && and || helps reduce compiler warnings
         case no_or:
             return 4;
         case no_if:
@@ -2143,8 +2143,13 @@ void HqlCppWriter::generateStmtLine(IHqlStmt * stmt)
     if (filename && line)
     {
         out.append("#line ");
-        generateExprCpp(line).append(" ");
-        generateExprCpp(filename);
+        generateExprCpp(line).append(" \"");
+        IValue *value = filename->queryValue();
+        assertex(value);
+        StringBuffer fname;
+        value->getStringValue(fname);
+        appendStringAsCPP(out, fname.length(), fname.str(), false).append("\"");
+        // NOTE - don't used generateExprCpp(filename), as that wil split the string at 120 chars
         newline();
     }
     else

@@ -1348,11 +1348,11 @@ public:
     virtual void init(IPermissionProcessor* pp)
     {
         m_pp = pp;
-        if(m_ldapconfig->getServerType() == OPEN_LDAP)
+        static bool createdOU = false;
+        CriticalBlock block(lcCrit);
+        if (!createdOU)
         {
-            static bool createdOU = false;
-            CriticalBlock block(lcCrit);
-            if (!createdOU)
+            if(m_ldapconfig->getServerType() == OPEN_LDAP)
             {
                 try
                 {
@@ -1363,7 +1363,7 @@ public:
                 }
                 try
                 {
-                addGroup("Directory Administrators", NULL, NULL, m_ldapconfig->getBasedn());
+                    addGroup("Directory Administrators", NULL, NULL, m_ldapconfig->getBasedn());
                 }
                 catch(...)
                 {

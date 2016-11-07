@@ -27,8 +27,10 @@
 
 #include "eclcmd_common.hpp"
 
-void outputMultiExceptions(const IMultiException &me)
+int outputMultiExceptionsEx(const IMultiException &me)
 {
+    if (!me.ordinality())
+        return 0;
     fprintf(stderr, "\nException(s):\n");
     aindex_t count = me.ordinality();
     for (aindex_t i=0; i<count; i++)
@@ -38,6 +40,7 @@ void outputMultiExceptions(const IMultiException &me)
         fprintf(stderr, "%d: %s\n", e.errorCode(), e.errorMessage(msg).str());
     }
     fprintf(stderr, "\n");
+    return 1;
 }
 
 bool checkMultiExceptionsQueryNotFound(const IMultiException &me)

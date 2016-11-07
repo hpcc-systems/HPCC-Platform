@@ -91,12 +91,14 @@ extern mp_decl ICommunicator *createCommunicator(IGroup *group,bool outer=false)
 extern mp_decl IInterCommunicator &queryWorldCommunicator();
 extern mp_decl bool hasMPServerStarted();
 
+enum MPServerOpts { mpsopt_null, mpsopt_channelreopen };
 interface IMPServer : extends IInterface
 {
     virtual mptag_t createReplyTag() = 0;
     virtual ICommunicator *createCommunicator(IGroup *group, bool outer=false) = 0;
     virtual void stop() = 0;
     virtual INode *queryMyNode() = 0;
+    virtual void setOpt(MPServerOpts opt, const char *value) = 0;
 };
 
 extern mp_decl void startMPServer(unsigned port,bool paused=false);

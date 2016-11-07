@@ -186,7 +186,7 @@ void CSlaveActivity::setInputStream(unsigned index, CThorInput &_input, bool con
         _input.junction.setown(junction.getClear());
         if (0 == index)
             inputStream = _inputStream;
-        _input.itdl->setOutputStream(_input.sourceIdx, LINK(_inputStream)); // used by debug request only at moment.
+        _input.itdl->setOutputStream(_input.sourceIdx, LINK(_inputStream)); // used by debug request only at moment. // JCSMORE - this should probably be the junction outputstream if there is one
     }
 }
 
@@ -251,6 +251,12 @@ IEngineRowStream *CSlaveActivity::queryInputStream(unsigned index) const
     return inputs.item(index).stream;
 }
 
+IStrandJunction *CSlaveActivity::queryInputJunction(unsigned index) const
+{
+    if (index>=inputs.ordinality()) return nullptr;
+    return inputs.item(index).junction;
+}
+
 IEngineRowStream *CSlaveActivity::queryOutputStream(unsigned index) const
 {
     if (index>=outputStreams.ordinality()) return nullptr;
@@ -276,7 +282,7 @@ void CSlaveActivity::startAllInputs()
 
 void CSlaveActivity::startInput(unsigned index, const char *extra)
 {
-    StringBuffer s("Starting input");
+    VStringBuffer s("Starting input %u", index);
     if (extra)
         s.append(" ").append(extra);
     ActPrintLog("%s", s.str());
@@ -1080,22 +1086,6 @@ void CSlaveGraph::done()
         throw LINK(exception.get());
 }
 
-void CSlaveGraph::end()
-{
-    CGraphBase::end();
-    if (!queryOwner())
-    {
-        if (atomic_read(&nodesLoaded)) // wouldn't mean much if parallel jobs running
-            GraphPrintLog("JHTree node stats:\ncacheAdds=%d\ncacheHits=%d\nnodesLoaded=%d\nblobCacheHits=%d\nblobCacheAdds=%d\nleafCacheHits=%d\nleafCacheAdds=%d\nnodeCacheHits=%d\nnodeCacheAdds=%d\n", atomic_read(&cacheAdds), atomic_read(&cacheHits), atomic_read(&nodesLoaded), atomic_read(&blobCacheHits), atomic_read(&blobCacheAdds), atomic_read(&leafCacheHits), atomic_read(&leafCacheAdds), atomic_read(&nodeCacheHits), atomic_read(&nodeCacheAdds));
-        JSocketStatistics stats;
-        getSocketStatistics(stats);
-        StringBuffer s;
-        getSocketStatisticsString(stats,s);
-        GraphPrintLog("Socket statistics : %s\n",s.str());
-        resetSocketStatistics();
-    }
-}
-
 bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
 {
     unsigned beginPos = mb.length();
@@ -1546,6 +1536,18 @@ void CJobSlave::startJob()
             throw MakeThorException(TE_NotEnoughFreeSpace, "Node %s has %u MB(s) of available disk space, specified minimum for this job: %u MB(s)", ep.getUrlStr(s).str(), (unsigned) freeSpace / 0x100000, minFreeSpace);
         }
     }
+}
+
+void CJobSlave::reportGraphEnd(graph_id gid)
+{
+    if (atomic_read(&nodesLoaded)) // wouldn't mean much if parallel jobs running
+        PROGLOG("Graph[%" GIDPF "u] - JHTree node stats:\ncacheAdds=%d\ncacheHits=%d\nnodesLoaded=%d\nblobCacheHits=%d\nblobCacheAdds=%d\nleafCacheHits=%d\nleafCacheAdds=%d\nnodeCacheHits=%d\nnodeCacheAdds=%d\n", gid, atomic_read(&cacheAdds), atomic_read(&cacheHits), atomic_read(&nodesLoaded), atomic_read(&blobCacheHits), atomic_read(&blobCacheAdds), atomic_read(&leafCacheHits), atomic_read(&leafCacheAdds), atomic_read(&nodeCacheHits), atomic_read(&nodeCacheAdds));
+    JSocketStatistics stats;
+    getSocketStatistics(stats);
+    StringBuffer s;
+    getSocketStatisticsString(stats,s);
+    PROGLOG("Graph[%" GIDPF "u] - Socket statistics : %s\n", gid, s.str());
+    resetSocketStatistics();
 }
 
 __int64 CJobSlave::getWorkUnitValueInt(const char *prop, __int64 defVal) const

@@ -466,6 +466,7 @@ IThorGraphDependencyIterator *CGraphElementBase::getDependsIterator() const
 
 void CGraphElementBase::reset()
 {
+    alreadyUpdated = false;
     onStartCalled = false;
 //  prepared = false;
     if (activity)
@@ -552,6 +553,8 @@ void CGraphElementBase::serializeCreateContext(MemoryBuffer &mb)
     DelayedSizeMarker sizeMark(mb);
     queryHelper()->serializeCreateContext(mb);
     sizeMark.write();
+    if (isSink())
+        mb.append(alreadyUpdated);
 }
 
 void CGraphElementBase::serializeStartContext(MemoryBuffer &mb)
@@ -568,6 +571,8 @@ void CGraphElementBase::deserializeCreateContext(MemoryBuffer &mb)
     mb.read(createCtxLen);
     createCtxMb.clear().append(createCtxLen, mb.readDirect(createCtxLen));
     haveCreateCtx = true;
+    if (isSink())
+        mb.read(alreadyUpdated);
 }
 
 void CGraphElementBase::deserializeStartContext(MemoryBuffer &mb)
@@ -666,7 +671,6 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                     return false;
             }
             whichBranch = (unsigned)-1;
-            alreadyUpdated = false;
             switch (getKind())
             {
                 case TAKindexwrite:

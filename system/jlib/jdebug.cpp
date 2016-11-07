@@ -1006,6 +1006,26 @@ memsize_t getMapInfo(const char *type)
     return ret;
 }
 
+static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
+{
+    size32_t len = strlen(prefix);
+    if (strncmp(prefix, line, len)==0)
+    {
+        char * tail = NULL;
+        value = strtol(line+len, &tail, 10);
+        while (isspace(*tail))
+            tail++;
+        if (strncmp(tail, "kB", 2) == 0)
+            value *= 0x400;
+        else if (strncmp(tail, "mB", 2) == 0)
+            value *= 0x100000;
+        else if (strncmp(tail, "gB", 2) == 0)
+            value *= 0x40000000;
+        return true;
+    }
+    return false;
+}
+
 memsize_t getVMInfo(const char *type)
 {
     memsize_t ret = 0;
@@ -1015,24 +1035,10 @@ memsize_t getVMInfo(const char *type)
     if (!diskfp)
         return 0;
     char ln[256];
-    memsize_t value = 0;
-    char unitStr[256];
     while (fgets(ln, sizeof(ln), diskfp))
     {
-        if (!strncmp(ln, name.str(), name.length()))
-        {
-            if (2 == sscanf(&ln[name.length()], "%lu%s", &value, unitStr))
-            {
-                if (!strcasecmp(unitStr, "kB"))
-                    value *= 1024ULL;
-                if (!strcasecmp(unitStr, "mB"))
-                    value *= 1024ULL * 1024ULL;
-                if (!strcasecmp(unitStr, "gB"))
-                    value *= 1024ULL * 1024ULL * 1024ULL;
-                ret = value;
-                break;
-            }
-        }
+        if (matchExtract(name.str(), ln, ret))
+            break;
     }
     fclose(diskfp);
     return ret;
@@ -1108,9 +1114,8 @@ static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigne
         memfd = open("/proc/meminfo",O_RDONLY);
     if (memfd==-1)
         return;
-    lseek(memfd, 0L, 0);
-    char buf[1024];
-    size32_t l = read(memfd, buf, sizeof(buf)-1);
+    char buf[2048];
+    size32_t l = pread(memfd, buf, sizeof(buf)-1, 0L);
     if ((int)l<=0)
         return;
     buf[l] = 0;
@@ -1265,24 +1270,6 @@ void clearAffinityCache()
 }
 
 
-static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
-{
-    size32_t len = strlen(prefix);
-    if (strncmp(prefix, line, len)==0)
-    {
-        char * tail = NULL;
-        value = strtol(line+len, &tail, 10);
-        while (isspace(*tail))
-            tail++;
-        if (strncmp(tail, "kB", 2) == 0)
-            value *= 0x400;
-        else if (strncmp(tail, "mB", 2) == 0)
-            value *= 0x100000;
-        return true;
-    }
-    return false;
-}
-
 void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident)
 {
     peakVm = 0;
@@ -1302,10 +1289,8 @@ void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident)
         memfd = open("/proc/self/status",O_RDONLY);
     if (memfd==-1)
         return;
-    lseek(memfd, 0L, 0);
-
     char buf[2048];
-    size32_t l = read(memfd, buf, sizeof(buf)-1);
+    size32_t l = pread(memfd, buf, sizeof(buf)-1, 0L);
     if ((int)l<=0)
         return;
     buf[l] = 0;
@@ -2113,6 +2098,179 @@ static struct CNtKernelInformation
 } NtKernelFunctions;
 #endif
 
+struct PortStats
+{
+    unsigned port;
+    unsigned drops;
+    unsigned rx_queue;
+};
+typedef MapBetween<unsigned, unsigned, PortStats, PortStats> MapPortToPortStats;
+
+class CUdpStatsReporter
+{
+public:
+    CUdpStatsReporter()
+    {
+        dropsCol = -1;
+        portCol = -1;
+        uidCol = -1;
+        queueCol = -1;
+    }
+
+    bool reportUdpInfo(unsigned traceLevel)
+    {
+#ifdef _WIN32
+        return false;
+#else
+        if (uidCol==-1 && columnNames.length())
+            return false;
+        FILE *netfp = fopen("/proc/net/udp", "r");
+        if (!netfp)
+            return false;
+        char ln[512];
+        // Read header
+        if (!fgets(ln, sizeof(ln), netfp)) {
+            fclose(netfp);
+            return false;
+        }
+        if (!columnNames.length())
+        {
+            columnNames.appendList(ln, " ");
+            ForEachItemInRev(idx, columnNames)
+            {
+                if (streq(columnNames.item(idx), "rem_address"))
+                    columnNames.add("rem_port", idx+1);
+                else if (streq(columnNames.item(idx), "local_address"))
+                    columnNames.add("local_port", idx+1);
+            }
+            ForEachItemIn(idx2, columnNames)
+            {
+                if (streq(columnNames.item(idx2), "drops"))
+                    dropsCol = idx2;
+                else if (streq(columnNames.item(idx2), "local_port"))
+                    portCol = idx2;
+                else if (streq(columnNames.item(idx2), "rx_queue"))
+                    queueCol = idx2;
+                else if (streq(columnNames.item(idx2), "uid"))
+                    uidCol = idx2;
+            }
+            if (portCol == -1 || queueCol == -1 || uidCol == -1)
+            {
+                uidCol = -1;
+                fclose(netfp);
+                return false;
+            }
+        }
+        int myUid = geteuid();
+        while (fgets(ln, sizeof(ln), netfp))
+        {
+            StringArray cols;
+            cols.appendList(ln, " :");
+            if (cols.length() >= columnNames.length() && atoi(cols.item(uidCol))==myUid)
+            {
+                unsigned queue = strtoul(cols.item(queueCol), NULL, 16);
+                unsigned drops = 0;
+                if (dropsCol >= 0)
+                    drops = strtoul(cols.item(dropsCol), NULL, 10);
+                if (queue || drops)
+                {
+                    unsigned port = strtoul(cols.item(portCol), NULL, 16);
+                    if (traceLevel > 0)
+                        DBGLOG("From /proc/net/udp: port %d rx_queue=%u drops=%u", port, queue, drops);
+                    PortStats *ret = map.getValue(port);
+                    if (!ret)
+                    {
+                        PortStats e = {port, 0, 0};
+                        map.setValue(port, e);
+                        ret = map.getValue(port);
+                        assertex(ret);
+                    }
+                    if (queue > ret->rx_queue)
+                    {
+                        DBGLOG("UDP queue: new max rx_queue: port %d rx_queue=%u drops=%u", port, queue, drops);
+                        ret->rx_queue = queue;
+                    }
+                    if (drops > ret->drops)
+                    {
+                        LOG(MCoperatorError, unknownJob, "DROPPED UDP PACKETS: port %d rx_queue=%u (peak %u) drops=%u (total %i)", port, queue, ret->rx_queue, drops-ret->drops, drops);
+                        ret->drops = drops;
+                    }
+                }
+            }
+        }
+        fclose(netfp);
+        return true;
+#endif
+    }
+private:
+    MapPortToPortStats map;
+    StringArray columnNames;
+    int dropsCol;
+    int portCol;
+    int uidCol;
+    int queueCol;
+};
+
+class CSnmpStatsReporter
+{
+public:
+    CSnmpStatsReporter()
+    {
+        inErrorsCol = -1;
+        prevErrors = 0;
+    }
+    bool reportSnmpInfo()
+    {
+#ifdef _WIN32
+        return false;
+#else
+        if (inErrorsCol==-1 && columnNames.length())
+            return false;
+        FILE *netfp = fopen("/proc/net/snmp", "r");
+        if (!netfp)
+            return false;
+        char ln[512];
+        bool ok = false;
+        while (fgets(ln, sizeof(ln), netfp))
+        {
+            if (strncmp(ln, "Udp:", 4)==0)
+            {
+                if (!columnNames.length())
+                {
+                    columnNames.appendList(ln, " ");
+                    ForEachItemIn(idx, columnNames)
+                    {
+                        if (streq(columnNames.item(idx), "InErrors"))
+                            inErrorsCol = idx;
+                    }
+                    if (inErrorsCol == -1)
+                        break;
+                }
+                if (fgets(ln, sizeof(ln), netfp))
+                {
+                    StringArray cols;
+                    cols.appendList(ln, " ");
+                    if (cols.length() >= columnNames.length())
+                    {
+                        ok = true;
+                        unsigned errors = strtoul(cols.item(inErrorsCol), NULL, 10);
+                        if (errors > prevErrors)
+                            LOG(MCoperatorError, unknownJob, "UDP InErrors: %u (total %u)", errors-prevErrors, errors);
+                        prevErrors = errors;
+                    }
+                }
+                break;
+            }
+        }
+        fclose(netfp);
+        return ok;
+#endif
+    }
+private:
+    StringArray columnNames;
+    int inErrorsCol;
+    unsigned prevErrors;
+};
 
 static class CMemoryUsageReporter: public Thread
 {
@@ -2140,6 +2298,8 @@ static class CMemoryUsageReporter: public Thread
     StringBuffer                   secondaryfs;
     CriticalSection                sect; // for getSystemTraceInfo
 
+    CSnmpStatsReporter             snmpStats;
+    CUdpStatsReporter              udpStats;
 
 public:
     CMemoryUsageReporter(unsigned _interval, PerfMonMode _traceMode, IPerfMonHook * _hook, bool printklog)
@@ -2424,6 +2584,11 @@ public:
     {
         StringBuffer str;
         getSystemTraceInfo(str, traceMode&~PerfMonExtended); // initializes the values so that first one we print is meaningful rather than always saying PU=0%
+        if (traceMode&PerfMonUDP)
+        {
+            snmpStats.reportSnmpInfo();
+            udpStats.reportUdpInfo(0);
+        }
         CTimeMon tm(NAMEDCOUNTPERIOD*1000);
         while (!term) {
             if (sem.wait(interval))
@@ -2437,6 +2602,11 @@ public:
                 tm.reset(NAMEDCOUNTPERIOD*1000);
             }
 #endif
+            if (traceMode&PerfMonUDP)
+            {
+                snmpStats.reportSnmpInfo();
+                udpStats.reportUdpInfo(0);
+            }
             if(traceMode&&str.length()) {
                 LOG(MCdebugInfo, unknownJob, "SYS: %s", str.str());
 #ifndef _WIN32

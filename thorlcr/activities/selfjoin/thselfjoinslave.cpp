@@ -77,7 +77,7 @@ private:
 #if THOR_TRACE_LEVEL > 5
         ActPrintLog("SELFJOIN: Performing global self-join");
 #endif
-        sorter->Gather(::queryRowInterfaces(input), inputStream, compare, NULL, NULL, keyserializer, NULL, false, isUnstable(), abortSoon, NULL);
+        sorter->Gather(::queryRowInterfaces(input), inputStream, compare, NULL, NULL, keyserializer, NULL, NULL, false, isUnstable(), abortSoon, NULL);
         PARENT::stop();
         if (abortSoon)
         {
@@ -91,12 +91,6 @@ private:
         }
         rowcount_t totalrows;
         return sorter->startMerge(totalrows);
-    }
-
-    IRowStream * doLightweightSelfJoin()
-    {
-        IRowStream *ret = LINK(inputStream);
-        return ret;
     }
 
 public:
@@ -174,8 +168,14 @@ public:
             CriticalBlock b(joinHelperCrit);
             joinhelper.setown(createSelfJoinHelper(*this, helper, this, hintparallelmatch, hintunsortedoutput));
         }
-        strm.setown(isLightweight? doLightweightSelfJoin() : (isLocal ? doLocalSelfJoin() : doGlobalSelfJoin()));
-        assertex(strm);
+        if (isLightweight)
+            strm.set(inputStream);
+        else
+        {
+            strm.setown(isLocal ? doLocalSelfJoin() : doGlobalSelfJoin());
+            assertex(strm);
+            // NB: PARENT::stop() will now have been called
+        }
 
         joinhelper->init(strm, NULL, ::queryRowAllocator(queryInput(0)), ::queryRowAllocator(queryInput(0)), ::queryRowMetaData(queryInput(0)));
     }
@@ -188,21 +188,25 @@ public:
     }
     virtual void stop() override
     {
-        if (!isLocal)
+        if (hasStarted())
         {
-            barrier->wait(false);
-            sorter->stopMerge();
-        }
-        {
-            CriticalBlock b(joinHelperCrit);
-            joinhelper.clear();
-        }
-        if (strm)
-        {
-            strm->stop();
+            if (!isLocal)
+            {
+                barrier->wait(false);
+                sorter->stopMerge();
+            }
+            {
+                CriticalBlock b(joinHelperCrit);
+                joinhelper.clear();
+            }
+            if (isLightweight)
+                PARENT::stop();
+            else if (strm) // if !isLightWeight, PARENT::stop() will have been called in start()
+                strm->stop();
             strm.clear();
         }
-        PARENT::stop();
+        else
+            PARENT::stop();
     }
     
     CATCH_NEXTROW()

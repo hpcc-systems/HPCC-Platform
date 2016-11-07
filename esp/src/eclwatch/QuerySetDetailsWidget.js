@@ -232,8 +232,8 @@ define([
                         tooltip += " " + newValue[i].Time;
                 }
                 this.graphsTab.set("tooltip", tooltip);
-            } else if (name === "ResourceURLCount" && newValue) {
-                this.widget._Resources.set("title", this.i18n.Resources + " (" + newValue + ")");
+            } else if (name === "ResourceURLCount" && newValue - 1) {
+                this.widget._Resources.set("title", this.i18n.Resources + " (" + (newValue - 1) + ")");
             } else if (name === "SuperFiles") {
                 if (lang.exists("SuperFile.length", newValue)) {
                     this.superFilesTab.set("title", this.i18n.SuperFiles + " (" + newValue.SuperFile.length + ")");

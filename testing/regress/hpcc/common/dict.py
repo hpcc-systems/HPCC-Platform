@@ -27,3 +27,9 @@ class _dict(object):
             return self.__d[attr]
         except KeyError:
             raise AttributeError
+
+    def set(self, attr,  val):
+        try:
+            self.__d[attr] = val
+        except KeyError:
+             raise AttributeError

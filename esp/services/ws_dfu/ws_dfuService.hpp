@@ -146,7 +146,6 @@ public:
 
 private:
     const char* getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix);
-    const char* getShortDescription(const char* description, StringBuffer& shortDesc);
     bool addDFUQueryFilter(DFUQResultField *filters, unsigned short &count, MemoryBuffer &buff, const char* value, DFUQResultField name);
     void appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, StringBuffer& filterBuf);
     void appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, const char *valueHigh, StringBuffer& filterBuf);

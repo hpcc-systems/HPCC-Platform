@@ -1258,7 +1258,7 @@ unsigned CWsWorkunitsEx::getGraphIdsByQueryId(const char *target, const char *qu
         IPropertyTree &graph = graphs->query();
         const char* graphId = graph.queryProp("@id");
         if (graphId && *graphId)
-            graphIds.append(graphId);
+            graphIds.appendUniq(graphId);
     }
     return graphIds.length();
 }

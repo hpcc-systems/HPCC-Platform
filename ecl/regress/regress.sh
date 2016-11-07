@@ -38,7 +38,7 @@ eclcc=
 diff=
 query=
 valgrind=
-np=`grep -c processor /proc/cpuinfo`
+np=`getconf _NPROCESSORS_ONLN`
 export ECLCC_ECLINCLUDE_PATH=
 
 ## Get cmd line options (overrite default args)

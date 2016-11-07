@@ -34,9 +34,9 @@ class CLoopSlaveActivityBase : public CSlaveActivity
 
 protected:
     bool global;
-    bool sentEndLooping;
+    bool sentEndLooping = true;
     unsigned maxIterations;
-    unsigned loopCounter;
+    unsigned loopCounter = 0;
     rtlRowBuilder extractBuilder;
     bool lastMaxEmpty;
     unsigned maxEmptyLoopIterations;
@@ -794,6 +794,14 @@ class CConditionalActivity : public CSlaveActivity
     IThorDataLink *selectedItdl = nullptr;
     IEngineRowStream *selectedInputStream = nullptr;
 
+    void stopUnselectedInputs()
+    {
+        ForEachItemIn(i, inputs)
+        {
+            if (i != branch)
+                stopInput(i);
+        }
+    }
 protected:
     unsigned branch = (unsigned)-1;
 
@@ -805,11 +813,7 @@ public:
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        ForEachItemIn(i, inputs)
-        {
-            if (i != branch)
-                stopInput(i);
-        }
+        stopUnselectedInputs();
         if (queryInput(branch))
         {
             startInput(branch);
@@ -821,7 +825,9 @@ public:
     }
     virtual void stop() override
     {
-        if ((branch>0) && queryInput(branch)) // branch 0 stopped by PARENT::stop
+        if (!hasStarted())
+            stopUnselectedInputs(); // i.e. all
+        else if ((branch>0) && queryInput(branch)) // branch 0 stopped by PARENT::stop
             stopInput(branch);
         selectedInputStream = NULL;
         abortSoon = true;
@@ -1341,7 +1347,7 @@ public:
         return inputs.ordinality();
     }
 
-    virtual IHThorInput * queryConcreteInput(unsigned idx) const
+    virtual IHThorInput * queryConcreteOutput(unsigned idx) const
     {
         if (inputs.isItem(idx))
             return &inputs.item(idx);

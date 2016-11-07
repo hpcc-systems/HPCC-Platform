@@ -38,7 +38,7 @@ public:
         else
             queryCodeContext()->getResultRaw(lenData, tempData, helper->queryName(), helper->querySequence(), helper->queryXmlTransformer(), helper->queryCsvTransformer());
         msg.clear();
-        msg.append(lenData, tempData);
+        msg.setBuffer(lenData, tempData, true);
         queryJobChannel().queryJobComm().reply(msg);
     }
 };

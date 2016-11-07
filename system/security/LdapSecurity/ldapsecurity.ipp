@@ -446,7 +446,7 @@ public:
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes);
     virtual int queryDefaultPermission(ISecUser& user);
     virtual bool clearPermissionsCache(ISecUser &user);
-    virtual bool authenticateUser(ISecUser & user, bool &superUser);
+    virtual bool authenticateUser(ISecUser & user, bool * superUser);
     virtual secManagerType querySecMgrType() { return SMT_LDAP; }
     inline virtual const char* querySecMgrTypeName() { return "LdapSecurity"; }
 };
