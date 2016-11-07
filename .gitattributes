@@ -1,4 +1,5 @@
 *               text=auto
+*.sh            eol=lf
 *.bat           eol=crlf
 *.jpg           -text
 *.gif           -text
