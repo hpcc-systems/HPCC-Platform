@@ -117,10 +117,10 @@ define([
             return children.length;
         }
         if (this._formattedRow[column.field] === undefined) {
-            this._formattedRow[column.field] = cell || "";
+            this._formattedRow[column.field] = cell === undefined ? "" : cell;
             ++internalRows;
         } else {
-            this._formattedRow[column.field] += LINE_SPLITTER + (cell || "");
+            this._formattedRow[column.field] += LINE_SPLITTER + (cell === undefined ? "" : cell);
             ++internalRows
         }
         if (!this._grid[rowIdx]) {
