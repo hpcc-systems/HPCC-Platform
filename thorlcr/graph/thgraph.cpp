@@ -1340,7 +1340,7 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
     {
         GraphPrintLog("Graph Done");
         StringBuffer memStr;
-        getSystemTraceInfo(memStr, PerfMonStandard | PerfMonExtended);
+        getSystemTraceInfo(memStr, ((PerfMonStandard & ~PerfMonUDP) | PerfMonExtended));
         GraphPrintLog("%s", memStr.str());
     }
     if (exception)
@@ -2678,7 +2678,7 @@ void CJobBase::startJob()
     if (pinterval)
     {
         perfmonhook.setown(createThorMemStatsPerfMonHook(*this, getOptInt(THOROPT_MAX_KERNLOG, 3)));
-        startPerformanceMonitor(pinterval,PerfMonStandard,perfmonhook);
+        startPerformanceMonitor(pinterval,(PerfMonStandard & ~PerfMonUDP), perfmonhook);
     }
     PrintMemoryStatusLog();
     logDiskSpace();
