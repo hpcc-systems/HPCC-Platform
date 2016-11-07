@@ -17,9 +17,10 @@
 
 ESPenum UserSortBy : string
 {
-    Name("Name"),
-    FullName("FullName"),
-    PasswordExpiration("PasswordExpiration"),
+    Name("username"),
+    FullName("fullname"),
+    PasswordExpiration("passwordexpiration"),
+    EmployeeID("employeeID"),
 };
 
 ESPenum GroupSortBy : string
