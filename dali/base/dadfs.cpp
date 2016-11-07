@@ -1043,8 +1043,8 @@ public:
     /* createNew always creates an unnamed unattached distributed file
      * The caller must associated it with a name and credentials when it is attached (attach())
      */
-    IDistributedFile *createNew(IFileDescriptor * fdesc, bool includeports=false);
-    IDistributedFile *createExternal(IFileDescriptor *desc, const char *name, bool includeports=false);
+    IDistributedFile *createNew(IFileDescriptor * fdesc);
+    IDistributedFile *createExternal(IFileDescriptor *desc, const char *name);
     IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist,IDistributedFileTransaction *transaction=NULL);
     IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree, const char *optionalName=nullptr);
     void removeSuperFile(const char *_logicalname, bool delSubs, IUserDescriptor *user, IDistributedFileTransaction *transaction);
@@ -2678,6 +2678,7 @@ protected:
     Linked<IUserDescriptor> udesc;
     unsigned defaultTimeout;
     bool dirty;
+    bool external = false;
     Owned<IRemoteConnection> superOwnerLock;
 public:
 
@@ -3187,6 +3188,7 @@ public:
     virtual void enqueueReplicate()=0;
     virtual bool getAccessedTime(CDateTime &dt) = 0;                            // get date and time last accessed (returns false if not set)
     virtual void setAccessedTime(const CDateTime &dt) = 0;                      // set date and time last accessed
+    virtual bool isExternal() const { return external; }
 };
 
 class CDistributedFile: public CDistributedFileBase<IDistributedFile>
@@ -3432,7 +3434,7 @@ public:
         //shrinkFileTree(root); // enable when safe!
     }
 
-    CDistributedFile(CDistributedFileDirectory *_parent, IFileDescriptor *fdesc, IUserDescriptor *user, bool includeports)
+    CDistributedFile(CDistributedFileDirectory *_parent, IFileDescriptor *fdesc, IUserDescriptor *user, bool _external)
     {
 #ifdef EXTRA_LOGGING
         LOGFDESC("CDistributedFile.b fdesc",fdesc);
@@ -3447,6 +3449,7 @@ public:
         saveClusters();
         setParts(fdesc,true);
         udesc.set(user);
+        external = _external;
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.1",root);
 #endif
@@ -7423,7 +7426,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
             Owned<IFileDescriptor> fDesc = getExternalFileDescriptor(logicalname->get());
             if (!fDesc)
                 return NULL;
-            return queryDistributedFileDirectory().createExternal(fDesc, logicalname->get(), true);
+            return queryDistributedFileDirectory().createExternal(fDesc, logicalname->get());
         }
         if (logicalname->isForeign()) {
             IDistributedFile * ret = getFile(logicalname->get(),user,NULL);
@@ -7587,14 +7590,14 @@ bool CDistributedFileDirectory::existsPhysical(const char *_logicalname, IUserDe
     return file->existsPhysicalPartFiles(0);
 }
 
-IDistributedFile *CDistributedFileDirectory::createNew(IFileDescriptor *fdesc, bool includeports)
+IDistributedFile *CDistributedFileDirectory::createNew(IFileDescriptor *fdesc)
 {
-    return new CDistributedFile(this, fdesc, NULL, includeports);
+    return new CDistributedFile(this, fdesc, NULL, false);
 }
 
-IDistributedFile *CDistributedFileDirectory::createExternal(IFileDescriptor *fdesc, const char *name, bool includeports)
+IDistributedFile *CDistributedFileDirectory::createExternal(IFileDescriptor *fdesc, const char *name)
 {
-    CDistributedFile *dFile = new CDistributedFile(this, fdesc, NULL, includeports);
+    CDistributedFile *dFile = new CDistributedFile(this, fdesc, NULL, true);
     dFile->setLogicalName(name);
     return dFile;
 }
@@ -10579,7 +10582,7 @@ IDistributedFile *CDistributedFileDirectory::getFile(const char *lname,IUserDesc
     if (!fdesc)
         return NULL;
     fdesc->setTraceName(lname);
-    CDistributedFile *ret = new CDistributedFile(this, fdesc, user, true);
+    CDistributedFile *ret = new CDistributedFile(this, fdesc, user, false);
     ret->setLogicalName(lname);
     const char *date = tree->queryProp("@modified");
     if (ret) {

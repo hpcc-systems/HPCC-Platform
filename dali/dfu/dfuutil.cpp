@@ -1064,7 +1064,7 @@ public:
             // Logical file map
 
             Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(t, &queryNamedGroupStore(), 0);
-            file.setown(dfd.createNew(fdesc, true));
+            file.setown(dfd.createNew(fdesc));
         }
         else
             throw MakeStringException(-1, "Unrecognised file XML root tag detected: '%s'", nodeName);

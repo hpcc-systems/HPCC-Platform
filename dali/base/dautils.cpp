@@ -2983,7 +2983,7 @@ public:
             if (lfn.isExternal())
             {
                 Owned<IFileDescriptor> fDesc = createExternalFileDescriptor(lfn.get());
-                dfile.setown(queryDistributedFileDirectory().createExternal(fDesc, lfn.get(), true));
+                dfile.setown(queryDistributedFileDirectory().createExternal(fDesc, lfn.get()));
                 Owned<IFile> file = getPartFile(0,0);
                 if (file.get())
                     fileExists = file->exists();
