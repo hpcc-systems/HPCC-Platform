@@ -129,6 +129,9 @@ define([
                     if (lang.exists("UserInfoEditInputResponse.lastname", response)) {
                         context.updateInput("LastName", null, response.UserInfoEditInputResponse.lastname);
                     }
+                    if (lang.exists("UserInfoEditInputResponse.employeeID", response)) {
+                        context.updateInput("EmployeeID", null, response.UserInfoEditInputResponse.employeeID);
+                    }
                 });
             }
         },
