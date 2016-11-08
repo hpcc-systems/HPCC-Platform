@@ -1933,7 +1933,7 @@ public:
         CriticalBlock b(crit);
         return _remove(*lFile);
     }
-    virtual IDelayedFile *lookup(CActivityBase &activity, IPartDescriptor &partDesc, IExpander *expander)
+    virtual IDelayedFile *lookup(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, IExpander *expander)
     {
         StringBuffer filename;
         RemoteFilename rfn;
@@ -1943,7 +1943,7 @@ public:
         Linked<CLazyFileIO> file = files.find(filename.str());
         if (!file)
         {
-            Owned<IReplicatedFile> repFile = createEnsurePrimaryPartFile(activity, filename.str(), &partDesc);
+            Owned<IReplicatedFile> repFile = createEnsurePrimaryPartFile(activity, logicalFilename, &partDesc);
             bool compressed = partDesc.queryOwner().isCompressed();
             file.setown(new CLazyFileIO(*this, filename.str(), repFile.getClear(), compressed, expander));
         }
