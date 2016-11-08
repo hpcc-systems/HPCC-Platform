@@ -1444,3 +1444,23 @@ IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errN
     return new CError(category,severity,errNo,msg,filename,lineno,column,pos);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+//Generic handler to log SIGPIPE error. LDAP generates this signal on stale connections
+#ifndef _WIN32
+void logSigPipe(int sig)
+{
+    WARNLOG("Broken Pipe Signal %d - remote side closed the socket", sig);
+}
+
+int jlib_decl handleSigPipe()
+{
+    struct sigaction act;
+    sigset_t blockset;
+    sigemptyset(&blockset);
+    act.sa_mask = blockset;
+    act.sa_handler = logSigPipe;
+    act.sa_flags = 0;
+    return sigaction(SIGPIPE, &act, NULL);//0 on success, -1 on failure. Check errno on failure
+}
+#endif
