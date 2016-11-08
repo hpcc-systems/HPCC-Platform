@@ -158,6 +158,7 @@ define({root:
     DownloadToCSV: "Download to CSV",
     DropZone: "Drop Zone",
     Duration: "Duration",
+    DynamicNoServicesFound: "No services found",
     EBCDIC: "EBCDIC",
     ECL: "ECL",
     ECLWorkunit: "ECL Workunit",
