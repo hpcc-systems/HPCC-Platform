@@ -1448,7 +1448,7 @@ IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errN
 
 //Generic handler to log SIGPIPE error. LDAP generates this signal on stale connections
 #ifndef _WIN32
-void logSigPipe(int sig)
+static void logSigPipe(int sig)
 {
     WARNLOG("Broken Pipe Signal %d - remote side closed the socket", sig);
 }
