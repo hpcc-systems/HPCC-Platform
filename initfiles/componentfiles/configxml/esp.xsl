@@ -511,11 +511,13 @@
                   </xsl:if>              
                </xsl:if>
 
-               <CustomBindingParameters>
-                  <xsl:for-each select="$envBindNode/CustomBindingParameter">
-                     <xsl:copy-of select="."/>
-                  </xsl:for-each>
-               </CustomBindingParameters>
+	       <xsl:if test="$envBindNode/CustomBindingParameter">
+                 <CustomBindingParameters>
+                    <xsl:for-each select="$envBindNode/CustomBindingParameter">
+                       <xsl:copy-of select="."/>
+                    </xsl:for-each>
+                 </CustomBindingParameters>
+	       </xsl:if>
 
                <!-- if the generated EspBinding/Authenticate is missing @workunitsBasedn then add it there -->
                <xsl:variable name="defaultWorkunitsBasedn">
