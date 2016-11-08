@@ -34,20 +34,10 @@ class JlibSemTest : public CppUnit::TestFixture
 {
 public:
     CPPUNIT_TEST_SUITE(JlibSemTest);
-        CPPUNIT_TEST(testSetup);
         CPPUNIT_TEST(testSimple);
-        CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
-
-    void testSetup()
-    {
-    }
-
-    void testCleanup()
-    {
-    }
 
     void testTimedAvailable(Semaphore & sem)
     {
@@ -57,12 +47,15 @@ protected:
         //Shouldn't cause a reschedule, definitely shouldn't wait for 100s
         ASSERT(taken < 5);
     }
+
     void testTimedElapsed(Semaphore & sem, unsigned time)
     {
         unsigned now = msTick();
         sem.wait(time);
         unsigned taken = msTick() - now;
-        ASSERT(taken >= time && taken < 2*time);
+        VStringBuffer errMsg("values: time: %u, taken: %u", time, taken);
+        CPPUNIT_ASSERT_MESSAGE(errMsg.str(), taken >= time && taken < 2*time);
+        PROGLOG("%s", errMsg.str());
     }
 
     void testSimple()
@@ -84,6 +77,62 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibSemTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibSemTest, "JlibSemTest" );
+
+
+class JlibSemTestStress : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JlibSemTestStress);
+        CPPUNIT_TEST(testSimple);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+
+    void testTimedElapsed(Semaphore & sem, unsigned time, unsigned loopCount)
+    {
+        unsigned __int64 sumTaken = 0;
+        unsigned maxTaken = 0;
+        unsigned timeLimit = 2 * time;
+        unsigned numberOfOut = 0;
+        bool isSignaled = false;
+
+        PROGLOG("Start loop");
+        for (int i = 0 ; i <= loopCount; i++)
+        {
+            unsigned now = msTick();
+            if (sem.wait(time))
+            {
+                isSignaled = true;
+                break;
+            }
+            unsigned taken = msTick() - now;
+            sumTaken += taken;
+            maxTaken = (taken > maxTaken ? taken : maxTaken);
+            numberOfOut += (taken > timeLimit ? 1 : 0);
+        }
+
+        VStringBuffer errMsg("values: time: %d, loop: %d, sum taken: %llu, average taken: %llu, max taken: %d, out of limit: %d times, signaled: %s",
+                                time, loopCount, sumTaken, sumTaken/loopCount, maxTaken, numberOfOut, (isSignaled ? "yes" : "no"));
+        CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0 == numberOfOut && !isSignaled );
+        PROGLOG("%s", errMsg.str());
+    }
+
+    void testSimple()
+    {
+        //Very basic semaphore stress tests.
+        Semaphore sem;
+        sem.signal();
+        if (!sem.wait(1000))
+        {
+            VStringBuffer errMsg("Semaphore stalled (%s:%s)", __FILE__, __LINE__);
+            CPPUNIT_FAIL(errMsg.str());
+        }
+        testTimedElapsed(sem, 5, 1000);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibSemTestStress );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibSemTestStress, "JlibSemTestStress" );
 
 /* =========================================================== */
 
