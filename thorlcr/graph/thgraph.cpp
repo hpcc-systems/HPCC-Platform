@@ -2674,12 +2674,8 @@ void CJobBase::startJob()
 {
     LOG(MCdebugProgress, thorJob, "New Graph started : %s", graphName.get());
     ClearTempDirs();
-    unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
-    if (pinterval)
-    {
-        perfmonhook.setown(createThorMemStatsPerfMonHook(*this, getOptInt(THOROPT_MAX_KERNLOG, 3)));
-        startPerformanceMonitor(pinterval,PerfMonStandard,perfmonhook);
-    }
+    perfmonhook.setown(createThorMemStatsPerfMonHook(*this, getOptInt(THOROPT_MAX_KERNLOG, 3)));
+    setPerformanceMonitorHook(perfmonhook);
     PrintMemoryStatusLog();
     logDiskSpace();
     unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", DEFAULT_KEYNODECACHEMB * queryJobChannels());
@@ -2699,7 +2695,7 @@ void CJobBase::startJob()
 
 void CJobBase::endJob()
 {
-    stopPerformanceMonitor();
+    setPerformanceMonitorHook(nullptr);
     LOG(MCdebugProgress, thorJob, "Job ended : %s", graphName.get());
     clearKeyStoreCache(true);
     PrintMemoryStatusLog();
