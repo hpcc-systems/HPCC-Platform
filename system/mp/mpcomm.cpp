@@ -509,7 +509,7 @@ public:
     bool nextChannel(CMPChannel *&c);
     void addConnectionMonitor(IConnectionMonitor *monitor);
     void removeConnectionMonitor(IConnectionMonitor *monitor);
-    void notifyClosed(SocketEndpoint &ep);
+    void notifyClosed(SocketEndpoint &ep, bool trace);
     StringBuffer &getReceiveQueueDetails(StringBuffer &buf) 
     {
         return receiveq.getReceiveQueueDetails(buf);
@@ -1078,7 +1078,7 @@ public:
         }
         catch (IException *e) {
             FLLOG(MCoperatorWarning, unknownJob, e,"MP writepacket");
-            closeSocket();
+            closeSocket(false, true);
             throw;
         }
         return true;
@@ -1136,7 +1136,7 @@ public:
     bool send(MemoryBuffer &mb, mptag_t tag, mptag_t replytag, CTimeMon &tm, bool reply);
 
 
-    void closeSocket(bool keepsocket=false)
+    void closeSocket(bool keepsocket=false, bool trace=false)
     {
         ISocket *s;
         bool socketfailed = false;
@@ -1168,7 +1168,7 @@ public:
             }
             parent->querySelectHandler().remove(s);
         }
-        parent->notifyClosed(remoteep);
+        parent->notifyClosed(remoteep, trace);
         if (socketfailed) {
             try {
                 s->Release();
@@ -1478,7 +1478,7 @@ public:
                     }
                 }
                 if (pc) 
-                    pc->closeSocket();
+                    pc->closeSocket(false, true);
                 return false;
             }
             do {
@@ -1578,7 +1578,7 @@ public:
         // error here, so close socket (ignore error as may be closed already)
         try {
             if(parent)
-                parent->closeSocket();
+                parent->closeSocket(false, true);
         }
         catch (IException *e) {
             e->Release();
@@ -1608,7 +1608,7 @@ CMPChannel::CMPChannel(CMPServer *_parent,SocketEndpoint &_remoteep)
 void CMPChannel::reset()
 {
     reader->shutdown(); // clear as early as possible
-    closeSocket();
+    closeSocket(false, true);
     reader->Release();
     channelsock = NULL;
     multitag = TAG_NULL;
@@ -1691,7 +1691,7 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
         try {
             LOG(MCdebugInfo(100), unknownJob, "Message Passing - removing stale socket to %s",ep2.str());
             CriticalUnblock unblock(connectsect);
-            closeSocket(true);
+            closeSocket(true, true);
 #ifdef REFUSE_STALE_CONNECTION
             if (!ismaster)
                 return false;
@@ -2440,12 +2440,15 @@ bool CMPServer::nextChannel(CMPChannel *&cur)
     return cur!=NULL;
 }
 
-void CMPServer::notifyClosed(SocketEndpoint &ep)
+void CMPServer::notifyClosed(SocketEndpoint &ep, bool trace)
 {
 #ifdef _TRACEMPSERVERNOTIFYCLOSED
-    StringBuffer url;
-    LOG(MCdebugInfo(100), unknownJob, "MP: CMPServer::notifyClosed %s",ep.getUrlStr(url).str());
-    PrintStackReport();
+    if (trace)
+    {
+        StringBuffer url;
+        LOG(MCdebugInfo(100), unknownJob, "MP: CMPServer::notifyClosed %s",ep.getUrlStr(url).str());
+        PrintStackReport();
+    }
 #endif
     notifyclosedthread->notify(ep);
 }
