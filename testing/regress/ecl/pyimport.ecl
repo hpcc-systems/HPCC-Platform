@@ -20,3 +20,8 @@
 import python;
 string pcat(string a, string b) := IMPORT(Python, '/opt/HPCCSystems/examples/embed/python_cat.cat':time);
 pcat('Hello ', 'world!');
+
+integer padd(integer a, integer b) := EMBED(Python :time)
+   return a + b
+ENDEMBED;
+padd(1, 2)*5;
