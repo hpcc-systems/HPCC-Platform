@@ -23,6 +23,9 @@
 
 #include "jstatcodes.h"
 
+const unsigned __int64 MaxStatisticValue = (unsigned __int64)-1;
+const unsigned __int64 AnyStatisticValue = MaxStatisticValue; // Use the maximum value to also represent unknown, since it is unlikely to ever occur.
+
 inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKind)(kind & ~StKindMask); }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -116,7 +119,7 @@ public:
 interface IStatisticsFilter : public IInterface
 {
 public:
-    virtual bool matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind) const = 0;
+    virtual bool matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind, unsigned __int64 value) const = 0;
     virtual bool recurseChildScopes(StatisticScopeType curScopeType, const char * curScope) const = 0;
     virtual const char * queryScope() const = 0;
 
@@ -190,7 +193,7 @@ public:
     const char * queryValue() const { return value ? value.get() : "*"; }
 
     void set(const char * value);
-    void setDepth(unsigned _minDepth);
+    void setDepth(unsigned _depth);
     void setDepth(unsigned _minDepth, unsigned _maxDepth);
 
 protected:
@@ -210,7 +213,7 @@ public:
     StatisticsFilter(const char * _creatorTypeText, const char * _creator, const char * _scopeTypeText, const char * _scope, const char * _measureText, const char * _kindText);
     StatisticsFilter(StatisticCreatorType _creatorType, const char * _creator, StatisticScopeType _scopeType, const char * _scope, StatisticMeasure _measure, StatisticKind _kind);
 
-    virtual bool matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind) const;
+    virtual bool matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind, unsigned __int64 value) const override;
     virtual bool recurseChildScopes(StatisticScopeType curScopeType, const char * curScope) const;
     virtual const char * queryScope() const { return scopeFilter.queryValue(); }
 
@@ -225,6 +228,7 @@ public:
     void setScopeDepth(unsigned _minScopeDepth, unsigned _maxScopeDepth);
     void setScope(const char * _scope);
     void setScopeType(StatisticScopeType _scopeType);
+    void setValueRange(unsigned __int64 minValue, unsigned __int64 _maxValue);
     void setKind(StatisticKind _kind);
     void setKind(const char * _kind);
     void setMeasure(StatisticMeasure _measure);
@@ -240,6 +244,8 @@ protected:
     StatisticKind kind;
     ScopedItemFilter creatorFilter;
     ScopedItemFilter scopeFilter;
+    unsigned __int64 minValue = 0;
+    unsigned __int64 maxValue = (unsigned __int64)(-1);
 };
 
 //---------------------------------------------------------------------------------------------------------------------

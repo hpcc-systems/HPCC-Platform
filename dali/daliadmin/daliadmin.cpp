@@ -2530,12 +2530,8 @@ static const char * checkDash(const char * s)
     return s;
 }
 
-static void dumpStats(IConstWorkUnit * workunit, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText, const char * userFilter, bool csv)
+static void dumpStats(IConstWorkUnit * workunit, const StatisticsFilter & filter, bool csv)
 {
-    StatisticsFilter filter(checkDash(creatorTypeText), checkDash(creator), checkDash(scopeTypeText), checkDash(scope), NULL, checkDash(kindText));
-    if (userFilter)
-        filter.setFilter(userFilter);
-
     Owned<IConstWUStatisticIterator> stats = &workunit->getStatistics(&filter);
     if (!csv)
         printf("<Statistics wuid=\"%s\">\n", workunit->queryWuid());
@@ -2591,7 +2587,7 @@ static void dumpStats(IConstWorkUnit * workunit, const char * creatorTypeText, c
                 xml.append(count);
             xml.append(",");
             if (max)
-                xml.append(value);
+                xml.append(max);
             xml.append(",");
             if (ts)
                 formatStatistic(xml, ts, SMeasureTimestampUs);
@@ -2637,6 +2633,10 @@ static void dumpStats(IConstWorkUnit * workunit, const char * creatorTypeText, c
 
 static void dumpStats(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText, const char * userFilter, bool csv)
 {
+    StatisticsFilter filter(checkDash(creatorTypeText), checkDash(creator), checkDash(scopeTypeText), checkDash(scope), NULL, checkDash(kindText));
+    if (userFilter)
+        filter.setFilter(userFilter);
+
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     const char * star = strchr(wuid, '*');
     if (star)
@@ -2652,7 +2652,7 @@ static void dumpStats(const char *wuid, const char * creatorTypeText, const char
         {
             Owned<IConstWorkUnit> workunit = factory->openWorkUnit(iter->query().queryWuid());
             if (workunit)
-                dumpStats(workunit, creatorTypeText, creator, scopeTypeText, scope, kindText, userFilter, csv);
+                dumpStats(workunit, filter, csv);
         }
     }
     else
@@ -2660,7 +2660,7 @@ static void dumpStats(const char *wuid, const char * creatorTypeText, const char
         Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
         if (!workunit)
             return;
-        dumpStats(workunit, creatorTypeText, creator, scopeTypeText, scope, kindText, userFilter, csv);
+        dumpStats(workunit, filter, csv);
     }
 }
 

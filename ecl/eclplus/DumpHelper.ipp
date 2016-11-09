@@ -48,4 +48,17 @@ private:
     Owned<IFormatType> format;
     Owned<IClientWsWorkunits> wuclient;
 };
+
+class StatsHelper : implements IEclPlusHelper
+{
+public:
+    StatsHelper(IProperties * globals, IFormatType * format);
+
+    virtual bool doit(FILE * fp);
+
+private:
+    Owned<IProperties> globals;
+    Owned<IFormatType> format;
+    Owned<IClientWsWorkunits> wuclient;
+};
 #endif // DUMPHELPER_HPP
