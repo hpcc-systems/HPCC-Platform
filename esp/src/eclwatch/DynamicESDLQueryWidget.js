@@ -93,11 +93,13 @@ define([
 
             retVal.on("dgrid-select", function (event) {
                 var selection = context.grid.getSelected();
-                if (selection.length) {
+                if (selection[0].__hpcc_parentName) {
                     lang.mixin(selection[0],{
                         Owner: context
                     });
                     context.detailsWidget.init(selection[0]);
+                } else {
+                    context.detailsWidget.init({0: context.i18n.PleaseSelectADynamicESDLService});
                 }
             });
             return retVal;
