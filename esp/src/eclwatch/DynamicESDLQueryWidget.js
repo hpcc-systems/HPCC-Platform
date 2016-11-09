@@ -21,6 +21,7 @@ define([
     "dojo/_base/array",
     "dojo/on",
     "dojo/dom-class",
+    "dojo/dom-construct",
 
     "dijit/registry",
 
@@ -35,7 +36,7 @@ define([
     "hpcc/DynamicESDLDetailsWidget",
     "hpcc/TargetSelectWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domClass,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domClass, domConstruct,
                 registry,
                 tree, ColumnHider,
                 GridDetailsWidget, WsTopology, WsESDLConfig, DelayLoadWidget, ESPUtil, DynamicESDLDetailsWidget, TargetSelectWidget) {
@@ -108,7 +109,6 @@ define([
 
         refreshGrid: function () {
             var context = this;
-
             WsESDLConfig.ListDESDLEspBindings({
                 request: {
                     IncludeESDLBindingInfo: true
@@ -116,9 +116,16 @@ define([
             }).then(function (response) {
                 var results = [];
                 var newRows = [];
+                var serviceInformation;
                 if (lang.exists("ListDESDLEspBindingsResp.ESPServers.ESPServer", response)) {
                     results = response.ListDESDLEspBindingsResp.ESPServers.ESPServer;
+                    serviceInformation = domConstruct.create("p", {innerHTML: context.i18n.PleaseSelectADynamicESDLService});
+                } else {
+                    serviceInformation = domConstruct.create("p", {innerHTML: context.i18n.DynamicNoServicesFound});
                 }
+
+                context.detailsWidget.widget._Details.setContent(serviceInformation);
+                
                 arrayUtil.forEach(results, function (row, idx) {
                     lang.mixin(row, {
                         __hpcc_parentName: null,

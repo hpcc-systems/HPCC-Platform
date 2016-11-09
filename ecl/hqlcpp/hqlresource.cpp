@@ -1873,7 +1873,7 @@ bool CResources::addExceeds(const CResources & other, const CResources & limit) 
     {
         if (resource[i] + other.resource[i] > limit.resource[i])
         {
-            //DBGLOG("Cannot merge because limit for %s exceeded (%d cf %d)", queryResourceName((ResourceType)i), resource[i] + other.resource[i], limit.resource[i]);
+            //DBGLOG("Cannot merge because limit for %s exceeded (%u cf %u)", queryResourceName((ResourceType)i), resource[i] + other.resource[i], limit.resource[i]);
             return true;
         }
     }
@@ -1889,7 +1889,7 @@ StringBuffer & CResources::getExceedsReason(StringBuffer & reasonText, const CRe
         {
             if (!first) reasonText.append(", ");
             first = false;
-            reasonText.appendf("%s (%d>%d)", queryResourceName((ResourceType)i), resource[i] + other.resource[i], limit.resource[i]);
+            reasonText.appendf("%s (%u>%u)", queryResourceName((ResourceType)i), resource[i] + other.resource[i], limit.resource[i]);
         }
     }
     return reasonText;

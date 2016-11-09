@@ -326,8 +326,6 @@
           <para>The <emphasis role="bold">Editor tab</emphasis> allows you to
           configure the editor to your preference.</para>
 
-          <para></para>
-
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
@@ -341,6 +339,12 @@
 
                   <entry>Specify the number of character spaces to use for a
                   tab. The default is 2.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Use Spaces</emphasis></entry>
+
+                  <entry>Specify to use spaces for a tab. </entry>
                 </row>
 
                 <row>
@@ -384,26 +388,13 @@
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold"><emphasis
-                  role="bold">Tooltips</emphasis></emphasis></entry>
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+                  role="bold">Target Background
+                  Colors</emphasis></emphasis></emphasis></entry>
 
-                  <entry>Check this box to enable tooltip display.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold"><emphasis role="bold">Font
-                  </emphasis></emphasis></entry>
-
-                  <entry>Specify the font to use in the editor. The default is
-                  Courier New.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold"><emphasis
-                  role="bold">Size</emphasis></emphasis></entry>
-
-                  <entry>Specify the font size to use in the editor. The
-                  default is 10.</entry>
+                  <entry>Check this box to change the editor background color
+                  depending on the selected Target. The colors are defined in
+                  the <emphasis role="bold">Colors</emphasis> tab.</entry>
                 </row>
 
                 <row>
@@ -433,14 +424,6 @@
                   <entry>Check this box to ensure that on a double click, the
                   entire folder and ECL file name is selected. When unchecked,
                   only the folder name is selected on a double click.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
-                  role="bold">Tip:</emphasis> </emphasis></emphasis></entry>
-
-                  <entry>You should use a fixed-width font to maintain
-                  alignment in ECL source code.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2738,7 +2721,7 @@ ENDMACRO;
                 </row>
 
                 <row>
-                  <entry>Shift+F3 </entry>
+                  <entry>Shift+F3</entry>
 
                   <entry>Find Previous</entry>
                 </row>
@@ -2888,7 +2871,7 @@ ENDMACRO;
                 </row>
 
                 <row>
-                  <entry>Ctrl+N </entry>
+                  <entry>Ctrl+N</entry>
 
                   <entry>New Builder Window</entry>
                 </row>
@@ -2906,7 +2889,7 @@ ENDMACRO;
                 </row>
 
                 <row>
-                  <entry>Ctrl+D </entry>
+                  <entry>Ctrl+D</entry>
 
                   <entry>Duplicate Line</entry>
                 </row>

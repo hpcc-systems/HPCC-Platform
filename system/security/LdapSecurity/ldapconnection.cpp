@@ -60,7 +60,7 @@
 
 #define UNK_PERM_VALUE (SecAccessFlags)-2	//used to initialize "default" permission, which we later try to deduce
 
-const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration" };
+const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration", "@employeeid" };
 
 const char* getUserFieldNames(UserField field)
 {
@@ -668,6 +668,7 @@ private:
 
     time_t               m_lastaccesstime;
     bool                 m_connected;
+    bool                 m_useSSL;
 
 public:
     IMPLEMENT_IINTERFACE
@@ -678,6 +679,7 @@ public:
         m_ld = NULL;
         m_connected = false;
         m_lastaccesstime = 0;
+        m_useSSL = false;
     }
 
     ~CLdapConnection()
@@ -688,6 +690,7 @@ public:
         }
     }
 
+private:
     virtual int connect(const char* ldapserver, const char* protocol)
     {
         if(!ldapserver || *ldapserver == '\0')
@@ -732,17 +735,25 @@ public:
         return rc;
     }
 
+public:
     virtual bool connect(bool force_ssl = false)
     {
         StringBuffer hostbuf;
         m_ldapconfig->getLdapHost(hostbuf);
         int rc = LDAP_SERVER_DOWN;
+
         const char* proto;
         if(force_ssl)
+        {
             proto = "ldaps";
+            m_useSSL = true;
+        }
         else
-            proto = m_ldapconfig->getProtocol();
-        
+        {
+            proto = m_ldapconfig->getProtocol();//get configured protocol, LDAP or LDAPS
+            m_useSSL = (0 == stricmp(proto, "ldaps") ? true : false);
+        }
+
         for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
         {
             rc = connect(hostbuf.str(), proto);
@@ -788,21 +799,15 @@ public:
             return true;
         else
         {
-            bool ok = false;
             LDAPMessage* msg = NULL;
             
             TIMEVAL timeOut = {LDAPTIMEOUT,0};
             int err = ldap_search_ext_s(m_ld, NULL, LDAP_SCOPE_BASE, "objectClass=*", NULL, 0, NULL, NULL, &timeOut, 1, &msg);
 
-            if(err == LDAP_SUCCESS)
-            {
-                ok = true;
-            }
-
             if(msg != NULL)
                 ldap_msgfree(msg);
             
-            if(!ok)
+            if(err != LDAP_SUCCESS)
             {
                 if(m_ld != NULL)
                 {
@@ -811,7 +816,7 @@ public:
                     m_connected = false;
                 }
                 DBGLOG("cached connection invalid, creating a new connection");
-                return connect();
+                return connect(m_useSSL);//reconnect stale connection, using original protocol
             }
             else
             {
@@ -2533,6 +2538,7 @@ public:
             userTree->addProp(getUserFieldNames(UFFullName), fullName);
         userTree->addPropInt(getUserFieldNames(UFUserID), usr.getUserID());
         userTree->addProp(getUserFieldNames(UFPasswordExpiration), sb.str());
+        userTree->addProp(getUserFieldNames(UFEmployeeID), usr.getEmployeeID());
         users->addPropTree("User", userTree.getClear());
     }
 

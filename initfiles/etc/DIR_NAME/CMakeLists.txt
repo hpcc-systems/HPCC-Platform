@@ -27,7 +27,6 @@ ENDFOREACH ( iFILES)
 Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.xml DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime )
 Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.conf DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime )
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime )
-Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.xml DESTINATION ${CONFIG_PREFIX}/${DIR_NAME}/${CONFIG_SOURCE_DIR} )
 
 ADD_SUBDIRECTORY(configmgr)
 

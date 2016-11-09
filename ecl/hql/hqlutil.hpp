@@ -209,6 +209,7 @@ extern HQL_API bool splitResultValue(SharedHqlExpr & dataset, SharedHqlExpr & at
 
 //Is 'expr' really dependent on a parameter - expr->isFullyBound() can give false negatives.
 extern HQL_API bool isDependentOnParameter(IHqlExpression * expr);
+extern HQL_API bool isTimed(IHqlExpression * expr);
 
 inline bool isInternalEmbedAttr(IAtom *name)
 {

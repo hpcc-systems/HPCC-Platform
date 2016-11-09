@@ -2284,7 +2284,7 @@ void StatisticsFilter::init()
     kind = StKindAll;
 }
 
-bool StatisticsFilter::matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind) const
+bool StatisticsFilter::matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind, unsigned __int64 value) const
 {
     if ((curCreatorType != SCTall) && (creatorType != SCTall) && (creatorType != curCreatorType))
         return false;
@@ -2298,11 +2298,31 @@ bool StatisticsFilter::matches(StatisticCreatorType curCreatorType, const char *
         return false;
     if (!scopeFilter.match(curScope))
         return false;
+    if (value != MaxStatisticValue)
+    {
+        if ((value < minValue) || (value > maxValue))
+            return false;
+    }
     return true;
 }
 
 bool StatisticsFilter::recurseChildScopes(StatisticScopeType curScopeType, const char * curScope) const
 {
+    switch (curScopeType)
+    {
+    case SSTgraph:
+        // A child of a graph will have depth 2 or more
+        if (!scopeFilter.matchDepth(2, (unsigned)-1))
+            return false;
+        break;
+    case SSTsubgraph:
+        // A child of a subgraph will have depth 3 or more
+        if (!scopeFilter.matchDepth(3, (unsigned)-1))
+            return false;
+        break;
+    }
+    if (!curScope)
+        return true;
     return scopeFilter.recurseChildScopes(curScope);
 }
 
@@ -2376,6 +2396,24 @@ void StatisticsFilter::addFilter(const char * filter)
         setScope(value);
     else if (hasPrefix(filter, "scopetype[", false))
         setScopeType(queryScopeType(value));
+    else if (hasPrefix(filter, "value[", false))
+    {
+        //value[exact|low..high] where low and high are optional
+        unsigned __int64 lowValue = 0;
+        unsigned __int64 highValue = MaxStatisticValue;
+        if (isdigit(*value))
+            lowValue = (unsigned __int64)atoi64(value);
+        const char * dotdot = strstr(value, "..");
+        if (dotdot)
+        {
+            unsigned __int64 maxValue = (unsigned __int64)atoi64(dotdot + 2);
+            if (maxValue != 0)
+                highValue = maxValue;
+        }
+        else
+            highValue = lowValue;
+        setValueRange(lowValue, highValue);
+    }
     else
         throw MakeStringException(1, "Unknown stats filter '%s' - expected creator,creatortype,depth,kind,measure,scope,scopetype", filter);
 }
@@ -2426,11 +2464,30 @@ void StatisticsFilter::setScope(const char * _scope)
 void StatisticsFilter::setScopeType(StatisticScopeType _scopeType)
 {
     scopeType = _scopeType;
+    switch (scopeType)
+    {
+    case SSTglobal:
+    case SSTgraph:
+        scopeFilter.setDepth(1);
+        break;
+    case SSTsubgraph:
+        scopeFilter.setDepth(2);
+        break;
+    case SSTactivity:
+        scopeFilter.setDepth(3);
+        break;
+    }
 }
 
 void StatisticsFilter::setMeasure(StatisticMeasure _measure)
 {
     measure = _measure;
+}
+
+void StatisticsFilter::setValueRange(unsigned __int64 _minValue, unsigned __int64 _maxValue)
+{
+    minValue = _minValue;
+    maxValue = _maxValue;
 }
 
 void StatisticsFilter::setKind(StatisticKind _kind)

@@ -93,7 +93,7 @@ extern "C" {
                         size32_t lenA, const void * a, bool isAllB, size32_t lenB,
                         const void * b);
   ECLBLAS_CALL void Extract_Tri(bool & __isAllResult, size32_t & __lenResult,
-                                void * & __result, uint32_t m, uint32_t n,
+                                void * & __result, uint32_t m, uint32_t n, uint8_t tri,
                                 uint8_t dt, bool isAllA, size32_t lenA,
                                 const void * a);
   ECLBLAS_CALL void make_diag(bool & __isAllResult, size32_t & __lenResult,

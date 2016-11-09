@@ -17,6 +17,23 @@
 #include "jlib.hpp"
 #include "DumpHelper.ipp"
 
+static bool processExceptions(const IMultiException* excep)
+{
+    if (excep && excep->ordinality())
+    {
+        unsigned i = 0;
+        while (i < excep->ordinality())
+        {
+            StringBuffer msg;
+            excep->item(i).errorMessage(msg);
+            unsigned code = excep->item(i).errorCode();
+            printf("<Error><code>%d</code><message>%s</message></Error>\n", code, msg.str());
+        }
+        return true;
+    }
+    return false;
+}
+
 DumpHelper::DumpHelper(IProperties * _globals, IFormatType * _format) : globals(_globals), format(_format), wuclient(createWorkunitsClient(_globals))
 {
 }
@@ -70,18 +87,8 @@ bool DumpHelper::doit(FILE * fp)
                 return false;
             }
             const IMultiException* excep = &resp->getExceptions();
-            if(excep != NULL && excep->ordinality())
-            {
-                unsigned i = 0;
-                while (i < excep->ordinality())
-                {
-                    StringBuffer msg;
-                    excep->item(i).errorMessage(msg);
-                    unsigned code = excep->item(i).errorCode();
-                    printf("<Error><code>%d</code><message>%s</message></Error>\n", code, msg.str());
-                }
+            if(processExceptions(excep))
                 return false;
-            }
 
             const MemoryBuffer & xmlmem = resp->getThefile();
             StringBuffer xmlbuf;
@@ -124,26 +131,84 @@ bool GraphHelper::doit(FILE * fp)
         req->setName(graph.str());
         Owned<IClientWUProcessGraphResponse> resp = wuclient->WUProcessGraph(req);
         const IMultiException* excep = &resp->getExceptions();
-        if(excep != NULL && excep->ordinality() > 0)
-        {
-            StringBuffer msg;
-            excep->errorMessage(msg);
-            printf("%s\n", msg.str());
+        if(processExceptions(excep))
             return false;
-        }
 
-            StringBuffer graphbuf;
-            graphbuf.append(resp->getTheGraph());
-            fprintf(fp, "%s", graphbuf.str());
-            return true;
-        
-        return false;
+        StringBuffer graphbuf;
+        graphbuf.append(resp->getTheGraph());
+        fprintf(fp, "%s", graphbuf.str());
+        return true;
     }
     else 
     {
         printf("Please specify the WUID\n");
         return false;
     }
+}
+
+
+
+
+StatsHelper::StatsHelper(IProperties * _globals, IFormatType * _format) : globals(_globals), format(_format), wuclient(createWorkunitsClient(_globals))
+{
+}
+
+bool StatsHelper::doit(FILE * fp)
+{
+    Owned<IClientWUGetStatsRequest> req = wuclient->createWUGetStatsRequest();
+    const char* wuid = globals->queryProp("WUID");
+    const char* filter = globals->queryProp("FILTER");
+    if (wuid)
+        req->setWUID(wuid);
+    else
+        req->setWUID("*");
+
+    if (filter)
+        req->setFilter(filter);
+
+    Owned<IClientWUGetStatsResponse> resp = wuclient->WUGetStats(req);
+    const IMultiException* excep = &resp->getExceptions();
+    if(processExceptions(excep))
+        return false;
+
+    IArrayOf<IConstWUStatisticItem> & stats = resp->getStatistics();
+    ForEachItemIn(i, stats)
+    {
+        IConstWUStatisticItem & cur = stats.item(i);
+
+        StringBuffer line;
+        line.append(cur.getWuid());
+        line.append(",");
+        line.append(cur.getCreatorType());
+        line.append(",");
+        line.append(cur.getCreator());
+        line.append(",");
+        line.append(cur.getScopeType());
+        line.append(",");
+        line.append(cur.getScope());
+        line.append(",");
+        line.append(cur.getMeasure());
+        line.append(",");
+        line.append(cur.getKind());
+        line.append(",");
+        line.append(cur.getRawValue());
+        line.append(",");
+        line.append(cur.getValue());
+        line.append(",");
+        if (!cur.getCount_isNull())
+            line.append(cur.getCount());
+        line.append(",");
+        if (!cur.getMax_isNull())
+            line.append(cur.getMax());
+        line.append(",");
+        line.append(cur.getTimeStamp());
+        line.append(",");
+        if (cur.getDescription())
+            line.append('"').append(cur.getDescription()).append('"');
+        printf("%s\n", line.str());
+    }
+
+    return true;
 }
 
 

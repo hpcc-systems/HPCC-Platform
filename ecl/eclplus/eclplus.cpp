@@ -137,10 +137,14 @@ IEclPlusHelper * createEclPlusHelper(IProperties * globals)
         {
             helper = new RerunHelper(LINK(globals), format);
         }
+        else if(!stricmp(action, "stats"))
+        {
+            helper = new StatsHelper(LINK(globals), format);
+        }
         else
         {
             ::Release(format);
-            throw MakeStringException(-1, "unknown action");
+            throw MakeStringException(-1, "unknown action '%s'", action);
         }
     }
     else

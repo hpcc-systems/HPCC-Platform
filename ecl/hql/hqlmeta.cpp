@@ -3503,6 +3503,8 @@ void markValidSelectors(IHqlExpression * expr, IHqlExpression * dsSelector)
                 expr->setTransformExtra(expr);
             return;
         }
+    case no_negate:
+        break;
     default:
         return;
     }

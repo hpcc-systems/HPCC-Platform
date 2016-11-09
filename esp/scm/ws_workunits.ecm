@@ -1703,6 +1703,7 @@ ESPStruct [nil_remove] WUStatisticItem
     int64 RawValue;
     int64 Count;
     int64 Max;
+    [min_ver("1.62")] string Wuid;
 };
 
 ESPrequest [nil_remove] WUGetStatsRequest
@@ -1718,6 +1719,10 @@ ESPrequest [nil_remove] WUGetStatsRequest
     unsigned MaxScopeDepth;
     boolean IncludeGraphs;
     boolean CreateDescriptions;
+    [min_ver("1.62")] int64 MinValue; // Should be uint64 but esdl does not support it.
+    [min_ver("1.62")] int64 MaxValue;
+    [min_ver("1.62")] string Filter; // arbitrary text filter
+    //MORE: Some indication of which fields need to be returned - to reduce the amount of data returned.  Is there a general esp mechanism?
 };
 
 ESPresponse [exceptions_inline] WUGetStatsResponse
@@ -1786,7 +1791,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
 
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.61"), default_client_version("1.61"),
+    version("1.62"), default_client_version("1.62"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
