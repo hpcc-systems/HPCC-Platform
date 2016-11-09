@@ -18,16 +18,12 @@
 #ifndef ECLBLAS_INCL
 #define ECLBLAS_INCL
 
-#ifdef _WIN32
-#define ECLBLAS_CALL _cdecl
 #ifdef ECLBLAS_EXPORTS
-#define ECLBLAS_PLUGIN_API __declspec(dllexport)
+#define ECLBLAS_PLUGIN_API DECL_EXPORT
+#define ECLBLAS_CALL DECL_EXPORT
 #else
-#define ECLBLAS_PLUGIN_API __declspec(dllimport)
-#endif
-#else
-#define ECLBLAS_CALL
-#define ECLBLAS_PLUGIN_API
+#define ECLBLAS_PLUGIN_API DECL_IMPORT
+#define ECLBLAS_CALL DECL_IMPORT
 #endif
 
 #include "platform.h"

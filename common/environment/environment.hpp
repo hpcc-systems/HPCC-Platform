@@ -25,14 +25,10 @@
 
 #include "dasubs.hpp"
 
-#ifdef WIN32
-    #ifdef ENVIRONMENT_EXPORTS
-        #define ENVIRONMENT_API __declspec(dllexport)
-    #else
-        #define ENVIRONMENT_API __declspec(dllimport)
-    #endif
+#ifdef ENVIRONMENT_EXPORTS
+    #define ENVIRONMENT_API DECL_EXPORT
 #else
-    #define ENVIRONMENT_API
+    #define ENVIRONMENT_API DECL_IMPORT
 #endif
 
 interface IPropertyTree;   // Not yet SCM-compliant

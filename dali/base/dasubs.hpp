@@ -21,7 +21,7 @@
 #include "dasess.hpp"
 
 #ifndef da_decl
-#define da_decl __declspec(dllimport)
+#define da_decl DECL_IMPORT
 #endif
 
 typedef DALI_UID SubscriptionId; // allocated by queryCoven().getUniqueId() 

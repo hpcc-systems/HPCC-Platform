@@ -22,6 +22,12 @@
 #include "jiface.hpp"
 #include "mpbase.hpp"
 
+#ifdef DALI_EXPORTS
+#define da_decl DECL_EXPORT
+#else
+#define da_decl DECL_IMPORT
+#endif
+
 interface IDaliServer: extends IInterface  // for all coven based servers
 {
     virtual void start() = 0;

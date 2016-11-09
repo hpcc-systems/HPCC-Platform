@@ -18,14 +18,10 @@
 #ifndef __XMLLIB_HPP__
 #define __XMLLIB_HPP__
 
-#ifdef _WIN32
-    #ifdef XMLLIB_EXPORTS
-        #define XMLLIB_API __declspec(dllexport)
-    #else
-        #define XMLLIB_API /*__declspec(dllimport)*/
-    #endif
+#ifdef XMLLIB_EXPORTS
+    #define XMLLIB_API DECL_EXPORT
 #else
-    #define XMLLIB_API
+    #define XMLLIB_API /*DECL_IMPORT*/
 #endif
 
 #endif

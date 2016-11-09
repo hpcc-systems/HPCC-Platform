@@ -18,6 +18,8 @@
 #ifndef __HQLPLUGIN_INCL
 #define __HQLPLUGIN_INCL
 
+#include "platform.h"
+
 #define PLUGIN_VERSION 2
 
 #define PLUGIN_IMPLICIT_MODULE 1

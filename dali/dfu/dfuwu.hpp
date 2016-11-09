@@ -19,7 +19,7 @@
 #define DFUWU_INCL
 
 #ifndef dfuwu_decl
-#define dfuwu_decl __declspec(dllimport)
+#define dfuwu_decl DECL_IMPORT
 #endif
 
 #include "jtime.hpp"

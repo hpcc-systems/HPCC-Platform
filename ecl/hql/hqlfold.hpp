@@ -18,9 +18,9 @@
 #define __HQLFOLD_HPP_
 
 #ifdef HQL_EXPORTS
-#define HQLFOLD_API __declspec(dllexport)
+#define HQLFOLD_API DECL_EXPORT
 #else
-#define HQLFOLD_API __declspec(dllimport)
+#define HQLFOLD_API DECL_IMPORT
 #endif
 
 #include "jlib.hpp"

@@ -3,14 +3,14 @@
 
 #ifdef _WIN32
 #define DMETAPHONE_CALL _cdecl
-#ifdef DMETAPHONE_EXPORTS
-#define DMETAPHONE_API __declspec(dllexport)
-#else
-#define DMETAPHONE_API __declspec(dllimport)
-#endif
 #else
 #define DMETAPHONE_CALL
-#define DMETAPHONE_API
+#endif
+
+#ifdef DMETAPHONE_EXPORTS
+#define DMETAPHONE_API DECL_EXPORT
+#else
+#define DMETAPHONE_API DECL_IMPORT
 #endif
 
 #include "hqlplugins.hpp"

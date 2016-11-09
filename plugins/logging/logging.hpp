@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define LOGGING_CALL _cdecl
-#ifdef LOGGING_EXPORTS
-#define LOGGING_API __declspec(dllexport)
-#else
-#define LOGGING_API __declspec(dllimport)
-#endif
 #else
 #define LOGGING_CALL
-#define LOGGING_API
+#endif
+
+#ifdef LOGGING_EXPORTS
+#define LOGGING_API DECL_EXPORT
+#else
+#define LOGGING_API DECL_IMPORT
 #endif
 
 #include "hqlplugins.hpp"

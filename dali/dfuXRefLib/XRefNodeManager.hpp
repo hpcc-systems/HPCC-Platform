@@ -25,14 +25,10 @@
 #include "dasds.hpp"
 
 
-#ifdef _WIN32
-    #ifdef DFUXREFLIB_EXPORTS
-        #define DFUXREFNODEMANAGERLIB_API __declspec(dllexport)
-    #else
-        #define DFUXREFNODEMANAGERLIB_API __declspec(dllimport)
-    #endif
+#ifdef DFUXREFLIB_EXPORTS
+    #define DFUXREFNODEMANAGERLIB_API DECL_EXPORT
 #else
-    #define DFUXREFNODEMANAGERLIB_API
+    #define DFUXREFNODEMANAGERLIB_API DECL_IMPORT
 #endif
 
 

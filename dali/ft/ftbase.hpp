@@ -18,14 +18,10 @@
 #ifndef FTBASE_HPP
 #define FTBASE_HPP
 
-#ifdef _WIN32
 #ifdef DALIFT_EXPORTS
-#define DALIFT_API __declspec(dllexport)
+#define DALIFT_API DECL_EXPORT
 #else
-#define DALIFT_API __declspec(dllimport)
-#endif
-#else
-#define DALIFT_API
+#define DALIFT_API DECL_IMPORT
 #endif
 
 typedef __int32 crc32_t;

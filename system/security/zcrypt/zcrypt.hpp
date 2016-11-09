@@ -18,16 +18,14 @@
 #ifndef ZCRYPT_HPP__
 #define ZCRYPT_HPP__
 
+#include "platform.h"
+
 #ifndef ZCRYPT_API
-#ifdef _WIN32
-    #ifndef ZCRYPT_EXPORTS
-        #define ZCRYPT_API __declspec(dllimport)
-    #else
-        #define ZCRYPT_API __declspec(dllexport)
-    #endif
+#ifndef ZCRYPT_EXPORTS
+    #define ZCRYPT_API DECL_IMPORT
 #else
-    #define ZCRYPT_API
-#endif //_WIN32
+    #define ZCRYPT_API DECL_EXPORT
+#endif
 #endif 
 
 #include <string>

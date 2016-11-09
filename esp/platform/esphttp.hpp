@@ -18,18 +18,10 @@
 #ifndef _ESPHTTP_HPP__
 #define _ESPHTTP_HPP__
 
-#ifdef _WIN32
-
-    #ifdef ESPHTTP_EXPORTS
-        #define ESPHTTP_API __declspec(dllexport)
-    #else
-        #define ESPHTTP_API /* __declspec(dllimport) */
-    #endif
-
+#ifdef ESPHTTP_EXPORTS
+    #define ESPHTTP_API DECL_EXPORT
 #else
-
-    #define ESPHTTP_API
-
+    #define ESPHTTP_API DECL_IMPORT
 #endif
 
 #define ENABLE_NEW_SECURITY 

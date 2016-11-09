@@ -211,7 +211,7 @@ void GraphPrintLog(CGraphBase *graph, IException *e, const char *format, ...)
     va_end(args);
 }
 
-class CThorException : public CSimpleInterface, implements IThorException
+class DECL_EXCEPTION CThorException : public CSimpleInterface, implements IThorException
 {
 protected:
     ThorExceptionAction action;
@@ -726,7 +726,7 @@ const char *queryTempDir(bool altdisk)
     return TempNameHandler.queryTempDir(altdisk);
 }
 
-class CBarrierAbortException: public CSimpleInterface, public IBarrierException
+class DECL_EXCEPTION CBarrierAbortException: public CSimpleInterface, public IBarrierException
 {
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);

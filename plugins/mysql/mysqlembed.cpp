@@ -30,13 +30,6 @@
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
 
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT
-#endif
-
-
 __declspec(noreturn) static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 
 static unsigned mysqlCacheCheckPeriod = 10000;
@@ -55,7 +48,7 @@ static const char * compatibleVersions[] = {
 
 static const char *version = "MySQL Embed Helper 1.0.0";
 
-extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
+extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
@@ -73,7 +66,7 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
-extern "C" EXPORT void setPluginContextEx(IPluginContextEx * _ctx)
+extern "C" DECL_EXPORT void setPluginContextEx(IPluginContextEx * _ctx)
 {
     mysqlCacheCheckPeriod = _ctx->ctxGetPropInt("@mysqlCacheCheckPeriod", 10000);
     mysqlCacheTimeoutPeriod = _ctx->ctxGetPropInt("@mysqlCacheTimeoutPeriod", 60000);
@@ -1674,12 +1667,12 @@ public:
     }
 };
 
-extern IEmbedContext* getEmbedContext()
+extern DECL_EXPORT IEmbedContext* getEmbedContext()
 {
     return new MySQLEmbedContext();
 }
 
-extern bool syntaxCheck(const char *script)
+extern DECL_EXPORT bool syntaxCheck(const char *script)
 {
     return true; // MORE
 }

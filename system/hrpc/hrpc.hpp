@@ -273,7 +273,7 @@ interface IHRPC_Exception: extends IException
 };
 
 // Exceptions raised on server and passed back to client
-interface IRemoteException:  extends IException
+interface DECL_EXCEPTION IRemoteException:  extends IException
 {
     enum RemoteExceptionKind
     {

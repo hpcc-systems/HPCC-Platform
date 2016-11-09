@@ -42,11 +42,7 @@
 
 #include "cassandraembed.hpp"
 
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT
-#endif
+#define EXPORT DECL_EXPORT
 
 namespace cassandraembed {
 

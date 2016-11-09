@@ -3,7 +3,7 @@
 
 
 #ifndef sa_decl
-#define sa_decl __declspec(dllimport)
+#define sa_decl DECL_IMPORT
 #endif
 
 #include "jlib.hpp"

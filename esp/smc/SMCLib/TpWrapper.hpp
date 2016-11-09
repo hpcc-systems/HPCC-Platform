@@ -22,14 +22,10 @@
 #ifndef _ESPWIZ_TpWrapper_HPP__
 #define _ESPWIZ_TpWrapper_HPP__
 
-#ifdef _WIN32
-    #ifdef SMCLIB_EXPORTS
-        #define TPWRAPPER_API __declspec(dllexport)
-    #else
-        #define TPWRAPPER_API __declspec(dllimport)
-    #endif
+#ifdef SMCLIB_EXPORTS
+    #define TPWRAPPER_API DECL_EXPORT
 #else
-    #define TPWRAPPER_API
+    #define TPWRAPPER_API DECL_IMPORT
 #endif
 
 

@@ -61,6 +61,7 @@ include_directories (
          ./../../../system/include 
          ./../../../common/workunit 
          ./../../../common/remote 
+         ./../../../common/roxiecommlib
          ./../../clients 
          ./../../../dali/base 
          ./../ws_workunits 

@@ -18,13 +18,14 @@
 #ifndef _SOAPBIND_HPP__
 #define _SOAPBIND_HPP__
 
-#ifndef esp_http_decl
-    #define esp_http_decl
-#endif
-
-
 //Jlib
 #include "jliball.hpp"
+
+#ifdef ESPHTTP_EXPORTS
+    #define esp_http_decl DECL_EXPORT
+#else
+    #define esp_http_decl DECL_IMPORT
+#endif
 
 //SCM Interfaces
 #include "esp.hpp"

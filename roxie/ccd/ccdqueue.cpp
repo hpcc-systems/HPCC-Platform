@@ -1645,7 +1645,7 @@ class RoxieThrottledPacketSender : public Thread
     unsigned maxPacketSize;
     SafeQueueOf<IRoxieQueryPacket, false> queue;
 
-    class StoppedException: public IException, public CInterface
+    class DECL_EXCEPTION StoppedException: public IException, public CInterface
     {
     public:
         IMPLEMENT_IINTERFACE;

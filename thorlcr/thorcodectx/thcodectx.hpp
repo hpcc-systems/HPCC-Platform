@@ -23,14 +23,10 @@
 #include "dadfs.hpp"
 #include "thgraph.hpp"
 
-#ifdef _WIN32
-    #ifdef THORCODECTX_EXPORTS
-        #define thcodectx_decl __declspec(dllexport)
-    #else
-        #define thcodectx_decl __declspec(dllimport)
-    #endif
+#ifdef THORCODECTX_EXPORTS
+    #define thcodectx_decl DECL_EXPORT
 #else
-    #define thcodectx_decl
+    #define thcodectx_decl DECL_IMPORT
 #endif
 
 interface ILoadedDllEntry;

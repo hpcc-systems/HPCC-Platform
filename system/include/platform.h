@@ -508,4 +508,26 @@ typedef __int64 cycle_t;
 #endif
 #endif
 
+//Use the following DECL_XXX to annotate items that are exported from dlls, or objects that are thrown:
+//DECL_EXPORT for items that are exported from the dll containing the current file being compiled
+//DECL_IMPORT for items that are imported from another dll
+//DECL_LOCAL is not generally required but could be used if there was an unexported class in a header file
+//DECL_EXCEPTION for any non exported/imported objects which are thrown (to avoid problems with RTTI)
+#ifdef _MSC_VER
+ #define DECL_EXPORT __declspec(dllexport)
+ #define DECL_IMPORT __declspec(dllimport)
+ #define DECL_LOCAL
+ #define DECL_EXCEPTION
+#elif __GNUC__ >= 4
+ #define DECL_EXPORT __attribute__ ((visibility ("default")))
+ #define DECL_IMPORT __attribute__ ((visibility ("default")))
+ #define DECL_LOCAL  __attribute__ ((visibility ("hidden")))
+ #define DECL_EXCEPTION DECL_EXPORT
+#else
+ #define DECL_EXPORT
+ #define DECL_IMPORT
+ #define DECL_LOCAL
+ #define DECL_EXCEPTION
+#endif
+
 #endif

@@ -20,6 +20,11 @@
 
 #define ALWAYS_SORT_PRIMARY 0
 
+#ifdef THORSORT_EXPORTS
+#define THORSORT_API DECL_EXPORT
+#else
+#define THORSORT_API DECL_IMPORT
+#endif
 
 interface ICompare;
 
@@ -47,7 +52,7 @@ public:
 
 
 class CActivityBase;
-IThorSorterMaster *CreateThorSorterMaster(CActivityBase *activity);
+THORSORT_API IThorSorterMaster *CreateThorSorterMaster(CActivityBase *activity);
 
 
 

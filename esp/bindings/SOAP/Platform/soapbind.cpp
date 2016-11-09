@@ -17,12 +17,6 @@
 
 #pragma warning( disable : 4786 )
 
-#ifdef WIN32
-#ifdef ESPHTTP_EXPORTS
-    #define esp_http_decl __declspec(dllexport)
-#endif
-#endif
-
 //Jlib
 #include "jliball.hpp"
 
@@ -39,11 +33,7 @@
 #include "http/platform/httpservice.hpp"
 #include "SOAP/Platform/soapservice.hpp"
 
-#ifdef WIN32
-#define ESP_FACTORY __declspec(dllexport)
-#else
-#define ESP_FACTORY
-#endif
+#define ESP_FACTORY DECL_EXPORT
 
 CSoapBinding::CSoapBinding()
 {

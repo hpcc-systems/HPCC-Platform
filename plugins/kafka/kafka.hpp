@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define ECL_KAFKA_CALL _cdecl
-#ifdef ECL_KAFKA_EXPORTS
-#define ECL_KAFKA_API __declspec(dllexport)
-#else
-#define ECL_KAFKA_API __declspec(dllimport)
-#endif
 #else
 #define ECL_KAFKA_CALL
-#define ECL_KAFKA_API
+#endif
+
+#ifdef ECL_KAFKA_EXPORTS
+#define ECL_KAFKA_API DECL_EXPORT
+#else
+#define ECL_KAFKA_API DECL_IMPORT
 #endif
 
 #include "platform.h"

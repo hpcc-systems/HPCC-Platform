@@ -17,14 +17,10 @@
 #ifndef HTHOR_INCL
 #define HTHOR_INCL
 
-#ifdef _WIN32
 #ifdef HTHOR_EXPORTS
-#define HTHOR_API __declspec(dllexport)
+#define HTHOR_API DECL_EXPORT
 #else
-#define HTHOR_API __declspec(dllimport)
-#endif
-#else
-#define HTHOR_API
+#define HTHOR_API DECL_IMPORT
 #endif
 
 #include "eclhelper.hpp"
@@ -213,7 +209,7 @@ extern HTHOR_API IHThorActivity *createStreamedIteratorActivity(IAgentContext &,
 extern HTHOR_API IHThorActivity *createExternalActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorExternalArg &arg, ThorActivityKind kind, IPropertyTree * graphNode);
 
 #define OwnedHThorRowArray OwnedRowArray
-class IHThorException : public IException
+class HTHOR_API IHThorException : public IException
 {
 };
 

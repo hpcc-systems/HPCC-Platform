@@ -18,14 +18,10 @@
 #ifndef _THMFILEMANAGER_HPP
 #define _THMFILEMANAGER_HPP
 
-#ifdef _WIN32
- #ifdef MFILEMANAGER_EXPORTS
-  #define thmfilemanager_decl __declspec(dllexport)
- #else
-  #define thmfilemanager_decl __declspec(dllimport)
- #endif
+#ifdef MFILEMANAGER_EXPORTS
+ #define thmfilemanager_decl DECL_EXPORT
 #else
- #define thmfilemanager_decl
+ #define thmfilemanager_decl DECL_IMPORT
 #endif
 
 #include "jarray.hpp"

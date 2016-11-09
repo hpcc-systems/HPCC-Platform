@@ -17,7 +17,7 @@
 
 // Dali Authorization Capability Library
 #ifndef DACAP_LINKED_IN
-#define dacaplib_decl __declspec(dllexport)
+#define dacaplib_decl DECL_EXPORT
 #endif
 #include "platform.h"
 

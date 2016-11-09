@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define ECL_EXAMPLE_PLUGIN_CALL _cdecl
-#ifdef ECL_EXAMPLE_PLUGIN_EXPORTS
-#define ECL_EXAMPLE_PLUGIN_API __declspec(dllexport)
-#else
-#define ECL_EXAMPLE_PLUGIN_API __declspec(dllimport)
-#endif
 #else
 #define ECL_EXAMPLE_PLUGIN_CALL
-#define ECL_EXAMPLE_PLUGIN_API
+#endif
+
+#ifdef ECL_EXAMPLE_PLUGIN_EXPORTS
+#define ECL_EXAMPLE_PLUGIN_API DECL_EXPORT
+#else
+#define ECL_EXAMPLE_PLUGIN_API DECL_IMPORT
 #endif
 
 #include "hqlplugins.hpp"

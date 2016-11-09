@@ -27,8 +27,6 @@ project( roxiecommlib )
 include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 set (    SRCS 
-         ${ESPSCM_GENERATED_DIR}/roxiecommlibscm_esp.cpp 
-                 ${HPCC_SOURCE_DIR}/esp/scm/roxiecommlibscm.ecm
          roxiecommunicationclient.cpp 
     )
 

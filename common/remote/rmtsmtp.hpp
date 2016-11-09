@@ -22,9 +22,9 @@
 #include "jstring.hpp"
 
 #ifdef REMOTE_EXPORTS
-#define REMOTE_API __declspec(dllexport)
+#define REMOTE_API DECL_EXPORT
 #else
-#define REMOTE_API __declspec(dllimport)
+#define REMOTE_API DECL_IMPORT
 #endif
 
 extern REMOTE_API void sendEmail( const char * to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings=NULL);

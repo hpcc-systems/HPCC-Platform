@@ -21,9 +21,9 @@
 #include "jfile.hpp"
 
 #ifdef ARCHIVEFILE_EXPORTS
-#define ARCHIVEFILE_API __declspec(dllexport)
+#define ARCHIVEFILE_API DECL_EXPORT
 #else
-#define ARCHIVEFILE_API __declspec(dllimport)
+#define ARCHIVEFILE_API DECL_IMPORT
 #endif
 
 

@@ -18,14 +18,10 @@
 #ifndef DLLSERVER_INCL
 #define DLLSERVER_INCL
 
-#ifdef _WIN32
-    #ifdef DLLSERVER_EXPORTS
-        #define DLLSERVER_API __declspec(dllexport)
-    #else
-        #define DLLSERVER_API __declspec(dllimport)
-    #endif
+#ifdef DLLSERVER_EXPORTS
+    #define DLLSERVER_API DECL_EXPORT
 #else
-    #define DLLSERVER_API
+    #define DLLSERVER_API DECL_IMPORT
 #endif
 
 #include "jiface.hpp"

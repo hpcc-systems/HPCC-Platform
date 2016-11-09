@@ -18,14 +18,10 @@
 #ifndef FVWUGEN_HPP
 #define FVWUGEN_HPP
 
-#ifdef _WIN32
-    #ifdef FILEVIEW2_EXPORTS
-        #define FILEVIEW_API __declspec(dllexport)
-    #else
-        #define FILEVIEW_API __declspec(dllimport)
-    #endif
+#ifdef FILEVIEW2_EXPORTS
+    #define FILEVIEW_API DECL_EXPORT
 #else
-    #define FILEVIEW_API
+    #define FILEVIEW_API DECL_IMPORT
 #endif
 
 #define LOWER_LIMIT_ID      "__startPos__"

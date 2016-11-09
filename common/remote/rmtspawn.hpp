@@ -19,9 +19,9 @@
 #define RMTSPAWN_HPP
 
 #ifdef REMOTE_EXPORTS
-#define REMOTE_API __declspec(dllexport)
+#define REMOTE_API DECL_EXPORT
 #else
-#define REMOTE_API __declspec(dllimport)
+#define REMOTE_API DECL_IMPORT
 #endif
 
 #define SLAVE_LISTEN_FOR_MASTER_TIMEOUT             5 * 60 * 1000           // 2 minutes

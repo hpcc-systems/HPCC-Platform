@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define STRINGLIB_CALL _cdecl
-#ifdef STRINGLIB_EXPORTS
-#define STRINGLIB_API __declspec(dllexport)
-#else
-#define STRINGLIB_API __declspec(dllimport)
-#endif
 #else
 #define STRINGLIB_CALL
-#define STRINGLIB_API
+#endif
+
+#ifdef STRINGLIB_EXPORTS
+#define STRINGLIB_API DECL_EXPORT
+#else
+#define STRINGLIB_API DECL_IMPORT
 #endif
 
 #include "platform.h"

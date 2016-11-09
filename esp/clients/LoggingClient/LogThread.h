@@ -21,14 +21,11 @@
 //////////////////////////////////////////////////////////////////////
 #ifndef _LOGTHREAD_HPP__
 #define _LOGTHREAD_HPP__
-#ifdef WIN32
-    #ifdef LOGGINGCLIENT_EXPORTS
-        #define WSLOGThread_API __declspec(dllexport)
-    #else
-        #define WSLOGThread_API __declspec(dllimport)
-    #endif
+
+#ifdef LOGGINGCLIENT_EXPORTS
+    #define WSLOGThread_API DECL_EXPORT
 #else
-    #define WSLOGThread_API
+    #define WSLOGThread_API DECL_IMPORT
 #endif
 
 #include "jthread.hpp"

@@ -17,12 +17,11 @@
 
 #pragma warning (disable : 4786)
 
-#ifdef WIN32
 #ifdef ESPHTTP_EXPORTS
-    #define esp_http_decl __declspec(dllexport)
+    #define esp_http_decl DECL_EXPORT
+#else
+    #define esp_http_decl DECL_IMPORT
 #endif
-#endif
-
 //Jlib
 #include "jliball.hpp"
 

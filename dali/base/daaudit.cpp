@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#define da_decl __declspec(dllexport)
 #include "platform.h"
 #include "jlib.hpp"
 #include "jfile.hpp"

@@ -33,19 +33,13 @@
 #include "thorxmlwrite.hpp"
 #include "esdl_def.hpp"
 
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT
-#endif
-
 static const char * compatibleVersions[] = {
     "Java Embed Helper 1.0.0",
     NULL };
 
 static const char *version = "Java Embed Helper 1.0.0";
 
-extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
+extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
@@ -3226,7 +3220,7 @@ public:
     }
 };
 
-extern IEmbedContext* getEmbedContext()
+extern DECL_EXPORT IEmbedContext* getEmbedContext()
 {
     return new JavaEmbedContext;
 }
@@ -3280,7 +3274,7 @@ JNIEXPORT jobject JNICALL Java_com_HPCCSystems_HpccUtils__1next (JNIEnv *JNIenv,
 
 // Used for dynamically loading in ESDL
 
-extern "C" EXPORT IEmbedContext *getEmbedContextDynamic()
+extern "C" DECL_EXPORT IEmbedContext *getEmbedContextDynamic()
 {
     return javaembed::getEmbedContext();
 }

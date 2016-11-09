@@ -31,11 +31,11 @@
 #include "unicode/utf.h"
 #endif //CHEAP_UCHAR_DEF
 
-#if defined(_WIN32)&&!defined(ECLRTL_LOCAL)
+#if !defined(ECLRTL_LOCAL)
 #ifdef ECLRTL_EXPORTS
-#define ECLRTL_API __declspec(dllexport)
+#define ECLRTL_API DECL_EXPORT
 #else
-#define ECLRTL_API __declspec(dllimport)
+#define ECLRTL_API DECL_IMPORT
 #endif
 #else
 #define ECLRTL_API

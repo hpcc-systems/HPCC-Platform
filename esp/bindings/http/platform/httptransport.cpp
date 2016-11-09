@@ -17,10 +17,10 @@
 #pragma warning(disable : 4786)
 #include "platform.h"
 
-#ifdef WIN32
 #ifdef ESPHTTP_EXPORTS
-    #define esp_http_decl __declspec(dllexport)
-#endif
+    #define esp_http_decl DECL_EXPORT
+#else
+    #define esp_http_decl DECL_IMPORT
 #endif
 
 #ifdef _WIN32

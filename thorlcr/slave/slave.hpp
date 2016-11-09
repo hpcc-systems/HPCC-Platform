@@ -18,14 +18,10 @@
 #ifndef SLAVE_HPP
 #define SLAVE_HPP
 
-#ifdef _WIN32
- #ifdef ACTIVITYSLAVES_EXPORTS
-  #define activityslaves_decl __declspec(dllexport)
- #else
-  #define activityslaves_decl __declspec(dllimport)
- #endif
+#ifdef ACTIVITYSLAVES_EXPORTS
+ #define activityslaves_decl DECL_EXPORT
 #else
- #define activityslaves_decl
+ #define activityslaves_decl DECL_IMPORT
 #endif
 
 #include "jio.hpp"

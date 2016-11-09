@@ -47,6 +47,7 @@ include_directories (
          ./../../../system/include 
          ./../../../common/remote 
          ./../../../common/environment
+         ./../../../common/roxiecommlib
          ./../../../common/workunit
          ./../../clients 
          ./../../../dali/base 

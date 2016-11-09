@@ -23,15 +23,11 @@
 #include "jexcept.hpp"
 
 #ifndef SECLIB_API
-#ifdef _WIN32
-    #ifndef SECLIB_EXPORTS
-        #define SECLIB_API __declspec(dllimport)
-    #else
-        #define SECLIB_API __declspec(dllexport)
-    #endif //SECLIB_EXPORTS
+#ifndef SECLIB_EXPORTS
+    #define SECLIB_API DECL_IMPORT
 #else
-    #define SECLIB_API
-#endif //_WIN32
+    #define SECLIB_API DECL_EXPORT
+#endif //SECLIB_EXPORTS
 #endif 
 
 #define SECLIB "seclib"

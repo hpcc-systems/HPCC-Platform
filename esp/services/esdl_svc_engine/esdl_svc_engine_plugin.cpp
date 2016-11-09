@@ -40,8 +40,6 @@ ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* t
     return new CEsdlSvcEngineSoapBindingEx(cfg, name, process);
 }
 
-IEspProtocol * http_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process);
-
 
 ESP_FACTORY IEspProtocol * esp_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {

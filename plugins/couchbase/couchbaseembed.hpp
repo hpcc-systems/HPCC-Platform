@@ -18,16 +18,10 @@
 #ifndef _COUCHBASEEMBED_INCL
 #define _COUCHBASEEMBED_INCL
 
-#ifdef _WIN32
-#define COUCHBASEEMBED_PLUGIN_CALL _cdecl
 #ifdef COUCHBASEEMBED_PLUGIN_EXPORTS
-#define COUCHBASEEMBED_PLUGIN_API __declspec(dllexport)
+#define COUCHBASEEMBED_PLUGIN_API DECL_EXPORT
 #else
-#define COUCHBASEEMBED_PLUGIN_API __declspec(dllimport)
-#endif
-#else
-#define COUCHBASEEMBED_PLUGIN_CALL
-#define COUCHBASEEMBED_PLUGIN_API
+#define COUCHBASEEMBED_PLUGIN_API DECL_IMPORT
 #endif
 
 //Using cpp wrapper from https://github.com/couchbaselabs/libcouchbase-cxx

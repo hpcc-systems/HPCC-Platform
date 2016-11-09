@@ -35,15 +35,10 @@
 #include "thorcommon.hpp"
 #include "thor.hpp"
 
-
-#ifdef _WIN32
-    #ifdef GRAPH_EXPORTS
-        #define graph_decl __declspec(dllexport)
-    #else
-        #define graph_decl __declspec(dllimport)
-    #endif
+#ifdef GRAPH_EXPORTS
+    #define graph_decl DECL_EXPORT
 #else
-    #define graph_decl
+    #define graph_decl DECL_IMPORT
 #endif
 
 /// Thor options, that can be hints, workunit options, or global settings
@@ -305,10 +300,10 @@ public:
     bool isAvailable(const char *filename);
 };
 
-interface IBarrierException : extends IException {};
+interface graph_decl IBarrierException : extends IException {};
 extern graph_decl IBarrierException *createBarrierAbortException();
 
-interface IThorException : extends IException
+interface graph_decl IThorException : extends IException
 {
     virtual ThorExceptionAction queryAction() const = 0;
     virtual ThorActivityKind queryActivityKind() const = 0;

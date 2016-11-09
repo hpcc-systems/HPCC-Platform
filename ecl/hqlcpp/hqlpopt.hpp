@@ -18,9 +18,9 @@
 #define __HQLPOPT_HPP_
 
 #ifdef HQLCPP_EXPORTS
-#define HQLCPP_API __declspec(dllexport)
+#define HQLCPP_API DECL_EXPORT
 #else
-#define HQLCPP_API __declspec(dllimport)
+#define HQLCPP_API DECL_IMPORT
 #endif
 
 //Perform very late optimizations on expressions that could otherwise cause problems uncommoning attributes etc.

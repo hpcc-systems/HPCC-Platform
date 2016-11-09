@@ -15,9 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#ifdef _WIN32
-#define AXA_API __declspec(dllexport)
-#endif
+#define AXA_API DECL_EXPORT
 
 #include "ldapsecurity.ipp"
 #include "ldapsecurity.hpp"

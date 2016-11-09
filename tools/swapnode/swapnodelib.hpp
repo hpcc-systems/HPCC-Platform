@@ -18,14 +18,10 @@
 #ifndef _SWAPNODE_LIB_HPP
 #define _SWAPNODE_LIB_HPP
 
-#ifdef _WIN32
- #ifdef SWAPNODELIB_EXPORTS
-  #define swapnodelib_decl __declspec(dllexport)
- #else
-  #define swapnodelib_decl __declspec(dllimport)
- #endif
+#ifdef SWAPNODELIB_EXPORTS
+ #define swapnodelib_decl DECL_EXPORT
 #else
- #define swapnodelib_decl
+ #define swapnodelib_decl DECL_IMPORT
 #endif
 
 interface IPropertyTree;

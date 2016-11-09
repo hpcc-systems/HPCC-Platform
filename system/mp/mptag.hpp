@@ -87,7 +87,7 @@ TAGENUMEND
 #define MPTAG_HPP
 
 #ifndef mp_decl
-#define mp_decl __declspec(dllimport)
+#define mp_decl DECL_IMPORT
 #endif
 
 #include "jstring.hpp"

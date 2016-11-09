@@ -49,7 +49,7 @@ atomic_t numFilesOpen[2];
 
 // We point unopened files at a FailingIO object, which avoids having to test for NULL on every access
 
-class NotYetOpenException : implements IException, public CInterface
+class DECL_EXCEPTION NotYetOpenException : implements IException, public CInterface
 {
 public: 
     IMPLEMENT_IINTERFACE;

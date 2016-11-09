@@ -23,14 +23,10 @@
 #include "jsocket.hpp"
 #include "roxiemem.hpp"
 
-#ifdef _WIN32
 #ifdef UDPLIB_EXPORTS
-#define UDPLIB_API __declspec(dllexport)
+#define UDPLIB_API DECL_EXPORT
 #else
-#define UDPLIB_API __declspec(dllimport)
-#endif
-#else
-#define UDPLIB_API
+#define UDPLIB_API DECL_IMPORT
 #endif
 
 typedef unsigned ruid_t;   // at 1000/sec recycle every 49 days

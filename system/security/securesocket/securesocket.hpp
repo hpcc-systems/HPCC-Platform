@@ -20,15 +20,11 @@
 
 #ifndef SECURESOCKET_API
 
-#ifdef _WIN32
-    #ifndef SECURESOCKET_EXPORTS
-        #define SECURESOCKET_API __declspec(dllimport)
-    #else
-        #define SECURESOCKET_API __declspec(dllexport)
-    #endif //SECURESOCKET_EXPORTS
+#ifndef SECURESOCKET_EXPORTS
+    #define SECURESOCKET_API DECL_IMPORT
 #else
-    #define SECURESOCKET_API
-#endif //_WIN32
+    #define SECURESOCKET_API DECL_EXPORT
+#endif //SECURESOCKET_EXPORTS
 
 #endif 
 

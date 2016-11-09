@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define UNICODELIB_CALL _cdecl
-#ifdef UNICODELIB_EXPORTS
-#define UNICODELIB_API __declspec(dllexport)
-#else
-#define UNICODELIB_API __declspec(dllimport)
-#endif
 #else
 #define UNICODELIB_CALL
-#define UNICODELIB_API
+#endif
+
+#ifdef UNICODELIB_EXPORTS
+#define UNICODELIB_API DECL_EXPORT
+#else
+#define UNICODELIB_API DECL_IMPORT
 #endif
 
 #ifndef CHEAP_UCHAR_DEF

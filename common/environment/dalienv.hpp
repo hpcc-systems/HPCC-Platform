@@ -18,14 +18,10 @@
 #ifndef DALIENV_HPP
 #define DALIENV_HPP
 
-#ifdef _WIN32
 #ifdef ENVIRONMENT_EXPORTS
-#define ENVIRONMENT_API __declspec(dllexport)
+#define ENVIRONMENT_API DECL_EXPORT
 #else
-#define ENVIRONMENT_API __declspec(dllimport)
-#endif
-#else
-#define ENVIRONMENT_API
+#define ENVIRONMENT_API DECL_IMPORT
 #endif
 
 #include "environment.hpp"

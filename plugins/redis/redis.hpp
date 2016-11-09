@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define ECL_REDIS_CALL _cdecl
-#ifdef ECL_REDIS_EXPORTS
-#define ECL_REDIS_API __declspec(dllexport)
-#else
-#define ECL_REDIS_API __declspec(dllimport)
-#endif
 #else
 #define ECL_REDIS_CALL
-#define ECL_REDIS_API
+#endif
+
+#ifdef ECL_REDIS_EXPORTS
+#define ECL_REDIS_API DECL_EXPORT
+#else
+#define ECL_REDIS_API DECL_IMPORT
 #endif
 
 //If altered, the MINVERSION in CMakeLists.txt must also be altered

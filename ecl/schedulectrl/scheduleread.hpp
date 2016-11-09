@@ -18,9 +18,9 @@
 #define __SCHEDULEREAD_HPP_
 
 #ifdef SCHEDULECTRL_EXPORTS
-#define SCHEDULECTRL_API __declspec(dllexport)
+#define SCHEDULECTRL_API DECL_EXPORT
 #else
-#define SCHEDULECTRL_API __declspec(dllimport)
+#define SCHEDULECTRL_API DECL_IMPORT
 #endif
 
 #include "jstring.hpp"

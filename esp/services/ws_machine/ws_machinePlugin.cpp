@@ -60,21 +60,7 @@ ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* t
 
 ESP_FACTORY IEspProtocol * esp_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-    if (strcmp(type, "http_protocol")==0)
-    {
-        return new CHttpProtocol;
-    }
-    else if(strcmp(type, "secure_http_protocol") == 0)
-    {
-        IPropertyTree *sslSettings;
-        sslSettings = cfg->getPropTree(StringBuffer("Software/EspProcess[@name=\"").append(process).append("\"]").append("/EspProtocol[@name=\"").append(name).append("\"]").str());
-        if(sslSettings != NULL)
-        {
-            return new CSecureHttpProtocol(sslSettings);
-        }
-    }
-
-    return NULL;
+    return http_protocol_factory(name, type, cfg, process);
 }
 
 };

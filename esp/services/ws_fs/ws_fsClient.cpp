@@ -17,11 +17,7 @@
 
 #pragma warning (disable : 4786)
 #ifndef FileSpray_API
-#ifdef _WIN32
-#define FileSpray_API __declspec(dllexport)
-#else
-#define FileSpray_API
-#endif //_WIN32
+#define FileSpray_API DECL_EXPORT
 #endif //FileSpray_API
 
 #include "ws_fs_esp.ipp"

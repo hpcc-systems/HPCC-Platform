@@ -18,10 +18,6 @@
 #ifndef __HTTPPROT_HPP_
 #define __HTTPPROT_HPP_
 
-#ifndef esp_http_decl
-    #define esp_http_decl
-#endif
-
 //Jlib
 #include "jliball.hpp"
 
@@ -149,6 +145,12 @@ public:
     virtual bool notifySelected(ISocket *sock,unsigned selected);
 //IEspProtocol
     virtual const char * getProtocolName();
+};
+
+extern "C" {
+
+esp_http_decl IEspProtocol * http_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process);
+
 };
 
 #endif //__HTTPPROT_HPP_

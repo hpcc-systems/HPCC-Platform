@@ -18,14 +18,10 @@
 #ifndef _THGRAPHSLAVE_HPP_
 #define _THGRAPHSLAVE_HPP_
 
-#ifdef _WIN32
-    #ifdef GRAPHSLAVE_EXPORTS
-        #define graphslave_decl __declspec(dllexport)
-    #else
-        #define graphslave_decl __declspec(dllimport)
-    #endif
+#ifdef GRAPHSLAVE_EXPORTS
+    #define graphslave_decl DECL_EXPORT
 #else
-    #define graphslave_decl
+    #define graphslave_decl DECL_IMPORT
 #endif
 
 #include "platform.h"

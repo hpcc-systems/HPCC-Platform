@@ -18,9 +18,9 @@
 #define DEPLOY_HPP_INCL
 
 #ifdef DEPLOY_EXPORTS
-  #define DEPLOY_API __declspec(dllexport)
+  #define DEPLOY_API DECL_EXPORT
 #else
-  #define DEPLOY_API __declspec(dllimport)
+  #define DEPLOY_API DECL_IMPORT
 #endif
 
 //disable the harmless warning about very long symbol names > 255 chars in debug mode

@@ -213,7 +213,7 @@ enum SDSExceptionCodes
     SDSExcpt_SubscriptionNoMatch
 };
 
-interface ISDSException : extends IException { };
+interface da_decl ISDSException : extends IException { };
 
 extern da_decl ISDSManagerServer &querySDSServer();
 

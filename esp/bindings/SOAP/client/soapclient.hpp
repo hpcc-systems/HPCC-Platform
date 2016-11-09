@@ -18,10 +18,6 @@
 #ifndef _SOAPCLIENT_HPP__
 #define _SOAPCLIENT_HPP__
 
-#ifndef esp_http_decl
-    #define esp_http_decl
-#endif
-
 //Jlib
 #include "jiface.hpp"
 

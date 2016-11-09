@@ -21,12 +21,8 @@
 #include "jliball.hpp"
 #include "jqueue.tpp"
 
-#ifdef _WIN32
- #ifdef ESDLLIB_EXPORTS
-  #define esdl_decl __declspec(dllexport)
- #else
-  #define esdl_decl
- #endif
+#ifdef ESDLLIB_EXPORTS
+ #define esdl_decl DECL_EXPORT
 #else
  #define esdl_decl
 #endif

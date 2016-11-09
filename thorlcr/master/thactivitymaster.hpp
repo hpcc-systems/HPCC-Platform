@@ -18,14 +18,10 @@
 #ifndef _THACTIVITYMASTER_HPP
 #define _THACTIVITYMASTER_HPP
 
-#ifdef _WIN32
- #ifdef ACTIVITYMASTERS_EXPORTS
-  #define actmaster_decl __declspec(dllexport)
- #else
-  #define actmaster_decl __declspec(dllimport)
- #endif
+#ifdef ACTIVITYMASTERS_EXPORTS
+ #define actmaster_decl DECL_EXPORT
 #else
- #define actmaster_decl
+ #define actmaster_decl DECL_IMPORT
 #endif
 
 

@@ -19,9 +19,9 @@
 #define RMTPASS_HPP
 
 #ifdef REMOTE_EXPORTS
-#define REMOTE_API __declspec(dllexport)
+#define REMOTE_API DECL_EXPORT
 #else
-#define REMOTE_API __declspec(dllimport)
+#define REMOTE_API DECL_IMPORT
 #endif
 
 class REMOTE_API CachedPassword : public CInterface

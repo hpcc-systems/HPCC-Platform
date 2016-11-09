@@ -2,9 +2,9 @@
 #define CONFIGHELPER_HPP_INCL
 
 #ifdef CONFIGUTILS_EXPORTS
-  #define CONFIGUTILS_API __declspec(dllexport)
+  #define CONFIGUTILS_API DECL_EXPORT
 #else
-  #define CONFIGUTILS_API __declspec(dllimport)
+  #define CONFIGUTILS_API DECL_IMPORT
 #endif
 
 #define STANDARD_CONFIG_ALGORITHMFILE "genenvrules.conf"

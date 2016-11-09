@@ -17,19 +17,22 @@
 
 #pragma warning( disable : 4786)
 
-#ifndef esp_http_decl
-    #define esp_http_decl
-#endif
-
-
 #ifndef _SOAPMESSAGE_HPP__
 #define _SOAPMESSAGE_HPP__
+
 #include "jliball.hpp"
 #include "jexcept.hpp"
 #include "soapesp.hpp"
 #include "esp.hpp"
 
 #include "http/platform/mime.hpp"
+
+#ifdef ESPHTTP_EXPORTS
+    #define esp_http_decl DECL_EXPORT
+#else
+    #define esp_http_decl DECL_IMPORT
+#endif
+
 #include "http/platform/httptransport.hpp"
 
 #include <xpp/XmlPullParser.h>

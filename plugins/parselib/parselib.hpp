@@ -20,14 +20,14 @@
 
 #ifdef _WIN32
 #define PARSELIB_CALL _cdecl
-#ifdef PARSELIB_EXPORTS
-#define PARSELIB_API __declspec(dllexport)
-#else
-#define PARSELIB_API __declspec(dllimport)
-#endif
 #else
 #define PARSELIB_CALL
-#define PARSELIB_API
+#endif
+
+#ifdef PARSELIB_EXPORTS
+#define PARSELIB_API DECL_EXPORT
+#else
+#define PARSELIB_API DECL_IMPORT
 #endif
 
 #include "hqlplugins.hpp"

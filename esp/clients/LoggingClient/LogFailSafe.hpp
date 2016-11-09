@@ -23,14 +23,10 @@
 #ifndef _LOGFAILSAFE_HPP__
 #define _LOGFAILSAFE_HPP__
 
-#ifdef WIN32
-    #ifdef LOGGINGCLIENT_EXPORTS
-        #define WSLOGFAILSAFE_API __declspec(dllexport)
-    #else
-        #define WSLOGFAILSAFE_API __declspec(dllimport)
-    #endif
+#ifdef LOGGINGCLIENT_EXPORTS
+    #define WSLOGFAILSAFE_API DECL_EXPORT
 #else
-    #define WSLOGFAILSAFE_API
+    #define WSLOGFAILSAFE_API DECL_IMPORT
 #endif
 
 

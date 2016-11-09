@@ -49,7 +49,7 @@ using roxiemem::DynamicRoxieOutputRowArray;
 
 //---------------------------------------------------------------------------
 
-class CHThorException : implements IHThorException, public CInterface
+class DECL_EXCEPTION CHThorException : implements IHThorException, public CInterface
 {
 public: 
     IMPLEMENT_IINTERFACE;

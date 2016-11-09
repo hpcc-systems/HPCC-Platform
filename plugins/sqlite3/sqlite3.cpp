@@ -29,12 +29,6 @@
 #include "rtlembed.hpp"
 #include "nbcd.hpp"
 
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT
-#endif
-
 __declspec(noreturn) static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 
 static void UNSUPPORTED(const char *feature)
@@ -48,7 +42,7 @@ static const char * compatibleVersions[] = {
 
 static const char *version = "SqLite3 Embed Helper 1.0.0";
 
-extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
+extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
@@ -607,12 +601,12 @@ public:
     }
 };
 
-extern IEmbedContext* getEmbedContext()
+extern DECL_EXPORT IEmbedContext* getEmbedContext()
 {
     return new SqLite3EmbedContext();
 }
 
-extern bool syntaxCheck(const char *script)
+extern DECL_EXPORT bool syntaxCheck(const char *script)
 {
     return true; // MORE
 }

@@ -17,12 +17,11 @@
 
 #pragma warning (disable : 4786)
 
-#ifdef WIN32
 #ifdef ESPHTTP_EXPORTS
-    #define esp_http_decl __declspec(dllexport)
+    #define esp_http_decl DECL_EXPORT
+#else
+    #define esp_http_decl DECL_IMPORT
 #endif
-#endif
-
 //Jlib
 #include "jliball.hpp"
 
@@ -57,11 +56,7 @@
 
 #include "securesocket.hpp"
 
-#ifdef WIN32
-#define ESP_FACTORY __declspec(dllexport)
-#else
-#define ESP_FACTORY
-#endif
+#define ESP_FACTORY DECL_EXPORT
 
 IThreadPool* http_thread_pool;
 CHttpThreadPoolFactory* http_pool_factory;

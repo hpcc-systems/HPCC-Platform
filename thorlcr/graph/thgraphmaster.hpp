@@ -18,14 +18,10 @@
 #ifndef _THGRAPHMASTER_HPP
 #define _THGRAPHMASTER_HPP
 
-#ifdef _WIN32
-    #ifdef GRAPHMASTER_EXPORTS
-        #define graphmaster_decl __declspec(dllexport)
-    #else
-        #define graphmaster_decl __declspec(dllimport)
-    #endif
+#ifdef GRAPHMASTER_EXPORTS
+    #define graphmaster_decl DECL_EXPORT
 #else
-    #define graphmaster_decl
+    #define graphmaster_decl DECL_IMPORT
 #endif
 
 #include "mptag.hpp"

@@ -19,6 +19,11 @@
 #ifndef TSortA_HPP
 #define TSortA_HPP
 
+#ifdef THORSORT_EXPORTS
+#define THORSORT_API DECL_EXPORT
+#else
+#define THORSORT_API DECL_IMPORT
+#endif
 
 #ifdef _DEBUG
 #define _TESTSLAVE
@@ -56,7 +61,7 @@ interface IThorRowSortedLoader: extends IInterface
     virtual unsigned overflowScale()=0;
 };
 
-class CThorKeyArray
+class THORSORT_API CThorKeyArray
 {
     CActivityBase &activity;
     Linked<IThorRowInterfaces> rowif;
@@ -109,7 +114,7 @@ public:
     void traceKey(const char *prefix,unsigned idx);
 };
 
-extern void traceKey(IOutputRowSerializer *serializer,const char *prefix,const void *key);
+extern THORSORT_API void traceKey(IOutputRowSerializer *serializer,const char *prefix,const void *key);
 
 
 #endif

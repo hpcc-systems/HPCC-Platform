@@ -18,12 +18,6 @@
 #ifndef _ESPWIZ_WsDfu_HPP__
 #define _ESPWIZ_WsDfu_HPP__
 
-#ifdef _WIN32
-    #define FILEVIEW_API __declspec(dllimport)
-#else
-    #define FILEVIEW_API
-#endif
-
 #include "ws_dfu_esp.ipp"
 
 #include "fileview.hpp"

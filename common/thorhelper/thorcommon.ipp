@@ -24,14 +24,10 @@
 #include "rtlds_imp.hpp"
 #include "jfile.hpp"
 
-#ifdef _WIN32
 #ifdef THORHELPER_EXPORTS
-#define THORHELPER_API __declspec(dllexport)
+#define THORHELPER_API DECL_EXPORT
 #else
-#define THORHELPER_API __declspec(dllimport)
-#endif
-#else
-#define THORHELPER_API
+#define THORHELPER_API DECL_IMPORT
 #endif
 
 //------------------------------------------------------------------------------------------------

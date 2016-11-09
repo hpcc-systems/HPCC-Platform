@@ -18,12 +18,9 @@
 #pragma warning (disable : 4786)
 
 #ifndef FileSpray_API
-#ifdef _WIN32
-#define FileSpray_API __declspec(dllexport)
-#else
-#define FileSpray_API
-#endif //_WIN32
+#define FileSpray_API DECL_EXPORT
 #endif //FileSpray_API
+
 #include <stdio.h>
 #include "ws_fs.hpp"
 #include "ws_fsBinding.hpp"
@@ -51,8 +48,6 @@ ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type
     return NULL;
 }
 
-
-
 ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
     if (strcmp(type, "FileSpray_Bind")==0)
@@ -68,25 +63,9 @@ ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* t
     return NULL;
 }
 
-
-
 ESP_FACTORY IEspProtocol * esp_protocol_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-    if (strcmp(type, "http_protocol")==0)
-    {
-        return new CHttpProtocol;
-    }
-    else if(strcmp(type, "secure_http_protocol") == 0)
-    {
-        IPropertyTree *sslSettings;
-        sslSettings = cfg->getPropTree(StringBuffer("Software/EspProcess[@name=\"").append(process).append("\"]").append("/EspProtocol[@name=\"").append(name).append("\"]").str());
-        if(sslSettings != NULL)
-        {
-            return new CSecureHttpProtocol(sslSettings);
-        }
-    }
-    
-    return NULL;
+    return http_protocol_factory(name, type, cfg, process);
 }
 
 };
