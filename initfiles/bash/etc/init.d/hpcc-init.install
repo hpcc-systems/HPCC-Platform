@@ -1,0 +1,1 @@
+installFile "$initPath/hpcc-init" "/etc/init.d/hpcc-init" 1 || exit 1
