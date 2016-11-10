@@ -37,6 +37,9 @@
 #include "traceslave.hpp"
 #include "thorstrand.hpp"
 
+// #define OUTPUT_RECORDSIZE // causes the record size to be logged for each activity on the 1st call to dataLinkIncrement
+
+
 interface IStartableEngineRowStream : extends IEngineRowStream
 {
     virtual void start() = 0;
@@ -73,13 +76,12 @@ public:
         assertex(!hasStarted() || hasStopped());      // ITDL started twice
 #endif
         icount = 0;
-        rowcount_t prevCount = count & THORDATALINK_COUNT_MASK;
-        count = prevCount | THORDATALINK_STARTED;
+        count = (count & THORDATALINK_COUNT_MASK) | THORDATALINK_STARTED;
     }
 
     inline void dataLinkStop()
     {
-        count |= THORDATALINK_STOPPED;
+        count = (count & THORDATALINK_COUNT_MASK) | THORDATALINK_STOPPED;
 #ifdef _TESTING
         owner.ActPrintLog("ITDL output %d stopped, count was %" RCPF "d", outputId, getDataLinkCount());
 #endif
@@ -87,15 +89,12 @@ public:
     inline void dataLinkIncrement() { dataLinkIncrement(1); }
     inline void dataLinkIncrement(rowcount_t v)
     {
-#ifdef _TESTING
-        assertex(hasStarted());
 #ifdef OUTPUT_RECORDSIZE
         if (count==THORDATALINK_STARTED)
         {
             size32_t rsz = parent.queryRowMetaData(this)->getMinRecordSize();
             parent.ActPrintLog("Record size %s= %d", parent.queryRowMetaData(this)->isVariableSize()?"(min) ":"",rsz);
         }
-#endif
 #endif
         icount += v;
         count += v;
