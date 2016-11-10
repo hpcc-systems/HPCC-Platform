@@ -185,7 +185,7 @@ IHqlExpression * convertIndexPhysical2LogicalValue(IHqlExpression * cur, IHqlExp
         return ensureExprType(newValue, type);
     }
     else
-        return LINK(physicalSelect);
+        return ensureExprType(physicalSelect, cur->queryType());
 }
 
 

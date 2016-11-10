@@ -3213,6 +3213,7 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
                     return LINK(expr);
                 break;
             }
+            break;
         }
     case type_dictionary:
     case type_table:
