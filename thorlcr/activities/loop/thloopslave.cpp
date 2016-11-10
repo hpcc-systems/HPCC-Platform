@@ -831,6 +831,7 @@ public:
             stopInput(branch);
         selectedInputStream = NULL;
         abortSoon = true;
+        branch = (unsigned)-1;
         PARENT::stop();
     }
     CATCH_NEXTROW()
