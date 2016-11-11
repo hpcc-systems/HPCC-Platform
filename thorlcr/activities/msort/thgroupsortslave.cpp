@@ -82,13 +82,13 @@ public:
     virtual void stop()
     {
         out.clear();
-        PARENT::stop();
         if (hasStarted())
         {
             CriticalBlock block(statsCs);
             mergeStats(spillStats, iLoader);
             iLoader.clear();
         }
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {

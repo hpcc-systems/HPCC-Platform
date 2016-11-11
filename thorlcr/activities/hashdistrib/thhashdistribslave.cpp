@@ -2022,9 +2022,8 @@ public:
             distributor->disconnect(true);
             distributor->join();
         }
-        stopInput();
         instrm.clear();
-        dataLinkStop();
+        PARENT::stop();
     }
     virtual void kill() override
     {
@@ -2900,9 +2899,14 @@ public:
         if (!inputstopped)
         {
             SpinBlock b(stopSpin);
-            PARENT::stop();
+            PARENT::stopInput(0);
             inputstopped = true;
         }
+    }
+    virtual void stop() override
+    {
+        stopInput();
+        PARENT::stop();
     }
     void kill()
     {
@@ -3441,11 +3445,6 @@ public:
         : HashDedupSlaveActivityBase(container, true)
     {
     }
-    void stop()
-    {
-        ActPrintLog("stopping");
-        stopInput();
-    }
     void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
@@ -3455,6 +3454,8 @@ public:
 
 class GlobalHashDedupSlaveActivity : public HashDedupSlaveActivityBase, implements IStopInput
 {
+    typedef HashDedupSlaveActivityBase PARENT;
+
     mptag_t mptag;
     CriticalSection stopsect;
     IHashDistributor *distributor;
@@ -3476,11 +3477,6 @@ public:
             distributor->join();
             distributor->Release();
         }
-    }
-    void stopInput()
-    {
-        CriticalBlock block(stopsect);  // can be called async by distribute
-        HashDedupSlaveActivityBase::stopInput();
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -3510,6 +3506,7 @@ public:
             distributor->join();
         }
         stopInput();
+        PARENT::stop();
     }
     virtual void abort()
     {
@@ -3522,6 +3519,13 @@ public:
         initMetaInfo(info);
         info.canStall = true;
         info.unknownRowsOutput = true;
+    }
+
+// IStopInput
+    virtual void stopInput() override
+    {
+        CriticalBlock block(stopsect);  // can be called async by distribute
+        HashDedupSlaveActivityBase::stopInput();
     }
 };
 
@@ -3675,7 +3679,7 @@ public:
             CriticalBlock b(joinHelperCrit);
             joinhelper.clear();
         }
-        dataLinkStop();
+        PARENT::stop();
     }
     void kill()
     {

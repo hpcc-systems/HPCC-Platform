@@ -38,7 +38,7 @@ protected:
         {
             stopped = true;
             sendResult(c);
-            PARENT::stop();
+            PARENT::stopInput(0);
         }
     }
 
@@ -75,6 +75,7 @@ public:
     virtual void stop() override
     {
         stopInput(getDataLinkCount());
+        PARENT::stop();
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
