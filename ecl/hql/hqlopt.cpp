@@ -2502,7 +2502,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                             if (isSimpleCountExistsAggregate(child0, false, true))
                             {
                                 IHqlExpression * dataset = child0->queryChild(0);
-                                if (dataset->getOperator() == no_addfiles && (!isShared(dataset) || (dataset->queryChild(0) == dataset->queryChild(1))))
+                                if (dataset->getOperator() == no_addfiles && (!isShared(dataset)))
                                 {
                                     IHqlExpression * left = dataset->queryChild(0);
                                     IHqlExpression * right = dataset->queryChild(1);
@@ -2519,6 +2519,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                             }
                         }
                     }
+                    break;
                 case no_createrow:
                     {
                         OwnedHqlExpr match = getExtractSelect(child->queryChild(0), transformed->queryChild(1), false);
