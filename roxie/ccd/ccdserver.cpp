@@ -516,13 +516,6 @@ public:
         CriticalBlock b(statsCrit);
         if (started)
             putStatsValue(&node, "_roxieStarted", "sum", started);
-        //MORE: The following is information is now duplicated
-        unsigned __int64 totalNs = mystats.getSerialStatisticValue(StTimeTotalExecute);
-        unsigned __int64 localNs = mystats.getSerialStatisticValue(StTimeLocalExecute);
-        if (totalNs)
-            putStatsValue(&node, "totalTime", "sum", (unsigned) (totalNs/1000));
-        if (localNs)
-            putStatsValue(&node, "localTime", "sum", (unsigned) (localNs/1000));
     }
 
     virtual void resetNodeProgressInfo()
@@ -1680,7 +1673,9 @@ public:
                 inputStream->stop();
 
             parent.stop();
-            //MORE: Move totalCycles (+processed?) to gatherStats()
+            //It would be preferrable to move totalCycles (+processed?) to gatherStats(), but because of
+            //the way firstRow is associated with startCycles it would require an extra parameter
+            //which is not consistent with the other gatherStats() calls, or extra logic in the stats classes.
             parent.mergeStrandStats(processed, totalCycles);
         }
         stopped = true;
@@ -1697,7 +1692,6 @@ public:
     inline void requestAbort() { abortRequested.store(true, std::memory_order_relaxed); }
     inline bool isAborting() { return abortRequested.load(std::memory_order_relaxed); }
 
-    //MORE: processed and totalCycles should be included here, and not merged in stop()
     void gatherStats(CRuntimeStatisticCollection & mergedStats) const
     {
         mergedStats.merge(stats);
@@ -24607,7 +24601,6 @@ public:
             partNo = map->mapOffset(rp);
         if (needsRHS)
         {
-            //MORE: This allocator should be created once
             Owned<IEngineRowAllocator> extractAllocator = createRowAllocator(helper.queryExtractedSize());
             RtlDynamicRowBuilder rb(extractAllocator, true);
             unsigned rhsSize = helper.extractJoinFields(rb, row);
