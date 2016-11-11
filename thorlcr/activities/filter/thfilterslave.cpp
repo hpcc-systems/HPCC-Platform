@@ -73,14 +73,8 @@ public:
         {
             dataLinkStart();
             abortSoon = true;
-            stop();
+            stopInput(0);
         }
-    }
-    virtual void stop() override
-    {
-        if (!queryInputStopped(0))
-            PARENT::stop();
-        // else already stopped
     }
     CATCH_NEXTROW()
     {

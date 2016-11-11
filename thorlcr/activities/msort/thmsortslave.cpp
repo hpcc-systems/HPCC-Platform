@@ -119,7 +119,7 @@ public:
                 abortSoon,
                 auxrowif);
 
-            PARENT::stop();
+            PARENT::stopInput(0);
             if (abortSoon)
             {
                 ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "MSortSlaveActivity::start aborting");
@@ -161,13 +161,12 @@ public:
             barrier->wait(false);
             ActPrintLog("SORT barrier.2 raised");
         }
-        PARENT::stop();
         if (queryInputStarted(0))
         {
             ActPrintLog("SORT waiting for merge");
             sorter->stopMerge();
         }
-        dataLinkStop();
+        PARENT::stop();
     }
     virtual void reset() override
     {

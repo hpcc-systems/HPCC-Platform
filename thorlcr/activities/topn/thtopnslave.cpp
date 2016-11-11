@@ -176,14 +176,14 @@ public:
         }
         if (global || 0 == topNLimit || 0 == sortedCount)
         {
-            PARENT::stop();
+            PARENT::stopInput(0);
             if (!global || 0 == topNLimit)
                 eos = true;
         }
         return retStream.getClear();
     }
 // IThorDataLink
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
@@ -194,7 +194,7 @@ public:
         if (0 == topNLimit)
         {
             eos = true;
-            PARENT::stop();
+            PARENT::stopInput(0);
         }
         else
         {
@@ -204,7 +204,7 @@ public:
         eog = false;
     }
     virtual bool isGrouped() const override { return grouped; }
-    virtual void stop()
+    virtual void stop() override
     {
         if (out)
             out->stop();
