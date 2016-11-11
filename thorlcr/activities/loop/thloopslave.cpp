@@ -107,7 +107,7 @@ public:
     void doStop()
     {
         sendEndLooping();
-        PARENT::stop();
+        stopInput(0);
     }
 // IThorDataLink
     virtual bool isGrouped() const override { return false; }
@@ -429,6 +429,7 @@ public:
     {
         if (nextRowFeeder)
             nextRowFeeder->stop(); // NB: This will block if this slave's loop hasn't hit eof, it will continue looping until 'finishedLooping'
+        PARENT::stop();
     }
 };
 
@@ -502,7 +503,8 @@ public:
     {
         finalResultStream.clear();
         loopResults.clear();
-        CLoopSlaveActivityBase::doStop();
+        doStop();
+        PARENT::stop();
     }
 };
 

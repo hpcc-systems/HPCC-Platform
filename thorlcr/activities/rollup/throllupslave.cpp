@@ -156,7 +156,6 @@ class CDedupRollupBaseActivity : public CSlaveActivity, implements IStopInput
     typedef CSlaveActivity PARENT;
 
     bool rollup;
-    CriticalSection stopsect;
     Linked<IThorRowInterfaces> rowif;
 
 protected:
@@ -179,11 +178,6 @@ public:
         if (!global)
             setRequireInitData(false);
     }
-    virtual void stopInput()
-    {
-        CriticalBlock block(stopsect);  // can be called async by distribute
-        PARENT::stop();
-    }
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {
         PARENT::setInputStream(index, _input, consumerOrdered);
@@ -197,10 +191,6 @@ public:
         rowif.set(queryRowInterfaces(input));
         eogNext = eos = false;
         numKept = 0;
-    }
-    virtual void stop()
-    {
-        stopInput();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
@@ -282,6 +272,11 @@ public:
     {
         if (global)
             cancelReceiveMsg(queryJobChannel().queryMyRank(), mpTag);
+    }
+// IStopInput
+    virtual void stopInput() override
+    {
+        PARENT::stopInput(0);
     }
 };
 
