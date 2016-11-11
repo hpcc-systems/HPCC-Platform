@@ -99,7 +99,7 @@ public:
                     OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row)
                     {
-                        stop();
+                        stopInput(0);
                         return NULL;
                     }
                     skipped++;
@@ -114,7 +114,7 @@ public:
                     return row.getClear();
                 }
             }
-            stop(); // NB: really whatever is pulling, should stop asap.
+            stopInput(0); // NB: really whatever is pulling, should stop asap.
         }
         return NULL;
     }
@@ -158,7 +158,7 @@ public:
                         {
                             if (0 == skipped)
                             {
-                                stop();
+                                stopInput(0);
                                 return NULL;
                             }
                             skipped = 0; // reset, skip group
@@ -177,7 +177,7 @@ public:
                     }
                     else if (0 == countThisGroup && 0==skipCount)
                     {
-                        stop();
+                        stopInput(0);
                         return NULL;
                     }
                 }
@@ -328,7 +328,7 @@ public:
                     OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row)
                     {
-                        stop();
+                        stopInput(0);
                         return NULL;
                     }
                     skipped++;
@@ -343,7 +343,7 @@ public:
                     return row.getClear();
                 }
             }
-            stop(); // NB: really whatever is pulling, should stop asap.
+            stopInput(0); // NB: really whatever is pulling, should stop asap.
         }
         return NULL;
     }

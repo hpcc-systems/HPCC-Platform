@@ -2183,7 +2183,7 @@ public:
                 }
                 out->flush();
                 sz = out->getPosition();
-                activity->stop();
+                activity->stopInput(0);
             }
             ret.setown(createRowStream(tempfile, activity, rwFlags));
         }
