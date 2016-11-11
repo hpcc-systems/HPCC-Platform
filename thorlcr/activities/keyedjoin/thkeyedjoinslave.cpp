@@ -1749,7 +1749,7 @@ public:
         if (!inputStopped)
         {
             inputStopped = true;
-            PARENT::stop();
+            PARENT::stopInput(0);
         }
     }
     void doAbortLimit(CJoinGroup *jg)
@@ -2071,6 +2071,7 @@ public:
             }
         }
         stopInput();
+        PARENT::stop();
 #ifdef TRACE_JOINGROUPS
         ActPrintLog("groupsPendsNoted = %d", groupsPendsNoted);
         ActPrintLog("fetchReadBack = %d", fetchReadBack);
@@ -2079,7 +2080,6 @@ public:
         ActPrintLog("wroteToFetchPipe = %d", wroteToFetchPipe);
         ActPrintLog("groupsComplete = %d", groupsComplete);
 #endif
-        dataLinkStop();
     }
     const void *doDenormTransform(RtlDynamicRowBuilder &target, CJoinGroup &group)
     {

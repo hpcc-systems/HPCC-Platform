@@ -40,7 +40,7 @@ protected:
         if (inputStopped)
             return;
         inputStopped = true;
-        PARENT::stop();
+        stopInput(0);
     }
     virtual void start() override
     {
@@ -157,6 +157,7 @@ public:
     virtual void stop() override
     {
         doStopInput();
+        PARENT::stop();
     }
     CATCH_NEXTROW()
     {

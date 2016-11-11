@@ -53,8 +53,8 @@ public:
         {
             abortSoon = true;
             stopped = true;
-            PARENT::stop();
         }
+        PARENT::stop();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
