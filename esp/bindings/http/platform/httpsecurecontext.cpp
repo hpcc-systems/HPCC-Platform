@@ -52,6 +52,12 @@ public:
         case HTTP_PROPERTY_TYPE_COOKIE:
             result = getCookie(name, value);
             break;
+        case HTTP_PROPERTY_TYPE_HEADER:
+            result = getHeader(name, value);
+            break;
+        case HTTP_PROPERTY_TYPE_REMOTE_ADDRESS:
+            result = getRemoteAddress(value);
+            break;
         default:
             break;
         }
@@ -74,6 +80,36 @@ private:
                 result = true;
             }
         }
+
+        return result;
+    }
+
+    bool getHeader(const char* name, StringBuffer& value)
+    {
+        bool result = false;
+
+        if (name && *name)
+        {
+            StringBuffer tmp;
+
+            if (m_request->getHeader(name, tmp).length())
+            {
+                value.set(tmp);
+                result = true;
+            }
+        }
+
+        return result;
+    }
+
+    bool getRemoteAddress(StringBuffer& value)
+    {
+        char address[256] = {0,};
+        int  port = m_request->getSocket()->peer_name(address, 256);
+        bool result = (*address != 0);
+
+        if (result)
+            value.set(address);
 
         return result;
     }
