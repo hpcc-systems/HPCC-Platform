@@ -1536,9 +1536,9 @@ public:
         {
             clearRHS();
             clearHT();
-            if (right)
-                stopInput(1, "(R)");
         }
+        if (right)
+            stopInput(1, "(R)");
         if (broadcaster)
             broadcaster->reset();
         stopInput(0, "(L)");
