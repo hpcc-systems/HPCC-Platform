@@ -1743,15 +1743,34 @@ IHqlExpression * normalizeAggregateExpr(IHqlExpression * tableSelector, IHqlExpr
 
 //---------------------------------------------------------------------------
 
-static void appendComponent(HqlExprArray & cpts, bool invert, IHqlExpression * expr)
+class SortListSimplifier
 {
-    if (invert)
-        cpts.append(*createValue(no_negate, expr->getType(), LINK(expr)));
-    else
-        cpts.append(*LINK(expr));
+public:
+    IHqlExpression * simplify(IHqlExpression * expr);
+
+protected:
+    void appendComponent(bool invert, IHqlExpression * expr);
+    void expandRowComponents(bool invert, IHqlExpression * select, IHqlExpression * record);
+
+protected:
+    TransformMutexBlock block;
+    HqlExprArray cpts;
+};
+
+void SortListSimplifier::appendComponent(bool invert, IHqlExpression * expr)
+{
+    //If already sorted by x or -x then no point sorting again by the same expression.
+    if (!expr->queryTransformExtra())
+    {
+        expr->setTransformExtraUnlinked(expr);
+        if (invert)
+            cpts.append(*createValue(no_negate, expr->getType(), LINK(expr)));
+        else
+            cpts.append(*LINK(expr));
+    }
 }
 
-static void expandRowComponents(HqlExprArray & cpts, bool invert, IHqlExpression * select, IHqlExpression * record)
+void SortListSimplifier::expandRowComponents(bool invert, IHqlExpression * select, IHqlExpression * record)
 {
     ForEachChild(i, record)
     {
@@ -1759,18 +1778,18 @@ static void expandRowComponents(HqlExprArray & cpts, bool invert, IHqlExpression
         switch (cur->getOperator())
         {
         case no_record:
-            expandRowComponents(cpts, invert, select, cur);
+            expandRowComponents(invert, select, cur);
             break;
         case no_ifblock:
-            expandRowComponents(cpts, invert, select, cur->queryChild(1));
+            expandRowComponents(invert, select, cur->queryChild(1));
             break;
         case no_field:
             {
                 OwnedHqlExpr childSelect = createSelectExpr(LINK(select), LINK(cur));
                 if (!childSelect->isDatarow())
-                    appendComponent(cpts, invert, childSelect);
+                    appendComponent(invert, childSelect);
                 else
-                    expandRowComponents(cpts, invert, childSelect, childSelect->queryRecord());
+                    expandRowComponents(invert, childSelect, childSelect->queryRecord());
                 break;
             }
         }
@@ -1778,14 +1797,10 @@ static void expandRowComponents(HqlExprArray & cpts, bool invert, IHqlExpression
 }
 
 
-static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
+IHqlExpression * SortListSimplifier::simplify(IHqlExpression * sortlist)
 {
-    if (!sortlist)
-        return NULL;
-
     //convert concat on fixed width strings to a list of fields.
     bool same = true;
-    HqlExprArray cpts;
     ForEachChild(idx, sortlist)
     {
         IHqlExpression * cpt = sortlist->queryChild(idx);
@@ -1813,7 +1828,7 @@ static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
             if (expand)
             {
                 ForEachItemIn(idxc, concats)
-                    appendComponent(cpts, invert, &concats.item(idxc));
+                    appendComponent(invert, &concats.item(idxc));
             }
         }
         else if (cur->getOperator() == no_trim)
@@ -1827,7 +1842,7 @@ static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
                 if (cur->queryType()->getTypeCode() == argType->getTypeCode())
                 {
                     expand = true;
-                    appendComponent(cpts, invert, arg);
+                    appendComponent(invert, arg);
                 }
             }
         }
@@ -1837,13 +1852,21 @@ static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
             if (cur->getOperator() == no_select && cur->isDatarow() && !cur->hasAttribute(newAtom))
             {
                 expand = true;
-                expandRowComponents(cpts, invert, cur, cur->queryRecord());
+                expandRowComponents(invert, cur, cur->queryRecord());
             }
 #endif
+            if (cur->queryTransformExtra())
+                expand = true;
+
+            if (cur->isConstant() && cpts.ordinality())
+                expand = true;
         }
 
         if (!expand)
+        {
+            cur->setTransformExtraUnlinked(cur);
             cpts.append(*LINK(cpt));
+        }
         else
             same = false;
     }
@@ -1852,6 +1875,16 @@ static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
 
     return NULL;
 }
+
+static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
+{
+    if (!sortlist)
+        return NULL;
+
+    SortListSimplifier transformer;
+    return transformer.simplify(sortlist);
+}
+
 
 static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortIndexPayload, bool alwaysLocal, bool allowImplicitSubSort)
 {
