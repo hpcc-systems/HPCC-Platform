@@ -8024,9 +8024,8 @@ void HqlCppTranslator::buildIteratorNext(BuildCtx & ctx, IHqlExpression * iter, 
 void HqlCppTranslator::doBuildAssignCompareRow(BuildCtx & ctx, EvaluateCompareInfo & info, IHqlExpression * left, IHqlExpression * right)
 {
     HqlExprArray leftValues, rightValues;
-    IHqlExpression * record = left->queryRecord();
-    expandRowOrder(left->queryNormalizedSelector(), record, leftValues, false);
-    expandRowOrder(right->queryNormalizedSelector(), record, rightValues, false);
+    expandRowOrder(left->queryNormalizedSelector(), left->queryRecord(), leftValues, false);
+    expandRowOrder(right->queryNormalizedSelector(), right->queryRecord(), rightValues, false);
     optimizeOrderValues(leftValues, rightValues, false);
 
     doBuildAssignCompare(ctx, info, leftValues, rightValues, true, false);      //MORE: ,no_break,true
