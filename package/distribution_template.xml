@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<installer-gui-script minSpecVersion="2">
+    <title>${TITLE}</title>
+    <welcome file="Welcome.txt"/>
+    <license file="License.txt"/>
+    <readme file="ReadMe.txt"/>
+    <options allow-external-scripts="no" customize="allow" rootVolumeOnly="false"/>
+    <pkg-ref id="hpccsystems.product"/>
+    <options customize="never" require-scripts="false"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="hpccsystems.product"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="hpccsystems.product" visible="false">
+        <pkg-ref id="hpccsystems.product"/>
+    </choice>
+    <pkg-ref id="hpccsystems.product" version="0" onConclusion="none">${PACKAGE_NAME}.pkg</pkg-ref>
+    <product version="${FULL_VERSION}"/>
+</installer-gui-script>
