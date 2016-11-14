@@ -1192,9 +1192,10 @@
                   <row>
                     <entry>-set_esp_username_pw</entry>
 
-                    <entry>Set specific logins credentials for esp checks. All
-                    fields are required. (esp name, user name, password) Can
-                    be specified more than once.</entry>
+                    <entry>Set specific login credentials for ESP checks. All
+                    fields are required (esp name, user name, password). Can
+                    be specified more than once to support multiple ESP
+                    servers.</entry>
 
                     <entry><para>&lt;esp name&gt;</para><para>&lt;user
                     name&gt;</para><para>&lt;password&gt;</para></entry>
