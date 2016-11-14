@@ -1344,10 +1344,11 @@ static bool WildMatchNreplace ( const char *src, int srclen, int srcidx,
                     (toupper(src[srcidx])!=toupper(next_char)))
                     goto Fail;
             }
-            else
+            else {
                 if ((srcidx == srclen) || (src[srcidx]!=next_char))
                     goto Fail;
                 srcidx++;
+            }
         }
         else {
             loop {
