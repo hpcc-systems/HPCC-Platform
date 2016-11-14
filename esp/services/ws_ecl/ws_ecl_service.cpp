@@ -373,7 +373,7 @@ void CWsEclBinding::getQueryNames(IPropertyTree* settree, const char *id, const 
 
     VStringBuffer xpath("Query[@id='%s']", id);
     IPropertyTree *query = settree->queryPropTree(xpath.str());
-    if (query->getPropBool("@isLibrary") || query->getPropBool("@suspended"))
+    if (!query || query->getPropBool("@isLibrary") || query->getPropBool("@suspended"))
         return;
 
     if (!qname || !*qname)
