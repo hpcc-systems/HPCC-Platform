@@ -1178,6 +1178,8 @@ class CSuperAllocator: public CInterface, implements IAllocator
             *   3. Put a 'free' tag on the end.
             *   4. Change the size recorded in the block.
             */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
             PrevFreeEnt->Size += CurBlockSize;
             ListOwner(ptr, CurBlockSize - BlockExtraSize) = PrevFreeEnt;
 
@@ -1188,6 +1190,7 @@ class CSuperAllocator: public CInterface, implements IAllocator
             LastFreeEnt = PrevFreeEnt->Prev;   /* Point at the next block to look at */
             if (PrevFreeEnt->Size==OSCHUNKSIZE-OSBlockExtra)
                 FreeOSChunk(PrevFreeEnt);
+#pragma GCC diagnostic pop
         }
         else if (NextTag == FreeBlockTag)
         {
