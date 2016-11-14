@@ -2093,11 +2093,15 @@ void HqlCppTranslator::doReportWarning(WarnErrorCategory category, ErrorSeverity
     Owned<IError> warnError;
     if (!location)
         location = queryActiveActivityLocation();
+    unsigned activity = 0;
+    if (activeActivities.ordinality())
+        activity = activeActivities.tos().queryActivityId();
+
     ErrorSeverity severity = (explicitSeverity == SeverityUnknown) ? queryDefaultSeverity(category) : explicitSeverity;
     if (location)
-        warnError.setown(createError(category, severity, id, msg, str(location->querySourcePath()), location->getStartLine(), location->getStartColumn(), 0));
+        warnError.setown(createError(category, severity, id, msg, str(location->querySourcePath()), location->getStartLine(), location->getStartColumn(), 0, activity));
     else
-        warnError.setown(createError(category, severity, id, msg, NULL, 0, 0, 0));
+        warnError.setown(createError(category, severity, id, msg, activity));
 
     errorProcessor->report(warnError);
 }

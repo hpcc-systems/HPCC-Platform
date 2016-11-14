@@ -74,6 +74,8 @@ void WorkUnitErrorReceiver::report(IError* eclError)
     StringBuffer msg;
     initializeError(exception, eclError->errorCode(), eclError->errorMessage(msg).str(), 
                     eclError->getFilename(), eclError->getLine(), eclError->getColumn(), eclError->getPosition());
+    if (eclError->getActivity())
+        exception->setActivityId(eclError->getActivity());
 }
 
 size32_t WorkUnitErrorReceiver::errCount()

@@ -238,6 +238,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                     err->setExceptionCode(atoi(errCode));
                     err->setExceptionMessage(errText);
                     err->setExceptionFileName(file); // any point if it just says stdin?
+                    //MORE: How can we pass the activity id?  Should errors be output in a modified format?
                 }
                 else
                 {
@@ -491,7 +492,7 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            addExceptionToWorkunit(workunit, SeverityError, "eclccserver", e->errorCode(), msg.str(), NULL, 0, 0);
+            addExceptionToWorkunit(workunit, SeverityError, "eclccserver", e->errorCode(), msg.str(), NULL, 0, 0, 0);
             e->Release();
         }
         if (ok)

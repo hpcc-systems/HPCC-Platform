@@ -1400,7 +1400,7 @@ void printStackReport()
 class jlib_decl CError : public CInterfaceOf<IError>
 {
 public:
-    CError(WarnErrorCategory _category,ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position);
+    CError(WarnErrorCategory _category,ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position, unsigned _activity);
 
     virtual int             errorCode() const { return no; }
     virtual StringBuffer &  errorMessage(StringBuffer & ret) const { return ret.append(msg); }
@@ -1413,6 +1413,7 @@ public:
     virtual StringBuffer& toString(StringBuffer&) const;
     virtual ErrorSeverity getSeverity() const { return severity; }
     virtual IError * cloneSetSeverity(ErrorSeverity _severity) const;
+    virtual unsigned getActivity() const { return activity; }
 
 protected:
     ErrorSeverity severity;
@@ -1423,10 +1424,11 @@ protected:
     int lineno;
     int column;
     int position;
+    unsigned activity;
 };
 
-CError::CError(WarnErrorCategory _category, ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position):
-  severity(_severity), category(_category), msg(_msg), filename(_filename)
+CError::CError(WarnErrorCategory _category, ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position, unsigned _activity)
+    : severity(_severity), category(_category), msg(_msg), filename(_filename), activity(_activity)
 {
     no = _no;
     lineno = _lineno;
@@ -1451,11 +1453,15 @@ IError * CError::cloneSetSeverity(ErrorSeverity newSeverity) const
 {
     return new CError(category, newSeverity,
                          errorCode(), msg, filename,
-                         getLine(), getColumn(), getPosition());
+                         getLine(), getColumn(), getPosition(), getActivity());
 }
 
-IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char * filename, int lineno, int column, int pos)
+IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char * filename, int lineno, int column, int pos, unsigned activity)
 {
-    return new CError(category,severity,errNo,msg,filename,lineno,column,pos);
+    return new CError(category,severity,errNo,msg,filename,lineno,column,pos, activity);
 }
 
+IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, unsigned activity)
+{
+    return new CError(category,severity,errNo,msg,nullptr, 0, 0, 0, activity);
+}

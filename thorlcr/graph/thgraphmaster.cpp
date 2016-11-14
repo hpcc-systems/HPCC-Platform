@@ -1162,7 +1162,8 @@ public:
         try
         {
             Owned<IWorkUnit> w = updateWorkUnit();
-            addExceptionToWorkunit(w, SeverityError, "user", code, text, filename, lineno, column);
+            unsigned activity = 0;
+            addExceptionToWorkunit(w, SeverityError, "user", code, text, filename, lineno, column, activity);
         }
         catch (IException *E)
         {

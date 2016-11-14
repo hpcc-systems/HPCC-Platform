@@ -1650,7 +1650,7 @@ void addException(IWorkUnit *w, ErrorSeverity severity, const char * source, uns
     PrintLog("%s", text);
     if ((severity == SeverityError) && (w->getState()!=WUStateAborting) && failOnError)
         w->setState(WUStateFailed);
-    addExceptionToWorkunit(w, severity, source, code, text, filename, lineno, column);
+    addExceptionToWorkunit(w, severity, source, code, text, filename, lineno, column, 0);
 }
 
 

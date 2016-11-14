@@ -295,7 +295,7 @@ protected:
             msg.append(type).append(" clause failed (execution will continue): ").append(e->errorCode()).append(": ");
             e->errorMessage(msg);
             WorkunitUpdate wu(&workunit->lock());
-            addExceptionToWorkunit(wu, SeverityWarning, "user", e->errorCode(), msg.str(), NULL, 0, 0);
+            addExceptionToWorkunit(wu, SeverityWarning, "user", e->errorCode(), msg.str(), NULL, 0, 0, 0);
         }
     }
     virtual void checkForAbort(unsigned wfid, IException * handling)
@@ -309,7 +309,7 @@ protected:
                 handling->errorMessage(msg);
                 msg.append(" (in item ").append(wfid).append(")");
                 WorkunitUpdate wu(&workunit->lock());
-                addExceptionToWorkunit(wu, SeverityWarning, "user", handling->errorCode(), msg.str(), NULL, 0, 0);
+                addExceptionToWorkunit(wu, SeverityWarning, "user", handling->errorCode(), msg.str(), NULL, 0, 0, 0);
                 handling->Release();
             }
             throw new WorkflowException(0, "Workunit abort request received", wfid, WorkflowException::ABORT, MSGAUD_user);
@@ -3570,7 +3570,7 @@ public:
         if (workUnit)
         {
             WorkunitUpdate wu(&workUnit->lock());
-            addExceptionToWorkunit(wu, severity, source, code, text, NULL, 0 ,0);
+            addExceptionToWorkunit(wu, severity, source, code, text, NULL, 0 ,0, 0);
         }
     }
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort)
@@ -3580,7 +3580,7 @@ public:
         if (workUnit)
         {
             WorkunitUpdate wu(&workUnit->lock());
-            addExceptionToWorkunit(wu, SeverityError, "user", code, text, filename, lineno, column);
+            addExceptionToWorkunit(wu, SeverityError, "user", code, text, filename, lineno, column, 0);
         }
         if (isAbort)
             rtlFailOnAssert();      // minimal implementation
