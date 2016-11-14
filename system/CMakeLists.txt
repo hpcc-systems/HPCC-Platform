@@ -14,7 +14,7 @@
 #    limitations under the License.
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (hrpc)
-HPCC_ADD_SUBDIRECTORY (include "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (include)
 HPCC_ADD_SUBDIRECTORY (jhtree)
 HPCC_ADD_SUBDIRECTORY (jlib)
 HPCC_ADD_SUBDIRECTORY (mp)
