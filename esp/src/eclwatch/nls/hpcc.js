@@ -439,6 +439,7 @@ define({root:
     PleasePickADefinition: "Please pick a definition",
     PleaseSelectAUserOrGroup: "Please select a user or a group along with a file name",
     PleaseSelectADynamicESDLService: "Please select a dynamic ESDL service",
+    PleaseSelectATopologyItem: "Please select a target, service or machine.",
     Plugins: "Plugins",
     PleaseEnterANumber: "Please enter a number 1 - ",
     Port: "Port",
