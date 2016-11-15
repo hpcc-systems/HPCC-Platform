@@ -75,8 +75,7 @@ ldap_compare_ext_s LDAP_P((
     LDAPControl    **clientctrls ));
 */
     #define LDAP_COMPARE_EXT_S(ld,dn,attr,bval,svrctrls,clientctrls,msgnum) ldap_compare_ext_s(ld,(const char*)dn,(const char*)attr,(struct berval *)bval,svrctrls,clientctrls)
-    #define LDAP_UNBIND(ld)     signal(SIGPIPE, SIG_IGN); \
-                                ldap_unbind_ext(ld,0,0)
+    #define LDAP_UNBIND(ld)     ldap_unbind_ext(ld,0,0)
     #define LDAP_INIT(ld,uri)   ldap_initialize(ld, uri);
 #endif
 
