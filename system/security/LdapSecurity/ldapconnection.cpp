@@ -666,6 +666,8 @@ public:
     {
         if(m_ld != NULL)
         {
+            // unbinding a stale connection can generate SIGPIPE
+            signal(SIGPIPE, SIG_IGN);
             LDAP_UNBIND(m_ld);
         }
     }
