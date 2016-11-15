@@ -705,14 +705,16 @@
 
             <listitem>
               <para>Locate the <emphasis role="bold">ldapUser</emphasis> field
-              and verify that there is a "<emphasis>roxie</emphasis>"
-              user.</para>
+              and verify that there is a valid HPCC user who is a member of
+              the Authenticated Users group on your LDAP server. For example,
+              the "<emphasis>roxie</emphasis>" user (assuming that the "roxie"
+              user is a valid HPCC authenticated user).</para>
             </listitem>
 
             <listitem>
-              <para>You can add password security for Roxie by adding it to
-              the <emphasis role="bold">ldapPassword</emphasis> field on the
-              same tab.</para>
+              <para>Add password security for Roxie by adding it to the
+              <emphasis role="bold">ldapPassword</emphasis> field on the same
+              tab.</para>
             </listitem>
           </orderedlist></para>
       </listitem>
