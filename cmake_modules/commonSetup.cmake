@@ -243,6 +243,11 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
 
   if(UNIX AND SIGN_MODULES)
+      execute_process(COMMAND bash "-c" "gpg --version | awk 'NR==1{print $3}'"
+        OUTPUT_VARIABLE GPG_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+    message(STATUS "gpg version ${GPG_VERSION}")
     #export gpg public key used for signing to new installation
     add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/pub.key
       COMMAND gpg --output=${CMAKE_BINARY_DIR}/pub.key --batch --no-tty --export ${SIGN_MODULES_KEYID}
@@ -954,9 +959,13 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       if(DEFINED SIGN_MODULES_KEYID)
         set(GPG_DEFAULT_KEY_OPTION --default-key)
       endif()
+      set(GPG_BATCH_OPTIONS --batch --no-tty)
+      if("${GPG_VERSION}" VERSION_GREATER "2.1")
+          set(GPG_BATCH_OPTIONS --pinentry-mode=loopback ${GPG_BATCH_OPTIONS})
+      endif()
       add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${module}
-        COMMAND gpg --output ${CMAKE_CURRENT_BINARY_DIR}/${module} ${GPG_DEFAULT_KEY_OPTION} ${SIGN_MODULES_KEYID}  --clearsign ${GPG_PASSPHRASE_OPTION} ${SIGN_MODULES_PASSPHRASE} --batch --no-tty ${module}
+        COMMAND gpg ${GPG_BATCH_OPTIONS} --output ${CMAKE_CURRENT_BINARY_DIR}/${module} ${GPG_PASSPHRASE_OPTION} ${SIGN_MODULES_PASSPHRASE} ${GPG_DEFAULT_KEY_OPTION} ${SIGN_MODULES_KEYID} --clearsign ${module} </dev/null
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Adding signed ${module} to project"
         )
