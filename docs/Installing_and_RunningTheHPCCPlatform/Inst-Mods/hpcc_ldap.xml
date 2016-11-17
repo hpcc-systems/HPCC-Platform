@@ -705,14 +705,17 @@
 
             <listitem>
               <para>Locate the <emphasis role="bold">ldapUser</emphasis> field
-              and verify that there is a "<emphasis>roxie</emphasis>"
+              and verify that there is a valid HPCC user who is a member of
+              the Authenticated Users group on your LDAP server. For example,
+              the "<emphasis>roxie</emphasis>" user assumes that the
+              "<emphasis>roxie</emphasis>" user is a valid HPCC authenticated
               user.</para>
             </listitem>
 
             <listitem>
-              <para>You can add password security for Roxie by adding it to
-              the <emphasis role="bold">ldapPassword</emphasis> field on the
-              same tab.</para>
+              <para>Add the password security for Roxie by adding it to the
+              <emphasis role="bold">ldapPassword</emphasis> field on the same
+              tab.</para>
             </listitem>
           </orderedlist></para>
       </listitem>
@@ -732,12 +735,12 @@
               fileref="../../images/caution.png" /></entry>
 
               <entry><para>In order to run Roxie queries with File Scope
-              security, ensure that the roxie user is created in the list of
+              security, ensure that a Roxie user is created in the list of
               authenticated users.</para>In the following section, <link
               linkend="Adding_Users"><emphasis>Adding and editing
-              users</emphasis></link>, add "<emphasis>roxie</emphasis>" as a
-              user and make sure the password is the same as the one entered
-              in Configuration Manager.</entry>
+              users</emphasis></link>, add the <emphasis>roxie</emphasis> user
+              and make sure that password is the same as the one entered in
+              Configuration Manager.</entry>
             </row>
           </tbody>
         </tgroup>
