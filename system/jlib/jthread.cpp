@@ -1640,20 +1640,24 @@ class CIgnoreSIGPIPE
 public:
     CIgnoreSIGPIPE()
     {
+        oact.sa_handler = SIG_IGN;
         struct sigaction act;
         sigset_t blockset;
         sigemptyset(&blockset);
         act.sa_mask = blockset;
         act.sa_handler = SIG_IGN;
         act.sa_flags = 0;
-        sigaction(SIGPIPE, &act, NULL);
+        sigaction(SIGPIPE, &act, &oact);
     }
 
     ~CIgnoreSIGPIPE()
     {
-        signal(SIGPIPE, SIG_DFL);
+        if (oact.sa_handler != SIG_IGN)
+            sigaction(SIGPIPE, &oact, NULL);
     }
 
+private:
+    struct sigaction oact;
 };
 
 #define WHITESPACE " \t\n\r"

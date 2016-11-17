@@ -110,11 +110,16 @@ int LdapUtils::LdapSimpleBind(LDAP* ld, char* userdn, char* password)
     ldap_set_option(ld, LDAP_OPT_TIMEOUT, &timeout);
     ldap_set_option(ld, LDAP_OPT_NETWORK_TIMEOUT, &timeout);
 #endif
-    return ldap_bind_s(ld, userdn, password, LDAP_AUTH_SIMPLE);
+    int srtn = ldap_bind_s(ld, userdn, password, LDAP_AUTH_SIMPLE);
+#ifndef _WIN32
+    // secure ldap tls might overwrite SIGPIPE handler
+    signal(SIGPIPE, SIG_IGN);
+#endif
+    return srtn;
 }
 
 // userdn is required for ldap_simple_bind_s, not really necessary for ldap_bind_s.
-int LdapUtils::LdapBindInternal(LDAP* ld, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method)
+int LdapUtils::LdapBind(LDAP* ld, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method)
 {
     bool binddone = false;
     int rc = LDAP_SUCCESS;
@@ -201,16 +206,6 @@ int LdapUtils::LdapBindInternal(LDAP* ld, const char* domain, const char* userna
     }
 
     return rc;
-}
-
-int LdapUtils::LdapBind(LDAP* ld, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method)
-{
-    int srtn = LdapBindInternal(ld, domain, username, password, userdn, server_type, method);
-#ifndef _WIN32
-    // secure ldap tls might overwrite SIGPIPE handler
-    signal(SIGPIPE, SIG_IGN);
-#endif
-    return srtn;
 }
 
 int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname)
