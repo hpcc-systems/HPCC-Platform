@@ -1420,7 +1420,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <entry>local</entry>
 
                     <entry>uses the local credentials for the server running
-                    the ESP.</entry>
+                    the ESP</entry>
                   </row>
 
                   <row>
@@ -1434,7 +1434,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <entry>ldaps</entry>
 
                     <entry>similar to LDAP but uses a more secure (TLS)
-                    protocol and a different default port</entry>
+                    protocol</entry>
                   </row>
 
                   <row>
