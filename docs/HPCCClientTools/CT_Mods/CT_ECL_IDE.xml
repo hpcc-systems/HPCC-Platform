@@ -344,7 +344,7 @@
                 <row>
                   <entry><emphasis role="bold">Use Spaces</emphasis></entry>
 
-                  <entry>Specify to use spaces for a tab. </entry>
+                  <entry>Specify to use spaces for a tab.</entry>
                 </row>
 
                 <row>
@@ -3063,6 +3063,49 @@ ENDMACRO;
 
         <para>There is also a right-click pop-up menu with the all the options
         found on the <emphasis role="bold">Edit</emphasis> menu.</para>
+
+        <sect3 role="brk">
+          <title>Builder Tab Options</title>
+
+          <para>When working in the IDE builder window you may find that you
+          have numerous tabs open. Right-click on any of the open tabs to
+          display tab options. <graphic
+          fileref="../../images/IDE0101.jpg" /></para>
+
+          <para>Select the desired action to perform on the tabs.</para>
+
+          <para><itemizedlist>
+              <listitem>
+                <para><emphasis role="bold">Save</emphasis> Saves the selected
+                tab.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">Close</emphasis> Closes the
+                selected tab.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">Close All</emphasis> Closes all
+                open tabs.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">Close All Others</emphasis> Closes
+                all open tabs except the selected tab.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">Close All to Right</emphasis>
+                Closes all open tabs to the right of the selected tab.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">Close All to Left</emphasis>
+                Closes all open tabs to the left of the selected tab.</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
 
         <sect3 id="CT_ECLIDE_AdvancedBuilderWindowOptions" role="brk">
           <title>Advanced Builder Window Options</title>
