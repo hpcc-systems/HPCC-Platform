@@ -93,6 +93,7 @@
   <Component name="ws_account" processName='EspService' schema='esp_service_account.xsd' deployable='no'>
     <File name="@temp/esp_service.xsl" method="esp_service_module" destName="WsAccount.xml" destPath="@temp"/>
   </Component>
+  <Component name="CassandraLoggingAgent" processName='CassandraLoggingAgent' schema='cassandraloggingagent.xsd' deployable='no'/>
   <Component name="ESPLoggingAgent" processName='ESPLoggingAgent' schema='esploggingagent.xsd' deployable='no'/>
   <Component name="LoggingManager" processName='LoggingManager' schema='loggingmanager.xsd' deployable='no'/>
   <Component name="WsLogging" processName='EspService' schema='wslogging.xsd' deployable='no'>
