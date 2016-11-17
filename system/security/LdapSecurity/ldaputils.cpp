@@ -23,6 +23,9 @@
 
 #include "ldaputils.hpp"
 
+#ifndef _WIN32
+# include <signal.h>
+#endif
 
 //------------------------------------
 // LdapUtils implementation
@@ -111,7 +114,7 @@ int LdapUtils::LdapSimpleBind(LDAP* ld, char* userdn, char* password)
 }
 
 // userdn is required for ldap_simple_bind_s, not really necessary for ldap_bind_s.
-int LdapUtils::LdapBind(LDAP* ld, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method)
+int LdapUtils::LdapBindInternal(LDAP* ld, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method)
 {
     bool binddone = false;
     int rc = LDAP_SUCCESS;
@@ -198,6 +201,16 @@ int LdapUtils::LdapBind(LDAP* ld, const char* domain, const char* username, cons
     }
 
     return rc;
+}
+
+int LdapUtils::LdapBind(LDAP* ld, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method)
+{
+    int srtn = LdapBindInternal(ld, domain, username, password, userdn, server_type, method);
+#ifndef _WIN32
+    // secure ldap tls might overwrite SIGPIPE handler
+    signal(SIGPIPE, SIG_IGN);
+#endif
+    return srtn;
 }
 
 int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname)

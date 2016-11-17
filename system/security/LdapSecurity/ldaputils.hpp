@@ -40,6 +40,7 @@ public:
     static LDAP* LdapInit(const char* protocol, const char* host, int port, int secure_port);
     static int LdapSimpleBind(LDAP* ld, char* userdn, char* password);
     // userdn is required for ldap_simple_bind_s, not really necessary for ldap_bind_s.
+    static int LdapBindInternal(LDAP* ld, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method="kerberos");
     static int LdapBind(LDAP* ld, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method="kerberos");
     static void bin2str(MemoryBuffer& from, StringBuffer& to);
     static int getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname);
