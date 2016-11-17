@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "httpsecurecontext.hpp"
+#define MAX_ADDRESS_LEN 256
 
 class CHttpSecureContext : extends CEspBaseSecureContext
 {
@@ -52,6 +53,12 @@ public:
         case HTTP_PROPERTY_TYPE_COOKIE:
             result = getCookie(name, value);
             break;
+        case HTTP_PROPERTY_TYPE_HEADER:
+            result = getHeader(name, value);
+            break;
+        case HTTP_PROPERTY_TYPE_REMOTE_ADDRESS:
+            result = getRemoteAddress(value);
+            break;
         default:
             break;
         }
@@ -74,6 +81,31 @@ private:
                 result = true;
             }
         }
+
+        return result;
+    }
+
+    bool getHeader(const char* name, StringBuffer& value)
+    {
+        if (name && *name)
+        {
+            value.clear();
+
+            if (m_request->getHeader(name, value).length())
+                return true;
+        }
+
+        return false;
+    }
+
+    bool getRemoteAddress(StringBuffer& value)
+    {
+        char address[MAX_ADDRESS_LEN] = {0,};
+        int  port = m_request->getSocket()->peer_name(address, MAX_ADDRESS_LEN);
+        bool result = (*address != 0);
+
+        if (result)
+            value.set(address);
 
         return result;
     }
