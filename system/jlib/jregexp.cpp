@@ -1347,8 +1347,8 @@ static bool WildMatchNreplace ( const char *src, int srclen, int srcidx,
             else {
                 if ((srcidx == srclen) || (src[srcidx]!=next_char))
                     goto Fail;
-                srcidx++;
             }
+            srcidx++;
         }
         else {
             loop {
