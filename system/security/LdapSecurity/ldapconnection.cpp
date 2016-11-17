@@ -131,9 +131,9 @@ public:
 class CHostManager
 {
 private:
-    StringArray hostArray;
+    StringArray m_hostArray;
     Mutex       m_HMMutex;
-    unsigned	curIdx;
+    unsigned    m_curHostIdx;
 
 public:
     void populateHosts(const char* addrlist)
@@ -164,62 +164,59 @@ public:
                         {
                             StringBuffer t;
                             t.append(ip).append('.').append(i);
-                            hostArray.append(t.str());
+                            m_hostArray.append(t.str());
                         }
                     }
                     else
                     {
-                        hostArray.append(ip);
+                        m_hostArray.append(ip);
                     }
                 }
                 else
                 {
-                    hostArray.append(ip);
+                    m_hostArray.append(ip);
                 }
+                DBGLOG("Added ldap server %s", m_hostArray.item(m_hostArray.ordinality()-1));
                 ip = strtok_r(NULL, "|", &saveptr);
             }
             free(copyFullText);
 
-            if(hostArray.length() == 0)
+            if(m_hostArray.length() == 0)
             {
                 throw MakeStringException(-1, "No valid ldap server address specified");
             }
 
-            for(unsigned ind = 0; ind < hostArray.length(); ind++)
-            {
-                DBGLOG("Added ldap server %s", hostArray.item(ind));
-            }
-            curIdx = 0;
+            m_curHostIdx = 0;
             populated = true;
         }
     }
 
     int queryNumHosts()
     {
-        return hostArray.ordinality();
+        return m_hostArray.ordinality();
     }
 
     const char * queryCurrentHost()
     {
         synchronized block(m_HMMutex);
-        return hostArray.item(curIdx);
+        return m_hostArray.item(m_curHostIdx);
     }
 
     void blacklistHost(const char * blockedHost)
     {
-        if (hostArray.ordinality() == 1)
+        if (m_hostArray.ordinality() == 1)
         {
-            DBGLOG("Cannot blacklist the only configured ldap server %s", hostArray.item(curIdx));
+            DBGLOG("Cannot blacklist the only configured ldap server %s", m_hostArray.item(m_curHostIdx));
             return;
         }
 
         //If blockedHost is not already blacklisted, do so
         synchronized block(m_HMMutex);
-        if (0 == strcmp(blockedHost, hostArray.item(curIdx)))
+        if (0 == strcmp(blockedHost, m_hostArray.item(m_curHostIdx)))
         {
-            DBGLOG("Blacklisting ldap server %s", hostArray.item(curIdx));
-            if (++curIdx == hostArray.ordinality())
-                curIdx = 0;//start over at begin of host array
+            DBGLOG("Blacklisting ldap server %s", m_hostArray.item(m_curHostIdx));
+            if (++m_curHostIdx == m_hostArray.ordinality())
+                m_curHostIdx = 0;//start over at begin of host array
         }
 
     }
@@ -329,12 +326,13 @@ public:
 
         int rc;
         StringBuffer hostbuf, dcbuf;
+        const char * ldapDomain = cfg->queryProp(".//@ldapDomain");
         for (int numHosts=0; numHosts < getHostCount(); numHosts++)
         {
             getLdapHost(hostbuf);
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
-                rc = LdapUtils::getServerInfo(hostbuf.str(), m_ldapport, dcbuf, m_serverType, cfg->queryProp(".//@ldapDomain"));
+                rc = LdapUtils::getServerInfo(hostbuf.str(), m_ldapport, dcbuf, m_serverType, ldapDomain);
                 if(!LdapServerDown(rc) || retries >= LDAPSEC_MAX_RETRIES)
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);
@@ -515,7 +513,7 @@ public:
 
     virtual StringBuffer& getLdapHost(StringBuffer& hostbuf)
     {
-        hostbuf.clear().append(s_hostManager.queryCurrentHost());
+        hostbuf.set(s_hostManager.queryCurrentHost());
         return hostbuf;
     }
 
@@ -748,23 +746,24 @@ private:
 public:
     virtual bool connect(bool force_ssl = false)
     {
+
+        const char* proto;
+        if(force_ssl)
+        {
+            proto = "ldaps";
+            m_useSSL = true;
+        }
+        else
+        {
+            proto = m_ldapconfig->getProtocol();//get configured protocol, LDAP or LDAPS
+            m_useSSL = (0 == stricmp(proto, "ldaps") ? true : false);
+        }
+
         int rc;
         StringBuffer hostbuf;
         for (int numHosts=0; numHosts < m_ldapconfig->getHostCount(); numHosts++)
         {
             m_ldapconfig->getLdapHost(hostbuf);
-
-            const char* proto;
-            if(force_ssl)
-            {
-                proto = "ldaps";
-                m_useSSL = true;
-            }
-            else
-            {
-                proto = m_ldapconfig->getProtocol();//get configured protocol, LDAP or LDAPS
-                m_useSSL = (0 == stricmp(proto, "ldaps") ? true : false);
-            }
 
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
@@ -791,8 +790,8 @@ public:
             {
                 m_ldapconfig->blacklistHost(hostbuf);
             }
-
-            break;
+            else
+                break;
         }
 
         if(rc == LDAP_SUCCESS)
