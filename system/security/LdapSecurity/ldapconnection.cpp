@@ -127,92 +127,103 @@ public:
     }
 };
 
-class CLoadBalancer : public CInterface
+
+class CHostManager
 {
 private:
     StringArray hostArray;
-    unsigned    nextIndex;
-    Mutex       m_mutex;
+    Mutex       m_HMMutex;
+    unsigned	curIdx;
 
 public:
-    CLoadBalancer(const char* addrlist)
+    void populateHosts(const char* addrlist)
     {
-        char *copyFullText = strdup(addrlist);
-        char *saveptr;
-        char *ip = strtok_r(copyFullText, "|", &saveptr);
-        while (ip != NULL)
+        static bool populated = false;
+        if (populated)
+            return;
+
+        synchronized block(m_HMMutex);
+        if (!populated)
         {
-            if (isdigit(*ip))
+            char *copyFullText = strdup(addrlist);
+            char *saveptr;
+            char *ip = strtok_r(copyFullText, "|", &saveptr);
+            while (ip != NULL)
             {
-                char *dash = strrchr(ip, '-');
-                if (dash)
+                if (isdigit(*ip))
                 {
-                    *dash = 0;
-                    int last = atoi(dash+1);
-                    char *dot = strrchr(ip, '.');
-                    *dot = 0;
-                    int first = atoi(dot+1);
-                    for (int i = first; i <= last; i++)
+                    char *dash = strrchr(ip, '-');
+                    if (dash)
                     {
-                        StringBuffer t;
-                        t.append(ip).append('.').append(i);
-                        hostArray.append(t.str());
+                        *dash = 0;
+                        int last = atoi(dash+1);
+                        char *dot = strrchr(ip, '.');
+                        *dot = 0;
+                        int first = atoi(dot+1);
+                        for (int i = first; i <= last; i++)
+                        {
+                            StringBuffer t;
+                            t.append(ip).append('.').append(i);
+                            hostArray.append(t.str());
+                        }
+                    }
+                    else
+                    {
+                        hostArray.append(ip);
                     }
                 }
                 else
                 {
                     hostArray.append(ip);
                 }
+                ip = strtok_r(NULL, "|", &saveptr);
             }
-            else
+            free(copyFullText);
+
+            if(hostArray.length() == 0)
             {
-                hostArray.append(ip);
+                throw MakeStringException(-1, "No valid ldap server address specified");
             }
-            ip = strtok_r(NULL, "|", &saveptr);
-        }
-        free(copyFullText);
 
-        if(hostArray.length() == 0)
-        {
-            throw MakeStringException(-1, "No valid ldap server address specified");
-        }
-
-        Owned<IRandomNumberGenerator> random = createRandomNumberGenerator();
-        random->seed((unsigned)get_cycles_now());
-
-        unsigned i = hostArray.ordinality();
-        while (i > 1)
-        {
-            unsigned j = random->next() % i;
-            i--;
-            hostArray.swap(i, j);
-        }
-
-        nextIndex = 0;
-
-        for(unsigned ind = 0; ind < hostArray.length(); ind++)
-        {
-            DBGLOG("Added ldap server %s", hostArray.item(ind));
+            for(unsigned ind = 0; ind < hostArray.length(); ind++)
+            {
+                DBGLOG("Added ldap server %s", hostArray.item(ind));
+            }
+            curIdx = 0;
+            populated = true;
         }
     }
 
-    virtual ~CLoadBalancer()
+    int queryNumHosts()
     {
+        return hostArray.ordinality();
     }
 
-    const char* next()
+    const char * queryCurrentHost()
     {
-        unsigned curindex = 0;
-        
+        synchronized block(m_HMMutex);
+        return hostArray.item(curIdx);
+    }
+
+    void blacklistHost(const char * blockedHost)
+    {
+        if (hostArray.ordinality() == 1)
         {
-            synchronized block(m_mutex);
-            curindex = nextIndex;
-            ++nextIndex %= hostArray.ordinality();
+            DBGLOG("Cannot blacklist the only configured ldap server %s", hostArray.item(curIdx));
+            return;
         }
 
-        return (hostArray.item(curindex));
+        //If blockedHost is not already blacklisted, do so
+        synchronized block(m_HMMutex);
+        if (0 == strcmp(blockedHost, hostArray.item(curIdx)))
+        {
+            DBGLOG("Blacklisting ldap server %s", hostArray.item(curIdx));
+            if (++curIdx == hostArray.ordinality())
+                curIdx = 0;//start over at begin of host array
+        }
+
     }
-};
+} s_hostManager;
 
 
 inline bool LdapServerDown(int rc)
@@ -228,7 +239,6 @@ private:
 
     Owned<IPropertyTree> m_cfg;
 
-    Owned<CLoadBalancer> m_ldaphosts;
     int                  m_ldapport;
     int                  m_ldap_secure_port;
     StringBuffer         m_protocol;
@@ -295,7 +305,7 @@ public:
         {
             throw MakeStringException(-1, "ldapAddress not found in config");
         }
-        m_ldaphosts.setown(new CLoadBalancer(hostsbuf.str()));
+        s_hostManager.populateHosts(hostsbuf.str());
 
         cfg->getProp(".//@ldapProtocol", m_protocol);
         if(m_protocol.length() == 0)
@@ -317,24 +327,30 @@ public:
         else
             m_ldap_secure_port = atoi(portbuf.str());
 
+        int rc;
         StringBuffer hostbuf, dcbuf;
-        int rc = 0;
-        getLdapHost(hostbuf);
-        for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
+        for (int numHosts=0; numHosts < getHostCount(); numHosts++)
         {
-            rc = LdapUtils::getServerInfo(hostbuf.str(), m_ldapport, dcbuf, m_serverType, cfg->queryProp(".//@ldapDomain"));
-            if(!LdapServerDown(rc) || retries > LDAPSEC_MAX_RETRIES)
-                break;
-            sleep(LDAPSEC_RETRY_WAIT);
-            if(retries < LDAPSEC_MAX_RETRIES)
+            getLdapHost(hostbuf);
+            for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
-                DBGLOG("Server %s temporarily unreachable.", hostbuf.str());
-                // Retrying next ldap sever, might be the same server
-                hostbuf.clear();
-                getLdapHost(hostbuf);
-                DBGLOG("Retrying with %s...", hostbuf.str());
+                rc = LdapUtils::getServerInfo(hostbuf.str(), m_ldapport, dcbuf, m_serverType, cfg->queryProp(".//@ldapDomain"));
+                if(!LdapServerDown(rc) || retries >= LDAPSEC_MAX_RETRIES)
+                    break;
+                sleep(LDAPSEC_RETRY_WAIT);
+                if(retries < LDAPSEC_MAX_RETRIES)
+                {
+                    DBGLOG("Server %s temporarily unreachable, retrying...", hostbuf.str());
+                }
             }
+            if (rc != LDAP_SUCCESS)
+            {
+                blacklistHost(hostbuf);
+            }
+            else
+                break;
         }
+
         if(rc != LDAP_SUCCESS)
         {
             throw MakeStringException(-1, "getServerInfo error - %s", ldap_err2string(rc));
@@ -492,26 +508,20 @@ public:
         return m_sdfieldname.str();
     }
 
+    virtual int getHostCount()
+    {
+        return s_hostManager.queryNumHosts();
+    }
+
     virtual StringBuffer& getLdapHost(StringBuffer& hostbuf)
     {
-        hostbuf.clear();
-        try
-        {
-            hostbuf.append(m_ldaphosts->next());
-        }
-        catch(IException* e)
-        {
-            StringBuffer emsg;
-            e->errorMessage(emsg);
-            DBGLOG("getLdapHost exception - %s", emsg.str());
-            e->Release();
-        }
-        catch(...)
-        {
-            DBGLOG("getLdapHost unknown exception");
-        }
-
+        hostbuf.clear().append(s_hostManager.queryCurrentHost());
         return hostbuf;
+    }
+
+    virtual void blacklistHost(const char * host)
+    {
+        s_hostManager.blacklistHost(host);
     }
 
     virtual void markDown(const char* ldaphost)
@@ -738,45 +748,53 @@ private:
 public:
     virtual bool connect(bool force_ssl = false)
     {
+        int rc;
         StringBuffer hostbuf;
-        m_ldapconfig->getLdapHost(hostbuf);
-        int rc = LDAP_SERVER_DOWN;
-
-        const char* proto;
-        if(force_ssl)
+        for (int numHosts=0; numHosts < m_ldapconfig->getHostCount(); numHosts++)
         {
-            proto = "ldaps";
-            m_useSSL = true;
-        }
-        else
-        {
-            proto = m_ldapconfig->getProtocol();//get configured protocol, LDAP or LDAPS
-            m_useSSL = (0 == stricmp(proto, "ldaps") ? true : false);
-        }
-
-        for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
-        {
-            rc = connect(hostbuf.str(), proto);
-            if(!LdapServerDown(rc) || retries > LDAPSEC_MAX_RETRIES)
-                break;
-            sleep(LDAPSEC_RETRY_WAIT);
-            if(retries < LDAPSEC_MAX_RETRIES)
-                DBGLOG("Server temporarily unreachable, retrying ...");
-            // Retrying next ldap sever, might be the same server
-            hostbuf.clear();
             m_ldapconfig->getLdapHost(hostbuf);
+
+            const char* proto;
+            if(force_ssl)
+            {
+                proto = "ldaps";
+                m_useSSL = true;
+            }
+            else
+            {
+                proto = m_ldapconfig->getProtocol();//get configured protocol, LDAP or LDAPS
+                m_useSSL = (0 == stricmp(proto, "ldaps") ? true : false);
+            }
+
+            for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
+            {
+                rc = connect(hostbuf.str(), proto);
+                if(!LdapServerDown(rc) || retries > LDAPSEC_MAX_RETRIES)
+                    break;
+                sleep(LDAPSEC_RETRY_WAIT);
+                if(retries < LDAPSEC_MAX_RETRIES)
+                    DBGLOG("Server temporarily unreachable, retrying ...");
+            }
+
+            if(rc == LDAP_SERVER_DOWN)
+            {
+                StringBuffer dc;
+                LdapUtils::getDcName(m_ldapconfig->getDomain(), dc);
+                if(dc.length() > 0)
+                {
+                    WARNLOG("Using automatically obtained LDAP Server %s", dc.str());
+                    rc = connect(dc.str(), proto);
+                }
+            }
+
+            if (rc != LDAP_SUCCESS)
+            {
+                m_ldapconfig->blacklistHost(hostbuf);
+            }
+
+            break;
         }
 
-        if(rc == LDAP_SERVER_DOWN)
-        {
-            StringBuffer dc;
-            LdapUtils::getDcName(m_ldapconfig->getDomain(), dc);
-            if(dc.length() > 0)
-            {
-                WARNLOG("Using automatically obtained LDAP Server %s", dc.str());
-                rc = connect(dc.str(), proto);
-            }
-        }
         if(rc == LDAP_SUCCESS)
             return true;
         else
@@ -1614,14 +1632,6 @@ public:
             {
                 DBGLOG("LdapBind for user %s (retries=%d).", username, retries);
                 {
-#ifdef NULL_DALIUSER_STACKTRACE
-                    //following debug code to be removed
-                    if (!username)
-                    {
-                        DBGLOG("UNEXPECTED USER (NULL) in ldapconnection.cpp authenticate() line %d", __LINE__);
-                        PrintStackReport();
-                    }
-#endif
                     LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     if(rc != LDAP_SUCCESS)
@@ -1635,7 +1645,6 @@ public:
                 if(retries < LDAPSEC_MAX_RETRIES)
                     DBGLOG("Server temporarily unreachable, retrying ...");
                 // Retrying next ldap sever, might be the same server
-                hostbuf.clear();
                 m_ldapconfig->getLdapHost(hostbuf);
             }
 
