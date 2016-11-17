@@ -1399,8 +1399,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
-          <para>A little more info on the available authentication methods.
-          </para>
+          <para>Additional information about the available Authentication
+          methods: </para>
 
           <para>
             <informaltable colsep="1" frame="all" rowsep="1">
@@ -1413,31 +1413,34 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   <row>
                     <entry>none</entry>
 
-                    <entry>there is no security</entry>
+                    <entry>uses no authentication</entry>
                   </row>
 
                   <row>
                     <entry>local</entry>
 
-                    <entry>local </entry>
+                    <entry>uses the local credentials for the server running
+                    the ESP.</entry>
                   </row>
 
                   <row>
                     <entry>ldap</entry>
 
-                    <entry>lightweight directory access protocol</entry>
+                    <entry>uses Lightweight Directory Access Protocol for
+                    authentication</entry>
                   </row>
 
                   <row>
                     <entry>ldaps</entry>
 
-                    <entry>lightweight directory access protocol</entry>
+                    <entry>similar to LDAP but uses a more secure (TLS)
+                    protocol and a different default port</entry>
                   </row>
 
                   <row>
                     <entry>secmgrPlugin</entry>
 
-                    <entry>uses the security manager plug in</entry>
+                    <entry>uses the security manager plug-in</entry>
                   </row>
                 </tbody>
               </tgroup>
