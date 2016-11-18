@@ -264,7 +264,7 @@ define([
                         disabled: function (item) {
                             if (item.__hpcc_treeItem) {
                                 if (context.viewModeTargets.checked) {
-                                    if (item.__hpcc_treeItem.Type === "HoleCluster" || item.__hpcc_treeItem.Type === "ThorCluster" || item.__hpcc_treeItem.Type === "RoxieCluster") {
+                                    if (item.__hpcc_treeItem.Type === "HoleCluster" || item.__hpcc_treeItem.Type === "ThorCluster" || item.__hpcc_treeItem.Type === "RoxieCluster" || item.hasLogs()) {
                                         return false;
                                     }
                                 }
@@ -274,7 +274,7 @@ define([
                                     }
                                 }
                                 if (context.viewModeMachines.checked) {
-                                    if (item.__hpcc_children.length > 0) {
+                                    if (item.__hpcc_children.length > 0 || item.hasLogs()) {
                                         return false;
                                     }
                                 }
@@ -306,7 +306,7 @@ define([
                 var selection = context.grid.getSelected();
                 if (selection.length) {
                     context.detailsWidget.init(selection[0]);
-                    if (context.viewModeTargets.checked === true && selection[0].__hpcc_parentNode) {
+                    if (context.viewModeTargets.checked === true && selection[0].__hpcc_parentNode && selection[0].hasLogs().length === 0) {
                         context.filter.disable(false);
                     } else if (context.viewModeServices.checked === true && selection[0].__hpcc_parentNode) {
                         context.filter.disable(false);
