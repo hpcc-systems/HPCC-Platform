@@ -16,6 +16,9 @@
 [submodule "esp/src/dojox"]
 	path = esp/src/dojox
 	url = https://github.com/hpcc-systems/dojox.git
+[submodule "esp/src/themes"]
+	path = esp/src/themes
+	url = https://github.com/hpcc-systems/themes.git
 [submodule "esp/src/util"]
 	path = esp/src/util
 	url = https://github.com/hpcc-systems/util.git

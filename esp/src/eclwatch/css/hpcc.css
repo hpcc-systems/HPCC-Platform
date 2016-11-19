@@ -118,14 +118,14 @@ hr.dashedLine {
     margin-left:15px;
 }
 /*IDs************************/
-.claro .hpccMainpage {
+.flat .hpccMainpage {
     margin: 0;
     padding: 0;
     width: 100%; 
     height: 100%; 
 }
 
-.claro .hpccTitlebar{
+.flat .hpccTitlebar {
     height: 50px;
     margin: 0;
     padding: 0;
@@ -135,18 +135,48 @@ hr.dashedLine {
     overflow: hidden;
 }
 
-.claro #stubStackController{
+.flat #stubStackController{
     height: 32px;
     margin-top: 6px;
 }
 
-.claro .glow :hover{
+.flat .glow :hover{
     background-color:rgb(118, 157, 192);
     border-radius: 4px;
     cursor: pointer;
 }
 
-.claro .glow .dijitToggleButton .dijitButtonNode {
+.flat .dijitToolbar .dijitButton {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .dijitToolbar .dijitButton .dijitButtonNode {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .dijitToolbar .dijitDropDownButton {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .dijitToolbar .dijitDropDownButton .dijitButtonNode {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .dijitToolbar .dijitToggleButton {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .dijitToolbar .dijitToggleButton .dijitButtonNode {
+    margin: 0px;
+    padding: 0px;
+}
+
+.flat .glow .dijitToggleButton .dijitButtonNode {
     background: none;
     border:none;
     box-shadow: none;
@@ -154,7 +184,7 @@ hr.dashedLine {
     align-content:center;
 }
 
-.claro .hpccTitlebar .dijitToggleButtonChecked .dijitButtonNode {
+.flat .hpccTitlebar .dijitToggleButtonChecked .dijitButtonNode {
     border-width: 1px;
     border-style: solid;
     border-color: #759dc0;
@@ -162,15 +192,15 @@ hr.dashedLine {
     align-content:center;
 }
 
-.claro .hpccTitlebar .dijitDropDownButton .dijitButtonNode {
+.flat .hpccTitlebar .dijitDropDownButton .dijitButtonNode {
     background: none;
     border:none;
     box-shadow: none;
-    margin:0;
+    margin:0px;
     align-content:center;
 }
 
-.claro .miniTitlebar {
+.flat .miniTitlebar {
     background: rgb(200, 200, 200);
     margin: 0px;
     padding: 0px;
@@ -180,7 +210,7 @@ hr.dashedLine {
     overflow: hidden;
 }
 
-.claro .miniTitlebar .dijitToggleButton .dijitButtonNode {
+.flat .miniTitlebar .dijitToggleButton .dijitButtonNode {
     background: none;
     border: none;
     box-shadow: none;
@@ -189,7 +219,7 @@ hr.dashedLine {
     cursor: pointer;
 }
 
-.claro .miniTitlebar .dijitToggleButtonChecked .dijitButtonNode {
+.flat .miniTitlebar .dijitToggleButtonChecked .dijitButtonNode {
     border-width: 1px;
     border-style: solid;
     background-image: none;
@@ -200,32 +230,37 @@ hr.dashedLine {
     cursor: pointer;
 }
 
-.claro #stubTitlebar .dijitToggleButton, .dijitButton, .dijitDropDownButton, .dijitComboButton{
-    margin:0;
+.flat .miniTitlebar .dijitNoIcon {
+    width: 0px;
+    height: 0px;
+}
+
+.flat #stubTitlebar .dijitToggleButton, .dijitButton, .dijitDropDownButton, .dijitComboButton{
+    margin:0px;
     cursor: pointer;
 }
 
-.claro .dijitPopup .dijitMenuPopup{
+.flat .dijitPopup .dijitMenuPopup{
     top:56px !important;
 }
 
-.claro .dgridInfo {
+.flat .dgridInfo {
     background-position:left center;
     background-repeat: no-repeat;
     padding-left:25px;
 }
 
-.claro .dgrid-cell { 
+.flat .dgrid-cell { 
     text-overflow: ellipsis; 
     white-space: nowrap; 
 }
 
-.claro .wrap .dgrid-cell { 
+.flat .wrap .dgrid-cell { 
     text-overflow: initial; 
     white-space: normal; 
 }
 
-.claro .hpccCentered { 
+.flat .hpccCentered { 
     text-align: center; 
 }
 
@@ -278,7 +313,7 @@ hr.dashedLine {
 
 
 @media (max-width: 959px){
-    .claro .hpccTitlebar {
+    .flat .hpccTitlebar {
         height:100px;
     }
     .searchUserMoreComponents{
@@ -354,7 +389,7 @@ hr.dashedLine {
     border:none;
 }
 
-.claro #stubMore{
+.flat #stubMore{
     padding:0;
     margin:0;
     height: 32px;
@@ -617,7 +652,7 @@ table.miniSelect span {
 }
 
 /*CLASSES******************/
-.claro #userIcons .dijitArrowButtonInner{
+.flat #userIcons .dijitArrowButtonInner{
     margin:5px auto 0 5px;
 }
 
@@ -757,8 +792,8 @@ table.miniSelect span {
     display: block;
 }
 
-.claro .hpccApp .hpccTitlebar {
-    background-color: rgb(0, 108, 204);
+.flat .hpccApp .hpccTitlebar {
+    background-color: #2196F3;
 }
 
 .hidden{
@@ -800,14 +835,6 @@ margin-left:-20px;
     bottom: 0;
     left: 0;
     right: 0;
-}
-
-.claro .hpccApp .topPanel {
-    background-color: rgb(208, 233, 252);
-}
-
-.claro .hpccApp .edgePanel {
-    background-color: rgb(208, 233, 252);
 }
 
 .TimingTreeMapWidget p {
@@ -1120,73 +1147,78 @@ margin-left:-20px;
     font-family: monospace;
 }
 
-.dgrid {
+.flat .dgrid {
     position: absolute;
     top: 0;
     bottom: 0;
     left: 0;
     right: 0;
     height: auto;
+    border-color: rgb(158, 158, 158);
 }
 
-.claro .graph_Graph .zoom {
+.flat .dgrid-page-size {
+    padding: 0px;
+}
+
+.flat .graph_Graph .zoom {
     fill: white;
 }
 
-.claro .graph_Graph .graphVertex .common_Menu {
+.flat .graph_Graph .graphVertex .common_Menu {
     visibility:hidden;
 }
 
-.claro .graph_Graph .graphVertex > .subgraph .title rect {
+.flat .graph_Graph .graphVertex > .subgraph .title rect {
     fill: #dcf1ff;
     border-bottom-width:0px;
 }
 
-.claro .graph_Graph .graphVertex > .subgraph .title text {
+.flat .graph_Graph .graphVertex > .subgraph .title text {
     fill: black;
 }
 
-.claro .graph_Graph .graphVertex > .subgraph rect {
+.flat .graph_Graph .graphVertex > .subgraph rect {
     fill: none;
 }
 
-.claro .graph_Graph .graphVertex > .subgraph.selected rect {
+.flat .graph_Graph .graphVertex > .subgraph.selected rect {
     stroke:red !important;
 }
 
-.claro .graph_Graph .graphVertex .graph_Vertex.selected .common_Shape {
+.flat .graph_Graph .graphVertex .graph_Vertex.selected .common_Shape {
     stroke:red !important;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge {
+.flat .graph_Graph .graphEdge .graph_Edge {
     stroke:lightgray;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge .common_Text {
+.flat .graph_Graph .graphEdge .graph_Edge .common_Text {
     fill:lightgray;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.active {
+.flat .graph_Graph .graphEdge .graph_Edge.active {
     stroke:green;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.active .common_Text {
+.flat .graph_Graph .graphEdge .graph_Edge.active .common_Text {
     fill:green;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.finished {
+.flat .graph_Graph .graphEdge .graph_Edge.finished {
     stroke:black;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.finished .common_Text {
+.flat .graph_Graph .graphEdge .graph_Edge.finished .common_Text {
     fill:black;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.selected {
+.flat .graph_Graph .graphEdge .graph_Edge.selected {
     stroke:red !important;
 }
 
-.claro .graph_Graph .graphEdge .graph_Edge.selected .common_Text {
+.flat .graph_Graph .graphEdge .graph_Edge.selected .common_Text {
     fill:red !important;
 }
 
