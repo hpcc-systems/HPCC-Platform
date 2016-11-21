@@ -134,16 +134,21 @@ private:
     StringArray m_hostArray;
     Mutex       m_HMMutex;
     unsigned    m_curHostIdx;
+    bool        m_populated;
 
 public:
+    CHostManager()
+    {
+        m_populated = false;
+    }
+
     void populateHosts(const char* addrlist)
     {
-        static bool populated = false;
-        if (populated)
+        if (m_populated)
             return;
 
         synchronized block(m_HMMutex);
-        if (!populated)
+        if (!m_populated)
         {
             char *copyFullText = strdup(addrlist);
             char *saveptr;
@@ -187,7 +192,7 @@ public:
             }
 
             m_curHostIdx = 0;
-            populated = true;
+            m_populated = true;
         }
     }
 
