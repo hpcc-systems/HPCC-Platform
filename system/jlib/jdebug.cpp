@@ -1481,7 +1481,7 @@ class CProcessMonitor
     CIArrayOf<CProcInfo> processes;
     unsigned tot_time;
     bool busy;
-
+    CriticalSection sect;
 
     static int compare(CInterface * const *i1, CInterface * const *i2)
     {
@@ -1502,9 +1502,8 @@ public:
             processes.item(i1).active = false;
         DIR *dir = opendir("/proc");
         loop {
-            struct dirent *ent;
-            struct dirent entryMem;
-            readdir_r(dir, &entryMem, &ent);
+            CriticalBlock b(sect);
+            struct dirent *ent = readdir(dir);
             if (!ent)
                 break;
             if ((ent->d_name[0]>='0')&&(ent->d_name[0]<='9')) {
