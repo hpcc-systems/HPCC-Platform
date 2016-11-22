@@ -70,7 +70,7 @@ IPropertyTree * fetchESDLDefinitionFromDaliById(const char *id)
 
     DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali: %s ", id);
 
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
@@ -105,7 +105,7 @@ IPropertyTree * fetchESDLBindingFromDali(const char *process, const char *bindin
     Owned<IRemoteConnection> conn;
     try
     {
-        conn.set(querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL));
+        conn.set(querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL));
         if (!conn)
         {
             DBGLOG("Unable to connect to ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);

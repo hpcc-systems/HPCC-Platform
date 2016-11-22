@@ -237,6 +237,8 @@ void CSlaveMessageHandler::main()
                             size32_t startCtxLen;
                             msg.read(startCtxLen);
                             element->doCreateActivity(parentExtractSz, parentExtract, startCtxLen ? &msg : nullptr);
+                            if (element->queryActivity())
+                                element->preStart(parentExtractSz, parentExtract);
                         }
                         catch (IException *e)
                         {

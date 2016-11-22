@@ -25,37 +25,68 @@
 project(couchbaseembed)
 
 IF ( COUCHBASEEMBED )
-    ADD_PLUGIN(COUCHBASEEMBED PACKAGES COUCHBASE)
-    IF ( MAKE_COUCHBASEEMBED )
-        set(
-            SRCS
-            couchbaseembed.cpp
-        )
 
-        INCLUDE_DIRECTORIES (
-            ${PROJECT_SOURCE_DIR}/libcouchbase-cxx/include
-            ./../../esp/platform #for token serialize/deserialize
-            ./../../system/include
-            ./../../rtl/eclrtl
-            ./../../rtl/include
-            ./../../rtl/nbcd
-            ./../../common/deftype
-            ./../../system/jlib
-            ./../../roxie/roxiemem
-        )
-
-        ADD_DEFINITIONS(-D_USRDLL -DCOUCHBASEEMBED_EXPORTS)
-        HPCC_ADD_LIBRARY(couchbaseembed SHARED ${SRCS})
-        install(
-            TARGETS couchbaseembed
-            DESTINATION plugins)
-
-        target_link_libraries(
-            couchbaseembed
-            ${LIBCOUCHBASE_LIBRARIES}
-            eclrtl
-            jlib)
+    if(APPLE)
+        set(LIBCOUCHBASE_LIB ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so)
+        set(LIBCOUCHBASE_LIB_SONAME ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so.2)
+        set(LIBCOUCHBASE_LIB_REAL ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so.2.0.38)
+    else()
+        set(LIBCOUCHBASE_LIB ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so)
+        set(LIBCOUCHBASE_LIB_SONAME ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so.2)
+        set(LIBCOUCHBASE_LIB_REAL ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so.2.0.38)
     endif()
+    add_custom_command(
+        OUTPUT ${LIBCOUCHBASE_LIB}
+        COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build
+        COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build && ${CMAKE_COMMAND} ${CMAKE_CURRENT_SOURCE_DIR}/libcouchbase && ${CMAKE_MAKE_PROGRAM}
+        COMMENT Building libcouchbase for import)
+    add_custom_target(libcouchbase-build ALL DEPENDS ${LIBCOUCHBASE_LIB})
+    add_library(libcouchbase SHARED IMPORTED)
+    set_property(TARGET libcouchbase PROPERTY IMPORTED_LOCATION ${LIBCOUCHBASE_LIB})
+    add_dependencies(libcouchbase libcouchbase-build)
+
+    set(
+        SRCS
+        couchbaseembed.cpp
+        )
+
+    INCLUDE_DIRECTORIES (
+        ${PROJECT_SOURCE_DIR}/libcouchbase/include
+        ${PROJECT_BINARY_DIR}/libcouchbase-build/generated
+        ${PROJECT_SOURCE_DIR}/libcouchbase-cxx/include
+        ${HPCC_SOURCE_DIR}/esp/platform #for token serialize/deserialize
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/rtl/eclrtl
+        ${HPCC_SOURCE_DIR}/rtl/include
+        ${HPCC_SOURCE_DIR}/rtl/nbcd
+        ${HPCC_SOURCE_DIR}/common/deftype
+        ${HPCC_SOURCE_DIR}/system/jlib
+        ${HPCC_SOURCE_DIR}/roxie/roxiemem
+        )
+
+    ADD_DEFINITIONS(-D_USRDLL -DCOUCHBASEEMBED_EXPORTS)
+    HPCC_ADD_LIBRARY(couchbaseembed SHARED ${SRCS})
+    install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libcouchbase-build/lib\")")
+    install(
+        TARGETS couchbaseembed
+        DESTINATION plugins)
+
+    install(
+        FILES ${LIBCOUCHBASE_LIB_REAL}
+        DESTINATION ${LIB_DIR}
+        PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+        COMPONENT Runtime)
+
+    install(
+        FILES ${LIBCOUCHBASE_LIB} ${LIBCOUCHBASE_LIB_SONAME}
+        DESTINATION ${LIB_DIR}
+        COMPONENT Runtime)
+
+    target_link_libraries(
+        couchbaseembed
+        libcouchbase
+        eclrtl
+        jlib)
 endif()
 
 if(PLATFORM OR CLIENTTOOLS_ONLY)

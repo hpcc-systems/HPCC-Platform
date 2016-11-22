@@ -40,3 +40,6 @@
 [submodule "plugins/couchbase/libcouchbase-cxx"]
 	path = plugins/couchbase/libcouchbase-cxx
 	url = https://github.com/hpcc-systems/libcouchbase-cxx.git
+[submodule "libcouchbase"]
+	path = plugins/couchbase/libcouchbase
+	url = https://github.com/hpcc-systems/libcouchbase.git

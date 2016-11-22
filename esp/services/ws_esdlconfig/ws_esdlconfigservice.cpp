@@ -173,7 +173,7 @@ bool ensureSDSSubPath(const char * sdsPath)
     if (!sdsPath)
         return false;
 
-    Owned<IRemoteConnection> conn = querySDS().connect(sdsPath, myProcessSession(), RTM_LOCK_READ, 4000);
+    Owned<IRemoteConnection> conn = querySDS().connect(sdsPath, myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, 4000);
     if (!conn)
     {
         conn.setown(querySDS().connect("/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL));
@@ -267,7 +267,7 @@ void CWsESDLConfigEx::init(IPropertyTree *cfg, const char *process, const char *
 
 IPropertyTree * CWsESDLConfigEx::getESDLDefinitionRegistry(const char * wsEclId, bool readonly)
 {
-    if (!ensureSDSPath("ESDL/Definitions"))
+    if (!ensureSDSPath(ESDL_DEFS_ROOT_PATH))
         throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
 
     Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
@@ -398,7 +398,7 @@ void CWsESDLConfigEx::ensureESDLServiceBindingRegistry(const char * espProcName,
     if (!espBindingName || !*espBindingName)
         throw MakeStringException(-1, "Unable to ensure ESDL service binding registry in dali, esp binding name not available");
 
-    if (!ensureSDSPath("ESDL/Bindings"))
+    if (!ensureSDSPath(ESDL_BINDINGS_ROOT_PATH))
         throw MakeStringException(-1, "Unable to connect to ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);
 
     Owned<IRemoteConnection> globalLock = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
@@ -644,8 +644,8 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
         return -1;
     }
 
-    if (!ensureSDSPath("ESDL/Bindings"))
-           throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
+    if (!ensureSDSPath(ESDL_BINDINGS_ROOT_PATH))
+        throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
 
     Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)

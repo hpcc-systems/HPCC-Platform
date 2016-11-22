@@ -344,7 +344,7 @@
                 <row>
                   <entry><emphasis role="bold">Use Spaces</emphasis></entry>
 
-                  <entry>Specify to use spaces for a tab. </entry>
+                  <entry>Specify to use spaces for a tab.</entry>
                 </row>
 
                 <row>
@@ -1001,7 +1001,8 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Check out</emphasis></entry>
+                    <entry><emphasis role="bold">Checked
+                    out</emphasis></entry>
 
                     <entry>Check this box to only find ECL files that have
                     been checked out.</entry>
@@ -3064,6 +3065,49 @@ ENDMACRO;
         <para>There is also a right-click pop-up menu with the all the options
         found on the <emphasis role="bold">Edit</emphasis> menu.</para>
 
+        <sect3 role="brk">
+          <title>Builder Tab Options</title>
+
+          <para>When working in the IDE builder window you may find that you
+          have numerous tabs open. Right-click on any of the open tabs to
+          display tab options. <graphic
+          fileref="../../images/IDE0101.jpg" /></para>
+
+          <para>Select the desired action to perform on the tabs.</para>
+
+          <para><itemizedlist>
+              <listitem>
+                <para><emphasis role="bold">Save</emphasis> Saves the selected
+                tab.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">Close</emphasis> Closes the
+                selected tab.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">Close All</emphasis> Closes all
+                open tabs.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">Close All Others</emphasis> Closes
+                all open tabs except the selected tab.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">Close All to Right</emphasis>
+                Closes all open tabs to the right of the selected tab.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">Close All to Left</emphasis>
+                Closes all open tabs to the left of the selected tab.</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
+
         <sect3 id="CT_ECLIDE_AdvancedBuilderWindowOptions" role="brk">
           <title>Advanced Builder Window Options</title>
 
@@ -3134,6 +3178,47 @@ ENDMACRO;
 
         <para>There is also a right-click pop-up menu with the all the options
         found on the <emphasis role="bold">Edit</emphasis> menu.</para>
+      </sect2>
+
+      <sect2>
+        <title>Bookmarks</title>
+
+        <para>The ECL IDE supports internal bookmarks. Bookmarks provide a way
+        to mark a place that you can easily return to any time in the
+        future.</para>
+
+        <para>To create a <emphasis role="bold">bookmark</emphasis>, a
+        <emphasis role="bold">todo</emphasis>, or <emphasis
+        role="bold">hack</emphasis>, simply enter the appropriate code into
+        the place you want to mark, and save it. The syntax is in the form of
+        an ECL comment. Note that bookmarks ARE case-sensitive.</para>
+
+        <para>Bookmark syntax. Note the square brackets and that it is all
+        upper case.</para>
+
+        <programlisting>//[BM]</programlisting>
+
+        <para>To do syntax. Note that it is all upper case and terminated with
+        a colon.</para>
+
+        <programlisting>//TODO:</programlisting>
+
+        <para>Hack syntax. Note that it is all upper case and terminated with
+        a colon.</para>
+
+        <programlisting>//HACK:</programlisting>
+
+        <para>Enter the code into your workspace in the builder window then
+        save.</para>
+
+        <para><graphic fileref="../../images/IDE-BM01.jpg" />Your bookmark
+        appears in the bookmarks window right below your builder
+        window.</para>
+
+        <para><graphic fileref="../../images/IDE-BM02.jpg" /></para>
+
+        <para>To return to your bookmarked place, double-click on the
+        corresponding bookmark in the bookmarks panel.</para>
       </sect2>
 
       <sect2 id="Results_Viewer">

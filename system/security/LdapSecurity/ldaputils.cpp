@@ -23,6 +23,9 @@
 
 #include "ldaputils.hpp"
 
+#ifndef _WIN32
+# include <signal.h>
+#endif
 
 //------------------------------------
 // LdapUtils implementation
@@ -107,7 +110,12 @@ int LdapUtils::LdapSimpleBind(LDAP* ld, char* userdn, char* password)
     ldap_set_option(ld, LDAP_OPT_TIMEOUT, &timeout);
     ldap_set_option(ld, LDAP_OPT_NETWORK_TIMEOUT, &timeout);
 #endif
-    return ldap_bind_s(ld, userdn, password, LDAP_AUTH_SIMPLE);
+    int srtn = ldap_bind_s(ld, userdn, password, LDAP_AUTH_SIMPLE);
+#ifndef _WIN32
+    // secure ldap tls might overwrite SIGPIPE handler
+    signal(SIGPIPE, SIG_IGN);
+#endif
+    return srtn;
 }
 
 // userdn is required for ldap_simple_bind_s, not really necessary for ldap_bind_s.

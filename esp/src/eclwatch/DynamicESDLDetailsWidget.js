@@ -249,6 +249,13 @@ define([
                     context.addBindingButton.set("disabled", false);
                     context.deleteBindingButton.set("disabled", true);
                 }
+            }  else {
+                domConstruct.destroy(this.id + "serviceInformation");
+                domConstruct.create("p", {});
+                context.details.setContent(context.i18n.PleaseSelectADynamicESDLService);
+                context.widget._Binding.set("disabled", true);
+                context.deleteBindingButton.set("disabled", true);
+                context.addBindingButton.set("disabled", true);
             }
 
             this.inherited(arguments);
@@ -260,7 +267,7 @@ define([
             var currSel = this.getSelectedChild();
             if (currSel.id == this.widget._Summary.id && !this.widget._Summary.__hpcc_initalized) {
                 this.widget._Summary.__hpcc_initalized = true;
-                var table = domConstruct.create("table", {});
+                var table = domConstruct.create("table", {id: this.id + "serviceInformation"});
                 if (this.params.__hpcc_parentName) {
                     for (var key in this.params) {
                         if (this.params.hasOwnProperty(key) && !(this.params[key] instanceof Object)) {
