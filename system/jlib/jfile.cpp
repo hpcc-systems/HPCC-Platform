@@ -3566,6 +3566,7 @@ class CLinuxDirectoryIterator : public CDirectoryIterator
     DIR *           handle;
     struct stat     st;
     bool            gotst;
+    CriticalSection sect;
 
     bool loadst()
     {
@@ -3626,11 +3627,11 @@ public:
     bool next()
     {
         loop {
-            struct dirent dirEntry;
             struct dirent *entry;
             loop {
                 gotst = false;
-                readdir_r(handle, &dirEntry, &entry);
+                CriticalBlock b(sect);
+                entry = readdir(handle);
                 // need better checking here?
                 if (!entry)
                     break;
