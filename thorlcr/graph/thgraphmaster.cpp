@@ -235,6 +235,8 @@ void CSlaveMessageHandler::main()
                         {
                             element->reset();
                             element->doCreateActivity(parentExtractSz, parentExtract);
+                            if (element->queryActivity())
+                                element->preStart(parentExtractSz, parentExtract);
                         }
                         catch (IException *e)
                         {
