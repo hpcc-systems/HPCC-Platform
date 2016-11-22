@@ -2568,7 +2568,7 @@ public:
         if (E)
             ss.append(": ").append(E->errorCode());
         if (file)
-            ss.appendf(": %s(%d) ", file, line);
+            ss.appendf(": %s(%d) ", sanitizeSourceFile(file), line);
         if (E)
             E->errorMessage(ss.append(": "));
         if (format)

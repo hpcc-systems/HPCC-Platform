@@ -330,7 +330,7 @@ void addChannel(unsigned nodeNumber, unsigned channel, unsigned level)
 
 extern void doUNIMPLEMENTED(unsigned line, const char *file)
 {
-    throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "UNIMPLEMENTED at %s:%d", file, line);
+    throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "UNIMPLEMENTED at %s:%d", sanitizeSourceFile(file), line);
 }
 
 void FatalError(const char *format, ...)

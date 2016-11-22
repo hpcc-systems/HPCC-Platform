@@ -419,7 +419,7 @@ interface jlib_thrown_decl IJSOCK_Exception: extends IException
 };
 
 extern jlib_decl IJSOCK_Exception *IPv6NotImplementedException(const char *filename,unsigned lineno);
-#define IPV6_NOT_IMPLEMENTED() throw IPv6NotImplementedException(__FILE__, __LINE__)
+#define IPV6_NOT_IMPLEMENTED() throw IPv6NotImplementedException(sanitizeSourceFile(__FILE__), __LINE__)
 
 
 

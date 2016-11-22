@@ -321,7 +321,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKstreamediterator:
         return createStreamedIteratorActivity(agent, activityId, subgraphId, (IHThorStreamedIteratorArg &)arg, kind);
     }
-    throw MakeStringException(-1, "UNIMPLEMENTED activity '%s'(kind=%d) at %s(%d)", activityKindStr(kind), kind, __FILE__, __LINE__);
+    throw MakeStringException(-1, "UNIMPLEMENTED activity '%s'(kind=%d) at %s(%d)", activityKindStr(kind), kind, sanitizeSourceFile(__FILE__), __LINE__);
 }
 
 //---------------------------------------------------------------------------

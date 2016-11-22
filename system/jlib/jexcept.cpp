@@ -496,16 +496,32 @@ void userBreakpoint()
 #endif
 }
 
+const char *sanitizeSourceFile(const char *file)
+{
+    if (file)
+    {
+        const char *tail = strrchr(file, '/');
+        if (tail)
+            return tail+1;
+#ifdef _WIN32
+        tail = strrchr(file, '\\');
+        if (tail)
+            return tail+1;
+#endif
+    }
+    return file;
+}
+
 void throwUnexpectedException(const char * file, unsigned line)
 {
     printStackReport();
-    throw makeStringExceptionV(9999, "Internal Error at %s(%d)", file, line);
+    throw makeStringExceptionV(9999, "Internal Error at %s(%d)", sanitizeSourceFile(file), line);
 }
 
 void throwUnexpectedException(const char * where, const char * file, unsigned line)
 {
     printStackReport();
-    throw makeStringExceptionV(9999, "Internal Error '%s' at %s(%d)", where, file, line);
+    throw makeStringExceptionV(9999, "Internal Error '%s' at %s(%d)", where, sanitizeSourceFile(file), line);
 }
 
 void raiseAssertException(const char *assertion, const char *file, unsigned line)
@@ -514,7 +530,7 @@ void raiseAssertException(const char *assertion, const char *file, unsigned line
     s.append("assert(");
     s.append(assertion);
     s.append(") failed - file: ");
-    s.append(file);
+    s.append(sanitizeSourceFile(file));
     s.append(", line ");
     s.append(line);
 
@@ -550,7 +566,7 @@ void raiseAssertCore(const char *assertion, const char *file, unsigned line)
     s.append("assert(");
     s.append(assertion);
     s.append(") failed - file: ");
-    s.append(file);
+    s.append(sanitizeSourceFile(file));
     s.append(", line ");
     s.append(line);
     ERRLOG("%s",s.str());       // make sure doesn't get lost!

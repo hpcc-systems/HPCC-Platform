@@ -445,7 +445,7 @@ extern StringBuffer tempDirectory;
 #undef throwUnexpected
 extern void doUNIMPLEMENTED(unsigned line, const char *file);
 #define UNIMPLEMENTED { doUNIMPLEMENTED(__LINE__, __FILE__); throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "UNIMPLEMENTED"); }
-#define throwUnexpected()          throw MakeStringException(ROXIE_INTERNAL_ERROR, "Internal Error at %s(%d)", __FILE__, __LINE__)
+#define throwUnexpected()          throw MakeStringException(ROXIE_INTERNAL_ERROR, "Internal Error at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
 
 extern IRoxieQueryPacket *createRoxiePacket(void *data, unsigned length);
 extern IRoxieQueryPacket *createRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
