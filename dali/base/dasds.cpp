@@ -1933,6 +1933,7 @@ public:
 
     void loadStore(const char *store=NULL, const bool *abort=NULL);
     void saveStore(const char *store=NULL, bool currentEdition=false);
+    void checkEnvironment(IPropertyTree *oldEnv, IPropertyTree *newEnv);
     bool unlock(__int64 treeId, ConnectionId connectionId, bool delayDelete=false);
     void unlockAll(__int64 treeId);
     void changeLockMode(CServerConnection &connection, unsigned newMode, unsigned timeout);
@@ -5947,6 +5948,26 @@ static int extNcompareFunc(CInterface * const *_itm1, CInterface * const *_itm2)
     return 1;
 }
 
+void CCovenSDSManager::checkEnvironment(IPropertyTree *oldEnv, IPropertyTree *newEnv)
+{
+    if (!areMatchingPTrees(oldEnv, newEnv))
+    {
+        StringBuffer fileName("environment");
+        addFileTimestamp(fileName);
+        fileName.append(".xml");
+        StringBuffer filePath(dataPath);
+        filePath.append(fileName);
+        PROGLOG("Detected environment change, backing up previous version to: %s", filePath.str());
+        saveXML(filePath, oldEnv, 2, XML_Format|XML_SortTags); // sort for easier diffing
+        if (remoteBackupLocation.length())
+        {
+            filePath.clear().append(remoteBackupLocation);
+            filePath.append(fileName);
+            saveXML(filePath, oldEnv, 2, XML_Format|XML_SortTags); // sort for easier diffing
+        }
+    }
+}
+
 void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
 {
     if (root) root->Release();
@@ -6036,7 +6057,11 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             }
 
             oldEnvironment.setown(root->getPropTree("Environment"));
-            root->removeTree(oldEnvironment);
+            if (oldEnvironment)
+            {
+                root->removeTree(oldEnvironment);
+                checkEnvironment(oldEnvironment, envTree);
+            }
             root->addPropTree("Environment", envTree.getClear());
             externalEnvironment = true;
         }
@@ -8051,11 +8076,8 @@ bool CCovenSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupU
         Owned<IPropertyTree> oldEnvironment = root->getPropTree("Environment");
         if (oldEnvironment.get())
         {
-            StringBuffer bakname;
-            Owned<IFileIO> io = createUniqueFile(NULL, "environment", "bak", bakname);
-            Owned<IFileIOStream> fstream = createBufferedIOStream(io);
-            toXML(oldEnvironment, *fstream);         // formatted (default)
             root->removeTree(oldEnvironment);
+            checkEnvironment(oldEnvironment, newEnv);
         }
         root->addPropTree("Environment", LINK(newEnv));
         root.clear();
