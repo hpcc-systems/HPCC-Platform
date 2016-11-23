@@ -151,6 +151,7 @@ public:
     bool                      queryConnected() const { return connected; }
     void                      markDisconnected() { connected = false; }
     bool                      getLogName(StringBuffer &name) const { return false; }
+    offset_t                  getLogPosition(StringBuffer &name) const { return 0; }
 private:
     Linked<INode>             parentNode;
     MPLogId                   cid;

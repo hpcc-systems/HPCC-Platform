@@ -501,6 +501,7 @@ interface jlib_decl ILogMsgHandler : public IInterface
     virtual char const *      disable() { return 0; }
     virtual void              enable() {}
     virtual bool              getLogName(StringBuffer &name) const = 0;
+    virtual offset_t          getLogPosition(StringBuffer &logFileName) const = 0;
 };
 
 // Class on manager's list of children which sends new filters to children, and holds thread which receives log messages
@@ -578,6 +579,7 @@ interface jlib_decl ILogMsgManager : public ILogMsgListener
     virtual void              report(const LogMsg & msg) const = 0;
     virtual LogMsgId          getNextID() = 0;
     virtual bool              rejectsCategory(const LogMsgCategory & cat) const = 0;
+    virtual offset_t          getLogPosition(StringBuffer &logFileName, const ILogMsgHandler * handler) const = 0;
 };
 
 // CONCRETE CLASSES
