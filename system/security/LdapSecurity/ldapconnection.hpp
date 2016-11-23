@@ -85,7 +85,11 @@ ldap_compare_ext_s LDAP_P((
     typedef struct timeval TIMEVAL;
 #endif
 
-#define LDAPTIMEOUT 60 //20 second connection/search timeout
+#ifdef _DEBUG
+	#define LDAPTIMEOUT 5
+#else
+	#define LDAPTIMEOUT 20
+#endif
 #define DEFAULT_LDAP_POOL_SIZE 10
 
 // 1 for ActiveDirectory, 2 for iPlanet, 3 for openLdap
@@ -165,6 +169,8 @@ interface ILdapConfig : extends IInterface
     virtual LdapServerType getServerType() = 0;
     virtual const char * getCfgServerType() const = 0;
     virtual StringBuffer& getLdapHost(StringBuffer& hostbuf) = 0;
+    virtual int getHostCount() = 0;
+    virtual void blacklistHost(const char * host) = 0;
     virtual void markDown(const char* ldaphost) = 0;
     virtual int getLdapPort() = 0;
     virtual int getLdapSecurePort() = 0;
