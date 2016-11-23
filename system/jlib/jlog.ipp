@@ -505,6 +505,7 @@ public:
     char const *              disable() { crit.enter(); return "HANDLER"; }
     void                      enable() { crit.leave(); }
     bool                      getLogName(StringBuffer &name) const { return false; }
+    offset_t                  getLogPosition(StringBuffer &name) const { return 0; }
 protected:
     FILE *                    handle;
     unsigned                  messageFields;
@@ -548,6 +549,7 @@ public:
     char const *              disable();
     void                      enable();
     bool                      getLogName(StringBuffer &name) const { name.append(filename); return true; }
+    offset_t                  getLogPosition(StringBuffer &name) const { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
                 
 protected:
     FILE *                    handle;
@@ -605,6 +607,7 @@ public:
     char const *              disable();
     void                      enable();
     bool                      getLogName(StringBuffer &name) const { CriticalBlock block(crit); name.append(filename); return true; }
+    offset_t                  getLogPosition(StringBuffer &name) const { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
 protected:
     void                      checkRollover() const;
     void                      doRollover(bool daily, const char *forceName = NULL) const;
@@ -639,6 +642,7 @@ public:
     char const *              disable();
     void                      enable();
     bool                      getLogName(StringBuffer &name) const { name.append(filename); return true; }
+    offset_t                  getLogPosition(StringBuffer &name) const { CriticalBlock block(crit); name.append(filename); return fstr->tell(); }
 protected:
     StringAttr                filename;
     bool                      append;
@@ -667,6 +671,7 @@ public:
     char const *              disable() { return "Audit"; }
     void                      enable() {}
     bool                      getLogName(StringBuffer &name) const { return false; }
+    offset_t                  getLogPosition(StringBuffer &logFileName) const { return 0; }
 protected:
     ISysLogEventLogger *      logger;
     unsigned                  fields;
@@ -782,6 +787,7 @@ public:
     void                      setSession(LogMsgSessionId _session) { session = _session; }
     LogMsgSessionId           querySession() const { return session; }
     bool                      rejectsCategory(const LogMsgCategory & cat) const;
+    virtual offset_t          getLogPosition(StringBuffer &logFileName, const ILogMsgHandler * handler) const;
 
 private:
     void                      sendFilterToChildren(bool locked = false) const;

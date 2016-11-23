@@ -3756,6 +3756,7 @@ public:
     virtual char const *disable() { return 0; }
     virtual void enable() {}
     virtual bool getLogName(StringBuffer &name __attribute__((unused))) const { return false; }
+    virtual offset_t getLogPosition(StringBuffer &logFileName __attribute__((unused))) const { return 0; };
 
     // interface IUserMetric
     virtual unsigned __int64 queryCount() const { return counter; }

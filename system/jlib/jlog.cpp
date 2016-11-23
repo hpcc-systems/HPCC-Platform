@@ -1634,6 +1634,14 @@ void CLogMsgManager::panic(char const * reason) const
     fprintf(stderr, "%s", reason); // not sure there's anything more useful we can do here
 }
 
+offset_t CLogMsgManager::getLogPosition(StringBuffer &logFileName, const ILogMsgHandler * handler) const
+{
+    if (processor)
+        processor->flush(10*1000);
+    WriteLockBlock block(monitorLock);  // Prevents any incoming messages as we are doing this
+    return handler->getLogPosition(logFileName);
+}
+
 aindex_t CLogMsgManager::find(const ILogMsgHandler * handler) const
 {
     // N.B. Should be used inside critical block
