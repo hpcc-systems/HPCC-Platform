@@ -4495,7 +4495,7 @@ int rtlCompareUtf8Utf8Strength(size32_t llen, const char * left, size32_t rlen, 
     return rtlCompareUnicodeUnicodeStrength(llen, uleft.getustr(), rlen, uright.getustr(), locale, strength);
 }
 
-void rtlDecPushUtf8(size32_t len, const void * data)
+void rtlDecPushUtf8(size32_t len, const char * data)
 {
     DecPushString(len, (const char *)data); // good enough for the moment
 }

@@ -652,7 +652,7 @@ ECLRTL_API void rtlUtf8ToUtf8(size32_t outlen, char * out, size32_t inlen, const
 ECLRTL_API void rtlUtf8ToUtf8X(size32_t & outlen, char * & out, size32_t inlen, const char *in);
 ECLRTL_API int rtlCompareUtf8Utf8(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale);
 ECLRTL_API int rtlCompareUtf8Utf8Strength(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale, unsigned strength);
-ECLRTL_API void rtlDecPushUtf8(size32_t len, const void * data);
+ECLRTL_API void rtlDecPushUtf8(size32_t len, const char * data);
 ECLRTL_API bool rtlUtf8ToBool(size32_t inlen, const char * in);
 ECLRTL_API __int64 rtlUtf8ToInt(size32_t inlen, const char * in);
 ECLRTL_API double rtlUtf8ToReal(size32_t inlen, const char * in);
