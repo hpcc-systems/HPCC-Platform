@@ -44,7 +44,7 @@ EXPORT eclblas := SERVICE : plugin('eclblasplugin'), library('eclblas'), namespa
                  BOOLEAN transposeA, blas_Diagonal diag,
                  blas_dimension_t M, blas_dimension_t N,  blas_dimension_t lda,
                  blas_value_t alpha, const blas_matrix_t A, const blas_matrix_t B);
-  SET OF REAL8 Extract_Tri(blas_dimension_t m, blas_dimension_t n, blas_Triangle tri,
+  SET OF REAL8 extract_tri(blas_dimension_t m, blas_dimension_t n, blas_Triangle tri,
                        blas_Diagonal dt, const blas_matrix_t a);
   SET OF REAL8 make_diag(blas_dimension_t m, blas_value_t v=1.0, const blas_matrix_t X=[]);
 END;
