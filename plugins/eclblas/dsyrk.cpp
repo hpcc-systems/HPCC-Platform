@@ -19,6 +19,8 @@
 //the update is upper or lower.  C is N by N
 #include "eclblas.hpp"
 
+namespace eclblas {
+
 ECLBLAS_CALL void dsyrk(bool & __isAllResult, size32_t & __lenResult,
                         void * &__result, uint8_t tri, bool transposeA,
                         uint32_t n, uint32_t k, double alpha, bool isAllA,
@@ -44,4 +46,6 @@ ECLBLAS_CALL void dsyrk(bool & __isAllResult, size32_t & __lenResult,
               transposeA ? CblasTrans : CblasNoTrans,
               n, k, alpha, (const double *)a, lda, beta, new_c, n);
   __result = (void*) new_c;
+}
+
 }

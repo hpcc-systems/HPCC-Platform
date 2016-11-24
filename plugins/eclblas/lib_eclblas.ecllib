@@ -23,32 +23,28 @@ EXPORT blas_Diagonal     := ENUM(UNSIGNED1, UnitTri=1, NotUnitTri=2);
 EXPORT blas_Side         := ENUM(UNSIGNED1, Ax=1, xA=2);
 
 
-EXPORT eclblas := SERVICE : plugin('eclblasplugin'), library('eclblas')
+EXPORT eclblas := SERVICE : plugin('eclblasplugin'), library('eclblas'), namespace('eclblas'), CPP, PURE
   REAL8 dasum(blas_dimension_t m, const blas_matrix_t x, blas_dimension_t incx,
-                blas_dimension_t skipped=0) : C, PURE;
+                blas_dimension_t skipped=0);
   SET OF REAL8 daxpy(blas_dimension_t N, blas_value_t alpha, const blas_matrix_t X,
                  blas_dimension_t incX, blas_matrix_t Y, blas_dimension_t incY,
-                 blas_dimension_t x_skipped=0, blas_dimension_t y_skipped=0)
-                 : C, PURE;
+                 blas_dimension_t x_skipped=0, blas_dimension_t y_skipped=0);
   SET OF REAL8 dgemm(BOOLEAN transposeA, BOOLEAN transposeB,
                  blas_dimension_t M, blas_dimension_t N, blas_dimension_t K,
                  blas_value_t alpha, const blas_matrix_t A, const blas_matrix_t B,
-                 blas_value_t beta=0.0, const blas_matrix_t C=[]) : C, PURE;
-  SET OF REAL8 dgetf2(blas_dimension_t m, blas_dimension_t n, const blas_matrix_t a)
-                 : C, PURE;
-  SET OF REAL8 dpotf2(blas_Triangle tri, blas_dimension_t r, blas_matrix_t A,
-                  BOOLEAN clear=TRUE) : C, PURE;
+                 blas_value_t beta=0.0, const blas_matrix_t C=[]);
+  SET OF REAL8 dgetf2(blas_dimension_t m, blas_dimension_t n, const blas_matrix_t a);
+  SET OF REAL8 dpotf2(blas_Triangle tri, blas_dimension_t r, blas_matrix_t A, BOOLEAN clear=TRUE);
   SET OF REAL8 dscal(blas_dimension_t N, blas_value_t alpha, const blas_matrix_t X,
-                 blas_dimension_t incX, blas_dimension_t skipped=0) : C, PURE;
+                 blas_dimension_t incX, blas_dimension_t skipped=0);
   SET OF REAL8 dsyrk(blas_Triangle tri, BOOLEAN transposeA, blas_dimension_t N,
                  blas_dimension_t K, blas_value_t alpha, const blas_matrix_t A,
-                 blas_value_t beta, const blas_matrix_t C, BOOLEAN clear=FALSE)
-                 : C, PURE;
+                 blas_value_t beta, const blas_matrix_t C, BOOLEAN clear=FALSE);
   SET OF REAL8 dtrsm(blas_Side side, blas_Triangle tri,
                  BOOLEAN transposeA, blas_Diagonal diag,
                  blas_dimension_t M, blas_dimension_t N,  blas_dimension_t lda,
-                 blas_value_t alpha, const blas_matrix_t A, const blas_matrix_t B) : C, PURE;
+                 blas_value_t alpha, const blas_matrix_t A, const blas_matrix_t B);
   SET OF REAL8 Extract_Tri(blas_dimension_t m, blas_dimension_t n, blas_Triangle tri,
-                       blas_Diagonal dt, const blas_matrix_t a) : C, PURE;
-  SET OF REAL8 make_diag(blas_dimension_t m, blas_value_t v=1.0, const blas_matrix_t X=[]) : C, PURE;
+                       blas_Diagonal dt, const blas_matrix_t a);
+  SET OF REAL8 make_diag(blas_dimension_t m, blas_value_t v=1.0, const blas_matrix_t X=[]);
 END;

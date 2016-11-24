@@ -48,8 +48,9 @@
 extern "C" {
 #include <cblas.h>
 }
+namespace eclblas {
 
-extern "C" {
+//extern "C" {
   ECLBLAS_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
 
   ECLBLAS_CALL double dasum(uint32_t m, bool isAllX, size32_t lenX, const void * x,
@@ -99,7 +100,8 @@ extern "C" {
   ECLBLAS_CALL void make_diag(bool & __isAllResult, size32_t & __lenResult,
                               void * & __result, size32_t m, double v,
                               bool isAllX, size32_t lenX, const void * x);
-}
+//}
 
+} // namespace
 
 #endif
