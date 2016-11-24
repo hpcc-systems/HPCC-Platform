@@ -4200,7 +4200,7 @@ public:
     {
     }
 
-    IRoxieProbe *createProbe(IInputBase *in, IEngineRowStream *stream, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration)
+    IRoxieProbe *createProbe(IInputBase *in, IActivityBase *sourceAct, IActivityBase *targetAct, unsigned sourceIdx, unsigned targetIdx, unsigned iteration) override
     {
         CriticalBlock b(crit);
         unsigned channel = debugContext->queryChannel();
@@ -4208,7 +4208,9 @@ public:
         unsigned targetId = targetAct->queryId();
         DebugActivityRecord *sourceActRecord = noteActivity(sourceAct, iteration, channel, debugContext->querySequence());
         DebugActivityRecord *targetActRecord = noteActivity(targetAct, iteration, channel, debugContext->querySequence());
-        DebugProbe *probe = new DebugProbe(dynamic_cast<IHThorInput*>(in), stream, sourceId, sourceIdx, sourceActRecord, targetId, targetIdx, targetActRecord, iteration, channel, debugContext);
+        IHThorInput *hin = dynamic_cast<IHThorInput*>(in);
+        assertex(hin);
+        DebugProbe *probe = new DebugProbe(hin, &hin->queryStream(), sourceId, sourceIdx, sourceActRecord, targetId, targetIdx, targetActRecord, iteration, channel, debugContext);
     #ifdef _DEBUG
         DBGLOG("Creating probe for edge id %s in graphManager %p", probe->queryEdgeId(), this);
     #endif
