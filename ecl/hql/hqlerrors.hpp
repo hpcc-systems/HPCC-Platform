@@ -149,6 +149,7 @@
 #define ERR_PARAM_TYPEMISMATCH      2064 /* param type mismatch */
 #define ERR_PARAM_WRONGNUMBER       2065 /* Wrong number of parameters: either 2061 or 2062 */
 #define ERR_PARAM_NOTYPEORVOID      2066 /* non-typed or void expression can not used as parameter */
+#define ERR_PARAM_NOTUNIQUE         2067 /* parameter name not unique */
 
 /* Expected ... */
 #define ERR_EXPECTED_CONST          2071 /* Constant expression expected */

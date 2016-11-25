@@ -6713,6 +6713,12 @@ bool HqlGram::checkParameters(IHqlExpression* func, HqlExprArray& actuals, const
 void HqlGram::addActiveParameterOwn(const attribute & errpos, IHqlExpression * param, IHqlExpression * defaultValue)
 {
     ActiveScopeInfo & activeScope = defineScopes.tos();
+    ForEachItemIn(idx, activeScope.activeParameters)
+    {
+        IHqlExpression & cur = activeScope.activeParameters.item(idx);
+        if (cur.queryName() == param->queryName())
+            reportError(ERR_PARAM_NOTUNIQUE, errpos, "Parameter name '%s' is not unique", str(param->queryName()));
+    }
     activeScope.activeParameters.append(*param);
     activeScope.activeDefaults.append(*ensureNormalizedDefaultValue(defaultValue));
 
