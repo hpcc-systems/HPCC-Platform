@@ -853,10 +853,10 @@ public:
             const char* s = getMetaString("xsd_group_type", "\"all\"");
             if (*s == '\"')
             {
-                s++;
+                s++;  // Skip leading " and (assumed) trailing "
                 size_t len = strlen(s);
-                xsdgrouptype = (char*)malloc(len);
-                strncpy(xsdgrouptype,s,len-1);
+                xsdgrouptype = (char*) malloc(len);
+                memcpy(xsdgrouptype,s,len-1);
                 xsdgrouptype[len-1]=0;
             }
             else
