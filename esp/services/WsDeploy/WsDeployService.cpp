@@ -4929,47 +4929,46 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
 
   if (!strcmp(operation, "Add"))
   {
-    StringBuffer sbNewType(newType);
-
-    if (!strcmp(newType, "EclCCServer"))
-      sbNewType.clear().append(XML_TAG_ECLCCSERVERPROCESS);
-    else if (!strcmp(newType, "EclServer"))
-      sbNewType.clear().append(XML_TAG_ECLSERVERPROCESS);
-    else if (!strcmp(newType, "EclAgent"))
-      sbNewType.clear().append(XML_TAG_ECLAGENTPROCESS);
-    else if (!strcmp(newType, "EclScheduler"))
-      sbNewType.clear().append(XML_TAG_ECLSCHEDULERPROCESS);
-    else if (!strcmp(newType, "Thor"))
-      sbNewType.clear().append(XML_TAG_THORCLUSTER);
-    else if (!strcmp(newType, "Roxie"))
-      sbNewType.clear().append(XML_TAG_ROXIECLUSTER);
-
-    IPropertyTree* pNode = createPTree(sbNewType.str());
-
-    if (!strcmp(sbNewType.str(), XML_TAG_ECLCCSERVERPROCESS) ||
-      !strcmp(sbNewType.str(), XML_TAG_ECLSERVERPROCESS) ||
-      !strcmp(sbNewType.str(), XML_TAG_ECLAGENTPROCESS) ||
-      !strcmp(sbNewType.str(), XML_TAG_ECLSCHEDULERPROCESS) ||
-      !strcmp(sbNewType.str(), XML_TAG_ROXIECLUSTER))
-      pNode->addProp(XML_ATTR_PROCESS, "");
-    else if (!strcmp(sbNewType.str(), XML_TAG_THORCLUSTER))
-    {
-      StringBuffer strName("thor");
-      strName.set(getUniqueName2(pEnvRoot->queryPropTree(buf.str()), strName, "ThorCluster", XML_ATTR_PROCESS));
-
-      pNode->addProp(XML_ATTR_PROCESS, strName.str());
-    }
-    else if (!strcmp(sbNewType.str(), XML_TAG_CLUSTER))
-    {
-      pNode->addProp(XML_ATTR_NAME, "");
-      pNode->addProp(XML_ATTR_PREFIX, "");
-      pNode->addProp(XML_ATTR_ALIAS, "");
-    }
-
     IPropertyTree* pTopology = pEnvRoot->queryPropTree(buf.str());
     if (pTopology)
-      pTopology->addPropTree(sbNewType.str(), pNode);
+    {
+      const char *sbNewType = newType;
 
+      if (!strcmp(newType, "EclCCServer"))
+        sbNewType = XML_TAG_ECLCCSERVERPROCESS;
+      else if (!strcmp(newType, "EclServer"))
+        sbNewType = XML_TAG_ECLSERVERPROCESS;
+      else if (!strcmp(newType, "EclAgent"))
+        sbNewType = XML_TAG_ECLAGENTPROCESS;
+      else if (!strcmp(newType, "EclScheduler"))
+        sbNewType = XML_TAG_ECLSCHEDULERPROCESS;
+      else if (!strcmp(newType, "Thor"))
+        sbNewType = XML_TAG_THORCLUSTER;
+      else if (!strcmp(newType, "Roxie"))
+        sbNewType = XML_TAG_ROXIECLUSTER;
+
+      IPropertyTree* pNode = createPTree(sbNewType);
+
+      if (!strcmp(sbNewType, XML_TAG_ECLCCSERVERPROCESS) ||
+        !strcmp(sbNewType, XML_TAG_ECLSERVERPROCESS) ||
+        !strcmp(sbNewType, XML_TAG_ECLAGENTPROCESS) ||
+        !strcmp(sbNewType, XML_TAG_ECLSCHEDULERPROCESS) ||
+        !strcmp(sbNewType, XML_TAG_ROXIECLUSTER))
+        pNode->addProp(XML_ATTR_PROCESS, "");
+      else if (!strcmp(sbNewType, XML_TAG_THORCLUSTER))
+      {
+        StringBuffer strName("thor");
+        getUniqueName2(pEnvRoot->queryPropTree(buf.str()), strName, "ThorCluster", XML_ATTR_PROCESS);
+        pNode->addProp(XML_ATTR_PROCESS, strName.str());
+      }
+      else if (!strcmp(sbNewType, XML_TAG_CLUSTER))
+      {
+        pNode->addProp(XML_ATTR_NAME, "");
+        pNode->addProp(XML_ATTR_PREFIX, "");
+        pNode->addProp(XML_ATTR_ALIAS, "");
+      }
+      pTopology->addPropTree(sbNewType, pNode);
+    }
     resp.setStatus("true");
   }
   else if (!strcmp(operation, "Delete"))
