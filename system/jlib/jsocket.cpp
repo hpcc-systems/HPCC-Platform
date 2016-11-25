@@ -6351,22 +6351,22 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
 #ifdef _DEBUG
         DBGLOG("%s",dbgSB.str());
 #endif
-#ifndef _USE_SELECT
-        delete [] fds;
-#endif
     }
     else if (res == SOCKET_ERROR)
     {
         res = 0; // dont return negative on failure
         int err = ERRNO();
-#ifndef _USE_SELECT
-        delete [] fds;
-#endif
         if (err != JSE_INTR)
         {
+#ifndef _USE_SELECT
+            delete [] fds;
+#endif
             throw MakeStringException(-1,"wait_multiple::select/poll error %d", err);
         }
     }
+#ifndef _USE_SELECT
+    delete [] fds;
+#endif
     return res;
 }
 
