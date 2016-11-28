@@ -26,6 +26,8 @@
 #include "eclblas.hpp"
 #include <math.h>
 
+namespace eclblas {
+
 ECLBLAS_CALL void dpotf2(bool & __isAllResult, size32_t & __lenResult,
                          void * & __result, uint8_t tri, uint32_t r,
                          bool isAllA, size32_t lenA, const void * A,
@@ -73,4 +75,6 @@ ECLBLAS_CALL void dpotf2(bool & __isAllResult, size32_t & __lenResult,
     for(unsigned int k=1; clear && k<r-j; k++) new_a[(k*x_step)+diag] = 0.0;
   }
   __result = (void*) new_a;
+}
+
 }

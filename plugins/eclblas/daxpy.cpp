@@ -18,6 +18,7 @@
 // Vector add, alpha X  +  Y
 #include "eclblas.hpp"
 
+namespace eclblas {
 
 ECLBLAS_CALL void daxpy(bool & __isAllResult, size32_t & __lenResult,
                         void * & __result, uint32_t n, double alpha,
@@ -32,4 +33,6 @@ ECLBLAS_CALL void daxpy(bool & __isAllResult, size32_t & __lenResult,
   double* Y = result + y_skipped;
   cblas_daxpy(n, alpha, X, incx, Y, incy);
   __result = (void*) result;
+}
+
 }

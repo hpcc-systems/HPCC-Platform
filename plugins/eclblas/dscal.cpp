@@ -18,6 +18,8 @@
 
 #include "eclblas.hpp"
 
+namespace eclblas {
+
 ECLBLAS_CALL void dscal(bool & __isAllResult, size32_t & __lenResult,
                         void * & __result, uint32_t n, double alpha,
                         bool isAllX, size32_t lenX, const void * x,
@@ -28,4 +30,6 @@ ECLBLAS_CALL void dscal(bool & __isAllResult, size32_t & __lenResult,
   __result = (void*) result;
   __isAllResult = false;
   __lenResult = lenX;
+}
+
 }

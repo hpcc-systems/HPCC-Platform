@@ -20,6 +20,8 @@
 //transpose A and B.  beta defaults to zero, and C to empty
 #include "eclblas.hpp"
 
+namespace eclblas {
+
 ECLBLAS_CALL void dgemm(bool & __isAllResult, size32_t & __lenResult,
                         void * & __result, bool transposeA, bool transposeB,
                         uint32_t m, uint32_t n, uint32_t k,
@@ -42,4 +44,6 @@ ECLBLAS_CALL void dgemm(bool & __isAllResult, size32_t & __lenResult,
               (const double *) B, ldb,
               beta, result, ldc);
   __result = (void *) result;
-  }
+}
+
+}
