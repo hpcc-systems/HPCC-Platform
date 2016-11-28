@@ -722,9 +722,9 @@ public:
     inline void setInput(unsigned idx, unsigned source, unsigned sourceidx)
     {
         if (idx != 0)
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: id = %d : setInput() parameter out of bounds idx = %d at %s(%d)", id, idx, __FILE__, __LINE__); 
+            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: id = %d : setInput() parameter out of bounds idx = %d at %s(%d)", id, idx, sanitizeSourceFile(__FILE__), __LINE__);
         if (input != -1)
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: id = %d : setInput() called twice for input = %d source = %d  inputidx = %d  sourceidx = %d at %s(%d)", id, input, source, inputidx, sourceidx, __FILE__, __LINE__); 
+            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: id = %d : setInput() called twice for input = %d source = %d  inputidx = %d  sourceidx = %d at %s(%d)", id, input, source, inputidx, sourceidx, sanitizeSourceFile(__FILE__), __LINE__);
         input = source;
         inputidx = sourceidx;
     }
@@ -2507,7 +2507,7 @@ public:
             sourceIdx1 = _sourceIdx;
             break;
         default:
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
+            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__);
         }   
     }
 
@@ -2742,7 +2742,7 @@ public:
             }
             catch (...)
             {
-                exception.set(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", __FILE__, __LINE__));
+                exception.set(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", sanitizeSourceFile(__FILE__), __LINE__));
                 abort();
                 throw;
             }
@@ -5755,7 +5755,7 @@ public:
         }
         catch(...)
         {
-            Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", __FILE__, __LINE__);
+            Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", sanitizeSourceFile(__FILE__), __LINE__);
             ctx->notifyAbort(E);
             abort();
             reset(); 
@@ -9314,7 +9314,7 @@ public:
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
     {
         if (idx)
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
+            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__);
         puller.setInput(this, _sourceIdx, _in);
         inputMeta.set(_in->queryOutputMeta());
     }
@@ -13142,7 +13142,7 @@ public:
         if (pullers.isItem(idx))
             pullers.item(idx).setInput(_sourceIdx, _in);
         else
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
+            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__);
     }
 
     virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
@@ -14378,7 +14378,7 @@ public:
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
     {
         if (idx)
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
+            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__);
         puller.setInput(this, _sourceIdx, _in);
     }
 
@@ -14995,7 +14995,7 @@ public:
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
     {
         if (idx)
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
+            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__);
         executor.setInput(this, _sourceIdx, _in, flags);
     }
 
@@ -24405,7 +24405,7 @@ public:
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
     {
         if (idx)
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
+            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__);
         puller.setInput(this, _sourceIdx, _in);
     }
 
@@ -24650,7 +24650,7 @@ public:
         }
     }
 
-    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const { throw MakeStringException(ROXIE_INTERNAL_ERROR, "%s query %s is suspended and cannot be executed - error occurred at %s(%d)", (queryFactory.isQueryLibrary()) ? "Library" : " ", queryFactory.queryQueryName(), __FILE__, __LINE__); }
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const { throw MakeStringException(ROXIE_INTERNAL_ERROR, "%s query %s is suspended and cannot be executed - error occurred at %s(%d)", (queryFactory.isQueryLibrary()) ? "Library" : " ", queryFactory.queryQueryName(), sanitizeSourceFile(__FILE__), __LINE__); }
 
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
     {
@@ -25109,7 +25109,7 @@ public:
             indexReadIdx = _sourceIdx;
         }
         else
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
+            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__);
     }
 
     virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
@@ -25465,7 +25465,7 @@ public:
             indexReadIdx = _sourceIdx;
         }
         else
-            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
+            throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__);
     }
 
     virtual void connectInputStreams(bool consumerOrdered)
@@ -26581,7 +26581,7 @@ public:
         }
         catch(...)
         {
-            Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", __FILE__, __LINE__);
+            Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", sanitizeSourceFile(__FILE__), __LINE__);
             ctx->notifyAbort(E);
             abort();
             throw;

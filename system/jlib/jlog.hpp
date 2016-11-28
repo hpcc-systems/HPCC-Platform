@@ -610,7 +610,7 @@ private:
 class jlib_decl LogMsgPrepender
 {
 public:
-    LogMsgPrepender(LogMsgComponentReporter * r, char const * f, unsigned l) : reporter(r), file(f), line(l) { }
+    LogMsgPrepender(LogMsgComponentReporter * r, char const * f, unsigned l) : reporter(r), file(sanitizeSourceFile(f)), line(l) { }
     void                      report(const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf, 3, 4)));
     void                      report_va(const LogMsgCategory & cat, const char * format, va_list args);
     void                      report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 4, 5)));

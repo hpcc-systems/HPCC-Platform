@@ -544,7 +544,7 @@
 #define ERRORAT2(e, x, a, b)        reportError(e, x, x##_Text, a, b)
 #define ERRORAT3(e, x, a, b, c)     reportError(e, x, x##_Text, a, b, c)
 
-#define throwUnexpectedOp(op)       throw MakeStringException(ECODETEXT(HQLERR_UnexpectedOperator), getOpString(op), __FILE__, __LINE__)
-#define throwUnexpectedType(type)   throw MakeStringException(ECODETEXT(HQLERR_UnexpectedType), type->queryTypeName(), __FILE__, __LINE__)
+#define throwUnexpectedOp(op)       throw MakeStringException(ECODETEXT(HQLERR_UnexpectedOperator), getOpString(op), sanitizeSourceFile(__FILE__), __LINE__)
+#define throwUnexpectedType(type)   throw MakeStringException(ECODETEXT(HQLERR_UnexpectedType), type->queryTypeName(), sanitizeSourceFile(__FILE__), __LINE__)
 
 #endif // _HQLERRORS_HPP_
