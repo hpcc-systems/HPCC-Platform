@@ -142,7 +142,7 @@ __declspec(noreturn) void jlib_decl throwUnexpectedException(const char * where,
 IException jlib_decl * deserializeException(MemoryBuffer & in); 
 void jlib_decl serializeException(IException * e, MemoryBuffer & out); 
 
-void  jlib_decl printStackReport();
+void  jlib_decl printStackReport(__int64 startIP = 0);
 // Macro for legacy name of above function
 #define PrintStackReport printStackReport
 
