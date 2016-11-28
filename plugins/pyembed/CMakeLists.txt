@@ -42,6 +42,9 @@ if(PYEMBED)
             ./../../rtl/include
             ./../../rtl/nbcd
             ./../../common/deftype
+            ./../../common/thorhelper
+            ./../../dali/base
+            ./../../system/mp
             ./../../roxie/roxiemem
             ./../../system/jlib)
 

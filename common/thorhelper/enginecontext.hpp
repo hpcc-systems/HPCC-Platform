@@ -21,10 +21,27 @@
 #include "jsocket.hpp"
 #include "dacoven.hpp"
 
+typedef void (* QueryTermCallback)(const char *queryId);
+
+class TerminationCallbackInfo : public CInterface
+{
+public:
+    TerminationCallbackInfo(QueryTermCallback _callback, const char *_id) : callback(_callback), id(_id) {}
+    ~TerminationCallbackInfo()
+    {
+        callback(id);
+    }
+protected:
+    QueryTermCallback callback;
+    StringAttr id;
+};
+
 interface IEngineContext
 {
     virtual DALI_UID getGlobalUniqueIds(unsigned num, SocketEndpoint *_foreignNode) = 0;
     virtual bool allowDaliAccess() const = 0;
+    virtual StringBuffer &getQueryId(StringBuffer &result, bool isShared) const = 0;
+    virtual void onTermination(QueryTermCallback callback, const char *key, bool isShared) const = 0;
 };
 
 #endif // ENGINECONTEXT_HPP

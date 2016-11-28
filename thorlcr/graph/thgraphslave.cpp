@@ -1322,6 +1322,8 @@ class CThorCodeContextSlave : public CThorCodeContextBase, implements IEngineCon
 {
     mptag_t mptag;
     Owned<IDistributedFileTransaction> superfiletransaction;
+    mutable CIArrayOf<TerminationCallbackInfo> callbacks;
+    mutable CriticalSection callbacksCrit;
 
     void invalidSetResult(const char * name, unsigned seq)
     {
@@ -1432,6 +1434,16 @@ public:
     {
         // NB. includes access to foreign Dalis.
         return jobChannel.queryJob().getOptBool("slaveDaliClient");
+    }
+    virtual StringBuffer &getQueryId(StringBuffer &result, bool isShared) const
+    {
+        return result.append(jobChannel.queryJob().queryWuid());
+    }
+    virtual void onTermination(QueryTermCallback callback, const char *key, bool isShared) const
+    {
+        TerminationCallbackInfo *term(new TerminationCallbackInfo(callback, key));
+        CriticalBlock b(callbacksCrit);
+        callbacks.append(*term);
     }
 };
 
