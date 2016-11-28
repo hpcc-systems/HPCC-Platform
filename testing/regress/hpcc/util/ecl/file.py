@@ -42,6 +42,7 @@ class ECLFile:
     wuid = None
     elapsTime = 0
     jobname = ''
+    jobnameVersion = ''
     aborted = False
     abortReason = ''
     taskId = -1
@@ -450,8 +451,17 @@ class ECLFile:
     def setElapsTime(self,  time):
         self.elapsTime = time
 
+    def setJobnameVersion(self,  version):
+        # convert this kind of version string
+        #  'multiPart=false,useSequential=true'
+        # to this
+        #   'multiPart(false)-useSequential(true)'
+        
+        self.jobnameVersion += '-' +version.replace('=', '(').replace(',', ')-')+')'
+        pass
+        
     def setJobname(self,  timestamp):
-        self.jobname = self.basename +"-"+timestamp
+        self.jobname = self.basename + self.jobnameVersion +"-"+timestamp
 
     def getJobname(self):
         return self.jobname
@@ -488,6 +498,7 @@ class ECLFile:
 
     # Set -D parameter(s) (and generate version string for logger)
     def setDParameters(self,  param):
+        self.setJobnameVersion(param)
         self.version = param.replace(',',  ', ')
         param = '-D'+param.replace(',', ' -D')+''
         self.paramD = param.split(' ')
