@@ -4706,7 +4706,15 @@ public:
                                     }
                                     if (ep_mode != 0) {
                                         tonotify.append(*epsi);
+#ifdef _TRACELINKCLOSED
+                                        // temporary, to help diagnose spurios socket closes (hpcc-15043)
+                                        // currently no implementation of notifySelected() uses the mode
+                                        // argument so we can pass in the epoll events mask and log that
+                                        // if there is no data and the socket gets closed
+                                        tonotify.element(tonotify.length()-1).mode = epevents[j].events;
+#else
                                         tonotify.element(tonotify.length()-1).mode = ep_mode;
+#endif
                                     }
                                 }
                             }
