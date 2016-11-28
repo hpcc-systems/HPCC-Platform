@@ -314,12 +314,8 @@ IHqlExpression * CTreeOptimizer::swapIntoIf(IHqlExpression * expr, bool force)
     OwnedHqlExpr newLeft = replaceChildDataset(body, left, 0);
     OwnedHqlExpr newRight = replaceChildDataset(body, right, 0);
 
-    HqlExprArray args;
-    args.append(*LINK(cond));
-    args.append(*LINK(newLeft));
-    args.append(*LINK(newRight));
-    OwnedHqlExpr newIf = child->clone(args);
-
+    OwnedHqlExpr newIf = createIf(LINK(cond),LINK(newLeft),LINK(newRight));
+    newIf.setown(child->cloneAllAnnotations(newIf));
     if (!alreadyHasUsage(newIf))
     {
         incUsage(newLeft);
@@ -3985,6 +3981,34 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         OwnedHqlExpr limited = createDataset(no_choosen, LINK(child->queryChild(0)), createComma(LINK(transformed->queryChild(1)), createLocalAttribute()));
                         OwnedHqlExpr newIndexRead = replaceChild(child, limited);
                         return replaceChild(transformed, newIndexRead);
+                    }
+                    break;
+                }
+            case no_if:
+                {
+                    if (transformed->queryChild(1)->isConstant())
+                        return swapIntoIf(transformed);
+                    break;
+                }
+             }
+             break;
+         }
+    case no_select:
+        {
+            node_operator childOp = child->getOperator();
+            switch(childOp)
+            {
+                case no_if:
+                {
+                    if (!isShared(child) && child->isDatarow())
+                    {
+                      IHqlExpression * cond = child->queryChild(0);
+                        IHqlExpression * field = transformed->queryChild(1);
+                        OwnedHqlExpr newLeft = createNewSelectExpr(LINK(child->queryChild(1)), LINK(field));
+                        OwnedHqlExpr newRight = createNewSelectExpr(LINK(child->queryChild(2)), LINK(field));
+                        incUsage(newLeft);
+                        incUsage(newRight);
+                        return createIf(LINK(cond), LINK(newLeft), LINK(newRight));
                     }
                     break;
                 }
