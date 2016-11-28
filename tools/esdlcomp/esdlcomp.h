@@ -892,12 +892,16 @@ public:
     {
         if (!xsdgrouptype)
         {
-            xsdgrouptype = strdup(getMetaString("xsd_group_type", "\"all\""));
-            if (*xsdgrouptype == '\"')
-                xsdgrouptype++;
-            char *finger = strchr(xsdgrouptype, '\"');
-            if (finger)
-                *finger=0;
+            const char* s = getMetaString("xsd_group_type", "\"all\"");
+            if (*s == '\"')
+            {
+                xsdgrouptype = strdup(s+1);
+                char *finger = strchr(xsdgrouptype, '\"');
+                if (finger)
+                    *finger=0;
+            }
+            else
+                xsdgrouptype = strdup(s);
         }
         return xsdgrouptype;
     }
