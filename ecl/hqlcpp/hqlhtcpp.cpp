@@ -5369,16 +5369,26 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
             }
         }
 
-        IHqlExpression * format =  originalExpr->queryAttribute(storedFieldFormatAtom);
-        if (format)
+        if (result)
         {
-            ForEachChild(i, format)
+            ActivityInstance * activity = queryCurrentActivity(ctx);
+            if (activity)
             {
-                StringBuffer name;
-                StringBuffer value;
-                OwnedHqlExpr folded = foldHqlExpression(format->queryChild(i));
-                getHintNameValue(folded, name, value);
-                result->setResultFieldOpt(name, value);
+                const char * graphName = activeGraph->name;
+                result->setResultWriteLocation(graphName, activity->activityId);
+            }
+
+            IHqlExpression * format = originalExpr->queryAttribute(storedFieldFormatAtom);
+            if (format)
+            {
+                ForEachChild(i, format)
+                {
+                    StringBuffer name;
+                    StringBuffer value;
+                    OwnedHqlExpr folded = foldHqlExpression(format->queryChild(i));
+                    getHintNameValue(folded, name, value);
+                    result->setResultFieldOpt(name, value);
+                }
             }
         }
     }

@@ -1750,6 +1750,7 @@ public:
     virtual IProperties *queryResultXmlns();
     virtual IStringVal& getResultFieldOpt(const char *name, IStringVal &str) const;
     virtual void getSchema(IArrayOf<ITypeInfo> &types, StringAttrArray &names, IStringVal * ecl=NULL) const;
+    virtual void        getResultWriteLocation(IStringVal & _graph, unsigned & _activityId) const;
 
     // interface IWUResult
     virtual void        setResultStatus(WUResultStatus status);
@@ -1784,6 +1785,7 @@ public:
     virtual void        setResultRow(unsigned len, const void * data);
     virtual void        setResultXmlns(const char *prefix, const char *uri);
     virtual void        setResultFieldOpt(const char *name, const char *value);
+    virtual void        setResultWriteLocation(const char * _graph, unsigned _activityId);
 
     virtual IPropertyTree *queryPTree() { return p; }
 };
@@ -7948,6 +7950,12 @@ IStringVal& CLocalWUResult::getResultFieldOpt(const char *name, IStringVal &str)
     return str;
 }
 
+void CLocalWUResult::getResultWriteLocation(IStringVal & _graph, unsigned & _activityId) const
+{
+    _graph.set(p->queryProp("@graph"));
+    _activityId = p->getPropInt("@activity", 0);
+}
+
 void CLocalWUResult::setResultStatus(WUResultStatus status)
 {
     setEnum(p, "@status", status, resultStatuses);
@@ -7989,6 +7997,12 @@ void CLocalWUResult::setResultFieldOpt(const char *name, const char *value)
     IPropertyTree *format = ensurePTree(p, "Format");
     VStringBuffer xpath("@%s", name);
     format->setProp(xpath, value);
+}
+
+void CLocalWUResult::setResultWriteLocation(const char * _graph, unsigned _activityId)
+{
+    p->setProp("@graph", _graph);
+    p->setPropInt("@activity", _activityId);
 }
 
 void CLocalWUResult::setResultScalar(bool isScalar)
