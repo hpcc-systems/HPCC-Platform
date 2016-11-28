@@ -118,7 +118,8 @@
     <para>Example:</para>
 
     <programlisting format="linespecific">IMPORT STD;
-STD.BLAS.ICellFunc(42,2,3);
+REAL8 my_func(STD.BLAS.Types.value_t v, STD.BLAS.Types.dimension_t x, STD.BLAS.Types.dimension_t y) 
+              := 1/v; //set element to the reciprocal value
 </programlisting>
 
     <para>See Also: <link linkend="Apply2Cells">Apply2Cells</link></para>
@@ -592,12 +593,9 @@ STD.BLAS.dgetf2(3, 3, test); //result is [2,2,3,3,4,4,9,16,25];
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">dgetf2</emphasis> function computes the
-    Cholesky factorization of a real symmetric positive definite matrix A. The
-    factorization has the form A = U**T * U , if UPLO = 'U', or * A = L *
-    L**T, if UPLO = 'L', where U is an upper triangular matrix and L is lower
-    triangular. This is the unblocked version of the algorithm, calling Level
-    2 BLAS..</para>
+    <para>The <emphasis role="bold">dpotf2</emphasis> function computes the
+    Cholesky factorization of a real symmetric positive definite matrix A.
+    </para>
 
     <para>Example:</para>
 
@@ -1147,7 +1145,7 @@ Square := STD.BLAS.make_diag(4, 1, init1); //4x4 with diagonal 1, 2, 3, 4
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">make_vecror</emphasis> function generates
+    <para>The <emphasis role="bold">make_vector</emphasis> function generates
     a vector of dimension n</para>
 
     <para>Example:</para>
@@ -1170,7 +1168,7 @@ twos_vector := STD.BLAS.make_vector(4, 2); // a vector of [2, 2, 2, 2]
         <primary>BLAS.trace</primary>
       </indexterm><indexterm>
         <primary>trace</primary>
-      </indexterm>(</emphasis> <emphasis>m, v );</emphasis>
+      </indexterm>(</emphasis> <emphasis>m, n, x );</emphasis>
     <emphasis></emphasis></para>
 
     <para></para>
@@ -1209,14 +1207,14 @@ twos_vector := STD.BLAS.make_vector(4, 2); // a vector of [2, 2, 2, 2]
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">make_vecror</emphasis> function computes
-    the trace of the input matrix </para>
+    <para>The <emphasis role="bold">trace</emphasis> function computes the
+    trace of the input matrix </para>
 
     <para>Example:</para>
 
     <programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.matrix_t x := [1.0, 2.0, 3.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0];
-trace_of_x := STD.BLAS.trace(3,3,x);	// the trace is 7
+trace_of_x := STD.BLAS.trace(3,3,x); // the trace is 7
 </programlisting>
 
     <para></para>
