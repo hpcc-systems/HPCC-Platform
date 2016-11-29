@@ -130,6 +130,9 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr)
 
     if (def)
     {
+        Owned<IPropertyTree> javadoc = getJavadocAnnotation(expr);
+        if (javadoc)
+            def->addPropTree("Documentation", javadoc.getClear());
         IHqlNamedAnnotation * symbol = queryNameAnnotation(expr);
         def->setProp("@name", str(expr->queryName()));
         def->setPropInt("@line", expr->getStartLine());
