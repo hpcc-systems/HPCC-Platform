@@ -7,6 +7,13 @@
   <para>This section provides support tor Basic Linear Algebra Subprogram
   support.</para>
 
+  <para>The BLAS functions use the column major mapping for the storage of a
+  matrix. This is the mapping used in Fortran, and has the entries of the
+  first column followed by the entries of the second column. This is the
+  transpose of the row major form commonly used in the C language where the
+  entries of the first row are followed by the entries of the second
+  row.</para>
+
   <sect1 id="BLASTypes">
     <title>Types</title>
 
@@ -970,14 +977,14 @@ diagonal_only := := STD.BLAS.extract_diag(3, 3, x);
   </sect1>
 
   <sect1 id="extract_tri">
-    <title>Extract_Tri</title>
+    <title>extract_tri</title>
 
-    <para><emphasis role="bold">STD.BLAS.Extract_Tri <indexterm>
-        <primary>STD.BLAS.Extract_Tri</primary>
+    <para><emphasis role="bold">STD.BLAS.extract_tri <indexterm>
+        <primary>STD.BLAS.extract_tri</primary>
       </indexterm><indexterm>
-        <primary>BLAS.Extract_Tri</primary>
+        <primary>BLAS.extract_tri</primary>
       </indexterm><indexterm>
-        <primary>Extract_Tri</primary>
+        <primary>extract_tri</primary>
       </indexterm>(</emphasis> <emphasis>m, n, tri, dt, a );</emphasis>
     <emphasis></emphasis></para>
 
@@ -1029,7 +1036,7 @@ diagonal_only := := STD.BLAS.extract_diag(3, 3, x);
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">Extract_Tri </emphasis> function extracts
+    <para>The <emphasis role="bold">extract_tri </emphasis> function extracts
     the upper or lower triangle. The diagonal can be the actual or implied
     unit diagonal.</para>
 
@@ -1039,7 +1046,7 @@ diagonal_only := := STD.BLAS.extract_diag(3, 3, x);
 Diagonal := STD.BLAS.Types.Diagonal;
 Triangle := STD.BLAS.Types.Triangle;
 STD.BLAS.Types.matrix_t x := [1.0, 2.0, 3.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0];
-triangle := STD.BLAS.Extract_Tri(3, 3, Triangle.upper, Diagonal.NotUnitTri, x);
+triangle := STD.BLAS.extract_tri(3, 3, Triangle.upper, Diagonal.NotUnitTri, x);
 </programlisting>
 
     <para></para>
