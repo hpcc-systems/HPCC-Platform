@@ -95,9 +95,9 @@ public:
 
 public:
     IMPLEMENT_IINTERFACE;
-    EsdlServiceImpl()  {}
+    EsdlServiceImpl(){}
 
-    ~EsdlServiceImpl();
+    virtual ~EsdlServiceImpl();
 
     virtual const char * getServiceType()
     {
@@ -322,9 +322,7 @@ public:
     EsdlBindingImpl();
     EsdlBindingImpl(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL);
 
-    ~EsdlBindingImpl()
-    {
-    }
+    virtual ~EsdlBindingImpl(){}
 
     virtual int onGet(CHttpRequest* request, CHttpResponse* response);
 
