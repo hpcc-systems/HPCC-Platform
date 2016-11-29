@@ -33,7 +33,7 @@ public:
     IMPLEMENT_IINTERFACE;
     CEsdlSvcEngine(){}
 
-    ~CEsdlSvcEngine();
+    virtual ~CEsdlSvcEngine();
 
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
     void generateTransactionId(IEspContext & context, StringBuffer & trxid);
@@ -51,9 +51,7 @@ public:
     CEsdlSvcEngineSoapBindingEx();
     CEsdlSvcEngineSoapBindingEx(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL);
 
-    ~CEsdlSvcEngineSoapBindingEx()
-    {
-    }
+    virtual ~CEsdlSvcEngineSoapBindingEx() {}
 
     virtual void addService(const char * name, const char * host, unsigned short port, IEspService & service)
     {
