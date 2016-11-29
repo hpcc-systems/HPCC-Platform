@@ -35,10 +35,10 @@ public:
 
     ~CEsdlSvcEngine();
 
-    virtual void init(IPropertyTree *cfg, const char *process, const char *service);
-    void generateTransactionId(IEspContext & context, StringBuffer & trxid);
-    virtual IPropertyTree *createTargetContext(IEspContext &context, IPropertyTree *tgtcfg, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *req_pt);
-    virtual void esdl_log(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IPropertyTree *req_pt, const char *xmlresp, const char *logdata, unsigned int timetaken);
+    virtual void init(const IPropertyTree *cfg, const char *process, const char *service) override;
+    void generateTransactionId(IEspContext & context, StringBuffer & trxid) override;
+    virtual IPropertyTree *createTargetContext(IEspContext &context, IPropertyTree *tgtcfg, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *req_pt) override;
+    virtual void esdl_log(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IPropertyTree *req_pt, const char *xmlresp, const char *logdata, unsigned int timetaken) override;
 };
 
 class CEsdlSvcEngineSoapBindingEx : public EsdlBindingImpl
