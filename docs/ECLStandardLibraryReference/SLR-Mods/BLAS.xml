@@ -594,8 +594,11 @@ STD.BLAS.dgetf2(3, 3, test); //result is [2,2,3,3,4,4,9,16,25];
     </informaltable>
 
     <para>The <emphasis role="bold">dpotf2</emphasis> function computes the
-    Cholesky factorization of a real symmetric positive definite matrix A.
-    </para>
+    Cholesky factorization of a real symmetric positive definite matrix A. The
+    factorization has the form A = U**T*U if the <emphasis>tri</emphasis>
+    parameter is Triangle.Upper, or A = L * L**T if the
+    <emphasis>tri</emphasis> parameter is Triangle.Lower. This is the
+    unblocked version of the algorithm, calling Level 2 BLAS.</para>
 
     <para>Example:</para>
 
@@ -1201,14 +1204,14 @@ twos_vector := STD.BLAS.make_vector(4, 2); // a vector of [2, 2, 2, 2]
           <row>
             <entry>Return:<emphasis></emphasis></entry>
 
-            <entry>The trace (sum of the diagonal entries) </entry>
+            <entry>The trace (sum of the diagonal entries)</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
     <para>The <emphasis role="bold">trace</emphasis> function computes the
-    trace of the input matrix </para>
+    trace of the input matrix</para>
 
     <para>Example:</para>
 
