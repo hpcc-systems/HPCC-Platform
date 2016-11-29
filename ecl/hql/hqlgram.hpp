@@ -316,6 +316,7 @@ public:
     unsigned firstSideEffect;
     //The following are used for the symbol currently being defined....  Here so correctly scoped.
     bool isParametered;
+    bool legacyOnly = false;
     HqlExprArray activeParameters;
     HqlExprArray activeDefaults;
     Owned<IHqlScope> templateAttrContext;
@@ -366,11 +367,13 @@ public:
 public:
     CIArrayOf<ActiveScopeInfo> defineScopes;
     HqlScopeArray defaultScopes;
+    HqlScopeArray implicitScopes;
     Owned<IHqlScope> globalScope;
     Linked<ISourcePath> sourcePath;
     HqlLookupContext lookupCtx;
     HqlExprArray imports;
     bool inSignedModule;
+    bool legacyImport;
 };
 
 typedef const IAtom * const * AtomList;
@@ -641,7 +644,7 @@ public:
     DefineIdSt * createDefineId(int scope, ITypeInfo * ownedType);
     void enterCompoundObject();
     void leaveCompoundObject();
-    void enterScope(IHqlScope * scope, bool allowExternal);
+    void enterScope(IHqlScope * scope, bool allowExternal, bool legacyOnly);
     void enterScope(bool allowExternal);
     void enterVirtualScope();
     void leaveScope(const attribute & errpos);
@@ -784,6 +787,7 @@ protected:
     IHqlExpression * createPatternOr(HqlExprArray & args, const attribute & errpos);
     IHqlExpression * mapAlienArg(IHqlSimpleScope * scope, IHqlExpression * expr);
     ITypeInfo * mapAlienType(IHqlSimpleScope * scope, ITypeInfo * type, const attribute & errpos);
+    IHqlExpression * lookupParseSymbol(IIdAtom * searchName);
 
     void disableError() { errorDisabled = true; }
     void enableError() { errorDisabled = false; }
@@ -871,7 +875,6 @@ protected:
     bool resolveSymbols;
     bool forceResult;
     bool associateWarnings;
-    bool legacyImportSemantics;
     bool legacyWhenSemantics;
     bool isQuery;
     bool parseConstantText;
@@ -917,6 +920,7 @@ protected:
     ITypeInfo * defaultRealType;
     ITypeInfo * boolType;
     HqlScopeArray defaultScopes;
+    HqlScopeArray implicitScopes;
     PointerArray savedType;
     HqlExprAttr curFeatureParams;
     HqlExprCopyArray implicitFeatureNames;
@@ -1079,6 +1083,7 @@ class HqlLex
         void setParentLex(HqlLex* pLex) { parentLex = pLex; }
         const char* getMacroName() { return (macroExpr) ? str(macroExpr->queryName()) : "<param>"; }
         IPropertyTree * getClearJavadoc();
+        void doSlashSlashHash(YYSTYPE const & returnToken, const char * command);
 
         void loadXML(const YYSTYPE & errpos, const char * value, const char * child = NULL);
 
@@ -1124,6 +1129,11 @@ class HqlLex
 
         StringBuffer& doGetDataType(StringBuffer & type, const char * text, int lineno, int column);
         void pushText(const char *);
+        bool hasLegacyImportSemantics() const;
+        void setLegacyImport(bool _legacyImportMode)
+        {
+            legacyImportMode = _legacyImportMode;
+        }
 
     protected:
         void init(IFileContents * _text);
@@ -1207,6 +1217,8 @@ class HqlLex
 
         bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg);
 
+        bool readCheckNextToken(YYSTYPE & returnToken, int expected, unsigned errCode, const char * msg);
+
 private:
         HqlGram *yyParser;
         Owned<IFileContents> text;
@@ -1232,6 +1244,7 @@ private:
         UnsignedArray hashendFlags;
         UnsignedArray hashendKinds;
         bool hasHashbreak;
+        bool legacyImportMode = false;
         int loopTimes;
 
         bool inComment;
