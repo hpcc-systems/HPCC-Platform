@@ -266,6 +266,21 @@ bool CLoggingManager::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEs
     return bRet;
 }
 
+bool CLoggingManager::providesTransactionID()
+{
+    if (!initialized)
+        throw MakeStringException(-1,"LoggingManager not initialized");
+
+    for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
+    {
+        IUpdateLogThread* loggingThread = loggingAgentThreads[x];
+        if (loggingThread->hasService(LGSTGetTransactionID))
+            return true;
+    }
+
+    return false;
+}
+
 bool CLoggingManager::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status)
 {
     if (!initialized)

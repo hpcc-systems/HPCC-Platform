@@ -44,7 +44,6 @@ static const char * const espLogContentGroupNames[] = { "ESPContext", "UserConte
 class CTransIDBuilder : public CInterface, implements IInterface
 {
     StringAttr seed;
-    bool localSeed;
     unsigned __int64 seq;
     void add(StringAttrMapping* transIDFields, const char* key, StringBuffer& id)
     {
@@ -52,20 +51,17 @@ class CTransIDBuilder : public CInterface, implements IInterface
         if (value)
             id.append(value->get()).append('-');
         else
-        {
-            const char* ptr = key;
-            if (strlen(key) > 11) //skip the "transaction" prefix of the key
-                ptr += 11;
-            id.append('?').append(ptr).append('-');
-        }
+            id.append('??-');
     }
 
 public:
     IMPLEMENT_IINTERFACE;
-    CTransIDBuilder(const char* _seed, bool _localSeed) : seed(_seed), localSeed(_localSeed), seq(0) { };
+    CTransIDBuilder(const char* _seed) : seed(_seed)
+    {
+        seq = 0;
+    };
     virtual ~CTransIDBuilder() {};
 
-    virtual const char* getTransSeed() { return seed.get(); };
     virtual void getTransID(StringAttrMapping* transIDFields, StringBuffer& id)
     {
         id.clear();
@@ -76,10 +72,7 @@ public:
             add(transIDFields, sTransactionMethod, id);
             add(transIDFields, sTransactionIdentifier, id);
         }
-        if (localSeed)
-            id.append(seed.get()).append("-X").append(++seq);
-        else
-            id.append(seed.get()).append('-').append(++seq);
+        id.append(seed.get()).append('-').append(++seq);
     };
 };
 

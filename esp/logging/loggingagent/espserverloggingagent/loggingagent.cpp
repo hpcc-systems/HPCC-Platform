@@ -54,8 +54,7 @@ bool CESPServerLoggingAgent::init(const char * name, const char * type, IPropert
     maxServerWaitingSeconds = cfg->getPropInt(PropServerWaitingSeconds);
     maxGTSRetries = cfg->getPropInt(MaxTriesGTS, DefaultMaxTriesGTS);
 
-    BoolHash uniqueGroupNames;
-    StringBuffer sourceName, groupName, dbName, localTransactionSeed;
+    StringBuffer sourceName, groupName, dbName;
     Owned<IPropertyTreeIterator> iter = cfg->getElements("LogSourceMap/LogSource");
     ForEach(*iter)
     {
@@ -65,27 +64,24 @@ bool CESPServerLoggingAgent::init(const char * name, const char * type, IPropert
         Owned<CLogSource> logSource = new CLogSource(sourceName.str(), groupName.str(), dbName.str());
         logSources.setValue(sourceName.str(), logSource);
 
-        bool* found = uniqueGroupNames.getValue(groupName.str());
-        if (!found || !*found)
+        CTransIDBuilder* transIDBuilder = transIDMap.getValue(groupName.str());
+        if (!transIDBuilder)
         {
-            uniqueGroupNames.setValue(groupName.str(), true);
             StringBuffer transactionSeed, statusMessage;
             getTransactionSeed(groupName.str(), transactionSeed, statusMessage);
-            if (transactionSeed.length() > 0)
+            if (transactionSeed.length() == 0)
             {
-                Owned<CTransIDBuilder> entry = new CTransIDBuilder(transactionSeed.str(), false);
-                transIDMap.setValue(groupName.str(), entry);
-                if (iter->query().getPropBool("@default", false))
-                    defaultGroup.set(groupName.str());
+                VStringBuffer msg("Unable to get transaction seed for LogSource:%s", groupName.str());
+                if (statusMessage.length())
+                    msg.append(" - ").append(statusMessage.str());
+                throw MakeStringException(-1, "%s", msg.str());
             }
-            else
-                PROGLOG("Failed to get TransactionSeed for <%s>", groupName.str());
+            Owned<CTransIDBuilder> entry = new CTransIDBuilder(transactionSeed.str());
+            transIDMap.setValue(groupName.str(), entry);
         }
+        if (defaultGroup.length() == 0)
+            defaultGroup.set(groupName.str());
     }
-    createLocalTransactionSeed(localTransactionSeed);
-    Owned<CTransIDBuilder> localTransactionEntry = new CTransIDBuilder(localTransactionSeed.str(), true);
-    transIDMap.setValue(appESPServerLoggingAgent, localTransactionEntry);
-
     readAllLogFilters(cfg);
     return true;
 }
@@ -253,13 +249,14 @@ void CESPServerLoggingAgent::getTransactionID(StringAttrMapping* transFields, St
         CLogSource* logSource = logSources.getValue(source->get());
         if (logSource)
             transIDBuilder = transIDMap.getValue(logSource->getGroupName());
+        else
+            throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed,
+                "Failed to get TransactionSeed group name for %s", source->get());
     }
     if (!transIDBuilder && (defaultGroup.length() != 0))
         transIDBuilder = transIDMap.getValue(defaultGroup.str());
     if (!transIDBuilder)
-        transIDBuilder = transIDMap.getValue(appESPServerLoggingAgent);
-    if (!transIDBuilder) //This should not happen.
-        throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "Failed to getTransactionID");
+        throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "Failed to get TransactionSeed");
 
     transIDBuilder->getTransID(transFields, transactionID);
     return;

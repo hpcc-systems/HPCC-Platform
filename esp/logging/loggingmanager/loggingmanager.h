@@ -34,6 +34,7 @@ interface ILoggingManager : implements IInterface
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) = 0;
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status) = 0;
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp) = 0;
+    virtual bool providesTransactionID() = 0;
     virtual bool getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status) = 0;
 };
 

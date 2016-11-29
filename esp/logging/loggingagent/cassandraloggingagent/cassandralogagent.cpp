@@ -19,7 +19,7 @@
 #include "esploggingservice_esp.ipp"
 #include "cassandralogagent.hpp"
 
-static const int defaultMaxTriesGTS = -1;
+const int defaultMaxTriesGTS = -1;
 
 static void setCassandraLogAgentOption(StringArray& opts, const char* opt, const char* val)
 {
@@ -158,11 +158,10 @@ void CCassandraLogAgent::setSessionOptions(const char *keyspace)
 {
     StringArray opts;
     setCassandraLogAgentOption(opts, "contact_points", dbServer.str());
-    if (!dbUserID.isEmpty())
+    if (!dbUserID.isEmpty() && !dbPassword.isEmpty())
     {
         setCassandraLogAgentOption(opts, "user", dbUserID.str());
-        if (!dbPassword.isEmpty())
-            setCassandraLogAgentOption(opts, "password", dbPassword.str());
+        setCassandraLogAgentOption(opts, "password", dbPassword.str());
     }
     if (keyspace && *keyspace)
         setCassandraLogAgentOption(opts, "keyspace", keyspace);
@@ -171,58 +170,7 @@ void CCassandraLogAgent::setSessionOptions(const char *keyspace)
 
 void CCassandraLogAgent::createTable(const char *dbName, const char *tableName, StringArray& columnNames, StringArray& columnTypes, const char* keys)
 {
-    StringBuffer fields;
-    ForEachItemIn(i, columnNames)
-        fields.appendf("%s %s,", columnNames.item(i), columnTypes.item(i));
-
-    VStringBuffer createTableSt("CREATE TABLE IF NOT EXISTS %s.%s (%s PRIMARY KEY (%s));", dbName, tableName, fields.str(), keys);
-    executeSimpleStatement(createTableSt.str());
-}
-
-void CCassandraLogAgent::addField(CLogField& logField, const char* name, StringBuffer& value, StringBuffer& fields, StringBuffer& values)
-{
-    const char* fieldType = logField.getType();
-    if(strieq(fieldType, "int"))
-    {
-        appendFieldInfo(logField.getMapTo(), value, fields, values, false);
-        return;
-    }
-
-    if(strieq(fieldType, "raw"))
-    {
-        appendFieldInfo(logField.getMapTo(), value, fields, values, true);;
-        return;
-    }
-
-    if(strieq(fieldType, "varchar") || strieq(fieldType, "text"))
-    {
-        if(fields.length() != 0)
-            fields.append(',');
-        fields.append(logField.getMapTo());
-
-        if(values.length() != 0)
-            values.append(',');
-        values.append('\'');
-
-        const char* str = value.str();
-        int length = value.length();
-        for(int i = 0; i < length; i++)
-        {
-            unsigned char c = str[i];
-            if(c == '\t' || c == '\n' || c== '\r')
-                values.append(' ');
-            else if(c == '\'')
-                values.append('"');
-            else if(c < 32 || c > 126)
-                values.append('?');
-            else
-                values.append(c);
-        }
-        values.append('\'');
-        return;
-    }
-
-    DBGLOG("Unknown format %s", fieldType);
+    statement.setf("INSERT INTO %s.%s (%s, date_added) values (%s, toUnixTimestamp(now()));", dbName, tableName, fields, values);
 }
 
 void CCassandraLogAgent::setUpdateLogStatement(const char* dbName, const char* tableName,

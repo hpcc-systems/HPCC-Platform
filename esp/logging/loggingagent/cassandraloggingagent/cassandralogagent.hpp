@@ -57,6 +57,11 @@ class CCassandraLogAgent : public CDBLogAgentBase
         const char* fields, const char* values, StringBuffer& statement);
     virtual void executeUpdateLogStatement(StringBuffer& statement);
 
+    virtual void queryTransactionSeed(const char* appName, StringBuffer& seed);
+    virtual void setUpdateLogStatement(const char* dbName, const char* tableName,
+        const char* fields, const char* values, StringBuffer& statement);
+    virtual void executeUpdateLogStatement(StringBuffer& statement);
+
 public:
     IMPLEMENT_IINTERFACE;
 
