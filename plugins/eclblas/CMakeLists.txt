@@ -37,7 +37,7 @@ if(USE_CBLAS)
         dsyrk.cpp
         dtrsm.cpp
         eclblas.cpp
-        Extract_Tri.cpp
+        extract_tri.cpp
         make_diag.cpp)
 
     include_directories(

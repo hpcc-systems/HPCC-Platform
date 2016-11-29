@@ -33,6 +33,7 @@
 #include <stdexcept> 
 #include "thorplugin.hpp"
 #include "thorcommon.hpp"
+#include "enginecontext.hpp"
 
 #define MAX_EDGEDATA_LENGTH 30000
 #define MAX_HEX_SIZE 500
@@ -329,7 +330,7 @@ public:
 
 
 class CHThorDebugContext;
-class EclAgent : implements IAgentContext, implements ICodeContext, implements IRowAllocatorMetaActIdCacheCallback, public CInterface
+class EclAgent : implements IAgentContext, implements ICodeContext, implements IRowAllocatorMetaActIdCacheCallback, implements IEngineContext, public CInterface
 {
 private:
     friend class EclAgentWorkflowMachine;
@@ -503,7 +504,7 @@ public:
     virtual IOrderedOutputSerializer * queryOutputSerializer() { return outputSerializer; }
     virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
     virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
-    virtual IEngineContext *queryEngineContext() { return NULL; }
+    virtual IEngineContext *queryEngineContext() { return this; }
     virtual char *getDaliServers();
 
     unsigned __int64 queryStopAfter() { return stopAfter; }
@@ -512,6 +513,36 @@ public:
     {
         return queryNullSectionTimer();
     }
+// IEngineContext
+    virtual DALI_UID getGlobalUniqueIds(unsigned num, SocketEndpoint *_foreignNode)
+    {
+        if (num==0)
+            return 0;
+        SocketEndpoint foreignNode;
+        if (_foreignNode && !_foreignNode->isNull())
+            foreignNode.set(*_foreignNode);
+        else
+        {
+            const char *dali = getDaliServers();
+            if (!dali)
+                return 0;
+            foreignNode.set(dali);
+            free((char *) dali);
+        }
+        return ::getGlobalUniqueIds(num, &foreignNode);
+    }
+    virtual bool allowDaliAccess() const  { return true; }
+    virtual StringBuffer &getQueryId(StringBuffer &result, bool isShared) const
+    {
+        result.append("workunit"); // No distinction between global, workunit and query scopes for eclagent
+        return result;
+    }
+
+    virtual void onTermination(QueryTermCallback callback, const char *key, bool isShared) const
+    {
+        // No need to unregister, since scope lasts until exe terminates
+    }
+
 
 //New workflow interface
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }

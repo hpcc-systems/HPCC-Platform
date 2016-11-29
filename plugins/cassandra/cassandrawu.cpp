@@ -830,7 +830,7 @@ struct CassandraTableInfo
 };
 
 static const int majorVersion = 1;  // If this does not match the value in the repository, you cannot proceed - a conversion tool is needed
-static const int minorVersion = 1;  // If this is less that the value in the repository, we should be fine (but there may be columns we don't know about and thus don't read - and will write as NULL in new rows)
+static const int minorVersion = 2;  // If this is less that the value in the repository, we should be fine (but there may be columns we don't know about and thus don't read - and will write as NULL in new rows)
                                     // If this is greater than the value in the repository, we need to update the repository (using add column) and its version before proceeding
                                     // Make sure to increment this if any column is ever added below
 
@@ -1077,7 +1077,9 @@ static const ChildTableInfo wuGraphMetasTable =
         {"totalrowcount", "bigint", "totalRowCount", bigintColumnMapper},  /* This is the number of rows in value */ \
         {"schemaRaw", "blob", "SchemaRaw", blobColumnMapper},              \
         {"logicalName", "text", "logicalName", stringColumnMapper},        /* either this or value will be present once result status is "calculated" */ \
-        {"value", "blob", "Value", blobColumnMapper}
+        {"value", "blob", "Value", blobColumnMapper}, \
+        {"graph", "text", "@graph", stringColumnMapper}, \
+        {"activity", "int", "@activity", intColumnMapper}
 
 static const CassandraXmlMapping wuResultsMappings [] =
 {
@@ -3052,36 +3054,53 @@ public:
         cluster.setOptions(options);
         if (!cluster.queryKeySpace())
             cluster.setKeySpace("hpcc");
-        cluster.connect();
-        Owned<IPTree> versionInfo = getVersionInfo();
-        if (versionInfo)
+        try
         {
-            int major = versionInfo->getPropInt("@major", 0);
-            int minor = versionInfo->getPropInt("@minor", 0);
-            if (major && minor)
+            cluster.connect();
+            Owned<IPTree> versionInfo = getVersionInfo();
+            if (versionInfo)
             {
-                // Note that if there is no version info at all, we have to assume that the repository is not yet created. We don't fail, otherwise no-one can call createRepository the first time...
-                if (major != majorVersion)
-                    throw makeStringExceptionV(WUERR_WorkunitVersionMismatch, "Incompatible workunit repository version (wanted %d.%d, found %d.%d)", majorVersion, minorVersion, major, minor);
-                if (minor != minorVersion)
+                int major = versionInfo->getPropInt("@major", 0);
+                int minor = versionInfo->getPropInt("@minor", 0);
+                if (major && minor)
                 {
-                    if (minor < minorVersion)
+                    // Note that if there is no version info at all, we have to assume that the repository is not yet created. We don't fail, otherwise no-one can call createRepository the first time...
+                    if (major != majorVersion)
+                        throw makeStringExceptionV(WUERR_WorkunitVersionMismatch, "Incompatible workunit repository version (wanted %d.%d, found %d.%d)", majorVersion, minorVersion, major, minor);
+                    if (minor != minorVersion)
                     {
-                        DBGLOG("WARNING: repository version %d.%d is older than current version %d.%d - adding required columns", major, minor, majorVersion, minorVersion);
-                        switch (minor)
+                        if (minor < minorVersion)
                         {
-                        // Add code here to create any columns that we need to to get from version "minor" to expected layout
+                            DBGLOG("WARNING: repository version %d.%d is older than current version %d.%d - adding required columns", major, minor, majorVersion, minorVersion);
+                            switch (minor)
+                            {
+                            case 1:
+                                executeSimpleCommand(querySession(), "ALTER TABLE wuresults ADD graph text;");
+                                executeSimpleCommand(querySession(), "ALTER TABLE wuresults ADD activity int;");
+                                executeSimpleCommand(querySession(), "ALTER TABLE wuvariables ADD graph text;");
+                                executeSimpleCommand(querySession(), "ALTER TABLE wuvariables ADD activity int;");
+                                executeSimpleCommand(querySession(), "ALTER TABLE wutemporaries ADD graph text;");
+                                executeSimpleCommand(querySession(), "ALTER TABLE wutemporaries ADD activity int;");
+                                break;
+                            }
+                            createVersionTable(true);
                         }
+                        else
+                            DBGLOG("WARNING: repository version %d.%d is newer than current version %d.%d - some columns will not be updated", major, minor, majorVersion, minorVersion);
                     }
-                    else
-                        DBGLOG("WARNING: repository version %d.%d is newer than current version %d.%d - some columns will not be updated", major, minor, majorVersion, minorVersion);
                 }
             }
+            else
+            {
+                DBGLOG("WARNING: repository version could not be retrieved (repository not yet created?)");
+                cluster.disconnect();
+            }
         }
-        else
+        catch (IException *E)
         {
+            EXCLOG(E);
+            E->Release();
             DBGLOG("WARNING: repository version could not be retrieved (repository not yet created?)");
-            cluster.disconnect();
         }
         cacheRetirer.start();
         LINK(_dll);  // Yes, this leaks. Not really sure how to avoid that.
@@ -3707,7 +3726,7 @@ public:
         executeSimpleCommand(s, create);
         s.set(NULL);
         cluster.connect();
-        createVersionTable();
+        createVersionTable(false);
         ensureTable(querySession(), workunitsMappings);
         ensureTable(querySession(), searchMappings);
         ensureTable(querySession(), uniqueSearchMappings);
@@ -3732,12 +3751,12 @@ public:
         return cluster.prepareStatement(query, traceLevel>=2);
     }
 private:
-    void createVersionTable()
+    void createVersionTable(bool force)
     {
         StringBuffer schema;
         executeSimpleCommand(querySession(), describeTable(versionMappings, schema));
         Owned<IPTree> oldVersion = getVersionInfo();
-        if (!oldVersion)
+        if (force || !oldVersion)
         {
             VStringBuffer versionInfo("<Version major='%d' minor='%d'/>", majorVersion, minorVersion);
             CassandraBatch versionBatch(cass_batch_new(CASS_BATCH_TYPE_LOGGED));

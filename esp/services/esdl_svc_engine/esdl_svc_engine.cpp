@@ -19,7 +19,7 @@
 #include "esdl_svc_engine.hpp"
 #include "params2xml.hpp"
 
-void CEsdlSvcEngine::init(IPropertyTree *cfg, const char *process, const char *service)
+void CEsdlSvcEngine::init(const IPropertyTree *cfg, const char *process, const char *service)
 {
     EsdlServiceImpl::init(cfg, process, service);
 
