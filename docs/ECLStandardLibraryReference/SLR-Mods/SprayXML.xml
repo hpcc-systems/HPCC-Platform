@@ -85,7 +85,7 @@
           <entry><emphasis>srcRowTag</emphasis></entry>
 
           <entry>A null-terminated string containing the row delimiting XML
-          tag.</entry>
+          tag. Required. </entry>
         </row>
 
         <row>
