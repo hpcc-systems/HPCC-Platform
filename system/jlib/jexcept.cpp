@@ -496,16 +496,32 @@ void userBreakpoint()
 #endif
 }
 
+const char *sanitizeSourceFile(const char *file)
+{
+    if (file)
+    {
+        const char *tail = strrchr(file, '/');
+        if (tail)
+            return tail+1;
+#ifdef _WIN32
+        tail = strrchr(file, '\\');
+        if (tail)
+            return tail+1;
+#endif
+    }
+    return file;
+}
+
 void throwUnexpectedException(const char * file, unsigned line)
 {
     printStackReport();
-    throw makeStringExceptionV(9999, "Internal Error at %s(%d)", file, line);
+    throw makeStringExceptionV(9999, "Internal Error at %s(%d)", sanitizeSourceFile(file), line);
 }
 
 void throwUnexpectedException(const char * where, const char * file, unsigned line)
 {
     printStackReport();
-    throw makeStringExceptionV(9999, "Internal Error '%s' at %s(%d)", where, file, line);
+    throw makeStringExceptionV(9999, "Internal Error '%s' at %s(%d)", where, sanitizeSourceFile(file), line);
 }
 
 void raiseAssertException(const char *assertion, const char *file, unsigned line)
@@ -514,7 +530,7 @@ void raiseAssertException(const char *assertion, const char *file, unsigned line
     s.append("assert(");
     s.append(assertion);
     s.append(") failed - file: ");
-    s.append(file);
+    s.append(sanitizeSourceFile(file));
     s.append(", line ");
     s.append(line);
 
@@ -550,7 +566,7 @@ void raiseAssertCore(const char *assertion, const char *file, unsigned line)
     s.append("assert(");
     s.append(assertion);
     s.append(") failed - file: ");
-    s.append(file);
+    s.append(sanitizeSourceFile(file));
     s.append(", line ");
     s.append(line);
     ERRLOG("%s",s.str());       // make sure doesn't get lost!
@@ -1013,7 +1029,6 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     __int64 ip = uc->uc_mcontext.gregs[REG_RIP];
     __int64 sp = uc->uc_mcontext.gregs[REG_RSP];
 #endif
-    
     excsignal = signum;
     s.appendf("SIG: %s(%d), accessing " I64X ", IP=" I64X, strsignal(signum),signum, (__int64)info->si_addr, ip);
     
@@ -1021,6 +1036,10 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     PROGLOG("Signal:    %d %s",signum,strsignal(signum));
     PROGLOG("Fault IP:  " I64X "", ip);
     PROGLOG("Accessing: " I64X "", (unsigned __int64) info->si_addr);
+#ifdef _EXECINFO_H
+    printStackReport(ip);
+#endif
+
     PROGLOG("Registers:" );
     PROGLOG("EAX:" I64X "  EBX:" I64X "  ECX:" I64X "  EDX:" I64X "  ESI:" I64X "  EDI:" I64X "",
 #ifdef __APPLE__
@@ -1060,6 +1079,10 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     PROGLOG("Signal:    %d %s",signum,strsignal(signum));
     PROGLOG("Fault IP:  %08X", ip);
     PROGLOG("Accessing: %08X", (unsigned) info->si_addr);
+#ifdef _EXECINFO_H
+    printStackReport(ip);
+#endif
+
     PROGLOG("Registers:" );
     PROGLOG("EAX:%08X  EBX:%08X  ECX:%08X  EDX:%08X  ESI:%08X  EDI:%08X",
         uc->uc_mcontext.gregs[REG_EAX], uc->uc_mcontext.gregs[REG_EBX], 
@@ -1190,9 +1213,6 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
 
 #endif
 
-#ifdef _EXECINFO_H
-    printStackReport();
-#endif  
     StringBuffer threadlist;
     PROGLOG( "ThreadList:\n%s",getThreadList(threadlist).str());
     queryLogMsgManager()->flushQueue(10*1000);
@@ -1376,7 +1396,7 @@ void jlib_decl serializeException(IException * e, MemoryBuffer & out)
 }
 
 
-void printStackReport()
+void printStackReport(__int64 startIP)
 {
     if (!queryLogMsgManager())
         return;
@@ -1388,7 +1408,21 @@ void printStackReport()
     void *btarray[100];
     unsigned btn = backtrace (btarray, 100);
     char **strings = backtrace_symbols (btarray, btn);
-    for (unsigned i=0; i<btn; i++)
+    unsigned i;
+    unsigned firstReal = 0;
+    if (startIP)
+    {
+        VStringBuffer iptext("[%p]", (void *) startIP);
+        for (i=0; i<btn; i++)
+        {
+            if (strstr(strings[i], iptext) != nullptr)
+            {
+                firstReal = i;
+                break;
+            }
+        }
+    }
+    for (i=firstReal; i<btn; i++)
         DBGLOG("  %s", strings[i]);
     free (strings);
 #endif

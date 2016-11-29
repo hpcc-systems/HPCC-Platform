@@ -128,3 +128,32 @@ s2b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := (COUNTER/2)+1));
 s1c :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := (integer) ((STRING) COUNTER + '1')));
 s2c :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := (integer) ((STRING)(COUNTER/2) + '1')));
  SUM(NOFOLD(s1c + s2c), a);
+
+unsigned persistscope1(unsigned a) := EMBED(Python: globalscope('yo'),persist('workunit'))
+  global b
+  b = a + 1
+  return a
+ENDEMBED;
+
+unsigned usepersistscope1(unsigned a) := EMBED(Python: globalscope('yo'),persist('workunit'))
+  global b
+  return a + b
+ENDEMBED;
+
+unsigned persistscope2(unsigned a) := EMBED(Python: globalscope('yi'),persist('workunit'))
+  global b
+  b = a + 11
+  return a
+ENDEMBED;
+
+unsigned usepersistscope2(unsigned a) := EMBED(Python: globalscope('yi'),persist('workunit'))
+  global b
+  return a + b
+ENDEMBED;
+
+sequential(
+  persistscope1(1),
+  persistscope2(1),
+  usepersistscope1(1),
+  usepersistscope2(1)
+);

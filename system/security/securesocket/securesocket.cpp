@@ -68,7 +68,7 @@ bool accept_selfsigned = false;
 #define CHK_SSL(err) if((err) ==-1){ERR_print_errors_fp(stderr); exit(2);}
 
 #define THROWSECURESOCKETEXCEPTION(err) \
-    throw MakeStringException(-1, "SecureSocket Exception Raised in: %s, line %d - %s", __FILE__, __LINE__, err);
+    throw MakeStringException(-1, "SecureSocket Exception Raised in: %s, line %d - %s", sanitizeSourceFile(__FILE__), __LINE__, err);
 
 
 static int pem_passwd_cb(char* buf, int size, int rwflag, void* password)

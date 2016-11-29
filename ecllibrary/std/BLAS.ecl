@@ -133,7 +133,7 @@ EXPORT Types.matrix_t
    * A = L  * L**T,  if UPLO = 'L',
    * where U is an upper triangular matrix and L is lower triangular.
    * This is the unblocked version of the algorithm, calling Level 2 BLAS.
-   * @param tri indocate whether upper or lower triangle is used
+   * @param tri indicate whether upper or lower triangle is used
    * @param r number of rows/columns in the square matrix
    * @param A the square matrix
    * @param clear clears the unused triangle
@@ -234,10 +234,10 @@ EXPORT Types.matrix_t
    * @return the triangle
    */
   EXPORT Types.matrix_t
-         Extract_Tri(Types.dimension_t m, Types.dimension_t n,
+         extract_tri(Types.dimension_t m, Types.dimension_t n,
                      Types.Triangle tri, Types.Diagonal dt,
                      Types.matrix_t a)
-       := LIB_ECLBLAS.ECLBLAS.Extract_Tri(m, n, tri, dt, a);
+       := LIB_ECLBLAS.ECLBLAS.extract_tri(m, n, tri, dt, a);
 
   /**
    * Generate a diagonal matrix.

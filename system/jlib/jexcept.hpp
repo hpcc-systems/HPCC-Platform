@@ -130,19 +130,21 @@ void jlib_decl setTerminateOnSEH(bool set=true);
 __declspec(noreturn) void jlib_decl throwUnexpectedException(const char * file, unsigned line) __attribute__((noreturn));
 __declspec(noreturn) void jlib_decl throwUnexpectedException(const char * where, const char * file, unsigned line) __attribute__((noreturn));
 
-#define makeUnexpectedException()  makeStringExceptionV(9999, "Internal Error at %s(%d)", __FILE__, __LINE__)
-#define throwUnexpected()          throwUnexpectedException(__FILE__, __LINE__)
-#define throwUnexpectedX(x)        throwUnexpectedException(x, __FILE__, __LINE__)
+const char jlib_decl *sanitizeSourceFile(const char *file);
+
+#define makeUnexpectedException()  makeStringExceptionV(9999, "Internal Error at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
+#define throwUnexpected()          throwUnexpectedException(sanitizeSourceFile(__FILE__), __LINE__)
+#define throwUnexpectedX(x)        throwUnexpectedException(x, sanitizeSourceFile(__FILE__), __LINE__)
 #define assertThrow(x)             assertex(x)
 
-#define UNIMPLEMENTED throw makeStringExceptionV(-1, "UNIMPLEMENTED feature at %s(%d)", __FILE__, __LINE__)
-#define UNIMPLEMENTED_X(reason) throw makeStringExceptionV(-1, "UNIMPLEMENTED '" reason "' at %s(%d)", __FILE__, __LINE__)
-#define UNIMPLEMENTED_XY(a,b) throw makeStringExceptionV(-1, "UNIMPLEMENTED " a " %s at %s(%d)", b, __FILE__, __LINE__)
+#define UNIMPLEMENTED throw makeStringExceptionV(-1, "UNIMPLEMENTED feature at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
+#define UNIMPLEMENTED_X(reason) throw makeStringExceptionV(-1, "UNIMPLEMENTED '" reason "' at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
+#define UNIMPLEMENTED_XY(a,b) throw makeStringExceptionV(-1, "UNIMPLEMENTED " a " %s at %s(%d)", b, sanitizeSourceFile(__FILE__), __LINE__)
 
 IException jlib_decl * deserializeException(MemoryBuffer & in); 
 void jlib_decl serializeException(IException * e, MemoryBuffer & out); 
 
-void  jlib_decl printStackReport();
+void  jlib_decl printStackReport(__int64 startIP = 0);
 // Macro for legacy name of above function
 #define PrintStackReport printStackReport
 

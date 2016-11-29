@@ -110,12 +110,12 @@
 #ifdef _TRACE
 #define THROWJSOCKEXCEPTION(exc) \
   { StringBuffer msg; \
-    msg.appendf("Target: %s, Raised in: %s, line %d",tracename ,__FILE__, __LINE__); \
+    msg.appendf("Target: %s, Raised in: %s, line %d",tracename ,sanitizeSourceFile(__FILE__), __LINE__); \
     IJSOCK_Exception *e = new SocketException(exc,msg.str());\
     throw e; }
 #define THROWJSOCKEXCEPTION2(exc) \
   { StringBuffer msg; \
-    msg.appendf("Raised in: %s, line %d",__FILE__, __LINE__); \
+    msg.appendf("Raised in: %s, line %d",sanitizeSourceFile(__FILE__), __LINE__); \
     IJSOCK_Exception *e = new SocketException(exc,msg.str());\
     throw e; }
 #define LOGERR(err,ref,info) LogErr(err,ref,info,__LINE__,NULL)
@@ -826,7 +826,7 @@ int CSocket::pre_connect (bool block)
     if (NULL == hostname || '\0' == (*hostname))
     {
         StringBuffer err;
-        err.appendf("CSocket::pre_connect - Invalid/missing host IP address raised in : %s, line %d",__FILE__, __LINE__);
+        err.appendf("CSocket::pre_connect - Invalid/missing host IP address raised in : %s, line %d",sanitizeSourceFile(__FILE__), __LINE__);
         IJSOCK_Exception *e = new SocketException(JSOCKERR_bad_netaddr,err.str());
         throw e;
     }
@@ -940,7 +940,7 @@ void CSocket::open(int listen_queue_size,bool reuseports)
 ErrPortInUse:
             closesock();
             char msg[1024]; 
-            sprintf(msg,"Target: %s, port = %d, Raised in: %s, line %d",tracename,(int)hostport,__FILE__, __LINE__); 
+            sprintf(msg,"Target: %s, port = %d, Raised in: %s, line %d",tracename,(int)hostport,sanitizeSourceFile(__FILE__), __LINE__);
             IJSOCK_Exception *e = new SocketException(JSOCKERR_port_in_use,msg);
             throw e; 
         }
@@ -6351,22 +6351,22 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
 #ifdef _DEBUG
         DBGLOG("%s",dbgSB.str());
 #endif
-#ifndef _USE_SELECT
-        delete [] fds;
-#endif
     }
     else if (res == SOCKET_ERROR)
     {
         res = 0; // dont return negative on failure
         int err = ERRNO();
-#ifndef _USE_SELECT
-        delete [] fds;
-#endif
         if (err != JSE_INTR)
         {
+#ifndef _USE_SELECT
+            delete [] fds;
+#endif
             throw MakeStringException(-1,"wait_multiple::select/poll error %d", err);
         }
     }
+#ifndef _USE_SELECT
+    delete [] fds;
+#endif
     return res;
 }
 

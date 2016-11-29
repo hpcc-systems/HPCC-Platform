@@ -291,6 +291,7 @@ interface IConstWUResult : extends IInterface
     virtual const IProperties *queryResultXmlns() = 0;
     virtual IStringVal &getResultFieldOpt(const char *name, IStringVal &str) const = 0;
     virtual void getSchema(IArrayOf<ITypeInfo> &types, StringAttrArray &names, IStringVal * eclText) const = 0;
+    virtual void getResultWriteLocation(IStringVal & _graph, unsigned & _activityId) const = 0;
 };
 
 
@@ -328,6 +329,7 @@ interface IWUResult : extends IConstWUResult
     virtual void setResultRow(unsigned len, const void * data) = 0;
     virtual void setResultXmlns(const char *prefix, const char *uri) = 0;
     virtual void setResultFieldOpt(const char *name, const char *value)=0;
+    virtual void setResultWriteLocation(const char * _graph, unsigned _activityId) = 0;
 
     virtual IPropertyTree *queryPTree() = 0;
 };

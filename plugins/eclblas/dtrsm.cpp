@@ -19,6 +19,8 @@
 //
 #include "eclblas.hpp"
 
+namespace eclblas {
+
 ECLBLAS_CALL void dtrsm(bool & __isAllResult, size32_t & __lenResult,
                         void * & __result, uint8_t side, uint8_t tri,
                         bool transposeA, uint8_t diag, uint32_t m,
@@ -37,4 +39,6 @@ ECLBLAS_CALL void dtrsm(bool & __isAllResult, size32_t & __lenResult,
               diag==UNIT ? CblasUnit : CblasNonUnit,
               m, n, alpha, (const double *)a, lda, new_b, ldb);
   __result = (void*) new_b;
+}
+
 }
