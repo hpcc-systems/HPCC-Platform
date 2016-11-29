@@ -7519,6 +7519,14 @@ IHqlNamedAnnotation * queryNameAnnotation(IHqlExpression * expr)
     return static_cast<IHqlNamedAnnotation *>(symbol->queryAnnotation());
 }
 
+IPropertyTree * getJavadocAnnotation(IHqlExpression * expr)
+{
+    IHqlExpression * symbol = queryAnnotation(expr, annotate_javadoc);
+    if (!symbol)
+        return NULL;
+    return symbol->getDocumentation();
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 
