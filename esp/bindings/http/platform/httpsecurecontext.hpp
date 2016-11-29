@@ -25,6 +25,8 @@
 enum HttpPropertyType
 {
     HTTP_PROPERTY_TYPE_COOKIE,
+    HTTP_PROPERTY_TYPE_HEADER,
+    HTTP_PROPERTY_TYPE_REMOTE_ADDRESS,
 };
 
 ESPHTTP_API IEspSecureContext* createHttpSecureContext(CHttpRequest* request);
