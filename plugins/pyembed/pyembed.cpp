@@ -129,7 +129,7 @@ static void checkPythonError()
         PyErr_Fetch(pType.ref(), pValue.ref(), pTraceBack.ref());
         OwnedPyObject valStr = PyObject_Str(pValue);
         PyErr_Clear();
-        failx("pyembed: %s", PyString_AsString(valStr));
+        failx("%s", PyString_AsString(valStr));
     }
 }
 
