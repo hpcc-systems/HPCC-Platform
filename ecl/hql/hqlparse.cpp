@@ -1077,7 +1077,8 @@ void HqlLex::doSlashSlashHash(YYSTYPE const & returnToken, const char * command)
             const char * bra = strchr(next, ')');
             if (bra)
             {
-                StringAttr option(next, bra - next);
+                StringBuffer option(bra - next, next);
+                option.clip();
                 if (strieq(option, "legacy"))
                     setLegacyImport(true);
                 else if (strieq(option, "modern"))

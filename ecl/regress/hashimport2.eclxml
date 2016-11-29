@@ -26,9 +26,9 @@ output(1 +
 2 = 3);
 
 output(TRUE AND
-//#import(legacy)
+//#import(  legacy  )
 #ISDEFINED(StringLib) AND
-//#import(modern)
+//#import( modern )
 NOT #ISDEFINED(StringLib));
 
 
