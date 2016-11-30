@@ -37,6 +37,12 @@
 
 static bool isInModule(HqlLookupContext & ctx, const char* module_name, const char* attr_name);
 static StringBuffer& mangle(IErrorReceiver* errReceiver,const char* src, StringBuffer& mangled,bool demangle);
+static const char * skipws(const char * str)
+{
+    while (isspace(*str))
+        str++;
+    return str;
+}
 
 // =========================== CDummyScopeIterator ======================================
 
@@ -309,7 +315,9 @@ void HqlLex::pushText(IFileContents * text, int startLineNo, int startColumn)
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::pushText");
 #endif
+    bool useLegacyImport = hasLegacyImportSemantics();
     inmacro = new HqlLex(yyParser, text, NULL, NULL);
+    inmacro->setLegacyImport(useLegacyImport);
     inmacro->set_yyLineNo(startLineNo);
     inmacro->set_yyColumn(startColumn);
 }
@@ -328,13 +336,22 @@ void HqlLex::pushText(const char *s)
     MTIME_SECTION(timer, "HqlLex::pushText");
 #endif
     Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+    bool useLegacyImport = hasLegacyImportSemantics();
     inmacro = new HqlLex(yyParser, macroContents, NULL, NULL);
+    inmacro->setLegacyImport(useLegacyImport);
     inmacro->set_yyLineNo(yyLineNo);
     inmacro->set_yyColumn(yyColumn);
 
 #if defined (TRACE_MACRO)
     PrintLog("MACRO>> inmacro %p created for \"%s\" for macro parameters.\n",inmacro,s);
 #endif
+}
+
+bool HqlLex::hasLegacyImportSemantics() const
+{
+    if (inmacro)
+        return inmacro->hasLegacyImportSemantics();
+    return legacyImportMode;
 }
 
 void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentId, unsigned& parmno,IProperties *macroParms)
@@ -555,7 +572,9 @@ void HqlLex::pushMacro(IHqlExpression *expr)
     }
     else
     {
+        bool useLegacyImport = hasLegacyImportSemantics();
         inmacro = new HqlLex(yyParser, macroContents, NULL, LINK(expr));
+        inmacro->setLegacyImport(useLegacyImport);
 
 #if defined(TRACE_MACRO)
         PrintLog("MACRO>> inmacro %p created for \"%s\" at %d:%d\n",inmacro, s.str(),macroBodyExpr->getStartLine(),macroBodyExpr->getStartColumn());
@@ -680,7 +699,9 @@ void HqlLex::processEncrypted()
     decrypted.append(0);    // add a null terminator to the string...
     Owned<ISourcePath> sourcePath = createSourcePath("<encrypted>");
     Owned<IFileContents> decryptedContents = createFileContentsFromText((const char *)decrypted.toByteArray(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+    bool useLegacyImport = hasLegacyImportSemantics();
     inmacro = new HqlLex(yyParser, decryptedContents, NULL, NULL);
+    inmacro->setLegacyImport(useLegacyImport);
     inmacro->setParentLex(this);
     inmacro->encrypted = true;
 }
@@ -1023,6 +1044,55 @@ void HqlLex::doLine(YYSTYPE & returnToken)
         else
             reportError(returnToken, ERR_EXPECTED_CONST, "Constant string expression expected");
     }
+}
+
+
+bool HqlLex::readCheckNextToken(YYSTYPE & returnToken, int expected, unsigned errCode, const char * msg)
+{
+    if (yyLex(returnToken, false, 0) == expected)
+        return true;
+
+    reportError(returnToken, errCode, "%s", msg);
+    returnToken.release();
+    return false;
+}
+
+void HqlLex::doSlashSlashHash(YYSTYPE const & returnToken, const char * command)
+{
+    if (inmacro)
+    {
+        inmacro->doSlashSlashHash(returnToken, command);
+        return;
+    }
+
+    if (macroGathering)
+        return;
+
+    if (hasPrefix(command, "import", false))
+    {
+        const char * next = skipws(command + 6);
+        if (*next == '(')
+        {
+            next = skipws(next + 1);
+            const char * bra = strchr(next, ')');
+            if (bra)
+            {
+                StringBuffer option(bra - next, next);
+                option.clip();
+                if (strieq(option, "legacy"))
+                    setLegacyImport(true);
+                else if (strieq(option, "modern"))
+                    setLegacyImport(false);
+                else
+                    reportError(returnToken, ERR_EXPECTED_ID, "Unknown #import option '%s' - expected legacy or modern", option.str());
+            }
+            else
+                reportError(returnToken, ERR_EXPECTED_RIGHTCURLY, "Expected closing )");
+        }
+        else
+            reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "Expected (");
+    }
+    //Ignore any unrecognised commands
 }
 
 void HqlLex::doError(YYSTYPE & returnToken, bool isError)
@@ -1794,8 +1864,7 @@ IHqlExpression *HqlLex::parseECL(IFileContents * contents, IXmlScope *xmlScope, 
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
 #endif
-    //  Use an ECL reserved word as the scope name to avoid name conflicts with these defined localscope.
-    Owned<IHqlScope> scope = new CHqlMultiParentScope(sharedId,yyParser->queryPrimaryScope(false),yyParser->queryPrimaryScope(true),yyParser->parseScope.get(),NULL);
+    Owned<IHqlScope> scope = createScope();
 
     HqlGramCtx parentContext(yyParser->lookupCtx, yyParser->inSignedModule);
     yyParser->saveContext(parentContext, false);

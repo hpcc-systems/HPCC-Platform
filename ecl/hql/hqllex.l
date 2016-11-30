@@ -257,6 +257,7 @@ xpathseq      ([^}\r\n])+
 %x COMMENT
 %x CPP
 %x SLSL
+%x SLSLHASH
 %x PGPHEADER
 %x PGPSIGN
 %%
@@ -304,6 +305,15 @@ xpathseq      ([^}\r\n])+
                     }
 
 {blank}+            { setupdatepos; }
+
+"//#"               { setupdatepos; BEGIN(SLSLHASH); }
+<SLSLHASH>\n        {
+                        updatepos1;
+                        lexer->updateNewline();
+                        BEGIN(0);
+                    }
+<SLSLHASH>\r        { updatepos1; }
+<SLSLHASH>[^\r\n]+  { updatepos1; lexer->doSlashSlashHash(returnToken, CUR_TOKEN_TEXT); }
 
 "//"                { setupdatepos; BEGIN(SLSL); }
 <SLSL>\n            { updatepos1; lexer->updateNewline(); BEGIN(0); }

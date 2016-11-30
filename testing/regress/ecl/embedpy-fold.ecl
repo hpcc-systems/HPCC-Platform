@@ -94,7 +94,7 @@ ENDEMBED;
 
 string myvalue := 'test' : STORED('myvalue');
 
-integer add1a(integer val) := EMBED(Python:FOLD,myoption(myvalue))
+integer add1a(integer val) := EMBED(Python:FOLD)
 val+1
 ENDEMBED;
 
