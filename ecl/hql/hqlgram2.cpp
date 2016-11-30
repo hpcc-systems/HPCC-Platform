@@ -345,17 +345,13 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
     forceResult = false;
     parsingTemplateAttribute = false;
     inSignedModule = _text->isImplicitlySigned();
-;
 
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
+    lexObject->setLegacyImport(queryLegacyImportSemantics());
 
-    if(lookupCtx.queryRepository() && loadImplicit && legacyImportSemantics)
-    {
-        HqlScopeArray scopes;
-        getImplicitScopes(scopes, lookupCtx.queryRepository(), _containerScope, lookupCtx);
-        ForEachItemIn(i, scopes)
-            defaultScopes.append(OLINK(scopes.item(i)));
-    }
+    //MORE: This should be in the parseContext calculated once
+    if (lookupCtx.queryRepository() && loadImplicit)
+        getImplicitScopes(implicitScopes, lookupCtx.queryRepository(), _containerScope, lookupCtx);
 }
 
 HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents * _text, IXmlScope *xmlScope, bool _parseConstantText)
@@ -368,8 +364,8 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
         defineScopes.append(OLINK(parent.defineScopes.item(i2)));
 
     init(parent.globalScope, _containerScope);
-    for (unsigned i=0;i<parent.defaultScopes.length();i++)
-        defaultScopes.append(*LINK(&parent.defaultScopes.item(i)));
+    appendArray(defaultScopes, parent.defaultScopes);
+    appendArray(implicitScopes, parent.implicitScopes);
     sourcePath.set(parent.sourcePath);
     inSignedModule = parent.inSignedModule || _text->isImplicitlySigned();
     errorHandler = lookupCtx.errs;
@@ -380,6 +376,7 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
          
     //Clone parseScope
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
+    lexObject->setLegacyImport(parent.legacyImport);
     forceResult = true;
     parsingTemplateAttribute = false;
     parseConstantText = _parseConstantText;
@@ -397,6 +394,7 @@ void HqlGram::saveContext(HqlGramCtx & ctx, bool cloneScopes)
             clone.localScope.set(cur.localScope);
             clone.privateScope.set(cur.privateScope);
             clone.isParametered = cur.isParametered;
+            clone.legacyOnly = cur.legacyOnly;
             appendArray(clone.activeParameters, cur.activeParameters);
             appendArray(clone.activeDefaults, cur.activeDefaults);
             ctx.defineScopes.append(clone);
@@ -405,8 +403,10 @@ void HqlGram::saveContext(HqlGramCtx & ctx, bool cloneScopes)
             ctx.defineScopes.append(OLINK(cur));
     }
 
+    ctx.legacyImport = lexObject->hasLegacyImportSemantics();
     ctx.globalScope.set(globalScope);
     appendArray(ctx.defaultScopes, defaultScopes);
+    appendArray(ctx.implicitScopes, implicitScopes);
     ctx.sourcePath.set(sourcePath);
     parseScope->getSymbols(ctx.imports);
 };
@@ -420,7 +420,6 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
 {
     minimumScopeIndex = 0;
     isQuery = false;
-    legacyImportSemantics = queryLegacyImportSemantics();
     legacyWhenSemantics = queryLegacyWhenSemantics();
     current_id = NULL;
     lexObject = NULL;
@@ -440,8 +439,6 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     globalScope = _globalScope;
     parseScope.setown(createPrivateScope(_containerScope));
     transformScope = NULL;
-    if (globalScope->queryName() && legacyImportSemantics)
-        parseScope->defineSymbol(globalScope->queryId(), NULL, LINK(queryExpression(globalScope)), false, false, ob_import);
 
     boolType = makeBoolType();
     defaultIntegralType = makeIntType(8, true);
@@ -2773,7 +2770,7 @@ void HqlGram::appendToActiveScope(IHqlExpression * arg)
 }
 
 
-void HqlGram::enterScope(IHqlScope * scope, bool allowExternal)
+void HqlGram::enterScope(IHqlScope * scope, bool allowExternal, bool legacyOnly)
 {
     ActiveScopeInfo & next = * new ActiveScopeInfo;
     if (allowExternal)
@@ -2784,6 +2781,7 @@ void HqlGram::enterScope(IHqlScope * scope, bool allowExternal)
     else
         next.privateScope.set(scope);
     next.firstSideEffect = parseResults.ordinality();
+    next.legacyOnly = legacyOnly;
     defineScopes.append(next);
 }
 
@@ -2929,7 +2927,7 @@ protected:
 void HqlGram::enterPatternScope(IHqlExpression * pattern)
 {
     Owned<IHqlScope> scope = new PseudoPatternScope(pattern);
-    enterScope(scope, false);
+    enterScope(scope, false, false);
 }
 
 
@@ -3412,11 +3410,22 @@ unsigned HqlGram::getExtraLookupFlags(IHqlScope * scope)
     return 0;
 }
 
+IHqlExpression *HqlGram::lookupParseSymbol(IIdAtom * searchName)
+{
+    IHqlExpression *ret = parseScope->lookupSymbol(searchName, LSFsharedOK, lookupCtx);
+    if (!ret && lexObject->hasLegacyImportSemantics())
+    {
+        if (globalScope && (searchName->queryLower() == globalScope->queryName()))
+            ret = LINK(queryExpression(globalScope));
+    }
+    return ret;
+}
+
 IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& errpos)
 {
 #if 0
-    if (stricmp(searchName->getAtomNamePtr(), "gh2")==0)
-        searchName = searchName;
+    if (stricmp(searchName->queryStr(), "gh2")==0)
+        searchName->queryStr();
 #endif
     if (expectedUnknownId)
         return NULL;
@@ -3532,6 +3541,9 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
         ForEachItemInRev(scopeIdx, defineScopes)
         {
             ActiveScopeInfo & cur = defineScopes.item(scopeIdx);
+            if (cur.legacyOnly && !lexObject->hasLegacyImportSemantics())
+                continue;
+
             if (cur.templateAttrContext)
                 templateScope = cur.templateAttrContext;
             if (outerScopeAccessDepth == 0)
@@ -3559,19 +3571,37 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
                     {
                         return recordLookupInTemplateContext(searchName, ret, templateScope);
                     }
+                    if ((cur.localScope == parseScope) && lexObject->hasLegacyImportSemantics())
+                    {
+                        if (searchName->queryLower() == globalScope->queryName())
+                            return recordLookupInTemplateContext(searchName, LINK(globalScope->queryExpression()), templateScope);
+                    }
                 }
             }
         }
 
         //Now look up imports
-        IHqlExpression *ret = parseScope->lookupSymbol(searchName, LSFsharedOK, lookupCtx);
+        IHqlExpression *ret = lookupParseSymbol(searchName);
         if (ret)
             return recordLookupInTemplateContext(searchName, ret, templateScope);
 
         // finally comes the local scope
-        if (legacyImportSemantics && lower(searchName)==globalScope->queryName())
+        if (lexObject->hasLegacyImportSemantics() && lower(searchName)==globalScope->queryName())
             return LINK(recordLookupInTemplateContext(searchName, queryExpression(globalScope), templateScope));
 
+        if (lexObject->hasLegacyImportSemantics())
+        {
+            ForEachItemIn(idx3, implicitScopes)
+            {
+                IHqlScope &plugin = implicitScopes.item(idx3);
+                IHqlExpression *ret = plugin.lookupSymbol(searchName, LSFpublic | getExtraLookupFlags(&plugin), lookupCtx);
+                if (ret)
+                {
+                    recordLookupInTemplateContext(searchName, ret, templateScope);
+                    return ret;
+                }
+            }
+        }
         ForEachItemIn(idx2, defaultScopes)
         {
             IHqlScope &plugin = defaultScopes.item(idx2);
@@ -6713,6 +6743,12 @@ bool HqlGram::checkParameters(IHqlExpression* func, HqlExprArray& actuals, const
 void HqlGram::addActiveParameterOwn(const attribute & errpos, IHqlExpression * param, IHqlExpression * defaultValue)
 {
     ActiveScopeInfo & activeScope = defineScopes.tos();
+    ForEachItemIn(idx, activeScope.activeParameters)
+    {
+        IHqlExpression & cur = activeScope.activeParameters.item(idx);
+        if (cur.queryName() == param->queryName())
+            reportError(ERR_PARAM_NOTUNIQUE, errpos, "Parameter name '%s' is not unique", str(param->queryName()));
+    }
     activeScope.activeParameters.append(*param);
     activeScope.activeDefaults.append(*ensureNormalizedDefaultValue(defaultValue));
 
@@ -8864,7 +8900,7 @@ void HqlGram::checkNotAlreadyDefined(IIdAtom * name, IHqlScope * scope, const at
     OwnedHqlExpr expr = scope->lookupSymbol(name, LSFsharedOK|LSFignoreBase, lookupCtx);
     if (expr)
     {
-        if (legacyImportSemantics && isImport(expr))
+        if (lexObject->hasLegacyImportSemantics() && isImport(expr))
             reportWarning(CategoryConfuse, ERR_ID_REDEFINE, idattr.pos, "Identifier '%s' hides previous import", str(name));
         else
             reportError(ERR_ID_REDEFINE, idattr, "Identifier '%s' is already defined", str(name));
@@ -9260,7 +9296,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
         {
             if (expectedAttribute && (lower(expectedAttribute) != lower(name)) && (activeScope.localScope == parseScope))
             {
-                OwnedHqlExpr resolved = parseScope->lookupSymbol(expectedAttribute, LSFsharedOK, lookupCtx);
+                OwnedHqlExpr resolved = lookupParseSymbol(expectedAttribute);
                 if (resolved)
                 {
                     reportError(ERR_UNEXPECTED_PUBLIC_ID, idattr.pos, "Definition of '%s' has a trailing public definition '%s'", str(expectedAttribute), str(name));
@@ -10312,7 +10348,7 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
         IIdAtom * id = expr->queryId();
         OwnedHqlExpr importMatch = lookupCtx.queryRepository()->queryRootScope()->lookupSymbol(id, LSFimport, lookupCtx);
         if (!importMatch)
-            importMatch.setown(parseScope->lookupSymbol(id, LSFsharedOK, lookupCtx));
+            importMatch.setown(lookupParseSymbol(id));
 
         if (!importMatch || !importMatch->queryScope())
         {
@@ -10490,7 +10526,7 @@ void HqlGram::defineImport(const attribute & errpos, IHqlExpression * imported, 
     if (!imported || !newName)
         return;
 
-    Owned<IHqlExpression> previous = parseScope->lookupSymbol(newName,LSFsharedOK,lookupCtx);
+    Owned<IHqlExpression> previous = lookupParseSymbol(newName);
     if (previous)
     {
         if (previous->queryBody() == imported->queryBody())
@@ -10908,6 +10944,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case VALIDATE: msg.append("VALIDATE"); break;
     case VARIANCE: msg.append("VARIANCE"); break;
     case VIRTUAL: msg.append("VIRTUAL"); break;
+    case VOLATILE: msg.append("VOLATILE"); break;
     case WAIT: msg.append("WAIT"); break;
     case TOK_WARNING: msg.append("WARNING"); break;
     case WHEN: msg.append("WHEN"); break;
@@ -11600,7 +11637,7 @@ void HqlGram::beginTransform(ITypeInfo * type)
     }
     curTransform = createOpenValue(no_transform, makeTransformType(LINK(type)));
     transformScope = createPrivateScope();
-    enterScope(transformScope, false);
+    enterScope(transformScope, false, false);
 #ifdef FAST_FIND_FIELD
     lockTransformMutex();
 #endif
@@ -11920,6 +11957,8 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
 
     //The attribute will be added to the current scope as a side-effect of parsing the attribute.
     const char * moduleName = scope->queryFullName();
+
+    //NOTE: The container scope needs to be re-resolved globally so merged file trees are supported
     Owned<IHqlScope> globalScope = getResolveDottedScope(moduleName, LSFpublic, ctx);
     HqlGram parser(globalScope, scope, contents, attrCtx, NULL, false, true);
     parser.setExpectedAttribute(name);
@@ -12056,17 +12095,17 @@ IHqlExpression *HqlGram::doParse()
     if (expectedAttribute)
     {
         if (queryExpression(containerScope)->getOperator() == no_forwardscope)
-            enterScope(containerScope, true);
-        if (legacyImportSemantics)
-            enterScope(globalScope, true);
+            enterScope(containerScope, true, false);
+
+        enterScope(globalScope, true, true);
 
         //If expecting a particular attribute, add symbols to a private scope, and then copy result across
-        enterScope(parseScope, true);
+        enterScope(parseScope, true, false);
     }
     else
     {
         //Either a query that is not part of the source tree, or an entire module (plugins/legacy support), parse direct into the scope
-        enterScope(containerScope, true);
+        enterScope(containerScope, true, false);
     }
     minimumScopeIndex = defineScopes.ordinality();
 

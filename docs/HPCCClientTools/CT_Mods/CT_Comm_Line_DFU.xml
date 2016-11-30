@@ -478,7 +478,8 @@ replicate=1</programlisting>
                   <row>
                     <entry><programlisting role="tab">    rowtag</programlisting></entry>
 
-                    <entry>The XML tag identifying each record.</entry>
+                    <entry>The XML tag identifying each record.
+                    Required.</entry>
                   </row>
 
                   <row>
@@ -888,7 +889,7 @@ dfuplus action=dspray srcname=le::imagedb
           <title>Add Operations:</title>
 
           <para>The <emphasis role="bold">add</emphasis> operation adds a new
-          logical file to the system data store. </para>
+          logical file to the system data store.</para>
 
           <para>This also allows you to restore a superfile <indexterm>
               <primary>restore a superfile</primary>
@@ -1222,7 +1223,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
           <title>Savexml Operations:</title>
 
           <para>The <emphasis role="bold">savexml</emphasis> operation saves
-          the logical file map to an XML file. </para>
+          the logical file map to an XML file.</para>
 
           <para>This feature also allows you to export the metadata from a
           superfile and then use it later to restore a superfile. This is

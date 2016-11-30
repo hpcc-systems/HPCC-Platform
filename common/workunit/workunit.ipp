@@ -110,6 +110,25 @@ template <typename T, typename IT> struct CachedTags
         }
     }
 
+    void loadBranch(IPropertyTree* p,const char* xpath)
+    {
+        if (!cached)
+        {
+            assertex(tags.length() == 0);
+            Owned<IPropertyTree> branch = p->getBranch(xpath);
+            if (branch)
+            {
+                Owned<IPropertyTreeIterator> r = branch->getElements("*");
+                for (r->first(); r->isValid(); r->next())
+                {
+                    IPropertyTree *rp = &r->query();
+                    rp->Link();
+                    tags.append(*new T(rp));
+                }
+            }
+            cached = true;
+        }
+    }
     void append(IPropertyTree * p)
     {
         tags.append(*new T(p));
@@ -151,6 +170,31 @@ template <>  struct CachedTags<CLocalWUAppValue, IConstWUAppValue>
             cached = true;
         }
     }
+    void loadBranch(IPropertyTree* p,const char* xpath)
+    {
+        if (!cached)
+        {
+            assertex(tags.length() == 0);
+            Owned<IPropertyTree> branch = p->getBranch(xpath);
+            if (branch)
+            {
+                Owned<IPropertyTreeIterator> r = branch->getElements("*");
+                for (r->first(); r->isValid(); r->next())
+                {
+                    IPropertyTree *rp = &r->query();
+                    Owned<IPropertyTreeIterator> v = rp->getElements("*");
+                    unsigned pos = 1;
+                    for (v->first(); v->isValid(); v->next())
+                    {
+                        rp->Link();
+                        tags.append(*new CLocalWUAppValue(rp,pos++));
+                    }
+                }
+            }
+            cached = true;
+        }
+    }
+
 
     operator IArrayOf<IConstWUAppValue>&() { return tags; }
 

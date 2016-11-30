@@ -392,6 +392,7 @@ static const char * eclReserved12[] = {//Attributes
     "thor",
     "unordered",
     "unsorted",
+    "volatile",
     "whole",
     NULL
 };
