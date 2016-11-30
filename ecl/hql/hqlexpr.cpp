@@ -10476,10 +10476,13 @@ IHqlExpression *CHqlExternalDatasetCall::clone(HqlExprArray &newkids)
 
 //==============================================================================================================
 
-CHqlDelayedCall::CHqlDelayedCall(IHqlExpression * _param, ITypeInfo * _type, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(no_call, _type, _ownedOperands), param(_param)
+CHqlDelayedCall::CHqlDelayedCall(IHqlExpression * _funcdef, ITypeInfo * _type, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(no_call, _type, _ownedOperands), funcdef(_funcdef)
 {
-    infoFlags |= (param->getInfoFlags() & HEFalwaysInherit);
-    infoFlags2 |= (param->getInfoFlags2() & HEF2alwaysInherit);
+    IHqlExpression * body = funcdef;
+    if (body->getOperator() == no_funcdef)
+        body = body->queryChild(0);
+    infoFlags |= (body->getInfoFlags() & HEFalwaysInherit);
+    infoFlags2 |= (body->getInfoFlags2() & HEF2alwaysInherit);
 }
 
 bool CHqlDelayedCall::equals(const IHqlExpression & _other) const
@@ -10488,7 +10491,7 @@ bool CHqlDelayedCall::equals(const IHqlExpression & _other) const
         return false;
 
     const CHqlDelayedCall & other = static_cast<const CHqlDelayedCall &>(_other);
-    if (param != other.param)
+    if (funcdef != other.funcdef)
         return false;
     return true;
 }
@@ -10496,12 +10499,12 @@ bool CHqlDelayedCall::equals(const IHqlExpression & _other) const
 void CHqlDelayedCall::sethash()
 {
     CHqlExpression::sethash();
-    HASHFIELD(param);
+    HASHFIELD(funcdef);
 }
 
 IHqlExpression *CHqlDelayedCall::clone(HqlExprArray &newkids)
 {
-    return makeDelayedCall(LINK(param), newkids);
+    return makeDelayedCall(LINK(funcdef), newkids);
 }
 
 

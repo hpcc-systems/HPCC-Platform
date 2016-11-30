@@ -988,15 +988,15 @@ typedef class MapXToMyClassViaBase<IAtom *, IAtom *, IFileContents, IFileContent
 
 class CHqlDelayedCall: public CHqlExpressionWithType
 {
-    OwnedHqlExpr param;
+    OwnedHqlExpr funcdef;
 protected:
     CHqlDelayedCall(IHqlExpression * _param, ITypeInfo * type, HqlExprArray &parms);
-    virtual IAtom * queryName() const { return param->queryName(); }
-    virtual IIdAtom * queryId() const { return param->queryId(); }
+    virtual IAtom * queryName() const { return funcdef->queryName(); }
+    virtual IIdAtom * queryId() const { return funcdef->queryId(); }
     virtual void sethash();
     virtual bool equals(const IHqlExpression & other) const;
     virtual IHqlExpression *clone(HqlExprArray &newkids);
-    virtual IHqlExpression *queryFunctionDefinition() const { return param; };
+    virtual IHqlExpression *queryFunctionDefinition() const { return funcdef; };
 public:
     static IHqlExpression *makeDelayedCall(IHqlExpression * _param, HqlExprArray &operands);
 };
