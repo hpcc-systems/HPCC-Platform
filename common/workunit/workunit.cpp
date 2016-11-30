@@ -827,7 +827,7 @@ public:
         priority = (WUPriorityClass) getEnum(&p, "@priorityClass", priorityClasses);
         priorityLevel = calcPriorityValue(&p);
         wuscope.set(p.queryProp("@scope"));
-        appvalues.load(&p,"Application/*");
+        appvalues.loadBranch(&p,"Application");
         totalThorTime = (unsigned)nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), false));
         _isProtected = p.getPropBool("@protected", false);
     }
@@ -5779,11 +5779,11 @@ IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(const IStatisticsFilter
 {
     CriticalBlock block(crit);
     //This should be deleted in version 6.0 when support for 4.x is no longer required
-    legacyTimings.load(p,"Timings/*");
+    legacyTimings.loadBranch(p,"Timings");
     if (legacyTimings.ordinality())
         return *new WorkUnitStatisticsIterator(legacyTimings, 0, (IConstWorkUnit *) this, filter);
 
-    statistics.load(p,"Statistics/*");
+    statistics.loadBranch(p,"Statistics");
     Owned<IConstWUStatisticIterator> localStats = new WorkUnitStatisticsIterator(statistics, 0, (IConstWorkUnit *) this, filter);
     if (!filter->recurseChildScopes(SSTgraph, nullptr))
         return *localStats.getClear();
