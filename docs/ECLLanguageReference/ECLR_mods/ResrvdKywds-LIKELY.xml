@@ -40,18 +40,18 @@
 
   <para>The LIKELY/UNLIKELY hint can be wrapped around a filter condition to
   indicate to the code generator the likelihood that the filter condition will
-  filter the record. </para>
+  filter the record.</para>
 
   <para>LIKELY specifies that the filter condition is likely to match most
-  records. UNLIKELY specifies that very few records are likely to be matched.
-  </para>
+  records. UNLIKELY specifies that very few records are likely to be
+  matched.</para>
 
   <para>Specific probability value may be provided for LIKELY. The probability
-  value is decimal value between 0 and 1. The closer this value is to 1.0 the
-  more likely that the filter condition is likely to match a record. The
-  closer the value is to 0.0 the less likely the filter condition is to match
-  records. The code generator makes use of the likelihood information to
-  produce better code.</para>
+  value is decimal value greater than 0 and less than 1. The closer this value
+  is to 1.0 the more likely that the filter condition is likely to match a
+  record. The closer the value is to 0.0 the less likely the filter condition
+  is to match records. The code generator makes use of the likelihood
+  information to produce better code.</para>
 
   <para>The code generator uses the LIKELY/UNLIKELY hint together with the
   count of usage, to determine the cost of spilling and the cost of
