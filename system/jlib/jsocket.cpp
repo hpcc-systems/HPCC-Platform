@@ -2271,6 +2271,9 @@ void CSocket::shutdown(unsigned mode)
         if (rc != 0) {
             int err=ERRNO();
             if (err==JSE_NOTCONN) {
+#ifdef _TRACELINKCLOSED
+                DBGLOG("CSocket::shutdown(%d) failed, socket: %d", mode, sock);
+#endif
                 LOGERR2(err,9,"shutdown");
                 err = JSOCKERR_broken_pipe;
             }
