@@ -49,9 +49,6 @@
 //#define _TRACE
 //#define _FULLTRACE
 
-#if 1 // #ifdef _FULLTRACE
-#define _TRACELINKCLOSED
-#endif
 #define _TRACEMPSERVERNOTIFYCLOSED
 #define _TRACEORPHANS
 
@@ -1478,7 +1475,12 @@ public:
                     }
                 }
                 if (pc) 
+                {
+#ifdef _TRACELINKCLOSED
+                    LOG(MCdebugInfo(100), unknownJob, "CMPPacketReader::notifySelected() about to close socket, mode = 0x%x", selected);
+#endif
                     pc->closeSocket(false, true);
+                }
                 return false;
             }
             do {

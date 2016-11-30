@@ -1488,7 +1488,6 @@ public:
         }
 
         eos = eog = someSinceEog = false;
-        atomic_set(&interChannelToNotifyCount, 0);
         currentHashEntry.index = 0;
         currentHashEntry.count = 0;
 
@@ -2711,6 +2710,7 @@ public:
                 if (gotRHS)
                 {
                     // Other channels sharing HT. So do not reset until all here
+                    // NB: See handleGlobalRHS, if any channel failed over to local, all will have been marked failed over to local.
                     if (!hasFailedOverToLocal() && queryJob().queryJobChannels()>1)
                         InterChannelBarrier();
                 }

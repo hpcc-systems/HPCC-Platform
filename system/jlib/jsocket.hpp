@@ -30,7 +30,9 @@
 #include "jexcept.hpp"
 #include "jthread.hpp"
 
-
+#if 1 // spurious mplink closed tracing info
+# define _TRACELINKCLOSED
+#endif
 
 #define DEFAULT_LISTEN_QUEUE_SIZE    200            // maximum for windows 2000 server
 #define DEFAULT_LINGER_TIME          1000 // seconds
