@@ -2250,8 +2250,9 @@
 
           <para>Right-click in the <emphasis role="bold">Repository Window
           </emphasis>for a Pop-up menu containing options which are available
-          depending on whether you have a folder or ECL file selected.
-          ***</para>
+          depending on whether you have a folder or ECL file selected. Note,
+          if you have TortoiseGit installed, the menu is extended. See <link
+          linkend="versioncontrol">Version Control</link> for details</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -3267,7 +3268,7 @@ ENDMACRO;
         <para><graphic fileref="../../images/CT54.jpg" /></para>
       </sect2>
 
-      <sect2>
+      <sect2 id="versioncontrol">
         <title>Version Control</title>
 
         <para>The ECL IDE does not directly provide version control
@@ -3275,7 +3276,7 @@ ENDMACRO;
         Window Shell Interface to Git version control. This open-source
         toolset provides easy access to Git commands from Windows Explorer.
         The IDE's integration extends that to the context menu of the
-        Repository toolbox in the IDE. </para>
+        Repository toolbox in the IDE.</para>
 
         <para></para>
 
@@ -3288,8 +3289,8 @@ ENDMACRO;
           </listitem>
 
           <listitem>
-            <para>Clone a Git repository to a folder on your local machine.
-            </para>
+            <para>Clone a Git repository to a folder on your local
+            machine.</para>
 
             <para>Follow the instructions in your Git repository's
             site.</para>
@@ -3298,7 +3299,7 @@ ENDMACRO;
           <listitem>
             <para>Add that folder to the list of ECL Folders on the <emphasis
             role="bold">Compiler</emphasis> tab of the <emphasis
-            role="bold">Preferences</emphasis> dialog. </para>
+            role="bold">Preferences</emphasis> dialog.</para>
 
             <para><graphic fileref="../../images/IDE_eclfolders.jpg" /></para>
           </listitem>
@@ -3311,7 +3312,7 @@ ENDMACRO;
 
           <listitem>
             <para>Right-click on the folder in the Repository toolbox, and
-            choose your Git command from the TortoiseGit menu. </para>
+            choose your Git command from the TortoiseGit menu.</para>
 
             <para><graphic
             fileref="../../images/IDE_tortoisegit.jpg" /></para>
