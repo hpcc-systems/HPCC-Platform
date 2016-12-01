@@ -9382,9 +9382,12 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
             }
         }
         break;
-    case no_attr:
     case no_embedbody:
-        //Don't change the type of an embed body - otherwise result it will become link counted when not expected.
+        if (expr->queryAttribute(languageAtom))
+            break;
+        //Don't change the type of an embedded C++ body - otherwise result it will become link counted when not expected.
+        // Fall into...
+    case no_attr:
         return LINK(expr);
     }
     return QuickHqlTransformer::createTransformedBody(expr);
