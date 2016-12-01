@@ -2441,7 +2441,7 @@ void CHThorGroupDedupKeepLeftActivity::resetEOF()
 
 //=====================================================================================================
 
-CHThorGroupDedupKeepRightActivity::CHThorGroupDedupKeepRightActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorGroupDedupKeepRightActivity::CHThorGroupDedupKeepRightActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, _arg, _kind), compareBest(nullptr)
 {
 }
 
@@ -2450,6 +2450,8 @@ void CHThorGroupDedupKeepRightActivity::ready()
     CHThorGroupDedupActivity::ready();
     assertex(numToKeep==1);
     firstDone = false;
+    if (helper.keepBest())
+        compareBest = helper.queryCompareBest();
 }
 
 void CHThorGroupDedupKeepRightActivity::stop()
@@ -2476,13 +2478,21 @@ const void *CHThorGroupDedupKeepRightActivity::nextRow()
             break;
         }
 
-        if (numKept < numToKeep-1)
+        if (compareBest)
         {
-            numKept++;
-            break;
+            if (compareBest->docompare(kept,next) > 0)
+                kept.setown(next.getClear());
         }
+        else
+        {
+            if (numKept < numToKeep-1)
+            {
+                numKept++;
+                break;
+            }
 
-        kept.setown(next.getClear());
+            kept.setown(next.getClear());
+        }
     }
 
     const void * ret = kept.getClear();
@@ -2628,9 +2638,28 @@ bool HashDedupTable::insert(const void * row)
     addNew(new HashDedupElement(hash, keyRow.getClear()), hash);
     return true;
 }
-
-CHThorHashDedupActivity::CHThorHashDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashDedupArg & _arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), table(_arg, activityId)
+bool HashDedupTable::insertBest(const void * nextrow)
 {
+    unsigned hash = helper.queryHash()->hash(nextrow);
+    const void *et = find(hash, nextrow);
+    if (et)
+    {
+        const HashDedupElement *element = reinterpret_cast<const HashDedupElement *>(et);
+        const void * row = element->queryRow();
+        if (queryBestCompare->docompare(row,nextrow) <= 0)
+            return false;
+        removeExact( const_cast<void *>(et));
+        // drop-through to add new row
+    }
+    LinkRoxieRow(nextrow);
+    addNew(new HashDedupElement(hash, nextrow), hash);
+    return true;
+}
+
+CHThorHashDedupActivity::CHThorHashDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashDedupArg & _arg, ThorActivityKind _kind)
+: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), table(_arg, activityId), hashTableFilled(false), hashDedupTableIter(table)
+{
+    keepBest = helper.keepBest();
 }
 
 void CHThorHashDedupActivity::ready()
@@ -2647,16 +2676,47 @@ void CHThorHashDedupActivity::stop()
 
 const void * CHThorHashDedupActivity::nextRow()
 {
-    while(true)
+    if (keepBest)
     {
-        OwnedConstRoxieRow next(input->nextRow());
-        if(!next)
+        // Populate hash table with best rows
+        if (!hashTableFilled)
         {
-            table.kill();
-            return NULL;
+            OwnedConstRoxieRow next(input->nextRow());
+            while(next)
+            {
+                table.insertBest(next);
+                next.setown(input->nextRow());
+            }
+            hashTableFilled = true;
+            hashDedupTableIter.first();
         }
-        if(table.insert(next))
-            return next.getClear();
+
+        // Iterate through hash table returning rows
+        if (hashDedupTableIter.isValid())
+        {
+            HashDedupElement &el = hashDedupTableIter.query();
+
+            OwnedConstRoxieRow row(el.getRow());
+            hashDedupTableIter.next();
+            return row.getClear();
+        }
+        table.kill();
+        hashTableFilled = false;
+        return NULL;
+    }
+    else
+    {
+        while(true)
+        {
+            OwnedConstRoxieRow next(input->nextRow());
+            if(!next)
+            {
+                table.kill();
+                return NULL;
+            }
+            if(table.insert(next))
+                return next.getClear();
+        }
     }
 }
 
@@ -10131,7 +10191,7 @@ extern HTHOR_API IHThorActivity * createGroupDedupActivity(IAgentContext & _agen
 {
     if(arg.compareAll())
         return new CHThorGroupDedupAllActivity(_agent, _activityId, _subgraphId, arg, kind);
-    else if (arg.keepLeft())
+    else if (arg.keepLeft() && !arg.keepBest())
         return new CHThorGroupDedupKeepLeftActivity(_agent, _activityId, _subgraphId, arg, kind);
     else
         return new CHThorGroupDedupKeepRightActivity(_agent, _activityId, _subgraphId, arg, kind);

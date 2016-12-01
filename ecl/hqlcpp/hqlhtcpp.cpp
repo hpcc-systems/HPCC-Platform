@@ -14112,14 +14112,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
 
     buildInstancePrefix(instance);
 
+    bool wholeRecord = false;
     if (!useHash)
     {
-        if (info.compareAllRows)
-            doBuildBoolFunction(instance->classctx, "compareAll", info.compareAllRows);
-        if (!info.keepLeft)
-            doBuildBoolFunction(instance->classctx, "keepLeft", info.keepLeft);
         if (!matchesConstantValue(info.numToKeep, 1))
+        {
             doBuildUnsignedFunction(instance->startctx, "numToKeep", info.numToKeep);
+            if (info.keepBest)
+                throwError(HQLERR_DedupBestWithKeepn);
+        }
 
         //MORE: If input is grouped (pretty likely), then no need to include fields in the filter function that are already included.
         if (instance->isGrouped)
@@ -14169,6 +14170,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
         buildCompareMember(instance->nestedctx, "Compare", order, DatasetReference(dataset));
         buildHashOfExprsClass(instance->nestedctx, "Hash", order, DatasetReference(dataset), true);
 
+        bool reuseCompare = false;
         HqlExprArray fields, selects;
         ForEachItemIn(idx, info.equalities)
         {
@@ -14194,43 +14196,55 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
         //virtual unsigned recordToKey(void * _key, const void * _record)
         buildDedupSerializeFunction(instance->startctx, "recordToKey", dataset, keyDataset, info.equalities, selects, selSeq);
 
-        //virtual ICompare * queryKeyCompare()
-        bool reuseCompare = false;
-        OwnedHqlExpr keyOrder = createValueSafe(no_sortlist, makeSortListType(NULL), selects);
-        if (recordTypesMatch(dataset, keyDataset))
+        // Helper function relating to selecting a record from a set of "duplicate" records
+        if (info.keepBest)
         {
-            OwnedHqlExpr globalOrder = replaceSelector(order, dataset, queryActiveTableSelector());
-            if (keyOrder == globalOrder)
-                reuseCompare = true;
+            // KeepBest stores entire record (not just the key field) so the KeyCompare and queryRowKeyCompare is the same as Compare.
+            reuseCompare = true;
         }
-
-        if (!reuseCompare)
-            buildCompareMember(instance->nestedctx, "KeyCompare", keyOrder, DatasetReference(keyDataset, no_activetable, NULL));
         else
-            instance->nestedctx.addQuotedLiteral("virtual ICompare * queryKeyCompare() { return &Compare; }");
-
-        //virtual unsigned getFlags() = 0;
         {
-            StringBuffer flags;
-            if (recordTypesMatch(dataset, keyDataset)) flags.append("|HFDwholerecord");
-            if (flags.length())
-                doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
+            //virtual ICompare * queryKeyCompare()
+            OwnedHqlExpr keyOrder = createValueSafe(no_sortlist, makeSortListType(NULL), selects);
+            if (recordTypesMatch(dataset, keyDataset))
+            {
+                OwnedHqlExpr globalOrder = replaceSelector(order, dataset, queryActiveTableSelector());
+                if (keyOrder == globalOrder)
+                    reuseCompare = true;
+            }
+            if (!reuseCompare)
+            {
+                buildCompareMember(instance->nestedctx, "KeyCompare", keyOrder, DatasetReference(keyDataset, no_activetable, NULL));
+                buildHashOfExprsClass(instance->nestedctx, "KeyHash", keyOrder, DatasetReference(keyDataset, no_activetable, NULL), true);
+                //virtual ICompare * queryRowKeyCompare()=0; // lhs is a row, rhs is a key
+                doCompareLeftRight(instance->nestedctx, "RowKeyCompare", DatasetReference(dataset), DatasetReference(keyDataset, no_activetable, NULL), info.equalities, selects);
+            }
+            wholeRecord = recordTypesMatch(dataset, keyDataset);
         }
-
-        //virtual IHash    * queryKeyHash()=0;
         if (reuseCompare)
-            instance->nestedctx.addQuotedLiteral("virtual IHash * queryKeyHash() { return &Hash; }");
-        else
-            buildHashOfExprsClass(instance->nestedctx, "KeyHash", keyOrder, DatasetReference(keyDataset, no_activetable, NULL), true);
-
-        //virtual ICompare * queryRowKeyCompare()=0; // lhs is a row, rhs is a key
-        if (!reuseCompare)
         {
-            doCompareLeftRight(instance->nestedctx, "RowKeyCompare", DatasetReference(dataset), DatasetReference(keyDataset, no_activetable, NULL), info.equalities, selects);
-        }
-        else
+            instance->nestedctx.addQuotedLiteral("virtual ICompare * queryKeyCompare() { return &Compare; }");
+            instance->nestedctx.addQuotedLiteral("virtual IHash * queryKeyHash() { return &Hash; }");
             instance->nestedctx.addQuotedLiteral("virtual ICompare * queryRowKeyCompare() { return &Compare; }");
+        }
+    }
 
+    StringBuffer flags;
+    if (info.compareAllRows) flags.append("|HDFcompareall");
+    if (info.keepLeft)       flags.append("|HDFkeepleft");
+    if (info.keepBest)       flags.append("|HDFkeepbest");
+    if (wholeRecord)         flags.append("|HDFwholerecord");
+    if (!streq(flags.str(), "|HDFkeepleft"))
+    {
+        if (flags.length()==0) flags.append("|0");
+        doBuildUnsignedFunction(instance->startctx, "getFlags", flags.str()+1);
+    }
+
+    if (info.keepBest)
+    {
+        IHqlExpression * sortOrder = expr->queryAttribute(bestAtom)->queryChild(0);
+        buildCompareClass(instance->startctx, "bestCompare", sortOrder, DatasetReference(dataset));
+        instance->startctx.addQuotedLiteral("virtual ICompare * queryCompareBest() { return &bestCompare; }");
     }
 
     buildInstanceSuffix(instance);

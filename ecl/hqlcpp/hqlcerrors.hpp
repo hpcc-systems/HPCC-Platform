@@ -223,6 +223,7 @@
 #define HQLERR_ServiceDefinitionNotAllowed      4203
 #define HQLERR_BodyNotAllowedWithInline         4204
 #define HQLERR_DatasetPassedToRowArg            4205
+#define HQLERR_DedupBestWithKeepn               4206
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -522,6 +523,7 @@
 #define HQLERR_ServiceDefinitionNotAllowed_Text "Insufficient access rights to use SERVICE"
 #define HQLERR_BodyNotAllowedWithInline_Text    "#body not supported with INLINE attribute"
 #define HQLERR_DatasetPassedToRowArg_Text       "Cannot pass a dataset to row argument %s"
+#define HQLERR_DedupBestWithKeepn_Text          "DEDUP with BEST does not support KEEP"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"

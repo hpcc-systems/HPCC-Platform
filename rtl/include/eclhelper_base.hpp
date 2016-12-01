@@ -1249,12 +1249,11 @@ class CThorDedupArg : implements IHThorDedupArg, public CThorArg
         }
         return NULL;
     }
-
-    virtual bool compareAll() { return false; }
-    virtual bool keepLeft() { return true; }
     virtual bool matches(const void * _left, const void * _right) { return true; }
     virtual unsigned numToKeep() { return 1; }
     virtual ICompare * queryComparePrimary() { return NULL; }
+    virtual unsigned getFlags() { return HDFkeepleft; }
+    virtual ICompare * queryCompareBest() { return NULL; }
 };
 
 class CThorAggregateArg : implements IHThorAggregateArg, public CThorArg
@@ -2115,7 +2114,10 @@ class CThorHashDedupArg : implements IHThorHashDedupArg, public CThorArg
         return NULL;
     }
 
-    virtual unsigned getFlags() { return 0; }
+    virtual unsigned getFlags() { return HDFkeepleft; }
+    virtual ICompare * queryCompareBest() { return NULL; }
+    virtual IOutputMetaData * queryKeySize() { return NULL; }
+    virtual size32_t recordToKey(ARowBuilder & rowBuilder, const void * _record) { return 0; }
 };
 
 class CThorHashMinusArg : implements IHThorHashMinusArg, public CThorArg

@@ -498,6 +498,7 @@ public:
 private:
     OwnedConstRoxieRow kept;
     bool         firstDone;
+    ICompare * compareBest;
 };
 
 class CHThorGroupDedupAllActivity : public CHThorSimpleActivityBase
@@ -534,7 +535,14 @@ public:
     }
     ~HashDedupElement()                 { ReleaseRoxieRow(keyRow); }
     inline unsigned queryHash() const   { return hash; }
-    inline const void *queryRow() const { return keyRow; }
+    inline const void * queryRow() const { return keyRow; }
+    inline const void * getRow()
+    {
+        const void * row = keyRow;
+        keyRow = nullptr;
+        hash = 0;
+        return row;
+    }
 private:
     unsigned hash;
     const void *keyRow;
@@ -547,6 +555,7 @@ public:
         : helper(_helper), 
           activityId(_activityId)
     {
+        queryBestCompare = helper.queryCompareBest();
     }
     virtual ~HashDedupTable()
     { 
@@ -578,11 +587,13 @@ public:
     inline void setRowAllocator(IEngineRowAllocator * _keyRowAllocator) { keyRowAllocator.setown(_keyRowAllocator); }
 
     bool insert(const void * row);
+    bool insertBest(const void * row);
 
 private:
     IHThorHashDedupArg & helper;
     unsigned activityId;
     Owned<IEngineRowAllocator> keyRowAllocator;
+    ICompare * queryBestCompare;
 };
 
 class CHThorHashDedupActivity : public CHThorSimpleActivityBase
@@ -597,6 +608,9 @@ public:
 private:
     IHThorHashDedupArg & helper;
     HashDedupTable table;
+    bool keepBest;
+    bool hashTableFilled;
+    SuperHashIteratorOf<HashDedupElement> hashDedupTableIter;
 };
 
 class CHThorNormalizeActivity : public CHThorSimpleActivityBase
