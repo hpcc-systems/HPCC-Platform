@@ -19,6 +19,7 @@
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default" xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-result-prefixes="seisint set">
     <xsl:import href="esp_service.xsl"/>
+    <xsl:import href="logging_agent.xsl"/>
 
     <xsl:template match="EspService">
         <xsl:param name="bindingNode"/>
@@ -100,7 +101,7 @@
                         <xsl:message terminate="yes">ESP NetAddress is undefined!</xsl:message>
                     </xsl:if>
                     <xsl:variable name="wsloggingUrl"><xsl:text>http://</xsl:text><xsl:value-of select="$espNetAddress"/><xsl:text>:</xsl:text><xsl:value-of select="$espPort"/></xsl:variable>
-                        <LogAgent name="{$agentName}" type="LogAgent" services="GetTransactionSeed,UpdateLog" plugin="espserverloggingagent">
+                        <LogAgent name="{$agentName}" type="LogAgent" services="GetTransactionSeed,UpdateLog,GetTransactionID" plugin="espserverloggingagent">
                             <ESPServer url="{$wsloggingUrl}" user="{$agentNode/@User}" password="{$agentNode/@Password}"/>
                             <xsl:if test="string($agentNode/@MaxServerWaitingSeconds) != ''">
                                 <MaxServerWaitingSeconds><xsl:value-of select="$agentNode/@MaxServerWaitingSeconds"/></MaxServerWaitingSeconds>
@@ -123,6 +124,11 @@
                             <xsl:if test="string($agentNode/@QueueSizeSignal) != ''">
                                 <QueueSizeSignal><xsl:value-of select="$agentNode/@QueueSizeSignal"/></QueueSizeSignal>
                             </xsl:if>
+
+                            <xsl:call-template name="LogSourceMap">
+                                <xsl:with-param name="agentNode" select="$agentNode"/>
+                            </xsl:call-template>
+
                             <Filters>
                                 <xsl:for-each select="$agentNode/Filter">
                                     <Filter value="{current()/@filter}" type="{current()/@type}"/>

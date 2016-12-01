@@ -330,6 +330,12 @@
     </BuildSet>
     <BuildSet deployable="no"
              installSet="deploy_map.xml"
+             name="cassandraloggingagent"
+             path="componentfiles/cassandraloggingagent"
+             processName="CassandraLoggingAgent"
+             schema="cassandraloggingagent.xsd"/>
+    <BuildSet deployable="no"
+             installSet="deploy_map.xml"
              name="esploggingagent"
              path="componentfiles/esploggingagent"
              processName="ESPLoggingAgent"
