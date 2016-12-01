@@ -26,6 +26,7 @@ if (APPLE)
     list(APPEND DYLIBS ${OPENSSL_LIBRARIES})
     list(APPEND DYLIBS ${ZLIB_LIBRARIES})
     list(APPEND DYLIBS ${LIBXML2_LIBRARIES})
+    list(APPEND DYLIBS ${CBLAS_LIBRARIES})
 elseif (WIN32)
     #TODO:  Should find these dlls not assume them.
     if (NOT USE_NATIVE_LIBRARIES)
@@ -105,6 +106,12 @@ foreach(dylib ${DYLIBS})
         string(REPLACE ".1.2.8.dylib" ".1.dylib" dylib_1_path "${dylib_path}")
         if (NOT "${dylib_1_path}" STREQUAL "${dylib_path}")
             set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_1_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
+        endif ()
+
+        if ("${dylib_path}" MATCHES "^/usr/local/Cellar/.*$")
+            get_filename_component(dylib_dir ${dylib} DIRECTORY)
+            set(dylib_link_path "${dylib_dir}/${dylib_name_ext}")
+            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_link_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
         endif ()
 
         install(CODE "
