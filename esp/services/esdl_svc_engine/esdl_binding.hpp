@@ -68,6 +68,8 @@ static const char* ESDL_METHOD_HELP="help";
 namespace javaembed { IEmbedContext* getEmbedContext(); }
 #endif
 
+bool ensureSDSPath(const char * sdsPath);
+
 class EsdlServiceImpl : public CInterface, implements IEspService
 {
 private:

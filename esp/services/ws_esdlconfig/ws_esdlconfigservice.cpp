@@ -121,7 +121,7 @@ bool isESDLDefinitionBound(const char * esdldefid)
     if (!esdldefid || !*esdldefid)
            return false;
 
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        return false;
 
@@ -157,66 +157,6 @@ bool isESDLDefinitionBound(const char * esdldefname, int version)
     return isESDLDefinitionBound(id);
 }
 
-bool checkSDSPathExists(const char * sdsPath)
-{
-    Owned<IRemoteConnection> conn = querySDS().connect(sdsPath, myProcessSession(), RTM_LOCK_READ, 3000);
-    if (conn)
-    {
-        conn->close(false);
-        return true;
-    }
-    return false;
-}
-
-bool ensureSDSSubPath(const char * sdsPath)
-{
-    if (!sdsPath)
-        return false;
-
-    Owned<IRemoteConnection> conn = querySDS().connect(sdsPath, myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, 4000);
-    if (!conn)
-    {
-        conn.setown(querySDS().connect("/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL));
-        if (!conn.get())
-            return false;
-
-        IPropertyTree * sdsRoot = conn->queryRoot();
-        if (!sdsRoot)
-            return false;
-
-        sdsRoot->addProp(sdsPath, "");
-        conn->commit();
-    }
-
-    conn->close(false);
-    return true;
-}
-
-bool ensureSDSPath(const char * sdsPath)
-{
-    if (!sdsPath)
-        return false;
-
-    StringArray paths;
-    paths.appendList(sdsPath, PATHSEPSTR);
-
-    StringBuffer fullpath;
-    ForEachItemIn(idx, paths)
-    {
-        if (idx > 0)
-            fullpath.append("/"); //Dali paths aren't os dependent... right?
-        fullpath.append(paths.item(idx));
-
-        if (!checkSDSPathExists(fullpath))
-        {
-            if(!ensureSDSSubPath(fullpath))
-                return false;
-        }
-    }
-
-    return true;
-}
-
 void fetchESDLDefinitionFromDaliById(const char *id, StringBuffer & def)
 {
     if (!id || !*id)
@@ -224,7 +164,7 @@ void fetchESDLDefinitionFromDaliById(const char *id, StringBuffer & def)
 
     DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali: %s ", id);
 
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
@@ -261,16 +201,17 @@ void CWsESDLConfigEx::init(IPropertyTree *cfg, const char *process, const char *
     if(servicecfg == NULL)
         throw MakeStringException(-1, "config not found for service %s/%s",process, service);
 
-    if(!ensureSDSPath("ESDL"))
-        throw MakeStringException(-1, "Could not ensure '/ESDL' entry in dali configuration");
+    if(!ensureSDSPath(ESDL_DEFS_ROOT_PATH))
+        throw MakeStringException(-1, "Could not ensure '%s' element on Dali", ESDL_DEFS_ROOT_PATH);
+
+    if(!ensureSDSPath(ESDL_BINDINGS_ROOT_PATH))
+        throw MakeStringException(-1, "Could not ensure '%s' element on Dali", ESDL_BINDINGS_ROOT_PATH);
+
 }
 
 IPropertyTree * CWsESDLConfigEx::getESDLDefinitionRegistry(const char * wsEclId, bool readonly)
 {
-    if (!ensureSDSPath(ESDL_DEFS_ROOT_PATH))
-        throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
-
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
         throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
     return (conn) ? conn->getRoot() : NULL;
@@ -398,10 +339,7 @@ void CWsESDLConfigEx::ensureESDLServiceBindingRegistry(const char * espProcName,
     if (!espBindingName || !*espBindingName)
         throw MakeStringException(-1, "Unable to ensure ESDL service binding registry in dali, esp binding name not available");
 
-    if (!ensureSDSPath(ESDL_BINDINGS_ROOT_PATH))
-        throw MakeStringException(-1, "Unable to connect to ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);
-
-    Owned<IRemoteConnection> globalLock = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
+    Owned<IRemoteConnection> globalLock = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
 
     if (!globalLock)
         throw MakeStringException(-1, "Unable to connect to ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);
@@ -644,10 +582,7 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
         return -1;
     }
 
-    if (!ensureSDSPath(ESDL_BINDINGS_ROOT_PATH))
-        throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
-
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
 
@@ -1317,7 +1252,7 @@ IPropertyTree * CWsESDLConfigEx::getBindingTree(const char * espProcName, const 
         return NULL;
     }
 
-    Owned<IRemoteConnection> globalLock = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
+    Owned<IRemoteConnection> globalLock = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
     if (!globalLock)
     {
         msg.set("Unable to connect to ESDL Service binding information in dali");
@@ -1780,7 +1715,7 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
 
 bool CWsESDLConfigEx::onListESDLDefinitions(IEspContext &context, IEspListESDLDefinitionsRequest&req, IEspListESDLDefinitionsResponse &resp)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
