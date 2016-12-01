@@ -6,7 +6,7 @@
 
   <para><emphasis role="bold">UNICODE<indexterm>
       <primary>UNICODE</primary>
-    </indexterm>[</emphasis><emphasis>locale</emphasis><emphasis
+    </indexterm>[</emphasis><emphasis>_locale</emphasis><emphasis
   role="bold">][</emphasis><emphasis>n</emphasis><emphasis
   role="bold">]<indexterm>
       <primary>UNICODE value type</primary>
@@ -30,8 +30,8 @@
         // utf-16-encoded string
 UNICODE4 MyUnicodeString := U'abcd';
         // same as: (UNICODE)'abcd'
-UNICODEde5 MyUnicodeString := U'abcd\353';
+UNICODE_de5 MyUnicodeString := U'abcd\353';
         // becomes 'abcdë' with a German locale
-UNICODEde5 MyUnicodeString := U'abcdë';
+UNICODE_de5 MyUnicodeString := U'abcdë';
         // same as previous example</programlisting>
 </sect1>

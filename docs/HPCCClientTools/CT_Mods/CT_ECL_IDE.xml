@@ -210,22 +210,20 @@
             <listitem>
               <para>Specify your Working Folder.</para>
 
-              <para>When you are running your locally, your queries are
+              <para>When you submit to a Local target, your queries are
               compiled and stored in this location.</para>
 
-              <para>To compile a query locally rather than on the thor or
-              hthor of your environment, select <emphasis
-              role="bold">Local</emphasis> as the <emphasis
-              role="bold">Target</emphasis> before pressing <emphasis
-              role="bold">Submit</emphasis> on the <emphasis
+              <para>To compile a query locally rather than on a cluster in
+              your environment, select <emphasis role="bold">Local</emphasis>
+              as the <emphasis role="bold">Target</emphasis> before pressing
+              <emphasis role="bold">Submit</emphasis> on the <emphasis
               role="bold">Builder</emphasis> window.</para>
 
               <!-- -->
 
               <para>If you are running under Windows and want to compile
               locally, install the Microsoft VS 2008 C++ compiler (either
-              Express or Professional edition) and Linux users need
-              GCC.</para>
+              Express or Professional edition). Linux users need GCC.</para>
             </listitem>
 
             <listitem>

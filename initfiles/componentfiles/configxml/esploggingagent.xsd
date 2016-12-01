@@ -92,6 +92,36 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:element name="LogSourceMap" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:appinfo>
+            <title>Log Source Map</title>
+          </xs:appinfo>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:appinfo>
+                <colIndex>1</colIndex>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="mapToDB" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:appinfo>
+                <colIndex>2</colIndex>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="mapToLogGroup" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:appinfo>
+                <colIndex>3</colIndex>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
       <xs:sequence>
         <xs:element name="Filter" minOccurs="0" maxOccurs="unbounded">
           <xs:annotation>

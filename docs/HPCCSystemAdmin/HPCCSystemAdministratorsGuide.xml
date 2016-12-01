@@ -1109,6 +1109,32 @@ lock=/var/lock/HPCCSystems</programlisting>
             </varlistentry>
           </variablelist></para>
       </sect2>
+
+      <sect2 id="ConfiguringRemoteAccessOverTLS">
+        <title>Remote Access over TLS</title>
+
+        <para>Configuring your system for remote file access over Transport
+        Layer Security (TLS) requires modifying the <emphasis
+        role="bold">dafilesrv</emphasis> setting in the
+        <emphasis>environment.conf</emphasis> file. </para>
+
+        <para>To do this either uncomment (if they are already there), or add
+        the following lines to the <emphasis>environment.conf</emphasis> file.
+        Then set the values as appropriate for your system. </para>
+
+        <para><programlisting>#enable SSL for dafilesrv remote file access
+dfsUseSSL=true
+dfsSSLCertFile=/certfilepath/certfile
+dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
+        role="blue">dfsUseSSL=true</emphasis> and set the value for the paths
+        to point to the certificate and key file paths on your system. Then
+        deploy the <emphasis>environment.conf</emphasis> file (and cert/key
+        files) to all nodes as appropriate. </para>
+
+        <para>When dafilesrv is enabled for TLS (port 7600), it can still
+        connect over a non-TLS connection (port 7100) to allow legacy clients
+        to work.</para>
+      </sect2>
     </sect1>
 
     <!--Inclusions-As-Sect1-->
@@ -1199,6 +1225,7 @@ lock=/var/lock/HPCCSystems</programlisting>
           </variablelist></para>
       </sect2>
     </sect1>
+
     <xi:include href="HPCCSystemAdmin/SA-Mods/CassandraWUServer.xml"
                 xpointer="CassandraWUStorage"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1761,12 +1788,11 @@ heapUseTransparentHugePages</programlisting>
       </sect2>
     </sect1>
 
-     <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
+    <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
                 xpointer="Capacity_Planning"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
- 
 
-     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="Sample_Sizings"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>

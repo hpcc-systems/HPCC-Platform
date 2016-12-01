@@ -9598,7 +9598,7 @@ static IHqlExpression * forceToCorrectEncoding(IHqlExpression * expr, IAtom * en
             }
             return expr->clone(args);
         }
-        else
+        else if (!isNumericType(expr->queryType()))
         {
             OwnedHqlExpr cast = ensureExprType(expr, unknownUtf8Type);
             OwnedHqlExpr transfer = createValue(no_typetransfer, LINK(unknownStringType), LINK(cast));
