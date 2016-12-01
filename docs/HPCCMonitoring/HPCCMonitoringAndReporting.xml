@@ -148,7 +148,6 @@
           <para>System Load</para>
         </listitem>
       </itemizedlist></para>
-
   </chapter>
 
   <chapter id="Ganglya_Overview">
@@ -1191,6 +1190,18 @@
                   </row>
 
                   <row>
+                    <entry>-set_esp_username_pw</entry>
+
+                    <entry>Set specific login credentials for ESP checks. All
+                    fields are required (esp name, user name, password). Can
+                    be specified more than once to support multiple ESP
+                    servers.</entry>
+
+                    <entry><para>&lt;esp name&gt;</para><para>&lt;user
+                    name&gt;</para><para>&lt;password&gt;</para></entry>
+                  </row>
+
+                  <row>
                     <entry>-override_check_all_disks</entry>
 
                     <entry>check_all_disk plugin name</entry>
@@ -1421,11 +1432,8 @@
       </sect2>
     </sect1>
 
-        
-            <xi:include href="HPCCMonitoring/MonRep-Mods/NagiosInECLWa.xml"
-                        xpointer="Nagios_in_ECLWatch"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
-        
-
+    <xi:include href="HPCCMonitoring/MonRep-Mods/NagiosInECLWa.xml"
+                xpointer="Nagios_in_ECLWatch"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 </book>
