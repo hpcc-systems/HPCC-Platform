@@ -2121,7 +2121,8 @@ public:
             DBGLOG("RecordPullerThread::stop");
         {
             CriticalBlock c(crit); // stop is called on our consumer's thread. We need to take care calling stop for our input to make sure it is not in mid-nextRow etc etc.
-            inputStream->stop();
+            if (inputStream)
+                inputStream->stop();
         }
         RestartableThread::join();
     }

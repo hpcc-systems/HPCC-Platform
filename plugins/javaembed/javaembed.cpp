@@ -33,6 +33,10 @@
 #include "thorxmlwrite.hpp"
 #include "esdl_def.hpp"
 
+#ifndef _WIN32
+ #include <sys/resource.h>
+#endif
+
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
 #else
@@ -134,6 +138,21 @@ public:
 
         // Options we know we always want set
         optionStrings.append("-Xrs");
+#ifdef RLIMIT_STACK
+        // JVM has a habit of reducing the stack limit on main thread to 1M - probably dates back to when it was actually an increase...
+        StringBuffer stackOption("-Xss");
+        struct rlimit limit;
+        rlim_t slim = 0;
+        if (getrlimit (RLIMIT_STACK, &limit)==0)
+            slim = limit.rlim_cur;
+        if (!slim)
+            slim = 8*1024*1024;
+        if (slim >= 1*1024*1024)
+        {
+            stackOption.append((__uint64) slim);
+            optionStrings.append(stackOption);
+        }
+#endif
 
         // These may be useful for debugging
 #ifdef _DEBUG
