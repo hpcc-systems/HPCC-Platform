@@ -331,26 +331,6 @@ bool CWsESDLConfigEx::existsESDLMethodDef(const char * esdlDefinitionName, unsig
     return found;
 }
 
-void CWsESDLConfigEx::ensureESDLServiceBindingRegistry(const char * espProcName, const char * espBindingName, bool readonly)
-{
-    if (!espProcName || !*espProcName)
-        throw MakeStringException(-1, "Unable to ensure ESDL service binding registry in dali, esp process name not available");
-
-    if (!espBindingName || !*espBindingName)
-        throw MakeStringException(-1, "Unable to ensure ESDL service binding registry in dali, esp binding name not available");
-
-    Owned<IRemoteConnection> globalLock = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
-
-    if (!globalLock)
-        throw MakeStringException(-1, "Unable to connect to ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);
-
-    IPropertyTree * esdlDefinitions = globalLock->queryRoot();
-    if (!esdlDefinitions)
-        throw MakeStringException(-1, "Unable to open ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);
-
-    globalLock->close(false);
-}
-
 IPropertyTree * CWsESDLConfigEx::getEspProcessRegistry(const char * espprocname, const char * espbindingport, const char * servicename)
 {
     if (!espprocname || !*espprocname)
@@ -1249,22 +1229,6 @@ IPropertyTree * CWsESDLConfigEx::getBindingTree(const char * espProcName, const 
     if (!espBindingName || !*espBindingName)
     {
         msg.set("Could not get configuration: Target ESP Binding name not available");
-        return NULL;
-    }
-
-    Owned<IRemoteConnection> globalLock = querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
-    if (!globalLock)
-    {
-        msg.set("Unable to connect to ESDL Service binding information in dali");
-        return NULL;
-    }
-
-    IPropertyTree *esdlDefinitions = globalLock->queryRoot();
-    globalLock->close(false);
-
-    if (!esdlDefinitions)
-    {
-        msg.set("Unable to open ESDL Service binding information in dali");
         return NULL;
     }
 

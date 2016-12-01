@@ -42,10 +42,9 @@ bool ensureSDSPath(const char * sdsPath)
     if (!sdsPath)
         return false;
 
-    Owned<IRemoteConnection> conn = querySDS().connect(sdsPath, myProcessSession(), RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
+    Owned<IRemoteConnection> conn = querySDS().connect(sdsPath, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
         return false;
-    conn->close(false);
 
     return true;
 }
