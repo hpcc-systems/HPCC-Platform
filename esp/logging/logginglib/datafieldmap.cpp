@@ -50,8 +50,8 @@ void readLogSourceCfg(IPropertyTree* cfg, unsigned& logSourceCount, StringAttr& 
     ForEach(*iter)
     {
         ensureInputString(iter->query().queryProp("@name"), false, name, -1, "LogSource @name required");
-        ensureInputString(iter->query().queryProp("@maptologgroup"), true, groupName, -1, "LogSource @maptologgroup required");
-        ensureInputString(iter->query().queryProp("@maptodb"), true, dbName, -1, "LogSource @maptodb required");
+        ensureInputString(iter->query().queryProp("@mapToLogGroup"), true, groupName, -1, "LogSource @mapToLogGroup required");
+        ensureInputString(iter->query().queryProp("@mapToDB"), true, dbName, -1, "LogSource @mapToDB required");
         Owned<CLogSource> logSource = new CLogSource(name.str(), groupName.str(), dbName.str());
         logSources.setValue(name.str(), logSource);
         logSourceCount++;
@@ -70,7 +70,7 @@ void CLogTable::loadMappings(IPropertyTree& fieldList)
         IPropertyTree &map = itr->query();
 
         ensureInputString(map.queryProp("@name"), false, name, -1, "Field @name required");
-        ensureInputString(map.queryProp("@mapto"), true, mapTo, -1, "Field @mapto required");
+        ensureInputString(map.queryProp("@mapTo"), true, mapTo, -1, "Field @mapTo required");
         ensureInputString(map.queryProp("@type"), true, fieldType, -1, "Field @type required");
         defaultValue = map.queryProp("@default");
         defaultValue.trim();

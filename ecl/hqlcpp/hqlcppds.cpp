@@ -2431,12 +2431,11 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             if (format == FormatLinkedDataset || format == FormatArrayDataset)
             {
                 IHqlExpression * choosenLimit = NULL;
-                if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+                if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2) && (canEvaluateInline(&ctx, expr->queryChild(0)) || !canIterateInline(&ctx, expr->queryChild(0))))
                 {
                     choosenLimit = expr->queryChild(1);
                     expr = expr->queryChild(0);
                 }
-
                 //MORE: Extract limit and choosen and pass as parameters
                 builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
             }
@@ -2808,7 +2807,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
         else
         {
             IHqlExpression * choosenLimit = NULL;
-            if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+            if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2) && (canEvaluateInline(&ctx, expr->queryChild(0)) || !canIterateInline(&ctx, expr->queryChild(0))))
             {
                 choosenLimit = expr->queryChild(1);
                 expr = expr->queryChild(0);
@@ -3824,20 +3823,25 @@ BoundRow * HqlCppTranslator::buildDatasetIterateChoosen(BuildCtx & ctx, IHqlExpr
             boundHigh.expr.setown(createValue(no_add, LINK(boundHigh.queryType()), LINK(boundHigh.expr), LINK(boundLow.expr)));
     }
 
-    BoundRow * cursor = buildDatasetIterate(ctx, expr->queryChild(0), needToBreak);
+    BoundRow * cursor = buildDatasetIterate(ctx, expr->queryChild(0), boundHigh.expr != nullptr);
 
     if (cursor)
     {
         OwnedHqlExpr inc = createValue(no_postinc, counter->getType(), LINK(counter));
         ctx.addExpr(inc);
 
-        OwnedHqlExpr cond;
         if (boundLow.expr)
-            extendConditionOwn(cond, no_and, createBoolExpr(no_gt, LINK(counter), LINK(boundLow.expr)));
-        if (boundHigh.expr)
-            extendConditionOwn(cond, no_and, createBoolExpr(no_le, LINK(counter), LINK(boundHigh.expr)));
-        if (cond)
+        {
+            OwnedHqlExpr cond = createBoolExpr(no_gt, LINK(counter), LINK(boundLow.expr));
             ctx.addFilter(cond);
+        }
+        if (boundHigh.expr)
+        {
+            BuildCtx breakctx(ctx);
+            OwnedHqlExpr cond = createBoolExpr(no_gt, LINK(counter), LINK(boundHigh.expr));
+            breakctx.addFilter(cond);
+            breakctx.addBreak();
+        }
     }
     return cursor;
 }

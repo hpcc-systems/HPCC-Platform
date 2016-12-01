@@ -3679,7 +3679,7 @@ void XmlSchemaBuilder::getXmlTypeName(StringBuffer & xmlType, ITypeInfo & type)
             type.getECLType(typesXml);
             typesXml.append("\"><xs:restriction base=\"xs:decimal\">");
             typesXml.appendf("<xs:totalDigits value=\"%d\"/>", type.getDigits());
-            typesXml.appendf("<xs:fractionalDigits value=\"%d\" fixed=\"true\"/>", type.getPrecision());
+            typesXml.appendf("<xs:fractionDigits value=\"%d\" fixed=\"true\"/>", type.getPrecision());
             typesXml.append("</xs:restriction></xs:simpleType>").newline();
         }
         break;
