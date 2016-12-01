@@ -744,6 +744,7 @@ protected:
     IHqlExpression * hoist(IHqlExpression * expr, IHqlExpression * hoisted);
     IHqlExpression * transformCond(IHqlExpression * expr);
     void doAnalyseExpr(IHqlExpression * expr);
+    void doAnalyseConditionalExpr(IHqlExpression * expr, unsigned firstConditional);
 
     inline AutoScopeMigrateInfo * queryBodyExtra(IHqlExpression * expr)     { return static_cast<AutoScopeMigrateInfo *>(queryTransformExtra(expr->queryBody())); }
 
@@ -755,6 +756,7 @@ private:
     bool hasCandidate;
     bool isSequential;
     unsigned curGraph;
+    unsigned graphDepth = 0;
     HqlExprArray graphActions;
     unsigned activityDepth;
     HqlExprArray * globalTarget;

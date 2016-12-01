@@ -8305,6 +8305,18 @@ void AutoScopeMigrateTransformer::analyseExpr(IHqlExpression * expr)
     activityDepth = savedDepth;
 }
 
+void AutoScopeMigrateTransformer::doAnalyseConditionalExpr(IHqlExpression * expr, unsigned firstConditional)
+{
+    bool wasConditional = isConditional;
+    ForEachChild(i, expr)
+    {
+        if (i == firstConditional)
+            isConditional = true;
+       analyseExpr(expr->queryChild(i));
+    }
+    isConditional = wasConditional;
+}
+
 void AutoScopeMigrateTransformer::doAnalyseExpr(IHqlExpression * expr)
 {
     AutoScopeMigrateInfo * extra = queryBodyExtra(expr);
@@ -8336,15 +8348,11 @@ void AutoScopeMigrateTransformer::doAnalyseExpr(IHqlExpression * expr)
         return;
     case no_if:
     case no_choose:
+    case no_case:
         {
-            if (expr->isAction())
+            if (expr->isAction() || (graphDepth == 0))
             {
-                bool wasConditional = isConditional;
-                analyseExpr(expr->queryChild(0));
-                isConditional = true;
-                ForEachChildFrom(i, expr, 1)
-                    analyseExpr(expr->queryChild(i));
-                isConditional = wasConditional;
+                doAnalyseConditionalExpr(expr, 1);
                 return;
             }
             break;
@@ -8359,13 +8367,22 @@ void AutoScopeMigrateTransformer::doAnalyseExpr(IHqlExpression * expr)
             return;
         }
         break;
+    case no_map:
+        if (expr->isAction() || (graphDepth == 0))
+        {
+            doAnalyseConditionalExpr(expr, 0);
+            return;
+        }
+        break;
     case no_thor:
         //ignore thor attribute on a dataset..
         if (expr->queryType())
         {
             curGraph++;
+            graphDepth++;
             NewHqlTransformer::analyseExpr(expr);
             curGraph++;     // don't restore - new pseudo graph to aid cse between global branches separated by graphs
+            graphDepth--;
             return;
         }
         break;
