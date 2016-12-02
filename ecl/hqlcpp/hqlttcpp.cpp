@@ -4731,6 +4731,23 @@ void OptimizeActivityTransformer::analyseExpr(IHqlExpression * expr)
     NewHqlTransformer::analyseExpr(expr);
 }
 
+static bool isWorthLimitingDataset(IHqlExpression * ds)
+{
+    node_operator dsOp = ds->getOperator();
+    switch (dsOp)
+    {
+    //Any dataset expression which is evaluated in a single go, rather than iterated is likely to be better
+    //especially if it is evaluated as an inline operation.
+    case no_select:
+    case no_choosen:
+    case no_rows:
+    case no_temptable:
+    case no_getresult:
+        return false;
+    }
+    return true;
+}
+
 //either a simple count, or isCountAggregate is guaranteed to be true - so structure is well defined
 IHqlExpression * OptimizeActivityTransformer::insertChoosen(IHqlExpression * lhs, IHqlExpression * limit, __int64 limitDelta)
 {
@@ -4746,9 +4763,7 @@ IHqlExpression * OptimizeActivityTransformer::insertChoosen(IHqlExpression * lhs
     case no_count:
     case no_newaggregate:
         {
-            //count on a child dataset is better if not limited...
-            node_operator dsOp = ds->getOperator();
-            if ((dsOp == no_select) || (dsOp == no_choosen) || (dsOp == no_rows))
+            if (!isWorthLimitingDataset(ds))
                 return NULL;
             args.append(*createDataset(no_choosen, LINK(ds), adjustValue(limit, limitDelta)));
             break;
