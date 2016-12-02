@@ -33,7 +33,7 @@
 #include "dadfs.hpp"
 
 #define DEBUG_DIR "debug"
-#define DEFAULT_KEEP_LASTN_STORES 1
+#define DEFAULT_KEEP_LASTN_STORES 10 // should match default in dali.xsd
 #define MAXDELAYS 5
 static const char *deltaHeader = "<CRC>0000000000</CRC><SIZE>0000000000000000</SIZE>"; // fill in later
 static unsigned deltaHeaderCrcOff = 5;
