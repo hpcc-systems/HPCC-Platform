@@ -618,6 +618,13 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         MESSAGE(FATAL_ERROR "You need bison version 2.4.1 or later to build this project (version ${BISON_VERSION} detected)")
       ENDIF()
 
+      IF ("${BISON_VERSION}" VERSION_LESS "2.7.0")
+        #Ignore all warnings - not recommend to develope on this version!
+        SET(bisonopt "-Wnone")
+      ELSE()
+        SET(bisonopt -Werror -Wno-other)
+      ENDIF()
+
       IF ("${FLEX_VERSION}" VERSION_LESS "2.5.35")
         MESSAGE(FATAL_ERROR "You need flex version 2.5.35 or later to build this project (version ${FLEX_VERSION} detected)")
       ENDIF()
