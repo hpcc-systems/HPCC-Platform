@@ -2476,8 +2476,8 @@ class CRoxieServerDebugContext : extends CBaseServerDebugContext
 public:
     IRoxieSlaveContext *ctx;
 
-    CRoxieServerDebugContext(IRoxieSlaveContext *_ctx, const IContextLogger &_logctx, IPropertyTree *_queryXGMML, SafeSocket &_client)
-        : CBaseServerDebugContext(_logctx, _queryXGMML, _client), ctx(_ctx)
+    CRoxieServerDebugContext(IRoxieSlaveContext *_ctx, const IContextLogger &_logctx, IPropertyTree *_queryXGMML)
+        : CBaseServerDebugContext(_logctx, _queryXGMML), ctx(_ctx)
     {
     }
 
@@ -2715,7 +2715,7 @@ protected:
     {
         if (!debugPermitted || !ownEP.port || !nativeProtocol)
             throw MakeStringException(ROXIE_ACCESS_ERROR, "Debug queries are not permitted on this system");
-        debugContext.setown(new CRoxieServerDebugContext(this, logctx, factory->cloneQueryXGMML(), *nativeProtocol->querySafeSocket()));
+        debugContext.setown(new CRoxieServerDebugContext(this, logctx, factory->cloneQueryXGMML()));
         debugContext->debugInitialize(debugUID, factory->queryQueryName(), breakAtStart);
         if (workUnit)
         {
