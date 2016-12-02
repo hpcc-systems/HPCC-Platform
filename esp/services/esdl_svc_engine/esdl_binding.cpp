@@ -37,7 +37,7 @@
 
 #include "loggingagentbase.hpp"
 
-bool ensureSDSPath(const char * sdsPath)
+bool EsdlBindingImpl::ensureSDSPath(const char * sdsPath)
 {
     if (!sdsPath)
         return false;

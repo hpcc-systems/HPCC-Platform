@@ -67,4 +67,5 @@ target_link_libraries ( ws_esdlconfig
          environment
          dllserver
          SMCLib
+         esdl_svc_engine
     )

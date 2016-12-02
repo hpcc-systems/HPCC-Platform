@@ -68,8 +68,6 @@ static const char* ESDL_METHOD_HELP="help";
 namespace javaembed { IEmbedContext* getEmbedContext(); }
 #endif
 
-bool ensureSDSPath(const char * sdsPath);
-
 class EsdlServiceImpl : public CInterface, implements IEspService
 {
 private:
@@ -374,6 +372,7 @@ public:
     static void splitURLList(const char* urlList, StringBuffer& protocol,StringBuffer& UserName,StringBuffer& Password, StringBuffer& ipportlistbody, StringBuffer& path, StringBuffer& options);
     static void transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie );
     static bool makeURL( StringBuffer& url, IPropertyTree& cfg );
+    static bool ensureSDSPath(const char * sdsPath);
 
     bool usesESDLDefinition(const char * name, int version);
     bool usesESDLDefinition(const char * id);
