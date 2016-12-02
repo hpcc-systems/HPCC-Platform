@@ -52,6 +52,7 @@
 
 using roxiemem::OwnedRoxieString;
 
+#include <memory>
 #include <new>
 
 #ifdef _USE_CPPUNIT
@@ -3373,7 +3374,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     try
     {
 #ifdef MONITOR_ECLAGENT_STATUS  
-        CSDSServerStatus * serverstatus = NULL;
+        std::unique_ptr<CSDSServerStatus> serverstatus;
 #endif
         Owned<ILocalWorkUnit> standAloneWorkUnit;
         if (wuXML)
@@ -3392,7 +3393,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 initClientProcess(serverGroup, DCR_EclAgent, 0, NULL, NULL, MP_WAIT_FOREVER);
             }
 #ifdef MONITOR_ECLAGENT_STATUS  
-            serverstatus = new CSDSServerStatus("ECLagent");
+            serverstatus.reset(new CSDSServerStatus("ECLagent"));
             serverstatus->queryProperties()->setPropInt("Pid", GetCurrentProcessId());
             serverstatus->commitProperties();
 #endif
@@ -3546,9 +3547,6 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         catch (RELEASE_CATCH_ALL)
         {
         }
-
-        if (serverstatus)
-            delete serverstatus;
     }
     catch (IException * e)
     {
