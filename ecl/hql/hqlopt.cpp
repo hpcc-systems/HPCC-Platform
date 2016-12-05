@@ -3986,7 +3986,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 }
             case no_if:
                 {
-                    if (transformed->queryChild(1)->isConstant())
+                    if (!isShared(child) && transformed->queryChild(1)->isConstant())
                         return swapIntoIf(transformed);
                     break;
                 }
@@ -4002,13 +4002,15 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 {
                     if (!isShared(child) && child->isDatarow())
                     {
-                      IHqlExpression * cond = child->queryChild(0);
+                        IHqlExpression * cond = child->queryChild(0);
                         IHqlExpression * field = transformed->queryChild(1);
                         OwnedHqlExpr newLeft = createNewSelectExpr(LINK(child->queryChild(1)), LINK(field));
                         OwnedHqlExpr newRight = createNewSelectExpr(LINK(child->queryChild(2)), LINK(field));
                         incUsage(newLeft);
                         incUsage(newRight);
-                        return createIf(LINK(cond), LINK(newLeft), LINK(newRight));
+                        OwnedHqlExpr newIf = createIf(LINK(cond), LINK(newLeft), LINK(newRight));
+                        newIf.setown(child->cloneAllAnnotations(transformed));
+                        return newIf.getClear();
                     }
                     break;
                 }
