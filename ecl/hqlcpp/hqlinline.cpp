@@ -113,6 +113,8 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     case no_call:
     case no_externalcall:               // no so sure about this - should possibly be assignable only. (also no_call above)
     case no_getresult:
+        if (isStreamed(expr))
+            return RETiterate;
         return RETassign;
     }
 

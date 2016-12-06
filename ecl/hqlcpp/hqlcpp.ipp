@@ -933,6 +933,7 @@ public:
     bool canIterateInline(BuildCtx * ctx, IHqlExpression * expr);
     bool canAssignInline(BuildCtx * ctx, IHqlExpression * expr);
     bool canEvaluateInline(BuildCtx * ctx, IHqlExpression * expr);
+    bool canEvaluateInlineNoSpill(BuildCtx * ctx, IHqlExpression * expr);
 
     void buildAssignChildDataset(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void buildChildDataset(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
