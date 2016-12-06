@@ -58,11 +58,13 @@
 
     <para>When a complex logical expression has multiple OR conditions, you
     should group the OR conditions and order them from least complex to most
-    complex to result in the most efficient processing. If the probability of
-    occurrence is known, you should order them from the most likely to occur
-    to the least likely to occur, because once any part of a compound OR
-    condition evaluates to TRUE, the remainder of the expression is bypassed.
-    This is also true of the order of MAP function conditions.</para>
+    complex to result in the most efficient processing. </para>
+
+    <para>If the probability of occurrence is known, you should order them
+    from the most likely to occur to the least likely to occur, because once
+    any part of a compound OR condition evaluates to TRUE, the remainder of
+    the expression can be bypassed. However, this is not guaranteed. This is
+    also true of the order of MAP function conditions.</para>
 
     <para>Whenever AND and OR logical operations are mixed in the same
     expression, you should use parentheses to group within the expression to
