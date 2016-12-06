@@ -433,7 +433,7 @@ IPooledThread *CHThorDebugSocketListener::createNew()
 //=======================================================================================
 
 CHThorDebugContext::CHThorDebugContext(const IContextLogger &_logctx, IPropertyTree *_queryXGMML, EclAgent *_eclAgent) 
-    : CBaseServerDebugContext(_logctx, _queryXGMML, client), eclAgent(_eclAgent)
+    : CBaseServerDebugContext(_logctx, _queryXGMML), eclAgent(_eclAgent)
 {
 }
 

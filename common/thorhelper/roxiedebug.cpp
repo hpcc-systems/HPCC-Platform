@@ -1440,8 +1440,8 @@ void CBaseServerDebugContext::waitForDebugger(DebugState state, IActivityDebugCo
     sequence++;
 }
 
-CBaseServerDebugContext::CBaseServerDebugContext(const IContextLogger &_logctx, IPropertyTree *_queryXGMML, SafeSocket &_client) 
-    : CBaseDebugContext(_logctx), queryXGMML(_queryXGMML), client(_client)
+CBaseServerDebugContext::CBaseServerDebugContext(const IContextLogger &_logctx, IPropertyTree *_queryXGMML)
+    : CBaseDebugContext(_logctx), queryXGMML(_queryXGMML)
 {
     sequence = 0;
     previousSequence = 0;

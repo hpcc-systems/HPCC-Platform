@@ -302,7 +302,6 @@ class THORHELPER_API CBaseServerDebugContext : public CBaseDebugContext, impleme
 
 protected:
     StringAttr debugId;
-    SafeSocket &client;
 
     Owned<IPropertyTree> queryXGMML;
     Semaphore debugeeSem;
@@ -321,7 +320,7 @@ protected:
     virtual void waitForDebugger(DebugState state, IActivityDebugContext *probe);
 public:
     IMPLEMENT_IINTERFACE;
-    CBaseServerDebugContext(const IContextLogger &_logctx, IPropertyTree *_queryXGMML, SafeSocket &_client) ;
+    CBaseServerDebugContext(const IContextLogger &_logctx, IPropertyTree *_queryXGMML) ;
     void serializeBreakpoints(MemoryBuffer &to);
     virtual void debugInitialize(const char *id, const char *_queryName, bool _breakAtStart);
     virtual void debugTerminate();
