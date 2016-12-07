@@ -417,23 +417,31 @@ protected:
 
 enum
 {
-    MFremote = 1,
-    MFsingle = 2,
+    MFdynamicproto = 1,               // Prototype for the function is not a literal string
+    MFsingle = 2,                   // This will only be executed once per activity instance
+    MFopt = 4,
 };
 
 class MemberFunction
 {
 public:
+    MemberFunction(HqlCppTranslator & translator, BuildCtx & classctx);
     MemberFunction(HqlCppTranslator & translator, BuildCtx & classctx, const char * text, unsigned _flags = 0);
-    MemberFunction(HqlCppTranslator & translator, BuildCtx & classctx, StringBuffer & text, unsigned _flags = 0);
-    ~MemberFunction();
+    ~MemberFunction() noexcept(false);
+
+    void start(const char * text, unsigned _flags = 0);
+    void finish();
+    unsigned numStmts() const;
+    void setIncomplete(bool value);
+    void setIncluded(bool value);
 
     inline bool isExecutedOnce() const { return (flags & MFsingle) != 0; }
 
 public:
     HqlCppTranslator & translator;
+    IHqlStmt * stmt = nullptr;
     BuildCtx ctx;
-    unsigned flags;
+    unsigned flags = 0;
 };
 
 //===========================================================================
@@ -986,8 +994,6 @@ public:
     inline IErrorReceiver & queryErrorProcessor() { return *errorProcessor; }
     inline ErrorSeverityMapper & queryLocalOnWarningMapper() { return *localOnWarnings; }
 
-    void pushMemberFunction(MemberFunction & func);
-    void popMemberFunction();
     unsigned getConsistentUID(IHqlExpression * ptr);
     bool insideOnCreate(BuildCtx & ctx);
     bool insideOnStart(BuildCtx & ctx);

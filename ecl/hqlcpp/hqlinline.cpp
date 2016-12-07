@@ -1936,7 +1936,7 @@ void NestedEvalContext::ensureHelpersExist()
 
         //void onStart(ICodeContext * _ctx, <ActivityClass> * _activity)
         BuildCtx oncreatectx(onCreate.declarectx);
-        IHqlStmt * onCreateStmt  = oncreatectx.addQuotedCompound(s.clear().append("inline void onCreate(ICodeContext * _ctx, ").append(rootActivity->className).append(" * _activity)"));
+        IHqlStmt * onCreateStmt  = oncreatectx.addQuotedFunction(s.clear().append("inline void onCreate(ICodeContext * _ctx, ").append(rootActivity->className).append(" * _activity)"), true);
         oncreatectx.addQuoted(s.clear().append("activity = _activity;"));
         oncreatectx.addQuotedLiteral("ctx = _ctx;");
 

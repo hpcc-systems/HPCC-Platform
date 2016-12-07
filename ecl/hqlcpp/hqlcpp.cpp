@@ -9396,7 +9396,8 @@ void HqlCppTranslator::doBuildExprOrdered(BuildCtx & ctx, IHqlExpression * expr,
 
     BuildCtx declareCtx(*code, declareAtom);
     s.clear().append("int ").append(tempName).append("(const void * left, const void * right)");
-    declareCtx.addQuotedCompound(s);
+
+    MemberFunction compareFunc(*this, declareCtx, s, MFdynamicproto);
 
     Owned<ITypeInfo> argType;
     if (isTypePassedByAddress(elementType) && !hasReferenceModifier(elementType))
@@ -9419,9 +9420,9 @@ void HqlCppTranslator::doBuildExprOrdered(BuildCtx & ctx, IHqlExpression * expr,
     else
         compare.setown(createValue(no_order, LINK(signedType), right, left));
     CHqlBoundExpr boundCompare;
-    buildExpr(declareCtx, compare, boundCompare);
-    declareCtx.setNextDestructor();
-    declareCtx.addReturn(boundCompare.expr);
+    buildExpr(compareFunc.ctx, compare, boundCompare);
+    compareFunc.ctx.setNextDestructor();
+    compareFunc.ctx.addReturn(boundCompare.expr);
 
     //Allocate an array to store the orders
     unsigned max = list->numChildren();
@@ -11699,7 +11700,7 @@ void HqlCppTranslator::doBuildUserFunctionReturn(BuildCtx & ctx, ITypeInfo * typ
     }
 }
 
-void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpression * bodyCode, const char *proto)
+void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx & ctx, IHqlExpression * bodyCode, const char *proto)
 {
     processCppBodyDirectives(bodyCode);
     IHqlExpression * location = queryLocation(bodyCode);
@@ -11733,10 +11734,10 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
             throwError(HQLERR_BodyNotAllowedWithInline);
         text.setCharAt(separator-text.str(), 0);
         if (location)
-            funcctx.addLine(locationFilename, startLine);
-        funcctx.addQuoted(body);
+            ctx.addLine(locationFilename, startLine);
+        ctx.addQuoted(body);
         if (location)
-            funcctx.addLine();
+            ctx.addLine();
 
         body = separator + strlen(cppSeparatorText);
         if (*body == '\r') body++;
@@ -11746,35 +11747,34 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
 
     bool addPragmas = options.embeddedWarningsAsErrors && !bodyCode->hasAttribute(inlineAtom);
 
-    BuildCtx outerctx(funcctx);
     if (addPragmas)
     {
-        funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+        ctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
                 "#pragma GCC diagnostic error \"-Wall\"\n"
                 "#pragma GCC diagnostic error \"-Wextra\"\n"
                 "#pragma GCC diagnostic ignored \"-Wunused-parameter\"\n"  // Generated prototype tends to include ctx that is often not used
                 "#endif\n");
     }
 
-    funcctx.addQuotedCompound(proto);
+    MemberFunction userFunc(*this, ctx, proto, MFdynamicproto);
+    if (location)
+        userFunc.ctx.addLine(locationFilename, startLine);
+    userFunc.ctx.addQuoted(body);
+    if (location)
+        userFunc.ctx.addLine();
 
     if (addPragmas)
     {
-        outerctx.addQuoted("\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+        ctx.addQuoted("\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
                 "#pragma GCC diagnostic ignored \"-Wall\"\n"
                 "#pragma GCC diagnostic ignored \"-Wextra\"\n"
                 "#pragma GCC diagnostic ignored \"-Wunused-variable\"\n"  // Some variants of gcc seem to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
                 "#pragma GCC diagnostic ignored \"-Wparentheses\"\n"      // Some variants of gcc seem to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
                 "#endif\n");
     }
-    if (location)
-        funcctx.addLine(locationFilename, startLine);
-    funcctx.addQuoted(body);
-    if (location)
-        funcctx.addLine();
 }
 
-void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpression * funcdef, const char *proto)
+void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpression * funcdef, const char *proto)
 {
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     IHqlExpression * outofline = funcdef->queryChild(0);
@@ -11784,7 +11784,8 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     IHqlExpression *language = queryAttributeChild(bodyCode, languageAtom, 0);
     bool isImport = bodyCode->hasAttribute(importAtom);
 
-    funcctx.addQuotedCompound(proto);
+    MemberFunction scriptFunc(*this, ctx, proto, MFdynamicproto);
+    BuildCtx & funcctx = scriptFunc.ctx;
     funcctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
     funcctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
 
@@ -12079,18 +12080,19 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
     }
     else
     {
-        funcctx.addQuotedCompound(proto);
+        MemberFunction func(*this, funcctx, proto, MFdynamicproto);
+
         //MORE: Need to work out how to handle functions that require the context.
         //Need to create a class instead.
         if (functionBodyUsesContext(outofline))
         {
-            funcctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
-            funcctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
+            func.ctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
+            func.ctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
         }
         OwnedHqlExpr newCode = replaceInlineParameters(funcdef, bodyCode);
         newCode.setown(foldHqlExpression(newCode));
         ITypeInfo * returnType = funcdef->queryType()->queryChildType();
-        doBuildUserFunctionReturn(funcctx, returnType, newCode);
+        doBuildUserFunctionReturn(func.ctx, returnType, newCode);
     }
 }
 
