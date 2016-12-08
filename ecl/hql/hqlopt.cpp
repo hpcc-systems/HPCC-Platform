@@ -315,7 +315,7 @@ IHqlExpression * CTreeOptimizer::swapIntoIf(IHqlExpression * expr, bool force)
     OwnedHqlExpr newRight = replaceChildDataset(body, right, 0);
 
     OwnedHqlExpr newIf = createIf(LINK(cond),LINK(newLeft),LINK(newRight));
-    newIf.setown(child->cloneAllAnnotations(newIf));
+    newIf.setown(expr->cloneAllAnnotations(newIf));
     if (!alreadyHasUsage(newIf))
     {
         incUsage(newLeft);
@@ -4006,10 +4006,9 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         IHqlExpression * field = transformed->queryChild(1);
                         OwnedHqlExpr newLeft = createNewSelectExpr(LINK(child->queryChild(1)), LINK(field));
                         OwnedHqlExpr newRight = createNewSelectExpr(LINK(child->queryChild(2)), LINK(field));
-                        incUsage(newLeft);
-                        incUsage(newRight);
                         OwnedHqlExpr newIf = createIf(LINK(cond), LINK(newLeft), LINK(newRight));
-                        newIf.setown(child->cloneAllAnnotations(transformed));
+                        newIf.setown(child->cloneAllAnnotations(newIf));
+                        noteUnused(child);
                         return newIf.getClear();
                     }
                     break;
