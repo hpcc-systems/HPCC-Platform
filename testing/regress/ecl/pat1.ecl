@@ -61,3 +61,6 @@ output(outfile3);
 //Return all matching sentances, case insignficant.
 outfile4 := PARSE(infile,text,sentance2,results,nocase,scan,skip(ws*),first);
 output(outfile4);
+
+outfile5 := PARSE(infile,text,patWord,results,nocase,not matched only);
+output(outfile5);

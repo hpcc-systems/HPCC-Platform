@@ -3391,11 +3391,11 @@ bool RegexParser::performMatch(IMatchedAction & action, const void * row, unsign
         const byte * end = endData - algo->minPatternLength;
 
         RegexState state(cache, algo->kind, helper, this, algo->inputFormat, len, start);
+        state.row = row;
+        state.processor = &action;
+        state.best = NULL;
         if (len >= algo->minPatternLength)
         {
-            state.row = row;
-            state.processor = &action;
-            state.best = NULL;
             for (const byte * curScan = start; curScan <= end;)
             {
                 state.cur = curScan;
