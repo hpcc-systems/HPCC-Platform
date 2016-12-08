@@ -316,8 +316,10 @@ void HqlLex::pushText(IFileContents * text, int startLineNo, int startColumn)
     MTIME_SECTION(timer, "HqlLex::pushText");
 #endif
     bool useLegacyImport = hasLegacyImportSemantics();
+    bool useLegacyWhen = hasLegacyWhenSemantics();
     inmacro = new HqlLex(yyParser, text, NULL, NULL);
     inmacro->setLegacyImport(useLegacyImport);
+    inmacro->setLegacyWhen(useLegacyWhen);
     inmacro->set_yyLineNo(startLineNo);
     inmacro->set_yyColumn(startColumn);
 }
@@ -337,8 +339,10 @@ void HqlLex::pushText(const char *s)
 #endif
     Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
     bool useLegacyImport = hasLegacyImportSemantics();
+    bool useLegacyWhen = hasLegacyWhenSemantics();
     inmacro = new HqlLex(yyParser, macroContents, NULL, NULL);
     inmacro->setLegacyImport(useLegacyImport);
+    inmacro->setLegacyWhen(useLegacyWhen);
     inmacro->set_yyLineNo(yyLineNo);
     inmacro->set_yyColumn(yyColumn);
 
@@ -352,6 +356,13 @@ bool HqlLex::hasLegacyImportSemantics() const
     if (inmacro)
         return inmacro->hasLegacyImportSemantics();
     return legacyImportMode;
+}
+
+bool HqlLex::hasLegacyWhenSemantics() const
+{
+    if (inmacro)
+        return inmacro->hasLegacyWhenSemantics();
+    return legacyWhenMode;
 }
 
 void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentId, unsigned& parmno,IProperties *macroParms)
@@ -573,8 +584,10 @@ void HqlLex::pushMacro(IHqlExpression *expr)
     else
     {
         bool useLegacyImport = hasLegacyImportSemantics();
+        bool useLegacyWhen = hasLegacyWhenSemantics();
         inmacro = new HqlLex(yyParser, macroContents, NULL, LINK(expr));
         inmacro->setLegacyImport(useLegacyImport);
+        inmacro->setLegacyWhen(useLegacyWhen);
 
 #if defined(TRACE_MACRO)
         PrintLog("MACRO>> inmacro %p created for \"%s\" at %d:%d\n",inmacro, s.str(),macroBodyExpr->getStartLine(),macroBodyExpr->getStartColumn());
@@ -700,8 +713,10 @@ void HqlLex::processEncrypted()
     Owned<ISourcePath> sourcePath = createSourcePath("<encrypted>");
     Owned<IFileContents> decryptedContents = createFileContentsFromText((const char *)decrypted.toByteArray(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
     bool useLegacyImport = hasLegacyImportSemantics();
+    bool useLegacyWhen = hasLegacyWhenSemantics();
     inmacro = new HqlLex(yyParser, decryptedContents, NULL, NULL);
     inmacro->setLegacyImport(useLegacyImport);
+    inmacro->setLegacyWhen(useLegacyWhen);
     inmacro->setParentLex(this);
     inmacro->encrypted = true;
 }
@@ -1083,6 +1098,30 @@ void HqlLex::doSlashSlashHash(YYSTYPE const & returnToken, const char * command)
                     setLegacyImport(true);
                 else if (strieq(option, "modern"))
                     setLegacyImport(false);
+                else
+                    reportError(returnToken, ERR_EXPECTED_ID, "Unknown #import option '%s' - expected legacy or modern", option.str());
+            }
+            else
+                reportError(returnToken, ERR_EXPECTED_RIGHTCURLY, "Expected closing )");
+        }
+        else
+            reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "Expected (");
+    }
+    else if (hasPrefix(command, "when", false))
+    {
+        const char * next = skipws(command + 4);
+        if (*next == '(')
+        {
+            next = skipws(next + 1);
+            const char * bra = strchr(next, ')');
+            if (bra)
+            {
+                StringBuffer option(bra - next, next);
+                option.clip();
+                if (strieq(option, "legacy"))
+                    setLegacyWhen(true);
+                else if (strieq(option, "modern"))
+                    setLegacyWhen(false);
                 else
                     reportError(returnToken, ERR_EXPECTED_ID, "Unknown #import option '%s' - expected legacy or modern", option.str());
             }

@@ -374,6 +374,7 @@ public:
     HqlExprArray imports;
     bool inSignedModule;
     bool legacyImport;
+    bool legacyWhen;
 };
 
 typedef const IAtom * const * AtomList;
@@ -875,7 +876,6 @@ protected:
     bool resolveSymbols;
     bool forceResult;
     bool associateWarnings;
-    bool legacyWhenSemantics;
     bool isQuery;
     bool parseConstantText;
     bool expandingMacroPosition;
@@ -1130,9 +1130,14 @@ class HqlLex
         StringBuffer& doGetDataType(StringBuffer & type, const char * text, int lineno, int column);
         void pushText(const char *);
         bool hasLegacyImportSemantics() const;
+        bool hasLegacyWhenSemantics() const;
         void setLegacyImport(bool _legacyImportMode)
         {
             legacyImportMode = _legacyImportMode;
+        }
+        void setLegacyWhen(bool _legacyWhenMode)
+        {
+            legacyWhenMode = _legacyWhenMode;
         }
 
     protected:
@@ -1245,6 +1250,7 @@ private:
         UnsignedArray hashendKinds;
         bool hasHashbreak;
         bool legacyImportMode = false;
+        bool legacyWhenMode = false;
         int loopTimes;
 
         bool inComment;
