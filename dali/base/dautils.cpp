@@ -1668,6 +1668,18 @@ void filterParts(IPropertyTree *file,UnsignedArray &partslist)
 #define SORT_NOCASE  2
 #define SORT_NUMERIC 4
 
+bool ensureSDSPath(const char * sdsPath)
+{
+    if (!sdsPath)
+        return false;
+
+    Owned<IRemoteConnection> conn = querySDS().connect(sdsPath, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return false;
+
+    return true;
+}
+
 inline void filteredAdd(IArrayOf<IPropertyTree> &results,const char *namefilterlo,const char *namefilterhi,StringArray& unknownAttributes, IPropertyTree *item)
 {
 

@@ -21,6 +21,7 @@
 #include "ws_esdlconfig_esp.ipp"
 #include "ws_topology_esp.ipp"
 #include "esdlconfig_errors.h"
+#include "dautils.hpp"
 
 static const char* FEATURE_URL="ESDLConfigAccess";
 

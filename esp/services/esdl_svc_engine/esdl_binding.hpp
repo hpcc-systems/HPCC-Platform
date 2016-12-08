@@ -27,6 +27,7 @@
 #include "loggingmanager.h"
 #include "thorplugin.hpp"
 #include "eclrtl.hpp"
+#include "dautils.hpp"
 
 static const char* ESDL_DEFS_ROOT_PATH="/ESDL/Definitions/";
 static const char* ESDL_DEF_PATH="/ESDL/Definitions/Definition";
@@ -370,7 +371,6 @@ public:
     static void splitURLList(const char* urlList, StringBuffer& protocol,StringBuffer& UserName,StringBuffer& Password, StringBuffer& ipportlistbody, StringBuffer& path, StringBuffer& options);
     static void transformGatewaysConfig( IPropertyTree* srvcfg, IPropertyTree* forRoxie );
     static bool makeURL( StringBuffer& url, IPropertyTree& cfg );
-    static bool ensureSDSPath(const char * sdsPath);
 
     bool usesESDLDefinition(const char * name, int version);
     bool usesESDLDefinition(const char * id);

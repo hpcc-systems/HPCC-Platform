@@ -68,4 +68,5 @@ target_link_libraries ( ws_esdlconfig
          dllserver
          SMCLib
          esdl_svc_engine
+         dalibase
     )
