@@ -3124,13 +3124,13 @@ void EspMessageInfo::write_esp_ipp()
     if (contentVar!=NULL)
         outf("\tStringBuffer m_%s_mimetype;\n", contentVar->name);
     
-    outs("\n\tvoid *m_eventSink;\n");
-    outs("\n\tIInterface* m_RequestState;\n");
+    outs("\n\tvoid *m_eventSink = nullptr;\n");
+    outs("\n\tIInterface* m_RequestState = nullptr;\n");
     outs("\tStringBuffer m_serviceName;\n");
     outs("\tStringBuffer m_methodName;\n");
     outs("\tStringBuffer m_msgName;\n");
     
-    outs("\n\tlong m_reqId;\n");
+    outs("\n\tlong m_reqId = 0;\n");
     outs("\tMutex m_mutex;\n");
     outs("public:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n");
@@ -4268,7 +4268,11 @@ void EspMessageInfo::write_esp()
     //method ==> copy
     outf("\nvoid C%s::copy(C%s &from)\n{\n", name_, name_);
     if (parent)
-        outf("\tC%s::copy(*dynamic_cast<C%s*>(&from));\n", parent, parent);
+    {
+        outf(1, "C%s *baseFrom = dynamic_cast<C%s*>(&from);\n", parent, parent);
+        outs(1, "if (baseFrom)\n");
+        outf(2, "C%s::copy(*baseFrom);\n", parent);
+    }
     for (pi=getParams();pi!=NULL;pi=pi->next)
         outf("\tm_%s.copy(from.m_%s);\n", pi->name, pi->name);
     if (getMetaInt("element"))
@@ -4278,7 +4282,11 @@ void EspMessageInfo::write_esp()
     //method ==> copy from interface
     outf("\nvoid C%s::copy(IConst%s &ifrom)\n{\n", name_, name_);
     if (parent)
-        outf("\tC%s::copy(*dynamic_cast<IConst%s*>(&ifrom));\n", parent, parent);
+    {
+        outf(1, "IConst%s *baseICFrom = dynamic_cast<IConst%s*>(&ifrom);\n", parent, parent);
+        outs(1, "if (baseICFrom)\n");
+        outf(2, "C%s::copy(*baseICFrom);\n", parent);
+    }
     for (pi=getParams();pi!=NULL;pi=pi->next)
     {
         char *uname=strdup(pi->name);
@@ -4426,7 +4434,9 @@ void EspMessageInfo::write_esp()
 
     if (parent)
     {
-        outf("\tC%s::serializer(ctx,dynamic_cast<C%s&>(src),buffer,false);\n",parent,parent);
+        outf(1, "C%s *baseSrc = dynamic_cast<C%s*>(&src);\n", parent, parent);
+        outs(1, "if (baseSrc)\n");
+        outf(2, "C%s::serializer(ctx, *baseSrc, buffer, false);\n",parent,parent);
     }
 
     // -- versioning
@@ -5554,7 +5564,14 @@ void EspServInfo::write_esp_binding_ipp()
     //Method ==> xslTransform
     if (needsXslt)
     {
-        outs("\tvoid setXslProcessor(IInterface *xslp_){xslp.set(dynamic_cast<IXslProcessor *>(xslp_));}\n");
+        outs(1, "void setXslProcessor(IInterface *xslp_)\n");
+        outs(1, "{\n");
+        outs(2, "IXslProcessor *ixslp = dynamic_cast<IXslProcessor *>(xslp_);\n");
+        outs(2, "if (!ixslp)\n");
+        outs(3, "xslp.clear();\n"); //set(NULL) would basically be same, but be explicit
+        outs(2, "else\n");
+        outs(3, "xslp.set(ixslp);\n");
+        outs(1, "}\n");
         outs("private:\n");
 
         outs("\tOwned<IXslProcessor> xslp;\n");
@@ -5639,8 +5656,8 @@ void EspServInfo::write_esp_binding()
     outs(1, "StringBuffer serviceName;\n");
     outs(1, "double clientVer=(ctx) ? ctx->getClientVersion() : 0.0;\n");
     outs(1, "qualifyServiceName(*ctx, ctx->queryServiceName(NULL), NULL, serviceName, NULL);\n");
-    outs(1, "CRpcCall* thecall = dynamic_cast<CRpcCall *>(rpc_call);\n");
-    outs(1, "CRpcResponse* response = dynamic_cast<CRpcResponse*>(rpc_response);\n\n");
+    outs(1, "CRpcCall* thecall = static_cast<CRpcCall *>(rpc_call);\n"); //interface must be from a class derived from CRpcCall
+    outs(1, "CRpcResponse* response = static_cast<CRpcResponse*>(rpc_response);\n\n");  //interface must be from a class derived from CRpcResponse
     
     outf("\tOwned<IEsp%s> iserv = (IEsp%s*)getService();\n", name_, name_);
     outs("\tif(iserv == NULL)\n");
@@ -6043,7 +6060,7 @@ void EspServInfo::write_esp_binding()
     
     outf("\n IRpcRequestBinding *C%sSoapBinding::createReqBinding(IEspContext &context, IHttpMessage *ireq, const char *service, const char *method)\n", name_);
     outs("{\n");
-    outs(1, "CHttpRequest *request=dynamic_cast<CHttpRequest*>(ireq);\n");
+    outs(1, "CHttpRequest *request=static_cast<CHttpRequest*>(ireq);\n");
     outs(1, "IProperties *props = (request) ? request->queryParameters() : NULL;\n\n");
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
     {
@@ -6366,7 +6383,7 @@ void EspServInfo::write_esp_client_ipp()
     outs("\tStringBuffer m_password;\n");
     outs("\tStringBuffer m_realm;\n");
     outs("\tStringBuffer m_action;\n");
-    outs("\tlong m_reqId;\n");
+    outs("\tlong m_reqId = 0;\n");
     outs("\tMapStringTo<SecAccessFlags> m_accessmap;\n");
 
     outs("\npublic:\n");
@@ -6436,7 +6453,7 @@ void EspServInfo::write_esp_client()
         outf("\nIClient%s * CClient%s::%s(IClient%s *request)\n", mthi->getResp(), name_, mthi->getName(), mthi->getReq());
         outs("{\n");
         outs("\tif(m_url.length()== 0){ throw MakeStringExceptionDirect(-1, \"url not set\"); }\n\n");
-        outf("\tC%s* esprequest = dynamic_cast<C%s*>(request);\n", mthi->getReq(), mthi->getReq());
+        outf("\tC%s* esprequest = static_cast<C%s*>(request);\n", mthi->getReq(), mthi->getReq());
         outf("\tC%s* espresponse = new C%s(\"%s\");\n\n", mthi->getResp(), mthi->getResp(), name_);
         outs("\tespresponse->setReqId(m_reqId++);\n");
         //dom
@@ -6451,7 +6468,7 @@ void EspServInfo::write_esp_client()
         outf("\nvoid CClient%s::async_%s(IClient%s *request, IClient%sEvents *events,IInterface* state)\n", name_, mthi->getName(), mthi->getReq(), name_);
         outs("{\n");
         outs("\tif(m_url.length()==0){ throw MakeStringExceptionDirect(-1, \"url not set\"); }\n\n");
-        outf("\tC%s* esprequest = dynamic_cast<C%s*>(request);\n", mthi->getReq(), mthi->getReq());
+        outf("\tC%s* esprequest = static_cast<C%s*>(request);\n", mthi->getReq(), mthi->getReq());
         outf("\tesprequest->setMethod(\"%s\");\n", mthi->getName());
         outs("\tesprequest->setReqId(m_reqId++);\n");
         outs("\tesprequest->setEventSink(events);\n");
@@ -6505,11 +6522,16 @@ void EspServInfo::write_esp_client()
     
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
     {
-        outf("\t\tif (stricmp(response->getMethod(), \"%s\")==0)\n", mthi->getName());
-        outs("\t\t{\n\t\t\tif(response->getRpcState() == RPC_MESSAGE_OK)\n");
-        outf("\t\t\t\teventSink->on%sComplete(dynamic_cast<IClient%s*>(response),response->queryState());\n", mthi->getName(), mthi->getResp());
-        outf("\t\t\telse\n\t\t\t\teventSink->on%sError(dynamic_cast<IClient%s*>(response),response->queryState());\n", mthi->getName(), mthi->getResp());
-        outs("\t\t}\n");
+        outf(2, "if (stricmp(response->getMethod(), \"%s\")==0)\n", mthi->getName());
+        outs(2, "{\n");
+        outf(3, "IClient%s* icresp = dynamic_cast<IClient%s*>(response);\n", mthi->getResp(), mthi->getResp());
+        outf(3, "if (icresp) {\n");
+        outs(4,  "if (response->getRpcState() == RPC_MESSAGE_OK)\n");
+        outf(5,   "eventSink->on%sComplete(icresp, response->queryState());\n", mthi->getName());
+        outf(4,  "else\n");
+        outf(5,    "eventSink->on%sError(icresp,response->queryState());\n", mthi->getName());
+        outs(3, "}\n");
+        outs(2, "}\n");
     }        
     outs("\t\tresponse->unlock();\n");
     outs("\t}\n");
