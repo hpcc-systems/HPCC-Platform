@@ -348,6 +348,7 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
 
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
     lexObject->setLegacyImport(queryLegacyImportSemantics());
+    lexObject->setLegacyWhen(queryLegacyWhenSemantics());
 
     //MORE: This should be in the parseContext calculated once
     if (lookupCtx.queryRepository() && loadImplicit)
@@ -377,6 +378,7 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
     //Clone parseScope
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
     lexObject->setLegacyImport(parent.legacyImport);
+    lexObject->setLegacyWhen(parent.legacyWhen);
     forceResult = true;
     parsingTemplateAttribute = false;
     parseConstantText = _parseConstantText;
@@ -404,6 +406,7 @@ void HqlGram::saveContext(HqlGramCtx & ctx, bool cloneScopes)
     }
 
     ctx.legacyImport = lexObject->hasLegacyImportSemantics();
+    ctx.legacyWhen = lexObject->hasLegacyWhenSemantics();
     ctx.globalScope.set(globalScope);
     appendArray(ctx.defaultScopes, defaultScopes);
     appendArray(ctx.implicitScopes, implicitScopes);
@@ -420,7 +423,6 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
 {
     minimumScopeIndex = 0;
     isQuery = false;
-    legacyWhenSemantics = queryLegacyWhenSemantics();
     current_id = NULL;
     lexObject = NULL;
     expectedAttribute = NULL;
@@ -9231,7 +9233,7 @@ IHqlExpression * HqlGram::associateSideEffects(IHqlExpression * expr, const ECLl
 {
     if (sideEffectsPending())
     {
-        if (legacyWhenSemantics)
+        if (lexObject->hasLegacyWhenSemantics())
         {
             if (okToAddSideEffects(expr))
                 return addSideEffects(expr);
@@ -9310,7 +9312,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
             if (isQuery && !insideNestedScope())
             {
                 //If this is a global query, and not inside a nested attribute, then keep any actions on the global list of results
-                if (!legacyWhenSemantics)
+                if (!lexObject->hasLegacyWhenSemantics())
                 {
                     //Should we give a warning here?? export/shared would not be legal if this was within the repository
                 }
