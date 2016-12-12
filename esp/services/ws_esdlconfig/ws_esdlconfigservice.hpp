@@ -42,7 +42,6 @@ public:
     static bool existsESDLMethodDef(const char * esdlDefinitionName, unsigned ver, const char * esdlServiceName, const char * methodName);
     static int publishESDLBinding(const char * bindingName, IPropertyTree * methodsConfig, const char * espProcName, const char * espPort, const char * esdlDefinitionName, int esdlDefinitionVersion, const char * esdlServiceName, StringBuffer & message, bool overwrite);
     static IPropertyTree * getEspProcessRegistry(const char * espprocname, const char * espbingingport, const char * servicename);
-    static void ensureESDLServiceBindingRegistry(const char * espProcName, const char * espBindingName, bool readonly);
     static IPropertyTree * getESDLDefinitionRegistry(const char * wsEclId, bool readonly);
     static void addESDLDefinition(IPropertyTree * queryRegistry, const char * name, IPropertyTree * definitionInfo, StringBuffer &newId, unsigned &newSeq, const char *userid, bool deleteprev);
     static int publishESDLMethod(const char * espProcName, const char * espBindingName, const char * srvDefId, const char * methodName, IPropertyTree * attributesTree, bool readonly, StringBuffer & message);

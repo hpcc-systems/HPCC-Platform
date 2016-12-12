@@ -1838,7 +1838,18 @@ public:
         initSendBuffer(sendBuffer);
         MemoryBuffer replyBuffer;
         sendBuffer.append((RemoteFileCommandType)RFCsetfileperms).append(filename).append(fPerms);
-        sendRemoteCommand(sendBuffer, replyBuffer);
+        try
+        {
+            sendRemoteCommand(sendBuffer, replyBuffer);
+        }
+        catch (IDAFS_Exception *e)
+        {
+            if (e->errorCode() == RFSERR_InvalidCommand)
+                WARNLOG("umask setFilePermissions (0%o) not supported on remote server", fPerms);
+            else
+                throw e;
+        }
+
     }
 
     offset_t size()

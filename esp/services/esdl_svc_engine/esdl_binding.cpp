@@ -36,6 +36,19 @@
 #include "build-config.h"
 
 #include "loggingagentbase.hpp"
+
+bool EsdlBindingImpl::ensureSDSPath(const char * sdsPath)
+{
+    if (!sdsPath)
+        return false;
+
+    Owned<IRemoteConnection> conn = querySDS().connect(sdsPath, myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
+    if (!conn)
+        return false;
+
+    return true;
+}
+
 /*
  * trim xpath at first instance of element
  */
@@ -70,7 +83,7 @@ IPropertyTree * fetchESDLDefinitionFromDaliById(const char *id)
 
     DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali: %s ", id);
 
-    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL);
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
     if (!conn)
        throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
@@ -105,7 +118,7 @@ IPropertyTree * fetchESDLBindingFromDali(const char *process, const char *bindin
     Owned<IRemoteConnection> conn;
     try
     {
-        conn.set(querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT_DESDL));
+        conn.set(querySDS().connect(ESDL_BINDINGS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL));
         if (!conn)
         {
             DBGLOG("Unable to connect to ESDL Service binding information in dali %s", ESDL_BINDINGS_ROOT_PATH);
@@ -1040,6 +1053,12 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const
 
     try
     {
+        if(!ensureSDSPath(ESDL_DEFS_ROOT_PATH))
+            ESPLOG(LogNormal, "ESP Binding '%s' could not ensure %s element on Dali.", binding, ESDL_DEFS_ROOT_PATH);
+
+        if(!ensureSDSPath(ESDL_BINDINGS_ROOT_PATH))
+            ESPLOG(LogNormal, "ESP Binding '%s' could not ensure %s element on Dali.", binding, ESDL_BINDINGS_ROOT_PATH);
+
         m_esdlBndCfg.set(fetchESDLBinding(process, binding, m_esdlStateFilesLocation));
 
         if (!m_esdlBndCfg.get())
@@ -1266,6 +1285,7 @@ void EsdlBindingImpl::initEsdlServiceInfo(IEsdlDefService &srvdef)
     xsltpath.append("xslt/esxdl2xsd.xslt");
     m_xsdgen->loadTransform(xsltpath, xsdparams, EsdlXslToXsd );
     m_xsdgen->loadTransform(xsltpath, wsdlparams, EsdlXslToWsdl );
+
 }
 
 void EsdlBindingImpl::getSoapMessage(StringBuffer& soapmsg,
