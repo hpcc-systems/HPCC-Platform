@@ -304,7 +304,7 @@ enum
 #ifdef _WIN32
     PerfMonStandard  = PerfMonProcMem
 #else
-    PerfMonStandard  = PerfMonProcMem|PerfMonExtended|PerfMonUDP
+    PerfMonStandard  = PerfMonProcMem|PerfMonExtended
 #endif
 
 };
