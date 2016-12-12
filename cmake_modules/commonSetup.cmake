@@ -172,10 +172,20 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       if(DEFINED SIGN_MODULES_KEYID)
         set(GPG_DEFAULT_KEY_OPTION --default-key)
       endif()
+      execute_process(COMMAND bash "-c" "gpg --version | awk 'NR==1{print $3}'"
+        OUTPUT_VARIABLE GPG_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+    if(${GPG_VERSION} VERSION_GREATER "2.1")
+          set(GPG_PINENTRY_MODE --pinentry-mode loopback --batch --no-tty)
+      else()
+          set(GPG_PINENTRY_MODE --batch --no-tty)
+      endif()
       execute_process(
           COMMAND rm -f sm_keycheck.tmp sm_keycheck.asc
           COMMAND touch sm_keycheck.tmp
-          COMMAND gpg --output sm_keycheck.asc ${GPG_DEFAULT_KEY_OPTION} ${SIGN_MODULES_KEYID}  --clearsign ${GPG_PASSPHRASE_OPTION} ${SIGN_MODULES_PASSPHRASE} --batch --no-tty sm_keycheck.tmp
+          COMMAND gpg --clearsign ${GPG_PINENTRY_MODE} ${GPG_DEFAULT_KEY_OPTION} ${SIGN_MODULES_KEYID} ${GPG_PASSPHRASE_OPTION} ${SIGN_MODULES_PASSPHRASE} --output sm_keycheck.asc sm_keycheck.tmp
+          TIMOUT 120
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
           RESULT_VARIABLE rc_var
           ERROR_VARIABLE err_var
