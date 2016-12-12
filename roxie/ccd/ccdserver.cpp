@@ -9341,7 +9341,8 @@ public:
         puller.stop();
         CRoxieServerActivity::stop();
         pipe.clear();
-        readTransformer->setStream(NULL);
+        if (readTransformer)
+            readTransformer->setStream(NULL);
     }
 
     virtual void reset()
