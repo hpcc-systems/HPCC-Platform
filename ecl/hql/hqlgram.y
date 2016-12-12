@@ -4093,7 +4093,7 @@ funcRetType
                             $$.setType(makeRowType(expr->getType()));
                             $$.setPosition($1);
                         }
-    | typeDef
+    | userTypedefType
     ;
 
 payloadPart

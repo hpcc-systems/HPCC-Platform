@@ -1942,6 +1942,13 @@ bool HqlCppTranslator::canEvaluateInline(BuildCtx * ctx, IHqlExpression * expr)
     return options.allowInlineSpill ? ::canProcessInline(ctx, expr) : ::canEvaluateInline(ctx, expr);
 }
 
+bool HqlCppTranslator::canEvaluateInlineNoSpill(BuildCtx * ctx, IHqlExpression * expr)
+{
+    if (!isInlineOk())
+        return false;
+    return ::canEvaluateInline(ctx, expr);
+}
+
 bool HqlCppTranslator::canProcessInline(BuildCtx * ctx, IHqlExpression * expr)
 {
     if (!isInlineOk())
@@ -2431,7 +2438,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             if (format == FormatLinkedDataset || format == FormatArrayDataset)
             {
                 IHqlExpression * choosenLimit = NULL;
-                if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2) && (canEvaluateInline(&ctx, expr->queryChild(0)) || !canIterateInline(&ctx, expr->queryChild(0))))
+                if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2) && (canEvaluateInlineNoSpill(&ctx, expr->queryChild(0)) || !canIterateInline(&ctx, expr->queryChild(0))))
                 {
                     choosenLimit = expr->queryChild(1);
                     expr = expr->queryChild(0);
@@ -2807,7 +2814,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
         else
         {
             IHqlExpression * choosenLimit = NULL;
-            if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2) && (canEvaluateInline(&ctx, expr->queryChild(0)) || !canIterateInline(&ctx, expr->queryChild(0))))
+            if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2) && (canEvaluateInlineNoSpill(&ctx, expr->queryChild(0)) || !canIterateInline(&ctx, expr->queryChild(0))))
             {
                 choosenLimit = expr->queryChild(1);
                 expr = expr->queryChild(0);

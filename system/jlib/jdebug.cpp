@@ -57,6 +57,7 @@
  #include <mach/mach_host.h>
  #include <mach/vm_statistics.h>
 #endif
+#include "build-config.h"
 
 //===========================================================================
 #ifdef _DEBUG
@@ -2339,6 +2340,10 @@ public:
         hook.set(_hook);
         term = false;
         latestCPU = 0;
+        // UDP stats reported unless explicitly disabled
+        Owned<IProperties> conf = createProperties(CONFIG_DIR PATHSEPSTR "environment.conf", true);
+        if (conf->getPropBool("udp_stats", true))
+            traceMode |= PerfMonUDP;
 #ifdef _WIN32
         memset(&liOldIdleTime,0,sizeof(liOldIdleTime));
         memset(&liOldSystemTime,0,sizeof(liOldSystemTime));
