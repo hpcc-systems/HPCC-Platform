@@ -20,6 +20,8 @@
 #include "jstats.h"
 #include "jregexp.hpp"
 #include "jfile.hpp"
+#include "deftype.hpp"
+#include "rmtfile.hpp"
 
 /*
  * This is the main unittest driver for HPCC. From here,
@@ -242,9 +244,12 @@ int main(int argc, char* argv[])
         }
         wasSuccessful = list || runner.run( "", false );
     }
+    releaseAtoms();
+    ClearTypeCache();   // Clear this cache before the file hooks are unloaded
+    removeFileHooks();
+
     objects.kill();
     ExitModuleObjects();
-    releaseAtoms();
     return wasSuccessful;
 }
 
