@@ -41,6 +41,7 @@ include_directories (
          ./../../common/remote
          ./../../dali/base
          ./../../system/security/shared
+         ./../../common/deftype
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -52,6 +53,7 @@ target_link_libraries ( unittests
          jlib
          remote
          dalibase
+         deftype
          ${CPPUNIT_LIBRARIES}
     )
 
