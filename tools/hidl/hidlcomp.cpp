@@ -4269,8 +4269,7 @@ void EspMessageInfo::write_esp()
     outf("\nvoid C%s::copy(C%s &from)\n{\n", name_, name_);
     if (parent)
     {
-        outf(1, "C%s *baseFrom = dynamic_cast<C%s*>(&from);\n", parent, parent);
-        outs(1, "if (baseFrom)\n");
+        outf(1, "C%s *baseFrom = static_cast<C%s*>(&from);\n", parent, parent);
         outf(2, "C%s::copy(*baseFrom);\n", parent);
     }
     for (pi=getParams();pi!=NULL;pi=pi->next)
@@ -4283,8 +4282,8 @@ void EspMessageInfo::write_esp()
     outf("\nvoid C%s::copy(IConst%s &ifrom)\n{\n", name_, name_);
     if (parent)
     {
-        outf(1, "IConst%s *baseICFrom = dynamic_cast<IConst%s*>(&ifrom);\n", parent, parent);
-        outs(1, "if (baseICFrom)\n");
+        outf(1, "C%s *classFrom = static_cast<C%s*>(&ifrom);\n", name_, name_);
+        outf(1, "IConst%s *baseICFrom = static_cast<IConst%s*>(classFrom);\n", parent, parent);
         outf(2, "C%s::copy(*baseICFrom);\n", parent);
     }
     for (pi=getParams();pi!=NULL;pi=pi->next)
@@ -4434,8 +4433,8 @@ void EspMessageInfo::write_esp()
 
     if (parent)
     {
-        outf(1, "C%s *baseSrc = dynamic_cast<C%s*>(&src);\n", parent, parent);
-        outs(1, "if (baseSrc)\n");
+        outf(1, "C%s *classSrc = static_cast<C%s*>(&src);\n", name_, name_);
+        outf(1, "C%s *baseSrc = static_cast<C%s*>(classSrc);\n", parent, parent);
         outf(2, "C%s::serializer(ctx, *baseSrc, buffer, false);\n",parent,parent);
     }
 
