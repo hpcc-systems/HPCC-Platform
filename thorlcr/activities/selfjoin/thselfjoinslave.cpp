@@ -203,7 +203,8 @@ public:
             }
             if (strm)
             {
-                strm->stop();
+                if (!isLightweight) // if lightweight strm=input and PARENT::stop handles input stop
+                    strm->stop();
                 strm.clear();
             }
         }
