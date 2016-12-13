@@ -58,6 +58,8 @@ class CLogThread : public Thread , implements IUpdateLogThread
     unsigned serializeLogRequestContent(IEspUpdateLogRequestWrap* request, StringBuffer& logData);
     IEspUpdateLogRequestWrap* unserializeLogRequestContent(const char* logData);
     bool enqueue(IEspUpdateLogRequestWrap* logRequest);
+    void writeJobQueue(IEspUpdateLogRequestWrap* jobToWrite);
+    IEspUpdateLogRequestWrap* readJobQueue();
 
 public:
     IMPLEMENT_IINTERFACE;
