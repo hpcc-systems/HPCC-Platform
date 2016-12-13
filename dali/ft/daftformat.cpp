@@ -371,7 +371,10 @@ void CInputBasePartitioner::setSource(unsigned _whichInput, const RemoteFilename
         inputName.getRemotePath(tmp);
         throwError1(DFTERR_CouldNotOpenFilePart, tmp.str());
     }
-    inIO.setown(openfilecache->addFile(inputName,IFOread));
+    {
+        CriticalBlock block(openfilecachesect);
+        inIO.setown(openfilecache->addFile(inputName,IFOread));
+    }
 
     if (_compressedInput) {
         Owned<IExpander> expander;
@@ -1666,7 +1669,10 @@ void CJsonInputPartitioner::setSource(unsigned _whichInput, const RemoteFilename
         inputName.getRemotePath(tmp);
         throwError1(DFTERR_CouldNotOpenFilePart, tmp.str());
     }
-    inIO.setown(openfilecache->addFile(inputName,IFOread));
+    {
+        CriticalBlock block(openfilecachesect);
+        inIO.setown(openfilecache->addFile(inputName,IFOread));
+    }
 
     if (_compressedInput) {
         Owned<IExpander> expander;
