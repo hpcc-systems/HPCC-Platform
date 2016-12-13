@@ -106,7 +106,7 @@ define([
             var retVal = this.inherited(arguments);
             self.UserGroupEdit({
                 request: {
-                    username: object.__hpcc_username,
+                    username: this.username,
                     action: object.isMember ? "add" : "delete",
                     groupnames_i1: object.name
                 }
