@@ -403,26 +403,22 @@ IEspUpdateLogRequestWrap* CLogThread::unserializeLogRequestContent(const char* l
 
 void CLogThread::writeJobQueue(IEspUpdateLogRequestWrap* jobToWrite)
 {
-	if (jobToWrite)
-	{
-		CriticalBlock b(logQueueCrit);
-		int QueueSize = logQueue.ordinality();
-		if(QueueSize > maxLogQueueLength)
-			ERRLOG("LOGGING QUEUE SIZE %d EXECEEDED MaxLogQueueLength %d, check the logging server.",QueueSize, maxLogQueueLength);
+    if (jobToWrite)
+    {
+        CriticalBlock b(logQueueCrit);
+        int QueueSize = logQueue.ordinality();
+        if(QueueSize > maxLogQueueLength)
+            ERRLOG("LOGGING QUEUE SIZE %d EXECEEDED MaxLogQueueLength %d, check the logging server.",QueueSize, maxLogQueueLength);
 
-		if(QueueSize!=0 && QueueSize % signalGrowingQueueAt == 0)
-			ERRLOG("Logging Queue at %d records. Check the logging server.",QueueSize);
+        if(QueueSize!=0 && QueueSize % signalGrowingQueueAt == 0)
+            ERRLOG("Logging Queue at %d records. Check the logging server.",QueueSize);
 
-		logQueue.enqueue(LINK(jobToWrite));
-	}
+        logQueue.enqueue(LINK(jobToWrite));
+    }
 }
 
 IEspUpdateLogRequestWrap* CLogThread::readJobQueue()
 {
-	CriticalBlock b(logQueueCrit);
-	if (logQueue.ordinality() > 0)
-	{
-		return (IEspUpdateLogRequestWrap*)logQueue.dequeue();
-	}
-	return NULL;
+    CriticalBlock b(logQueueCrit);
+    return (IEspUpdateLogRequestWrap*)logQueue.dequeue();
 }
