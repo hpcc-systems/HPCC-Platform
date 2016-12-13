@@ -249,7 +249,7 @@ struct da_decl TransactionLog
 extern da_decl const char * skipScope(const char *lname,const char *scope); // skips a sspecified scope (returns NULL if scope doesn't match)
 extern da_decl const char * querySdsFilesRoot();
 extern da_decl const char * querySdsRelationshipsRoot();
-
+extern da_decl bool ensureSDSPath(const char * sdsPath);
 
 extern da_decl IPropertyTreeIterator *deserializePartAttrIterator(MemoryBuffer &mb);    // clears mb
 extern da_decl MemoryBuffer &serializePartAttr(MemoryBuffer &mb,IPropertyTree *tree); 

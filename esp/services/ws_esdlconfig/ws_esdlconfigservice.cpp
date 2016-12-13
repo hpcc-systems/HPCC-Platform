@@ -201,10 +201,10 @@ void CWsESDLConfigEx::init(IPropertyTree *cfg, const char *process, const char *
     if(servicecfg == NULL)
         throw MakeStringException(-1, "config not found for service %s/%s",process, service);
 
-    if(!EsdlBindingImpl::ensureSDSPath(ESDL_DEFS_ROOT_PATH))
+    if(!ensureSDSPath(ESDL_DEFS_ROOT_PATH))
         throw MakeStringException(-1, "Could not ensure '%s' element on Dali", ESDL_DEFS_ROOT_PATH);
 
-    if(!EsdlBindingImpl::ensureSDSPath(ESDL_BINDINGS_ROOT_PATH))
+    if(!ensureSDSPath(ESDL_BINDINGS_ROOT_PATH))
         throw MakeStringException(-1, "Could not ensure '%s' element on Dali", ESDL_BINDINGS_ROOT_PATH);
 
 }
