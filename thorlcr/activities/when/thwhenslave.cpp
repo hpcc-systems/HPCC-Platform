@@ -84,8 +84,9 @@ public:
     }
     virtual void stop() override
     {
+        bool started = hasStarted();
         PARENT::stop();
-        if (queryInputStarted(0))
+        if (started)
         {
             if (!executeDependencies(abortSoon ? WhenFailureId : WhenSuccessId))
                 abortSoon = true;

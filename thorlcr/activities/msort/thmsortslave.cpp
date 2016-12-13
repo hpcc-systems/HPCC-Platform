@@ -155,14 +155,11 @@ public:
             output->stop();
             output.clear();
         }
-        if (queryInputStarted(0))
+        if (hasStarted())
         {
             ActPrintLog("SORT waiting barrier.2");
             barrier->wait(false);
             ActPrintLog("SORT barrier.2 raised");
-        }
-        if (queryInputStarted(0))
-        {
             ActPrintLog("SORT waiting for merge");
             sorter->stopMerge();
         }

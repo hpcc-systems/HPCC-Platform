@@ -463,7 +463,7 @@ public:
     }
     virtual void stop() override
     {
-        if (queryInputStarted(0))
+        if (hasStarted())
             fetchStreamOut->stop();
         dataLinkStop();
     }

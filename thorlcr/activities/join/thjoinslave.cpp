@@ -373,7 +373,7 @@ public:
          * stop()'s are chained like this, so that upstream splitters can be stopped as quickly as possible
          * in order to reduce buffering.
          */
-        if (queryInputStarted(0))
+        if (hasStarted())
         {
             lhsProgressCount = joinhelper->getLhsProgress();
             rhsProgressCount = joinhelper->getRhsProgress();
