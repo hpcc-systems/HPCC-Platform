@@ -226,12 +226,12 @@ void CDiskRecordPartHandler::open()
         rwFlags |= rw_grouped;
 
     {
-        CriticalBlock block(statsCs);
+        Owned<IExtRowStream> partStream;
         if (compressed)
         {
             rwFlags |= rw_compress;
-            in.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags, activity.eexp));
-            if (!in.get())
+            partStream.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags, activity.eexp));
+            if (!partStream.get())
             {
                 if (!blockCompressed)
                     throw MakeStringException(-1,"Unsupported compressed file format: %s", filename.get());
@@ -240,7 +240,12 @@ void CDiskRecordPartHandler::open()
             }
         }
         else
-            in.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags));
+            partStream.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags));
+
+        {
+            CriticalBlock block(statsCs);
+            in.setown(partStream.getClear());
+        }
     }
 
     if (!in)
@@ -263,11 +268,16 @@ void CDiskRecordPartHandler::open()
 
 void CDiskRecordPartHandler::close(CRC32 &fileCRC)
 {
-    CriticalBlock block(statsCs);
-    if (in) 
-        in->stop(&fileCRC);
-    mergeStats(fileStats, in);
-    in.clear();
+    Owned<IExtRowStream> partStream;
+    {
+        CriticalBlock block(statsCs);
+        partStream.setown(in.getClear());
+    }
+    if (partStream)
+    {
+        partStream->stop(&fileCRC);
+        mergeStats(fileStats, partStream);
+    }
 }
 
 /////////////////////////////////////////////////
