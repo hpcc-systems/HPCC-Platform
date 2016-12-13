@@ -855,6 +855,7 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
     case no_all:
     case no_self:
     case no_activerow:
+    case no_param:
         return OptionMaybe;
     case no_evaluate:
         throwUnexpected();
@@ -869,6 +870,7 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
             case no_externalcall:
                 return normalizeThor(ds);
             case no_self:
+            case no_param:
                 return OptionMaybe;
             }
             return isNew ? OptionYes : OptionMaybe;
@@ -9699,6 +9701,28 @@ IHqlExpression * HqlScopeTagger::transformAmbiguousChildren(IHqlExpression * exp
 }
 
 
+IHqlExpression * HqlScopeTagger::transformCall(IHqlExpression * expr)
+{
+    unsigned max = expr->numChildren();
+    bool same = true;
+    HqlExprArray args;
+    args.ensure(max);
+    for(unsigned i=0; i < max; i++)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        IHqlExpression * tr = transformAmbiguous(cur, false);
+        args.append(*tr);
+        if (cur != tr)
+            same = false;
+    }
+    IHqlExpression * funcdef = expr->queryFunctionDefinition();
+    OwnedHqlExpr newFuncDef = transform(funcdef);
+    if (same && funcdef == newFuncDef)
+        return LINK(expr);
+    return createReboundFunction(newFuncDef, args);
+}
+
+
 IHqlExpression * HqlScopeTagger::transformSizeof(IHqlExpression * expr)
 {
     IHqlExpression * arg = expr->queryChild(0)->queryNormalizedSelector();
@@ -9818,12 +9842,13 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         break;
     case no_select:
         return transformSelect(expr);
-    case no_call:
     case no_externalcall:
     case no_rowvalue:
 //  case no_addfiles:
 //  case no_libraryscopeinstance:??
         return transformAmbiguousChildren(expr);
+    case no_call:
+        return transformCall(expr);
     case no_offsetof:
     case no_sizeof:
         return transformSizeof(expr);
