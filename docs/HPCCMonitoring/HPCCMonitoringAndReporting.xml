@@ -873,7 +873,7 @@
 
           <para>Available optional parameters: <informaltable>
               <tgroup cols="3">
-                <colspec colwidth="175pt" />
+                <colspec colwidth="174pt" />
 
                 <colspec colwidth="155pt" />
 
@@ -1403,7 +1403,7 @@
                   </row>
 
                   <row>
-                    <entry>-set_catch_all_hostgroup </entry>
+                    <entry>-set_catch_all_hostgroup</entry>
 
                     <entry>create a hostgroup and include all nodes as
                     memebers</entry>
