@@ -9769,6 +9769,8 @@ void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errp
                 IIdAtom * id = syms.item(iSym).queryId();
                 IAtom * name = lower(id);
                 OwnedHqlExpr baseSym = curBase->lookupSymbol(id, LSFsharedOK|LSFfromderived, lookupCtx);
+                if (!baseSym)
+                    continue;
                 OwnedHqlExpr match  = scope->lookupSymbol(id, LSFsharedOK|LSFignoreBase, lookupCtx);
 
                 LinkedHqlExpr mapped = baseSym;
