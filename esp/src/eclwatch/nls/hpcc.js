@@ -397,7 +397,7 @@ define({root:
     OriginalFile: "Original File",
     OrphanFile: "Orphan Files",
     OrphanFile2: "Orphan File",
-    OrphanMessage: "An orphan file has partial file parts on disk. However, a full set of parts is not available to construct a complete logical file. This no reference to these file parts in the Dali server.",
+    OrphanMessage: "An orphan file has partial file parts on disk. However, a full set of parts is not available to construct a complete logical file. There is no reference to these file parts in the Dali server.",
     Outputs: "Outputs",
     Overview: "Overview",
     Overwrite: "Overwrite",
