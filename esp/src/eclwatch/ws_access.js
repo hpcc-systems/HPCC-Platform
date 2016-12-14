@@ -48,7 +48,7 @@ define([
             var retVal = this.inherited(arguments);
             self.UserGroupEdit({
                 request: {
-                    username: object.username,
+                    username: this.username,
                     action: object.isMember ? "add" : "delete",
                     groupnames_i1: object.__hpcc_groupname
                 }
@@ -61,8 +61,8 @@ define([
             return self.Users({
                 request: query
             }).then(function (response) {
-                if (lang.exists("UserResponse.Users.User", response)) {
-                    return response.UserResponse.Users.User;
+                if (lang.exists("UserQueryResponse.Users.User", response)) {
+                    return response.UserQueryResponse.Users.User;
                 }
                 return [];
             });
@@ -106,7 +106,7 @@ define([
             var retVal = this.inherited(arguments);
             self.UserGroupEdit({
                 request: {
-                    username: object.__hpcc_username,
+                    username: this.username,
                     action: object.isMember ? "add" : "delete",
                     groupnames_i1: object.name
                 }
@@ -116,8 +116,8 @@ define([
 
         refreshGroups: function () {
             return self.Groups().then(function (response) {
-                if (lang.exists("GroupResponse.Groups.Group", response)) {
-                    return response.GroupResponse.Groups.Group;
+                if (lang.exists("GroupQueryResponse.Groups.Group", response)) {
+                    return response.GroupQueryResponse.Groups.Group;
                 }
                 return [];
             });
@@ -561,7 +561,7 @@ define([
         },
 
         Users: function (params) {
-            return this._doCall("Users", params);
+            return this._doCall("UserQuery", params);
         },
 
         UserAction: function (params) {
@@ -605,7 +605,7 @@ define([
         },
 
         Groups: function (params) {
-            return this._doCall("Groups", params);
+            return this._doCall("GroupQuery", params);
         },
 
         Permissions: function (params) {
