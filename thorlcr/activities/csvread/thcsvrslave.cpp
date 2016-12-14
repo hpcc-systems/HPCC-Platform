@@ -104,17 +104,20 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
             CDiskPartHandlerBase::open();
             readFinished = false;
 
+            OwnedIFileIO partFileIO;
+            if (compressed)
+            {
+                partFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
+                if (!partFileIO)
+                    throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
+                checkFileCrc = false;
+            }
+            else
+                partFileIO.setown(iFile->open(IFOread));
+
             {
                 CriticalBlock block(statsCs);
-                if (compressed)
-                {
-                    iFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
-                    if (!iFileIO)
-                        throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
-                    checkFileCrc = false;
-                }
-                else
-                    iFileIO.setown(iFile->open(IFOread));
+                iFileIO.setown(partFileIO.getClear());
             }
 
             inputStream.setown(createFileSerialStream(iFileIO));
@@ -146,9 +149,13 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         }
         virtual void close(CRC32 &fileCRC)
         {
-            CriticalBlock block(statsCs);
-            mergeStats(fileStats, iFileIO);
-            iFileIO.clear();
+            Owned<IFileIO> partFileIO;
+            {
+                CriticalBlock block(statsCs);
+                partFileIO.setown(iFileIO.getClear());
+            }
+            mergeStats(fileStats, partFileIO);
+            partFileIO.clear();
             inputStream.clear();
             fileCRC = inputCRC;
         }
