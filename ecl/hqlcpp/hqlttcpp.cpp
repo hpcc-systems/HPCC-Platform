@@ -10651,6 +10651,8 @@ bool containsCompound(IHqlExpression * expr)
     return spotter.containsCompound;
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
 static HqlTransformerInfo nestedCompoundTransformerInfo("NestedCompoundTransformer");
 NestedCompoundTransformer::NestedCompoundTransformer(HqlCppTranslator & _translator)
 : HoistingHqlTransformer(nestedCompoundTransformerInfo, CTFnoteifactions), translator(_translator), translatorOptions(_translator.queryOptions())

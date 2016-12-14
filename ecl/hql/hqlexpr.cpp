@@ -4204,6 +4204,8 @@ void CHqlRealExpression::updateFlagsAfterOperands()
                 infoFlags &= ~(HEFonFailDependent|HEFcontainsSkip); // ONFAIL(SKIP) - skip shouldn't extend any further
             else if (name == _volatileId_Atom)
                 infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
+            else if (name == _selectorSequence_Atom)
+                infoFlags2 &= ~(HEF2containsSelf);
             infoFlags &= ~(HEFthrowscalar|HEFthrowds|HEFoldthrows);
             break;
         }
@@ -4289,6 +4291,19 @@ void CHqlRealExpression::updateFlagsAfterOperands()
                 infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
             break;
         }
+    case no_funcdef:
+        {
+            IHqlExpression * body = queryChild(0);
+            if (body->getOperator() == no_outofline)
+            {
+                //This test could be done for all funcdefs, but the cost of calculating often outweighs
+                //the savings when binding functions.
+                if (!containsExternalParameter(body, queryChild(1)))
+                    infoFlags &= ~HEFunbound;
+            }
+            break;
+        }
+
     }
 
 #ifdef VERIFY_EXPR_INTEGRITY
@@ -8186,7 +8201,6 @@ IHqlExpression * createFunctionDefinition(IIdAtom * id, HqlExprArray & args)
         attrs.set(cachedContextAttribute);
 
     //This is a bit of a waste of time, but need to improve assignableFrom for a function type to ignore the uids.
-    QuickExpressionReplacer defaultReplacer;
     HqlExprArray normalized;
     ForEachChild(i, formals)
     {
@@ -8195,11 +8209,25 @@ IHqlExpression * createFunctionDefinition(IIdAtom * id, HqlExprArray & args)
         unwindChildren(attrs, formal);
         IHqlExpression * normal = createParameter(formal->queryId(), UnadornedParameterIndex, formal->getType(), attrs);
         normalized.append(*normal);
-        defaultReplacer.setMapping(formal->queryBody(), normal);
     }
 
+    OwnedHqlExpr newDefaults;
+    if (defaults && !defaults->isFullyBound())
+    {
+        QuickExpressionReplacer defaultReplacer;
+        ForEachChild(i, formals)
+        {
+            IHqlExpression * formal = formals->queryChild(i);
+            IHqlExpression * normal = &normalized.item(i);
+            defaultReplacer.setMapping(formal->queryBody(), normal);
+        }
+
+        newDefaults.setown(defaultReplacer.transform(defaults));
+    }
+    else
+        newDefaults.set(defaults);
+
     OwnedHqlExpr newFormals = formals->clone(normalized);
-    OwnedHqlExpr newDefaults = defaults ? defaultReplacer.transform(defaults) : NULL;
 
     ITypeInfo * type = makeFunctionType(body->getType(), newFormals.getClear(), newDefaults.getClear(), attrs.getClear());
     return createNamedValue(no_funcdef, type, id, args);
@@ -9512,7 +9540,7 @@ IHqlExpression *CHqlVirtualScope::lookupSymbol(IIdAtom * searchName, unsigned lo
             if (matchOp == no_unboundselect || matchOp == no_purevirtual)
                 throwError1(HQLERR_MemberXContainsVirtualRef, str(searchName));
 
-            if (containsInternalSelect(match))
+            if ((this != definitionModule) && containsInternalSelect(match))
             {
                 //throwError1(HQLERR_MemberXContainsVirtualRef, searchName->str());
                 //All internal references need to be recursively replaced with no_internalselect
@@ -11900,110 +11928,113 @@ static void normalizeCallParameters(HqlExprArray & resolvedActuals, IHqlExpressi
     if (isExternalMethodDefinition(funcdef))
         resolvedActuals.append(OLINK(actuals.item(curActual++)));
 
-    QuickExpressionReplacer defaultReplacer;
-    for (unsigned i = 0; i < maxFormal; i++)
+    if (maxFormal)
     {
-        //NOTE: For functional parameters, formal is a no_funcdef, not a no_param.  I suspect something better should be implemented..
-        IHqlExpression * formal = formals->queryChild(i);
-        LinkedHqlExpr actual;
-        if (actuals.isItem(curActual))
-            actual.set(&actuals.item(curActual++));
-        if (!actual || actual->getOperator()==no_omitted || actual->isAttribute())
+        QuickExpressionReplacer defaultReplacer;
+        for (unsigned i = 0; i < maxFormal; i++)
         {
-            actual.set(queryDefaultValue(defaults, i));
-            if (!actual)
-                actual.setown(createNullExpr(formal));
-            else if (actual->getOperator() == no_sequence)
-                actual.setown(createSequenceExpr());
-
-            //implicit parameters added to out of line function definitions, may reference the function parameters (e..g, global(myParameter * 2)
-            //so they need substituting first.  May also occur if defaults are based on other parameter values.
-            //MORE: Should probably lazily create the mapping etc since 95% of the time it won't be used
-            if (!actual->isFullyBound() && !actual->isFunction())
-                actual.setown(defaultReplacer.transform(actual));
-        }
-
-        ITypeInfo * type = formal->queryType();
-        if (type)
-        {
-            switch (type->getTypeCode())
+            //NOTE: For functional parameters, formal is a no_funcdef, not a no_param.  I suspect something better should be implemented..
+            IHqlExpression * formal = formals->queryChild(i);
+            LinkedHqlExpr actual;
+            if (actuals.isItem(curActual))
+                actual.set(&actuals.item(curActual++));
+            if (!actual || actual->getOperator()==no_omitted || actual->isAttribute())
             {
-            case type_record:
-                // MORE - should be more exact?  Don't add a cast when binding parameters into a transform...
-                break;
-            case type_table:
-            case type_groupedtable:
-                if (isAbstractDataset(formal))
-                {
-#ifdef NEW_VIRTUAL_DATASETS
-                    HqlExprArray abstractSelects;
-                    gatherAbstractSelects(abstractSelects, funcdef->queryChild(0), formal);
+                actual.set(queryDefaultValue(defaults, i));
+                if (!actual)
+                    actual.setown(createNullExpr(formal));
+                else if (actual->getOperator() == no_sequence)
+                    actual.setown(createSequenceExpr());
 
-                    if (actual->getOperator()==no_fieldmap)
-                    {
-                        LinkedHqlExpr map = actual->queryChild(1);
-                        actual.set(actual->queryChild(0));
-                        associateBindMap(abstractSelects, formal, actual, map);
-                    }
-
-                    associateBindByName(abstractSelects, formal, actual);
-#else
-                    if (actual->getOperator()==no_fieldmap)
-                        actual.set(actual->queryChild(0));
-#endif
-                }
-                else
-                {
-                    OwnedHqlExpr actualRecord = getUnadornedRecordOrField(actual->queryRecord());
-                    IHqlExpression * formalRecord = ::queryOriginalRecord(type);
-                    OwnedHqlExpr normalFormalRecord = getUnadornedRecordOrField(formalRecord);
-                    if (actualRecord && normalFormalRecord && normalFormalRecord->numChildren() && (normalFormalRecord->queryBody() != actualRecord->queryBody()))
-                    {
-                        //If the actual dataset is derived from the input dataset, then insert a project so types remain correct
-                        //otherwise x+y will change meaning.
-                        OwnedHqlExpr seqAttr = createSelectorSequence();
-                        OwnedHqlExpr self = createSelector(no_self, formalRecord, NULL);
-                        OwnedHqlExpr left = createSelector(no_left, actual, seqAttr);
-                        HqlExprArray assigns;
-                        createAssignAll(assigns, self, left, formalRecord);
-                        OwnedHqlExpr transform = createValue(no_transform, makeTransformType(formalRecord->getType()), assigns);
-                        actual.setown(createDataset(no_hqlproject, actual.getClear(), createComma(transform.getClear(), LINK(seqAttr))));
-                    }
-                }
-                break;
-            case type_dictionary:
-                // MORE - needs some code
-                // For now, never cast
-                break;
-            case type_row:
-            case type_transform:
-            case type_function:
-                break;
-            case type_unicode:
-                if ((type->getSize() == UNKNOWN_LENGTH) && (actual->queryType()->getTypeCode() == type_varunicode))
-                    break;
-                actual.setown(ensureExprType(actual, type));
-                break;
-#if 0
-            case type_string:
-                if (type->getSize() == UNKNOWN_LENGTH)
-                {
-                    ITypeInfo * actualType = actual->queryType();
-                    if ((actualType->getTypeCode() == type_varstring) && (actualType->queryCharset() == type->queryCharset())))
-                        break;
-                }
-                actual.setown(ensureExprType(actual, type));
-                break;
-#endif
-            default:
-                if (type != actual->queryType())
-                    actual.setown(ensureExprType(actual, type));
-                break;
+                //implicit parameters added to out of line function definitions, may reference the function parameters (e..g, global(myParameter * 2)
+                //so they need substituting first.  May also occur if defaults are based on other parameter values.
+                //MORE: Should probably lazily create the mapping etc since 95% of the time it won't be used
+                if (!actual->isFullyBound() && !actual->isFunction())
+                    actual.setown(defaultReplacer.transform(actual));
             }
+
+            ITypeInfo * type = formal->queryType();
+            if (type)
+            {
+                switch (type->getTypeCode())
+                {
+                case type_record:
+                    // MORE - should be more exact?  Don't add a cast when binding parameters into a transform...
+                    break;
+                case type_table:
+                case type_groupedtable:
+                    if (isAbstractDataset(formal))
+                    {
+    #ifdef NEW_VIRTUAL_DATASETS
+                        HqlExprArray abstractSelects;
+                        gatherAbstractSelects(abstractSelects, funcdef->queryChild(0), formal);
+
+                        if (actual->getOperator()==no_fieldmap)
+                        {
+                            LinkedHqlExpr map = actual->queryChild(1);
+                            actual.set(actual->queryChild(0));
+                            associateBindMap(abstractSelects, formal, actual, map);
+                        }
+
+                        associateBindByName(abstractSelects, formal, actual);
+    #else
+                        if (actual->getOperator()==no_fieldmap)
+                            actual.set(actual->queryChild(0));
+    #endif
+                    }
+                    else
+                    {
+                        OwnedHqlExpr actualRecord = getUnadornedRecordOrField(actual->queryRecord());
+                        IHqlExpression * formalRecord = ::queryOriginalRecord(type);
+                        OwnedHqlExpr normalFormalRecord = getUnadornedRecordOrField(formalRecord);
+                        if (actualRecord && normalFormalRecord && normalFormalRecord->numChildren() && (normalFormalRecord->queryBody() != actualRecord->queryBody()))
+                        {
+                            //If the actual dataset is derived from the input dataset, then insert a project so types remain correct
+                            //otherwise x+y will change meaning.
+                            OwnedHqlExpr seqAttr = createSelectorSequence();
+                            OwnedHqlExpr self = createSelector(no_self, formalRecord, NULL);
+                            OwnedHqlExpr left = createSelector(no_left, actual, seqAttr);
+                            HqlExprArray assigns;
+                            createAssignAll(assigns, self, left, formalRecord);
+                            OwnedHqlExpr transform = createValue(no_transform, makeTransformType(formalRecord->getType()), assigns);
+                            actual.setown(createDataset(no_hqlproject, actual.getClear(), createComma(transform.getClear(), LINK(seqAttr))));
+                        }
+                    }
+                    break;
+                case type_dictionary:
+                    // MORE - needs some code
+                    // For now, never cast
+                    break;
+                case type_row:
+                case type_transform:
+                case type_function:
+                    break;
+                case type_unicode:
+                    if ((type->getSize() == UNKNOWN_LENGTH) && (actual->queryType()->getTypeCode() == type_varunicode))
+                        break;
+                    actual.setown(ensureExprType(actual, type));
+                    break;
+    #if 0
+                case type_string:
+                    if (type->getSize() == UNKNOWN_LENGTH)
+                    {
+                        ITypeInfo * actualType = actual->queryType();
+                        if ((actualType->getTypeCode() == type_varstring) && (actualType->queryCharset() == type->queryCharset())))
+                            break;
+                    }
+                    actual.setown(ensureExprType(actual, type));
+                    break;
+    #endif
+                default:
+                    if (type != actual->queryType())
+                        actual.setown(ensureExprType(actual, type));
+                    break;
+                }
+            }
+
+            defaultReplacer.setMapping(formal->queryBody(), actual);
+            resolvedActuals.append(*LINK(actual));
         }
-    
-        defaultReplacer.setMapping(formal->queryBody(), actual);
-        resolvedActuals.append(*LINK(actual));
     }
     while (actuals.isItem(curActual))
     {

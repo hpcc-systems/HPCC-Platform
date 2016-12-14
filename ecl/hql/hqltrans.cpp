@@ -4774,6 +4774,43 @@ void * transformerAlloc(size32_t size)
 }
 #endif
 
+//---------------------------------------------------------------------------------------------------------------------
+
+static HqlTransformerInfo containsExternalTransformerInfo("ContainsExternalParamSpotter");
+ContainsExternalParamSpotter::ContainsExternalParamSpotter(IHqlExpression * params)
+: QuickHqlTransformer(containsExternalTransformerInfo, NULL)
+{
+    ForEachChild(i, params)
+        internal.append(*params->queryChild(i));
+}
+
+//NB: This cannot be short circuited, because it is also gathering information about whether or
+void ContainsExternalParamSpotter::doAnalyseBody(IHqlExpression * expr)
+{
+    if (seenExternal)
+        return;
+    if (expr->isFullyBound())
+        return;
+
+    switch (expr->getOperator())
+    {
+    case no_param:
+        if (!internal.contains(*expr))
+            seenExternal = true;
+        return;
+    }
+
+    QuickHqlTransformer::doAnalyseBody(expr);
+}
+
+
+bool containsExternalParameter(IHqlExpression * expr, IHqlExpression * params)
+{
+    ContainsExternalParamSpotter spotter(params);
+    spotter.analyse(expr);
+    return spotter.containsExternal();
+}
+
 //------------------------------------------------------------------------------------------------
 
 /*
