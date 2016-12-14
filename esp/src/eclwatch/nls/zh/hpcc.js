@@ -466,7 +466,7 @@
     SelectPackageFile: "选择文件包文件",
     Separators: "分割符",
     SetBanner: "标语设置",
-    SetTextError: "文本太大无法显示. 请用'帮助'下载",
+    SetTextError: "文本太大无法显示. 请用&lsquo;帮助&rsquo;下载",
     SetToFailed: "设为失误状态",
     Severity: "严重性",
     Show: "显示",
