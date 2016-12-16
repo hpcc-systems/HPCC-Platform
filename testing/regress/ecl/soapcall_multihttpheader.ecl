@@ -24,4 +24,13 @@ string constHeader := 'constHeaderValue';
 
 soapcallResult := SOAPCALL(TargetURL, 'HttpEcho', httpEchoServiceRequestRecord, DATASET(httpEchoServiceResponseRecord), LITERAL, xpath('HttpEchoResponse'), httpheader('StoredHeader', storedHeader), httpheader('literalHeader', 'literalHeaderValue'), httpheader('constHeader', constHeader));
 
-output(soapcallResult);
+output(soapcallResult, named('soapcallResult'));
+
+
+//test proxyaddress functionality by using an invalid targetUrl, but a valid proxyaddress.  HTTP Host header will be wrong, but should still work fine as it's ignored by ESP.
+string HostURL := 'http://1.1.1.1:9999/WsSmc/HttpEcho?name=doe,joe&number=1';
+string TargetProxy := 'http://' + TargetIP + ':8010';
+
+proxyResult := SOAPCALL(HostURL, 'HttpEcho', httpEchoServiceRequestRecord, DATASET(httpEchoServiceResponseRecord), LITERAL, xpath('HttpEchoResponse'), proxyAddress(TargetProxy), httpheader('StoredHeader', storedHeader), httpheader('literalHeader', 'literalHeaderValue'), httpheader('constHeader', constHeader));
+
+output(proxyResult, named('proxyResult'));
