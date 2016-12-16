@@ -10821,7 +10821,8 @@ public:
     }
     virtual StrandProcessor *createStrandProcessor(IEngineRowStream *instream)
     {
-        DBGLOG("Create aggregate strand processor %u", strandOptions.numStrands);
+        if (traceLevel > 4)
+            DBGLOG("Create aggregate strand processor %u", strandOptions.numStrands);
         return new AggregateProcessor(*this, instream, (IHThorAggregateArg &) basehelper, isInputGrouped && !combineStreams, abortEarly);
     }
     virtual StrandProcessor *createStrandSourceProcessor(bool inputOrdered) { throwUnexpected(); }
