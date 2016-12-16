@@ -42,9 +42,8 @@ public:
     void doDebugCommand(IPropertyTree *query, IDebuggerContext *debugContext, IXmlWriter &out);
     void doDebugCommand(IPropertyTree *query, IDebuggerContext *debugContext, FlushingStringBuffer &output)
     {
-        CommonXmlWriter out(0, 1);
+        CommonXmlWriter out(0, 1, &output);
         doDebugCommand(query, debugContext, out);
-        output.append(out.str());
     }
 };
 

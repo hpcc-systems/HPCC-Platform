@@ -617,16 +617,14 @@ public:
             else if (mlFmt==MarkupFmt_XML)
             {
                 assertex(transformer);
-                CommonXmlWriter writer(xmlReadFlags|XWFnoindent, 0);
+                CommonXmlWriter writer(xmlReadFlags|XWFnoindent, 0, r);
                 transformer->toXML(isAll, len, (byte *)data, writer);
-                r->append(writer.str());
             }
             else if (mlFmt==MarkupFmt_JSON)
             {
                 assertex(transformer);
-                CommonJsonWriter writer(xmlReadFlags|XWFnoindent, 0);
+                CommonJsonWriter writer(xmlReadFlags|XWFnoindent, 0, r);
                 transformer->toXML(isAll, len, (byte *)data, writer);
-                r->append(writer.str());
             }
             else
             {
