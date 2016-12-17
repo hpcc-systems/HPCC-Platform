@@ -133,7 +133,7 @@
     DenyRead: "<center>Zabranite<br>Čitanje</center>",
     DenyWrite: "<center>Zabranite<br>Pisanje</center>",
     Depth: "Dubina",
-    DepthTooltip: "&lsquo;Najveća Dubina Podgrafa",
+    DepthTooltip: "Najveća Dubina Podgrafa",
     Deschedule: "Izbacite Is Reda Za Izvršavanje",
     DescheduleSelectedWorkunits: "Izbacite Odabrane Radne Jedinice Is Reda Za Izvršavanje?",
     Description: "Opis",
