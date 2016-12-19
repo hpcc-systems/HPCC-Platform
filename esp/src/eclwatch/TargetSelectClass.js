@@ -78,6 +78,10 @@ define([
                 this.loadDropZones();
             } else if (params.Users === true) {
                 this.loadUsers();
+            } else if (params.loadUsersNotInGroup === true) {
+                this.loadUsersNotInGroup(params.groupname);
+            } else if (params.loadUsersNotAMemberOfAGroup === true) {
+                this.loadUsersNotAMemberOfAGroup(params.username);
             } else if (params.UserGroups === true) {
                 this.loadUserGroups();
             } else if (params.DropZoneFolders === true) {
@@ -175,6 +179,46 @@ define([
                         context._postLoad();
                     }
                 }
+            });
+        },
+
+        loadUsersNotAMemberOfAGroup: function (username) {
+            var context = this;
+            WsAccess.UserGroupEditInput({
+                request: {
+                    username: username
+                }
+            }).then(function (response) {
+                    if (lang.exists("UserGroupEditInputResponse.Groups.Group", response)) {
+                        var targetData = response.UserGroupEditInputResponse.Groups.Group;
+                        for (var i = 0; i < targetData.length; ++i) {
+                            context.options.push({
+                                label: targetData[i].name,
+                                value: targetData[i].name
+                            });
+                        }
+                        context._postLoad();
+                    }
+            });
+        },
+
+        loadUsersNotInGroup: function (groupname) {
+            var context = this;
+            WsAccess.GroupMemberEditInput({
+                request: {
+                    groupname: groupname
+                }
+            }).then(function (response) {
+                    if (lang.exists("GroupMemberEditInputResponse.Users.User", response)) {
+                        var targetData = response.GroupMemberEditInputResponse.Users.User;
+                        for (var i = 0; i < targetData.length; ++i) {
+                            context.options.push({
+                                label: targetData[i].username,
+                                value: targetData[i].username
+                            });
+                        }
+                        context._postLoad();
+                    }
             });
         },
 

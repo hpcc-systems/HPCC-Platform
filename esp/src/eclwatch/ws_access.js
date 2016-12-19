@@ -38,53 +38,7 @@ define([
         responseTotalQualifier: "UserQueryResponse.TotalUsers",
         idProperty: "username",
         startProperty: "PageStartFrom",
-        countProperty: "PageSize",
-
-        constructor: function () {
-            this.idProperty = "username";
-        },
-
-        put: function (object, options) {
-            var retVal = this.inherited(arguments);
-            self.UserGroupEdit({
-                request: {
-                    username: object.username,
-                    action: object.isMember ? "add" : "delete",
-                    groupnames_i1: object.__hpcc_groupname
-                }
-            });
-            return retVal;
-        },
-
-        refreshUsers: function (query) {
-            var context = this;
-            return self.Users({
-                request: query
-            }).then(function (response) {
-                if (lang.exists("UserResponse.Users.User", response)) {
-                    return response.UserResponse.Users.User;
-                }
-                return [];
-            });
-        },
-
-        refreshGroupUsers: function (query) {
-            if (!this.groupname) {
-                var deferred = new Deferred;
-                deferred.resolve([]);
-                return deferred.promise;
-            }
-            return self.GroupEdit({
-                request: {
-                    groupname: this.groupname
-                }
-            }).then(function (response) {
-                if (lang.exists("GroupEditResponse.Users.User", response)) {
-                    return response.GroupEditResponse.Users.User;
-                }
-                return [];
-            });
-        }
+        countProperty: "PageSize"
     });
 
     var GroupsStore = declare([ESPRequest.Store], {
@@ -94,47 +48,7 @@ define([
         responseTotalQualifier: "GroupQueryResponse.TotalGroups",
         idProperty: "name",
         startProperty: "PageStartFrom",
-        countProperty: "PageSize",
-
-        constructor: function () {
-            this.idProperty = "name";
-            this.startProperty = "PageStartFrom";
-            this.countProperty = "PageSize";
-        },
-
-        put: function (object, options) {
-            var retVal = this.inherited(arguments);
-            self.UserGroupEdit({
-                request: {
-                    username: object.__hpcc_username,
-                    action: object.isMember ? "add" : "delete",
-                    groupnames_i1: object.name
-                }
-            });
-            return retVal;
-        },
-
-        refreshGroups: function () {
-            return self.Groups().then(function (response) {
-                if (lang.exists("GroupResponse.Groups.Group", response)) {
-                    return response.GroupResponse.Groups.Group;
-                }
-                return [];
-            });
-        },
-
-        refreshUserGroups: function (query) {
-            return self.UserEdit({
-                request: {
-                    username: this.username
-                }
-            }).then(function (response) {
-                if (lang.exists("UserEditResponse.Groups.Group", response)) {
-                    return response.UserEditResponse.Groups.Group;
-                }
-                return [];
-            });
-        }
+        countProperty: "PageSize"
     });
 
     var CONCAT_SYMBOL = ":";
@@ -561,7 +475,7 @@ define([
         },
 
         Users: function (params) {
-            return this._doCall("Users", params);
+            return this._doCall("UserQuery", params);
         },
 
         UserAction: function (params) {
@@ -592,6 +506,10 @@ define([
             return this._doCall("UserGroupEdit", params);
         },
 
+        UserGroupEditInput: function (params) {
+            return this._doCall("UserGroupEditInput", params);
+        },
+
         GroupAdd: function (params) {
             return this._doCall("GroupAdd", params);
         },
@@ -604,8 +522,20 @@ define([
             return this._doCall("GroupEdit", params);
         },
 
+        GroupMemberEdit: function (params) {
+            return this._doCall("GroupMemberEdit", params);
+        },
+
         Groups: function (params) {
-            return this._doCall("Groups", params);
+            return this._doCall("GroupQuery", params);
+        },
+
+        Members: function (params) {
+            return this._doCall("GroupEdit", params);
+        },
+
+        GroupMemberEditInput: function (params) {
+            return this._doCall("GroupMemberEditInput", params);
         },
 
         Permissions: function (params) {

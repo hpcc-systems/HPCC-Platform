@@ -873,7 +873,7 @@
 
           <para>Available optional parameters: <informaltable>
               <tgroup cols="3">
-                <colspec colwidth="175pt" />
+                <colspec colwidth="174pt" />
 
                 <colspec colwidth="155pt" />
 
@@ -910,6 +910,14 @@
                     <entry>-s or -service</entry>
 
                     <entry>generate service and host file</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-t or -host</entry>
+
+                    <entry>generate host file</entry>
 
                     <entry></entry>
                   </row>
@@ -1023,6 +1031,14 @@
 
                     <entry>keep attempting to resolve IP to hostnames. Stops
                     after 1st failure.</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry>-lookup</entry>
+
+                    <entry>look up hostname form ip</entry>
 
                     <entry></entry>
                   </row>
@@ -1202,38 +1218,6 @@
                   </row>
 
                   <row>
-                    <entry>-override_check_all_disks</entry>
-
-                    <entry>check_all_disk plugin name</entry>
-
-                    <entry>check_all_disks</entry>
-                  </row>
-
-                  <row>
-                    <entry>-override_check_users</entry>
-
-                    <entry>check_users plugin name</entry>
-
-                    <entry>check_users</entry>
-                  </row>
-
-                  <row>
-                    <entry>-override_check_procs</entry>
-
-                    <entry>check_procs plugin name</entry>
-
-                    <entry>check_procs</entry>
-                  </row>
-
-                  <row>
-                    <entry>-override_check_load</entry>
-
-                    <entry>check_load plugin name</entry>
-
-                    <entry>check_load</entry>
-                  </row>
-
-                  <row>
                     <entry>-override_retry_interval</entry>
 
                     <entry>check retry_interval</entry>
@@ -1306,14 +1290,6 @@
                   </row>
 
                   <row>
-                    <entry>-override_retry_check_interval</entry>
-
-                    <entry>retry_check_interval</entry>
-
-                    <entry>1</entry>
-                  </row>
-
-                  <row>
                     <entry>-override_flap_detection_enabled</entry>
 
                     <entry>flap_detection_enabled</entry>
@@ -1354,35 +1330,101 @@
                   </row>
 
                   <row>
-                    <entry>-disable_check_all_disks</entry>
+                    <entry>-check_all_disks</entry>
 
-                    <entry>disable disk space checks</entry>
+                    <entry>enable/disable check_all_disks service
+                    check</entry>
+
+                    <entry>check_all_disks</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_all_disks</entry>
+
+                    <entry>check_all_disk plugin name</entry>
+
+                    <entry>check_all_disks</entry>
+                  </row>
+
+                  <row>
+                    <entry>-check_users</entry>
+
+                    <entry>enable/disable check_users service check</entry>
+
+                    <entry>check_users</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_users</entry>
+
+                    <entry>check_users plugin name</entry>
+
+                    <entry>check_users</entry>
+                  </row>
+
+                  <row>
+                    <entry>-check_procs</entry>
+
+                    <entry>enable/disable check_procs service check</entry>
+
+                    <entry>check_procs</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_procs</entry>
+
+                    <entry>check_procs plugin name</entry>
+
+                    <entry>check_procs</entry>
+                  </row>
+
+                  <row>
+                    <entry>-check_load</entry>
+
+                    <entry>enable/disable check_load service check</entry>
+
+                    <entry>check_load</entry>
+                  </row>
+
+                  <row>
+                    <entry>-override_check_load</entry>
+
+                    <entry>check_load plugin name</entry>
+
+                    <entry>check_load</entry>
+                  </row>
+
+                  <row>
+                    <entry>-check_ssh</entry>
+
+                    <entry>enable/disable ssh service check</entry>
+
+                    <entry>checkSSH</entry>
+                  </row>
+
+                  <row>
+                    <entry>-set_catch_all_hostgroup</entry>
+
+                    <entry>create a hostgroup and include all nodes as
+                    memebers</entry>
 
                     <entry></entry>
                   </row>
 
                   <row>
-                    <entry>-disable_check_users</entry>
+                    <entry>-set_host_check_command</entry>
 
-                    <entry>disable user logged on checks</entry>
-
-                    <entry></entry>
-                  </row>
-
-                  <row>
-                    <entry>-disable_check_procs</entry>
-
-                    <entry>disable process checks</entry>
+                    <entry>set the check_command for hosts</entry>
 
                     <entry></entry>
                   </row>
 
                   <row>
-                    <entry>-disable_check_load</entry>
+                    <entry>-check_host</entry>
 
-                    <entry>disable load check</entry>
+                    <entry>enable/disable check host check</entry>
 
-                    <entry></entry>
+                    <entry>check_host</entry>
                   </row>
 
                   <row>

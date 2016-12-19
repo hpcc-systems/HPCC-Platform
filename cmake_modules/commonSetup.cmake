@@ -166,30 +166,33 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   if (SIGN_MODULES)
       message(STATUS "GPG signing check")
-      if(DEFINED SIGN_MODULES_PASSPHRASE)
-          set(GPG_PASSPHRASE_OPTION --passphrase)
-      endif()
-      if(DEFINED SIGN_MODULES_KEYID)
-        set(GPG_DEFAULT_KEY_OPTION --default-key)
-      endif()
       execute_process(COMMAND bash "-c" "gpg --version | awk 'NR==1{print $3}'"
         OUTPUT_VARIABLE GPG_VERSION
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET)
-    if(${GPG_VERSION} VERSION_GREATER "2.1")
-          set(GPG_PINENTRY_MODE --pinentry-mode loopback --batch --no-tty)
+      set(GPG_COMMAND_STR "gpg")
+      if(${GPG_VERSION} VERSION_GREATER "2.1")
+          set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --pinentry-mode loopback --batch --no-tty")
       else()
-          set(GPG_PINENTRY_MODE --batch --no-tty)
+          set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --batch --no-tty")
       endif()
+      if(DEFINED SIGN_MODULES_PASSPHRASE)
+          set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --passphrase ${SIGN_MODULES_PASSPHRASE}")
+      endif()
+      if(DEFINED SIGN_MODULES_KEYID)
+          set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --default-key ${SIGN_MODULES_KEYID}")
+      endif()
+      set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --output sm_keycheck.asc --clearsign sm_keycheck.tmp")
       execute_process(
           COMMAND rm -f sm_keycheck.tmp sm_keycheck.asc
           COMMAND touch sm_keycheck.tmp
-          COMMAND gpg --clearsign ${GPG_PINENTRY_MODE} ${GPG_DEFAULT_KEY_OPTION} ${SIGN_MODULES_KEYID} ${GPG_PASSPHRASE_OPTION} ${SIGN_MODULES_PASSPHRASE} --output sm_keycheck.asc sm_keycheck.tmp
+          COMMAND bash "-c" "${GPG_COMMAND_STR}"
           TIMOUT 120
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
           RESULT_VARIABLE rc_var
+          OUTPUT_VARIABLE out_var
           ERROR_VARIABLE err_var
-          OUTPUT_QUIET)
+          )
       if(NOT "${rc_var}" STREQUAL "0")
           message(STATUS "GPG signing check - failed")
           message(FATAL_ERROR "gpg signing of std ecllibrary unsupported in current environment. \
@@ -242,7 +245,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     message(STATUS "gpg version ${GPG_VERSION}")
     #export gpg public key used for signing to new installation
     add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/pub.key
-      COMMAND gpg --output=${CMAKE_BINARY_DIR}/pub.key --batch --no-tty --export ${SIGN_MODULES_KEYID}
+      COMMAND bash "-c" "gpg --output=${CMAKE_BINARY_DIR}/pub.key --batch --no-tty --export ${SIGN_MODULES_KEYID}"
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
       COMMENT "Exporting public key for eclcc signed modules to ${CMAKE_BINARY_DIR}/pub.key"
       VERBATIM
@@ -964,19 +967,20 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   MACRO(SIGN_MODULE module)
     if(SIGN_MODULES)
+      set(GPG_COMMAND_STR "gpg")
       if(DEFINED SIGN_MODULES_PASSPHRASE)
-        set(GPG_PASSPHRASE_OPTION --passphrase)
+          set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --passphrase ${SIGN_MODULES_PASSPHRASE}")
       endif()
       if(DEFINED SIGN_MODULES_KEYID)
-        set(GPG_DEFAULT_KEY_OPTION --default-key)
+          set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --default-key ${SIGN_MODULES_KEYID}")
       endif()
-      set(GPG_BATCH_OPTIONS --batch --no-tty)
       if("${GPG_VERSION}" VERSION_GREATER "2.1")
-          set(GPG_BATCH_OPTIONS --pinentry-mode=loopback ${GPG_BATCH_OPTIONS})
+          set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --pinentry-mode loopback")
       endif()
+      set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --batch --no-tty --output ${CMAKE_CURRENT_BINARY_DIR}/${module} --clearsign ${module}")
       add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${module}
-        COMMAND gpg ${GPG_BATCH_OPTIONS} --output ${CMAKE_CURRENT_BINARY_DIR}/${module} ${GPG_PASSPHRASE_OPTION} ${SIGN_MODULES_PASSPHRASE} ${GPG_DEFAULT_KEY_OPTION} ${SIGN_MODULES_KEYID} --clearsign ${module} </dev/null
+        COMMAND bash "-c" "${GPG_COMMAND_STR}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Adding signed ${module} to project"
         )
