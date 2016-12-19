@@ -47,7 +47,7 @@ class CLogThread : public Thread , implements IUpdateLogThread
 
     Owned<IEspLogAgent> logAgent;
     LOGServiceType services[MAXLOGSERVICES];
-    SafeQueueOf<IInterface, false> logQueue;
+    QueueOf<IInterface, false> logQueue;
     CriticalSection logQueueCrit;
     Semaphore       m_sem;
 
