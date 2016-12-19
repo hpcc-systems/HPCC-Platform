@@ -363,9 +363,11 @@ void CDiskWriteSlaveActivityBase::open()
     if (diskHelperBase->getFlags() & TDXtemporary)
         twFlags |= TW_Temporary;
 
+    Owned<IFileIO> partOutputIO = createMultipleWrite(this, *partDesc, diskRowMinSz, twFlags, compress, ecomp, this, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
+
     {
         CriticalBlock block(statsCs);
-        outputIO.setown(createMultipleWrite(this, *partDesc, diskRowMinSz, twFlags, compress, ecomp, this, &abortSoon, (external&&!query) ? &tempExternalName : NULL));
+        outputIO.setown(partOutputIO.getClear());
     }
 
     if (compress)

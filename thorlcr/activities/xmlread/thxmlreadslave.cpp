@@ -68,17 +68,20 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
         {
             CDiskPartHandlerBase::open();
 
+            OwnedIFileIO partFileIO;
+            if (compressed)
+            {
+                partFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
+                if (!partFileIO)
+                    throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
+                checkFileCrc = false;
+            }
+            else
+                partFileIO.setown(iFile->open(IFOread));
+
             {
                 CriticalBlock block(statsCs);
-                if (compressed)
-                {
-                    iFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
-                    if (!iFileIO)
-                        throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
-                    checkFileCrc = false;
-                }
-                else
-                    iFileIO.setown(iFile->open(IFOread));
+                iFileIO.setown(partFileIO.getClear());
             }
 
             Owned<IIOStream> stream = createIOStream(iFileIO);
@@ -96,7 +99,6 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
         }
         virtual void close(CRC32 &fileCRC)
         {
-            CriticalBlock block(statsCs);
             xmlParser.clear();
             inputIOstream.clear();
             if (checkFileCrc)
@@ -104,8 +106,12 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
                 fileCRC.reset(~crcStream->queryCrc()); // MORE should prob. change stream to use CRC32
                 crcStream.clear();
             }
-            mergeStats(fileStats, iFileIO);
-            iFileIO.clear();
+            Owned<IFileIO> partFileIO;
+            {
+                CriticalBlock block(statsCs);
+                partFileIO.setown(iFileIO.getClear());
+            }
+            mergeStats(fileStats, partFileIO);
         }
 
         const void *nextRow()
