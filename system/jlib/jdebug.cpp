@@ -1861,64 +1861,64 @@ class CExtendedStats  // Disk network and cpu stats
     size32_t  getKLog(const char *&data)
     {
 #ifdef __linux__
-        if (kbufmax) {
-            loop {
-                char *newkbuf = (char *)malloc(kbufmax);
-                if (!newkbuf)
-                    break;  // OOM - abort logging
-                size32_t newkbufsz = klogctl(3,newkbuf,kbufmax);
-                if ((int)newkbufsz<0) {
-                    ERRLOG("klogctl error %d",errno);
-                    free(newkbuf);
-                    data = NULL;
-                    return 0;
-                }
-                if (newkbufsz<kbufmax) {
-                    unsigned short crc = chksum16(newkbuf,newkbufsz);
-                    if (kbuf) {
-                        if (crc!=kbufcrc) {
-                            unsigned ofs = 0;
-                            if ((newkbufsz>=kbufsz)) {
-                                for (unsigned i=0;i+3<kbufsz;i++) { // not very quick!
-                                    if (memcmp(kbuf+i,newkbuf,kbufsz-i)==0) {
-                                        ofs = kbufsz-i;
-                                        break;
-                                    }
-                                }
-                            }
-                            size32_t ret = newkbufsz-ofs;
-                            if (ret>3) {
-                                kbufcrc = crc;
-                                free(kbuf);
-                                kbuf = newkbuf;
-                                kbufsz = newkbufsz;
-                                data = kbuf+ofs;
-                                return ret;
+        if (kbufmax)
+        {
+            char *newkbuf = (char *)malloc(kbufmax+1);
+            if (!newkbuf)
+            {
+                // OOM - abort logging
+                data = NULL;
+                return 0;
+            }
+            // kernel bug might occur if kbufmax < max ring bufsize
+            // where more data can be read than requested/allocated
+            size32_t newkbufsz = klogctl(3,newkbuf,kbufmax);
+            if ((int)newkbufsz<0)
+            {
+                ERRLOG("klogctl error %d",errno);
+                free(newkbuf);
+                data = NULL;
+                return 0;
+            }
+            unsigned short crc = chksum16(newkbuf,newkbufsz);
+            if (kbuf)
+            {
+                if (crc!=kbufcrc)
+                {
+                    unsigned ofs = 0;
+                    if ((newkbufsz>=kbufsz))
+                    {
+                        for (unsigned i=0;i+3<kbufsz;i++)
+                        {   // not very quick!
+                            if (memcmp(kbuf+i,newkbuf,kbufsz-i)==0)
+                            {
+                                ofs = kbufsz-i;
+                                break;
                             }
                         }
                     }
-                    else  { // first time {
+                    size32_t ret = newkbufsz-ofs;
+                    if (ret>3)
+                    {
+                        kbufcrc = crc;
+                        free(kbuf);
                         kbuf = newkbuf;
-                        newkbuf = NULL;
                         kbufsz = newkbufsz;
+                        data = kbuf+ofs;
+                        return ret;
                     }
-                    free(newkbuf);
-                    data = NULL;
-                    return 0;
                 }
-                if (kbufmax>0x100000) {
-                    // don't believe!
-                    ERRLOG("klogctl buffer too big!");
-                    free(newkbuf);
-                    break;
-                }
-                kbufmax += 0x1000;
-                free(newkbuf);
             }
-            kbufmax = 0;
-            kbufsz = 0;
-            free(kbuf);
-            kbuf = NULL;
+            else
+            {   // first time
+                kbuf = newkbuf;
+                newkbuf = nullptr;
+                kbufsz = newkbufsz;
+            }
+            if (newkbuf != nullptr)
+                free(newkbuf);
+            data = NULL;
+            return 0;
         }
 #endif
         data = NULL;
@@ -1956,7 +1956,7 @@ public:
         oldblkio = NULL;
         first = true;
         ncpu = 0;
-        kbuf = NULL;
+        kbuf = nullptr;
         kbufsz = 0;
         kbufcrc = 0;
         memset(&oldcpu, 0, sizeof(oldcpu));
@@ -1967,10 +1967,17 @@ public:
         memset(&oldnet, 0, sizeof(oldnet));
         memset(&newnet, 0, sizeof(newnet));
         ndisks = 0;
+        kbufmax = 0;
+#ifdef __linux__
         if (printklog)
-            kbufmax = 0x1000;
-        else
-            kbufmax = 0;
+        {
+            // kernel ring buffer size - supported since 2.6.6
+            // ignore kern msgs for anything older
+            int klogmax = klogctl(10, NULL, 0);
+            if (klogmax > 0)
+                kbufmax = klogmax;
+        }
+#endif
     }
 
     ~CExtendedStats()
