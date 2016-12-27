@@ -108,7 +108,7 @@ if [ -z "$num_arenas" ] ; then
     num_arenas = 8
 elif [ $num_arenas -lt 8 ] ; then
     num_arenas = 8
-elif [ $num_arenas  -gt 32 ] ; then
+elif [ $num_arenas -gt 32 ] ; then
     num_arenas = 32
 fi
 export MALLOC_ARENA_MAX=$num_arenas
