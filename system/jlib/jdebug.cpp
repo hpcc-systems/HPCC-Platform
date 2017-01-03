@@ -1907,7 +1907,7 @@ class CExtendedStats  // Disk network and cpu stats
                     if (kbufcrc && kbufcrc == lastCRC)
                     {
                         ksz = sz - 1;
-                        if (ksz)
+                        if (ksz && sz)
                             data = p + 1;
                         else
                             data = nullptr;
