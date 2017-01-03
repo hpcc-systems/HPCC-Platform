@@ -1591,9 +1591,12 @@ protected:
         case no_assign:
             {
                 //The following optimization would be required if we ever supported recursive records.
-                IHqlExpression * lhs = expr->queryChild(0);
                 IHqlExpression * rhs = expr->queryChild(1);
-                return createAssign(LINK(lhs), recursiveReplaceExpression(rhs));
+                OwnedHqlExpr newRhs = recursiveReplaceExpression(rhs);
+                if (rhs == newRhs)
+                    return LINK(expr);
+                IHqlExpression * lhs = expr->queryChild(0);
+                return createAssign(LINK(lhs), newRhs.getClear());
             }
         }
 
@@ -1615,6 +1618,9 @@ protected:
 
     IHqlExpression * recursiveReplaceExpression(IHqlExpression * expr)
     {
+        if (!containsSelf(expr))
+            return LINK(expr);
+
         IHqlExpression * mapped = (IHqlExpression *)expr->queryTransformExtra();
         if (mapped)
             return LINK(mapped);

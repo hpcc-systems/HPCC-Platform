@@ -1065,6 +1065,7 @@ protected:
 
     IHqlExpression * transformAmbiguous(IHqlExpression * expr, bool isActiveOk);
     IHqlExpression * transformAmbiguousChildren(IHqlExpression * expr);
+    IHqlExpression * transformCall(IHqlExpression * expr);
     IHqlExpression * transformNewDataset(IHqlExpression * expr, bool isActiveOk);
     IHqlExpression * transformRelated(IHqlExpression * expr);
     IHqlExpression * transformSelectorsAttr(IHqlExpression * expr);

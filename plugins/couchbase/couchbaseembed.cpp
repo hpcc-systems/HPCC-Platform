@@ -32,7 +32,7 @@ static const char *g_version = "Couchbase Embed Helper 1.0.0";
 static const char *g_compatibleVersions[] = { g_version, nullptr };
 static const NullFieldProcessor NULLFIELD(NULL);
 
-COUCHBASEEMBED_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
+extern "C" COUCHBASEEMBED_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
