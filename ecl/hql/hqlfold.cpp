@@ -5474,6 +5474,13 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                 if (isNoSkipInlineDataset(child))
                     return createConstant(expr->queryType()->castFrom(false, (__int64)child->queryChild(0)->numChildren()));
                 break;
+            case no_temptable:
+            {
+                IHqlExpression * values = child->queryChild(0);
+                if (values->isList())
+                    return createValue(no_countlist, expr->getType(), LINK(values));
+                break;
+            }
             case no_null:
                 return createNullValue(expr);
 #if 0

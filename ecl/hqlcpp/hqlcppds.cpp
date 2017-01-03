@@ -1092,6 +1092,9 @@ bool HqlCppTranslator::canBuildOptimizedCount(BuildCtx & ctx, IHqlExpression * d
     case no_rows:
     case no_id2blob:
         break;
+    case no_temptable:
+        //Temp table always calculates the entire dataset first - so the count will be available
+        break;
     case no_inlinetable:
     {
         OwnedHqlExpr count = queryFixedRowCount(dataset);
