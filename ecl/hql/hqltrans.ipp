@@ -1177,6 +1177,24 @@ protected:
     inline SplitterVerifierInfo * queryExtra(IHqlExpression * expr)     { return static_cast<SplitterVerifierInfo *>(queryTransformExtra(expr)); }
 };
 
+//---------------------------------------------------------------------------
+
+class ContainsExternalParamSpotter : public QuickHqlTransformer
+{
+public:
+    ContainsExternalParamSpotter(IHqlExpression * params);
+
+    bool containsExternal() const { return seenExternal; }
+
+protected:
+    virtual void doAnalyseBody(IHqlExpression * expr);
+
+private:
+    bool seenExternal = false;
+    HqlExprCopyArray internal;
+};
+bool containsExternalParameter(IHqlExpression * expr, IHqlExpression * params);
+
 /*
 
 If something can be transformed more than one way depending on the context then must either
