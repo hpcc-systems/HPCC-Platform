@@ -492,7 +492,7 @@ namespace couchbaseembed
 
     double CouchbaseEmbedFunctionContext::getRealResult()
     {
-        double mydouble;
+        double mydouble = 0.0;
         auto value = nextResultScalar();
         handleDeserializeOutcome(m_tokenDeserializer.deserialize(value, mydouble), "real", value);
 
@@ -501,7 +501,7 @@ namespace couchbaseembed
 
     __int64 CouchbaseEmbedFunctionContext::getSignedResult()
     {
-        __int64 myint64;
+        __int64 myint64 = 0;
         auto value = nextResultScalar();
         handleDeserializeOutcome(m_tokenDeserializer.deserialize(value, myint64), "signed", value);
 
@@ -510,7 +510,7 @@ namespace couchbaseembed
 
     unsigned __int64 CouchbaseEmbedFunctionContext::getUnsignedResult()
     {
-        unsigned __int64 myuint64;
+        unsigned __int64 myuint64 = 0;
         auto value = nextResultScalar();
         handleDeserializeOutcome(m_tokenDeserializer.deserialize(value, myuint64), "unsigned", value);
 
@@ -806,7 +806,7 @@ namespace couchbaseembed
             return p.doubleResult;
         }
 
-        double mydouble;
+        double mydouble = 0.0;
         couchbaseembed::handleDeserializeOutcome(m_tokenDeserializer.deserialize(value, mydouble), "real", value);
         return mydouble;
     }
@@ -820,7 +820,7 @@ namespace couchbaseembed
             return p.uintResult;
         }
 
-        __int64 myint64;
+        __int64 myint64 = 0;
         couchbaseembed::handleDeserializeOutcome(m_tokenDeserializer.deserialize(value, myint64), "signed", value);
         return myint64;
     }
@@ -834,14 +834,14 @@ namespace couchbaseembed
             return p.uintResult;
         }
 
-        unsigned __int64 myuint64;
+        unsigned __int64 myuint64 = 0;
         couchbaseembed::handleDeserializeOutcome(m_tokenDeserializer.deserialize(value, myuint64), "unsigned", value);
         return myuint64;
     }
 
     void CouchbaseRowBuilder::getStringResult(const RtlFieldInfo *field, size32_t &chars, char * &result)
     {
-         const char * value = nextField(field);
+        const char * value = nextField(field);
 
         if (!value || !*value)
         {

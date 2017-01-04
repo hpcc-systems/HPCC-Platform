@@ -237,7 +237,7 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
         return rt;
 
 //  DBGLOG("response SoapClient got from soap server = \n%s", responsebuf.str());
-    auto_ptr<XmlPullParser> xpp(new XmlPullParser());
+    std::unique_ptr<XmlPullParser> xpp(new XmlPullParser());
     int bufSize = responsebuf.length();
     xpp->setSupportNamespaces(true);
     xpp->setInput(responsebuf.str(), bufSize);

@@ -794,7 +794,7 @@ public:
             Owned<ITypeInfo> type;
             IAtom * name;
             size32_t size;
-            unsigned keyed;
+            unsigned keyed = 0;
             unsigned f;
             for(f = 0; getFieldData(m, f, type, name, size, keyed); ++f)
             {

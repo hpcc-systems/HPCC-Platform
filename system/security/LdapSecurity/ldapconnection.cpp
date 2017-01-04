@@ -329,7 +329,7 @@ public:
         else
             m_ldap_secure_port = atoi(portbuf.str());
 
-        int rc;
+        int rc = LDAP_OTHER;
         StringBuffer hostbuf, dcbuf;
         const char * ldapDomain = cfg->queryProp(".//@ldapDomain");
         for (int numHosts=0; numHosts < getHostCount(); numHosts++)
