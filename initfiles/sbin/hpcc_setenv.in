@@ -81,7 +81,16 @@ IFS="${OIFS}"
 umask ${OUMASK}
 
 # use less heap when threaded
-export MALLOC_ARENA_MAX=8
+# but if set too low it can affect performance significantly
+num_arenas=$(getconf _NPROCESSORS_ONLN 2>/dev/null)
+if [ -z "$num_arenas" ] ; then
+    num_arenas = 8
+elif [ $num_arenas -lt 8 ] ; then
+    num_arenas = 8
+elif [ $num_arenas -gt 32 ] ; then
+    num_arenas = 32
+fi
+export MALLOC_ARENA_MAX=$num_arenas
 
 PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path *= *" | sed -e 's/^path *= *//'`
 
