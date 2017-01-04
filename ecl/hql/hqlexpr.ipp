@@ -990,7 +990,7 @@ class CHqlDelayedCall: public CHqlExpressionWithType
 {
     OwnedHqlExpr funcdef;
 protected:
-    CHqlDelayedCall(IHqlExpression * _param, ITypeInfo * type, HqlExprArray &parms);
+    CHqlDelayedCall(IHqlExpression * _funcdef, ITypeInfo * type, HqlExprArray &parms);
     virtual IAtom * queryName() const { return funcdef->queryName(); }
     virtual IIdAtom * queryId() const { return funcdef->queryId(); }
     virtual void sethash();
@@ -998,7 +998,7 @@ protected:
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual IHqlExpression *queryFunctionDefinition() const { return funcdef; };
 public:
-    static IHqlExpression *makeDelayedCall(IHqlExpression * _param, HqlExprArray &operands);
+    static IHqlExpression *makeDelayedCall(IHqlExpression * _funcdef, HqlExprArray &operands);
 };
 
 
@@ -1006,7 +1006,7 @@ class CHqlDelayedDatasetCall: public CHqlDelayedCall, implements IHqlDataset
 {
     friend class CHqlDelayedCall;
 
-    CHqlDelayedDatasetCall(IHqlExpression * _param, ITypeInfo * type, HqlExprArray &parms) : CHqlDelayedCall(_param, type, parms) {}
+    CHqlDelayedDatasetCall(IHqlExpression * _funcdef, ITypeInfo * type, HqlExprArray &parms) : CHqlDelayedCall(_funcdef, type, parms) {}
     IMPLEMENT_IINTERFACE_USING(CHqlDelayedCall)
 
     virtual IHqlDataset *queryDataset() { return this; }
@@ -1026,7 +1026,7 @@ class CHqlDelayedScopeCall: public CHqlDelayedCall, implements IHqlScope
 public:
     friend class CHqlDelayedCall;
 
-    CHqlDelayedScopeCall(IHqlExpression * _param, ITypeInfo * type, HqlExprArray &parms);
+    CHqlDelayedScopeCall(IHqlExpression * _funcdef, ITypeInfo * type, HqlExprArray &parms);
     IMPLEMENT_IINTERFACE_USING(CHqlDelayedCall)
 
     virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) { throwUnexpected(); }

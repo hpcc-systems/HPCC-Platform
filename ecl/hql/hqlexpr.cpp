@@ -10531,8 +10531,8 @@ IHqlExpression * CHqlDelayedCall::makeDelayedCall(IHqlExpression * _funcdef, Hql
 
 //==============================================================================================================
 
-CHqlDelayedScopeCall::CHqlDelayedScopeCall(IHqlExpression * _param, ITypeInfo * type, HqlExprArray &parms) 
-: CHqlDelayedCall(_param, type, parms) 
+CHqlDelayedScopeCall::CHqlDelayedScopeCall(IHqlExpression * _funcdef, ITypeInfo * type, HqlExprArray &parms)
+: CHqlDelayedCall(_funcdef, type, parms)
 {
     typeScope = ::queryScope(type); // no need to link
     if (!hasAttribute(_virtualSeq_Atom))
