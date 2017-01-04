@@ -1668,8 +1668,8 @@ class CExtendedStats  // Disk network and cpu stats
     unsigned ncpu;
     bool first;
     char *kbuf;
-    size32_t kbufsz;
     size32_t kbufmax;
+    int kbadcnt;
     unsigned short kbufcrc;
     __uint64 totalcpu;
 
@@ -1858,70 +1858,80 @@ class CExtendedStats  // Disk network and cpu stats
         return true;
     }
 
-    size32_t  getKLog(const char *&data)
+    size32_t getKLog(const char *&data)
     {
 #ifdef __linux__
-        if (kbufmax) {
-            loop {
-                char *newkbuf = (char *)malloc(kbufmax);
-                if (!newkbuf)
-                    break;  // OOM - abort logging
-                size32_t newkbufsz = klogctl(3,newkbuf,kbufmax);
-                if ((int)newkbufsz<0) {
-                    ERRLOG("klogctl error %d",errno);
-                    free(newkbuf);
-                    data = NULL;
-                    return 0;
+        if (kbufmax)
+        {
+            data = nullptr;
+            size32_t ksz = 0;
+            unsigned short lastCRC = 0;
+            // NOTE: allocated 2*kbufmax to work around kernel bug
+            // where klogctl() could sometimes return more than requested
+            size32_t sz = klogctl(3, kbuf, kbufmax);
+            if ((int)sz < 0)
+            {
+                if (kbadcnt < 5)
+                {
+                    ERRLOG("klogctl SYSLOG_ACTION_READ_ALL error %d", errno);
+                    kbadcnt++;
                 }
-                if (newkbufsz<kbufmax) {
-                    unsigned short crc = chksum16(newkbuf,newkbufsz);
-                    if (kbuf) {
-                        if (crc!=kbufcrc) {
-                            unsigned ofs = 0;
-                            if ((newkbufsz>=kbufsz)) {
-                                for (unsigned i=0;i+3<kbufsz;i++) { // not very quick!
-                                    if (memcmp(kbuf+i,newkbuf,kbufsz-i)==0) {
-                                        ofs = kbufsz-i;
-                                        break;
-                                    }
-                                }
-                            }
-                            size32_t ret = newkbufsz-ofs;
-                            if (ret>3) {
-                                kbufcrc = crc;
-                                free(kbuf);
-                                kbuf = newkbuf;
-                                kbufsz = newkbufsz;
-                                data = kbuf+ofs;
-                                return ret;
-                            }
-                        }
-                    }
-                    else  { // first time {
-                        kbuf = newkbuf;
-                        newkbuf = NULL;
-                        kbufsz = newkbufsz;
-                    }
-                    free(newkbuf);
-                    data = NULL;
-                    return 0;
-                }
-                if (kbufmax>0x100000) {
-                    // don't believe!
-                    ERRLOG("klogctl buffer too big!");
-                    free(newkbuf);
-                    break;
-                }
-                kbufmax += 0x1000;
-                free(newkbuf);
+                else
+                    kbufmax = 0;
+                return 0;
             }
-            kbufmax = 0;
-            kbufsz = 0;
-            free(kbuf);
-            kbuf = NULL;
+#if 0
+            kbuf[sz] = '\0';
+#endif
+            if (kbufcrc)
+            {
+                data = kbuf;
+                ksz = sz;
+            }
+            // determine where new info starts ...
+            StringBuffer ln;
+            const char *p = kbuf;
+            const char *e = p+sz;
+            while (p && p!=e)
+            {
+                if (*p=='<')
+                {
+                    ln.clear();
+                    while ((p && p!=e)&&(*p!='\n'))
+                    {
+                        ln.append(*p);
+                        p++;
+                        sz--;
+                    }
+                    lastCRC = chksum16(ln.str(), ln.length());
+                    if (kbufcrc && kbufcrc == lastCRC)
+                    {
+                        ksz = sz - 1;
+                        if (ksz && sz)
+                            data = p + 1;
+                        else
+                            data = nullptr;
+                    }
+                }
+                while ((p && p!=e)&&(*p!='\n'))
+                {
+                    p++;
+                    sz--;
+                }
+                if (p && p!=e)
+                {
+                    p++;
+                    sz--;
+                }
+            }
+            if (lastCRC)
+                kbufcrc = lastCRC;
+            if (!ksz)
+                data = nullptr;
+            return ksz;
         }
 #endif
-        data = NULL;
+        data = nullptr;
         return 0;
     }
 
@@ -1956,8 +1966,7 @@ public:
         oldblkio = NULL;
         first = true;
         ncpu = 0;
-        kbuf = NULL;
-        kbufsz = 0;
+        kbuf = nullptr;
         kbufcrc = 0;
         memset(&oldcpu, 0, sizeof(oldcpu));
         memset(&newcpu, 0, sizeof(newcpu));
@@ -1967,8 +1976,14 @@ public:
         memset(&oldnet, 0, sizeof(oldnet));
         memset(&newnet, 0, sizeof(newnet));
         ndisks = 0;
+        kbadcnt = 0;
         if (printklog)
+        {
             kbufmax = 0x1000;
+            kbuf = (char *)malloc(kbufmax*2);
+            if (!kbuf)
+                kbufmax = 0;
+        }
         else
             kbufmax = 0;
     }
@@ -1976,9 +1991,10 @@ public:
     ~CExtendedStats()
     {
         free(partition);
-        free(kbuf);
         free(newblkio);
         free(oldblkio);
+        if (kbuf != nullptr)
+            free(kbuf);
     }
 
     bool getLine(StringBuffer &out)
@@ -2042,23 +2058,26 @@ public:
         return true;
     }
 
-#define KERN_EMERG  "<0>"   // system is unusable
-#define KERN_ALERT  "<1>"   // action must be taken immediately
-#define KERN_CRIT   "<2>"   // critical conditions
-#define KERN_ERR    "<3>"   // error conditions
+#define KERN_EMERG   "<0>"   // system is unusable
+#define KERN_ALERT   "<1>"   // action must be taken immediately
+#define KERN_CRIT    "<2>"   // critical conditions
+#define KERN_ERR     "<3>"   // error conditions
 #define KERN_WARNING "<4>"  // warning conditions
-#define KERN_NOTICE "<5>"   // normal but significant condition
-#define KERN_INFO   "<6>"   // informational
-#define KERN_DEBUG  "<7>"   // debug-level messages
+#define KERN_NOTICE  "<5>"   // normal but significant condition
+#define KERN_INFO    "<6>"   // informational
+#define KERN_DEBUG   "<7>"   // debug-level messages
 #define KMSGTEST(S) if (memcmp(p,S,3)==0) { ln.append(#S); level = p[1]-'0'; }
 
     void printKLog(IPerfMonHook *hook)
     {
-        const char *p;
+        const char *p = nullptr;
         size32_t sz = getKLog(p);
+#if 0
+        DBGLOG("getKLog() returns: %u <%s>", sz, p);
+#endif
         StringBuffer ln;
         const char *e = p+sz;
-        while (p!=e) {
+        while (p && (p!=e)) {
             if (*p=='<') {
                 ln.clear();
                 int level = -1;
@@ -2076,16 +2095,16 @@ public:
                 }
                 p += 3;
                 ln.append(": ");
-                while ((p!=e)&&(*p!='\n'))
+                while ((p && p!=e)&&(*p!='\n'))
                     ln.append(*(p++));
                 if (hook)
                     hook->log(level, ln.str());
                 else
                     PROGLOG("%s",ln.str());
             }
-            while ((p!=e)&&(*p!='\n'))
+            while ((p && p!=e)&&(*p!='\n'))
                 p++;
-            if (p!=e)
+            if (p && p!=e)
                 p++;
         }
     }
