@@ -417,9 +417,9 @@ protected:
 
 enum
 {
-    MFdynamicproto = 1,               // Prototype for the function is not a literal string
+    MFdynamicproto = 1,             // Prototype for the function is not a literal string
     MFsingle = 2,                   // This will only be executed once per activity instance
-    MFopt = 4,
+    MFopt = 4,                      // An optional function that will not be generated if it is empty
 };
 
 class MemberFunction

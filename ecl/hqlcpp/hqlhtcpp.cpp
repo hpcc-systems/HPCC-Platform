@@ -17086,10 +17086,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
             rowsExpr.setown(getSizetConstant(1));
         }
         else if ((values->getOperator() == no_list) || (values->getOperator() == no_null))
-    //  else if (((values->getOperator() == no_list) &&
-    //                  (!values->isConstant() || (values->queryType()->queryChildType()->getSize() == UNKNOWN_LENGTH))) || (values->getOperator() == no_null))
         {
-            //
             unsigned maxRows = values->numChildren();
             if (maxRows)
             {
@@ -17106,7 +17103,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
                     casectx.addQuotedCompound(s.clear().append("case ").append(row).append(":"), nullptr);
 
                     buildAssign(casectx, tgt, values->queryChild(row));
-                    //casectx.setNextDestructor();
                     buildReturnRecordSize(casectx, selfCursor);
                 }
             }
