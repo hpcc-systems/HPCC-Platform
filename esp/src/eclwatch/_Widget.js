@@ -127,7 +127,9 @@ define([
             var target = registry.byId(id);
             if (target) {
                 target.set("disabled", disabled);
-                target.set("iconClass", disabled ? disabledIcon : icon);
+                if ((!disabled && icon) || (disabled && disabledIcon)) {
+                    target.set("iconClass", disabled ? disabledIcon : icon);
+                }
             }
         },
 
