@@ -124,7 +124,7 @@ protected:
         sem.signal();
         if (!sem.wait(1000))
         {
-            VStringBuffer errMsg("Semaphore stalled (%s:%s)", sanitizeSourceFile(__FILE__), __LINE__);
+            VStringBuffer errMsg("Semaphore stalled (%s:%d)", sanitizeSourceFile(__FILE__), __LINE__);
             CPPUNIT_FAIL(errMsg.str());
         }
         testTimedElapsed(sem, 5, 1000);
