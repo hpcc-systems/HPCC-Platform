@@ -27,13 +27,14 @@ string10        forename;
 integer2        age := 25;
             END;
 
-FilterDatasetInterface(dataset(namesRecord) ds, string search, boolean onlyOldies) := interface
+FilterDatasetInterface(dataset(namesRecord) ds, dataset(namesRecord) unused, string search, boolean onlyOldies) := interface
     export dataset(namesRecord) matches;
     export dataset(namesRecord) others;
 end;
 
+empty := DATASET([], namesRecord);
 
-filterDataset(dataset(namesRecord) ds, string search, boolean onlyOldies) := library('aaaLibrary2',FilterDatasetInterface(ds,search,onlyOldies));
+filterDataset(dataset(namesRecord) ds, string search, boolean onlyOldies) := library('aaaLibrary2',FilterDatasetInterface(ds,empty,search,onlyOldies));
 
 namesTable := dataset([
         {'Halliday','Gavin',31},
