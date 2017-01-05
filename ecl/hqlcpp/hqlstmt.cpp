@@ -466,6 +466,14 @@ IHqlStmt * BuildCtx::addQuotedCompound(const char * text, const char * extra)
 }
 
 
+IHqlStmt * BuildCtx::addQuotedFunction(const char * text, bool dynamicText)
+{
+    if (dynamicText)
+        return addQuotedCompound(text, nullptr);
+    else
+        return addQuotedCompoundLiteral(text, nullptr);
+}
+
 IHqlStmt * BuildCtx::addQuotedCompoundLiteral(const char * text, const char * extra)
 {
     if (ignoreInput)
