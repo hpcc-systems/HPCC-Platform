@@ -26,21 +26,22 @@ integer2        age := 25;
             END;
 
 
-FilterDatasetInterface(dataset(namesRecord) ds, string search, boolean onlyOldies) := interface
+FilterDatasetInterface(dataset(namesRecord) ds, dataset(namesRecord) unused, string search, boolean onlyOldies) := interface
     export dataset(namesRecord) matches;
     export dataset(namesRecord) others;
 end;
 
 
-FilterDatasetLibrary(dataset(namesRecord) ds, string search, boolean onlyOldies) := module,library(FilterDatasetInterface)
+FilterDatasetLibrary(dataset(namesRecord) ds, dataset(namesRecord) unused, string search, boolean onlyOldies) := module,library(FilterDatasetInterface)
     f := ds;
     shared g := if (onlyOldies, f(age >= 65), f);
     export matches := g(surname = search);
     export others := g(surname != search);
 end;
 
+empty := nofold(DATASET([{'a','a',2}], namesRecord));
 
-filterDataset(dataset(namesRecord) ds, string search, boolean onlyOldies) := library(internal(FilterDatasetLibrary), FilterDatasetInterface(ds, search, onlyOldies));
+filterDataset(dataset(namesRecord) ds, string search, boolean onlyOldies) := library(internal(FilterDatasetLibrary), FilterDatasetInterface(ds, empty, search, onlyOldies));
 
 
 namesTable := dataset([
@@ -58,3 +59,5 @@ output(filtered2.others,,named('NotHalliday'));
 
 filtered3 := filterDataset(namesTable, 'Halliday', true);
 output(filtered3.others,,named('OldNotHalliday'));
+
+output(empty);
