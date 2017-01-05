@@ -2192,6 +2192,11 @@ IHqlExpression * applyBinaryFold(IHqlExpression * expr, binaryFoldFunc folder)
     {
         IValue * res = folder(leftValue, rightValue);
         assertex(res);
+#if 0
+        //A useful consistency test, but not always true for no_concat, so commented out for the moment
+        if (!isUnknownSize(expr->queryType()))
+            assertex(res->queryType() == expr->queryType());
+#endif
         return createConstant(res);
     }
 

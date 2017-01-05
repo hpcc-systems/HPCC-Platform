@@ -19,8 +19,8 @@ r1 := RECORD
     unsigned1   f1{default(0)};
     unsigned1   f2{default(255)};
     unsigned1   badf3{default(256)};
-    bitfield3   f4{default(7)};
-    bitfield3   badf5{default(8)};
+    bitfield3_1   f4{default(7)};
+    bitfield3_1   badf5{default(8)};
 END;
 
 output(dataset(row(transform(r1, self := []))));

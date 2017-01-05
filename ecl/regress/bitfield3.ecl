@@ -17,8 +17,8 @@
 
 in1rec := RECORD
     UNSIGNED1 id;
-    BITFIELD4 age1;
-    BITFIELD4 age2;
+    BITFIELD4_1 age1;
+    BITFIELD4_1 age2;
 END;
 
 in1 := DATASET([{1,10,12},
