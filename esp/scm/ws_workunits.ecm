@@ -1472,9 +1472,11 @@ ESPresponse [exceptions_inline] WUQueryDetailsResponse
     [min_ver("1.46")] string CompileTime;
     [min_ver("1.46")] ESParray<string> LibrariesUsed;
     [min_ver("1.46")] int CountGraphs;
-    [min_ver("1.46")] ESParray<string> GraphIds;
+    [min_ver("1.46"), depr_ver("1.64")] ESParray<string> GraphIds;
     [min_ver("1.50")] int ResourceURLCount;
     [min_ver("1.51")] ESParray<string, Address> WsEclAddresses;
+    [min_ver("1.64")] ESParray<ESPstruct ECLGraph> WUGraphs;
+    [min_ver("1.64")] ESParray<ESPstruct ECLTimer> WUTimers;
 };
 
 ESPrequest WUMultiQuerySetDetailsRequest
@@ -1792,7 +1794,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
 
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.63"), default_client_version("1.63"),
+    version("1.64"), default_client_version("1.64"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

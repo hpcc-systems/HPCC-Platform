@@ -1642,10 +1642,13 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
             libUsed.append(libs->query().getName(s).str());
         if (libUsed.length())
             resp.setLibrariesUsed(libUsed);
-        unsigned numGraphIds = getGraphIdsByQueryId(querySet, queryId, graphIds);
-        resp.setCountGraphs(numGraphIds);
-        if (numGraphIds > 0)
-            resp.setGraphIds(graphIds);
+        if (version < 1.64)
+        {
+            unsigned numGraphIds = getGraphIdsByQueryId(querySet, queryId, graphIds);
+            resp.setCountGraphs(numGraphIds);
+            if (numGraphIds > 0)
+                resp.setGraphIds(graphIds);
+        }
     }
 
     StringArray logicalFiles;
@@ -1679,6 +1682,20 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     {
         WsWuInfo winfo(context, wuid);
         resp.setResourceURLCount(winfo.getResourceURLCount());
+        if (version >= 1.64)
+        {
+            IArrayOf<IEspECLTimer> timers;
+            winfo.doGetTimers(timers); //Graph Duration
+            if (timers.length())
+                resp.setWUTimers(timers);
+
+            IArrayOf<IEspECLGraph> graphs;
+            winfo.doGetGraphs(graphs); //Graph Name, Label, Started, Finished, Type
+            unsigned numGraphIds = graphs.length();
+            resp.setCountGraphs(numGraphIds);
+            if (numGraphIds > 0)
+                resp.setWUGraphs(graphs);
+        }
     }
     if (req.getIncludeWsEclAddresses())
     {
