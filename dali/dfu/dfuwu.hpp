@@ -50,16 +50,16 @@ enum DFUstate
 
 enum DFUcmd
 {
-    DFUcmd_none, 
-    DFUcmd_copy, 
-    DFUcmd_remove, 
-    DFUcmd_move, 
-    DFUcmd_rename, 
-    DFUcmd_replicate, 
-    DFUcmd_import, 
-    DFUcmd_export, 
-    DFUcmd_add, 
-    DFUcmd_transfer, 
+    DFUcmd_none,
+    DFUcmd_copy,
+    DFUcmd_remove,
+    DFUcmd_move,
+    DFUcmd_rename,
+    DFUcmd_replicate,
+    DFUcmd_import,
+    DFUcmd_export,
+    DFUcmd_add,
+    DFUcmd_transfer,
     DFUcmd_savemap,             // Cmd line only currently
     DFUcmd_addgroup,            // Cmd line only currently
     DFUcmd_server,              // Cmd line only
@@ -68,7 +68,7 @@ enum DFUcmd
     DFUcmd_supercopy
 };
 
-enum DFUreplicateMode 
+enum DFUreplicateMode
 {
     DFURMprimary,
     DFURMsecondary,
@@ -128,8 +128,8 @@ enum DFUsortfield
 
 enum DFUclusterPartDiskMapping // legacy - should use ClusterPartDiskMapSpec instead
 {
-    DFUcpdm_c_replicated_by_d = 0,   // default 
-    DFUcpdm_c_only,                 
+    DFUcpdm_c_replicated_by_d = 0,   // default
+    DFUcpdm_c_only,
     DFUcpdm_d_only,
     DFUcpdm_c_then_d
 };
@@ -160,7 +160,7 @@ interface IConstDFUoptions : extends IInterface
     virtual const char * querySplitPrefix() const = 0;
     virtual bool getCrcCheck() const = 0;
     virtual bool getNoRecover() const = 0;
-    virtual bool getIfNewer() const = 0;    
+    virtual bool getIfNewer() const = 0;
     virtual bool getIfModified() const = 0;                             // for 'smart' super copy
     virtual bool getSlavePathOverride(StringBuffer &path) const = 0;
     virtual bool getSuppressNonKeyRepeats() const = 0;
@@ -172,6 +172,7 @@ interface IConstDFUoptions : extends IInterface
     virtual bool getQuotedTerminator() const = 0;
     virtual bool getPreserveCompression() const = 0;
     virtual StringBuffer &getUMask(StringBuffer &str)const =0;
+    virtual int getExpireDays() const = 0;
 };
 
 interface IDFUoptions : extends IConstDFUoptions
@@ -200,7 +201,7 @@ interface IDFUoptions : extends IConstDFUoptions
     virtual void setSplitPrefix(const char *str) = 0;
     virtual void setCrcCheck(bool val=true) = 0;
     virtual void setNoRecover(bool val=true) = 0;
-    virtual void setIfNewer(bool val=true) = 0;         
+    virtual void setIfNewer(bool val=true) = 0;
     virtual void setIfModified(bool val=true) = 0;                  // for 'smart' super copy
     virtual void setSlavePathOverride(const char *path) = 0;
     virtual void setSuppressNonKeyRepeats(bool val=true) = 0;
@@ -211,6 +212,7 @@ interface IDFUoptions : extends IConstDFUoptions
     virtual void setQuotedTerminator(bool val=true) = 0;
     virtual void setPreserveCompression(bool val=true) = 0;
     virtual void setUMask(const char *val) = 0;
+    virtual void setExpireDays(int val) = 0;
 };
 
 interface IConstDFUfileSpec: extends IInterface
@@ -224,8 +226,8 @@ interface IConstDFUfileSpec: extends IInterface
     virtual StringBuffer &getGroupName(unsigned cluster,StringBuffer &str) const = 0;       // i.e. cluster name if known
     virtual IPropertyTree *queryProperties() const = 0;
     virtual size32_t getRecordSize() const = 0;
-    virtual size32_t getMaxRecordSize() const = 0;  
-    virtual DFUfileformat getFormat() const = 0; 
+    virtual size32_t getMaxRecordSize() const = 0;
+    virtual DFUfileformat getFormat() const = 0;
     virtual StringBuffer &getPartUrl(unsigned clustnum,unsigned partidx, StringBuffer &url,bool iskey=false) const = 0; // idx 0 based
     virtual RemoteFilename &getPartFilename(unsigned clustnum,unsigned partidx, RemoteFilename &rfn, bool iskey=false) const = 0; // idx 0 based
     virtual IPropertyTree *queryPartProperties(unsigned partidx) const = 0;
@@ -233,7 +235,7 @@ interface IConstDFUfileSpec: extends IInterface
     virtual StringBuffer &getRowTag(StringBuffer &str)const =0;
     virtual void setForeignDali(const SocketEndpoint &ep)=0; // only used for source of copy (for inter-dali copy)
     virtual bool getForeignDali(SocketEndpoint &ep) const =0;
-    virtual void setForeignUser(const char *user,const char *password)=0; 
+    virtual void setForeignUser(const char *user,const char *password)=0;
     virtual bool getForeignUser(StringBuffer &user,StringBuffer &password) const =0; // only if foreign dali set
     virtual bool isCompressed() const = 0;
     virtual bool getWrap() const = 0;
@@ -257,16 +259,16 @@ interface IDFUfileSpec: extends IConstDFUfileSpec
 // only subsets of these are used for setup depending on src/dest type
 // see testDFUWU in dfuwu.cpp for examples
     virtual void setLogicalName(const char *val) = 0;
-    virtual void setDirectory(const char *val)  = 0;                
-    virtual void setFileMask(const char *val) = 0;                  
-    virtual void setGroupName(const char *val) = 0;                 // i.e. cluster name 
-    virtual void setFromFileDescriptor(IFileDescriptor &fd) = 0;    // alter 
+    virtual void setDirectory(const char *val)  = 0;
+    virtual void setFileMask(const char *val) = 0;
+    virtual void setGroupName(const char *val) = 0;                 // i.e. cluster name
+    virtual void setFromFileDescriptor(IFileDescriptor &fd) = 0;    // alter
     virtual void setSingleFilename(RemoteFilename &rfn) = 0;
     virtual void setMultiFilename(RemoteMultiFilename &rmfn) = 0;
     virtual void setTitle(const char *val) = 0; //used for error messages etc (defaults to logical name)
     virtual void setRecordSize(size32_t size) = 0; // may need to be supplied for non 1-1 splits
-    virtual void setMaxRecordSize(size32_t size) = 0; 
-    virtual void setFormat(DFUfileformat format) = 0; 
+    virtual void setMaxRecordSize(size32_t size) = 0;
+    virtual void setFormat(DFUfileformat format) = 0;
     virtual void setCsvOptions(const char *separate=NULL,const char *terminate=NULL,const char *quote=NULL,const char *escape=NULL,bool quotedTerminator=true) = 0;  // NULL for default
     virtual void setRowTag(const char *str) = 0;
     virtual void setFromXML(const char *xml) = 0;
@@ -275,9 +277,9 @@ interface IDFUfileSpec: extends IConstDFUfileSpec
     virtual void setReplicateOffset(int val) = 0;           // sets for all clusters
     virtual void setDiffKey(const char *keyname) = 0;
     virtual void setMultiCopy(bool val) = 0;
-    virtual void setClusterPartDiskMapSpec(const char* clustername,ClusterPartDiskMapSpec &spec) = 0; 
-    virtual void setClusterPartDefaultBaseDir(const char* clustername,const char *basedir) = 0; 
-    virtual void setClusterPartDiskMapping(DFUclusterPartDiskMapping val,const char *basedir, const char *clustername, bool repeatlast=false, bool onlyrepeated=false) = 0; 
+    virtual void setClusterPartDiskMapSpec(const char* clustername,ClusterPartDiskMapSpec &spec) = 0;
+    virtual void setClusterPartDefaultBaseDir(const char* clustername,const char *basedir) = 0;
+    virtual void setClusterPartDiskMapping(DFUclusterPartDiskMapping val,const char *basedir, const char *clustername, bool repeatlast=false, bool onlyrepeated=false) = 0;
     virtual IPropertyTree *setProperties(IPropertyTree *val) = 0;   // takes ownershop of val
     virtual IPropertyTree *queryUpdateProperties() = 0;
     virtual IPropertyTree *queryUpdatePartProperties(unsigned partidx) = 0;
@@ -410,11 +412,11 @@ interface IDFUWorkUnit : extends IConstDFUWorkUnit
     virtual IDFUprogress *queryUpdateProgress() = 0;
     virtual IDFUmonitor *queryUpdateMonitor() = 0;
     virtual void closeUpdate() = 0;                     // called before WU obtained by openUpdate is released
-    virtual void queryRecoveryStore(IRemoteConnection *& conn,IPropertyTree *&tree,StringBuffer &runningpath) = 0; // not nice - needed by daft 
+    virtual void queryRecoveryStore(IRemoteConnection *& conn,IPropertyTree *&tree,StringBuffer &runningpath) = 0; // not nice - needed by daft
     virtual void removeRecoveryStore() = 0;
     virtual void addException(IException *e)=0;
     virtual void setTimeScheduled(const CDateTime &val) = 0;
-    virtual unsigned getEdition(bool local) = 0;            
+    virtual unsigned getEdition(bool local) = 0;
     virtual void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite) = 0;
     virtual void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite) = 0;
     virtual void setDebugValue(const char *propname, const char *value, bool overwrite) = 0;
@@ -439,7 +441,7 @@ interface IDFUWorkUnitFactory : extends IInterface
     virtual bool deleteWorkUnit(const char * wuid) = 0;
     virtual IConstDFUWorkUnit * openWorkUnit(const char * wuid, bool lock) = 0;
     virtual IConstDFUWorkUnitIterator * getWorkUnitsByXPath(const char *xpath) = 0;
-    virtual IConstDFUWorkUnitIterator * getWorkUnitsByOwner(const char * owner) = 0; 
+    virtual IConstDFUWorkUnitIterator * getWorkUnitsByOwner(const char * owner) = 0;
     virtual IConstDFUWorkUnitIterator * getWorkUnitsByState(DFUstate state) = 0;
     // more get functions (e.g. by date) could be added
     virtual IDFUWorkUnit * updateWorkUnit(const char * wuid,bool exclusive=false) = 0;
@@ -448,7 +450,7 @@ interface IDFUWorkUnitFactory : extends IInterface
                                                         const void *filterbuf,      // list of 0 termintated strings for filter values
                                                         unsigned startoffset,
                                                         unsigned maxnum,
-                                                        const char *queryowner, 
+                                                        const char *queryowner,
                                                         __int64 *cachehint,         // set to NULL if caching not required
                                                         unsigned *total) = 0;       // set to NULL if caching not required
     virtual unsigned numWorkUnits()=0;
@@ -482,7 +484,7 @@ class CDFUfileformat
     DFF_MAP1(DFUff_recfmvb,             "recfmvb") \
     DFF_MAP1(DFUff_recfmv,              "recfmv") \
     DFF_MAP1(DFUff_variablebigendian,   "variablebigendian") \
-    DFF_MAP1(DFUff_fixed,               "fixed") 
+    DFF_MAP1(DFUff_fixed,               "fixed")
 public:
     static inline DFUfileformat decode(const char * str)
     {
@@ -510,5 +512,5 @@ extern dfuwu_decl unsigned queuedJobs(const char *queuename,StringAttrArray &wul
 extern dfuwu_decl IDfuFileCopier *createRemoteFileCopier(const char *qname,const char *clustername, const char *jobname, bool replicate);
 
 
-#endif 
+#endif
 
