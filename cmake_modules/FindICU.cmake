@@ -63,7 +63,9 @@ IF (NOT ICU_FOUND)
     ELSE()
       STRING(REPLACE "icuuc" "icuin" ICU_EXTRA1 "${ICU_LIBRARIES}")
     ENDIF()
-    set (ICU_LIBRARIES ${ICU_LIBRARIES} ${ICU_EXTRA1} ${ICU_EXTRA2} )
+    # The order is important for lib2 processing:
+    # depender, such as icuil8n, should be placed before the dependee
+    set (ICU_LIBRARIES ${ICU_EXTRA1} ${ICU_LIBRARIES} ${ICU_EXTRA2} )
   ENDIF()
 
 
