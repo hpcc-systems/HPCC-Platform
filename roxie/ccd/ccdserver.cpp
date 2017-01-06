@@ -1365,6 +1365,8 @@ public:
             {
                 if (state==STATEstarted || state==STATEstarting)
                 {
+                    if (ctx->queryOptions().failOnLeaks)
+                        throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "STATE: activity %d reset without stop", activityId);
                     if (traceStartStop || traceLevel > 2)
                         CTXLOG("STATE: activity %d reset without stop", activityId);
                     stop();

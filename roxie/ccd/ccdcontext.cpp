@@ -1235,6 +1235,7 @@ public:
     }
 
     // interface IRoxieServerContext
+
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
         logctx.noteStatistic(kind, value);
@@ -2973,6 +2974,19 @@ public:
             debugContext->debugTerminate();
         if (workUnit)
         {
+            if (options.failOnLeaks && !failed)
+            {
+                graph.clear();
+                childGraphs.kill();
+                probeManager.clear();
+                if (rowManager && rowManager->allocated())
+                {
+                    rowManager->reportLeaks();
+                    failed = true;
+                    Owned <IException> E = makeStringException(ROXIE_INTERNAL_ERROR, "Row leaks detected");
+                    ::addWuException(workUnit, E);
+                }
+            }
             WorkunitUpdate w(&workUnit->lock());
             if (aborted)
                 w->setState(WUStateAborted);
