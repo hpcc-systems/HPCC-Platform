@@ -1854,11 +1854,14 @@ readAnother:
                                 if (stricmp(format, "raw") == 0)
                                 {
                                     protocolFlags |= HPCC_PROTOCOL_NATIVE_RAW;
+                                    if (client) //not stand alone roxie exe
+                                        protocolFlags |= HPCC_PROTOCOL_BLOCKED;
                                     mlResponseFmt = MarkupFmt_Unknown;
                                 }
                                 else if (stricmp(format, "bxml") == 0)
                                 {
                                     protocolFlags |= HPCC_PROTOCOL_BLOCKED;
+                                    mlResponseFmt = MarkupFmt_XML;
                                 }
                                 else if (stricmp(format, "ascii") == 0)
                                 {
