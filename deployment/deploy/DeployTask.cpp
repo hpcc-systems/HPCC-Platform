@@ -1089,8 +1089,8 @@ public:
       Owned<IFile> pDstFile = createIFile(target);
       CDateTime dtSrc;
       CDateTime dtDst;
-      offset_t  szSrc;
-      offset_t  szDst;
+      offset_t  szSrc = 0;
+      offset_t  szDst = 0;
 
       if (!getFileAttributes(pSrcFile, dtSrc, szSrc, mode) ||
           !getFileAttributes(pDstFile, dtDst, szDst, mode))

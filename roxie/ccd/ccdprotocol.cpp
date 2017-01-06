@@ -1372,7 +1372,7 @@ public:
         if (name.isEmpty())
         {
             const char *fmt = mlFmt==MarkupFmt_XML ? "XML" : "JSON";
-            IException *E = MakeStringException(-1, "ERROR: Invalid %s received from %s:%d - %s queryName not found", fmt, peer, port, msg);
+            IException *E = MakeStringException(-1, "ERROR: Invalid %s queryName not found - received from %s:%d - %s", fmt, peer, port, msg);
             logctx.logOperatorException(E, __FILE__, __LINE__, "Invalid query %s", fmt);
             throw E;
         }
@@ -1435,8 +1435,16 @@ public:
     {
         if (!name.isEmpty())
             more = false;
-        else if (headerDepth && streq(tag, "Header"))
-            headerDepth--;
+        else if (headerDepth) //will never be true if !isSoap
+        {
+            const char *local = strchr(tag, ':');
+            if (local)
+                local++;
+            else
+                local = tag;
+            if (streq(local, "Header"))
+                headerDepth--;
+        }
     }
 
 };
@@ -1848,11 +1856,14 @@ readAnother:
                                 if (stricmp(format, "raw") == 0)
                                 {
                                     protocolFlags |= HPCC_PROTOCOL_NATIVE_RAW;
+                                    if (client) //not stand alone roxie exe
+                                        protocolFlags |= HPCC_PROTOCOL_BLOCKED;
                                     mlResponseFmt = MarkupFmt_Unknown;
                                 }
                                 else if (stricmp(format, "bxml") == 0)
                                 {
                                     protocolFlags |= HPCC_PROTOCOL_BLOCKED;
+                                    mlResponseFmt = MarkupFmt_XML;
                                 }
                                 else if (stricmp(format, "ascii") == 0)
                                 {

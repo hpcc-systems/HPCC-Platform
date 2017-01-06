@@ -17523,9 +17523,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
 
     IHqlExpression * proxyAddress = expr->queryAttribute(proxyAddressAtom);
     if (proxyAddress)
-    {
         doBuildVarStringFunction(instance->startctx, "getProxyAddress", proxyAddress->queryChild(0));
-    }
 
     IHqlExpression * namespaceAttr = expr->queryAttribute(namespaceAtom);
     IHqlExpression * responseAttr = expr->queryAttribute(responseAtom);
@@ -17680,6 +17678,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
     buildHTTPtoXml(instance->startctx);
 
     doBuildHttpHeaderStringFunction(instance->startctx, expr);
+
+    IHqlExpression * proxyAddress = expr->queryAttribute(proxyAddressAtom);
+    if (proxyAddress)
+        doBuildVarStringFunction(instance->startctx, "getProxyAddress", proxyAddress->queryChild(0));
 
     //virtual const char * queryOutputIteratorPath()
     IHqlExpression * separator = expr->queryAttribute(separatorAtom);

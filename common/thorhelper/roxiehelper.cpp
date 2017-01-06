@@ -527,7 +527,10 @@ public:
     {
         sorter->reset();
     }
-
+    ~SortedInputReader()
+    {
+        sorter->reset();
+    }
     virtual const void *nextRow()
     {
         if (!firstRead)
@@ -612,6 +615,11 @@ class CSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
 {
 public:
     CSortAlgorithm() { elapsedCycles = 0; }
+
+    virtual void beforeDispose() override
+    {
+        reset();
+    }
 
     virtual void getSortedGroup(ConstPointerArray & result)
     {

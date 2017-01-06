@@ -326,7 +326,7 @@ IRpcMessage* createRpcMessage(const char* rootTag, StringBuffer& xml)
 {
     CRpcMessage* rpc = new  CRpcMessage(rootTag);
 
-    auto_ptr<XmlPullParser> xpp(new XmlPullParser(xml.str(), xml.length()));
+    std::unique_ptr<XmlPullParser> xpp(new XmlPullParser(xml.str(), xml.length()));
     xpp->setSupportNamespaces(true);
 
     rpc->unmarshall(xpp.get());

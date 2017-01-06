@@ -10,3 +10,6 @@
 <Dataset name='OldNotHalliday'>
  <Row><surname>Smith               </surname><forename>George    </forename><age>75</age></Row>
 </Dataset>
+<Dataset name='Result 4'>
+ <Row><surname>a                   </surname><forename>a         </forename><age>2</age></Row>
+</Dataset>

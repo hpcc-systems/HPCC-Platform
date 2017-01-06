@@ -555,21 +555,28 @@ TIMELIB_API unsigned int TIMELIB_CALL tlGetDayOfWeek(short year, unsigned short 
 
 TIMELIB_API void TIMELIB_CALL tlDateToString(size32_t &__lenResult, char* &__result, unsigned int date, const char* format)
 {
-    struct tm       timeInfo;
-    const size_t    kBufferSize = 256;
-    char            buffer[kBufferSize];
+    __result = NULL;  // Return blank string on error
+    __lenResult = 0;
 
-    memset(&timeInfo, 0, sizeof(timeInfo));
-    tlInsertDateIntoTimeStruct(&timeInfo, date);
-    tlMKTime(&timeInfo);
+    // date is expected to be in form year*10000 + month * 100 + day, and must be later than 1900
+    // or we can't store it in a struct tm
 
-    __lenResult = strftime(buffer, kBufferSize, format, &timeInfo);
-    __result = NULL;
-
-    if (__lenResult > 0)
+    if (date >= 1900 * 10000)
     {
-        __result = reinterpret_cast<char*>(CTXMALLOC(parentCtx, __lenResult));
-        memcpy(__result, buffer, __lenResult);
+        struct tm       timeInfo;
+        const size_t    kBufferSize = 256;
+        char            buffer[kBufferSize];
+
+        memset(&timeInfo, 0, sizeof(timeInfo));
+        tlInsertDateIntoTimeStruct(&timeInfo, date);
+        tlMKTime(&timeInfo);
+
+        __lenResult = strftime(buffer, kBufferSize, format, &timeInfo);
+        if (__lenResult > 0)
+        {
+            __result = reinterpret_cast<char*>(CTXMALLOC(parentCtx, __lenResult));
+            memcpy(__result, buffer, __lenResult);
+        }
     }
 }
 

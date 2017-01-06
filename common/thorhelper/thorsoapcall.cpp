@@ -766,6 +766,15 @@ public:
         if (flags & SOAPFhttpheaders)
             httpHeaders.set(s.setown(helper->getHttpHeaders()));
 
+        StringAttr proxyAddress;
+        proxyAddress.set(s.setown(helper->getProxyAddress()));
+        if (!proxyAddress.isEmpty())
+        {
+            UrlListParser proxyUrlListParser(proxyAddress);
+            if (0 == proxyUrlListParser.getUrls(proxyUrlArray))
+                throw MakeStringException(0, "SOAPCALL PROXYADDRESS specified no URLs");
+        }
+
         if (wscType == STsoap)
         {
             soapaction.set(s.setown(helper->getSoapAction()));
@@ -779,15 +788,6 @@ public:
             httpHeaderValue.set(s.setown(helper->getHttpHeaderValue()));
             if(httpHeaderValue.get() && !isValidHttpValue(httpHeaderValue.get()))
                 throw MakeStringException(-1, "HTTPHEADER value contained illegal characters: %s", httpHeaderValue.get());
-
-            StringAttr proxyAddress;
-            proxyAddress.set(s.setown(helper->getProxyAddress()));
-            if (!proxyAddress.isEmpty())
-            {
-                UrlListParser proxyUrlListParser(proxyAddress);
-                if (0 == proxyUrlListParser.getUrls(proxyUrlArray))
-                    throw MakeStringException(0, "SOAPCALL PROXYADDRESS specified no URLs");
-            }
 
             if ((flags & SOAPFliteral) && (flags & SOAPFencoding))
                 throw MakeStringException(0, "SOAPCALL 'LITERAL' and 'ENCODING' options are mutually exclusive");

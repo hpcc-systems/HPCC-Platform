@@ -5,11 +5,11 @@
   <chapterinfo>
     <date id="DateVer">DEVELOPER NON-GENERATED VERSION</date>
 
-    <releaseinfo id="FooterInfo">© 2016 HPCC
+    <releaseinfo id="FooterInfo">© 2017 HPCC
     Systems<superscript>®</superscript>. All rights reserved</releaseinfo>
 
     <copyright id="Copyright">
-      <year>2016 HPCC Systems<superscript>®</superscript>. All rights
+      <year>2017 HPCC Systems<superscript>®</superscript>. All rights
       reserved</year>
     </copyright>
   </chapterinfo>
@@ -24,7 +24,7 @@
     and that is to store the chapterinfo the above sections that are being
     used by several other documents.</para>
 
-    <para id="CHMVer">2016 Version X.X</para>
+    <para id="CHMVer">2017 Version X.X</para>
 
     <para>The following line is the code to be put into the document you wish
     to include the above version info in:</para>
@@ -40,6 +40,6 @@
     structure that we can use bookinfo/date and other elements for other
     purposes.</para>
 
-    <para>☺</para>
+    <para>☺ © Γ∏</para>
   </section>
 </chapter>

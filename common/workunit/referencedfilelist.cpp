@@ -337,7 +337,10 @@ void ReferencedFile::resolveLocal(const char *dstCluster, const char *srcCluster
     if(df)
         processLocalFileInfo(df, dstCluster, srcCluster, subfiles);
     else
+    {
         flags |= RefFileNotFound;
+        DBGLOG("ReferencedFile not found (local) %s", logicalName.str());
+    }
 }
 
 IPropertyTree *ReferencedFile::getRemoteFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix)
@@ -404,6 +407,9 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
     }
 
     flags |= RefFileNotFound;
+
+    StringBuffer dest;
+    DBGLOG("ReferencedFile not found %s [dali=%s, remote=%s, prefix=%s]", logicalName.str(), daliip.get(), remote ? remote->endpoint().getUrlStr(dest).str() : nullptr, remotePrefix);
 }
 
 void ReferencedFile::resolve(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, INode *remote, const char *remotePrefix, bool checkLocalFirst, StringArray *subfiles, bool _trackSubFiles, bool resolveForeign)
@@ -438,13 +444,13 @@ void ReferencedFile::cloneInfo(unsigned updateFlags, IDFUhelper *helper, IUserDe
     catch (IException *e)
     {
         flags |= RefFileCopyInfoFailed;
-        DBGLOG(e);
+        DBGLOG(e, "ReferencedFile ");
         e->Release();
     }
     catch (...)
     {
         flags |= RefFileCopyInfoFailed;
-        DBGLOG("Unknown error copying file info for [%s::] %s, from %s on dfs-dali %s", filePrefix.str(), logicalName.str(), fileSrcCluster.length() ? fileSrcCluster.get() : "*", daliip.str());
+        DBGLOG("ReferencedFile Unknown error copying file info for [%s::] %s, from %s on dfs-dali %s", filePrefix.str(), logicalName.str(), fileSrcCluster.length() ? fileSrcCluster.get() : "*", daliip.str());
     }
 }
 
@@ -489,13 +495,13 @@ void ReferencedFile::cloneSuperInfo(unsigned updateFlags, ReferencedFileList *li
     catch (IException *e)
     {
         flags |= RefFileCopyInfoFailed;
-        DBGLOG(e);
+        DBGLOG(e, "ReferencedFile ");
         e->Release();
     }
     catch (...)
     {
         flags |= RefFileCopyInfoFailed;
-        DBGLOG("Unknown error copying superfile info for %s", logicalName.str());
+        DBGLOG("ReferencedFile Unknown error copying superfile info for %s", logicalName.str());
     }
 }
 
@@ -624,6 +630,8 @@ bool ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
             IPropertyTree &node = iter->query();
             bool isOpt = false;
             const char *logicalName = node.queryProp("att[@name='_fileName']/@value");
+            if (!logicalName)
+                logicalName = node.queryProp("att[@name='_indexFileName']/@value");
             if (!logicalName)
                 continue;
 

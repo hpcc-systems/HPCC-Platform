@@ -67,7 +67,10 @@ public:
 
         //Call ISecManager instance factory and return the new instance
         DBGLOG("Calling '%s' in pluggable security manager '%s'", instFactory.str(), libName.str());
-        return xproc(bindingName, *secMgrCfg, *bindingCfg);
+        ISecManager* pPSM = xproc(bindingName, *secMgrCfg, *bindingCfg);
+        if (pPSM == nullptr)
+            throw MakeStringException(-1, "%s Security Manager %s failed to instantiate in call to %s", lsm, libName.str(), instFactory.str());
+        return pPSM;
     }
 
     static ISecManager* loadSecManager(const char* model_name, const char* servicename, IPropertyTree* cfg)

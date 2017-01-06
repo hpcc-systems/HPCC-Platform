@@ -370,66 +370,70 @@ void WsWuInfo::addTimerToList(SCMStringBuffer& name, const char * scope, IConstW
     timers.append(*t.getLink());
 }
 
+void WsWuInfo::doGetTimers(IArrayOf<IEspECLTimer>& timers)
+{
+    unsigned __int64 totalThorTimeValue = 0;
+    unsigned __int64 totalThorTimerCount = 0; //Do we need this?
+
+    StatisticsFilter filter;
+    filter.setScopeDepth(1, 2);
+    filter.setMeasure(SMeasureTimeNs);
+    Owned<IConstWUStatisticIterator> it = &cw->getStatistics(&filter);
+    if (it->first())
+    {
+        ForEach(*it)
+        {
+            IConstWUStatistic & cur = it->query();
+            SCMStringBuffer name, scope;
+            cur.getDescription(name, true);
+            cur.getScope(scope);
+
+            bool isThorTiming = false;//Should it be renamed as isClusterTiming?
+            if ((cur.getCreatorType() == SCTsummary) && (cur.getKind() == StTimeElapsed) && streq(scope.str(), GLOBAL_SCOPE))
+            {
+                SCMStringBuffer creator;
+                cur.getCreator(creator);
+                if (streq(creator.str(), "thor") || streq(creator.str(), "hthor") ||
+                    streq(creator.str(), "roxie"))
+                    isThorTiming = true;
+            }
+            else if (strieq(name.str(), TOTALTHORTIME)) // legacy
+                isThorTiming = true;
+
+            if (isThorTiming)
+            {
+                totalThorTimeValue += cur.getValue();
+                totalThorTimerCount += cur.getCount();
+            }
+            else
+                addTimerToList(name, scope.str(), cur, timers);
+        }
+    }
+
+    if (totalThorTimeValue > 0)
+    {
+        StringBuffer totalThorTimeText;
+        formatStatistic(totalThorTimeText, totalThorTimeValue, SMeasureTimeNs);
+
+        Owned<IEspECLTimer> t= createECLTimer("","");
+        if (version > 1.52)
+            t->setName(TOTALCLUSTERTIME);
+        else
+            t->setName(TOTALTHORTIME);
+        t->setValue(totalThorTimeText.str());
+        t->setCount((unsigned)totalThorTimerCount);
+        timers.append(*t.getLink());
+    }
+}
+
 void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
 {
     if (!(flags & WUINFO_IncludeTimers))
         return;
     try
     {
-        unsigned __int64 totalThorTimeValue = 0;
-        unsigned __int64 totalThorTimerCount = 0; //Do we need this?
-
         IArrayOf<IEspECLTimer> timers;
-        StatisticsFilter filter;
-        filter.setScopeDepth(1, 2);
-        filter.setMeasure(SMeasureTimeNs);
-        Owned<IConstWUStatisticIterator> it = &cw->getStatistics(&filter);
-        if (it->first())
-        {
-            ForEach(*it)
-            {
-                IConstWUStatistic & cur = it->query();
-                SCMStringBuffer name, scope;
-                cur.getDescription(name, true);
-                cur.getScope(scope);
-
-                bool isThorTiming = false;//Should it be renamed as isClusterTiming?
-                if ((cur.getCreatorType() == SCTsummary) && (cur.getKind() == StTimeElapsed) && streq(scope.str(), GLOBAL_SCOPE))
-                {
-                    SCMStringBuffer creator;
-                    cur.getCreator(creator);
-                    if (streq(creator.str(), "thor") || streq(creator.str(), "hthor") ||
-                        streq(creator.str(), "roxie"))
-                        isThorTiming = true;
-                }
-                else if (strieq(name.str(), TOTALTHORTIME)) // legacy
-                    isThorTiming = true;
-
-                if (isThorTiming)
-                {
-                    totalThorTimeValue += cur.getValue();
-                    totalThorTimerCount += cur.getCount();
-                }
-                else
-                    addTimerToList(name, scope.str(), cur, timers);
-            }
-        }
-
-        if (totalThorTimeValue > 0)
-        {
-            StringBuffer totalThorTimeText;
-            formatStatistic(totalThorTimeText, totalThorTimeValue, SMeasureTimeNs);
-
-            Owned<IEspECLTimer> t= createECLTimer("","");
-            if (version > 1.52)
-                t->setName(TOTALCLUSTERTIME);
-            else
-                t->setName(TOTALTHORTIME);
-            t->setValue(totalThorTimeText.str());
-            t->setCount((unsigned)totalThorTimerCount);
-            timers.append(*t.getLink());
-        }
-
+        doGetTimers(timers);
         info.setTimers(timers);
     }
     catch(IException* e)
@@ -701,6 +705,54 @@ bool WsWuInfo::legacyHasSubGraphTimings()
     return false;
 }
 
+void WsWuInfo::doGetGraphs(IArrayOf<IEspECLGraph>& graphs)
+{
+    SCMStringBuffer runningGraph;
+    WUGraphIDType id;
+
+    WUState st = cw->getState();
+    bool running = (!(st==WUStateFailed || st==WUStateAborted || st==WUStateCompleted) && cw->getRunningGraph(runningGraph,id));
+
+    Owned<IConstWUGraphMetaIterator> it = &cw->getGraphsMeta(GraphTypeAny);
+    ForEach(*it)
+    {
+        IConstWUGraphMeta &graph = it->query();
+
+        SCMStringBuffer name, label, type;
+        graph.getName(name);
+        graph.getLabel(label);
+
+        graph.getTypeName(type);
+        WUGraphState graphState = graph.getState();
+
+        Owned<IEspECLGraph> g= createECLGraph();
+        g->setName(name.str());
+        g->setLabel(label.str());
+        g->setType(type.str());
+        if (WUGraphComplete == graphState)
+            g->setComplete(true);
+        else if (running && (WUGraphRunning == graphState))
+        {
+            g->setRunning(true);
+            g->setRunningId(id);
+        }
+        else if (WUGraphFailed == graphState)
+            g->setFailed(true);
+
+        if (version >= 1.53)
+        {
+            SCMStringBuffer s;
+            Owned<IConstWUStatistic> whenGraphStarted = cw->getStatistic(NULL, name.str(), StWhenGraphStarted);
+            Owned<IConstWUStatistic> whenGraphFinished = cw->getStatistic(NULL, name.str(), StWhenGraphFinished);
+            if (whenGraphStarted)
+                g->setWhenStarted(whenGraphStarted->getFormattedValue(s).str());
+            if (whenGraphFinished)
+                g->setWhenFinished(whenGraphFinished->getFormattedValue(s).str());
+        }
+        graphs.append(*g.getLink());
+    }
+}
+
 void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
 {
      if (version > 1.01)
@@ -716,51 +768,8 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
 
     try
     {
-        SCMStringBuffer runningGraph;
-        WUGraphIDType id;
-
-        WUState st = cw->getState();
-        bool running = (!(st==WUStateFailed || st==WUStateAborted || st==WUStateCompleted) && cw->getRunningGraph(runningGraph,id));
-
         IArrayOf<IEspECLGraph> graphs;
-        Owned<IConstWUGraphMetaIterator> it = &cw->getGraphsMeta(GraphTypeAny);
-        ForEach(*it)
-        {
-            IConstWUGraphMeta &graph = it->query();
-
-            SCMStringBuffer name, label, type;
-            graph.getName(name);
-            graph.getLabel(label);
-
-            graph.getTypeName(type);
-            WUGraphState graphState = graph.getState();
-
-            Owned<IEspECLGraph> g= createECLGraph();
-            g->setName(name.str());
-            g->setLabel(label.str());
-            g->setType(type.str());
-            if (WUGraphComplete == graphState)
-                g->setComplete(true);
-            else if (running && (WUGraphRunning == graphState))
-            {
-                g->setRunning(true);
-                g->setRunningId(id);
-            }
-            else if (WUGraphFailed == graphState)
-                g->setFailed(true);
-
-            if (version >= 1.53)
-            {
-                SCMStringBuffer s;
-                Owned<IConstWUStatistic> whenGraphStarted = cw->getStatistic(NULL, name.str(), StWhenGraphStarted);
-                Owned<IConstWUStatistic> whenGraphFinished = cw->getStatistic(NULL, name.str(), StWhenGraphFinished);
-                if (whenGraphStarted)
-                    g->setWhenStarted(whenGraphStarted->getFormattedValue(s).str());
-                if (whenGraphFinished)
-                    g->setWhenFinished(whenGraphFinished->getFormattedValue(s).str());
-            }
-            graphs.append(*g.getLink());
-        }
+        doGetGraphs(graphs);
         info.setGraphs(graphs);
     }
     catch(IException* e)

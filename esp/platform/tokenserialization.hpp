@@ -159,6 +159,7 @@ public:
         skipWhitespace(ptr);
         if (!*ptr)
         {
+            value = false;
             result = Deserialization_INVALID_TOKEN;
         }
         else

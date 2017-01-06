@@ -1838,7 +1838,7 @@ public:
 
         if (xmlDef.length())
         {
-            auto_ptr<XmlPullParser> xpp(new XmlPullParser());
+            std::unique_ptr<XmlPullParser> xpp(new XmlPullParser());
 
             int bufSize = xmlDef.length();
             xpp->setSupportNamespaces(true);
