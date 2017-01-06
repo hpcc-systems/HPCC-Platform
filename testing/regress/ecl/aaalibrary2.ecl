@@ -30,13 +30,13 @@ string10        forename;
 integer2        age := 25;
             END;
 
-FilterDatasetInterface(dataset(namesRecord) ds, string search, boolean onlyOldies) := interface
+FilterDatasetInterface(dataset(namesRecord) ds, dataset(namesRecord) unused, string search, boolean onlyOldies) := interface
     export dataset(namesRecord) matches;
     export dataset(namesRecord) others;
 end;
 
 
-filterDatasetLibrary(dataset(namesRecord) ds, string search, boolean onlyOldies) := module,library(FilterDatasetInterface)
+filterDatasetLibrary(dataset(namesRecord) ds, dataset(namesRecord) unused, string search, boolean onlyOldies) := module,library(FilterDatasetInterface)
     f := ds;
     shared g := if (onlyOldies, f(age >= 65), f);
     export matches := g(surname = search);
