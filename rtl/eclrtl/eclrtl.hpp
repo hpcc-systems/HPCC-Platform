@@ -388,6 +388,11 @@ ECLRTL_API unsigned rtlCrcVUnicode(UChar const * k, unsigned initval);
 
 ECLRTL_API unsigned rtlRandom();
 ECLRTL_API void rtlSeedRandom(unsigned value);
+ECLRTL_API unsigned rtlPseudoRandomNumberUniformDistribution(unsigned engine, unsigned lower_bound, unsigned upper_bound);
+ECLRTL_API unsigned rtlPseudoRandomNumberBinomialDistribution(unsigned engine, double probablity, unsigned upper_bound);
+ECLRTL_API unsigned rtlPseudoRandomNumberNegativeBinomialDistribution(unsigned engine,  double probablity, unsigned upper_bound);
+ECLRTL_API unsigned rtlPseudoRandomNumberGeometricDistribution(unsigned engine, double probablity);
+ECLRTL_API unsigned rtlPseudoRandomNumberPoissonDistribution(unsigned engine, double mean);
 __declspec(noreturn) ECLRTL_API void rtlFail(int code, const char *msg) __attribute__((noreturn));
 __declspec(noreturn) ECLRTL_API void rtlSysFail(int code, const char *msg) __attribute__((noreturn));
 __declspec(noreturn) ECLRTL_API void rtlFailUnexpected() __attribute__((noreturn));

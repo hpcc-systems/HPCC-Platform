@@ -3140,8 +3140,28 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprOrdered(ctx, expr, tgt);
         return;
     case no_random:
-        doBuildExprSysFunc(ctx, expr, tgt, rtlRandomId);
+    {
+        if (expr->queryChild(0)->numChildren() == 0)
+        {
+            doBuildExprSysFunc(ctx, expr, tgt, rtlRandomId);
+            return;
+        }
+        IIdAtom *func = nullptr;
+
+        if (expr->queryChild(0)->queryName() == distributionUniformAtom)
+            func = rtlPseudoRandomNumberUniformDistributionId;
+        else if (expr->queryChild(0)->queryName() == distributionBinomialAtom)
+            func = rtlPseudoRandomNumberBinomialDistributionId;
+        else if (expr->queryChild(0)->queryName() == distributionNegativeBinomialAtom)
+            func = rtlPseudoRandomNumberNegativeBinomialDistributionId;
+        else if (expr->queryChild(0)->queryName() == distributionGeometricAtom)
+            func = rtlPseudoRandomNumberGeometricDistributionId;
+        else if (expr->queryChild(0)->queryName() == distributionPoissonAtom)
+            func = rtlPseudoRandomNumberPoissonDistributionId;
+
+        doBuildExprPseudoRandomFunc(ctx, expr, tgt, func);
         return;
+    }
     case no_rank:
         doBuildExprRank(ctx, expr, tgt);
         return;
@@ -9607,6 +9627,21 @@ void HqlCppTranslator::doBuildExprSysFunc(BuildCtx & ctx, IHqlExpression * expr,
     ForEachChild(i, expr)
     {
         IHqlExpression * cur = expr->queryChild(i);
+        if (!cur->isAttribute())
+            args.append(*LINK(cur));
+    }
+    OwnedHqlExpr call = bindFunctionCall(funcName, args);
+    buildExpr(ctx, call, tgt);
+}
+
+void HqlCppTranslator::doBuildExprPseudoRandomFunc(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, IIdAtom * funcName)
+{
+    HqlExprArray args;
+    args.append(*LINK(expr->queryChild(1)));
+
+    ForEachChild(i, expr->queryChild(0))
+    {
+        IHqlExpression * cur = expr->queryChild(0)->queryChild(i);
         if (!cur->isAttribute())
             args.append(*LINK(cur));
     }
