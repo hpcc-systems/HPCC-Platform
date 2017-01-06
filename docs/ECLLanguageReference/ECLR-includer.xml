@@ -41,7 +41,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <releaseinfo>© 2015 HPCC Systems<superscript>®</superscript>. All rights
+    <releaseinfo>© 2017 HPCC Systems<superscript>®</superscript>. All rights
     reserved. Except where otherwise noted, ECL Language Reference content
     licensed under Creative Commons public license.</releaseinfo>
 
@@ -549,8 +549,9 @@
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FETCH.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FROMJSON.xml"
-		xpointer="element(/1)"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FROMUNICODE.xml"
@@ -724,6 +725,7 @@
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ORDERED.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-OUTPUT.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -887,8 +889,9 @@
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-THISNODE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOJSON.xml"
-		xpointer="element(/1)"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOPN.xml"
@@ -922,6 +925,7 @@
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-UNICODEORDER.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-UNORDERED.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1101,12 +1105,11 @@
     <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WARNING.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
- 
 
     <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WEBSERVICE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
- 
+
     <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WORKUNIT.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />

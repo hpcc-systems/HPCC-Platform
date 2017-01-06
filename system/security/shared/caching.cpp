@@ -367,8 +367,9 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
                     DBGLOG("CACHE: CPermissionsCache Found validated user %s", username);
 #endif
                     // Copy cached user to the sec_user structure, but still keep the original clear text password.
+                    StringAttr originalPW(pw);
                     user->queryUser()->copyTo(sec_user);
-                    sec_user.credentials().setPassword(pw);
+                    sec_user.credentials().setPassword(originalPW.get());
                     return true;
                 }
                 else
