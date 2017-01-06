@@ -1147,10 +1147,10 @@
 
       <para>To access Dynamic ESDL through ECL Watch, click on the <emphasis
       role="bold">Operations</emphasis> link, then click on <emphasis
-      role="bold">Dynamic ESDL</emphasis> from the navigation sub-menu bar.
-      </para>
+      role="bold">Dynamic ESDL</emphasis> from the navigation sub-menu
+      bar.</para>
 
-      <para>The DESDL based ESP services available are listed in the navigator
+      <para>The DESDL-based ESP services available are listed in the navigator
       pane on the left as children of their parent ESP process.</para>
 
       <figure>
@@ -1204,7 +1204,7 @@
           binding.</para>
 
           <para>Press the <emphasis role="bold">Configuration</emphasis>
-          button to view, or add to the configurations. <figure>
+          button to view or add to the configurations. <figure>
               <title>Dynamic EDSL Binding Configuration</title>
 
               <mediaobject>
