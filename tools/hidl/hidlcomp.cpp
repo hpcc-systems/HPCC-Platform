@@ -4435,7 +4435,7 @@ void EspMessageInfo::write_esp()
     {
         outf(1, "C%s *classSrc = static_cast<C%s*>(&src);\n", name_, name_);
         outf(1, "C%s *baseSrc = static_cast<C%s*>(classSrc);\n", parent, parent);
-        outf(2, "C%s::serializer(ctx, *baseSrc, buffer, false);\n",parent,parent);
+        outf(2, "C%s::serializer(ctx, *baseSrc, buffer, false);\n",parent);
     }
 
     // -- versioning
