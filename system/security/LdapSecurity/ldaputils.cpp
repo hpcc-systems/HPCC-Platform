@@ -103,10 +103,10 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
     return ld;
 }
 
-int LdapUtils::LdapSimpleBind(LDAP* ld, char* userdn, char* password)
+int LdapUtils::LdapSimpleBind(LDAP* ld, int ldapTimeout, char* userdn, char* password)
 {
 #ifndef _WIN32
-    TIMEVAL timeout = {LDAPTIMEOUT, 0};
+    TIMEVAL timeout = {ldapTimeout, 0};
     ldap_set_option(ld, LDAP_OPT_TIMEOUT, &timeout);
     ldap_set_option(ld, LDAP_OPT_NETWORK_TIMEOUT, &timeout);
 #endif
@@ -119,7 +119,7 @@ int LdapUtils::LdapSimpleBind(LDAP* ld, char* userdn, char* password)
 }
 
 // userdn is required for ldap_simple_bind_s, not really necessary for ldap_bind_s.
-int LdapUtils::LdapBind(LDAP* ld, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method)
+int LdapUtils::LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method)
 {
     bool binddone = false;
     int rc = LDAP_SUCCESS;
@@ -168,13 +168,13 @@ int LdapUtils::LdapBind(LDAP* ld, const char* domain, const char* username, cons
             DBGLOG("userdn can't be NULL in order to bind to ldap server.");
             return LDAP_INVALID_CREDENTIALS;
         }
-        int rc = LdapSimpleBind(ld, (char*)userdn, (char*)password);
+        int rc = LdapSimpleBind(ld, ldapTimeout, (char*)userdn, (char*)password);
         if (rc != LDAP_SUCCESS && server_type == OPEN_LDAP && strchr(userdn,','))
         {   //Fedora389 is happier without the domain component specified
             StringBuffer cn(userdn);
             cn.replace(',',(char)NULL);
             if (cn.length())//disallow call if no cn
-                rc = LdapSimpleBind(ld, (char*)cn.str(), (char*)password);
+                rc = LdapSimpleBind(ld, ldapTimeout, (char*)cn.str(), (char*)password);
         }
         if (rc != LDAP_SUCCESS )
         {
@@ -183,7 +183,7 @@ int LdapUtils::LdapBind(LDAP* ld, const char* domain, const char* username, cons
             {
                 StringBuffer logonname;
                 logonname.append(domain).append("\\").append(username);
-                rc = LdapSimpleBind(ld, (char*)logonname.str(), (char*)password);
+                rc = LdapSimpleBind(ld, ldapTimeout, (char*)logonname.str(), (char*)password);
                 if(rc != LDAP_SUCCESS)
                 {
 #ifdef LDAP_OPT_DIAGNOSTIC_MESSAGE
@@ -208,7 +208,7 @@ int LdapUtils::LdapBind(LDAP* ld, const char* domain, const char* username, cons
     return rc;
 }
 
-int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname)
+int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname, int timeout)
 {
     LdapServerType deducedSType = LDAPSERVER_UNKNOWN;
     LDAP* ld = LdapInit("ldap", ldapserver, ldapport, 636);
@@ -218,7 +218,7 @@ int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer&
         return false;
     }
 
-    int err = LdapSimpleBind(ld, NULL, NULL);
+    int err = LdapSimpleBind(ld, timeout,NULL, NULL);
     if(err != LDAP_SUCCESS)
     {
         DBGLOG("ldap anonymous bind error (%d) - %s", err, ldap_err2string(err));

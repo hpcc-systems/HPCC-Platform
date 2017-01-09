@@ -88,7 +88,7 @@ ldap_compare_ext_s LDAP_P((
 #ifdef _DEBUG
 	#define LDAPTIMEOUT 5
 #else
-	#define LDAPTIMEOUT 20
+	#define LDAPTIMEOUT 60
 #endif
 #define DEFAULT_LDAP_POOL_SIZE 10
 
@@ -190,6 +190,7 @@ interface ILdapConfig : extends IInterface
     virtual bool sysuserSpecified() = 0;
     virtual int getMaxConnections() = 0;
     virtual void setResourceBasedn(const char* rbasedn, SecResourceType rtype = RT_DEFAULT) = 0;
+    virtual int getLdapTimeout() = 0;
 };
 
 
