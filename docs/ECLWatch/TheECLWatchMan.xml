@@ -1167,14 +1167,14 @@
       ESDL Binding information.. For more information about Dynamic ESDL refer
       to the documentation; <emphasis>Dynamic ESDL</emphasis> available from
       the HPCC Systems portal: <ulink
-      url="https://hpccsystems.com/download/documentation/all">https://hpccsystems.com/download/documentation/all</ulink></para>
+      url="https://hpccsystems.com/download/documentation/learning-ecl/dynamic-esdl">https://hpccsystems.com/download/documentation/learning-ecl/dynamic-esdl</ulink></para>
 
       <sect2 id="USING_Dynamic_ESDL">
         <title>Using Dynamic ESDL</title>
 
-        <para>Click on the triangle to expand the ESP process and display the
-        DESDL services. Select the desired DESDL service from the navigator
-        pane.</para>
+        <para>Click on the triangle icon next to the ESP process to expand and
+        display the DESDL services. Select the desired DESDL service from the
+        navigator pane.</para>
 
         <para>The selected service's information displays on the <emphasis
         role="bold">Summary</emphasis> tab to the right.</para>
@@ -1204,7 +1204,8 @@
           binding.</para>
 
           <para>Press the <emphasis role="bold">Configuration</emphasis>
-          button to view or add to the configurations. <figure>
+          button to view or edit the method configurations. The methods are
+          configured by adding or editing these attributes. <figure>
               <title>Dynamic EDSL Binding Configuration</title>
 
               <mediaobject>
@@ -1218,9 +1219,9 @@
 
           <para><orderedlist>
               <listitem>
-                <para>press the arrow next to the method (if there are are
-                more than one methods) and display the attributes and
-                values.</para>
+                <para>Expand the target method configuration attributes (if
+                there are more than one methods) and display the attributes
+                and values.</para>
               </listitem>
 
               <listitem>
