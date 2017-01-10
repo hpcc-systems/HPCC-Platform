@@ -2979,6 +2979,8 @@ public:
                 graph.clear();
                 childGraphs.kill();
                 probeManager.clear();
+                ::Release(deserializedResultStore);
+                deserializedResultStore = nullptr;
                 if (rowManager && rowManager->allocated())
                 {
                     rowManager->reportLeaks();
