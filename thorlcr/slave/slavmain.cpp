@@ -302,16 +302,9 @@ public:
                             }
                             catch (IException *e)
                             {
-                                StringBuffer msg("Failed to save dll, cwd = ");
-                                char buf[255];
-                                if (!GetCurrentDirectory(sizeof(buf), buf))
-                                {
-                                    ERRLOG("CJobListener::main: Current directory path too big, setting it to null");
-                                    buf[0] = 0;
-                                }
-                                msg.append(buf).append(", path = ").append(soPath);
-                                EXCLOG(e, msg.str());
+                                IException *e2 = ThorWrapException(e, "Failed to save dll: %s", soPath.str());
                                 e->Release();
+                                throw e2;
                             }
                             assertex(globals->getPropBool("Debug/@dllsToSlaves", true));
                             querySoCache.add(soPath.str());
