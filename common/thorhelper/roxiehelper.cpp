@@ -81,11 +81,9 @@ void CRHRollingCacheElem::set(const void *_row)
 //CRHRollingCache copied/modified from THOR CRollingCache
 CRHRollingCache::~CRHRollingCache()
 {
-    loop 
+    while (cache.ordinality())
     {  
         CRHRollingCacheElem *e = cache.dequeue();  
-        if (!e)  
-            break;  
         delete e;  
     }  
 }
