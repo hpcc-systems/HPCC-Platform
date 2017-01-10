@@ -27,7 +27,7 @@ typeof(infile) %tra%(infile l, patchfile rec) := transform
   self := l;
   end;
 
-
+ENDMACRO;
 
 export MAC_Patch_Id(infile,patch_Field,patchfile,left_field,right_field,outfile) := macro
 #uniquename(MPI)
