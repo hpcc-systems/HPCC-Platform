@@ -10384,7 +10384,7 @@ extern bool isVolatileFuncdef(IHqlExpression * funcdef)
             //otherwise it requires an explicit volatile qualifier.
             IHqlExpression * bodycode = body->queryChild(0);
             if (bodycode->getOperator() == no_embedbody)
-                return bodycode->queryAttribute(volatileAtom);
+                return bodycode->hasAttribute(volatileAtom);
             return false;
         }
     default:
