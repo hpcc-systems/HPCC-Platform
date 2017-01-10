@@ -26,16 +26,23 @@ struct ECLRTL_API RtlDynFieldInfo : public RtlFieldInfo
 {
 public:
     RtlDynFieldInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type)
-    : RtlFieldInfo(nullptr, nullptr, _type, nullptr), nameAttr(_name), xpathAttr(_xpath)
+    : RtlFieldInfo(_name, _xpath, _type, nullptr)
     {
-        name = nameAttr.get();
-        xpath = xpathAttr.get();
     }
-
-protected:
-    StringAttr nameAttr;
-    StringAttr xpathAttr;
+    ~RtlDynFieldInfo()
+    {
+        free(const_cast<char *>(name));
+        free(const_cast<char *>(xpath));
+    }
 };
 
+
+//-------------------------------------------------------------------------------------------------------------------
+
+struct ECLRTL_API RtlDynRecordTypeInfo : public RtlRecordTypeInfo
+{
+    inline RtlDynRecordTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields) : RtlRecordTypeInfo(_fieldType, _length, _fields) {}
+    ~RtlDynRecordTypeInfo() { delete[] fields; }
+};
 
 #endif

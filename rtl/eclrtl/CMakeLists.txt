@@ -38,6 +38,7 @@ set (    SRCS
          rtlrank.cpp 
          rtlfield.cpp 
          rtlread.cpp 
+         rtlrecord.cpp
          rtltype.cpp 
          rtlxml.cpp
          
@@ -52,6 +53,7 @@ set (    SRCS
          rtlkey2.hpp
          rtlkey.hpp
          rtlread_imp.hpp
+         rtlrecord.hpp
          rtlsize.hpp
          rtltype.hpp
          rtlbcdtest.cpp 
