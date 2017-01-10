@@ -8297,6 +8297,7 @@ public:
         calculated = false;
         processedAny = false;
         anyThisGroup = false;
+        ReleaseRoxieRows(sorted);
         CRoxieServerActivity::reset();
     }
 
@@ -8427,7 +8428,7 @@ public:
             curQuantile++;
             if (curQuantile > numDivisions)
             {
-                sorted.kill();
+                ReleaseRoxieRows(sorted);
                 sorter->reset();
                 calculated = false; // ready for next group
             }
