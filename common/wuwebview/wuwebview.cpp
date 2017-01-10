@@ -337,6 +337,7 @@ public:
     void getResource(const char *name, StringBuffer &content, StringBuffer &abspath, const char *type);
     bool getResourceByPath(const char *path, MemoryBuffer &mb);
     StringBuffer &getManifest(StringBuffer &mf){return toXML(ensureManifest(), mf);}
+    IConstWUQuery* getEmbeddedQuery();
 
     void calculateResourceIncludePaths();
     virtual bool getInclude(const char *includename, MemoryBuffer &includebuf, bool &pathOnly);
@@ -919,6 +920,19 @@ void WuWebView::addInputsFromXml(const char *xml)
 {
     Owned<IPropertyTree> pt = createPTreeFromXMLString(xml, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces));
     addInputsFromPTree(pt.get());
+}
+
+IConstWUQuery* WuWebView::getEmbeddedQuery()
+{
+    if (!loadDll())
+        return NULL;
+
+    StringBuffer dllXML;
+    if (!getEmbeddedWorkUnitXML(dll, dllXML))
+        return NULL;
+
+    Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(dllXML.str());
+    return embeddedWU->getQuery();
 }
 
 extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *target, const char *queryname, const char *dir, bool mapEspDirectories)

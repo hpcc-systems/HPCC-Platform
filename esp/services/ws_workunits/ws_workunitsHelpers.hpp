@@ -201,6 +201,7 @@ public:
     void listArchiveFiles(IPropertyTree* archive, const char* path, IArrayOf<IEspWUArchiveModule>& modules, IArrayOf<IEspWUArchiveFile>& files);
     void getArchiveFile(IPropertyTree* archive, const char* moduleName, const char* attrName, const char* path, StringBuffer& file);
     void setWUAbortTime(IEspECLWorkunit &info, unsigned __int64 abortTS);
+    IConstWUQuery* getEmbeddedQuery();
 
 protected:
     void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
