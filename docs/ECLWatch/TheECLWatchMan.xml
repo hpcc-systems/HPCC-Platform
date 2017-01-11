@@ -1138,6 +1138,189 @@
         </figure></para>
     </sect1>
 
+    <sect1 id="ECLWatch-DynamicESDL">
+      <title>Dynamic ESDL</title>
+
+      <para>The Dynamic ESDL tab in ECL Watch displays the available ESP
+      Services. You can explore the DESDL services and ESDL bindings, also
+      known as service configurations.</para>
+
+      <para>To access Dynamic ESDL through ECL Watch, click on the <emphasis
+      role="bold">Operations</emphasis> link, then click on <emphasis
+      role="bold">Dynamic ESDL</emphasis> from the navigation sub-menu
+      bar.</para>
+
+      <para>The DESDL-based ESP services available are listed in the navigator
+      pane on the left as children of their parent ESP process.</para>
+
+      <figure>
+        <title>Dynamic ESDL sub-menu</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/DESDL03.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>This tab contains a list of all DESDL based ESP Services and their
+      ESDL Binding information.. For more information about Dynamic ESDL refer
+      to the documentation; <emphasis>Dynamic ESDL</emphasis> available from
+      the HPCC Systems portal: <ulink
+      url="https://hpccsystems.com/download/documentation/learning-ecl/dynamic-esdl">https://hpccsystems.com/download/documentation/learning-ecl/dynamic-esdl</ulink></para>
+
+      <sect2 id="USING_Dynamic_ESDL">
+        <title>Using Dynamic ESDL</title>
+
+        <para>Click on the triangle icon next to the ESP process to expand and
+        display the DESDL services. Select the desired DESDL service from the
+        navigator pane.</para>
+
+        <para>The selected service's information displays on the <emphasis
+        role="bold">Summary</emphasis> tab to the right.</para>
+
+        <para>Select the <emphasis role="bold">Binding</emphasis> tab to
+        display the ESDL definition in XML format and the configuration
+        information. Press the Definition button to view the XML.</para>
+
+        <para><figure>
+            <title>Dynamic ESDL Binding Definition</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/DESDL02.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>You can select ESP Services and assign them an interface (an
+        ESDL Definition) and configure each available method.</para>
+
+        <sect3 id="Configure_ESDL_Bindings">
+          <title>Configuring ESDL Bindings</title>
+
+          <para>You can select a service and if there is a binding for it you
+          can review, delete, or modify the configuration of that
+          binding.</para>
+
+          <para>Press the <emphasis role="bold">Configuration</emphasis>
+          button to view or edit the method configurations. The methods are
+          configured by adding or editing these attributes. <figure>
+              <title>Dynamic EDSL Binding Configuration</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DESDL04.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para><emphasis role="bold">To Add an attribute:</emphasis></para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Expand the target method configuration attributes (if
+                there are more than one methods) and display the attributes
+                and values.</para>
+              </listitem>
+
+              <listitem>
+                <para>Check the box next to the method to modify.</para>
+              </listitem>
+
+              <listitem>
+                <para>Press the Add Attribute(s) button. This opens an
+                <emphasis role="bold">Add attributes/values</emphasis>
+                dialog.</para>
+              </listitem>
+
+              <listitem>
+                <para>Enter the Attribute and Value to the method,</para>
+              </listitem>
+
+              <listitem>
+                <para>Press the Save button.</para>
+              </listitem>
+            </orderedlist><emphasis role="bold">To Remove attributes and
+          values</emphasis>:.</para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Check the box next to the method to modify.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the box for the desired attribute (and value) to
+                remove.</para>
+              </listitem>
+
+              <listitem>
+                <para>Press the <emphasis role="bold">Remove
+                Attribute(s)</emphasis> button. This removes the
+                attribute.</para>
+              </listitem>
+            </orderedlist></para>
+
+          <para>If a configuration does not have a binding, you can add a
+          binding.</para>
+        </sect3>
+
+        <sect3>
+          <title>Add a Binding</title>
+
+          <para>To add a service binding to an
+          <emphasis>unconfigured</emphasis> ESP Service. Select the
+          unconfigured ESP service, then press the enabled <emphasis
+          role="bold">Add Binding</emphasis> button.</para>
+
+          <para><figure>
+              <title>Adding a service binding</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DESDL05.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>This will open a dialog listing the available interfaces
+          that have definitions. Select the interface to bind to the ESP
+          service.</para>
+
+          <para><figure>
+              <title>Adding the definition</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DESDL06.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>Press the <emphasis role="bold">Apply</emphasis> button
+          to apply the definition.</para>
+        </sect3>
+
+        <sect3>
+          <title>Delete a Binding</title>
+
+          <para>To delete a service binding for a
+          <emphasis>configured</emphasis> ESP Service. Select the ESP service
+          that contains the binding to delete.</para>
+
+          <para><figure>
+              <title>Deleting service binding</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DESDL07.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>Press the <emphasis role="bold">Delete Binding</emphasis>
+          button. Confirm that you want to delete the binding by pressing OK
+          on the confirmation dialog.</para>
+
+          <para>The binding is deleted.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
     <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
                 xpointer="Preflight_system_servers"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
