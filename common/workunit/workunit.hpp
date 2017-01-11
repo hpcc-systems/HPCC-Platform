@@ -1370,6 +1370,7 @@ protected:
 
 typedef IWorkUnitFactory * (* WorkUnitFactoryFactory)(const IPropertyTree *);
 
+extern WORKUNIT_API void getDFUServerQueueNames(StringArray &ret, const char *process);
 extern WORKUNIT_API IStringVal &getEclCCServerQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getEclServerQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getEclSchedulerQueueNames(IStringVal &ret, const char *process);
