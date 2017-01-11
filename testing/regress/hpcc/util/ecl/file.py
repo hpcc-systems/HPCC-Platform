@@ -136,6 +136,17 @@ class ECLFile:
 
         self.optF =[]
         self.optFHash={}
+        # -f parameters from config
+        try:
+            for param in self.config.engineParams:
+                paramf=self.removeQuote(param)
+                optFs = ("-f"+paramf.replace(',',  ',-f')).split(',')
+                self.processKeyValPairs(optFs,  self.optFHash)
+                pass
+        except AttributeError:
+            # It seems there is no Params array in the config file
+            pass
+
         #process -f CLI parameters (multiple -f enabled)
         if args.f != None:
             for argf in args.f:
@@ -165,7 +176,12 @@ class ECLFile:
 
     def processKeyValPairs(self,  optArr,  optHash):
         for optStr in optArr:
-            [key,  val] = optStr.split('=')
+            if '=' in optStr:
+                # Has value
+                [key,  val] = optStr.split('=')
+            else:
+                # Hasn't value
+                [key,  val] = [optStr, '']
             key = key.strip().replace(' ', '')  # strip spaces around and inside the key
             val = val.strip()                               # strip spaces around the val
             if ' ' in val:
@@ -175,7 +191,11 @@ class ECLFile:
     def mergeHashToStrArray(self, optHash,  strArray):
         # Merge all parameters into a string array
         for key in optHash:
-            strArray.append(key+'='+optHash[key])
+            if '' == optHash[key]:
+                # Hasn't value
+                strArray.append(key)
+            else:
+                strArray.append(key+'='+optHash[key])
 
     def removeQuote(self, str):
         if str.startswith('\'') and str.endswith('\''):

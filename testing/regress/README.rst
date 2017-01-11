@@ -805,6 +805,14 @@ Important!
     If there is more than one -X in the command line, the last will be the active and all other discarded.
 
 
+For default engine paramters:
+
+|    "engineParams":[
+|            "failOnLeaks"
+|        ]
+
+The Regression Suite processes the engineParams definition(s) sequentially and adds them with '-f' prefix to the 'ecl run ...' command.
+
 
 10. Authentication:
 -------------------

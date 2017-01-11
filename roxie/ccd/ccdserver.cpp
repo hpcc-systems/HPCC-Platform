@@ -1365,6 +1365,8 @@ public:
             {
                 if (state==STATEstarted || state==STATEstarting)
                 {
+                    if (ctx->queryOptions().failOnLeaks)
+                        throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "STATE: activity %d reset without stop", activityId);
                     if (traceStartStop || traceLevel > 2)
                         CTXLOG("STATE: activity %d reset without stop", activityId);
                     stop();
@@ -8369,6 +8371,7 @@ public:
         calculated = false;
         processedAny = false;
         anyThisGroup = false;
+        ReleaseRoxieRows(sorted);
         CRoxieServerActivity::reset();
     }
 
@@ -8499,7 +8502,7 @@ public:
             curQuantile++;
             if (curQuantile > numDivisions)
             {
-                sorted.kill();
+                ReleaseRoxieRows(sorted);
                 sorter->reset();
                 calculated = false; // ready for next group
             }
@@ -16236,14 +16239,6 @@ public:
     {
     }
 
-    virtual void stop()
-    {
-        ForEachItemIn(i2, selectedStreams)
-            selectedStreams.item(i2)->stop();
-
-        CRoxieServerMultiInputBaseActivity::stop();
-    }
-
     virtual unsigned __int64 queryLocalCycles() const
     {
         __int64 localCycles = totalCycles.totalCycles;
@@ -16357,14 +16352,11 @@ public:
                 selectedJunctions.append(junctionArray[nextIndex-1]);
             }
         }
-
         // NB: Whatever pulls this nwayinput activity, starts and stops the selectedInputs and selectedJunctions
+        // But the N-Way input itself is now done with processing, and can stop itself/dependencies.
+        stop();
     }
 
-    virtual void stop()
-    {
-        // NB: Whatever pulls this nwayinput activity, starts and stops the selectedInputs
-    }
 };
 
 class CRoxieServerNWayInputActivityFactory : public CRoxieServerMultiInputFactory
@@ -16436,6 +16428,8 @@ public:
                 selectedJunctions.append(resultJunctions[i]);
             }
         }
+        // I have done with my processing - note that this won't stop my inputs
+        stop();
     }
 
     virtual void reset()    

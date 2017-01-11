@@ -162,6 +162,14 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="ldapTimeoutSecs" type="xs:nonNegativeInteger" use="optional" default="60">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>true</required>
+                        <tooltip>The maximum number of seconds to wait for most LDAP calls.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="cacheTimeout" type="xs:nonNegativeInteger" use="optional" default="5">
                 <xs:annotation>
                     <xs:appinfo>

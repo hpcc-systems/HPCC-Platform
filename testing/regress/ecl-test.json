@@ -31,6 +31,9 @@
             "PassTest.ecl:bla='A value'",
             "httpcall_multiheader.ecl:TargetIP=.",
             "soapcall_multihttpheader.ecl:TargetIP=."
+        ],
+        "engineParams":[
+            "failOnLeaks"
         ]
     }
 }

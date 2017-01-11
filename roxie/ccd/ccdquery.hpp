@@ -123,6 +123,7 @@ public:
     bool timeActivities;
     bool allSortsMaySpill;
     bool traceEnabled;
+    bool failOnLeaks;
 
 private:
     static const char *findProp(const IPropertyTree *ctx, const char *name1, const char *name2);

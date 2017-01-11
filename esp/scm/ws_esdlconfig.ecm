@@ -23,9 +23,9 @@ ESPstruct BaseESDLStatus
 
 ESPStruct MethodConfig
 {
-    String Name;
+    string Name;
     ESParray<ESPstruct NamedValue, Attribute> Attributes;
-    String Elements;
+    string Elements;
 };
 
 ESPStruct ESDLConfiguration
@@ -41,10 +41,10 @@ ESPstruct ESDLBinding
 
 ESPstruct ESDLDefinition
 {
-    String Name;
+    string Name;
     int Seq;
-    String Id;
-    [min_ver("1.1")] String Interface;
+    string Id;
+    [min_ver("1.1")] string Interface;
     [min_ver("1.2")] ESParray<string, Name> ESDLServices;
 };
 
@@ -196,7 +196,7 @@ ESPresponse [exceptions_inline] GetESDLBindingResponse
     string EspProcName;   //Name of ESP Process
     string BindingName;
     string EspPort;
-    String ConfigXML;
+    string ConfigXML;
     [min_ver("1.1")] ESPStruct ESDLBindingContents ESDLBinding;
     ESPstruct BaseESDLStatus status;
 };
