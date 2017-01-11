@@ -1,5 +1,3 @@
-import std.system.thorlib;
-
 d := dataset([{1},{1},{2},{3},{4},{8},{9}], { unsigned r; });
 
 d t(d L, d r) := transform
@@ -9,8 +7,8 @@ END;
 rollup(d, t(LEFT, RIGHT), LEFT.r = RIGHT.r, LOCAL);
 rollup(d, t(LEFT, RIGHT), LEFT.r >= RIGHT.r-1, LOCAL);
 
-// spread across nodes and perform global rollup to string
-distd := DISTRIBUTE(d, r / (thorlib.nodes()+1));
+// use global sort to spread across nodes, then perform global rollup to string
+distd := SORT(d, r);
 p := PROJECT(distd, TRANSFORM({ d, string res:=''; }, SELF := LEFT));
 p t2(p l, p r) := transform
  SELF.res := IF(L.res='',(string)l.r+(string)r.r,(string)l.res + (string)r.r);
