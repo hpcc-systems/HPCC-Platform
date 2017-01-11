@@ -268,6 +268,8 @@ private:
     int                  m_maxConnections;
     
     StringBuffer         m_sdfieldname;
+
+    int                  m_timeout;
 public:
     IMPLEMENT_IINTERFACE
 
@@ -329,6 +331,8 @@ public:
         else
             m_ldap_secure_port = atoi(portbuf.str());
 
+        m_timeout = cfg->getPropInt(".//@ldapTimeoutSecs", LDAPTIMEOUT);
+
         int rc = LDAP_OTHER;
         StringBuffer hostbuf, dcbuf;
         const char * ldapDomain = cfg->queryProp(".//@ldapDomain");
@@ -337,7 +341,7 @@ public:
             getLdapHost(hostbuf);
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
-                rc = LdapUtils::getServerInfo(hostbuf.str(), m_ldapport, dcbuf, m_serverType, ldapDomain);
+                rc = LdapUtils::getServerInfo(hostbuf.str(), m_ldapport, dcbuf, m_serverType, ldapDomain, m_timeout);
                 if(!LdapServerDown(rc) || retries >= LDAPSEC_MAX_RETRIES)
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);
@@ -670,6 +674,11 @@ public:
         else if(m_serverType == IPLANET)
             sysuser_basedn.append("ou=administrators,ou=topologymanagement,o=netscaperoot");
     }
+
+    virtual int getLdapTimeout()
+    {
+        return m_timeout;
+    }
 };
 
 
@@ -712,9 +721,9 @@ private:
         m_ld = LdapUtils::LdapInit(protocol, ldapserver, m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
         int rc = LDAP_SUCCESS;
         if(m_ldapconfig->sysuserSpecified())
-            rc =  LdapUtils::LdapBind(m_ld, m_ldapconfig->getDomain(), m_ldapconfig->getSysUser(), m_ldapconfig->getSysUserPassword(), m_ldapconfig->getSysUserDn(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
+            rc =  LdapUtils::LdapBind(m_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), m_ldapconfig->getSysUser(), m_ldapconfig->getSysUserPassword(), m_ldapconfig->getSysUserDn(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
         else
-            rc =  LdapUtils::LdapBind(m_ld, m_ldapconfig->getDomain(), NULL, NULL, NULL, m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
+            rc =  LdapUtils::LdapBind(m_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), NULL, NULL, NULL, m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
 
         if(rc == LDAP_SUCCESS)
         {
@@ -823,7 +832,7 @@ public:
         {
             LDAPMessage* msg = NULL;
             
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};
+            TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
             int err = ldap_search_ext_s(m_ld, NULL, LDAP_SCOPE_BASE, "objectClass=*", NULL, 0, NULL, NULL, &timeOut, 1, &msg);
 
             if(msg != NULL)
@@ -1116,6 +1125,7 @@ private:
     struct berval * m_pCookie;
     LDAPMessage *   m_pPageEntry;
     LDAPMessage *   m_pPageBlock;
+    int             m_timeout;
 
     //local helper class, ensures ldap Page Control memory freed
     class CPageControlMemWrapper
@@ -1144,7 +1154,7 @@ private:
             return false;
 
         CPageControlMemWrapper pageCtrlMem;
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};
+        TIMEVAL timeOut = {m_timeout,0};
         try
         {
 #ifdef LDAP_API_FEATURE_PAGED_RESULTS
@@ -1250,10 +1260,12 @@ private:
 
 public:
 
-    CPagedLDAPSearch(LDAP* _pLdapConn, char * _pszDN, unsigned long _scope, char * _pszFilter, char * _pszAttrs[])
+    CPagedLDAPSearch(LDAP* _pLdapConn, int _timeout, char * _pszDN, unsigned long _scope, char * _pszFilter, char * _pszAttrs[])
     {
         m_pLdapConn =_pLdapConn;
+
         m_pszDN = _pszDN;
+        m_timeout = _timeout;
         m_scope = _scope;
         m_pszFilter = _pszFilter;
         m_pszAttrs = _pszAttrs;
@@ -1315,7 +1327,7 @@ public:
 };
 
 static CriticalSection  mpaCrit;
-static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _baseDN)
+static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _baseDN, int _timeout)
 {
     static time_t   lastPwdAgeCheck = 0;
     static __int64  maxPwdAge = PWD_NEVER_EXPIRES;
@@ -1328,7 +1340,7 @@ static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _bas
     DBGLOG("Retrieving LDAP 'maxPwdAge'");
     char* attrs[] = {"maxPwdAge", NULL};
     CLDAPMessage searchResult;
-    TIMEVAL timeOut = {LDAPTIMEOUT,0};
+    TIMEVAL timeOut = {_timeout,0};
     Owned<ILdapConnection> lconn = _conns->getConnection();
     LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
     int result = ldap_search_ext_s(sys_ld, (char*)_baseDN, LDAP_SCOPE_BASE, NULL,
@@ -1447,7 +1459,7 @@ public:
         __int64 time = 0;
         for (unsigned x=0; x < len; x++)
             time = time * 10 + ( (int)val[x] - '0');
-        time += getMaxPwdAge(m_connections,(char*)m_ldapconfig->getBasedn() );
+        time += getMaxPwdAge(m_connections,(char*)m_ldapconfig->getBasedn(), m_ldapconfig->getLdapTimeout());
         dt.setFromFILETIME(time);
         dt.adjustTime(dt.queryUtcToLocalDelta());
     }
@@ -1463,7 +1475,7 @@ public:
             if(!username || !*username || !password || !*password)
                 return false;
 
-            if (getMaxPwdAge(m_connections,(char*)m_ldapconfig->getBasedn()) != PWD_NEVER_EXPIRES)
+            if (getMaxPwdAge(m_connections,(char*)m_ldapconfig->getBasedn(), m_ldapconfig->getLdapTimeout()) != PWD_NEVER_EXPIRES)
                 m_domainPwdsNeverExpire = false;
             else
                 m_domainPwdsNeverExpire = true;
@@ -1500,7 +1512,7 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
             CLDAPMessage searchResult;
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};
+            TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
             int result = ldap_search_ext_s(sys_ld,
                             (char*)m_ldapconfig->getUserBasedn(), //distinguished name of the entry at which to start the search
                             LDAP_SCOPE_SUBTREE,
@@ -1523,7 +1535,7 @@ public:
             if(entries == 0)
             {
                 searchResult.ldapMsgFree();
-                TIMEVAL timeOut = {LDAPTIMEOUT,0};
+                TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
                 result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
                 if(result != LDAP_SUCCESS)
                 {
@@ -1637,7 +1649,7 @@ public:
                 DBGLOG("LdapBind for user %s (retries=%d).", username, retries);
                 {
                     LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
-                    rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
+                    rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     if(rc != LDAP_SUCCESS)
                         ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
                     LDAP_UNBIND(user_ld);
@@ -1660,7 +1672,7 @@ public:
                 {
                     WARNLOG("Using automatically obtained LDAP Server %s", dc.str());
                     LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), dc.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
-                    rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
+                    rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     if(rc != LDAP_SUCCESS)
                         ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
                     LDAP_UNBIND(user_ld);
@@ -1924,7 +1936,7 @@ public:
         {
             CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
 
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+            TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
@@ -1995,7 +2007,7 @@ public:
 
             filter.append(user.getName());
 
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+            TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
             
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -2115,7 +2127,7 @@ public:
             filter.appendf("entryid=%d", uid);
         }
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0}; 
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -2204,7 +2216,7 @@ public:
             act_fieldname = "uid";
         }
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0}; 
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -2279,7 +2291,7 @@ public:
         char        *attribute;       
         LDAPMessage *message;
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -2394,7 +2406,7 @@ public:
         else
             filter.append("objectClass=inetorgperson");
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -2420,7 +2432,7 @@ public:
 
         char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", "employeeNumber", NULL};
 
-        CPagedLDAPSearch pagedSrch(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
+        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
         for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
             bool accountPwdNeverExpires = false;
@@ -3054,7 +3066,7 @@ public:
         char        *attribute, **values = NULL;
         LDAPMessage *message;
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         StringBuffer filter;
         filter.append("sAMAccountName=").append(username);
@@ -3145,7 +3157,7 @@ public:
         m_ldapconfig->getLdapHost(hostbuf);
 
         LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
-        int rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdn, m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
+        int rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(),m_ldapconfig->getDomain(), username, password, userdn, m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
         if(rc != LDAP_SUCCESS)
             ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
         LDAP_UNBIND(user_ld);
@@ -3275,7 +3287,7 @@ public:
             char        **values = NULL;
             LDAPMessage *message;
 
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};
+            TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -3334,7 +3346,7 @@ public:
         LdapUtils::normalizeDn(basedn, m_ldapconfig->getBasedn(), basednbuf);
         StringBuffer filter("objectClass=*");
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -3347,7 +3359,7 @@ public:
             fldname = "ou";
         char        *attrs[] = {(char*)fldname, "description", NULL};
 
-        CPagedLDAPSearch pagedSrch(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs);
+        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs);
         for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
             // Go through the search results by checking message types
@@ -3415,7 +3427,7 @@ public:
             filter.appendf(")(|(%s=*%s*)))", "uNCName", searchstr);
         }
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -3428,7 +3440,7 @@ public:
             fldname = "ou";
         char        *attrs[] = {(char*)fldname, "description", NULL};
 
-        CPagedLDAPSearch pagedSrch(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs);
+        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs);
         for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
             // Go through the search results by checking message types
@@ -3614,13 +3626,13 @@ public:
         else
             filter.append("objectClass=groupofuniquenames");
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         char *attrs[] = {"cn", "managedBy", "description", NULL};
 
-        CPagedLDAPSearch pagedSrch(ld, baseDN==nullptr ? (char*)m_ldapconfig->getGroupBasedn() : (char*)baseDN, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
+        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), baseDN==nullptr ? (char*)m_ldapconfig->getGroupBasedn() : (char*)baseDN, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
         for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
             // Go through the search results by checking message types
@@ -3837,7 +3849,7 @@ public:
             StringBuffer filter("sAMAccountName=");
             filter.append(user);
 
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+            TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -4124,7 +4136,7 @@ public:
             filter.append("cn=").append(groupname);
         }
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -4144,7 +4156,7 @@ public:
         StringBuffer groupbasedn;
         getGroupBaseDN(groupname, groupbasedn, groupsDN);
 
-        CPagedLDAPSearch pagedSrch(ld, (char*)groupbasedn.str(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
+        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)groupbasedn.str(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
         for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
         {
             // Go through the search results by checking message types
@@ -4399,13 +4411,13 @@ public:
 
     virtual int countEntries(const char* basedn, const char* filter, int limit)
     {
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
         char *attrs[] = { LDAP_NO_ATTRS, NULL };
-        CPagedLDAPSearch pagedSrch(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter, attrs);
+        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter, attrs);
         int entries = pagedSrch.countEntries();
         return entries;
     }
@@ -4421,7 +4433,7 @@ public:
                 
                 char* pw_attrs[] = {"nsslapd-rootpwstoragescheme", NULL};
                 CLDAPMessage msg;
-                TIMEVAL timeOut = {LDAPTIMEOUT,0};
+                TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
                 int err = ldap_search_ext_s(ld, "cn=config", LDAP_SCOPE_BASE, "objectClass=*", pw_attrs, false, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &msg.msg);
                 if(err != LDAP_SUCCESS)
                 {
@@ -4513,7 +4525,7 @@ private:
             char        *attribute;
             LDAPMessage *message;
 
-            TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+            TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
             char *dn_fieldname;
             dn_fieldname = "distinguishedName";
@@ -4594,7 +4606,7 @@ private:
         char        *attribute;
         LDAPMessage *message;
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         char *uid_fieldname = "sAMAccountName";
 
@@ -4920,7 +4932,7 @@ private:
         }
         filter.append(")");
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
         
         char* attrs[] = {(char*)id_fieldname, (char*)des_fieldname, NULL};
         Owned<ILdapConnection> lconn = m_connections->getConnection();
@@ -5087,7 +5099,7 @@ private:
         }
         filter.append(")");
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
         
         char* attrs[] = {sd_fieldname, NULL};
         Owned<ILdapConnection> lconn = m_connections->getConnection();
@@ -5170,7 +5182,7 @@ private:
         LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
         char* attrs[] = {"ou", NULL};
         CLDAPMessage searchResult;
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
         int rc = ldap_search_ext_s(sys_ld,const_cast <char*>(ou),LDAP_SCOPE_ONELEVEL,NULL,attrs,0,NULL,NULL,&timeOut,LDAP_NO_LIMIT,&searchResult.msg);
         return rc == LDAP_SUCCESS;
     }
@@ -5588,7 +5600,7 @@ private:
         char        *attribute;
         LDAPMessage *message;
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};   
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         char        *attrs[] = {"userAccountControl", NULL};
         CLDAPMessage searchResult;
@@ -6005,7 +6017,7 @@ private:
         attrs[0] = &desc_attr;
         attrs[1] = nullptr;
 
-        TIMEVAL timeOut = { LDAPTIMEOUT, 0 };
+        TIMEVAL timeOut = { m_ldapconfig->getLdapTimeout(), 0 };
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*) lconn.get())->getLd();
 
@@ -6125,7 +6137,7 @@ private:
         else
             filter.append("objectClass=groupofuniquenames");
 
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};
+        TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -6133,7 +6145,7 @@ private:
 
         StringBuffer dn;
         dn.appendf("CN=%s,%s", viewName, (char*)m_ldapconfig->getViewBasedn() );
-        CPagedLDAPSearch pagedSrch(ld, (char*)dn.str(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
+        CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)dn.str(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
         int idx = 0;
         LDAPMessage *message = pagedSrch.getFirstEntry();
         if (message)
