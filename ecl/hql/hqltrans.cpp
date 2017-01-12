@@ -215,7 +215,7 @@ HqlTransformerInfo::~HqlTransformerInfo()
 #ifdef TRANSFORM_STATS
     StringBuffer s;
     if (getStatsText(s))
-        printf(s.newline().str());
+        printf("%s\n", s.str());
 #endif
 }
 

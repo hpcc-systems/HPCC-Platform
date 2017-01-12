@@ -1851,6 +1851,9 @@ void EclCompileInstance::logStats()
         DBGLOG("Stats:,parse,%u,generate,%u,peakmem,%u,xml,%" I64F "u,cpp,%" I64F "u",
                 stats.parseTime, stats.generateTime, (unsigned)(peakResident / 0x100000),
                 (unsigned __int64)stats.xmlSize, (unsigned __int64)stats.cppSize);
+
+        //Following only produces output if the system has been compiled with TRANSFORM_STATS defined
+        dbglogTransformStats(true);
     }
 }
 
@@ -2279,8 +2282,6 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             Owned<IErrorReceiver> localErrs = createFileErrorReceiver(logFile);
             EclCompileInstance info(&file, *localErrs, logFile, outFilename, optLegacyImport, optLegacyWhen);
             processFile(info);
-            //Following only produces output if the system has been compiled with TRANSFORM_STATS defined
-            dbglogTransformStats(true);
             if (info.wu &&
                 (info.wu->getDebugValueBool("generatePartialOutputOnError", false) || info.queryErrorProcessor().errCount() == 0))
             {
