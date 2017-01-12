@@ -105,7 +105,7 @@ extern HQL_API int getResultSequenceValue(IHqlExpression * expr);
 extern HQL_API unsigned countTotalFields(IHqlExpression * record, bool includeVirtual);
 extern HQL_API bool transformContainsSkip(IHqlExpression * transform);
 extern HQL_API bool transformListContainsSkip(IHqlExpression * transforms);
-extern HQL_API bool recordContainsNestedRecord(IHqlExpression * record);
+extern HQL_API bool recordContainsNestedRow(IHqlExpression * record);
 extern HQL_API IHqlExpression * queryStripCasts(IHqlExpression * expr);
 extern HQL_API bool remainingChildrenMatch(IHqlExpression * left, IHqlExpression * right, unsigned first);
 

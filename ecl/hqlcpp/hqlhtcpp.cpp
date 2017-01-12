@@ -3506,7 +3506,7 @@ bool HqlCppTranslator::buildMetaPrefetcherClass(BuildCtx & ctx, IHqlExpression *
     return ok;
 }
 
-IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExpression * rowRecord)
+IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExpression * rowRecord, bool expandNested)
 {
     /*
     Most field information is context independent - which make life much easier, there are a few exceptions though:
@@ -3518,6 +3518,7 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
     */
 
     bool contextDependent = false;
+    LinkedHqlExpr extra = rowRecord;
     switch  (expr->getOperator())
     {
     case no_field:
@@ -3546,6 +3547,10 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
             //actually too strict - some alien data types are not context dependent.
             contextDependent = true;
             break;
+        case type_row:
+            contextDependent = true;
+            extra.setown(createConstant(expandNested));
+            break;
         }
         break;
     case no_ifblock:
@@ -3554,7 +3559,7 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
     }
 
     if (contextDependent)
-        return createAttribute(rtlFieldKeyMarkerAtom, LINK(expr), LINK(rowRecord));
+        return createAttribute(rtlFieldKeyMarkerAtom, LINK(expr), extra.getClear());
     return LINK(expr);
 }
 
@@ -3563,24 +3568,17 @@ bool checkXpathIsNonScalar(const char *xpath)
     return (strpbrk(xpath, "/?*[]<>")!=NULL); //anything other than a single tag/attr name cannot name a scalar field
 }
 
-unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpression * fieldKey)
+unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord, bool expandNested)
 {
+    OwnedHqlExpr fieldKey = getRtlFieldKey(field, rowRecord, expandNested);
+
     BuildCtx declarectx(*code, declareAtom);
     HqlExprAssociation * match = declarectx.queryMatchExpr(fieldKey);
     if (match)
     {
         IHqlExpression * mapped = match->queryExpr();
-        if (instanceName)
-            mapped->queryChild(0)->toString(*instanceName);
+        mapped->queryChild(0)->toString(instanceName);
         return (unsigned)getIntValue(mapped->queryChild(1));
-    }
-
-    IHqlExpression * field = fieldKey;
-    IHqlExpression * rowRecord = NULL;
-    if (field->isAttribute())
-    {
-        field = fieldKey->queryChild(0);
-        rowRecord = fieldKey->queryChild(1);
     }
 
     StringBuffer name;
@@ -3600,6 +3598,10 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
         case type_row:
             //Backward compatibility - should revisit
             fieldType.set(fieldType->queryChildType());
+            break;
+        case type_bitfield:
+            //fieldKey contains a field with a type annotated with offsets/isLastBitfield
+            fieldType.set(fieldKey->queryType());
             break;
         }
 
@@ -3629,9 +3631,6 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
             if (checkXpathIsNonScalar(xpathName))
                 typeFlags |= RFTMhasnonscalarxpath;
         }
-
-        StringBuffer typeName;
-        typeFlags = buildRtlType(typeName, fieldType, typeFlags); //benefit to adding other flags to generated code as well?
 
         StringBuffer lowerName;
         lowerName.append(field->queryName()).toLowerCase();
@@ -3672,22 +3671,48 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
         }
 
         StringBuffer definition;
-        definition.append("const RtlFieldStrInfo ").append(name).append("(\"").append(lowerName).append("\",").append(xpathCppText).append(",&").append(typeName);
-        if (defaultInitializer.length())
-            definition.append(',').append(defaultInitializer);
-        definition.append(");");
+        if (field->isDatarow() && expandNested)
+        {
+            BuildCtx fieldctx(declarectx);
 
-        BuildCtx fieldctx(declarectx);
-        fieldctx.setNextPriority(TypeInfoPrio);
-        fieldctx.addQuoted(definition);
+            OwnedHqlExpr marker = createAttribute(rowAtom);
+            if (!declarectx.queryMatchExpr(marker))
+            {
+                fieldctx.setNextPriority(TypeInfoPrio);
+                fieldctx.addQuotedLiteral("const RtlBeginRowTypeInfo tybRow;");
+                fieldctx.setNextPriority(TypeInfoPrio);
+                fieldctx.addQuotedLiteral("const RtlEndRowTypeInfo tyeRow;");
+                declarectx.associateExpr(marker, marker);
+            }
+
+            definition.clear().append("const RtlFieldStrInfo ").append(name).append("b(\"").append(lowerName).append("\",").append(xpathCppText).append(",&tybRow);");
+            fieldctx.setNextPriority(TypeInfoPrio);
+            fieldctx.addQuoted(definition);
+            definition.clear().append("const RtlFieldStrInfo ").append(name).append("e(\"").append(lowerName).append("\",").append(xpathCppText).append(",&tyeRow);");
+            fieldctx.setNextPriority(TypeInfoPrio);
+            fieldctx.addQuoted(definition);
+        }
+        else
+        {
+            StringBuffer typeName;
+            typeFlags = buildRtlType(typeName, fieldType, typeFlags); //benefit to adding other flags to generated code as well?
+
+            definition.append("const RtlFieldStrInfo ").append(name).append("(\"").append(lowerName).append("\",").append(xpathCppText).append(",&").append(typeName);
+            if (defaultInitializer.length())
+                definition.append(',').append(defaultInitializer);
+            definition.append(");");
+
+            BuildCtx fieldctx(declarectx);
+            fieldctx.setNextPriority(TypeInfoPrio);
+            fieldctx.addQuoted(definition);
+        }
 
         name.insert(0, "&");
     }
     OwnedHqlExpr nameExpr = createVariable(name.str(), makeBoolType());
     OwnedHqlExpr mapped = createAttribute(fieldAtom, LINK(nameExpr), getSizetConstant(typeFlags));
     declarectx.associateExpr(fieldKey, mapped);
-    if (instanceName)
-        instanceName->append(name);
+    instanceName.append(name);
     return typeFlags;
 }
 
@@ -3702,7 +3727,7 @@ unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHq
     {
         unsigned length = 0;
         StringBuffer childTypeName;
-        unsigned childType = buildRtlRecordFields(childTypeName, ifblock->queryChild(1), rowRecord);
+        unsigned childType = buildRtlRecordFields(childTypeName, ifblock->queryChild(1), rowRecord, false);
         fieldType |= (childType & (RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr));
 
         StringBuffer className;
@@ -3746,26 +3771,43 @@ unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHq
 }
 
 
-unsigned HqlCppTranslator::expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord)
+unsigned HqlCppTranslator::expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord, bool expandNested)
 {
     unsigned fieldType = 0;
     ForEachChild(i, record)
     {
         IHqlExpression * cur = record->queryChild(i);
-        StringBuffer next;
         unsigned childType = 0;
         switch (cur->getOperator())
         {
         case no_field:
-        case no_ifblock:
+            if (cur->isDatarow() && expandNested)
             {
-                OwnedHqlExpr fieldKey = getRtlFieldKey(cur, rowRecord);
-                childType = buildRtlField(&fieldListText, fieldKey);
-                fieldListText.append(",");
-                break;
+                StringBuffer baseName;
+                childType = buildRtlField(baseName, cur, rowRecord, expandNested);
+                fieldListText.append(baseName).append("b,");
+                childType = expandRtlRecordFields(fieldListText, cur->queryRecord(), cur->queryRecord(), true);
+                fieldListText.append(baseName).append("e,");
             }
+            else
+            {
+                childType = buildRtlField(fieldListText, cur, rowRecord, expandNested);
+                fieldListText.append(",");
+            }
+            break;
+        case no_ifblock:
+            if (expandNested)
+            {
+                childType = expandRtlRecordFields(fieldListText, cur->queryChild(1), cur->queryRecord(), true);
+            }
+            else
+            {
+                childType = buildRtlField(fieldListText, cur, rowRecord, expandNested);
+                fieldListText.append(",");
+            }
+            break;
         case no_record:
-            childType = expandRtlRecordFields(fieldListText, cur, rowRecord);
+            childType = expandRtlRecordFields(fieldListText, cur, rowRecord, expandNested);
             break;
         }
         fieldType |= (childType & (RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr));
@@ -3774,10 +3816,10 @@ unsigned HqlCppTranslator::expandRtlRecordFields(StringBuffer & fieldListText, I
 }
 
 
-unsigned HqlCppTranslator::buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord)
+unsigned HqlCppTranslator::buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord, bool expandNested)
 {
     StringBuffer fieldListText;
-    unsigned fieldFlags = expandRtlRecordFields(fieldListText, record, rowRecord);
+    unsigned fieldFlags = expandRtlRecordFields(fieldListText, record, rowRecord, expandNested);
 
     StringBuffer name;
     name.append("tl").append(++nextTypeId);
@@ -3791,12 +3833,6 @@ unsigned HqlCppTranslator::buildRtlRecordFields(StringBuffer & instanceName, IHq
 
     instanceName.append(name);
     return fieldFlags;
-}
-
-unsigned HqlCppTranslator::getRtlFieldInfo(StringBuffer & fieldInfoName, IHqlExpression * field, IHqlExpression * rowRecord)
-{
-    OwnedHqlExpr fieldKey = getRtlFieldKey(field, rowRecord);
-    return buildRtlField(&fieldInfoName, fieldKey);
 }
 
 unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo * type, unsigned typeFlags)
@@ -3927,7 +3963,25 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             IHqlExpression * record = ::queryRecord(type);
             className.append("RtlRecordTypeInfo");
             arguments.append(",");
-            childType = buildRtlRecordFields(arguments, record, record);
+            StringBuffer fieldsInstance;
+            childType = buildRtlRecordFields(fieldsInstance, record, record, false);
+            arguments.append(fieldsInstance);
+
+            //The following code could be used to generate an extra list of fields with nested records expanded out,
+            //but it causes some queries to grow significantly, so not currently used.
+#if 0
+            if (!recordContainsNestedRow(record))
+            {
+                arguments.append(fieldsInstance).append(",");
+                arguments.append(fieldsInstance);
+            }
+            else
+            {
+                arguments.append(fieldsInstance).append(",");
+                childType |= buildRtlRecordFields(arguments, record, record, true);
+            }
+#endif
+
 //          fieldType |= (childType & RFTMcontainsifblock);
             length = getMinRecordSize(record);
             if (!isFixedRecordSize(record))
@@ -3951,7 +4005,10 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             arguments.append(",&");
             childType = buildRtlType(arguments, ::queryRecordType(type), 0);
             if (hasLinkCountedModifier(type))
+            {
                 fieldType |= RFTMlinkcounted;
+                fieldType &= ~RFTMunknownsize;
+            }
             break;
         }
     case type_dictionary:
@@ -3960,7 +4017,10 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             arguments.append(",&");
             childType = buildRtlType(arguments, ::queryRecordType(type), 0);
             if (hasLinkCountedModifier(type))
+            {
                 fieldType |= RFTMlinkcounted;
+                fieldType &= ~RFTMunknownsize;
+            }
             StringBuffer lookupHelperName;
             buildDictionaryHashClass(::queryRecord(type), lookupHelperName);
             arguments.append(",&").append(lookupHelperName.str());

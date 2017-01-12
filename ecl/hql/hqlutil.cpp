@@ -3374,7 +3374,7 @@ bool isEmptyList(IHqlExpression * expr)
 }
 
 
-bool recordContainsNestedRecord(IHqlExpression * record)
+bool recordContainsNestedRow(IHqlExpression * record)
 {
     ForEachChild(i, record)
     {
@@ -3382,11 +3382,11 @@ bool recordContainsNestedRecord(IHqlExpression * record)
         switch (cur->getOperator())
         {
         case no_record:
-            if (recordContainsNestedRecord(cur))
+            if (recordContainsNestedRow(cur))
                 return true;
             break;
         case no_ifblock:
-            if (recordContainsNestedRecord(cur->queryChild(1)))
+            if (recordContainsNestedRow(cur->queryChild(1)))
                 return true;
             break;
         case no_field:
