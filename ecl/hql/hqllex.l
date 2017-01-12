@@ -1436,8 +1436,6 @@ ENCRYPTED           {
                     }
 FUNCTIONMACRO|MACRO { 
                         setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
 
                         int tok;
                         ECLlocation startLocation;
@@ -1467,8 +1465,10 @@ FUNCTIONMACRO|MACRO {
                         if(complex || isFunctionMacro)
                             endpos -= 8; // remove the ENDMACRO token
                         
-                        // keep the orginal format info (like blanks, newlines) for macro
+                        if (!lookup)
+                            return MACRO;
                         
+                        // keep the orginal format info (like blanks, newlines) for macro
                         int len = endpos-startpos;
                         Owned<IFileContents> macroContents;
                         if (!isFunctionMacro)
