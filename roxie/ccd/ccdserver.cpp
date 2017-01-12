@@ -9734,7 +9734,7 @@ public:
             return NULL;
         loop
         {
-            const void * ret = inputStream->nextRow();
+            OwnedConstRoxieRow ret(inputStream->nextRow());
             if (!ret)
             {
                 //stop returning two NULLs in a row.
@@ -9743,7 +9743,7 @@ public:
                     anyThisGroup = false;
                     return NULL;
                 }
-                ret = inputStream->nextRow();
+                ret.setown(inputStream->nextRow());
                 if (!ret)
                 {
                     eof = true;
@@ -9755,9 +9755,8 @@ public:
             {
                 anyThisGroup = true;
                 processed++;
-                return ret;
+                return ret.getClear();
             }
-            ReleaseRoxieRow(ret);
         }
     }
 
@@ -9771,7 +9770,7 @@ public:
 
         loop
         {
-            const void * ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+            OwnedConstRoxieRow ret(inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
             if (!ret)
             {
                 eof = true;
@@ -9781,19 +9780,19 @@ public:
             if (!wasCompleteMatch)
             {
                 anyThisGroup = false; // RKC->GH - is this right??
-                return ret;
+                return ret.getClear();
             }
 
             if (helper.isValid(ret))
             {
                 anyThisGroup = true;
                 processed++;
-                return ret;
+                return ret.getClear();
             }
 
             if (!stepExtra.returnMismatches())
             {
-                ReleaseRoxieRow(ret);
+                ret.clear();
                 return nextRow();
             }
 
@@ -9803,10 +9802,8 @@ public:
             {
                 wasCompleteMatch = false;
                 anyThisGroup = false; // WHY?
-                return ret;
+                return ret.getClear();
             }
-
-            ReleaseRoxieRow(ret);
         }
     }
 
