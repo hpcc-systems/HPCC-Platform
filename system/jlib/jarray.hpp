@@ -45,7 +45,6 @@ typedef int (* StdCompare)(const void *_e1, const void *_e2);
 class jlib_decl Allocator
 {
 public:
-    Allocator() { _init(); }
     void  kill();
     inline bool isItem(aindex_t pos = 0) const    { return pos < used; }      /* Is there an item at pos */
     inline aindex_t length() const                 { return used; } /* Return number of items  */
@@ -67,9 +66,9 @@ protected:
     void doSwapWith(Allocator & other);
 
 protected:
-    void * _head;
-    aindex_t used;
-    aindex_t max;
+    void * _head = nullptr;
+    aindex_t used = 0;
+    aindex_t max = 0;
 };
 
 

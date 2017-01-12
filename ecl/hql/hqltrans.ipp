@@ -33,13 +33,14 @@
 
 typedef MapOwnedToOwned<IHqlExpression, IHqlExpression> MapOwnedHqlToOwnedHql;
 
+//NOTE: eclcc needs to be run with the -m option for the summary to be output
 //#define TRANSFORM_STATS
 //#define TRANSFORM_STATS_OPS
 //#define TRANSFORM_STATS_TIME
 //#define TRANSFORM_STATS_MEMORY
 //#define ALLOW_TRANSFORM_TRACING
 
-class HqlTransformStats
+class HQL_API HqlTransformStats
 {
 public:
     HqlTransformStats();
