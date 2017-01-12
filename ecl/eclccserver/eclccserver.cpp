@@ -403,7 +403,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 if (!workunit->getDebugValueBool("obfuscateOutput", false))
                 {
                     Owned<IWUQuery> query = workunit->updateQuery();
-                    query->setQueryText(eclQuery.s.str());
+                    query->setQueryText(eclQuery.s.str(), true);
                 }
 
                 createUNCFilename(realdllfilename.str(), dllurl);
