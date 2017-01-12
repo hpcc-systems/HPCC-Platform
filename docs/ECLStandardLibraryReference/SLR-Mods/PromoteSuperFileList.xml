@@ -100,7 +100,7 @@
         <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry>PromoteSupeFileList returns Null; fPromoteSupeFileList
+          <entry>PromoteSuperFileList returns Null; fPromoteSuperFileList
           returns a string.</entry>
         </row>
       </tbody>
