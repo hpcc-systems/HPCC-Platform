@@ -1728,6 +1728,17 @@ void ActivityTimeAccumulator::addStatistics(IStatisticGatherer & builder) const
     }
 }
 
+void ActivityTimeAccumulator::addStatistics(CRuntimeStatisticCollection & merged) const
+{
+    if (totalCycles)
+    {
+        merged.mergeStatistic(StWhenFirstRow, firstRow);
+        merged.mergeStatistic(StTimeElapsed, elapsed());
+        merged.mergeStatistic(StTimeTotalExecute, cycle_to_nanosec(totalCycles));
+        merged.mergeStatistic(StTimeFirstExecute, latency());
+    }
+}
+
 void ActivityTimeAccumulator::merge(const ActivityTimeAccumulator & other)
 {
     if (other.totalCycles)

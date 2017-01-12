@@ -210,9 +210,9 @@ public:
     {
         ctx->mergeStats(from);
     }
-    virtual const CRuntimeStatisticCollection &queryStats() const
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
-        return ctx->queryStats();
+        ctx->gatherStats(merged);
     }
     virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0)))
     {
@@ -282,9 +282,9 @@ public:
     {
         ctx->noteProcessed(subgraphId, activityId, _idx, _processed, _strands);
     }
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId) const
     {
-        ctx->mergeActivityStats(fromStats, subgraphId, activityId, _totalCycles, _localCycles);
+        ctx->mergeActivityStats(fromStats, subgraphId, activityId);
     }
     virtual IProbeManager *queryProbeManager() const
     {
@@ -350,7 +350,8 @@ protected:
 
 static const StatisticsMapping actStatistics(StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
                                               StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped, StNumStrands,
-                                              StNumScansPerRow, StNumAllocations, StNumAllocationScans, StKindNone);
+                                              StNumScansPerRow, StNumAllocations, StNumAllocationScans,
+                                              StTimeFirstExecute, StCycleLocalExecuteCycles, StCycleTotalExecuteCycles, StKindNone);
 static const StatisticsMapping joinStatistics(&actStatistics, StNumAtmostTriggered, StKindNone);
 static const StatisticsMapping keyedJoinStatistics(&joinStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                     StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
@@ -388,11 +389,8 @@ protected:
     bool optUnordered = false; // is the output specified as unordered?
     unsigned heapFlags;
 
-    mutable CriticalSection statsCrit;
     mutable __int64 processed;
     mutable __int64 started;
-    mutable __int64 totalCycles;
-    mutable __int64 localCycles;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -402,8 +400,6 @@ public:
     {
         processed = 0;
         started = 0;
-        totalCycles = 0;
-        localCycles = 0;
         dependentCount = 0;
         optParallel = _graphNode.getPropInt("att[@name='parallel']/@value", 0);
         optUnordered = !_graphNode.getPropBool("att[@name='ordered']/@value", true);
@@ -490,18 +486,6 @@ public:
         }
     }
 
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
-    {
-        if (_totalCycles.totalCycles || _localCycles)
-        {
-            CriticalBlock b(statsCrit);
-            dbgassertex(_totalCycles.totalCycles >= _localCycles);
-            totalCycles += _totalCycles.totalCycles;
-            localCycles += _localCycles;
-        }
-        CActivityFactory::mergeStats(fromStats);
-    }
-
     virtual void noteStarted() const
     {
         CriticalBlock b(statsCrit);
@@ -532,10 +516,6 @@ public:
         CriticalBlock b(statsCrit);
         if (started)
             putStatsValue(&node, "_roxieStarted", "sum", started);
-        if (totalCycles)
-            putStatsValue(&node, "totalTime", "sum", (unsigned) (cycle_to_nanosec(totalCycles)/1000));
-        if (localCycles)
-            putStatsValue(&node, "localTime", "sum", (unsigned) (cycle_to_nanosec(localCycles)/1000));
     }
 
     virtual void resetNodeProgressInfo()
@@ -544,22 +524,19 @@ public:
         CriticalBlock b(statsCrit);
         processed = 0;
         started = 0;
-        totalCycles = 0;
-        localCycles = 0;
     }
     virtual void getActivityMetrics(StringBuffer &reply) const
     {
         CActivityFactory::getActivityMetrics(reply);
         CriticalBlock b(statsCrit);
         putStatsValue(reply, "_roxieStarted", "sum", started);
-        putStatsValue(reply, "totalTime", "sum", (unsigned) (cycle_to_nanosec(totalCycles)/1000));
-        putStatsValue(reply, "localTime", "sum", (unsigned) (cycle_to_nanosec(localCycles)/1000));
+        putStatsValue(reply, "totalTime", "sum", (unsigned) (mystats.getSerialStatisticValue(StTimeTotalExecute)/1000));
+        putStatsValue(reply, "localTime", "sum", (unsigned) (mystats.getSerialStatisticValue(StTimeLocalExecute)/1000));
     }
-    virtual unsigned __int64 queryLocalCycles() const
+    virtual unsigned __int64 queryLocalTimeNs() const
     {
-        return localCycles;
+        return mystats.getSerialStatisticValue(StTimeLocalExecute);
     }
-
     virtual IQueryFactory &queryQueryFactory() const
     {
         return CActivityFactory::queryQueryFactory();
@@ -936,7 +913,6 @@ protected:
     MapStringToMyClass<ThorSectionTimer> functionTimers;
     unsigned processed;
     ActivityTimeAccumulator totalCycles;
-    cycle_t localCycles;
     unsigned activityId;
     activityState state;
     bool createPending;
@@ -962,7 +938,6 @@ public:
         inputStream = NULL;
         meta.set(basehelper.queryOutputMeta());
         processed = 0;
-        localCycles = 0;
         state=STATEreset;
         rowAllocator = NULL;
         debugging = _probeManager != NULL; // Don't want to collect timing stats from debug sessions
@@ -981,7 +956,6 @@ public:
         ctx = NULL;
         meta.set(basehelper.queryOutputMeta());
         processed = 0;
-        localCycles = 0;
         state=STATEreset;
         rowAllocator = NULL;
         debugging = false;
@@ -992,6 +966,12 @@ public:
     }
 
     ~CRoxieServerActivity()
+    {
+        basehelper.Release();
+        ::Release(rowAllocator);
+    }
+
+    virtual void beforeDispose() override
     {
         if (traceStartStop)
         {
@@ -1010,20 +990,25 @@ public:
             DBGLOG("STATE: Activity %d destroyed but not reset", activityId);
             state = STATEreset;  // bit pointless but there you go... 
         }
+    }
+
+    virtual void updateFactoryStatistics() override
+    {
+        CRuntimeStatisticCollection mergedStats(stats.queryMapping());
+        gatherStats(mergedStats);
+
         if (factory && !debugging)
         {
             if (processed)
                 factory->noteProcessed(0, processed);
-            factory->mergeActivityStats(stats, totalCycles, localCycles);
+            factory->mergeStats(mergedStats);
         }
         if (ctx && factory)
         {
             if (processed)
                 ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed, 0);
-            ctx->mergeActivityStats(stats, factory->querySubgraphId(), activityId, totalCycles, localCycles);
+            ctx->mergeActivityStats(mergedStats, factory->querySubgraphId(), activityId);
         }
-        basehelper.Release();
-        ::Release(rowAllocator);
     }
 
     virtual const IRoxieContextLogger &queryLogCtx()const
@@ -1063,12 +1048,11 @@ public:
 #endif
         return nullptr;
     }
-    void mergeStrandStats(unsigned strandProcessed, const ActivityTimeAccumulator & strandCycles, const CRuntimeStatisticCollection & strandStats)
+    void mergeStrandStats(unsigned strandProcessed, const ActivityTimeAccumulator & strandCycles)
     {
         CriticalBlock cb(statscrit);
         processed += strandProcessed;
         totalCycles.merge(strandCycles);
-        stats.merge(strandStats);
     }
     inline void ensureRowAllocator()
     {
@@ -1140,9 +1124,14 @@ public:
     {
         stats.merge(from);
     }
-    virtual const CRuntimeStatisticCollection &queryStats() const
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
-        return stats;
+        merged.merge(stats);
+        if (rowAllocator)
+            rowAllocator->gatherStats(merged);
+
+        totalCycles.addStatistics(merged);
+        merged.mergeStatistic(StCycleLocalExecuteCycles, queryLocalCycles());
     }
 
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
@@ -1340,11 +1329,6 @@ public:
                 }
                 if (inputStream)
                     inputStream->stop();
-                if (rowAllocator)
-                {
-                    stats.reset(heapStatistics);
-                    rowAllocator->gatherStats(stats);
-                }
             }
         }
     }
@@ -1385,7 +1369,6 @@ public:
                 resetJunction(junction);
                 ForEachItemIn(idx, dependencies)
                     dependencies.item(idx).reset();
-                localCycles = queryLocalCycles();  // We can't call queryLocalCycles() in the destructor, so save the information here when we can.
                 if (input)
                     input->reset();
             }
@@ -1683,7 +1666,6 @@ public:
         processed = 0;
         numProcessedLastGroup = 0;
         totalCycles.reset();
-        stats.reset();
     }
     virtual void stop()
     {
@@ -1692,11 +1674,11 @@ public:
             if (inputStream)
                 inputStream->stop();
 
-            stats.reset(heapStatistics); // Heap stats are always gathered from scratch each time
-            if (rowAllocator)
-                rowAllocator->gatherStats(stats);
             parent.stop();
-            parent.mergeStrandStats(processed, totalCycles, stats);
+            //It would be preferrable to move totalCycles (+processed?) to gatherStats(), but because of
+            //the way firstRow is associated with startCycles it would require an extra parameter
+            //which is not consistent with the other gatherStats() calls, or extra logic in the stats classes.
+            parent.mergeStrandStats(processed, totalCycles);
         }
         stopped = true;
     }
@@ -1711,6 +1693,13 @@ public:
     }
     inline void requestAbort() { abortRequested.store(true, std::memory_order_relaxed); }
     inline bool isAborting() { return abortRequested.load(std::memory_order_relaxed); }
+
+    void gatherStats(CRuntimeStatisticCollection & mergedStats) const
+    {
+        mergedStats.merge(stats);
+        if (rowAllocator)
+            rowAllocator->gatherStats(mergedStats);
+    }
 };
 
 class CRoxieServerStrandedActivity : public CRoxieServerActivity
@@ -1740,6 +1729,13 @@ public:
                 ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed, strands.ordinality());
             processed = 0;  // To avoid reprocessing in base destructor
         }
+    }
+
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
+    {
+        CRoxieServerActivity::gatherStats(merged);
+        ForEachItemIn(i, strands)
+            strands.item(i).gatherStats(merged);
     }
 
     virtual void onCreate(IHThorArg *_colocalArg)
@@ -4413,6 +4409,12 @@ public:
         return totalCycles;
     }
 
+    void gatherStats(CRuntimeStatisticCollection & merged) const
+    {
+        if (rowAllocator)
+            rowAllocator->gatherStats(merged);
+    }
+
     const void * nextRowGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seekLen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         if (activity.queryLogCtx().queryTraceLevel() > 20)
@@ -4760,7 +4762,6 @@ public:
                                     }
                                     else
                                     {
-                                        ActivityTimeAccumulator dummy; // We could serialize from slave? Would get confusing though
                                         CRuntimeStatisticCollection childStats(allStatistics);
                                         childStats.deserialize(buf);
                                         if (traceLevel > 5)
@@ -4768,7 +4769,7 @@ public:
                                             StringBuffer s;
                                             activity.queryLogCtx().CTXLOG("Processing ChildStats for child %d subgraph %d: %s", childId, graphId, childStats.toStr(s).str());
                                         }
-                                        activity.queryContext()->mergeActivityStats(childStats, graphId, childId, dummy, 0);
+                                        activity.queryContext()->mergeActivityStats(childStats, graphId, childId);
                                     }
                                 }
                                 ReleaseRoxieRow(rowlen);
@@ -7603,6 +7604,13 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
             addNew(new HashDedupElement(hash, nextrow), hash);
             return true;
         }
+
+        void gatherStats(CRuntimeStatisticCollection & merged) const
+        {
+            if (keyRowAllocator)
+                keyRowAllocator->gatherStats(merged);
+        }
+
     private:
         IHThorHashDedupArg & helper;
         CachedOutputMetaData keySize;
@@ -16881,6 +16889,15 @@ public:
         return processor.queryInputSteppingMeta();
     }
 
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
+    {
+        CRoxieServerNaryActivity::gatherStats(merged);
+        if (inputAllocator)
+            inputAllocator->gatherStats(merged);
+        if (outputAllocator)
+            outputAllocator->gatherStats(merged);
+    }
+
 protected:
     IHThorNWayMergeJoinArg & helper;
     CMergeJoinProcessor & processor;
@@ -17170,6 +17187,11 @@ public:
     {
         throwUnexpected(); // I am nobody's input
     }
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
+    {
+        CRoxieServerActivity::gatherStats(merged);
+        remote.gatherStats(merged);
+    }
 };
 
 class CRoxieServerRemoteActivityFactory : public CRoxieServerActivityFactory
@@ -17375,6 +17397,13 @@ public:
         {
             throw makeWrappedException(E);
         }
+    }
+
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
+    {
+        CRoxieServerActivity::gatherStats(merged);
+        if (rightRowAllocator)
+            rightRowAllocator->gatherStats(merged);
     }
 };
 
@@ -21578,6 +21607,13 @@ public:
             return rowBuilder.finalizeRowClear(outSize);
         return NULL;
     }
+
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
+    {
+        CRoxieServerActivity::gatherStats(merged);
+        if (remote)
+            remote->gatherStats(merged);
+    }
 };
 
 class CRoxieServerDiskReadActivity : public CRoxieServerDiskReadBaseActivity
@@ -22780,6 +22816,12 @@ public:
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
+    }
+
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
+    {
+        CRoxieServerActivity::gatherStats(merged);
+        remote.gatherStats(merged);
     }
 };
 
@@ -24494,6 +24536,11 @@ public:
             return NULL;
     }
 
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
+    {
+        CRoxieServerActivity::gatherStats(merged);
+        remote.gatherStats(merged);
+    }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
@@ -25067,6 +25114,13 @@ public:
         }
     }
 
+    void gatherStats(CRuntimeStatisticCollection & merged) const
+    {
+        CRemoteResultAdaptor::gatherStats(merged);
+        if (ccdRecordAllocator)
+            ccdRecordAllocator->gatherStats(merged);
+    }
+
 private:
     void processSlaveResults()
     {
@@ -25450,6 +25504,14 @@ public:
     {
         throwUnexpected(); // I am nobody's input
     }
+
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
+    {
+        CRoxieServerActivity::gatherStats(merged);
+        remote.gatherStats(merged);
+        if (indexReadAllocator)
+            indexReadAllocator->gatherStats(merged);
+    }
 };
 
 class CRoxieServerKeyedJoinBase : public CRoxieServerActivity, implements IRecordPullerCallback, implements IRoxieServerErrorHandler, implements IJoinProcessor
@@ -25587,6 +25649,12 @@ public:
         if (localCycles < 0)
             localCycles = 0;
         return localCycles;
+    }
+
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
+    {
+        CRoxieServerActivity::gatherStats(merged);
+        remote.gatherStats(merged);
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -25994,6 +26062,12 @@ public:
         throwUnexpected();
     }
 
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
+    {
+        CRoxieServerKeyedJoinBase::gatherStats(merged);
+        if (fetchInputAllocator)
+            fetchInputAllocator->gatherStats(merged);
+    }
 };
 
 #ifdef _MSC_VER
@@ -26247,6 +26321,15 @@ public:
     void processGroup(const ConstPointerArray &)
     {
         throwUnexpected();
+    }
+
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
+    {
+        CRoxieServerKeyedJoinBase::gatherStats(merged);
+        if (indexReadAllocator)
+            indexReadAllocator->gatherStats(merged);
+        if (joinFieldsAllocator)
+            joinFieldsAllocator->gatherStats(merged);
     }
 };
 
@@ -26924,6 +27007,8 @@ public:
 
     ~CActivityGraph()
     {
+        ForEachItemIn(i, activities)
+            activities.item(i).updateFactoryStatistics();
         if (probeManager)
             probeManager->deleteGraph((IArrayOf<IActivityBase>*)&activities, (IArrayOf<IInputBase>*)&probes);
     }
@@ -28057,7 +28142,7 @@ protected:
         qsort(output, 2000, sizeof(output[0]), compareFunc);
         testActivity(activity, input, output);
 
-        unsigned __int64 us = cycle_to_nanosec(factory->queryLocalCycles()/1000);
+        unsigned __int64 us = factory->queryLocalTimeNs();
         DBGLOG("Simple %s sorts: activity time %u.%u ms", type==2?"Heap" : (type==1 ? "Insertion" : "Quick"), (int)(us/1000), (int)(us%1000));
         factory->resetNodeProgressInfo();
         if (type)

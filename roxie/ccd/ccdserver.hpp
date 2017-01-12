@@ -192,6 +192,7 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
     virtual IRoxieServerActivity * queryChildActivity(unsigned activityId) = 0;
     virtual IEngineRowAllocator * createRowAllocator(IOutputMetaData * metadata) = 0;
+    virtual void updateFactoryStatistics() = 0;
 };
 
 interface IRoxieServerActivityFactory : extends IActivityFactory
@@ -213,13 +214,12 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual IHThorArg &getHelper() const = 0;
     virtual IRoxieServerActivity *createFunction(IHThorArg &helper, IProbeManager *_probeManager) const = 0;
     virtual void noteProcessed(unsigned idx, unsigned processed) const = 0;
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const ActivityTimeAccumulator &totalCycles, cycle_t localCycles) const = 0;
     virtual void onCreateChildQueries(IRoxieSlaveContext *ctx, IHThorArg *colocalArg, IArrayOf<IActivityGraph> &childGraphs, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx, unsigned numParallel) const = 0;
     virtual void noteStarted() const = 0;
     virtual void noteStarted(unsigned idx) const = 0;
     virtual void noteDependent(unsigned target) = 0;
     virtual IActivityGraph * createChildGraph(IRoxieSlaveContext * ctx, IHThorArg *colocalArg, unsigned childId, IRoxieServerActivity *parentActivity, IProbeManager * _probeManager, const IRoxieContextLogger &_logctx) const = 0;
-    virtual unsigned __int64 queryLocalCycles() const = 0;
+    virtual unsigned __int64 queryLocalTimeNs() const = 0;
     virtual bool isGraphInvariant() const = 0;
     virtual IRoxieServerSideCache *queryServerSideCache() const = 0;
     virtual IDefRecordMeta *queryActivityMeta() const = 0;
