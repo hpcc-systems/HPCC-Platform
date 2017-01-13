@@ -184,7 +184,7 @@
             container.push(headerNames);
 
             arrayUtil.forEach(rows, function (cells, idx){
-                container.push(csvEncode(cells));
+                container.push(cells);
             });
 
             arrayUtil.forEach(container, function (header, idx) {
