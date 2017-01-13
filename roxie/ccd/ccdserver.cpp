@@ -15325,6 +15325,7 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
 
     Owned<IStrandJunction> curJunction;
     IEngineRowStream *curStream = connectSingleStream(ctx, curInput, inputIdx, curJunction, true);
+    Owned<IException> failure;
     try
     {
         curInput->start(savedParentExtractSize, savedParentExtract, false);
@@ -15352,20 +15353,19 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
     catch (IException *E)
     {
         ctx->notifyAbort(E);
-        for (i= 0; i != numIterations; i++)
-        {
-            cachedGraphs.item(i).queryLoopGraph()->afterExecute();
-        }
-        curStream->stop();
-        curInput->reset();
-        throw;
+        failure.setown(E);
     }
     for (i= 0; i != numIterations; i++)
     {
-        cachedGraphs.item(i).queryLoopGraph()->afterExecute();
+        IRoxieServerChildGraph * loopGraph = cachedGraphs.item(i).queryLoopGraph();
+        loopGraph->afterExecute();
+        //NOTE: inputIdx is always 0 - the code above could be cleaned up.
+        loopGraph->querySetInputResult(1, 0, nullptr);
     }
     curStream->stop();
     curInput->reset();
+    if (failure)
+        throw failure.getClear();
 }
 
 IFinalRoxieInput * LoopExecutorThread::createLoopIterationGraph(unsigned i, unsigned inputIdx, IFinalRoxieInput * input, unsigned counter)

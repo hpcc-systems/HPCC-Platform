@@ -1470,12 +1470,17 @@ public:
             {
                 error = e;
             }
-            graph.clear();
-            childGraphs.kill();
+            cleanupGraphs();
             graphStats.clear();
             if (error)
                 throw error;
         }
+    }
+
+    void cleanupGraphs()
+    {
+        graph.clear();
+        childGraphs.kill();
     }
 
     void runGraph()
@@ -1530,8 +1535,7 @@ public:
                 else
                 {
                     // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
-                    graph.clear();
-                    childGraphs.kill();
+                    cleanupGraphs();
                 }
                 CTXLOG("Done cleaning up");
                 throw;
@@ -1544,8 +1548,7 @@ public:
                 else
                 {
                     // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
-                    graph.clear();
-                    childGraphs.kill();
+                    cleanupGraphs();
                 }
                 CTXLOG("Done cleaning up");
                 throw;
@@ -2973,8 +2976,7 @@ public:
         {
             if (options.failOnLeaks && !failed)
             {
-                graph.clear();
-                childGraphs.kill();
+                cleanupGraphs();
                 probeManager.clear();
                 ::Release(deserializedResultStore);
                 deserializedResultStore = nullptr;
