@@ -1795,6 +1795,22 @@ inline bool useDescriptiveGraphLabel(ThorActivityKind kind)
 }
 
 
+static bool expandGraphLabel(ThorActivityKind kind)
+{
+    switch (kind)
+    {
+    case TAKdiskread:
+    case TAKcsvread:
+    case TAKxmlread:
+    case TAKjsonread:
+    case TAKdiskcount:
+    case TAKdiskexists:
+        return true;
+    default:
+        return false;
+    }
+}
+
 ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * expr, ThorActivityKind _activityKind, const char *kind, ABoundActivity *input)
 {
     activityKind = _activityKind;
@@ -1821,7 +1837,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
 
     bool isFiltered = false;
     double filterLikelihood = 1.0;
-    if ((activityKind == TAKdiskread) || (activityKind == TAKcsvread) || (activityKind == TAKxmlread) || (activityKind == TAKjsonread))
+    if (expandGraphLabel(activityKind))
     {
         graphLabel.clear();
         if (expr != tableExpr)
@@ -1872,6 +1888,8 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
 
         if ((translator.getTargetClusterType() == RoxieCluster) && isSpill)
             graphLabel.append("Read");
+        else if (isExplicitExists() && (activityKind == TAKdiskcount))
+            graphLabel.append("Disk Exists");
         else
             graphLabel.append(getActivityText(activityKind));
     }
@@ -1879,8 +1897,6 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     {
         if (activityKind == TAKindexcount)
             graphLabel.clear().append("Index Exists");
-        else
-            graphLabel.clear().append("Disk Exists");
     }
     if (useDescriptiveGraphLabel(activityKind))
     {
