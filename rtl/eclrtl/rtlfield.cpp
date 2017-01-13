@@ -1225,14 +1225,12 @@ size32_t RtlRecordTypeInfo::build(ARowBuilder &builder, size32_t offset, const R
 
 void RtlRecordTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
 {
-    //MORE: Should this fail instead?
     resultLen = 0;
     result = nullptr;
 }
 
 __int64 RtlRecordTypeInfo::getInt(const void * ptr) const
 {
-    //MORE: Should this fail instead?
     return 0;
 }
 
@@ -1750,14 +1748,14 @@ size32_t RtlUnimplementedTypeInfo::toXML(const byte * self, const byte * selfrow
 
 void RtlUnimplementedTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
 {
-    //MORE: Should this fail instead?
     resultLen = 0;
     result = nullptr;
+    rtlFailUnexpected();
 }
 
 __int64 RtlUnimplementedTypeInfo::getInt(const void * ptr) const
 {
-    //MORE: Should this fail instead?
+    rtlFailUnexpected();
     return 0;
 }
 
