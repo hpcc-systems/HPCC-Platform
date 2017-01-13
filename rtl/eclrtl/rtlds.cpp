@@ -258,7 +258,7 @@ void rtlRowsAttr::dispose()
 void rtlReportFieldOverflow(unsigned size, unsigned max, const RtlFieldInfo * field)
 {
     if (field)
-        rtlReportFieldOverflow(size, max, str(field->name));
+        rtlReportFieldOverflow(size, max, field->name);
     else
         rtlReportRowOverflow(size, max);
 }

@@ -15,10 +15,19 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef rtlfield_imp_hpp
-#define rtlfield_imp_hpp
+#ifndef rtlfield_hpp
+#define rtlfield_hpp
 
+#include "eclhelper.hpp"
 #include "eclrtl.hpp"
+
+/*
+The classes in this file are used to represent the type of various fields, and information about the fields.
+They are primarily designed to be used in generated code, so should have as little overhead as possible when used
+in that context.  For that reason the classes have no destructors.
+
+The file rtldynfield contains classes which manage instances of these classes which are dynamically created.
+*/
 
 // A base implementation of RtlTypeInfo
 struct ECLRTL_API RtlTypeInfoBase : public RtlTypeInfo

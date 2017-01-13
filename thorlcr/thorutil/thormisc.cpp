@@ -45,7 +45,7 @@
 #include "eclhelper.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlread_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 
 namespace thormisc {  // Make sure we can't clash with generated versions or version check mechanism fails.

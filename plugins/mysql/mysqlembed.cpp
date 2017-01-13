@@ -25,7 +25,7 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlembed.hpp"
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
@@ -706,7 +706,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("mysql: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", field->name->queryStr());
+        msg.appendf(" for field %s", field->name);
     rtlFail(0, msg.str());
 }
 
@@ -1070,9 +1070,9 @@ protected:
             colIdx++;
         else
             fail("Too many fields in ECL output row");
-        const MYSQL_BIND &column = resultInfo.queryColumn(colIdx,field->name->queryStr());
+        const MYSQL_BIND &column = resultInfo.queryColumn(colIdx,field->name);
         if (*column.error)
-            failx("Error fetching column %s", field->name->queryStr());
+            failx("Error fetching column %s", field->name);
         return column;
     }
     const MySQLBindingArray &resultInfo;

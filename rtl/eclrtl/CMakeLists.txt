@@ -31,6 +31,7 @@ set (    SRCS
          rtlbcd.cpp 
          rtldistr.cpp 
          rtlds.cpp 
+         rtldynfield.cpp 
          rtlint.cpp 
          rtlkey.cpp 
          rtlqstr.cpp 
@@ -47,7 +48,7 @@ set (    SRCS
          rtldistr.hpp
          rtlds_imp.hpp
          rtlembed.hpp
-         rtlfield_imp.hpp
+         rtlfield.hpp
          rtlkey2.hpp
          rtlkey.hpp
          rtlread_imp.hpp
@@ -98,7 +99,7 @@ if (NOT PLUGIN)
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlbcd.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtldistr.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlds_imp.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/rtlfield_imp.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rtlfield.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlkey.hpp
   )
     install ( FILES ${iFILES} DESTINATION componentfiles/cl/include COMPONENT Runtime )

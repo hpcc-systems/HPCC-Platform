@@ -35,6 +35,7 @@ set (   SRCS
         hqlerror.cpp
         hqlesp.cpp
         hqlexpr.cpp
+        hqlfield.cpp
         hqlfold.cpp
         hqlgram2.cpp
         hqlmanifest.cpp
@@ -69,6 +70,7 @@ set (   SRCS
         hqldesc.hpp
         hqlesp.hpp
         hqlexpr.hpp
+        hqlfield.hpp
         hqlfold.hpp
         hqlgram.hpp
         hqlmeta.hpp
@@ -99,7 +101,7 @@ include_directories (
          ./../../system/hrpc 
          ./../../common/thorhelper 
          ./../../rtl/eclrtl 
-         ./../../rtl/include 
+         ./../../rtl/include
          ./../eclagent 
          ./../../system/include 
          ./../../common/workunit
