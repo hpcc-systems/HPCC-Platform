@@ -83,8 +83,8 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
     maxLogQueueLength = _cfg->getPropInt(PropMaxLogQueueLength, MaxLogQueueLength);
     signalGrowingQueueAt = _cfg->getPropInt(PropQueueSizeSignal, QueueSizeSignal);
     maxLogRetries = _cfg->getPropInt(PropMaxTriesRS, DefaultMaxTriesRS);
-    failSafeLogging = _cfg->getPropBool(PropFailSafe);
-    if(failSafeLogging)
+    ensureFailSafe = _cfg->getPropBool(PropFailSafe);
+    if(ensureFailSafe)
     {
         const char * logsDir = _cfg->queryProp(PropFailSafeLogsDir);
         if (!logsDir || !*logsDir)
@@ -157,8 +157,7 @@ bool CLogThread::queueLog(IEspUpdateLogRequestWrap* logRequest)
 {
     unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
     logAgent->filterLogContent(logRequest);
-    if (getEspLogLevel()>=LogNormal)
-        DBGLOG("LThread:filterLog: %dms\n", msTick() -  startTime);
+    ESPLOG(LogNormal, "LThread:filterLog: %dms\n", msTick() -  startTime);
     return enqueue(logRequest);
 }
 
@@ -172,8 +171,7 @@ bool CLogThread::enqueue(IEspUpdateLogRequestWrap* logRequest)
         logRequest->setGUID(GUID.str());
         if (serializeLogRequestContent(logRequest, reqBuf))
             logFailSafe->Add(GUID, reqBuf.str());
-        if (getEspLogLevel()>=LogNormal)
-            DBGLOG("LThread:addToFailSafe: %dms\n", msTick() -  startTime);
+        ESPLOG(LogNormal, "LThread:addToFailSafe: %dms\n", msTick() -  startTime);
     }
 
     writeJobQueue(logRequest);
@@ -198,7 +196,7 @@ void CLogThread::sendLog()
                 break;
 
             const char* GUID= logRequest->getGUID();
-            if ((!GUID || !*GUID) && failSafeLogging && logFailSafe.get())
+            if ((!GUID || !*GUID) && ensureFailSafe && logFailSafe.get())
                 continue;
 
             try
@@ -216,15 +214,13 @@ void CLogThread::sendLog()
                     else
                         throw MakeStringException(EspLoggingErrors::UpdateLogFailed, "Unknown error");
                 }
-                if (getEspLogLevel()>=LogNormal)
-                    DBGLOG("LThread:updateLog: %dms\n", msTick() -  startTime);
+                ESPLOG(LogNormal, "LThread:updateLog: %dms\n", msTick() -  startTime);
 
-                if(failSafeLogging && logFailSafe.get())
+                if(ensureFailSafe && logFailSafe.get())
                 {
                     unsigned startTime1 = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
                     logFailSafe->AddACK(GUID);
-                    if (getEspLogLevel()>=LogNormal)
-                        DBGLOG("LThread:AddACK: %dms\n", msTick() -  startTime1);
+                    ESPLOG(LogNormal, "LThread:AddACK: %dms\n", msTick() -  startTime1);
                 }
                 logRequest->Release();//Make sure that no data (such as GUID) is needed before releasing the logRequest.
             }
@@ -249,7 +245,7 @@ void CLogThread::sendLog()
                 }
                 if (!willRetry)
                 {
-                    if(failSafeLogging && logFailSafe.get())
+                    if(ensureFailSafe && logFailSafe.get())
                         logFailSafe->AddACK(GUID);
                     logRequest->Release();
                 }
@@ -318,8 +314,7 @@ void CLogThread::checkRollOver()
             if(GUID && *GUID && serializeLogRequestContent(pEspRequest, reqBuf))
                 logFailSafe->Add(GUID, reqBuf.str());
         }
-        if (getEspLogLevel()>=LogNormal)
-            DBGLOG("LThread:AddFailSafe: %dms\n", msTick() -  startTime);
+        ESPLOG(LogNormal, "LThread:AddFailSafe: %dms\n", msTick() -  startTime);
     }
     catch(IException* Ex)
     {
@@ -424,8 +419,7 @@ void CLogThread::writeJobQueue(IEspUpdateLogRequestWrap* jobToWrite)
     {
         unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
         CriticalBlock b(logQueueCrit);
-        if (getEspLogLevel()>=LogNormal)
-            DBGLOG("LThread:waitWQ: %dms\n", msTick() -  startTime);
+        ESPLOG(LogNormal, "LThread:waitWQ: %dms\n", msTick() -  startTime);
 
         int QueueSize = logQueue.ordinality();
         if(QueueSize > maxLogQueueLength)
@@ -442,7 +436,6 @@ IEspUpdateLogRequestWrap* CLogThread::readJobQueue()
 {
     unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
     CriticalBlock b(logQueueCrit);
-    if (getEspLogLevel()>=LogNormal)
-        DBGLOG("LThread:waitRQ: %dms\n", msTick() -  startTime);
+    ESPLOG(LogNormal, "LThread:waitRQ: %dms\n", msTick() -  startTime);
     return (IEspUpdateLogRequestWrap*)logQueue.dequeue();
 }

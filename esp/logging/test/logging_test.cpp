@@ -136,7 +136,7 @@ void sendRequest()
         printf("userRespXML: <%s>.\n", userRespXML.str());
         printf("backEndResp: <%s>.\n", backEndResp);
 
-        //Sleep(5000); //Waiting for loggingManager to start
+        Sleep(5000); //Waiting for loggingManager to start
         loggingManager->updateLog(option.str(), *espContext, userContextTree, userRequestTree, backEndResp, userRespXML.str(), logDatasetsXML.str(), status);
     }
     else if (action.length() && strieq(action.str(), "UpdateLog1"))

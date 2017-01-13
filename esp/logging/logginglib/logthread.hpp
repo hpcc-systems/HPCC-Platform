@@ -51,7 +51,7 @@ class CLogThread : public Thread , implements IUpdateLogThread
     CriticalSection logQueueCrit;
     Semaphore       m_sem;
 
-    bool failSafeLogging;
+    bool ensureFailSafe;
     Owned<ILogFailSafe> logFailSafe;
     struct tm         m_startTime;
 
