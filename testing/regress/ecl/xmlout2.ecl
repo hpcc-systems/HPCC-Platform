@@ -49,12 +49,17 @@ phoneRecord         mobilePhone;
 contactRecord   contact;
 dataset(bookRec) books;
 set of string    colours;
+BITFIELD63      b1;
+BITFIELD1       b2;
+BITFIELD3_8     b3;
+BITFIELD12_8    b4;
+BITFIELD17_8    b5;
 string2         endmarker := '$$';
             END;
 
 namesTable := dataset([
-        {'Halliday','Gavin','09876',123456,true,'07967',838690, 'n/a','n/a',true,'gavin@edata.com',[{'To kill a mocking bird','Lee'},{'Zen and the art of motorcycle maintainence','Pirsig'}], ALL},
-        {'Halliday','Abigail','09876',654321,false,'','',false,[{'The cat in the hat','Suess'},{'Wolly the sheep',''}], ['Red','Yellow']}
+        {'Halliday','Gavin','09876',123456,true,'07967',838690, 'n/a','n/a',true,'gavin@edata.com',[{'To kill a mocking bird','Lee'},{'Zen and the art of motorcycle maintainence','Pirsig'}], ALL, 1234567,0,7,6,5},
+        {'Halliday','Abigail','09876',654321,false,'','',false,[{'The cat in the hat','Suess'},{'Wolly the sheep',''}], ['Red','Yellow'], 0x7fffffffffffffff,1,7,4095,0x1FFFF}
         ], personRecord);
 
 output(namesTable,,'REGRESS::TEMP::output2.xml',overwrite,xml(heading('','')));
