@@ -3929,7 +3929,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             arguments.append(",");
             childType = buildRtlRecordFields(arguments, record, record);
 //          fieldType |= (childType & RFTMcontainsifblock);
-            length = getMaxRecordSize(record);
+            length = getMinRecordSize(record);
             if (!isFixedRecordSize(record))
                 fieldType |= RFTMunknownsize;
             break;
