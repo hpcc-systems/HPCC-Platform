@@ -328,6 +328,7 @@ class TransformSaveInfo : public CInterface
 public:
     Owned<IHqlScope> transformScope;
     Owned<IHqlExpression> curTransform;
+    OwnedHqlExpr transformRecord;
 };
 
 class FunctionCallInfo : public CInterface
@@ -625,7 +626,7 @@ public:
     void addAssignall(IHqlExpression * record, IHqlExpression * src,const attribute& errpos);
     void addConditionalAssign(const attribute & errpos, IHqlExpression * self, IHqlExpression * leftSelect, IHqlExpression * rightSelect, IHqlExpression * field);
     void addConditionalRowAssign(const attribute & errpos, IHqlExpression * self, IHqlExpression * leftSelect, IHqlExpression * rightSelect, IHqlExpression * record);
-    void checkAllAssigned(IHqlExpression * record, const attribute &errpos);
+    void checkAllAssigned(IHqlExpression * originalRecord, IHqlExpression * unadornedRecord, const attribute &errpos);
     void checkGrouping(const attribute & errpos, HqlExprArray & parms, IHqlExpression* record, IHqlExpression* groups);
     void checkGrouping(const attribute & errpos, IHqlExpression * dataset, IHqlExpression* record, IHqlExpression* groups);
     void checkFieldMap(IHqlExpression* map, attribute& errpos);
@@ -635,8 +636,8 @@ public:
     void clearSideEffects();
     bool sideEffectsPending() const;
 
-    void checkAssignedNormalizeTransform(IHqlExpression * record, const attribute &errpos);
-    void doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpression* select, IHqlExpression* targetSelect, IHqlExpression * cur, const attribute& errpos, bool & modified);
+    void checkAssignedNormalizeTransform(IHqlExpression * originalRecord, IHqlExpression * unadornedRecord, const attribute &errpos);
+    void doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpression* select, IHqlExpression* targetSelect, IHqlExpression * original, IHqlExpression * unadorned, const attribute& errpos, bool & modified);
 
     bool checkValidBaseModule(const attribute & attr, SharedHqlExpr & expr);
     IHqlExpression * implementInterfaceFromModule(attribute & iAttr, attribute & mAttr, IHqlExpression * flags);
@@ -655,7 +656,7 @@ public:
     void leavePatternScope(const YYSTYPE & errpos);
     bool insideNestedScope() const;
 
-    void beginTransform(ITypeInfo * type);
+    void beginTransform(ITypeInfo * recordType, IHqlExpression * unadornedRecord);
     IHqlExpression *endTransform(const attribute &errpos);
     void openTransform(ITypeInfo * type);
     IHqlExpression *closeTransform(const attribute &errpos);
@@ -812,6 +813,7 @@ protected:
     IHqlExpression * createDefaultAssignTransform(IHqlExpression * record, IHqlExpression * rowValue, const attribute & errpos);
     IHqlExpression * createDefaultProjectDataset(IHqlExpression * record, IHqlExpression * src, const attribute & errpos);
     IHqlExpression * createDatasetFromList(attribute & listAttr, attribute & recordAttr);
+    IHqlExpression * getUnadornedRecord(IHqlExpression * record);
 
     void checkConditionalAggregates(IIdAtom * name, IHqlExpression * value, const attribute & errpos);
     void checkProjectedFields(IHqlExpression * e, attribute & errpos);
@@ -915,6 +917,7 @@ protected:
     HqlExprArray parseResults;
     IErrorReceiver *errorHandler;
     IHqlExpression *curTransform;
+    OwnedHqlExpr curTransformRecord;
     ITypeInfo * defaultIntegralType;
     ITypeInfo * uint4Type;
     ITypeInfo * defaultRealType;
