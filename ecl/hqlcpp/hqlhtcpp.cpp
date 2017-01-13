@@ -3911,7 +3911,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
     case type_bitfield:
         {
         className.append("RtlBitfieldTypeInfo");
-        unsigned size = type->getSize();
+        unsigned size = type->queryChildType()->getSize();
         unsigned bitsize = type->getBitSize();
         unsigned offset = (unsigned)getIntValue(queryAttributeChild(type, bitfieldOffsetAtom, 0),-1);
         bool isLastBitfield = (queryAttribute(type, isLastBitfieldAtom) != NULL);

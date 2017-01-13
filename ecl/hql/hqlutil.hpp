@@ -454,11 +454,13 @@ public:
 
     void reset()
     {
+        activeType = nullptr;
         bitsRemaining = 0;
         nextBitOffset = 0;
     }
 
 public:
+    ITypeInfo * activeType = nullptr;
     unsigned bitsRemaining;
     unsigned nextBitOffset;
 };

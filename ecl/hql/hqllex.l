@@ -1333,7 +1333,8 @@ BITFIELD{digit}+    {
                          size = 1;
                       }
 
-                      ITypeInfo * type = makeBitfieldType(size);
+                      Owned<ITypeInfo> int64 = makeIntType(8, false);
+                      ITypeInfo * type = makeBitfieldType(size, int64);
                       assert(type!=NULL);
 
                       returnToken.setType(type); 
@@ -1358,7 +1359,7 @@ BITFIELD{digit}+_{digit}+ {
                       case 1: case 2: case 4: case 8:
                          break;
                       default:
-                         lexer->reportError(returnToken, ERR_ILLSIZE_BITFIELD, "Invalid size for BITFIELD type: valid size 1..64");
+                         lexer->reportError(returnToken, ERR_ILLSIZE_BITFIELD, "Invalid size for BITFIELD base type: valid size 1,2,4,8");
                          baseSize = 8;
                       }
                       if (size > baseSize*8)

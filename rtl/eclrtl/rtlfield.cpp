@@ -1384,20 +1384,20 @@ __int64 RtlBitfieldTypeInfo::signedValue(const byte * self) const
     __int64 value = rtlReadInt(self, getBitfieldIntSize());
     unsigned shift = getBitfieldShift();
     unsigned numBits = getBitfieldNumBits();
-    value <<= (sizeof(value) - shift - numBits);
-    return value >> numBits;
-
+    unsigned bitsInValue = sizeof(value) * 8;
+    value <<= (bitsInValue - shift - numBits);
+    return value >> (bitsInValue - numBits);
 }
 
 
 unsigned __int64 RtlBitfieldTypeInfo::unsignedValue(const byte * self) const
 {
-    unsigned __int64 value = rtlReadInt(self, getBitfieldIntSize());
+    unsigned __int64 value = rtlReadUInt(self, getBitfieldIntSize());
     unsigned shift = getBitfieldShift();
     unsigned numBits = getBitfieldNumBits();
-    value <<= (sizeof(value) - shift - numBits);
-    return value >> numBits;
-
+    unsigned bitsInValue = sizeof(value) * 8;
+    value <<= (bitsInValue - shift - numBits);
+    return value >> (bitsInValue - numBits);
 }
 
 
@@ -1419,12 +1419,15 @@ size32_t RtlBitfieldTypeInfo::process(const byte * self, const byte * selfrow, c
 
 size32_t RtlBitfieldTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
-    size32_t fieldsize = size(self, selfrow);
+    size32_t fieldsize = getBitfieldIntSize();
     if (isUnsigned())
         target.outputUInt(unsignedValue(self), fieldsize, queryScalarXPath(field));
     else
         target.outputInt(signedValue(self), fieldsize, queryScalarXPath(field));
-    return fieldsize;
+
+    if (fieldType & RFTMislastbitfield)
+        return fieldsize;
+    return 0;
 }
 
 //-------------------------------------------------------------------------------------------------------------------

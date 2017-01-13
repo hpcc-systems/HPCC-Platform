@@ -2306,8 +2306,7 @@ void CBitfieldContainerInfo::gatherSize(SizeStruct & size)
 
 IHqlExpression * CBitfieldContainerInfo::getRelativeSelf()
 {
-    //ifblocks inside bitfield containers?? Not supported.... should create a new container, unless desparate.
-    UNIMPLEMENTED;
+    return container->getRelativeSelf();
 }
 
 
@@ -2377,7 +2376,10 @@ void CBitfieldInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IRe
 
     unsigned bitSize = columnType->getBitSize();
     unsigned __int64 mask = (((unsigned __int64)1)<<bitSize)-1;
-    unsigned __int64 shiftMask = (((unsigned __int64)1)<<(bitSize+bitOffset)) - (((unsigned __int64)1)<<bitOffset);
+    unsigned __int64 shiftMask = 0;
+    if (bitSize + bitOffset < sizeof(__int64) * 8)
+        shiftMask = (((unsigned __int64)1)<<(bitSize+bitOffset));
+    shiftMask -= (((unsigned __int64)1)<<bitOffset);
     IValue * oldMaskValue = storageType->castFrom(false, (__int64)shiftMask);
     IHqlExpression * oldMask = createConstant(oldMaskValue);
     IHqlExpression * transColumn = createTranslatedOwned(columnRef);
@@ -2385,7 +2387,7 @@ void CBitfieldInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IRe
 
     IValue * newMaskValue = storageType->castFrom(false, (__int64)mask);
     IHqlExpression * newMask = createConstant(newMaskValue);
-    OwnedHqlExpr newValue = createValue(no_band, LINK(storageType), LINK(value), newMask);
+    OwnedHqlExpr newValue = createValue(no_band, LINK(storageType), ensureExprType(value, storageType), newMask);
     if (bitOffset > 0)
         newValue.setown(createValue(no_lshift, LINK(storageType), newValue.getClear(), getSizetConstant(bitOffset)));
     if (newValue->isConstant())
@@ -3030,7 +3032,8 @@ CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlEx
                 if (prior)
                     prior->noteLastBitfield();
                 ITypeInfo * storeType = type->queryChildType();
-                OwnedHqlExpr value = createValue(no_field, LINK(storeType));
+                //Use createUniqueId() to ensure that bitfield containers of the same type can be distinguished.
+                OwnedHqlExpr value = createValue(no_field, LINK(storeType), createUniqueId());
                 bitContainer = new CBitfieldContainerInfo(container, prior, value);
                 bitContainer->setOffset(!fixedSizeRecord);
             }

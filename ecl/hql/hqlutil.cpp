@@ -4797,9 +4797,10 @@ bool BitfieldPacker::checkSpaceAvailable(unsigned & thisBitOffset, unsigned & th
 {
     bool fitted = true;
     thisBits = type->getBitSize();
-    if (thisBits > bitsRemaining)
+    ITypeInfo * storeType = type->queryChildType();
+    if ((thisBits > bitsRemaining) || !activeType || (storeType != activeType))
     {
-        ITypeInfo * storeType = type->queryChildType();
+        activeType = storeType;
         unsigned unitSize = storeType->getSize();
         bitsRemaining = unitSize * 8;
         nextBitOffset = 0;
