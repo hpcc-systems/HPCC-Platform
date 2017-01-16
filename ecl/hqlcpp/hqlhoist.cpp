@@ -102,6 +102,16 @@ void CHqlExprMultiGuard::combine(CHqlExprMultiGuard & other)
     }
 }
 
+
+static IHqlExpression * querySubset(IHqlExpression * newGuard, IHqlExpression * oldGuard)
+{
+    if (newGuard == oldGuard)
+        return newGuard;
+    if (newGuard->getOperator() == no_and)
+        return querySubset(newGuard->queryChild(0), oldGuard);
+    return nullptr;
+}
+
 void CHqlExprMultiGuard::combine(CHqlExprGuard & other)
 {
     ForEachItemIn(i, guarded)
@@ -109,12 +119,15 @@ void CHqlExprMultiGuard::combine(CHqlExprGuard & other)
         CHqlExprGuard & cur = guarded.item(i);
         if (cur.original == other.original)
         {
-            //condition is now (a || b)
-            OwnedHqlExpr newCond;
-            if (matchesBoolean(cur.guard, true) || matchesBoolean(other.guard, true))
-                newCond.set(queryBoolExpr(true));
-            else
-                newCond.setown(createBoolExpr(no_or, LINK(cur.guard), LINK(other.guard)));
+            LinkedHqlExpr newCond = querySubset(other.guard, cur.guard);
+            if (!newCond)
+            {
+                //condition is now (a || b)
+                if (matchesBoolean(cur.guard, true) || matchesBoolean(other.guard, true))
+                    newCond.set(queryBoolExpr(true));
+                else
+                    newCond.setown(createBoolExpr(no_or, LINK(cur.guard), LINK(other.guard)));
+            }
 
             //MORE: Could sometimes reuse the existing guard if this was created by this node
             Owned<CHqlExprGuard> newGuard = new CHqlExprGuard(newCond, cur.original, cur.guardContainsCandidate||other.guardContainsCandidate);
