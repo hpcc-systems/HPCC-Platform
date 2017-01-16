@@ -206,10 +206,16 @@ void recursiveRemoveDirectory(IFile *dir, bool isDryRun)
         IFile *thisFile = &files->query();
         if (thisFile->isDirectory()==foundYes)
             recursiveRemoveDirectory(thisFile, isDryRun);
-        if (isDryRun || optVerbose)
-            printf("rm %s\n", thisFile->queryFilename());
-        if (!isDryRun)
-            thisFile->remove();
+        else
+        {
+            if (isDryRun || optVerbose)
+                printf("rm %s\n", thisFile->queryFilename());
+            if (!isDryRun)
+            {
+                thisFile->setReadOnly(false);
+                thisFile->remove();
+            }
+        }
     }
     if (isDryRun || optVerbose)
         printf("rmdir %s\n", dir->queryFilename());
@@ -300,10 +306,13 @@ StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation)
     // If the bundle name looks like a url, fetch it somewhere temporary first...
     if (isUrl(bundleName))
     {
-        //Put it into a temp directory - we need the filename to be right
-        //I don't think there is any way to disable the following warning....
-        const char *tmp = tmpnam(NULL);
-        recursiveCreateDirectory(tmp);
+        StringBuffer tmp;
+        getTempFilePath(tmp, "ecl-bundle", nullptr);
+        tmp.append(PATHSEPCHAR).append("tmp.XXXXXX");
+        if (!mkdtemp((char *) tmp.str()))
+        {
+            throw makeStringExceptionV(0, "Failed to create temporary directory %s (error %d)", tmp.str(), errno);
+        }
         deleteOnCloseDown.append(tmp);
         if (optVerbose)
             printf("mkdir %s\n", tmp);
