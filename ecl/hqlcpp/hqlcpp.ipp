@@ -543,7 +543,7 @@ class ColumnToOffsetMap;
 class RecordOffsetMap : public MapOf<IHqlExpression *, ColumnToOffsetMap>
 {
 public:
-    ColumnToOffsetMap * queryMapping(IHqlExpression * record, unsigned maxRecordSize);
+    ColumnToOffsetMap * queryMapping(IHqlExpression * record, unsigned maxRecordSize, bool isTarget);
 };
 
 class ExprExprMap : public MapOwnedToOwned<IHqlExpression, IHqlExpression>
@@ -589,6 +589,7 @@ struct HqlCppOptions
     unsigned            subgraphToRegenerate;
     unsigned            defaultPersistExpiry;
     unsigned            defaultExpiry;
+    unsigned            varFieldAccessorThreshold;
     int                 defaultNumPersistInstances;
     CompilerType        targetCompiler;
     DBZaction           divideByZeroAction;
@@ -1019,8 +1020,7 @@ public:
     BoundRow * bindCsvTableCursor(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * bound, node_operator side, IHqlExpression * selSeq, bool translateVirtuals, IAtom * encoding);
     BoundRow * bindXmlTableCursor(BuildCtx & ctx, IHqlExpression * dataset, const char * name, node_operator side, IHqlExpression * selSeq, bool translateVirtuals);
     BoundRow * bindXmlTableCursor(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * bound, node_operator side, IHqlExpression * selSeq, bool translateVirtuals);
-    BoundRow * createTableCursor(IHqlExpression * dataset, IHqlExpression * bound, node_operator side, IHqlExpression * selSeq);
-    BoundRow * createTableCursor(IHqlExpression * dataset, const char * name, bool isLinkCounted, node_operator side, IHqlExpression * selSeq);
+    BoundRow * createTableCursor(IHqlExpression * dataset, IHqlExpression * bound, bool useAccessorClass, node_operator side, IHqlExpression * selSeq);
     BoundRow * bindRow(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * bound);
     BoundRow * bindRow(BuildCtx & ctx, IHqlExpression * expr, const char * name);
     BoundRow * bindConstantRow(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound);
@@ -1057,7 +1057,7 @@ public:
     void getRecordSize(BuildCtx & ctx, IHqlExpression * dataset, CHqlBoundExpr & bound);
     BoundRow * resolveSelectorDataset(BuildCtx & ctx, IHqlExpression * dataset);
     BoundRow * resolveDatasetRequired(BuildCtx & ctx, IHqlExpression * expr);
-    ColumnToOffsetMap * queryRecordOffsetMap(IHqlExpression * record);
+    ColumnToOffsetMap * queryRecordOffsetMap(IHqlExpression * record, bool isTargetRow);
     IHqlExpression * queryRecord(BuildCtx & ctx, IHqlExpression * expr);
     RecordOffsetMap & queryRecordMap()              { return recordMap; }
     unsigned getDefaultMaxRecordSize()              { return options.maxRecordSize; }
@@ -1071,6 +1071,9 @@ public:
     void ensureRowSerializer(StringBuffer & serializerName, BuildCtx & ctx, IHqlExpression * record, IAtom * format, IAtom * kind);
     void ensureRowPrefetcher(StringBuffer & prefetcherName, BuildCtx & ctx, IHqlExpression * record);
     IHqlExpression * createSerializer(BuildCtx & ctx, IHqlExpression * record, IAtom * format, IAtom * kind);
+
+    void buildRowAccessors();
+    void buildRowAccessor(ColumnToOffsetMap * map);
 
     AliasKind buildExprInCorrectContext(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, bool evaluateLocally);
     ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, IHqlExpression * expr, bool doDeclare);
@@ -1791,8 +1794,8 @@ public:
     void buildRefFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, const char * name, IHqlExpression * dataset);
     void createAccessFunctions(StringBuffer & helperFunc, BuildCtx & declarectx, unsigned prio, const char * interfaceName, const char * object);
 
-    void beginNestedClass(BuildCtx & classctx, const char * member, const char * bases, const char * memberExtra = NULL, ParentExtract * extract = NULL);
-    void endNestedClass();
+    IHqlStmt * beginNestedClass(BuildCtx & classctx, const char * member, const char * bases, const char * memberExtra = NULL, ParentExtract * extract = NULL);
+    void endNestedClass(IHqlStmt * stmt);
 
     void buildEncryptHelper(BuildCtx & ctx, IHqlExpression * encryptAttr, const char * funcname = NULL);
     void buildFormatCrcFunction(BuildCtx & ctx, const char * name, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta);
@@ -1841,6 +1844,7 @@ protected:
     IHqlExpression * normalizeGlobalIfCondition(BuildCtx & ctx, IHqlExpression * expr);
     void substituteClusterSize(HqlExprArray & exprs);
     void throwCannotCast(ITypeInfo * from, ITypeInfo * to);
+    bool useRowAccessorClass(IHqlExpression * record, bool isTargetRow);
 
     void ensureSerialized(BuildCtx & ctx, const CHqlBoundTarget & variable);
 

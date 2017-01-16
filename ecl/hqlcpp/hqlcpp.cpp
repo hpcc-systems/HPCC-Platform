@@ -254,6 +254,7 @@ bool isSimpleTranslatedStringExpr(IHqlExpression * expr)
         case no_constant:
         case no_variable:
         case no_callback:
+        case no_select:
             return true;
         case no_cast:
         case no_implicitcast:
@@ -1793,6 +1794,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsFatal",true),
         DebugOption(options.optimizeCriticalFunctions,"optimizeCriticalFunctions",true),
         DebugOption(options.addLikelihoodToGraph,"addLikelihoodToGraph", true),
+        DebugOption(options.varFieldAccessorThreshold,"varFieldAccessorThreshold",3),   // Generate accessor classes for rows with #variable width fields >= threshold
     };
 
     //get options values from workunit
@@ -12261,9 +12263,8 @@ IHqlExpression * HqlCppTranslator::getBoundSize(const CHqlBoundExpr & bound)
             return getSizetConstant(sizeof(void*));
 
         IHqlExpression * record = ::queryRecord(type);
-        ColumnToOffsetMap * map = queryRecordOffsetMap(record);
-        if (map->isFixedWidth())
-            return getSizetConstant(map->getFixedRecordSize());
+        if (isFixedSizeRecord(record))
+            return getSizetConstant(getMinRecordSize(record));
 
         //call meta function mm.queryRecordSize(&row)
         StringBuffer metaInstance, temp;

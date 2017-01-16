@@ -508,7 +508,7 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
 {
     cycle_t startCycles = get_cycles_now();
     unsigned numExtraFiles = translator.getNumExtraCppFiles();
-    bool isMultiFile = translator.spanMultipleCppFiles() && (numExtraFiles != 0);
+    bool isMultiFile = translator.spanMultipleCppFiles();
     CompilerType targetCompiler = translator.queryOptions().targetCompiler;
 
     StringBuffer fullname;

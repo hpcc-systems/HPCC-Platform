@@ -24,6 +24,7 @@
 #endif
 
 extern IAtom * _accessedFromChild_Atom;
+extern IAtom * accessorAtom;
 extern IAtom * activeActivityMarkerAtom;
 extern IAtom * activeMatchTextAtom;
 extern IAtom * activeMatchUnicodeAtom;

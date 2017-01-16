@@ -26,6 +26,7 @@
 #include "hqlcatom.hpp"
 
 IAtom * _accessedFromChild_Atom;
+IAtom * accessorAtom;
 IAtom * activeActivityMarkerAtom;
 IAtom * activeMatchTextAtom;
 IAtom * activeMatchUnicodeAtom;
@@ -1429,6 +1430,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(xmlEncodeUStr);
 
 //Atoms
+    MAKEATOM(accessor);
     MAKEATOM(activeActivityMarker);
     MAKEATOM(activeMatchText);
     MAKEATOM(activeMatchUnicode);

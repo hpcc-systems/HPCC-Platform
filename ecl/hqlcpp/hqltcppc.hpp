@@ -24,9 +24,8 @@ class HQLCPP_API BoundRow : public HqlExprAssociation
 {
 public:
     BoundRow(const BoundRow & other, IHqlExpression * _newBound);                                                       // other row
-    BoundRow(BoundRow * row, IHqlExpression * dataset, node_operator side, IHqlExpression * selSeq);
-    BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, ColumnToOffsetMap * _columnMap);                       // row
-    BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, ColumnToOffsetMap * _columnMap, node_operator side, IHqlExpression * selSeq);  // cursor
+    BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, IHqlExpression * accessor, ColumnToOffsetMap * _columnMap);                       // row
+    BoundRow(IHqlExpression * _dataset, IHqlExpression * _bound, IHqlExpression * accessor, ColumnToOffsetMap * _columnMap, node_operator side, IHqlExpression * selSeq);  // cursor
     ~BoundRow();
 
     virtual AssocKind getKind()             { return (AssocKind)kind; }
@@ -73,10 +72,17 @@ public:
     void setAlias(IReferenceSelector * selector)                { alias.set(selector); }
     IReferenceSelector * queryAlias()                           { return alias; }
     IHqlExpression * queryBuilderEnsureMarker();
+    void prepareAccessor(HqlCppTranslator & translator, BuildCtx & ctx);
+    IHqlExpression * ensureAccessor(HqlCppTranslator & translator, BuildCtx & ctx);
+
+protected:
+    BoundRow(const BoundRow & other, ColumnToOffsetMap * rawMap, IHqlExpression * _newBound); // for colocal child query
 
 protected:
     HqlExprAttr                 dataset;
     HqlExprAttr                 bound;
+    HqlExprAttr                 accessor;
+    IHqlStmt *                  accessorStmt = nullptr;
     HqlExprAttr                 builder;
     HqlExprAttr                 builderEnsureMarker;
     ColumnToOffsetMap *         columnMap;
@@ -143,7 +149,7 @@ protected:
 class NonLocalIndirectRow : public BoundRow
 {
 public:
-    NonLocalIndirectRow(const BoundRow & other, IHqlExpression * _newBound, SerializationRow * _serialization);
+    NonLocalIndirectRow(const BoundRow & other, ColumnToOffsetMap * rawMap, SerializationRow * _serialization);
 
     virtual BoundRow * clone(IHqlExpression * _newBound)    { UNIMPLEMENTED; }
     virtual IHqlExpression * getMappedSelector(BuildCtx & ctx, IReferenceSelector * selector);
@@ -160,6 +166,7 @@ class BoundAliasRow : public BoundRow
 {
 public:
     BoundAliasRow(const BoundRow & other, IHqlExpression * _newBound, IHqlExpression * _expansion) : BoundRow(other, _newBound) { expansion.set(_expansion); }
+    BoundAliasRow(const BoundRow & other, ColumnToOffsetMap * _rawMap, IHqlExpression * _expansion) : BoundRow(other, _rawMap, nullptr) { expansion.set(_expansion); }
     BoundAliasRow(const BoundAliasRow & other, IHqlExpression * _newBound) : BoundRow(other, _newBound) { expansion.set(other.expansion); }
 
     virtual BoundRow * clone(IHqlExpression * _newBound)    { return new BoundAliasRow(*this, _newBound); }

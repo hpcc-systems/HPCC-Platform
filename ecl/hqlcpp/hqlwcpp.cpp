@@ -1996,7 +1996,12 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
     if (hasModifier(type, typemod_mutable))
         out.append("mutable ");
 
+    //The following is correct, but causes lots of problems because const isn't currently correctly tracked
+    //if (hasModifier(type, typemod_const))
+    //    out.append("const ");
+
     size32_t typeSize = type->getSize();
+    bool useConstructor = false;
     if (hasWrapperModifier(type))
     {
         ITypeInfo * builderModifier = queryModifier(type, typemod_builder);
@@ -2029,23 +2034,28 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
             out.append("rtlFixedSizeDataAttr<").append(typeSize).append("> ").append(targetName);
         else
             out.append("rtlDataAttr ").append(targetName);
-        if (value)
-        {
-            out.append("(");
-            generateExprCpp(value);
-            out.append(")");
-            value = NULL;
-        }
+        useConstructor = true;
     }
     else
     {
         generateType(type, targetName.str());
+        if (type->getTypeCode() == type_class)
+            useConstructor = true;
     }
 
     if (value)
     {
-        out.append(" = ");
-        generateExprCpp(value);
+        if (useConstructor)
+        {
+            out.append("(");
+            generateExprCpp(value);
+            out.append(")");
+        }
+        else
+        {
+            out.append(" = ");
+            generateExprCpp(value);
+        }
     }
     out.append(";");
     

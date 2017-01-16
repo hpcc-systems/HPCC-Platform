@@ -103,6 +103,7 @@ if (NOT PLUGIN)
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlds_imp.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlfield.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlkey.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rtlrecord.hpp
   )
     install ( FILES ${iFILES} DESTINATION componentfiles/cl/include COMPONENT Runtime )
   ENDFOREACH ( iFILES )

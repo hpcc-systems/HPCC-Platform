@@ -4411,8 +4411,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                                 IHqlExpression * root = queryRoot(expr);
                                 if (root)
                                 {
-                                    ColumnToOffsetMap * map = translator.queryRecordOffsetMap(root->queryRecord());
-                                    if (map->isFixedWidth())
+                                    if (translator.isFixedRecordSize(root->queryRecord()))
                                         extra->forceCompound = true;
                                 }
                             }

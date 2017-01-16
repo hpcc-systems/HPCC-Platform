@@ -33,7 +33,7 @@ struct ECLRTL_API RtlRecord
 {
 public:
     friend class RtlRow;
-    RtlRecord(const RtlRecordTypeInfo & fields);
+    RtlRecord(const RtlRecordTypeInfo & fields, bool expandFields);
     ~RtlRecord();
 
     void calcRowOffsets(size_t * variableOffsets, const void * _row) const;
@@ -66,12 +66,13 @@ protected:
     unsigned numFields;
     unsigned numVarFields;
     const RtlFieldInfo * const * fields;
+    const RtlFieldInfo * const * originalFields;
 };
 
 struct ECLRTL_API RtlRow
 {
 public:
-    RtlRow(const RtlRecord & _info, const void * optRow, size_t * _variableOffsets);
+    RtlRow(const RtlRecord & _info, const void * optRow, unsigned numOffsets, size_t * _variableOffsets);
 
     __int64 getInt(unsigned field) const;
     void getUtf8(size32_t & resultLen, char * & result, unsigned field) const;
@@ -90,14 +91,14 @@ public:
 
 protected:
     const RtlRecord & info;
-    const void * row = nullptr;
+    const void * row;
     size_t * variableOffsets;       // [0 + 1 entry for each variable size field ]
 };
 
 struct ECLRTL_API RtlDynRow : public RtlRow
 {
 public:
-    RtlDynRow(const RtlRecord & _info, const void * optRow = nullptr);
+    RtlDynRow(const RtlRecord & _info, const void * optRow = NULL);
     ~RtlDynRow();
 };
 
@@ -106,21 +107,23 @@ template <unsigned NUM_VARIABLE_FIELDS>
 struct ECLRTL_API RtlStaticRow : RtlRow
 {
 public:
-    RtlStaticRow(const RtlRecord & _info, const void * optRow = nullptr) : RtlRow(_info, optRow, &offsets) {}
+    RtlStaticRow(const RtlRecord & _info, const void * optRow = NULL) : RtlRow(_info, optRow, NUM_VARIABLE_FIELDS+1, off) {}
 public:
-    size_t offsets[NUM_VARIABLE_FIELDS+1];
+    size_t off[NUM_VARIABLE_FIELDS+1];
 };
 
-class ECLRTL_API RtlRecordSize : CInterfaceOf<IRecordSize>
+class ECLRTL_API RtlRecordSize : public IRecordSize, public RtlCInterface
 {
-    RtlRecordSize(const RtlRecordTypeInfo & fields) : offsetInformation(fields) {}
+public:
+    RtlRecordSize(const RtlRecordTypeInfo & fields) : offsetInformation(fields, true) {}
+    RTLIMPLEMENT_IINTERFACE
 
     virtual size32_t getRecordSize(const void * row)
     {
-        assertex(row);
         //Allocate a temporary offset array on the stack to avoid runtime overhead.
-        size_t * variableOffsets = (size_t *)alloca((offsetInformation.getNumVarFields() + 1) * sizeof(size_t));
-        RtlRow offsetCalculator(offsetInformation, row, variableOffsets);
+        unsigned numOffsets = offsetInformation.getNumVarFields() + 1;
+        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+        RtlRow offsetCalculator(offsetInformation, row, numOffsets, variableOffsets);
         return offsetCalculator.getRecordSize();
     }
 

@@ -71,5 +71,6 @@ typedef unsigned __int64 hash64_t;
 #include "rtlds_imp.hpp"
 #include "eclhelper_base.hpp"
 #include "rtlbcd.hpp"
+#include "rtlrecord.hpp"
 
 #endif

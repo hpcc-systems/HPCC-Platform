@@ -215,7 +215,7 @@ void CompoundIteratorBuilder::bindParentCursors(BuildCtx & ctx, CursorArray & cu
         BoundRow & cur = cursors.item(i);
         //Very similar to code in the extract builder
         OwnedHqlExpr colocalBound = addMemberSelector(cur.queryBound(), colocal);
-        ctx.associateOwn(*cur.clone(colocalBound));
+        translator.bindTableCursor(ctx, cur.queryDataset(), colocalBound, cur.querySide(), cur.querySelSeq());
     }
 }
 
@@ -253,7 +253,7 @@ void CompoundIteratorBuilder::createSingleLevelIterator(StringBuffer & iterName,
     translator.getUniqueId(cursorName.append("row"));
     OwnedHqlExpr row = createVariable(cursorName, makeRowReferenceType(cur));
     declarectx.addDeclare(row);
-    cursors.append(*translator.createTableCursor(cur, row, no_none, NULL));
+    cursors.append(*translator.createTableCursor(cur, row, false, no_none, NULL));
 }
 
 void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHqlExpression * expr, CursorArray & cursors)
@@ -263,7 +263,7 @@ void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHql
 
     //MORE: Nested class/...
     BuildCtx classctx(nestedctx);
-    translator.beginNestedClass(classctx, iterName, "IRtlDatasetSimpleCursor", NULL, NULL);
+    IHqlStmt * classStmt = translator.beginNestedClass(classctx, iterName, "IRtlDatasetSimpleCursor", NULL, NULL);
     translator.queryEvalContext(classctx)->ensureHelpersExist();
 
     if (isArrayRowset(expr->queryType()))
@@ -322,7 +322,7 @@ void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHql
         nextctx.addQuotedLiteral("const byte * valid = checkValid(); if (valid) return valid;");
     }
 
-    translator.endNestedClass();
+    translator.endNestedClass(classStmt);
 }
 
 void CompoundIteratorBuilder::createRawFirstFunc(BuildCtx & ctx, IHqlExpression * expr, CursorArray & cursors)

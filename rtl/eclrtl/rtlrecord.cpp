@@ -90,12 +90,66 @@ static unsigned countFields(const RtlFieldInfo * const * fields)
     return cnt;
 }
 
+static unsigned countFields(const RtlFieldInfo * const * fields, bool & containsNested)
+{
+    unsigned cnt = 0;
+    for (;*fields;fields++)
+    {
+        const RtlTypeInfo * type = (*fields)->type;
+        if (type->getType() == type_record)
+        {
+            containsNested = true;
+            const RtlFieldInfo * const * nested = type->queryFields();
+            if (nested)
+                cnt += countFields(nested, containsNested);
+        }
+        else
+            cnt++;
+    }
+    return cnt;
+}
 
-RtlRecord::RtlRecord(const RtlRecordTypeInfo & record) : fields(record.fields)
+
+static const RtlFieldInfo * * expandNestedRows(const RtlFieldInfo * * target, const RtlFieldInfo * const * fields)
+{
+    for (;*fields;fields++)
+    {
+        const RtlFieldInfo * cur = *fields;
+        const RtlTypeInfo * type = cur->type;
+        if (type->getType() == type_record)
+        {
+            const RtlFieldInfo * const * nested = type->queryFields();
+            if (nested)
+                target = expandNestedRows(target, nested);
+        }
+        else
+            *target++ = cur;
+    }
+    return target;
+}
+
+
+RtlRecord::RtlRecord(const RtlRecordTypeInfo & record, bool expandFields) : fields(record.fields), originalFields(record.fields)
 {
     //MORE: Does not cope with ifblocks.
     numVarFields = 0;
-    numFields = countFields(fields);
+    //Optionally expand out nested rows.
+    if (expandFields)
+    {
+        bool containsNested = false;
+        numFields = countFields(fields, containsNested);
+        if (containsNested)
+        {
+            const RtlFieldInfo * * allocated  = new const RtlFieldInfo * [numFields+1];
+            fields = allocated;
+            const RtlFieldInfo * * target = expandNestedRows(allocated, originalFields);
+            assertex(target == fields+numFields);
+            *target = nullptr;
+        }
+    }
+    else
+        numFields = countFields(fields);
+
     for (unsigned i=0; i < numFields; i++)
     {
         if (!queryType(i)->isFixedSize())
@@ -133,6 +187,8 @@ RtlRecord::RtlRecord(const RtlRecordTypeInfo & record) : fields(record.fields)
 
 RtlRecord::~RtlRecord()
 {
+    if (fields != originalFields)
+        delete [] fields;
     delete [] fixedOffsets;
     delete [] whichVariableOffset;
     delete [] variableFieldIds;
@@ -165,12 +221,12 @@ size32_t RtlRecord::getMinRecordSize() const
 
 //---------------------------------------------------------------------------------------------------------------------
 
-RtlRow::RtlRow(const RtlRecord & _info, const void * optRow, size_t * _variableOffsets) : info(_info), variableOffsets(_variableOffsets)
+RtlRow::RtlRow(const RtlRecord & _info, const void * optRow, unsigned numOffsets, size_t * _variableOffsets) : info(_info), variableOffsets(_variableOffsets)
 {
+    assertex(numOffsets == info.getNumVarFields()+1);
     //variableOffset[0] is used for all fixed offset fields to avoid any special casing.
     variableOffsets[0] = 0;
-    if (optRow)
-        setRow(optRow);
+    setRow(optRow);
 }
 
 __int64 RtlRow::getInt(unsigned field) const
@@ -195,7 +251,7 @@ void RtlRow::setRow(const void * _row)
 }
 
 
-RtlDynRow::RtlDynRow(const RtlRecord & _info, const void * optRow) : RtlRow(_info, optRow, new size_t[_info.getNumVarFields()+1])
+RtlDynRow::RtlDynRow(const RtlRecord & _info, const void * optRow) : RtlRow(_info, optRow, _info.getNumVarFields()+1, new size_t[_info.getNumVarFields()+1])
 {
 }
 

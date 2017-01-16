@@ -684,8 +684,7 @@ BoundRow * HqlCppTranslator::ensureLinkCountedRow(BuildCtx & ctx, BoundRow * row
         return row;
 
     OwnedHqlExpr srcRow = createTranslated(row->queryBound());
-    OwnedHqlExpr tempRowExpr = declareLinkedRowExpr(ctx, row->queryRecord(), false);
-    Owned<BoundRow> tempRow = row->clone(tempRowExpr);
+    Owned<BoundRow> tempRow = declareLinkedRow(ctx, row->represents, false);
 
     OwnedHqlExpr source = getPointer(row->queryBound());
     BuildCtx subctx(ctx);

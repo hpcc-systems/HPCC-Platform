@@ -159,7 +159,7 @@ public:
     void                        set(BuildCtx & _owner);
 
 public:
-    enum { ConPrio = 1, EarlyPrio =3000, NormalPrio = 5000, LatePrio = 7000, DesPrio = 9999, OutermostScopePrio };
+    enum { ConPrio = 1, NormalPrio = 5000, DesPrio = 9999, OutermostScopePrio };
 
 protected:
     HqlStmt *                   appendCompound(HqlCompoundStmt * next);

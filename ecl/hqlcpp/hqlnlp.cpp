@@ -220,7 +220,7 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
     if (validators.ordinality())
     {
         BuildCtx helperctx(classctx);
-        translator.beginNestedClass(helperctx, "helper", "INlpHelper");
+        IHqlStmt * helperClassStmt = translator.beginNestedClass(helperctx, "helper", "INlpHelper");
 
         BuildCtx funcctx(helperctx);
         funcctx.addQuotedFunction("virtual IValidator * queryValidator(unsigned i)");
@@ -237,7 +237,7 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
             ValidateKind kind = getValidateKind(validateExpr);
 
             BuildCtx validatorctx(helperctx);
-            translator.beginNestedClass(validatorctx, member, (kind != ValidateIsUnicode) ? "IStringValidator" : "IUnicodeValidator");
+            IHqlStmt * classStmt = translator.beginNestedClass(validatorctx, member, (kind != ValidateIsUnicode) ? "IStringValidator" : "IUnicodeValidator");
 
             {
                 MemberFunction func(translator, validatorctx);
@@ -264,7 +264,7 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
                     validateExpr.setown(spotScalarCSE(validateExpr, NULL, translator.queryOptions().spotCseInIfDatasetConditions));
                 translator.buildReturn(func.ctx, validateExpr);
             }
-            translator.endNestedClass();
+            translator.endNestedClass(classStmt);
 
             StringBuffer s;
             s.append("case ").append(idx).append(": return &").append(member).append(";");
@@ -272,7 +272,7 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
         }
         funcctx.addReturn(queryQuotedNullExpr());
 
-        translator.endNestedClass();
+        translator.endNestedClass(helperClassStmt);
         classctx.addQuotedLiteral("virtual INlpHelper * queryHelper() { return &helper; }");
     }
 }
