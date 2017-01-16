@@ -33,6 +33,7 @@
 #define HPCC_FILEHOOKS_PATH "HPCC_FILEHOOKS_PATH"
 #define VERSION_SUBDIR "_versions"
 
+#define ECLOPT_BRANCH "--branch"
 #define ECLOPT_DETAILS "--details"
 #define ECLOPT_DRYRUN "--dryrun"
 #define ECLOPT_FORCE "--force"
@@ -301,7 +302,7 @@ void doDeleteOnCloseDown()
     }
 }
 
-StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation)
+StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation, const char *optBranch)
 {
     // If the bundle name looks like a url, fetch it somewhere temporary first...
     if (isUrl(bundleName))
@@ -315,7 +316,7 @@ StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation)
         }
         deleteOnCloseDown.append(tmp);
         if (optVerbose)
-            printf("mkdir %s\n", tmp);
+            printf("mkdir %s\n", tmp.str());
 
         const char *ext = pathExtension(bundleName);
         if (ext && strcmp(ext, ".git")==0)
@@ -324,6 +325,8 @@ StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation)
             splitFilename(bundleName, NULL, NULL, &fetchedLocation, NULL);
             StringBuffer output;
             VStringBuffer params("clone --depth=1 %s %s", bundleName, fetchedLocation.str());
+            if (optBranch)
+                params.appendf(" -b %s", optBranch);
             unsigned retCode = doPipeCommand(output, "git", params, NULL);
             if (optVerbose)
                 printf("%s", output.str());
@@ -352,8 +355,10 @@ StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation)
 class CBundleInfo : public CInterfaceOf<IBundleInfo>
 {
 public:
-    CBundleInfo(const char *bundle)
+    CBundleInfo(const char *bundle, const char *suppliedname=nullptr)
     {
+        if (!suppliedname)
+            suppliedname = bundle;
         active = false;
         try
         {
@@ -383,12 +388,12 @@ public:
                                     " [ (UTF8) COUNT(B.dependsOn) ] + B.dependsOn + "
                                     " [ (UTF8) #IFDEFINED(B.platformVersion, '')]", bundleName.str());
             if (doPipeCommand(output, queryEclccPath(), eclOpts.str(), bundleCmd) > 0)
-                throw MakeStringException(0, "%s cannot be parsed as a bundle\n", bundle);
+                throw MakeStringException(0, "%s cannot be parsed as a bundle\n", suppliedname);
             // output should contain [ 'name', 'version', etc ... ]
             if (optVerbose)
                 printf("Bundle info from ECL compiler: %s\n", output.str());
             if (!output.length())
-                throw MakeStringException(0, "%s cannot be parsed as a bundle\n", bundle);
+                throw MakeStringException(0, "%s cannot be parsed as a bundle\n", suppliedname);
             RegExpr re("'{[^'\r\n\\\\]|\\\\[^\r\n]}*'");
             extractAttr(re, name, output.str());
             if (!strieq(name, bundleName))
@@ -1002,6 +1007,7 @@ protected:
         return strchr(optBundle, PATHSEPCHAR) != NULL || strchr(optBundle, '.') != NULL || isUrl(optBundle);
     }
     StringAttr optBundle;
+    StringAttr optBranch;
     StringBuffer bundlePath;
     StringBuffer hooksPath;
     bool bundleCompulsory;
@@ -1157,8 +1163,8 @@ public:
         if (isFromFile())
         {
             StringBuffer useName;
-            fetchURL(optBundle, useName);
-            bundle.setown(new CBundleInfo(useName));
+            fetchURL(optBundle, useName, optBranch);
+            bundle.setown(new CBundleInfo(useName, optBundle));
         }
         else
         {
@@ -1201,6 +1207,8 @@ public:
     {
         if (iter.matchFlag(optDryRun, ECLOPT_DRYRUN))
             return EclCmdOptionMatch;
+        if (iter.matchOption(optBranch, ECLOPT_BRANCH))
+            return EclCmdOptionMatch;
         if (iter.matchFlag(optForce, ECLOPT_FORCE))
             return EclCmdOptionMatch;
         if (iter.matchFlag(optKeepPrior, ECLOPT_KEEPPRIOR))
@@ -1213,12 +1221,12 @@ public:
     virtual int processCMD()
     {
         StringBuffer useName;
-        fetchURL(optBundle, useName);
+        fetchURL(optBundle, useName, optBranch);
         Owned<IFile> bundleFile = createIFile(useName);
         if (bundleFile->exists())
         {
             bool ok = true;
-            Owned<IBundleInfo> bundle = new CBundleInfo(useName);
+            Owned<IBundleInfo> bundle = new CBundleInfo(useName, optBundle);
             bundle->checkValid();
             const char *version = bundle->queryVersion();
             printf("Installing bundle %s version %s\n", bundle->queryBundleName(), version);
@@ -1352,6 +1360,8 @@ private:
             Owned<IFile> targetFile = createIFile(destname);
             if (thisFile->isDirectory()==foundYes)
             {
+                if (strcmp(tail, ".git")==0)
+                    continue;
                 if (!optDryRun)
                     targetFile->createDirectory();
                 copyDirectory(thisFile, destname);
@@ -1440,8 +1450,8 @@ public:
         if (isFromFile())
         {
             StringBuffer useName;
-            fetchURL(optBundle, useName);
-            bundle.setown(new CBundleInfo(useName));
+            fetchURL(optBundle, useName, optBranch);
+            bundle.setown(new CBundleInfo(useName, optBundle));
         }
         else
         {
@@ -1661,6 +1671,7 @@ int main(int argc, const char *argv[])
         E->Release();
         exitCode = 2;
     }
+    optVerbose = false;
     doDeleteOnCloseDown();
     removeFileHooks();
     releaseAtoms();
