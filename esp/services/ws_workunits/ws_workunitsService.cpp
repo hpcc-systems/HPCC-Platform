@@ -4650,7 +4650,16 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             addThorSlaveLogfile(cwu, winfo, folderToZIP.str());
 
         //Write out to ZIP file
-        zipFileName.append(nameStr.str()).append(".zip");
+        const char* zipFName = req.getZAPFileName();
+        if (!zipFName || !*zipFName)
+            zipFileName.append(nameStr.str()).append(".zip");
+        else
+        {
+            zipFileName.set(zipFName);
+            const char* ext = pathExtension(zipFName);
+            if (!ext || !strieq(ext, ".zip"))
+                zipFileName.append(".zip");
+        }
         zipFileNameWithPath.append(zipFolder).append(zipFileName.str());
         pathNameStr.set(folderToZIP.str()).append("/*");
 
