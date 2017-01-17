@@ -1668,6 +1668,10 @@ public:
     virtual IConstWUAssociatedFile * getAssociatedFile(WUFileType type, unsigned index) const;
     virtual IConstWUAssociatedFileIterator& getAssociatedFiles() const;
     virtual bool isArchive() const;
+    virtual bool hasArchive() const
+    {
+        return p->getPropBool("@hasArchive");
+    }
 
     virtual void        setQueryType(WUQueryType qt);
     virtual void        setQueryText(const char *pstr);
@@ -7325,6 +7329,8 @@ void CLocalWUQuery::setQueryText(const char *text)
             p->setProp("ShortText", xml->queryProp("Query"));
     }
     p->setPropBool("@isArchive", isArchive);
+    if (isArchive)
+        p->setPropBool("@hasArchive", true); //preserved if setQueryText is called multiple times.  Should setting this be more explicit?
 }
 
 void CLocalWUQuery::setQueryName(const char *qname)

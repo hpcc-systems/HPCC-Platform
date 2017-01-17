@@ -419,6 +419,7 @@ interface IConstWUQuery : extends IInterface
     virtual IStringVal & getQueryShortText(IStringVal & str) const = 0;
     virtual IStringVal & getQueryMainDefinition(IStringVal & str) const = 0;
     virtual bool isArchive() const = 0;
+    virtual bool hasArchive() const = 0;
 };
 
 
