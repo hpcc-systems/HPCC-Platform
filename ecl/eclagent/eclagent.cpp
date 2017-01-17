@@ -1910,6 +1910,8 @@ void EclAgent::doProcess()
     bool deleteJobTemps = true;
     try
     {
+        updateWULogfile();//Update workunit logfile name in case of date rollover
+
         WorkunitUpdate w = updateWorkUnit();
 
         addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
