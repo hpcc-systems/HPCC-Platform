@@ -195,15 +195,17 @@ void CAttribute::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     assert(this->getName() != nullptr);
 
-    const char *pChar = strrchr(strXPath.str(),'[');
-    assert(pChar != nullptr && strlen(pChar) >= 3);
+
+    //These two lines cause installset.xsd segmentation fault. Will come back to this later
+    //const char *pChar = strrchr(strXPath.str(),'[');
+    //assert(pChar != nullptr && strlen(pChar) >= 3);
 
     /*strXPath.setLength(strXPath.length()-strlen(pChar));  // remove [N] from XPath;
     strXPath.appendf("[%d]", index);*/
     strXPath.append("/").append("[@").append(this->getName()).append("]");
     this->setEnvXPath(strXPath.str());
 
-    //PROGLOG("Mapping attribute with XPATH of %s to %p", this->getEnvXPath(), this);
+    PROGLOG("Mapping attribute with XPATH of %s to %p", this->getEnvXPath(), this);
 
     CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToAttribute(this->getEnvXPath(), this);
     CConfigSchemaHelper::getInstance()->appendAttributeXPath(this->getEnvXPath());

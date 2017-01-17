@@ -150,13 +150,17 @@ MACRO(XSD_TO_XML _xsd_files _in_dir _out_dir)
         foreach(_xsd_file ${_xsd_files})
             STRING(REGEX REPLACE "(.*).xsd" "\\1.xml" _xml_file "${_xsd_file}")
 	    ADD_CUSTOM_COMMAND(
-		COMMAND ./configurator -doc -use ${_xsd_file} -b ${_in_dir} -t ${_out_dir}
+		COMMAND ./configurator --doc --use ${_xsd_file} -b ${_in_dir} -t ${_out_dir}
 		OUTPUT ${_out_dir}/${_xml_file}
                 WORKING_DIRECTORY ${CONFIGURATOR_DIRECTORY}
 		DEPENDS ${_out_dir} ${_in_dir}/${_xsd_file} ${_in_dir}/environment.xsd
 		)
             list(APPEND _xml_files ${_out_dir}/${_xml_file})
         endforeach()
-	ADD_CUSTOM_TARGET("xsd_to_xml" ALL  DEPENDS ${_out_dir} ${_xml_files} )
+        if (MAKE_CONFIGURATOR)
+	    ADD_CUSTOM_TARGET("xsd_to_xml" ALL  DEPENDS ${_out_dir} ${_xml_files} "configurator" )
+        else()
+	    ADD_CUSTOM_TARGET("xsd_to_xml" ALL  DEPENDS ${_out_dir} ${_xml_files} )
+        endif()
         set_property(GLOBAL APPEND PROPERTY DOC_TARGETS "xsd_to_xml")
 ENDMACRO(XSD_TO_XML)
