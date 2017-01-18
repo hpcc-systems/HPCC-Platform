@@ -127,7 +127,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                 mbuf.append(job->queryKey());
                 mptag_t replyTag = createReplyTag();
                 serializeMPtag(mbuf, replyTag);
-                mbuf.append(rawText);
+                mbuf.append(rawText.str());
                 if (!comm.send(mbuf, RANK_ALL_OTHER, masterSlaveMpTag, MP_ASYNC_SEND))
                 {
                     DBGLOG("Failed to send debug info to slave");
