@@ -2998,6 +2998,22 @@ public:
                 w->setState(WUStateWait);
             else
                 w->setState(WUStateCompleted);
+            if(w->queryEventScheduledCount() > 0 && w->getState() != WUStateWait)
+            {
+                try
+                {
+                    w->deschedule();
+                }
+                catch(IException * e)
+                {
+                    int code = e->errorCode();
+                    VStringBuffer msg("Failed to deschedule workunit %s: ", w->queryWuid());
+                    e->errorMessage(msg);
+                    addExceptionToWorkunit(w, SeverityError, "Roxie", code, msg.str(), NULL, 0, 0, 0);
+                    e->Release();
+                    WARNLOG("%s (%d)", msg.str(), code);
+                }
+            }
             while (clusterNames.ordinality())
                 restoreCluster();
             addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
