@@ -143,7 +143,7 @@ void CTxSummary::serialize(StringBuffer& buffer) const
 
 void CTxSummary::log()
 {
-    if (size())
+    if (__contains("user") || __contains("req"))
     {
         StringBuffer summary;
         serialize(summary);
