@@ -1895,6 +1895,17 @@ transform
                             Owned<ITypeInfo> retType = $1.getType();
                             $$.setExpr(parser->leaveLamdaExpression(NULL, $5), $7);
                         }
+    | VALUE_MACRO transform ENDMACRO
+                        {
+                            $$.setExpr($2.getExpr());
+                            $$.setPosition($1);
+                        }
+    | moduleScopeDot VALUE_MACRO leaveScope transform ENDMACRO
+                        {
+                            $1.release();
+                            $$.setExpr($4.getExpr());
+                            $$.setPosition($2);
+                        }
     ;
 
 

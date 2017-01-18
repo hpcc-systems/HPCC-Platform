@@ -1876,11 +1876,76 @@ void HqlGram::addAssignall(IHqlExpression *tgt, IHqlExpression *src, const attri
         assignall->Release();
 }
 
+static HqlTransformerInfo hqlRecordNormalizerInfo("HqlRecordNormalizer");
+class HqlRecordNormalizer : public NewHqlTransformer
+{
+public:
+    HqlRecordNormalizer() : NewHqlTransformer(hqlRecordNormalizerInfo)
+    {
+    }
+
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr)
+    {
+        if (expr->isFullyBound())
+            return LINK(expr);
+
+        node_operator op = expr->getOperator();
+        switch (op)
+        {
+        case no_field:
+            return createTransformedField(expr);
+        case no_record:
+        case no_ifblock:
+            return completeTransform(expr);
+        }
+
+        return NewHqlTransformer::createTransformed(expr);
+    }
+
+protected:
+    IHqlExpression * createTransformedField(IHqlExpression * expr)
+    {
+        //Remove the default values...
+        HqlExprArray children;
+        bool same = true;
+        ForEachChild(idx, expr)
+        {
+            IHqlExpression * cur = expr->queryChild(idx);
+            if (cur->isAttribute() || cur->isFullyBound())
+            {
+                children.append(*LINK(cur));
+            }
+            else
+                same = false;
+        }
+
+        ITypeInfo * type = expr->queryType();
+        OwnedITypeInfo newType = transformType(type);
+        IIdAtom * id = expr->queryId();
+        if (type != newType)
+            return createField(id, newType.getClear(), children);
+
+        if (same)
+            return LINK(expr);
+        return expr->clone(children);
+    }
+};
+
+IHqlExpression * HqlGram::getUnadornedRecord(IHqlExpression * record)
+{
+    if (record->isFullyBound())
+        return LINK(record);
+
+    HqlRecordNormalizer normalizer;
+    return normalizer.transformRoot(record);
+}
+
 
 IHqlExpression * HqlGram::createDefaultAssignTransform(IHqlExpression * record, IHqlExpression * rowValue, const attribute & errpos)
 {
-    Owned<ITypeInfo> type = createRecordType(record);
-    beginTransform(type);
+    OwnedHqlExpr unadornedRecord = getUnadornedRecord(record);
+    Owned<ITypeInfo> type = createRecordType(unadornedRecord);
+    beginTransform(type, record);
     pushSelfScope(type);
     addAssignall(getSelfScope(), LINK(rowValue), errpos);
     return closeTransform(errpos);
@@ -2014,15 +2079,17 @@ IHqlExpression * HqlGram::createRowAssignTransform(const attribute & srcAttr, co
     IHqlExpression * res_rec = tgtAttr.queryExpr();
     
     // create transform
-    beginTransform(res_rec->queryRecordType());
+    OwnedHqlExpr unadornedRecord = getUnadornedRecord(res_rec);
+    Owned<ITypeInfo> type = createRecordType(unadornedRecord);
+    beginTransform(type, res_rec);
     
     // self := left;
     IHqlExpression *assignall = createOpenValue(no_assignall, NULL);
-    doAddAssignSelf(assignall, res_rec->queryRecord(), createSelector(no_left, src, seqAttr.queryExpr()), tgtAttr);
+    doAddAssignSelf(assignall, unadornedRecord, createSelector(no_left, src, seqAttr.queryExpr()), tgtAttr);
     curTransform->addOperand(assignall->closeExpr());
 
     // close transform
-    checkAllAssigned(res_rec, srcAttr);
+    checkAllAssigned(res_rec, unadornedRecord, srcAttr);
     return endTransform(srcAttr);
 }
 
@@ -2055,14 +2122,14 @@ IHqlExpression *HqlGram::queryCurrentTransformRecord()
 }
 
 /* Linkage: not affected */
-void HqlGram::checkAssignedNormalizeTransform(IHqlExpression * record, const attribute &errpos)
+void HqlGram::checkAssignedNormalizeTransform(IHqlExpression * originalRecord, IHqlExpression * unadornedRecord, const attribute &errpos)
 {
-    OwnedHqlExpr self = getSelf(record);
+    OwnedHqlExpr self = getSelf(unadornedRecord);
     bool modified = false;
-    if (recordContainsNestedRecord(record))
+    if (recordContainsNestedRecord(unadornedRecord))
     {
         HqlExprArray assigns;
-        doCheckAssignedNormalizeTransform(&assigns, self, self, record, errpos, modified);
+        doCheckAssignedNormalizeTransform(&assigns, self, self, originalRecord, unadornedRecord, errpos, modified);
 
         if (modified)
         {
@@ -2089,7 +2156,7 @@ void HqlGram::checkAssignedNormalizeTransform(IHqlExpression * record, const att
         }
     }
     else
-        doCheckAssignedNormalizeTransform(NULL, self, self, record, errpos, modified);
+        doCheckAssignedNormalizeTransform(NULL, self, self, originalRecord, unadornedRecord, errpos, modified);
 }
 
 static bool isNullDataset(IHqlExpression * expr)
@@ -2109,23 +2176,23 @@ static bool isNullDataset(IHqlExpression * expr)
     return false;
 }
 
-void HqlGram::doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpression* select, IHqlExpression* targetSelect, IHqlExpression * cur, const attribute& errpos, bool & modified)
+void HqlGram::doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpression* select, IHqlExpression* targetSelect, IHqlExpression * original, IHqlExpression * unadorned, const attribute& errpos, bool & modified)
 {
-    switch (cur->getOperator())
+    switch (unadorned->getOperator())
     {
     case no_record:
         {
-            ForEachChild(i, cur)
-                doCheckAssignedNormalizeTransform(assigns, select, targetSelect, cur->queryChild(i), errpos, modified);
+            ForEachChild(i, unadorned)
+                doCheckAssignedNormalizeTransform(assigns, select, targetSelect, original->queryChild(i), unadorned->queryChild(i), errpos, modified);
             break;
         }
     case no_ifblock:
-        doCheckAssignedNormalizeTransform(assigns, select, targetSelect, cur->queryChild(1), errpos, modified);
+        doCheckAssignedNormalizeTransform(assigns, select, targetSelect, original->queryChild(1), unadorned->queryChild(1), errpos, modified);
         break;
     case no_field:
         {
-            OwnedHqlExpr selected = createSelectExpr(LINK(select), LINK(cur));
-            OwnedHqlExpr targetSelected = createSelectExpr(LINK(targetSelect), LINK(cur));
+            OwnedHqlExpr selected = createSelectExpr(LINK(select), LINK(unadorned));
+            OwnedHqlExpr targetSelected = createSelectExpr(LINK(targetSelect), LINK(unadorned));
             IHqlExpression * match = findAssignment(selected);
             if (match)
             {
@@ -2134,29 +2201,29 @@ void HqlGram::doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpr
             }
             else
             {
-                type_t tc = cur->queryType()->getTypeCode();
+                type_t tc = unadorned->queryType()->getTypeCode();
                 assertex(tc != type_record);
                 if (tc == type_row)
                 {
-                    IHqlExpression * record = cur->queryRecord();
-                    OwnedHqlExpr self = getSelf(record);
+                    IHqlExpression * childRecord = unadorned->queryRecord();
+                    OwnedHqlExpr self = getSelf(childRecord);
                     if (assigns)
                     {
                         //create a new nested project.
                         HqlExprArray subAssigns;
-                        doCheckAssignedNormalizeTransform(&subAssigns, selected, self, record, errpos, modified);
+                        doCheckAssignedNormalizeTransform(&subAssigns, selected, self, original->queryRecord(), childRecord, errpos, modified);
 
-                        OwnedHqlExpr newTransform = createValue(no_transform, makeTransformType(record->getType()), subAssigns);
+                        OwnedHqlExpr newTransform = createValue(no_transform, makeTransformType(childRecord->getType()), subAssigns);
                         OwnedHqlExpr newValue = createRow(no_createrow, newTransform.getClear());
                         assigns->append(*createAssign(LINK(targetSelected), LINK(newValue)));
                         modified = true;
                     }
                     else
-                        doCheckAssignedNormalizeTransform(NULL, selected, self, record, errpos, modified);
+                        doCheckAssignedNormalizeTransform(NULL, selected, self, original->queryRecord(), childRecord, errpos, modified);
                 }
                 else
                 {
-                    IHqlExpression * child0 = queryRealChild(cur, 0);
+                    IHqlExpression * child0 = queryRealChild(original, 0);
                     if (child0 && (child0->isConstant() || isNullDataset(child0)))
                     {
                         OwnedHqlExpr castChild = ensureExprType(child0, targetSelected->queryType());
@@ -2172,10 +2239,10 @@ void HqlGram::doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpr
                         getFldName(selected,fldName);
 
                         //Not very nice - only ok in some situations....
-                        if (cur->hasAttribute(virtualAtom))
+                        if (original->hasAttribute(virtualAtom))
                         {
                             reportWarning(CategorySyntax, ERR_TRANS_NOVALUE4FIELD, errpos.pos, "Transform does not supply a value for field \"%s\"", fldName.str());
-                            OwnedHqlExpr null = createNullExpr(cur);
+                            OwnedHqlExpr null = createNullExpr(unadorned);
                             if (assigns)
                                 assigns->append(*createAssign(LINK(targetSelected), LINK(null)));
                             else
@@ -2196,9 +2263,9 @@ void HqlGram::doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpr
 }
 
 
-void HqlGram::checkAllAssigned(IHqlExpression * record, const attribute &errpos)
+void HqlGram::checkAllAssigned(IHqlExpression * originalRecord, IHqlExpression * unadornedRecord, const attribute &errpos)
 {
-    checkAssignedNormalizeTransform(record, errpos);
+    checkAssignedNormalizeTransform(originalRecord, unadornedRecord, errpos);
 }
 
 void HqlGram::checkFoldConstant(attribute & attr)
@@ -2262,23 +2329,23 @@ void HqlGram::checkUseLocation(const attribute & errpos)
 
 void HqlGram::openTransform(ITypeInfo * type)
 {
-    beginTransform(type);
-    pushSelfScope(type);
+    IHqlExpression * originalRecord = queryOriginalRecord(type);
+    OwnedHqlExpr unadornedRecord = getUnadornedRecord(originalRecord);
+    //unadornedRecord.setown(originalRecord->cloneAllAnnotations(unadornedRecord));
+    Owned<ITypeInfo> unadornedType = createRecordType(unadornedRecord);
+    beginTransform(unadornedType, originalRecord);
+    pushSelfScope(unadornedType);
     enterCompoundObject();
 }
 
 IHqlExpression *HqlGram::closeTransform(const attribute &errpos)
 {
     // make sure all fields are covered
-    IHqlExpression *record = queryOriginalRecord(curTransform->queryType());
-
-    checkAllAssigned(record, errpos);
+    checkAllAssigned(curTransformRecord, queryRecord(curTransform), errpos);
 
     popSelfScope();
 
-    IHqlExpression *ret = endTransform(errpos);
-
-    return ret;
+    return endTransform(errpos);
 }
 
 IHqlExpression * HqlGram::transformRecord(IHqlExpression *record, IAtom * targetCharset, IHqlExpression * scope, bool & changed, const attribute & errpos)
@@ -5576,7 +5643,7 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
         HqlExprArray args;
         unwindChildren(args, list);
 
-        if (args.item(0).queryRecord() != record->queryRecord())
+        if (!recordTypesMatch(&args.item(0), record))
             reportError(ERR_TYPEMISMATCH_RECORD, recordAttr, "Datarow must match the record definition, try using ROW()");
         
         OwnedHqlExpr combined;
@@ -9126,6 +9193,8 @@ static bool isEquivalentType(ITypeInfo * derivedType, ITypeInfo * baseType)
             }
         case type_scope:
             return baseType->assignableFrom(derivedType);
+        case type_record:
+            return recordTypesMatch(derivedType, baseType);
         default:
             return false;
         }
@@ -11596,9 +11665,10 @@ IHqlExpression* HqlGram::createDefJoinTransform(IHqlExpression* left,IHqlExpress
         res_rec.set(leftRecord);
 
     // create transform
-    beginTransform(res_rec->queryRecordType());
+    OwnedHqlExpr unadornedRecord = getUnadornedRecord(res_rec);
+    beginTransform(unadornedRecord->queryType(), res_rec);
 
-    OwnedHqlExpr self = createSelector(no_self, res_rec, NULL);
+    OwnedHqlExpr self = createSelector(no_self, unadornedRecord, NULL);
     OwnedHqlExpr leftSelect = createSelector(no_left, left, seq);
     OwnedHqlExpr rightSelect = createSelector(no_right, right, seq);
 
@@ -11623,7 +11693,7 @@ IHqlExpression* HqlGram::createDefJoinTransform(IHqlExpression* left,IHqlExpress
     }
 
     // close transform
-    checkAllAssigned(res_rec, errpos);
+    checkAllAssigned(res_rec, unadornedRecord, errpos);
     return endTransform(errpos);
 }
 
@@ -11636,16 +11706,20 @@ IHqlExpression * HqlGram::createProjectRow(attribute & rowAttr, attribute & tran
     return createRow(no_projectrow, row.getClear(), createComma(transform.getClear(), seq.getClear()));
 }
 
-void HqlGram::beginTransform(ITypeInfo * type)
+void HqlGram::beginTransform(ITypeInfo * recordType, IHqlExpression * originalRecord)
 {
     if (curTransform)
     {
         TransformSaveInfo * saved = new TransformSaveInfo;
         saved->curTransform.setown(curTransform);
         saved->transformScope.setown(transformScope);
+        saved->transformRecord.setown(curTransformRecord.getClear());
         transformSaveStack.append(*saved);
     }
-    curTransform = createOpenValue(no_transform, makeTransformType(LINK(type)));
+
+    assertex(recordType->getTypeCode() == type_record);
+    curTransform = createOpenValue(no_transform, makeTransformType(LINK(recordType)));
+    curTransformRecord.set(originalRecord);
     transformScope = createPrivateScope();
     enterScope(transformScope, false, false);
 #ifdef FAST_FIND_FIELD
@@ -11666,11 +11740,13 @@ IHqlExpression * HqlGram::endTransform(const attribute &errpos)
 #endif
     IHqlExpression *ret = curTransform->closeExpr();
     curTransform = NULL;
+    curTransformRecord.clear();
     if (transformSaveStack.ordinality())
     {
         Owned<TransformSaveInfo> saved = &transformSaveStack.popGet();
         transformScope = saved->transformScope.getClear();
         curTransform = saved->curTransform.getClear();
+        curTransformRecord.swap(saved->transformRecord);
     }
     return ret;
 }

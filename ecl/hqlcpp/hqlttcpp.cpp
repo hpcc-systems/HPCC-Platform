@@ -394,10 +394,33 @@ void NewThorStoredReplacer::doAnalyse(IHqlExpression * expr)
         {
             //assume there won't be many of these... otherwise we should use a hash table
             OwnedHqlExpr lowerName = lowerCaseHqlExpr(expr->queryChild(1));
+            IHqlExpression * searchExpr = lowerName->queryBody();
+            IHqlExpression * newValue = expr->queryChild(2);
             //Use lowerName->queryBody() to remove named symbols/location annotations etc.
-            storedNames.append(*LINK(lowerName->queryBody()));
-            storedValues.append(*LINK(expr->queryChild(2)));
-            storedIsConstant.append(kind == constAtom);
+            unsigned match = storedNames.find(*searchExpr);
+            if (match != NotFound)
+            {
+                IHqlExpression * oldValue = &storedValues.item(match);
+                if (oldValue->queryBody() != newValue->queryBody())
+                {
+                    if (queryLocationIndependent(oldValue) != queryLocationIndependent(newValue))
+                    {
+                        StringBuffer labelText;
+                        getExprECL(searchExpr, labelText);
+                        StringBuffer oldText;
+                        StringBuffer newText;
+                        const char * oldType = storedIsConstant.item(match) ? "CONSTANT" : "STORED";
+                        const char * newType = (kind == constAtom) ? "CONSTANT" : "STORED";
+                        translator.reportWarning(CategoryMistake, SeverityError, queryLocation(expr), ECODETEXT(HQLERR_HashStoredDuplication), oldType, labelText.str(), getExprECL(oldValue, oldText).str(), newType, labelText.str(), getExprECL(newValue, newText).str());
+                    }
+                }
+            }
+            else
+            {
+                storedNames.append(*LINK(searchExpr));
+                storedValues.append(*LINK(newValue));
+                storedIsConstant.append(kind == constAtom);
+            }
         }
         else if (kind == onWarningAtom)
             translator.addGlobalOnWarning(expr);
