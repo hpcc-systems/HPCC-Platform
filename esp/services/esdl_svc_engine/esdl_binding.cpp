@@ -432,7 +432,7 @@ void EsdlServiceImpl::configureUrlMethod(const char *method, IPropertyTree &entr
     entry.setProp("@prot", protocol);
     entry.setProp("@path", path);
 
-    Owned<ISmartSocketFactory> sf = new CSmartSocketFactory(iplist, true);
+    Owned<ISmartSocketFactory> sf = createSmartSocketFactory(iplist, true);
 
     connMap.remove(method);
     connMap.setValue(method, sf.getClear());
@@ -869,7 +869,7 @@ void EsdlServiceImpl::generateTargetURL(IEspContext & context,
 
     StringBuffer name(srvinfo->queryProp("@name"));
 
-    CSmartSocketFactory *sconn = static_cast<CSmartSocketFactory*>(connMap.getValue(name));
+    ISmartSocketFactory *sconn = connMap.getValue(name);
     if (!sconn)
         throw MakeStringException(-1, "Could not create smartsocket.");
 
@@ -878,16 +878,7 @@ void EsdlServiceImpl::generateTargetURL(IEspContext & context,
         url.append("HTTP");
     url.append("://");
 
-    SmartSocketEndpoint * sep = sconn->nextSmartEndpoint();
-    SocketEndpoint ep = sep->ep;
-    if (sep->name.length())
-    {
-        url.append(sep->name.str());
-        if (ep.port)
-            url.append(':').append((unsigned)ep.port);
-    }
-    else
-        ep.getUrlStr(url);
+    sconn->getUrlStr(url, true, -1);
 
     if(srvinfo->hasProp("@path"))  //Append the server path
     {

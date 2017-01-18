@@ -57,6 +57,8 @@ interface jlib_decl ISmartSocketFactory : extends IInterface
     virtual void stop() = 0;
 
     virtual void resolveHostnames() = 0;
+
+    virtual StringBuffer & getUrlStr(StringBuffer &str, bool useHostName, unsigned dnsIntervalSecs) = 0;
 };
 
 
