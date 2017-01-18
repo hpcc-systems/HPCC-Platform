@@ -1480,25 +1480,6 @@ public:
             else
                 m_domainPwdsNeverExpire = true;
 
-            const char* sysuser = m_ldapconfig->getSysUser();
-            bool sysUser = false;
-            if(sysuser && *sysuser && (strcmp(username, sysuser) == 0))
-            {
-                if(strcmp(password, m_ldapconfig->getSysUserPassword()) == 0)
-                {
-                    user.setFullName(m_ldapconfig->getSysUserCommonName());
-                    user.setAuthenticateStatus(AS_AUTHENTICATED);
-                    if (m_ldapconfig->getServerType() != ACTIVE_DIRECTORY)
-                        return true;
-                    sysUser = true;
-                }
-                else
-                {
-                    user.setAuthenticateStatus(AS_INVALID_CREDENTIALS);
-                    return false;
-                }
-            }
-
             StringBuffer filter;
             // Retrieve user's dn with system connection
             if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
@@ -1635,9 +1616,6 @@ public:
             StringBuffer userdnbuf;
             userdnbuf.append(userdn);
             ldap_memfree(userdn);
-
-            if (sysUser)
-                return true;//sysuser authenticated above
 
             StringBuffer hostbuf;
             m_ldapconfig->getLdapHost(hostbuf);
