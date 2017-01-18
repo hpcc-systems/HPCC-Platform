@@ -36,6 +36,7 @@
 #include "hqlfold.hpp"
 #include "hqlthql.hpp"
 #include "eclhelper.hpp"
+#include "math.h"
 
 #ifdef __APPLE__
 #include <dlfcn.h>
@@ -2410,6 +2411,7 @@ static IHqlExpression * foldHashXX(IHqlExpression * expr)
 
 IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOptions, ITemplateContext * templateContext)
 {
+    DBZaction onZero = (foldOptions & HFOforcefold) ? DBZfail : DBZnone;
     node_operator op = expr->getOperator();
     switch (op)
     {
@@ -2571,7 +2573,6 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             IValue * rightValue = expr->queryChild(1)->queryValue();
             if (leftValue && rightValue)
             {
-                DBZaction onZero = (foldOptions & HFOforcefold) ? DBZfail : DBZnone;
                 IValue * res;
                 if (op == no_div)
                     res = divideValues(leftValue, rightValue, onZero);
@@ -3107,7 +3108,9 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 case no_exp:
                     return createConstant(expValue(constValue));
                 case no_ln:
-                    return createConstant(lnValue(constValue));
+                    if (onZero == DBZnone && constValue->getRealValue() <= 0)
+                        break;
+                    return createConstant(lnValue(constValue, onZero));
                 case no_sin:
                     return createConstant(sinValue(constValue));
                 case no_cos:
@@ -3115,9 +3118,13 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 case no_tan:
                     return createConstant(tanValue(constValue));
                 case no_asin:
-                    return createConstant(asinValue(constValue));
+                    if (onZero == DBZnone && fabs(constValue->getRealValue()) > 1.0)
+                        break;
+                    return createConstant(asinValue(constValue, onZero));
                 case no_acos:
-                    return createConstant(acosValue(constValue));
+                    if (onZero == DBZnone && fabs(constValue->getRealValue()) > 1.0)
+                        break;
+                    return createConstant(acosValue(constValue, onZero));
                 case no_atan:
                     return createConstant(atanValue(constValue));
                 case no_sinh:
@@ -3127,9 +3134,13 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 case no_tanh:
                     return createConstant(tanhValue(constValue));
                 case no_log10:
-                    return createConstant(log10Value(constValue));
+                    if (onZero == DBZnone && constValue->getRealValue() <= 0)
+                        break;
+                    return createConstant(log10Value(constValue, onZero));
                 case no_sqrt:
-                    return createConstant(sqrtValue(constValue));
+                    if (onZero == DBZnone && constValue->getRealValue() < 0)
+                        break;
+                    return createConstant(sqrtValue(constValue, onZero));
                 case no_abs:
                     return createConstant(absValue(constValue));
                 }

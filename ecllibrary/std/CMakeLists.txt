@@ -23,6 +23,7 @@ set(
     BundleBase.ecl
     Date.ecl
     File.ecl
+    Math.ecl
     Metaphone3.ecl
     Metaphone.ecl
     Str.ecl

@@ -4183,33 +4183,65 @@ ECLRTL_API void serializeReal8(double field, MemoryBuffer &out)
 
 //These maths functions can all have out of range arguments....
 //---------------------------------------------------------------------------
-ECLRTL_API double rtlLog10(double x)
+static double rtlInvalidArgument(DBZaction dbz, const char *source, double arg)
 {
-    if (x <= 0) return 0;
+    switch ((DBZaction) dbz)
+    {
+    case DBZfail:
+        throw MakeStringException(MSGAUD_user, -1, "Invalid argument to %s: %f", source, arg);
+    case DBZnan:
+        return rtlCreateRealNull();
+    }
+    return 0;
+}
+
+static double rtlInvalidLog(DBZaction dbz, const char *source, double arg)
+{
+    switch ((DBZaction) dbz)
+    {
+    case DBZfail:
+        throw MakeStringException(MSGAUD_user, -1, "Invalid argument to %s: %f", source, arg);
+    case DBZnan:
+        if (arg)
+            return rtlCreateRealNull();
+        else
+            return -INFINITY;
+    }
+    return 0;
+}
+
+ECLRTL_API double rtlLog10(double x, byte dbz)
+{
+    if (x <= 0)
+        return rtlInvalidLog((DBZaction) dbz, "LOG10", x);
     return log10(x);
 }
 
-ECLRTL_API double rtlLog(double x)
+ECLRTL_API double rtlLog(double x, byte dbz)
 {
-    if (x <= 0) return 0;
+    if (x <= 0)
+        return rtlInvalidLog((DBZaction) dbz, "LOG10", x);
     return log(x);
 }
 
-ECLRTL_API double rtlSqrt(double x)
+ECLRTL_API double rtlSqrt(double x, byte dbz)
 {
-    if (x < 0) return 0;
+    if (x < 0)
+        return rtlInvalidArgument((DBZaction) dbz, "SQRT", x);
     return sqrt(x);
 }
 
-ECLRTL_API double rtlACos(double x)
+ECLRTL_API double rtlACos(double x, byte dbz)
 {
-    if (fabs(x) > 1) return 0;
+    if (fabs(x) > 1)
+        return rtlInvalidArgument((DBZaction) dbz, "ACOS", x);
     return acos(x);
 }
 
-ECLRTL_API double rtlASin(double x)
+ECLRTL_API double rtlASin(double x, byte dbz)
 {
-    if (fabs(x) > 1) return 0;
+    if (fabs(x) > 1)
+        return rtlInvalidArgument((DBZaction) dbz, "ASIN", x);
     return asin(x);
 }
 
@@ -4264,6 +4296,23 @@ double rtlCreateRealNull()
     return u.r;
 }
 
+double rtlCreateRealInf()
+{
+    return INFINITY;
+}
+
+bool rtlIsInfinite(double value)
+{
+    return isinf(value);
+}
+bool rtlIsNaN(double value)
+{
+    return isnan(value);
+}
+bool rtlIsFinite(double value)
+{
+    return isfinite(value);
+}
 
 void rtlUnicodeToUnicode(size32_t outlen, UChar * out, size32_t inlen, UChar const *in)
 {

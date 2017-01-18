@@ -1,0 +1,90 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>log10(0) = </Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>-inf</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>-inf</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>log(0) = </Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>-inf</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>-inf</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>log10(-1) = </Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>nan</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>nan</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>log(-1) = </Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>nan</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>nan</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>sqrt(-1) = </Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>nan</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>nan</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>1/0 = </Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17>inf</Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>inf</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>fmod(1.0, 0.0) = </Result_19></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20>0</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>0</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>fmod(5.3, 2.0) = </Result_22></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><Result_23>1</Result_23></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><Result_24>1</Result_24></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><Result_25>acos(2) = </Result_25></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><Result_26>nan</Result_26></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><Result_27>nan</Result_27></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><Result_28>asin(2) = </Result_28></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><Result_29>nan</Result_29></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><Result_30>nan</Result_30></Row>
+</Dataset>

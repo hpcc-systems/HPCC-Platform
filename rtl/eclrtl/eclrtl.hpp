@@ -595,14 +595,18 @@ ECLRTL_API void serializeReal4(float field, MemoryBuffer &out);
 ECLRTL_API void serializeReal8(double field, MemoryBuffer &out);
 
 //These maths functions can all have out of range arguments....
-ECLRTL_API double rtlLog(double x);
-ECLRTL_API double rtlLog10(double x);
-ECLRTL_API double rtlSqrt(double x);
-ECLRTL_API double rtlACos(double x);
-ECLRTL_API double rtlASin(double x);
+ECLRTL_API double rtlLog(double x, byte dbz = DBZzero);
+ECLRTL_API double rtlLog10(double x, byte dbz = DBZzero);
+ECLRTL_API double rtlSqrt(double x, byte dbz = DBZzero);
+ECLRTL_API double rtlACos(double x, byte dbz = DBZzero);
+ECLRTL_API double rtlASin(double x, byte dbz = DBZzero);
 
 ECLRTL_API bool rtlIsValidReal(unsigned size, const void * data);
 ECLRTL_API double rtlCreateRealNull();
+ECLRTL_API double rtlCreateRealInf();
+ECLRTL_API bool rtlIsInfinite(double value);
+ECLRTL_API bool rtlIsNaN(double value);
+ECLRTL_API bool rtlIsFinite(double value);
 
 ECLRTL_API unsigned rtlQStrLength(unsigned size);
 ECLRTL_API unsigned rtlQStrSize(unsigned length);
