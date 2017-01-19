@@ -2705,7 +2705,7 @@ void FileSprayer::checkFilePath(RemoteFilename & filename)
             if (!dropZone)
             {
                 LOG(MCdebugInfo, unknownJob, "No matching drop zone path to file path: '%s'", pfilePath);
-                throwError1(DFTERR_NoMatchingDropzonePath, pfilePath);
+                // throwError1(DFTERR_NoMatchingDropzonePath, pfilePath);
             }
             else
             {
