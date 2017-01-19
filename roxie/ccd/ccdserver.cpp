@@ -15936,7 +15936,7 @@ public:
                 if (inputUsed[i1])
                     inputAdaptors[i1]->setParentExtract(parentExtractSize, parentExtract);
                 else
-                    inputAdaptors[i1]->queryInput()->stopall();
+                    inputAdaptors[i1]->stop();
             }
 
             for (unsigned i2 = 0; i2 < numOutputs; i2++)
@@ -15948,7 +15948,7 @@ public:
             ForEachItemIn(i3, extra.unusedOutputs)
             {
                 Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
-                output->stopall();
+                // output->queryStream().stop(); Is this needed??
             }
         }
     }
@@ -15964,7 +15964,7 @@ public:
             ForEachItemIn(i3, extra.unusedOutputs)
             {
                 Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
-                output->stopall();
+                // Is this needed ?? output->queryStream().stop();
             }
             CRoxieServerActivity::stop();
         }

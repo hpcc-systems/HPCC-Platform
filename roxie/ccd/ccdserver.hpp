@@ -108,12 +108,6 @@ interface IFinalRoxieInput : extends IInputBase
     virtual IIndexReadActivityInfo *queryIndexReadActivity() = 0;
 
     virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) = 0;  // Use StrandFlags values for flags
-
-    inline void stopall()
-    {
-        for (int i = 0; i < numConcreteOutputs(); i++)
-            queryConcreteOutputStream(i)->stop();
-    }
 };
 
 extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, bool consumerOrdered);
