@@ -338,4 +338,8 @@ public:
     }
 };
 
+#ifdef _WIN32
+extern jlib_decl char *mkdtemp(char *_template);
+#endif
+
 #endif
