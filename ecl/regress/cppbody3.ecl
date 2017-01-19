@@ -51,10 +51,9 @@ output(s1fp);
 
 export dummy2 := 1;
 
-real8 s1f(real a) :=
-BEGINC++
+real8 s1f(real a) := EMBED(C++ : inline)
 return sqrt(a);
-ENDC++;
+ENDEMBED;
 s1fp := s1f(3) : persist('s2f');
 output(s1fp);
 
