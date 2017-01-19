@@ -431,6 +431,7 @@ interface IWUQuery : extends IConstWUQuery
     virtual void removeAssociatedFiles() = 0;
     virtual void setQueryMainDefinition(const char * str) = 0;
     virtual void removeAssociatedFile(WUFileType type, const char * name, const char * desc) = 0;
+    virtual void setQueryText(const char * pstr, bool preserveFlagIfArchive) = 0;
 };
 
 

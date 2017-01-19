@@ -1671,6 +1671,7 @@ public:
 
     virtual void        setQueryType(WUQueryType qt);
     virtual void        setQueryText(const char *pstr);
+    virtual void        setQueryText(const char *pstr, bool preserveFlagIfArchive);
     virtual void        setQueryName(const char *);
     virtual void        setQueryMainDefinition(const char * str);
     virtual void        addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc, unsigned minActivity, unsigned maxActivity);
@@ -7307,7 +7308,7 @@ unsigned CLocalWUQuery::getQueryDllCrc() const
     return 0;
 }
 
-void CLocalWUQuery::setQueryText(const char *text)
+void CLocalWUQuery::setQueryText(const char *text, bool preserveFlagIfArchive)
 {
     p->setProp("Text", text);
     bool isArchive = isArchiveQuery(text);
@@ -7324,7 +7325,13 @@ void CLocalWUQuery::setQueryText(const char *text)
         else
             p->setProp("ShortText", xml->queryProp("Query"));
     }
-    p->setPropBool("@isArchive", isArchive);
+    if (!preserveFlagIfArchive || !p->getPropBool("@isArchive"))
+        p->setPropBool("@isArchive", isArchive);
+}
+
+void CLocalWUQuery::setQueryText(const char *text)
+{
+    setQueryText(text, false);
 }
 
 void CLocalWUQuery::setQueryName(const char *qname)
