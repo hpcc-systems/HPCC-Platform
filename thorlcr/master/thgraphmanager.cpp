@@ -106,8 +106,10 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             }
 
             Linked<CJobMaster> job = mgr.getCurrentJob();
+            if (!job)
+                throw MakeStringException(5300, "Command not available when no job active");
             const char *graphId = job->queryGraphName();
-            if (!job || !graphId)
+            if (!graphId)
                 throw MakeStringException(5300, "Command not available when no graph active");
 
             const char *command = queryXml->queryName();
@@ -127,7 +129,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                 mbuf.append(job->queryKey());
                 mptag_t replyTag = createReplyTag();
                 serializeMPtag(mbuf, replyTag);
-                mbuf.append(rawText.str());
+                mbuf.append(rawText);
                 if (!comm.send(mbuf, RANK_ALL_OTHER, masterSlaveMpTag, MP_ASYNC_SEND))
                 {
                     DBGLOG("Failed to send debug info to slave");
