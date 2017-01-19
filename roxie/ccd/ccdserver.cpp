@@ -2703,7 +2703,7 @@ public:
 
     virtual void stopSink(unsigned outputIdx)
     {
-        if (!stopped[outputIdx])
+        if (outputIdx < numOutputs && !stopped[outputIdx])  // Implicit dependencies on DiskWrite activities do not count as outputs
         {
             stopped[outputIdx] = true;
             for (unsigned s = 0; s < numOutputs; s++)
