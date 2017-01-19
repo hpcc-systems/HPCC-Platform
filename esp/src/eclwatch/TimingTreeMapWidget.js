@@ -34,7 +34,7 @@ define([
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
     function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, dom, domClass, domStyle,
-            registry, 
+            registry,
             TreeMap,
             _Widget, ESPWorkunit,
             template) {
@@ -68,11 +68,25 @@ define([
             },
 
             calcHeight: function (elmID) {
-                var elmHeight, elmMargin, elm = document.getElementById(elmID);
-                var computedStyle = domStyle.getComputedStyle(elm);
-                elmHeight = parseFloat(computedStyle.getPropertyValue("height"));
-                elmMargin = parseFloat(computedStyle.getPropertyValue('margin-top')) + parseInt(computedStyle.getPropertyValue('margin-bottom'));
+                var elm = document.getElementById(elmID);
+                var elmHeight = document.getElementById(elmID);
+                var elmMargin = document.getElementById(elmID);
+                var computedStyle = this.verifyBrowser(elm, "height");
+
+                elmHeight = parseFloat(this.verifyBrowser(elmHeight, "height"));
+                elmMargin = parseFloat(this.verifyBrowser(elmMargin, 'margin-top')) + parseInt(this.verifyBrowser(elmMargin, 'margin-bottom'));
                 return elmHeight + elmMargin;
+            },
+
+            verifyBrowser: function (el, prop) {
+                //IE does not support getComputedStyle so we are detecting here.
+              if (document.defaultView && document.defaultView.getComputedStyle) {
+                return document.defaultView.getComputedStyle(el, null)[prop];
+              } else if (el.currentStyle) {
+                return el.currentStyle[prop];
+              } else {
+                return el.style[prop];
+              }
             },
 
             resize: function (args) {
