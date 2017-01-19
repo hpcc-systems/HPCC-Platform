@@ -34,7 +34,7 @@ define([
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
     function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, dom, domClass, domStyle,
-            registry, 
+            registry,
             TreeMap,
             _Widget, ESPWorkunit,
             template) {
