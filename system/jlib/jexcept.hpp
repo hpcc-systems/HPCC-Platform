@@ -223,5 +223,9 @@ inline bool isFatal(IError * error) { return isFatal(error->getSeverity()); }
 
 extern jlib_decl IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0);
 
+#ifndef _WIN32
+int jlib_decl handleSigPipe();
+#endif
+
 #endif
 
