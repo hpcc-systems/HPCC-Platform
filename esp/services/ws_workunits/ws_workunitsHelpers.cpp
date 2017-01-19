@@ -508,7 +508,7 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
 
             if (version > 1.30)
             {
-                info.setHasArchiveQuery(query->isArchive());
+                info.setHasArchiveQuery(query->hasArchive());
             }
 
             for (unsigned i = 0; i < FileTypeSize; i++)
@@ -2085,6 +2085,15 @@ void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
     queryDllServer().getDll(query->getQueryResTxtName(resname).str(), buf);
 }
 
+IConstWUQuery* WsWuInfo::getEmbeddedQuery()
+{
+    Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+    if (wv)
+        return wv->getEmbeddedQuery();
+
+    return NULL;
+}
+
 void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
 {
     Owned<IConstWUQuery> query = cw->getQuery();
@@ -2094,7 +2103,18 @@ void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
     SCMStringBuffer queryText;
     query->getQueryText(queryText);
     if ((queryText.length() < 1) || !isArchiveQuery(queryText.str()))
-        throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Archive Query not found for workunit %s.", wuid.str());
+    {
+        if (!query->hasArchive())
+            throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Archive query not found for workunit %s.", wuid.str());
+
+        Owned<IConstWUQuery> embeddedQuery = getEmbeddedQuery();
+        if (!embeddedQuery)
+            throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Embedded query not found for workunit %s.", wuid.str());
+
+        embeddedQuery->getQueryText(queryText);
+        if ((queryText.length() < 1) || !isArchiveQuery(queryText.str()))
+            throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Archive query not found for workunit %s.", wuid.str());
+    }
     buf.append(queryText.length(), queryText.str());
 }
 
