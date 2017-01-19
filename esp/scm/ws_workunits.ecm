@@ -1666,6 +1666,7 @@ ESPrequest [nil_remove] WUCreateZAPInfoRequest
     string WhatChanged;
     string WhereSlow;
     [min_ver("1.53")] string Password;
+    [min_ver("1.65")] string ZAPFileName;
     [min_ver("1.57")] bool IncludeThorSlaveLog(false);
 };
 
@@ -1794,7 +1795,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
 
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.64"), default_client_version("1.64"),
+    version("1.65"), default_client_version("1.65"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
