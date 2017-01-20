@@ -119,6 +119,27 @@ Some thoughts on improving this memory manager:
      be a 'lazy shrink' of just rows which survived long enough to be worth considering shrinking, and would be able to do nothing
      (avoid the call even?) in cases where there was no shrinking to be done...
 
+Link counted rows and memory order:
+===================================
+
+In the general implementation of linkcounted objects, decrement/store to the link count should be an release operation - to ensure
+that any writes to the contents of the object are committed before it is decremented, and there should be an acquire barrier
+after the last decrement - to ensure that memory cannot appear to be modified after the object is freed.
+
+However the roxiemem implementation has some additional considerations:
+
+* allocations are protected by an acquire/release spinblock (or cs).  That means that one allocation cannot access an inconsistent view
+  of an object from a previous allocation.
+
+* Only the thread that allocates the memory modifies it.  As long as rows are passed to other threads with acquire/release this means
+  that the row will always be up to date in all threads.
+
+Therefore decrements do not need release (since memory is already synchronized - either by the allocation cs, or not shared with another thread),
+and accesses do not need to use acquire.
+
+If this assumption about modifying on other threads is ever broken then there needs to be an appriate barrier after the last write and
+before the object is released.
+
 */
 //================================================================================
 // Allocation of aligned blocks from os
@@ -1777,7 +1798,7 @@ public:
     {
         //This function may not give correct results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = freeBase.load(std::memory_order_relaxed);
+        unsigned limit = freeBase.load(std::memory_order_acquire); // acquire ensures that any link counts will be initialised
         while (leaked > 0 && base < limit)
         {
             const char *block = data() + base;
@@ -1808,7 +1829,7 @@ public:
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = freeBase.load(std::memory_order_relaxed);
+        unsigned limit = freeBase.load(std::memory_order_acquire); // acquire ensures that any link counts will be initialised
         while (base < limit)
         {
             const char *block = data() + base;
@@ -1830,7 +1851,7 @@ public:
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = freeBase.load(std::memory_order_relaxed);
+        unsigned limit = freeBase.load(std::memory_order_acquire); // acquire ensures that any link counts will be initialised
         memsize_t running = 0;
         unsigned runningCount = 0;
         unsigned lastId = 0;
@@ -2028,7 +2049,7 @@ public:
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = freeBase.load(std::memory_order_relaxed);
+        unsigned limit = freeBase.load(std::memory_order_acquire); // acquire ensures that any link counts will be initialised
         while (base < limit)
         {
             const char *block = data() + base;
@@ -3274,8 +3295,9 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsig
             if (bytesFree >= size)
             {
                 //This is the only place that modifies freeBase, so it can be unconditional since caller must have a lock.
-                freeBase.store(curFreeBase + size, std::memory_order_relaxed);
                 ret = data() + curFreeBase;
+                ((std::atomic_uint *)ret)->store(0, std::memory_order_relaxed);
+                freeBase.store(curFreeBase + size, std::memory_order_release); // ensure link count is written before this is incremented.
                 goto done;
             }
 
@@ -3325,7 +3347,7 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsig
             nextMatchOffset = offset;
             //save offset
         }
-done:
+
         //Mark as allocated before return - while spin lock is still guaranteed to be active
         ((std::atomic_uint *)ret)->store(0, std::memory_order_relaxed);
     }
@@ -3374,6 +3396,7 @@ done:
         }
     }
 
+done:
     if (incCounter && !alreadyIncremented)
         count.fetch_add(1, std::memory_order_relaxed);
 
