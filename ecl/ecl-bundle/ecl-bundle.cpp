@@ -1295,6 +1295,8 @@ public:
                 "ecl bundle info <bundle> \n"
                 " Options:\n"
                 "   <bundle>               The name or URL of a bundle file, or installed bundle\n"
+                "   --branch               Names a branch to install when bundle references a git repository\n"
+                "   --remote               Interpret bundle name as a remote name from catalog\n"
                );
         EclCmdBundleBaseWithVersion::usage();
     }
@@ -1449,9 +1451,11 @@ public:
                 "ecl bundle install <bundle> \n"
                 " Options:\n"
                 "   <bundle>               The name or URL of a bundle file\n"
+                "   --branch               Names a branch to install when bundle references a git repository\n"
                 "   --dryrun               Print what would be installed, but do not copy\n"
                 "   --force                Install even if required dependencies missing\n"
                 "   --keepprior            Do not remove an previous versions of the bundle\n"
+                "   --remote               Interpret bundle name as a remote name from catalog\n"
                 "   --update               Update an existing installed bundle\n"
                );
         EclCmdBundleBase::usage();
@@ -1642,6 +1646,8 @@ public:
                 "ecl bundle info <bundle> \n"
                 " Options:\n"
                 "   <bundle>               The name or URL of a bundle file, or installed bundle\n"
+                "   --branch               Names a branch to install when bundle references a git repository\n"
+                "   --remote               Interpret bundle name as a remote name from catalog\n"
                );
         EclCmdBundleBaseWithVersion::usage();
     }
@@ -1800,6 +1806,7 @@ public:
                 "      info         Show bundle information\n"
                 "      install      Install a bundle\n"
                 "      list         List installed bundles\n"
+                "      search       Search catalog for matching bundles\n"
                 "      selftest     Run bundle selftests\n"
                 "      uninstall    Uninstall a bundle\n"
                 "      use          Specify which version of a bundle to use\n"
