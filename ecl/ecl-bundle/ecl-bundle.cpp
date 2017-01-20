@@ -28,10 +28,14 @@
 #include "eclcmd.hpp"
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
+#include <regex>
 
+#define CATALOG_URL "CATALOG_URL"
 #define ECLCC_ECLBUNDLE_PATH "ECLCC_ECLBUNDLE_PATH"
 #define HPCC_FILEHOOKS_PATH "HPCC_FILEHOOKS_PATH"
 #define VERSION_SUBDIR "_versions"
+
+#define DEFAULT_CATALOG_URL "https://github.com/hpcc-systems/ecl-bundles/raw/master/README.rst"
 
 #define ECLOPT_BRANCH "--branch"
 #define ECLOPT_DETAILS "--details"
@@ -39,6 +43,8 @@
 #define ECLOPT_FORCE "--force"
 #define ECLOPT_KEEPPRIOR "--keepprior"
 #define ECLOPT_RECURSE "--recurse"
+#define ECLOPT_REMOTE "--remote"
+#define ECLOPT_STATUS "--status"
 #define ECLOPT_UPDATE "--update"
 
 
@@ -302,54 +308,73 @@ void doDeleteOnCloseDown()
     }
 }
 
-StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation, const char *optBranch)
+interface ICatalogEntry : extends IInterface
 {
-    // If the bundle name looks like a url, fetch it somewhere temporary first...
-    if (isUrl(bundleName))
-    {
-        StringBuffer tmp;
-        getTempFilePath(tmp, "ecl-bundle", nullptr);
-        tmp.append(PATHSEPCHAR).append("tmp.XXXXXX");
-        if (!mkdtemp((char *) tmp.str()))
-        {
-            throw makeStringExceptionV(0, "Failed to create temporary directory %s (error %d)", tmp.str(), errno);
-        }
-        deleteOnCloseDown.append(tmp);
-        if (optVerbose)
-            printf("mkdir %s\n", tmp.str());
+    virtual const char *queryName() const = 0;
+    virtual const char *queryDescription() const = 0;
+    virtual const char *queryStatus() const = 0;
+    virtual const char *queryUrl() const = 0;
+};
 
-        const char *ext = pathExtension(bundleName);
-        if (ext && strcmp(ext, ".git")==0)
+class CCatalogEntry : public CInterfaceOf<ICatalogEntry>
+{
+public:
+    CCatalogEntry(const char *_name, const char *_description, const char *_status,const char *_url)
+    : name(_name), description(_description), status(_status), url(_url)
+    {
+    }
+    virtual const char *queryName() const override { return name.str(); }
+    virtual const char *queryDescription() const override { return description.str(); }
+    virtual const char *queryStatus() const override { return status.str(); }
+    virtual const char *queryUrl() const override { return url.str(); }
+protected:
+    StringAttr name;
+    StringAttr description;
+    StringAttr status;
+    StringAttr url;
+};
+
+int loadCatalog(IArrayOf<ICatalogEntry> &catalog)
+{
+    int ret = 0;
+    const char * const REbundle = "\n(Approved|Supported|Other) bundles\n=+\n|[|] *(.+?) *[|] *(.+?) *[|] *(.+?) *[|]";
+    const char *catalogs = getenv(CATALOG_URL);
+    if (!catalogs)
+        catalogs = DEFAULT_CATALOG_URL;
+    StringArray urls;
+    urls.appendList(catalogs, ";");
+    ForEachItemIn(idx, urls)
+    {
+        const char *url = urls.item(idx);
+        StringBuffer output;
+        VStringBuffer params("-L %s", url);
+        unsigned retCode = doPipeCommand(output, "curl", params, NULL);
+        if (optVerbose)
+            printf("curl fetched catalog:\n%s", output.str());
+        if (retCode == START_FAILURE)
         {
-            fetchedLocation.append(tmp).append(PATHSEPCHAR);
-            splitFilename(bundleName, NULL, NULL, &fetchedLocation, NULL);
-            StringBuffer output;
-            VStringBuffer params("clone --depth=1 %s %s", bundleName, fetchedLocation.str());
-            if (optBranch)
-                params.appendf(" -b %s", optBranch);
-            unsigned retCode = doPipeCommand(output, "git", params, NULL);
-            if (optVerbose)
-                printf("%s", output.str());
-            if (retCode == START_FAILURE)
-                throw makeStringExceptionV(0, "Could not retrieve repository %s: git executable missing?", bundleName);
+            printf("Could not retrieve catalog from url %s: curl executable missing?", url);
+            ret = 1;
         }
-        else
+        std::regex reBundle(REbundle);
+        std::smatch sm;
+        std::string search(output);
+        std::string status = "Other";
+        while (std::regex_search(search, sm, reBundle))
         {
-            // Use curl executable
-            fetchedLocation.append(tmp).append(PATHSEPCHAR);
-            splitFilename(bundleName, NULL, NULL, &fetchedLocation,  &fetchedLocation);
-            StringBuffer output;
-            VStringBuffer params("-o %s %s", fetchedLocation.str(), bundleName);
-            unsigned retCode = doPipeCommand(output, "curl", params, NULL);
-            if (optVerbose)
-                printf("%s", output.str());
-            if (retCode == START_FAILURE)
-                throw makeStringExceptionV(0, "Could not retrieve url %s: curl executable missing?", bundleName);
+            search = sm.suffix();
+            if (!sm[2].length())
+                status = sm[1].str();
+            else
+            {
+                std::string bundleName = sm[2].str();
+                std::string bundleDesc = sm[3].str();
+                std::string bundleUrl = sm[4].str();
+                catalog.append(*new CCatalogEntry(bundleName.c_str(), bundleDesc.c_str(), status.c_str(), bundleUrl.c_str()));
+            }
         }
     }
-    else
-        fetchedLocation.append(bundleName); // Assume local
-    return fetchedLocation;
+    return ret;
 }
 
 class CBundleInfo : public CInterfaceOf<IBundleInfo>
@@ -991,7 +1016,22 @@ public:
         installFileHooks(hooksPath.str());
         return true;
     }
+    virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
+    {
+        if (iter.matchFlag(optRemote, ECLOPT_REMOTE))
+            return EclCmdOptionMatch;
+        return EclCmdCommon::matchCommandLineOption(iter, finalAttempt);
+    }
 protected:
+    static bool isGitUrl(const char *url)
+    {
+        if (strncmp(url, "https://github.com/", strlen("https://github.com/"))==0)
+            return true;
+        const char *ext = pathExtension(url);
+        if (ext && strcmp(ext, ".git")==0)
+            return true;
+        return false;
+    }
     void getCompilerPaths()
     {
         StringBuffer output;
@@ -1004,13 +1044,83 @@ protected:
     bool isFromFile() const
     {
         // If a supplied bundle id contains pathsep or ., assume a filename or directory is being supplied
-        return strchr(optBundle, PATHSEPCHAR) != NULL || strchr(optBundle, '.') != NULL || isUrl(optBundle);
+        return optRemote || strchr(optBundle, PATHSEPCHAR) != NULL || strchr(optBundle, '.') != NULL || isUrl(optBundle);
     }
+    StringBuffer & fetchURL(StringBuffer &fetchedLocation)
+    {
+        const char * url = optBundle;
+        IArrayOf<ICatalogEntry> catalog;  // Needs to remain alive until method completes
+        if (optRemote)
+        {
+            bool found = false;
+            loadCatalog(catalog);
+            ForEachItemIn(idx, catalog)
+            {
+                ICatalogEntry &entry = catalog.item(idx);
+                if (strieq(entry.queryName(), optBundle))
+                {
+                    url = entry.queryUrl();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                throw makeStringExceptionV(0, "Could not find a remote bundle called %s", optBundle.str());
+        }
+        // If the bundle name looks like a url, fetch it somewhere temporary first...
+        if (isUrl(url))
+        {
+            StringBuffer tmp;
+            getTempFilePath(tmp, "ecl-bundle", nullptr);
+            tmp.append(PATHSEPCHAR).append("tmp.XXXXXX");
+            if (!mkdtemp((char *) tmp.str()))
+            {
+                throw makeStringExceptionV(0, "Failed to create temporary directory %s (error %d)", tmp.str(), errno);
+            }
+            deleteOnCloseDown.append(tmp);
+            if (optVerbose)
+                printf("mkdir %s\n", tmp.str());
+
+            const char *ext = pathExtension(url);
+            if (isGitUrl(url))
+            {
+                fetchedLocation.append(tmp).append(PATHSEPCHAR);
+                splitFilename(url, NULL, NULL, &fetchedLocation, NULL);
+                StringBuffer output;
+                VStringBuffer params("clone --depth=1 %s %s", url, fetchedLocation.str());
+                if (optBranch)
+                    params.appendf(" -b %s", optBranch.str());
+                unsigned retCode = doPipeCommand(output, "git", params, NULL);
+                if (optVerbose)
+                    printf("%s", output.str());
+                if (retCode == START_FAILURE)
+                    throw makeStringExceptionV(0, "Could not retrieve repository %s: git executable missing?", url);
+            }
+            else
+            {
+                // Use curl executable
+                fetchedLocation.append(tmp).append(PATHSEPCHAR);
+                splitFilename(url, NULL, NULL, &fetchedLocation,  &fetchedLocation);
+                StringBuffer output;
+                VStringBuffer params("-o %s %s", fetchedLocation.str(), url);
+                unsigned retCode = doPipeCommand(output, "curl", params, NULL);
+                if (optVerbose)
+                    printf("%s", output.str());
+                if (retCode == START_FAILURE)
+                    throw makeStringExceptionV(0, "Could not retrieve url %s: curl executable missing?", url);
+            }
+        }
+        else
+            fetchedLocation.append(optBundle); // Assume local
+        return fetchedLocation;
+    }
+
     StringAttr optBundle;
     StringAttr optBranch;
     StringBuffer bundlePath;
     StringBuffer hooksPath;
     bool bundleCompulsory;
+    bool optRemote;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -1163,7 +1273,7 @@ public:
         if (isFromFile())
         {
             StringBuffer useName;
-            fetchURL(optBundle, useName, optBranch);
+            fetchURL(useName);
             bundle.setown(new CBundleInfo(useName, optBundle));
         }
         else
@@ -1185,6 +1295,8 @@ public:
                 "ecl bundle info <bundle> \n"
                 " Options:\n"
                 "   <bundle>               The name or URL of a bundle file, or installed bundle\n"
+                "   --branch               Names a branch to install when bundle references a git repository\n"
+                "   --remote               Interpret bundle name as a remote name from catalog\n"
                );
         EclCmdBundleBaseWithVersion::usage();
     }
@@ -1221,7 +1333,7 @@ public:
     virtual int processCMD()
     {
         StringBuffer useName;
-        fetchURL(optBundle, useName, optBranch);
+        fetchURL(useName);
         Owned<IFile> bundleFile = createIFile(useName);
         if (bundleFile->exists())
         {
@@ -1339,9 +1451,11 @@ public:
                 "ecl bundle install <bundle> \n"
                 " Options:\n"
                 "   <bundle>               The name or URL of a bundle file\n"
+                "   --branch               Names a branch to install when bundle references a git repository\n"
                 "   --dryrun               Print what would be installed, but do not copy\n"
                 "   --force                Install even if required dependencies missing\n"
                 "   --keepprior            Do not remove an previous versions of the bundle\n"
+                "   --remote               Interpret bundle name as a remote name from catalog\n"
                 "   --update               Update an existing installed bundle\n"
                );
         EclCmdBundleBase::usage();
@@ -1441,6 +1555,66 @@ protected:
 
 //-------------------------------------------------------------------------------------------------
 
+class EclCmdBundleSearch : public EclCmdBundleBase
+{
+public:
+    EclCmdBundleSearch() : EclCmdBundleBase(false)
+    {
+    }
+
+    virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
+    {
+        if (iter.matchOption(optStatus, ECLOPT_STATUS))
+            return EclCmdOptionMatch;
+        return EclCmdCommon::matchCommandLineOption(iter, finalAttempt);
+    }
+
+    virtual int processCMD()
+    {
+        IArrayOf<ICatalogEntry> catalog;
+        int ret = loadCatalog(catalog);
+        StringBuffer match;
+        if (optBundle)
+        {
+            if (containsWildcard(optBundle))
+                match.append(optBundle);
+            else
+                match.append('*').append(optBundle).append('*');
+        }
+        ForEachItemIn(idx, catalog)
+        {
+            ICatalogEntry &entry = catalog.item(idx);
+            if (optStatus && !strieq(optStatus, entry.queryStatus()))
+                continue;
+            if (match.length() && !WildMatch(entry.queryName(), match, true))
+                continue;
+            printf("%-15s %s\n", entry.queryName(), entry.queryDescription());
+        }
+        return ret;
+    }
+
+    virtual void usage()
+    {
+        printf("\nUsage:\n"
+                "\n"
+                "The 'search' command will search for matching bundles in the online repository\n"
+                "\n"
+                "ecl bundle search [pattern]\n"
+                " Options:\n"
+                "   <pattern>              A pattern specifying what bundles to list\n"
+                "                          If omitted, all bundles are listed\n"
+                "   --status [approved|supported|other]"
+                "                          Only include bundles matching the specified status\n"
+               );
+        EclCmdBundleBase::usage();
+    }
+protected:
+    StringAttr optStatus;
+private:
+};
+
+//-------------------------------------------------------------------------------------------------
+
 class EclCmdBundleSelfTest : public EclCmdBundleBaseWithVersion
 {
 public:
@@ -1450,7 +1624,7 @@ public:
         if (isFromFile())
         {
             StringBuffer useName;
-            fetchURL(optBundle, useName, optBranch);
+            fetchURL(useName);
             bundle.setown(new CBundleInfo(useName, optBundle));
         }
         else
@@ -1472,6 +1646,8 @@ public:
                 "ecl bundle info <bundle> \n"
                 " Options:\n"
                 "   <bundle>               The name or URL of a bundle file, or installed bundle\n"
+                "   --branch               Names a branch to install when bundle references a git repository\n"
+                "   --remote               Interpret bundle name as a remote name from catalog\n"
                );
         EclCmdBundleBaseWithVersion::usage();
     }
@@ -1600,6 +1776,8 @@ IEclCommand *createBundleSubCommand(const char *cmdname)
         return new EclCmdBundleInstall();
     else if (strieq(cmdname, "list"))
         return new EclCmdBundleList();
+    else if (strieq(cmdname, "search"))
+        return new EclCmdBundleSearch();
     else if (strieq(cmdname, "selftest"))
         return new EclCmdBundleSelfTest();
     else if (strieq(cmdname, "uninstall"))
@@ -1628,6 +1806,7 @@ public:
                 "      info         Show bundle information\n"
                 "      install      Install a bundle\n"
                 "      list         List installed bundles\n"
+                "      search       Search catalog for matching bundles\n"
                 "      selftest     Run bundle selftests\n"
                 "      uninstall    Uninstall a bundle\n"
                 "      use          Specify which version of a bundle to use\n"
