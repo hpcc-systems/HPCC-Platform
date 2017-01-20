@@ -4245,6 +4245,21 @@ ECLRTL_API double rtlASin(double x, byte dbz)
     return asin(x);
 }
 
+ECLRTL_API double rtlFMod(double numer, double denom, byte dbz)
+{
+    if (!denom)
+        return rtlInvalidArgument((DBZaction) dbz, "FMOD", denom);
+    return fmod(numer, denom);
+}
+
+ECLRTL_API bool rtlFMatch(double a, double b, double epsilon)
+{
+    if (isnan(a) || isnan(b))
+        return false;
+    return fabs(a-b) <= epsilon;
+}
+
+
 //---------------------------------------------------------------------------
 
 ECLRTL_API bool rtlIsValidReal(unsigned size, const void * data)

@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+IMPORT Std.Math;
 #option ('divideByZero', 'zero');
 
 zero := nofold(0.0);
@@ -27,7 +28,7 @@ zero := nofold(0.0);
 'log(-1) = '; ln(-1.0); ln(zero - 1.0);
 'sqrt(-1) = '; sqrt(-1.0); sqrt(zero - 1.0);
 '1/0 = '; 1.0/0.0; 1.0 / zero;
-'fmod(1.0, 0.0) = '; 1.0 % 0.0; 1.0 % zero;
-'fmod(5.3, 2.0) = '; 5.3 % 2.0; 5.3 % (zero+2.0);
+'fmod(1.0, 0.0) = '; Math.FMod(1.0, 0.0); Math.FMod(1.0, zero);
+'fmod(5.3, 2.0) = '; Math.FMod(5.3, 2.0); Math.FMod(5.3, (zero+2.0));
 'acos(2) = '; acos(2.0); acos(2.0 + zero);
 'asin(2) = '; asin(2.0); asin(2.0 + zero);
