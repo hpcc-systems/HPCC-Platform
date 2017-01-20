@@ -3091,7 +3091,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprSysFunc(ctx, expr, tgt, clibExpId);
         return;
     case no_ln:
-        doBuildExprSysFunc(ctx, expr, tgt, lnId);
+        doBuildExprSysFunc(ctx, expr, tgt, lnId, options.divideByZeroAction);
         return;
     case no_sin:
         doBuildExprSysFunc(ctx, expr, tgt, sinId);
@@ -3103,10 +3103,10 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprSysFunc(ctx, expr, tgt, tanId);
         return;
     case no_asin:
-        doBuildExprSysFunc(ctx, expr, tgt, asinId);
+        doBuildExprSysFunc(ctx, expr, tgt, asinId, options.divideByZeroAction);
         return;
     case no_acos:
-        doBuildExprSysFunc(ctx, expr, tgt, acosId);
+        doBuildExprSysFunc(ctx, expr, tgt, acosId, options.divideByZeroAction);
         return;
     case no_atan:
         doBuildExprSysFunc(ctx, expr, tgt, atanId);
@@ -3124,7 +3124,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprSysFunc(ctx, expr, tgt, tanhId);
         return;
     case no_log10:
-        doBuildExprSysFunc(ctx, expr, tgt, log10Id);
+        doBuildExprSysFunc(ctx, expr, tgt, log10Id, options.divideByZeroAction);
         return;
     case no_power:
         doBuildExprSysFunc(ctx, expr, tgt, powerId);
@@ -3153,7 +3153,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprRound(ctx, expr, tgt);
         return;
     case no_sqrt:
-        doBuildExprSysFunc(ctx, expr, tgt, sqrtId);
+        doBuildExprSysFunc(ctx, expr, tgt, sqrtId, options.divideByZeroAction);
         return;
     case no_truncate:
         doBuildExprTrunc(ctx, expr, tgt);
@@ -7348,7 +7348,7 @@ void HqlCppTranslator::doBuildDivideByZero(BuildCtx & ctx, const CHqlBoundTarget
             if (zero->queryType()->getTypeCode() == type_real)
             {
                 HqlExprArray noArgs;
-                nan.setown(bindFunctionCall(createRealNullId, noArgs));
+                nan.setown(bindFunctionCall(createRealInfId, noArgs));
             }
 
             if (target)
@@ -9601,7 +9601,7 @@ void HqlCppTranslator::doBuildAssignEventExtra(BuildCtx & ctx, const CHqlBoundTa
 //---------------------------------------------------------------------------
 //-- system call e.g. EXP(), LOG()...
 
-void HqlCppTranslator::doBuildExprSysFunc(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, IIdAtom * funcName)
+void HqlCppTranslator::doBuildExprSysFunc(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, IIdAtom * funcName, byte dbz)
 {
     HqlExprArray args;
     ForEachChild(i, expr)
@@ -9610,6 +9610,8 @@ void HqlCppTranslator::doBuildExprSysFunc(BuildCtx & ctx, IHqlExpression * expr,
         if (!cur->isAttribute())
             args.append(*LINK(cur));
     }
+    if (dbz)
+        args.append(*createConstant(dbz));
     OwnedHqlExpr call = bindFunctionCall(funcName, args);
     buildExpr(ctx, call, tgt);
 }

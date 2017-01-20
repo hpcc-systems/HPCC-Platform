@@ -2022,12 +2022,22 @@ unsigned RealValue::getHash(unsigned initval)
 
 const char *RealValue::generateECL(StringBuffer &s)
 {
-    return getStringValue(s);
+    if (isinf(val))
+        return s.append("Std.Math.INFINITY");
+    else if (isnan(val))
+        return s.append("Std.Math.NaN");
+    else
+        return getStringValue(s);
 }
 
 const char *RealValue::generateCPP(StringBuffer &s, CompilerType compiler)
 {
-    return getStringValue(s);
+    if (isinf(val))
+        return s.append("rtlCreateRealInf()");
+    else if (isnan(val))
+        return s.append("rtlCreateRealNull()");
+    else
+        return getStringValue(s);
 }
 
 const char *RealValue::getStringValue(StringBuffer &s)
@@ -2614,7 +2624,7 @@ IValue * divideValues(IValue * left, IValue * right, byte dbz)
         if (rv)
             res = lv / rv;
         else if (dbz == DBZnan)
-            res =  rtlCreateRealNull();
+            res =  rtlCreateRealInf();
         else
             res = 0.0;
 
@@ -2843,9 +2853,9 @@ IValue * truncateValue(IValue * v)
     return NULL;
 }
 
-IValue * lnValue(IValue * v)
+IValue * lnValue(IValue * v, byte onZero)
 {
-    return createRealValue(rtlLog(v->getRealValue()), 8);
+    return createRealValue(rtlLog(v->getRealValue(), onZero), 8);
 }
 
 IValue * sinValue(IValue * v)
@@ -2878,14 +2888,14 @@ IValue * tanhValue(IValue * v)
     return createRealValue(tanh(v->getRealValue()), 8);
 }
 
-IValue * asinValue(IValue * v)
+IValue * asinValue(IValue * v, byte onZero)
 {
-    return createRealValue(rtlASin(v->getRealValue()), 8);
+    return createRealValue(rtlASin(v->getRealValue(), onZero), 8);
 }
 
-IValue * acosValue(IValue * v)
+IValue * acosValue(IValue * v, byte onZero)
 {
-    return createRealValue(rtlACos(v->getRealValue()), 8);
+    return createRealValue(rtlACos(v->getRealValue(), onZero), 8);
 }
 
 IValue * atanValue(IValue * v)
@@ -2898,23 +2908,23 @@ IValue * atan2Value(IValue * y, IValue* x)
     return createRealValue(atan2(y->getRealValue(), x->getRealValue()), 8);
 }
 
-IValue * log10Value(IValue * v)
+IValue * log10Value(IValue * v, byte onZero)
 {
-    return createRealValue(rtlLog10(v->getRealValue()), 8);
+    return createRealValue(rtlLog10(v->getRealValue(), onZero), 8);
 }
 
-IValue * sqrtValue(IValue * v)
+IValue * sqrtValue(IValue * v, byte onZero)
 {
     switch(v->getTypeCode())
     {
+    case type_decimal:
+        //MORE: This should probably do this more accurately.
+        //fall into
     case type_int:
     case type_swapint:
     case type_packedint:
     case type_real:
-        return createRealValue(rtlSqrt(v->getRealValue()), 8);
-    case type_decimal:
-        //MORE: This should probably do this more accurately.
-        return createRealValue(rtlSqrt(v->getRealValue()), 8);
+        return createRealValue(rtlSqrt(v->getRealValue(), onZero), 8);
     }
     throwUnexpected();
     return NULL;
