@@ -95,7 +95,7 @@ public:
 
     virtual void resolveHostnames();
 
-    virtual StringBuffer & getUrlStr(StringBuffer &str, bool useHostName, unsigned dnsIntervalSecs);
+    virtual StringBuffer & getUrlStr(StringBuffer &str, bool useHostName);
 };
 
 

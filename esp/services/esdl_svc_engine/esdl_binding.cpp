@@ -878,7 +878,7 @@ void EsdlServiceImpl::generateTargetURL(IEspContext & context,
         url.append("HTTP");
     url.append("://");
 
-    sconn->getUrlStr(url, true, -1);
+    sconn->getUrlStr(url, true);
 
     if(srvinfo->hasProp("@path"))  //Append the server path
     {

@@ -428,29 +428,23 @@ void CSmartSocketFactory::setStatus(SocketEndpoint &ep, bool status)
         ss->status=status;
 }
 
-StringBuffer & CSmartSocketFactory::getUrlStr(StringBuffer &url, bool useHostName, unsigned dnsIntervalSecs)
+StringBuffer & CSmartSocketFactory::getUrlStr(StringBuffer &url, bool useHostName)
 {
 	SmartSocketEndpoint * sep = nextSmartEndpoint();
 	if (sep)
 	{
 		SocketEndpoint ep;
-
-		if(useHostName)
+		if(useHostName && sep->name.length())
 		{
+			url.append(sep->name.str());
 			ep = sep->ep;
-			if (sep->name.length())
-			{
-				url.append(sep->name.str());
-				if (ep.port)
-					url.append(':').append((unsigned)ep.port);
-			}
-			else
-				ep.getUrlStr(url);
+			if (ep.port)
+				url.append(':').append((unsigned)ep.port);
 		}
 		else
 		{
 			sep->checkHost(dnsInterval);
-			ep = sep->ep;
+			SocketEndpoint ep = sep->ep;
 			ep.getUrlStr(url);
 		}
 	}
