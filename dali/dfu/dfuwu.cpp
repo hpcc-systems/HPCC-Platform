@@ -70,14 +70,14 @@ static StringBuffer &newWUID(StringBuffer &wuid)
     char result[32];
     time_t ltime;
     time( &ltime );
-    tm *today = localtime( &ltime );   
+    tm *today = localtime( &ltime );
     strftime(result, sizeof(result), "%Y%m%d-%H%M%S", today);
     wuid.append(result);
     return wuid;
 }
 
 
-struct DFUstateStruct { int val; const char *str; } DFUstates[] = 
+struct DFUstateStruct { int val; const char *str; } DFUstates[] =
 {
     {DFUstate_unknown,"unknown"},
     {DFUstate_scheduled, "scheduled"},
@@ -91,7 +91,7 @@ struct DFUstateStruct { int val; const char *str; } DFUstates[] =
     {DFUstate_unknown,""}               // must be last
 };
 
-struct DFUcmdStruct { int val; const char *str; } DFUcmds[] = 
+struct DFUcmdStruct { int val; const char *str; } DFUcmds[] =
 {
     {DFUcmd_copy,               "copy"},
     {DFUcmd_remove,             "remove"},
@@ -191,11 +191,11 @@ DFUsortfield decodeDFUsortfield(const char * s)
         return DFUsf_term;
     int mod = 0;
     while (*s) {
-        if (*s=='-') 
+        if (*s=='-')
             mod |= DFUsf_reverse;
-        else if (*s=='?') 
+        else if (*s=='?')
             mod |= DFUsf_nocase;
-        else if (*s=='#') 
+        else if (*s=='#')
             mod |= DFUsf_numeric;
         else
             break;
@@ -204,7 +204,7 @@ DFUsortfield decodeDFUsortfield(const char * s)
     unsigned i=0;
     loop {
         const char *cmp=DFUsortfields[i].str;
-        if (!*cmp||(DFUsortfields[i].val==(int)DFUsf_term)) 
+        if (!*cmp||(DFUsortfields[i].val==(int)DFUsf_term))
             return DFUsf_term;
         if (stricmp(s,cmp)==0)
             break;
@@ -216,11 +216,11 @@ DFUsortfield decodeDFUsortfield(const char * s)
 StringBuffer &encodeDFUsortfield(DFUsortfield fmt,StringBuffer &str,bool incmodifier)
 {
     if (incmodifier) {
-        if (((int)fmt)&DFUsf_reverse) 
+        if (((int)fmt)&DFUsf_reverse)
             str.append('-');
-        if (((int)fmt)&DFUsf_nocase) 
+        if (((int)fmt)&DFUsf_nocase)
             str.append('?');
-        if (((int)fmt)&DFUsf_numeric) 
+        if (((int)fmt)&DFUsf_numeric)
             str.append('#');
     }
     fmt = (DFUsortfield)(((int)fmt)&0xff);
@@ -240,7 +240,7 @@ protected: friend class CLinkedDFUWUchild; friend class CDFUprogress; friend cla
     Owned<IRemoteConnection> conn;
     Owned<IPropertyTree> root;
     mutable CriticalSection crit;
-    virtual ~CDFUWorkUnitBase() 
+    virtual ~CDFUWorkUnitBase()
     {
         root.clear();
         conn.clear();
@@ -296,7 +296,7 @@ public:
         root.set(parent->root->queryPropTree(name.get()));
     }
 
-    virtual void Link(void) const       { parent->Link(); } 
+    virtual void Link(void) const       { parent->Link(); }
     virtual bool Release(void) const    { return parent->Release(); }
 
 
@@ -394,7 +394,7 @@ public:
         if (!replicating) {
             unsigned __int64 sdone = getScaledDone();
             unsigned __int64 stotal = getScaledTotal();
-            getScale(scale); 
+            getScale(scale);
             getKbPerSecAve();
             unsigned kbs = getKbPerSecAve();
             if ((kbs!=0)||(sdone!=0)||(stotal!=0)) {
@@ -442,20 +442,20 @@ public:
         }
         return str;
     }
-    DFUstate getState() const 
+    DFUstate getState() const
     {
         CriticalBlock block(parent->crit);
         return decodeDFUstate(queryRoot()->queryProp("@state"));
     }
-    CDateTime &getTimeStarted(CDateTime &val) const 
+    CDateTime &getTimeStarted(CDateTime &val) const
     {
         CriticalBlock block(parent->crit);
         StringBuffer str;
         queryRoot()->getProp("@timestarted",str);
         val.setString(str.str());
-        return val; 
+        return val;
     }
-    CDateTime &getTimeStopped(CDateTime &val) const 
+    CDateTime &getTimeStopped(CDateTime &val) const
     {
         CriticalBlock block(parent->crit);
         StringBuffer str;
@@ -514,19 +514,19 @@ public:
         queryRoot()->setPropInt("@replicating",0);
         parent->commit();
     }
-    void setState(DFUstate state) 
+    void setState(DFUstate state)
     {
         CriticalBlock block(parent->crit);
         CDateTime dt;
         switch (state) {
         case DFUstate_started:
             dt.setNow();
-            setTimeStarted(dt); 
+            setTimeStarted(dt);
             break;
         case DFUstate_aborting:
             {
                 DFUstate oldstate = getState();
-                if ((oldstate==DFUstate_aborted)||(oldstate==DFUstate_failed)||(oldstate==DFUstate_finished)) 
+                if ((oldstate==DFUstate_aborted)||(oldstate==DFUstate_failed)||(oldstate==DFUstate_finished))
                     state = oldstate;
             }
             // fall through
@@ -536,7 +536,7 @@ public:
             if (parent->removeQueue()&&(state==DFUstate_aborting))
                 state = DFUstate_aborted;
             dt.setNow();
-            setTimeStopped(dt); 
+            setTimeStopped(dt);
             break;
         }
         StringBuffer s;
@@ -544,14 +544,14 @@ public:
         queryRoot()->setProp("@state",s.str());
         parent->commit();
     }
-    void setTimeStarted(const CDateTime &val) 
+    void setTimeStarted(const CDateTime &val)
     {
         CriticalBlock block(parent->crit);
         StringBuffer str;
         val.getString(str);
         queryRoot()->setProp("@timestarted",str.str());
     }
-    void setTimeStopped(const CDateTime &val) 
+    void setTimeStopped(const CDateTime &val)
     {
         CriticalBlock block(parent->crit);
         StringBuffer str;
@@ -571,14 +571,14 @@ public:
         queryRoot()->getProp("@subinprogress",str);
         return str;
     }
-    
+
     StringBuffer &getSubDone(StringBuffer &str) const
     {
         CriticalBlock block(parent->crit);
         queryRoot()->getProp("@subdone",str);
         return str;
     }
-    
+
     void setSubInProgress(const char *str)
     {
         CriticalBlock block(parent->crit);
@@ -619,16 +619,16 @@ public:
                 return true;
         }
         return false;
-        
+
     }
 
-    StringBuffer &getEventName(StringBuffer &str)const 
+    StringBuffer &getEventName(StringBuffer &str)const
     {
         queryRoot()->getProp("@eventname",str);
         return str;
     }
 
-    bool getSub()const 
+    bool getSub()const
     {
         return queryRoot()->getPropBool("@sub");
     }
@@ -641,7 +641,7 @@ public:
     unsigned getTriggeredList(StringAttrArray &files) const
     {
         MemoryBuffer buf;
-        if (!queryRoot()->getPropBin("triggeredList",buf)||(buf.length()<sizeof(unsigned))) 
+        if (!queryRoot()->getPropBin("triggeredList",buf)||(buf.length()<sizeof(unsigned)))
             return 0;
         unsigned n;
         buf.read(n);
@@ -667,7 +667,7 @@ public:
 
     void setHandlerEp(const SocketEndpoint &ep)
     {
-        if (ep.isNull()) 
+        if (ep.isNull())
             queryRoot()->removeProp("@handler");
         else {
             StringBuffer s;
@@ -675,7 +675,7 @@ public:
         }
     }
 
-    void setSub(bool sub) 
+    void setSub(bool sub)
     {
         queryRoot()->setPropBool("@sub",sub);
 
@@ -751,7 +751,7 @@ public:
 
     IMPLEMENT_DFUWUCHILD;
 
-    IFileDescriptor *getFileDescriptor(bool iskey,bool ignorerepeats) const 
+    IFileDescriptor *getFileDescriptor(bool iskey,bool ignorerepeats) const
     {
         unsigned nc = numClusters();
         unsigned n=nc?getNumParts(0,iskey):0;
@@ -782,7 +782,7 @@ public:
             SocketEndpoint ep;
             if ((getGroupName(0,s).length()!=0)&&!getForeignDali(ep) ) {
                 Owned<IGroup> grp = queryNamedGroupStore().lookup(s.str());
-                if (!grp) 
+                if (!grp)
                     throw MakeStringException(-1,"CDFUfileSpec: Cluster %s not found",s.str());
             }
             throw MakeStringException(-1,"CDFUfileSpec: No parts found for file!");
@@ -794,7 +794,7 @@ public:
         Owned<IFileDescriptor> ret = createFileDescriptor(p);
         StringBuffer s;
         bool dirgot = false;
-        if (getDirectory(s).length()) {   
+        if (getDirectory(s).length()) {
             dirgot = true;
             ret->setDefaultDir(s.str());
         }
@@ -813,8 +813,8 @@ public:
                 n=getNumParts(clustnum,iskey);
             if (!n)
                 continue;
-            ClusterPartDiskMapSpec mspec;               
-            getClusterPartDiskMapSpec(clustnum,mspec);  
+            ClusterPartDiskMapSpec mspec;
+            getClusterPartDiskMapSpec(clustnum,mspec);
             if (ignorerepeats&&(mspec.repeatedPart!=CPDMSRP_notRepeated)) {
                 if (mspec.repeatedPart&CPDMSRP_onlyRepeated)
                     continue;  // ignore only repeated cluster
@@ -823,10 +823,10 @@ public:
             }
             const char *grpname=NULL;
             StringBuffer gs;
-            if (getGroupName(clustnum,gs).length()) 
+            if (getGroupName(clustnum,gs).length())
                 grpname = gs.str();
             Owned<IGroup> grp(getGroup(clustnum));
-            if (dirgot&&grp.get()&&partmask.length()) {  // not sure if need dir here 
+            if (dirgot&&grp.get()&&partmask.length()) {  // not sure if need dir here
                 if (!initdone) {
                     ret->setNumParts(n); // NB first cluster determines number of parts
                     initdone = true;
@@ -848,22 +848,22 @@ public:
         }
         return ret.getClear();
     }
-    StringBuffer &getTitle(StringBuffer &str) const 
+    StringBuffer &getTitle(StringBuffer &str) const
     {
         queryRoot()->getProp("@title",str);
         return str;
     }
 
-    StringBuffer &getRawDirectory(StringBuffer &str) const 
+    StringBuffer &getRawDirectory(StringBuffer &str) const
     {
         queryRoot()->getProp("@directory",str);
         return str;
-    }   
-    StringBuffer &getDirectory(StringBuffer &str) const 
+    }
+    StringBuffer &getDirectory(StringBuffer &str) const
     {
         if (!queryRoot()->getProp("@directory",str)) {
             StringBuffer tmp;
-            if (getRoxiePrefix(tmp).length()) 
+            if (getRoxiePrefix(tmp).length())
                 tmp.append("::");
             size32_t tmpl = tmp.length();
             if (getLogicalName(tmp).length()>tmpl) {
@@ -880,12 +880,12 @@ public:
         }
         return str;
     }
-    StringBuffer &getLogicalName(StringBuffer &str)const 
+    StringBuffer &getLogicalName(StringBuffer &str)const
     {
         queryRoot()->getProp("OrigName",str);
         return str;
     }
-    StringBuffer &getFileMask(StringBuffer &str) const 
+    StringBuffer &getFileMask(StringBuffer &str) const
     {
         if (!queryRoot()->getProp("@partmask",str)) {
             StringBuffer tmp;
@@ -901,31 +901,31 @@ public:
         return str;
     }
 
-    StringBuffer &getRawFileMask(StringBuffer &str) const 
+    StringBuffer &getRawFileMask(StringBuffer &str) const
     {
         queryRoot()->getProp("@partmask",str);
         return str;
     }
-    
-    StringBuffer &getGroupName(unsigned clustnum,StringBuffer &str) const 
+
+    StringBuffer &getGroupName(unsigned clustnum,StringBuffer &str) const
     {
         // first see if Cluster spec
         if (clustnum<numClusters()) {
             StringBuffer xpath;
             xpath.appendf("Cluster[%d]",clustnum+1);
-            IPropertyTree *ct = queryRoot()->queryPropTree(xpath.str()); 
+            IPropertyTree *ct = queryRoot()->queryPropTree(xpath.str());
             if (ct&&ct->getProp("@name",str))
                 return str;
             StringBuffer s;     // old style
-            queryRoot()->getProp("@group",s); 
+            queryRoot()->getProp("@group",s);
             StringArray gs;
             getFileGroups(s.str(),gs);
-            if (clustnum<gs.ordinality()) 
+            if (clustnum<gs.ordinality())
                 str.append(gs.item(clustnum));
         }
         return str;
     }
-    IPropertyTree *queryProperties() const 
+    IPropertyTree *queryProperties() const
     {
         IPropertyTree *ret = queryRoot()->queryPropTree("Attr");
         if (!ret) {
@@ -937,18 +937,18 @@ public:
         }
         return ret;
     }
-    IPropertyTree *queryUpdateProperties() 
+    IPropertyTree *queryUpdateProperties()
     {
         IPropertyTree *ret = queryRoot()->queryPropTree("Attr");
         if (!ret)
             ret = setProperties(createPTree("Attr"));
         return ret;
     }
-    size32_t getRecordSize() const 
+    size32_t getRecordSize() const
     {
         return queryProperties()->getPropInt("@recordSize");
     }
-    bool isCompressed() const 
+    bool isCompressed() const
     {
         bool blocked;
         if (!::isCompressed(*queryProperties(),&blocked))
@@ -961,14 +961,14 @@ public:
         StringBuffer gs;
         if (getGroupName(clustnum,gs).length()) {
             Owned<IGroup> grp = queryNamedGroupStore().lookup(gs.str());
-            if (!grp) 
+            if (!grp)
                 throw MakeStringException(-1,"DFUWU: Logical group %s not found",gs.str());
             return grp.getClear();
         }
         return NULL;
     }
 
-    RemoteFilename &getPartFilename(unsigned clustnum,unsigned partidx, RemoteFilename &rfn, bool iskey) const 
+    RemoteFilename &getPartFilename(unsigned clustnum,unsigned partidx, RemoteFilename &rfn, bool iskey) const
     {
         // supports both with and without Part
         StringBuffer tmp;
@@ -978,11 +978,11 @@ public:
         CDfsLogicalFileName lfn;
         StringBuffer dir;
         ClusterPartDiskMapSpec mspec;
-        getClusterPartDiskMapSpec(clustnum,mspec);  
+        getClusterPartDiskMapSpec(clustnum,mspec);
         const char *mask = getFileMask(tmpmask).str();
         const char *fn = NULL;
         // now read part
-        Owned<IGroup> grp(getGroup(clustnum));        
+        Owned<IGroup> grp(getGroup(clustnum));
         unsigned np = getNumParts(clustnum,iskey);
         unsigned npt = queryRoot()->getPropInt("@numparts",np);
         StringBuffer xpath;
@@ -990,12 +990,12 @@ public:
         IPropertyTree *part = queryRoot()->queryPropTree(xpath.str());
         if (part) {
             const char *ns=part->queryProp("@node");
-            if (ns) 
+            if (ns)
                 ep.set(ns);
             if (!getWrap()&&(partidx<npt)) {    // override
                 const char *n=part->queryProp("@name");
                 if (n&&*n) {
-                    if (findPathSepChar(n)) 
+                    if (findPathSepChar(n))
                         fn = splitDirTail(n,dir);
                     else
                         fn = n;
@@ -1010,12 +1010,12 @@ public:
                     IPropertyTree &part = pi->get();
                     if (part.getPropInt("@num")==(partidx%npt)+1) {
                         const char *ns=part.queryProp("@node");
-                        if (ns) 
+                        if (ns)
                             ep.set(ns);
                         if (!getWrap()&&(partidx<npt)) {    // override
                             const char *n=part.queryProp("@name");
                             if (n&&*n) {
-                                if (findPathSepChar(n)) 
+                                if (findPathSepChar(n))
                                     fn = splitDirTail(n,dir);
                                 else
                                     fn = n;
@@ -1040,7 +1040,7 @@ public:
             ep = grp->queryNode(nn).endpoint();
         }
         StringBuffer tmpout;
-        // now its a bit of a kludge but can be multiple filenames 
+        // now its a bit of a kludge but can be multiple filenames
         if (strchr(fn,',')) {
             StringArray sub;
             RemoteMultiFilename::expand(fn,sub);
@@ -1078,13 +1078,13 @@ public:
         StringBuffer filename;
         if (dn) {
             filename.append(fn);
-            setReplicateFilename(filename,dn); 
+            setReplicateFilename(filename,dn);
             fn = filename.str();
         }
         rfn.setPath(ep,fn);
         return rfn;
     }
-    StringBuffer &getPartUrl(unsigned clustnum,unsigned partidx, StringBuffer &url, bool iskey) const 
+    StringBuffer &getPartUrl(unsigned clustnum,unsigned partidx, StringBuffer &url, bool iskey) const
     {   // loses port
         RemoteFilename rfn;
         getPartFilename(clustnum,partidx,rfn,iskey);
@@ -1094,7 +1094,7 @@ public:
             rfn.getRemotePath(url);
         return url;
     }
-    IPropertyTree *queryPartProperties(unsigned partidx) const 
+    IPropertyTree *queryPartProperties(unsigned partidx) const
     {
         StringBuffer path;
         path.append("Part[@num=\"").append(partidx+1).append("\"]");
@@ -1111,8 +1111,8 @@ public:
             ret->setPropInt("@num",partidx+1);
         }
         return ret;
-    }   
-    
+    }
+
     unsigned getNumParts(unsigned clustnum,bool iskey) const
     {
         unsigned n = numpartsoverride?numpartsoverride:(unsigned)queryRoot()->getPropInt("@numparts",0);
@@ -1128,7 +1128,7 @@ public:
                     return 0;
                 }
                 ClusterPartDiskMapSpec mspec;
-                getClusterPartDiskMapSpec(clustnum,mspec); 
+                getClusterPartDiskMapSpec(clustnum,mspec);
                 if (mspec.flags&CPDMSF_wrapToNextDrv)
                     n*=mspec.maxDrvs;
                 if (iskey)
@@ -1138,12 +1138,12 @@ public:
         return n;
     }
 
-    void setTitle(const char *val) 
+    void setTitle(const char *val)
     {
         queryRoot()->setProp("@title",val);
 
     }
-    void setDirectory(const char *val) 
+    void setDirectory(const char *val)
     {
         queryRoot()->setProp("@directory",val);
 
@@ -1160,16 +1160,16 @@ public:
         queryRoot()->setProp("@name",tail);
         queryRoot()->setProp("OrigName",val);
     }
-    void setFileMask(const char *val) 
+    void setFileMask(const char *val)
     {
         queryRoot()->setProp("@partmask",val);
     }
-    void setNumParts(unsigned val) 
+    void setNumParts(unsigned val)
     {
         queryRoot()->setPropInt("@numparts",val);
 
     }
-    void setGroupName(const char *val) 
+    void setGroupName(const char *val)
     {
         StringArray gs;
         getFileGroups(val,gs);
@@ -1177,18 +1177,18 @@ public:
             addCluster(gs.item(i));
         }
     }
-    IPropertyTree *setProperties(IPropertyTree *val) 
+    IPropertyTree *setProperties(IPropertyTree *val)
     {
         return queryRoot()->setPropTree("Attr",val);
     }
-    void setRecordSize(size32_t size) 
+    void setRecordSize(size32_t size)
     {
         if (size)
             queryUpdateProperties()->setPropInt("@recordSize",(int)size);
         else
             queryUpdateProperties()->removeProp("@recordSize");
     }
-    void setCompressed(bool set) 
+    void setCompressed(bool set)
     {
         // only block compressed supported
         if (set)
@@ -1198,7 +1198,7 @@ public:
     }
     virtual void setFromFileDescriptor(IFileDescriptor &fd)
     {
-        // use dfsdesc for hard work 
+        // use dfsdesc for hard work
         queryRoot()->setPropTree(NULL,fd.getFileTree(CPDMSF_packParts));
     }
 
@@ -1231,7 +1231,7 @@ public:
             const char *s=path.str();
             size32_t dirlen = 0;
             while (*s) {
-                if (isPathSepChar(*s)) { // must support unix/windows from either platform 
+                if (isPathSepChar(*s)) { // must support unix/windows from either platform
                     dirlen = s-path.str();
                     if ((dirlen==0)||((dirlen==2)&&!isPathSepChar(path.charAt(0))&&(path.charAt(1)==':')))
                         dirlen++;
@@ -1352,7 +1352,7 @@ public:
         t->setPropBool("@quotedTerminator", quotedTerminator);
     }
 
-    StringBuffer &getRowTag(StringBuffer &str)const 
+    StringBuffer &getRowTag(StringBuffer &str)const
     {
         queryProperties()->getProp("@rowTag",str);
         return str;
@@ -1373,14 +1373,14 @@ public:
     }
 
 
-    void setForeignDali(const SocketEndpoint &ep) 
+    void setForeignDali(const SocketEndpoint &ep)
     {
         // only used for source of copy
         IPropertyTree *t = queryUpdateProperties();
         StringBuffer s;
         t->setProp("@foreignDali",ep.getUrlStr(s).str());
     }
-        
+
     bool getForeignDali(SocketEndpoint &ep) const
     {
         // only used for source of copy
@@ -1424,7 +1424,7 @@ public:
         }
         return true;
     }
-    
+
 
     bool getWrap() const
     {
@@ -1451,8 +1451,8 @@ public:
         numpartsoverride = num;
     }
 
-    
-    StringBuffer &getDiffKey(StringBuffer &str) const 
+
+    StringBuffer &getDiffKey(StringBuffer &str) const
     {
         queryRoot()->getProp("@diffKey",str);
         return str;
@@ -1468,9 +1468,9 @@ public:
         StringBuffer xpath;
         xpath.appendf("Cluster[%d]",clusternum+1);
         IPropertyTree *pt = queryRoot()->queryPropTree(xpath.str());
-        if (pt) 
-            spec.fromProp(pt); 
-        else { 
+        if (pt)
+            spec.fromProp(pt);
+        else {
             ClusterPartDiskMapSpec defspec;
             spec = defspec;
         }
@@ -1529,14 +1529,14 @@ public:
         StringBuffer xpath;
         xpath.appendf("Cluster[%d]",clusternum+1);
         IPropertyTree *pt = queryRoot()->queryPropTree(xpath.str());
-        if (pt) 
-            spec.toProp(pt);  
+        if (pt)
+            spec.toProp(pt);
     }
 
     unsigned addCluster(const char *clustername)
     {
         StringBuffer _clustername;
-        if (clustername) 
+        if (clustername)
             clustername = _clustername.append(clustername).trim().toLowerCase().str();
         unsigned clusternum;
         if (!findCluster(clustername,clusternum)) {
@@ -1565,7 +1565,7 @@ public:
         setClusterPartDiskMapSpec(addCluster(clustername),spec);
     }
 
-    void setClusterPartDefaultBaseDir(const char *clustername,const char *basedir) 
+    void setClusterPartDefaultBaseDir(const char *clustername,const char *basedir)
     {
         unsigned clusternum;
         if (findCluster(clustername,clusternum)) {
@@ -1597,7 +1597,7 @@ public:
         }
         if (basedir&&*basedir)
             spec.setDefaultBaseDir(basedir);
-        if (repeatlast) 
+        if (repeatlast)
             spec.setRepeatedCopies(CPDMSRP_lastRepeated,onlyrepeated);
         setClusterPartDiskMapSpec(clustername,spec);
 
@@ -1650,7 +1650,7 @@ public:
             return true;
         }
         StringBuffer dir;
-        if (!queryRoot()->getProp("@directory",dir)) 
+        if (!queryRoot()->getProp("@directory",dir))
             getClusterPartDefaultBaseDir(NULL,dir);
         if (!dir.length())
             return false;
@@ -1670,11 +1670,11 @@ public:
         return str.toLowerCase();
     }
 
-    bool getRemoteGroupOverride() const 
+    bool getRemoteGroupOverride() const
     {
         return queryRoot()->getPropBool("@remoteGroupOverride");
     }
-    
+
     void setRemoteGroupOverride(bool set)
     {
         queryRoot()->setPropBool("@remoteGroupOverride",set);
@@ -1723,7 +1723,7 @@ public:
         return queryRoot()->getPropInt("@suppressNonKeyRepeats")!=0;
     }
 
-    bool getSlavePathOverride(StringBuffer &path) const 
+    bool getSlavePathOverride(StringBuffer &path) const
     {
         return queryRoot()->getProp("@slave",path)&&(path.length()!=0);
     }
@@ -1992,7 +1992,7 @@ public:
         queryRoot()->setPropBool("@subFileCopy",set);
     }
 
-    bool getSubfileCopy() const 
+    bool getSubfileCopy() const
     {
         return queryRoot()->getPropBool("@subFileCopy");
     }
@@ -2077,6 +2077,16 @@ public:
         queryRoot()->setProp("@umask",val);
 
     }
+    int getExpireDays() const
+    {
+        if (queryRoot()->hasProp("@expireDays"))
+            return queryRoot()->getPropInt("@expireDays", -1);
+        return -1;
+    }
+    void setExpireDays(int val)
+    {
+        queryRoot()->setPropInt("@expireDays",val);
+    }
 };
 
 class CExceptionIterator: implements IExceptionIterator, public CInterface
@@ -2086,7 +2096,7 @@ class CExceptionIterator: implements IExceptionIterator, public CInterface
     Owned<IException> cur;
 public:
     IMPLEMENT_IINTERFACE;
-    CExceptionIterator(IPropertyTree *_tree) 
+    CExceptionIterator(IPropertyTree *_tree)
         : tree(_tree)
     {
         i = 0;
@@ -2113,12 +2123,12 @@ public:
         return true;
     }
 
-    bool  isValid() 
+    bool  isValid()
     {
         return cur.get()!=NULL;
     }
 
-    IException &   query() 
+    IException &   query()
     {
         return *cur.get();
     }
@@ -2136,7 +2146,7 @@ class CDFUWorkUnit: public CDFUWorkUnitBase
     Linked<IDFUprogressSubscriber> subscriber;
     Linked<IDFUabortSubscriber> abortsubscriber;
     SubscriptionId subscriberid;
-    Semaphore completed;    
+    Semaphore completed;
     unsigned localedition;
     Linked<IDFUWorkUnitFactory> parent;
 public:
@@ -2154,7 +2164,7 @@ public:
         return true;
     }
 
-    CDFUWorkUnit(IDFUWorkUnitFactory *_parent,IRemoteConnection *_conn,IPropertyTree *tree,bool _lock=false) 
+    CDFUWorkUnit(IDFUWorkUnitFactory *_parent,IRemoteConnection *_conn,IPropertyTree *tree,bool _lock=false)
         : parent(_parent)
     {
         updating = false;
@@ -2171,14 +2181,14 @@ public:
         destination.init(this,"Destination",!_lock);
         options.init(this,"Options",!_lock);
         monitor.init(this,"Monitor",!_lock);
-        if (_lock) {            
+        if (_lock) {
             updatelock.lock();
             assertex(!updating);
             updating = true;
         }
     }
 
-    ~CDFUWorkUnit() 
+    ~CDFUWorkUnit()
     {
         CriticalBlock block(crit);
         try {
@@ -2188,7 +2198,7 @@ public:
             unsubscribe();
 
             if (updating) {
-                conn.clear();   
+                conn.clear();
                 updatelock.unlock();
             }
             else if (conn) {
@@ -2208,7 +2218,7 @@ public:
         return root->queryName();
     }
 
-    
+
     void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {   // for progress and/or state changed
         Linked<IDFUabortSubscriber> notifyabortsubscriber;
@@ -2282,7 +2292,7 @@ public:
     {
         root->getProp("@submitID",str);
         return str;
-        
+
     }
 
     StringBuffer &getPassword(StringBuffer &str) const
@@ -2348,15 +2358,15 @@ public:
         return str;
     }
 
-    CDateTime &getTimeScheduled(CDateTime &val) const 
+    CDateTime &getTimeScheduled(CDateTime &val) const
     {
         StringBuffer str;
         root->getProp("@timescheduled",str);
         val.setString(str.str());
-        return val; 
+        return val;
     }
 
-    void setTimeScheduled(const CDateTime &val) 
+    void setTimeScheduled(const CDateTime &val)
     {
         StringBuffer str;
         val.getString(str);
@@ -2433,7 +2443,7 @@ public:
     void subscribeProgress(IDFUprogressSubscriber *sub)
     {
 
-        { 
+        {
             CriticalBlock block(crit);
             if (sub) {
                 subscriber.set(sub);
@@ -2451,7 +2461,7 @@ public:
 
     void subscribeAbort(IDFUabortSubscriber *sub)
     {
-        { 
+        {
             CriticalBlock block(crit);
             if (sub) {
                 abortsubscriber.set(sub);
@@ -2498,11 +2508,11 @@ public:
             monitor.reinit();
         }
     }
-    
+
     unsigned commit()
     {
         CriticalBlock block(crit);
-        if (!conn) 
+        if (!conn)
             return 0;
         localedition++;
         root->setPropInt("Progress/Edition",localedition);
@@ -2525,7 +2535,7 @@ public:
         CriticalBlock block(crit);
         if (local)
             return localedition;
-        if (!conn) 
+        if (!conn)
             return 0;
         conn->reload("Progress/Edition");                   // this may cause problems TBI
         return root->getPropInt("Progress/Edition",0);
@@ -2583,7 +2593,7 @@ public:
 
     IDFUoptions *queryUpdateOptions()
     {
-        return &options;        
+        return &options;
     }
 
     IDFUfileSpec *queryUpdateSource()
@@ -2628,14 +2638,14 @@ public:
         if (checkconn()) {
             conn->changeMode(RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT); // make sure not locked
             root.clear();
-            conn->close(true);  
+            conn->close(true);
             conn.clear();
         }
     }
-    
+
     void queryRecoveryStore(IRemoteConnection *& _conn,IPropertyTree *&_tree, StringBuffer &runningpath)
     {
-        if (!conn) 
+        if (!conn)
             reinit();
         _conn = conn;
         _tree = root->queryPropTree("Recovery");
@@ -2678,7 +2688,7 @@ public:
         if (tree) {
             StringBuffer prop;
             prop.append(app).append('/').append(propname);
-            tree->getProp(prop.str(),str); 
+            tree->getProp(prop.str(),str);
         }
         return str;
     }
@@ -2689,7 +2699,7 @@ public:
         if (tree) {
             StringBuffer prop;
             prop.append(app).append('/').append(propname);
-            ret = tree->getPropInt(prop.str(),ret); 
+            ret = tree->getPropInt(prop.str(),ret);
         }
         return ret;
     }
@@ -2697,13 +2707,13 @@ public:
     void setApplicationValue(const char *app, const char *propname, const char *value, bool overwrite)
     {
         IPropertyTree *tree = root->queryPropTree("Application");
-        if (!tree) 
+        if (!tree)
             tree = root->addPropTree("Application",createPTree("Application"));
         IPropertyTree *sub = tree->queryPropTree(app);
-        if (!sub) 
+        if (!sub)
             sub = tree->addPropTree(app,createPTree(app));
-        if (overwrite || !sub->hasProp(propname)) 
-            sub->setProp(propname, value); 
+        if (overwrite || !sub->hasProp(propname))
+            sub->setProp(propname, value);
     }
 
     void setApplicationValueInt(const char *app, const char *propname, int value, bool overwrite)
@@ -2720,16 +2730,16 @@ public:
         const char * val = root->queryProp(prop.str());
         if (!val)
             return str;
-        return str.append(val); 
+        return str.append(val);
     }
 
     void setDebugValue(const char *propname, const char *value, bool overwrite)
     {
         IPropertyTree *tree = root->queryPropTree("Debug");
-        if (!tree) 
+        if (!tree)
             tree = root->addPropTree("Debug",createPTree("Debug"));
         if (overwrite || !tree->hasProp(propname))
-            tree->setProp(propname, value); 
+            tree->setProp(propname, value);
     }
 
     StringBuffer &toXML(StringBuffer &str)
@@ -2808,7 +2818,7 @@ class CConstDFUWUArrayIterator : implements IConstDFUWorkUnitIterator, public CI
     IArrayOf<IConstDFUWorkUnit> wua;
 public:
     IMPLEMENT_IINTERFACE;
-    CConstDFUWUArrayIterator(IDFUWorkUnitFactory *_parent,IRemoteConnection *_conn, IArrayOf<IPropertyTree> &trees) 
+    CConstDFUWUArrayIterator(IDFUWorkUnitFactory *_parent,IRemoteConnection *_conn, IArrayOf<IPropertyTree> &trees)
     {
         idx = 0;
         ForEachItemIn(i,trees) {
@@ -2816,26 +2826,26 @@ public:
             wua.append(*(IConstDFUWorkUnit *) new CDFUWorkUnit(_parent,NULL,&tree));
         }
     }
-    bool first() 
-    { 
+    bool first()
+    {
         idx = 0;
         return isValid();
     }
-    bool isValid() 
-    { 
+    bool isValid()
+    {
         return idx<wua.ordinality();
     }
-    bool next() 
-    { 
+    bool next()
+    {
         idx++;
         return isValid();
     }
-    IConstDFUWorkUnit & query() 
-    { 
+    IConstDFUWorkUnit & query()
+    {
         return wua.item(idx);
     }
-    IConstDFUWorkUnit * get() 
-    { 
+    IConstDFUWorkUnit * get()
+    {
         if (!isValid())
             return NULL;
         IConstDFUWorkUnit *ret = &wua.item(idx);
@@ -2853,9 +2863,9 @@ class CDFUWorkUnitFactory : implements IDFUWorkUnitFactory, implements ISDSSubsc
     PointerArray subscribers;
     Int64Array subscriberids;
     Int64Array active;  // active TIDS
-    
+
     void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-    {   
+    {
         __uint64 tid = (__uint64) GetCurrentThreadId();
         Linked<ISDSSubscription> dest;
         {
@@ -2864,11 +2874,11 @@ class CDFUWorkUnitFactory : implements IDFUWorkUnitFactory, implements ISDSSubsc
                 return;
             active.append(tid);
             unsigned i1 = subscriberids.find(id);
-            if (i1!=NotFound) 
+            if (i1!=NotFound)
                 dest.set((ISDSSubscription *)subscribers.item(i1));
         }
         try {
-            if (dest.get()) 
+            if (dest.get())
                 dest->notify(id,xpath,flags,valueLen,valueData);
         }
         catch (IException *e) {
@@ -2901,7 +2911,7 @@ class CDFUWorkUnitFactory : implements IDFUWorkUnitFactory, implements ISDSSubsc
                 WARNLOG("CDFUWorkUnitFactory: Subscription(%d,%" I64F "d) busy %s",i,(__int64)atid,xpath?xpath:"");
             CriticalUnblock unblock(proxylock);
             Sleep(i*10);
-            if (i==99) 
+            if (i==99)
                 PrintStackReport();
         }
         SubscriptionId subscriberid = 0;
@@ -2983,8 +2993,8 @@ public:
         if (!conn.get())
             return new CConstDFUWorkUnitIterator(this,NULL,NULL);
         CDaliVersion serverVersionNeeded("3.2");
-        Owned<IPropertyTreeIterator> iter(queryDaliServerVersion().compare(serverVersionNeeded) < 0 ? 
-            conn->queryRoot()->getElements(xpath) : 
+        Owned<IPropertyTreeIterator> iter(queryDaliServerVersion().compare(serverVersionNeeded) < 0 ?
+            conn->queryRoot()->getElements(xpath) :
             conn->getElements(xpath));
         return new CConstDFUWorkUnitIterator(this,conn,iter);
     }
@@ -3017,10 +3027,10 @@ public:
 
     IConstDFUWorkUnitIterator* getWorkUnitsSorted(  DFUsortfield *sortorder, // list of fields to sort by (terminated by WUSFterm)
                                                     DFUsortfield *filters, // list of fields to filter by (terminated by WUSFterm)
-                                                    const void *filterbuf,     
+                                                    const void *filterbuf,
                                                     unsigned startoffset,
                                                     unsigned maxnum,
-                                                    const char *queryowner, 
+                                                    const char *queryowner,
                                                     __int64 *cachehint,
                                                     unsigned *total)
     {
@@ -3069,7 +3079,7 @@ public:
             for (unsigned i=0;filters[i]!=DFUsf_term;i++)
             {
                 DFUsortfield fmt = filters[i];
-                if (fmt==DFUsf_wuid) 
+                if (fmt==DFUsf_wuid)
                     namefilterlo.set(fv);
                 else if (fmt==DFUsf_wuidhigh)
                     namefilterhi.set(fv);
@@ -3114,7 +3124,7 @@ public:
     virtual unsigned numWorkUnits()
     {
         Owned<IRemoteConnection> conn = querySDS().connect("DFU/WorkUnits", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-        if (!conn) 
+        if (!conn)
             return 0;
         IPropertyTree *root = conn->queryRoot();
         return root->numChildren();
@@ -3149,7 +3159,7 @@ dfuwu_decl unsigned queuedJobs(const char *queuename,StringAttrArray &wulist)
             }
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
         ERRLOG("DFUWU runningJobs(%s) %s",queuename,msg.str());
@@ -3169,7 +3179,7 @@ dfuwu_decl unsigned queuedJobs(const char *queuename,StringAttrArray &wulist)
             }
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
         ERRLOG("DFUWU queuedJobs(%s) %s",queuename,msg.str());
@@ -3184,7 +3194,7 @@ IDfuFileCopier *createRemoteFileCopier(const char *qname,const char *clustername
     class cCopier: public CInterface, implements IDfuFileCopier
     {
         Owned<IDFUWorkUnitFactory> factory;
-        StringAttr qname; 
+        StringAttr qname;
         StringAttr clustername;
         StringAttr jobname;
 //      DFD_OS os;
@@ -3218,7 +3228,7 @@ IDfuFileCopier *createRemoteFileCopier(const char *qname,const char *clustername
             source->setLogicalName(srclfn);
             source->setForeignDali(srcdali);
             destination->setLogicalName(lfn);
-            destination->setGroupName(clustername);              
+            destination->setGroupName(clustername);
             options->setReplicate(true);
             // should be no need for overwrite
             const char *wuid = wu->queryId();
@@ -3234,7 +3244,7 @@ IDfuFileCopier *createRemoteFileCopier(const char *qname,const char *clustername
             ForEachItemIn(i,wuids) {
                 const char *wuid = wuids.item(i);
                 Owned<IConstDFUWorkUnit> dfuwu = factory->openWorkUnit(wuid,false);
-                if (!dfuwu) 
+                if (!dfuwu)
                     throw MakeStringException(-1,"DFUWU %s could not be found",wuid);
                 IConstDFUprogress *progress = dfuwu->queryProgress();
                 PROGLOG("Waiting for %s",wuid);
@@ -3255,7 +3265,7 @@ IDfuFileCopier *createRemoteFileCopier(const char *qname,const char *clustername
                 case DFUstate_finished:
                     break;
                 }
-                Sleep(COPY_WAIT_SECONDS*1000);  
+                Sleep(COPY_WAIT_SECONDS*1000);
             }
             return true;
         }

@@ -3309,6 +3309,12 @@ void FileSprayer::updateTargetProperties()
             }
             curHistory->addPropTree("Origin",newRecord.getClear());
         }
+
+        int expireDays = options->getPropInt("@expireDays");
+        if (expireDays != -1)
+        {
+            curProps.setPropInt("@expireDays", expireDays);
+        }
     }
     if (error)
         throw error.getClear();
