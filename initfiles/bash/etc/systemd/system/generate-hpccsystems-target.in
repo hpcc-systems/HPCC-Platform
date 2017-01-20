@@ -1,0 +1,31 @@
+#!/bin/bash
+
+want=($(@ADMIN_PATH@/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -list | awk 'BEGIN {FS="=|;";} !/dafilesrv/ && !/ftslave/ {printf "%s@%s.service ", $2, $1;}'))
+require=($(@ADMIN_PATH@/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -t dafilesrv -list | awk 'BEGIN {FS="=|;";} /dafilesrv/ {printf "%s@%s.service", $2, $1;}'))
+all=(${want[@]} ${require[@]})
+want_string="${want[@]}"
+require_string="${require[@]}"
+
+rm -f /etc/systemd/system/hpccsystems-platform.target
+for instance in "${all[@]}"; do
+	#echo "removing /etc/systemd/system/${instance}"
+	rm -f /etc/systemd/system/${instance}
+done
+
+mkdir -p @INSTALL_DIR@/etc/systemd/system/gen
+cd /etc/systemd/system
+cat << EOT >> @INSTALL_DIR@/etc/systemd/system/gen/hpccsystems-platform.target
+[Unit]
+Description=hpccsystems-platform components
+Requires=${require_string}
+Wants=${want_string}
+EOT
+ln -sf @INSTALL_DIR@/etc/systemd/system/gen/hpccsystems-platform.target hpccsystems-platform.target
+for ((i=0; i<${#all[@]}; i++)); do
+	component="$(echo "${all[$i]}" | awk 'BEGIN {FS="[.@]";} {print $1;}')"
+	instance="$(echo "${all[$i]}" | awk 'BEGIN {FS="[.@]";} {print $2;}')"
+	sedcmd="sed 's/dafilesrv\.service/${require_string}/g; s/%i/${instance}/g' @INSTALL_DIR@/etc/systemd/system/${component}@.service > @INSTALL_DIR@/etc/systemd/system/gen/${all[$i]}"
+    eval "$sedcmd"
+	ln -sf @INSTALL_DIR@/etc/systemd/system/gen/${all[$i]} ${all[$i]}
+done
+systemctl daemon-reload

@@ -734,6 +734,16 @@ void initSignals()
 
 int main(int argc, const char *argv[])
 {
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (strcmp("--daemon",argv[i])==0 || strcmp("-d",argv[i])==0) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+            break;
+        }
+    }
+
     InitModuleObjects();
     initSignals();
     NoQuickEditSection x;

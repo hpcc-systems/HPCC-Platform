@@ -1,0 +1,4 @@
+if which systemctl 1>/dev/null 2>&1; then
+    installFile "$path/etc/systemd/system/hpcc-init.service" "/etc/systemd/system/hpcc-init.service" 1 || exit 1
+    installFile "$path/etc/systemd/system/hpcc-init@.service" "/etc/systemd/system/hpcc-init@.service" 1 || exit 1
+fi

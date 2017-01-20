@@ -1,0 +1,21 @@
+[Unit]
+Description=@description@
+After=network.target remote-fs.target hpcc-conf@%i.service @dependencies@
+Requires=hpcc-conf@%i.service
+
+[Service]
+Type=forking
+User=@RUNTIME_USER@
+Group=@RUNTIME_GROUP@
+PermissionsStartOnly=true
+WorkingDirectory=@RUNTIME_PATH@/%i
+EnvironmentFile=@RUNTIME_PATH@/%i/%i.cfg
+PIDFile=@PID_PATH@/%i.pid
+ExecStart=@EXEC_PATH@/@processName@ @processArgs@
+Restart=on-failure
+RestartSec=5
+TimeoutSec=30
+
+[Install]
+WantedBy=default.target
+DefaultInstance=my@component@

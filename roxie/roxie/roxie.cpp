@@ -25,6 +25,7 @@ static void roxie_server_usage()
 
     // Not documenting use of internal options: selftest, restarts, enableSysLog and host
     printf("\nService:\n");
+    printf("\t--daemon <instance>\t: sets up daemon and writes out pidfile\n");
     printf("\t--topology=[XML-file]\t: Reads Roxie topology (default RoxieTopology.xml)\n");
     printf("\t--port=[integer]\t\t: Network port (default 9876)\n");
     printf("\nOne-off query:\n");

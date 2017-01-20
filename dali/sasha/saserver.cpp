@@ -23,6 +23,7 @@
 #include "jlog.hpp"
 #include "jptree.hpp"
 #include "jmisc.hpp"
+#include "jutil.hpp"
 
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
@@ -257,6 +258,15 @@ static struct CRequestStop : implements IExceptionHandler
 
 int main(int argc, const char* argv[])
 {
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (strcmp("--daemon",argv[i])==0 || strcmp("-d",argv[i])==0) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+            break;
+        }
+    }
     InitModuleObjects();
     EnableSEHtoExceptionMapping();
 
@@ -277,7 +287,7 @@ int main(int argc, const char* argv[])
             coalescer = true;
             force = (argc>2)&&(stricmp(argv[2],"FORCE")==0);
         }
-        else {
+        else if (!stricmp(argv[1],"--daemon")==0 || !stricmp(argv[1],"-d")) {
             usage();
             return 1;
         }

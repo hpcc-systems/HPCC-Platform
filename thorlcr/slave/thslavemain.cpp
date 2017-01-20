@@ -296,6 +296,15 @@ void setSlaveAffinity(unsigned processOnNode)
 
 int main( int argc, char *argv[]  )
 {
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (strcmp("--daemon",argv[i])==0 || strcmp("-d",argv[i])==0) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+            break;
+        }
+    }
 #if defined(WIN32) && defined(_DEBUG)
     int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
     tmpFlag |= _CRTDBG_LEAK_CHECK_DF;

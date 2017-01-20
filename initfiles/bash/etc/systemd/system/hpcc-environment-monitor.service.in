@@ -1,0 +1,6 @@
+[Unit]
+Description=Regenerates hpccsystems-platform.target
+
+[Service]
+Type=oneshot
+ExecStart=@ADMIN_PATH@/generate-hpccsystems-target.sh

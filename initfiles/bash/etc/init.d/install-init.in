@@ -282,20 +282,7 @@ chown root:$group ${configs}
 chown -R $user:$group ${configs}/*
 chmod 775 ${configs}
 
-# Add systemd support
-distrib_check
-if [ "${DISTRIB_NAME}" = "ubuntu" ] &&
-   [ ${DISTRIB_MAJOR_VERSION} -ge 15 ]; then
-
-   dpkg -S /sbin/init | grep -q systemd
-   if [ $? -eq 0 ]; then
-      cp ${INSTALL_DIR}/etc/init.d/hpcc-init.service /lib/systemd/system/
-      cp ${INSTALL_DIR}/etc/init.d/hpcc-init@.service /lib/systemd/system/
-      cp ${INSTALL_DIR}/etc/init.d/dafilesrv.service /lib/systemd/system/
-      cp ${INSTALL_DIR}/etc/init.d/dafilesrv@.service /lib/systemd/system/
-      systemctl daemon-reload
-   fi
-fi
+which systemctl 1>/dev/null 2>&1 && systemctl daemon-reload
 
 createRuntime
 [ -e  ${LOG_DIR}/hpcc-init.debug ] && chown ${user}:${user} ${LOG_DIR}/hpcc-init.debug
