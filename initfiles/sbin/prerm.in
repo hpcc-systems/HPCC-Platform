@@ -27,8 +27,12 @@ fi
 
 # Stop all services before cleaning up
 ######################################
-/etc/init.d/hpcc-init stop
-/etc/init.d/dafilesrv stop
+if which systemctl 1>/dev/null 2>&1; then
+	systemctl stop hpccsystems-platform.target
+else 
+	/etc/init.d/hpcc-init stop
+	/etc/init.d/dafilesrv stop
+fi
 
 # Remove edits from /etc files
 ##############################

@@ -1,0 +1,15 @@
+[Unit]
+Description=hpcc-systems platform
+
+[Service]
+Type=forking
+Restart=no
+TimeoutSec=5min
+IgnoreSIGPIPE=no
+KillMode=process
+GuessMainPID=no
+RemainAfterExit=yes
+ExecStart=/etc/init.d/hpcc-init start
+ExecStop=/etc/init.d/hpcc-init stop
+WorkingDirectory=@RUNTIME_PATH@
+StandardOutput=journal+console

@@ -1,0 +1,11 @@
+[Unit]
+Description=generating %i configuration file and @RUNTIME_PATH@/%i/%i.cfg
+After=hpcc-conf@%i.service
+Requires=hpcc-conf@%i.service
+
+[Service]
+Type=oneshot
+User=@RUNTIME_USER@
+Group=@RUNTIME_GROUP@
+ExecStartPre=/bin/mkdir -p @RUNTIME_PATH@/%i @LOG_PATH@/%i @PID_PATH@ @LOCK_PATH@/%i
+ExecStart=/bin/bash -c "/bin/sed -e 's/export //g' @RUNTIME_PATH@/%i/setvars >> @RUNTIME_PATH@/%i/%i.cfg"

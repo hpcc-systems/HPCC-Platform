@@ -1604,56 +1604,21 @@ unsigned usTick()
 #endif
 
 
-int make_daemon(bool printpid) 
+int write_pidfile(const char * instance)
 {
 #ifndef _WIN32
-    pid_t   pid, sid;
-    pid = fork();
-    if (pid < 0) {
-        PrintLog("fork failed\n");
+    StringBuffer path;
+    path.append(PID_DIR).append(PATHSEPCHAR).append(instance).append(".pid");
+    FILE * fd = fopen(path.str(),"w");
+    if (fd==NULL) {
+        perror("Unable to open pidfile for writing");
         return(EXIT_FAILURE);
     }
-    if (pid > 0) {
-        if (printpid) {
-            int status;
-            waitpid(pid, &status, 0);
-            if (WEXITSTATUS(status)!=0) 
-                return EXIT_FAILURE;
-        }
-        exit(EXIT_SUCCESS); 
-    }
-
-    if ((sid = setsid()) < 0) {
-        PrintLog("error: set sid failed\n");
-        return(EXIT_FAILURE);
-    }
-
-    umask(0);
-
-
-    pid = fork();                           // To prevent zombies
-    if (pid < 0) {                          
-        PrintLog("fork failed (2)\n");
-        return(EXIT_FAILURE);
-    }
-    if (pid > 0) {
-        if (printpid)
-            fprintf(stdout,"%d\n",pid);
-        exit(EXIT_SUCCESS);
-    }
-
-    if (!freopen("/dev/null", "r", stdin) ||
-        !freopen("/dev/null", "w", stdout) ||
-        !freopen("/dev/null", "w", stderr)) {
-        PrintLog("reopen std in/out/err failed\n");
-        return(EXIT_FAILURE);
-    }
-
+    fprintf(fd,"%d",getpid());
+    fclose(fd);
     return(EXIT_SUCCESS);
-#else
-     return 0;
 #endif
-
+    return 0;
 }
 
 //Calculate the greatest common divisor using Euclid's method

@@ -22,6 +22,7 @@
 #include "jlog.ipp"
 #include "jptree.hpp"
 #include "jmisc.hpp"
+#include "jutil.hpp"
 
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
@@ -126,8 +127,38 @@ bool actionOnAbort()
 
 USE_JLIB_ALLOC_HOOK;
 
+void usage(void)
+{
+    printf("daserver (option)\n");
+    printf("--rank|-r <value>\t: dali ranking value\n");
+    printf("--server|-s <value>\t: server ip if not local host\n");
+    printf("--port|-p <value>\t: server port only effective if --server set\n");
+    printf("--daemon|-d <instanceName>\t: run daemon as instance\n");
+}
+
 int main(int argc, char* argv[])
 {
+    rank_t myrank = 0;
+    char *server = nullptr;
+    int port = 0;
+    for (unsigned i=1;i<(unsigned)argc;i++) {
+        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+        }
+        else if (streq(argv[i],"--server") || streq(argv[i],"-s"))
+            server = argv[++i];
+        else if (streq(argv[i],"--port") || streq(argv[i],"-p"))
+            port = atoi(argv[++i]);
+        else if (streq(argv[i],"--rank") || streq(argv[i],"-r"))
+            myrank = atoi(argv[++i]);
+        else {
+            usage();
+            return EXIT_FAILURE;
+        }
+    }
     InitModuleObjects();
     NoQuickEditSection x;
     try {
@@ -139,19 +170,6 @@ int main(int argc, char* argv[])
 #endif
         setAllocHook(true);
 
-        rank_t myrank = 0;
-        if (argc==2) {
-            printf("daserver <myrank> <server_ip:port>* \n");
-            return 0;
-        }
-        else if (argc>=3) {
-            myrank = atoi(argv[1]);
-            if (myrank>=(unsigned)(argc-2)) {
-                printf("incorrect rank\n");
-                return 0;
-            }
-        }
-	
         Owned<IFile> sentinelFile = createSentinelTarget();
         removeSentinelFile(sentinelFile);
 	
@@ -317,6 +335,7 @@ int main(int argc, char* argv[])
         else
             serverConfig.setown(createPTree());
 
+        write_pidfile(serverConfig->queryProp("@name"));
         NamedMutex globalNamedMutex("DASERVER");
         if (!serverConfig->getPropBool("allowMultipleDalis"))
         {
@@ -330,16 +349,18 @@ int main(int argc, char* argv[])
 
         SocketEndpoint ep;
         SocketEndpointArray epa;
-        if (argc==1) {
+        if (!server) {
             ep.setLocalHost(DALI_SERVER_PORT);
             epa.append(ep);
         }
         else {
-            for (unsigned i=2;i<(unsigned)argc;i++) {
-                ep.set(argv[i],DALI_SERVER_PORT);
+                if (!port)
+                    ep.set(server,DALI_SERVER_PORT);
+                else
+                    ep.set(server,port);
                 epa.append(ep);
-            }
         }
+
         unsigned short myport = epa.item(myrank).port;
         startMPServer(myport,true);
         setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", 100));

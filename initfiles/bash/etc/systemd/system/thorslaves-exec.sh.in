@@ -1,0 +1,25 @@
+#!/bin/bash
+
+[[ $# -ne 7 ]] && exit 1
+
+ACTION=$1
+INSTANCENAME=$2
+SLAVEPORT=$3
+SLAVENUM=$4
+THORNAME=$5
+THORMASTER=$6
+THORMASTERPORT=$7
+
+[[ ! -d @LOG_PATH@/${THORNAME} ]] && mkdir -p @LOG_PATH@/${THORNAME}
+[[ ! -d @LOCK_PATH@/${THORNAME} ]] && mkdir -p @LOCK_PATH@/${THORNAME}
+[[ ! -d @PID_PATH@ ]] && mkdir -p @PID_PATH@
+[[ ! -d @RUNTIME_PATH@/tmp ]] && mkdir -p @RUNTIME_PATH@/thorslaves
+cd @RUNTIME_PATH@/thorslaves
+
+echo "THORNAME=${THORNAME}" > ${INSTANCENAME}.cfg
+echo "THORMASTER=${THORMASTER}" >> ${INSTANCENAME}.cfg
+echo "THORMASTERPORT=${THORMASTERPORT}" >> ${INSTANCENAME}.cfg
+echo "SLAVEPORT=${SLAVEPORT}" >> ${INSTANCENAME}.cfg
+echo "SLAVENUM=${SLAVENUM}" >> ${INSTANCENAME}.cfg
+
+sudo systemctl ${ACTION} thorslave@${INSTANCENAME}.service

@@ -496,6 +496,15 @@ bool ControlHandler(ahType type)
 #include "thactivitymaster.hpp"
 int main( int argc, char *argv[]  )
 {
+    for (unsigned i=0;i<(unsigned)argc;i++) {
+        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+            if (daemon(1,0) || write_pidfile(argv[++i])) {
+                perror("Failed to daemonize");
+                return EXIT_FAILURE;
+            }
+            break;
+        }
+    }
 #if defined(WIN32) && defined(_DEBUG)
     int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
     tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
