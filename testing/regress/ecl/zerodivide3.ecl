@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+IMPORT Std.Math;
 #option ('divideByZero', 'fail');
 
 zero := nofold(0.0);
@@ -25,3 +26,4 @@ catch(sqrt(zero - 1.0), 125);
 catch(1.0 / zero, 126);
 catch(acos(2.0 + zero), 127);
 catch(asin(2.0 + zero), 128);
+catch(Math.FMod(1.0, zero), 129);
