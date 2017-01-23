@@ -1059,7 +1059,7 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
             return countThorLog;
         }
 
-        unsigned numberOfSlaves = clusterInfo->getSize();
+        unsigned numberOfSlaveLogs = clusterInfo->getNumberOfSlaveLogs();
 
         BoolHash uniqueProcesses;
         Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
@@ -1125,7 +1125,7 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
                 thorLog->setProcessName(processName.str());
                 thorLog->setClusterGroup(groupName.str());
                 thorLog->setLogDate(logDate.str());
-                thorLog->setNumberSlaves(numberOfSlaves);
+                thorLog->setNumberSlaves(numberOfSlaveLogs);
                 thorLogList.append(*thorLog.getLink());
             }
         }
