@@ -61,7 +61,9 @@
 namespace roxiemem {
 
 #define NOTIFY_UNUSED_PAGES_ON_FREE     // avoid linux swapping 'freed' pages to disk
-//#define ALWAYS_USE_SCAN_HEAP            // option to test out using the scanning heaplets
+//#define ALWAYS_USE_SCAN_HEAP          // option to test out using the scanning heaplets
+//#define ALWAYS_DELAY_RELEASE          // option to test out using delayed releasing with the scanning heaplets
+//#define OLD_ROW_COMPACT
 
 //The following constants should probably be tuned depending on the architecture - see Tuning Test at the end of the file.
 #define DEFAULT_PARALLEL_SYNC_RELEASE_GRANULARITY       2048        // default
@@ -116,6 +118,27 @@ Some thoughts on improving this memory manager:
    - OR (maybe this is equivalent) we could NEVER shrink as we finalize BUT do a clone when we want to hang on to a row. The clone
      be a 'lazy shrink' of just rows which survived long enough to be worth considering shrinking, and would be able to do nothing
      (avoid the call even?) in cases where there was no shrinking to be done...
+
+Link counted rows and memory order:
+===================================
+
+In the general implementation of linkcounted objects, decrement/store to the link count should be an release operation - to ensure
+that any writes to the contents of the object are committed before it is decremented, and there should be an acquire barrier
+after the last decrement - to ensure that memory cannot appear to be modified after the object is freed.
+
+However the roxiemem implementation has some additional considerations:
+
+* allocations are protected by an acquire/release spinblock (or cs).  That means that one allocation cannot access an inconsistent view
+  of an object from a previous allocation.
+
+* Only the thread that allocates the memory modifies it.  As long as rows are passed to other threads with acquire/release this means
+  that the row will always be up to date in all threads.
+
+Therefore decrements do not need release (since memory is already synchronized - either by the allocation cs, or not shared with another thread),
+and accesses do not need to use acquire.
+
+If this assumption about modifying on other threads is ever broken then there needs to be an appriate barrier after the last write and
+before the object is released.
 
 */
 //================================================================================
@@ -1109,6 +1132,12 @@ bool HeapletBase::isShared(const void *ptr)
     throwUnexpected();
 }
 
+unsigned HeapletBase::calcNumAllocated(bool updateCount) const
+{
+    // There is one refcount for the page itself
+    return count.load(std::memory_order_relaxed)-1;
+}
+
 void HeapletBase::internalFreeNoDestructor(const void *ptr)
 {
     dbgassertex(isValidRoxiePtr(ptr));
@@ -1132,6 +1161,22 @@ const void * HeapletBase::compactRow(const void * ptr, HeapCompactState & state)
         return ptr;
     HeapletBase *h = findBase(ptr);
     return h->_compactRow(ptr, state);
+}
+
+void HeapletBase::prepareToCompactRow(const void * ptr, NewHeapCompactState & state)
+{
+    if (!isValidRoxiePtr(ptr))
+        return;
+    HeapletBase *h = findBase(ptr);
+    h->_prepareToCompactRow(ptr, state);
+}
+
+const void * HeapletBase::newCompactRow(const void * ptr, NewHeapCompactState & state)
+{
+    if (!isValidRoxiePtr(ptr))
+        return ptr;
+    HeapletBase *h = findBase(ptr);
+    return h->_newCompactRow(ptr, state);
 }
 
 void HeapletBase::setDestructorFlag(const void *ptr)
@@ -1314,6 +1359,7 @@ public:
     virtual void verifySpaceList();
 
     inline bool isWithinHeap(CHeap * search) const { return heap == search; }
+    const CHeap * queryHeap() const { return heap; }
 };
 
 
@@ -1329,6 +1375,9 @@ public:
 #define HEAPLET_DATA_AREA_OFFSET(heapletType) ((size32_t) ((sizeof(heapletType) + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE) * CACHE_LINE_SIZE)
 
 const static unsigned FREE_ROW_COUNT = (unsigned)-1;
+const static unsigned DELAYFREE_ROW_COUNT = (unsigned)-2;
+const static unsigned FREE_ROW_COUNT_MIN = DELAYFREE_ROW_COUNT;
+
 
 class CChunkedHeap;
 class ChunkedHeaplet : public Heaplet
@@ -1341,6 +1390,12 @@ protected:
     unsigned sharedAllocatorId;
     unsigned nextMatchOffset = 0;
     HeapletStats stats;
+public:
+    bool compacting = false;
+    bool moveRows = false; // only valid if compacting
+    bool hasSharedRow = false;
+    std::atomic_bool hadDelayedRelease = {false};
+    unsigned compactingRowCount = 0;  // only valid if compacting
 
     inline char *data() const
     {
@@ -1357,8 +1412,6 @@ public:
     }
 
     virtual size32_t sizeInPages() { return 1; }
-
-    inline unsigned numChunks() const { return queryCount()-1; }
 
     //Is there any space within the heaplet that hasn't ever been allocated.
     inline bool hasAnyUnallocatedSpace() const
@@ -1377,6 +1430,10 @@ public:
     }
 
     virtual bool isFull() const override;
+
+    virtual bool isEmpty() override;
+
+    virtual unsigned calcNumAllocated(bool updateCount) const;
 
     inline static unsigned dataOffset() { return HEAPLET_DATA_AREA_OFFSET(ChunkedHeaplet); }
 
@@ -1400,6 +1457,8 @@ public:
     }
 
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state);
+    virtual void _prepareToCompactRow(const void * ptr, NewHeapCompactState & state);
+    virtual const void * _newCompactRow(const void * ptr, NewHeapCompactState & state);
 
     const void * moveRow(const void * row)
     {
@@ -1410,6 +1469,21 @@ public:
         //Don't clone rows into empty pages
         if (isEmpty())
             return NULL;
+
+        char * chunk = allocateChunk();
+        if (!chunk)
+            return NULL;
+        return doMoveRow(chunk, row);
+    }
+
+    const void * newMoveRow(const void * row)
+    {
+        //If this pointer already lives in this page don't move it (but update the current page source)
+        //Shouldn't ever happen with the new code
+        if (findBase(row) == this)
+            return row;
+        if (_isShared(row))
+            return row;
 
         char * chunk = allocateChunk();
         if (!chunk)
@@ -1457,10 +1531,26 @@ public:
         r_blocks.store(nextBlock, std::memory_order_relaxed);
     }
 
-    inline char * allocateSingle(unsigned allocated, bool incCounter) __attribute__((always_inline));
+    inline char * allocateSingle(unsigned allocated, bool incCounter, unsigned & alreadyIncremented) __attribute__((always_inline));
     char * allocateChunk();
     unsigned allocateMultiChunk(unsigned max, char * * rows);   // allocates at least 1 row
     virtual void verifySpaceList();
+
+    void startCompacting();
+    void stopCompacting();
+    inline bool isCompacting() const
+    {
+        return compacting;
+    }
+    inline bool isEmptyAfterCompact()
+    {
+        return moveRows && isEmpty();
+    }
+    inline unsigned numCompactingRows() const
+    {
+        return compactingRowCount;
+    }
+    inline void setMoveRows() { moveRows = true; }
 
 protected:
     inline unsigned makeRelative(const char *ptr)
@@ -1498,9 +1588,22 @@ protected:
     {
         if (heapFlags & RHFnofragment)
         {
-            ((std::atomic_uint *)ptr)->store(FREE_ROW_COUNT, std::memory_order_release);
-            if (nextSpace.load(std::memory_order_relaxed) == 0)
-                addToSpaceList();
+            if (heapFlags & RHFdelayrelease)
+            {
+                bool anyFreed = hadDelayedRelease.load(std::memory_order_relaxed);
+                ((std::atomic_uint *)ptr)->store(DELAYFREE_ROW_COUNT, std::memory_order_release);
+                if (nextSpace.load(std::memory_order_relaxed) == 0)
+                    addToSpaceList();
+                if (!anyFreed)
+                    hadDelayedRelease.store(true, std::memory_order_relaxed);
+                return; // Link count is not decremented at this point.
+            }
+            else
+            {
+                ((std::atomic_uint *)ptr)->store(FREE_ROW_COUNT, std::memory_order_release);
+                if (nextSpace.load(std::memory_order_relaxed) == 0)
+                    addToSpaceList();
+            }
         }
         else
         {
@@ -1695,13 +1798,13 @@ public:
     {
         //This function may not give correct results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = freeBase.load(std::memory_order_relaxed);
+        unsigned limit = freeBase.load(std::memory_order_acquire); // acquire ensures that any link counts will be initialised
         while (leaked > 0 && base < limit)
         {
             const char *block = data() + base;
             if (heapFlags & RHFnofragment)
             {
-                if (((std::atomic_uint *)block)->load(std::memory_order_relaxed) != FREE_ROW_COUNT)
+                if (((std::atomic_uint *)block)->load(std::memory_order_relaxed) < FREE_ROW_COUNT_MIN)
                 {
                     reportLeak(block, logctx);
                     leaked--;
@@ -1726,7 +1829,7 @@ public:
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = freeBase.load(std::memory_order_relaxed);
+        unsigned limit = freeBase.load(std::memory_order_acquire); // acquire ensures that any link counts will be initialised
         while (base < limit)
         {
             const char *block = data() + base;
@@ -1748,7 +1851,7 @@ public:
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = freeBase.load(std::memory_order_relaxed);
+        unsigned limit = freeBase.load(std::memory_order_acquire); // acquire ensures that any link counts will be initialised
         memsize_t running = 0;
         unsigned runningCount = 0;
         unsigned lastId = 0;
@@ -1928,7 +2031,7 @@ public:
 
     virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const
     {
-        unsigned numLeaked = queryCount()-1;
+        unsigned numLeaked = calcNumAllocated(true);
         //Because there is only a 4 byte counter on each field which is reused for the field list
         //it isn't possible to walk the rows in 0..freeBase and see if they are allocated or not
         //so have to be content with a summary
@@ -1946,7 +2049,7 @@ public:
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
-        unsigned limit = freeBase.load(std::memory_order_relaxed);
+        unsigned limit = freeBase.load(std::memory_order_acquire); // acquire ensures that any link counts will be initialised
         while (base < limit)
         {
             const char *block = data() + base;
@@ -1965,6 +2068,7 @@ public:
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
+        //calcNumAllocated() will already have been called.
         unsigned numAllocs = queryCount()-1;
         if (numAllocs)
         {
@@ -2112,6 +2216,15 @@ public:
     }
 
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state)
+    {
+        return ptr;
+    }
+
+    virtual void _prepareToCompactRow(const void * ptr, NewHeapCompactState & state)
+    {
+    }
+
+    virtual const void * _newCompactRow(const void * ptr, NewHeapCompactState & state)
     {
         return ptr;
     }
@@ -2472,6 +2585,7 @@ protected:
 class CHeap : public CInterface
 {
     friend class HeapCompactState;
+    friend class ChunkedHeaplet;
 public:
     CHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, unsigned _flags)
         : flags(_flags), rowManager(_rowManager), allocatorCache(_allocatorCache), logctx(_logctx)
@@ -2668,7 +2782,7 @@ public:
             Heaplet * finger = start;
             do
             {
-                total += finger->queryCount() - 1; // There is one refcount for the page itself on the active q
+                total += finger->calcNumAllocated(true);
                 finger = getNext(finger);
             } while (finger != start);
         }
@@ -2715,13 +2829,13 @@ public:
         //If releaseEmptyPages() is called between the last release on a page (setting count to 1), and this flag
         //getting set, it won't release the page *this time*.  But that is the same as the release happening
         //slightly later.
-        if (!possibleEmptyPages.load(std::memory_order_relaxed))
+        if (!possibleEmptyPages.load(std::memory_order_relaxed) && !(flags & RHFdelayrelease))
             return 0;
 
         unsigned total = 0;
         NonReentrantSpinBlock c1(heapletLock);
         //Check again in case other thread has also called this function and no other pages have been released.
-        if (!possibleEmptyPages.load(std::memory_order_acquire))
+        if (!possibleEmptyPages.load(std::memory_order_acquire) && !(flags & RHFdelayrelease))
             return 0;
 
         if (flags & RHForphaned)
@@ -2822,7 +2936,7 @@ public:
                 Heaplet * finger = start;
                 do
                 {
-                    unsigned thisCount = finger->queryCount()-1;
+                    unsigned thisCount = finger->calcNumAllocated(true);
                     if (thisCount != 0)
                         finger->getPeakActivityUsage(usageMap);
                     numAllocs += thisCount;
@@ -2888,8 +3002,16 @@ protected:
         //NOTE: We do not clear next/prev in the heaplet being removed.
     }
 
-    inline void internalLock() { heapletLock.enter(); }
-    inline void internalUnlock() { heapletLock.leave(); }
+    inline void internalLock()
+    {
+        if (compacting++ == 0)
+            heapletLock.enter();
+    }
+    inline void internalUnlock()
+    {
+        if (--compacting == 0)
+            heapletLock.leave();
+    }
 
     void throwHeapExhausted(unsigned allocatorId, unsigned pages) const;
 
@@ -2904,14 +3026,17 @@ protected:
     std::atomic_uint headMaybeSpace{BLOCKLIST_NULL};  // The head of the list of heaplets which potentially have some space.  When adding must use mo_release, when removing must use mo_acquire
     std::atomic_uint possibleEmptyPages{false};  // Are there any pages with 0 records.  Primarily here to avoid walking long page chains.
     HeapletStats stats;
+    mutable unsigned compacting = 0;
 };
 
 
 //---------------------------------------------------------------------------------------------------------------------
+
+static CriticalSection compactCs;
 class HeapCompactState
 {
 public:
-    inline HeapCompactState() : numPagesEmptied(0), heap(NULL), next(NULL)
+    inline HeapCompactState() : lock(compactCs), numPagesEmptied(0), heap(NULL), next(NULL)
     {
     }
 
@@ -2939,9 +3064,59 @@ public:
         }
     }
 public:
+    CriticalBlock lock;
     unsigned numPagesEmptied;
     CHeap * heap;
     Heaplet * next; // which heaplet to try to compact into next.  Not so good if > 1 heaps in use.
+};
+
+class NewHeapCompactState
+{
+public:
+    NewHeapCompactState() : lock(compactCs)
+    {
+    }
+
+    ~NewHeapCompactState()
+    {
+        ForEachItemIn(i, heaplets)
+            heaplets.item(i)->stopCompacting();
+    }
+
+    bool calculateRowsToMove();
+
+    void noteHeaplet(ChunkedHeaplet * heaplet)
+    {
+        if (!heaplet->isCompacting())
+        {
+            //This call will lock access to the heap the heaplet belongs to
+            heaplet->startCompacting();
+            heaplets.append(heaplet);
+        }
+    }
+
+    unsigned numPagesEmptied()
+    {
+        unsigned numEmpty = 0;
+        ForEachItemIn(i, heaplets)
+        {
+            ChunkedHeaplet * cur = heaplets.item(i);
+            if (cur->isEmpty())
+                numEmpty++;
+            else if (heaplets.item(i)->moveRows)
+                cur->isEmpty();
+        }
+        return numEmpty;
+    }
+
+    ChunkedHeaplet * queryHeaplet(unsigned i) { return heaplets.item(i); }
+
+protected:
+    bool processHeap(unsigned low, unsigned max);
+
+protected:
+    CriticalBlock lock;
+    PointerArrayOf<ChunkedHeaplet> heaplets;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -2983,6 +3158,7 @@ public:
     }
 
     const void * compactRow(const void * ptr, HeapCompactState & state);
+    const void * newCompactRow(const void * ptr, NewHeapCompactState & state);
 
     inline unsigned maxChunksPerPage() const { return chunksPerPage; }
 
@@ -2992,11 +3168,14 @@ public:
         dbgassertex(flags & RHFunique);
         flags |= RHForphaned;
     }
-
     void checkScans();
     virtual void reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats) = 0;
 
     void gatherStats(CRuntimeStatisticCollection & stats);
+    void setCompactTarget(unsigned target)
+    {
+        curCompactTarget = target;
+    }
 
 protected:
     void * doAllocateRow(unsigned allocatorId, unsigned maxSpillCost);
@@ -3007,6 +3186,7 @@ protected:
 protected:
     size32_t chunkSize;
     unsigned chunksPerPage;
+    unsigned curCompactTarget = 0;
 };
 
 class CFixedChunkedHeap : public CChunkedHeap
@@ -3096,7 +3276,7 @@ void ChunkedHeaplet::verifySpaceList()
 }
 
 //This function must be called inside a protecting lock on the heap it belongs to, or after precreateFreeChain() has been called.
-char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter)
+char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsigned & alreadyIncremented)
 {
     //The spin lock for the heap this chunk belongs to must be held when this function is called
     char *ret;
@@ -3115,15 +3295,22 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter)
             if (bytesFree >= size)
             {
                 //This is the only place that modifies freeBase, so it can be unconditional since caller must have a lock.
-                freeBase.store(curFreeBase + size, std::memory_order_relaxed);
                 ret = data() + curFreeBase;
+                ((std::atomic_uint *)ret)->store(0, std::memory_order_relaxed);
+                freeBase.store(curFreeBase + size, std::memory_order_release); // ensure link count is written before this is incremented.
                 goto done;
             }
 
             CChunkedHeap * chunkHeap = static_cast<CChunkedHeap *>(heap);
             unsigned maxAllocs = chunkHeap->maxChunksPerPage();
             if (numAllocs == maxAllocs)
-                return nullptr;
+            {
+                if (!(heapFlags & RHFdelayrelease))
+                    return nullptr;
+                //If no row has ever been freed then it must really be full - optimize the situation filling a buffer
+                if (!hadDelayedRelease.load(std::memory_order_relaxed))
+                    return nullptr;
+            }
         }
 
         {
@@ -3138,12 +3325,17 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter)
                     offset = 0;
                 __builtin_prefetch(data() + offset);
 
-                if (((std::atomic_uint *)ret)->load(std::memory_order_relaxed) == FREE_ROW_COUNT)
+                unsigned tag = ((std::atomic_uint *)ret)->load(std::memory_order_relaxed);
+                if (tag >= FREE_ROW_COUNT_MIN)
+                {
+                    if (tag == DELAYFREE_ROW_COUNT)
+                        alreadyIncremented++;
                     break;
+                }
 
                 if (offset == startOffset)
                 {
-                    //Should never occur...
+                    assertex(heapFlags & RHFdelayrelease);
                     stats.totalDistanceScanned += curFreeBase;
                     return nullptr;
                 }
@@ -3155,7 +3347,7 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter)
             nextMatchOffset = offset;
             //save offset
         }
-done:
+
         //Mark as allocated before return - while spin lock is still guaranteed to be active
         ((std::atomic_uint *)ret)->store(0, std::memory_order_relaxed);
     }
@@ -3204,7 +3396,8 @@ done:
         }
     }
 
-    if (incCounter)
+done:
+    if (incCounter && !alreadyIncremented)
         count.fetch_add(1, std::memory_order_relaxed);
 
     stats.totalAllocs++;
@@ -3214,16 +3407,19 @@ done:
 //This function must be called inside a protecting lock on the heap it belongs to, or after precreateFreeChain() has been called.
 char * ChunkedHeaplet::allocateChunk()
 {
-    return allocateSingle(0, true);
+    unsigned alreadyIncremented = 0;
+    return allocateSingle(0, true, alreadyIncremented);
 }
 
 unsigned ChunkedHeaplet::allocateMultiChunk(unsigned max, char * * rows)
 {
     //The spin lock for the heap this chunk belongs to must be held when this function is called
     unsigned allocated = 0;
+    unsigned alreadyIncremented = 0;
     do
     {
-        char * ret = allocateSingle(allocated, false);
+        bool needIncrement = false;
+        char * ret = allocateSingle(allocated, false, alreadyIncremented);
         if (!ret)
         {
             if (allocated == 0)
@@ -3233,7 +3429,8 @@ unsigned ChunkedHeaplet::allocateMultiChunk(unsigned max, char * * rows)
         rows[allocated++] = ret;
     } while (allocated < max);
 
-    count.fetch_add(allocated, std::memory_order_relaxed);
+    if (allocated != alreadyIncremented)
+        count.fetch_add(allocated-alreadyIncremented, std::memory_order_relaxed);
     return allocated;
 }
 
@@ -3242,16 +3439,151 @@ bool ChunkedHeaplet::isFull() const
     CChunkedHeap * chunkHeap = static_cast<CChunkedHeap *>(heap);
     unsigned numAllocs = count.load(std::memory_order_acquire)-1;
     unsigned maxAllocs = chunkHeap->maxChunksPerPage();
-    return (numAllocs == maxAllocs);
+    if (numAllocs != maxAllocs)
+        return false;
+    if (heapFlags & RHFdelayrelease)
+    {
+        if (!hadDelayedRelease.load(std::memory_order_relaxed))
+            return true;
+
+        //Scan through all the memory, checking for a block marked as free - should terminate very quickly unless highly fragmented
+        size32_t offset = nextMatchOffset;
+        const size32_t size = chunkSize;
+        const unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
+        do
+        {
+            char * ret = data() + offset;
+            unsigned tag = ((std::atomic_uint *)ret)->load(std::memory_order_relaxed);
+            dbgassertex(tag != FREE_ROW_COUNT);
+            if (tag == DELAYFREE_ROW_COUNT)
+            {
+                /*
+                ((std::atomic_uint *)ret)->store(FREE_ROW_COUNT, std::memory_order_relaxed);
+                //This heap must be locked to be calling this function
+                if (count.fetch_sub(1, std::memory_order_release) == 2)
+                {
+                    //This thread does not access anything else from the object, so no need for an acquire fence!
+                    //I'm not sure this will accomplish anything useful!
+                    heap->noteEmptyPage();
+                }*/
+
+                return false;
+            }
+            offset += size;
+            if (offset == curFreeBase)
+                offset = 0;
+        } while (offset != nextMatchOffset);
+    }
+    return true;
 }
+
+bool ChunkedHeaplet::isEmpty()
+{
+    unsigned numAllocs = count.load(std::memory_order_acquire)-1;
+    if (numAllocs == 0)
+        return true;
+
+    if (!(heapFlags & RHFdelayrelease))
+        return false;
+
+    //Scan through all the memory, checking for a block marked as free - should terminate very quickly unless highly fragmented
+    size32_t offset = 0;
+    const size32_t size = chunkSize;
+    const unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
+    do
+    {
+        char * ret = data() + offset;
+        unsigned tag = ((std::atomic_uint *)ret)->load(std::memory_order_relaxed);
+        if (tag < FREE_ROW_COUNT_MIN)
+            return false;
+        offset += size;
+    } while (offset < curFreeBase);
+
+    return true;
+}
+
+unsigned ChunkedHeaplet::calcNumAllocated(bool updateCount) const
+{
+    unsigned numAllocs = count.load(std::memory_order_acquire)-1;
+    if (heapFlags & RHFdelayrelease)
+    {
+        if (numAllocs == 0)
+            return 0;
+
+        //Scan through all the memory, checking for a block marked as free - should terminate very quickly unless highly fragmented
+        size32_t offset = 0;
+        const size32_t size = chunkSize;
+        const unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
+        unsigned numDelayed = 0;
+        do
+        {
+            char * ret = data() + offset;
+            unsigned tag = ((std::atomic_uint *)ret)->load(std::memory_order_relaxed);
+            if (tag == DELAYFREE_ROW_COUNT)
+            {
+                numDelayed++;
+                if (updateCount)
+                    ((std::atomic_uint *)ret)->store(FREE_ROW_COUNT, std::memory_order_relaxed);
+            }
+            offset += size;
+        } while (offset < curFreeBase);
+
+        if (numDelayed)
+        {
+            if (updateCount)
+            {
+                if (count.fetch_sub(numDelayed, std::memory_order_release) == numDelayed+1)
+                {
+                    //This thread does not access anything else from the object, so no need for an acquire fence!
+                    //I'm not sure this will accomplish anything useful!
+                    heap->noteEmptyPage();
+                }
+            }
+            return numAllocs - numDelayed;
+        }
+    }
+    return numAllocs;
+}
+
 
 const void * ChunkedHeaplet::_compactRow(const void * ptr, HeapCompactState & state)
 {
     //NB: If this already belongs to a full heaplet then leave it where it is..
     CChunkedHeap * chunkedHeap = static_cast<CChunkedHeap *>(heap);
-    if (numChunks() == chunkedHeap->maxChunksPerPage())
+    if (isFull())
         return ptr;
     return chunkedHeap->compactRow(ptr, state);
+}
+
+void ChunkedHeaplet::startCompacting()
+{
+    heap->internalLock(); // prevent any allocations while this operation is going on.
+    compacting = true;
+    compactingRowCount = calcNumAllocated(false); // Don't update the counts because it will make allocating rows less efficient.
+    moveRows = false;
+    hasSharedRow = false;
+}
+void ChunkedHeaplet::stopCompacting()
+{
+    compacting = false;
+    heap->internalUnlock();
+}
+
+void ChunkedHeaplet::_prepareToCompactRow(const void * ptr, NewHeapCompactState & state)
+{
+    state.noteHeaplet(this);
+    if (_isShared(ptr))
+        hasSharedRow = true;
+}
+
+const void * ChunkedHeaplet::_newCompactRow(const void * ptr, NewHeapCompactState & state)
+{
+    assertex(compacting);
+    if (!moveRows)
+        return ptr;
+
+    CChunkedHeap * chunkedHeap = static_cast<CChunkedHeap *>(heap);
+    return chunkedHeap->newCompactRow(ptr, state);
 }
 
 //================================================================================
@@ -3822,6 +4154,9 @@ public:
             unsigned flags = RHFvariable;
 #ifdef ALWAYS_USE_SCAN_HEAP
             flags |= RHFnofragment;
+#ifdef ALWAYS_DELAY_RELEASE
+            flags |= RHFdelayrelease;
+#endif
 #endif
             normalHeaps.append(*new CFixedChunkedHeap(this, _logctx, _allocatorCache, thisSize, flags, SpillAllCost));
             prevSize = thisSize;
@@ -4291,6 +4626,9 @@ public:
     {
 #ifdef ALWAYS_USE_SCAN_HEAP
         roxieHeapFlags |= RHFnofragment;
+#ifdef ALWAYS_DELAY_RELEASE
+        roxieHeapFlags |= RHFdelayrelease;
+#endif
 #endif
         CRoxieFixedRowHeapBase * rowHeap = doCreateFixedRowHeap(fixedSize, activityId, roxieHeapFlags, maxSpillCost);
 
@@ -4429,7 +4767,7 @@ protected:
         if ((roxieHeapFlags & RHFoldfixed) || (fixedSize > FixedSizeHeaplet::maxHeapSize()))
             return new CRoxieFixedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, fixedSize);
 
-        unsigned heapFlags = roxieHeapFlags & (RHFunique|RHFpacked|RHFnofragment);
+        unsigned heapFlags = roxieHeapFlags & (RHFunique|RHFpacked|RHFnofragment|RHFdelayrelease);
         if (heapFlags & RHFpacked)
         {
             CPackedChunkingHeap * heap = createPackedHeap(fixedSize, activityId, heapFlags, maxSpillCost);
@@ -4557,6 +4895,29 @@ protected:
 
     virtual memsize_t compactRows(memsize_t count, const void * * rows)
     {
+#ifndef OLD_ROW_COMPACT
+        NewHeapCompactState state;
+        for (memsize_t i = 0; i < count; i++)
+        {
+            const void * row = rows[i];
+            if (row)
+                HeapletBase::prepareToCompactRow(row, state);
+        }
+
+        if (!state.calculateRowsToMove())
+            return 0;
+
+        for (memsize_t i = 0; i < count; i++)
+        {
+            const void * row = rows[i];
+            if (row)
+            {
+                const void * packed = HeapletBase::newCompactRow(row, state);
+                rows[i] = packed;  // better to always assign
+            }
+        }
+        return state.numPagesEmptied();
+#else
         HeapCompactState state;
         for (memsize_t i = 0; i < count; i++)
         {
@@ -4568,6 +4929,7 @@ protected:
             }
         }
         return state.numPagesEmptied;
+#endif
     }
 
     virtual void reportMemoryUsage(bool peak) const
@@ -4681,6 +5043,87 @@ protected:
     unsigned slaveId;
     CGlobalRowManager * globalManager;
 };
+
+//================================================================================
+
+static int compareHeaplets(void * const * left, void * const * right)
+{
+    ChunkedHeaplet * leftHeaplet = *reinterpret_cast<ChunkedHeaplet * const *>(left);
+    ChunkedHeaplet * rightHeaplet = *reinterpret_cast<ChunkedHeaplet * const *>(right);
+    if (leftHeaplet->queryHeap() != rightHeaplet->queryHeap())
+        return (leftHeaplet->queryHeap() < rightHeaplet->queryHeap()) ? -1 : +1;
+
+    if (leftHeaplet->hasSharedRow)
+    {
+        if (!rightHeaplet->hasSharedRow)
+            return -1;
+    }
+    else
+    {
+        if (rightHeaplet->hasSharedRow)
+            return +1;
+    }
+
+    return rightHeaplet->numCompactingRows() - leftHeaplet->numCompactingRows();
+}
+
+bool NewHeapCompactState::calculateRowsToMove()
+{
+    if (heaplets.ordinality() <= 1)
+        return false;
+
+    //Sort the list of heaplets by heap, heaplet, realCount
+    heaplets.sort(compareHeaplets);
+
+    //Walk through each heaplet in turn, processing a heap at a time.
+    bool foundPossibility = false;
+    unsigned firstHeaplet = 0;
+    const CHeap * curHeap = nullptr;
+    ForEachItemIn(i, heaplets)
+    {
+        ChunkedHeaplet * cur = heaplets.item(i);
+        if (cur->queryHeap() != curHeap)
+        {
+            if (processHeap(firstHeaplet, i))
+                foundPossibility = true;
+            firstHeaplet = i;
+            curHeap = cur->queryHeap();
+        }
+    }
+    if (processHeap(firstHeaplet, heaplets.ordinality()))
+        foundPossibility = true;
+    return foundPossibility;
+}
+
+
+bool NewHeapCompactState::processHeap(unsigned low, unsigned max)
+{
+    //0 or 1 entries - do nothing.
+    const unsigned numHeaplets = (max - low);
+    if (numHeaplets <= 1)
+        return false;
+
+    //Calculate the total number of rows in the heaplet
+    //MORE: This doesn't cover situations where other parts of the heaplet have lots of allocations....
+    //if more than one heaplet for this heap.
+    memsize_t totalRows = 0;
+    for (unsigned i1=low; i1 < max; i1++)
+        totalRows += heaplets.item(i1)->numCompactingRows();
+
+    //work backwards and tag the heaplets that contain rows that should be moved.
+    const CChunkedHeap * curHeap = static_cast<const CChunkedHeap *>(heaplets.item(low)->queryHeap());
+    unsigned maxRows = curHeap->maxChunksPerPage();
+    unsigned heapletsRequired = (unsigned)((totalRows + maxRows - 1) / maxRows);
+    if (heapletsRequired >= numHeaplets)
+        return false;
+
+    //Start cloning rows into the heaplet with the largest number
+    const_cast<CChunkedHeap *>(curHeap)->setCompactTarget(low);
+    for (unsigned i2=low + heapletsRequired; i2 < max; i2++)
+        heaplets.item(i2)->setMoveRows();
+    return true;
+}
+
 
 //================================================================================
 
@@ -5385,6 +5828,23 @@ const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state
                 break;
         }
     }
+    return ptr;
+}
+
+const void * CChunkedHeap::newCompactRow(const void * ptr, NewHeapCompactState & state)
+{
+    loop
+    {
+        ChunkedHeaplet * curTarget = state.queryHeaplet(curCompactTarget);
+        assertex(curTarget->queryHeap() == this);
+        const void * ret = curTarget->newMoveRow(ptr);
+        if (ret)
+            return ret;
+
+        //Heaplet is full.  If allocations are occuring at the same time it is possible that
+        curCompactTarget++;
+    }
+
     return ptr;
 }
 
@@ -7198,6 +7658,9 @@ protected:
         testFixedCas("packed scan", RHFpacked|RHFnofragment);
         testFixedCas("packed blocked", RHFpacked|RHFblocked);
         testFixedCas("packed blocked scan", RHFpacked|RHFnofragment|RHFblocked);
+        testFixedCas("packed delayed scan", RHFpacked|RHFnofragment|RHFdelayrelease);
+        testFixedCas("packed blocked", RHFpacked|RHFblocked);
+        testFixedCas("packed delayed blocked scan", RHFpacked|RHFnofragment|RHFblocked|RHFdelayrelease);
         testGeneralCas();
     }
 
