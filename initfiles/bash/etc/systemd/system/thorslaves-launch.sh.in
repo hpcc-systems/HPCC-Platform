@@ -26,7 +26,10 @@ fi
 
 source ${instanceName}.cfg
 
-slaveIps=($(@EXEC_PATH@/daliadmin server=$DALISERVER clusternodes ${THORNAME} slaves 1>/dev/null 2>&1; uniq slaves))
+slaveIps=($(@EXEC_PATH@/daliadmin server=$DALISERVER clusternodes ${THORNAME} slaves timeout=2 1>/dev/null 2>&1; uniq slaves))
+if [[ -z $slaveIps ]]; then
+	slaveIps=($(uniq slaves 2>&1))
+fi
 [[ -z $slaveIps ]] && exit 1
 
 numOfNodes=${#slaveIps[@]}

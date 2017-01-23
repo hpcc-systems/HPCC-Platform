@@ -17,5 +17,4 @@ RestartSec=5
 TimeoutSec=30
 
 [Install]
-WantedBy=default.target
 DefaultInstance=my@component@

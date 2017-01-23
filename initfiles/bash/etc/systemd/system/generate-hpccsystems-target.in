@@ -24,7 +24,7 @@ ln -sf @INSTALL_DIR@/etc/systemd/system/gen/hpccsystems-platform.target hpccsyst
 for ((i=0; i<${#all[@]}; i++)); do
 	component="$(echo "${all[$i]}" | awk 'BEGIN {FS="[.@]";} {print $1;}')"
 	instance="$(echo "${all[$i]}" | awk 'BEGIN {FS="[.@]";} {print $2;}')"
-	sedcmd="sed 's/dafilesrv\.service/${require_string}/g; s/%i/${instance}/g' @INSTALL_DIR@/etc/systemd/system/${component}@.service > @INSTALL_DIR@/etc/systemd/system/gen/${all[$i]}"
+	sedcmd="sed 's/\[Unit\]/\[Unit\]\nPartOf=hpccsystems-platform.target/g; s/dafilesrv\.service/${require_string}/g; s/%i/${instance}/g' @INSTALL_DIR@/etc/systemd/system/${component}@.service > @INSTALL_DIR@/etc/systemd/system/gen/${all[$i]}"
     eval "$sedcmd"
 	ln -sf @INSTALL_DIR@/etc/systemd/system/gen/${all[$i]} ${all[$i]}
 done

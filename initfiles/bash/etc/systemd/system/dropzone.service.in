@@ -1,0 +1,11 @@
+[Unit]
+Description=Dropzone Configuration
+After=network.target remote-fs.target configmgr-conf.service
+PartOf=hpccsystems-platform.target
+
+[Service]
+Type=oneshot
+User=@RUNTIME_USER@
+Group=@RUNTIME_GROUP@
+WorkingDirectory=@RUNTIME_PATH@
+ExecStart=/bin/bash -c "for i in $(@ADMIN_PATH@/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -listdirs); do mkdir -p $i; done"

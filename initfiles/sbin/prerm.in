@@ -28,7 +28,7 @@ fi
 # Stop all services before cleaning up
 ######################################
 if which systemctl 1>/dev/null 2>&1; then
-	[[ -e "/etc/systemd/system/hpccsystems-platform.target" ]] && systemctl stop hpccsystems-platform.target
+	systemctl stop hpccsystems-platform.target
 else 
 	/etc/init.d/hpcc-init stop
 	/etc/init.d/dafilesrv stop
