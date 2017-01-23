@@ -43,7 +43,7 @@ class CLoggingManager : implements ILoggingManager, public CInterface
     bool initialized;
 
     IEspLogAgent* loadLoggingAgent(const char* name, const char* dll, const char* type, IPropertyTree* cfg);
-    bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp, StringBuffer& status);
+    bool updateLog(IEspContext& espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp, StringBuffer& status);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -55,8 +55,8 @@ public:
 
     virtual bool updateLog(const char* option, IEspContext& espContext, IPropertyTree* userContext, IPropertyTree* userRequest,
         const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status);
-    virtual bool updateLog(const char* option, const char* logContent, StringBuffer& status);
-    virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
+    virtual bool updateLog(IEspContext& espContext, const char* option, const char* logContent, StringBuffer& status);
+    virtual bool updateLog(IEspContext& espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status);
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
     virtual bool getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status);
