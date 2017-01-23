@@ -1,0 +1,19 @@
+[Unit]
+Description=@description@
+After=network.target remote-fs.target @dependencies@
+
+[Service]
+Type=forking
+User=@RUNTIME_USER@
+Group=@RUNTIME_GROUP@
+PermissionsStartOnly=true
+PIDFile=@PID_PATH@/%i.pid
+EnvironmentFile=@RUNTIME_PATH@/tmp/%i.cfg
+ExecStart=@EXEC_PATH@/@processName@ @processArgs@
+Restart=on-failure
+RestartSec=5
+TimeoutSec=30
+
+[Install]
+WantedBy=default.target
+DefaultInstance=my@component@

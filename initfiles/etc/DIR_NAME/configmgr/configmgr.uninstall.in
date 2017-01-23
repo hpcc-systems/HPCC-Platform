@@ -1,0 +1,2 @@
+removeSymlink "@CONFIG_DIR@/configmgr/configmgr.conf"
+removeSymlink "@CONFIG_DIR@/configmgr/esp.xml"

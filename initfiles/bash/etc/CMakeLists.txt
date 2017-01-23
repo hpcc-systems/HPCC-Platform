@@ -14,4 +14,5 @@
 #    limitations under the License.
 ################################################################################
 
+ADD_SUBDIRECTORY(systemd/system)
 ADD_SUBDIRECTORY(init.d)

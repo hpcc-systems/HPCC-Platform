@@ -28,7 +28,6 @@ fi
 # Stop all services before cleaning up
 ######################################
 /etc/init.d/hpcc-init stop
-/etc/init.d/dafilesrv stop
 
 # Remove edits from /etc files
 ##############################

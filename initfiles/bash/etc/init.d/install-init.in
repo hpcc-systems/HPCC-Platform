@@ -253,6 +253,9 @@ group=`grep -w ${groupNum} /etc/group | cut -d ':' -f 1`
 chmod 700 ${homePath}/.ssh
 [ -e ${homePath}/.ssh/id_rsa.pub ] && chmod 600 ${homePath}/.ssh/id_rsa.pub
 chown -R $user:$group ${homePath}
+if which restorecon 1>/dev/null 2>&1; then
+    restorecon -FRvv ${homePath}/.ssh 1>/dev/null 2>&1
+fi
 
 $path/sbin/add_conf_settings.sh
 
@@ -282,22 +285,11 @@ chown root:$group ${configs}
 chown -R $user:$group ${configs}/*
 chmod 775 ${configs}
 
-# Add systemd support
-distrib_check
-if [ "${DISTRIB_NAME}" = "ubuntu" ] &&
-   [ ${DISTRIB_MAJOR_VERSION} -ge 15 ]; then
+# enable systemd support if applicable
+which systemctl 1>/dev/null 2>&1 && systemctl daemon-reload
 
-   dpkg -S /sbin/init | grep -q systemd
-   if [ $? -eq 0 ]; then
-      cp ${INSTALL_DIR}/etc/init.d/hpcc-init.service /lib/systemd/system/
-      cp ${INSTALL_DIR}/etc/init.d/hpcc-init@.service /lib/systemd/system/
-      cp ${INSTALL_DIR}/etc/init.d/dafilesrv.service /lib/systemd/system/
-      cp ${INSTALL_DIR}/etc/init.d/dafilesrv@.service /lib/systemd/system/
-      systemctl daemon-reload
-   fi
-fi
-
-createRuntime
+mkdir -p ${runtime} ${lock} ${pid} ${log}
+chown ${user}:${group} -R ${runtime} ${lock} ${pid} ${log}
 [ -e  ${LOG_DIR}/hpcc-init.debug ] && chown ${user}:${user} ${LOG_DIR}/hpcc-init.debug
 
 exit 0

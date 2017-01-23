@@ -1,0 +1,2 @@
+installFile "@INSTALL_DIR@/etc/@DIR_NAME@/configmgr/configmgr.conf" "@CONFIG_DIR@/configmgr/configmgr.conf" 1 "@CONFIG_DIR@/configmgr" || exit 1
+installFile "@INSTALL_DIR@/etc/@DIR_NAME@/configmgr/esp.xml" "@CONFIG_DIR@/configmgr/esp.xml" 1 "@CONFIG_DIR@/configmgr" || exit 1
