@@ -1400,7 +1400,7 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                         Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
 
                         IPropertyTree & cur = iter->query();
-                        toXML(&cur, methodconfigxml);
+                        toXML(&cur, methodconfigxml.clear());
                         if (methodconfigxml.length())
                             methodconfig->setXML(methodconfigxml);
 
