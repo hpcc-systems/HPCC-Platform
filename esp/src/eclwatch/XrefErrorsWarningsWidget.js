@@ -98,21 +98,37 @@ define([
                 if (lang.exists("DFUXRefMessagesQueryResponse.DFUXRefMessagesQueryResult", response)) {
                     results = response.DFUXRefMessagesQueryResponse.DFUXRefMessagesQueryResult;
                 }
-                arrayUtil.forEach(results.Warning, function (row, idx) {
-                   newRows.push({
-                        File: row.File,
-                        Text: row.Text,
-                        Status: context.i18n.Warning
-                    });
-                });
 
-                arrayUtil.forEach(results.Error, function (row, idx) {
-                   newRows.push({
-                        File: row.File,
-                        Text: row.Text,
+                if (lang.exists("Warning.length", results)) {
+                    arrayUtil.forEach(results.Warning, function (row, idx) {
+                        newRows.push({
+                            File: row.File,
+                            Text: row.Text,
+                            Status: context.i18n.Warning
+                        });
+                    });
+                }  else if (results.Warning) {
+                        newRows.push({
+                            File: results.Warning.File,
+                            Text: results.Warning.Text,
+                            Status: context.i18n.Warning
+                        });
+                    }
+                if (lang.exists("Error.length", results)) {
+                        arrayUtil.forEach(results.Error, function (row, idx) {
+                           newRows.push({
+                                File: row.File,
+                                Text: row.Text,
+                                Status: context.i18n.Error
+                            });
+                        });
+                } else if (results.Error) {
+                    newRows.push({
+                        File: results.Error.File,
+                        Text: results.Error.Text,
                         Status: context.i18n.Error
                     });
-                });
+                }
                 context.store.setData(newRows);
                 context.grid.set("query", {});
             });
