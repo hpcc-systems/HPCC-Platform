@@ -101,7 +101,7 @@ public:
     {
         initMetaInfo(info);
         info.isSource = true;
-        if (firstNode())
+        if (container.queryLocal() || firstNode())
             info.unknownRowsOutput = true;
         else
         {
