@@ -1668,6 +1668,10 @@ public:
     virtual IConstWUAssociatedFile * getAssociatedFile(WUFileType type, unsigned index) const;
     virtual IConstWUAssociatedFileIterator& getAssociatedFiles() const;
     virtual bool isArchive() const;
+    virtual bool hasArchive() const
+    {
+        return p->getPropBool("@hasArchive");
+    }
 
     virtual void        setQueryType(WUQueryType qt);
     virtual void        setQueryText(const char *pstr);
@@ -4391,12 +4395,13 @@ class CEnvironmentClusterInfo: implements IConstWUClusterInfo, public CInterface
     unsigned clusterWidth;
     unsigned roxieRedundancy;
     unsigned channelsPerNode;
+    unsigned numberOfSlaveLogs;
     int roxieReplicateOffset;
 
 public:
     IMPLEMENT_IINTERFACE;
     CEnvironmentClusterInfo(const char *_name, const char *_prefix, const char *_alias, IPropertyTree *agent, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
-        : name(_name), prefix(_prefix), alias(_alias), roxieRedundancy(0), channelsPerNode(0), roxieReplicateOffset(1)
+        : name(_name), prefix(_prefix), alias(_alias), roxieRedundancy(0), channelsPerNode(0), numberOfSlaveLogs(0), roxieReplicateOffset(1)
     {
         StringBuffer queue;
         if (thors.ordinality())
@@ -4423,6 +4428,7 @@ public:
                 unsigned slavesPerNode = thor.getPropInt("@slavesPerNode", 1);
                 unsigned channelsPerSlave = thor.getPropInt("@channelsPerSlave", 1);
                 unsigned ts = nodes * slavesPerNode * channelsPerSlave;
+                numberOfSlaveLogs = nodes * slavesPerNode;
                 if (clusterWidth && (ts!=clusterWidth)) 
                     throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: mismatched thor sizes in cluster");
                 clusterWidth = ts;
@@ -4510,6 +4516,10 @@ public:
     unsigned getSize() const 
     {
         return clusterWidth;
+    }
+    unsigned getNumberOfSlaveLogs() const
+    {
+        return numberOfSlaveLogs;
     }
     virtual ClusterType getPlatform() const
     {
@@ -7327,6 +7337,8 @@ void CLocalWUQuery::setQueryText(const char *text)
             p->setProp("ShortText", xml->queryProp("Query"));
     }
     p->setPropBool("@isArchive", isArchive);
+    if (isArchive)
+        p->setPropBool("@hasArchive", true); //preserved if setQueryText is called multiple times.  Should setting this be more explicit?
 }
 
 void CLocalWUQuery::setQueryName(const char *qname)

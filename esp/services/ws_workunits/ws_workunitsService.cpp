@@ -4419,7 +4419,7 @@ void CWsWorkunitsEx::addThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& w
         return;
     }
 
-    unsigned numberOfSlaves = clusterInfo->getSize();
+    unsigned numberOfSlaveLogs = clusterInfo->getNumberOfSlaveLogs();
     BoolHash uniqueProcesses;
     Owned<IStringIterator> thorInstances = cwu->getProcesses("Thor");
     ForEach (*thorInstances)
@@ -4456,7 +4456,7 @@ void CWsWorkunitsEx::addThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& w
             StringBuffer logDate = ppStr;
             logDate.setLength(10);
 
-            for (unsigned i = 0; i < numberOfSlaves; i++)
+            for (unsigned i = 0; i < numberOfSlaveLogs; i++)
             {
                 MemoryBuffer mb;
                 winfo.getWorkunitThorSlaveLog(groupName.str(), NULL, logDate.str(), logDir.str(), i+1, mb, false);
@@ -4650,7 +4650,16 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             addThorSlaveLogfile(cwu, winfo, folderToZIP.str());
 
         //Write out to ZIP file
-        zipFileName.append(nameStr.str()).append(".zip");
+        const char* zipFName = req.getZAPFileName();
+        if (!zipFName || !*zipFName)
+            zipFileName.append(nameStr.str()).append(".zip");
+        else
+        {
+            zipFileName.set(zipFName);
+            const char* ext = pathExtension(zipFName);
+            if (!ext || !strieq(ext, ".zip"))
+                zipFileName.append(".zip");
+        }
         zipFileNameWithPath.append(zipFolder).append(zipFileName.str());
         pathNameStr.set(folderToZIP.str()).append("/*");
 

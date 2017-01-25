@@ -54,6 +54,7 @@ interface IWuWebView : extends IInterface
     virtual void createWuidResponse(StringBuffer &out, unsigned flags)=0;
     virtual bool getResourceByPath(const char *path, MemoryBuffer &mb)=0;
     virtual StringBuffer &getManifest(StringBuffer &mf)=0;
+    virtual IConstWUQuery* getEmbeddedQuery()=0;
 
 };
 
