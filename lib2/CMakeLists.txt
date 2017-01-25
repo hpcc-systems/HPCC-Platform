@@ -27,6 +27,7 @@ if (APPLE)
     list(APPEND DYLIBS ${ZLIB_LIBRARIES})
     list(APPEND DYLIBS ${LIBXML2_LIBRARIES})
     list(APPEND DYLIBS ${CBLAS_LIBRARIES})
+    list(APPEND DYLIBS ${CBLAS_DEPS_LIBS})
 elseif (WIN32)
     #TODO:  Should find these dlls not assume them.
     if (NOT USE_NATIVE_LIBRARIES)
@@ -72,56 +73,38 @@ foreach(dylib ${DYLIBS})
     elseif (APPLE)
         install(PROGRAMS "${dylib_path}" DESTINATION lib2)
         get_filename_component(dylib_name_ext ${dylib_path} NAME)
-
-        set(fixupCommand "execute_process(COMMAND install_name_tool -change \"${dylib_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file} ERROR_VARIABLE ignore)")
-
-        #TODO:  Should be able resolve alias's to alias's correctly?
-        string(REPLACE ".2.21.dylib" ".2.dylib" dylib_2_path "${dylib_path}")
-        if (NOT "${dylib_2_path}" STREQUAL "${dylib_path}")
-            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_2_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
-        endif ()
-
-        string(REPLACE ".28.0.dylib" ".28.dylib" dylib_28_path "${dylib_path}")
-        if (NOT "${dylib_28_path}" STREQUAL "${dylib_path}")
-            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_28_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
-        endif ()
-
-        string(REPLACE ".48.1.dylib" ".48.dylib" dylib_48_path "${dylib_path}")
-        if (NOT "${dylib_48_path}" STREQUAL "${dylib_path}")
-            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_48_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
-        endif ()
-
-        string(REPLACE ".110.0.dylib" ".dylib" dylib_110_path "${dylib_path}")
-        if (NOT "${dylib_110_path}" STREQUAL "${dylib_path}")
-            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_110_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
-        endif ()
-
-        string(REPLACE ".51.2.dylib" ".51.dylib" dylib_51_path "${dylib_path}")
-        if (NOT "${dylib_51_path}" STREQUAL "${dylib_path}")
-            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_51_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
-        endif ()
-
-        string(REPLACE ".55.1.dylib" ".55.dylib" dylib_55_path "${dylib_path}")
-        if (NOT "${dylib_55_path}" STREQUAL "${dylib_path}")
-            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_55_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
-        endif ()
-
-        string(REPLACE ".1.2.8.dylib" ".1.dylib" dylib_1_path "${dylib_path}")
-        if (NOT "${dylib_1_path}" STREQUAL "${dylib_path}")
-            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_1_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
-        endif ()
-
-        if ("${dylib_path}" MATCHES "^/usr/local/Cellar/.*$")
-            get_filename_component(dylib_dir ${dylib} DIRECTORY)
-            set(dylib_link_path "${dylib_dir}/${dylib_name_ext}")
-            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_link_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
-        endif ()
+        get_filename_component(dylib_name_only ${dylib_name_ext} NAME_WE)
 
         install(CODE "
-            file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${EXEC_DIR}/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIB_DIR}/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/plugins/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2/*.dylib\")
-            foreach(file \${files})
-              ${fixupCommand}
-            endforeach ()
+           file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${EXEC_DIR}/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIB_DIR}/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/plugins/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2/*.dylib\")
+           foreach(file \${files})
+               execute_process(COMMAND bash \"-c\"  \"otool -L \\\"\${file}\\\" | egrep \\\"/${dylib_name_only}(.[0-9]{1,})*.dylib\\\" | sed \\\"s/^[[:space:]]//g\\\" | cut -d' ' -f1\"
+                  OUTPUT_VARIABLE otoolOut
+                  ERROR_VARIABLE  otoolErr
+                  OUTPUT_STRIP_TRAILING_WHITESPACE
+               )
+               if (\"\${otoolOut}\" STREQUAL \"\")
+                  continue()
+               endif()
+               if (NOT \"\${otoolErr}\" STREQUAL \"\")
+                   message(FATAL_ERROR \"Failed to check dependent lib  ${dylib_name_only} for \${file}\")
+               endif()
+
+                  set(original_dylib_path \${otoolOut})
+
+                  file(GLOB lib2_dylib \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2/${dylib_name_only}*.dylib\")
+                  if (\"\${otoolOut}\" STREQUAL \"\")
+                      message(FATAL_ERROR \"Cannot find ${dylib_name_only}*.dylib under lib2\")
+                  endif()
+                  get_filename_component(dylib_name_ext \"\${lib2_dylib}\" NAME)
+
+                  execute_process(
+                      COMMAND install_name_tool -change \"\${original_dylib_path}\" \"@loader_path/../lib2/\${dylib_name_ext}\" \"\${file}\"
+                      OUTPUT_VARIABLE out
+                     ERROR_VARIABLE  err
+                  )
+               endif()
+           endforeach ()
         ")
    endif()
 endforeach(dylib)
