@@ -4419,7 +4419,7 @@ void CWsWorkunitsEx::addThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& w
         return;
     }
 
-    unsigned numberOfSlaves = clusterInfo->getSize();
+    unsigned numberOfSlaveLogs = clusterInfo->getNumberOfSlaveLogs();
     BoolHash uniqueProcesses;
     Owned<IStringIterator> thorInstances = cwu->getProcesses("Thor");
     ForEach (*thorInstances)
@@ -4456,7 +4456,7 @@ void CWsWorkunitsEx::addThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& w
             StringBuffer logDate = ppStr;
             logDate.setLength(10);
 
-            for (unsigned i = 0; i < numberOfSlaves; i++)
+            for (unsigned i = 0; i < numberOfSlaveLogs; i++)
             {
                 MemoryBuffer mb;
                 winfo.getWorkunitThorSlaveLog(groupName.str(), NULL, logDate.str(), logDir.str(), i+1, mb, false);

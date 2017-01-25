@@ -34,6 +34,7 @@
 #include "workunit.hpp"
 #include "wuwebview.hpp"
 #include "build-config.h"
+#include "jsmartsock.ipp"
 
 #include "loggingagentbase.hpp"
 
@@ -432,6 +433,7 @@ void EsdlServiceImpl::configureUrlMethod(const char *method, IPropertyTree &entr
     entry.setProp("@path", path);
 
     Owned<ISmartSocketFactory> sf = createSmartSocketFactory(iplist, true);
+
     connMap.remove(method);
     connMap.setValue(method, sf.getClear());
 }
@@ -855,6 +857,7 @@ void EsdlServiceImpl::handleEchoTest(const char *mthName,
     else
         out.appendf("<%sResponse><ValueOut>%s</ValueOut></%sResponse>", mthName, valueIn && *valueIn ? valueIn : "", mthName);
 }
+
 void EsdlServiceImpl::generateTargetURL(IEspContext & context,
                                      IPropertyTree *srvinfo,
                                      StringBuffer & url,
@@ -866,8 +869,8 @@ void EsdlServiceImpl::generateTargetURL(IEspContext & context,
 
     StringBuffer name(srvinfo->queryProp("@name"));
 
-    ISmartSocketFactory *conn = connMap.getValue(name);
-    if (!conn)
+    ISmartSocketFactory *sconn = connMap.getValue(name);
+    if (!sconn)
         throw MakeStringException(-1, "Could not create smartsocket.");
 
     url.set(srvinfo->queryProp("@prot"));
@@ -875,10 +878,7 @@ void EsdlServiceImpl::generateTargetURL(IEspContext & context,
         url.append("HTTP");
     url.append("://");
 
-    SocketEndpoint ep;
-    ep = conn->nextEndpoint();
-
-    ep.getUrlStr(url);
+    sconn->getUrlStr(url, true);
 
     if(srvinfo->hasProp("@path"))  //Append the server path
     {

@@ -466,9 +466,6 @@ public:
     {
         if (m_txSummary)
         {
-            if (!m_hasException && (getEspLogLevel() <= LogNormal))
-                m_txSummary->clear();
-
             updateTraceSummaryHeader();
             m_txSummary->append("total", m_processingTime, "ms");
         }
@@ -586,12 +583,28 @@ void CEspContext::updateTraceSummaryHeader()
     if (m_txSummary)
     {
         m_txSummary->set("activeReqs", m_active);
-        m_txSummary->set("user", VStringBuffer("%s%s%s", (queryUserId() ? queryUserId() : ""), (m_peer.length() ? "@" : ""), m_peer.str()).str());
+        VStringBuffer user("%s%s%s", (queryUserId() ? queryUserId() : ""), (m_peer.length() ? "@" : ""), m_peer.str());
+        if (!user.isEmpty())
+            m_txSummary->set("user", user.str());
 
-        VStringBuffer reqSummury("%s %s.%s", httpMethod.get(), m_servName.str(), servMethod.get());
+        VStringBuffer reqSummary("%s", httpMethod.isEmpty() ? "" : httpMethod.get());
+        if (!m_servName.isEmpty() || !servMethod.isEmpty())
+        {
+            if (!reqSummary.isEmpty())
+                reqSummary.append(" ");
+            if (!m_servName.isEmpty())
+                reqSummary.append(m_servName.str());
+            if (!servMethod.isEmpty())
+                reqSummary.append(".").append(servMethod.str());
+        }
         if (m_clientVer > 0)
-            reqSummury.append(" v").append(m_clientVer);
-        m_txSummary->set("req", reqSummury.str());
+        {
+            if (!reqSummary.isEmpty())
+                reqSummary.append(" ");
+            reqSummary.append("v").append(m_clientVer);
+        }
+        if (!reqSummary.isEmpty())
+            m_txSummary->set("req", reqSummary.str());
 
         if (m_hasException)
             m_txSummary->set(VStringBuffer("exception@%ums", m_exceptionTime), m_exceptionCode);
