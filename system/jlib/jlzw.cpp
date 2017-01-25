@@ -2326,66 +2326,94 @@ public:
 };
 
 
-
-        
-
-ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expander)
+static unsigned getCompressedMethod(__int64 compressedType)
 {
-    if (fileio) {
-        offset_t fsize = fileio->size();
-        if (fsize>=sizeof(WinCompressedFileTrailer)) {  // thats 8 bytes bigger but I think doesn't matter
+    if (compressedType == COMPRESSEDFILEFLAG)
+        return COMPRESS_METHOD_LZW;
+    else if (compressedType == FASTCOMPRESSEDFILEFLAG)
+        return COMPRESS_METHOD_FASTLZ;
+    else if (compressedType == LZ4COMPRESSEDFILEFLAG)
+        return COMPRESS_METHOD_LZ4;
+    return 0;
+}
+
+static bool isCompressedType(__int64 compressedType)
+{
+    return 0 != getCompressedMethod(compressedType);
+}
+
+bool isCompressedFile(IFileIO *iFileIO, CompressedFileTrailer *trailer=nullptr)
+{
+    if (iFileIO)
+    {
+        offset_t fsize = iFileIO->size();
+        if (fsize>=sizeof(WinCompressedFileTrailer))  // thats 8 bytes bigger but I think doesn't matter
+        {
             WinCompressedFileTrailer wintrailer;
-            CompressedFileTrailer trailer;
-            if (fileio->read(fsize-sizeof(WinCompressedFileTrailer),sizeof(WinCompressedFileTrailer),&wintrailer)==sizeof(WinCompressedFileTrailer)) {
-                wintrailer.translate(trailer);
-                if ( (trailer.compressedType==COMPRESSEDFILEFLAG) ||
-                     (trailer.compressedType==FASTCOMPRESSEDFILEFLAG) ||
-                     (trailer.compressedType==LZ4COMPRESSEDFILEFLAG) )
-                {
-                    if (expander&&(trailer.recordSize!=0)) {
-                        throw MakeStringException(-1, "Compressed file format error(%d), Encrypted?",trailer.recordSize);
-                    }
-                    unsigned compMethod1 = COMPRESS_METHOD_LZW;
-                    if (trailer.compressedType == FASTCOMPRESSEDFILEFLAG)
-                        compMethod1 = COMPRESS_METHOD_FASTLZ;
-                    else if (trailer.compressedType == LZ4COMPRESSEDFILEFLAG)
-                        compMethod1 = COMPRESS_METHOD_LZ4;
-                    CCompressedFile *cfile = new CCompressedFile(fileio,NULL,trailer,ICFread,false,NULL,expander,compMethod1);
-                    return cfile;
-                }
+            CompressedFileTrailer _trailer;
+            if (!trailer)
+                trailer = &_trailer;
+            if (iFileIO->read(fsize-sizeof(WinCompressedFileTrailer),sizeof(WinCompressedFileTrailer),&wintrailer)==sizeof(WinCompressedFileTrailer))
+            {
+                wintrailer.translate(*trailer);
+                if (isCompressedType(trailer->compressedType))
+                    return true;
             }
         }
     }
-    return NULL;
+    return false;
+}
+
+
+
+bool isCompressedFile(const char *filename)
+{
+    Owned<IFile> iFile = createIFile(filename);
+    return isCompressedFile(iFile);
+}
+
+bool isCompressedFile(IFile *iFile)
+{
+    Owned<IFileIO> iFileIO = iFile->open(IFOread);
+    return isCompressedFile(iFileIO);
+}
+
+ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expander)
+{
+    CompressedFileTrailer trailer;
+    if (isCompressedFile(fileio, &trailer))
+    {
+        if (expander&&(trailer.recordSize!=0))
+            throw MakeStringException(-1, "Compressed file format error(%d), Encrypted?",trailer.recordSize);
+        unsigned compMethod = getCompressedMethod(trailer.compressedType);
+        return new CCompressedFile(fileio,NULL,trailer,ICFread,false,NULL,expander,compMethod);
+    }
+    return nullptr;
 }
 
 
 ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, bool memorymapped, IFEflags extraFlags)
 {
-    if (file) {
-        if (memorymapped) {
+    if (file)
+    {
+        if (memorymapped)
+        {
             Owned<IMemoryMappedFile> mmfile = file->openMemoryMapped();
-            if (mmfile) {
+            if (mmfile)
+            {
                 offset_t fsize = mmfile->fileSize();
-                if (fsize>=sizeof(WinCompressedFileTrailer)) {  // thats 8 bytes bigger but I think doesn't matter
+                if (fsize>=sizeof(WinCompressedFileTrailer))  // thats 8 bytes bigger but I think doesn't matter
+                {
                     WinCompressedFileTrailer wintrailer;
                     CompressedFileTrailer trailer;
                     memcpy(&wintrailer,mmfile->base()+fsize-sizeof(WinCompressedFileTrailer),sizeof(WinCompressedFileTrailer));
                     wintrailer.translate(trailer);
-                    if ( (trailer.compressedType==COMPRESSEDFILEFLAG) ||
-                         (trailer.compressedType==FASTCOMPRESSEDFILEFLAG) ||
-                         (trailer.compressedType==LZ4COMPRESSEDFILEFLAG) )
+                    unsigned compMethod = getCompressedMethod(trailer.compressedType);
+                    if (compMethod)
                     {
-                        if (expander&&(trailer.recordSize!=0)) {
+                        if (expander&&(trailer.recordSize!=0))
                             throw MakeStringException(-1, "Compressed file format error(%d), Encrypted?",trailer.recordSize);
-                        }
-                        unsigned compMethod1 = COMPRESS_METHOD_LZW;
-                        if (trailer.compressedType == FASTCOMPRESSEDFILEFLAG)
-                            compMethod1 = COMPRESS_METHOD_FASTLZ;
-                        else if (trailer.compressedType == LZ4COMPRESSEDFILEFLAG)
-                            compMethod1 = COMPRESS_METHOD_LZ4;
-                        CCompressedFile *cfile = new CCompressedFile(NULL,mmfile,trailer,ICFread,false,NULL,expander,compMethod1);
-                        return cfile;
+                        return new CCompressedFile(NULL,mmfile,trailer,ICFread,false,NULL,expander,compMethod);
                     }
                 }
             }
@@ -2404,26 +2432,21 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsiz
 {
     CompressedFileTrailer trailer;
     offset_t fsize = fileio->size();
-    if (fsize) {
-        loop {
-            if (fsize>=sizeof(WinCompressedFileTrailer)) {  // thats 8 bytes bigger but I think doesn't matter
+    if (fsize)
+    {
+        loop
+        {
+            if (fsize>=sizeof(WinCompressedFileTrailer))  // thats 8 bytes bigger but I think doesn't matter
+            {
                 WinCompressedFileTrailer wintrailer;
                 CompressedFileTrailer trailer;
                 if (fileio->read(fsize-sizeof(WinCompressedFileTrailer),sizeof(WinCompressedFileTrailer),&wintrailer)==sizeof(WinCompressedFileTrailer)) {
                     wintrailer.translate(trailer);
-                    if ( (trailer.compressedType==COMPRESSEDFILEFLAG) ||
-                         (trailer.compressedType==FASTCOMPRESSEDFILEFLAG) ||
-                         (trailer.compressedType==LZ4COMPRESSEDFILEFLAG) )
+                    unsigned compMethod = getCompressedMethod(trailer.compressedType);
+                    if (compMethod)
                     {
                         // check trailer.compressedType against _compMethod
-                        unsigned compMethod1 = 0;
-                        if (trailer.compressedType == COMPRESSEDFILEFLAG)
-                            compMethod1 = COMPRESS_METHOD_LZW;
-                        else if (trailer.compressedType == FASTCOMPRESSEDFILEFLAG)
-                            compMethod1 = COMPRESS_METHOD_FASTLZ;
-                        else if (trailer.compressedType == LZ4COMPRESSEDFILEFLAG)
-                            compMethod1 = COMPRESS_METHOD_LZ4;
-                        if (_compMethod != compMethod1)
+                        if (_compMethod != compMethod)
                             throw MakeStringException(-1,"Appending to file with different compression method");
                         if ((recordsize==trailer.recordSize)||!trailer.recordSize)
                             break;
@@ -2434,7 +2457,8 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsiz
             throw MakeStringException(-1,"Appending to file that is not compressed");
         }
     }
-    else {
+    else
+    {
         memset(&trailer,0,sizeof(trailer));
         trailer.crc = ~0U;
         if (_compMethod == COMPRESS_METHOD_FASTLZ)
@@ -2670,9 +2694,7 @@ IPropertyTree *getBlockedFileDetails(IFile *file)
             CompressedFileTrailer trailer;
             if (fileio->read(fsize-sizeof(WinCompressedFileTrailer),sizeof(WinCompressedFileTrailer),&wintrailer)==sizeof(WinCompressedFileTrailer)) {
                 wintrailer.translate(trailer);
-                if ( (trailer.compressedType==COMPRESSEDFILEFLAG) ||
-                     (trailer.compressedType==FASTCOMPRESSEDFILEFLAG) ||
-                     (trailer.compressedType==LZ4COMPRESSEDFILEFLAG) )
+                if (isCompressedType(trailer.compressedType))
                 {
                     trailer.setDetails(*tree);
                     unsigned nb = trailer.numBlocks();
