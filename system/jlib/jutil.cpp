@@ -1716,28 +1716,31 @@ unsigned runExternalCommand(StringBuffer &output, const char *cmd, const char *i
     try
     {
         Owned<IPipeProcess> pipe = createPipeProcess();
-        pipe->run(cmd, cmd, ".", input != NULL, true, true, 1024*1024);
-        if (input)
+        int ret = START_FAILURE;
+        if (pipe->run(cmd, cmd, ".", input != NULL, true, true, 1024*1024))
         {
-            pipe->write(strlen(input), input);
-            pipe->closeInput();
-        }
-        char buf[1024];
-        while (true)
-        {
-            size32_t read = pipe->read(sizeof(buf), buf);
-            if (!read)
-                break;
-            output.append(read, buf);
-        }
-        int ret = pipe->wait();
-        StringBuffer error;
-        while (true)
-        {
-            size32_t read = pipe->readError(sizeof(buf), buf);
-            if (!read)
-                break;
-            error.append(read, buf);
+            if (input)
+            {
+                pipe->write(strlen(input), input);
+                pipe->closeInput();
+            }
+            char buf[1024];
+            while (true)
+            {
+                size32_t read = pipe->read(sizeof(buf), buf);
+                if (!read)
+                    break;
+                output.append(read, buf);
+            }
+            ret = pipe->wait();
+            StringBuffer error;
+            while (true)
+            {
+                size32_t read = pipe->readError(sizeof(buf), buf);
+                if (!read)
+                    break;
+                error.append(read, buf);
+            }
         }
         return ret;
     }
@@ -1745,7 +1748,7 @@ unsigned runExternalCommand(StringBuffer &output, const char *cmd, const char *i
     {
         E->Release();
         output.clear();
-        return 255;
+        return START_FAILURE;
     }
 }
 

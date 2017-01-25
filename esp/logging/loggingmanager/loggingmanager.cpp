@@ -83,7 +83,7 @@ IEspLogAgent* CLoggingManager::loadLoggingAgent(const char* name, const char* dl
     return (IEspLogAgent*) xproc();
 }
 
-bool CLoggingManager::updateLog(const char* option, const char* logContent, StringBuffer& status)
+bool CLoggingManager::updateLog(IEspContext& espContext, const char* option, const char* logContent, StringBuffer& status)
 {
     if (!initialized)
         throw MakeStringException(-1,"LoggingManager not initialized");
@@ -93,7 +93,7 @@ bool CLoggingManager::updateLog(const char* option, const char* logContent, Stri
     {
         Owned<IEspUpdateLogRequestWrap> req =  new CUpdateLogRequestWrap(NULL, option, logContent);
         Owned<IEspUpdateLogResponse> resp =  createUpdateLogResponse();
-        bRet = updateLog(*req, *resp, status);
+        bRet = updateLog(espContext, *req, *resp, status);
     }
     catch (IException* e)
     {
@@ -129,7 +129,7 @@ bool CLoggingManager::updateLog(const char* option, IEspContext& espContext, IPr
         Owned<IEspUpdateLogRequestWrap> req =  new CUpdateLogRequestWrap(NULL, option, espContextTree.getClear(), LINK(userContext), LINK(userRequest),
             backEndResp, userResp, logDatasets);
         Owned<IEspUpdateLogResponse> resp =  createUpdateLogResponse();
-        bRet = updateLog(*req, *resp, status);
+        bRet = updateLog(espContext, *req, *resp, status);
     }
     catch (IException* e)
     {
@@ -141,9 +141,9 @@ bool CLoggingManager::updateLog(const char* option, IEspContext& espContext, IPr
     return bRet;
 }
 
-bool CLoggingManager::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp, StringBuffer& status)
+bool CLoggingManager::updateLog(IEspContext& espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp, StringBuffer& status)
 {
-    bool bRet = updateLog(req, resp);
+    bool bRet = updateLog(espContext, req, resp);
     if (bRet)
         status.set("Log request has been sent.");
     else
@@ -157,7 +157,7 @@ bool CLoggingManager::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResp
     return bRet;
 }
 
-bool CLoggingManager::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp)
+bool CLoggingManager::updateLog(IEspContext& espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp)
 {
     if (!initialized)
         throw MakeStringException(-1,"LoggingManager not initialized");
@@ -165,6 +165,7 @@ bool CLoggingManager::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResp
     bool bRet = false;
     try
     {
+        espContext.addTraceSummaryTimeStamp("LMgr:startQLog");
         for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
         {
             IUpdateLogThread* loggingThread = loggingAgentThreads[x];
@@ -174,6 +175,7 @@ bool CLoggingManager::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResp
                 bRet = true;
             }
         }
+        espContext.addTraceSummaryTimeStamp("LMgr:endQLog");
     }
     catch (IException* e)
     {

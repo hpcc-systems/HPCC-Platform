@@ -600,6 +600,9 @@ ECLRTL_API double rtlLog10(double x, byte dbz = DBZzero);
 ECLRTL_API double rtlSqrt(double x, byte dbz = DBZzero);
 ECLRTL_API double rtlACos(double x, byte dbz = DBZzero);
 ECLRTL_API double rtlASin(double x, byte dbz = DBZzero);
+ECLRTL_API double rtlFMod(double numer, double denom, byte dbz = DBZzero);
+
+ECLRTL_API bool rtlFMatch(double a, double b, double epsilon);
 
 ECLRTL_API bool rtlIsValidReal(unsigned size, const void * data);
 ECLRTL_API double rtlCreateRealNull();

@@ -28,7 +28,9 @@
 #include "jstring.hpp"
 #include "jdebug.hpp"
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <sys/wait.h>
 #include <pwd.h>
 #endif
@@ -994,3 +996,25 @@ jlib_decl bool getHomeDir(StringBuffer & homepath)
     homepath.append(home);
     return true;
 }
+
+#ifdef _WIN32
+char *mkdtemp(char *_template)
+{
+    if (!_template || strlen(_template) < 6 || !streq(_template+strlen(_template)-6, "XXXXXX"))
+    {
+        errno = EINVAL;
+        return nullptr;
+    }
+    char * tail = _template + strlen(_template) - 6;
+    for (int i = 0; i < 100; i++)
+    {
+        snprintf(tail, 7, "%06d", rand());
+        if (!_mkdir(_template))
+            return _template;
+        if (errno != EEXIST)
+            return nullptr;
+    }
+    errno = EINVAL;
+    return nullptr;
+}
+#endif

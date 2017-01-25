@@ -14,7 +14,7 @@
  <Row><Result_5>false</Result_5></Row>
 </Dataset>
 <Dataset name='Result 6'>
- <Row><Result_6>true</Result_6></Row>
+ <Row><Result_6>false</Result_6></Row>
 </Dataset>
 <Dataset name='Result 7'>
  <Row><Result_7>false</Result_7></Row>
@@ -26,7 +26,7 @@
  <Row><Result_9>false</Result_9></Row>
 </Dataset>
 <Dataset name='Result 10'>
- <Row><Result_10>true</Result_10></Row>
+ <Row><Result_10>false</Result_10></Row>
 </Dataset>
 <Dataset name='Result 11'>
  <Row><Result_11>false</Result_11></Row>
@@ -38,7 +38,7 @@
  <Row><Result_13>false</Result_13></Row>
 </Dataset>
 <Dataset name='Result 14'>
- <Row><Result_14>true</Result_14></Row>
+ <Row><Result_14>false</Result_14></Row>
 </Dataset>
 <Dataset name='Result 15'>
  <Row><Result_15>false</Result_15></Row>
@@ -95,10 +95,10 @@
  <Row><Result_32>Miscellaneous</Result_32></Row>
 </Dataset>
 <Dataset name='Result 33'>
- <Row><Result_33>nan</Result_33></Row>
+ <Row><Result_33>inf</Result_33></Row>
 </Dataset>
 <Dataset name='Result 34'>
- <Row><Result_34>nan</Result_34></Row>
+ <Row><Result_34>inf</Result_34></Row>
 </Dataset>
 <Dataset name='Result 35'>
  <Row><Result_35>inf</Result_35></Row>

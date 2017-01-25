@@ -94,6 +94,8 @@ public:
     virtual void stop();
 
     virtual void resolveHostnames();
+
+    virtual StringBuffer & getUrlStr(StringBuffer &str, bool useHostName);
 };
 
 
