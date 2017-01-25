@@ -108,16 +108,7 @@ public:
     {
         if(!user)
             throw MakeStringException(-1, "can't create CachedUser, NULL user pointer");
-
         m_user.setown(user);
-        const char* pw = user->credentials().getPassword();
-        if(pw && *pw)
-        {
-            StringBuffer md5pbuf;
-            md5_string2(pw, md5pbuf);
-            user->credentials().setPassword(md5pbuf.str());
-        }
-
         time(&m_timestamp);
     }
 
