@@ -2828,7 +2828,7 @@ void CThorStats::processInfo()
     ForEachItemIn(n, counts)
     {
         unsigned __int64 thiscount = counts.item(n);
-        tallyValue(thiscount, n);
+        tallyValue(thiscount, n+1);
     }
     calculateSkew();
 }
@@ -2880,7 +2880,7 @@ void ProgressInfo::processInfo() // reimplement as counts have special flags (i.
         if (thiscount & THORDATALINK_STOPPED)
             stopcount++;
         thiscount = thiscount & THORDATALINK_COUNT_MASK;
-        tallyValue(thiscount, n);
+        tallyValue(thiscount, n+1);
     }
     calculateSkew();
 }
