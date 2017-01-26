@@ -858,6 +858,7 @@ public:
     virtual typeid_t addSimpleType(type_t tc, const SimpleTypeBuilderInfo & info) = 0;
     virtual typeid_t addExprType(type_t tc, exprid_t expr) = 0;
     virtual typeid_t addCompoundType(type_t tc, const CompoundTypeBuilderInfo & info) = 0;
+    virtual typeid_t addClassType(const char * name) = 0;
     virtual typeid_t addUnknownType(type_t tc) = 0;
     virtual typeid_t addTypeAnnotation(typemod_t kind, const TypeAnnotationBuilderInfo & info) = 0;
 
@@ -1175,6 +1176,17 @@ public:
         startDefinition(def, "type");
         line.append(getTypeIRText(tc)).append("(");
         appendId(info.baseType).append(")");
+        finishDefinition(def);
+
+        return def.id;
+    }
+
+    virtual typeid_t addClassType(const char * name)
+    {
+        Definition def("t", nextId(), false);
+
+        startDefinition(def, "type");
+        line.append("class:").append(name);
         finishDefinition(def);
 
         return def.id;
@@ -1698,6 +1710,10 @@ public:
     {
         return 0;
     }
+    virtual typeid_t addClassType(const char * name)
+    {
+        return 0;
+    }
     virtual typeid_t addUnknownType(type_t tc)
     {
         return saveItem(makeNullType());
@@ -1896,10 +1912,11 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
         case type_ifblock:
         case type_alias:
         case type_blob:
-        case type_class:
         case type_array:
             throwUnexpected();
             break;
+        case type_class:
+            return target->addClassType(type->queryTypeName());
         default:
             UNIMPLEMENTED;
         }
