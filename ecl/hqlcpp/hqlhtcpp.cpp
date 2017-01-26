@@ -9221,7 +9221,7 @@ unsigned HqlCppTranslator::doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpressi
 
     OwnedHqlExpr idExpr = createConstant((__int64)thisId);
     ctx.associateExpr(expr, idExpr);
-    if (thisId == options.subgraphToRegeneate)
+    if (thisId == options.subgraphToRegenerate)
     {
         StringBuffer ecl;
         regenerateECL(expr, ecl);
