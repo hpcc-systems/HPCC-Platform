@@ -137,7 +137,16 @@ void sendRequest()
         printf("backEndResp: <%s>.\n", backEndResp);
 
         Sleep(5000); //Waiting for loggingManager to start
-        loggingManager->updateLog(option.str(), *espContext, userContextTree, userRequestTree, backEndResp, userRespXML.str(), logDatasetsXML.str(), status);
+        Owned<IEspLogEntry> entry = loggingManager->createLogEntry();
+        entry->setOption(option.str());
+        entry->setEspContext(espContext);
+        entry->setUserContextTree(userContextTree);
+        entry->setUserRequestTree(userRequestTree);
+        entry->setUserResp(userRespXML.str());
+        entry->setBackEndResp(backEndResp);
+        entry->setLogDatasets(logDatasetsXML.str());
+
+        loggingManager->updateLog(entry, status);
     }
     else if (action.length() && strieq(action.str(), "UpdateLog1"))
     {
@@ -157,7 +166,12 @@ void sendRequest()
         short servPort = logContentTree->getPropInt("ESPContext/Port");
         espContext->setUserID(userName);
         espContext->setServAddress(sourceIP, servPort);
-        loggingManager->updateLog(*espContext, option.str(), logContentXML.str(), status);
+
+        Owned<IEspLogEntry> entry = loggingManager->createLogEntry();
+        entry->setOption(option.str());
+        entry->setEspContext(espContext);
+        entry->setLogContent(logContentXML.str());
+        loggingManager->updateLog(entry, status);
     }
     else
         printf("Invalid action.\n");

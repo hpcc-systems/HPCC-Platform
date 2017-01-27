@@ -31,6 +31,43 @@
     #define LOGGINGMANAGER_API DECL_IMPORT
 #endif
 
+class CEspLogEntry : implements IEspLogEntry, public CInterface
+{
+    Owned<IEspContext> espContext;
+    StringAttr option, logContent, backEndResp, userResp, logDatasets;
+    Owned<IPropertyTree> userContextTree;
+    Owned<IPropertyTree> userRequestTree;
+    Owned<IPropertyTree> logInfoTree;
+    Owned<IInterface> extraLog;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CEspLogEntry(void) { };
+
+    void setEspContext(IEspContext* ctx) { espContext.setown(ctx); };
+    void setUserContextTree(IPropertyTree* tree) { userContextTree.setown(tree); };
+    void setUserRequestTree(IPropertyTree* tree) { userRequestTree.setown(tree); };
+    void setLogInfoTree(IPropertyTree* tree) { logInfoTree.setown(tree); };
+    void setExtraLog(IInterface* extra) { extraLog.setown(extra); };
+    void setOption(const char* ptr) { option.set(ptr); };
+    void setLogContent(const char* ptr) { logContent.set(ptr); };
+    void setBackEndResp(const char* ptr) { backEndResp.set(ptr); };
+    void setUserResp(const char* ptr) { userResp.set(ptr); };
+    void setLogDatasets(const char* ptr) { logDatasets.set(ptr); };
+
+    IEspContext* getEspContext() { return espContext; };
+    IPropertyTree* getUserContextTree() { return userContextTree; };
+    IPropertyTree* getUserRequestTree() { return userRequestTree; };
+    IPropertyTree* getLogInfoTree() { return logInfoTree; };
+    IInterface* getExtraLog() { return extraLog; };
+    const char* getOption() { return option.get(); };
+    const char* getLogContent() { return logContent.get(); };
+    const char* getBackEndResp() { return backEndResp.get(); };
+    const char* getUserResp() { return userResp.get(); };
+    const char* getLogDatasets() { return logDatasets.get(); };
+};
+
 
 class CLoggingManager : implements ILoggingManager, public CInterface
 {
@@ -39,7 +76,13 @@ class CLoggingManager : implements ILoggingManager, public CInterface
     bool initialized;
 
     IEspLogAgent* loadLoggingAgent(const char* name, const char* dll, const char* type, IPropertyTree* cfg);
-    bool updateLog(IEspContext& espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp, StringBuffer& status);
+    bool updateLogImpl(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
+
+    bool updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp, StringBuffer& status);
+    bool updateLog(IEspContext* espContext, const char* option, IPropertyTree* userContext, IPropertyTree* userRequest,
+        const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status);
+    bool updateLog(IEspContext* espContext, const char* option, const char* logContent, StringBuffer& status);
+    bool updateLog(IEspContext* espContext, const char* option, IPropertyTree* logInfo, IInterface* extraLog, StringBuffer& status);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -49,10 +92,9 @@ public:
 
     virtual bool init(IPropertyTree* cfg, const char* service);
 
-    virtual bool updateLog(const char* option, IEspContext& espContext, IPropertyTree* userContext, IPropertyTree* userRequest,
-        const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status);
-    virtual bool updateLog(IEspContext& espContext, const char* option, const char* logContent, StringBuffer& status);
-    virtual bool updateLog(IEspContext& espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
+    virtual IEspLogEntry* createLogEntry();
+    virtual bool updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
+    virtual bool updateLog(IEspLogEntry* entry, StringBuffer& status);
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status);
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
     virtual bool getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status);
