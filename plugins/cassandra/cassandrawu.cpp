@@ -3543,11 +3543,22 @@ public:
     }
     virtual unsigned numWorkUnits()
     {
-        CassandraStatement statement(prepareStatement("SELECT COUNT(*) FROM workunits;"));
-        CassandraFuture future(cass_session_execute(querySession(), statement));
-        future.wait("select count(*)");
-        CassandraResult result(cass_future_get_result(future));
-        return getUnsignedResult(NULL, getSingleResult(result));
+        unsigned total = 0;
+        CIArrayOf<CassandraFuture> futures;
+        for (int i = 0; i < NUM_PARTITIONS; i++)
+        {
+            CassandraStatement statement(prepareStatement("SELECT COUNT(*) FROM workunits where partition=?;"));
+            statement.bindInt32(0, i);
+            futures.append(*new CassandraFuture(cass_session_execute(querySession(), statement)));
+        }
+        ForEachItemIn(idx, futures)
+        {
+            CassandraFuture &future = futures.item(idx);
+            future.wait("select count(*)");
+            CassandraResult result(cass_future_get_result(future));
+            total += getUnsignedResult(NULL, getSingleResult(result));
+        }
+        return total;
     }
     /*
     virtual bool isAborting(const char *wuid) const - done in the base class using dali
