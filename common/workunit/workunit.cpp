@@ -2696,13 +2696,23 @@ void CWorkUnitFactory::reportAbnormalTermination(const char *wuid, WUState &stat
 }
 
 static CriticalSection deleteDllLock;
-static Owned<IWorkQueueThread> deleteDllWorkQ;
-
+static IWorkQueueThread *deleteDllWorkQ = nullptr;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    CriticalBlock b(deleteDllLock);
+    if (deleteDllWorkQ)
+        ::Release(deleteDllWorkQ);
+    deleteDllWorkQ = nullptr;
+}
 static void asyncRemoveDll(const char * name)
 {
     CriticalBlock b(deleteDllLock);
     if (!deleteDllWorkQ)
-        deleteDllWorkQ.setown(createWorkQueueThread());
+        deleteDllWorkQ = createWorkQueueThread();
     deleteDllWorkQ->post(new asyncRemoveDllWorkItem(name));
 }
 
@@ -2710,7 +2720,7 @@ static void asyncRemoveFile(const char * ip, const char * name)
 {
     CriticalBlock b(deleteDllLock);
     if (!deleteDllWorkQ)
-        deleteDllWorkQ.setown(createWorkQueueThread());
+        deleteDllWorkQ = createWorkQueueThread();
     deleteDllWorkQ->post(new asyncRemoveRemoteFileWorkItem(ip, name));
 }
 

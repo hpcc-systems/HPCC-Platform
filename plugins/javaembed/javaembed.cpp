@@ -165,6 +165,7 @@ public:
         vm_args.options = options;
         vm_args.ignoreUnrecognized = true;
         vm_args.version = JNI_VERSION_1_6;
+
         /* load and initialize a Java VM, return a JNI interface pointer in env */
         JNIEnv *env;       /* receives pointer to native method interface */
         int createResult = JNI_CreateJavaVM(&javaVM, (void**)&env, &vm_args);
@@ -1554,6 +1555,22 @@ public:
         }
     }
 
+    bool checkException(StringBuffer &message)
+    {
+        if (JNIenv->ExceptionCheck())
+        {
+            jthrowable exception = JNIenv->ExceptionOccurred();
+            JNIenv->ExceptionClear();
+            jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
+            jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
+            jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
+            const char *text = JNIenv->GetStringUTFChars(cause, 0);
+            message.append(text);
+            JNIenv->ReleaseStringUTFChars(cause, text);
+            return true;
+        }
+        return false;
+    }
     jobject getSystemClassLoader()
     {
         JNIenv->ExceptionClear();
@@ -1698,16 +1715,18 @@ public:
             jobject classLoader = getThreadClassLoader();
             jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
             jstring methodString = JNIenv->NewStringUTF(classname);
-            javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString));
+            javaClass = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString);
+            StringBuffer message;
+            if (checkException(message) || !javaClass)
+                throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve class name %s: %s", classname.str(), message.str());
+            javaClass = (jclass) JNIenv->NewGlobalRef(javaClass);
 
-            if (!javaClass)
-                throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve class name %s", classname.str());
             if (instance)
                 javaMethodID = JNIenv->GetMethodID(javaClass, methodname, javaSignature);
             else
                 javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodname, javaSignature);
-            if (!javaMethodID)
-                throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve method name %s with signature %s", methodname.str(), signature);
+            if (checkException(message) || !javaMethodID)
+                throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve method name %s with signature %s: %s", methodname.str(), signature, message.str());
             const char *returnSig = strrchr(signature, ')');
             assertex(returnSig);  // Otherwise how did Java accept it??
             returnSig++;

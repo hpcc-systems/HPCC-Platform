@@ -26,6 +26,7 @@ ESPStruct MethodConfig
     string Name;
     ESParray<ESPstruct NamedValue, Attribute> Attributes;
     string Elements;
+    string XML;
 };
 
 ESPStruct ESDLConfiguration

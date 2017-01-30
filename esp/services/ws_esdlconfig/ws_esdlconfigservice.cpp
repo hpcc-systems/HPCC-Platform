@@ -1393,12 +1393,17 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
                         }
                     }
 
+                    StringBuffer methodconfigxml;
                     Owned<IPropertyTreeIterator> iter = esdlbindingtree->getElements("Definition[1]/Methods/Method");
                     ForEach(*iter)
                     {
                         Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
 
                         IPropertyTree & cur = iter->query();
+                        toXML(&cur, methodconfigxml.clear());
+                        if (methodconfigxml.length())
+                            methodconfig->setXML(methodconfigxml);
+
                         IArrayOf<IEspNamedValue> iespattributes;
                         Owned<IAttributeIterator> attributes = cur.getAttributes();
                         ForEach(*attributes)
