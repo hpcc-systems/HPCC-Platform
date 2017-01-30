@@ -478,6 +478,7 @@ class WuTool : public CppUnit::TestFixture
         CPPUNIT_TEST(testListByAppValueWild);
         CPPUNIT_TEST(testListByFilesRead);
         CPPUNIT_TEST(testListByFilesWritten);
+        CPPUNIT_TEST(testSortByThorTime);
         CPPUNIT_TEST(testSet);
         CPPUNIT_TEST(testResults);
         CPPUNIT_TEST(testWorkUnitServices);
@@ -487,7 +488,6 @@ class WuTool : public CppUnit::TestFixture
         CPPUNIT_TEST(testGraph);
         CPPUNIT_TEST(testGraphProgress);
         CPPUNIT_TEST(testGlobal); 
-        CPPUNIT_TEST(testSortByThorTime);
     CPPUNIT_TEST_SUITE_END();
 protected:
     static StringArray wuids;
@@ -697,6 +697,7 @@ protected:
                 "    AQAAAAAAAAA=   </Value>"
                 "  </Result>"
                 " </Results>"
+                " <State>completed</State>"
                 " <Statistics>"
                 "  <Statistic c='eclcc'"
                 "             count='1'"
@@ -786,7 +787,8 @@ protected:
         // This is complicated by the fact that the order is not preserved for statistics
         sortStatistics(xml2);
         sortStatistics(xml3);
-
+        if (wu->getState() != WUStateCompleted)
+            DBGLOG("Not completed");
         DBGLOG("Comparing xml2 and xml3");
         checkStringsMatch(xml2, xml3);
 
@@ -809,6 +811,11 @@ protected:
         p1->removeProp("Variables/Variable[@name='one']/rowCount");
         p1->removeProp("Variables/Variable[@name='one']/totalRowCount");
         p1->removeProp("Variables/Variable[@name='one']/Value");
+        // Checking that results were reset by the copy
+        p1->setProp("Results/Result[@name='Result 1']/@status", "undefined");
+        p1->removeProp("Results/Result[@name='Result 1']/rowCount");
+        p1->removeProp("Results/Result[@name='Result 1']/totalRowCount");
+        p1->removeProp("Results/Result[@name='Result 1']/Value");
         // Checking that workflow was reset by the copy
         p1->setProp("Workflow/Item[@wfid='1']/@state", "null");
         p1->setProp("Workflow/Item[@wfid='2']/@state", "null");
@@ -833,7 +840,7 @@ protected:
             query->setQueryName("qname");
             query->setQueryMainDefinition("fred");
             query->setQueryType(QueryTypeEcl);
-            query->addAssociatedFile(FileTypeCpp, "myfile", "1.2.3.4", "Description", 53, 3, 4);
+            query->addAssociatedFile(FileTypeCpp, "myfile", "nosuchurl.co.ggg", "Description", 53, 3, 4);
             createWu->setState(WUStateCompleted);
             createWu.clear();
         }
@@ -855,7 +862,7 @@ protected:
         ASSERT(file->getType()==FileTypeCpp);
         ASSERT(file->getMinActivityId()==3);
         ASSERT(file->getMaxActivityId()==4);
-        ASSERT(streq(file->getIp(s).str(), "1.2.3.4"));
+        ASSERT(streq(file->getIp(s).str(), "nosuchurl.co.ggg"));
         query.clear();
         wu.clear();
 
@@ -1665,7 +1672,7 @@ protected:
             numIterated++;
         }
         DBGLOG("%d workunits by totalThorTime in %d ms", numIterated, msTick()-start);
-        ASSERT(numIterated == (testSize+9)/10);
+        ASSERT(numIterated == testSize);
         numIterated++;
     }
     void testGlobal()
@@ -1804,6 +1811,8 @@ protected:
             virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) { throwUnexpected(); }
         } ctx;
 
+ #if 0
+        // These tests are not valid at present, since the C++ structure does not accurately describe the variable layout fields
         size32_t lenResult;
         void * result;
         wsWorkunitList(&ctx, lenResult, result, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL);
@@ -1857,6 +1866,7 @@ protected:
         ASSERT(numResults <= (testSize+49)/50);  // Not sure what the exact answer should be!
 
         rtlFree(result);
+#endif
     }
 };
 StringArray WuTool::wuids;

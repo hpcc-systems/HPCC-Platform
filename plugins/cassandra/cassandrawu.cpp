@@ -2697,6 +2697,10 @@ public:
         CriticalBlock b(crit);
         for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             checkChildLoaded(**table);
+        // And a hack for the fact that Dali stores state in both @state and <state>
+        const char *stateStr = p->queryProp("@state");
+        if (stateStr)
+            p->setProp("State", stateStr);
         return p;
     }
 
