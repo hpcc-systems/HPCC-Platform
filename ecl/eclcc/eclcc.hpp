@@ -124,6 +124,7 @@ const char * const helpText[] = {
     "?!  -fshowMetaInGraph       Add distribution/sort orders to the graph",
     "?!  -fshowRecordCountInGraph  Show estimates of record counts in the graph",
     "?!  -fspanMultipleCpp       Generate a work unit in multiple c++ files",
+    "?!  -fsubgraphToRegenerate=n Regenerate the ECL for a particular subgraph",
     "",
 };
 
