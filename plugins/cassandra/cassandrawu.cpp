@@ -984,7 +984,7 @@ static const CassandraXmlMapping wuQueryMappings [] =
     {"attributes", "map<text, text>", "", attributeMapColumnMapper},
     {"query", "text", "Text", stringColumnMapper}, // May want to make this even lazier...
     {"shortQuery", "text", "ShortText", stringColumnMapper},
-    { NULL, "wuQueries", "((partition, wuid))", stringColumnMapper}
+    { NULL, "wuQueries", "((partition), wuid)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuQueriesTable =
@@ -1003,7 +1003,7 @@ static const CassandraXmlMapping wuExceptionsMappings [] =
     {"sequence", "int", "@sequence", intColumnMapper},
     {"attributes", "map<text, text>", "", attributeMapColumnMapper},
     {"value", "text", ".", stringColumnMapper},
-    { NULL, "wuExceptions", "((partition, wuid), sequence)", stringColumnMapper}
+    { NULL, "wuExceptions", "((partition), wuid, sequence)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuExceptionsTable =
@@ -1022,7 +1022,7 @@ static const CassandraXmlMapping wuStatisticsMappings [] =
     {"creator", "text", "@creator", stringColumnMapper},
     {"scope", "text", "@scope", stringColumnMapper},
     {"attributes", "map<text, text>", "@ts@kind@creator@scope@", attributeMapColumnMapper},
-    { NULL, "wuStatistics", "((partition, wuid), ts, kind, creator, scope)", stringColumnMapper}
+    { NULL, "wuStatistics", "((partition), wuid, ts, kind, creator, scope)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuStatisticsTable =
@@ -1039,7 +1039,7 @@ static const CassandraXmlMapping wuGraphsMappings [] =
     {"name", "text", "@name", stringColumnMapper},
     {"attributes", "map<text, text>", "@name@", attributeMapColumnMapper},
     {"xgmml", "blob", "xgmml", compressTreeColumnMapper},
-    { NULL, "wuGraphs", "((partition, wuid), name)", stringColumnMapper}  // Note - we do occasionally search by type - but that is done in a postfilter having preloaded/cached all
+    { NULL, "wuGraphs", "((partition), wuid, name)", stringColumnMapper}  // Note - we do occasionally search by type - but that is done in a postfilter having preloaded/cached all
 };
 
 static const ChildTableInfo wuGraphsTable =
@@ -1057,7 +1057,7 @@ static const CassandraXmlMapping wuGraphMetasMappings [] =
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"name", "text", "@name", stringColumnMapper},
     {"attributes", "map<text, text>", "@name@", attributeMapColumnMapper},
-    { NULL, "wuGraphs", "((partition, wuid), name)", stringColumnMapper}
+    { NULL, "wuGraphs", "((partition), wuid, name)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuGraphMetasTable =
@@ -1084,7 +1084,7 @@ static const ChildTableInfo wuGraphMetasTable =
 static const CassandraXmlMapping wuResultsMappings [] =
 {
     resultTableFields,
-    { NULL, "wuResults", "((partition, wuid), sequence)", stringColumnMapper}
+    { NULL, "wuResults", "((partition), wuid, sequence)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuResultsTable =
@@ -1100,7 +1100,7 @@ static const CassandraXmlMapping wuVariablesMappings [] =
 {
     resultTableFields,
     {"xmlValue", "text", "xmlValue", stringColumnMapper},
-    { NULL, "wuVariables", "((partition, wuid), sequence, name)", stringColumnMapper}
+    { NULL, "wuVariables", "((partition), wuid, sequence, name)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuVariablesTable =
@@ -1115,7 +1115,7 @@ static const ChildTableInfo wuVariablesTable =
 static const CassandraXmlMapping wuTemporariesMappings [] =
 {
     resultTableFields,
-    { NULL, "wuTemporaries", "((partition, wuid), sequence, name)", stringColumnMapper}
+    { NULL, "wuTemporaries", "((partition), wuid, sequence, name)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuTemporariesTable =
@@ -1132,7 +1132,7 @@ static const CassandraXmlMapping wuFilesReadMappings [] =
     {"name", "text", "@name", stringColumnMapper},
     {"attributes", "map<text, text>", "@name@", attributeMapColumnMapper},  /* name is the suppression list */
     {"subfiles", "list<text>", NULL, subfileListColumnMapper},
-    { NULL, "wuFilesRead", "((partition, wuid), name)", stringColumnMapper}
+    { NULL, "wuFilesRead", "((partition), wuid, name)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuFilesReadTable =
@@ -1148,7 +1148,7 @@ static const CassandraXmlMapping wuFilesWrittenMappings [] =
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"name", "text", "@name", stringColumnMapper},
     {"attributes", "map<text, text>", "@name@", attributeMapColumnMapper},  /* name is the suppression list */
-    { NULL, "wuFilesWritten", "((partition, wuid), name)", stringColumnMapper}
+    { NULL, "wuFilesWritten", "((partition), wuid, name)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuFilesWrittenTable =
@@ -1167,7 +1167,7 @@ static const CassandraXmlMapping wuFieldUsageMappings [] =
     {"numFields", "int", "@numFields", intColumnMapper},
     {"numFieldsUsed", "int", "@numFieldsUsed", intColumnMapper},
     {"fields", "map<text, text>", "fields", usedFieldsMapColumnMapper},
-    { NULL, "wuFieldUsage", "((partition, wuid), name)", stringColumnMapper}
+    { NULL, "wuFieldUsage", "((partition), wuid, name)", stringColumnMapper}
 };
 
 static const ChildTableInfo wuFieldUsageTable =
@@ -1190,7 +1190,7 @@ static const CassandraXmlMapping wuGraphProgressMappings [] =
     {"subgraphID", "bigint", NULL, bigintColumnMapper},
     {"creator", "text", NULL, stringColumnMapper},
     {"progress", "blob", NULL, blobColumnMapper},
-    { NULL, "wuGraphProgress", "((partition, wuid), graphID, subgraphID, creator)", stringColumnMapper}
+    { NULL, "wuGraphProgress", "((partition), wuid, graphID, subgraphID, creator)", stringColumnMapper}
 };
 
 static const CassandraXmlMapping wuGraphStateMappings [] =
@@ -1200,7 +1200,7 @@ static const CassandraXmlMapping wuGraphStateMappings [] =
     {"graphID", "text", NULL, stringColumnMapper},
     {"subgraphID", "bigint", NULL, bigintColumnMapper},
     {"state", "int", NULL, intColumnMapper},
-    { NULL, "wuGraphState", "((partition, wuid), graphID, subgraphID)", stringColumnMapper}
+    { NULL, "wuGraphState", "((partition), wuid, graphID, subgraphID)", stringColumnMapper}
 };
 
 static const CassandraXmlMapping wuGraphRunningMappings [] =
@@ -1209,13 +1209,15 @@ static const CassandraXmlMapping wuGraphRunningMappings [] =
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"graphID", "text", NULL, stringColumnMapper},
     {"subgraphID", "bigint", NULL, bigintColumnMapper},
-    { NULL, "wuGraphRunning", "((partition, wuid))", stringColumnMapper}
+    { NULL, "wuGraphRunning", "((partition), wuid)", stringColumnMapper}
 };
 
 interface ICassandraSession : public IInterface  // MORE - rename!
 {
     virtual CassSession *querySession() const = 0;
     virtual CassandraPrepared *prepareStatement(const char *query) const = 0;
+    virtual void executeAsync(CIArrayOf<CassandraStatement> &batch, const char *what) const = 0;
+
     virtual unsigned queryTraceLevel() const = 0;
 
     virtual const CassResult *fetchDataForWuid(const CassandraXmlMapping *mappings, const char *wuid, bool includeWuid) const = 0;
@@ -1291,7 +1293,7 @@ const CassResult *executeQuery(CassSession *session, CassStatement *statement)
     return cass_future_get_result(future);
 }
 
-void deleteSecondaryByKey(const char * xpath, const char *key, const char *wuid, const ICassandraSession *sessionCache, CassBatch *batch)
+void deleteSecondaryByKey(const char * xpath, const char *key, const char *wuid, const ICassandraSession *sessionCache, CIArrayOf<CassandraStatement> &batch)
 {
     if (key)
     {
@@ -1301,12 +1303,12 @@ void deleteSecondaryByKey(const char * xpath, const char *key, const char *wuid,
         StringBuffer tableName;
         getFieldNames(searchMappings, names, tableName);
         VStringBuffer deleteQuery("DELETE from %s where xpath=? and fieldPrefix=? and fieldValue=? and wuid=?;", tableName.str());
-        CassandraStatement update(sessionCache->prepareStatement(deleteQuery));
+        CassandraStatement &update = *new CassandraStatement(sessionCache->prepareStatement(deleteQuery));
         update.bindString(0, xpath);
         update.bindString_n(1, ucKey, CASS_SEARCH_PREFIX_SIZE);
         update.bindString(2, ucKey);
         update.bindString(3, wuid);
-        check(cass_batch_add_statement(batch, update));
+        batch.append(update);
     }
 }
 
@@ -1341,48 +1343,66 @@ extern void simpleXMLtoCassandra(const ICassandraSession *session, CassBatch *ba
     check(cass_batch_add_statement(batch, update));
 }
 
-extern void deleteFileSearch(const ICassandraSession *session, CassBatch *batch, const char *name, bool read, const char *wuid)
+extern void simpleXMLtoCassandra(const ICassandraSession *session, CIArrayOf<CassandraStatement> &batch, const CassandraXmlMapping *mappings, IPTree *inXML, const char *userVal = NULL)
+{
+    StringBuffer names;
+    StringBuffer bindings;
+    StringBuffer tableName;
+    getBoundFieldNames(mappings, names, bindings, inXML, userVal, tableName);
+    VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
+    CassandraStatement &update = *new CassandraStatement(session->prepareStatement(insertQuery));
+    unsigned bindidx = 0;
+    while (mappings->columnName)
+    {
+        if (mappings->mapper.fromXML(&update, bindidx, inXML, mappings->xpath, userVal))
+            bindidx++;
+        mappings++;
+    }
+    batch.append(update);
+}
+
+extern void deleteFileSearch(const ICassandraSession *session, CIArrayOf<CassandraStatement> &batch, const char *name, bool read, const char *wuid)
 {
     StringBuffer names;
     StringBuffer tableName;
     getFieldNames(filesSearchMappings, names, tableName);
     VStringBuffer deleteQuery("DELETE from %s where name=? and read=? and wuid=?", tableName.str());
-    CassandraStatement update(session->prepareStatement(deleteQuery));
+    CassandraStatement &update = *new CassandraStatement(session->prepareStatement(deleteQuery));
     update.bindString(0, name);
     update.bindBool(1, read ? cass_true : cass_false);
     update.bindString(2, wuid);
-    check(cass_batch_add_statement(batch, update));
+    batch.append(update);
 }
 
-extern void addFileSearch(const ICassandraSession *session, CassBatch *batch, const char *name, bool read, const char *wuid)
+extern void addFileSearch(const ICassandraSession *session, CIArrayOf<CassandraStatement> &batch, const char *name, bool read, const char *wuid)
 {
     StringBuffer bindings;
     StringBuffer names;
     StringBuffer tableName;
     getBoundFieldNames(filesSearchMappings, names, bindings, NULL, NULL, tableName);
     VStringBuffer insertQuery("INSERT INTO %s (%s) values (%s)", tableName.str(), names.str()+1, bindings.str()+1);
-    CassandraStatement update(session->prepareStatement(insertQuery));
+    CassandraStatement &update = *new CassandraStatement(session->prepareStatement(insertQuery));
     update.bindString(0, name);
     update.bindBool(1, read ? cass_true : cass_false);
     update.bindString(2, wuid);
-    check(cass_batch_add_statement(batch, update));
+    batch.append(update);
 }
 
-extern void addUniqueValue(const ICassandraSession *session, CassBatch *batch, const char *xpath, const char *value)
+extern void addUniqueValue(const ICassandraSession *session, CIArrayOf<CassandraStatement> &batch, const char *xpath, const char *value)
 {
     StringBuffer bindings;
     StringBuffer names;
     StringBuffer tableName;
     getBoundFieldNames(uniqueSearchMappings, names, bindings, NULL, NULL, tableName);
     VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
-    CassandraStatement update(session->prepareStatement(insertQuery));
+    CassandraStatement &update = *new CassandraStatement(session->prepareStatement(insertQuery));
     update.bindString(0, xpath);
     StringBuffer ucValue(value);
     ucValue.toUpperCase();
     update.bindString_n(1, ucValue, CASS_SEARCH_PREFIX_SIZE);
     update.bindString(2, ucValue);
     update.bindString(3, value);
-    check(cass_batch_add_statement(batch, update));
+    batch.append(update);
 }
 
 extern void childXMLRowtoCassandra(const ICassandraSession *session, CassBatch *batch, const CassandraXmlMapping *mappings, const char *wuid, IPTree &row, const char *userVal)
@@ -2121,6 +2141,7 @@ static void lockWuid(Owned<IRemoteConnection> &connection, const char *wuid)
         throw makeStringExceptionV(WUERR_LockFailed, "Failed to get connection for xpath %s", wuRoot.str());
 }
 
+
 class CCassandraWorkUnit : public CPersistedWorkUnit
 {
 public:
@@ -2129,8 +2150,6 @@ public:
     {
         CPersistedWorkUnit::loadPTree(wuXML);
         memset(childLoaded, 0, sizeof(childLoaded));
-        if (daliLock)
-            createBatch();
         actionChanged = false;
         stateChanged = false;
         abortDirty = false;
@@ -2150,24 +2169,40 @@ public:
         abortDirty = true;
     }
 
+    void executeBatch(CassandraBatch &batch, const char * what) const
+    {
+        if (sessionCache->queryTraceLevel() > 1)
+            DBGLOG("Executing batch %s", what);
+        batch.execute(sessionCache->querySession(), what);
+    }
+    void executeAsync(CIArrayOf<CassandraStatement> &batch, const char * what) const
+    {
+        if (sessionCache->queryTraceLevel() > 1)
+            DBGLOG("Executing async batch %s (%d elements)", what, batch.length());
+        sessionCache->executeAsync(batch, what);
+    }
     virtual void cleanupAndDelete(bool deldll, bool deleteOwned, const StringArray *deleteExclusions)
     {
         const char *wuid = queryWuid();
         CPersistedWorkUnit::cleanupAndDelete(deldll, deleteOwned, deleteExclusions);
-        if (!batch)
-            batch.setown(new CassandraBatch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED)));
-        deleteChildren(wuid);
-        deleteSecondaries(wuid);
-        sessionCache->deleteChildByWuid(wuGraphProgressMappings, wuid, *batch);
-        sessionCache->deleteChildByWuid(wuGraphStateMappings, wuid, *batch);
-        sessionCache->deleteChildByWuid(wuGraphRunningMappings, wuid, *batch);
+        // Note we need to gather the information about what secondaries to delete before we delete the parent/children,
+        // but we actually do the deletion afterwards
+        CIArrayOf<CassandraStatement> deleteSearches;
+        deleteSecondaries(wuid, deleteSearches);
+
+        CassandraBatch main(CASS_BATCH_TYPE_UNLOGGED);
+        deleteChildren(wuid, main);
+        sessionCache->deleteChildByWuid(wuGraphProgressMappings, wuid, main);
+        sessionCache->deleteChildByWuid(wuGraphStateMappings, wuid, main);
+        sessionCache->deleteChildByWuid(wuGraphRunningMappings, wuid, main);
+        // If the partitioning of the main workunits table does not match the partitioning of the other tables, then would be better to
+        // execute the deletes of the child tables and the main record as two separate batches.
         CassandraStatement update(sessionCache->prepareStatement("DELETE from workunits where partition=? and wuid=?;"));
         update.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
         update.bindString(1, wuid);
-        check(cass_batch_add_statement(*batch, update));
-        CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), *batch));
-        futureBatch.wait("execute");
-        batch.clear();
+        check(cass_batch_add_statement(main, update));
+        executeBatch(main, "delete wu");
+        executeAsync(deleteSearches, "delete wu");
     }
 
     virtual void commit()
@@ -2177,110 +2212,107 @@ public:
         {
             StringBuffer s; toXML(p, s); DBGLOG("CCassandraWorkUnit::commit\n%s", s.str());
         }
-        if (batch)
+        CIArrayOf<CassandraStatement> secondaryBatch;
+        CassandraBatch batch(CASS_BATCH_TYPE_UNLOGGED);
+        const char *wuid = queryWuid();
+        bool isGlobal = streq(wuid, GLOBAL_WORKUNIT);
+        if (!isGlobal) // Global workunit only has child rows, no parent
         {
-            const char *wuid = queryWuid();
-            bool isGlobal = streq(wuid, GLOBAL_WORKUNIT);
-            if (!isGlobal) // Global workunit only has child rows, no parent
-            {
-                if (prev) // Holds the values of the "basic" info at the last commit
-                    updateSecondaries(wuid);
-                simpleXMLtoCassandra(sessionCache, *batch, workunitsMappings, p);  // This just does the parent row
-            }
-            if (allDirty && !isGlobal)
-            {
-                // MORE - this delete is technically correct, but if we assert that the only place that copyWorkUnit is used is to populate an
-                // empty newly-created WU, it is unnecessary.
-                //deleteChildren(wuid);
+            if (prev) // Holds the values of the "basic" info at the last commit
+                updateSecondaries(wuid, secondaryBatch);
+            simpleXMLtoCassandra(sessionCache, batch, workunitsMappings, p);  // This just does the parent row
+        }
+        if (allDirty && !isGlobal)
+        {
+            // MORE - this delete is technically correct, but if we assert that the only place that copyWorkUnit is used is to populate an
+            // empty newly-created WU, it is unnecessary.
+            //deleteChildren(wuid);
 
-                // MORE can use the table?
-                childXMLtoCassandra(sessionCache, *batch, wuGraphsMappings, p, "Graphs/Graph", 0);
-                childXMLtoCassandra(sessionCache, *batch, wuResultsMappings, p, "Results/Result", "0");
-                childXMLtoCassandra(sessionCache, *batch, wuVariablesMappings, p, "Variables/Variable", "-1"); // ResultSequenceStored
-                childXMLtoCassandra(sessionCache, *batch, wuTemporariesMappings, p, "Temporaries/Variable", "-3"); // ResultSequenceInternal // NOTE - lookups may also request ResultSequenceOnce
-                childXMLtoCassandra(sessionCache, *batch, wuExceptionsMappings, p, "Exceptions/Exception", 0);
-                childXMLtoCassandra(sessionCache, *batch, wuStatisticsMappings, p, "Statistics/Statistic", 0);
-                childXMLtoCassandra(sessionCache, *batch, wuFilesReadMappings, p, "FilesRead/File", 0);
-                childXMLtoCassandra(sessionCache, *batch, wuFilesWrittenMappings, p, "Files/File", 0);
-                childXMLtoCassandra(sessionCache, *batch, wuFieldUsageMappings, p, "usedsources/datasource", 0);
+            // MORE can use the table?
+            childXMLtoCassandra(sessionCache, batch, wuGraphsMappings, p, "Graphs/Graph", 0);
+            childXMLtoCassandra(sessionCache, batch, wuResultsMappings, p, "Results/Result", "0");
+            childXMLtoCassandra(sessionCache, batch, wuVariablesMappings, p, "Variables/Variable", "-1"); // ResultSequenceStored
+            childXMLtoCassandra(sessionCache, batch, wuTemporariesMappings, p, "Temporaries/Variable", "-3"); // ResultSequenceInternal // NOTE - lookups may also request ResultSequenceOnce
+            childXMLtoCassandra(sessionCache, batch, wuExceptionsMappings, p, "Exceptions/Exception", 0);
+            childXMLtoCassandra(sessionCache, batch, wuStatisticsMappings, p, "Statistics/Statistic", 0);
+            childXMLtoCassandra(sessionCache, batch, wuFilesReadMappings, p, "FilesRead/File", 0);
+            childXMLtoCassandra(sessionCache, batch, wuFilesWrittenMappings, p, "Files/File", 0);
+            childXMLtoCassandra(sessionCache, batch, wuFieldUsageMappings, p, "usedsources/datasource", 0);
 
-                IPTree *query = p->queryPropTree("Query");
-                if (query)
-                    childXMLRowtoCassandra(sessionCache, *batch, wuQueryMappings, wuid, *query, 0);
-            }
-            else
-            {
-                HashIterator iter(dirtyPaths);
-                ForEach (iter)
-                {
-                    const char *path = (const char *) iter.query().getKey();
-                    const CassandraXmlMapping *table = *dirtyPaths.mapToValue(&iter.query());
-                    if (sessionCache->queryTraceLevel()>2)
-                        DBGLOG("Updating dirty path %s", path);
-                    if (*path == '*')
-                    {
-                        sessionCache->deleteChildByWuid(table, wuid, *batch);
-                        childXMLtoCassandra(sessionCache, *batch, table, p, path+1, 0);
-                    }
-                    else
-                    {
-                        IPTree *dirty = p->queryPropTree(path);
-                        if (dirty)
-                            childXMLRowtoCassandra(sessionCache, *batch, table, wuid, *dirty, 0);
-                        else if (sessionCache->queryTraceLevel())
-                        {
-                            StringBuffer xml;
-                            toXML(p, xml);
-                            DBGLOG("Missing dirty element %s in %s", path, xml.str());
-                        }
-                    }
-                }
-                ForEachItemIn(d, dirtyResults)
-                {
-                    IWUResult &result = dirtyResults.item(d);
-                    switch (result.getResultSequence())
-                    {
-                    case ResultSequenceStored:
-                        childXMLRowtoCassandra(sessionCache, *batch, wuVariablesMappings,  wuid, *result.queryPTree(), "-1");
-                        break;
-                    case ResultSequenceInternal:
-                    case ResultSequenceOnce:
-                        childXMLRowtoCassandra(sessionCache, *batch, wuTemporariesMappings,  wuid, *result.queryPTree(), "-3");
-                        break;
-                    default:
-                        childXMLRowtoCassandra(sessionCache, *batch, wuResultsMappings, wuid, *result.queryPTree(), "0");
-                        break;
-                    }
-                }
-            }
-            if (sessionCache->queryTraceLevel() > 1)
-                DBGLOG("Executing batch");
-            CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), *batch));
-            futureBatch.wait("execute");
-            if (stateChanged)
-            {
-                // Signal changes to state to anyone that might be watching via Dali
-                VStringBuffer xpath("/WorkUnitStates/%s/State", wuid);
-                Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
-                conn->queryRoot()->setProp(NULL, p->queryProp("@state"));
-            }
-            if (actionChanged)
-            {
-                // Signal changes to action to anyone that might be watching via Dali
-                VStringBuffer xpath("/WorkUnitStates/%s/Action", wuid);
-                Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
-                conn->queryRoot()->setProp(NULL, p->queryProp("Action"));
-            }
-            batch.setown(new CassandraBatch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED))); // Commit leaves it locked...
-            prev.clear();
-            allDirty = false;
-            stateChanged = false;
-            actionChanged = false;
-            dirtyPaths.kill();
-            dirtyResults.kill();
+            IPTree *query = p->queryPropTree("Query");
+            if (query)
+                childXMLRowtoCassandra(sessionCache, batch, wuQueryMappings, wuid, *query, 0);
         }
         else
-            DBGLOG("No batch present??");
+        {
+            HashIterator iter(dirtyPaths);
+            ForEach (iter)
+            {
+                const char *path = (const char *) iter.query().getKey();
+                const CassandraXmlMapping *table = *dirtyPaths.mapToValue(&iter.query());
+                if (sessionCache->queryTraceLevel()>2)
+                    DBGLOG("Updating dirty path %s", path);
+                if (*path == '*')
+                {
+                    sessionCache->deleteChildByWuid(table, wuid, batch);
+                    childXMLtoCassandra(sessionCache, batch, table, p, path+1, 0);
+                }
+                else
+                {
+                    IPTree *dirty = p->queryPropTree(path);
+                    if (dirty)
+                        childXMLRowtoCassandra(sessionCache, batch, table, wuid, *dirty, 0);
+                    else if (sessionCache->queryTraceLevel())
+                    {
+                        StringBuffer xml;
+                        toXML(p, xml);
+                        DBGLOG("Missing dirty element %s in %s", path, xml.str());
+                    }
+                }
+            }
+            ForEachItemIn(d, dirtyResults)
+            {
+                IWUResult &result = dirtyResults.item(d);
+                switch (result.getResultSequence())
+                {
+                case ResultSequenceStored:
+                    childXMLRowtoCassandra(sessionCache, batch, wuVariablesMappings,  wuid, *result.queryPTree(), "-1");
+                    break;
+                case ResultSequenceInternal:
+                case ResultSequenceOnce:
+                    childXMLRowtoCassandra(sessionCache, batch, wuTemporariesMappings,  wuid, *result.queryPTree(), "-3");
+                    break;
+                default:
+                    childXMLRowtoCassandra(sessionCache, batch, wuResultsMappings, wuid, *result.queryPTree(), "0");
+                    break;
+                }
+            }
+        }
+        if (sessionCache->queryTraceLevel() > 1)
+            DBGLOG("Executing batch");
+        CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), batch));
+        futureBatch.wait("commit");
+        executeAsync(secondaryBatch, "commit");
+        if (stateChanged)
+        {
+            // Signal changes to state to anyone that might be watching via Dali
+            VStringBuffer xpath("/WorkUnitStates/%s/State", wuid);
+            Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
+            conn->queryRoot()->setProp(NULL, p->queryProp("@state"));
+        }
+        if (actionChanged)
+        {
+            // Signal changes to action to anyone that might be watching via Dali
+            VStringBuffer xpath("/WorkUnitStates/%s/Action", wuid);
+            Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
+            conn->queryRoot()->setProp(NULL, p->queryProp("Action"));
+        }
+        prev.clear();
+        allDirty = false;
+        stateChanged = false;
+        actionChanged = false;
+        dirtyPaths.kill();
+        dirtyResults.kill();
     }
     virtual IConstWUGraph *getGraph(const char *qname) const
     {
@@ -2361,13 +2393,11 @@ public:
     virtual void _lockRemote()
     {
         lockWuid(daliLock, queryWuid());
-        createBatch();
     }
 
     virtual void _unlockRemote()
     {
         commit();
-        batch.clear();
         if (daliLock)
         {
             daliLock->close(true);
@@ -2467,12 +2497,11 @@ public:
     virtual void clearGraphProgress() const
     {
         const char *wuid = queryWuid();
-        CassandraBatch batch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED));
+        CassandraBatch batch(CASS_BATCH_TYPE_UNLOGGED);
         sessionCache->deleteChildByWuid(wuGraphProgressMappings, wuid, batch);
         sessionCache->deleteChildByWuid(wuGraphStateMappings, wuid, batch);
         sessionCache->deleteChildByWuid(wuGraphRunningMappings, wuid, batch);
-        CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), batch));
-        futureBatch.wait("clearGraphProgress");
+        executeBatch(batch, "clearGraphProgress");
     }
     virtual bool getRunningGraph(IStringVal &graphName, WUGraphIDType &subId) const
     {
@@ -2796,17 +2825,11 @@ public:
         return progress.getClear();
     }
 protected:
-    void createBatch()
-    {
-        if (sessionCache->queryTraceLevel() > 1)
-            DBGLOG("Creating batch");
-        batch.setown(new CassandraBatch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED)));
-    }
     // Delete child table rows
-    void deleteChildren(const char *wuid)
+    void deleteChildren(const char *wuid, CassBatch *useBatch)
     {
         for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
-            sessionCache->deleteChildByWuid(table[0]->mappings, wuid, *batch);
+            sessionCache->deleteChildByWuid(table[0]->mappings, wuid, useBatch);
     }
 
     // Lazy-populate a portion of WU xml from a child table
@@ -2868,16 +2891,16 @@ protected:
 
     // Update secondary tables (used to search wuids by owner, state, jobname etc)
 
-    void updateSecondaryTable(const char *xpath, const char *prevKey, const char *wuid)
+    void updateSecondaryTable(const char *xpath, const char *prevKey, const char *wuid, CIArrayOf<CassandraStatement> &batch)
     {
         if (prevKey && *prevKey)
-            deleteSecondaryByKey(xpath, prevKey, wuid, sessionCache, *batch);
+            deleteSecondaryByKey(xpath, prevKey, wuid, sessionCache, batch);
         const char *value = p->queryProp(xpath);
         if (value && *value)
-            simpleXMLtoCassandra(sessionCache, *batch, searchMappings, p, xpath);
+            simpleXMLtoCassandra(sessionCache, batch, searchMappings, p, xpath);
     }
 
-    void deleteAppSecondaries(IPTree &pt, const char *wuid)
+    void deleteAppSecondaries(IPTree &pt, const char *wuid, CIArrayOf<CassandraStatement> &batch)
     {
         Owned<IPTreeIterator> apps = pt.getElements("Application");
         ForEach(*apps)
@@ -2895,62 +2918,62 @@ protected:
                     if (appValue && *appValue)
                     {
                         VStringBuffer xpath("%s/%s/%s", app.queryName(), name.queryName(), value.queryName());
-                        deleteSecondaryByKey(xpath, appValue, wuid, sessionCache, *batch);
+                        deleteSecondaryByKey(xpath, appValue, wuid, sessionCache, batch);
                     }
                 }
             }
         }
     }
 
-    void deleteSecondaries(const char *wuid)
+    void deleteSecondaries(const char *wuid, CIArrayOf<CassandraStatement> &batch)
     {
         for (const char * const *search = searchPaths; *search; search++)
-            deleteSecondaryByKey(*search, p->queryProp(*search), wuid, sessionCache, *batch);
-        deleteAppSecondaries(*p, wuid);
+            deleteSecondaryByKey(*search, p->queryProp(*search), wuid, sessionCache, batch);
+        deleteAppSecondaries(*p, wuid, batch);
         Owned<IPropertyTreeIterator> filesRead = &getFilesReadIterator();
         ForEach(*filesRead)
         {
-            deleteFileSearch(sessionCache, *batch, filesRead->query().queryProp("@name"), true, wuid);
+            deleteFileSearch(sessionCache, batch, filesRead->query().queryProp("@name"), true, wuid);
         }
         Owned<IPropertyTreeIterator> filesWritten = &getFileIterator();
         ForEach(*filesWritten)
         {
-            deleteFileSearch(sessionCache, *batch, filesWritten->query().queryProp("@name"), false, wuid);
+            deleteFileSearch(sessionCache, batch, filesWritten->query().queryProp("@name"), false, wuid);
         }
     }
 
-    void updateSecondaries(const char *wuid)
+    void updateSecondaries(const char *wuid, CIArrayOf<CassandraStatement> &batch)
     {
         const char * const *search;
         for (search = searchPaths; *search; search++)
-            updateSecondaryTable(*search, prev->queryProp(*search), wuid);
+            updateSecondaryTable(*search, prev->queryProp(*search), wuid, batch);
         for (search = wildSearchPaths; *search; search++)
         {
             const char *value = p->queryProp(*search);
             if (value && *value)
-                addUniqueValue(sessionCache, *batch, *search, value);
+                addUniqueValue(sessionCache, batch, *search, value);
         }
-        deleteAppSecondaries(*prev, wuid);
+        deleteAppSecondaries(*prev, wuid, batch);
         Owned<IConstWUAppValueIterator> appValues = &getApplicationValues();
         ForEach(*appValues)
         {
             IConstWUAppValue& val=appValues->query();
-            addUniqueValue(sessionCache, *batch, "Application", val.queryApplication());  // Used to populate droplists of applications
+            addUniqueValue(sessionCache, batch, "Application", val.queryApplication());  // Used to populate droplists of applications
             VStringBuffer key("@@%s", val.queryApplication());
-            addUniqueValue(sessionCache, *batch, key, val.queryName());  // Used to populate droplists of value names for a given application
+            addUniqueValue(sessionCache, batch, key, val.queryName());  // Used to populate droplists of value names for a given application
             VStringBuffer xpath("Application/%s/%s", val.queryApplication(), val.queryName());
-            addUniqueValue(sessionCache, *batch, xpath, val.queryValue());  // Used to get lists of values for a given app and name, and for filtering
-            simpleXMLtoCassandra(sessionCache, *batch, searchMappings, p, xpath);
+            addUniqueValue(sessionCache, batch, xpath, val.queryValue());  // Used to get lists of values for a given app and name, and for filtering
+            simpleXMLtoCassandra(sessionCache, batch, searchMappings, p, xpath);
         }
         Owned<IPropertyTreeIterator> filesRead = &getFilesReadIterator();
         ForEach(*filesRead)
         {
-            addFileSearch(sessionCache, *batch, filesRead->query().queryProp("@name"), true, wuid);
+            addFileSearch(sessionCache, batch, filesRead->query().queryProp("@name"), true, wuid);
         }
         Owned<IPropertyTreeIterator> filesWritten = &getFileIterator();
         ForEach(*filesWritten)
         {
-            addFileSearch(sessionCache, *batch, filesWritten->query().queryProp("@name"), false, wuid);
+            addFileSearch(sessionCache, batch, filesWritten->query().queryProp("@name"), false, wuid);
         }
     }
 
@@ -3003,7 +3026,6 @@ protected:
     bool actionChanged;
     Owned<IPTree> prev;
 
-    Owned<CassandraBatch> batch;
     MapStringTo<const CassandraXmlMapping *> dirtyPaths;
     IArrayOf<IWUResult> dirtyResults;
     Owned<IRemoteConnection> daliLock;  // We still use dali for locking
@@ -3681,16 +3703,13 @@ public:
     unsigned validateRepository(bool fix)
     {
         unsigned errCount = 0;
-        // MORE - if the batch gets too big you may need to flush it occasionally
-        CassandraBatch batch(fix ? cass_batch_new(CASS_BATCH_TYPE_LOGGED) : NULL);
         // 1. Check that every entry in main wu table has matching entries in secondary tables
         CassandraResult result(fetchData(workunitInfoMappings+1));
         CassandraIterator rows(cass_iterator_from_result(result));
-        if (batch)
+        if (fix)
         {
             // Delete the unique values table - the validate process recreates it afresh
-            CassandraStatement truncate(cass_statement_new("TRUNCATE uniqueSearchValues", 0));
-            check(cass_batch_add_statement(batch, truncate));
+            executeSimpleCommand(querySession(), "TRUNCATE uniqueSearchValues;");
         }
         while (cass_iterator_next(rows))
         {
@@ -3698,22 +3717,16 @@ public:
             const char *wuid = wuXML->queryName();
             // For each search entry, check that we get matching XML
             for (const char * const *search = searchPaths; *search; search++)
-                errCount += validateSearch(*search, wuid, wuXML, batch);
+                errCount += validateSearch(*search, wuid, wuXML, fix);
         }
         // 2. Check that there are no orphaned entries in search or child tables
-        errCount += checkOrphans(searchMappings, 3, batch);
+        errCount += checkOrphans(searchMappings, 3, fix);
         for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
-            errCount += checkOrphans(table[0]->mappings, 1, batch);
-        errCount += checkOrphans(wuGraphProgressMappings, 1, batch);
-        errCount += checkOrphans(wuGraphStateMappings, 1, batch);
-        errCount += checkOrphans(wuGraphRunningMappings, 1, batch);
+            errCount += checkOrphans(table[0]->mappings, 1, fix);
+        errCount += checkOrphans(wuGraphProgressMappings, 1, fix);
+        errCount += checkOrphans(wuGraphStateMappings, 1, fix);
+        errCount += checkOrphans(wuGraphRunningMappings, 1, fix);
 
-        // 3. Commit fixes
-        if (batch)
-        {
-            CassandraFuture futureBatch(cass_session_execute_batch(querySession(), batch));
-            futureBatch.wait("Fix_repository");
-        }
         return errCount;
     }
 
@@ -3765,7 +3778,23 @@ public:
     {
         return cluster.prepareStatement(query, traceLevel>=2);
     }
+    virtual void executeAsync(CIArrayOf<CassandraStatement> &batch, const char *what) const override
+    {
+        if (batch.ordinality())
+        {
+            if (queryTraceLevel() > 1)
+                DBGLOG("Executing async batch %s", what);
+            cluster.executeAsync(batch, what);
+        }
+    }
 private:
+    virtual void executeBatch(CassandraBatch &batch, const char *what) const
+    {
+        if (queryTraceLevel() > 1)
+            DBGLOG("Executing batch %s", what);
+        CassandraFuture futureBatch(cass_session_execute_batch(querySession(), batch));
+        futureBatch.wait(what);
+    }
     void createVersionTable(bool force)
     {
         StringBuffer schema;
@@ -3774,15 +3803,14 @@ private:
         if (force || !oldVersion)
         {
             VStringBuffer versionInfo("<Version major='%d' minor='%d'/>", majorVersion, minorVersion);
-            CassandraBatch versionBatch(cass_batch_new(CASS_BATCH_TYPE_LOGGED));
+            CassandraBatch versionBatch(CASS_BATCH_TYPE_LOGGED);
             Owned<IPTree> pt = createPTreeFromXMLString(versionInfo);
             for (int i = 0; i < NUM_PARTITIONS; i++)
             {
                 pt->setPropInt("@partition", i);
                 simpleXMLtoCassandra(this, versionBatch, versionMappings, pt, NULL);
             }
-            CassandraFuture futureBatch(cass_session_execute_batch(querySession(), versionBatch));
-            futureBatch.wait("createVersionTable");
+            executeBatch(versionBatch, "createVersionTable");
         }
     }
     IPTree *getVersionInfo()
@@ -3873,20 +3901,22 @@ private:
         }
         return result;
     }
-    unsigned validateSearch(const char *xpath, const char *wuid, IPTree *wuXML, CassBatch *batch)
+    unsigned validateSearch(const char *xpath, const char *wuid, IPTree *wuXML, bool fix)
     {
         unsigned errCount = 0;
         const char *childKey = wuXML->queryProp(xpath);
         if (childKey && *childKey)
         {
+            CIArrayOf<CassandraStatement> batch;
+            CIArrayOf<CassandraStatement> deletes;
             CassandraResult result(fetchDataForKeyAndWuid(xpath, childKey, wuid));
-            if (batch)
+            if (fix)
                 simpleXMLtoCassandra(this, batch, uniqueSearchMappings, wuXML, xpath);
             switch (cass_result_row_count(result))
             {
             case 0:
                 DBGLOG("Missing search data for %s for wuid=%s key=%s", xpath, wuid, childKey);
-                if (batch)
+                if (fix)
                     simpleXMLtoCassandra(this, batch, searchMappings, wuXML, xpath);
                 errCount++;
                 break;
@@ -3897,7 +3927,7 @@ private:
                 if (!areMatchingPTrees(wuXML, secXML))
                 {
                     DBGLOG("Mismatched search data for %s for wuid %s", xpath, wuid);
-                    if (batch)
+                    if (fix)
                         simpleXMLtoCassandra(this, batch, searchMappings, wuXML, xpath);
                     errCount++;
                 }
@@ -3905,18 +3935,23 @@ private:
             }
             default:
                 DBGLOG("Multiple secondary data %d for %s for wuid %s", (int) cass_result_row_count(result), xpath, wuid); // This should be impossible!
-                if (batch)
+                if (fix)
                 {
-                    deleteSecondaryByKey(xpath, childKey, wuid, this, batch);
+                    deleteSecondaryByKey(xpath, childKey, wuid, this, deletes);
                     simpleXMLtoCassandra(this, batch, searchMappings, wuXML, xpath);
                 }
                 break;
+            }
+            if (fix)
+            {
+                executeAsync(deletes, "delete search");
+                executeAsync(batch, "fix search");
             }
         }
         return errCount;
     }
 
-    unsigned checkOrphans(const CassandraXmlMapping *mappings, unsigned wuidIndex, CassBatch *batch)
+    unsigned checkOrphans(const CassandraXmlMapping *mappings, unsigned wuidIndex, bool fix)
     {
         unsigned errCount = 0;
         CassandraResult result(fetchData(mappings));
@@ -3929,17 +3964,23 @@ private:
             if (!streq(wuid, GLOBAL_WORKUNIT) && !checkWuExists(wuid))
             {
                 DBGLOG("Orphaned data in %s for wuid=%s", queryTableName(mappings), wuid.str());
-                if (batch)
+                if (fix)
                 {
                     if (wuidIndex)
                     {
+                        CIArrayOf<CassandraStatement> secondaryBatch;
                         StringBuffer xpath, fieldValue;
                         getCassString(xpath, cass_row_get_column(row, 0));
                         getCassString(fieldValue, cass_row_get_column(row, 2));
-                        deleteSecondaryByKey(xpath, fieldValue, wuid, this, batch);
+                        deleteSecondaryByKey(xpath, fieldValue, wuid, this, secondaryBatch);
+                        executeAsync(secondaryBatch, "Delete orphans");
                     }
                     else
+                    {
+                        CassandraBatch batch(CASS_BATCH_TYPE_UNLOGGED);
                         deleteChildByWuid(mappings, wuid, batch);
+                        executeBatch(batch, "Delete orphans");
+                    }
                 }
                 errCount++;
             }
