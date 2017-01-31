@@ -41,7 +41,7 @@ CBuildSetManager* CBuildSetManager::getInstance(const char* pBuildSetFile, const
 
         s_pBuildSetManager->m_buildSetPath.setf("%s%s%s", pBuildSetDirectory, pBuildSetDirectory[strlen(pBuildSetDirectory)-1] == '/' ? "" : "/", pBuildSetFile);
 
-        if (! (CFile(s_pBuildSetManager->m_buildSetPath.str())).exists())
+        if (!checkFileExists(s_pBuildSetManager->m_buildSetPath.str()))
             return s_pBuildSetManager;
         if (s_pBuildSetManager->populateBuildSet() == false)
         {
