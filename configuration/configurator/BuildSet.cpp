@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "jptree.hpp"
+#include "jfile.hpp"
 #include "XMLTags.h"
 #include "BuildSet.hpp"
 #include "SchemaCommon.hpp"
