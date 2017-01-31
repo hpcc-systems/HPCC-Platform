@@ -1465,7 +1465,7 @@ protected:
             numIterated++;
         }
         DBGLOG("%d workunits ascending thortime in %d ms", numIterated, msTick()-start);
-        ASSERT(numIterated == testSize);
+        ASSERT(numIterated == before);
 
         // Test use of cache/page mechanism - on something needing a postsort
         start = msTick();
@@ -1567,7 +1567,7 @@ protected:
             startRow++;
         }
         DBGLOG("%d workunits descending thortime, page by page in %d ms", numIterated, msTick()-start);
-        ASSERT(numIterated == testSize);
+        ASSERT(numIterated == before);
     }
 
     void testListByAppValue()
@@ -1657,6 +1657,7 @@ protected:
     void testSortByThorTime()
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned before = factory->numWorkUnits();
         unsigned start = msTick();
         unsigned numIterated = 0;
         // Test filter by filesRead
@@ -1672,7 +1673,7 @@ protected:
             numIterated++;
         }
         DBGLOG("%d workunits by totalThorTime in %d ms", numIterated, msTick()-start);
-        ASSERT(numIterated == testSize);
+        ASSERT(numIterated == before);
         numIterated++;
     }
     void testGlobal()
