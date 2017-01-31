@@ -195,6 +195,7 @@ void CAttribute::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     assert(this->getName() != nullptr);
 
+    //These two lines cause installset.xsd segmentation fault in debug. Will come back to this later
     const char *pChar = strrchr(strXPath.str(),'[');
     assert(pChar != nullptr && strlen(pChar) >= 3);
 
