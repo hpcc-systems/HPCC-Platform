@@ -2052,6 +2052,7 @@ public: // data
     Owned<IPropertyTree> properties;
 private:
     void validateBackup();
+    void validateDeltaBackup();
     LockStatus establishLock(CLock &lock, __int64 treeId, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &lockCallback);
     void _getChildren(CRemoteTreeBase &parent, CServerRemoteTree &serverParent, CRemoteConnection &connection, unsigned levels);
     void matchServerTree(CClientRemoteTree *local, IPropertyTree &matchTree, bool allTail);
@@ -2078,6 +2079,7 @@ private:
     bool doTimeComparison;
     StringBuffer blockedDelta;
     CBackupHandler backupHandler;
+    bool backupOutOfSync = false;
 };
 
 ISDSManagerServer &querySDSServer()
@@ -5889,6 +5891,22 @@ bool compareFiles(IFile *file1, IFile *file2, bool compareTimes=true)
     return false;
 }
 
+void CCovenSDSManager::validateDeltaBackup()
+{
+    // check consistency of delta
+    StringBuffer deltaFilename(dataPath);
+    iStoreHelper->getCurrentDeltaFilename(deltaFilename);
+    OwnedIFile iFileDelta = createIFile(deltaFilename.str());
+    deltaFilename.clear().append(remoteBackupLocation);
+    iStoreHelper->getCurrentDeltaFilename(deltaFilename);
+    OwnedIFile iFileDeltaBackup = createIFile(deltaFilename.str());
+    if (!compareFiles(iFileDeltaBackup, iFileDelta, false))
+    {
+        WARNLOG("Delta file backup doesn't exist or differs, filename=%s", deltaFilename.str());
+        copyFile(iFileDeltaBackup, iFileDelta);
+    }
+}
+
 void CCovenSDSManager::validateBackup()
 {
     // check consistency of store info file.
@@ -5903,14 +5921,7 @@ void CCovenSDSManager::validateBackup()
     }
 
     // check consistency of delta
-    StringBuffer deltaFilename(dataPath);
-    iStoreHelper->getCurrentDeltaFilename(deltaFilename);
-    OwnedIFile iFileDelta = createIFile(deltaFilename.str());
-    deltaFilename.clear().append(remoteBackupLocation);
-    iStoreHelper->getCurrentDeltaFilename(deltaFilename);
-    OwnedIFile iFileDeltaBackup = createIFile(deltaFilename.str());
-    if (!compareFiles(iFileDeltaBackup, iFileDelta, false))
-        WARNLOG("Delta file backup doesn't exist or differs, filename=%s", deltaFilename.str());
+    validateDeltaBackup();
 
     // ensure there's a copy of the primary store present at startup.
     StringBuffer storeFilename(dataPath);
@@ -5921,7 +5932,10 @@ void CCovenSDSManager::validateBackup()
     iStoreHelper->getCurrentStoreFilename(storeFilename);
     OwnedIFile iFileBackupStore = createIFile(storeFilename.str());
     if (!compareFiles(iFileBackupStore, iFileStore))
+    {
         WARNLOG("Store backup file doesn't exist or differs, filename=%s", storeFilename.str());
+        copyFile(iFileBackupStore, iFileStore);
+    }
 }
 
 static int uint64compare(unsigned __int64 const *i1, unsigned __int64 const *i2)
@@ -6529,29 +6543,50 @@ void CCovenSDSManager::saveDelta(const char *path, IPropertyTree &changeTree)
         }
         catch (IException *e) { EXCLOG(e, NULL); e->Release(); }
     }
+    bool first = false;
     try
     {
         StringBuffer deltaFilename(dataPath);
         iStoreHelper->getCurrentDeltaFilename(deltaFilename);
         toXML(header, blockedDelta);
         OwnedIFile iFile = createIFile(deltaFilename.str());
-        bool first = !iFile->exists() || 0 == iFile->size();
+        first = !iFile->exists() || 0 == iFile->size();
         writeDelta(blockedDelta, *iFile);
-        if (remoteBackupLocation.length())
-            backupHandler.addDelta(blockedDelta, iStoreHelper->queryCurrentEdition(), first);
-        else
-        {
-            if (blockedDelta.length() > 0x100000)
-                blockedDelta.kill();
-            else
-                blockedDelta.clear();
-        }
     }
     catch (IException *e)
     {
-        LOG(MCoperatorError, unknownJob, e, "saveDelta");
+        // NB: writeDelta retries a few times before giving up.
+        VStringBuffer errMsg("saveDelta: failed to save delta data, blockedDelta size=%d", blockedDelta.length());
+        LOG(MCoperatorError, unknownJob, e, errMsg.str());
         e->Release();
+        return;
     }
+    if (remoteBackupLocation.length())
+    {
+        try
+        {
+            if (backupOutOfSync) // true if there was previously an exception during synchronously writing delta to backup.
+            {
+                LOG(MCoperatorError, unknownJob, "Backup delta is out of sync due to a prior backup write error, attempting to resync");
+                // catchup - check and copy primary delta to backup
+                validateDeltaBackup();
+                backupOutOfSync = false;
+                LOG(MCoperatorError, unknownJob, "Backup delta resynchronized");
+            }
+            else
+                backupHandler.addDelta(blockedDelta, iStoreHelper->queryCurrentEdition(), first);
+        }
+        catch (IException *e)
+        {
+            LOG(MCoperatorError, unknownJob, e, "saveDelta: failed to save backup delta data");
+            e->Release();
+            backupOutOfSync = true;
+        }
+    }
+    if (blockedDelta.length() > 0x100000)
+        blockedDelta.kill();
+    else
+        blockedDelta.clear();
 }
 
 CSubscriberContainerList *CCovenSDSManager::getSubscribers(const char *xpath, CPTStack &stack)

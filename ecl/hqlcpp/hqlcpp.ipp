@@ -586,7 +586,7 @@ struct HqlCppOptions
     unsigned            applyInstantEclTransformationsLimit;
     unsigned            complexClassesThreshold;
     unsigned            complexClassesActivityFilter;
-    unsigned            subgraphToRegeneate;
+    unsigned            subgraphToRegenerate;
     unsigned            defaultPersistExpiry;
     unsigned            defaultExpiry;
     int                 defaultNumPersistInstances;

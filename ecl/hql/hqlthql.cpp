@@ -894,7 +894,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
     {
         if (expr->isDataset() || expr->isDictionary())
         {
-            if (!isNamedSymbol && expandProcessed && no != no_field && no != no_rows && !isTargetSelector(expr))
+            if (!isNamedSymbol && (expandProcessed || tryToRegenerate) && no != no_field && no != no_rows && !isTargetSelector(expr))
             {
                 if (!expr->queryTransformExtra())
                 {
@@ -1926,8 +1926,11 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         {
             s.append("DATASET(WORKUNIT(");
             toECL(child1, s, false, inType);
-            s.append(", ");
-            toECL(expr->queryChild(2), s, false, inType);
+            if (!isInternalAttribute(expr->queryChild(2)) || expandProcessed)
+            {
+                s.append(", ");
+                toECL(expr->queryChild(2), s, false, inType);
+            }
             if (expandProcessed)
                 childrenToECL(expr, s, false, true, 3);
             s.append("), ");
@@ -2549,7 +2552,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             break;
         case no_getgraphresult:
         case no_setgraphresult:
-            if (expandProcessed)
+            if (expandProcessed || tryToRegenerate)
                 defaultToECL(expr, s, inType);
             else
             {
