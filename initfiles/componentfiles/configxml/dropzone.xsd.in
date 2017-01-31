@@ -43,7 +43,7 @@
                                 <xs:appinfo>
                                     <tooltip>Significance of this note.</tooltip>
                                     <title>Severity</title>
-                                    <colIndex>1</colIndex>                  
+                                    <colIndex>1</colIndex>
                                 </xs:appinfo>
                             </xs:annotation>
                             <xs:simpleType>
@@ -53,7 +53,7 @@
                                     <xs:enumeration value="Critical"/>
                                 </xs:restriction>
                             </xs:simpleType>
-                        </xs:attribute>                     
+                        </xs:attribute>
                         <xs:attribute name="date" type="AutoTimeStampType" use="optional">
                             <xs:annotation>
                                 <xs:appinfo>
@@ -89,36 +89,36 @@
                 </xs:element>
             </xs:sequence>
             <xs:sequence>
-				<xs:element name="WhiteList" maxOccurs="unbounded">
-					<xs:annotation>
-						<xs:appinfo>
-							<viewChildNodes>true</viewChildNodes>
-						</xs:appinfo>
-					</xs:annotation>
-					<xs:complexType>
-						<xs:sequence>
-							<xs:element name="WhiteListEntry" type="xs:string" minOccurs="0" maxOccurs="1"/>
-						</xs:sequence>
-					</xs:complexType>
-					<xs:attribute name="server" type="string" use="optional">
-							<xs:annotation>
-								<xs:appinfo>
-									<title>Server Address</title>
-									<tooltip>Server Address to add to whitelist</tooltip>
-									<width>120</width>
-									<colIndex>2</colIndex>
-								</xs:appinfo>
-							</xs:annotation>
-						</xs:attribute>
-						<xs:attribute name="name" type="xs:string" use="required">
-                            <xs:annotation>
-                                <xs:appinfo>
-                                    <colIndex>1</colIndex>
-                                </xs:appinfo>
-                            </xs:annotation>
-                        </xs:attribute>
-				</xs:element>
-			</xs:sequence>
+                <xs:element name="WhiteList" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <viewChildNodes>true</viewChildNodes>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="WhiteListEntry" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                    <xs:attribute name="server" type="string" use="required">
+                        <xs:annotation>
+                            <xs:appinfo>
+                                <title>Server Address</title>
+                                <tooltip>Server Address to add to whitelist</tooltip>
+                                <width>120</width>
+                                <colIndex>2</colIndex>
+                            </xs:appinfo>
+                        </xs:annotation>
+                    </xs:attribute>
+                    <xs:attribute name="name" type="xs:string" use="required">
+                        <xs:annotation>
+                            <xs:appinfo>
+                                <colIndex>1</colIndex>
+                            </xs:appinfo>
+                        </xs:annotation>
+                    </xs:attribute>
+                </xs:element>
+            </xs:sequence>
             <xs:attribute name="build" type="buildType" use="required">
                 <xs:annotation>
                     <xs:appinfo>
