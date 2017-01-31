@@ -247,6 +247,12 @@ public:
         statement = NULL;
         return ret;
     }
+    void bindNull(unsigned idx)
+    {
+        if (query.length())
+            traceBind(idx, "null");
+        check(cass_statement_bind_null(statement, idx));
+    }
     void bindBool(unsigned idx, cass_bool_t value)
     {
         if (query.length())

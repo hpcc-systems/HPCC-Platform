@@ -1421,7 +1421,8 @@ extern void childXMLRowtoCassandra(const ICassandraSession *session, CassBatch *
     unsigned colidx = 2; // We already bound wuid and partition
     while (mappings[colidx].columnName)
     {
-        mappings[colidx].mapper.fromXML(&update, colidx, &row, mappings[colidx].xpath, userVal);
+        if (!mappings[colidx].mapper.fromXML(&update, colidx, &row, mappings[colidx].xpath, userVal))
+            update.bindNull(colidx);
         colidx++;
     }
     check(cass_batch_add_statement(batch, update));
@@ -2214,6 +2215,7 @@ public:
         }
         CIArrayOf<CassandraStatement> secondaryBatch;
         CassandraBatch batch(CASS_BATCH_TYPE_UNLOGGED);
+        Owned<CassandraBatch> deletesBatch;
         const char *wuid = queryWuid();
         bool isGlobal = streq(wuid, GLOBAL_WORKUNIT);
         if (!isGlobal) // Global workunit only has child rows, no parent
@@ -2226,7 +2228,7 @@ public:
         {
             // MORE - this delete is technically correct, but if we assert that the only place that copyWorkUnit is used is to populate an
             // empty newly-created WU, it is unnecessary.
-            //deleteChildren(wuid);
+            // deleteChildren(wuid, deletesBatch);
 
             // MORE can use the table?
             childXMLtoCassandra(sessionCache, batch, wuGraphsMappings, p, "Graphs/Graph", 0);
@@ -2254,7 +2256,9 @@ public:
                     DBGLOG("Updating dirty path %s", path);
                 if (*path == '*')
                 {
-                    sessionCache->deleteChildByWuid(table, wuid, batch);
+                    if (!deletesBatch)
+                        deletesBatch.setown(new CassandraBatch(CASS_BATCH_TYPE_UNLOGGED));
+                    sessionCache->deleteChildByWuid(table, wuid, *deletesBatch);
                     childXMLtoCassandra(sessionCache, batch, table, p, path+1, 0);
                 }
                 else
@@ -2289,9 +2293,14 @@ public:
             }
         }
         if (sessionCache->queryTraceLevel() > 1)
-            DBGLOG("Executing batch");
+            DBGLOG("Executing commit batches");
+        if (deletesBatch)
+        {
+            CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), *deletesBatch));
+            futureBatch.wait("commit deletes");
+        }
         CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), batch));
-        futureBatch.wait("commit");
+        futureBatch.wait("commit updates");
         executeAsync(secondaryBatch, "commit");
         if (stateChanged)
         {
