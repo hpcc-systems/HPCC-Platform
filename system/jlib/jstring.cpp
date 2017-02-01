@@ -1318,24 +1318,25 @@ StringAttr& StringAttr::operator = (StringAttr && from)
 
 void StringAttr::set(const char * _text)
 {
-    free(text);
+    char * oldtext = text;
     text = _text ? strdup(_text) : NULL;
+    free(oldtext);
 }
 
 void StringAttr::set(const char * _text, unsigned _len)
 {
-  if (text)
-    free(text);
-  text = (char *)malloc(_len+1);
-  memcpy(text, _text, _len);
-  text[_len] = 0;
+    char * oldtext = text;
+    text = (char *)malloc(_len+1);
+    memcpy(text, _text, _len);
+    text[_len] = 0;
+    free(oldtext);
 }
 
 void StringAttr::setown(const char * _text)
 {
-  if (text)
-    free(text);
-  text = (char *)_text;
+    char * oldtext = text;
+    text = (char *)_text;
+    free(oldtext);
 }
 
 void StringAttr::set(const StringBuffer & source)
