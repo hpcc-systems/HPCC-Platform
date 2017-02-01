@@ -527,7 +527,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                                            unsigned int flags)
 {
     const char *mthName = mthdef.queryName();
-    context.addTraceSummaryValue("method", mthName);
+    context.addTraceSummaryValue(LogMin, "method", mthName);
 
     StringBuffer trxid;
     if (!m_bGenerateLocalTrxId)
@@ -954,9 +954,9 @@ void EsdlServiceImpl::sendTargetSOAP(IEspContext & context,
     ESPLOG(LogMax,"OUTGOING Request: %s", clreq.str());
     {
         EspTimeSection timing("Calling out to query");
-        context.addTraceSummaryTimeStamp("startcall");
+        context.addTraceSummaryTimeStamp(LogMin, "startcall");
         httpclient->sendRequest("POST", "text/xml", clreq, resp, status,true);
-        context.addTraceSummaryTimeStamp("endcall");
+        context.addTraceSummaryTimeStamp(LogMin, "endcall");
     }
 
     if (status.length()==0)
@@ -1361,7 +1361,7 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
                     response->send();
 
                     unsigned timetaken = msTick() - context.queryCreationTime();
-                    context.addTraceSummaryTimeStamp("respSent");
+                    context.addTraceSummaryTimeStamp(LogMin, "respSent");
 
                      m_pESDLService->esdl_log(context, *srvdef, *mthdef, tgtcfg.get(), tgtctx.get(), req_pt.get(), out.str(), logdata.str(), timetaken);
 
@@ -1621,7 +1621,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
             response->send();
 
             unsigned timetaken = msTick() - ctx->queryCreationTime();
-            ctx->addTraceSummaryTimeStamp("respSent");
+            ctx->addTraceSummaryTimeStamp(LogMin, "respSent");
 
              m_pESDLService->esdl_log(*ctx, *srvdef, *mthdef, tgtcfg.get(), tgtctx.get(), pt, baseout.str(), logdata.str(), timetaken);
 
@@ -2141,7 +2141,7 @@ int EsdlBindingImpl::getJsonTestForm(IEspContext &context, CHttpRequest* request
 void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *response)
 {
     IEspContext *ctx = request->queryContext();
-    ctx->addTraceSummaryValue("Esdl Binding", "JSONPost");
+    ctx->addTraceSummaryValue(LogNormal, "Esdl Binding", "JSONPost");
 
     StringBuffer jsonresp;
 

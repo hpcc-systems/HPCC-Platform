@@ -19,7 +19,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Environment>
 <Software>
-<EspProcess formOptionsAccess="1" description="ESP server" enableSNMP="false" enableSEHMapping="false" httpConfigAccess="true" logLevel="1" maxBacklogQueueSize="200" maxConcurrentThreads="0" name="esp_2" perfReportDelay="60">
+<EspProcess formOptionsAccess="1" description="ESP server" enableSNMP="false" enableSEHMapping="false" httpConfigAccess="true" logLevel="1" logRequests="false" logResponses="false" txSummaryLevel="1" txSummaryResourceReq="false" maxBacklogQueueSize="200" maxConcurrentThreads="0" name="esp_2" perfReportDelay="60">
  <ldapSecurity name="ldapserver" ldapProtocol="ldap" localDomain="localhost" authMethod="simple" maxConnections="10" cacheTimeout="5" ldapAddress="10.150.0.3" description="LDAP server process" groupsBasedn="ou=groups,ou=ecl,dc=internal,dc=sds" ldapPort="389" ldapSecurePort="636" resourcesBasedn="ou=dataland,ou=ecl,dc=internal,dc=sds" sudoersBasedn="ou=SUDOers" systemBasedn="cn=Users,dc=internal,dc=sds" systemCommonName="sds_system" systemPassword="2ggj6ZTFZA3sa5SUv7oexg==" systemUser="sds_system" usersBasedn="ou=users,ou=ecl,dc=internal,dc=sds" workunitsBasedn="ou=workunits,ou=ecl" />
 <EspProtocol name="http" type="http_protocol" plugin="libesphttp.so" maxRequestEntityLength="8000000"/>
 <EspService name="ws_dispatch" type="ws_dispatch" plugin="ws_dispatch">

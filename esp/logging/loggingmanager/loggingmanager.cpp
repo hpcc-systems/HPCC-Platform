@@ -165,7 +165,7 @@ bool CLoggingManager::updateLog(IEspContext& espContext, IEspUpdateLogRequestWra
     bool bRet = false;
     try
     {
-        espContext.addTraceSummaryTimeStamp("LMgr:startQLog");
+        espContext.addTraceSummaryTimeStamp(LogMin, "LMgr:startQLog");
         for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
         {
             IUpdateLogThread* loggingThread = loggingAgentThreads[x];
@@ -175,7 +175,7 @@ bool CLoggingManager::updateLog(IEspContext& espContext, IEspUpdateLogRequestWra
                 bRet = true;
             }
         }
-        espContext.addTraceSummaryTimeStamp("LMgr:endQLog");
+        espContext.addTraceSummaryTimeStamp(LogMin, "LMgr:endQLog");
     }
     catch (IException* e)
     {

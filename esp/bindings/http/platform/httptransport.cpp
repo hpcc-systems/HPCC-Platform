@@ -615,7 +615,7 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
     if (isUpload())
         return 0;
 
-    m_context->addTraceSummaryValue("contLen", m_content_length);
+    m_context->addTraceSummaryValue(LogMin, "contLen", m_content_length);
     if(m_content_length > 0)
     {
         readContent();
@@ -1670,7 +1670,7 @@ int CHttpRequest::receive(IMultiException *me)
         }
     }
 
-    m_context->addTraceSummaryTimeStamp("rcv");
+    m_context->addTraceSummaryTimeStamp(LogMin, "rcv");
     return 0;
 }
 
