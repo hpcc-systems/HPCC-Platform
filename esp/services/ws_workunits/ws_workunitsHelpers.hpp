@@ -125,7 +125,10 @@ private:
 #define WUINFO_IncludeResultsViewNames  0x0800
 #define WUINFO_IncludeXmlSchema         0x1000
 #define WUINFO_IncludeResourceURLs      0x2000
-#define WUINFO_All                      0xFFFF
+#define WUINFO_IncludeECL               0x4000
+#define WUINFO_IncludeHelpers           0x8000
+#define WUINFO_IncludeAllowedClusters   0x10000
+#define WUINFO_All                      0xFFFFFFFF
 
 class WsWuInfo
 {
@@ -151,37 +154,37 @@ public:
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", wuid_);
     }
 
-    bool getResourceInfo(StringArray &viewnames, StringArray &urls, unsigned flags);
+    bool getResourceInfo(StringArray &viewnames, StringArray &urls, unsigned long flags);
     unsigned getResourceURLCount();
 
-    void getCommon(IEspECLWorkunit &info, unsigned flags);
-    void getInfo(IEspECLWorkunit &info, unsigned flags);
+    void getCommon(IEspECLWorkunit &info, unsigned long flags);
+    void getInfo(IEspECLWorkunit &info, unsigned long flags);
 
-    void getResults(IEspECLWorkunit &info, unsigned flags);
-    void getVariables(IEspECLWorkunit &info, unsigned flags);
-    void getDebugValues(IEspECLWorkunit &info, unsigned flags);
-    bool getClusterInfo(IEspECLWorkunit &info, unsigned flags);
-    void getApplicationValues(IEspECLWorkunit &info, unsigned flags);
-    void getExceptions(IEspECLWorkunit &info, unsigned flags);
-    void getSourceFiles(IEspECLWorkunit &info, unsigned flags);
+    void getResults(IEspECLWorkunit &info, unsigned long flags);
+    void getVariables(IEspECLWorkunit &info, unsigned long flags);
+    void getDebugValues(IEspECLWorkunit &info, unsigned long flags);
+    bool getClusterInfo(IEspECLWorkunit &info, unsigned long flags);
+    void getApplicationValues(IEspECLWorkunit &info, unsigned long flags);
+    void getExceptions(IEspECLWorkunit &info, unsigned long flags);
+    void getSourceFiles(IEspECLWorkunit &info, unsigned long flags);
     unsigned getTimerCount();
-    void getTimers(IEspECLWorkunit &info, unsigned flags);
+    void getTimers(IEspECLWorkunit &info, unsigned long flags);
     void doGetTimers(IArrayOf<IEspECLTimer>& timers);
-    void getHelpers(IEspECLWorkunit &info, unsigned flags);
-    void getGraphInfo(IEspECLWorkunit &info, unsigned flags);
+    void getHelpers(IEspECLWorkunit &info, unsigned long flags);
+    void getGraphInfo(IEspECLWorkunit &info, unsigned long flags);
     void doGetGraphs(IArrayOf<IEspECLGraph>& graphs);
     void getWUGraphNameAndTypes(WUGraphType graphType, IArrayOf<IEspNameAndType>& graphNameAndTypes);
-    void getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags);
+    void getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData);
     bool getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize);
 
-    void getWorkflow(IEspECLWorkunit &info, unsigned flags);
+    void getWorkflow(IEspECLWorkunit &info, unsigned long flags);
 
     void getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEspECLHelpFile>& helpers);
     void getSubFiles(IPropertyTreeIterator* f, IEspECLSourceFile* eclSuperFile, StringArray& fileNames);
     void getEclSchemaChildFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpression * expr, bool isConditional);
     void getEclSchemaFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpression * expr, bool isConditional);
     bool getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem>& schemas);
-    void getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned flags);
+    void getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned long flags);
     void getStats(StatisticsFilter& filter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics);
 
     void getWorkunitEclAgentLog(const char* eclAgentInstance, const char* agentPid, MemoryBuffer& buf);
@@ -211,7 +214,7 @@ protected:
     unsigned getLegacyTotalThorTime();
     bool hasSubGraphTimings();
     bool legacyHasSubGraphTimings();
-    void legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags);
+    void legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingData);
 
 public:
     IEspContext &context;

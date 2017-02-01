@@ -188,7 +188,7 @@ void getSashaNode(SocketEndpoint &ep)
 }
 
 
-void WsWuInfo::getSourceFiles(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getSourceFiles(IEspECLWorkunit &info, unsigned long flags)
 {
     if (!(flags & WUINFO_IncludeSourceFiles))
         return;
@@ -299,7 +299,7 @@ void WsWuInfo::getSourceFiles(IEspECLWorkunit &info, unsigned flags)
     }
 }
 
-void WsWuInfo::getExceptions(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getExceptions(IEspECLWorkunit &info, unsigned long flags)
 {
     if ((flags & WUINFO_IncludeExceptions) || version > 1.16)
     {
@@ -316,7 +316,7 @@ void WsWuInfo::getExceptions(IEspECLWorkunit &info, unsigned flags)
     }
 }
 
-void WsWuInfo::getVariables(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getVariables(IEspECLWorkunit &info, unsigned long flags)
 {
     if (!(flags & WUINFO_IncludeVariables))
         return;
@@ -426,7 +426,7 @@ void WsWuInfo::doGetTimers(IArrayOf<IEspECLTimer>& timers)
     }
 }
 
-void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned long flags)
 {
     if (!(flags & WUINFO_IncludeTimers))
         return;
@@ -476,7 +476,7 @@ mapEnums queryFileTypes[] = {
    { FileTypeSize,  NULL },
 };
 
-void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
 {
     try
     {
@@ -487,20 +487,25 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
         {
             ERRLOG("Cannot get Query for this workunit.");
             info.setHelpersDesc("Cannot get Query for this workunit.");
+
+            if (!(flags & WUINFO_IncludeHelpers))
+                return;
         }
         else
         {
-            SCMStringBuffer qname;
-            query->getQueryShortText(qname);
-            if(qname.length())
+            if (flags & WUINFO_IncludeECL)
             {
-                if((flags & WUINFO_TruncateEclTo64k) && (qname.length() > 64000))
-                    qname.setLen(qname.str(), 64000);
+                SCMStringBuffer qname;
+                query->getQueryShortText(qname);
+                if(qname.length())
+                {
+                    if((flags & WUINFO_TruncateEclTo64k) && (qname.length() > 64000))
+                        qname.setLen(qname.str(), 64000);
 
-                IEspECLQuery* q=&info.updateQuery();
-                q->setText(qname.str());
+                    IEspECLQuery* q=&info.updateQuery();
+                    q->setText(qname.str());
+                }
             }
-
             if (version > 1.34)
             {
                 SCMStringBuffer mainDefinition;
@@ -516,6 +521,9 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
             {
                 info.setHasArchiveQuery(query->hasArchive());
             }
+
+            if (!(flags & WUINFO_IncludeHelpers))
+                return;
 
             for (unsigned i = 0; i < FileTypeSize; i++)
                 getHelpFiles(query, (WUFileType) i, helpers);
@@ -588,7 +596,7 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
     }
 }
 
-void WsWuInfo::getApplicationValues(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getApplicationValues(IEspECLWorkunit &info, unsigned long flags)
 {
     if (!(flags & WUINFO_IncludeApplicationValues))
         return;
@@ -618,7 +626,7 @@ void WsWuInfo::getApplicationValues(IEspECLWorkunit &info, unsigned flags)
     }
 }
 
-void WsWuInfo::getDebugValues(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getDebugValues(IEspECLWorkunit &info, unsigned long flags)
 {
     if (!(flags & WUINFO_IncludeDebugValues))
     {
@@ -753,7 +761,7 @@ void WsWuInfo::doGetGraphs(IArrayOf<IEspECLGraph>& graphs)
     }
 }
 
-void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned long flags)
 {
      if (version > 1.01)
      {
@@ -795,7 +803,7 @@ void WsWuInfo::getWUGraphNameAndTypes(WUGraphType graphType, IArrayOf<IEspNameAn
     }
 }
 
-void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags)
+void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData)
 {
     StatisticsFilter filter(SCTall, SSTsubgraph, SMeasureTimeNs, StTimeElapsed);
     Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
@@ -829,10 +837,10 @@ void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, uns
     }
 
     if (!matched)
-        legacyGetGraphTimingData(timingData, flags);
+        legacyGetGraphTimingData(timingData);
 }
 
-void WsWuInfo::legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags)
+void WsWuInfo::legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingData)
 {
     StatisticsFilter filter;
     filter.setScopeDepth(1);
@@ -935,7 +943,7 @@ unsigned WsWuInfo::getLegacyTotalThorTime()
     return 0;
 }
 
-void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
 {
     info.setWuid(cw->queryWuid());
     info.setProtected(cw->isProtected() ? 1 : 0);
@@ -997,7 +1005,7 @@ void WsWuInfo::setWUAbortTime(IEspECLWorkunit &info, unsigned __int64 abortTS)
     info.setAbortTime(abortTimeStr.str());
 }
 
-void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned long flags)
 {
     getCommon(info, flags);
 
@@ -1231,9 +1239,9 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
     return countThorLog;
 }
 
-bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned flags)
+bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned long flags)
 {
-    if (version > 1.04)
+    if ((flags & WUINFO_IncludeAllowedClusters) && (version > 1.04))
     {
         StringArray allowedClusters;
         SCMStringBuffer val;
@@ -1287,7 +1295,7 @@ bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned flags)
     return true;
 }
 
-void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned long flags)
 {
     if (!(flags & WUINFO_IncludeWorkflows))
         return;
@@ -1449,7 +1457,7 @@ bool WsWuInfo::getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem
     return true;
 }
 
-void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned flags)
+void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned long flags)
 {
     SCMStringBuffer name;
     r.getResultName(name);
@@ -1557,7 +1565,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
 }
 
 
-void WsWuInfo::getResults(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getResults(IEspECLWorkunit &info, unsigned long flags)
 {
     if (!(flags & WUINFO_IncludeResults))
         return;
@@ -1779,7 +1787,7 @@ void WsWuInfo::getSubFiles(IPropertyTreeIterator* f, IEspECLSourceFile* eclSuper
     return;
 }
 
-bool WsWuInfo::getResourceInfo(StringArray &viewnames, StringArray &urls, unsigned flags)
+bool WsWuInfo::getResourceInfo(StringArray &viewnames, StringArray &urls, unsigned long flags)
 {
     if (!(flags & (WUINFO_IncludeResultsViewNames | WUINFO_IncludeResourceURLs)))
         return true;

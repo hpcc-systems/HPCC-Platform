@@ -1440,7 +1440,7 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                 ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
                 PROGLOG("WUInfo: %s", wuid.str());
 
-                unsigned flags=0;
+                unsigned long flags=0;
                 if (req.getTruncateEclTo64k())
                     flags|=WUINFO_TruncateEclTo64k;
                 if (req.getIncludeExceptions())
@@ -1469,6 +1469,12 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                     flags|=WUINFO_IncludeResultsViewNames;
                 if (req.getIncludeResourceURLs())
                     flags|=WUINFO_IncludeResourceURLs;
+                if (req.getIncludeECL())
+                    flags|=WUINFO_IncludeECL;
+                if (req.getIncludeHelpers())
+                    flags|=WUINFO_IncludeHelpers;
+                if (req.getIncludeAllowedClusters())
+                    flags|=WUINFO_IncludeAllowedClusters;
 
                 WsWuInfo winfo(context, wuid.str());
                 winfo.getInfo(resp.updateWorkunit(), flags);
@@ -4004,7 +4010,7 @@ bool CWsWorkunitsEx::onWUGraphTiming(IEspContext &context, IEspWUGraphTimingRequ
 
         WsWuInfo winfo(context, cw);
         IArrayOf<IConstECLTimingData> timingData;
-        winfo.getGraphTimingData(timingData, 0);
+        winfo.getGraphTimingData(timingData);
         resp.updateWorkunit().setTimingData(timingData);
     }
     catch(IException* e)
