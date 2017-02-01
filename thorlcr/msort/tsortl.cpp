@@ -38,6 +38,7 @@
 #endif
 
 #define DEFAULTTIMEOUT 3600 // 60 minutes 
+#define CONNECTTIMEOUT 300  // seconds
 
 #ifdef _MSC_VER
 #pragma warning( disable : 4355 )
@@ -77,7 +78,7 @@ struct TransferStreamHeader
 
 static ISocket *DoConnect(SocketEndpoint &nodeaddr)
 {
-    return ISocket::connect_wait(nodeaddr,DEFAULTTIMEOUT);
+    return ISocket::connect_wait(nodeaddr,CONNECTTIMEOUT*1000);
 }
 
 class CSocketRowStream: public CSimpleInterface, implements IRowStream
