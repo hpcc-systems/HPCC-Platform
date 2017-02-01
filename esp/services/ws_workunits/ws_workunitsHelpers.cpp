@@ -495,15 +495,15 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
         {
             if (flags & WUINFO_IncludeECL)
             {
-                SCMStringBuffer qname;
-                query->getQueryShortText(qname);
-                if(qname.length())
+                SCMStringBuffer queryText;
+                query->getQueryShortText(queryText);
+                if (queryText.length())
                 {
-                    if((flags & WUINFO_TruncateEclTo64k) && (qname.length() > 64000))
-                        qname.setLen(qname.str(), 64000);
+                    if((flags & WUINFO_TruncateEclTo64k) && (queryText.length() > 64000))
+                        queryText.setLen(queryText.str(), 64000);
 
                     IEspECLQuery* q=&info.updateQuery();
-                    q->setText(qname.str());
+                    q->setText(queryText.str());
                 }
             }
             if (version > 1.34)
