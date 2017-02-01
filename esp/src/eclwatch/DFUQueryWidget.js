@@ -577,6 +577,7 @@ define([
                         }
                     }),
                     Owner: { label: this.i18n.Owner, width: 72 },
+                    SuperOwners: { label: this.i18n.SuperOwner, width: 150 },
                     Description: { label: this.i18n.Description, width: 153 },
                     NodeGroup: { label: this.i18n.Cluster, width: 108 },
                     RecordCount: { label: this.i18n.Records, width: 72},

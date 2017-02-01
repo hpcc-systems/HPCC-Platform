@@ -70,6 +70,10 @@ define([
                     request.Sortby = "FileSize";
                     break;
             }
+
+            lang.mixin(request, {
+                IncludeSuperOwner: 1
+            });
         },
         update: function (id, item) {
             var storeItem = this.get(id);

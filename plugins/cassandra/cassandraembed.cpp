@@ -336,6 +336,15 @@ CassandraStatementInfo *CassandraClusterSession::createStatementInfo(const char 
     return new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, semaphore, maxRetries);
 }
 
+void CassandraClusterSession::executeAsync(CIArrayOf<CassandraStatement> &batch, const char *what) const
+{
+    CIArrayOf<CassandraRetryingFuture> futures;
+    ForEachItemIn(idx, batch)
+        futures.append(*new CassandraRetryingFuture(*session, batch.item(idx).getClear(), semaphore, maxRetries));
+    ForEachItemIn(idx2, futures)
+        futures.item(idx2).wait(what);
+ }
+
 typedef CassandraClusterSession *CassandraClusterSessionPtr;
 typedef MapBetween<hash64_t, hash64_t, CassandraClusterSessionPtr, CassandraClusterSessionPtr> ClusterSessionMap;
 static CriticalSection clusterCacheCrit;
@@ -518,7 +527,7 @@ bool CassandraStatementInfo::next()
 void CassandraStatementInfo::startStream()
 {
     if (batchMode != (CassBatchType) -1)
-        batch.setown(new CassandraBatch(cass_batch_new(batchMode)));
+        batch.setown(new CassandraBatch(batchMode));
     statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
     inBatch = true;
 }
