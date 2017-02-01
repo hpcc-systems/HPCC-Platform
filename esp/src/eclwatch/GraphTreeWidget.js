@@ -768,7 +768,7 @@ define([
             }
             var context = this;
             if (selectedGlobalIDs.length) {
-                var edges = selectedGlobalIDs.filter(function (id) {
+                var edges = arrayUtil.filter(selectedGlobalIDs, function (id) {
                     return id && id.indexOf && id.indexOf("_") >= 0;
                 });
                 if (edges.length === 1) {
