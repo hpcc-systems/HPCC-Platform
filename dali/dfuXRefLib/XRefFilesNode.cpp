@@ -21,6 +21,7 @@
 
 #include "XRefFilesNode.hpp"
 
+#include "jlzw.hpp"
 #include "dautils.hpp"
 
 //////////////////////////////////////////////////////////////////////
@@ -335,6 +336,9 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
 
     unsigned numparts = subBranch->getPropInt("Numparts");
 
+    bool isCompressed = false;
+    bool first = true;
+    offset_t totalSize = 0;
     Owned<IPropertyTreeIterator> partItr =  subBranch->getElements("Part");
     for (partItr->first(); partItr->isValid(); partItr->next())
     {
@@ -348,7 +352,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
         splitFilename(remoteFilePath.str(), &_drive, &_path, &_tail, &_ext);
         _filename.append(_tail.str());
         _filename.append(_ext.str());
-                
+
         const char* _node = part.queryProp("Node[1]");
         if (!_node||!*_node)
             _node = part.queryProp("RNode[1]");
@@ -360,8 +364,42 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
         Owned<INode> node = createINode(_node);
         DBGLOG("Setting number %d for Node %s and name %s",part.getPropInt("Num")-1,_node,_filename.str());
         //Num is 0 based...
-        fileDesc->setPart(part.getPropInt("Num")-1,node,_filename.str());
+        unsigned partNo = part.getPropInt("Num")-1;
+
+        RemoteFilename rfn;
+        rfn.setPath(node->endpoint(), remoteFilePath);
+        Owned<IFile> iFile = createIFile(rfn);
+        offset_t physicalSize = iFile->size();
+        bool partCompressed = isCompressedFile(iFile);
+        if (first)
+        {
+            first = false;
+            isCompressed = partCompressed;
+        }
+        else if (isCompressed != partCompressed)
+        {
+            VStringBuffer err("%s - could not attach (mixed compressed/non-compressed physical parts detected)", Partmask);
+            ERRLOG("%s", err.str());
+            errstr.append(err.str());
+            return false;
+        }
+        Owned<IPropertyTree> partProps = createPTree("Part");
+        if (isCompressed)
+            partProps->setPropInt64("@compressedSize", physicalSize);
+        else
+            partProps->setPropInt64("@size", physicalSize);
+        totalSize += physicalSize;
+
+        fileDesc->setPart(partNo, node,_filename.str(), partProps);
     }
+    IPropertyTree &props = fileDesc->queryProperties();
+    if (isCompressed)
+    {
+        props.setPropBool("@blockCompressed", true);
+        props.setPropInt64("@compressedSize", totalSize);
+    }
+    else
+        props.setPropInt64("@size", totalSize);
 
     Owned<IDistributedFile> dFile = queryDistributedFileDirectory().createNew(fileDesc);
     dFile->attach(logicalName.str(),udesc);
