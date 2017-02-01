@@ -1217,6 +1217,7 @@ public:
         if (!async)
         {
             writeExt(fname, length, data);
+            free(data);
             return;
         }
         BackupQueueItem *item = getFreeItem();
@@ -1504,7 +1505,7 @@ public:
         {
             StringBuffer fname(name);
             backupHandler.addExt(fname.append(queryExt()).str(), length, out.detach());
-        }       
+        }
     }
     virtual void remove(const char *name) { CExternalFile::remove(name); }
     virtual bool isValid(const char *name) { return CExternalFile::isValid(name); }
