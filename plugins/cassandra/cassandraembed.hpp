@@ -77,6 +77,7 @@ private:
 };
 
 class CassandraStatementInfo;
+class CassandraStatement;
 
 class CassandraClusterSession : public CInterface
 {
@@ -114,6 +115,8 @@ public:
     void disconnect();
     CassandraPrepared *prepareStatement(const char *query, bool trace) const;
     CassandraStatementInfo *createStatementInfo(const char *script, unsigned numParams, CassBatchType batchMode, unsigned pageSize) const;
+    void executeAsync(CIArrayOf<CassandraStatement> &batch, const char *what) const;
+
 private:
     void checkSetOption(CassError rc, const char *name);
     cass_bool_t getBoolOption(const char *val, const char *option);
@@ -188,8 +191,9 @@ private:
 class CassandraBatch : public CInterface
 {
 public:
-    inline CassandraBatch(CassBatch *_batch) : batch(_batch)
+    inline CassandraBatch(CassBatchType _type)
     {
+        batch = cass_batch_new(_type);
     }
     inline ~CassandraBatch()
     {
@@ -199,6 +203,11 @@ public:
     inline operator CassBatch *() const
     {
         return batch;
+    }
+    void execute(CassSession *session, const char *what)
+    {
+        CassandraFuture futureBatch(cass_session_execute_batch(session, batch));
+        futureBatch.wait(what);
     }
 private:
     CassandraBatch(const CassandraBatch &);
@@ -237,6 +246,12 @@ public:
         CassStatement *ret = statement;
         statement = NULL;
         return ret;
+    }
+    void bindNull(unsigned idx)
+    {
+        if (query.length())
+            traceBind(idx, "null");
+        check(cass_statement_bind_null(statement, idx));
     }
     void bindBool(unsigned idx, cass_bool_t value)
     {
