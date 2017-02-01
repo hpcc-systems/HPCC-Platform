@@ -153,7 +153,8 @@ private:
     bool addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles);
     void setDFUQueryResponse(IEspContext &context, unsigned totalFiles, StringBuffer& sortBy, bool descending, unsigned pageStart,
         unsigned pageSize, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
-    void getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor* udesc, const char *dirname, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs);
+    void getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor* udesc, const char *dirname,
+        bool includeSuperOwner, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs);
     bool doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name,const char *cluster,
         const char *description,IEspDFUFileDetail& FileDetails);

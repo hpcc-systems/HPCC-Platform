@@ -1052,7 +1052,7 @@ public:
     IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user);
     IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout);
     IPropertyTreeIterator *getDFAttributesTreeIterator(const char *filters, DFUQResultField* localFilters, const char *localFilterBuf,
-        IUserDescriptor *user, bool& allMatchingFilesReceived, INode *foreigndali,unsigned foreigndalitimeout);
+        IUserDescriptor *user, bool recursive, bool& allMatchingFilesReceived, INode *foreigndali,unsigned foreigndalitimeout);
     IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT)
     {
         Owned<INode> foreign;
@@ -1125,6 +1125,8 @@ public:
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
     IDFAttributesIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void *filterBuf, DFUQResultField *specialFilters,
             const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived);
+    IDFAttributesIterator* getLogicalFiles(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void *filterBuf, DFUQResultField *specialFilters,
+            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived, bool recursive, bool sorted);
 
     void setFileProtect(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const char *owner, bool set, const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
@@ -12313,7 +12315,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
 }
 
 IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(const char* filters, DFUQResultField* localFilters,
-    const char* localFilterBuf, IUserDescriptor* user, bool& allMatchingFilesReceived, INode* foreigndali, unsigned foreigndalitimeout)
+    const char* localFilterBuf, IUserDescriptor* user, bool recursive, bool& allMatchingFilesReceived, INode* foreigndali, unsigned foreigndalitimeout)
 {
     CMessageBuffer mb;
     CDaliVersion serverVersionNeeded("3.13");
@@ -12322,7 +12324,7 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
         mb.append((int)MDFS_ITERATE_FILTEREDFILES);
     else
         mb.append((int)MDFS_ITERATE_FILTEREDFILES2);
-    mb.append(filters).append(true);
+    mb.append(filters).append(recursive);
     if (user)
         user->serialize(mb);
 
@@ -12341,7 +12343,7 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
     return deserializeFileAttrIterator(mb, numfiles, localFilters, localFilterBuf);
 }
 
-IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
+IDFAttributesIterator* CDistributedFileDirectory::getLogicalFiles(
     IUserDescriptor* udesc,
     DFUQResultField *sortOrder, // list of fields to sort by (terminated by DFUSFterm)
     const void *filters,  // (appended) string values for filters used by dali server
@@ -12351,7 +12353,9 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
     unsigned maxNum,
     __int64 *cacheHint,
     unsigned *total,
-    bool *allMatchingFiles)
+    bool *allMatchingFiles,
+    bool recursive,
+    bool sorted)
 {
     class CDFUPager : implements IElementsPager, public CSimpleInterface
     {
@@ -12361,30 +12365,31 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
         DFUQResultField *localFilters;
         StringAttr localFilterBuf;
         StringAttr sortOrder;
+        bool recursive, sorted;
         bool allMatchingFilesReceived;
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
         CDFUPager(IUserDescriptor* _udesc, const char*_filters, DFUQResultField*_localFilters, const char*_localFilterBuf,
-            const char*_sortOrder) : udesc(_udesc), filters(_filters), localFilters(_localFilters), localFilterBuf(_localFilterBuf),
-            sortOrder(_sortOrder)
+            const char*_sortOrder, bool _recursive, bool _sorted) : udesc(_udesc), filters(_filters), localFilters(_localFilters), localFilterBuf(_localFilterBuf),
+            sortOrder(_sortOrder), recursive(_recursive), sorted(_sorted)
         {
             allMatchingFilesReceived = true;
         }
         virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
         {
             Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesTreeIterator(filters.get(),
-                localFilters, localFilterBuf.get(), udesc, allMatchingFilesReceived);
+                localFilters, localFilterBuf.get(), udesc, recursive, allMatchingFilesReceived);
             StringArray unknownAttributes;
-            sortElements(fi, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+            sortElements(fi, sorted ? sortOrder.get() : NULL, NULL, NULL, unknownAttributes, elements);
             return NULL;
         }
         virtual bool allMatchingElementsReceived() { return allMatchingFilesReceived; }
     };
 
     StringBuffer so;
-    if (sortOrder)
+    if (sorted && sortOrder)
     {
         for (unsigned i=0;sortOrder[i]!=DFUQRFterm;i++)
         {
@@ -12402,10 +12407,27 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
     }
     IArrayOf<IPropertyTree> results;
     Owned<IElementsPager> elementsPager = new CDFUPager(udesc, (const char*) filters, localFilters, (const char*) localFilterBuf,
-        so.length()?so.str():NULL );
+        so.length()?so.str():NULL, recursive, sorted);
     Owned<IRemoteConnection> conn = getElementsPaged(elementsPager,startOffset,maxNum,NULL,"",cacheHint,results,total,allMatchingFiles,false);
     return new CDFAttributeIterator(results);
 }
+
+IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
+    IUserDescriptor* udesc,
+    DFUQResultField *sortOrder, // list of fields to sort by (terminated by DFUSFterm)
+    const void *filters,  // (appended) string values for filters used by dali server
+    DFUQResultField *localFilters, //used for filtering query result received from dali server.
+    const void *localFilterBuf,
+    unsigned startOffset,
+    unsigned maxNum,
+    __int64 *cacheHint,
+    unsigned *total,
+    bool *allMatchingFiles)
+{
+    return getLogicalFiles(udesc, sortOrder, filters, localFilters, localFilterBuf, startOffset, maxNum,
+        cacheHint, total, allMatchingFiles, true, true);
+}
+
 #ifdef _USE_CPPUNIT
 /*
  * This method removes files only logically. removeEntry() used to do that, but the only
