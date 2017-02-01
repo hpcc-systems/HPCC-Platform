@@ -23,6 +23,7 @@ define([
     "dojo/dom",
     "dojo/dom-class",
     "dojo/dom-style",
+    "dojo/has",
 
     "dijit/registry",
 
@@ -33,7 +34,7 @@ define([
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
-    function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, dom, domClass, domStyle,
+    function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, dom, domClass, domStyle, has,
             registry, 
             TreeMap,
             _Widget, ESPWorkunit,
@@ -69,6 +70,9 @@ define([
 
             calcHeight: function (elmID) {
                 var elmHeight, elmMargin, elm = document.getElementById(elmID);
+                if (has("ie") === 8) {
+                    return elm.clientHeight;
+                }
                 var computedStyle = domStyle.getComputedStyle(elm);
                 elmHeight = parseFloat(computedStyle.getPropertyValue("height"));
                 elmMargin = parseFloat(computedStyle.getPropertyValue('margin-top')) + parseInt(computedStyle.getPropertyValue('margin-bottom'));
@@ -217,11 +221,11 @@ define([
 
             loadTimers: function (_timers) {
                 var context = this;
-                var timers = _timers.filter(function (d) { return context.timerFilter(d); });
+                var timers = arrayUtil.filter(_timers, function (d) { return context.timerFilter(d); });
                 var timerData = [];
                 if (timers) {
                     this.avg = timers.reduce(function (sum, timer) { return sum + timer.Seconds; }, 0) / timers.length;
-                    var sqrDiffs = timers.map(function (timer) { return Math.pow(timer.Seconds - context.avg, 2); });
+                    var sqrDiffs = arrayUtil.map(timers, function (timer) { return Math.pow(timer.Seconds - context.avg, 2); });
                     var variance = sqrDiffs.reduce(function (sum, value) { return sum + value; }, 0) / sqrDiffs.length;
                     this.stdDev = Math.sqrt(variance);
                     for (var i = 0; i < timers.length; ++i) {

@@ -86,7 +86,7 @@ define([
             if (!column.children && context._formattedRow[column.field] !== undefined) {
                 colLenBefore[column.field] = ("" + context._formattedRow[column.field]).split(LINE_SPLITTER).length;
             }
-            maxChildLen = Math.max(maxChildLen, context.formatCell(column, safeEncode(row[column.leafID]), rowIdx));
+            maxChildLen = Math.max(maxChildLen, context.formatCell(column, column.isRawHTML ? row[column.leafID] : safeEncode(row[column.leafID]), rowIdx));
         });
         arrayUtil.forEach(columns, function (column) {
             if (!column.children) {
@@ -413,6 +413,7 @@ define([
                             };
                             this.parseName(nameObj);
                             column = {
+                                isRawHTML: true,
                                 label: nameObj.displayName,
                                 leafID: name,
                                 field: prefix + name,
@@ -427,6 +428,7 @@ define([
                             };
                             this.parseName(nameObj);
                             column = {
+                                isRawHTML:true,
                                 label: nameObj.displayName,
                                 leafID: name,
                                 field: prefix + name,

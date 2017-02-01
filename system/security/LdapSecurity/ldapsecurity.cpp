@@ -194,6 +194,9 @@ bool CLdapSecUser::addToken(unsigned type, void * data, unsigned length)
 
 void CLdapSecUser::copyTo(ISecUser& destination)
 {
+    if (this == &destination)
+        return;
+
     CLdapSecUser* dest = dynamic_cast<CLdapSecUser*>(&destination);
     if(!dest)
         return;
