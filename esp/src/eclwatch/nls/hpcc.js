@@ -597,6 +597,7 @@ define({root:
     SuperFiles: "Super Files",
     SuperFilesBelongsTo: "Member of Superfile(s)",
     SuperfilesOnly: "Superfiles Only",
+    SuperOwner: "Super Owner",
     Suspend: "Suspend",
     Suspended: "Suspended",
     SuspendedBy: "Suspended By",
