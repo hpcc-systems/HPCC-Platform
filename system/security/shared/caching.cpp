@@ -359,17 +359,12 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
 
             if(cachedpw && pw && *pw != '\0')
             {
-                StringBuffer md5pbuf;
-                md5_string2(pw, md5pbuf);
-                if(strcmp(cachedpw, md5pbuf.str()) == 0)
+                if(strcmp(cachedpw, pw) == 0)
                 {
 #ifdef _DEBUG
                     DBGLOG("CACHE: CPermissionsCache Found validated user %s", username);
 #endif
-                    // Copy cached user to the sec_user structure, but still keep the original clear text password.
-                    StringAttr originalPW(pw);
                     user->queryUser()->copyTo(sec_user);
-                    sec_user.credentials().setPassword(originalPW.get());
                     return true;
                 }
                 else
