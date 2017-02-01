@@ -110,6 +110,8 @@ interface ICompressedFileIO: extends IFileIO
     virtual unsigned method()=0;
 };
 
+extern jlib_decl bool isCompressedFile(const char *filename);
+extern jlib_decl bool isCompressedFile(IFile *file);
 extern jlib_decl ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander=NULL, bool memorymapped=false, IFEflags extraFlags=IFEnone);
 extern jlib_decl ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expander=NULL);
 extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append=false,bool setcrc=true,ICompressor *compressor=NULL, unsigned compMethod=COMPRESS_METHOD_LZW, IFEflags extraFlags=IFEnone);

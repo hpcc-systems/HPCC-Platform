@@ -248,7 +248,7 @@ define([
                             findTextParts.splice(0, 1);
                             findTerm = findTextParts.join(":");
                         }
-                        return this.graphData.vertices.filter(function (item) {
+                        return arrayUtil.filter(this.graphData.vertices, function (item) {
                             if (findProp) {
                                 if (item.hasOwnProperty(findProp)) {
                                     return (item[findProp].toString().toLowerCase().indexOf(findTerm.toLowerCase()) >= 0);

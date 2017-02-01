@@ -574,7 +574,7 @@ interface IDistributedFileDirectory: extends IInterface
             // wildname is in form scope/name and may contain wild components for either
     virtual IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
     virtual IPropertyTreeIterator *getDFAttributesTreeIterator(const char *filters, DFUQResultField* localFilters,
-        const char *localFilterBuf, IUserDescriptor *user, bool& allMatchingFilesReceived, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
+        const char *localFilterBuf, IUserDescriptor *user, bool recursive, bool& allMatchingFilesReceived, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
     virtual IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
 
     virtual IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope=NULL,bool recursive=true,bool includeempty=false)=0;
@@ -681,6 +681,8 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false)=0; // if owner = NULL then all
     virtual IDFAttributesIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void* filters, DFUQResultField *localFilters,
             const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived) = 0;
+    virtual IDFAttributesIterator* getLogicalFiles(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void* filters, DFUQResultField *localFilters,
+            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived, bool recursive, bool sorted) = 0;
 
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                // sets default timeout for SDS connections and locking
                                                                                             // returns previous value

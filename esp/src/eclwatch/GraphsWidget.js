@@ -20,6 +20,7 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
+    "dojo/has",
 
     "dijit/form/Button",
 
@@ -33,7 +34,7 @@ define([
     "hpcc/TimingTreeMapWidget",
     "hpcc/ESPUtil"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, has,
                 Button,
                 selector,
                 GridDetailsWidget, ESPWorkunit, ESPQuery, ESPLogicalFile, DelayLoadWidget, TimingTreeMapWidget, ESPUtil) {
@@ -48,6 +49,7 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
+            this.isIE8 = has("ie") === 8;
             this.timingTreeMap = new TimingTreeMapWidget({
                 id: this.id + "TimingTreeMap",
                 region: "right",
@@ -124,7 +126,7 @@ define([
                     });
                 }
             }).placeAt(this.widget.Open.domNode, "after");
-            if (dojoConfig.isPluginInstalled()) {
+            if (dojoConfig.isPluginInstalled() && !this.isIE8) {
                 this.openNativeMode = new Button({
                     label: this.i18n.OpenNativeMode,
                     onClick: function (event) {
@@ -133,6 +135,9 @@ define([
                         });
                     }
                 }).placeAt(this.widget.Open.domNode, "after");
+            }
+            if (this.isIE8) {
+                dojo.destroy(this.id + "Open");
             }
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
@@ -241,7 +246,8 @@ define([
                 delayProps = {
                     forceNative: true
                 };
-            } else if (params && params.legacyMode) {
+            }
+            if (params && params.legacyMode || this.isIE8) {
                 delayWidget = "GraphPageWidget";
                 title += " (L)";
                 delayProps = {};

@@ -2194,7 +2194,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 }
 
 
-void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor* udesc, const char *dirname, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs)
+void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor* udesc, const char *dirname,
+    bool includeSuperOwner, IArrayOf<IEspDFULogicalFile>& logicalFiles, int& numFiles, int& numDirs)
 {
     double version = context.getClientVersion();
     if (dirname && *dirname)
@@ -2202,44 +2203,32 @@ void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor*
     else
         PROGLOG("getLogicalFileAndDirectory: folder not specified");
 
-    StringArray roxieClusterNames;
-    IArrayOf<IEspTpCluster> roxieclusters;
-    CTpWrapper dummy;
-    dummy.getClusterProcessList(eqRoxieCluster, roxieclusters);
-    ForEachItemIn(k, roxieclusters)
-    {
-        IEspTpCluster& cluster = roxieclusters.item(k);
-        StringBuffer sName = cluster.getName();
-        roxieClusterNames.append(sName.str());
-    }
-
     numFiles = 0;
     numDirs = 0;
     if (dirname && *dirname)
     {
-        StringBuffer filter;
-        filter.append(dirname);
-        filter.append("::*");
+        StringBuffer filterBuf;
+        setFileNameFilter(NULL, dirname, filterBuf);
+        if (includeSuperOwner)
+            filterBuf.append(DFUQFTincludeFileAttr).append(DFUQFilterSeparator).append(DFUQSFAOincludeSuperOwner).append(DFUQFilterSeparator);
 
-        Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator(filter.toLowerCase().str(), udesc, false,true, NULL);
-        if(fi)
-        {
-            StringBuffer size;
-            ForEach(*fi)
-            {
-                IPropertyTree &attr=fi->query();
+        //filters used to filter query result received from dali server.
+        DFUQResultField localFilters[8];
+        localFilters[0] = DFUQRFterm;
 
-                StringArray groups;
-                if (!getFileGroups(&attr,groups))
-                    groups.append("");
+        DFUQResultField sortOrder[] = {DFUQRFterm};
 
-                ForEachItemIn(i, groups)
-                {
-                    addToLogicalFileList(attr, groups.item(i), version, LogicalFiles);
-                    numFiles++;
-                }
-            }
-        }
+        __int64 cacheHint = 0; //No page
+        unsigned totalFiles = 0;
+        bool allMatchingFilesReceived = true;
+        Owned<IDFAttributesIterator> it = queryDistributedFileDirectory().getLogicalFiles(udesc, sortOrder, filterBuf.str(),
+            localFilters, NULL, 0, (unsigned)-1, &cacheHint, &totalFiles, &allMatchingFilesReceived, false, false);
+        if(!it)
+            throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get LogicalFile information from file system.");
+
+        ForEach(*it)
+            addToLogicalFileList(it->query(), NULL, version, logicalFiles);
+        numFiles = totalFiles;
     }
 
     Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(udesc,dirname,false);
@@ -2250,10 +2239,10 @@ void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor*
             const char *scope = iter->query();
             if (scope && *scope)
             {
-                Owned<IEspDFULogicalFile> File = createDFULogicalFile("","");
-                File->setDirectory(scope);
-                File->setIsDirectory(true);
-                LogicalFiles.append(*File.getClear());
+                Owned<IEspDFULogicalFile> file = createDFULogicalFile("","");
+                file->setDirectory(scope);
+                file->setIsDirectory(true);
+                logicalFiles.append(*file.getClear());
                 numDirs++;
             }
         }
@@ -2281,7 +2270,7 @@ bool CWsDfuEx::onDFUFileView(IEspContext &context, IEspDFUFileViewRequest &req, 
         int numDirs = 0;
         int numFiles = 0;
         IArrayOf<IEspDFULogicalFile> logicalFiles;
-        getLogicalFileAndDirectory(context, userdesc.get(), req.getScope(), logicalFiles, numFiles, numDirs);
+        getLogicalFileAndDirectory(context, userdesc.get(), req.getScope(), !req.getIncludeSuperOwner_isNull() && req.getIncludeSuperOwner(), logicalFiles, numFiles, numDirs);
 
         if (numFiles > 0)
             resp.setNumFiles(numFiles);
@@ -3485,7 +3474,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
         int numDirs = 0;
         int numFiles = 0;
         IArrayOf<IEspDFULogicalFile> logicalFiles;
-        getLogicalFileAndDirectory(context, udesc, req.getLogicalName(), logicalFiles, numFiles, numDirs);
+        getLogicalFileAndDirectory(context, udesc, req.getLogicalName(), !req.getIncludeSuperOwner_isNull() && req.getIncludeSuperOwner(), logicalFiles, numFiles, numDirs);
         return true;
     }
 
