@@ -44,6 +44,7 @@
 #define ECLOPT_KEEPPRIOR "--keepprior"
 #define ECLOPT_RECURSE "--recurse"
 #define ECLOPT_REMOTE "--remote"
+#define ECLOPT_TMPDIR "--tmpdir"
 #define ECLOPT_STATUS "--status"
 #define ECLOPT_UPDATE "--update"
 
@@ -1020,6 +1021,8 @@ public:
     {
         if (iter.matchFlag(optRemote, ECLOPT_REMOTE))
             return EclCmdOptionMatch;
+        if (iter.matchFlag(optTmpDir, ECLOPT_TMPDIR))
+            return EclCmdOptionMatch;
         return EclCmdCommon::matchCommandLineOption(iter, finalAttempt);
     }
 protected:
@@ -1041,6 +1044,36 @@ protected:
         extractValueFromEnvOutput(bundlePath, output, ECLCC_ECLBUNDLE_PATH);
         extractValueFromEnvOutput(hooksPath, output, HPCC_FILEHOOKS_PATH);
     }
+    StringBuffer &getTempFilePath(StringBuffer &dir)
+    {
+        if (optTmpDir)
+            dir.set(optTmpDir);
+        else
+        {
+    #ifdef _WIN32
+            char path[_MAX_PATH+1];
+            if(GetTempPath(sizeof(path),path))
+                dir.append(path);
+            else
+            {
+                dir.append(getenv("TEMP"));
+                if (!dir.length())
+                    dir.append(getenv("TMP"));
+                if (!dir.length())
+                    dir.append(".");
+            }
+    #else
+            dir.append(getenv("TMPDIR"));
+            if (!dir.length())
+                dir.append("/tmp");
+    #endif
+        }
+        if (!dir.length() || !checkDirExists(dir))
+            throw makeStringExceptionV(0, "FATAL: Invalid temporary directory '%s' - try --tmpdir option", dir.str());
+        return dir;
+    }
+
+
     bool isFromFile() const
     {
         // If a supplied bundle id contains pathsep or ., assume a filename or directory is being supplied
@@ -1071,7 +1104,7 @@ protected:
         if (isUrl(url))
         {
             StringBuffer tmp;
-            getTempFilePath(tmp, "ecl-bundle", nullptr);
+            getTempFilePath(tmp);
             tmp.append(PATHSEPCHAR).append("tmp.XXXXXX");
             if (!mkdtemp((char *) tmp.str()))
             {
@@ -1117,6 +1150,7 @@ protected:
 
     StringAttr optBundle;
     StringAttr optBranch;
+    StringAttr optTmpDir;
     StringBuffer bundlePath;
     StringBuffer hooksPath;
     bool bundleCompulsory;
