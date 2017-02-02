@@ -44,7 +44,9 @@ define([
         startProperty: "PageStartFrom",
         countProperty: "Count",
 
-        _watched: [],
+        constructor: function () {
+            this._watched = {};
+        },
         preRequest: function (request) {
             if (request.Sortby && request.Sortby === "TotalClusterTime") {
                 request.Sortby = "ClusterTime";
@@ -53,6 +55,7 @@ define([
         },
         preProcessFullResponse: function (response, request, query, options) {
             this.busy = false;
+            this._toUnwatch = lang.mixin({}, this._watched);
         },
         create: function (id) {
             return new Workunit({
@@ -69,7 +72,16 @@ define([
                         context.notify(storeItem, id);
                     }
                 });
+            } else {
+                delete this._toUnwatch[id];
             }
+        },
+        postProcessResults: function () {
+            for (var key in this._toUnwatch) {
+                this._toUnwatch[key].unwatch();
+                delete this._watched[key];
+            }
+            delete this._toUnwatch;
         }
     });
 
@@ -234,7 +246,10 @@ define([
             }
             if (!this.hasCompleted) {
                 var context = this;
-                this.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
+                if (this._watchHandle) {
+                    this._watchHandle.unwatch();
+                }
+                this._watchHandle = this.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue && newValue) {
                         if (callback) {
                             callback(context);
