@@ -1120,7 +1120,7 @@ protected:
     StringBuffer bundlePath;
     StringBuffer hooksPath;
     bool bundleCompulsory;
-    bool optRemote;
+    bool optRemote = false;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -1259,7 +1259,7 @@ private:
         return ok;
     }
 
-    bool optRecurse;
+    bool optRecurse = false;
 };
 
 //-------------------------------------------------------------------------------------------------
