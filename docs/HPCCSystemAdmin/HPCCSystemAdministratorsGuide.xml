@@ -200,10 +200,11 @@
           <title>Sasha</title>
 
           <para>The Sasha server is a companion “housekeeping” server to the
-          Dali server. Sasha works independently of yet in conjunction with
+          Dali server. Sasha works independently of, yet in conjunction with
           Dali. Sasha’s main function is to reduce the stress on the Dali
           server. Wherever possible, Sasha reduces the resource utilization on
-          Dali.</para>
+          Dali. A very important aspect of Sasha is coalescing, by saving the
+          in-memory store to a new store edition. </para>
 
           <para>Sasha archives workunits (including DFU Workunits) that are
           then stored in folders on a disk.</para>
@@ -218,7 +219,7 @@
 
           <para>Sasha is the component responsible for removing expireds when
           the criteria has been met. The EXPIRE option on ECL's OUTPUT or
-          PERSIST sets that condition. </para>
+          PERSIST sets that condition.</para>
         </sect3>
 
         <sect3 id="SysAdm_DFU">
@@ -534,28 +535,31 @@
       High Availability (HA) RAID level is fine.</para>
 
       <para>Sasha only stores data to locally available disks, reading data
-      from Dali then processeing it by archiving workunits (WUs) to disk.
-      </para>
+      from Dali then processing it by archiving workunits (WUs) to disk. It is
+      beneficial to configure Sasha for a larger amount of archiving so that
+      Dali does not keep too many workunits in memory. This requires a larger
+      amount of diskspace. </para>
 
-      <para>Allocating a larger disk for Sasha reduces the amount of
-      housekeeping needed. Since Sasha assists Dali by performing
-      housekeeping, it works best when on its own node. Ideally, you should
-      avoid putting Sasha and Dali on the same node, because the node that
-      runs these components is extremely critical, particularly when it comes
-      to recovering from losses. Therefore, it should be as robust as
-      possible: RAID drives, fault tolerant, etc.</para>
+      <para>Allocating greater disk space for Sasha is sound practice as
+      configuring Sasha for more archiving better benefits Dali. Since Sasha
+      assists Dali by performing housekeeping, it works best when on its own
+      node. Ideally, you should avoid putting Sasha and Dali on the same node,
+      because the node that runs these components is extremely critical,
+      particularly when it comes to recovering from losses. Therefore, it
+      should be as robust as possible: RAID drives, fault tolerant,
+      etc.</para>
 
       <sect2>
         <title>Sasha/Dali Interactions</title>
 
-        <para>Another critical role of Sasha is in coalescing. When Dali shuts
-        down, it saves its in-memory store to a new store edition by creating
-        a new <emphasis>dalisdsXXXX.xml</emphasis>, where XXXX is incremented
-        to the new edition. The current edition is recorded by the filename
+        <para>A critical role of Sasha is in coalescing. When Dali shuts down,
+        it saves its in-memory store to a new store edition by creating a new
+        <emphasis>dalisdsXXXX.xml</emphasis>, where XXXX is incremented to the
+        new edition. The current edition is recorded by the filename
         store.XXXX</para>
 
-        <para>An Explicit request to save using <emphasis>dalidiag</emphasis>:
-        </para>
+        <para>An explicit request to save using
+        <emphasis>dalidiag</emphasis>:</para>
 
         <programlisting> dalidiag . -save </programlisting>
 
@@ -570,10 +574,10 @@
         any write transactions while saving.</para>
 
         <para>All Dali SDS changes are recorded in a delta transaction log (in
-        XML format) named convention of <emphasis>daliincXXXX.xml</emphasis>,
-        where XXXX is the current store edition. They are also optionally
-        mirrored to a backup location. This transaction log grows indefinitely
-        until the store is saved.</para>
+        XML format) with a naming convention of
+        <emphasis>daliincXXXX.xml</emphasis>, where XXXX is the current store
+        edition. They are also optionally mirrored to a backup location. This
+        transaction log grows indefinitely until the store is saved.</para>
 
         <para>In the normal/recommended setup, Sasha is the primary creator of
         new SDS store editions. It does so on a schedule and according to
@@ -716,8 +720,8 @@
           also the component that creates the XREF metadata that ECLWatch
           uses. Be aware that Sasha can create quite a bit of archive data.
           Once the workunits are archived they are no longer available in the
-          Dali data store. The archives can still be retrieved, but that
-          archive now becomes the only copy of these workunits.</para>
+          Dali data store. The archives can still be accessed through ECL
+          Watch by restoring them to Dali. </para>
 
           <para>If you need high availability for archived workunits, you
           should back them up at a system level using traditional backup
@@ -1666,6 +1670,12 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           Thor master and the Dali (at minimum) to be on separate nodes. The
           best practice is to keep as many components as possible their own
           nodes.</para>
+
+          <para>Another consideration for a multiple node system is to avoid
+          putting any of the components on nodes with slaves. This is not a
+          best practice and leads to an unbalanced cluster, resulting in those
+          slaves with less memory/cpu taking longer than the rest and dragging
+          the whole performance of the cluster down as a result.</para>
         </sect3>
       </sect2>
 
