@@ -47,7 +47,7 @@ if(NOT CBLAS_FOUND)
         endif()
 
         if ("${otoolOut}" STREQUAL "")
-          message(FATAL_ERROR "{$OPENBLAB_LIB} dependencies changed. Run otool -L check manually and update file FindCBLAS.cmake")
+          message(FATAL_ERROR "${LIB_TO_DO} dependencies changed. Run otool -L check manually and update file FindCBLAS.cmake")
         endif()
         list(APPEND CBLAS_DEPS_LIBS ${otoolOut})
         if ("${otoolOut}" MATCHES ".*libgfortran.*")
