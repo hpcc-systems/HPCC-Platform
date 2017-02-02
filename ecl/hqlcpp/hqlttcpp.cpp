@@ -8506,6 +8506,15 @@ IHqlExpression * AutoScopeMigrateTransformer::createTransformed(IHqlExpression *
             s.append("[").append(expr->queryName()).append("] ");
         s.append("as an item to hoist");
         DBGLOG("%s", s.str());
+        if (extra->globalInsideChild)
+        {
+            StringBuffer nameText;
+            if (expr->queryName())
+                nameText.append(expr->queryName());
+            else
+                getExprECL(expr, nameText);
+            translator.reportWarning(CategoryEfficiency, SeverityIgnore, queryActiveLocation(expr), HQLWRN_GlobalDatasetFromChildQuery, HQLWRN_GlobalDatasetFromChildQuery_Text, nameText.str());
+        }
 
         GlobalAttributeInfo info("jobtemp::auto","auto", transformed);
         info.extractGlobal(NULL, translator.getTargetClusterType());
