@@ -680,11 +680,10 @@ bool checkExternFoldable(IHqlExpression* expr, unsigned foldOptions, StringBuffe
     return true;
 }
 
-IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateContext *templateContext, const char *library, const char *entrypoint)
+void *loadExternalEntryPoint(IHqlExpression* expr, unsigned foldOptions, ITemplateContext *templateContext, const char *library, const char *entrypoint, HINSTANCE &hDLL)
 {
     IHqlExpression * funcdef = expr->queryExternalDefinition();
     IHqlExpression *body = funcdef->queryChild(0);
-
     // Get the handle to the library and procedure.
 #ifdef __APPLE__
     StringBuffer fullLibraryPath;
@@ -712,13 +711,13 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
 #endif
 #endif
 
-    HINSTANCE hDLL=LoadSharedObject(library, false, false);
+    hDLL=LoadSharedObject(library, false, false);
     if (!LoadSucceeded(hDLL))
     {
         if (body->hasAttribute(templateAtom))
-            throw MakeStringException(ERR_SVC_LOADLIBFAILED, "Error happened when trying to load library %s for template helper function", library);
+            throw MakeStringException(ERR_SVC_LOADLIBFAILED, "Error when trying to load library %s for template helper function", library);
         if (foldOptions & HFOthrowerror)
-            throw MakeStringException(ERR_SVC_LOADLIBFAILED, "Error happened when trying to load library %s", library);
+            throw MakeStringException(ERR_SVC_LOADLIBFAILED, "Error when trying to load library %s", library);
         return NULL;
     }
     void* fh = GetSharedProcedure(hDLL, entrypoint);
@@ -726,9 +725,19 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
     {
         FreeSharedObject(hDLL);
         if (foldOptions & HFOthrowerror)
-            throw MakeStringException(ERR_SVC_LOADFUNCFAILED, "Error happened when trying to load procedure %s from library %s", entrypoint, library);
+            throw MakeStringException(ERR_SVC_LOADFUNCFAILED, "Error when trying to load procedure %s from library %s", entrypoint, library);
         return NULL;
     }
+    return fh;
+}
+
+IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateContext *templateContext, const char *library, const char *entrypoint, void *fh)
+{
+    // NOTE - on OSX there are compiler bugs that prevent exceptions thrown from within this function from properly unwinding.
+    // Hence anything that can throw an exception should be pre-checked in one of the functions above.
+
+    IHqlExpression * funcdef = expr->queryExternalDefinition();
+    IHqlExpression *body = funcdef->queryChild(0);
 
     // create a FuncCallStack to generate a stack used to pass parameters to 
     // the called function
@@ -1271,7 +1280,6 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
 #endif //win32
     }
     catch (...) {
-        FreeSharedObject(hDLL);
         if(retCharStar || charStarInParam) { // Char* return type, need to free up tgt.
             free(tgt);
         }
@@ -1281,7 +1289,6 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
         return NULL;
     }
 
-    // NOTE - we do not call FreeSharedObject(hDLL); here - the embedded language folding requires that the dll stay loaded, and it's also more efficient for other cases
 
     IValue* result = NULL;
 
@@ -1365,7 +1372,12 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     StringBuffer entry;
     if (!checkExternFoldable(expr, foldOptions, library, entry))
         return NULL;
-    return doFoldExternalCall(expr, foldOptions, templateContext, library.str(), entry.str());
+    // NOTE - we do not call FreeSharedObject(hDLL) - the embedded language folding requires that the dll stay loaded, and it's also more efficient for other cases
+    HINSTANCE hDll;
+    void *funcptr = loadExternalEntryPoint(expr, foldOptions, templateContext, library.str(), entry.str(), hDll);
+    if (!funcptr)
+        return NULL;
+    return doFoldExternalCall(expr, foldOptions, templateContext, library.str(), entry.str(), funcptr);
 }
 
 //------------------------------------------------------------------------------------------
