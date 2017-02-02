@@ -22,7 +22,6 @@ import logging
 import os
 import traceback
 import re
-import tempfile
 import xml.etree.ElementTree as ET
 import unicodedata
 
