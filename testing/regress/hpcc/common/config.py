@@ -60,7 +60,10 @@ class Config:
             rC = namedtuple("Regress", js.keys())
             return _dict(getattr(rC(**js), "Regress"))
         except IOError as e:
-            raise(e)
+            if e.errno == 21:
+                raise IOError("Error: "+file+" "+e.strerror+", we need a JSON file!")
+            else:
+                raise(e)
 
     #implement writing out of a config.
     def writeConfig(self, file):
