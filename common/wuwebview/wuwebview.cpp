@@ -783,7 +783,7 @@ ILoadedDllEntry *WuWebView::loadDll(bool force)
     {
         try
         {
-            dll.setown(queryDllServer().loadDll(dllname.str(), DllLocationAnywhere));
+            dll.setown(queryDllServer().loadDllResources(dllname.str(), DllLocationAnywhere));
         }
         catch (IException *e)
         {

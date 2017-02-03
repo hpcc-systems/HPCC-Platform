@@ -873,7 +873,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         sendSo = globals->getPropBool("Debug/@dllsToSlaves", true);
     }
 
-    Owned<ILoadedDllEntry> querySo = createDllEntry(compoundPath.str(), false, NULL);
+    Owned<ILoadedDllEntry> querySo = createDllEntry(compoundPath.str(), false, NULL, false);
 
     SCMStringBuffer eclstr;
     StringAttr user(workunit.queryUser());
