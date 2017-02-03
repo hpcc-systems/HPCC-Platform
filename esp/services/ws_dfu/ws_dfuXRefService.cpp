@@ -20,6 +20,7 @@
 #include "ws_dfuXRefService.hpp"
 
 #include "dadfs.hpp"
+#include "daft.hpp"
 #include "wshelpers.hpp"
 #include "exception_util.hpp"
 #include "package.h"
@@ -195,15 +196,61 @@ IXRefFilesNode* CWsDfuXRefEx::getFileNodeInterface(IXRefNode& XRefNode,const cha
     return 0;
 }
 
+void CWsDfuXRefEx::readLostFileQueryResult(IEspContext &context, StringBuffer& buf)
+{
+    Owned<IPropertyTree> lostFilesQueryResult = createPTreeFromXMLString(buf.str());
+    if (!lostFilesQueryResult)
+    {
+        PROGLOG("readLostFileQueryResult() failed in creating PTree.");
+        return;
+    }
+
+    StringBuffer username;
+    Owned<IUserDescriptor> userdesc;
+    context.getUserID(username);
+    if(username.length() > 0)
+    {
+        const char* passwd = context.queryPassword();
+        userdesc.setown(createUserDescriptor());
+        userdesc->set(username.str(), passwd);
+    }
+
+    Owned<IPropertyTreeIterator> iter = lostFilesQueryResult->getElements("File");
+    ForEach(*iter)
+    {
+        IPropertyTree& item = iter->query();
+        const char* fileName = item.queryProp("Name");
+        if (!fileName || !*fileName)
+            continue;
+
+        try
+        {
+            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userdesc, false, false, false, NULL, 0);
+            if(df)
+                item.addPropInt64("Size", queryDistributedFileSystem().getSize(df));
+        }
+        catch(IException* e)
+        {
+            item.addProp("Status", "Warning: this file may be locked now. It can't be recovered as locked.");
+            StringBuffer eMsg;
+            PROGLOG("Exception in readLostFileQueryResult(): %s", e->errorMessage(eMsg).str());
+            e->Release();
+        }
+    }
+
+    if (context.getResponseFormat() == ESPSerializationJSON)
+        toJSON(lostFilesQueryResult, buf.clear());
+    else
+        toXML(lostFilesQueryResult, buf.clear());
+}
+
+
 bool CWsDfuXRefEx::onDFUXRefLostFiles(IEspContext &context, IEspDFUXRefLostFilesQueryRequest &req, IEspDFUXRefLostFilesQueryResponse &resp)
 {
     try
     {
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_DFU_XREF_ACCESS_DENIED, "Failed to read Xref Lost Files. Permission denied.");
-
-        StringBuffer username;
-        context.getUserID(username);
 
         if (!req.getCluster() || !*req.getCluster())
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "Cluster not defined.");
@@ -218,11 +265,7 @@ bool CWsDfuXRefEx::onDFUXRefLostFiles(IEspContext &context, IEspDFUXRefLostFiles
         {
             _lost->Serialize(buf);
             if (!buf.isEmpty())
-            {
-                ESPSerializationFormat fmt = context.getResponseFormat();
-                if (fmt == ESPSerializationJSON)
-                    dfuXrefXMLToJSON(buf);
-            }
+                readLostFileQueryResult(context, buf);
         }
         resp.setDFUXRefLostFilesQueryResult(buf.str());
     }
