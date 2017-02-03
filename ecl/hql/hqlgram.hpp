@@ -1260,6 +1260,7 @@ private:
         bool inComment;
         bool inSignature;
         bool inCpp;
+        bool inMultiString;
         bool encrypted;
         StringBuffer javaDocComment;
 

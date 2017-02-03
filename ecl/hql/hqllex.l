@@ -1552,10 +1552,10 @@ FUNCTIONMACRO|MACRO {
 (d|D|q|Q|v|V|u|U|u8|U8)?"'''"  { 
                         setupdatepos; 
                         BEGIN(MULTISTRING);
-                        lexer->inCpp = true;
+                        lexer->inMultiString = true;
                     }
 <MULTISTRING>[^\n]*"'''"[^\n]*  {
-                        lexer->inCpp = false;
+                        lexer->inMultiString = false;
                         int endpos = lexer->yyPosition;
                         //skip to the position of ''' on the line)
                         while (memcmp(lexer->yyBuffer+endpos, "'''", 3) != 0)
@@ -1753,6 +1753,16 @@ FUNCTIONMACRO|MACRO {
                         return (UNICODE_CONST);
                     }
                         
+
+(d|D|q|Q|v|V)?\'([^'\r\n\\]|\\[^\r\n])*\'/\' {
+                        /* error pattern - a string immediately followed by a ' usually means someone thought they could use '' to escape a quote char */
+                        /* It's usually going to hit a grammar error too, but patterns can legally be formed of two adjacent string tokens */
+                        lexer->reportWarning(CategoryMistake, returnToken, ERR_STRING_DOUBLE_QUOTE, "'' is not an escaped quote character: use \\' instead");
+                        int oldColumn = lexer->yyColumn;
+                        int oldPosition = lexer->yyPosition;
+                        setupdatepos;
+                        return lexer->processStringLiteral(returnToken, CUR_TOKEN_TEXT, CUR_TOKEN_LENGTH-1, oldColumn, oldPosition);
+                    }
 
 (d|D|q|Q|v|V)?\'([^'\r\n\\]|\\[^\r\n])*\' {
                         int oldColumn = lexer->yyColumn;
