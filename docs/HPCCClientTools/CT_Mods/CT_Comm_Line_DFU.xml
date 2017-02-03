@@ -25,8 +25,7 @@
       <title>Command Line Interface</title>
 
       <sect2 id="DFUPlusexe">
-        <title><emphasis
-        role="bold">dfuplus</emphasis><emphasis></emphasis><emphasis
+        <title><emphasis role="bold">dfuplus </emphasis><emphasis
         role="bold">[--version] action=</emphasis><emphasis>operation
         </emphasis><emphasis
         role="bold">[</emphasis><emphasis>@filename</emphasis><emphasis
@@ -408,7 +407,10 @@ replicate=1</programlisting>
                     endian) and the size of integer to contain it (<emphasis
                     role="bold">1</emphasis> to <emphasis
                     role="bold">8</emphasis> bytes). If format and size are
-                    omitted, the default is L4.</entry>
+                    omitted, the default is L4. <para>Use in conjunction with
+                    the <emphasis>filename</emphasis> option to retain the
+                    appropriate file structure and to allow for despray into
+                    same. </para></entry>
                   </row>
 
                   <row>
@@ -648,7 +650,10 @@ END;</programlisting>
                   <entry>Uses the prepended size of the file (see the
                   <emphasis>prefix</emphasis> option to the spray
                   <emphasis>operation</emphasis>) to split out the data into
-                  separate files.</entry>
+                  separate files.<para>Use in conjunction with the
+                  <emphasis>filename</emphasis> option to retain the
+                  appropriate file structure and to allow for despray into
+                  same. </para></entry>
                 </row>
               </tbody>
             </tgroup>
