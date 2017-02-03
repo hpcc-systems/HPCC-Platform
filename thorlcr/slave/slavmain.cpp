@@ -346,7 +346,7 @@ public:
                             soPath.clear().append(tempSo.str());
                         }
 #endif
-                        Owned<ILoadedDllEntry> querySo = createDllEntry(soPath.str(), false, NULL);
+                        Owned<ILoadedDllEntry> querySo = createDllEntry(soPath.str(), false, NULL, false);
 
                         Owned<IPropertyTree> workUnitInfo = createPTree(msg);
                         StringBuffer user;

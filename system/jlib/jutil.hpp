@@ -73,7 +73,8 @@ public:
     
     bool load(const char * dllName, bool isGlobal, bool raiseOnError=false);
     bool loadCurrentExecutable();
-    bool loaded()       { return h != 0; }
+    bool loadResources(const char * dllName);
+    bool loaded() const { return h != 0; }
     void unload();
     HINSTANCE getInstanceHandle() const { return h; }
     void *getEntry(const char * name) const;

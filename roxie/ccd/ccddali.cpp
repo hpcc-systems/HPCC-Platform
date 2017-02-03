@@ -851,7 +851,7 @@ public:
             {
                 try
                 {
-                    return createDllEntry(localName.str(), false, NULL);
+                    return createDllEntry(localName.str(), false, NULL, false);
                 }
                 catch (ICorruptDllException *E)
                 {
@@ -874,6 +874,10 @@ public:
             started = true;
         }
         return queryDllServer().loadDll(name, location);
+    }
+    virtual ILoadedDllEntry * loadDllResources(const char * name, DllLocationType location) 
+    {
+        throwUnexpected();
     }
 } roxieDllServer;
 
