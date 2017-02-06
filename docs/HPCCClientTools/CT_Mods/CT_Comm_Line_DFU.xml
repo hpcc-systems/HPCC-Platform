@@ -407,10 +407,14 @@ replicate=1</programlisting>
                     endian) and the size of integer to contain it (<emphasis
                     role="bold">1</emphasis> to <emphasis
                     role="bold">8</emphasis> bytes). If format and size are
-                    omitted, the default is L4. <para>Use in conjunction with
-                    the <emphasis>filename</emphasis> option to retain the
-                    appropriate file structure and to allow for despray into
-                    same. </para></entry>
+                    omitted, the default is L4. <para>When using wildcard
+                    characters (* and ?) to spray multiple source files
+                    (srcfile) to a single dstname, you MUST use both the
+                    filename and filesize options if you need to be able to
+                    despray the contents of each record in the dstname back to
+                    the multiple source files they originally came from. If
+                    you never need to do that, then the filesize option may be
+                    omitted. </para></entry>
                   </row>
 
                   <row>
@@ -650,10 +654,13 @@ END;</programlisting>
                   <entry>Uses the prepended size of the file (see the
                   <emphasis>prefix</emphasis> option to the spray
                   <emphasis>operation</emphasis>) to split out the data into
-                  separate files.<para>Use in conjunction with the
-                  <emphasis>filename</emphasis> option to retain the
-                  appropriate file structure and to allow for despray into
-                  same. </para></entry>
+                  separate files.<para>When using wildcard characters (* and
+                  ?) to spray multiple source files (srcfile) to a single
+                  dstname, you MUST use both the filename and filesize options
+                  if you need to be able to despray the contents of each
+                  record in the dstname back to the multiple source files they
+                  originally came from. If you never need to do that, then the
+                  filesize option may be omitted. </para></entry>
                 </row>
               </tbody>
             </tgroup>
