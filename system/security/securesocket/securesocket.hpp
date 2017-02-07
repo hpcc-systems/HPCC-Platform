@@ -31,11 +31,7 @@
 #include "jsocket.hpp"
 #include "jptree.hpp"
 
-#ifdef _WIN32
-#define SSLIB "securesocket.dll"
-#else
-#define SSLIB "libsecuresocket.so"
-#endif
+#define SSLIB "securesocket"
 
 enum SecureSocketType
 {

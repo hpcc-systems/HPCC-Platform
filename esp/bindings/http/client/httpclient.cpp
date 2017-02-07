@@ -60,15 +60,15 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
         CriticalBlock b(m_sscrit);
         if(m_ssctx.get() == NULL)
         {
+            StringBuffer libName;
+            IEspPlugin *pplg = loadPlugin(libName.append(SharedObjectPrefix).append(SSLIB).append(SharedObjectExtension));
+            if (!pplg)
+                throw MakeStringException(-1, "dll/shared-object %s can't be loaded", libName.str());
+
             if(m_config.get() == NULL)
             {
                 createSecureSocketContext_t xproc = NULL;
-                IEspPlugin *pplg = loadPlugin(SSLIB);
-                if (pplg)
-                    xproc = (createSecureSocketContext_t) pplg->getProcAddress("createSecureSocketContext");
-                else
-                    throw MakeStringException(-1, "dll/shared-object %s can't be loaded", SSLIB);
-
+                xproc = (createSecureSocketContext_t) pplg->getProcAddress("createSecureSocketContext");
                 if (xproc)
                     m_ssctx.setown(xproc(ClientSocket));
                 else
@@ -77,12 +77,7 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
             else
             {
                 createSecureSocketContextEx2_t xproc = NULL;
-                IEspPlugin *pplg = loadPlugin(SSLIB);
-                if (pplg)
-                    xproc = (createSecureSocketContextEx2_t) pplg->getProcAddress("createSecureSocketContextEx2");
-                else
-                    throw MakeStringException(-1, "dll/shared-object %s can't be loaded", SSLIB);
-
+                xproc = (createSecureSocketContextEx2_t) pplg->getProcAddress("createSecureSocketContextEx2");
                 if (xproc)
                     m_ssctx.setown(xproc(m_config.get(),ClientSocket));
                 else

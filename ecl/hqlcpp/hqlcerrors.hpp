@@ -273,6 +273,7 @@
 #define HQLWRN_OnlyLocalMergeJoin               4545
 #define HQLWRN_WorkflowDependParameter          4546
 #define HQLWRN_OutputScalarInsideChildQuery     4547
+#define HQLWRN_GlobalDatasetFromChildQuery      4548
 
 //Temporary errors
 #define HQLERR_OrderOnVarlengthStrings          4601
@@ -564,6 +565,7 @@
 #define HQLWRN_OnlyLocalMergeJoin_Text          "Only LOCAL versions of %s are currently supported on THOR"
 #define HQLWRN_WorkflowDependParameter_Text     "Workflow action %s appears to be dependent upon a parameter"
 #define HQLWRN_OutputScalarInsideChildQuery_Text "Output(%s) of single value inside a child query has undefined behaviour"
+#define HQLWRN_GlobalDatasetFromChildQuery_Text "Global dataset expression (%s) is used in a child query"
 
 #define HQLERR_DistributionVariableLengthX_Text "DISTRIBUTION does not support variable length field '%s'"
 #define HQLERR_DistributionUnsupportedTypeXX_Text "DISTRIBUTION does not support field '%s' with type %s"

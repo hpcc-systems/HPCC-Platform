@@ -1831,7 +1831,6 @@ protected: friend class PipeWriterThread;
             CriticalBlock block(sect); // clear forkthread and stderrbufferthread
             ft.setown(forkthread.getClear());
             et = stderrbufferthread;
-            stderrbufferthread = NULL;
         }
         if (ft)
         {
@@ -1841,7 +1840,7 @@ protected: friend class PipeWriterThread;
         if (et)
         {
             et->stop();
-            delete et;
+            // NOTE - we don't delete it here, since we want to be able to still read the buffered data
         }
     }
 public:
@@ -1870,6 +1869,7 @@ public:
         closeOutput();
         closeError();
         clearUtilityThreads();
+        delete stderrbufferthread;
     }
 
 

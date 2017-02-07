@@ -29,6 +29,7 @@ from hpcc.util import argparse
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress, parentPath, checkClusters, checkHpccStatus
+from hpcc.util.expandcheck import ExpandCheck
 from hpcc.common.error import Error
 from hpcc.common.config import Config
 
@@ -49,7 +50,7 @@ class RegressMain:
     def query(self):
         if not self.args.query:
             print "\nMissing ECL query file!\n"
-            parser_query.print_help()
+            self.parser_query.print_help()
             exit()
         eclfiles=[]   # List for ECL filenames to be executed
         for ecl in self.args.query:
@@ -114,6 +115,7 @@ class RegressMain:
         prog = "ecl-test"
         description = 'HPCC Platform Regression suite'
         pythonVer = getVersionNumbers()
+        defaultConfigFile="ecl-test.json"
 
         if (pythonVer['main'] <= 2) and (pythonVer['minor'] <=6) and (pythonVer['patch'] <6):
             print "\nError!"
@@ -132,7 +134,7 @@ class RegressMain:
 
         helperParser=argparse.ArgumentParser(add_help=False)
         helperParser.add_argument('--config', help="config file to use. Default: ecl-test.json",
-                            nargs='?', default="ecl-test.json")
+                            nargs='?', default=defaultConfigFile)
         helperParser.add_argument('--loglevel', help="set the log level. Use debug for more detailed logfile.",
                             nargs='?', default="info",
                             choices=['info', 'debug'])
@@ -185,16 +187,26 @@ class RegressMain:
         parser_run.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                                 action='store_true')
 
-        parser_query = subparsers.add_parser('query', help='query help',  parents=[helperParser, commonParser, executionParser])
-        parser_query.set_defaults(func='query')
-        parser_query.add_argument('query', help="One or more ECL file(s). It can contain wildcards. (mandatory).",
+        self.parser_query = subparsers.add_parser('query', help='query help',  parents=[helperParser, commonParser, executionParser])
+        self.parser_query.set_defaults(func='query')
+        self.parser_query.add_argument('query', help="One or more ECL file(s). It can contain wildcards. (mandatory).",
                                   nargs='+', metavar="ECL_query")
-        parser_query.add_argument('--target', '-t', help="Target cluster(s) for query to run. If target = 'all' then run query on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).",
+        self.parser_query.add_argument('--target', '-t', help="Target cluster(s) for query to run. If target = 'all' then run query on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).",
                                 nargs='?', default='', metavar="target_cluster_list | all")
-        parser_query.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
+        self.parser_query.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                                 action='store_true')
 
         self.args = parser.parse_args()
+
+        regressionSuiteMainDir = os.path.dirname(__file__)
+        regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
+
+        if defaultConfigFile == self.args.config:
+            # Resolve Regression Suite starting path for ecl-test.json config file
+            # It is necessary when Regression Suite doesn't started from its home directory
+            self.args.config = str(os.path.join(regressionSuiteFullPath, self.args.config))
+        else:
+            self.args.config = ExpandCheck.dirExists(self.args.config, True,  True)
 
         # Process config parameter
         self.config = Config(self.args.config).configObj
@@ -246,12 +258,6 @@ class RegressMain:
             if self.args.X[0]== "5000":
                 self.regress = None
                 raise Error(self.args.X[0])
-
-            # Resolve Regression Suite starting path for ecl-test.json config file
-            # It is necessary when Regression Suite doesn't started from its home directory
-            regressionSuiteMainDir = os.path.dirname(__file__)
-            regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
-            self.args.config = str(os.path.join(regressionSuiteFullPath, self.args.config))
 
             self.regressionSuiteHpccMainOsDir = regressionSuiteFullPath
             self.regressionSuiteHpccMainEclDir = convertPath(regressionSuiteFullPath)+"::download"

@@ -118,9 +118,10 @@ unsigned doPipeCommand(StringBuffer &output, const char *cmd, const char *args, 
         if (input)
             printf("with input %s\n", input);
     }
-    unsigned ret = runExternalCommand(output, runcmd, input);
+    StringBuffer error;
+    unsigned ret = runExternalCommand(output, error, runcmd, input);
     if (optVerbose && (ret > 0))
-        printf("%s return code was %d\n", cmd, ret);
+        printf("%s return code was %d\n%s\n", cmd, ret, error.str());
     return ret;
 }
 
@@ -414,7 +415,11 @@ public:
                                     " [ (UTF8) COUNT(B.dependsOn) ] + B.dependsOn + "
                                     " [ (UTF8) #IFDEFINED(B.platformVersion, '')]", bundleName.str());
             if (doPipeCommand(output, queryEclccPath(), eclOpts.str(), bundleCmd) > 0)
+            {
+                if (optVerbose)
+                    printf("eclcc reported:\n%s", output.str());
                 throw MakeStringException(0, "%s cannot be parsed as a bundle\n", suppliedname);
+            }
             // output should contain [ 'name', 'version', etc ... ]
             if (optVerbose)
                 printf("Bundle info from ECL compiler: %s\n", output.str());

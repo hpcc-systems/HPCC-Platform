@@ -430,25 +430,25 @@ void CSmartSocketFactory::setStatus(SocketEndpoint &ep, bool status)
 
 StringBuffer & CSmartSocketFactory::getUrlStr(StringBuffer &url, bool useHostName)
 {
-	SmartSocketEndpoint * sep = nextSmartEndpoint();
-	if (sep)
-	{
-		SocketEndpoint ep;
-		if(useHostName && sep->name.length())
-		{
-			url.append(sep->name.str());
-			ep = sep->ep;
-			if (ep.port)
-				url.append(':').append((unsigned)ep.port);
-		}
-		else
-		{
-			sep->checkHost(dnsInterval);
-			SocketEndpoint ep = sep->ep;
-			ep.getUrlStr(url);
-		}
-	}
-	return url;
+    SmartSocketEndpoint * sep = nextSmartEndpoint();
+    if (sep)
+    {
+        SocketEndpoint ep;
+        if(useHostName && sep->name.length())
+        {
+            url.append(sep->name.str());
+            ep = sep->ep;
+            if (ep.port)
+                url.append(':').append((unsigned)ep.port);
+        }
+        else
+        {
+            sep->checkHost(dnsInterval);
+            SocketEndpoint ep = sep->ep;
+            ep.getUrlStr(url);
+        }
+    }
+    return url;
 }
 
 ISmartSocketFactory *createSmartSocketFactory(const char *_socklist, bool _retry, unsigned _retryInterval, unsigned _dnsInterval) {

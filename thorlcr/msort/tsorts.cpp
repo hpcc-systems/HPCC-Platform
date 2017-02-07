@@ -997,7 +997,15 @@ public:
         assertex(transferserver.get()!=NULL);
         if (intercept)
             rowArray.kill(); // don't need samples any more. All merged from disk.
-        transferserver->merge(mapsize,map,mapupper,num,endpoints,partno);
+        try
+        {
+            transferserver->merge(mapsize,map,mapupper,num,endpoints,partno);
+        }
+        catch (IException *e)
+        {
+            startmergesem.interrupt(e);
+            stop();
+        }
     }
     virtual void SingleMerge()
     {
