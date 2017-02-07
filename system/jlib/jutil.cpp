@@ -1746,7 +1746,7 @@ static const char *findExtension(const char *fn)
     return ret;
 }
 
-unsigned runExternalCommand(StringBuffer &output, StringBuffer &error, const char *cmd, const char *input)
+unsigned runExternalCommand(StringBuffer &output, const char *cmd, const char *input)
 {
     try
     {
@@ -1766,6 +1766,7 @@ unsigned runExternalCommand(StringBuffer &output, StringBuffer &error, const cha
             output.append(read, buf);
         }
         int ret = pipe->wait();
+        StringBuffer error;
         while (true)
         {
             size32_t read = pipe->readError(sizeof(buf), buf);

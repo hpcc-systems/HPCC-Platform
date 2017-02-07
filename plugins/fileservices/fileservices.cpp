@@ -500,10 +500,10 @@ FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData(ICodeContext * ctx
 
 FILESERVICES_API char * FILESERVICES_CALL fsCmdProcess(const char *prog, const char *src)
 {
-    StringBuffer in, out, err;
+    StringBuffer in, out;
     in.append(src);
 
-    runExternalCommand(out, err, prog, in);
+    runExternalCommand(out, prog, in);
 
     return CTXSTRDUP(parentCtx, out.str());
 }
@@ -511,10 +511,10 @@ FILESERVICES_API char * FILESERVICES_CALL fsCmdProcess(const char *prog, const c
 
 FILESERVICES_API void FILESERVICES_CALL fsCmdProcess2(unsigned & tgtLen, char * & tgt, const char *prog, unsigned srcLen, const char * src)
 {
-    StringBuffer in, out, err;
+    StringBuffer in, out;
     in.append(srcLen, src);
 
-    runExternalCommand(out, err, prog, in);
+    runExternalCommand(out, prog, in);
 
     tgtLen = out.length();
     tgt = (char *)CTXDUP(parentCtx, out.str(), out.length());
