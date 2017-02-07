@@ -26,6 +26,7 @@
 - [ ] This change is a bug fix (non-breaking change which fixes an issue).
 - [ ] This change is a new feature (non-breaking change which adds functionality).
 - [ ] This change is a breaking change (fix or feature that will cause existing behavior to change).
+- [ ] This change alters the query API (existing queries will have to be recompiled)
 
 ## Checklist:
 - [ ] My code follows the code style of this project.
@@ -34,7 +35,7 @@
   - [ ] I have updated the documentation accordingly, or...
   - [ ] I have created a JIRA ticket to update the documentation.
   - [ ] Any new interfaces or exported functions are appropriately commented.
-- [ ] I have read the CONTRIBUTING document.
+- [ ] I have read the CONTRIBUTORS document.
 - [ ] The change has been fully tested:
   - [ ] I have added tests to cover my changes.
   - [ ] All new and existing tests passed.
@@ -44,7 +45,9 @@
   - [ ] Scalability
   - [ ] Performance
   - [ ] Security
+  - [ ] Thread-safety
   - [ ] Premature optimization
+  - [ ] Existing deployed queries will not be broken
   - [ ] This change fixes the problem, not just the symptom
   - [ ] The target branch of this pull request is appropriate for such a change.
 - [ ] There are no similar instances of the same problem that should be addressed
