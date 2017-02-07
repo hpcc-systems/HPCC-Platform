@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+//Ensure that we test the case where the last field in a record is a variable length row.
+#option ('varFieldAccessorThreshold', 1);
+
 childRec := RECORD
     UNSIGNED id;
     STRING name;
