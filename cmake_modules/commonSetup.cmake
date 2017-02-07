@@ -183,9 +183,15 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
           set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --default-key ${SIGN_MODULES_KEYID}")
       endif()
       set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --output sm_keycheck.asc --clearsign sm_keycheck.tmp")
+      execute_process(COMMAND rm -f sm_keycheck.tmp sm_keycheck.asc TIMEOUT 5
+		  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} OUTPUT_QUIET ERROR_QUIET)
+      execute_process(COMMAND touch sm_keycheck.tmp TIMEOUT 5
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} RESULT_VARIABLE t_rc
+          OUTPUT_QUIET ERROR_QUIET)
+      if(NOT "${t_rc}" STREQUAL "0")
+          message(FATAL_ERROR "Failed to create sm_keycheck.tmp for signing")
+      endif()
       execute_process(
-          COMMAND rm -f sm_keycheck.tmp sm_keycheck.asc
-          COMMAND touch sm_keycheck.tmp
           COMMAND bash "-c" "${GPG_COMMAND_STR}"
           TIMOUT 120
           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
