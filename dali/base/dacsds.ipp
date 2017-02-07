@@ -164,7 +164,7 @@ static void checkValidSubscriptionPath(const char *xpath)
 {
     bool quote=false, sep=false;
     const char *_xpath = xpath;
-    loop
+    for (;;)
     {
         char next = *_xpath;
         if ('\0' == next)

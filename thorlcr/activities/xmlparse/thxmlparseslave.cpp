@@ -84,11 +84,11 @@ public:
         }
         try
         {
-            loop
+            for (;;)
             {
                 if (xmlParser)
                 {
-                    loop
+                    for (;;)
                     {
                         if (!xmlParser->next())
                         {

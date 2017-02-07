@@ -54,7 +54,7 @@ IPropertyTree *sendRoxieControlQuery(ISocket *sock, const char *msg, unsigned wa
     sock->write(msg, msglen);
 
     StringBuffer resp;
-    loop
+    for (;;)
     {
         sock->read(&len, sizeof(len));
         if (!len)

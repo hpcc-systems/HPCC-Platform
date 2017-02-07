@@ -609,7 +609,7 @@ void checkSuperFileOwnership(IDistributedFile &file)
         Owned<IPropertyTreeIterator> iter = file.queryAttributes().getElements("SuperOwner");
         if (iter->first())
         {
-            loop
+            for (;;)
             {
                 iter->query().getProp(NULL, owners);
                 if (!iter->next())
@@ -633,7 +633,7 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned he
         f = &iter->query();
     }
     StringBuffer kindStr(activityKindStr(activity->queryContainer().getKind()));
-    loop
+    for (;;)
     {
         unsigned dfsCrc;
         if (f->getFormatCrc(dfsCrc) && helperCrc != dfsCrc)

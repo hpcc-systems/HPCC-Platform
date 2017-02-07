@@ -191,7 +191,7 @@ int copyExpanded(const char *from, const char *to, bool stats)
     offset_t offset = 0;
     try
     {
-        loop {
+        for (;;) {
             size32_t got = cmpio.get()?cmpio->read(offset,BUFFERSIZE, buffer):
                 (strmsrc?strmsrc->read(BUFFERSIZE, buffer):
                     srcio->read(offset, BUFFERSIZE, buffer));
@@ -333,7 +333,7 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
     offset_t offset = 0;
     try
     {
-        loop {
+        for (;;) {
             size32_t got = cmpio.get()?cmpio->read(offset, BUFFERSIZE, buffer):srcio->read(offset, BUFFERSIZE, buffer);
             if (got == 0)
                 break;

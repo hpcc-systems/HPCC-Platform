@@ -144,7 +144,7 @@ public:
     }
     ~LinkedRowQueue()
     {
-        loop
+        for (;;)
         {
             const void * next = dequeue();
             if (!next)
@@ -751,7 +751,7 @@ public:
 
     void kill()
     {
-        loop
+        for (;;)
         {
             const void * next = dequeue();
             if (!next)

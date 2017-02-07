@@ -147,7 +147,7 @@ void HqlDllGenerator::addLibrary(const char * name)
 void HqlDllGenerator::addLibrariesToCompiler()
 {
     unsigned idx=0;
-    loop
+    for (;;)
     {
         const char * lib = code->queryLibrary(idx);
         if (!lib)
@@ -157,7 +157,7 @@ void HqlDllGenerator::addLibrariesToCompiler()
         idx++;
     }
     idx=0;
-    loop
+    for (;;)
     {
         const char * obj = code->queryObjectFile(idx);
         if (!obj)
@@ -167,7 +167,7 @@ void HqlDllGenerator::addLibrariesToCompiler()
         idx++;
     }
     idx=0;
-    loop
+    for (;;)
     {
         const char * src = code->querySourceFile(idx);
         if (!src)

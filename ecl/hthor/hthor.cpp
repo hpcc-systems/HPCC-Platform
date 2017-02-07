@@ -794,7 +794,7 @@ const void *CHThorSpillActivity::nextRow()
 
 void CHThorSpillActivity::stop()
 {
-    loop 
+    for (;;)
     {
         OwnedConstRoxieRow nextrec(nextRow());
         if (!nextrec) 
@@ -827,7 +827,7 @@ void CHThorCsvWriteActivity::execute()
 
     // Loop thru the results
     numRecords = 0;
-    loop
+    for (;;)
     {
         OwnedConstRoxieRow nextrec(input->nextRow());
         if (!nextrec)
@@ -921,7 +921,7 @@ void CHThorXmlWriteActivity::execute()
     writer->outputBeginArray(rowTag); //need to set up the array
     writer->clear(); //but not output it
 
-    loop
+    for (;;)
     {
         OwnedConstRoxieRow nextrec(input->nextRow());
         if (!nextrec)
@@ -1094,7 +1094,7 @@ void CHThorIndexWriteActivity::execute()
                 return builder->createBlob(size, (const char *) ptr);
             }
         } bc(builder);
-        loop
+        for (;;)
         {
             OwnedConstRoxieRow nextrec(input->nextRow());
             if (!nextrec)
@@ -1417,7 +1417,7 @@ public:
     {
         try
         {
-            loop
+            for (;;)
             {
                 const void * row = helper->nextInput();
                 if (row)
@@ -1685,7 +1685,7 @@ public:
 
     virtual void execute()
     {
-        loop
+        for (;;)
         {
             const void *row = input->nextRow();
             if (!row)
@@ -1763,7 +1763,7 @@ void CHThorIterateActivity::ready()
 
 const void *CHThorIterateActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         right.setown(input->nextRow());
         if(!right)
@@ -1820,7 +1820,7 @@ const void *CHThorProcessActivity::nextRow()
 {
     try
     {
-        loop
+        for (;;)
         {
             OwnedConstRoxieRow next(input->nextRow());
             if (!next)
@@ -1877,7 +1877,7 @@ void CHThorNormalizeActivity::ready()
 
 const void *CHThorNormalizeActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         while (curRow == numThisRow)
         {
@@ -1925,7 +1925,7 @@ CHThorNormalizeChildActivity::~CHThorNormalizeChildActivity()
 
 bool CHThorNormalizeChildActivity::advanceInput()
 {
-    loop
+    for (;;)
     {
         inbuff.setown(input->nextRow());
         if (!inbuff && (processed == numProcessedLastGroup))
@@ -1962,7 +1962,7 @@ void CHThorNormalizeChildActivity::ready()
 
 const void *CHThorNormalizeChildActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         if (!inbuff)
         {
@@ -1993,7 +1993,7 @@ const void *CHThorNormalizeChildActivity::nextRow()
 //=================================================================================
 bool CHThorNormalizeLinkedChildActivity::advanceInput()
 {
-    loop
+    for (;;)
     {
         curParent.setown(input->nextRow());
         if (!curParent && (processed == numProcessedLastGroup))
@@ -2033,7 +2033,7 @@ void CHThorNormalizeLinkedChildActivity::stop()
 
 const void * CHThorNormalizeLinkedChildActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         if (!curParent)
         {
@@ -2077,7 +2077,7 @@ void CHThorProjectActivity::ready()
 
 const void * CHThorProjectActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         OwnedConstRoxieRow in(input->nextRow());
         if (!in)
@@ -2126,7 +2126,7 @@ const void * CHThorPrefetchProjectActivity::nextRow()
 {
     if (eof)
         return NULL;
-    loop
+    for (;;)
     {
         try
         {
@@ -2189,7 +2189,7 @@ const void * CHThorFilterProjectActivity::nextRow()
 {
     if (eof)
         return NULL;
-    loop
+    for (;;)
     {
         OwnedConstRoxieRow in = input->nextRow();
         if (!in)
@@ -2240,7 +2240,7 @@ void CHThorCountProjectActivity::ready()
 
 const void * CHThorCountProjectActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         OwnedConstRoxieRow in = input->nextRow();
         if (!in)
@@ -2299,7 +2299,7 @@ void CHThorRollupActivity::stop()
 
 const void *CHThorRollupActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         right.setown(input->nextRow());
         if(!prev || !right || !helper.matches(prev,right))
@@ -2367,7 +2367,7 @@ void CHThorGroupDedupKeepLeftActivity::stop()
 const void *CHThorGroupDedupKeepLeftActivity::nextRow()
 {
     OwnedConstRoxieRow next;
-    loop
+    for (;;)
     {
         next.setown(input->nextRow());
         if (!prev || !next || !helper.matches(prev,next))
@@ -2393,7 +2393,7 @@ const void *CHThorGroupDedupKeepLeftActivity::nextRow()
 const void * CHThorGroupDedupKeepLeftActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
     OwnedConstRoxieRow next;
-    loop
+    for (;;)
     {
         next.setown(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
         if (!prev || !next || !helper.matches(prev,next))
@@ -2467,7 +2467,7 @@ const void *CHThorGroupDedupKeepRightActivity::nextRow()
     }
 
     OwnedConstRoxieRow next;
-    loop
+    for (;;)
     {
         next.setown(input->nextRow());
         if (!kept || !next || !helper.matches(kept,next))
@@ -2702,7 +2702,7 @@ const void * CHThorFilterActivity::nextRow()
     if (eof)
         return NULL;
 
-    loop
+    for (;;)
     {
         OwnedConstRoxieRow ret(input->nextRow());
         if (!ret)
@@ -2783,7 +2783,7 @@ void CHThorFilterGroupActivity::stop()
 
 const void * CHThorFilterGroupActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         if (eof)
             return NULL;
@@ -3161,7 +3161,7 @@ void CHThorSampleActivity::ready()
 
 const void * CHThorSampleActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         OwnedConstRoxieRow ret(input->nextRow());
         if (!ret)
@@ -3225,7 +3225,7 @@ const void * CHThorAggregateActivity::nextRow()
         bool abortEarly = (kind == TAKexistsaggregate) && !input->isGrouped();
         if (!abortEarly)
         {
-            loop
+            for (;;)
             {
                 next = input->nextRow();
                 if (!next)
@@ -3277,7 +3277,7 @@ const void * CHThorHashAggregateActivity::nextRow()
     {
         bool eog = true;
         aggregated.start(rowAllocator);
-        loop
+        for (;;)
         {
             OwnedConstRoxieRow next(input->nextRow());
             if (!next)
@@ -3394,7 +3394,7 @@ const void * CHThorFirstNActivity::nextRow()
         return NULL;
 
     OwnedConstRoxieRow ret;
-    loop
+    for (;;)
     {
         ret.setown(input->nextRow());
         if (!ret)
@@ -3466,7 +3466,7 @@ const void * CHThorChooseSetsActivity::nextRow()
     if (finished)
         return NULL;
 
-    loop
+    for (;;)
     {
         OwnedConstRoxieRow ret(input->nextRow());
         if (!ret)
@@ -3956,7 +3956,7 @@ bool CHThorGroupSortActivity::sortAndSpillRows()
 void CSimpleSorterBase::spillSortedToDisk(IDiskMerger * merger)
 {
     Owned<IRowWriter> out = merger->createWriteBlock();
-    loop
+    for (;;)
     {
         const void *row = getNextSorted();
         if (!row)
@@ -4661,7 +4661,7 @@ void CHThorJoinActivity::failLimit()
 
 const void *CHThorJoinActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         switch (state)
         {
@@ -6138,7 +6138,7 @@ void CHThorWorkUnitWriteActivity::execute()
             sb.appendf("<Dataset name='Result %d'>\n", seq+1);
         agent.queryOutputSerializer()->fwrite(seq, (const void*)sb.str(), 1, sb.length());
     }
-    loop
+    for (;;)
     {
         if ((unsigned __int64)rows >= agent.queryStopAfter())
             break;
@@ -6231,7 +6231,7 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
     assertex(sequence < 0);
 
     RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
-    loop
+    for (;;)
     {
         const void *row = input->nextRow();
         if (!row)
@@ -6637,11 +6637,11 @@ const void * CHThorRollupGroupActivity::nextRow()
     if (eof)
         return NULL;
 
-    loop
+    for (;;)
     {
         OwnedRowArray group;
 
-        loop
+        for (;;)
         {
             const void * in = input->nextRow();
             if (!in)
@@ -6697,7 +6697,7 @@ void CHThorCombineActivity::nextInputs(OwnedRowArray & out)
 
 const void *CHThorCombineActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         OwnedRowArray group;
         nextInputs(group);
@@ -6760,7 +6760,7 @@ void CHThorCombineGroupActivity::setInput(unsigned index, IHThorInput *_input)
 
 const void *CHThorCombineGroupActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         OwnedConstRoxieRow left(input->nextRow());
         if (!left && (numProcessedLastGroup == processed))
@@ -6780,7 +6780,7 @@ const void *CHThorCombineGroupActivity::nextRow()
         }
 
         OwnedRowArray group;
-        loop
+        for (;;)
         {
             const void * in = input1->nextRow();
             if (!in)
@@ -6821,7 +6821,7 @@ void CHThorApplyActivity::execute()
     try
     {
         helper.start();
-        loop
+        for (;;)
         {
             OwnedConstRoxieRow next(input->nextRow());
             if (!next)
@@ -6855,7 +6855,7 @@ void CHThorDistributionActivity::execute()
     helper.clearAggregate(accumulator); 
 
     OwnedConstRoxieRow nextrec(input->nextRow());
-    loop
+    for (;;)
     {
         if (!nextrec)
         {
@@ -7038,7 +7038,7 @@ unsigned CHThorParseActivity::onMatch(ARowBuilder & self, const void * curRecord
 
 const void * CHThorParseActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         if (rowIter->isValid())
         {
@@ -7101,7 +7101,7 @@ const void * CHThorEnthActivity::nextRow()
     if(!started)
         start();
     OwnedConstRoxieRow ret;
-    loop
+    for (;;)
     {
         ret.setown(input->nextRow());
         if(!ret) //end of group
@@ -7270,11 +7270,11 @@ void CHThorXmlParseActivity::stop()
 
 const void * CHThorXmlParseActivity::nextRow()
 {
-    loop
+    for (;;)
     {
         if(xmlParser)
         {
-            loop
+            for (;;)
             {
                 bool gotNext = false;
                 try
@@ -7607,7 +7607,7 @@ void CHThorDatasetResultActivity::execute()
 {
     rowdata.clear();
     IRecordSize * inputMeta = input->queryOutputMeta();
-    loop
+    for (;;)
     {
         OwnedConstRoxieRow nextrec(input->nextRow());
         if (!nextrec)
@@ -7875,7 +7875,7 @@ const void *CHThorChildThroughNormalizeActivity::nextRow()
 {
     try
     {
-        loop
+        for (;;)
         {
             if (ok)
                 ok = helper.next();
@@ -8554,16 +8554,16 @@ void CHThorDiskNormalizeActivity::gatherInfo(IFileDescriptor * fd)
 const void *CHThorDiskNormalizeActivity::nextRow()
 {
     if (!opened) open();
-    loop
+    for (;;)
     {
         if (eofseen || (stopAfter && (processed - initialProcessed) >= stopAfter)) 
             break;
 
-        loop
+        for (;;)
         {
             if (expanding)
             {
-                loop
+                for (;;)
                 {
                     expanding = helper.next();
                     if (!expanding)
@@ -8748,7 +8748,7 @@ const void *CHThorDiskCountActivity::nextRow()
     {
         if (!opened) open();
 
-        loop
+        for (;;)
         {
             if (eofseen) 
                 break;
@@ -8936,7 +8936,7 @@ const void *CHThorCsvReadActivity::nextRow()
         {
             size32_t rowSize = 4096; // MORE - make configurable
             size32_t thisLineLength;
-            loop
+            for (;;)
             {
                 size32_t avail;
                 const void *peek = inputstream->peek(rowSize, avail);
@@ -9019,7 +9019,7 @@ void CHThorCsvReadActivity::checkOpenNext()
             open();
     }
 
-    loop
+    for (;;)
     {
         if (eofseen || !inputstream->eos())
             return;
@@ -9183,7 +9183,7 @@ CHThorLocalResultWriteActivity::CHThorLocalResultWriteActivity(IAgentContext &_a
 void CHThorLocalResultWriteActivity::execute()
 {
     IHThorGraphResult * result = graph->createResult(helper.querySequence(), LINK(rowAllocator));
-    loop
+    for (;;)
     {
         const void *nextrec = input->nextRow();
         if (!nextrec)
@@ -9208,7 +9208,7 @@ CHThorDictionaryResultWriteActivity::CHThorDictionaryResultWriteActivity (IAgent
 void CHThorDictionaryResultWriteActivity::execute()
 {
     RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
-    loop
+    for (;;)
     {
         const void *row = input->nextRow();
         if (!row)
@@ -9272,7 +9272,7 @@ const void * CHThorLocalResultSpillActivity::nextRow()
 
 void CHThorLocalResultSpillActivity::stop()
 {
-    loop
+    for (;;)
     {
         const void * ret = input->nextRow();
         if (!ret)
@@ -9332,9 +9332,9 @@ const void * CHThorLoopActivity::nextRow()
         return NULL;
 
     unsigned emptyIterations = 0;
-    loop
+    for (;;)
     {
-        loop
+        for (;;)
         {
             const void * ret = curInput->nextRow();
             if (!ret)
@@ -9498,7 +9498,7 @@ CHThorGraphLoopResultWriteActivity::CHThorGraphLoopResultWriteActivity(IAgentCon
 void CHThorGraphLoopResultWriteActivity::execute()
 {
     IHThorGraphResult * result = graph->createGraphLoopResult(LINK(rowAllocator));
-    loop
+    for (;;)
     {
         const void *nextrec = input->nextRow();
         if (!nextrec)
@@ -9568,7 +9568,7 @@ const void * CHThorGraphLoopActivity::nextRow()
         executed = true;
 
         IHThorGraphResult * inputResult = loopResults->createResult(0, LINK(rowAllocator));
-        loop
+        for (;;)
         {
             const void * ret = input->nextRow();
             if (!ret)
@@ -9642,7 +9642,7 @@ const void * CHThorParallelGraphLoopActivity::nextRow()
         executed = true;
 
         IHThorGraphResult * inputResult = loopResults->createResult(0, LINK(rowAllocator));
-        loop
+        for (;;)
         {
             const void * ret = input->nextRow();
             if (!ret)

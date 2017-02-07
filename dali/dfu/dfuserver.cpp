@@ -179,7 +179,7 @@ int main(int argc, const char *argv[])
             addAbortHandler(exitDFUserver);
         }
         const char *q = queue.str();
-        loop {
+        for (;;) {
             StringBuffer subq;
             const char *comma = strchr(q,',');
             if (comma)

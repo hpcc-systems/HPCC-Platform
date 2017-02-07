@@ -988,7 +988,7 @@ void QTest(bool testput)
             }
             else {
 #if 1
-                loop {
+                for (;;) {
                     if (channel->get(mb,0,100))
                         break;
                     printf(".");
@@ -1056,7 +1056,7 @@ void Test_Session(const char *eps) // test for sessions
     cnotify->sem.wait();
     INode *node = createINode(eps,7777);
     SessionId id;
-    loop {
+    for (;;) {
         id = querySessionManager().lookupProcessSession(node);
         if (id) {
             PrintLog("Session looked up %" I64F "d",id);
@@ -1314,7 +1314,7 @@ public:
     }
     virtual int run()
     {
-        loop
+        for (;;)
         {
             conn->queryRoot()->setPropInt("testprop", rand()*100);
             conn->commit();
@@ -2322,7 +2322,7 @@ public:
                 conn.setown(querySDS().connect(xpath.get(), myProcessSession(), mode, 10000*MDELAY));
                 if (!conn)
                 {
-                    loop
+                    for (;;)
                     {
                         PROGLOG("creating initial branch");
                         conn.setown(querySDS().connect(xpath.get(), myProcessSession(), RTM_CREATE| RTM_LOCK_WRITE, 10000*MDELAY));
@@ -2393,7 +2393,7 @@ void TestSDS3(IGroup *group)
     SDS3Params params;
     params.reinitLock = &reinitLock;
     params.group = group;
-    loop
+    for (;;)
     {
         pool->start(&params, NULL, 50000); // keep starting them as they become available
     }
@@ -2825,7 +2825,7 @@ public:
     int run()
     {
         try {
-            loop {
+            for (;;) {
                 Sleep(getRandom()%1000);
                 unsigned i = getRandom()%NCCS;
                 PrintLog("%s locking %d",name,i);
@@ -2891,7 +2891,7 @@ public:
     int run()
     {
         try {
-            loop {
+            for (;;) {
                 unsigned i = getRandom()%NMEMPTRS;
                 if (ptrs[i])
                     free(ptrs[i]);

@@ -268,7 +268,7 @@ public:
                     *b++ = *bufPtr++;
                 bufPtr = bs;
                 fetched = 0;
-                loop
+                for (;;)
                 {
                     size32_t sz = read(b+fetched, halfBufSize-fetched);
                     fetched += sz;
@@ -294,7 +294,7 @@ public:
                         *b++ = *bufPtr++;
                     bufPtr = bs;
                     fetched = 0;
-                    loop
+                    for (;;)
                     {
                         if (READSIZE_UNSPECIFIED == sz)
                             sz = baseBufSize;

@@ -80,7 +80,7 @@ static int versionCompare(const char *v1, const char *v2, bool strict)
     a1.appendList(v1, ".");
     a2.appendList(v2, ".");
     int i = 0;
-    loop
+    for (;;)
     {
         if (a1.isItem(i) && a2.isItem(i))
         {

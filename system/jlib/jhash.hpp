@@ -531,7 +531,7 @@ public:
                 i = 0;
         }
         unsigned j = i+1;
-        loop {
+        for (;;) {
             if (j==htn)
                 j = 0;
             C *cn = table[j];

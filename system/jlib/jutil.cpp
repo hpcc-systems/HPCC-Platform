@@ -151,7 +151,7 @@ void MilliSleep(unsigned milli)
 {
     if (milli) {
         unsigned target = msTick()+milli;
-        loop {
+        for (;;) {
             timespec sleepTime;
             
             if (milli>=1000)
@@ -1343,7 +1343,7 @@ static inline byte decode_32c(char c)
 
 void JBASE32_Decode(const char *bi,StringBuffer &out)
 {
-    loop {
+    for (;;) {
         byte b[8];
         for (unsigned i=0;i<8;i++)
             b[i] =  decode_32c(*(bi++));
@@ -1381,7 +1381,7 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
         c = 0;
     StringBuffer str;
     unsigned dstlen=dst.ordinality();
-    loop {
+    for (;;) {
         while (isspace(*s))
             s++;
         if (!*s&&(dst.ordinality()==dstlen)) // this check is to allow trailing separators (e.g. ",," is 3 (NULL) entries) but not generate an entry for ""
@@ -1575,7 +1575,7 @@ int make_daemon(bool printpid)
 //Calculate the greatest common divisor using Euclid's method
 unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 right)
 {
-    loop
+    for (;;)
     {
         if (left > right)
         {
@@ -1735,7 +1735,7 @@ static const char *findExtension(const char *fn)
         return NULL;
     const char *ret = strchr(fn,'.');
     if (ret) {
-        loop {
+        for (;;) {
             ret++;
             const char *s = strchr(ret,'.');
             if (!s)
@@ -1812,7 +1812,7 @@ bool deduceMask(const char *fn, bool expandN, StringAttr &mask, unsigned &pret, 
     const char *e = findExtension(fn);
     if (!e)
         return false;
-    loop {                  
+    for (;;) {
         const char *s=e;
         if (*s=='_') {
             s++;
@@ -1840,7 +1840,7 @@ bool deduceMask(const char *fn, bool expandN, StringAttr &mask, unsigned &pret, 
             }
         }
         e--;
-        loop {
+        for (;;) {
             if (e==fn)
                 return false;
             if (*(e-1)=='.')
@@ -2205,7 +2205,7 @@ StringBuffer jlib_decl passwordInput(const char* prompt, StringBuffer& passwd)
 #ifdef _WIN32
     printf("%s", prompt);
     size32_t entrylen = passwd.length();
-    loop {
+    for (;;) {
         char c = getch();
         if (c == '\r') 
             break;
@@ -2462,7 +2462,7 @@ const char * matchConfigurationDirectoryEntry(const char *path,const char *mask,
     PointerArray val;
     const char *m = mask;
     const char *p = path;
-    loop {
+    for (;;) {
         char c = *m;
         if (!c)
             break;
@@ -2584,7 +2584,7 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
     int argc = 0;
     arg[0] = 0;
     char quotechar = 0;
-    loop {
+    for (;;) {
         char c = *(cmdline++);
         switch(c) {
         case ' ':

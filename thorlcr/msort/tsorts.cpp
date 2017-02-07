@@ -193,7 +193,7 @@ public:
         bool overflowed = false;
         ActPrintLog(&activity, "Local Overflow Merge start");
         unsigned ret=0;
-        loop
+        for (;;)
         {
             const void *_row = input->nextRow();
             if (!_row)
@@ -294,7 +294,7 @@ class CMiniSort
     {
         CMemoryRowSerializer out(mb);
         unsigned ret = 0;
-        loop
+        for (;;)
         {
             size32_t ln = mb.length();
             OwnedConstThorRow row = stream.nextRow();
@@ -373,7 +373,7 @@ class CMiniSort
         ActPrintLog(&activity, "MiniSort appending from primary node");
 #endif
         CMessageBuffer mbin;
-        loop
+        for (;;)
         {
             mbin.clear();
 #ifdef  _FULL_TRACE
@@ -406,7 +406,7 @@ class CMiniSort
 #endif
         CMessageBuffer mbin;
         bool first = true;
-        loop
+        for (;;)
         {
             mbin.clear();
             byte fn = 255;
@@ -462,7 +462,7 @@ public:
             Owned<IRowStream> spillableStream = spillableRows.createRowStream(SPILL_PRIORITY_SPILLABLE_STREAM, spillCompInfo);
 
             CMessageBuffer mb;
-            loop
+            for (;;)
             {
                 unsigned done = serialize(*spillableStream, mb.clear(), blksize);
 #ifdef  _FULL_TRACE
@@ -730,7 +730,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
         for (unsigned n=0;n<num;n++)
         {
             unsigned i = n;
-            loop                                      // adjustment for empty keys
+            for (;;)                                      // adjustment for empty keys
             {
                 if (i>=keys.ordinality())
                 {
@@ -1186,7 +1186,7 @@ public:
         )
     {
         ActPrintLog(activity, "Gather in");
-        loop {
+        for (;;) {
             if (abort)
                 return;
             if (startgathersem.wait(10000))

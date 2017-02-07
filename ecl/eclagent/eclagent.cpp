@@ -194,7 +194,7 @@ public:
     virtual int run()
     {
         port = HTHOR_DEBUG_BASE_PORT;
-        loop 
+        for (;;)
         {
             try 
             {
@@ -2569,7 +2569,7 @@ bool EclAgent::changePersistLockMode(IRemoteConnection *persistLock, unsigned mo
     //possible.  Otherwise lots of workunits each trying to convert read locks to write locks will mean
     //that the read lock is never released by all the workunits at the same time, so no workunit can progress.
     unsigned timeout = repeat ? PERSIST_LOCK_TIMEOUT : 0;
-    loop
+    for (;;)
     {
         try
         {
@@ -2612,7 +2612,7 @@ IRemoteConnection *EclAgent::getPersistReadLock(const char * logicalName)
 
     LOG(MCrunlock, unknownJob, "Waiting for persist read lock for %s", name);
     Owned<IRemoteConnection> persistLock;
-    loop
+    for (;;)
     {
         try
         {
@@ -2650,7 +2650,7 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntime
     //Loop trying to get a write lock - if it fails, then release the read lock, otherwise
     //you can get a deadlock with several things waiting to read, and none being able to write.
     bool rebuildAllPersists = globals->getPropBool("REBUILDPERSISTS", false);   // Useful for debugging purposes
-    loop
+    for (;;)
     {
         StringBuffer dummy;
         if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, dummy) && !rebuildAllPersists)
@@ -3085,7 +3085,7 @@ void EclAgent::abortMonitor()
 {
     StringBuffer errorText;
     unsigned guillotineleft = 0;
-    loop {
+    for (;;) {
         unsigned waittime = ABORT_CHECK_INTERVAL;   
         if (abortmonitor->guillotinetimeout) {
             if (guillotineleft==0) {
@@ -3165,7 +3165,7 @@ IGroup *EclAgent::getHThorGroup(StringBuffer &out)
     unsigned ins = 1;
     SocketEndpoint ep(0,queryMyNode()->endpoint());
     Owned<IGroup> mygrp = createIGroup(1,&ep);
-    loop
+    for (;;)
     {
         Owned<IGroup> grp = queryNamedGroupStore().lookup(mygroupname.str());
         if (!grp)
@@ -4110,7 +4110,7 @@ public:
         {
             if (forceEOF)
                 return NULL;
-            loop
+            for (;;)
             {
                 const void *ret = InputProbe::nextRow();
                 if (!ret)

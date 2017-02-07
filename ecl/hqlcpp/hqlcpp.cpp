@@ -245,7 +245,7 @@ inline bool isPushed(const CHqlBoundExpr & bound)
 
 bool isSimpleTranslatedStringExpr(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         node_operator op = expr->getOperator();
 
@@ -292,7 +292,7 @@ bool isSimpleTranslatedExpr(IHqlExpression * expr)
         return true;
     }
 
-    loop
+    for (;;)
     {
         node_operator op = expr->getOperator();
 
@@ -368,7 +368,7 @@ IHqlExpression * getAddress(IHqlExpression * expr)
 IHqlExpression * getRawAddress(IHqlExpression * expr)
 {
     OwnedHqlExpr raw = getAddress(expr);
-    loop
+    for (;;)
     {
         switch (raw->getOperator())
         {
@@ -11715,7 +11715,7 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
     text.setLength(cleanupEmbeddedCpp(text.length(), (char*)text.str()));
 
     const char * start = text.str();
-    loop
+    for (;;)
     {
         char next = *start;
         if (next == '\n')

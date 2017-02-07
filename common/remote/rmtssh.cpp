@@ -151,7 +151,7 @@ class CFRunSSH: public CInterface, implements IFRunSSH
             if (hash)
                 *hash = 0;
             char *finger = inbuf;
-            loop {
+            for (;;) {
                 while (isspace(*finger))
                     finger++;
                 char *start = finger;
@@ -424,7 +424,7 @@ public:
                     useplink, // for some reason plink needs input handle
                     true,true)) {
                     byte buf[4096];
-                    loop {
+                    for (;;) {
                         size32_t read = pipe->read(sizeof(buf),buf);
                         if (!read)
                             break;
@@ -432,7 +432,7 @@ public:
                     }
                     retcode = pipe->wait();
                     bool firsterr=true;
-                    loop {
+                    for (;;) {
                         size32_t read = pipe->readError(sizeof(buf),buf);
                         if (!read)
                             break;

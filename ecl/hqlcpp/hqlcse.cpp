@@ -880,7 +880,7 @@ CseScopeInfo * CseScopeTransformer::calcCommonLocation(CseScopeInfo * extra)
 IHqlExpression * CseScopeTransformer::findAliasLocation(CseScopeInfo * extra)
 {
     CseScopeInfo * best = calcCommonLocation(extra);
-    loop
+    for (;;)
     {
         if (!best)
             return NULL;
@@ -903,7 +903,7 @@ CseScopeInfo * CseScopeTransformer::selectParent(CseScopeInfo * info)
 
 CseScopeInfo * CseScopeTransformer::findCommonPath(CseScopeInfo * left, CseScopeInfo * right)
 {
-    loop
+    for (;;)
     {
         if (!left || !right)
             return NULL;

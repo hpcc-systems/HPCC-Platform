@@ -489,7 +489,7 @@ public:
         if (pipe->hasOutput())
         {
            byte buf[4096];
-           loop
+           for (;;)
            {
                 size32_t read = pipe->read(sizeof(buf),buf);
                 if (!read)
@@ -536,7 +536,7 @@ private:
         virtual int run()
         {
            byte buf[4096];
-           loop
+           for (;;)
            {
                 size32_t read = pipe->readError(sizeof(buf), buf);
                 if (!read)

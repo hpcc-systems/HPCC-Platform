@@ -149,7 +149,7 @@ public:
 
     ~CKeyBuilderBase()
     {
-        loop
+        for (;;)
         {
             CRC32HTE *et = (CRC32HTE *)crcEndPosTable.next(NULL);
             if (!et) break;

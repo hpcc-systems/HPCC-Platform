@@ -231,7 +231,7 @@ public:
     {
         // NB: readers call writeahead, which will block others
         CriticalBlock b(writeAheadCrit);
-        loop
+        for (;;)
         {
             if (eofHit)
                 return recsReady;
@@ -241,7 +241,7 @@ public:
             {
                 stalledWriters.append(&writeBlockSem);
                 stalledWriterIdxs.append(outIdx);
-                loop
+                for (;;)
                 {
                     {
                         CriticalUnblock ub(writeAheadCrit);
@@ -267,7 +267,7 @@ public:
 
         pagedOut = false;
         OwnedConstThorRow row;
-        loop
+        for (;;)
         {
             if (abortSoon || stopped || pagedOut)
                 break;

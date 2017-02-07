@@ -246,7 +246,7 @@ public:
     }
     int run()
     {
-        loop
+        for (;;)
         {
             if (stopped.wait(10000))
                 break;

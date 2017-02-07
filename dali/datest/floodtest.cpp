@@ -143,7 +143,7 @@ public:
         try {
             MemoryBuffer mb;
             bool first = true;
-            loop
+            for (;;)
             {
                 size32_t sz = sock->receive_block_size();
                 if (sz==0)
@@ -823,7 +823,7 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
     unsigned starttime;
     __int64 total=0;
     SocketEndpointArray epa;
-    loop {
+    for (;;) {
         schannel->get(mb.clear());
         unsigned fn;
         mb.read(fn);

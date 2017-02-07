@@ -44,7 +44,7 @@
 bool isMulti(const char *str)
 {
     if (str&&!isSpecialPath(str))
-        loop {
+        for (;;) {
             switch (*str) {
             case ',':
             case '*':
@@ -1283,7 +1283,7 @@ public:
         {
             UnsignedArray pia;
             unsigned pi;
-            loop
+            for (;;)
             {
                 mb.read(pi);
                 if (pi == (unsigned)-1)
@@ -2015,7 +2015,7 @@ public:
             unsigned p = 0;
             unsigned f = 0;
             bool found = false;
-            loop {
+            for (;;) {
                 if (f==subfilecounts->ordinality()) {
                     if (!found)
                         break; // no more
@@ -2505,7 +2505,7 @@ StringBuffer &getPartMask(StringBuffer &ret,const char *lname,unsigned partmax)
     if (lname) {
         bool maybequery = false;
         const char *lnamebase = lname;
-        loop {
+        for (;;) {
             const char *e = strstr(lname,"::");
             if (!e)
                 break;
@@ -2572,7 +2572,7 @@ StringBuffer &getPartMask(StringBuffer &ret,const char *lname,unsigned partmax)
 
 inline const char *skipRoot(const char *lname)
 {
-    loop {
+    for (;;) {
         while (*lname==' ')
             lname++;
         if (*lname!='.')
@@ -2886,7 +2886,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
     StringBuffer xpath;
     StringBuffer locpath;
     StringArray locdirs;
-    loop {
+    for (;;) {
         IPropertyTree *loc =  part1->queryPropTree(xpath.clear().appendf("Loc[%d]",nc+1));
         if (!loc)
             break;
@@ -2962,7 +2962,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
         map.replicateOffset = 0;
         unsigned i2;
         unsigned i3;
-        loop {
+        for (;;) {
             for (i2=1;i2<nc;i2++) {
                 for (i3=0;i3<epa[i2].ordinality();i3++) {
                     INode &node = grp->queryNode((i3+map.replicateOffset*i2)%grp->ordinality());

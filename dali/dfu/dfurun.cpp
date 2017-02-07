@@ -236,7 +236,7 @@ class CDFUengine: public CInterface, implements IDFUengine
                         e->Release();
                     }
                 }
-                loop {
+                for (;;) {
                     unsigned char mode;
                     StringAttr wuid;
                     Owned<IJobQueueItem> item = queue->dequeue(timeout);

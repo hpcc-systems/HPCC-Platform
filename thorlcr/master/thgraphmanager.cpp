@@ -473,7 +473,7 @@ void CJobManager::run()
         }
         void main()
         {
-            loop
+            for (;;)
             {
                 CMessageBuffer msg;
                 if (!queryWorldCommunicator().recv(msg, NULL, mptag))
@@ -548,7 +548,7 @@ void CJobManager::run()
             CIdleShutdown idleshutdown(globals->getPropInt("@idleRestartPeriod", IDLE_RESTART_PERIOD));
             if (exclLockDaliMutex.get())
             {
-                loop
+                for (;;)
                 {
                     while (!stopped && !jobq->ordinality()) // this is avoid tight loop when nothing on q.
                     {
@@ -997,7 +997,7 @@ public:
     ~CDaliConnectionValidator() { stop(); threaded.join(); }
     void main()
     {
-        loop
+        for (;;)
         {
             poll.wait(pollDelay);
             if (stopped) break;

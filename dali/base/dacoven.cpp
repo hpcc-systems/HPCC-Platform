@@ -444,7 +444,7 @@ public:
             else if (r>myrank) {
                 rank_t sender;
                 StringBuffer str;
-                loop
+                for (;;)
                 {
                     if (!recv(mb,r,MPTAG_DALI_COVEN_REQUEST,&sender,COVEN_SERVER_TIMEOUT)) {
                         throw MakeStringException(-1,"Could not connect to %s",grp->queryNode(r).endpoint().getUrlStr(str).str());

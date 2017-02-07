@@ -121,7 +121,7 @@ void CSlaveMessageHandler::main()
 {
     try
     {
-        loop
+        for (;;)
         {
             rank_t sender;
             CMessageBuffer msg;
@@ -223,7 +223,7 @@ void CSlaveMessageHandler::main()
                         parentExtract = graph->setParentCtx(parentExtractSz, parentExtract);
                     }
                     Owned<IException> exception;
-                    loop
+                    for (;;)
                     {
                         activity_id id;
                         msg.read(id);
@@ -1412,7 +1412,7 @@ void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mpt
     if (sendOnly) return;
     unsigned respondents = 0;
     Owned<IBitSet> bitSet = createThreadSafeBitSet();
-    loop
+    for (;;)
     {
         rank_t sender;
         CMessageBuffer msg;
@@ -1427,7 +1427,7 @@ void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mpt
             unsigned s = bitSet->scan(0, false);
             assertex(s<querySlaves()); // must be at least one
             tmpStr.append(s+1);
-            loop
+            for (;;)
             {
                 s = bitSet->scan(s+1, false);
                 if (s>=querySlaves())
@@ -1966,9 +1966,9 @@ class CCollatedResult : implements IThorResult, public CSimpleInterface
         CThorStreamDeserializerSource rowSource(stream);
         unsigned todo = numSlaves;
 
-        loop
+        for (;;)
         {
-            loop
+            for (;;)
             {
                 if (activity.queryAbortSoon())
                     return;
@@ -2235,7 +2235,7 @@ bool CMasterGraph::serializeActivityInitData(unsigned slave, MemoryBuffer &mb, I
 
 void CMasterGraph::readActivityInitData(MemoryBuffer &mb, unsigned slave)
 {
-    loop
+    for (;;)
     {
         activity_id id;
         mb.read(id);

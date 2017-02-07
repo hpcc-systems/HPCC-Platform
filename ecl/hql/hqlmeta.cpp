@@ -1774,7 +1774,7 @@ IHqlExpression * createMatchingDistribution(IHqlExpression * expr, const HqlExpr
 
 static IHqlExpression * queryColocalDataset(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {

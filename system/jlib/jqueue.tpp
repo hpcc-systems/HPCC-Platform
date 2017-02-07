@@ -221,7 +221,7 @@ public:
             if (e==ptrs[tailp])
                 return num-1;
             unsigned i=headp;
-            loop {
+            for (;;) {
                 if (ptrs[i]==e) {
                     if (i<headp)
                         i += max;

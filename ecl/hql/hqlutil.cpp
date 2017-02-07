@@ -398,7 +398,7 @@ bool containsOnlyLeft(IHqlExpression * expr, bool ignoreSelfOrFilepos)
 
 IHqlExpression * queryPhysicalRootTable(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -1722,7 +1722,7 @@ public:
 static IHqlExpression * walkHints(IHqlExpression * expr, IHintVisitor & visitor)
 {
     //First look for any hint annotations.
-    loop
+    for (;;)
     {
         annotate_kind kind = expr->getAnnotationKind();
         if (kind == annotate_meta)
@@ -2972,7 +2972,7 @@ bool RecordSelectIterator::doNext()
 {
     while (indices.ordinality())
     {
-        loop
+        for (;;)
         {
             unsigned next = indices.tos();
             IHqlExpression & curRecord = records.tos();
@@ -3136,7 +3136,7 @@ bool transformListContainsSkip(IHqlExpression * transforms)
 
 IHqlExpression * queryNextRecordField(IHqlExpression * record, unsigned & idx)
 {
-    loop
+    for (;;)
     {
         IHqlExpression * cur = record->queryChild(idx++);
         if (!cur || cur->getOperator() == no_field)
@@ -3420,7 +3420,7 @@ IHqlExpression * queryNextMultiLevelDataset(IHqlExpression * expr, bool followAc
         return NULL;
 
     IHqlExpression * ds = root->queryChild(0);
-    loop
+    for (;;)
     {
         if (ds->isDataset())
             return ds;
@@ -4359,7 +4359,7 @@ IDefRecordElement * createMetaRecord(IHqlExpression * record, IMaxSizeCallback *
 
 static bool doContainsExpression(IHqlExpression * expr, IHqlExpression * search)
 {
-    loop
+    for (;;)
     {
         if (expr->queryTransformExtra())
             return false;
@@ -5560,7 +5560,7 @@ bool isConstantTransform(IHqlExpression * transform)
 //would be sensible to extend this to some simple expressions
 static bool isSimpleValue(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         if (expr->isConstant())
             return true;
@@ -5586,7 +5586,7 @@ static bool isSimpleValue(IHqlExpression * expr)
 
 IHqlExpression * queryUncastExpr(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         if (!isCast(expr))
             return expr;
@@ -7315,7 +7315,7 @@ extern HQL_API bool isSteppedDataset(IHqlExpression * expr)
 
 extern HQL_API IHqlExpression * queryFieldFromExpr(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -7369,7 +7369,7 @@ extern HQL_API bool isFieldSelectedFromRecord(IHqlExpression * expr)
         return false;
     }
 
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -8979,7 +8979,7 @@ static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLook
 IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx)
 {
     OwnedHqlExpr query = LINK(expr);
-    loop
+    for (;;)
     {
         OwnedHqlExpr transformed = transformAttributeToQuery(query, ctx);
         if (!transformed || transformed == query)
@@ -9066,7 +9066,7 @@ include a unique id.  The root table doesn't need to be modified because no sele
 
 IHqlExpression * queryTableOrSplitter(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         node_operator op = expr->getOperator();
         if (op == no_compound)

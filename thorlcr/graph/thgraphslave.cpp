@@ -774,7 +774,7 @@ void CSlaveGraph::reset()
 void CSlaveGraph::initWithActData(MemoryBuffer &in, MemoryBuffer &out)
 {
     activity_id id;
-    loop
+    for (;;)
     {
         in.read(id);
         if (0 == id) break;
@@ -1284,9 +1284,9 @@ IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IThorRowInter
     Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
     CThorStreamDeserializerSource rowSource(stream);
 
-    loop
+    for (;;)
     {
-        loop
+        for (;;)
         {
             if (activity.queryAbortSoon())
                 return NULL;

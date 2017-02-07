@@ -1088,7 +1088,7 @@ public:
         for (unsigned i=0; i<10 ; i++)
             a.append(*new CChange(i));
         unsigned last = 0;
-        loop {
+        for (;;) {
             Sleep(1000);
             {
                 CriticalBlock block(subchangesect);
@@ -2405,7 +2405,7 @@ public:
                              };
         PROGLOG("Checking valid logical filenames");
         unsigned nlfn=0;
-        loop
+        for (;;)
         {
             const char *lfn = lfns[nlfn++];
             if (NULL == lfn)
@@ -2426,7 +2426,7 @@ public:
         }
         PROGLOG("Checking invalid logical filenames");
         nlfn = 0;
-        loop
+        for (;;)
         {
             const char *lfn = invalidLfns[nlfn++];
             if (NULL == lfn)
@@ -2499,7 +2499,7 @@ public:
 
         PROGLOG("Checking external filenames detection and normalization");
         unsigned nlfn=0;
-        loop
+        for (;;)
         {
             const char *lfn = validExternalLfns[nlfn][inFileName];
             if (nullptr == lfn)
@@ -2524,7 +2524,7 @@ public:
 
         PROGLOG("Checking valid internal filenames");
         nlfn=0;
-        loop
+        for (;;)
         {
             const char *lfn = validInternalLfns[nlfn][inFileName];
             if (nullptr == lfn)

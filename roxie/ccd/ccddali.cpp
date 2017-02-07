@@ -379,7 +379,7 @@ private:
     static StringBuffer &normalizeName(const char *name, StringBuffer &ret)
     {
         // Ensure only chars that are accepted by jptree in an xpath element are used
-        loop
+        for (;;)
         {
             char c = *name++;
             if (!c)

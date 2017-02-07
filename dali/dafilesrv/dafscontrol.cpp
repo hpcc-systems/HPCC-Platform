@@ -301,7 +301,7 @@ int main(int argc, char* argv[])
             quiet = true;
             ac--;
         }
-        loop {
+        for (;;) {
             if (ai>=ac) {
                 usage();
                 break;

@@ -989,7 +989,7 @@ ISocket* CSocket::accept(bool allowcancel)
         THROWJSOCKEXCEPTION(JSOCKERR_connectionless_socket);
     }
     T_SOCKET newsock;
-    loop {
+    for (;;) {
         in_accept = true;
         newsock = (sock!=INVALID_SOCKET)?::accept(sock, NULL, NULL):INVALID_SOCKET;
         in_accept = false;
@@ -1952,7 +1952,7 @@ size32_t CSocket::udp_write_to(const SocketEndpoint &ep, void const* buf, size32
     }
     size32_t res=0;
     DEFINE_SOCKADDR(u); 
-    loop {
+    for (;;) {
         socklen_t  ul = setSockAddr(u,ep,ep.port);      
         int rc = sendto(sock, (char*)buf, size, 0, &u.sa, ul);
         if (rc < 0) {
@@ -2074,7 +2074,7 @@ EintrRetry:
     size32_t left = total;
     byte *b = NULL;
     size32_t s=0;
-    loop {
+    for (;;) {
         while (!s&&(i<num)) {
             b = (byte *)buf[i];
             s = size[i];
@@ -2972,7 +2972,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
         if (entry->h_addr_list[0]) {
             unsigned ptr = 0;
             if (!PreferredSubnet.isNull()) {
-                loop {
+                for (;;) {
                     ptr++;
                     if (entry->h_addr_list[ptr]==NULL) {
                         ptr = 0;
@@ -2996,7 +2996,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
     struct addrinfo hints;
     memset(&hints,0,sizeof(hints));
     struct addrinfo  *addrInfo = NULL;
-    loop {
+    for (;;) {
         memset(&hints,0,sizeof(hints));
         int ret = getaddrinfo(name, NULL , &hints, &addrInfo);
         if (!ret) 
@@ -3016,7 +3016,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
     }
     struct addrinfo  *best = NULL;
     bool snm = !PreferredSubnet.isNull();
-    loop {
+    for (;;) {
         struct addrinfo  *ai;
         for (ai = addrInfo; ai; ai = ai->ai_next) {
 //          printf("flags=%d, family=%d, socktype=%d, protocol=%d, addrlen=%d, canonname=%s\n",ai->ai_flags,ai->ai_family,ai->ai_socktype,ai->ai_protocol,ai->ai_addrlen,ai->ai_canonname?ai->ai_canonname:"NULL");
@@ -3381,7 +3381,7 @@ void SocketListCreator::addSocket(const char * ip, unsigned port)
         else
         {
             const char * cur = ip;
-            loop
+            for (;;)
             {
                 char n = *cur;
                 if (!n)
@@ -3468,7 +3468,7 @@ bool SocketListParser::next(StringAttr & ip, unsigned & port)
         //count the number of dots in the tail
         const char * cur = cursor;
         unsigned count = 0;
-        loop
+        for (;;)
         {
             char c = *cur++;
             switch (c)
@@ -3487,7 +3487,7 @@ done:
         //copy up to the appropriate dot from the previous ip.
         const unsigned dotCount = 3;        //more what about 6 digit ip's
         cur = lastIp;
-        loop
+        for (;;)
         {
             char c = *cur++;
             switch (c)
@@ -3513,7 +3513,7 @@ done2:;
 
     bool inPort = false;
     port = lastPort;
-    loop
+    for (;;)
     {
         char c = *cursor++;
         switch (c)
@@ -3898,7 +3898,7 @@ class CSocketSelectThread: public CSocketBaseThread
         assertex(items.ordinality()<HASHTABSIZE-1);
         ForEachItemIn(i,items) {
             unsigned h = HASHSOCKET(items.item(i).handle);
-            loop {
+            for (;;) {
                 if (hashtab[h]==HASHNULL) {
                     hashtab[h] = (byte)i;
                     break;
@@ -3913,7 +3913,7 @@ class CSocketSelectThread: public CSocketBaseThread
     {
         unsigned h = HASHSOCKET(handle);
         unsigned sh = h;
-        loop {
+        for (;;) {
             SelectItem &i=items.element(hashtab[h]);
             if (i.handle==handle) 
                 return i;
@@ -3925,7 +3925,7 @@ class CSocketSelectThread: public CSocketBaseThread
 
     inline void processfds(T_FD_SET &s,byte mode,SelectItemArray &tonotify)
     {
-        loop {
+        for (;;) {
             T_SOCKET sock = popfds(s);
             if (!sock)
                 break;
@@ -4357,7 +4357,7 @@ public:
     void add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
         CriticalBlock block(sect);
-        loop {
+        for (;;) {
             bool added=false;
             ForEachItemIn(i,threads) {
                 if (added)
@@ -5195,7 +5195,7 @@ public:
 
     unsigned short setRandomPort(unsigned short base, unsigned num)
     {
-        loop {
+        for (;;) {
             try {
                 ep.port = base+(unsigned short)(getRandom()%num);
                 listensock.setown(ISocket::create(ep.port));
@@ -5225,7 +5225,7 @@ public:
         if (!sock) {
             ISocket *newsock=NULL;
             state = Saccept;
-            loop {
+            for (;;) {
                 try {
                     { 
                         CriticalUnblock unblock(crit);
@@ -5630,7 +5630,7 @@ void multiConnect(const SocketEndpointArray &eps,ISocketConnectNotify &inotify,u
     if (remaining) {
         unsigned lastremaining=remaining;
         selecthandler->start();
-        loop {
+        for (;;) {
             bool to=!notifysem.wait(timeout);
             {
                 CriticalBlock block(sect);
@@ -5834,7 +5834,7 @@ inline bool appendv4range(SocketEndpointArray *array,char *str,SocketEndpoint &e
             StringBuffer tmp;
             ep.getIpText(tmp);
             dc++;
-            loop { 
+            for (;;) {
                 if (tmp.length()==0)
                     return false;
                 if (tmp.charAt(tmp.length()-1)=='.')
@@ -5884,7 +5884,7 @@ void SocketEndpointArray::fromText(const char *text,unsigned defport)
     char *s = str;
     SocketEndpoint ep;
     bool eol = false;
-    loop {
+    for (;;) {
         while (isspace(*s)||(*s==','))
             s++;
         if (!*s)

@@ -746,7 +746,7 @@ class JlibReaderWriterTestTiming : public CppUnit::TestFixture
 
         virtual int run()
         {
-            loop
+            for (;;)
             {
                 const void * next;
                 if (!source.dequeue(next))

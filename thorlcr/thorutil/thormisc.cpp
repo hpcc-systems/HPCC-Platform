@@ -1158,7 +1158,7 @@ public:
     {
         if (eos) return NULL;
 
-        loop
+        for (;;)
         {
             while (!memDeserializer.eos()) 
             {
@@ -1169,7 +1169,7 @@ public:
             // no msg just give me data
             if (!comm.send(msg, node, mpTag, LONGTIMEOUT)) // should never timeout, unless other end down
                 throw MakeStringException(0, "CRowStreamFromNode: Failed to send data request from node %d, to node %d", myNode, node);
-            loop
+            for (;;)
             {
                 if (abortSoon)
                     break;
@@ -1301,9 +1301,9 @@ void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *in
     MemoryBuffer mb;
     CMemoryRowSerializer mbs(mb);
     IOutputRowSerializer *serializer = rowIf->queryRowSerializer();
-    loop
+    for (;;)
     {
-        loop
+        for (;;)
         {
             OwnedConstThorRow row = input->nextRow();
             if (!row)

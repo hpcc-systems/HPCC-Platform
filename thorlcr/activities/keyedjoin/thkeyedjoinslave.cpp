@@ -414,7 +414,7 @@ public:
     {
         assertex(head == head->groupHead());
         CJoinGroup *finger = head;
-        loop
+        for (;;)
         {
             CJoinGroup *next = finger->next;
             if (!next->inGroup(head))
@@ -486,7 +486,7 @@ public:
         {
             CriticalBlock c(crit);
             CJoinGroup *p = &head;
-            loop
+            for (;;)
             {
                 p = p->next;
                 if (p == &head) break;
@@ -499,7 +499,7 @@ public:
         if (tc)
         {
             str.append("CJoinGroup rowsSeen : ");
-            loop
+            for (;;)
             {
                 str.append(counts.item(i));
                 i++;
@@ -1051,11 +1051,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                         assertex(!replyWaiting);
                         CThorExpandingRowArray dstList(owner, owner.fetchInputMetaRowIf);
                         unsigned dstP=0;
-                        loop
+                        for (;;)
                         {
                             // delay if more than max or if few sends and growing # of replies
                             bool throttleBig = pendingReplies >= blockRequestsAt;
-                            loop
+                            for (;;)
                             {
                                 if (!throttleBig)
                                 {
@@ -1115,7 +1115,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             try
             {
                 CMessageBuffer msg;
-                loop
+                for (;;)
                 {
                     crit.enter();
                     if (aborted || stopped)
@@ -1282,7 +1282,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             try
             {
-                loop
+                for (;;)
                 {
                     if (currentPart)
                     {
@@ -1349,7 +1349,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     }
                     else if (currentTlk)
                     {
-                        loop
+                        for (;;)
                         {
                             if (!tlkManager->lookup(false)) break;
                             if (tlkManager->queryFpos()) // don't bail out if part0 match, test again for 'real' tlk match.
@@ -1674,7 +1674,7 @@ public:
     }
     bool waitPendingGroups()
     {
-        loop
+        for (;;)
         {
             {
                 if (eos)
@@ -2136,7 +2136,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (!abortSoon && !eos)
         {
-            loop
+            for (;;)
             {
                 if (djg.get())
                 {
@@ -2183,7 +2183,7 @@ public:
                             case TAKkeyedjoin:
                             {
                                 row.ensureRow();
-                                loop
+                                for (;;)
                                 {
                                     if (currentMatchIdx >= currentMatched)
                                     {

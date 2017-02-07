@@ -416,7 +416,7 @@ bool mustInitializeField(IHqlExpression * field)
 
 bool worthGeneratingRowAsSingleActivity(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {

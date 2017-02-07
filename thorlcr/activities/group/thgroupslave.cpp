@@ -98,7 +98,7 @@ public:
             if (next)
             {
                 ActPrintLog("GROUP: Sending first group to previous node(%d)", queryJobChannel().queryMyRank()-1);
-                loop
+                for (;;)
                 {
                     writer->putRow(next.getLink());
                     if (abortSoon)

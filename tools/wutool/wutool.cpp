@@ -1472,7 +1472,7 @@ protected:
         __int64 cachehint = 0;
         numIterated = 0;
         int startRow = 0;
-        loop
+        for (;;)
         {
             wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFstate|WUSFreverse), filterByCluster, "WuTestCluster0", startRow, 1, &cachehint, NULL));
             if (!wus->first())
@@ -1495,7 +1495,7 @@ protected:
         cachehint = 0;
         numIterated = 0;
         startRow = 0;
-        loop
+        for (;;)
         {
             wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFwuid|WUSFreverse), filterByCluster, "WuTestCluster0", startRow, 1, &cachehint, NULL));
             if (!wus->first())
@@ -1518,7 +1518,7 @@ protected:
         cachehint = 0;
         numIterated = 0;
         startRow = 0;
-        loop
+        for (;;)
         {
             wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFwuid), filterByCluster, "WuTestCluster0", startRow, 1, &cachehint, NULL));
             if (!wus->first())
@@ -1551,7 +1551,7 @@ protected:
         numIterated = 0;
         unsigned startRow = 0;
         unsigned prevThorTime = 0;
-        loop
+        for (;;)
         {
             wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFtotalthortime|WUSFreverse), NULL, NULL, startRow, 1, &cachehint, NULL));
             if (!wus->first())

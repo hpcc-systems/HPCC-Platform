@@ -163,7 +163,7 @@ public:
             }
             ~CNotifyThread()
             {
-                loop
+                for (;;)
                 {
                     if (threaded.join(60000))
                         break;
@@ -877,7 +877,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
             {
                 return NULL;
             }
-            loop
+            for (;;)
             {
                 OwnedConstThorRow row = partHandler->nextRow();
                 if (row)

@@ -254,7 +254,7 @@ unsigned SuperHashTable::doFindExact(const void *et) const
         i = getHashFromElement(et) % tablesize;
 #endif
         unsigned is = i;
-        loop
+        for (;;)
         {
             const void * cur = table[i];
             if (!cur || cur == et)
@@ -276,7 +276,7 @@ void SuperHashTable::ensure(unsigned mincount)
         return;
 
     unsigned newsize = tablesize;
-    loop
+    for (;;)
     {
 #ifdef HASHSIZE_POWER2
         newsize += newsize;

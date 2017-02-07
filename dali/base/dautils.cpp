@@ -444,7 +444,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                 }
             }
         }
-        loop
+        for (;;)
         {
             s+=2;
             const char *ns = strstr(s,"::");
@@ -900,7 +900,7 @@ unsigned CDfsLogicalFileName::numScopes(bool removeforeign) const
         s += localpos;
     // num scopes = number of "::"s
     unsigned ret = 0;
-    loop {
+    for (;;) {
         s = strstr(s,"::");
         if (!s)
             return ret;
@@ -919,7 +919,7 @@ StringBuffer &CDfsLogicalFileName::getScope(StringBuffer &buf,unsigned idx,bool 
     if (removeforeign)
         s += localpos;
     // num scopes = number of "::"s
-    loop {
+    for (;;) {
         const char *p = s;
         s = strstr(s,"::");
         if (idx--==0) {
@@ -942,7 +942,7 @@ StringBuffer &CDfsLogicalFileName::makeScopeQuery(StringBuffer &query, bool abso
     // returns full xpath for containing scope
     const char *s=get(true);    // skip foreign
     bool first=true;
-    loop {
+    for (;;) {
         const char *e=strstr(s,"::");
         if (!e)
             break;
@@ -967,7 +967,7 @@ StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) con
 {
     const char *s=get(true);    // skip foreign
     // Ensure only chars that are accepted by jptree in an xpath element are used
-    loop
+    for (;;)
     {
         const char *e=strstr(s,"::");
         if ((e && 0 != strncmp(".", s, e-s)) || (!e && !streq(".", s))) // skip '.' scopes
@@ -1070,7 +1070,7 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
         s += 2;                 // no leading '\'
     const char *s1=s;
     const char *t1=NULL;
-    loop {
+    for (;;) {
         s1 = strstr(s1,"::");
         if (!s1)
             break;
@@ -1169,7 +1169,7 @@ bool CDfsLogicalFileName::setFromMask(const char *fname,const char *rootdir)
         fname++;
     }
     StringBuffer logicalName;
-    loop {
+    for (;;) {
         if (*fname==0)  // we didn't find tail
             return false;
         if (isPathSepChar(*fname))
@@ -1179,7 +1179,7 @@ bool CDfsLogicalFileName::setFromMask(const char *fname,const char *rootdir)
                 if (strchr(fname+1,'.')==NULL) { // check for multiple extension
                     fname++;
                     if (*fname=='_') {
-                        loop {
+                        for (;;) {
                             fname++;
                             if (!*fname)
                                 return false;
@@ -1347,7 +1347,7 @@ IPropertyTree *deserializePartAttr(MemoryBuffer &mb)
         pt->setProp(NULL, val);
     }
     if (flags&PAF_HAS_SUB) {
-        loop {
+        for (;;) {
             StringAttr name;
             mb.read(name);
             if (name.length()==0)
@@ -1358,7 +1358,7 @@ IPropertyTree *deserializePartAttr(MemoryBuffer &mb)
     StringAttr _aname;
     StringAttr avalue;
     StringBuffer aname("@");
-    loop {
+    for (;;) {
         mb.read(_aname);
         if (!_aname.length())
             break;
@@ -1429,7 +1429,7 @@ unsigned getFileGroups(const char *grplist,StringArray &groups)
     StringBuffer gs;
     unsigned sq = 0;
     unsigned pa = 0;
-    loop {
+    for (;;) {
         char c = *(s++);
         if (!c||((c==',')&&!sq&&!pa)) {
             gs.clip();
@@ -1546,7 +1546,7 @@ bool shrinkFileTree(IPropertyTree *file)
     IPropertyTree **parts = (IPropertyTree **)calloc(n,sizeof(IPropertyTree *));
 
     unsigned i;
-    loop {
+    for (;;) {
         IPropertyTree *part = file->getBranch("Part[1]");
         if (!part)
             break;
@@ -1728,7 +1728,7 @@ public:
         StringBuffer sk;
         const char *s = sortorder;
         int mod = 0;
-        loop {
+        for (;;) {
             if (!*s||(*s==',')) {
                 if (sk.length()) {
                     // could add '-' and '?' prefixes here (reverse/caseinsensitive)
@@ -1788,7 +1788,7 @@ public:
         else
         {
             unsigned k2=1;
-            loop
+            for (;;)
             {
                 v = sortvalues.item(idx).queryProp(key);
                 if (v || k2 == keys.ordinality())
@@ -2320,7 +2320,7 @@ IClusterFileScanIterator *getClusterFileScanIterator(
         bool next()
         {
             cur.clear();
-            loop {
+            for (;;) {
                 if (fn>=filenames.ordinality())
                     return false;
                 const char *fns = filenames.item(fn++);
@@ -2714,7 +2714,7 @@ public:
         bool next()
         {
             StringBuffer out;
-            loop {
+            for (;;) {
                 idx++;
                 if (idx>=parent.nmaps)
                     break;
@@ -2887,7 +2887,7 @@ void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &reload, 
     unsigned steptime = 1000*60*5;
     if ((timeoutms!=INFINITE)&&(steptime>timeoutms/2))
         steptime = timeoutms/2;
-    loop {
+    for (;;) {
         try {
             if ((timeoutms!=INFINITE)&&(steptime>timeoutms))
                 steptime = timeoutms;
@@ -3261,7 +3261,7 @@ public:
             CDateTime timeLocked;
             StringBuffer timeStr;
             unsigned c = 0;
-            loop
+            for (;;)
             {
                 CLockMetaData &lD = *ldInfo.item(c);
                 unsigned lockedFor = msNow-lD.timeLockObtained;

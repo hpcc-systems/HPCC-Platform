@@ -314,7 +314,7 @@ interface ISerialStream: extends IInterface
 
 /* example of reading a nul terminated string using ISerialStream peek and skip
 {
-    loop {
+    for (;;) {
         const char *s = peek(1,got);
         if (!s)
             break;  // eof before nul detected;

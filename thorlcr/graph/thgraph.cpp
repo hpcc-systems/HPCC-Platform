@@ -129,7 +129,7 @@ public:
             if (prev)
             {
                 bool eog;
-                loop
+                for (;;)
                 {
                     eog = false;
                     OwnedConstThorRow next = stream->nextRow();
@@ -150,7 +150,7 @@ public:
         }
         else
         {
-            loop
+            for (;;)
             {
                 OwnedConstThorRow row = stream->nextRow();
                 if (!row)
@@ -1081,7 +1081,7 @@ static void addDependencies(IPropertyTree *xgmml, bool failIfMissing, CGraphTabl
 
             CGraphBase *targetGraph = NULL;
             unsigned targetGraphContext = -1;
-            loop
+            for (;;)
             {
                 targetGraph = &targetActivity->queryOwner();
                 targetGraphContext = targetGraph->queryParentActivityId();
@@ -1212,7 +1212,7 @@ void CGraphBase::serializeCreateContexts(MemoryBuffer &mb)
 void CGraphBase::deserializeCreateContexts(MemoryBuffer &mb)
 {
     activity_id id;
-    loop
+    for (;;)
     {
         mb.read(id);
         if (0 == id) break;
@@ -1574,7 +1574,7 @@ protected:
                 return;
         }
         // check haven't been here before
-        loop
+        for (;;)
         {
             if (cur->getOutputs() < 2)
                 break;
@@ -1603,7 +1603,7 @@ public:
         Owned<IThorActivityIterator> sinkIter = graph.getSinkIterator();
         if (!sinkIter->first())
             return false;
-        loop
+        for (;;)
         {
             cur.set(& sinkIter->query());
             if (!cur->alreadyUpdated)
@@ -1818,7 +1818,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
         virtual CGraphBase &queryOriginalGraph() override { return *originalChildGraph; }
         virtual void abort(IException *e) override
         {
-            loop
+            for (;;)
             {
                 Owned<CGraphBase> activeChildGraph;
                 {
@@ -2294,7 +2294,7 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                 }
                 void main()
                 {
-                    loop
+                    for (;;)
                     {
                         Linked<CGraphBase> graph = graphInfo->subGraph;
                         Owned<IException> e;
@@ -2453,7 +2453,7 @@ public:
         }
         if (alreadyRunning)
         {
-            loop
+            for (;;)
             {
                 PROGLOG("Waiting on subgraph %" GIDPF "d", subGraph->queryGraphId());
                 if (runningSem.wait(MEDIUMTIMEOUT) || job.queryAborted() || job.queryPausing())

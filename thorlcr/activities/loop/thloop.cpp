@@ -46,7 +46,7 @@ protected:
         CMessageBuffer msg;
         while (n--) // a barrier really
         {
-            loop
+            for (;;)
             {
                 rank_t sender;
                 if (receiveMsg(msg, RANK_ALL, mpTag, &sender, SYNC_TIMEOUT))
@@ -170,7 +170,7 @@ class CLoopActivityMaster : public CLoopActivityMasterBase
         unsigned n = nodes;
         bool allEmptyIterations = true;
         CMessageBuffer msg;
-        loop
+        for (;;)
         {
             rank_t sender;
             if (!receiveMsg(msg, RANK_ALL, mpTag, &sender, LONGTIMEOUT))
@@ -219,7 +219,7 @@ public:
         {
             helper->createParentExtract(extractBuilder);
             unsigned loopCounter = 1;
-            loop
+            for (;;)
             {
                 if (sync(loopCounter))
                     break;
@@ -301,7 +301,7 @@ public:
         helper->createParentExtract(extractBuilder);
 
         unsigned loopCounter = 1;
-        loop
+        for (;;)
         {
             if (sync(loopCounter))
                 break;

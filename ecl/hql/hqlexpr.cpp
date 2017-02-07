@@ -693,7 +693,7 @@ extern HQL_API IHqlExpression * queryOperator(node_operator search, const HqlExp
 
 extern HQL_API IHqlExpression * queryAnnotation(IHqlExpression * expr, annotate_kind search)
 {
-    loop
+    for (;;)
     {
         annotate_kind kind = expr->getAnnotationKind();
         if (kind == search)
@@ -706,7 +706,7 @@ extern HQL_API IHqlExpression * queryAnnotation(IHqlExpression * expr, annotate_
 
 extern HQL_API IHqlExpression * cloneAnnotationKind(IHqlExpression * donor, IHqlExpression * expr, annotate_kind search)
 {
-    loop
+    for (;;)
     {
         annotate_kind kind = donor->getAnnotationKind();
         if (kind == annotate_none)
@@ -723,7 +723,7 @@ extern HQL_API IHqlExpression * cloneAnnotationKind(IHqlExpression * donor, IHql
 
 extern HQL_API IHqlExpression * cloneInheritedAnnotations(IHqlExpression * donor, IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         annotate_kind kind = donor->getAnnotationKind();
         if (kind == annotate_none)
@@ -783,7 +783,7 @@ extern HQL_API IHqlExpression * queryAnnotationAttribute(IAtom * search, IHqlExp
 
 extern HQL_API IHqlExpression * queryMetaAttribute(IAtom * search, IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         annotate_kind kind = expr->getAnnotationKind();
         if (kind == annotate_none)
@@ -800,7 +800,7 @@ extern HQL_API IHqlExpression * queryMetaAttribute(IAtom * search, IHqlExpressio
 
 extern HQL_API void gatherMetaAttributes(HqlExprArray & matches, IAtom * search, IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         annotate_kind kind = expr->getAnnotationKind();
         if (kind == annotate_none)
@@ -835,7 +835,7 @@ extern HQL_API void gatherAttributes(HqlExprArray & matches, IAtom * search, IHq
 extern HQL_API IHqlExpression * queryLocation(IHqlExpression * expr)
 {
     IHqlExpression * best = NULL;
-    loop
+    for (;;)
     {
         annotate_kind kind = expr->getAnnotationKind();
         if (kind == annotate_none)
@@ -850,7 +850,7 @@ extern HQL_API IHqlExpression * queryLocation(IHqlExpression * expr)
 
 extern HQL_API void gatherLocations(HqlExprCopyArray & matches, IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         annotate_kind kind = expr->getAnnotationKind();
         if (kind == annotate_none)
@@ -3038,7 +3038,7 @@ bool isAggregateDataset(IHqlExpression * expr)
 
 bool isAggregatedDataset(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         if (isAggregateDataset(expr))
             return true;
@@ -3489,7 +3489,7 @@ unsigned CHqlExpression::numChildren() const
 
 inline bool matchesTypeCode(ITypeInfo * type, type_t search)
 {
-    loop
+    for (;;)
     {
         if (!type)
             return false;
@@ -3512,7 +3512,7 @@ bool CHqlExpression::isBoolean()
 bool CHqlExpression::isDataset()
 {
     ITypeInfo * cur = queryType();
-    loop
+    for (;;)
     {
         if (!cur)
             return false;
@@ -5283,7 +5283,7 @@ void CUsedTablesBuilder::removeParent(IHqlExpression * expr)
     IHqlExpression * sel = expr->queryNormalizedSelector();
     removeActive(sel);
 
-    loop
+    for (;;)
     {
         IHqlExpression * root = queryRoot(expr);
         if (!root || root->getOperator() != no_select)
@@ -12771,7 +12771,7 @@ extern IHqlExpression *createDatasetFromRow(IHqlExpression * ownedRow)
 
 inline IHqlExpression * normalizeSelectLhs(IHqlExpression * lhs, bool & isNew)
 {
-    loop
+    for (;;)
     {
         switch (lhs->getOperator())
         {
@@ -14686,7 +14686,7 @@ IHqlExpression * replaceSelectorDataset(IHqlExpression * expr, IHqlExpression * 
 
 IHqlExpression * querySkipDatasetMeta(IHqlExpression * dataset)
 {
-    loop
+    for (;;)
     {
         switch (dataset->getOperator())
         {
@@ -15182,7 +15182,7 @@ unsigned unwoundCount(IHqlExpression * expr, node_operator op)
 
     unsigned count = 0;
     // comma almost always needs head recursion
-    loop
+    for (;;)
     {
         if (expr->getOperator() != op)
             return count+1;
@@ -16126,7 +16126,7 @@ IHqlExpression * convertToSimpleAggregate(IHqlExpression * expr)
         return NULL;
 
     IHqlExpression * ds = expr->queryChild(0);
-    loop
+    for (;;)
     {
         node_operator op = ds->getOperator();
         if ((op != no_sorted) && (op != no_distributed) && (op != no_unordered) && (op != no_preservemeta) && (op != no_alias_scope))
@@ -16318,7 +16318,7 @@ IHqlExpression * queryOriginalRecord(IHqlExpression * expr)
 
 IHqlExpression * queryOriginalTypeExpression(ITypeInfo * t)
 {
-    loop
+    for (;;)
     {
         typemod_t modifier = t->queryModifier();
         if (modifier == typemod_none)
@@ -16342,7 +16342,7 @@ IHqlExpression * queryOriginalRecord(ITypeInfo * t)
     if (!t)
         return NULL;
 
-    loop
+    for (;;)
     {
         typemod_t modifier = t->queryModifier();
         if (modifier == typemod_none)
@@ -16434,7 +16434,7 @@ IHqlExpression * queryNonDelayedBaseAttribute(IHqlExpression * expr)
     if (!expr)
         return NULL;
 
-    loop
+    for (;;)
     {
         node_operator op = expr->getOperator();
         switch (op)
@@ -16599,7 +16599,7 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
     HqlLookupContext ctx(parseCtx, errorHandler);
     if (items && *items)
     {
-        loop
+        for (;;)
         {
             const char * comma = strchr(items, ',');
             if (!comma)

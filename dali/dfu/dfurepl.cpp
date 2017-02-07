@@ -150,7 +150,7 @@ struct ReplicatePartItem: extends CInterface
     }
     void waitReplicate()
     {
-        loop {
+        for (;;) {
             bool alldone=true;
             ForEachItemIn(i1,copies) {  
                 if (!copies.item(i1).doneCopy(1000*60)) 

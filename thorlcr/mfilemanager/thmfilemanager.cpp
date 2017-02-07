@@ -658,7 +658,7 @@ void fillClusterArray(CJobBase &job, const char *filename, StringArray &clusters
             throw MakeStringException(0, "Could not find cluster group %s for file: %s", cluster, filename);
         EnvMachineOS os = queryOS(group->queryNode(0).endpoint());
         unsigned clusterIdx = 1;
-        loop
+        for (;;)
         {
             groups.append(*LINK(group));
             if (clusterIdx>=clusters.ordinality())

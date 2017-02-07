@@ -2358,7 +2358,7 @@ public:
             return puller.queryStream()->nextRow();
         else
         {
-            loop
+            for (;;)
             {
                 {
                     CriticalBlock b(crit);
@@ -2969,7 +2969,7 @@ protected:
     void removeEntry(IRoxieServerQueryPacket *goer)
     {
         unsigned v = goer->queryHash() % cacheTableSize;
-        loop
+        for (;;)
         {
             IRoxieServerQueryPacket *found = cacheTable[v];
             assertex(found);
@@ -2977,7 +2977,7 @@ protected:
             {
                 cacheTable[v] = NULL;
                 unsigned vn = v;
-                loop
+                for (;;)
                 {
                     vn++;
                     if (vn==cacheTableSize) vn = 0;
@@ -3031,7 +3031,7 @@ public:
             logctx.CTXLOG("CRoxieServerSideCache::findCachedResult hash %x slot %d %s", hash, et, p->queryHeader().toString(s).str());
         }
         CriticalBlock b(crit);
-        loop
+        for (;;)
         {
             IRoxieServerQueryPacket *found = cacheTable[et];
             if (!found)
@@ -3067,7 +3067,7 @@ public:
                 DBGLOG("CRoxieServerSideCache::noteCachedResult hash %x slot %d %s", hash, et, out->queryPacket()->queryHeader().toString(s).str());
             }
             CriticalBlock b(crit);
-            loop
+            for (;;)
             {
                 IRoxieServerQueryPacket *found = cacheTable[et];
                 if (!found)
@@ -3273,7 +3273,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
             {
                 // MORE - This loop should possibly be a binchop... though it's not absolutely clear that is true (depends on term frequencies)
                 unsigned skipped = 0;
-                loop
+                for (;;)
                 {
                     int c = compare->docompare(current, seek, numFields);
 
@@ -4451,7 +4451,7 @@ public:
             return NULL;
         if (allread)
             return NULL;
-        loop
+        for (;;)
         {
             if (merger.ready())
             {
@@ -4475,7 +4475,7 @@ public:
         {
             activity.queryLogCtx().CTXLOG("CRemoteResultAdaptor::nextRow()");
         }
-        loop
+        for (;;)
         {
             checkDelayed();
             if (processed==stopAfter)
@@ -4569,7 +4569,7 @@ public:
     {
         mu.clear();
         unsigned ctxTraceLevel = activity.queryLogCtx().queryTraceLevel();
-        loop
+        for (;;)
         {
             checkDelayed();
             unsigned timeout = remoteId.isSLAPriority() ? slaTimeout : (remoteId.isHighPriority() ? highTimeout : lowTimeout);
@@ -4722,7 +4722,7 @@ public:
                     case ROXIE_TRACEINFO:
                     {
                         Owned<IMessageUnpackCursor> extra = mr->getCursor(rowManager);
-                        loop
+                        for (;;)
                         {
                             RecordLengthType *rowlen = (RecordLengthType *) extra->getNext(sizeof(RecordLengthType));
                             if (rowlen)
@@ -4919,7 +4919,7 @@ class CSkippableRemoteResultAdaptor : public CRemoteResultAdaptor
             if (exception)
                 throw exception.getClear();
             unsigned __int64 count = 0;
-            loop
+            for (;;)
             {
                 const void * next = CRemoteResultAdaptor::nextRow();
                 if (next == NULL)
@@ -5041,7 +5041,7 @@ public:
     virtual void onExecute() 
     {
         helper.start();
-        loop
+        for (;;)
         {
             const void * next = inputStream->ungroupedNextRow();
             if (!next)
@@ -5531,7 +5531,7 @@ public:
     {
         ActivityTimer t(totalCycles, timeActivities);
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
-        loop
+        for (;;)
         {
             if (ok)
                 ok = helper.next();
@@ -5614,7 +5614,7 @@ public:
         helper.clearAggregate(accumulator);
 
         OwnedConstRoxieRow nextrec(inputStream->nextRow());
-        loop
+        for (;;)
         {
             if (!nextrec)
             {
@@ -5735,7 +5735,7 @@ public:
                 ActivityTimer t(totalCycles, timeActivities);
                 MemoryBuffer result;
                 IRecordSize * inputMeta = input->queryOutputMeta();
-                loop
+                for (;;)
                 {
                     const void *nextrec = inputStream->ungroupedNextRow();
                     if (!nextrec)
@@ -5918,7 +5918,7 @@ class CRoxieServerStrandedInlineTableActivity : public CRoxieServerStrandedActiv
         virtual const void * nextRow()
         {
             ActivityTimer t(totalCycles, timeActivities);
-            loop
+            for (;;)
             {
                 //Return rows while the current section is active
                 while (curRow < sectionMaxRows)
@@ -6718,7 +6718,7 @@ public:
         unsigned sequence = helper.querySequence();
 
         RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
-        loop
+        for (;;)
         {
             const void *row = inputStream->ungroupedNextRow();
             if (!row)
@@ -7112,7 +7112,7 @@ public:
     {
         ActivityTimer t(totalCycles, timeActivities);
         const void * next;
-        loop
+        for (;;)
         {
             next = inputStream->nextRow();
             if (!prev || !next || !helper.matches(prev,next))
@@ -7144,7 +7144,7 @@ public:
     {
         ActivityTimer t(totalCycles, timeActivities);
         const void * next;
-        loop
+        for (;;)
         {
             next = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 
@@ -7247,7 +7247,7 @@ public:
             first = false;
         }
         const void * next;
-        loop
+        for (;;)
         {
             next = inputStream->nextRow();
             if (!kept || !next || !helper.matches(kept,next))
@@ -7694,7 +7694,7 @@ public:
             readFirstRow = true;
         }
 
-        loop
+        for (;;)
         {
             right.setown(inputStream->nextRow());
             if(!prev || !right || !helper.matches(prev,right))
@@ -7784,7 +7784,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             while (curRow == numThisRow)
             {
@@ -7855,7 +7855,7 @@ class CRoxieServerNormalizeChildActivity : public CRoxieServerActivity
 
     bool advanceInput()
     {
-        loop
+        for (;;)
         {
             ReleaseClearRoxieRow(buffer);
             buffer = inputStream->nextRow();
@@ -7916,7 +7916,7 @@ public:
     const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             if (!buffer)
             {
@@ -7974,7 +7974,7 @@ class CRoxieServerNormalizeLinkedChildActivity : public CRoxieServerActivity
 
     bool advanceInput()
     {
-        loop
+        for (;;)
         {
             curParent.setown(inputStream->nextRow());
             if (!curParent && (processed == numProcessedLastGroup))
@@ -8017,7 +8017,7 @@ public:
     const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             if (!curParent)
             {
@@ -9538,7 +9538,7 @@ public:
 
     virtual void onExecute()
     {
-        loop
+        for (;;)
         {
             const void *row = inputStream->ungroupedNextRow();
             if (!row)
@@ -9735,7 +9735,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
-        loop
+        for (;;)
         {
             OwnedConstRoxieRow ret(inputStream->nextRow());
             if (!ret)
@@ -9771,7 +9771,7 @@ public:
         if (eof)
             return NULL;
 
-        loop
+        for (;;)
         {
             OwnedConstRoxieRow ret(inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
             if (!ret)
@@ -9898,7 +9898,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             if (eof)
                 return NULL;
@@ -9963,7 +9963,7 @@ public:
         
         //MORE: What do we do with wasCompleteMatch?  something like the following????
 #if 0
-        loop
+        for (;;)
         {
             const void * ret;
             if (stepExtra.returnMismatches())
@@ -10205,7 +10205,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
-        loop
+        for (;;)
         {
             const void * ret = inputStream->nextRow();
             if (!ret)
@@ -10300,7 +10300,7 @@ public:
         if (done)
             return NULL;
 
-        loop
+        for (;;)
         {
             const void * ret = inputStream->ungroupedNextRow();
             if (!ret)
@@ -10609,7 +10609,7 @@ public:
         if (eof)
             return NULL;
         const void * ret;
-        loop
+        for (;;)
         {
             ret = inputStream->ungroupedNextRow();
             if (!ret) //eof
@@ -10694,7 +10694,7 @@ public:
 
             if (!abortEarly)
             {
-                loop
+                for (;;)
                 {
                     next = inputStream->nextRow();
                     if (!next)
@@ -10753,7 +10753,7 @@ class CRoxieServerStrandedAggregateActivity : public CRoxieServerStrandedActivit
 
                 if (!abortEarly)
                 {
-                    loop
+                    for (;;)
                     {
                         next = inputStream->nextRow();
                         if (!next)
@@ -11042,7 +11042,7 @@ public:
         {
             aggregated.start(rowAllocator);
             bool eog = true;
-            loop
+            for (;;)
             {
                 const void * next = inputStream->nextRow();
                 if (!next)
@@ -11234,7 +11234,7 @@ public:
         }
         if (needTransform)
         {
-            loop
+            for (;;)
             {
                 const void *in = inputStream->nextRow();
                 if (!in)
@@ -11537,7 +11537,7 @@ public:
 
     virtual void onExecute()
     {
-        loop
+        for (;;)
         {
             const void *nextrec = inputStream->ungroupedNextRow();
             if (!nextrec)
@@ -11642,7 +11642,7 @@ public:
             csvOutput.writeHeaderLn(strlen(header), header);
             diskout->write(csvOutput.length(), csvOutput.str());
         }
-        loop
+        for (;;)
         {
             const void *nextrec = inputStream->ungroupedNextRow();
             if (!nextrec)
@@ -11739,7 +11739,7 @@ public:
         writer->outputBeginArray(rowTag); //need to set this
         writer->clear(); //but not output it
 
-        loop
+        for (;;)
         {
             OwnedConstRoxieRow nextrec = inputStream->ungroupedNextRow();
             if (!nextrec)
@@ -12024,7 +12024,7 @@ public:
             } bc(builder);
 
             // Loop thru the results
-            loop
+            for (;;)
             {
                 OwnedConstRoxieRow nextrec(inputStream->ungroupedNextRow());
                 if (!nextrec)
@@ -12575,7 +12575,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             switch (state)
             {
@@ -13160,7 +13160,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
-        loop
+        for (;;)
         {
             if (readyPending && !inGroup)
             {
@@ -13773,7 +13773,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             ConstPointerArray group;
             nextInputs(group);
@@ -13865,7 +13865,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             const void * left = inputStream->nextRow();
             if (!left && (numProcessedLastGroup == processed))
@@ -13888,7 +13888,7 @@ public:
             }
 
             ConstPointerArray group;
-            loop
+            for (;;)
             {
                 const void * in = inputStream1->nextRow();
                 if (!in)
@@ -14009,11 +14009,11 @@ public:
         if (eof)
             return NULL;
 
-        loop
+        for (;;)
         {
             ConstPointerArray group;
 
-            loop
+            for (;;)
             {
                 const void * in = inputStream->nextRow();
                 if (!in)
@@ -14102,7 +14102,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
-        loop
+        for (;;)
         {
             const void * in = inputStream->nextRow();
             if (!in)
@@ -14174,7 +14174,7 @@ class CRoxieServerStrandedProjectActivity : public CRoxieServerStrandedActivity
         virtual const void * nextRow()
         {
             ActivityTimer t(totalCycles, timeActivities);
-            loop
+            for (;;)
             {
                 OwnedConstRoxieRow in = inputStream->nextRow();
                 if (!in)
@@ -14253,7 +14253,7 @@ class CRoxieServerProjectActivity : public CRoxieServerActivity
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             OwnedConstRoxieRow in = inputStream->nextRow();
             if (!in)
@@ -14453,7 +14453,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
-        loop
+        for (;;)
         {
             Owned<PrefetchInfo> in = readNextRecord();
             if (!in)
@@ -14708,9 +14708,9 @@ public:
         if (eof)
             return NULL;
         unsigned emptyIterations = 0;
-        loop
+        for (;;)
         {
-            loop
+            for (;;)
             {
                 const void * ret = curStream->nextRow();
                 if (!ret)
@@ -15036,7 +15036,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             if (eof)
                 return NULL;
@@ -15108,7 +15108,7 @@ public:
 
 const void * LoopFilterPseudoInput::nextRow()
 {
-    loop
+    for (;;)
     {
         const void * next = stream->nextRow();
         if (!next || activity->includeInLoop(counter, next))
@@ -15171,7 +15171,7 @@ void LoopExecutorThread::executeLoop()
     unsigned outputIndex = 0;
 
     //Note, activities don't link inputs, so need to be careful that special inputs remain linked while the activity is executing.
-    loop
+    for (;;)
     {
         if (activity->activityKind == TAKloopcount)
         {
@@ -15248,7 +15248,7 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
         curInput->start(savedParentExtractSize, savedParentExtract, false);
         if (spillOutput)
         {
-            loop
+            for (;;)
             {
                 const void * next = curStream->nextRow();
                 if (!next)
@@ -15258,7 +15258,7 @@ void LoopExecutorThread::executeLoopInstance(unsigned counter, unsigned numItera
         }
         else
         {
-            loop
+            for (;;)
             {
                 const void * next = curStream->nextRow();
                 if (!next)
@@ -17172,7 +17172,7 @@ public:
     virtual const void * nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             right.setown(inputStream->nextRow());
             if (!right)
@@ -17263,7 +17263,7 @@ public:
 
         try
         {
-            loop
+            for (;;)
             {
                 const void * in = inputStream->nextRow();
                 if (!in)
@@ -17472,7 +17472,7 @@ public:
         if (eof)
             return NULL;
         const void *ret;
-        loop
+        for (;;)
         {
             ret = inputStream->nextRow();
             if (!ret)
@@ -19530,7 +19530,7 @@ protected:
     void pullInput()
     {
         unsigned count = 0;
-        loop
+        for (;;)
         {
             const void * next = inputStream->nextRow();
             if (next == NULL)
@@ -19735,7 +19735,7 @@ protected:
         try
         {
             bool EOGseen = false;
-            loop
+            for (;;)
             {
                 const void * next = inputStream->nextRow();
                 buff.append(next);
@@ -19842,7 +19842,7 @@ protected:
     void pullInput()
     {
         bool EOGseen = false;
-        loop
+        for (;;)
         {
             const void * next = inputStream->nextRow();
             buff.append(next);
@@ -20738,7 +20738,7 @@ class CRoxieServerStrandedParseActivity : public CRoxieServerStrandedActivity
         virtual const void * nextRow()
         {
             ActivityTimer t(totalCycles, timeActivities);
-            loop
+            for (;;)
             {
                 if (rowIter->isValid())
                 {
@@ -20909,7 +20909,7 @@ public:
         }
         __int64 initialProcessed = processed;
         RtlLinkedDatasetBuilder builder(rowAllocator);
-        loop
+        for (;;)
         {
             const void *row = inputStream->nextRow();
             if (saveInContext)
@@ -21058,7 +21058,7 @@ public:
         assertex(sequence < 0);
 
         RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
-        loop
+        for (;;)
         {
             const void *row = inputStream->ungroupedNextRow();
             if (!row)
@@ -21194,11 +21194,11 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             if(xmlParser)
             {
-                loop
+                for (;;)
                 {
                     if(!xmlParser->next())
                     {
@@ -21624,7 +21624,7 @@ public:
         unsigned transformedSize = 0;
         if (isKeyed)
         {
-            loop
+            for (;;)
             {
                 const void *nextCandidate = cursor->nextMatch();
                 if (!nextCandidate)
@@ -21640,7 +21640,7 @@ public:
         else // use reader...
         {
             assertex(reader != NULL);
-            loop
+            for (;;)
             {
                 if (deserializeSource.eos())
                 {
@@ -21851,7 +21851,7 @@ public:
                 // MORE - there are rumours of a  csvSplitter that operates on a stream... if/when it exists, this should use it
                 size32_t rowSize = 4096; // MORE - make configurable
                 size32_t thisLineLength;
-                loop
+                for (;;)
                 {
                     size32_t avail;
                     const void *peek = reader->peek(rowSize, avail);
@@ -21950,7 +21950,7 @@ public:
         unsigned transformedSize = 0;
         if (isKeyed)
         {
-            loop
+            for (;;)
             {
                 while (firstPending)
                 {
@@ -21975,7 +21975,7 @@ public:
         else
         {
             assertex(reader != NULL);
-            loop
+            for (;;)
             {
                 while (firstPending)
                 {
@@ -22096,7 +22096,7 @@ public:
         {
             if (useRemote())
             {
-                loop
+                for (;;)
                 {
                     const void * next = remote->nextRow();
                     if (!next)
@@ -22122,7 +22122,7 @@ public:
             {
                 if (isKeyed)
                 {
-                    loop
+                    for (;;)
                     {
                         const void *nextCandidate = cursor->nextMatch();
                         if (!nextCandidate)
@@ -22209,7 +22209,7 @@ public:
                 finalSize = cloneRow(rowBuilder, firstRow, meta);
                 ReleaseRoxieRow(firstRow);
             }
-            loop
+            for (;;)
             {
                 const void * next = remote->nextRow();
                 if (!next)
@@ -22225,7 +22225,7 @@ public:
             {
                 if (isKeyed)
                 {
-                    loop
+                    for (;;)
                     {
                         const void *next = cursor->nextMatch();
                         if (!next)
@@ -22296,7 +22296,7 @@ public:
     {
         if (useRemote())
         {
-            loop
+            for (;;)
             {
                 const void * next = remote->nextRow();
                 if (!next)
@@ -22611,7 +22611,7 @@ public:
                                     ctx->queryProbeManager()->setNodeProperty(this, "filter", out.str());
                             }
                             tlk->reset();
-                            loop // for each file part
+                            for (;;) // for each file part
                             {
                                 //block for TransformCallbackAssociation
                                 {
@@ -23783,7 +23783,7 @@ public:
 
         try
         {
-            loop
+            for (;;)
             {
                 const void * next = remote.nextRow();
                 if (!next)
@@ -23989,7 +23989,7 @@ public:
             finalSize = cloneRow(rowBuilder, firstRow, meta);
             ReleaseRoxieRow(firstRow);
         }
-        loop
+        for (;;)
         {
             const void * next = remote.nextRow();
             if (!next)
@@ -24145,7 +24145,7 @@ public:
             accepted++;
         }
 
-        loop
+        for (;;)
         {
             Owned<AggregateRowBuilder> next = singleAggregator.nextResult();
             if (!next)
@@ -24173,7 +24173,7 @@ public:
     void gatherMerged()
     {
         gathered = true;
-        loop
+        for (;;)
         {
             const void * next = remote.nextRow();
             if (!next)
@@ -24973,7 +24973,7 @@ public:
     virtual const void *nextRow()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             if (eof)
                 return NULL;
@@ -25232,7 +25232,7 @@ public:
                             rootIndex->mergeSegmentMonitors(tlk);
                         tlk->finishSegmentMonitors();
                         tlk->reset();
-                        loop
+                        for (;;)
                         {
                             typedef const void * cvp;
                             if (thisKey->isTopLevelKey())
@@ -26046,7 +26046,7 @@ public:
                     try
                     {
                         tlk->reset();
-                        loop
+                        for (;;)
                         {
                             typedef const void * cvp;
                             if (thisKey && thisKey->isTopLevelKey())
@@ -26893,7 +26893,7 @@ public:
             IRoxieServerActivityFactory &donor = graphDefinition.serverItem(idx1);
             IRoxieServerActivity &activity = activities.item(idx1);
             unsigned inputidx = 0;
-            loop
+            for (;;)
             {
                 unsigned outputidx;
                 unsigned source = donor.getInput(inputidx, outputidx);
@@ -27396,7 +27396,7 @@ public:
             activity->resetOutputsUsed();
 
             unsigned inputidx = 0;
-            loop
+            for (;;)
             {
                 unsigned outputidx;
                 unsigned source = donor.getInput(inputidx, outputidx);
@@ -27782,7 +27782,7 @@ protected:
                 activity->start(0, NULL, false);
                 ASSERT(in.state == TestInput::STATEstarted);
                 ASSERT(!input2 || in2.state == TestInput::STATEstarted);
-                loop
+                for (;;)
                 {
                     const void *next = outStream->nextRow();
                     if (!next)
@@ -27851,7 +27851,7 @@ protected:
                 void *buf = alloca(meta->getFixedSize());
                 unsigned count = 0;
                 unsigned repeats = repeat;
-                loop
+                for (;;)
                 {
                     const void *next = outStream->nextRow();
                     if (!next)

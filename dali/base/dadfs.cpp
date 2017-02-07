@@ -278,7 +278,7 @@ public:
     {
         unsigned start = msTick();
         bool first = true;
-        loop
+        for (;;)
         {
             try
             {
@@ -357,7 +357,7 @@ void ensureFileScope(const CDfsLogicalFileName &dlfn,unsigned timeout)
     IPropertyTree *r = connlock.conn->getRoot();
     StringBuffer scopes;
     const char *s=dlfn.getScopes(scopes,true).str();
-    loop {
+    for (;;) {
         IPropertyTree *nr;
         const char *e = strstr(s,"::");
         query.clear();
@@ -387,7 +387,7 @@ void removeFileEmptyScope(const CDfsLogicalFileName &dlfn,unsigned timeout)
     StringBuffer query;
     dlfn.makeScopeQuery(query.clear(),false);
     StringBuffer head;
-    loop {
+    for (;;) {
         if (query.length()) {
             const char *tail = splitXPath(query.str(),head.clear());
             if (!tail||!*tail)
@@ -426,7 +426,7 @@ protected:
         conn = NULL;
         lock.clear();
         CTimeMon tm(timeout);
-        loop
+        for (;;)
         {
             try
             {
@@ -597,7 +597,7 @@ public:
             return false; // throw ?
         CTimeMon tm(timeout);
         unsigned remaining = timeout;
-        loop
+        for (;;)
         {
             try
             {
@@ -880,7 +880,7 @@ public:
             clustlist.append(cname.str());
         unsigned i;
         if (clusters) {
-            loop {
+            for (;;) {
                 const char *s = clusters;
                 while (*s&&(*s!=','))
                     s++;
@@ -1359,7 +1359,7 @@ public:
         if (!lfn.isExternal() && !checkLogicalName(lfn,user,true,true,true,"remove"))
             ThrowStringException(-1, "Logical Name fails for removal on %s", lfn.get());
 
-        loop
+        for (;;)
         {
             // Transaction files have already been unlocked at this point, delete all remaining files
             Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, true, false, true, NULL, SDS_SUB_LOCK_TIMEOUT);
@@ -1599,7 +1599,7 @@ public:
         // =============== PREPARE AND RETRY UNTIL READY
         try
         {
-            loop
+            for (;;)
             {
                 if (prepareActions())
                     break;
@@ -2220,7 +2220,7 @@ public:
             fill();
             return true;
         }
-        loop {
+        for (;;) {
             if (fiter->next()) {
                 piter.setown(fiter->query().getElements("Attr/Protect"));
                 if (piter->first()) {
@@ -3134,7 +3134,7 @@ public:
         if (iter->first())
         {
             error.append("Cannot remove file ").append(logicalName.get()).append(" as owned by SuperFile(s): ");
-            loop
+            for (;;)
             {
                 error.append(iter->query().queryProp("@name"));
                 if (!iter->next())
@@ -3633,7 +3633,7 @@ public:
         IPropertyTree *t0 = t;
         StringBuffer grplist;
         // the following is complicated by fact there is a cache of the file branch
-        loop {
+        for (;;) {
             while ((pt=t->queryPropTree("Cluster[1]"))!=NULL)
                 t->removeTree(pt);
             ForEachItemIn(i,clusters) {
@@ -4089,7 +4089,7 @@ public:
         if (isPathSepChar(*thisEnd))
             thisEnd--;
         const char *oldP = oldEnd, *thisP = thisEnd;
-        loop {
+        for (;;) {
             if (oldP==oldPath || thisP==thisPath)
                 break;
             if (*oldP != *thisP) {
@@ -5193,7 +5193,7 @@ protected:
                 pn[j] = allsubfiles.item(j).numParts();
             unsigned f=0;
             bool found=false;
-            loop {
+            for (;;) {
                 if (f==allsubfiles.ordinality()) {
                     if (!found)
                         break; // no more
@@ -7206,7 +7206,7 @@ public:
         StringBuffer name;
         StringBuffer prop;
         unsigned scale = 16;
-        loop {
+        for (;;) {
             name.clear();
             if (lname.length()) { // try suggested name
                 name.append(lname);
@@ -7421,7 +7421,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
     if (strchr(logicalname->get(), '*')) // '*' only wildcard supported. NB: This is a temporary fix (See: HPCC-12523)
         throw MakeStringException(-1, "Invalid filename lookup: %s", logicalname->get());
     Owned<IDfsLogicalFileNameIterator> redmatch;
-    loop
+    for (;;)
     {
         checkLogicalName(*logicalname,user,true,writeattr,true,NULL);
         if (logicalname->isExternal()) {
@@ -7437,7 +7437,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
         }
         else {
             unsigned start = 0;
-            loop {
+            for (;;) {
                 CFileLock fcl;
                 unsigned mode = RTM_LOCK_READ | RTM_SUB;
                 if (hold) mode |= RTM_LOCK_HOLD;
@@ -8394,7 +8394,7 @@ public:
         pn=0;
         s=filter;
         unsigned start=0;
-        loop {
+        for (;;) {
             if ((*s==0)||(*s==',')||isspace(*s)) {
                 if (start) {
                     for (i=start-1;i<pn;i++)
@@ -9199,7 +9199,7 @@ class CInitGroups
         Owned<IPropertyTreeIterator> newIter = newClusterGroup->getElements("Node");
         Owned<IPropertyTreeIterator> oldIter = oldClusterGroup->getElements("Node");
         if (newIter->first() && oldIter->first()) {
-            loop {
+            for (;;) {
                 const char *oldIp = oldIter->query().queryProp("@ip");
                 const char *newIp = newIter->query().queryProp("@ip");
                 if (!streq(oldIp, newIp))
@@ -10086,7 +10086,7 @@ public:
         dlfn.set(lname);
         CDfsLogicalFileName *logicalname=&dlfn;
         Owned<IDfsLogicalFileNameIterator> redmatch;
-        loop {
+        for (;;) {
             StringBuffer tail;
             checkLogicalName(*logicalname,udesc,true,false,true,"getFileTree on");
             CScopeConnectLock sconnlock("getFileTree", *logicalname, false, false, false, defaultTimeout);

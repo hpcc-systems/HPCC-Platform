@@ -36,7 +36,7 @@ public:
     STRAND_CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             if (parent.queryAbortSoon())
                 return nullptr;
@@ -182,7 +182,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
         }
         void main()
         {
-            loop
+            for (;;)
             {
                 Owned<PrefetchInfo> fetchRow = pullRecord();
                 CriticalBlock b(crit);
@@ -210,7 +210,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
             if (eoq)
                 return NULL;
             CriticalBlock b(crit);
-            loop
+            for (;;)
             {
                 if (prefetchQueue.ordinality())
                 {
@@ -277,7 +277,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
-        loop
+        for (;;)
         {
             Owned<PrefetchInfo> prefetchRow = readNextRecord();
             if (!prefetchRow)

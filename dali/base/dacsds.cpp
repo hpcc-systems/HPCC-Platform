@@ -2111,7 +2111,7 @@ void CClientSDSManager::setConfigOpt(const char *opt, const char *value)
             {
                 PROGLOG("Reducing concurrentThrottleLimit from %d to %d", clientThrottleLimit, newV);
                 unsigned c=0;
-                loop
+                for (;;)
                 {
                     // generally won't be waiting, as would expect this option to typically be called just after component startup time.
                     if (!concurrentRequests.wait(clientThrottleDelay))

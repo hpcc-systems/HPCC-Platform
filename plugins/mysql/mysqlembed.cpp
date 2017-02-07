@@ -464,7 +464,7 @@ Semaphore MySQLConnectionCloserThread::closing;
 
 int MySQLConnectionCloserThread::run()
 {
-    loop
+    for (;;)
     {
         if (closing.wait(mysqlCacheCheckPeriod))
         {
@@ -1281,7 +1281,7 @@ public:
         // A little complex when streaming data in as well as out - want to execute for every input record
         if (eof)
             return NULL;
-        loop
+        for (;;)
         {
             if (executePending)
             {
@@ -1584,7 +1584,7 @@ public:
     virtual void compileEmbeddedScript(size32_t chars, const char *script)
     {
         size32_t len = rtlUtf8Size(chars, script);
-        loop
+        for (;;)
         {
             Owned<MySQLStatement> stmt  = new MySQLStatement(mysql_stmt_init(*conn));
             if (!*stmt)

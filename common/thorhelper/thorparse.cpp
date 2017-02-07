@@ -507,7 +507,7 @@ unsigned getMaximumMatchLength(AsciiDfa & dfa, unsigned len, const byte * start)
     const AsciiDfaState * states = dfa.queryStates();
     unsigned * transitions = dfa.queryTransitions();
     const byte * best = NULL;
-    loop
+    for (;;)
     {
         if (states[activeState].accepts())
             best = cur;

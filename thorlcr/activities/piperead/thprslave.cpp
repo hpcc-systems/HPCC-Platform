@@ -205,7 +205,7 @@ public:
             return NULL;
         try
         {
-            loop
+            for (;;)
             {
                 if (readTransformer->eos())
                     break;
@@ -380,7 +380,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (eof || abortSoon)
             return NULL;
-        loop
+        for (;;)
         {
             if (recreate && firstRead)
             {
@@ -508,7 +508,7 @@ int PipeWriterThread::run()
     int ret = 0;
     try
     {
-        loop
+        for (;;)
         {
             if (eos||activity.abortSoon)
                 break;

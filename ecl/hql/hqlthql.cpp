@@ -231,7 +231,7 @@ StringBuffer &HqltHql::makeUniqueName(IHqlExpression * expr, StringBuffer &s)
             else
             {
                 const char * moduleNameText = str(lower(moduleName));
-                loop
+                for (;;)
                 {
                     const char * dot = strchr(moduleNameText, '.');
                     if (!dot)
@@ -282,7 +282,7 @@ void HqltHql::popMapping()
 
 IHqlExpression * HqltHql::queryMapped(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         IHqlExpression * extra = (IHqlExpression *)expr->queryTransformExtra();
         if (!extra || extra->isAttribute() || extra == expr)
@@ -836,7 +836,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
     if(paren)
         s.append('(');
 
-    loop
+    for (;;)
     {
         annotate_kind kind = expr->getAnnotationKind();
         if ((kind == annotate_none) || (kind == annotate_symbol))

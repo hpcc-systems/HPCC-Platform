@@ -678,7 +678,7 @@ void HqlLex::processEncrypted()
         return;
     }
     StringBuffer encoded64;
-    loop
+    for (;;)
     {
         if (yyLex(nextToken, false,0) != STRING_CONST)
         {
@@ -2308,7 +2308,7 @@ void HqlLex::enterEmbeddedMode()
 
 int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
 {
-    loop
+    for (;;)
     {
         while (inmacro)
         {

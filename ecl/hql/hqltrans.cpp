@@ -997,7 +997,7 @@ IHqlScope * QuickHqlTransformer::transform(IHqlScope * scope)
 
 void QuickHqlTransformer::setMapping(IHqlExpression * oldValue, IHqlExpression * newValue)
 {
-    loop
+    for (;;)
     {
         oldValue->setTransformExtra(newValue);
         IHqlExpression * body = oldValue->queryBody(true);
@@ -1019,7 +1019,7 @@ QuickExpressionReplacer::QuickExpressionReplacer()
 
 void QuickExpressionReplacer::setMapping(IHqlExpression * oldValue, IHqlExpression * newValue)
 {
-    loop
+    for (;;)
     {
         oldValue->setTransformExtra(newValue);
         IHqlExpression * body = oldValue->queryBody(true);
@@ -1670,7 +1670,7 @@ IHqlExpression * NewHqlTransformer::getTransformedChildren(IHqlExpression * expr
 
 void NewHqlTransformer::initializeActiveSelector(IHqlExpression * expr, IHqlExpression * transformed)
 {
-    loop
+    for (;;)
     {
         setTransformedSelector(expr->queryNormalizedSelector(), transformed->queryNormalizedSelector());
         if (!expr->queryDataset())  // parent could be a row. e.g., LEFT.childDataset
@@ -1716,7 +1716,7 @@ ANewTransformInfo * NewHqlTransformer::queryTransformExtra(IHqlExpression * expr
 
 void NewHqlTransformer::stopDatasetTransform(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         IHqlExpression * prev;
         do
@@ -1935,7 +1935,7 @@ void NewHqlTransformer::setMapping(IHqlExpression * oldValue, IHqlExpression * n
 
 void NewHqlTransformer::setMappingOnly(IHqlExpression * oldValue, IHqlExpression * newValue)
 {
-    loop
+    for (;;)
     {
         setTransformed(oldValue, newValue);
         IHqlExpression * body = oldValue->queryBody(true);
@@ -1968,7 +1968,7 @@ IHqlExpression * NewHqlTransformer::doUpdateOrphanedSelectors(IHqlExpression * e
 
     LinkedHqlExpr updated = transformed;
     IHqlExpression * ds = expr->queryChild(0);
-    loop
+    for (;;)
     {
         if (newDs == ds)
             return updated.getClear();
@@ -2103,7 +2103,7 @@ IHqlExpression * HqlMapSelectorTransformer::createTransformed(IHqlExpression * e
     //then ensure the selectors aren't replaced in this operator's arguments.
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * walker = dataset;
-    loop
+    for (;;)
     {
         IHqlExpression * table = queryTable(walker);
         if (table)

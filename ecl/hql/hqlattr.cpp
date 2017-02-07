@@ -1955,7 +1955,7 @@ unsigned isStreamingActivity(IHqlExpression * expr)
 
 bool isInlineTrivialDataset(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -1986,7 +1986,7 @@ bool isInlineTrivialDataset(IHqlExpression * expr)
 
 bool isTrivialDataset(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         if (isInlineTrivialDataset(expr))
             return true;
@@ -2079,7 +2079,7 @@ bool increasesRowSize(IHqlExpression * expr)
 
 bool isLimitedDataset(IHqlExpression * expr, bool onFailOnly)
 {
-    loop
+    for (;;)
     {
         if (expr->hasAttribute(limitAtom))
             return true;
@@ -2134,7 +2134,7 @@ bool containsAnyActions(IHqlExpression * expr)
 
 unsigned getCardinality(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -3137,7 +3137,7 @@ IHqlExpression * queryFixedRowCount(IHqlExpression * expr)
 
 IHqlExpression * queryAttribute(ITypeInfo * type, IAtom * search)
 {
-    loop
+    for (;;)
     {
         typemod_t curModifier = type->queryModifier();
         switch (curModifier)

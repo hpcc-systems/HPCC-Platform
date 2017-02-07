@@ -156,7 +156,7 @@ public:
     }
     ~CParallelFunnel()
     {
-        loop
+        for (;;)
         {
             OwnedConstThorRow row = rows.dequeueNow();
             if (!row) break;
@@ -213,7 +213,7 @@ public:
             stopped = true; // ensure any pending push()'s don't enqueue and if big row potentially block again.
             if (full)
             {
-                loop
+                for (;;)
                 {
                     OwnedConstThorRow row = rows.dequeueNow();
                     if (!row) break;
@@ -366,7 +366,7 @@ public:
                 return NULL;
             }
             eog[currentMarker] = true;
-            loop
+            for (;;)
             {
                 ActPrintLog("FUNNEL: Read %" RCPF "d records from input %d", readThisInput, currentMarker);
                 if (currentMarker + 1 < inputs.ordinality())
@@ -420,7 +420,7 @@ public:
                 dataLinkIncrement();
                 return row.getClear();
             }
-            loop
+            for (;;)
             {
                 ActPrintLog("FUNNEL: Read %" RCPF "d records from input %d", readThisInput, currentMarker);
                 if (currentMarker + 1 < inputs.ordinality())
@@ -503,7 +503,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             bool eog = false;
             bool err = false;
@@ -606,7 +606,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         unsigned n = inputs.ordinality();
         IRowStream *current = queryInputStream(curinput);
-        loop
+        for (;;)
         {
             OwnedConstThorRow row = current->nextRow();
             if (row)
@@ -734,7 +734,7 @@ public:
             eogNext = false; 
             return NULL; 
         }
-        loop
+        for (;;)
         {
             OwnedConstThorRow row = queryInputStream(curinput)->nextRow();
             if (row ) {

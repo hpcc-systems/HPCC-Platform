@@ -502,7 +502,7 @@ void CassandraStatementInfo::stop()
 }
 bool CassandraStatementInfo::next()
 {
-    loop
+    for (;;)
     {
         if (!iterator)
         {
@@ -1243,7 +1243,7 @@ public:
         // A little complex when streaming data in as well as out - want to execute for every input record
         if (eof)
             return NULL;
-        loop
+        for (;;)
         {
             if (executePending)
             {
@@ -1766,7 +1766,7 @@ public:
         const char *script = queryString.get(); // Now null terminated
         if ((flags & (EFnoreturn|EFnoparams)) == (EFnoreturn|EFnoparams))
         {
-            loop
+            for (;;)
             {
                 const char *nextScript = findUnquoted(script, ';');
                 if (!nextScript)
@@ -1869,7 +1869,7 @@ protected:
                     else if (*query=='*')
                     {
                         query++;
-                        loop
+                        for (;;)
                         {
                             if (!*query)
                                 fail("Unterminated comment in query string");

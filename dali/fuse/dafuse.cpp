@@ -587,7 +587,7 @@ class CFuseDaliDFS: public CFuseBase
         if (pos==1)
             if (filler(buf, "..", &s, ++pos))
                 return 0;
-        loop {
+        for (;;) {
             bool isscope;
             const char *fn = dci->get((unsigned)pos-2,isscope);
             if (!fn)
@@ -654,7 +654,7 @@ class CFuseDaliDFS: public CFuseBase
             }
             offset_t base;
             unsigned pn = file->getPositionPart(pos,base);
-            loop {
+            for (;;) {
                 if (pn==NotFound)
                     break;
                 IDistributedFilePart &part = file->queryPart(pn);

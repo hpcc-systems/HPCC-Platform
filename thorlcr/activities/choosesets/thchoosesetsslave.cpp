@@ -76,7 +76,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             OwnedConstThorRow row = inputStream->ungroupedNextRow();
             if(!row || done || abortSoon)

@@ -126,7 +126,7 @@ public:
 
     void readRest()
     {
-        loop {
+        for (;;) {
             OwnedConstThorRow row = ungroupedNextRow();
             if (!row)
                 break;

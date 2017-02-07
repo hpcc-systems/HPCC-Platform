@@ -2544,7 +2544,7 @@ RegexMatchAction RegexAsciiDfaPattern::match(RegexState & state)
     {
         //MORE: Store only one because we know we could never be backtracked - e.g., because this is always a token.
         const byte * best = NULL;
-        loop
+        for (;;)
         {
             if (states[activeState].accepts())
                 best = cur;
@@ -2574,7 +2574,7 @@ RegexMatchAction RegexAsciiDfaPattern::match(RegexState & state)
     {
         ConstPointerArray & potentialMatches = state.cache.potentialMatches;
         unsigned prevPotentialMatches = potentialMatches.ordinality();
-        loop
+        for (;;)
         {
             if (states[activeState].accepts())
                 potentialMatches.append(cur);
@@ -2644,7 +2644,7 @@ RegexMatchAction RegexAsciiDfaPattern::beginMatch(RegexState & state)
     const byte * best = NULL;
     ConstPointerArray & potentialMatches = state.cache.potentialMatches;
     const unsigned prevPotentialMatches = potentialMatches.ordinality();
-    loop
+    for (;;)
     {
         if (states[activeState].accepts())
         {
@@ -2731,7 +2731,7 @@ RegexMatchAction RegexUnicodeDfaPattern::match(RegexState & state)
     const byte * end = state.end;
     unsigned activeState = 0;
     ConstPointerArray matches;
-    loop
+    for (;;)
     {
         //MORE: It would be better to store only one if we knew we could never be backtracked - e.g., if this was always a token.
         if (states[activeState].accepts)
@@ -2807,7 +2807,7 @@ RegexMatchAction RegexRepeatAnyPattern::match(RegexState & state)
     else
     {
         unsigned i = max;
-        loop
+        for (;;)
         {
             state.cur = start+i;
             RegexMatchAction ret = matchNext(state);

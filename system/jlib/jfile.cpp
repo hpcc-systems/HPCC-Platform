@@ -277,7 +277,7 @@ bool CFile::exists()
 bool WindowsCreateDirectory(const char * path)
 {
     unsigned retry = 0;
-    loop {
+    for (;;) {
         if (CreateDirectory(path, NULL))
             return true;
         DWORD err = GetLastError();
@@ -688,7 +688,7 @@ bool CFile::remove()
 {
 #ifdef _WIN32
     unsigned retry = 0;
-    loop {
+    for (;;) {
         if (isDirectory()==foundYes) {
             if (RemoveDirectory(filename) != 0)
                 return true;
@@ -760,7 +760,7 @@ void CFile::move(const char *newname)
     }
 #ifdef _WIN32
     unsigned retry = 0;
-    loop {
+    for (;;) {
         if (MoveFileEx(filename.get(),newname,0)) 
             return;
         DWORD err = GetLastError();
@@ -813,7 +813,7 @@ bool CFile::fastCopyFile(CFile &target, size32_t buffersize, ICopyFileProgress *
     // only currently supported for windows
 #ifdef _WIN32
     unsigned retry = 0;
-    loop {
+    for (;;) {
         BOOL cancel=FALSE;
         if (CopyFileEx(queryFilename(),target.queryFilename(),progress?fastCopyProgressRoutine:NULL,progress?progress:NULL,&cancel,0))
             break;
@@ -1082,7 +1082,7 @@ public:
         }
         unsigned interval = 1;
         unsigned start = msTick();
-        loop {
+        for (;;) {
 #ifdef _WIN32
             OVERLAPPED overlapped;
             memset(&overlapped,0,sizeof(overlapped));
@@ -1153,7 +1153,7 @@ unsigned CFile::getCRC()
     Owned<IFileIO> fileio = open(IFOread);
     if (fileio) {
         offset_t pos=0;
-        loop {
+        for (;;) {
             size32_t rd = fileio->read(pos,0x10000,buf);
             if (!rd)
                 break;
@@ -2327,7 +2327,7 @@ public:
     bool getResult(size32_t &ret,bool wait)
     {
         if (value==(size32_t)-1) {
-            loop {
+            for (;;) {
                 int aio_errno = aio_error(&cb);
                 if (aio_errno==ECANCELED)
                     return false;
@@ -2342,7 +2342,7 @@ public:
                 }
                 if (!wait)
                     return false;
-                loop {
+                for (;;) {
                     struct timespec timeout;
                     timeout.tv_sec = 60*60*24;  // a long time
                     timeout.tv_nsec = 0;
@@ -2989,7 +2989,7 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
     {
         if (progress)
             total = sourceIO->size(); // only needed for progress
-        loop
+        for (;;)
         {
             size32_t got;
             if (copyintercept) {
@@ -3465,8 +3465,8 @@ public:
 
     bool next()
     {
-        loop {
-            loop {
+        for (;;) {
+            for (;;) {
                 if (!FindNextFile(handle, &info))
                     break;
                 if (setCurrent())
@@ -3617,9 +3617,9 @@ public:
 
     bool next()
     {
-        loop {
+        for (;;) {
             struct dirent *entry;
-            loop {
+            for (;;) {
                 gotst = false;
                 CriticalBlock b(sect);
                 entry = readdir(handle);
@@ -3813,7 +3813,7 @@ public:
             unsigned ni = ordinality();
             unsigned j = 0;
             unsigned nj = cmp->ordinality();
-            loop {
+            for (;;) {
                 CDirEntry *a = NULL;
                 CDirEntry *b = NULL;
                 if (i>=ni) {
@@ -3962,7 +3962,7 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
     Owned<CDirectoryDifferenceIterator> base = new CDirectoryDifferenceIterator(prev,NULL);
     prev.clear(); // not needed now
     unsigned start=msTick();
-    loop {
+    for (;;) {
         if (abortsem) {
             if (abortsem->wait(checkinterval))
                 break;
@@ -4881,7 +4881,7 @@ void RemoteMultiFilename::expandWild()
             rfn.getLocalPath(name);
             const char *s=name.str();
             const char *t=s;
-            loop {
+            for (;;) {
                 const char *sep=findPathSepChar(t);
                 if (!sep)
                     break;
@@ -4966,7 +4966,7 @@ void RemoteMultiFilename::expand(const char *mpath, StringArray &array)
 {
     StringBuffer path;
     StringBuffer fullpath;
-    loop {
+    for (;;) {
         while (isspace(*mpath))
             mpath++;
         if (!*mpath)
@@ -5156,7 +5156,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
             const char *path = relpath;
             const char *tail = end;
             StringBuffer head;
-            loop
+            for (;;)
             {
                 if (realpath(path,rPath))
                 {
@@ -5166,7 +5166,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
                     return removeTrailingPathSepChar(out);
                 }
                 // mark next tail
-                loop
+                for (;;)
                 {
                     --tail;
                     if (tail == relpath)
@@ -5219,7 +5219,7 @@ const char *splitRelativePath(const char *full,const char *basedir,StringBuffer 
             full += bl+1;
     }
     const char *t = full;
-    loop {
+    for (;;) {
         const char *n = findPathSepChar(t);
         if (!n) 
             break;
@@ -5509,7 +5509,7 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
     filename.appendf("_%" I64F "x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
     OwnedIFile iFile = createIFile(filename.str());
     unsigned attempts = 5; // max attempts
-    loop
+    for (;;)
     {
         if (!iFile->exists())
         {
@@ -5656,7 +5656,7 @@ private:
 
     const void * dopeek(size32_t sz, size32_t &got) __attribute__((noinline))
     {
-        loop
+        for (;;)
         {
             size32_t left = bufmax-bufpos;
             got = left;
@@ -6348,7 +6348,7 @@ bool isSpecialPath(const char *path)
         return false;
     if (isPathSepChar(path[0])&&(path[0]==path[1])) {
         path += 2;
-        loop {
+        for (;;) {
             if (*path=='/') 
                 return (path[1]=='>');
             if (!*path||(*path=='\\'))
@@ -6588,7 +6588,7 @@ public:
     void checkCache(unsigned wanted=1)
     {
         // called in sect
-        loop {
+        for (;;) {
             CCachedFileIO *oldest = NULL;
             unsigned oldestt = 0;
             unsigned t = msTick();
