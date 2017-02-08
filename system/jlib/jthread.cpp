@@ -1823,14 +1823,16 @@ protected: friend class PipeWriterThread;
     StringArray envVars;
     StringArray envValues;
 
-    void clearUtilityThreads()
+    void clearUtilityThreads(bool clearStderr)
     {
         Owned<cForkThread> ft;
         cStdErrorBufferThread *et;
         {
-            CriticalBlock block(sect); // clear forkthread and stderrbufferthread
+            CriticalBlock block(sect); // clear forkthread and optionally stderrbufferthread
             ft.setown(forkthread.getClear());
             et = stderrbufferthread;
+            if (clearStderr)
+                stderrbufferthread = nullptr;
         }
         if (ft)
         {
@@ -1840,7 +1842,8 @@ protected: friend class PipeWriterThread;
         if (et)
         {
             et->stop();
-            // NOTE - we don't delete it here, since we want to be able to still read the buffered data
+            if (clearStderr)
+                delete et;
         }
     }
 public:
@@ -1868,8 +1871,7 @@ public:
         closeInput();
         closeOutput();
         closeError();
-        clearUtilityThreads();
-        delete stderrbufferthread;
+        clearUtilityThreads(true);
     }
 
 
@@ -2163,7 +2165,8 @@ public:
                 }
             }
         }
-        clearUtilityThreads(); // NB: will recall forkthread->join(), but doesn't matter
+        // NOTE - we don't clear stderrbufferthread here, since we want to be able to still read the buffered data
+        clearUtilityThreads(false); // NB: will recall forkthread->join(), but doesn't matter
         if (pipeProcess != (HANDLE)-1)
         {
             if (title.length())
