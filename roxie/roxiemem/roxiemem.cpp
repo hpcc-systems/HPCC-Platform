@@ -7606,6 +7606,10 @@ protected:
 
         delete [] slaveManagers;
 
+        for (unsigned i3 = 0; i3 < numSlaves; i3++)
+            delete allocators[i3];
+        delete [] allocators;
+
         unsigned elapsed = endTime - startTime;
         DBGLOG("Slave spill (%u,%u) = %ums", numSlaves, numIter, elapsed);
     }
@@ -7627,7 +7631,7 @@ protected:
         memsize_t maxMemory = heapTotalPages * HEAP_ALIGNMENT_SIZE;
         memsize_t wasted = 0;
 
-        void * * pages = new void * [heapTotalPages];
+        std::unique_ptr<void *[]> pages(new void * [heapTotalPages]);
         //Allocate a whole set of 1 page allocations
         unsigned scale = 1;
         memsize_t curSize =  HEAP_ALIGNMENT_SIZE * scale - HugeHeaplet::dataOffset();
