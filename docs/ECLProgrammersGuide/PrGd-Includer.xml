@@ -178,13 +178,11 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter>
+  <chapter id="EmbeddedLanguages_DataStores">
     <title>Embedded Languages and Data stores</title>
 
     <xi:include href="ECLProgrammersGuide/PRG_Mods/CodeSign.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-   
   </chapter>
 </book>
