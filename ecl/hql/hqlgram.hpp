@@ -374,8 +374,8 @@ public:
     HqlLookupContext lookupCtx;
     HqlExprArray imports;
     bool inSignedModule;
-    bool legacyImport;
-    bool legacyWhen;
+    bool legacyImport = false;
+    bool legacyWhen = false;
 };
 
 typedef const IAtom * const * AtomList;
