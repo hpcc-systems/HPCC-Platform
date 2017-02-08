@@ -5442,7 +5442,7 @@ void writeAccessMap(const char * rawServiceAccessList, const char * methodname, 
                 {
                     if (strieq(currAccessName, "NONE") || strieq(currAccessName, "DEFERRED"))
                     {
-                        outf("\n//WARNING: Developer has suppressed automatic feature level authorization, ensure this behavior is correct!");
+                        outf("\n//WARNING: Developer has suppressed automatic feature level authorization, ensure this behavior is correct!\n");
                         continue;
                     }
                     else
