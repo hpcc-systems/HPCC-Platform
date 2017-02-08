@@ -204,7 +204,7 @@
           Dali. Sasha’s main function is to reduce the stress on the Dali
           server. Wherever possible, Sasha reduces the resource utilization on
           Dali. A very important aspect of Sasha is coalescing, by saving the
-          in-memory store to a new store edition. </para>
+          in-memory store to a new store edition.</para>
 
           <para>Sasha archives workunits (including DFU Workunits) that are
           then stored in folders on a disk.</para>
@@ -217,8 +217,8 @@
           files. It then presents options (via EclWatch) for their recovery or
           deletion.</para>
 
-          <para>Sasha is the component responsible for removing expireds when
-          the criteria has been met. The EXPIRE option on ECL's OUTPUT or
+          <para>Sasha is the component responsible for removing expired files
+          when the criteria has been met. The EXPIRE option on ECL's OUTPUT or
           PERSIST sets that condition.</para>
         </sect3>
 
@@ -538,7 +538,7 @@
       from Dali then processing it by archiving workunits (WUs) to disk. It is
       beneficial to configure Sasha for a larger amount of archiving so that
       Dali does not keep too many workunits in memory. This requires a larger
-      amount of diskspace. </para>
+      amount of disk space.</para>
 
       <para>Allocating greater disk space for Sasha is sound practice as
       configuring Sasha for more archiving better benefits Dali. Since Sasha
@@ -721,7 +721,7 @@
           uses. Be aware that Sasha can create quite a bit of archive data.
           Once the workunits are archived they are no longer available in the
           Dali data store. The archives can still be accessed through ECL
-          Watch by restoring them to Dali. </para>
+          Watch by restoring them to Dali.</para>
 
           <para>If you need high availability for archived workunits, you
           should back them up at a system level using traditional backup
