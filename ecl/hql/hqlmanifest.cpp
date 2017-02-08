@@ -26,8 +26,16 @@ class ResourceManifest : public CInterface
 {
 public:
     ResourceManifest(const char *filename)
-        : manifest(createPTreeFromXMLFile(filename))
     {
+        try
+        {
+            manifest.setown(createPTreeFromXMLFile(filename));
+        }
+        catch (IException * e)
+        {
+            e->Release();
+            throw makeStringExceptionV(0, "Invalid manifest file '%s'", filename);
+        }
         makeAbsolutePath(filename, absFilename);
         splitDirTail(absFilename, dir);
         expand();
