@@ -3391,6 +3391,7 @@ public:
                 {
                 case WUSFappvalue:
                 {
+                    assertex(fv);
                     const char *name = fv;
                     fv = fv + strlen(fv)+1;
                     if (isWild)
