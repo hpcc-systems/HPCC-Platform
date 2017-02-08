@@ -140,6 +140,7 @@ public:
     CHostManager()
     {
         m_populated = false;
+        m_curHostIdx = 0;
     }
 
     void populateHosts(const char* addrlist)
@@ -773,7 +774,7 @@ public:
             m_useSSL = (0 == stricmp(proto, "ldaps") ? true : false);
         }
 
-        int rc;
+        int rc = LDAP_SERVER_DOWN;//assume bad things
         StringBuffer hostbuf;
         for (int numHosts=0; numHosts < m_ldapconfig->getHostCount(); numHosts++)
         {
@@ -1400,6 +1401,7 @@ public:
         m_pp = NULL;
         //m_defaultFileScopePermission = -2;
         //m_defaultWorkunitScopePermission = -2;
+        m_domainPwdsNeverExpire = false;
     }
 
     virtual void init(IPermissionProcessor* pp)
@@ -1935,6 +1937,10 @@ public:
         if(infotype && stricmp(infotype, "sudoers") == 0)
         {
             CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
+            if (ldapuser == nullptr)
+            {
+                throw MakeStringException(-1, "Unable to cast input user variable");
+            }
 
             TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
             Owned<ILdapConnection> lconn = m_connections->getConnection();
@@ -2185,12 +2191,13 @@ public:
         // Since we've got the SID for the user, cache it for later uses.
         MemoryBuffer mb;
         if(m_pp != NULL)
-            m_pp->getCachedSid(ldapuser->getName(), mb);
-        if(mb.length() == 0)
         {
-            m_pp->cacheSid(ldapuser->getName(), usersidbuf.length(), usersidbuf.toByteArray());
+            m_pp->getCachedSid(ldapuser->getName(), mb);
+            if(mb.length() == 0)
+            {
+                m_pp->cacheSid(ldapuser->getName(), usersidbuf.length(), usersidbuf.toByteArray());
+            }
         }
-
         return ldapuser;
     }
 
@@ -2991,6 +2998,10 @@ public:
         else if(stricmp(type, "sudoersupdate") == 0)
         {
             CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
+            if (ldapuser == nullptr)
+            {
+                throw MakeStringException(-1, "Unable to cast input user variable");
+            }
 
             char* sudoHost = (char*)ldapuser->getSudoHost();
             char* sudoCommand = (char*)ldapuser->getSudoCommand();
@@ -5354,6 +5365,8 @@ private:
         while(nextptr != NULL)
         {
             prevptr = nextptr + 2;
+            if (prevptr == nullptr)
+                break;//could happen if resource contains trailing ::
             nextptr = strstr(prevptr, "::");
         }
         if(prevptr != NULL && *prevptr != '\0')

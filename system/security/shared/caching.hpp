@@ -130,6 +130,9 @@ public:
 
 // main cache that stores all user-specific caches (defined by CResPermissionsCache above)
 //
+
+#define DEFAULT_CACHE_TIMEOUT_SECONDS 10
+
 class CPermissionsCache : public CInterface
 {
 public:
@@ -141,6 +144,7 @@ public:
         m_lastManagedFileScopesRefresh = 0;
         m_defaultPermission = SecAccess_Unknown;
         m_secMgrClass.set(_secMgrClass);
+        m_transactionalCacheTimeout = DEFAULT_CACHE_TIMEOUT_SECONDS;
     }
 
     virtual ~CPermissionsCache();
@@ -167,7 +171,6 @@ public:
     virtual void add (ISecUser& sec_user);
     virtual void removeFromUserCache(ISecUser& sec_user);
 
-#define DEFAULT_CACHE_TIMEOUT_SECONDS 10
     void  setCacheTimeout(int timeoutSeconds)
     {
         m_cacheTimeout = timeoutSeconds;

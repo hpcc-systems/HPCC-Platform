@@ -58,6 +58,7 @@ PermissionProcessor::PermissionProcessor(IPropertyTree* config)
 
     m_sidcache.setown(createPTree());
     m_cfg->getProp(".//@ldapAddress", m_server);
+    m_ldap_client = nullptr;
 }
 
 SecAccessFlags PermissionProcessor::ldap2sec(unsigned ldapperm)
@@ -403,12 +404,6 @@ bool GetAclInformation(PACL pAcl, void* pAclInformation, DWORD nAclInformationLe
     if(nAclInformationLength < sizeof(ACL_SIZE_INFORMATION))
     {
         DBGLOG("GetAclInformation: ACL_SIZE_INFORMATION buffer size too small");
-        return false;
-    }
-
-    if(pAcl == NULL)
-    {
-        DBGLOG("GetAclInformation: PACL is NULL");
         return false;
     }
 
