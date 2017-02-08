@@ -8929,7 +8929,7 @@ IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext &
     return parseQuery(scope, mappedContents, ctx, NULL, macroParms, true);
 }
 
-static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx)
+static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx, bool syntaxCheck)
 {
     if (expr->isMacro())
         return expandMacroDefinition(expr, ctx, true);
@@ -8965,22 +8965,25 @@ static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLook
         if (main)
             return main.getClear();
 
-        StringBuffer msg;
-        const char * name = scope->queryFullName();
-        msg.appendf("Module %s does not EXPORT an attribute main()", name ? name : "");
-        ctx.errs->reportError(HQLERR_CannotSubmitModule, msg.str(), NULL, 1, 0, 0);
-        return NULL;
+        if (!syntaxCheck)
+        {
+            StringBuffer msg;
+            const char * name = scope->queryFullName();
+            msg.appendf("Module %s does not EXPORT an attribute main()", name ? name : "");
+            ctx.errs->reportError(HQLERR_CannotSubmitModule, msg.str(), NULL, 1, 0, 0);
+            return NULL;
+        }
     }
 
     return LINK(expr);
 }
 
-IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx)
+IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx, bool syntaxCheck)
 {
     OwnedHqlExpr query = LINK(expr);
     loop
     {
-        OwnedHqlExpr transformed = transformAttributeToQuery(query, ctx);
+        OwnedHqlExpr transformed = transformAttributeToQuery(query, ctx, syntaxCheck);
         if (!transformed || transformed == query)
             return transformed.getClear();
         query.set(transformed);
