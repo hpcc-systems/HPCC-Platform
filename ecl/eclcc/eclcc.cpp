@@ -409,13 +409,13 @@ static int doMain(int argc, const char *argv[])
     if (argc>=2 && stricmp(argv[1], "-selftest")==0)
         return doSelfTest(argc, argv);
 
-    EclCC processor(argc, argv);
-    int ret = processor.parseCommandLineOptions(argc, argv);
-    if (ret != 0)
-        return ret;
-
     try
     {
+        EclCC processor(argc, argv);
+        int ret = processor.parseCommandLineOptions(argc, argv);
+        if (ret != 0)
+            return ret;
+
         if (processor.printKeywordsToXml())
             return 0;
         if (!processor.processFiles())
