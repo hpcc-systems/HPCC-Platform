@@ -117,7 +117,7 @@ int rangeCompare(double value, ITypeInfo * targetType)
             return rangeCompare(value, targetType->queryPromotedType());
         case type_bitfield:
             {
-                unsigned __int64 maxValue = (1 << targetType->getBitSize()) - 1;
+                unsigned __int64 maxValue = (I64C(1) << targetType->getBitSize()) - 1;
                 if (value > maxValue)
                     return +1;
                 break;

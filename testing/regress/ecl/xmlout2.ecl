@@ -63,7 +63,7 @@ namesTable := dataset([
         ], personRecord);
 
 output(namesTable,,'REGRESS::TEMP::output2.xml',overwrite,xml(heading('','')));
-
+output(count(nofold(namesTable)(b1 > 0x80000000)));
 inf := dataset('REGRESS::TEMP::output2.xml', { string text }, csv);
 output(inf);
 
