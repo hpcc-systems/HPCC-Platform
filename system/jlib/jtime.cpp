@@ -305,6 +305,8 @@ void CDateTime::set(unsigned year, unsigned month, unsigned day, unsigned hour, 
         local.tm_min = minute;
         local.tm_sec = second;
         local.tm_isdst = -1;
+        local.tm_wday = 0;
+        local.tm_yday = 0;
         time_t simple = timelocal(&local);
         set(simple);
     }
