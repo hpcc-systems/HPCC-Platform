@@ -17122,7 +17122,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
         OwnedHqlExpr normalized = normalizeListCasts(values);
 
         if (normalized->getOperator() == no_alias)
-            buildExpr(instance->startctx, normalized, bound);
+        {
+            buildExpr(funcctx, normalized, bound);
+            rowsExpr.setown(createValue(no_countlist, makeIntType(8, false), LINK(normalized)));
+        }
         else
         {
             BuildCtx * declarectx;
@@ -17134,9 +17137,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
             CHqlBoundTarget tempTarget;
             buildTempExpr(*callctx, *declarectx, tempTarget, normalized, FormatNatural, !canSetBeAll(normalized));
             bound.setFromTarget(tempTarget);
+            rowsExpr.setown(getBoundCount(bound));
+            rowsExpr.setown(createTranslated(rowsExpr));
         }
-        rowsExpr.setown(getBoundCount(bound));
-        rowsExpr.setown(createTranslated(rowsExpr));
 
         OwnedHqlExpr compare = createValue(no_ge, makeBoolType(), LINK(rowVar), ensureExprType(rowsExpr, rowVar->queryType()));
         BuildCtx condctx(funcctx);
