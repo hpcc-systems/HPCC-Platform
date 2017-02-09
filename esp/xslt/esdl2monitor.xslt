@@ -189,11 +189,11 @@ END;
 
   string monAction := 'Create' : STORED('MonAction', FORMAT(SELECT('Create,Run'), SEQUENCE(5)));
   string userId := '' : stored('UserId', FORMAT(SEQUENCE(6)));
-  string service_url := '' : stored('QueryURL', FORMAT(SEQUENCE(7)));
-  string service_name := '' : stored('QueryName', FORMAT(SEQUENCE(8)));
+  string serviceURL := '' : stored('QueryURL', FORMAT(SEQUENCE(7)));
+  string serviceName := '' : stored('QueryName', FORMAT(SEQUENCE(8)));
 
 <xsl:if test="$diffaction='Run'">
-  string MonitorIdIn := '' : stored('MonitorId', FORMAT(SEQUENCE(9)));
+  string monitorIdIn := '' : stored('MonitorId', FORMAT(SEQUENCE(9)));
 </xsl:if>
   requestIn := DATASET([], the_requestLayout) : STORED ('<xsl:value-of select="$requestType"/>', FEW, FORMAT(FIELDWIDTH(100),FIELDHEIGHT(30), sequence(100)));
 
@@ -202,21 +202,21 @@ MonSoapcall(DATASET(the_requestLayout) req) := FUNCTION
   // Wrap it so that request would look like:
   // <AssetReportRequest><Row><User>...</User><Options>..</Options><SearchBy>...</SearchBy></Row></AssetReportRequest>
   in_rec := record
-    dataset (the_requestLayout) <xsl:value-of select="$requestType"/> {xpath('<xsl:value-of select="$requestType"/>/Row'), maxcount(1)};
+    DATASET (the_requestLayout) <xsl:value-of select="$requestType"/> {xpath('<xsl:value-of select="$requestType"/>/Row'), maxcount(1)};
   end;
 
   in_rec Format () := transform
     Self.<xsl:value-of select="$requestType"/> := req;
   end;
 
-  ds_request := dataset ([Format()]);
+  ds_request := DATASET ([Format()]);
 
   // execute soapcall
   ar_results := SOAPCALL (ds_request,
-                          service_url,
-                          service_name,
+                          serviceURL,
+                          serviceName,
                           {ds_request},
-                          dataset (the_responseLayout),
+                          DATASET (the_responseLayout),
                           TIMEOUT(6), RETRY(1), LITERAL, XPATH('*/Results/Result/Dataset/Row'));
 
   RETURN ar_results;
@@ -294,7 +294,7 @@ END;
   executedAction := CreateMonitor(userId, requestIn).Result();
   </xsl:when>
   <xsl:otherwise>
-  executedAction := RunMonitor(MonitorIdIn, requestIn).Result();
+  executedAction := RunMonitor(monitorIdIn, requestIn).Result();
   </xsl:otherwise>
 </xsl:choose>
 
