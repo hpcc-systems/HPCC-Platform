@@ -108,20 +108,24 @@ void BaseDatasetCursor::buildIterateMembers(BuildCtx & declarectx, BuildCtx & in
     OwnedHqlExpr row = createRow(declarectx, "row", rowName);
 
     //row = iter.first()
-    BuildCtx firstctx(declarectx);
-    firstctx.addQuotedCompoundLiteral("virtual bool first()");
-    s.clear().append(rowName).append(" = (byte *)").append(iterName).append(".first();");
-    firstctx.addQuoted(s);
-    s.clear().append("return ").append(rowName).append(" != NULL;");
-    firstctx.addQuoted(s);
+    {
+        BuildCtx firstctx(declarectx);
+        firstctx.addQuotedFunction("virtual bool first()");
+        s.clear().append(rowName).append(" = (byte *)").append(iterName).append(".first();");
+        firstctx.addQuoted(s);
+        s.clear().append("return ").append(rowName).append(" != NULL;");
+        firstctx.addQuoted(s);
+    }
 
     //row = iter.first()
-    BuildCtx nextctx(declarectx);
-    nextctx.addQuotedCompoundLiteral("virtual bool next()");
-    s.clear().append(rowName).append(" = (byte *)").append(iterName).append(".next();");
-    nextctx.addQuoted(s);
-    s.clear().append("return ").append(rowName).append(" != NULL;");
-    nextctx.addQuoted(s);
+    {
+        BuildCtx nextctx(declarectx);
+        nextctx.addQuotedFunction("virtual bool next()");
+        s.clear().append(rowName).append(" = (byte *)").append(iterName).append(".next();");
+        nextctx.addQuoted(s);
+        s.clear().append("return ").append(rowName).append(" != NULL;");
+        nextctx.addQuoted(s);
+    }
 
     //iterate
     translator.bindTableCursor(declarectx, ds, row);

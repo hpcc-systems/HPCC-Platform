@@ -2287,7 +2287,7 @@ protected:
             if (getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER)) // for testing only (force to disk, as if spilt)
                 channelDistributor.spill(false);
 
-            Owned<IRowStream> distChannelStream = rhsDistributor->connect(queryRowInterfaces(rightITDL), right, rightHash, NULL);
+            Owned<IRowStream> distChannelStream = rhsDistributor->connect(queryRowInterfaces(rightITDL), right, rightHash, nullptr, nullptr);
             channelDistributor.processDistRight(distChannelStream);
         }
         catch (IException *e)
@@ -2429,7 +2429,7 @@ protected:
                     }
 
                     // start LHS distributor, needed by local lookup or full join
-                    left.setown(lhsDistributor->connect(queryRowInterfaces(leftITDL), left, leftHash, NULL));
+                    left.setown(lhsDistributor->connect(queryRowInterfaces(leftITDL), left, leftHash, nullptr, nullptr));
 
                     // NB: Some channels in this or other slave processes may have fallen over to hash join
                 }

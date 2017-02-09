@@ -25,7 +25,7 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlembed.hpp"
 #include "roxiemem.hpp"
 #include "nbcd.hpp"

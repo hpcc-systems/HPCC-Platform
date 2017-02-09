@@ -479,13 +479,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibrarySelect(BuildCtx & ctx, 
 
 void HqlCppTranslator::buildLibraryInstanceExtract(BuildCtx & ctx, HqlCppLibraryInstance * libraryInstance)
 {
-    BuildCtx subctx(ctx);
-    subctx.addQuotedCompoundLiteral("virtual void createParentExtract(rtlRowBuilder & builder)");
+    MemberFunction func(*this, ctx, "virtual void createParentExtract(rtlRowBuilder & builder)");
 
-
-    BuildCtx beforeBuilderCtx(subctx);
+    BuildCtx beforeBuilderCtx(func.ctx);
     beforeBuilderCtx.addGroup();
-    Owned<ParentExtract> extractBuilder = createExtractBuilder(subctx, PETlibrary, NULL, GraphNonLocal, false);
+    Owned<ParentExtract> extractBuilder = createExtractBuilder(func.ctx, PETlibrary, NULL, GraphNonLocal, false);
 
     StringBuffer s;
     s.append("rtlRowBuilder & ");
@@ -493,7 +491,7 @@ void HqlCppTranslator::buildLibraryInstanceExtract(BuildCtx & ctx, HqlCppLibrary
     s.append(" = builder;");
     beforeBuilderCtx.addQuoted(s);
 
-    beginExtract(subctx, extractBuilder);
+    beginExtract(func.ctx, extractBuilder);
 
     //Ensure all the values are added to the serialization in the correct order 
     CHqlBoundExpr dummyTarget;
@@ -504,7 +502,7 @@ void HqlCppTranslator::buildLibraryInstanceExtract(BuildCtx & ctx, HqlCppLibrary
         extractBuilder->addSerializedExpression(libraryInstance->queryActual(i2), parameter->queryType());
     }
 
-    endExtract(subctx, extractBuilder);
+    endExtract(func.ctx, extractBuilder);
 }
 
 ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx, IHqlExpression * expr)
@@ -585,7 +583,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
 
     StringBuffer s;
     BuildCtx metactx(instance->classctx);
-    metactx.addQuotedCompoundLiteral("virtual IOutputMetaData * queryOutputMeta(unsigned whichOutput)");
+    metactx.addQuotedFunction("virtual IOutputMetaData * queryOutputMeta(unsigned whichOutput)");
     BuildCtx switchctx(metactx);
     switchctx.addQuotedCompoundLiteral("switch (whichOutput)");
 
@@ -602,10 +600,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
     }
     metactx.addReturn(queryQuotedNullExpr());
 
-    //Library Name must be onCreate invariant
-    BuildCtx namectx(instance->createctx);
-    namectx.addQuotedCompoundLiteral("virtual char * getLibraryName()");
-    buildReturn(namectx, name, unknownVarStringType);
+    {
+        //Library Name must be onCreate invariant
+        MemberFunction func(*this, instance->createctx, "virtual char * getLibraryName()");
+        buildReturn(func.ctx, name, unknownVarStringType);
+    }
 
     buildInstanceSuffix(instance);
 

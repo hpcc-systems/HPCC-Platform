@@ -2,9 +2,6 @@
 
  PLEASE READ the following before proceeding.
 
- Lines in comments may be deleted from the comment before you submit.
- Other lines should be modified appropriately and left in place.
-
  This project only accepts pull requests related to open JIRA issues.
  If suggesting a new feature or change, please discuss it in a JIRA issue first.
  If fixing a bug, there should be an issue describing it with steps to reproduce.
@@ -13,7 +10,7 @@
 
  HPCC-nnnnn Short description of issue
 
- This will allow the Jira ticket to be automatically updated to refer to this pull request,and
+ This will allow the Jira ticket to be automatically updated to refer to this pull request,
  and will ensure that the automatically-generated changelog is properly formatted.
  Where a pull request contains a single commit the pull request title will be set automatically,
  assuming that the commit has followed the proper guidelines.

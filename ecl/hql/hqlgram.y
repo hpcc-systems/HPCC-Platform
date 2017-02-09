@@ -8004,7 +8004,7 @@ simpleDataSet
                             parser->expandWholeAndExcept(ds, $4);
 
                             IHqlExpression *flags = $4.getExpr();
-                            //checkDedup(ds, flags, $3);
+                            //checkDedup(ds, flags, $4);
                             OwnedHqlExpr dedup = createDataset(no_dedup, ds, createComma(flags, $7.getExpr()));
 
                             parser->checkDistribution($3, dedup, false);
@@ -11725,6 +11725,13 @@ dedupFlag
                             $$.setExpr(row.getClear(), $1);
                         }
     | dataSet
+    | BEST '(' startSortOrder beginList sortListOptCurleys ')' endSortOrder
+                        {
+                            HqlExprArray sortItems;
+                            parser->endList(sortItems);
+
+                            $$.setExpr(createExprAttribute(bestAtom, createSortList(sortItems)));
+                        }
     ;
 
 rollupExtra

@@ -24,7 +24,7 @@
 #include "eclhelper.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 #include "jprop.hpp"
 #include "build-config.h"
@@ -305,10 +305,10 @@ protected:
             if (inSet)
             {
                 VStringBuffer arraySig("[%s", sig);
-                fieldId = JNIenv->GetFieldID(Class, str(field->name), arraySig.str());
+                fieldId = JNIenv->GetFieldID(Class, field->name, arraySig.str());
             }
             else
-                fieldId = JNIenv->GetFieldID(Class, str(field->name), sig);
+                fieldId = JNIenv->GetFieldID(Class, field->name, sig);
         }
         else
         {
@@ -319,14 +319,14 @@ protected:
             checkException();
             jmethodID getDeclaredField = JNIenv->GetMethodID(classClass, "getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;" );
             checkException();
-            jstring fieldName = JNIenv->NewStringUTF(str(field->name));
+            jstring fieldName = JNIenv->NewStringUTF(field->name);
             checkException();
             jobject reflectedField = JNIenv->CallObjectMethod(Class, getDeclaredField, fieldName);
             checkException();
             fieldId = JNIenv->FromReflectedField(reflectedField);
         }
         if (!fieldId && expected)
-            throw MakeStringException(0, "javaembed: Unable to retrieve field %s of type %s", str(field->name), expected);
+            throw MakeStringException(0, "javaembed: Unable to retrieve field %s of type %s", field->name, expected);
         if (expected)
             checkException();
         else
@@ -952,7 +952,7 @@ public:
             if (!JNIenv->CallBooleanMethod(arrayClass, isArrayMethod))
             {
                 JNIenv->ExceptionClear();
-                VStringBuffer message("javaembed: Array expected for field %s", str(field->name));
+                VStringBuffer message("javaembed: Array expected for field %s", field->name);
                 rtlFail(0, message.str());
             }
             // Set up constructor etc for the child rows, so we don't do it per row

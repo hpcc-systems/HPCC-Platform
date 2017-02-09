@@ -106,6 +106,8 @@ public:
     {
         while (bindingCount)
             bindings[--bindingCount]->Release();
+        if (hxsl)
+            FreeSharedObject(hxsl);
     }
 
     const StringBuffer &getAppFrameHtml(time_t &modified, const char *inner_url, StringBuffer &html, IEspContext* ctx);

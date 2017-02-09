@@ -555,26 +555,28 @@ IHqlExpression * SteppingFieldSelection::generateSteppingMeta(HqlCppTranslator &
         comparectx.addQuotedCompoundLiteral("class Compare : public IRangeCompare", s2.clear().append(" ").append(compareName).append(";"));
         translator.doBuildUnsignedFunction(comparectx, "maxFields", lenOffsets/2);
 
-        comparectx.addQuotedCompoundLiteral("virtual int docompare(const void * _left,const void * _right, unsigned numFields) const");
-        comparectx.addQuotedLiteral("const byte * left = (const byte *)_left;");
-        comparectx.addQuotedLiteral("const byte * right = (const byte *)_right;");
-        comparectx.addQuotedLiteral("int ret;");
-
-        comparectx.addQuoted(s.clear().append("if (numFields < 1) return 0;"));
-        OwnedHqlExpr selSeq = createDummySelectorSequence();
-        BoundRow * left = translator.bindTableCursor(comparectx, ds, "left", no_left, selSeq);
-        BoundRow * right = translator.bindTableCursor(comparectx, ds, "right", no_right, selSeq);
-        ForEachChild(i, fields)
         {
-            IHqlExpression * cur = fields->queryChild(i);
-            if (i)
-                comparectx.addQuoted(s.clear().append("if (ret || (numFields < ").append(i+1).append(")) return ret;"));
-            OwnedHqlExpr lhs = replaceSelector(cur, ds, left->querySelector());
-            OwnedHqlExpr rhs = replaceSelector(cur, ds, right->querySelector());
-            OwnedHqlExpr order = createValue(no_order, makeIntType(4, true), LINK(lhs), LINK(rhs));
-            translator.buildAssignToTemp(comparectx, result, order);
+            MemberFunction func(translator, comparectx, "virtual int docompare(const void * _left,const void * _right, unsigned numFields) const");
+            func.ctx.addQuotedLiteral("const byte * left = (const byte *)_left;");
+            func.ctx.addQuotedLiteral("const byte * right = (const byte *)_right;");
+            func.ctx.addQuotedLiteral("int ret;");
+
+            func.ctx.addQuoted(s.clear().append("if (numFields < 1) return 0;"));
+            OwnedHqlExpr selSeq = createDummySelectorSequence();
+            BoundRow * left = translator.bindTableCursor(func.ctx, ds, "left", no_left, selSeq);
+            BoundRow * right = translator.bindTableCursor(func.ctx, ds, "right", no_right, selSeq);
+            ForEachChild(i, fields)
+            {
+                IHqlExpression * cur = fields->queryChild(i);
+                if (i)
+                    func.ctx.addQuoted(s.clear().append("if (ret || (numFields < ").append(i+1).append(")) return ret;"));
+                OwnedHqlExpr lhs = replaceSelector(cur, ds, left->querySelector());
+                OwnedHqlExpr rhs = replaceSelector(cur, ds, right->querySelector());
+                OwnedHqlExpr order = createValue(no_order, makeIntType(4, true), LINK(lhs), LINK(rhs));
+                translator.buildAssignToTemp(func.ctx, result, order);
+            }
+            func.ctx.addReturn(result);
         }
-        comparectx.addReturn(result);
     
         classctx.addQuoted(s.clear().append("virtual IRangeCompare * queryCompare() { return &").append(compareName).append("; }"));
     }
@@ -588,35 +590,38 @@ IHqlExpression * SteppingFieldSelection::generateSteppingMeta(HqlCppTranslator &
 
         BuildCtx distancectx(classctx);
         distancectx.addQuotedCompoundLiteral("class Distance : public IDistanceCalculator", s2.clear().append(" ").append(distanceName).append(";"));
-        distancectx.addQuotedCompoundLiteral("virtual unsigned getDistance(unsigned __int64 & distance, const void * _before, const void * _after, unsigned numFields) const");
-        distancectx.addQuotedLiteral("const byte * before = (const byte *)_before;");
-        distancectx.addQuotedLiteral("const byte * after = (const byte *)_after;");
 
-        OwnedHqlExpr selSeq = createDummySelectorSequence();
-        OwnedITypeInfo distanceType = makeIntType(8, false);
-        OwnedHqlExpr distanceExpr = createVariable("distance", LINK(distanceType));
-        BoundRow * left = translator.bindTableCursor(distancectx, ds, "before", no_left, selSeq);
-        BoundRow * right = translator.bindTableCursor(distancectx, ds, "after", no_right, selSeq);
-        ForEachChild(i, fields)
         {
-            IHqlExpression * cur = fields->queryChild(i);
-            distancectx.addQuoted(s.clear().append("if (numFields < ").append(i+1).append(") return DISTANCE_EXACT_MATCH;"));
-            OwnedHqlExpr lhs = replaceSelector(cur, ds, left->querySelector());
-            OwnedHqlExpr rhs = replaceSelector(cur, ds, right->querySelector());
-            OwnedHqlExpr compare = createBoolExpr(no_ne, LINK(lhs), LINK(rhs));
-            BuildCtx subctx(distancectx);
-            translator.buildFilter(subctx, compare);
+            MemberFunction func(translator, distancectx, "virtual unsigned getDistance(unsigned __int64 & distance, const void * _before, const void * _after, unsigned numFields) const");
+            func.ctx.addQuotedLiteral("const byte * before = (const byte *)_before;");
+            func.ctx.addQuotedLiteral("const byte * after = (const byte *)_after;");
 
-            OwnedHqlExpr value;
-            if (lhs->queryType()->isInteger())
-                value.setown(createValue(no_sub, LINK(distanceType), ensureExprType(rhs, distanceType), ensureExprType(lhs, distanceType)));
-            else
-                value.setown(getSizetConstant(1));
-            translator.buildAssignToTemp(subctx, distanceExpr, value);
-            subctx.addQuotedF("return %u;", i+1);
+            OwnedHqlExpr selSeq = createDummySelectorSequence();
+            OwnedITypeInfo distanceType = makeIntType(8, false);
+            OwnedHqlExpr distanceExpr = createVariable("distance", LINK(distanceType));
+            BoundRow * left = translator.bindTableCursor(func.ctx, ds, "before", no_left, selSeq);
+            BoundRow * right = translator.bindTableCursor(func.ctx, ds, "after", no_right, selSeq);
+            ForEachChild(i, fields)
+            {
+                IHqlExpression * cur = fields->queryChild(i);
+                func.ctx.addQuoted(s.clear().append("if (numFields < ").append(i+1).append(") return DISTANCE_EXACT_MATCH;"));
+                OwnedHqlExpr lhs = replaceSelector(cur, ds, left->querySelector());
+                OwnedHqlExpr rhs = replaceSelector(cur, ds, right->querySelector());
+                OwnedHqlExpr compare = createBoolExpr(no_ne, LINK(lhs), LINK(rhs));
+                BuildCtx subctx(func.ctx);
+                translator.buildFilter(subctx, compare);
+
+                OwnedHqlExpr value;
+                if (lhs->queryType()->isInteger())
+                    value.setown(createValue(no_sub, LINK(distanceType), ensureExprType(rhs, distanceType), ensureExprType(lhs, distanceType)));
+                else
+                    value.setown(getSizetConstant(1));
+                translator.buildAssignToTemp(subctx, distanceExpr, value);
+                subctx.addQuotedF("return %u;", i+1);
+            }
+
+            func.ctx.addQuotedLiteral("return DISTANCE_EXACT_MATCH;");
         }
-            
-        distancectx.addQuotedLiteral("return DISTANCE_EXACT_MATCH;");
     
         classctx.addQuoted(s.clear().append("virtual IDistanceCalculator * queryDistance() { return &").append(distanceName).append("; }"));
     }
@@ -755,9 +760,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRowsetRange(BuildCtx & ctx, IH
     OwnedHqlExpr castList = ensureExprType(inputSelection, castType);
     OwnedHqlExpr normalized = normalizeListCasts(castList);
 
-    BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompoundLiteral("virtual void getInputSelection(bool & __isAllResult, size32_t & __lenResult, void * & __result)");
-    doBuildFunctionReturn(funcctx, castType, normalized);
+    {
+        MemberFunction func(*this, instance->startctx, "virtual void getInputSelection(bool & __isAllResult, size32_t & __lenResult, void * & __result)");
+        doBuildFunctionReturn(func.ctx, castType, normalized);
+    }
 
     if ((kind == TAKnwaygraphloopresultread) && isGrouped(rowset))
         doBuildBoolFunction(instance->classctx, "grouped", true);
@@ -994,27 +1000,25 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 
         //virtual unsigned __int64 extractRangeValue(const void * input);               // distance is assumed to be unsigned, code generator must bias if not true.
         {
-            BuildCtx extractCtx(instance->startctx);
-            extractCtx.addQuotedCompoundLiteral("unsigned __int64 extractRangeValue(const void * _left)");
-            extractCtx.addQuotedLiteral("const byte * left = (const byte *)_left;");
-            bindTableCursor(extractCtx, dataset, "left", no_left, selSeq);
-            buildReturn(extractCtx, rangeValue);
+            MemberFunction func(*this, instance->startctx, "unsigned __int64 extractRangeValue(const void * _left)");
+            func.ctx.addQuotedLiteral("const byte * left = (const byte *)_left;");
+            bindTableCursor(func.ctx, dataset, "left", no_left, selSeq);
+            buildReturn(func.ctx, rangeValue);
         }
 
         //virtual void adjustRangeValue(void * self, const void * input, __int64 delta);        // implementation must ensure field doesn't go -ve.
         {
-            BuildCtx adjustCtx(instance->startctx);
-            adjustCtx.addQuotedCompoundLiteral("void adjustRangeValue(ARowBuilder & crSelf, const void * _left, __int64 delta)");
-            ensureRowAllocated(adjustCtx, "crSelf");
-            adjustCtx.addQuotedLiteral("const byte * left = (const byte *)_left;");
+            MemberFunction func(*this, instance->startctx, "void adjustRangeValue(ARowBuilder & crSelf, const void * _left, __int64 delta)");
+            ensureRowAllocated(func.ctx, "crSelf");
+            func.ctx.addQuotedLiteral("const byte * left = (const byte *)_left;");
 
-            BoundRow * self = bindSelf(adjustCtx, dataset, "crSelf");
-            bindTableCursor(adjustCtx, dataset, "left", no_left, selSeq);
+            BoundRow * self = bindSelf(func.ctx, dataset, "crSelf");
+            bindTableCursor(func.ctx, dataset, "left", no_left, selSeq);
             ForEachChild(i, equalityList)
             {
                 IHqlExpression * cur = equalityList->queryChild(i);
                 OwnedHqlExpr target = replaceSelector(cur, left, self->querySelector());
-                buildAssign(adjustCtx, target, cur);
+                buildAssign(func.ctx, target, cur);
             }
             OwnedHqlExpr target = replaceSelector(rangeSelect, left, self->querySelector());
             OwnedHqlExpr delta = createVariable("delta", LINK(distanceType));
@@ -1028,23 +1032,21 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
                                                           LINK(cond), 
                                                           createValue(no_add, rangeSelect->getType(), LINK(rangeSelect), ensureExprType(delta, rangeSelect->queryType())),
                                                           ensureExprType(firstValue, rangeSelect->queryType()));
-            buildAssign(adjustCtx, target, assignValue);
+            buildAssign(func.ctx, target, assignValue);
         }
 
         //virtual __int64 maxRightBeforeLeft()
         {
-            BuildCtx rBeforeLctx(instance->startctx);
-            rBeforeLctx.addQuotedCompoundLiteral("virtual __int64 maxRightBeforeLeft()");
+            MemberFunction func(*this, instance->startctx, "virtual __int64 maxRightBeforeLeft()");
             OwnedHqlExpr mrbl = stepCondition.getMaxRightBeforeLeft();
-            buildReturn(rBeforeLctx, mrbl);
+            buildReturn(func.ctx, mrbl);
         }
 
         //virtual __int64 maxLeftBeforeRight()
         {
-            BuildCtx lBeforeRctx(instance->startctx);
-            lBeforeRctx.addQuotedCompoundLiteral("virtual __int64 maxLeftBeforeRight()");
+            MemberFunction func(*this, instance->startctx, "virtual __int64 maxLeftBeforeRight()");
             OwnedHqlExpr mlbr = stepCondition.getMaxLeftBeforeRight();
-            buildReturn(lBeforeRctx, mlbr);
+            buildReturn(func.ctx, mlbr);
         }
     }
 
@@ -1061,21 +1063,20 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
     //virtual size32_t transform(ARowBuilder & crSelf, unsigned _num, const void * * _rows)
     if (transform)
     {
-        BuildCtx transformctx(instance->startctx);
-        transformctx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, unsigned numRows, const void * * _rows)");
-        ensureRowAllocated(transformctx, "crSelf");
-        transformctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
-        transformctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _rows[1];");
-        transformctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
+        MemberFunction func(*this, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, unsigned numRows, const void * * _rows)");
+        ensureRowAllocated(func.ctx, "crSelf");
+        func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
+        func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _rows[1];");
+        func.ctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
 
-        bindTableCursor(transformctx, dataset, "left", no_left, selSeq);
-        bindTableCursor(transformctx, dataset, "right", no_right, selSeq);
-        bindRows(transformctx, no_left, selSeq, rowsid, dataset, "numRows", "rows", options.mainRowsAreLinkCounted);
-        BoundRow * selfCursor = bindSelf(transformctx, expr, "crSelf");
+        bindTableCursor(func.ctx, dataset, "left", no_left, selSeq);
+        bindTableCursor(func.ctx, dataset, "right", no_right, selSeq);
+        bindRows(func.ctx, no_left, selSeq, rowsid, dataset, "numRows", "rows", options.mainRowsAreLinkCounted);
+        BoundRow * selfCursor = bindSelf(func.ctx, expr, "crSelf");
 
-        associateSkipReturnMarker(transformctx, queryZero(), selfCursor);
-        doTransform(transformctx, transform, selfCursor);
-        buildReturnRecordSize(transformctx, selfCursor);
+        associateSkipReturnMarker(func.ctx, queryZero(), selfCursor);
+        doTransform(func.ctx, transform, selfCursor);
+        buildReturnRecordSize(func.ctx, selfCursor);
     }
 
     if (mofn)
@@ -1091,13 +1092,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
         IHqlExpression * lastJoinField = equalityList->queryChild(numEqualFields-1);
         if (lastJoinField->queryType()->isInteger())
         {
-            BuildCtx transformctx(instance->startctx);
-            transformctx.addQuotedCompoundLiteral("virtual bool createNextJoinValue(ARowBuilder & crSelf, const void * _value)");
-            ensureRowAllocated(transformctx, "crSelf");
-            transformctx.addQuotedLiteral("const byte * value = (const byte *)_value;");
+            MemberFunction func(*this, instance->startctx, "virtual bool createNextJoinValue(ARowBuilder & crSelf, const void * _value)");
+            ensureRowAllocated(func.ctx, "crSelf");
+            func.ctx.addQuotedLiteral("const byte * value = (const byte *)_value;");
 
-            BoundRow * self = bindSelf(transformctx, dataset, "crSelf");
-            bindTableCursor(transformctx, dataset, "value", no_left, selSeq);
+            BoundRow * self = bindSelf(func.ctx, dataset, "crSelf");
+            bindTableCursor(func.ctx, dataset, "value", no_left, selSeq);
             ForEachChild(i, equalityList)
             {
                 IHqlExpression * cur = equalityList->queryChild(i);
@@ -1105,9 +1105,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
                 LinkedHqlExpr source = cur;
                 if (i == numEqualFields-1)
                     source.setown(adjustValue(cur, 1));
-                buildAssign(transformctx, target, source);
+                buildAssign(func.ctx, target, source);
             }
-            buildReturn(transformctx, queryBoolExpr(true));
+            buildReturn(func.ctx, queryBoolExpr(true));
         }
     }
 

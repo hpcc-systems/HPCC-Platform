@@ -79,7 +79,7 @@ ESPStruct [nil_remove] DFUWorkunit
 
     // Monitor
     string MonitorEventName;
-    bool MonitorSub;                
+    bool MonitorSub;
     int MonitorShotLimit;
 
     string SourceDiffKeyName;
@@ -93,6 +93,7 @@ ESPStruct [nil_remove] DFUWorkunit
     [min_ver("1.09")] bool recordStructurePresent(false);
     [min_ver("1.10")] bool quotedTerminator(true);
     [min_ver("1.12")] bool preserveCompression(true);
+    [min_ver("1.14")] int expireDays;
 };
 
 ESPStruct [nil_remove] GroupNode
@@ -115,14 +116,14 @@ ESPStruct [nil_remove] DFUActionResult
     string Result;
 };
 
-ESPrequest 
+ESPrequest
 [
 ]
 DFUWUSearchRequest
 {
 };
 
-ESPresponse 
+ESPresponse
 [
    exceptions_inline
 ]
@@ -267,7 +268,7 @@ ESPrequest SubmitDFUWorkunit
     string wuid;
 };
 
-ESPresponse [exceptions_inline] 
+ESPresponse [exceptions_inline]
 SubmitDFUWorkunitResponse
 {
 };
@@ -277,7 +278,7 @@ ESPrequest AbortDFUWorkunit
     string wuid;
 };
 
-ESPresponse [exceptions_inline] 
+ESPresponse [exceptions_inline]
 AbortDFUWorkunitResponse
 {
 };
@@ -287,7 +288,7 @@ ESPrequest GetDFUExceptions
     string wuid;
 };
 
-ESPresponse [exceptions_inline] 
+ESPresponse [exceptions_inline]
 GetDFUExceptionsResponse
 {
     ESParray<ESPstruct DFUException> result;
@@ -327,10 +328,12 @@ ESPrequest [nil_remove] SprayFixed
     [min_ver("1.09")] bool recordStructurePresent(false);
 
     [min_ver("1.10")] bool quotedTerminator(true);
+
+    [min_ver("1.14")] int expireDays;
 };
 
-ESPresponse [exceptions_inline] 
-SprayFixedResponse 
+ESPresponse [exceptions_inline]
+SprayFixedResponse
 {
     string wuid;
 };
@@ -340,7 +343,7 @@ ESPrequest [nil_remove] SprayVariable
     string sourceIP;
     string sourcePath;
     binary srcxml;
-    
+
     int sourceMaxRecordSize;
     int sourceFormat;
     bool   NoSourceCsvSeparator(false);
@@ -357,12 +360,12 @@ ESPrequest [nil_remove] SprayVariable
     int    ReplicateOffset(1);
 
     int    maxConnections;
-    int    throttle;    
+    int    throttle;
     int    transferBufferSize;
 
     string prefix;
     bool   nosplit(false);
-    bool   norecover(false);    
+    bool   norecover(false);
     bool   compress(false);
     bool   push(false);
     bool   pull(false);
@@ -377,10 +380,11 @@ ESPrequest [nil_remove] SprayVariable
     [min_ver("1.10")] bool quotedTerminator(true);
     [min_ver("1.11")] string sourceRowPath;
     [min_ver("1.11")] bool isJSON(false);
+    [min_ver("1.14")] int expireDays;
 };
 
-ESPresponse [exceptions_inline] 
-SprayResponse 
+ESPresponse [exceptions_inline]
+SprayResponse
 {
     string wuid;
 };
@@ -392,9 +396,9 @@ ESPrequest [nil_remove] Replicate
     string cluster;
     bool   repeatLast(false);
     bool   onlyRepeated(false);
-};  
+};
 
-ESPresponse [exceptions_inline] 
+ESPresponse [exceptions_inline]
 ReplicateResponse
 {
     string wuid;
@@ -410,7 +414,7 @@ ESPrequest Despray
     bool   overwrite;
 
     int    maxConnections;
-    int    throttle;    
+    int    throttle;
     int    transferBufferSize;
 
     string splitprefix;
@@ -423,9 +427,9 @@ ESPrequest Despray
     string encrypt;
     string decrypt;
 
-};  
+};
 
-ESPresponse [exceptions_inline] 
+ESPresponse [exceptions_inline]
 DesprayResponse
 {
     string wuid;
@@ -445,7 +449,7 @@ ESPrequest [nil_remove] Copy
     int    ReplicateOffset(1);
 
     int    maxConnections;
-    int    throttle;    
+    int    throttle;
     int    transferBufferSize;
     bool   nosplit;
     bool   norecover(false);
@@ -466,7 +470,7 @@ ESPrequest [nil_remove] Copy
     [min_ver("1.12")] bool preserveCompression(true);
 };
 
-ESPresponse [exceptions_inline] 
+ESPresponse [exceptions_inline]
 CopyResponse
 {
     string result;
@@ -489,7 +493,7 @@ ESPrequest Rename
     bool   overwrite;
 };
 
-ESPresponse [exceptions_inline] 
+ESPresponse [exceptions_inline]
 RenameResponse
 {
     string wuid;
@@ -534,7 +538,7 @@ ESPresponse [exceptions_inline] FileListResponse
     int    OS;
     bool DirectoryOnly(false);
     [min_ver("1.10")] string AcceptLanguage;
-    ESParray<ESPStruct PhysicalFileStruct> files;   
+    ESParray<ESPStruct PhysicalFileStruct> files;
 };
 
 ESPrequest [nil_remove] DropZoneFileSearchRequest
@@ -600,7 +604,7 @@ ESPStruct [nil_remove] DropZone
     string NetAddress;
     string Path;
     string Computer;
-    string Linux;                          
+    string Linux;
 };
 
 ESPrequest DropZoneFilesRequest
@@ -618,8 +622,8 @@ ESPresponse [exceptions_inline, nil_remove] DropZoneFilesResponse
     string Path;
     int OS;
 
-    ESParray<ESPStruct DropZone> DropZones; 
-    ESParray<ESPStruct PhysicalFileStruct> Files;   
+    ESParray<ESPStruct DropZone> DropZones;
+    ESParray<ESPStruct PhysicalFileStruct> Files;
 };
 
 ESPrequest DeleteDropZoneFilesRequest
@@ -647,12 +651,12 @@ ESPrequest GetSprayTargetsRequest
 
 ESPresponse [exceptions_inline, nil_remove] GetSprayTargetsResponse
 {
-    ESParray<ESPstruct GroupNode, GroupNode> GroupNodes; 
+    ESParray<ESPstruct GroupNode, GroupNode> GroupNodes;
 };
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.13"),
+    version("1.14"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;

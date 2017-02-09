@@ -350,6 +350,9 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
     if(globals->hasProp("failIfNoSourceFile"))
         req->setFailIfNoSourceFile(globals->getPropBool("failIfNoSourceFile",false));
 
+    if(globals->hasProp("expireDays"))
+        req->setExpireDays(globals->getPropInt("expireDays"));
+
     if(srcxml == NULL)
         info("\nFixed spraying from %s on %s to %s\n", srcfile, srcip, dstname);
     else
@@ -493,6 +496,9 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
 
     if(globals->hasProp("quotedTerminator"))
         req->setQuotedTerminator(globals->getPropBool("quotedTerminator",true));
+
+    if(globals->hasProp("expireDays"))
+        req->setExpireDays(globals->getPropInt("expireDays"));
 
     if(srcxml == NULL)
         info("\nVariable spraying from %s on %s to %s\n", srcfile, srcip, dstname);

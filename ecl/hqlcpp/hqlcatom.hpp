@@ -202,6 +202,7 @@ extern IIdAtom * createQStrRangeHighId;
 extern IIdAtom * createQuotedStringId;
 extern IIdAtom * createRangeLowId;
 extern IIdAtom * createRangeHighId;
+extern IIdAtom * createRealInfId;
 extern IIdAtom * createRealNullId;
 extern IIdAtom * createRowFromJsonId;
 extern IIdAtom * createRowFromXmlId;

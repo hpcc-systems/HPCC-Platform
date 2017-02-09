@@ -370,6 +370,7 @@ public:
     {
         return queryStatistic(kind).get();
     }
+    unsigned __int64 getSerialStatisticValue(StatisticKind kind) const;
     void reset();
     void reset(const StatisticsMapping & toClear);
 

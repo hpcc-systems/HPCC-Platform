@@ -1246,9 +1246,9 @@ public:
         logctx.mergeStats(from);
     }
 
-    virtual const CRuntimeStatisticCollection &queryStats() const
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
-        return logctx.queryStats();
+        logctx.gatherStats(merged);
     }
 
     virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
@@ -1470,12 +1470,17 @@ public:
             {
                 error = e;
             }
-            graph.clear();
-            childGraphs.kill();
+            cleanupGraphs();
             graphStats.clear();
             if (error)
                 throw error;
         }
+    }
+
+    void cleanupGraphs()
+    {
+        graph.clear();
+        childGraphs.kill();
     }
 
     void runGraph()
@@ -1530,8 +1535,7 @@ public:
                 else
                 {
                     // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
-                    graph.clear();
-                    childGraphs.kill();
+                    cleanupGraphs();
                 }
                 CTXLOG("Done cleaning up");
                 throw;
@@ -1544,8 +1548,7 @@ public:
                 else
                 {
                     // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
-                    graph.clear();
-                    childGraphs.kill();
+                    cleanupGraphs();
                 }
                 CTXLOG("Done cleaning up");
                 throw;
@@ -2451,7 +2454,7 @@ public:
         slaveLogCtx.putStatProcessed(subgraphId, activityId, _idx, _processed, _strands);
     }
 
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId) const
     {
         const SlaveContextLogger &slaveLogCtx = static_cast<const SlaveContextLogger &>(logctx);
         slaveLogCtx.putStats(subgraphId, activityId, fromStats);
@@ -2824,7 +2827,7 @@ public:
         }
     }
 
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId) const
     {
         if (graphStats)
         {
@@ -2832,9 +2835,6 @@ public:
             IStatisticGatherer & builder = graphStats->queryStatsBuilder();
             StatsSubgraphScope graphScope(builder, subgraphId);
             StatsActivityScope scope(builder, activityId);
-            _totalCycles.addStatistics(builder);
-            if (_localCycles)
-                builder.addStatistic(StTimeLocalExecute, cycle_to_nanosec(_localCycles));
             fromStats.recordStatistics(builder);
         }
         logctx.mergeStats(fromStats);
@@ -2976,8 +2976,7 @@ public:
         {
             if (options.failOnLeaks && !failed)
             {
-                graph.clear();
-                childGraphs.kill();
+                cleanupGraphs();
                 probeManager.clear();
                 ::Release(deserializedResultStore);
                 deserializedResultStore = nullptr;
@@ -3019,7 +3018,9 @@ public:
             addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
             updateWorkunitTimings(w, myTimer);
             Owned<IStatisticGatherer> gatherer = createGlobalStatisticGatherer(w);
-            logctx.queryStats().recordStatistics(*gatherer);
+            CRuntimeStatisticCollection merged(allStatistics);
+            logctx.gatherStats(merged);
+            merged.recordStatistics(*gatherer);
 
             WuStatisticTarget statsTarget(w, "roxie");
             rowManager->reportPeakStatistics(statsTarget, 0);

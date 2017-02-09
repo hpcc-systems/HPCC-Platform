@@ -406,6 +406,7 @@ const char * cppSystemText[]  = {
 
     "   boolean validReal(const data src) : eclrtl,pure,library='eclrtl',entrypoint='rtlIsValidReal';",
     "   real8 createRealNull() : eclrtl,pure,library='eclrtl',entrypoint='rtlCreateRealNull';",
+    "   real8 createRealInf() : eclrtl,pure,library='eclrtl',entrypoint='rtlCreateRealInf';",
 
     "   deserializeRaw(noconst data field, boolean o) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeRaw';",
     "   data deserializeDataX(boolean o) :  eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeDataX';",
@@ -569,20 +570,20 @@ const char * cppSystemText[]  = {
     "   unsigned4 strlen(const varstring1 src) :    sys,pure,entrypoint='strlen';",
 
     "   real8 clibExp(real8 arg) :  sys,pure,entrypoint='exp';",
-    "   real8 _LN(real8 arg) :  eclrtl,pure,library='eclrtl',entrypoint='rtlLog';",
+    "   real8 _LN(real8 arg, unsigned1 dbz=0) :  eclrtl,pure,library='eclrtl',entrypoint='rtlLog';",
     "   real8 _SIN(real8 arg) : sys,pure,entrypoint='sin';",
     "   real8 _COS(real8 arg) : sys,pure,entrypoint='cos';",
     "   real8 _TAN(real8 arg) : sys,pure,entrypoint='tan';",
     "   real8 _SINH(real8 arg) :    sys,pure,entrypoint='sinh';",
     "   real8 _COSH(real8 arg) :    sys,pure,entrypoint='cosh';",
     "   real8 _TANH(real8 arg) :    sys,pure,entrypoint='tanh';",
-    "   real8 _ASIN(real8 arg) :    eclrtl,pure,library='eclrtl',entrypoint='rtlASin';",
-    "   real8 _ACOS(real8 arg) :    eclrtl,pure,library='eclrtl',entrypoint='rtlACos';",
+    "   real8 _ASIN(real8 arg, unsigned1 dbz=0) :    eclrtl,pure,library='eclrtl',entrypoint='rtlASin';",
+    "   real8 _ACOS(real8 arg, unsigned1 dbz=0) :    eclrtl,pure,library='eclrtl',entrypoint='rtlACos';",
     "   real8 _ATAN(real8 arg) :    sys,pure,entrypoint='atan';",
     "   real8 _ATAN2(real8 y, real8 x) :    sys,pure,entrypoint='atan2';",
-    "   real8 _LOG10(real8 arg) :   eclrtl,pure,library='eclrtl',entrypoint='rtlLog10';",
+    "   real8 _LOG10(real8 arg, unsigned1 dbz=0) :   eclrtl,pure,library='eclrtl',entrypoint='rtlLog10';",
     "   real8 _POWER(real8 x, real8 y) :    sys,pure,entrypoint='pow';",
-    "   real8 _SQRT(real8 x) :  eclrtl,pure,library='eclrtl',entrypoint='rtlSqrt';",
+    "   real8 _SQRT(real8 x, unsigned1 dbz=0) :  eclrtl,pure,library='eclrtl',entrypoint='rtlSqrt';",
 
     "   writeEbcdic(const ebcdic string src) : method,include='eclhelper.hpp',entrypoint='writeString';",
     "   writeReal(real8 src) : method,include='eclhelper.hpp',entrypoint='writeReal';",

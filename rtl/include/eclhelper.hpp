@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      161
-#define MIN_ACTIVITY_INTERFACE_VERSION  161             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      163
+#define MIN_ACTIVITY_INTERFACE_VERSION  163             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -344,6 +344,7 @@ interface IRtlFieldTypeDeserializer;
 //Interface used to get field information.  Separate from RtlTypeInfo for clarity and to ensure the vmt comes first.
 interface RtlITypeInfo
 {
+    virtual ~RtlITypeInfo() {}
     virtual size32_t size(const byte * self, const byte * selfrow) const = 0;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const = 0;  // returns the size
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & out) const = 0;
@@ -353,6 +354,9 @@ interface RtlITypeInfo
     virtual const RtlTypeInfo * queryChildType() const = 0;
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const = 0;
+
+    virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const = 0;
+    virtual __int64 getInt(const void * ptr) const = 0;
 };
 
 
@@ -381,13 +385,13 @@ public:
                                     // if RFTMunknownsize then maxlength (records) [maxcount(datasets)]
 };
 
-//Core struct used for representing meta for a field.
+//Core struct used for representing meta for a field.  Effectively used as an interface.
 struct RtlFieldInfo
 {
-    inline RtlFieldInfo(IAtom * _name, const char * _xpath, const RtlTypeInfo * _type, const char *_initializer = NULL)
+    inline RtlFieldInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, const char *_initializer = NULL)
     : name(_name), xpath(_xpath), type(_type), initializer((const byte *) _initializer) {}
 
-    IAtom * name;
+    const char * name;
     const char * xpath;
     const RtlTypeInfo * type;
     const byte *initializer;
@@ -1489,13 +1493,24 @@ struct IHThorRollupArg : public IHThorArg
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) = 0;
 };
 
+enum
+{
+    HDFwholerecord   = 0x0001,
+    HDFcompareall    = 0x0002,
+    HDFkeepleft      = 0x0004,
+    HDFkeepbest      = 0x0008
+};
+
 struct IHThorDedupArg : public IHThorArg
 {
-    virtual bool compareAll() = 0;
-    virtual bool keepLeft() = 0;
+    inline bool compareAll() { return (getFlags() & HDFcompareall) != 0; }
+    inline bool keepLeft() { return (getFlags() & HDFkeepleft) != 0; }
+    inline bool keepBest() { return (getFlags() & HDFkeepbest) != 0; }
     virtual bool matches(const void * _left, const void * _right) = 0;
     virtual unsigned numToKeep() = 0;
     virtual ICompare * queryComparePrimary() = 0;           // used to break global dedup into chunks
+    virtual unsigned getFlags() = 0;
+    virtual ICompare * queryCompareBest() = 0;
 };
 
 enum
@@ -1904,11 +1919,6 @@ struct IHThorHashDistributeArg : public IHThorArg
     virtual ICompare * queryMergeCompare()=0;       // iff TAKhasdistributemerge
 };
 
-enum
-{
-    HFDwholerecord  = 0x0001,
-};
-
 struct IHThorHashDedupArg : public IHThorArg
 {
     virtual ICompare * queryCompare()=0;
@@ -1919,6 +1929,10 @@ struct IHThorHashDedupArg : public IHThorArg
     virtual unsigned getFlags() = 0;
     virtual IHash    * queryKeyHash()=0;
     virtual ICompare * queryRowKeyCompare()=0; // lhs is a row, rhs is a key
+    virtual ICompare * queryCompareBest()=0;
+    inline bool compareAll() { return (getFlags() & HDFcompareall) != 0; }
+    inline bool keepLeft() { return (getFlags() & HDFkeepleft) != 0; }
+    inline bool keepBest() { return (getFlags() & HDFkeepbest) != 0; }
 };
 
 struct IHThorHashMinusArg : public IHThorArg

@@ -235,6 +235,7 @@ protected:
     ActivityArrayArray childQueries;
     UnsignedArray childQueryIndexes;
     CachedOutputMetaData meta;
+    mutable CriticalSection statsCrit;
     mutable CRuntimeStatisticCollection mystats;
     // MORE: Could be CRuntimeSummaryStatisticCollection to include derived stats, but stats are currently converted
     // to IPropertyTrees.  Would need to serialize/deserialize and then merge/derived so that they merged properly
@@ -257,6 +258,7 @@ public:
 
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
+        CriticalBlock b(statsCrit);
         mystats.merge(from);
     }
 

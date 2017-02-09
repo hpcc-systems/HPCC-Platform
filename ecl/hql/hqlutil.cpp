@@ -1378,6 +1378,7 @@ DedupInfoExtractor::DedupInfoExtractor(IHqlExpression * expr)
     compareAllFields = false;
     isLocal = false;
     keepLeft = true;
+    keepBest = false;
     numToKeep.setown(createConstantOne());
 
     unsigned max = expr->numChildren();
@@ -1404,6 +1405,8 @@ DedupInfoExtractor::DedupInfoExtractor(IHqlExpression * expr)
                     keepLeft = true;
                 else if (name == rightAtom)
                     keepLeft = false;
+                else if (name == bestAtom)
+                    keepBest = true;
             }
             break;
         case no_negate:

@@ -203,6 +203,7 @@ public:
     inline cycle_t latencyCycles() const { return firstExitCycles-startCycles; }
 
     void addStatistics(IStatisticGatherer & builder) const;
+    void addStatistics(CRuntimeStatisticCollection & merged) const;
     void merge(const ActivityTimeAccumulator & other);
 
     void reset()

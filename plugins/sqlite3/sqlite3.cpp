@@ -25,7 +25,7 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "rtlembed.hpp"
 #include "nbcd.hpp"
 
@@ -88,7 +88,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("sqlite3: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", str(field->name));
+        msg.appendf(" for field %s", field->name);
     rtlFail(0, msg.str());
 }
 

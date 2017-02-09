@@ -17,7 +17,7 @@
 
 //nothor
 //nothorlcr
-//noroxie
+//nohthor
 
 //Test division by zero - fail instead of returning 0
 #option ('divideByZero', 'nan'); 

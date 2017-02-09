@@ -668,9 +668,9 @@ public:
     {
         stats.merge(from);
     }
-    virtual const CRuntimeStatisticCollection &queryStats() const
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
-        return stats;
+        merged.merge(stats);
     }
 
     virtual unsigned queryTraceLevel() const
@@ -720,9 +720,9 @@ public:
     void putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const;
     void flush();
     inline bool queryDebuggerActive() const { return debuggerActive; }
-    inline const CRuntimeStatisticCollection &queryStats() const
+    virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
-        return stats;
+        merged.merge(stats);
     }
     inline const char *queryWuid()
     {

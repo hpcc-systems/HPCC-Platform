@@ -223,7 +223,7 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
         translator.beginNestedClass(helperctx, "helper", "INlpHelper");
 
         BuildCtx funcctx(helperctx);
-        funcctx.addQuotedCompoundLiteral("virtual IValidator * queryValidator(unsigned i)");
+        funcctx.addQuotedFunction("virtual IValidator * queryValidator(unsigned i)");
         BuildCtx casectx(funcctx);
         casectx.addQuotedCompoundLiteral("switch (i)");
 
@@ -239,28 +239,31 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
             BuildCtx validatorctx(helperctx);
             translator.beginNestedClass(validatorctx, member, (kind != ValidateIsUnicode) ? "IStringValidator" : "IUnicodeValidator");
 
-            BuildCtx validctx(validatorctx);
-            CHqlBoundExpr boundMatched;
-            if (kind != ValidateIsUnicode)
             {
-                validctx.addQuotedCompoundLiteral("virtual bool isValid(unsigned len, const char * data)");
-                boundMatched.length.setown(createVariable("len", LINK(sizetType)));
-                boundMatched.expr.setown(createVariable("data", makeReferenceModifier(LINK(unknownStringType))));
-                validctx.associateExpr(activeMatchTextExpr, boundMatched);
+                MemberFunction func(translator, validatorctx);
+                CHqlBoundExpr boundMatched;
+                if (kind != ValidateIsUnicode)
+                {
+                    func.start("virtual bool isValid(unsigned len, const char * data)");
+                    boundMatched.length.setown(createVariable("len", LINK(sizetType)));
+                    boundMatched.expr.setown(createVariable("data", makeReferenceModifier(LINK(unknownStringType))));
+                    func.ctx.associateExpr(activeMatchTextExpr, boundMatched);
+                }
+                else
+                {
+                    func.start("virtual bool isValid(unsigned len, const UChar * data)");
+                    boundMatched.length.setown(createVariable("len", LINK(sizetType)));
+                    boundMatched.expr.setown(createVariable("data", makeReferenceModifier(LINK(unknownUnicodeType))));
+                    func.ctx.associateExpr(activeMatchUnicodeExpr, boundMatched);
+                }
+                func.ctx.associateExpr(activeNlpMarkerExpr, activeNlpMarkerExpr);
+                func.ctx.associateExpr(activeValidateMarkerExpr, activeValidateMarkerExpr);
+                translator.bindTableCursor(func.ctx, queryNlpParsePseudoTable(), queryNlpParsePseudoTable());
+
+                if (translator.queryOptions().spotCSE)
+                    validateExpr.setown(spotScalarCSE(validateExpr, NULL, translator.queryOptions().spotCseInIfDatasetConditions));
+                translator.buildReturn(func.ctx, validateExpr);
             }
-            else
-            {
-                validctx.addQuotedCompoundLiteral("virtual bool isValid(unsigned len, const UChar * data)");
-                boundMatched.length.setown(createVariable("len", LINK(sizetType)));
-                boundMatched.expr.setown(createVariable("data", makeReferenceModifier(LINK(unknownUnicodeType))));
-                validctx.associateExpr(activeMatchUnicodeExpr, boundMatched);
-            }
-            validctx.associateExpr(activeNlpMarkerExpr, activeNlpMarkerExpr);
-            validctx.associateExpr(activeValidateMarkerExpr, activeValidateMarkerExpr);
-            translator.bindTableCursor(validctx, queryNlpParsePseudoTable(), queryNlpParsePseudoTable());
-            if (translator.queryOptions().spotCSE)
-                validateExpr.setown(spotScalarCSE(validateExpr, NULL, translator.queryOptions().spotCseInIfDatasetConditions));
-            translator.buildReturn(validctx, validateExpr);
             translator.endNestedClass();
 
             StringBuffer s;
@@ -282,7 +285,7 @@ void NlpParseContext::buildProductions(HqlCppTranslator & translator, BuildCtx &
 
     {
         BuildCtx metactx(classctx);
-        metactx.addQuotedCompoundLiteral("virtual IOutputMetaData * queryProductionMeta(unsigned id)");
+        metactx.addQuotedFunction("virtual IOutputMetaData * queryProductionMeta(unsigned id)");
 
         BuildCtx metacasectx(metactx);
         metacasectx.addQuotedCompoundLiteral("switch (id)");
@@ -303,14 +306,14 @@ void NlpParseContext::buildProductions(HqlCppTranslator & translator, BuildCtx &
 
     {
         OwnedHqlExpr callback = createVariable("input", makeBoolType());
-        BuildCtx prodctx(startctx);
-        prodctx.addQuotedCompoundLiteral("virtual size32_t executeProduction(ARowBuilder & crSelf, unsigned id, IProductionCallback * input)");
-        prodctx.associateExpr(activeProductionMarkerExpr, callback);
 
-        BuildCtx prodcasectx(prodctx);
+        MemberFunction func(translator, startctx, "virtual size32_t executeProduction(ARowBuilder & crSelf, unsigned id, IProductionCallback * input)");
+        func.ctx.associateExpr(activeProductionMarkerExpr, callback);
+
+        BuildCtx prodcasectx(func.ctx);
         prodcasectx.addQuotedCompoundLiteral("switch (id)");
 
-        StringBuffer s, subname;
+        StringBuffer s, subname, proto;
         ForEachItemIn(i, productions)
         {
             IHqlExpression & cur = productions.item(i);
@@ -325,19 +328,18 @@ void NlpParseContext::buildProductions(HqlCppTranslator & translator, BuildCtx &
             prodcasectx.addQuoted(s);
 
             {
-                BuildCtx childctx(startctx);
-                childctx.addQuotedCompound(s.clear().append("size32_t ").append(subname).append("(ARowBuilder & crSelf, IProductionCallback * input)"));
-                translator.ensureRowAllocated(childctx, "crSelf");
-                childctx.associateExpr(activeProductionMarkerExpr, callback);
-
+                proto.clear().append("size32_t ").append(subname).append("(ARowBuilder & crSelf, IProductionCallback * input)");
+                MemberFunction validateFunc(translator, startctx, proto, MFdynamicproto);
+                translator.ensureRowAllocated(validateFunc.ctx, "crSelf");
+                validateFunc.ctx.associateExpr(activeProductionMarkerExpr, callback);
 
                 OwnedHqlExpr newTransform = LINK(transform);
                 OwnedHqlExpr dataset = createDataset(no_anon, LINK(transform->queryRecord()));
 
-                translator.buildTransformBody(childctx, newTransform, NULL, NULL, dataset, NULL);
+                translator.buildTransformBody(validateFunc.ctx, newTransform, NULL, NULL, dataset, NULL);
             }
         }
-        prodctx.addQuotedLiteral("return (size32_t)-1;");
+        func.ctx.addQuotedLiteral("return (size32_t)-1;");
     }
 }
 
@@ -509,99 +511,100 @@ void NlpParseContext::setParserOptions(INlpParseAlgorithm & parser)
 
 void HqlCppTranslator::doBuildParseTransform(BuildCtx & classctx, IHqlExpression * expr)
 {
-    BuildCtx funcctx(classctx);
-
-    funcctx.addQuotedCompoundLiteral("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IMatchedResults * matched, IMatchWalker * walker)");
-    ensureRowAllocated(funcctx, "crSelf");
-    funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
-    funcctx.associateExpr(activeNlpMarkerExpr, activeNlpMarkerExpr);
-    bindTableCursor(funcctx, queryNlpParsePseudoTable(), queryNlpParsePseudoTable());
+    MemberFunction func(*this, classctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IMatchedResults * matched, IMatchWalker * walker)");
+    ensureRowAllocated(func.ctx, "crSelf");
+    func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+    func.ctx.associateExpr(activeNlpMarkerExpr, activeNlpMarkerExpr);
+    bindTableCursor(func.ctx, queryNlpParsePseudoTable(), queryNlpParsePseudoTable());
 
     // Bind left to "left" and right to RIGHT
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * transform = expr->queryChild(4);
-    BoundRow * selfCursor = bindSelf(funcctx, expr, "crSelf");
+    BoundRow * selfCursor = bindSelf(func.ctx, expr, "crSelf");
     if (transform->getOperator() == no_newtransform)
-        bindTableCursor(funcctx, dataset, "left");
+        bindTableCursor(func.ctx, dataset, "left");
     else
-        bindTableCursor(funcctx, dataset, "left", no_left, querySelSeq(expr));
+        bindTableCursor(func.ctx, dataset, "left", no_left, querySelSeq(expr));
 
-    associateSkipReturnMarker(funcctx, queryZero(), selfCursor);
-    doTransform(funcctx, transform, selfCursor);
+    associateSkipReturnMarker(func.ctx, queryZero(), selfCursor);
+    doTransform(func.ctx, transform, selfCursor);
 
-    buildReturnRecordSize(funcctx, selfCursor);
+    buildReturnRecordSize(func.ctx, selfCursor);
 }
 
 
 void HqlCppTranslator::doBuildParseSearchText(BuildCtx & classctx, IHqlExpression * dataset, IHqlExpression * search, type_t searchTypeCode, ITypeInfo * transferType)
 {
-    BuildCtx funcctx(classctx);
-
-    if (searchTypeCode == type_unicode)
-    {
-        funcctx.addQuotedCompoundLiteral("virtual void getSearchText(size32_t & retLen, char * & _retText, const void * _self)");
-        funcctx.addQuotedLiteral("UChar * & retText = *(UChar * *)&_retText;");        // don't ask.
-    }
-    else
-        funcctx.addQuotedCompoundLiteral("virtual void getSearchText(size32_t & retLen, char * & retText, const void * _self)");
-    funcctx.addQuotedLiteral("const unsigned char * self = (const unsigned char *) _self;");
-    bindTableCursor(funcctx, dataset, "self");
-
     bool needToFree = true;
-    Owned<ITypeInfo> retType;
-    switch (searchTypeCode)
-    {
-    case type_unicode:
-        retType.setown(makeUnicodeType(UNKNOWN_LENGTH, 0));
-        break;
-    case type_utf8:
-        retType.setown(makeUtf8Type(UNKNOWN_LENGTH, 0));
-        break;
-    default:
-        retType.setown(makeStringType(UNKNOWN_LENGTH, NULL, NULL));
-        break;
-    }
-    OwnedHqlExpr castSearch = ensureExprType(search, retType);
-    castSearch.setown(foldHqlExpression(castSearch));
-    retType.setown(makeReferenceModifier(retType.getClear()));
 
-    switch (castSearch->getOperator())
     {
-    case no_select:
-    case no_constant:
-        //Not strictly true - could be conditional
-        //also misses lots of cases - but I doubt anyone will ever complain...
-        needToFree = false;
-        break;
-    }
+        MemberFunction func(*this, classctx);
+
+        if (searchTypeCode == type_unicode)
+        {
+            func.start("virtual void getSearchText(size32_t & retLen, char * & _retText, const void * _self)");
+            func.ctx.addQuotedLiteral("UChar * & retText = *(UChar * *)&_retText;");        // don't ask.
+        }
+        else
+            func.start("virtual void getSearchText(size32_t & retLen, char * & retText, const void * _self)");
+        func.ctx.addQuotedLiteral("const unsigned char * self = (const unsigned char *) _self;");
+        bindTableCursor(func.ctx, dataset, "self");
+
+        Owned<ITypeInfo> retType;
+        switch (searchTypeCode)
+        {
+        case type_unicode:
+            retType.setown(makeUnicodeType(UNKNOWN_LENGTH, 0));
+            break;
+        case type_utf8:
+            retType.setown(makeUtf8Type(UNKNOWN_LENGTH, 0));
+            break;
+        default:
+            retType.setown(makeStringType(UNKNOWN_LENGTH, NULL, NULL));
+            break;
+        }
+        OwnedHqlExpr castSearch = ensureExprType(search, retType);
+        castSearch.setown(foldHqlExpression(castSearch));
+        retType.setown(makeReferenceModifier(retType.getClear()));
+
+        switch (castSearch->getOperator())
+        {
+        case no_select:
+        case no_constant:
+            //Not strictly true - could be conditional
+            //also misses lots of cases - but I doubt anyone will ever complain...
+            needToFree = false;
+            break;
+        }
 
 
-    OwnedHqlExpr retLen = createVariable("retLen", LINK(sizetType));
-    OwnedHqlExpr tempLen;
-    if (transferType)
-        tempLen.setown(funcctx.getTempDeclare(sizetType, NULL));
+        OwnedHqlExpr retLen = createVariable("retLen", LINK(sizetType));
+        OwnedHqlExpr tempLen;
+        if (transferType)
+            tempLen.setown(func.ctx.getTempDeclare(sizetType, NULL));
 
-    CHqlBoundTarget target;
-    target.length.set(tempLen ? tempLen : retLen);
-    target.expr.setown(createVariable("retText", LINK(retType)));
-    if (needToFree)
-    {
-        buildExprAssign(funcctx, target, castSearch);
-    }
-    else
-    {
-        CHqlBoundExpr bound;
-        buildExpr(funcctx, castSearch, bound);
-        OwnedHqlExpr len = getBoundLength(bound);
-        funcctx.addAssign(target.length, len);
-        funcctx.addAssign(target.expr, bound.expr);
-    }
-    if (tempLen)
-    {
-        OwnedHqlExpr source = target.getTranslatedExpr();
-        OwnedHqlExpr transferred = createValue(no_typetransfer, LINK(transferType), LINK(source));
-        OwnedHqlExpr length = createValue(no_charlen, LINK(sizetType), LINK(transferred));
-        buildAssignToTemp(funcctx, retLen, length);
+        CHqlBoundTarget target;
+        target.length.set(tempLen ? tempLen : retLen);
+        target.expr.setown(createVariable("retText", LINK(retType)));
+        if (needToFree)
+        {
+            buildExprAssign(func.ctx, target, castSearch);
+        }
+        else
+        {
+            CHqlBoundExpr bound;
+            buildExpr(func.ctx, castSearch, bound);
+            OwnedHqlExpr len = getBoundLength(bound);
+            func.ctx.addAssign(target.length, len);
+            func.ctx.addAssign(target.expr, bound.expr);
+        }
+        if (tempLen)
+        {
+            OwnedHqlExpr source = target.getTranslatedExpr();
+            OwnedHqlExpr transferred = createValue(no_typetransfer, LINK(transferType), LINK(source));
+            OwnedHqlExpr length = createValue(no_charlen, LINK(sizetType), LINK(transferred));
+            buildAssignToTemp(func.ctx, retLen, length);
+        }
     }
 
     doBuildBoolFunction(classctx, "searchTextNeedsFree", needToFree);
@@ -646,7 +649,7 @@ void HqlCppTranslator::doBuildParseCompiled(BuildCtx & classctx, MemoryBuffer & 
     OwnedHqlExpr srcData = addDataLiteral((const char *)compressed.toByteArray(), buffLen);
     OwnedHqlExpr retData = createVariable("retData", makePointerType(makeVoidType()));
 
-    funcctx.addQuotedCompoundLiteral("virtual void queryCompiled(IResourceContext *ctx, size32_t & retLen, const void * & retData)");
+    funcctx.addQuotedFunction("virtual void queryCompiled(IResourceContext *ctx, size32_t & retLen, const void * & retData)");
     funcctx.addQuotedF("//uncompressed size = %d", buffer.length());
     buildExpr(funcctx, srcData, bound);
 

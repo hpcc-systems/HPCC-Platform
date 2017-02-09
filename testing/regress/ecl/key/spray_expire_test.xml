@@ -1,0 +1,25 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='desprayCsv'>
+ <Row><result>Pass</result></Row>
+</Dataset>
+<Dataset name='desprayXml'>
+ <Row><result>Pass</result></Row>
+</Dataset>
+<Dataset name='SprayVariable'>
+ <Row><SprayVariable>Pass</SprayVariable></Row>
+</Dataset>
+<Dataset name='SprayDelimited'>
+ <Row><SprayDelimited>Pass</SprayDelimited></Row>
+</Dataset>
+<Dataset name='SprayFixed'>
+ <Row><SprayFixed>Pass</SprayFixed></Row>
+</Dataset>
+<Dataset name='SprayXml'>
+ <Row><SprayXml>Pass</SprayXml></Row>
+</Dataset>
+<Dataset name='DFUPlus'>
+ <Row><DFUPlus>Pass</DFUPlus></Row>
+</Dataset>

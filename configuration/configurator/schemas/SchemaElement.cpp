@@ -269,7 +269,7 @@ void CElement::getDocumentation(::StringBuffer &strDoc) const
 
     assert(strlen(this->getName()) > 0);
 
-    if (pGrandParentNode->getNodeType() == XSD_SCHEMA)
+    if (strDoc.length() == 0)
     {
         ::StringBuffer strName(this->getName());
 

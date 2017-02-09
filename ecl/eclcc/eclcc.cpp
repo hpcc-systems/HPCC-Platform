@@ -1111,7 +1111,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             options.includePrivateDefinitions = instance.wu->getDebugValueBool("metaIncludePrivate", true);
             options.onlyGatherRoot = instance.wu->getDebugValueBool("metaIncludeMainOnly", false);
             options.includeImports = instance.wu->getDebugValueBool("metaIncludeImports", true);
-            options.includeExternalUses = instance.wu->getDebugValueBool("metaIncludeExternalUse", true);
+            options.includeInternalUses = instance.wu->getDebugValueBool("metaIncludeInternalUse", true);
             options.includeExternalUses = instance.wu->getDebugValueBool("metaIncludeExternalUse", true);
             options.includeLocations = instance.wu->getDebugValueBool("metaIncludeLocations", true);
             options.includeJavadoc = instance.wu->getDebugValueBool("metaIncludeJavadoc", true);

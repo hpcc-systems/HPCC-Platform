@@ -55,6 +55,7 @@ var profile = {
         'dojo',
         'dijit',
         'dojox',
+        'themes',
         'dgrid',
         'put-selector',
         'xstyle',

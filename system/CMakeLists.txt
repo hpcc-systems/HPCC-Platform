@@ -13,11 +13,15 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-HPCC_ADD_SUBDIRECTORY (hrpc)
+
 HPCC_ADD_SUBDIRECTORY (include)
 HPCC_ADD_SUBDIRECTORY (jhtree)
 HPCC_ADD_SUBDIRECTORY (jlib)
-HPCC_ADD_SUBDIRECTORY (mp)
-HPCC_ADD_SUBDIRECTORY (security)
-HPCC_ADD_SUBDIRECTORY (xmllib)
-HPCC_ADD_SUBDIRECTORY (xmllibtest "PLATFORM")
+
+if (NOT JLIB_ONLY)
+   HPCC_ADD_SUBDIRECTORY (hrpc)
+   HPCC_ADD_SUBDIRECTORY (mp)
+   HPCC_ADD_SUBDIRECTORY (security)
+   HPCC_ADD_SUBDIRECTORY (xmllib)
+   HPCC_ADD_SUBDIRECTORY (xmllibtest "PLATFORM")
+endif( )

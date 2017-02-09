@@ -18,7 +18,7 @@
 #ifndef rtlembed_hpp
 #define rtlembed_hpp
 
-// NOTE - not included from generated code (see rtlfield_imp.hpp)
+// NOTE - not included from generated code (see rtlfield.hpp)
 
 #include "eclrtl.hpp"
 #include "nbcd.hpp"
