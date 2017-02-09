@@ -4859,8 +4859,11 @@ IHqlExpression * NullFolderMixin::queryOptimizeAggregateInline(IHqlExpression * 
 
 //---------------------------------------------------------------------------
 
-IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
+static IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
 {
+    IValue * value = expr->queryValue();
+    assertex(value);
+
     ITypeInfo * type = expr->queryType();
     switch (type->getTypeCode())
     {
@@ -4875,8 +4878,6 @@ IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
         return LINK(expr);
     }
 
-    IValue * value = expr->queryValue();
-    assertex(value);
     const void * data = value->queryValue();
     unsigned size = type->getSize();
     unsigned stringLen = type->getStringLen();
@@ -4899,6 +4900,13 @@ IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
         return LINK(expr);
 
     return createConstant(createValueFromMem(LINK(type), lower.get()));
+}
+
+
+IHqlExpression * getLowerCaseConstantExpr(IHqlExpression * expr)
+{
+    OwnedHqlExpr folded = foldHqlExpression(expr);
+    return getLowerCaseConstant(folded);
 }
 
 //---------------------------------------------------------------------------
@@ -7067,11 +7075,11 @@ IHqlExpression * foldExprIfConstant(IHqlExpression * expr)
 
 //---------------------------------------------------------------------------
 
-static HqlTransformerInfo lowerCaseTransformerInfo("LowerCaseTransformer");
-class LowerCaseTransformer : public NewHqlTransformer
+static HqlTransformerInfo normalizeFilenameTransformerInfo("NormalizeFilenameTransformer");
+class NormalizeFilenameTransformer : public NewHqlTransformer
 {
 public:
-    LowerCaseTransformer() : NewHqlTransformer(lowerCaseTransformerInfo) {}
+    NormalizeFilenameTransformer() : NewHqlTransformer(normalizeFilenameTransformerInfo) {}
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr)
     {
@@ -7110,11 +7118,11 @@ public:
  * string constants do not prevent a write to a file, and a subsequent read from the same file to be treated as
  * the same filenames.  It doesn't aim to be perfect, but to avoid the most common problems.
  */
-IHqlExpression * lowerCaseHqlExpr(IHqlExpression * expr)
+IHqlExpression * normalizeFilenameExpr(IHqlExpression * expr)
 {
     if (expr->getOperator() == no_constant)
         return getLowerCaseConstant(expr);
-    LowerCaseTransformer transformer;
+    NormalizeFilenameTransformer transformer;
     return transformer.transformRoot(expr);
 }
 
