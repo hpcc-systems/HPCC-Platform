@@ -7075,15 +7075,41 @@ public:
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr)
     {
-        switch (expr->getOperator())
+        node_operator op = expr->getOperator();
+        switch (op)
         {
         case no_constant:
             return getLowerCaseConstant(expr);
+        case no_cast:
+        case no_implicitcast:
+        case no_concat:
+        case no_nofold:
+        case no_nocombine:
+        case no_nohoist:
+        case no_alias:
+        case no_globalscope:
+        case no_map:
+        case no_trim:
+            return NewHqlTransformer::createTransformed(expr);
+        case no_if:
+        case no_mapto:
+        case no_case:
+            break;
+        default:
+            return LINK(expr);
         }
-        return NewHqlTransformer::createTransformed(expr);
+
+        HqlExprArray args;
+        args.append(*LINK(expr->queryChild(0)));
+        return completeTransform(expr, args);
     }
 };
 
+/*
+ * The purpose of this function is to normalize a filename as much as possible, so that differences in case for
+ * string constants do not prevent a write to a file, and a subsequent read from the same file to be treated as
+ * the same filenames.  It doesn't aim to be perfect, but to avoid the most common problems.
+ */
 IHqlExpression * lowerCaseHqlExpr(IHqlExpression * expr)
 {
     if (expr->getOperator() == no_constant)
