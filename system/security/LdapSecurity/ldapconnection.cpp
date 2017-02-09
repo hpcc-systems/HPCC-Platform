@@ -1939,7 +1939,7 @@ public:
             CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
             if (ldapuser == nullptr)
             {
-                throw MakeStringException(-1, "Unable to cast input user variable");
+                throw MakeStringException(-1, "Unable to cast user %s to CLdapSecUser", username);
             }
 
             TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
@@ -2743,6 +2743,10 @@ public:
                 throw MakeStringException(-1, "posixAccount isn't applicable to Active Directory");
 
             CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
+            if (ldapuser == nullptr)
+            {
+                throw MakeStringException(-1, "Unable to cast user %s to CLdapSecUser", username);
+            }
 
             char* oc_values[] = {"posixAccount", NULL};
             LDAPMod oc_attr = {
@@ -2832,9 +2836,6 @@ public:
             }
             else
             {
-
-                CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
-
                 char* oc_values[] = {"posixAccount", NULL};
                 LDAPMod oc_attr = {
                     LDAP_MOD_DELETE,
@@ -2896,6 +2897,10 @@ public:
         else if(stricmp(type, "sudoersadd") == 0)
         {
             CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
+            if (ldapuser == nullptr)
+            {
+                throw MakeStringException(-1, "Unable to cast user %s to CLdapSecUser", username);
+            }
 
             char *cn_values[] = {(char*)username, NULL };
             LDAPMod cn_attr =
@@ -3000,7 +3005,7 @@ public:
             CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
             if (ldapuser == nullptr)
             {
-                throw MakeStringException(-1, "Unable to cast input user variable");
+                throw MakeStringException(-1, "Unable to cast user %s to CLdapSecUser", username);
             }
 
             char* sudoHost = (char*)ldapuser->getSudoHost();
@@ -5365,8 +5370,8 @@ private:
         while(nextptr != NULL)
         {
             prevptr = nextptr + 2;
-            if (prevptr == nullptr)
-                break;//could happen if resource contains trailing ::
+            if (prevptr == nullptr || *prevptr == '\0')
+                break;
             nextptr = strstr(prevptr, "::");
         }
         if(prevptr != NULL && *prevptr != '\0')
