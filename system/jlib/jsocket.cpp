@@ -1509,16 +1509,19 @@ void CSocket::udpconnect()
 int CSocket::wait_read(unsigned timeout)
 {
     int ret = 0;
-    while (sock!=INVALID_SOCKET) {
+    while (sock!=INVALID_SOCKET)
+    {
 #ifdef _USE_SELECT
         T_FD_SET fds;
         CHECKSOCKRANGE(sock);
         XFD_ZERO(&fds);
         FD_SET((unsigned)sock, &fds);
-        if (timeout==WAIT_FOREVER) {
+        if (timeout==WAIT_FOREVER)
+        {
             ret = ::select( sock + 1, (fd_set *)&fds, NULL, NULL, NULL );
         }
-        else {
+        else
+        {
             struct timeval tv;
             tv.tv_sec = timeout / 1000;
             tv.tv_usec = (timeout % 1000)*1000;
@@ -1531,15 +1534,58 @@ int CSocket::wait_read(unsigned timeout)
         fds[0].revents = 0;
         ret = ::poll(fds, 1, timeout);
 #endif
-        if (ret==SOCKET_ERROR) {
+        if (ret == SOCKET_ERROR)
+        {   // error
             int err = ERRNO();
-            if (err!=JSE_INTR) {   // else retry (should adjust time but for our usage don't think it matters that much)
+            if (err!=JSE_INTR)
+            {   // else retry (should adjust time but for our usage don't think it matters that much)
                 LOGERR2(err,1,"wait_read");
                 break;
             }
         }
-        else
+        else if (ret == 0)
+        {   // timeout
             break;
+        }
+        else
+        {   // ret > 0 - ready or error
+#ifdef _USE_SELECT
+            if (!FD_ISSET(sock, &fds))
+            {
+                LOGERR2(998,7,"wait_read");
+                ret = -1;
+            }
+#else
+            if (fds[0].revents & POLLERR)
+            {
+                char lname[256];
+                int lport = name(lname, sizeof(lname));
+                char rname[256];
+                int rport = peer_name(rname, sizeof(rname));
+                StringBuffer errStr;
+                errStr.appendf("wait_read POLLERR %u l: %s:%d r: %s:%d", sock, lname, lport, rname, rport);
+                int serror = 0;
+                socklen_t serrlen = sizeof(serror);
+                int srtn = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char *)&serror, &serrlen);
+                if (srtn != 0)
+                    serror = ERRNO();
+                LOGERR2(serror,2,errStr.str());
+                // MCK - do we always force error ?
+                ret = -1;
+            }
+            else if (fds[0].revents & POLLNVAL)
+            {
+                LOGERR2(998,5,"wait_read POLLNVAL");
+                ret = -1;
+            }
+            else if (!(fds[0].revents & (POLLIN | POLLHUP)))
+            {
+                LOGERR2(999,6,"wait_read !(POLLIN|POLLHUP)");
+                ret = -1;
+            }
+#endif
+            break;
+        }
     }
     return ret;
 }
@@ -1569,15 +1615,58 @@ int CSocket::wait_write(unsigned timeout)
         fds[0].revents = 0;
         ret = ::poll(fds, 1, timeout);
 #endif
-        if (ret==SOCKET_ERROR) {
+        if (ret==SOCKET_ERROR)
+        {
             int err = ERRNO();
-            if (err!=JSE_INTR) {   // else retry (should adjust time but for our usage don't think it matters that much)
+            if (err!=JSE_INTR)
+            {   // else retry (should adjust time but for our usage don't think it matters that much)
                 LOGERR2(err,1,"wait_write");
                 break;
             }
         }
-        else
+        else if (ret == 0)
+        {   // timeout
             break;
+        }
+        else
+        {   // ret > 0 - ready or error
+#ifdef _USE_SELECT
+            if (!FD_ISSET(sock, &fds))
+            {
+                LOGERR2(998,7,"wait_write");
+                ret = -1;
+            }
+#else
+            if (fds[0].revents & POLLERR)
+            {
+                char lname[256];
+                int lport = name(lname, sizeof(lname));
+                char rname[256];
+                int rport = peer_name(rname, sizeof(rname));
+                StringBuffer errStr;
+                errStr.appendf("wait_write POLLERR %u l: %s:%d r: %s:%d", sock, lname, lport, rname, rport);
+                int serror = 0;
+                socklen_t serrlen = sizeof(serror);
+                int srtn = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char *)&serror, &serrlen);
+                if (srtn != 0)
+                    serror = ERRNO();
+                LOGERR2(serror,2,errStr.str());
+                // MCK - do we always force error ?
+                ret = -1;
+            }
+            else if (fds[0].revents & POLLNVAL)
+            {
+                LOGERR2(998,5,"wait_write POLLNVAL");
+                ret = -1;
+            }
+            else if (!(fds[0].revents & POLLOUT))
+            {
+                LOGERR2(999,6,"wait_write !POLLOUT");
+                ret = -1;
+            }
+#endif
+            break;
+        }
     }
     return ret;
 }
