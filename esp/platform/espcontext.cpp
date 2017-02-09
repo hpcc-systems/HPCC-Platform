@@ -445,39 +445,45 @@ public:
         return m_txSummary.get();
     }
 
-    virtual void addTraceSummaryValue(const char *name, const char *value)
+    virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, const char *value)
     {
-        if (m_txSummary)
+        if (m_txSummary && (getTxSummaryLevel() >= logLevel))
             m_txSummary->append(name, value);
     }
 
-    virtual void addTraceSummaryValue(const char *name, __int64 value)
+    virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, __int64 value)
     {
-        if (m_txSummary)
+        if (m_txSummary && (getTxSummaryLevel() >= logLevel))
             m_txSummary->append(name, value);
     }
 
-    virtual void addTraceSummaryTimeStamp(const char *name)
+    virtual void addTraceSummaryTimeStamp(LogLevel logLevel, const char *name)
     {
-        if (m_txSummary && name && *name)
+        if (m_txSummary && (getTxSummaryLevel() >= logLevel) && name && *name)
             m_txSummary->append(name, m_txSummary->getElapsedTime(), "ms");
     }
     virtual void flushTraceSummary()
     {
-        if (m_txSummary)
-        {
-            updateTraceSummaryHeader();
+        updateTraceSummaryHeader();
+        if (m_txSummary && (getTxSummaryLevel() >= LogMin))
             m_txSummary->append("total", m_processingTime, "ms");
-        }
     }
-    virtual void addTraceSummaryCumulativeTime(const char* name, unsigned __int64 time)
+    virtual void addTraceSummaryCumulativeTime(LogLevel logLevel, const char* name, unsigned __int64 time)
     {
-        if (m_txSummary)
+        if (m_txSummary && (getTxSummaryLevel() >= logLevel))
             m_txSummary->updateTimer(name, time);
     }
     virtual CumulativeTimer* queryTraceSummaryCumulativeTimer(const char* name)
     {
         return (m_txSummary ? m_txSummary->queryTimer(name) : NULL);
+    }
+    virtual void cancelTxSummary()
+    {
+        if (!m_txSummary)
+            return;
+
+        m_txSummary->clear();
+        m_txSummary.clear();
     }
 
     virtual ESPSerializationFormat getResponseFormat(){return respSerializationFormat;}
@@ -580,7 +586,7 @@ bool CEspContext::isMethodAllowed(double version, const char* optional, const ch
 
 void CEspContext::updateTraceSummaryHeader()
 {
-    if (m_txSummary)
+    if (m_txSummary && (getTxSummaryLevel() >= LogMin))
     {
         m_txSummary->set("activeReqs", m_active);
         VStringBuffer user("%s%s%s", (queryUserId() ? queryUserId() : ""), (m_peer.length() ? "@" : ""), m_peer.str());
@@ -759,6 +765,20 @@ LogLevel getEspLogLevel(IEspContext* ctx)
     if (getContainer())
         return getContainer()->getLogLevel();
     return LogMin;
+}
+
+LogLevel getTxSummaryLevel()
+{
+    if (getContainer())
+        return getContainer()->getTxSummaryLevel();
+    return LogMin;
+}
+
+bool getTxSummaryResourceReq()
+{
+    if (getContainer())
+        return getContainer()->getTxSummaryResourceReq();
+    return false;
 }
 
 bool getEspLogRequests()

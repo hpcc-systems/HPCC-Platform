@@ -2439,7 +2439,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         }
         else if (!stricmp(methodName.str(), "proxy"))
         {
-            context->addTraceSummaryValue("wseclMode", "proxy");
+            context->addTraceSummaryValue(LogMin, "wseclMode", "proxy");
 
             StringBuffer wuid;
             StringBuffer target;
@@ -2490,7 +2490,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         }
         else if (!stricmp(methodName.str(), "submit"))
         {
-            context->addTraceSummaryValue("wseclMode", "submit");
+            context->addTraceSummaryValue(LogMin, "wseclMode", "submit");
 
             StringBuffer wuid;
             StringBuffer qs;
@@ -2507,7 +2507,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         }
         else if (!stricmp(methodName.str(), "xslt"))
         {
-            context->addTraceSummaryValue("wseclMode", "xslt");
+            context->addTraceSummaryValue(LogMin, "wseclMode", "xslt");
 
             StringBuffer wuid;
             StringBuffer qs;
@@ -2602,7 +2602,7 @@ void checkForXmlResponseName(StartTag &starttag, StringBuffer &respname, int &so
 void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *response)
 {
     IEspContext *ctx = request->queryContext();
-    ctx->addTraceSummaryValue("wseclMode", "JSONPost");
+    ctx->addTraceSummaryValue(LogMin, "wseclMode", "JSONPost");
     IProperties *parms = request->queryParameters();
     StringBuffer jsonresp;
 
@@ -2710,7 +2710,7 @@ void CWsEclBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respons
 int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* response)
 {
     IEspContext *ctx = request->queryContext();
-    ctx->addTraceSummaryValue("wseclMode", "SOAPPost");
+    ctx->addTraceSummaryValue(LogMin, "wseclMode", "SOAPPost");
     IProperties *parms = request->queryParameters();
 
     const char *thepath = request->queryPath();
