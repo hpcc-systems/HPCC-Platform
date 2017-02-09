@@ -178,6 +178,7 @@ void HqlLex::init(IFileContents * _text)
     inComment = false;
     inSignature = false;
     inCpp = false;
+    inMultiString = false;
     hasHashbreak = false;
     encrypted = false;
     loopTimes = 0;
@@ -2560,6 +2561,8 @@ int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"Signature is not terminated");
             else if (inCpp)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"BEGINC++ or EMBED is not terminated");
+            else if (inMultiString)
+                reportError(returnToken, ERR_COMMENT_UNENDED,"Multiline string constant is not terminated");
             if (hashendKinds.ordinality())
             {
                 StringBuffer msg("Unexpected EOF: ");
