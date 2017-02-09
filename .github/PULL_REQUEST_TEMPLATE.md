@@ -28,6 +28,9 @@
 ## Checklist:
 - [ ] My code follows the code style of this project.
   - [ ] My code does not create any new warnings from compiler, build system, or lint.
+- [ ] The commit message is properly formatted and free of typos.
+  - [ ] The commit message title makes sense in a changelog, by itself.
+  - [ ] The commit is signed.
 - [ ] My change requires a change to the documentation.
   - [ ] I have updated the documentation accordingly, or...
   - [ ] I have created a JIRA ticket to update the documentation.
