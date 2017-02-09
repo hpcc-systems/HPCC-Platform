@@ -29,5 +29,32 @@ if(NOT CBLAS_FOUND)
         DEFAULT_MSG
         CBLAS_LIBRARIES 
         CBLAS_INCLUDE_DIR)
+
+    if (APPLE)
+      set(LIB_TO_DO ${CBLAS_LIBRARIES})
+
+      set(CBLAS_DEPS_LIBS "")
+      foreach (lib libquadmath;libgfortran;libgcc_s)
+         message("otool -L ${LIB_TO_DO} | egrep ${lib}(.[0-9]{1,})*.dylib | sed \"s/^[[:space:]]//g\" | cut -d' ' -f1")
+         execute_process(
+           COMMAND bash "-c"  "otool -L \"${LIB_TO_DO}\" | egrep \"${lib}(.[0-9]{1,})*.dylib\" | sed \"s/^[[:space:]]//g\" | cut -d' ' -f1"
+           OUTPUT_VARIABLE otoolOut
+           ERROR_VARIABLE  otoolErr
+           OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if (NOT "${otoolErr}" STREQUAL "")
+          message(FATAL_ERROR "Failed to check dependent lib ${lib} for ${LIB_TO_DO}")
+        endif()
+
+        if ("${otoolOut}" STREQUAL "")
+          message(FATAL_ERROR "${LIB_TO_DO} dependencies changed. Run otool -L check manually and update file FindCBLAS.cmake")
+        endif()
+        list(APPEND CBLAS_DEPS_LIBS ${otoolOut})
+        if ("${otoolOut}" MATCHES ".*libgfortran.*")
+          set(LIB_TO_DO "${otoolOut}")
+        endif()
+      endforeach()
+    endif(APPLE)
+
     mark_as_advanced(CBLAS_INCLUDE_DIR CBLAS_LIBRARIES)
 endif()
