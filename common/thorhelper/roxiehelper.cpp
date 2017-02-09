@@ -1768,7 +1768,7 @@ void CSafeSocket::flush()
         if (!adaptiveRoot || mlResponseFmt != MarkupFmt_JSON)
         {
             if (traceLevel > 5)
-                DBGLOG("Writing content head length %d to HTTP socket", contentHead.length());
+                DBGLOG("Writing content head length %" I64F "u to HTTP socket", static_cast<__uint64>(contentHead.length()));
             sock->write(contentHead.str(), contentHead.length());
             sent += contentHead.length();
         }
@@ -1783,7 +1783,7 @@ void CSafeSocket::flush()
         if (!adaptiveRoot || mlResponseFmt != MarkupFmt_JSON)
         {
             if (traceLevel > 5)
-                DBGLOG("Writing content tail length %d to HTTP socket", contentTail.length());
+                DBGLOG("Writing content tail length %" I64F "u to HTTP socket", static_cast<__uint64>(contentTail.length()));
             sock->write(contentTail.str(), contentTail.length());
             sent += contentTail.length();
         }

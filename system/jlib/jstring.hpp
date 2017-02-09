@@ -250,7 +250,7 @@ class jlib_decl StringAttr
 {
 public:
     inline StringAttr(void)                     { text = NULL; }
-    StringAttr(const char * _text, unsigned _len);
+    StringAttr(const char * _text, size_t _len);
     StringAttr(const char * _text);
     StringAttr(const StringAttr & src);
     StringAttr(StringAttr && src);
@@ -261,13 +261,13 @@ public:
     inline void clear()                         { setown(NULL); }
     inline char * detach()                      { char * ret = text; text = NULL; return ret; }
     inline const char * get() const             { return text; }
-    inline size32_t     length() const          { return text ? (size32_t)strlen(text) : 0; }
+    inline size_t length() const                { return text ? strlen(text) : 0; }
     inline bool isEmpty() const                 { return !text||!*text; } // faster than (length==0)
     inline const char * str() const             { return text ? text : ""; } // safe form (doesn't return NULL)
 
     void         set(const char * _text);
     void         setown(const char * _text);
-    void         set(const char * _text, unsigned _len);
+    void         set(const char * _text, size_t _len);
     void         set(const StringBuffer & source);
     void         setown(StringBuffer & source);
     void         toLowerCase();
