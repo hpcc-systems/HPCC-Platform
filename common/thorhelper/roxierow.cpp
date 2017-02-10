@@ -443,7 +443,7 @@ public:
     virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags)
     {
         SpinBlock b(allAllocatorsLock);
-        loop
+        for (;;)
         {
             CAllocatorCacheItem *container = _lookup(meta, activityId, flags);
             if (container)

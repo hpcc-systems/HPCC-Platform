@@ -225,7 +225,7 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
             size32_t rd = fileio->read(blk*(offset_t)blocksize,readBlockSize,buf);
             assertex(rd==readBlockSize);
             unsigned p = 0;
-            loop {
+            for (;;) {
                 byte b;
                 ds.read(sizeof(b),&b);
                 if (!b)
@@ -356,7 +356,7 @@ public:
         const void * ret;
         assertex(out);
         assertex(!waiting);  // reentrancy checks
-        loop {
+        for (;;) {
             {
                 SpinBlock block(lock);
                 if (out->ordinality()) {
@@ -403,7 +403,7 @@ public:
 #endif
         SpinBlock block(lock);
         if (eoi) return;
-        loop {
+        for (;;) {
             assertex(in);  // reentry check
             diskflush();
             eoi = true;
@@ -521,7 +521,7 @@ public:
         const void * ret;
         SpinBlock block(lock);
         assertex(!waitingout);  // reentrancy checks
-        loop {
+        for (;;) {
             if (in->ordinality()) {
                 ret = in->dequeue();
                 if (ret) {
@@ -588,7 +588,7 @@ public:
         // I think flush should wait til all rows read
         SpinBlock block(lock);
         eoi = true;
-        loop {
+        for (;;) {
             assertex(in);  // reentry check
             if (waitingout) {
                 waitoutsem.signal();
@@ -928,7 +928,7 @@ protected:
             {
                 CriticalUnblock b(crit);
                 unsigned mins=0;
-                loop
+                for (;;)
                 {
                     if (output.readWaitSem.wait(60000))
                         break; // NB: will also be signal if aborting
@@ -959,7 +959,7 @@ protected:
         unsigned o=0;
         offset_t lsf = (unsigned)-1;
         unsigned lsfOutput = (unsigned)-1;
-        loop
+        for (;;)
         {
             if (queryCOutput(o).currentChunkNum < lsf)
             {
@@ -1081,7 +1081,7 @@ public:
     unsigned anyReaderBehind()
     {
         unsigned reader=0;
-        loop
+        for (;;)
         {
             if (reader>=outputCount) // so all waiting, don't need in mem page.
                 break;
@@ -1426,7 +1426,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
 #endif
             CThorStreamDeserializerSource ds(stream);
             rowSet.setown(newRowSet(currentChunkNum));
-            loop
+            for (;;)
             {
                 byte b;
                 ds.read(sizeof(b),&b);
@@ -1516,7 +1516,7 @@ public:
         if (spillFile)
             spillFile->remove();
 
-        loop
+        for (;;)
         {
             Owned<Chunk> chunk = savedChunks.dequeue();
             if (!chunk) break;
@@ -1526,7 +1526,7 @@ public:
     virtual void reset()
     {
         CSharedWriteAheadBase::reset();
-        loop
+        for (;;)
         {
             Owned<Chunk> chunk = savedChunks.dequeue();
             if (!chunk) break;
@@ -1626,7 +1626,7 @@ public:
     }
     ~CSharedWriteAheadMem()
     {
-        loop
+        for (;;)
         {
             Owned<CRowSet> rowSet = chunkPool.dequeue();
             if (!rowSet)
@@ -1636,7 +1636,7 @@ public:
     virtual void reset()
     {
         CSharedWriteAheadBase::reset();
-        loop
+        for (;;)
         {
             Owned<CRowSet> rowSet = chunkPool.dequeue();
             if (!rowSet)
@@ -1694,7 +1694,7 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
 
     void addRows(CThorExpandingRowArray &inRows)
     {
-        loop
+        for (;;)
         {
             {
                 CThorArrayLockBlock block(rows);
@@ -1784,7 +1784,7 @@ public:
             return NULL;
         if (rowPos == rowsToRead)
         {
-            loop
+            for (;;)
             {
                 {
                     CThorArrayLockBlock block(rows);

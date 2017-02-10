@@ -121,7 +121,7 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
         dafsthread.setown(thr.getClear());
     }
     else {
-        loop {
+        for (;;) {
             Sleep(500);
             if (thr->idleTime()>timeout) {
                 thr->stop();

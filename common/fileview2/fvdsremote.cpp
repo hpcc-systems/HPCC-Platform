@@ -351,7 +351,7 @@ void RemoteDataSourceServer::doCmdRow(bool raw, MemoryBuffer & in, MemoryBuffer 
 
     unsigned numRowsPos = out.length();
     out.append(numRows);                // total number of rows;
-    loop
+    for (;;)
     {
         unsigned lengthPos = out.length();
         out.append((unsigned)0);                // size of this row.

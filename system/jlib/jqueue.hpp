@@ -157,7 +157,7 @@ public:
         //Note, compare_exchange_weak updates curState when it fails, so don't read inside the main loop
         unsigned numSpins = initialSpinsBeforeWait;
         state_t curState = state.load(std::memory_order_acquire);
-        loop
+        for (;;)
         {
             unsigned curCount = (curState & countMask);
             if (curCount == maxItems)
@@ -249,7 +249,7 @@ public:
         unsigned numSpins = initialSpinsBeforeWait;
         //Note, compare_exchange_weak updates curState when it fails, so don't read inside the main loop
         state_t curState = state.load(std::memory_order_acquire);
-        loop
+        for (;;)
         {
             unsigned curCount = (curState & countMask);
             //Check if the queue is empty
@@ -321,7 +321,7 @@ public:
                     unsigned curDequeueSlot = (curDequeueSeq & slotMask);
                     BufferElement & cur = values[curDequeueSlot];
                     unsigned spins = 0;
-                    loop
+                    for (;;)
                     {
                         unsigned sequence = cur.sequence.load(std::memory_order_acquire);
                         if (sequence == expectedSeq)

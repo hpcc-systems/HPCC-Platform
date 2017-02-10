@@ -328,7 +328,7 @@ public:
                 try
                 {
                     open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize());
-                    loop
+                    for (;;)
                     {
                         OwnedConstThorRow row = inputStream->ungroupedNextRow();
                         if (!row)
@@ -346,7 +346,7 @@ public:
                         CThorStreamDeserializerSource rowSource;
                         rowSource.setStream(stream);
                         bool successSR;
-                        loop
+                        for (;;)
                         {
                             {
                                 BooleanOnOff tf(receivingTag2);
@@ -383,7 +383,7 @@ public:
                 CMessageBuffer mb;
                 CMemoryRowSerializer mbs(mb);
                 Linked<IOutputRowSerializer> serializer = ::queryRowSerializer(input);
-                loop
+                for (;;)
                 {
                     BooleanOnOff tf(receivingTag2);
                     if (queryJobChannel().queryJobComm().recv(mb, 1, mpTag2)) // node 1 asking for more..

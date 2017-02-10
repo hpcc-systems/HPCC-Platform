@@ -869,7 +869,7 @@ public:
         {
             if (forceEOF)
                 return NULL;
-            loop
+            for (;;)
             {
                 const void *ret = InputProbe::nextRow();
                 if (!ret)
@@ -932,7 +932,7 @@ public:
         {
             if (forceEOF)
                 return NULL;
-            loop
+            for (;;)
             {
                 const void *ret = InputProbe::nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
                 if (!ret)

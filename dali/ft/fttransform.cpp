@@ -522,7 +522,7 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
     const offset_t startInputOffset = curPartition.inputOffset;
     const offset_t startOutputOffset = curPartition.outputOffset;
 
-    loop
+    for (;;)
     {
         unsigned gotLength = input->getBlock(out);
         totalLengthRead  += gotLength;

@@ -304,7 +304,7 @@ public:
             if (!eoi && !activity.queryAbortSoon()) {
                 try {
                     if (activity.needTransform) {
-                        loop {
+                        for (;;) {
                             const void * row = CDiskRecordPartHandler::prefetchRow();
                             if (!row) {
                                 if (!activity.grouped)
@@ -330,7 +330,7 @@ public:
                         }
                     }
                     else {
-                        loop {
+                        for (;;) {
                             OwnedConstThorRow row = CDiskRecordPartHandler::nextRow();
                             if (!row) {
                                 if (!activity.grouped)
@@ -563,7 +563,7 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
                 eoi = true;
                 return NULL;
             }
-            loop
+            for (;;)
             {
                 if (nextrow)
                 {
@@ -792,7 +792,7 @@ public:
         {
             partHandler->setPart(&partDescs.item(part));
             ++part;
-            loop
+            for (;;)
             {
                 OwnedConstThorRow nextrow =  partHandler->nextRow();
                 if (!nextrow)
@@ -920,7 +920,7 @@ public:
             {
                 partHandler->setPart(&partDescs.item(part));
                 ++part;
-                loop {
+                for (;;) {
                     OwnedConstThorRow nextrow = partHandler->nextRow();
                     if (!nextrow)
                         break;
@@ -1035,7 +1035,7 @@ public:
                 {
                     partHandler->setPart(&partDescs.item(part));
                     ++part;
-                    loop
+                    for (;;)
                     {
                         OwnedConstThorRow nextrow = partHandler->nextRow();
                         if (!nextrow)

@@ -472,7 +472,7 @@ public:
             executed = true;
             IThorResult *result = loopResults->createResult(*this, 0, this, !queryGraph().isLocalChild());
             Owned<IRowWriter> resultWriter = result->getWriter();
-            loop
+            for (;;)
             {
                 OwnedConstThorRow row = inputStream->nextRow();
                 if (!row)
@@ -684,7 +684,7 @@ public:
         IThorResult *result = createResult();
 
         Owned<IRowWriter> resultWriter = result->getWriter();
-        loop
+        for (;;)
         {
             OwnedConstThorRow nextrec = inputStream->nextRow();
             if (!nextrec)
@@ -748,7 +748,7 @@ public:
         processed = THORDATALINK_STARTED;
 
         RtlLinkedDictionaryBuilder builder(queryRowAllocator(), helper->queryHashLookupInfo());
-        loop
+        for (;;)
         {
             const void *row = inputStream->nextRow();
             if (!row)
@@ -1178,7 +1178,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        loop
+        for (;;)
         {
             if (ok)
                 ok = helper->next();

@@ -204,7 +204,7 @@ public:
         if (ordinality()>1)
         {
             unsigned i = 1;
-            loop
+            for (;;)
             {
                 str.append(item(i).queryName());
                 if (++i >= ordinality())

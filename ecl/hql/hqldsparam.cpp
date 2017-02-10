@@ -184,7 +184,7 @@ IHqlExpression* HqlGram::queryFieldMap(IHqlExpression* expr)
 {
     if (!fieldMapUsed)
         return NULL;
-    loop
+    for (;;)
     {
         if (expr == NULL)
             return NULL;

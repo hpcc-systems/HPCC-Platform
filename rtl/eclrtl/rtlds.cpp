@@ -584,7 +584,7 @@ void RtlLinkedDictionaryBuilder::appendOwn(const void * source)
     {
         checkSpace();
         unsigned rowidx = hash->hash(source) % tableSize;
-        loop
+        for (;;)
         {
             const void *entry = table[rowidx];
             if (entry && compare->docompare(source, entry)==0)
@@ -696,7 +696,7 @@ extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size
     IHash *hash  = hashInfo.queryHashLookup();
     ICompare *compare  = hashInfo.queryCompareLookup();
     unsigned rowidx = hash->hash(source) % tableSize;
-    loop
+    for (;;)
     {
         const void *entry = table[rowidx];
         if (!entry)
@@ -717,7 +717,7 @@ extern ECLRTL_API byte *rtlDictionaryLookupString(size32_t tableSize, byte **tab
         return (byte *) rtlLinkRow(defaultRow);
     unsigned hash = rtlHash32Data(rtlTrimStrLen(searchLen, searchFor), searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const char *entry = (const char *) table[rowidx];
         if (!entry)
@@ -736,7 +736,7 @@ extern ECLRTL_API byte *rtlDictionaryLookupStringN(size32_t tableSize, byte **ta
         return (byte *) rtlLinkRow(defaultRow);
     unsigned hash = rtlHash32Data(rtlTrimStrLen(searchLen, searchFor), searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const char *entry = (const char *) table[rowidx];
         if (!entry)
@@ -755,7 +755,7 @@ extern ECLRTL_API byte *rtlDictionaryLookupSigned(size32_t tableSize, byte **tab
         return (byte *) rtlLinkRow(defaultRow);
     unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const void *entry = table[rowidx];
         if (!entry)
@@ -774,7 +774,7 @@ extern ECLRTL_API byte *rtlDictionaryLookupUnsigned(size32_t tableSize, byte **t
         return (byte *) rtlLinkRow(defaultRow);
     unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const void *entry = table[rowidx];
         if (!entry)
@@ -793,7 +793,7 @@ extern ECLRTL_API byte *rtlDictionaryLookupSignedN(size32_t tableSize, byte **ta
         return (byte *) rtlLinkRow(defaultRow);
     unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const void *entry = table[rowidx];
         if (!entry)
@@ -812,7 +812,7 @@ extern ECLRTL_API byte *rtlDictionaryLookupUnsignedN(size32_t tableSize, byte **
         return (byte *) rtlLinkRow(defaultRow);
     unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const void *entry = table[rowidx];
         if (!entry)
@@ -833,7 +833,7 @@ extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo,
     IHash *hash  = hashInfo.queryHashLookup();
     ICompare *compare  = hashInfo.queryCompareLookup();
     unsigned rowidx = hash->hash(source) % tableSize;
-    loop
+    for (;;)
     {
         const void *entry = table[rowidx];
         if (!entry)
@@ -854,7 +854,7 @@ extern ECLRTL_API bool rtlDictionaryLookupExistsString(size32_t tableSize, byte 
         return false;
     unsigned hash = rtlHash32Data(rtlTrimStrLen(searchLen, searchFor), searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const char *entry = (const char *) table[rowidx];
         if (!entry)
@@ -873,7 +873,7 @@ extern ECLRTL_API bool rtlDictionaryLookupExistsStringN(size32_t tableSize, byte
         return false;
     unsigned hash = rtlHash32Data(rtlTrimStrLen(searchLen, searchFor), searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const char *entry = (const char *) table[rowidx];
         if (!entry)
@@ -892,7 +892,7 @@ extern ECLRTL_API bool rtlDictionaryLookupExistsSigned(size32_t tableSize, byte 
         return false;
     unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const void *entry = table[rowidx];
         if (!entry)
@@ -911,7 +911,7 @@ extern ECLRTL_API bool rtlDictionaryLookupExistsUnsigned(size32_t tableSize, byt
         return false;
     unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const void *entry = table[rowidx];
         if (!entry)
@@ -930,7 +930,7 @@ extern ECLRTL_API bool rtlDictionaryLookupExistsSignedN(size32_t tableSize, byte
         return false;
     unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const void *entry = table[rowidx];
         if (!entry)
@@ -949,7 +949,7 @@ extern ECLRTL_API bool rtlDictionaryLookupExistsUnsignedN(size32_t tableSize, by
         return false;
     unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
     unsigned rowidx = hash % tableSize;
-    loop
+    for (;;)
     {
         const void *entry = table[rowidx];
         if (!entry)
@@ -1772,7 +1772,7 @@ bool RtlCompoundIterator::first(unsigned level)
     if (!first(level-1)) 
         return false;
 
-    loop
+    for (;;)
     {
         const byte * cur = curIter->first();
         if (cur)
@@ -1798,7 +1798,7 @@ bool RtlCompoundIterator::next(unsigned level)
     if (level == 0)
         return false;
 
-    loop
+    for (;;)
     {
         if (!next(level-1)) 
             return false;

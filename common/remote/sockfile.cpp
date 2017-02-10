@@ -607,7 +607,7 @@ static void flush(ISocket *socket)
     try {
         sendBuffer(socket, sendbuf);
         char buf[1024];
-        loop {
+        for (;;) {
             Sleep(1000);    // breathe
             size32_t szread;
             SOCKREADTMS(socket)(buf, 1, sizeof(buf), szread, 1000*60);
@@ -825,7 +825,7 @@ public:
             CConnectionRec *old = NULL;
             unsigned oldi;
             unsigned now = msTick();
-            loop {
+            for (;;) {
                 c = (CConnectionRec *)SuperHashTableOf<CConnectionRec,SocketEndpoint>::next(c);
                 if (!c)
                     break;
@@ -1069,7 +1069,7 @@ protected: friend class CRemoteFileIO;
         setDafsEndpointPort(tep);
         unsigned nretries = retry?3:0;
         Owned<IJSOCK_Exception> firstexc;   // when retrying return first error if fails
-        loop {
+        for (;;) {
             try {
                 if (socket) {
                     sendBuffer(socket, src);
@@ -1410,7 +1410,7 @@ public:
     }
     bool next()
     {
-        loop {
+        for (;;) {
             curidx++;
             cur.clear();
             curdt.clear();
@@ -1500,7 +1500,7 @@ public:
         byte b=1;
         StringBuffer tmp;
         if (first ? iter->first() : iter->next()) {
-            loop {
+            for (;;) {
                 mb.append(b);
                 bool isdir = iter->isDir();
                 __int64 sz = isdir?0:iter->getFileSize();
@@ -1916,7 +1916,7 @@ public:
 
         Owned<CEndpointCS> crit = dirCSTable->getCrit(ep); // NB dirCSTable doesn't own, last reference will remove from table
         CriticalBlock block(*crit);
-        loop {
+        for (;;) {
             MemoryBuffer sendBuffer;
             initSendBuffer(sendBuffer);
             MemoryBuffer replyBuffer;
@@ -2337,7 +2337,7 @@ public:
     const void *doRead(offset_t pos, size32_t len, MemoryBuffer &replyBuffer, size32_t &got, void *dstbuf)
     {
         unsigned tries=0;
-        loop {
+        for (;;) {
             try {
                 MemoryBuffer sendBuffer;
                 initSendBuffer(sendBuffer);
@@ -2401,7 +2401,7 @@ public:
         unsigned tries=0;
         size32_t ret = 0;
         CCycleTimer timer;
-        loop {
+        for (;;) {
             try {
                 MemoryBuffer replyBuffer;
                 MemoryBuffer sendBuffer;
@@ -3545,7 +3545,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         }
         ~CThrottler()
         {
-            loop
+            for (;;)
             {
                 Owned<CThrottleQueueItem> item = queue.dequeue();
                 if (!item)
@@ -3656,7 +3656,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         }
         void take(RemoteFileCommandType cmd) // cmd for info. only
         {
-            loop
+            for (;;)
             {
                 if (sem.wait(delayMs))
                     return;
@@ -3728,7 +3728,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             Linked<CRemoteClientHandler> currentClient;
             MemoryBuffer currentMsg;
             unsigned ms;
-            loop
+            for (;;)
             {
                 RemoteFileCommandType currentCmd;
                 {
@@ -3818,7 +3818,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     int getNextHandle()
     {
         // called in sect critical block
-        loop {
+        for (;;) {
             if (lasthandle==INT_MAX)
                 lasthandle = 1;
             else
@@ -4573,7 +4573,7 @@ public:
         unsigned lastmin = 0;
         if (!srcfn.queryIP().ipequals(dstfn.queryIP())) {
             CriticalBlock block(treeCopyCrit);
-            loop {
+            for (;;) {
                 CDateTime dt;
                 offset_t sz;
                 try {
@@ -4774,7 +4774,7 @@ public:
             }
             if (hasoutput) {
                 byte buf[4096];
-                loop {
+                for (;;) {
                     size32_t read = pipe->read(sizeof(buf),buf);
                     if (!read)
                         break;
@@ -5095,7 +5095,7 @@ public:
             readSocks.append(rejectsock->OShandle());
         }
 
-        loop {
+        for (;;) {
             Owned<ISocket> sock;
             bool sockavail = false;
             try {

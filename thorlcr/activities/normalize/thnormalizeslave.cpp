@@ -58,7 +58,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             while (curRow == numThisRow)
             {
@@ -131,7 +131,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop {
+        for (;;) {
             while(!curChildRow) {
                 curRow = 0;
                 childBuf.setown(inputStream->nextRow());
@@ -179,7 +179,7 @@ class CNormalizeLinkedChildSlaveActivity : public CSlaveActivity
 
     bool advanceInput()
     {
-        loop
+        for (;;)
         {
             curParent.setown(inputStream->nextRow());
             if (!curParent)
@@ -218,7 +218,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop
+        for (;;)
         {
             if (!curParent)
             {

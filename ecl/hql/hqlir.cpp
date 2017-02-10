@@ -976,7 +976,7 @@ private:
 void BinaryIRPlayer::process()
 {
     seq = 1;
-    loop
+    for (;;)
     {
         byte element;
         read(element);
@@ -1085,7 +1085,7 @@ exprid_t BinaryIRPlayer::readExpr()
     info.type = readId();
     info.id = readSymId();
     info.name = readName();
-    loop
+    for (;;)
     {
         exprid_t id = readId();
         if (!id)

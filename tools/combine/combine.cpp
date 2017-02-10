@@ -55,7 +55,7 @@ void appendFile(IFileIO *srcio,IFileIOStream *out,bool sub)
 {
     static byte buf[BUFFER_SIZE];
     Owned<IFileIOStream> srcstrm = createIOStream(srcio);
-    loop {
+    for (;;) {
         size32_t rd = srcstrm->read(BUFFER_SIZE,buf);
         if (!rd)
             break;

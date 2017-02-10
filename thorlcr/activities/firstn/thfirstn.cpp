@@ -43,7 +43,7 @@ public:
         rowcount_t skip = validRC(helper->numToSkip());
         unsigned nslaves = container.queryJob().querySlaves();
         unsigned s = 1;
-        loop
+        for (;;)
         {
             CMessageBuffer msgMb;
             msgMb.append(limit);

@@ -866,11 +866,11 @@ public:
         if (locknest++==0) {
             unsigned wait = qdata&&qdata->next?5000:INFINITE;
             ForEachQueue(qd) {
-                loop {
+                for (;;) {
                     StringBuffer path;
                     path.appendf("/JobQueues/Queue[@name=\"%s\"]",qd->qname.get());
                     bool timeout;
-                    loop {
+                    for (;;) {
                         timeout=false;
                         try {
                             qd->conn = querySDS().connect(path.str(),myProcessSession(),exclusive?RTM_LOCK_WRITE:RTM_LOCK_READ,wait);
@@ -1014,7 +1014,7 @@ public:
         }
         item->setPropInt("@num",-1);
         StringBuffer path;
-        loop {
+        for (;;) {
             IPropertyTree *item2 = qd.root->queryPropTree(getItemPath(path.clear(),n).str());
             if (!item2)
                 break;
@@ -1582,7 +1582,7 @@ public:
     {
         Cconnlockblock block(this,true);
         qd.root->setPropInt("@count",0);
-        loop {
+        for (;;) {
             IPropertyTree *item = qd.root->queryPropTree("Item[1]");
             if (!item)
                 break;
@@ -1638,7 +1638,7 @@ public:
         connected = 0;
         waiting = 0;
         unsigned i=0;
-        loop {
+        for (;;) {
             IPropertyTree *croot = queryClientRootIndex(qd,i);
             if (!croot)
                 break;
@@ -1660,7 +1660,7 @@ public:
         }
         i=0;
         StringBuffer path;
-        loop {
+        for (;;) {
             IPropertyTree *item = qd.root->queryPropTree(getItemPath(path.clear(),i).str());
             if (!item)
                 break;
@@ -1780,7 +1780,7 @@ public:
         assertex(connected); // must be connected
         int curmp = maxp?maxp->get():0;
         int nextmp = curmp;
-        loop {
+        for (;;) {
             bool timedout = false;
             Owned<IJobQueueItem> item;
             {
@@ -1836,7 +1836,7 @@ public:
     bool cancelInitiateConversation(sQueueData &qd,const char *wuid)
     {
         Cconnlockblock block(this,true);
-        loop {
+        for (;;) {
             Owned<IJobQueueItem> item = dotake(qd,wuid,false);
             if (!item.get())
                 break;

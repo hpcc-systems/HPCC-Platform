@@ -262,7 +262,7 @@ bool HashTable::keyeq(const void *key1, const void *key2, int ksize) const
         {
             unsigned char *k1 = (unsigned char *) key1;
             unsigned char *k2 = (unsigned char *) key2;
-            loop
+            for (;;)
             {
                 unsigned char c1 = toupper(*k1);
                 if (c1 != toupper(*k2))

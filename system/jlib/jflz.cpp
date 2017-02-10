@@ -679,7 +679,7 @@ public:
                 throw MakeStringException(MSGAUD_operator,0, "Out of memory in FastLZExpander::expand, requesting %d bytes", bufalloc);
         }
         size32_t done = 0;
-        loop {
+        for (;;) {
             const size32_t szchunk = *in;
             in++;
             if (szchunk+done<outlen) {

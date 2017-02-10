@@ -189,7 +189,7 @@ public:
                 return false;
             if (!started)
                 init();
-            loop {
+            for (;;) {
                 OwnedConstThorRow row = iseq->nextRow();
                 if (!row) {
                     if (sent)

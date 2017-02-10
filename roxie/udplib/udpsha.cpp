@@ -202,7 +202,7 @@ bool queue_t::removeData(void *key, PKT_CMP_FUN pkCmpFn)
     if (active_buffers) 
     {
         unsigned ix = first;
-        loop
+        for (;;)
         {
             if (elements[ix].data && 
                 ((key == NULL) || (pkCmpFn == NULL) || pkCmpFn((void*) elements[ix].data, key)))
@@ -229,7 +229,7 @@ bool queue_t::dataQueued(void *key, PKT_CMP_FUN pkCmpFn)
     if (active_buffers) 
     {
         unsigned ix = first;
-        loop 
+        for (;;)
         {
             if (elements[ix].data && pkCmpFn((void*) elements[ix].data, key))
             {

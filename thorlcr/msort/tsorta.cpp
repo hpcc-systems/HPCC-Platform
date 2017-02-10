@@ -460,7 +460,7 @@ void CThorKeyArray::calcPositions(IFile *file,CThorKeyArray &sample)
             pos = 0;
         // should do bin-chop for fixed length but initially do sequential search
         Owned<IRowStream> s = createRowStreamEx(file, rowif, pos);
-        loop
+        for (;;)
         {
             OwnedConstThorRow rowcmp = s->nextRow();
             if (!rowcmp)

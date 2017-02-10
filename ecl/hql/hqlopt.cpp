@@ -579,7 +579,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
     bool insideShared = false;
     bool isScalarAggregate = (aggOp != no_newaggregate) && (aggOp != no_aggregate);
     bool isSimpleCount = isSimpleCountExistsAggregate(transformed, false, true);
-    loop
+    for (;;)
     {
         node_operator dsOp = ds->getOperator();
         IHqlExpression * next = NULL;
@@ -715,7 +715,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
 
 static IHqlExpression * skipMetaAliases(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -1873,7 +1873,7 @@ bool CTreeOptimizer::isWorthMovingProjectOverLimit(IHqlExpression * project)
         return false;
 
     IHqlExpression * expr = project->queryChild(0);
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {

@@ -69,7 +69,7 @@ class CDaliAuditServer: public IDaliServer, public Thread
 
     bool matchrow(const char *row,const char *match)
     {
-        loop {
+        for (;;) {
             char m = *match;
             if (!m) 
                 break;
@@ -87,7 +87,7 @@ class CDaliAuditServer: public IDaliServer, public Thread
                 }
             }
             else {
-                loop {
+                for (;;) {
                     if (m!=c)
                         return false;
                     m = *(match++);
@@ -173,7 +173,7 @@ public:
             char *buf = (char *)mba.allocate(BUFFSIZE+MAXLINESIZE+1);
             size32_t lbsize = 0;
             char *p=NULL;
-            loop {
+            for (;;) {
 Retry:
                 if (lbsize<MAXLINESIZE) {
                     if (!eof) {

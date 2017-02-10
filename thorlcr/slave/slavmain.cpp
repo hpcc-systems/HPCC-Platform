@@ -60,7 +60,7 @@ void enableThorSlaveAsDaliClient()
         throw MakeStringException(0, "No Dali server list specified");
     Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
     unsigned retry = 0;
-    loop
+    for (;;)
     {
         try
         {
@@ -671,7 +671,7 @@ public:
     }
     void deinit()
     {
-        loop
+        for (;;)
         {
             CStringAttr *item = fipList.dequeue();
             if (!item) break;

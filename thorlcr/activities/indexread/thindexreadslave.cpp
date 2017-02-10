@@ -147,7 +147,7 @@ protected:
             return nullptr;
         const void *ret = nullptr;
         dbgassertex(currentManager);
-        loop
+        for (;;)
         {
             if (currentManager->lookup(true))
             {
@@ -301,7 +301,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
     const void *getNextRow()
     {
         RtlDynamicRowBuilder ret(allocator);
-        loop
+        for (;;)
         {
             const void *r = nextKey();
             if (!r)
@@ -356,7 +356,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
     {
         RtlDynamicRowBuilder ret(allocator);
         size32_t seekSize = seekSizes.item(numFields-1);
-        loop
+        for (;;)
         {
             const void *r = nextKeyGE(seek, numFields);
             if (!r)
@@ -803,7 +803,7 @@ public:
                 {
                     IKeyManager &keyManager = keyManagers.item(p);
                     setManager(&keyManager);
-                    loop
+                    for (;;)
                     {
                         bool l = keyManager.lookup(true);
                         noteStats(keyManager.querySeeks(), keyManager.queryScans());
@@ -984,11 +984,11 @@ public:
             keyedLimitCount = RCMAX;
         }
 
-        loop
+        for (;;)
         {
             if (expanding)
             {
-                loop
+                for (;;)
                 {
                     expanding = helper->next();
                     if (!expanding)
@@ -1000,7 +1000,7 @@ public:
                 }
             }
 
-            loop
+            for (;;)
             {
                 callback.finishedRow();
                 const void *rec = nextKey();
@@ -1073,7 +1073,7 @@ public:
 
         RtlDynamicRowBuilder row(allocator);
         helper->clearAggregate(row);
-        loop
+        for (;;)
         {
             const void *r = nextKey();
             if (!r)

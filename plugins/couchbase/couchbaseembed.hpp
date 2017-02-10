@@ -133,7 +133,7 @@ namespace couchbaseembed
                     else if (*query=='*')
                     {
                         query++;
-                        loop
+                        for (;;)
                         {
                             if (!*query)
                                 fail("Unterminated comment in query string");

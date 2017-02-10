@@ -395,7 +395,7 @@ const void * CSteppedConjunctionOptimizer::next()
     if (!hasCandidates() && !findCandidates(NULL, 0))
         return NULL;
 
-    loop
+    for (;;)
     {
         const void * next = rootActivity->nextInputRow();
         if (next)

@@ -217,7 +217,7 @@ public:
         if (abortSoon)
             return NULL;
 
-        loop
+        for (;;)
         {
             OwnedConstThorRow keyRec = keyOutStream->nextRow(); // is this right?
             if (!keyRec)
@@ -563,7 +563,7 @@ public:
         size32_t minRequired = 4096; // MORE - make configurable
         size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
         size32_t thisLineLength;
-        loop
+        for (;;)
         {
             size32_t avail;
             const void *peek = inputStream->peek(minRequired, avail);

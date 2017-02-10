@@ -887,7 +887,7 @@ size32_t RtlUtf8TypeInfo::toXML(const byte * self, const byte * selfrow, const R
 inline size32_t sizeFields(const RtlFieldInfo * const * cur, const byte * self, const byte * selfrow)
 {
     unsigned offset = 0;
-    loop
+    for (;;)
     {
         const RtlFieldInfo * child = *cur;
         if (!child)
@@ -901,7 +901,7 @@ inline size32_t sizeFields(const RtlFieldInfo * const * cur, const byte * self, 
 inline size32_t processFields(const RtlFieldInfo * const * cur, const byte * self, const byte * selfrow, IFieldProcessor & target)
 {
     unsigned offset = 0;
-    loop
+    for (;;)
     {
         const RtlFieldInfo * child = *cur;
         if (!child)
@@ -915,7 +915,7 @@ inline size32_t processFields(const RtlFieldInfo * const * cur, const byte * sel
 
 inline size32_t buildFields(const RtlFieldInfo * const * cur, ARowBuilder &builder, size32_t offset, IFieldSource &source)
 {
-    loop
+    for (;;)
     {
         const RtlFieldInfo * child = *cur;
         if (!child)
@@ -930,7 +930,7 @@ inline size32_t buildFields(const RtlFieldInfo * const * cur, ARowBuilder &build
 inline size32_t toXMLFields(const RtlFieldInfo * const * cur, const byte * self, const byte * selfrow, IXmlWriter & target)
 {
     size32_t offset = 0;
-    loop
+    for (;;)
     {
         const RtlFieldInfo * child = *cur;
         if (!child)

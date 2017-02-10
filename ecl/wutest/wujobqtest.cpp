@@ -356,7 +356,7 @@ static void cmd_pause(IJobQueue *queue)
 static void cmd_stop(IJobQueue *queue) 
 {
     queue->stop();
-    loop {
+    for (;;) {
         unsigned enqueued=0;
         unsigned connected=0;
         unsigned waiting=0;
@@ -456,7 +456,7 @@ static void cmd_remove(IJobQueue *queue,const char *wuid)
 
 static void cmd_stats(IJobQueue *queue,bool wait) 
 {
-    loop {
+    for (;;) {
         unsigned enqueued=0;
         unsigned connected=0;
         unsigned waiting=0;
@@ -478,7 +478,7 @@ static void cmd_activity(IJobQueue *queue,const char *qname)
         ERRLOG("cannot connect to Status/Servers");
         return;
     }
-    loop {
+    for (;;) {
         conn->reload();
         Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements(xpath.str());
         StringArray wuids;

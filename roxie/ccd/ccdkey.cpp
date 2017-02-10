@@ -766,7 +766,7 @@ public:
     }
     virtual bool eos() 
     {
-        loop
+        for (;;)
         {
             if (!curStream)
                 return true;
@@ -894,7 +894,7 @@ class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
     int compare(SegMonitorArray *l, SegMonitorArray *r)
     {
         unsigned idx = 0;
-        loop
+        for (;;)
         {
             if (l->isItem(idx))
             {
@@ -1681,7 +1681,7 @@ class InMemoryIndexCursor : implements IInMemoryIndexCursor, public CInterface
     {
         if (!segMonitors.length())
             return a;
-        loop
+        for (;;)
         {
             // binchop...
             int b = numPtrs;
@@ -1700,7 +1700,7 @@ class InMemoryIndexCursor : implements IInMemoryIndexCursor, public CInterface
                 const void *row = GETROW(a);
                 unsigned seg = 0;
                 unsigned lim = segMonitors.length();
-                loop
+                for (;;)
                 {
                     if (!segMonitors.item(seg).matches(row))
                         break;
@@ -1855,7 +1855,7 @@ public:
 
     virtual const void *nextMatch()
     {
-        loop
+        for (;;)
         {
             const void *ret;
             if (midx <= lidx)

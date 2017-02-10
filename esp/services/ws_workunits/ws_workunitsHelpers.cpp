@@ -1838,7 +1838,7 @@ void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownloa
     while (!eof)
     {
         line.clear();
-        loop
+        for (;;)
         {
             char c;
             size32_t numRead = ios->read(1, &c);
@@ -1895,7 +1895,7 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
     while(!eof)
     {
         line.clear();
-        loop
+        for (;;)
         {
             char c;
             size32_t numRead = ios->read(1, &c);
@@ -1966,7 +1966,7 @@ void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf)
     while (!eof)
     {
         line.clear();
-        loop
+        for (;;)
         {
             char c;
             size32_t numRead = ios->read(1, &c);
@@ -2067,7 +2067,7 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char *ipAddr
         while (!eof)
         {
             line.clear();
-            loop
+            for (;;)
             {
                 char c;
                 size32_t numRead = ios->read(1, &c);

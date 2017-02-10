@@ -227,7 +227,7 @@ bool RoxieRowBlock::readFromStream(IRowStream * stream)
     bool done = false;
     try
     {
-        loop
+        for (;;)
         {
             const void * row = stream->nextRow();
             if (!row)
@@ -296,7 +296,7 @@ static void resetBlockQueue(IRowQueue * queue)
 {
     queue->reset();
 
-    loop
+    for (;;)
     {
         const void * next;
         if (!queue->tryDequeue(next))
@@ -368,7 +368,7 @@ public:
     virtual const void *nextRow()
     {
         const void * ret;
-        loop
+        for (;;)
         {
             if (curBlock)
             {
@@ -782,7 +782,7 @@ public:
         if (numActiveStrands == 0)
             return NULL;
 
-        loop
+        for (;;)
         {
             if (curBlock)
             {
@@ -797,7 +797,7 @@ public:
                     nextStrand();
             }
 
-            loop
+            for (;;)
             {
                 OrderedReadAheadThread & curProducer = *(producers[curStrand]);
                 OrderedJunctionBlockQueue & queue = curProducer.queryQueue();
@@ -913,7 +913,7 @@ public:
  //interface IEngineRowStream for the rows being supplied to the strand.
     virtual const void *nextRow()
     {
-        loop
+        for (;;)
         {
             if (!curInputBlock)
             {
@@ -1039,7 +1039,7 @@ public:
             {
                 if (isGrouped)
                 {
-                    loop
+                    for (;;)
                     {
                         const void * row = input->nextRow();
                         if (!row)
@@ -1060,7 +1060,7 @@ public:
                 else
                 {
                     //MORE: This could more efficiently loop 0..blockSize-1 and remove the test in addRowNowFull()
-                    loop
+                    for (;;)
                     {
                         const void * row = input->nextRow();
                         if (unlikely(!row))
@@ -1153,7 +1153,7 @@ public:
  //interface IEngineRowStream for the rows being supplied to the strand.
     virtual const void *nextRow()
     {
-        loop
+        for (;;)
         {
             if (eof)
                 return NULL;
@@ -1270,7 +1270,7 @@ public:
         {
             try
             {
-                loop
+                for (;;)
                 {
                     const void * row = strand->nextRow();
                     //NB: Need to be check the final eog isn't lost when processing sequentially
@@ -1426,7 +1426,7 @@ public:
 //implementation of IEngineRowStream
      virtual const void *nextRow()
      {
-         loop
+         for (;;)
          {
              if (likely(curOutputBlock))
              {
@@ -1616,7 +1616,7 @@ public:
     {
         queue->reset();
 
-        loop
+        for (;;)
         {
             if (curBlock)
                 curBlock->releaseBlock();
@@ -1630,7 +1630,7 @@ public:
     virtual const void *nextRow()
     {
         const void * ret;
-        loop
+        for (;;)
         {
             if (curBlock)
             {

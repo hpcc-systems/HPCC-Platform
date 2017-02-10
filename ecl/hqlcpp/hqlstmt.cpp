@@ -547,7 +547,7 @@ void BuildCtx::appendToOutermostScope(HqlStmt * next)
     HqlStmts * searchStmts = curStmts;
     HqlStmts * insertStmts = NULL;
     HqlStmt * insertBefore = NULL;
-    loop
+    for (;;)
     {
         HqlStmt * owner = searchStmts->owner;
         if (!owner)
@@ -640,7 +640,7 @@ IHqlExpression * BuildCtx::getTempDeclare(ITypeInfo * type, IHqlExpression * val
 bool BuildCtx::hasAssociation(HqlExprAssociation & search, bool unconditional)
 {
     HqlStmts * searchStmts = curStmts;
-    loop
+    for (;;)
     {
         if (searchStmts->defs.contains(search))
             return true;
@@ -683,7 +683,7 @@ bool BuildCtx::isSameLocation(const BuildCtx & other) const
 bool BuildCtx::isOuterContext() const
 {
     HqlStmts * searchStmts = curStmts;
-    loop
+    for (;;)
     {
         HqlStmt * owner = searchStmts->owner;
         if (!owner)
@@ -719,7 +719,7 @@ HqlExprAssociation * BuildCtx::queryAssociation(IHqlExpression * search, AssocKi
     // search all statements in the tree before this one, to see
     // if an expression already exists...  If so return the target
     // of the assignment.
-    loop
+    for (;;)
     {
         unsigned stmtMask = searchStmts->associationMask;
         if (stmtMask & searchMask)
@@ -779,7 +779,7 @@ void BuildCtx::removeAssociation(HqlExprAssociation * search)
     if (!search)
         return;
     HqlStmts * searchStmts = curStmts;
-    loop
+    for (;;)
     {
         bool matched = searchStmts->zap(*search);
         if (matched)
@@ -802,7 +802,7 @@ HqlExprAssociation * BuildCtx::queryFirstAssociation(AssocKind searchKind)
     // search all statements in the tree before this one, to see
     // if an expression already exists...  If so return the target
     // of the assignment.
-    loop
+    for (;;)
     {
         if (searchStmts->associationMask & searchMask)
         {
@@ -833,7 +833,7 @@ HqlExprAssociation * BuildCtx::queryFirstCommonAssociation(AssocKind searchKind)
     // search all statements in the tree before this one, to see
     // if an expression already exists...  If so return the target
     // of the assignment.
-    loop
+    for (;;)
     {
         if (searchStmts->associationMask & searchMask)
         {
@@ -1617,7 +1617,7 @@ HqlStmt * SpecialFunction::createStmt(HqlStmts & curStmts, HqlCppTranslator & tr
 
 IHqlExpression * stripTranslatedCasts(IHqlExpression * e)
 {
-    loop
+    for (;;)
     {
         switch (e->getOperator())
         {
@@ -2025,7 +2025,7 @@ bool AssociationIterator::first()
 
 bool AssociationIterator::doNext()
 {
-    loop
+    for (;;)
     {
         if (curIdx-- != 0)
             return true;

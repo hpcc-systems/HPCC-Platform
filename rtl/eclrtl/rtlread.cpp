@@ -79,7 +79,7 @@ size32_t CThorStreamDeserializerSource::readUtf8(ARowBuilder & target, size32_t 
 {
     //The len is the number of utf characters, size depends on which characters are included.
     size32_t totalSize = 0;
-    loop
+    for (;;)
     {
         if (len == 0)
             return totalSize;
@@ -104,7 +104,7 @@ size32_t CThorStreamDeserializerSource::readUtf8(ARowBuilder & target, size32_t 
 size32_t CThorStreamDeserializerSource::readVStr(ARowBuilder & target, size32_t offset, size32_t fixedSize)
 {
     size32_t totalSize = 0;
-    loop
+    for (;;)
     {
         size32_t available;
         const byte * cur = doPeek(1, available);
@@ -124,7 +124,7 @@ size32_t CThorStreamDeserializerSource::readVUni(ARowBuilder & target, size32_t 
 {
     size32_t totalSize = 0;
     bool done = false;
-    loop
+    for (;;)
     {
         size32_t available;
         const byte * cur = doPeek(2, available);
@@ -172,7 +172,7 @@ void CThorStreamDeserializerSource::skipPackedInt()
 void CThorStreamDeserializerSource::skipUtf8(size32_t len)
 {
     throwUnexpected();
-    loop
+    for (;;)
     {
         if (len == 0)
             return;

@@ -240,7 +240,7 @@ inline bool projectSelectorDatasetToField(IHqlExpression * row)
 
 static IHqlExpression * skipScalarWrappers(IHqlExpression * value)
 {
-    loop
+    for (;;)
     {
         node_operator op = value->getOperator();
         if ((op != no_globalscope) && (op != no_thisnode) && (op != no_evalonce))
@@ -937,7 +937,7 @@ protected:
 
     bool isWorthForcingHoist(IHqlExpression * expr)
     {
-        loop
+        for (;;)
         {
             switch (expr->getOperator())
             {
@@ -1843,7 +1843,7 @@ inline bool isResourcedActivity(IHqlExpression * expr)
 
 bool isWorthForcingHoist(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -3090,7 +3090,7 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
     bool isFiltered = false;
     double filterLikelihood = 1.0;
     bool isProcessed = false;
-    loop
+    for (;;)
     {
         ResourcerInfo * info = queryResourceInfo(expr);
         if (info && info->neverSplit)
@@ -3290,7 +3290,7 @@ bool ResourcerInfo::expandRatherThanSplit()
     //MORE: This doesn't really work - should do indexMatching first.
     //should only expand if one side that uses this is also filtered
     IHqlExpression * expr = original;
-    loop
+    for (;;)
     {
         ResourcerInfo * info = queryResourceInfo(expr);
         if (info && info->neverSplit)
@@ -3386,7 +3386,7 @@ bool ResourcerInfo::hasDependency() const
 
 bool neverCommonUp(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         node_operator op = expr->getOperator();
         switch (op)
@@ -3613,7 +3613,7 @@ void EclResourcer::tagActiveCursors(HqlExprCopyArray * activeRows)
 
 static bool isPotentialCompoundSteppedIndexRead(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -5391,7 +5391,7 @@ bool EclResourcer::allInputsPulledIndependently(IHqlExpression * expr) const
 void EclResourcer::removeDuplicateIndependentLinks(CSplitterInfo & connections, ResourcerInfo & info)
 {
     IHqlExpression * expr = info.original;
-    loop
+    for (;;)
     {
         bool again = false;
         for (unsigned i=0; i < info.balancedLinks.ordinality(); i++)
@@ -6685,7 +6685,7 @@ void SpillActivityTransformer::analyseExpr(IHqlExpression * expr)
     {
         IHqlExpression * splitter = NULL;
         IHqlExpression * cur = body->queryChild(0);
-        loop
+        for (;;)
         {
             node_operator op = cur->getOperator();
             if (op == no_split)

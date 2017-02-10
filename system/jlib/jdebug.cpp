@@ -145,7 +145,7 @@ inline void skipSp(const char *&s)
 inline offset_t readHexNum(const char *&s)
 {
     offset_t ret = 0;
-    loop {
+    for (;;) {
         switch (*s) {
             case '0':
             case '1': 
@@ -183,7 +183,7 @@ inline offset_t readHexNum(const char *&s)
 inline offset_t readDecNum(const char *&s)
 {
     offset_t ret = 0;
-    loop {
+    for (;;) {
         switch (*s) {
             case '0':
             case '1': 
@@ -1055,7 +1055,7 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
     MemoryAttr ma;
     char *buf = (char *)ma.allocate(0x10000);
     size32_t l=0;
-    loop {
+    for (;;) {
         size32_t rd = read(cpufd, buf+l, 0x10000-1-l);
         if ((int)rd<=0) 
             break;
@@ -1502,7 +1502,7 @@ public:
         ForEachItemIn(i1,processes)
             processes.item(i1).active = false;
         DIR *dir = opendir("/proc");
-        loop {
+        for (;;) {
             CriticalBlock b(sect);
             struct dirent *ent = readdir(dir);
             if (!ent)

@@ -459,7 +459,7 @@ ConditionalContextInfo * ConditionalContextTransformer::calcCommonLocation(Condi
 ConditionalContextInfo * ConditionalContextTransformer::findCandidateLocation(ConditionalContextInfo * extra)
 {
     ConditionalContextInfo * best = calcCommonLocation(extra);
-    loop
+    for (;;)
     {
         if (!best)
             return NULL;
@@ -480,7 +480,7 @@ ConditionalContextInfo * ConditionalContextTransformer::selectParent(Conditional
 
 ConditionalContextInfo * ConditionalContextTransformer::findCommonPath(ConditionalContextInfo * left, ConditionalContextInfo * right)
 {
-    loop
+    for (;;)
     {
         if (!left || !right)
             return NULL;

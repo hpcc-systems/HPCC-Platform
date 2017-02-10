@@ -230,7 +230,7 @@ StringBuffer &substnum(StringBuffer &str,const char *sub,unsigned n)
 static StringBuffer &makeScopeQuery(const char *scope,StringBuffer &query)
 {
     const char *s=scope;
-    loop {
+    for (;;) {
         const char *e=strstr(s,"::");
         if (s!=scope)
             query.append('/');
@@ -251,7 +251,7 @@ static const char *splitScope(const char *name,StringBuffer &scope)
 {
     const char *s=strstr(name,"::");
     if (s) {
-        loop {
+        for (;;) {
             const char *ns = strstr(s+2,"::");
             if (!ns)
                 break;
@@ -846,7 +846,7 @@ static bool constructLogicalName(const char *fullname,const char *basedir,String
     if (!*fullname)
         return false;
     const char *s=fullname;
-    loop {
+    for (;;) {
         const char *e=s;
         while (*e&&!isPathSepChar(*e)) 
             e++;
@@ -860,7 +860,7 @@ static bool constructLogicalName(const char *fullname,const char *basedir,String
     const char *ext = strchr(s,'.');
     if (!ext)
         return false;
-    loop {
+    for (;;) {
         const char *ne = strchr(ext+1,'.');
         if (!ne)
             break;
@@ -922,7 +922,7 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
         name = nonrepdir.str();
     num = 0;
     max = 0;
-    loop {
+    for (;;) {
         char c=*name;
         if (!c)
             break;
@@ -1520,7 +1520,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                 const char *partmask = file.queryProp("@partmask");
                 const char *partdir = file.queryProp("@directory");
                 int replicateoffset = file.getPropInt("@replicateOffset",1);
-                loop {
+                for (;;) {
                     RemoteFilename rfn; 
                     IGroup *grp = lnentry->queryGroup();
                     if (!grp) {
@@ -1908,7 +1908,7 @@ class CXRefManager: public CXRefManagerBase
             void scanfile(SocketEndpoint &ep,const char *fullname,IPropertyTree *file)
             {
                 const char * tail = fullname;
-                loop {
+                for (;;) {
                     const char *s = strchr(tail,pathsepchar);
                     if (!s)
                         break;

@@ -120,7 +120,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop {
+        for (;;) {
             if (eof || abortSoon)
                 break;
             
@@ -196,7 +196,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        loop {
+        for (;;) {
             if (eof || abortSoon)
                 break;
             if (!left) {

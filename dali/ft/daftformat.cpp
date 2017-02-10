@@ -984,7 +984,7 @@ void CCsvQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                 {
                     //For large
                     size32_t ensureSize = numInBuffer-bufferOffset;
-                    loop
+                    for (;;)
                     {
                         try
                         {
@@ -1323,7 +1323,7 @@ void CUtfQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                 {
                     //For large
                     size32_t ensureSize = numInBuffer-bufferOffset;
-                    loop
+                    for (;;)
                     {
                         try
                         {
@@ -1524,7 +1524,7 @@ offset_t XmlSplitter::getHeaderLength(BufferedDirectReader & reader)
     offset_t startOfHeader = reader.tell();
     offset_t startOfLine = startOfHeader;
 
-    loop
+    for (;;)
     {
         if (reader.ensure(maxElementLength) == 0)
             throwError(DFTERR_CannotFindFirstXmlRecord);
@@ -1573,7 +1573,7 @@ offset_t XmlSplitter::getFooterLength(BufferedDirectReader & reader, offset_t si
     offset_t xmlFooterOffset = (offset_t)-1;
     bool inTag = false;
 
-    loop
+    for (;;)
     {
         if (reader.ensure(maxElementLength) == 0)
         {
@@ -1754,7 +1754,7 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
         if (numInBuffer != bufferOffset)
         {
             size32_t ensureSize = numInBuffer-bufferOffset;
-            loop
+            for (;;)
             {
                 size32_t sizeAvailable = numInBuffer - bufferOffset;
                 size32_t sizeRecord = splitter.getEndOfRecord(buffer+bufferOffset, sizeAvailable);

@@ -89,7 +89,7 @@ unsigned short allocPort(unsigned num)
         num = 1;
     unsigned sp=0;
     unsigned p;
-    loop {
+    for (;;) {
         p = portmap->scan(sp,false);
         unsigned q;
         for (q=p+1;q<p+num;q++) {

@@ -783,7 +783,7 @@ unsigned __int64 MemoryBuffer::readPacked()
 {
     unsigned __int64 value = 0;
     unsigned shift = 0;
-    loop
+    for (;;)
     {
         byte next;
         read(next);

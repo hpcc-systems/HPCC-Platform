@@ -254,7 +254,7 @@ protected:
                 elem.append(id-levelx, levelx);
                 child = createPTree(elem);
                 parent->addPropTree(elem, child);
-                loop
+                for (;;)
                 {
                     StringBuffer attr, val;
                     id++;
@@ -1549,7 +1549,7 @@ public:
             }
             size32_t rowSize = 4096; // MORE - make configurable
             size32_t thisLineLength;
-            loop
+            for (;;)
             {
                 size32_t avail;
                 const void *peek = reader->peek(rowSize, avail);
@@ -2135,7 +2135,7 @@ public:
             if (cursor)
             {
                 const char *endRec = nextRec + gotSize;
-                loop
+                for (;;)
                 {
                     // This loop is the inner loop for memory disk counts - so keep it efficient!
                     if (nextRec >= endRec)
@@ -2707,7 +2707,7 @@ protected:
     {
         if (!aborted)
         {
-            loop
+            for (;;)
             {
                 Owned<AggregateRowBuilder> next = results.nextResult();
                 if (!next)
@@ -2811,7 +2811,7 @@ public:
     {
         if (!aborted)
         {
-            loop
+            for (;;)
             {
                 Owned<AggregateRowBuilder> next = resultAggregator.nextResult();
                 if (!next)
@@ -4186,7 +4186,7 @@ public:
 
             if (!aborted)
             {
-                loop
+                for (;;)
                 {
                     Owned<AggregateRowBuilder> next = results.nextResult();
                     if (!next)
@@ -4464,7 +4464,7 @@ public:
         IHThorCsvFetchArg *h = (IHThorCsvFetchArg *) helper;
         rawStream->reset(pos);
         size32_t rowSize = 4096; // MORE - make configurable
-        loop
+        for (;;)
         {
             size32_t avail;
             const void *peek = rawStream->peek(rowSize, avail);

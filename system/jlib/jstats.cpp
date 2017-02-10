@@ -78,7 +78,7 @@ static unsigned matchString(const char * const * names, const char * search)
         search = "all";
 
     unsigned i=0;
-    loop
+    for (;;)
     {
         const char * next = names[i];
         if (!next)
@@ -365,7 +365,7 @@ void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticKind k
 unsigned queryStatisticsDepth(const char * text)
 {
     unsigned depth = 1;
-    loop
+    for (;;)
     {
         switch (*text)
         {
@@ -2424,7 +2424,7 @@ void StatisticsFilter::setFilter(const char * filter)
     if (isEmptyString(filter))
         return;
 
-    loop
+    for (;;)
     {
         const char * closeBra = strchr(filter, ']');
         if (!closeBra)

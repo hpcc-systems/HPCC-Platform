@@ -533,7 +533,7 @@ public:
     bool send(INode *node,unsigned timeout)
     {
         unsigned retries = 3;
-        loop {
+        for (;;) {
             try {
                 CMessageBuffer mb;
                 serialize(mb);

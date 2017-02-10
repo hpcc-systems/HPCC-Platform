@@ -929,7 +929,7 @@ bool isSensibleRecord(IHqlExpression * record)
 
 IHqlExpression * queryRootSelector(IHqlExpression * select)
 {
-    loop
+    for (;;)
     {
         if (select->hasAttribute(newAtom))
             return select;
@@ -1699,7 +1699,7 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
             {
                 //Either inherit from the dataset if new, or add the root field (x.a.b only adds x.a)
                 IHqlExpression * cur = expr;
-                loop
+                for (;;)
                 {
                     IHqlExpression * ds = cur->queryChild(0);
                     if (cur->hasAttribute(newAtom))

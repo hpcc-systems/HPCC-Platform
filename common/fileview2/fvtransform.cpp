@@ -708,7 +708,7 @@ void MappingParser::parseColumn(FieldTransformInfo & output)
 
     unsigned firstFieldIndex = 0;
     const IResultSetMetaData * curMeta = &fieldMeta;
-    loop
+    for (;;)
     {
         StringAttr fieldName;
         assertToken(TokId);
@@ -765,7 +765,7 @@ void MappingParser::parseColumn(FieldTransformInfo & output)
 
 void MappingParser::parseConstantList(HqlExprArray & args)
 {
-    loop
+    for (;;)
     {
         switch (tokenType)
         {
@@ -788,7 +788,7 @@ void MappingParser::parseConstantList(HqlExprArray & args)
 
 void MappingParser::parseTransformList(ViewFieldTransformerArray & transforms)
 {
-    loop
+    for (;;)
     {
         assertToken(TokId);
 
@@ -912,7 +912,7 @@ void MappingParser::parseColumnMapping(FieldTransformInfo & output)
 
     if (tokenType != endToken)
     {
-        loop
+        for (;;)
         {
             parseAttribute(output);
 
@@ -937,7 +937,7 @@ void MappingParser::parseColumnMappingList(FieldTransformInfoArray & results, un
     if (tokenType == TokEof)
         return;
 
-    loop
+    for (;;)
     {
         FieldTransformInfo * next = new FieldTransformInfo;
         results.append(*next);

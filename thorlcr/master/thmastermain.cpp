@@ -106,7 +106,7 @@ class CRegistryServer : public CSimpleInterface
         virtual void main()
         {
             running = true;
-            loop
+            for (;;)
             {
                 INode *senderNode;
                 CMessageBuffer msg;
@@ -204,7 +204,7 @@ public:
         unsigned timeWaited = 0;
         unsigned connected = 0;
         Owned<IBitSet> connectedSet = createThreadSafeBitSet();
-        loop
+        for (;;)
         {
             CTimeMon tm(msgDelay);
             UnsignedArray todo;
@@ -241,7 +241,7 @@ public:
                 if ((outstanding) <= 5)
                 {
                     unsigned s=0;
-                    loop
+                    for (;;)
                     {
                         unsigned ns = connectedSet->scan(s, false);
                         if (ns<s || ns >= slaves)
@@ -279,7 +279,7 @@ public:
                 {
                     PROGLOG("Slaves not responding to cluster initialization: ");
                     unsigned s=0;
-                    loop
+                    for (;;)
                     {
                         unsigned ns = status->scan(s, false);
                         if (ns<s || ns >= slaves)
@@ -568,7 +568,7 @@ int main( int argc, char *argv[]  )
         Owned<IGroup> serverGroup = createIGroup(daliServer.str(), DALI_SERVER_PORT);
 
         unsigned retry = 0;
-        loop {
+        for (;;) {
             try {
                 unsigned port = getFixedPort(TPORT_mp);
                 LOG(MCdebugProgress, thorJob, "calling initClientProcess Port %d", port);

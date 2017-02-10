@@ -72,7 +72,7 @@ protected:
         sock->write(&sendlen, sizeof(sendlen));
         sock->write(xml.str(), len);
         StringBuffer response;
-        loop
+        for (;;)
         {
             sock->read(&sendlen, sizeof(sendlen));
             if (!sendlen)
@@ -112,7 +112,7 @@ protected:
         sock->write(xml.str(), len);
 
         Owned<IException> exception;
-        loop
+        for (;;)
         {
             sock->read(&sendlen, sizeof(sendlen));
             if (!sendlen)
@@ -242,7 +242,7 @@ protected:
         sock->write(&locklen, sizeof(locklen));
         sock->write(lock, strlen(lock));
         StringBuffer lockResponse;
-        loop
+        for (;;)
         {
             unsigned sendlen;
             sock->read(&sendlen, sizeof(sendlen));
@@ -334,7 +334,7 @@ public:
         sock->write(msg, msglen);
 
         StringBuffer resp;
-        loop
+        for (;;)
         {
             sock->read(&len, sizeof(len));
             if (!len)

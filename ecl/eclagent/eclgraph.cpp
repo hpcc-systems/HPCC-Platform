@@ -1138,7 +1138,7 @@ void EclGraph::createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, boo
 
             EclSubGraph * targetGraph = NULL;
             unsigned targetGraphContext = -1;
-            loop
+            for (;;)
             {
                 targetGraph = targetActivity->subgraph;
                 targetGraphContext = targetGraph->parentActivityId;
@@ -1483,7 +1483,7 @@ void EclAgent::executeThorGraph(const char * graphName)
         unlockWorkUnit();
         if (WUStatePaused == queryWorkUnit()->getState()) // check initial state - and wait if paused
         {
-            loop
+            for (;;)
             {
                 WUAction action = wuFactory->waitForWorkUnitAction(wuid, queryWorkUnit()->getAction());
                 if (action == WUActionUnknown)

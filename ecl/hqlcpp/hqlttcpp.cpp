@@ -60,7 +60,7 @@
 static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
 {
     bool isFiltered = false;
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -2829,7 +2829,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinAndGroup(IHqlExpression * expr
 
 static IHqlExpression * queryDistributionKey(IHqlExpression * rhs)
 {
-    loop
+    for (;;)
     {
         switch (rhs->getOperator())
         {
@@ -3982,7 +3982,7 @@ void CompoundSourceInfo::ensureCompound()
         //However, that isn't just for this case - should be iterative
         //e.g. while (spotMoreCompoundActivities())....
         IHqlExpression * search = original;
-        loop
+        for (;;)
         {
             CompoundSourceInfo * extra = queryExtra(search);
             if (extra->sharedCount-- > 1)
@@ -4947,7 +4947,7 @@ IHqlExpression * OptimizeActivityTransformer::optimizeCompare(IHqlExpression * l
 
 static IHqlExpression * queryNormalizedAggregateParameter(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -5595,7 +5595,7 @@ static bool isTrivialStored(IHqlExpression * set)
         if (matchesConstantValue(queryAttributeChild(set, sequenceAtom, 0), ResultSequenceStored))
         {
             IHqlExpression * value = set->queryChild(0);
-            loop
+            for (;;)
             {
                 switch (value->getOperator())
                 {
@@ -8649,7 +8649,7 @@ void FilterCloner::setMapping(IHqlExpression * selector, IHqlExpression * value)
 
 void FilterCloner::doAddMappings(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -10949,7 +10949,7 @@ static bool isUniqueAttributeName(IAtom * name)
 
 static bool containsUpperCase(const char * s)
 {
-    loop
+    for (;;)
     {
         unsigned char next = *s++;
         if (!next)
@@ -11940,7 +11940,7 @@ IHqlExpression * HqlTreeNormalizer::validateKeyedJoin(IHqlExpression * expr)
 
     unsigned prevChildren = children.ordinality();
     IHqlExpression * rhs = &children.item(1);
-    loop
+    for (;;)
     {
         node_operator op = rhs->getOperator();
         if (op == no_forcelocal)
@@ -12764,7 +12764,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             //Normalize the index build by splitting out the sort here, so that constant percolating
             //is also done on these parameters
             OwnedHqlExpr transformed = Parent::createTransformed(expr);
-            loop
+            for (;;)
             {
                 IHqlExpression * ret = normalizeIndexBuild(transformed, options.sortIndexPayload, !translator.targetThor(), options.implicitSubSort);
                 if (!ret)

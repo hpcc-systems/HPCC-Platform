@@ -92,7 +92,7 @@ protected:
         bool first = true;
         unsigned superSubIndex=0;
         bool fileCrc = false, rowCrc = false;
-        loop
+        for (;;)
         {
             Owned<IDistributedFilePart> part = f->getPart(width);
             if (checkTLKConsistency)

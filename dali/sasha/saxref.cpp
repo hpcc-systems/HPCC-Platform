@@ -47,7 +47,7 @@ inline bool nextCsvToken(const char *&s,StringBuffer &tok)
 {
     if (!s)
         return false;
-    loop {
+    for (;;) {
         if (!*s)
             return false;
         if (*s!=',')
@@ -55,7 +55,7 @@ inline bool nextCsvToken(const char *&s,StringBuffer &tok)
         s++;
     }
     const char *e = s;
-    loop {
+    for (;;) {
         if (!*e||(*e==','))
             break;
         e++;

@@ -29,7 +29,7 @@
 
 static bool isSubsetOf(IHqlExpression * search, IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         if (search->queryBody() == expr->queryBody())
             return true;

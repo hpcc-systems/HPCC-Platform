@@ -65,7 +65,7 @@ extern jlib_decl size32_t checked_read(int file, void *buffer, size32_t len)
     unsigned attempts = 0;
     size32_t ret = 0;
     unsigned __int64 startCycles = get_cycles_now();
-    loop
+    for (;;)
     {
         ssize_t readNow = _read(file, buffer, len);
         if (readNow == (ssize_t)-1)
@@ -139,7 +139,7 @@ extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, of
     size32_t ret = 0;
     unsigned attempts = 0;
     unsigned __int64 startCycles = get_cycles_now();
-    loop
+    for (;;)
     {
         ssize_t readNow = ::pread(file, buffer, len, pos);
         if (readNow == (ssize_t)-1)
@@ -1037,7 +1037,7 @@ unsigned copySeq(IReadSeq *from,IWriteSeq *to,size32_t bufsize)
     MemoryAttr ma;
     byte *buf=(byte *)ma.allocate(nbuf*recsize);
     unsigned ret = 0;
-    loop {
+    for (;;) {
         unsigned n = from->getn(buf,nbuf);
         if (n==0)
             break;
@@ -1222,7 +1222,7 @@ IRowStream *createNullRowStream()
 unsigned copyRowStream(IRowStream *in, IRowWriter *out)
 {
     unsigned ret=0;
-    loop {
+    for (;;) {
         const void *row = in->nextRow();
         if (!row)
             break;
@@ -1234,7 +1234,7 @@ unsigned copyRowStream(IRowStream *in, IRowWriter *out)
 unsigned groupedCopyRowStream(IRowStream *in, IRowWriter *out)
 {
     unsigned ret=0;
-    loop {
+    for (;;) {
         const void *row = in->nextRow();
         if (!row) {
             row = in->nextRow();
@@ -1250,7 +1250,7 @@ unsigned groupedCopyRowStream(IRowStream *in, IRowWriter *out)
 unsigned ungroupedCopyRowStream(IRowStream *in, IRowWriter *out)
 {
     unsigned ret=0;
-    loop {
+    for (;;) {
         const void *row = in->ungroupedNextRow();
         if (!row)
             break;

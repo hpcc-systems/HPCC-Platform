@@ -274,7 +274,7 @@ bool IndexDataSource::getRowData(__int64 row, size32_t & length, const void * & 
 bool IndexDataSource::getNextRow(MemoryBuffer & out, bool extractRow)
 {
     bool nextPart = !matchingParts.isItem((unsigned)curPartIndex);
-    loop
+    for (;;)
     {
         if (nextPart)
         {

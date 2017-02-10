@@ -357,7 +357,7 @@ const void * CSteppedInputLookahead::nextGE(const void * seek, unsigned numField
         unsigned flags = (stepExtra.queryFlags() & ~stepFlagsMask) | stepFlagsValue;
         SmartStepExtra inputStepExtra(flags, lowestFrequencyInput);
         unsigned stepFields = (numFields <= numStepableFields) ? numFields : numStepableFields;
-        loop
+        for (;;)
         {
             readAheadRowIsExactMatch = true;
             readAheadRow = nextInputRowGE(seek, stepFields, readAheadRowIsExactMatch, inputStepExtra);
@@ -401,7 +401,7 @@ const void * CSteppedInputLookahead::nextGE(const void * seek, unsigned numField
     }
 
     //now narrow down
-    loop
+    for (;;)
     {
         const void * cur = next();
         if (!cur)
@@ -538,7 +538,7 @@ void CFilteredInputBuffer::fill(const void * equalityRow)
     append(next);
     if (equalityRow)
     {
-        loop
+        for (;;)
         {
             bool matches = true;
             SmartStepExtra stepExtra(SSEFreturnMismatches, NULL);
@@ -550,7 +550,7 @@ void CFilteredInputBuffer::fill(const void * equalityRow)
     }
     else
     {
-        loop
+        for (;;)
         {
             const void * next = input->consume();
             if (!next)
@@ -1077,7 +1077,7 @@ const void * CMergeJoinProcessor::nextInputRow()
     if (!hasCandidates() && !findCandidates(NULL, 0))
         return NULL;
 
-    loop
+    for (;;)
     {
         const void * next = nextCandidate();
         if (next)
@@ -1841,7 +1841,7 @@ bool CNaryJoinLookaheadQueue::findValidSelection(unsigned initialRow)
 
     const unsigned max = maxRow;
     unsigned candidateRow = initialRow;
-    loop
+    for (;;)
     {
         const void * leftRow = left->activeRow();
         while (candidateRow < max)
@@ -1892,7 +1892,7 @@ bool CNaryJoinLookaheadQueue::nextSelection()
 
 bool CNaryJoinLookaheadQueue::ensureCandidateExists(unsigned __int64 minDistance, unsigned __int64 maxDistance)
 {
-    loop
+    for (;;)
     {
         const void * next = rows.head();
         if (!next)
@@ -1906,7 +1906,7 @@ bool CNaryJoinLookaheadQueue::ensureCandidateExists(unsigned __int64 minDistance
         rows.skip();
     }
 
-    loop
+    for (;;)
     {
         const void * next = nextUnqueued();
         if (!next)
@@ -1928,7 +1928,7 @@ bool CNaryJoinLookaheadQueue::ensureCandidateExists(unsigned __int64 minDistance
 
 bool CNaryJoinLookaheadQueue::checkExistsGE(const void * seek, unsigned numFields)
 {
-    loop
+    for (;;)
     {
         const void * next = rows.head();
         if (!next)
@@ -1982,7 +1982,7 @@ unsigned CNaryJoinLookaheadQueue::readAheadTo(unsigned __int64 maxDistance, bool
 
 void CNaryJoinLookaheadQueue::readCandidateAll()
 {
-    loop
+    for (;;)
     {
         const void * next = nextUnqueued();
         if (!next)
@@ -2256,12 +2256,12 @@ void CJoinGenerator::afterProcessCandidates()
 const void * CJoinGenerator::nextOutputRow()
 {
     RtlDynamicRowBuilder rowBuilder(outputAllocator, false);
-    loop
+    for (;;)
     {
         if (isSpecialLeftJoin)
         {
             CNaryJoinLookaheadQueue & left = inputs.item(0);
-            loop
+            for (;;)
             {
                 const void * unmatchedLeft = left.nextUnmatched();
                 if (!unmatchedLeft)
@@ -2327,7 +2327,7 @@ const void * CJoinGenerator::nextOutputRowGE(const void * seek, unsigned numFiel
     //A stupid version.  We could possibly skip on the lowest value if we knew the fields were assigned from the lowest value in the input
     //which would potentially save a lot of transforms.
     //would also probably need the input to match the output.
-    loop
+    for (;;)
     {
         const void * next = nextOutputRow();
         if (!next || stepCompare->docompare(next, seek, numFields) >= 0)
@@ -2420,7 +2420,7 @@ bool CEqualityJoinGenerator::gatherNextCandidates()
     else if (lowestInput->empty())
         return false;
 
-    loop
+    for (;;)
     {
         if (doGatherNextCandidates())
             return true;
@@ -2620,7 +2620,7 @@ bool CAnchoredRangeJoinGenerator::nextMatchesAnyConsumed()
 
 bool CAnchoredRangeJoinGenerator::gatherNextCandidates()
 {
-    loop
+    for (;;)
     {
         if (!nextMatchesAnyConsumed())
             return false;
@@ -2708,7 +2708,7 @@ bool CProximityRangeJoinGenerator::gatherNextCandidates(unsigned iLowest)
 
 bool CProximityRangeJoinGenerator::gatherNextCandidates()
 {
-    loop
+    for (;;)
     {
         unsigned iLowest = lowestSpotter.queryNextInput();
         assertex(iLowest != NotFound);

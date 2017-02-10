@@ -365,7 +365,7 @@ void Thread::startRelease()
     int status;
     unsigned numretrys = 8;
     unsigned delay = 1000;
-    loop {
+    for (;;) {
         pthread_attr_t attr;
         pthread_attr_init(&attr);
         pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
@@ -405,7 +405,7 @@ void Thread::startRelease()
         throw makeOsException(status);
     }
     unsigned retryCount = 10;
-    loop
+    for (;;)
     {
         if (starting.wait(1000*10))
             break;
@@ -449,7 +449,7 @@ bool Thread::join(unsigned timeout)
         return true;
     }
     unsigned st = 0;
-    loop {                                              // this is to prevent race with destroy
+    for (;;) {                                              // this is to prevent race with destroy
                                                         // (because Thread objects are not always link counted!)
         {
             SpinBlock block(ThreadDestroyListLock);
@@ -560,7 +560,7 @@ CThreadedPersistent::~CThreadedPersistent()
 
 void CThreadedPersistent::main()
 {
-    loop
+    for (;;)
     {
         sem.wait();
         if (halt)
@@ -1917,7 +1917,7 @@ public:
          */
         unsigned argc;
         char **argv=splitargs(prog,argc);
-        loop
+        for (;;)
         {
             pipeProcess = (HANDLE)fork();
             if (pipeProcess!=(HANDLE)-1) 
@@ -2052,7 +2052,7 @@ public:
         if (hOutput==(HANDLE)-1)
             return 0;
         size32_t sizeRead;
-        loop {
+        for (;;) {
             {
                 CriticalUnblock unblock(sect); 
                 sizeRead = (size32_t)::read(hOutput, buf, sz);
@@ -2084,7 +2084,7 @@ public:
         if (hInput==(HANDLE)-1)
             return 0;
         size32_t sizeWritten;
-        loop {
+        for (;;) {
             {
                 CriticalUnblock unblock(sect); 
                 sizeWritten = (size32_t)::write(hInput, buf, sz);
@@ -2110,7 +2110,7 @@ public:
         if (hError==(HANDLE)-1)
             return 0;
         size32_t sizeRead;
-        loop {
+        for (;;) {
             {
                 CriticalUnblock unblock(sect); 
                 sizeRead = (size32_t)::read(hError, buf, sz);
@@ -2296,7 +2296,7 @@ public:
 
         int run()
         {
-            loop {
+            for (;;) {
                 IWorkQueueItem * work;
                 bool wr = sem.wait(persisttime);
                 {

@@ -84,7 +84,7 @@ void promptFor(const char *prompt, const char *prop, bool hide, IProperties * gl
         DWORD dwInputMode;
         GetConsoleMode(hStdIn, &dwInputMode);   
         SetConsoleMode(hStdIn, dwInputMode & ~ENABLE_LINE_INPUT & ~ENABLE_ECHO_INPUT);
-        loop
+        for (;;)
         {
             /* read a character from the console input */   
             char ch;
@@ -107,7 +107,7 @@ void promptFor(const char *prompt, const char *prop, bool hide, IProperties * gl
             ioctl(fn, TCSETA, &t);
         }
 #endif
-        loop
+        for (;;)
         {
             char ch = fgetc(stdin);
             if (ch == '\n' || ch=='\r' || !ch)

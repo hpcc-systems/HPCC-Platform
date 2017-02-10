@@ -1975,7 +1975,7 @@ IHqlExpression * HqlCppTranslator::buildSpillChildDataset(BuildCtx & ctx, IHqlEx
 
 IHqlExpression * HqlCppTranslator::forceInlineAssignDataset(BuildCtx & ctx, IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         CHqlBoundExpr bound;
         if (expr->isPure() && ctx.getMatchExpr(expr, bound))
@@ -3659,7 +3659,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
             IHqlExpression * ds = expr->queryChild(0);
 #if 0
             HqlExprCopyArray selectors;
-            loop
+            for (;;)
             {
                 selectors.append(*ds->queryNormalizedSelector());
                 IHqlExpression * root = queryRoot(expr);
@@ -5577,7 +5577,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphLoopResult(BuildCtx & 
 
 static IHqlExpression * queryResultExpr(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {

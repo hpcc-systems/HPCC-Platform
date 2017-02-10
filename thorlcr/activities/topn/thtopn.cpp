@@ -56,7 +56,7 @@ public:
             unsigned t = 0;
             n = 0;
             bool first = true;
-            loop
+            for (;;)
             {
                 if (first)
                 {

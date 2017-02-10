@@ -968,7 +968,7 @@ size32_t CThorContiguousRowBuffer::sizeUtf8(size32_t len)
 size32_t CThorContiguousRowBuffer::sizeVStr()
 {
     size32_t nextOffset = readOffset;
-    loop
+    for (;;)
     {
         ensureAccessible(nextOffset+1);
 
@@ -984,7 +984,7 @@ size32_t CThorContiguousRowBuffer::sizeVUni()
 {
     size32_t nextOffset = readOffset;
     const size32_t sizeOfUChar = 2;
-    loop
+    for (;;)
     {
         ensureAccessible(nextOffset+sizeOfUChar);
 
@@ -1516,7 +1516,7 @@ public:
     void put(size32_t len, const void * ptr)
     {
         // first fill buf
-        loop {
+        for (;;) {
             if (bufpos<ROW_WRITER_BUFFERSIZE) {
                 size32_t wr = ROW_WRITER_BUFFERSIZE-bufpos;
                 if (wr>len)
@@ -1698,7 +1698,7 @@ public:
     {
         count_t count = 0;
         Owned<IRowStream> mergedStream = merge(icompare, partdedup);
-        loop
+        for (;;)
         {
             const void *row = mergedStream->nextRow();
             if (!row)
@@ -1776,7 +1776,7 @@ void setProcessAffinity(const char * cpuList)
     CPU_ZERO(&cpus);
 
     const char * cur = cpuList;
-    loop
+    for (;;)
     {
         char * next;
         unsigned cpu1 = getCpuId(cur, &next);

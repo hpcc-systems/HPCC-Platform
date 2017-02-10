@@ -117,7 +117,7 @@ protected:
         }
         ~CSendBucket()
         {
-            loop
+            for (;;)
             {
                 const void *row = rows.dequeue();
                 if (!row)
@@ -172,7 +172,7 @@ protected:
         {
             size32_t len = dstMb.length();
             CMemoryRowSerializer memSerializer(dstMb);
-            loop
+            for (;;)
             {
                 OwnedConstThorRow row = nextRow();
                 if (!row)
@@ -226,7 +226,7 @@ protected:
             size32_t dstPos = dstMb.length();
             dstMb.append(compSz); // placeholder
             compressor.open(dstMb, owner.bucketSendSize * 2);
-            loop
+            for (;;)
             {
                 OwnedConstThorRow row = nextRow();
                 if (!row)
@@ -285,7 +285,7 @@ protected:
             }
             void reset()
             {
-                loop
+                for (;;)
                 {
                     CSendBucket *sendBucket = pendingBuckets.dequeueNow();
                     if (!sendBucket)
@@ -606,7 +606,7 @@ protected:
         {
             // NB: called inside activeWritersLock
             unsigned start = next;
-            loop
+            for (;;)
             {
                 CTarget *target = targets.item(next);
                 unsigned c = target->getNumPendingBuckets();
@@ -654,7 +654,7 @@ protected:
                         Owned<CSendBucket> bucket = target->getBucketClear();
                         if (bucket)
                             decTotal(bucket->querySize());
-                        loop
+                        for (;;)
                         {
                             bucket.setown(target->dequeuePendingBucket());
                             if (!bucket)
@@ -773,7 +773,7 @@ protected:
                                 break;
                             senderFull = true;
                         }
-                        loop
+                        for (;;)
                         {
                             if (timer.elapsedCycles() >= queryOneSecCycles()*10)
                                 owner.ActPrintLog("HD sender, waiting for space, inactive writers = %d, totalSz = %d, numFinished = %d", queryInactiveWriters(), queryTotalSz(), atomic_read(&numFinished));
@@ -928,7 +928,7 @@ protected:
     {
         CriticalBlock block(putsect); // JCSMORE - probably doesn't need for this long
         HDSendPrintLog3("addLocal (b=%d), size=%d", bucket->queryDestination(), bucket->querySize());
-        loop
+        for (;;)
         {
             const void *row = bucket->nextRow();
             if (!row)
@@ -1311,7 +1311,7 @@ public:
     bool sendRecv(ICommunicator &comm, CMessageBuffer &mb, rank_t r, mptag_t tag)
     {
         mptag_t replyTag = activity->queryMPServer().createReplyTag();
-        loop
+        for (;;)
         {
             if (aborted)
                 return false;
@@ -1320,7 +1320,7 @@ public:
                 break;
             // try again
         }
-        loop
+        for (;;)
         {
             if (aborted)
                 return false;
@@ -2168,7 +2168,7 @@ public:
                 Owned<IExtRowWriter> out = createRowWriter(tempfile, activity, rwFlags);
                 if (!out)
                     throw MakeStringException(-1,"Could not created file %s",tempname.str());
-                loop
+                for (;;)
                 {
                     const void * row = inputStream->ungroupedNextRow();
                     if (!row)
@@ -2457,7 +2457,7 @@ public:
     bool lookupRow(unsigned htPos, const void *row) const // return true == match
     {
         rowidx_t s = htPos;
-        loop
+        for (;;)
         {
             const void *htKey = rows[htPos];
             if (!htKey)
@@ -2672,7 +2672,7 @@ class CBucketHandler : public CSimpleInterface, implements IInterface, implement
             if (NotFound == owner.nextSpilledBucketFlush)
                 return false;
             unsigned startNum = owner.nextSpilledBucketFlush;
-            loop
+            for (;;)
             {
                 CBucket *bucket = owner.buckets[owner.nextSpilledBucketFlush];
                 ++owner.nextSpilledBucketFlush;
@@ -2916,7 +2916,7 @@ public:
         if (eos)
             return NULL;
         // bucket handlers, stream out non-duplicates (1st entry in HT)
-        loop
+        for (;;)
         {
             OwnedConstThorRow row;
             {
@@ -2938,7 +2938,7 @@ public:
                 bucketHandler->flushBuckets();
 
                 Owned<CBucketHandler> nextBucketHandler;
-                loop
+                for (;;)
                 {
                     // pop off parents until one has a bucket left to read
                     Owned<IRowStream> nextInput;
@@ -3381,7 +3381,7 @@ void CBucketHandler::init(unsigned _numBuckets, IRowStream *keyStream)
     callbacksInstalled = true;
     if (keyStream)
     {
-        loop
+        for (;;)
         {
             OwnedConstThorRow key = keyStream->nextRow();
             if (!key)
@@ -3792,7 +3792,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
         if (!distributor)
             distributor.setown(createPullHashDistributor(&activity, activity.queryContainer().queryJobChannel().queryJobComm(), mptag, false, NULL, "MERGEAGGS"));
         strm.setown(distributor->connect(nodeRowMetaRowIf, localAggregatedStream, &nodeCompare, &nodeCompare));
-        loop
+        for (;;)
         {
             OwnedConstThorRow rowMeta = strm->nextRow();
             if (!rowMeta)
@@ -3827,7 +3827,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
             distributor.setown(createHashDistributor(&activity, activity.queryContainer().queryJobChannel().queryJobComm(), mptag, false, NULL, "MERGEAGGS"));
         Owned<IThorRowInterfaces> rowIf = activity.getRowInterfaces(); // create new rowIF / avoid using activities IRowInterface, otherwise suffer from circular link
         strm.setown(distributor->connect(rowIf, localAggregatedStream, helperExtra.queryHashElement(), NULL));
-        loop
+        for (;;)
         {
             OwnedConstThorRow row = strm->nextRow();
             if (!row)
