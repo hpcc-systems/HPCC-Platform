@@ -433,6 +433,8 @@
               logLevel="1"
               logRequests="false"
               logResponses="false"
+              txSummaryLevel="1"
+              txSummaryResourceReq="false"
               maxBacklogQueueSize="200"
               maxConcurrentThreads="0"
               maxRequestEntityLength="8000000"

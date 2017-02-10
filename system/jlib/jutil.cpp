@@ -485,6 +485,20 @@ bool SharedObject::loadCurrentExecutable()
     return true;
 }
 
+bool SharedObject::loadResources(const char * dllName)
+{
+#ifdef _WIN32
+    UINT oldMode = SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOOPENFILEERRORBOX);
+    h = LoadLibraryEx(dllName, NULL, LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE);
+    if (!LoadSucceeded(h))
+        h = LoadLibraryEx(dllName, NULL, LOAD_LIBRARY_AS_DATAFILE); // the LOAD_LIBRARY_AS_IMAGE_RESOURCE flag is not supported on all versions of Windows
+    SetErrorMode(oldMode);
+    return LoadSucceeded(h);
+#else
+    UNIMPLEMENTED;
+#endif
+}
+
 void *SharedObject::getEntry(const char * name) const
 {
     return GetSharedProcedure(getInstanceHandle(), name);

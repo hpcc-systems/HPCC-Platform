@@ -77,6 +77,7 @@ interface IDllServer : extends IInterface
     virtual void getLocalLibraryName(const char * name, StringBuffer & libraryName) = 0;
     virtual DllLocationType isAvailable(const char * name) = 0;
     virtual ILoadedDllEntry * loadDll(const char * name, DllLocationType location) = 0;
+    virtual ILoadedDllEntry * loadDllResources(const char * name, DllLocationType location) = 0;
     virtual void removeDll(const char * name, bool removeDlls, bool removeDirectory) = 0;
     virtual void registerDll(const char * name, const char * kind, const char * dllPath) = 0;
     virtual IDllEntry * createEntry(IPropertyTree *owner, IPropertyTree *entry) = 0;

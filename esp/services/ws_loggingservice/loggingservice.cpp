@@ -85,7 +85,7 @@ bool CWsLoggingServiceEx::onUpdateLog(IEspContext& context, IEspUpdateLogRequest
         if (!context.validateFeatureAccess(WSLOGGING_ACCESS, SecAccess_Write, false))
             throw MakeStringException(EspLoggingErrors::WSLoggingAccessDenied, "Failed to update log. Permission denied.");
 
-        context.addTraceSummaryTimeStamp("startQLog");
+        context.addTraceSummaryTimeStamp(LogMin, "startQLog");
         for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
         {
             IUpdateLogThread* loggingThread = loggingAgentThreads[x];
@@ -93,7 +93,7 @@ bool CWsLoggingServiceEx::onUpdateLog(IEspContext& context, IEspUpdateLogRequest
                 continue;
             loggingThread->queueLog(&req);
         }
-        context.addTraceSummaryTimeStamp("endQLog");
+        context.addTraceSummaryTimeStamp(LogMin, "endQLog");
         resp.setStatusCode(0);
         resp.setStatusMessage("Log will be updated.");
     }

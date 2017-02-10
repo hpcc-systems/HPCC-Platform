@@ -56,6 +56,8 @@ private:
     LogLevel m_logLevel;
     bool m_logReq;
     bool m_logResp;
+    LogLevel txSummaryLevel;
+    bool txSummaryResourceReq;
     unsigned m_slowProcessingTime;
     StringAttr m_frameTitle;
     Mutex abortMutex;
@@ -76,6 +78,8 @@ public:
         m_logLevel = config->m_options.logLevel;
         m_logReq = config->m_options.logReq;
         m_logResp = config->m_options.logResp;
+        txSummaryLevel = config->m_options.txSummaryLevel;
+        txSummaryResourceReq = config->m_options.txSummaryResourceReq;
         m_slowProcessingTime = config->m_options.slowProcessingTime;
         m_frameTitle.set(config->m_options.frameTitle);
         m_SEHMappingEnabled = false;
@@ -145,10 +149,14 @@ public:
     void setLogLevel(LogLevel level) { m_logLevel = level; }
     void setLogRequests(bool logReq) { m_logReq = logReq; }
     void setLogResponses(bool logResp) { m_logResp = logResp; }
+    void setTxSummaryLevel(LogLevel level) { txSummaryLevel = level; }
+    void setTxSummaryResourceReq(bool logReq) { txSummaryResourceReq = logReq; }
 
     LogLevel getLogLevel() { return m_logLevel; }
     bool getLogRequests() { return m_logReq; }
     bool getLogResponses() { return m_logResp; }
+    LogLevel getTxSummaryLevel() { return txSummaryLevel; }
+    bool getTxSummaryResourceReq() { return txSummaryResourceReq; }
     void setFrameTitle(const char* title)  { m_frameTitle.set(title); }
     const char* getFrameTitle()  { return m_frameTitle.get(); }
     unsigned getSlowProcessingTime() { return m_slowProcessingTime; }

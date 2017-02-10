@@ -329,11 +329,17 @@ int CEspHttpServer::processRequest()
                     methodName.setCharAt(methodName.length()-1, 0);
                 if (!stricmp(methodName.str(), "files"))
                 {
+                    if (!getTxSummaryResourceReq())
+                        ctx->cancelTxSummary();
                     checkInitEclIdeResponse(m_request, m_response);
                     return onGetFile(m_request.get(), m_response.get(), pathEx.str());
                 }
                 else if (!stricmp(methodName.str(), "xslt"))
+                {
+                    if (!getTxSummaryResourceReq())
+                        ctx->cancelTxSummary();
                     return onGetXslt(m_request.get(), m_response.get(), pathEx.str());
+                }
                 else if (!stricmp(methodName.str(), "body"))
                     return onGetMainWindow(m_request.get(), m_response.get());
                 else if (!stricmp(methodName.str(), "frame"))
@@ -490,7 +496,7 @@ int CEspHttpServer::processRequest()
                 else
                     unsupported();
             }
-            ctx->addTraceSummaryTimeStamp("handleHttp");
+            ctx->addTraceSummaryTimeStamp(LogMin, "handleHttp");
         }
     }
     catch(IEspHttpException* e)

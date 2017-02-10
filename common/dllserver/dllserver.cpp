@@ -493,6 +493,7 @@ public:
     virtual void getLocalLibraryName(const char * name, StringBuffer & libraryName);
     virtual DllLocationType isAvailable(const char * name);
     virtual ILoadedDllEntry * loadDll(const char * name, DllLocationType location);
+    virtual ILoadedDllEntry * loadDllResources(const char * name, DllLocationType location);
     virtual void removeDll(const char * name, bool removeDlls, bool removeDirectory);
     virtual void registerDll(const char * name, const char * kind, const char * dllPath);
     virtual IDllEntry * createEntry(IPropertyTree *owner, IPropertyTree *entry);
@@ -503,6 +504,7 @@ protected:
     void doRegisterDll(const char * name, const char * kind, const char * dllPath, const char * libPath);
     IDllLocation * getBestMatch(const char * name);
     IDllLocation * getBestMatchEx(const char * name);
+    ILoadedDllEntry * doLoadDll(const char * name, DllLocationType location, bool resourcesOnly);
 
 protected:
     StringAttr rootDir;
@@ -723,6 +725,16 @@ DllLocationType DllServer::isAvailable(const char * name)
 
 ILoadedDllEntry * DllServer::loadDll(const char * name, DllLocationType type)
 {
+    return doLoadDll(name, type, false);
+}
+
+ILoadedDllEntry * DllServer::loadDllResources(const char * name, DllLocationType type)
+{
+    return doLoadDll(name, type, true);
+}
+
+ILoadedDllEntry * DllServer::doLoadDll(const char * name, DllLocationType type, bool resourcesOnly)
+{
 #ifdef _WIN32
     if (type < DllLocationDomain)
         type = DllLocationDomain;
@@ -737,7 +749,7 @@ ILoadedDllEntry * DllServer::loadDll(const char * name, DllLocationType type)
     StringBuffer x;
     rfile.getPath(x);
     LOG(MCdebugInfo, unknownJob, "Loading dll (%s) from location %s", name, x.str());
-    return createDllEntry(x.str(), false, NULL);
+    return createDllEntry(x.str(), false, NULL, resourcesOnly);
 }
 
 void DllServer::removeDll(const char * name, bool removeDlls, bool removeDirectory)

@@ -111,7 +111,7 @@ public:
 #ifdef LINK_STATICALLY  // May be useful for debugging...
             javaplugin.setown(javaembed::getEmbedContext());
 #else
-            javaPluginDll.setown(createDllEntry("javaembed", false, NULL));
+            javaPluginDll.setown(createDllEntry("javaembed", false, NULL, false));
             if (!javaPluginDll)
                 throw makeStringException(0, "Failed to load javaembed plugin");
             GetEmbedContextFunction pf = (GetEmbedContextFunction) javaPluginDll->getEntry("getEmbedContextDynamic");
