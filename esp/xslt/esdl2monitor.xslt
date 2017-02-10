@@ -197,6 +197,17 @@ END;
 </xsl:if>
   requestIn := DATASET([], the_requestLayout) : STORED ('<xsl:value-of select="$requestType"/>', FEW, FORMAT(FIELDWIDTH(100),FIELDHEIGHT(30), sequence(100)));
 
+  exceptionRec := RECORD
+    string10 Source {xpath('Source')};
+    integer2 Code {xpath('Code')};
+    string100 Message {xpath('Message')};
+  END;
+
+  soapout_rec := record
+    dataset (the_responseLayout) ds {xpath('Dataset/Row')};
+    exceptionRec Exception {xpath('Exception')};
+  end;
+
 MonSoapcall(DATASET(the_requestLayout) req) := FUNCTION
 
   // Wrap it so that request would look like:
@@ -216,9 +227,8 @@ MonSoapcall(DATASET(the_requestLayout) req) := FUNCTION
                           serviceURL,
                           serviceName,
                           {ds_request},
-                          DATASET (the_responseLayout),
-                          TIMEOUT(6), RETRY(1), LITERAL, XPATH('*/Results/Result/Dataset/Row'));
-
+                          DATASET (soapout_rec),
+                          TIMEOUT(6), RETRY(1), LITERAL, XPATH('*/Results/Result'));
   RETURN ar_results;
 END;
 
@@ -244,7 +254,7 @@ ENDEMBED;
     string id;
     string responseXML;
     dataset(the_responseLayout) report;
-//    dataset(the_responseLayout) soap;
+//    dataset(soapout_rec) soap;
 //    dataset(the_responseLayout) prior;
   END;
 
@@ -253,12 +263,13 @@ CreateMonitor (string userid, dataset(the_requestLayout) req) := MODULE
   DATA16 monitorHash := HASHMD5(userId, requestXml, TimeLib.CurrentTimestamp(false));
   SHARED string monitorId := STD.Str.ToHexPairs(monitorHash);
   SHARED soapOut := MonSoapCall(req)[1];
-  SHARED responseXML := '&lt;Row&gt;' + TOXML(soapOut) + '&lt;/Row&gt;';
+  SHARED responseRow := soapOut.ds[1];
+  SHARED responseXML := '&lt;Row&gt;' + TOXML(responseRow) + '&lt;/Row&gt;';
 
   SHARED MonitorResultRec BuildMonitor() :=TRANSFORM
-    SELF.id := monitorId;
+    SELF.id := IF (soapOut.Exception.Code=0, monitorId, ERROR(soapOut.Exception.Code, soapOut.Exception.Message));
     SELF.responseXML := (string) responseXML;
-    SELF.report := soapOut;
+    SELF.report := responseRow;
 //    SELF.soap := soapOut;
 //    SELF.prior := DATASET([], the_responseLayout);
   END;
@@ -271,14 +282,15 @@ RunMonitor (string id, dataset(the_requestLayout) req) := MODULE
   SHARED monitorId := id;
   SHARED monitorStore := getStoredMonitor(id);
   SHARED soapOut := MonSoapCall(req)[1];
-  SHARED responseXML := '&lt;Row&gt;' + TOXML(soapOut) + '&lt;/Row&gt;';
+  SHARED responseRow := soapOut.ds[1];
+  SHARED responseXML := '&lt;Row&gt;' + TOXML(responseRow) + '&lt;/Row&gt;';
 
   SHARED oldResponse := FROMXML (the_responseLayout, monitorStore.result);
 
-  SHARED diff_result := the_differenceModule(false, '').AsRecord(soapOut, oldResponse);
+  SHARED diff_result := the_differenceModule(false, '').AsRecord(responseRow, oldResponse);
 
   EXPORT MonitorResultRec BuildMonitor() :=TRANSFORM
-    SELF.id := monitorId;
+    SELF.id := IF (soapOut.Exception.Code=0, monitorId, ERROR(soapOut.Exception.Code, soapOut.Exception.Message));
     SELF.responseXML := (string) responseXML;
     SELF.report := diff_result;
 //    SELF.soap := soapOut;
