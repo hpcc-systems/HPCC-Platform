@@ -103,42 +103,32 @@
       <xsl:element name="SDS">
         <xsl:attribute name="store">dalisds.xml</xsl:attribute>
         <xsl:attribute name="caseInsensitive">0</xsl:attribute>
-        <xsl:attribute name="enableSysLog">
-          <xsl:call-template name="outputBool">
-            <xsl:with-param name="val" select="@enableSysLog"/>
-          </xsl:call-template>
-        </xsl:attribute>
-        <xsl:attribute name="enableSNMP">
-          <xsl:call-template name="outputBool">
-            <xsl:with-param name="val" select="@enableSNMP"/>
-          </xsl:call-template>
-        </xsl:attribute>
-        <xsl:attribute name="snmpSendWarnings">
-          <xsl:call-template name="outputBool">
-            <xsl:with-param name="val" select="@snmpSendWarnings"/>
-          </xsl:call-template>
-        </xsl:attribute>
-        <xsl:attribute name="recoverFromIncErrors">
-          <xsl:call-template name="outputBool">
-            <xsl:with-param name="val" select="@recoverFromIncErrors"/>
-          </xsl:call-template>
-        </xsl:attribute>
-        <xsl:copy-of select="@snmpErrorMsgLevel | @msgLevel | @lightweightCoalesce | @keepStores | @backupLargeWarningThreshold | @backupSoftQueueLimit | @backupSoftQueueLimitDelay"/>
-        <xsl:attribute name="lCIdlePeriod">
-          <xsl:value-of select="@IdlePeriod"/>
-        </xsl:attribute>
-        <xsl:attribute name="lCIdleRate">
-          <xsl:value-of select="@IdleRate"/>
-        </xsl:attribute>
-        <xsl:attribute name="lCMinTime">
-          <xsl:value-of select="@MinTime"/>
-        </xsl:attribute>
-        <xsl:attribute name="lCQuietStartTime">
-          <xsl:value-of select="@StartTime"/>
-        </xsl:attribute>
-        <xsl:attribute name="lCQuietEndTime">
-          <xsl:value-of select="@EndTime"/>
-        </xsl:attribute>
+        <xsl:copy-of select="@recoverFromIncErrors |@snmpSendWarnings | @enableSNMP | @enableSysLog | @snmpErrorMsgLevel | @msgLevel | @lightweightCoalesce | @keepStores | @backupLargeWarningThreshold | @backupSoftQueueLimit | @backupSoftQueueLimitDelay"/>
+        <xsl:if test="string(@IdlePeriod) != ''">
+            <xsl:attribute name="lCIdlePeriod">
+                <xsl:value-of select="@IdlePeriod"/>
+            </xsl:attribute>
+        </xsl:if>
+        <xsl:if test="string(@IdleRate) != ''">
+            <xsl:attribute name="lCIdleRate">
+                <xsl:value-of select="@IdleRate"/>
+            </xsl:attribute>
+        </xsl:if>
+        <xsl:if test="string(@MinTime) != ''">
+            <xsl:attribute name="lCMinTime">
+                <xsl:value-of select="@MinTime"/>
+            </xsl:attribute>
+        </xsl:if>
+        <xsl:if test="string(@StartTime) != ''">
+            <xsl:attribute name="lCQuietStartTime">
+                <xsl:value-of select="@StartTime"/>
+            </xsl:attribute>
+        </xsl:if>
+        <xsl:if test="string(@EndTime) != ''">
+            <xsl:attribute name="lCQuietEndTime">
+                <xsl:value-of select="@EndTime"/>
+            </xsl:attribute>
+        </xsl:if>
         <xsl:if test="string(@environment)!=''">
           <xsl:attribute name="environment">
             <xsl:value-of select="@environment"/>
@@ -161,16 +151,7 @@
             <xsl:value-of select="/Environment/Hardware/Computer[@name=current()/@backupComputer]/@netAddress"/>
           </xsl:attribute>
         </xsl:if>
-        <xsl:attribute name="asyncBackup">
-          <xsl:call-template name="outputBool">
-            <xsl:with-param name="val" select="@asyncBackup"/>
-          </xsl:call-template>
-        </xsl:attribute>
-        <xsl:attribute name="useNFSBackupMount">
-          <xsl:call-template name="outputBool">
-            <xsl:with-param name="val" select="@useNFSBackupMount"/>
-          </xsl:call-template>
-        </xsl:attribute>
+        <xsl:copy-of select="@asyncBackup | @useNFSBackupMount"/>
       </xsl:element>
       <DFS>
       <xsl:copy-of select="@forceGroupUpdate | @numThreads"/>
@@ -303,19 +284,6 @@
         </xsl:if>
       </xsl:element>
     </DALI>
-  </xsl:template>
-
-
-  <xsl:template name="outputBool">
-    <xsl:param name="val"/>
-    <xsl:param name="default" select="0"/>
-    <xsl:choose>
-      <xsl:when test="$val='true'">1</xsl:when>
-      <xsl:when test="$val='false'">0</xsl:when>
-      <xsl:otherwise>
-        <xsl:value-of select='$default'/>
-      </xsl:otherwise>
-    </xsl:choose>
   </xsl:template>
 
   <xsl:template name="makeAbsolutePath">
