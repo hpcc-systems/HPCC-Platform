@@ -9510,7 +9510,21 @@ ANewTransformInfo * HqlScopeTagger::createTransformInfo(IHqlExpression * expr)
 
 
 /*
-Details of the scope tagging.
+ * This transformation converts references to datasets which are ambiguous.  There are two main examples:
+ *   ds1.childds.x.
+ *      ECL supports implicit normalization of datasets.  i.e., ds1.childds is treated as normalize(ds1, left.childds).
+ *      Unfortunately this means that exists(ds1.childds(age=10)) has a different meaning depending on its context:
+ *         exists(ds1(exists(ds1.childds(age=10))) - here childds is iterated within the current row of ds1
+ *
+ *   SELF.x := ds1
+ *      This either means the entire ds1, or the current row in ds1 = depending on whether dataset is active or not
+ *      (e.g, due to a TABLE() statement.)  This code reports a warning in this case - active(ds1) should be used for
+ *      the second case.
+ *
+ * In order to achieve this the entire expression tree needs to be transformed differently within each potentital dataset
+ * scope combination.
+
+Details of the no_select representation:
 
 no_select
     if the lhs dataset is in scope then no flags are attached.  if the lhs is not in scope, then a newAtom attribute is

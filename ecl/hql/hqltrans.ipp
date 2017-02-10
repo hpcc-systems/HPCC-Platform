@@ -1149,6 +1149,7 @@ protected:
     HqlExprAttr childScope;
     HqlExprAttr cachedLeft;
     HqlExprAttr cachedRight;
+    BoolArray scopeMatched;
 };
 
 
