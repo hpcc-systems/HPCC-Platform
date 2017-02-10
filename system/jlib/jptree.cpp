@@ -1834,7 +1834,7 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
         else
         {
             aindex_t pos = (aindex_t)-1;
-            if (qualifier.length())
+            if (!qualifier.isEmpty())
             {
                 pos = ((PTree *)child)->getChildMatchPos(qualifier);
                 if ((aindex_t) -1 == pos)
@@ -2625,7 +2625,7 @@ void PTree::deserialize(MemoryBuffer &src)
     {
         size32_t pos = src.getPos();
         src.read(eName);
-        if (!eName.length())
+        if (eName.isEmpty())
             break;
         src.reset(pos); // reset to re-read tree name
         IPropertyTree *child = create(src);
@@ -2648,7 +2648,7 @@ void PTree::deserializeSelf(MemoryBuffer &src)
     loop
     {
         src.read(attrName);
-        if (!attrName.length())
+        if (attrName.isEmpty())
             break;
         src.read(attrValue);
         setProp(attrName, attrValue);
@@ -3650,7 +3650,7 @@ void _synchronizePTree(IPropertyTree *target, IPropertyTree *source)
         }
         else
         {
-            if (!firstOfType.length() || 0 != strcmp(firstOfType, e.queryName()))
+            if (firstOfType.isEmpty() || 0 != strcmp(firstOfType, e.queryName()))
             {
                 if (firstOfType.length() && srcTypeIter)
                 {

@@ -1290,7 +1290,7 @@ StringAttr::StringAttr(const char * _text)
   text = _text ? strdup(_text) : NULL;
 }
 
-StringAttr::StringAttr(const char * _text, unsigned _len)
+StringAttr::StringAttr(const char * _text, size_t _len)
 {
     text = NULL;
     set(_text, _len);
@@ -1323,7 +1323,7 @@ void StringAttr::set(const char * _text)
     free(oldtext);
 }
 
-void StringAttr::set(const char * _text, unsigned _len)
+void StringAttr::set(const char * _text, size_t _len)
 {
     char * oldtext = text;
     text = (char *)malloc(_len+1);
