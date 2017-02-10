@@ -5833,7 +5833,7 @@ const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state
 
 const void * CChunkedHeap::newCompactRow(const void * ptr, NewHeapCompactState & state)
 {
-    loop
+    for (;;)
     {
         ChunkedHeaplet * curTarget = state.queryHeaplet(curCompactTarget);
         assertex(curTarget->queryHeap() == this);
