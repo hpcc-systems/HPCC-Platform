@@ -297,7 +297,7 @@ public:
     {
         CriticalBlock block(sect);
         unsigned iter=0;
-        loop {
+        for (;;) {
             ForEachItemIn(i,waiting) {
                 CBufferQueueWaiting::QWenum r = waiting.item(i).notify(b);
                 if (r!=CBufferQueueWaiting::QWcontinue) {
@@ -610,7 +610,7 @@ public:
     }
     int run()
     {
-        loop {
+        for (;;) {
             try {
                 Owned<INode> node = workq.dequeue();
                 if (node->endpoint().isNull())
@@ -666,7 +666,7 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
     StringBuffer epStr;
     CCycleTimer readTmsTimer;
     unsigned intervalTimeoutMs = timeoutChkIntervalMs;
-    loop
+    for (;;)
     {
         try
         {
@@ -1107,7 +1107,7 @@ public:
         }
         StringBuffer ep;
         remoteep.getUrlStr(ep); 
-        loop {
+        for (;;) {
             CTimeMon pingtm(1000*60);
             if (sendPing(pingtm)) 
                 break;
@@ -1378,7 +1378,7 @@ public:
         mhdr.idx = 0;
         const byte *p = (const byte *)mb.toByteArray();
         unsigned i=0;
-        loop {
+        for (;;) {
             if (i+1==mhdr.numparts) 
                 mhdr.size = mhdr.total-mhdr.ofs;
 #ifdef _FULLTRACE
@@ -1748,7 +1748,7 @@ bool CMPChannel::send(MemoryBuffer &mb, mptag_t tag, mptag_t replytag, CTimeMon 
 
     bool ismulti = (msgsize>MAXDATAPERPACKET);
     // pre-condition - ensure no clashes
-    loop {
+    for (;;) {
         sendmutex.lock();
         if (ismulti) {
             if (multitag==TAG_NULL)     // don't want to interleave with other multi send
@@ -2149,7 +2149,7 @@ CMPChannel *CMPServer::lookup(const SocketEndpoint &endpoint)
     if (checkclosed) {
         checkclosed = false;
         CMPChannel *c = NULL;
-        loop { 
+        for (;;) {
             c = next(c);
             if (!c) {
                 break;
@@ -2379,7 +2379,7 @@ void CMPServer::stop()
     selecthandler->stop(true); 
     connectthread->stop();
     CMPChannel *c = NULL;
-    loop { 
+    for (;;) {
         c = (CMPChannel *)next(c);
         if (!c)
             break;
@@ -2587,7 +2587,7 @@ public:
         if (sender)
             *sender = NULL;
         CTimeMon tm(timeout);
-        loop
+        for (;;)
         {
             try
             {
@@ -2871,7 +2871,7 @@ public:
         else
             srcep = &queryEndpoint(srcrank);
         CTimeMon tm(timeout);
-        loop
+        for (;;)
         {
             try
             {

@@ -244,7 +244,7 @@ bool FileTransferThread::catchReadBuffer(ISocket * socket, MemoryBuffer & msg, u
     unsigned nowTime = msTick();
 
     unsigned abortCheckTimeout = 120*1000;
-    loop
+    for (;;)
     {
         try
         {
@@ -377,7 +377,7 @@ bool FileTransferThread::performTransfer()
             throwError1(RFSERR_TimeoutWaitConnect, url.str());
 
         bool done;
-        loop
+        for (;;)
         {
             msg.clear();
             if (!catchReadBuffer(socket, msg, FTTIME_PROGRESS))
@@ -495,7 +495,7 @@ int FileSizeThread::run()
     try
     {
         RemoteFilename remoteFilename;
-        loop
+        for (;;)
         {
             cur.clear();
             cs.enter();
@@ -1824,7 +1824,7 @@ void FileSprayer::gatherFileSizes(FilePartInfoArray & fileSizeQueue, bool errorI
             threads.append(*new FileSizeThread(fileSizeQueue, fileSizeCS, compressedInput&&!copyCompressed, errorIfMissing));
         for (idx = 0; idx < numThreads; idx++)
             threads.item(idx).start();
-        loop {
+        for (;;) {
             bool alldone = true;
             StringBuffer err;
             for (idx = 0; idx < numThreads; idx++) {

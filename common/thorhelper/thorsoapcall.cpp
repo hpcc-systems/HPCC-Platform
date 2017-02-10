@@ -366,7 +366,7 @@ public:
             checkRoxieAbortMonitor(roxieAbortMonitor);
             Owned<ISocket> sock;
             Owned<ISocketConnectWait> scw = nonBlockingConnect(ep, timeoutMS == WAIT_FOREVER ? 60000 : timeoutMS*(retries+1));
-            loop
+            for (;;)
             {
                 sock.setown(scw->wait(1000));//throws if connect fails or timeoutMS
                 checkRoxieAbortMonitor(roxieAbortMonitor);
@@ -890,7 +890,7 @@ public:
     {
         ForEachItemIn(i,threads)
             threads.item(i).join();
-        loop
+        for (;;)
         {
             const void *row = outputQ.dequeueNow();
             if (!row)
@@ -920,7 +920,7 @@ public:
     {
         if (complete)
             return NULL;
-        loop
+        for (;;)
         {
             const void *row = outputQ.dequeue();
             if (aborted)
@@ -1234,7 +1234,7 @@ int CWSCHelperThread::run()
     else
     {
         // following a bit odd but preserving previous semantics (except fixing abort leak)
-        loop
+        for (;;)
         {
             try
             {
@@ -1710,7 +1710,7 @@ private:
                 }
             }
             else {
-                loop {
+                for (;;) {
                     checkTimeLimitExceeded(&remainingMS);
                     checkRoxieAbortMonitor(master->roxieAbortMonitor);
                     socket->readtms(buffer, 0, WSCBUFFERSIZE, bytesRead, MIN(master->timeoutMS,remainingMS));
@@ -1895,7 +1895,7 @@ public:
             Owned<ISocket> socket;
             cycle_t startCycles, endCycles;
             startCycles = get_cycles_now();
-            loop 
+            for (;;)
             {
                 try
                 {

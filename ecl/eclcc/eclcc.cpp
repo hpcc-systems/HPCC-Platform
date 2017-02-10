@@ -886,7 +886,7 @@ static bool findFilenameInSearchPath(StringBuffer & attributePath, const char * 
 {
     const char * cur = searchPath;
     unsigned lenSource = strlen(expandedSourceName);
-    loop
+    for (;;)
     {
         const char * sep = strchr(cur, ENVSEPCHAR);
         StringBuffer curExpanded;
@@ -2329,7 +2329,7 @@ public:
     }
     virtual int run()
     {
-        loop
+        for (;;)
         {
             fileReady.wait();
             IFile * next = queue.dequeue();

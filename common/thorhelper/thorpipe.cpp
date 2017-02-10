@@ -176,7 +176,7 @@ public:
             size32_t rowSize = 4096; // MORE - make configurable
             size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
             size32_t thisLineLength;
-            loop
+            for (;;)
             {
                 size32_t avail;
                 const void *peek = pipeStream->peek(rowSize, avail);
@@ -242,7 +242,7 @@ public:
 
     virtual const void * next()
     {
-        loop
+        for (;;)
         {
             if (!ensureNext())
                 return NULL;

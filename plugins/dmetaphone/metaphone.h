@@ -26,8 +26,9 @@ namespace nsDmetaphone {
 
 class DMETAPHONE_API MString : public cString
 {
-        int             length, last;
-        bool    alternate;
+        int     length = 0;
+        int     last = 0;
+        bool    alternate = false;
         cString primary, secondary;
 
 public:

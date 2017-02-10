@@ -116,7 +116,7 @@ public:
         byte *buffer = new byte[65535];
         if (!lastReport)
             lastReport = msTick();
-        loop
+        for (;;)
         {
             unsigned lim = (1024 * 1024) / size;
             for (unsigned i = 0; i < lim; i++)
@@ -223,7 +223,7 @@ public:
                 if (readRows)
                 {
                     Owned<IMessageUnpackCursor> cursor = result->getCursor(rowMgr);
-                    loop
+                    for (;;)
                     {
                         if (variableRows)
                         {
@@ -311,7 +311,7 @@ void testNxN()
             sendSize /= 100*n;
             sendSize *= 100*n;
         }
-        loop
+        for (;;)
         {
             do {
                 dest++;

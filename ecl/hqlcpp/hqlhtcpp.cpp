@@ -477,7 +477,7 @@ public:
     inline bool isUsedUnconditionallyEnough(IHqlExpression * expr)
     {
         IHqlExpression * search = expr;
-        loop
+        for (;;)
         {
             if (isUsedUnconditionally(search))
                 return true;
@@ -1965,7 +1965,7 @@ void ActivityInstance::processAnnotations(IHqlExpression * expr)
     }
 
     IHqlExpression * cur = expr;
-    loop
+    for (;;)
     {
         IHqlExpression * body = cur->queryBody(true);
         if (cur == body)
@@ -2052,7 +2052,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     }
 
     IHqlExpression * cur = dataset;
-    loop
+    for (;;)
     {
         IHqlExpression * body = cur->queryBody(true);
         if (cur == body)
@@ -6296,7 +6296,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
 
     //Process any annotations first - but still pass the original expr to the doBuildActivtyXXX functions.
     IHqlExpression * cur = expr;
-    loop
+    for (;;)
     {
         IHqlExpression * body = cur->queryBody(true);
         if (cur == body)
@@ -7809,7 +7809,7 @@ void HqlCppTranslator::doBuildStmtSetResult(BuildCtx & ctx, IHqlExpression * exp
 
 static bool isFilePersist(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -8260,7 +8260,7 @@ static void unwindAddFiles(HqlExprArray & args, IHqlExpression * expr, bool reqI
 
 static IHqlExpression * queryRootConcatActivity(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         node_operator curOp = expr->getOperator();
         switch (curOp)
@@ -9566,7 +9566,7 @@ void HqlCppTranslator::buildCsvListFunc(BuildCtx & classctx, const char * func, 
             {
                 unsigned entry = 0;
                 const char * start  = defaultValue;
-                loop
+                for (;;)
                 {
                     const char * end = strchr(start, '|');
                     if (!end) end = start+strlen(start);
@@ -12663,7 +12663,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIterate(BuildCtx & ctx, IHqlEx
 
 IHqlExpression * HqlCppTranslator::queryExpandAliasScope(BuildCtx & ctx, IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {

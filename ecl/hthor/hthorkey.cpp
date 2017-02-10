@@ -908,7 +908,7 @@ const void *CHThorIndexReadActivity::nextRow()
     if((stopAfter && (processed-initialProcessed)==stopAfter) || !klManager)
         return NULL;
 
-    loop
+    for (;;)
     {
         agent.reportProgress(NULL);
 
@@ -992,7 +992,7 @@ const void *CHThorIndexReadActivity::nextRowGE(const void * seek, unsigned numFi
         helper.mapOutputToInput(tempBuilder, seek, numFields); // NOTE - weird interface to mapOutputToInput means that it STARTS writing at seekGEOffset...
         rawSeek = (byte *)temp;
     }
-    loop
+    for (;;)
     {
         agent.reportProgress(NULL);
 
@@ -1182,13 +1182,13 @@ const void *CHThorIndexNormalizeActivity::nextRow()
     }
     assertex(!((keyedLimit != (unsigned __int64) -1) && ((helper.getFlags() & TIRkeyedlimitskips) != 0)));
 
-    loop
+    for (;;)
     {
-        loop
+        for (;;)
         {
             if (expanding)
             {
-                loop
+                for (;;)
                 {
                     expanding = helper.next();
                     if (!expanding)
@@ -1337,7 +1337,7 @@ void CHThorIndexAggregateActivity::gather()
     if(!klManager)
         return;
 
-    loop
+    for (;;)
     {
         while (!klManager->lookup(true))
         {
@@ -1432,11 +1432,11 @@ const void *CHThorIndexCountActivity::nextRow()
     unsigned __int64 totalCount = 0;
     if(klManager)
     {
-        loop
+        for (;;)
         {
             if (helper.hasFilter())
             {
-                loop
+                for (;;)
                 {
                     agent.reportProgress(NULL);
                     if (!klManager->lookup(true))
@@ -1548,7 +1548,7 @@ void CHThorIndexGroupAggregateActivity::gather()
     gathered = true;
     if(!klManager)
         return;
-    loop
+    for (;;)
     {
         while (!klManager->lookup(true))
         {
@@ -1629,7 +1629,7 @@ public:
         try
         {
             owner->openPart();
-            loop
+            for (;;)
             {
                 ROW * row = owner->getRow();
                 if (!row)
@@ -2270,7 +2270,7 @@ public:
     {
         if(parts)
         {
-            loop
+            for (;;)
             {
                 if (aborting)
                     break;
@@ -2502,7 +2502,7 @@ public:
         CriticalBlock procedure(transformCrit);
         size32_t rowSize = 4096; // MORE - make configurable
         size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
-        loop
+        for (;;)
         {
             size32_t avail;
             const void *peek = rawStream->peek(rowSize, avail);
@@ -3513,7 +3513,7 @@ public:
     virtual void fetchAll()
     {
         bool eogSeen = false;  // arguably true makes more sense
-        loop
+        for (;;)
         {
             if (aborting)
                 break;

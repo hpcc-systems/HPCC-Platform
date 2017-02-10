@@ -1246,7 +1246,7 @@ bool TomitaParser::performMatch(IMatchedAction & action, const void * row, unsig
     parser.beginParse(def->chooseBest);
 
     bool scanWhole = (def->scanAction == INlpParseAlgorithm::NlpScanWhole);
-    loop
+    for (;;)
     {
         position_t nextPosition = parser.getFirstPosition();
         if (nextPosition == NotFound)

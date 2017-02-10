@@ -557,7 +557,7 @@ bool sendSlaveCommand(INode * remote, CMessageBuffer & msg, unsigned tag)
         throwError1(DFTERR_TimeoutWaitConnect, url.str());
 
     bool done;
-    loop
+    for (;;)
     {
         msg.clear();
         if (!queryWorldCommunicator().recv(msg, remote, tag, NULL, FTTIME_PROGRESS))

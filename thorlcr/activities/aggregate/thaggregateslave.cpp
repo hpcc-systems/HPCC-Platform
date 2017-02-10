@@ -236,7 +236,7 @@ class ThroughAggregateSlaveActivity : public AggregateSlaveBase
     }
     void readRest()
     {
-        loop
+        for (;;)
         {
             OwnedConstThorRow row = ungroupedNextRow();
             if (!row)

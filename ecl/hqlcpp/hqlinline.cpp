@@ -592,7 +592,7 @@ bool activityNeedsParent(IHqlExpression * expr)
     case no_hqlproject:
     case no_newusertable:
         //Filters might be merged into projects, so need to walk the inputs.
-        loop
+        for (;;)
         {
             if (activityNeedsParent(expr))
                 return true;

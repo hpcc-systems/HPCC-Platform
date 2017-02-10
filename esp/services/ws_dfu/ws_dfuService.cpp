@@ -260,7 +260,7 @@ void parseTwoStringArrays(const char *input, StringArray& strarray1, StringArray
         char * inputText = (char *) input;
         inputText += 2; //skip 2 chars
 
-        loop
+        for (;;)
         {
             if (!inputText || strlen(inputText) < name_len + value_len)
                 break;

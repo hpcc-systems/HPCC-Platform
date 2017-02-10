@@ -61,7 +61,7 @@ static void calcNumUniqueExpressions(IHqlExpression * expr, ExpressionStatsInfo 
     expr->setTransformExtraUnlinked(expr);
 
     //use head recursion
-    loop
+    for (;;)
     {
         info.count++;
         unsigned max = expr->numChildren();
@@ -556,7 +556,7 @@ void SourceFieldTracker::analyseExpr(IHqlExpression * expr)
 
 bool SourceFieldTracker::isSelected(IHqlExpression * expr) const
 {
-    loop
+    for (;;)
     {
         if (expr->getOperator() != no_select)
             return false;

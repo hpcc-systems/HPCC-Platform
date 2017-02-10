@@ -185,7 +185,7 @@ static unsigned __int64 hextoll(const char *str, bool &error)
     unsigned __int64 factor = 1;
     unsigned __int64 rolling = 0;
     char *ptr = (char *)str+len-1;
-    loop {
+    for (;;) {
         char c = *ptr;
         unsigned v;
         if (isdigit(c))
@@ -451,7 +451,7 @@ static void xget(const char *path)
             StringBuffer res;
             res.append(idx).append(',');
             s = props;
-            loop {
+            for (;;) {
                 const char *e = strchr(s,',');
                 if (e&&e[1]) {
                     StringBuffer prop(e-s,s);
@@ -878,7 +878,7 @@ static void dfsparents(const char *lname, IUserDescriptor *user)
 
 static void dfsunlink(const char *lname, IUserDescriptor *user)
 {
-    loop
+    for (;;)
     {
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true);
         if (!file)
@@ -1230,7 +1230,7 @@ static void checksuperfile(const char *lfn,bool fix=false)
     unsigned subnum = 0;
     unsigned i;
     for (i=0;i<n;i++) {
-        loop {
+        for (;;) {
             IPropertyTree *sub2 = root->queryPropTree(path.clear().appendf("SubFile[@num=\"%d\"][2]",i+1).str());
             if (!sub2)
                 break;
@@ -1326,7 +1326,7 @@ static void checksuperfile(const char *lfn,bool fix=false)
         root->setPropInt("@numsubfiles",subnum);
     i = 0;
     byte fixstate = 0;
-    loop {
+    for (;;) {
         bool err = false;
         IPropertyTree *sub = root->queryPropTree(path.clear().appendf("SubFile[%d]",i+1).str());
         if (sub) {

@@ -1017,7 +1017,7 @@ public:
         RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
 
         OwnedRoxieRowSet rows;
-        loop
+        for (;;)
         {
             const byte *row = (const byte *) val->ungroupedNextRow();
             if (!row)

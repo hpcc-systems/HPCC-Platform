@@ -1982,7 +1982,7 @@ void printKeyedValues(StringBuffer &out, IIndexReadContext *segs, IOutputMetaDat
                     if (!seg.isEmpty())
                     {
                         seg.setLow(tempRow);
-                        loop
+                        for (;;)
                         {
                             if (numValues)
                                 setValues.append(",");

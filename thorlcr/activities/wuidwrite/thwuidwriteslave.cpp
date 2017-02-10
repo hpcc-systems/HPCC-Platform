@@ -180,7 +180,7 @@ public:
                 if (!queryJobChannel().queryJobComm().send(reqMsg, 0, container.queryJob().querySlaveMpTag(), MEDIUMTIMEOUT))
                     throwUnexpected();
                 bool got = false;
-                loop
+                for (;;)
                 {
                     CMessageBuffer replyMsg;
                     if (receiveMsg(replyMsg, 0, replyTag, NULL, MEDIUMTIMEOUT))

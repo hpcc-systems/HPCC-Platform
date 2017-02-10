@@ -40,7 +40,7 @@ protected:
 
     void clear(int count)
     {
-        loop
+        for (;;)
         {
             MAPPING *tail = mruList.dequeueTail();
             if (!tail)

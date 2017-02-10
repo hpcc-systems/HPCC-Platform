@@ -748,7 +748,7 @@ bool LRState::canAccept(token_id sym) const
     if (action == MultiAction)
     {
         LRAction * multi = table->extraActions + cur.getExtra();
-        loop
+        for (;;)
         {
             action = multi->getAction();
             if (action == NoAction)
@@ -773,7 +773,7 @@ state_id LRState::getShift(token_id sym) const
     if (action == MultiAction)
     {
         LRAction * multi = table->extraActions + cur.getExtra();
-        loop
+        for (;;)
         {
             action = multi->getAction();
             if (action == NoAction)
@@ -796,7 +796,7 @@ unsigned LRState::numReductions(token_id sym) const
     {
         unsigned count = 0;
         LRAction * multi = table->extraActions + cur.getExtra();
-        loop
+        for (;;)
         {
             action = multi->getAction();
             if (action == NoAction)
@@ -818,7 +818,7 @@ unsigned LRState::queryReduction(token_id sym, unsigned idx) const
     if (action == MultiAction)
     {
         LRAction * multi = table->extraActions + cur.getExtra();
-        loop
+        for (;;)
         {
             action = multi->getAction();
             if (action == NoAction)
@@ -852,7 +852,7 @@ StringBuffer & LRState::trace(StringBuffer & out, unsigned id) const
             {
                 out.append("{");
                 LRAction * multi = table->extraActions + cur.getExtra();
-                loop
+                for (;;)
                 {
                     action = multi->getAction();
                     if (action == NoAction)
@@ -887,7 +887,7 @@ StringBuffer & LRState::trace(StringBuffer & out, unsigned id) const
             {
                 out.append("{");
                 LRAction * multi = table->extraActions + cur.getExtra();
-                loop
+                for (;;)
                 {
                     action = multi->getAction();
                     if (action == NoAction)

@@ -932,7 +932,7 @@ bool leftRecordIsSubsetOfRight(IHqlExpression * left, IHqlExpression * right)
         if (nextLeft->isAttribute())
             continue;
         IHqlExpression * nextRight;
-        loop
+        for (;;)
         {
             nextRight = right->queryChild(rightIndex++);
             if (!nextRight)

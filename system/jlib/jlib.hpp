@@ -35,7 +35,6 @@
 #include <assert.h>
 #include "jarray.hpp"
 
-#define loop            for(;;)
 #define _elements_in(a) (sizeof(a)/sizeof((a)[0]))
 #define _memclr(s, n)      memset(s, 0, n)
 #define _clear(a)          memset(&a, 0, sizeof(a))

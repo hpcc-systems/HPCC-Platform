@@ -365,7 +365,7 @@ void Thread::startRelease()
     int status;
     unsigned numretrys = 8;
     unsigned delay = 1000;
-    loop {
+    for (;;) {
         pthread_attr_t attr;
         pthread_attr_init(&attr);
         pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
@@ -405,7 +405,7 @@ void Thread::startRelease()
         throw makeOsException(status);
     }
     unsigned retryCount = 10;
-    loop
+    for (;;)
     {
         if (starting.wait(1000*10))
             break;
@@ -449,7 +449,7 @@ bool Thread::join(unsigned timeout)
         return true;
     }
     unsigned st = 0;
-    loop {                                              // this is to prevent race with destroy
+    for (;;) {                                              // this is to prevent race with destroy
                                                         // (because Thread objects are not always link counted!)
         {
             SpinBlock block(ThreadDestroyListLock);
@@ -560,7 +560,7 @@ CThreadedPersistent::~CThreadedPersistent()
 
 void CThreadedPersistent::main()
 {
-    loop
+    for (;;)
     {
         sem.wait();
         if (halt)
@@ -1823,14 +1823,16 @@ protected: friend class PipeWriterThread;
     StringArray envVars;
     StringArray envValues;
 
-    void clearUtilityThreads()
+    void clearUtilityThreads(bool clearStderr)
     {
         Owned<cForkThread> ft;
         cStdErrorBufferThread *et;
         {
-            CriticalBlock block(sect); // clear forkthread and stderrbufferthread
+            CriticalBlock block(sect); // clear forkthread and optionally stderrbufferthread
             ft.setown(forkthread.getClear());
             et = stderrbufferthread;
+            if (clearStderr)
+                stderrbufferthread = nullptr;
         }
         if (ft)
         {
@@ -1840,7 +1842,8 @@ protected: friend class PipeWriterThread;
         if (et)
         {
             et->stop();
-            // NOTE - we don't delete it here, since we want to be able to still read the buffered data
+            if (clearStderr)
+                delete et;
         }
     }
 public:
@@ -1868,8 +1871,7 @@ public:
         closeInput();
         closeOutput();
         closeError();
-        clearUtilityThreads();
-        delete stderrbufferthread;
+        clearUtilityThreads(true);
     }
 
 
@@ -1915,7 +1917,7 @@ public:
          */
         unsigned argc;
         char **argv=splitargs(prog,argc);
-        loop
+        for (;;)
         {
             pipeProcess = (HANDLE)fork();
             if (pipeProcess!=(HANDLE)-1) 
@@ -2050,7 +2052,7 @@ public:
         if (hOutput==(HANDLE)-1)
             return 0;
         size32_t sizeRead;
-        loop {
+        for (;;) {
             {
                 CriticalUnblock unblock(sect); 
                 sizeRead = (size32_t)::read(hOutput, buf, sz);
@@ -2082,7 +2084,7 @@ public:
         if (hInput==(HANDLE)-1)
             return 0;
         size32_t sizeWritten;
-        loop {
+        for (;;) {
             {
                 CriticalUnblock unblock(sect); 
                 sizeWritten = (size32_t)::write(hInput, buf, sz);
@@ -2108,7 +2110,7 @@ public:
         if (hError==(HANDLE)-1)
             return 0;
         size32_t sizeRead;
-        loop {
+        for (;;) {
             {
                 CriticalUnblock unblock(sect); 
                 sizeRead = (size32_t)::read(hError, buf, sz);
@@ -2163,7 +2165,8 @@ public:
                 }
             }
         }
-        clearUtilityThreads(); // NB: will recall forkthread->join(), but doesn't matter
+        // NOTE - we don't clear stderrbufferthread here, since we want to be able to still read the buffered data
+        clearUtilityThreads(false); // NB: will recall forkthread->join(), but doesn't matter
         if (pipeProcess != (HANDLE)-1)
         {
             if (title.length())
@@ -2293,7 +2296,7 @@ public:
 
         int run()
         {
-            loop {
+            for (;;) {
                 IWorkQueueItem * work;
                 bool wr = sem.wait(persisttime);
                 {

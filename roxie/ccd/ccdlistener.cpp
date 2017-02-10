@@ -203,7 +203,7 @@ public:
 private:
     unsigned lockChildren()
     {
-        loop
+        for (;;)
         {
             int got = 1;
             CriticalSection cs;
@@ -357,7 +357,7 @@ public:
         unsigned lockDelay = 0;
         unsigned locksGot = 0;
         Owned<IRandomNumberGenerator> randomizer;
-        loop
+        for (;;)
         {
             try
             {

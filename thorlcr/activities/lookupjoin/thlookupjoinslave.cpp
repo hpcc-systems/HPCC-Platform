@@ -157,7 +157,7 @@ class CBroadcaster : public CSimpleInterface
         bool aborted;
         void clearQueue()
         {
-            loop
+            for (;;)
             {
                 Owned<CSendItem> sendItem = broadcastQueue.dequeueNow();
                 if (NULL == sendItem)
@@ -618,7 +618,7 @@ class CMarker
     rowidx_t run(rowidx_t myStart, rowidx_t myEnd)
     {
         rowidx_t chunkUnique = 0;
-        loop
+        for (;;)
         {
             chunkUnique += doMarking(myStart, myEnd);
             myEnd = getMore(myStart);
@@ -837,7 +837,7 @@ protected:
 
         void clearQueue()
         {
-            loop
+            for (;;)
             {
                 Owned<CSendItem> sendItem = blockQueue.dequeueNow();
                 if (NULL == sendItem)
@@ -1200,7 +1200,7 @@ protected:
                 if (filteredRhs.ordinality())
                 {
                     size32_t rowSize = 0;
-                    loop
+                    for (;;)
                     {
                         const void *rightRow = filteredRhs.item(rcCount);
                         size32_t sz = HELPERBASE::joinTransform(rowBuilder, ret, rightRow, ++rcCount);
@@ -1226,7 +1226,7 @@ protected:
     {
         if (!abortSoon && !eos)
         {
-            loop
+            for (;;)
             {
                 if (NULL == rhsNext)
                 {
@@ -2192,7 +2192,7 @@ protected:
             }
             void process(IRowStream *right)
             {
-                loop
+                for (;;)
                 {
                     OwnedConstThorRow row = right->nextRow();
                     if (!row)
@@ -2207,7 +2207,7 @@ protected:
             }
             void processDistRight(IRowStream *right)
             {
-                loop
+                for (;;)
                 {
                     OwnedConstThorRow row = right->nextRow();
                     if (!row)
@@ -2220,7 +2220,7 @@ protected:
             {
                 CriticalBlock b(crit);
                 unsigned startSpillChannel = nextSpillChannel;
-                loop
+                for (;;)
                 {
                     bool res = channelDistributors[nextSpillChannel]->spill(critical);
                     ++nextSpillChannel;
@@ -2907,7 +2907,7 @@ class CLookupHT : public CHTBase
     const void *findFirst(const void *left)
     {
         unsigned h = leftHash->hash(left)%tableSize;
-        loop
+        for (;;)
         {
             const void *right = ht[h];
             if (!right)
@@ -2947,7 +2947,7 @@ public:
     }
     inline void addEntry(const void *row, unsigned hash)
     {
-        loop
+        for (;;)
         {
             const void *&htRow = ht[hash];
             if (!htRow)
@@ -2974,7 +2974,7 @@ public:
     {
         const void **rows = _rows.getRowArray();
         rowidx_t pos=0;
-        loop
+        for (;;)
         {
             rowidx_t nextPos = marker.findNextBoundary(pos);
             if (0 == nextPos)
@@ -3006,7 +3006,7 @@ class CLookupManyHT : public CHTBase
     const void *findFirst(const void *left, HtEntry &currentHashEntry)
     {
         unsigned h = leftHash->hash(left)%tableSize;
-        loop
+        for (;;)
         {
             HtEntry *e = lookup(h);
             if (!e)
@@ -3036,7 +3036,7 @@ public:
     }
     inline void addEntry(const void *row, unsigned hash, rowidx_t index, rowidx_t count)
     {
-        loop
+        for (;;)
         {
             HtEntry &e = ht[hash];
             if (!e.count)
@@ -3078,7 +3078,7 @@ public:
         rows = _rows.getRowArray();
         rowidx_t pos=0;
         rowidx_t pos2;
-        loop
+        for (;;)
         {
             pos2 = marker.findNextBoundary(pos);
             if (0 == pos2)

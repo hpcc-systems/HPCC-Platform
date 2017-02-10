@@ -133,7 +133,7 @@ unsigned getProjectCount(IHqlExpression * expr)
 
 IHqlExpression * queryFetch(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -155,7 +155,7 @@ IHqlExpression * queryFetch(IHqlExpression * expr)
 
 bool isSimpleSource(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -371,7 +371,7 @@ IHqlExpression * buildTableWithoutVirtuals(VirtualFieldsInfo & info, IHqlExpress
 
 static IHqlExpression * nextDiskField(IHqlExpression * diskRecord, unsigned & diskIndex)
 {
-    loop
+    for (;;)
     {
         IHqlExpression * cur = diskRecord->queryChild(diskIndex++);
         if (!cur || !cur->isAttribute())
@@ -845,7 +845,7 @@ bool SourceBuilder::isSourceInvariant(IHqlExpression * dataset, IHqlExpression *
 
     //Carefull....  It looks ok, but it is possible that the same dataset occurs at multiple levels (sqfilt.hql)
     //So need to be careful that the datasets being referenced aren't newly in scope for this activity...
-    loop
+    for (;;)
     {
         if (inScope.contains(*dataset->queryNormalizedSelector()))
             return false;
@@ -1755,7 +1755,7 @@ void SourceBuilder::analyseGraph(IHqlExpression * expr)
 
 void SourceBuilder::gatherFieldUsage(SourceFieldUsage * fieldUsage, IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         if (expr->queryBody() == tableExpr->queryBody())
             return;
@@ -1846,7 +1846,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
         {
             IHqlExpression * cur = expr;
             bool isProjected = false;
-            loop
+            for (;;)
             {
                 switch (cur->getOperator())
                 {
@@ -1908,7 +1908,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
         bool isStepped = false;
         IHqlExpression * cur = expr;
         instance->graphEclText.clear();
-        loop
+        for (;;)
         {
             eclChunk.clear();
             switch (cur->getOperator())
@@ -1968,7 +1968,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
             const char * coloncolon = strstr(filename, "::");
             if (coloncolon)
             {
-                loop
+                for (;;)
                 {
                     const char * next = strstr(coloncolon+2, "::");
                     if (!next)
@@ -2568,7 +2568,7 @@ interface ICompoundSourceSteppingMeta : extends ISteppingMeta
 
 bool SourceBuilder::containsStepping(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -2591,7 +2591,7 @@ bool SourceBuilder::containsStepping(IHqlExpression * expr)
 
 void SourceBuilder::gatherSteppingMeta(IHqlExpression * expr, SteppingFieldSelection & outputStepping, SteppingFieldSelection & rawStepping)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -4847,7 +4847,7 @@ void MonitorExtractor::spotSegmentCSE(BuildCtx & ctx)
             cur = cur->queryChild(0);
             //fallthrough
         default:
-            loop
+            for (;;)
             {   
                 if (!keyed.conditions.isItem(curCond))
                     throwUnexpected();
@@ -4861,7 +4861,7 @@ void MonitorExtractor::spotSegmentCSE(BuildCtx & ctx)
             break;
         }
     }
-    loop
+    for (;;)
     {   
         if (!keyed.conditions.isItem(curCond))
             break;
@@ -5033,7 +5033,7 @@ bool MonitorExtractor::isIndexInvariant(IHqlExpression * expr)
     ForEachItemIn(i, scopeUsed)
     {
         IHqlExpression * cur = &scopeUsed.item(i);
-        loop
+        for (;;)
         {
             if (cur == search || queryRoot(cur) == search)
                 return false;
@@ -5393,7 +5393,7 @@ IHqlExpression * MonitorExtractor::createRangeCompare(IHqlExpression * selector,
 
 static IHqlExpression * removeCastTrim(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         if ((expr->getOperator() == no_trim) && !expr->queryChild(1))
             expr = expr->queryChild(0);
@@ -5458,7 +5458,7 @@ static void extendRangeCheck(SharedHqlExpr & globalGuard, SharedHqlExpr & localC
                 cur = queryNonAliased(cur->queryChild(0));
 
             IHqlExpression * compare = selector;
-            loop
+            for (;;)
             {
                 compare = removeCastTrim(queryNonAliased(compare));
                 if (cur->queryBody() == compare->queryBody())
@@ -6081,7 +6081,7 @@ bool MonitorExtractor::extractFilters(KeyConditionInfo & matches, IHqlExpression
 
 void MonitorExtractor::extractAllFilters(IHqlExpression * dataset)
 {
-    loop
+    for (;;)
     {
         switch (dataset->getOperator())
         {

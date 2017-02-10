@@ -507,7 +507,7 @@ bool convertUtf(MemoryBuffer & target, UtfReader::UtfFormat targetType, unsigned
     UtfReader input(sourceType, false);
     input.set(sourceLength, source);
     unsigned originalLength = target.length();
-    loop
+    for (;;)
     {
         UTF32 next = input.next();
         if (next == sourceExhausted)
@@ -631,7 +631,7 @@ extern jlib_decl bool replaceUtf(utfReplacementFunc func, MemoryBuffer & target,
     UtfReader input(type, false);
     input.set(sourceLength, source);
     unsigned originalLength = target.length();
-    loop
+    for (;;)
     {
         const byte * cur = input.cur;
         UTF32 next = input.next();

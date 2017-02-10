@@ -1158,7 +1158,7 @@ bool PagedDataSource::getRowData(__int64 row, size32_t & length, const void * & 
         return false;
 
     RowLocation location;
-    loop
+    for (;;)
     {
         if (cache.getCacheRow(row, location))
         {

@@ -157,7 +157,7 @@ public:
                     size32_t sz = parent->getRows(sender-1, pos, rows);
                     mb.clear().ensureCapacity(sz);
                     CMemoryRowSerializer msz(mb);
-                    loop {                                          // there must be a better way than deserializing then serializing!!
+                    for (;;) {                                          // there must be a better way than deserializing then serializing!!
                         OwnedConstThorRow row = rows.dequeue();
                         if (!row)
                             break;
@@ -327,7 +327,7 @@ public:
         CThorKeyArray sample(*this, this, helper->querySerialize(), helper->queryCompare(), helper->queryCompareKey(), helper->queryCompareRowKey());
         sample.setSampling(MERGE_TRANSFER_BUFFER_SIZE);
         ActPrintLog("MERGE: start gather");
-        loop {
+        for (;;) {
             OwnedConstThorRow row = merged->nextRow();
             if (!row)
                 break;

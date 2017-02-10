@@ -179,7 +179,7 @@ public:
                     }
                     else
                         f = indexFile;
-                    loop
+                    for (;;)
                     {
                         unsigned location;
                         OwnedIFile iFile;

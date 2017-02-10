@@ -138,7 +138,7 @@ DFUcmd decodeDFUcommand(const char * str)
     if (!str)
         return DFUcmd_none;
     unsigned i=0;
-    loop {
+    for (;;) {
         const char *cmp=DFUcmds[i].str;
         if (!*cmp||(stricmp(str,cmp)==0))
             break;
@@ -150,7 +150,7 @@ DFUcmd decodeDFUcommand(const char * str)
 StringBuffer &encodeDFUcommand(DFUcmd cmd,StringBuffer &str)
 {
     unsigned i=0;
-    loop {
+    for (;;) {
         if (!*DFUcmds[i].str||(DFUcmds[i].val==(int)cmd))
             break;
         i++;
@@ -163,7 +163,7 @@ DFUstate decodeDFUstate(const char * str)
     if (!str)
         return DFUstate_unknown;
     unsigned i=0;
-    loop {
+    for (;;) {
         const char *cmp=DFUstates[i].str;
         if (!*cmp||(stricmp(str,cmp)==0))
             break;
@@ -175,7 +175,7 @@ DFUstate decodeDFUstate(const char * str)
 StringBuffer &encodeDFUstate(DFUstate state,StringBuffer &str)
 {
     unsigned i=0;
-    loop {
+    for (;;) {
         if (!*DFUstates[i].str||(DFUstates[i].val==(int)state))
             break;
         i++;
@@ -202,7 +202,7 @@ DFUsortfield decodeDFUsortfield(const char * s)
         s++;
     }
     unsigned i=0;
-    loop {
+    for (;;) {
         const char *cmp=DFUsortfields[i].str;
         if (!*cmp||(DFUsortfields[i].val==(int)DFUsf_term))
             return DFUsf_term;
@@ -225,7 +225,7 @@ StringBuffer &encodeDFUsortfield(DFUsortfield fmt,StringBuffer &str,bool incmodi
     }
     fmt = (DFUsortfield)(((int)fmt)&0xff);
     unsigned i=0;
-    loop {
+    for (;;) {
         if ((DFUsortfields[i].val==(int)DFUsf_term)||(DFUsortfields[i].val==(int)fmt))
             break;
         i++;
@@ -1151,7 +1151,7 @@ public:
     void setLogicalName(const char *val)
     {
         const char *tail=val;
-        loop {
+        for (;;) {
             const char *n = strstr(tail,"::");
             if (!n)
                 break;
@@ -2483,7 +2483,7 @@ public:
             CriticalBlock block(crit);
             subscribe();
         }
-        loop {
+        for (;;) {
             DFUstate ret = queryProgress(true)->getState();
             switch (ret) {
             case DFUstate_aborted:

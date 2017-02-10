@@ -324,7 +324,7 @@ public:
 
         if (groupStream)
         {
-            loop
+            for (;;)
             {
                 OwnedConstThorRow row = groupStream->nextRow();
                 if (!row)
@@ -346,7 +346,7 @@ public:
         
         //MORE: What do we do with wasCompleteMatch?  something like the following????
 #if 0
-        loop
+        for (;;)
         {
             OwnedConstThorRow ret;
             if (stepExtra.returnMismatches())

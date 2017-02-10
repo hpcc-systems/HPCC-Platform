@@ -531,7 +531,7 @@ inline static void readID(const char *&xxpath, bool started)
 inline static void readWildId(const char *&xpath, bool &wild)
 {
     wild = false;
-    loop
+    for (;;)
     {
         readID(xpath, wild);
         if ('*' != *xpath)
@@ -642,7 +642,7 @@ const char *splitXPath(const char *xpath, StringBuffer &headPath)
 const char *queryNextUnquoted(const char *str, char c)
 {
     bool quote = false;
-    loop
+    for (;;)
     {
         char next = *str;
         if (next == '\0')
@@ -661,7 +661,7 @@ const char *queryHead(const char *xpath, StringBuffer &head)
     const char *start = xpath;
     bool quote = false;
     bool braced = false;
-    loop
+    for (;;)
     {
         if (*xpath == '\0')
             return NULL;
@@ -1265,7 +1265,7 @@ void PTree::resolveParentChild(const char *xpath, IPropertyTree *&parent, IPrope
         IPropertyTree *currentPath = NULL;
         bool multiplePaths = false;
         bool multipleChildMatches = false;
-        loop
+        for (;;)
         {
             // JCSMORE - a bit annoying has to be done again once path has been established
             currentPath = &pathIter->query();
@@ -1787,7 +1787,7 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
     {
         CHECK_ATTRIBUTE(xpath);
         const char *x = xpath;
-        loop
+        for (;;)
         {
             if (!*x++)
             {
@@ -1834,7 +1834,7 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
         else
         {
             aindex_t pos = (aindex_t)-1;
-            if (qualifier.length())
+            if (!qualifier.isEmpty())
             {
                 pos = ((PTree *)child)->getChildMatchPos(qualifier);
                 if ((aindex_t) -1 == pos)
@@ -2338,7 +2338,7 @@ restart:
                             else
                                 iter.setown(child->getElements(NULL));
                             const char *start = xxpath-1;
-                            loop
+                            for (;;)
                             {
                                 char quote = 0;
                                 while (']' != *(++xxpath) || quote)
@@ -2621,11 +2621,11 @@ void PTree::deserialize(MemoryBuffer &src)
     deserializeSelf(src);
 
     StringAttr eName;
-    loop
+    for (;;)
     {
         size32_t pos = src.getPos();
         src.read(eName);
-        if (!eName.length())
+        if (eName.isEmpty())
             break;
         src.reset(pos); // reset to re-read tree name
         IPropertyTree *child = create(src);
@@ -2645,10 +2645,10 @@ void PTree::deserializeSelf(MemoryBuffer &src)
         setName(_name);
     attributes.setNoCase(isnocase());
     StringAttr attrName, attrValue;
-    loop
+    for (;;)
     {
         src.read(attrName);
-        if (!attrName.length())
+        if (attrName.isEmpty())
             break;
         src.read(attrValue);
         setProp(attrName, attrValue);
@@ -2929,7 +2929,7 @@ bool PTree::checkPattern(const char *&xxpath) const
 #ifdef WARNLEGACYCOMPARE
     bool legacynumeric=false;
 #endif
-    loop
+    for (;;)
     {
         switch (*xpath) {
         case '"':
@@ -3071,7 +3071,7 @@ bool PTree::checkPattern(const char *&xxpath) const
         if (!quoteBegin && rhsEnd) // validate it's a numeric
         {
             const char *c = rhsBegin;
-            loop
+            for (;;)
             {
                 if (!isdigit(*c++))
                     throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS is an unquoted string");
@@ -3117,7 +3117,7 @@ bool PTree::checkPattern(const char *&xxpath) const
                     continue;
                 tProp = NULL;
             }
-            loop
+            for (;;)
             {
                 if (matchElem->isBinary(tProp))
                     UNIMPLEMENTED;
@@ -3234,9 +3234,9 @@ bool PTLocalIteratorBase::_next()
     if (iter && iter->isValid() && iter->next())
         return true;
 
-    loop
+    for (;;)
     {
-        loop
+        for (;;)
         {
             if (!baseIter->isValid())
             {
@@ -3420,7 +3420,7 @@ bool PTStackIterator::next()
     {
         IPropertyTree *element = NULL;
         StringBuffer qualifierText;
-        loop
+        for (;;)
         {
             while (!iter->isValid())
             {
@@ -3650,7 +3650,7 @@ void _synchronizePTree(IPropertyTree *target, IPropertyTree *source)
         }
         else
         {
-            if (!firstOfType.length() || 0 != strcmp(firstOfType, e.queryName()))
+            if (firstOfType.isEmpty() || 0 != strcmp(firstOfType, e.queryName()))
             {
                 if (firstOfType.length() && srcTypeIter)
                 {
@@ -3847,7 +3847,7 @@ protected:
         if (n > d) n = d;
         if (!nullTerm)
             bufRemaining += n;
-        loop
+        for (;;)
         {
             --bufPtr;
             if (!--n) break;
@@ -3902,7 +3902,7 @@ protected:
     void match(const char *txt, const char *msg=NULL)
     {
         const char *c = txt;
-        loop
+        for (;;)
         {
             if (*c == '\0') break;
             readNext();
@@ -4073,7 +4073,7 @@ protected:
     {
         if (isValidXPathStartChr(nextChar))
         {
-            loop
+            for (;;)
             {
                 id.append(nextChar);
                 readNext();
@@ -4118,7 +4118,7 @@ protected:
             if ('"' == nextChar)
             {
                 StringBuffer refValue;
-                loop
+                for (;;)
                 {
                     readNext();
                     if (!nextChar || '"' == nextChar)
@@ -4130,7 +4130,7 @@ protected:
                         if ('#' == nextChar)
                         {
                             ref.append("&#");
-                            loop
+                            for (;;)
                             {
                                 readNext();
                                 if (!nextChar)
@@ -4165,7 +4165,7 @@ protected:
     }
     void parseIntSubset()
     {
-        loop
+        for (;;)
         {
             readNext();
             skipWS();
@@ -4218,7 +4218,7 @@ protected:
                 skipWS();
                 StringBuffer doctypeid;
                 readID(doctypeid);
-                loop
+                for (;;)
                 {
                     skipWS();
                     if ('>' == nextChar) break;
@@ -4268,7 +4268,7 @@ protected:
     {
         try { match("CDATA["); }
         catch (const char *) { error("Bad CDATA syntax"); }
-        loop
+        for (;;)
         {
             readNext();
             while (']' == nextChar)
@@ -4293,7 +4293,7 @@ protected:
         if (!isValidXPathStartChr(nextChar))
             error("Invalid PI target");
 
-        loop
+        for (;;)
         {
             target.append(nextChar);
             readNext();
@@ -4302,7 +4302,7 @@ protected:
         }
         skipWS();
         unsigned closeTag=0;
-        loop
+        for (;;)
         {
             if (!nextChar)
                 error("Missing closing PI tag ?>");
@@ -4593,9 +4593,9 @@ restart:
         {
             if (nextChar == '>')
             {
-                loop
+                for (;;)
                 {
-                    loop
+                    for (;;)
                     {
                         readNext();
                         if (ignoreWhiteSpace)
@@ -4781,7 +4781,7 @@ public:
                 if (!checkReadNext()) return false;
                 if (checkBOM())
                     if (!checkReadNext()) return false;
-                loop
+                for (;;)
                 {
                     if (!checkSkipWS()) return false;
                     if ('<' != nextChar)
@@ -4804,7 +4804,7 @@ public:
             case tagStart:
             {
                 offset_t startOffset;
-                loop
+                for (;;)
                 {
                     if ('!' != nextChar)
                         break;
@@ -4934,7 +4934,7 @@ public:
             {
                 try
                 {
-                    loop
+                    for (;;)
                     {
                         if (endOfRoot)
                         {
@@ -5048,7 +5048,7 @@ public:
                 readNext();
                 const char *t = stateInfo->tag.str();
                 const char *te = t+stateInfo->tag.length();
-                loop
+                for (;;)
                 {
                     if (nextChar == '>' || isspace(nextChar))
                     {
@@ -5709,7 +5709,7 @@ static void validateQualifier(const char *&xxpath)
     const char *start = xpath;
     skipWS(xpath);
     const char *lhsStart = xpath;
-    loop
+    for (;;)
     {
         switch (*xpath) {
         case ']':
@@ -6024,7 +6024,7 @@ void extractJavadoc(IPropertyTree * result, const char * text)
     //Now process each of the parameters...
     StringBuffer tagname;
     StringBuffer tagtext;
-    loop
+    for (;;)
     {
         text = skipWhitespace(text);
         text = skipAsterisk(text);
@@ -6610,7 +6610,7 @@ public:
         if (noRoot)
         {
             StringBuffer tagName;
-            loop
+            for (;;)
             {
                 switch (nextChar)
                 {

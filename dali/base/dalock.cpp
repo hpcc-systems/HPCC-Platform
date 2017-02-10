@@ -72,7 +72,7 @@ public:
     {
         CTimeMon tm(timeout);
         sect.enter();
-        loop {
+        for (;;) {
             unsigned num = owners.ordinality();
             if (exclusive) {
                 if (num==0) {

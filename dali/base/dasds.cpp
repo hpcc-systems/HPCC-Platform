@@ -208,7 +208,7 @@ public:
     CLCLockBlock(ReadWriteLock &_lock, bool readLock, unsigned timeout, const char *fname, unsigned _lnum) : lock(_lock), lnum(_lnum)
     {
         got = msTick();
-        loop
+        for (;;)
         {
             if (readLock)
             {
@@ -699,7 +699,7 @@ public:
         const char *nextSep = path+1;
         StringBuffer head;
         depth = 1; // root
-        loop
+        for (;;)
         {
             nextSep = queryHead(nextSep, head.clear());
             ++depth; // inc last
@@ -707,7 +707,7 @@ public:
                 break;
         }
         StringBuffer strippedXpath;
-        loop
+        for (;;)
         {
             const char *startQ;
             if (NULL == (startQ = queryNextUnquoted(path, '['))) // escaped '[]' chars??
@@ -717,7 +717,7 @@ public:
             }
 
             const char *nextSep = path+1;
-            loop
+            for (;;)
             {
                 nextSep = queryHead(nextSep, head.clear());
                 if (!nextSep || startQ < nextSep)
@@ -728,7 +728,7 @@ public:
 
             Owned<CQualifiers> qualifiers = new CQualifiers;
             strippedXpath.append(startQ-path, path);
-            loop
+            for (;;)
             {
                 const char *endQ = queryNextUnquoted(startQ+1, ']');
                 if (!endQ)
@@ -776,7 +776,7 @@ public:
                     const char *qualifier = qualifiers->item(q2);
                     const char *q = qualifier;
                     bool numeric = true;
-                    loop
+                    for (;;)
                     {
                         if ('\0' == *q) break;
                         else if (!isdigit(*q)) { numeric = false; break; }
@@ -921,7 +921,7 @@ void serializeVisibleAttributes(IPropertyTree &tree, MemoryBuffer &mb)
     IAttributeIterator *aIter = tree.getAttributes();
     if (aIter->first())
     {
-        loop
+        for (;;)
         {
             const char *attr = aIter->queryName();
             if (0 != strcmp(EXT_ATTR, attr))
@@ -947,7 +947,7 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
     unsigned startCrc = ~0;
     MemoryBuffer header;
     char strNum[17];
-    loop
+    for (;;)
     {
         header.append(deltaHeader);
         try
@@ -1058,7 +1058,7 @@ class CBackupHandler : public CInterface, implements IThreaded
     }
     void clearQueue(BackupQueue &queue)
     {
-        loop
+        for (;;)
         {
             BackupQueueItem *item = queue.dequeue();
             if (!item) break;
@@ -1070,7 +1070,7 @@ class CBackupHandler : public CInterface, implements IThreaded
         Owned<IException> exception;
         unsigned _retryAttempts = retryAttempts;
         StringBuffer rL(remoteBackupLocation);
-        loop
+        for (;;)
         {
             try
             {
@@ -1104,7 +1104,7 @@ class CBackupHandler : public CInterface, implements IThreaded
         Owned<IException> exception;
         unsigned _retryAttempts = retryAttempts;
         StringBuffer rL(remoteBackupLocation);
-        loop
+        for (;;)
         {
             try
             {
@@ -1145,7 +1145,7 @@ class CBackupHandler : public CInterface, implements IThreaded
     void clearOld()
     {
         CriticalBlock b(queueCrit);
-        loop
+        for (;;)
         {
             BackupQueueItem *item = itemQueue.dequeue();
             if (!item) break;
@@ -1312,7 +1312,7 @@ public:
 // IThreaded
     void main()
     {
-        loop
+        for (;;)
         {
             BackupQueueItem *item=NULL;
             do
@@ -1739,7 +1739,7 @@ void buildNotifyData(MemoryBuffer &notifyData, PDState state, CPTStack *stack, M
         if (n>1)
         {
             unsigned s = 1;
-            loop
+            for (;;)
             {
                 PTree &child = stack->item(s);
                 const char *str = child.queryName();
@@ -1801,7 +1801,7 @@ public:
 
     void notify()
     {
-        loop
+        for (;;)
         {
             if (!subscriber.notify(change->notifyData))
             {
@@ -2206,7 +2206,7 @@ StringBuffer &CPTStack::getAbsolutePath(StringBuffer &str)
     if (ordinality()>1)
     {
         unsigned i = 1;
-        loop
+        for (;;)
         {
             IPropertyTree *child = &item(i);
             str.append(child->queryName());
@@ -2285,7 +2285,7 @@ void CRemoteTreeBase::deserializeRT(MemoryBuffer &src)
 void CRemoteTreeBase::deserializeChildrenRT(MemoryBuffer &src)
 {
     StringAttr eName;
-    loop
+    for (;;)
     {
         size32_t pos = src.getPos();
         src.read(eName);
@@ -3296,7 +3296,7 @@ class CLock : implements IInterface, public CInterface
     {
         if (INFINITE == timeout)
         {
-            loop
+            for (;;)
             {
                 if (!SDSManager->queryConnection(id))
                     return LockFailed;
@@ -3335,7 +3335,7 @@ class CLock : implements IInterface, public CInterface
         else
         {
             CTimeMon tm(timeout);
-            loop
+            for (;;)
             {
                 if (!SDSManager->queryConnection(id))
                     return LockFailed;
@@ -3906,7 +3906,7 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
     {
         if (CPS_Renames & state)
         {
-            loop
+            for (;;)
             {
                 __int64 id;
                 mb.read(id);
@@ -3937,7 +3937,7 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
 
         if (CPS_Deletions & state)
         {
-            loop
+            for (;;)
             {
                 __int64 id;
                 mb.read(id);
@@ -4027,7 +4027,7 @@ bool translateOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *pare
     mb.read(hasChildren);
     if (hasChildren)
     {
-        loop
+        for (;;)
         {
             __int64 id;
             int pos = -1;
@@ -4273,7 +4273,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 replyMb.init(mb.getSender(), mb.getTag(), mb.getReplyTag());
                 replyMb.append((int)DAMP_SDSREPLY_OK);
                 bool first = true, empty = false;
-                loop
+                for (;;)
                 {
                     mb.read(serverId);
                     if (!serverId) break;
@@ -4699,7 +4699,7 @@ public:
 static bool retryRename(const char *from, const char *to, unsigned maxAttempts, unsigned delay)
 {
     unsigned attempts=maxAttempts;
-    loop
+    for (;;)
     {
         OwnedIFile iFile = createIFile(from);
         try
@@ -4724,7 +4724,7 @@ static bool retryRename(const char *from, const char *to, unsigned maxAttempts, 
 static bool retryCopy(const char *from, const char *to, unsigned maxAttempts, unsigned delay)
 {
     unsigned attempts=maxAttempts;
-    loop
+    for (;;)
     {
         StringBuffer _from;
         StringBuffer fname;
@@ -5075,7 +5075,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
             Owned<IDirectoryIterator> dIter = createDirectoryIterator(location, wcard.str());
             ForEach (*dIter)
             {
-                loop
+                for (;;)
                 {   
                     try { dIter->query().remove(); break; }
                     catch (IException *e)
@@ -5095,7 +5095,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
                 StringBuffer path(location);
                 path.append(storeInfo->cache);
                 OwnedIFile iFile = createIFile(path.str());
-                loop
+                for (;;)
                 {   
                     try { iFile->remove(); break; }
                     catch (IException *e)
@@ -5156,7 +5156,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
             wcard.append(base).append(".*");
             Owned<IDirectoryIterator> dIter = createDirectoryIterator(location, wcard.str());
             unsigned totalDelays = 0;
-            loop
+            for (;;)
             {
                 if (dIter->first())
                 {
@@ -5251,7 +5251,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
             if (detachIPIFile)
             {
                 unsigned a=0;
-                loop
+                for (;;)
                 {
                     try { detachIPIFile->remove(); break; }
                     catch (IException *e)
@@ -5408,7 +5408,7 @@ public:
         OwnedIFile detachedDeltaIFile = createIFile(getDetachedDeltaName(detachPath).str());
         bool detached = detachedDeltaIFile->exists();
         OwnedIFile deltaIFile = createIFile(deltaFilename.str());
-        loop
+        for (;;)
         {
             StringAttr filename;
             IFile *iFile;
@@ -6102,7 +6102,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         unsigned l = strlen(EXTERNAL_NAME_PREFIX);
         bool primary = true;
         Owned<IDirectoryIterator> di = createDirectoryIterator(dataPath);
-        loop
+        for (;;)
         {
             try
             {
@@ -6158,7 +6158,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         IExternalHandler *extHandler = queryExternalHandler(EF_BinaryValue);
         primary = true;
         UInt64Array missingPrimarys;
-        loop
+        for (;;)
         {
             UInt64Array &fileExts = primary ? primaryExts : backupExts;
             unsigned __int64 refN = refExts.ordinality() ? refExts.item(0) : (unsigned __int64)-1;
@@ -6431,7 +6431,7 @@ StringBuffer &transformToAbsolute(StringBuffer &result, const char *xpath, unsig
     const char *end = xpath+strlen(xpath);
     const char *p = end;
     const char *q = NULL;
-    loop
+    for (;;)
     {
         if (p == xpath)
         {
@@ -7230,7 +7230,7 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
                     uProp.append(prop).append('-');
                     unsigned l = uProp.length();
                     unsigned n=1;
-                    loop
+                    for (;;)
                     {
                         n += getRandom() % 5; // better chance of finding a mismatch soon.
                         uProp.append(n);
@@ -7323,7 +7323,7 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
             connection->queryPTreePath().getAbsolutePath(headPath);
             if (headPath.length() && headPath.charAt(0) == '/')
                 headPath.remove(0, 1);
-            loop
+            for (;;)
             {
                 _deltaPath.append('/');
                 IPropertyTree &tree = connection->queryPTreePath().item(s);
@@ -7621,7 +7621,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
             freeExistingLocks.setConnectionId(connectionId);
             try
             {
-                loop
+                for (;;)
                 {
                     try
                     {
@@ -8282,7 +8282,7 @@ public:
     SubCommitType match(const char *head, const char *path)
     {
         bool wild = false;
-        loop
+        for (;;)
         {
             if (wild)
             {

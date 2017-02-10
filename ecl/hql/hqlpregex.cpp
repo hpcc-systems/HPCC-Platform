@@ -103,7 +103,7 @@ unsigned RegexParser::readNumber()
     if ((first < '0') || (first > '9'))
         illegal();
     unsigned value = (first - '0');
-    loop
+    for (;;)
     {
         unsigned x = next();
         if ((x < '0') || (x > '9'))
@@ -131,7 +131,7 @@ IHqlExpression * RegexParser::parse0()
     if (next() == '|' || next() == PatEOF || next() == ')')
         return createValue(no_null, makePatternType());
     OwnedHqlExpr prev = parse1();
-    loop
+    for (;;)
     {
         switch (next())
         {
@@ -150,7 +150,7 @@ IHqlExpression * RegexParser::parse0()
 IHqlExpression * RegexParser::parse1()
 {
     OwnedHqlExpr arg = parse2();
-    loop
+    for (;;)
     {
         unsigned low = 0;
         unsigned high = PATTERN_UNLIMITED_LENGTH;
@@ -292,7 +292,7 @@ IHqlExpression * RegexParser::parse2()
         const byte * start = cur;
         advance();
         unsigned restorePos = getPos();
-        loop
+        for (;;)
         {
             if (done())
                 break;
@@ -376,7 +376,7 @@ IHqlExpression * RegexParser::parseSetBound()
             {
                 advance();
                 StringBuffer name;
-                loop
+                for (;;)
                 {
                     unsigned c = nextAdvance();
                     if (c == PatEOF)

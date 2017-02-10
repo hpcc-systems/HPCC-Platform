@@ -112,7 +112,7 @@ public:
         try
         {
             RoxiePacketHeader newHeader(header, ROXIE_DEBUGCALLBACK);
-            loop // retry indefinately, as more than likely Roxie server is waiting for user input ...
+            for (;;) // retry indefinitely, as more than likely Roxie server is waiting for user input ...
             {
                 Owned<IMessagePacker> output = ROQ->createOutputStream(newHeader, true, logctx);
                 // These are deserialized in onDebugCallback..
@@ -482,7 +482,7 @@ private:
         //possible.  Otherwise lots of workunits each trying to convert read locks to write locks will mean
         //that the read lock is never released by all the workunits at the same time, so no workunit can progress.
         unsigned timeout = repeat ? PERSIST_LOCK_TIMEOUT : 0;
-        loop
+        for (;;)
         {
             try
             {
@@ -525,7 +525,7 @@ private:
 
         logctx.CTXLOG("Waiting for persist read lock for %s", name);
         Owned<IRemoteConnection> persistLock;
-        loop
+        for (;;)
         {
             try
             {
@@ -563,7 +563,7 @@ private:
         //Loop trying to get a write lock - if it fails, then release the read lock, otherwise
         //you can get a deadlock with several things waiting to read, and none being able to write.
         bool rebuildAllPersists = false;   // Useful for debugging purposes
-        loop
+        for (;;)
         {
             StringBuffer dummy;
             if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, dummy) && !rebuildAllPersists)
@@ -874,7 +874,7 @@ public:
     {
         bool atEOG = true;
         RtlLinkedDatasetBuilder builder(rowAllocator);
-        loop
+        for (;;)
         {
             const void *ret = nextRow();
             if (!ret)
@@ -1792,7 +1792,7 @@ public:
         const char *val = useContext(sequence).queryProp(name);
         if (val)
         {
-            loop
+            for (;;)
             {
                 char c0 = *val++;
                 if (!c0)
@@ -2215,7 +2215,7 @@ protected:
             resubmit = false; // set if job interrupted in thor
             if (WUStatePaused == workUnit->getState()) // check initial state - and wait if paused
             {
-                loop
+                for (;;)
                 {
                     WUAction action = wuFactory->waitForWorkUnitAction(wuid, queryWorkUnit()->getAction());
                     if (action == WUActionUnknown)

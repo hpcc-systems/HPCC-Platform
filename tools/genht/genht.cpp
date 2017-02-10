@@ -211,7 +211,7 @@ void process(const char *fname)
         offsets.append(o);
         size32_t sl = *p;
         unsigned h = hashc(p+1,sl,sl)%htsize;
-        loop {
+        for (;;) {
             if (htab[h]==0) {
                 htab[h] = o;
                 break;

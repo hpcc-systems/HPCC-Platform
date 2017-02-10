@@ -396,7 +396,7 @@ bool processDirCommand(ISocket * masterSocket, MemoryBuffer & cmd, MemoryBuffer 
 
     StringAttr nextDir;
     const char * cur = directory;
-    loop
+    for (;;)
     {
         const char * sep = strchr(cur, ';');
         if (sep)
@@ -471,7 +471,7 @@ bool DirectoryThread::performCommand()
             throwError1(RFSERR_TimeoutWaitConnect, url.str());
 
         bool done;
-        loop
+        for (;;)
         {
             msg.clear();
             if (!catchReadBuffer(socket, msg, FTTIME_DIRECTORY))
@@ -834,7 +834,7 @@ void doPhysicalCopy(IPropertyTree * source, const char * target, IPropertyTree *
             throwError1(RFSERR_TimeoutWaitConnect, url.str());
 
         bool done;
-        loop
+        for (;;)
         {
             msg.clear();
             if (!catchReadBuffer(socket, msg, FTTIME_DIRECTORY))

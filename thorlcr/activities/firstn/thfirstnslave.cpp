@@ -146,7 +146,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities);
         if (!abortSoon)
         {
-            loop
+            for (;;)
             {
                 if (0 == countThisGroup && skipCount)
                 {
@@ -185,7 +185,7 @@ public:
                 }
                 else
                 { // consume rest of group
-                    loop
+                    for (;;)
                     {
                         OwnedConstThorRow row = inputStream->nextRow();
                         if (!row)

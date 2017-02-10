@@ -174,7 +174,7 @@ CRHDualCache::~CRHDualCache()
 {
     ::Release(strm1);
     ::Release(strm2);
-    loop 
+    for (;;)
     {  
         CRHRollingCacheElem *e = cache.dequeue();  
         if (!e)  
@@ -298,7 +298,7 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
     
     // first move 'mid' forwards until mid>=left
     int low = 0;
-    loop 
+    for (;;)
     {
         CRHRollingCacheElem * r = cache->mid(0);
         if (!r)
@@ -322,7 +322,7 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
             low--;
     }
     // now scan back (note low should be filled even at eos)
-    loop 
+    for (;;)
     {
         CRHRollingCacheElem * pr = cache->mid(low-1);
         if (!pr)
@@ -345,7 +345,7 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
     if (cache->mid(0)) // check haven't already hit end
     { 
         // now scan fwd
-        loop 
+        for (;;)
         {
             high++;
             CRHRollingCacheElem * nr = cache->mid(high);
@@ -413,7 +413,7 @@ bool IEngineRowStream::nextGroup(ConstPointerArray & group)
 
 void IEngineRowStream::readAll(RtlLinkedDatasetBuilder &builder)
 {
-    loop
+    for (;;)
     {
         const void *nextrec = nextRow();
         if (!nextrec)
@@ -621,7 +621,7 @@ public:
 
     virtual void getSortedGroup(ConstPointerArray & result)
     {
-        loop
+        for (;;)
         {
             const void * row = next();
             if (!row)
@@ -857,7 +857,7 @@ class CHeapSortAlgorithm : public CSortAlgorithm
                 const void **s = sorted.getArray();
                 int *sq = sequences.getArray();
                 unsigned v = 0; // vacancy
-                loop
+                for (;;)
                 {
                     unsigned c = 2*v + 1;
                     if (c < n)
@@ -978,7 +978,7 @@ public:
             eof = true;
             return;
         }
-        loop
+        for (;;)
         {
             insertHeap(next);
             next = input->nextRow();
@@ -1041,7 +1041,7 @@ public:
 
     virtual void prepare(IEngineRowStream *input)
     {
-        loop
+        for (;;)
         {
             const void * next = input->nextRow();
             if (!next)
@@ -1768,7 +1768,7 @@ void CSafeSocket::flush()
         if (!adaptiveRoot || mlResponseFmt != MarkupFmt_JSON)
         {
             if (traceLevel > 5)
-                DBGLOG("Writing content head length %d to HTTP socket", contentHead.length());
+                DBGLOG("Writing content head length %" I64F "u to HTTP socket", static_cast<__uint64>(contentHead.length()));
             sock->write(contentHead.str(), contentHead.length());
             sent += contentHead.length();
         }
@@ -1783,7 +1783,7 @@ void CSafeSocket::flush()
         if (!adaptiveRoot || mlResponseFmt != MarkupFmt_JSON)
         {
             if (traceLevel > 5)
-                DBGLOG("Writing content tail length %d to HTTP socket", contentTail.length());
+                DBGLOG("Writing content tail length %" I64F "u to HTTP socket", static_cast<__uint64>(contentTail.length()));
             sock->write(contentTail.str(), contentTail.length());
             sent += contentTail.length();
         }

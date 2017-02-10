@@ -828,7 +828,7 @@ void CThorExpandingRowArray::transferRowsCopy(const void **outRows, bool takeOwn
     else
     {
         const void **lastNewRow = outRows+numRows-1;
-        loop
+        for (;;)
         {
             LinkThorRow(*outRows);
             if (outRows == lastNewRow)
@@ -1572,7 +1572,7 @@ void CThorSpillableRowArray::transferRowsCopy(const void **outRows, bool takeOwn
     else
     {
         const void **lastNewRow = outRows+numRows-1;
-        loop
+        for (;;)
         {
             LinkThorRow(*outRows);
             if (outRows == lastNewRow)

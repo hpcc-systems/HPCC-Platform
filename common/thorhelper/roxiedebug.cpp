@@ -30,7 +30,7 @@
 bool CDebugCommandHandler::checkCommand(IXmlWriter &out, const char *&supplied, const char *expected)
 {
     unsigned i = 0;
-    loop
+    for (;;)
     {
         if (!supplied[i])
         {
@@ -303,7 +303,7 @@ public:
                 {
                     intValue = 0;
                     char c;
-                    loop
+                    for (;;)
                     {
                         c = *v++;
                         if ((c >= '0') && (c <= '9')) 

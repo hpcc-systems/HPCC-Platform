@@ -321,7 +321,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     int retry = udpRetryBusySenders; 
                     unsigned finger = firstRequest;
                     unsigned prev = -1;
-                    loop
+                    for (;;)
                     {
                         if (udpSnifferEnabled && parent.sniffer->is_busy(finger))
                         {

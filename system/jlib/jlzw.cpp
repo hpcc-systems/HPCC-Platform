@@ -633,7 +633,7 @@ size32_t RLECompress(void *dst,const void *src,size32_t size) // maximum will wr
     const byte *in=(const byte *)src;
     const byte *inmax = in+size;
     byte pc = 0;
-    loop {
+    for (;;) {
         byte c = *(in++);
         if (c==pc) {
             byte cnt = 0;
@@ -699,7 +699,7 @@ size32_t RLEExpand(void *dst,const void *src,size32_t expsize)
         return expsize+2;
     }
     byte pc = 0;
-    loop {
+    for (;;) {
         if ((c<0xd0)||(c>=0xe0)) 
             *(out++) = c;
         else {
@@ -1127,7 +1127,7 @@ public:
         if (!sz)
             return 0;
         byte *d=(byte *)dst;
-        loop {
+        for (;;) {
             switch (state) {
             case S_pre_repeat:
                 if (!rs) 
@@ -1193,7 +1193,7 @@ public:
         if (!sz)
             return rs?-1:0;
         const byte *d=(const byte *)dst;
-        loop {
+        for (;;) {
             switch (state) {
             case S_pre_repeat:
                 if (!rs) 
@@ -2240,7 +2240,7 @@ public:
         CriticalBlock block(crit);
         assertex(mode!=ICFread);
         size32_t ret = 0;
-        loop {
+        for (;;) {
             if (pos!=trailer.expandedSize)
                 throw MakeStringException(-1,"sequential writes only on compressed file");
             size32_t done = compress(data,len);
@@ -2434,7 +2434,7 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsiz
     offset_t fsize = fileio->size();
     if (fsize)
     {
-        loop
+        for (;;)
         {
             if (fsize>=sizeof(WinCompressedFileTrailer))  // thats 8 bytes bigger but I think doesn't matter
             {
@@ -2895,7 +2895,7 @@ jlib_decl void testDiffComp(unsigned amount)
         Owned<IReadSeqVar> in = createRowCompReadSeq("test.out", 0, sz);
 
         count_t a = 0;
-        loop
+        for (;;)
         {
             size32_t tmpSz;
             if (!in->get(sz, s, tmpSz))
@@ -2914,7 +2914,7 @@ jlib_decl void testDiffComp(unsigned amount)
         Owned<IReadSeqVar> in = createRowCompReadSeq(*iFileIOStream, 0, sz);
 
         count_t a = 0;
-        loop
+        for (;;)
         {
             size32_t tmpSz;
             if (!in->get(sz, s, tmpSz))
@@ -2930,7 +2930,7 @@ jlib_decl void testDiffComp(unsigned amount)
         Owned<IReadSeqVar> in = createRowCompReadSeq("test.out", 0, sz, -1, true);
 
         count_t a = 0;
-        loop
+        for (;;)
         {
             size32_t tmpSz;
             if (!in->get(sz, s, tmpSz))

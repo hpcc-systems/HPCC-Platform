@@ -121,7 +121,7 @@ static bool CopySingleFile(IFile *srcfile,IFile *dstfile, bool compress, bool su
             {
                 HANDLE hSource=::CreateFile(source,GENERIC_READ,0,NULL,OPEN_EXISTING,0,NULL);
                 void *buf = malloc(BUFSIZE);
-                loop
+                for (;;)
                 {
                     DWORD read;
                     if (!::ReadFile(hSource, buf, BUFSIZE, &read, NULL))
@@ -407,7 +407,7 @@ static void loadSlaves(const char *slavesName)
         if (hash)
             *hash = 0;
         char *finger = inbuf;
-        loop
+        for (;;)
         {
             while (isspace(*finger))
                 finger++;

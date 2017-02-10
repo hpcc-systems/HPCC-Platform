@@ -111,7 +111,7 @@ static bool checkPartsInCluster(const char *title,const char *clustername, IProp
         unsigned pn = part.getPropInt("Num");
         for (int rep=0;rep<2;rep++) {
             i = 0;
-            loop {
+            for (;;) {
                 i++;
                 xpath.clear().appendf(rep?"RNode[%d]":"Node[%d]",i);
                 if (!part.hasProp(xpath.str())) 
@@ -172,7 +172,7 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
         /////////////////////////////////
         StringBuffer xpath;
         unsigned i = 0;
-        loop {
+        for (;;) {
             i++;
             xpath.clear().appendf("Node[%d]",i);
             if (!part.hasProp(xpath.str())) 
@@ -183,7 +183,7 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
             files.append(rmtFile);
         }
         i = 0;
-        loop {
+        for (;;) {
             i++;
             xpath.clear().appendf("RNode[%d]",i);
             if (!part.hasProp(xpath.str())) 

@@ -254,7 +254,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
 #ifdef _WIN32
     // Not the world's best code but will do 
     char *next = (char *) HEAP_ALIGNMENT_SIZE;
-    loop
+    for (;;)
     {
         heapBase = (char *) VirtualAlloc(next, memsize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
         if (heapBase)
@@ -687,7 +687,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
         //Check if the last page allocated created a new run of completely allocated memory
         if (heapBitmap[i-1] == 0)
         {
-            loop
+            for (;;)
             {
                 i--;
                 dbgassertex(i != 0); // should never occur - memory must be full, and should have been caught much earlier
@@ -713,7 +713,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                             unsigned start = i;
                             heap_t startHbi = hbi;
                             char *ret = heapBase + (i*HEAP_BITS+b-1)*HEAP_ALIGNMENT_SIZE;
-                            loop
+                            for (;;)
                             {
                                 hbi &= ~mask;
                                 if (!--matches)
@@ -810,7 +810,7 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
         if (wordOffset < heapLWM)
             heapLWM = wordOffset;
 
-        loop
+        for (;;)
         {
             heap_t prev = heapBitmap[wordOffset];
             if (unlikely((prev & mask) != 0))
@@ -1514,7 +1514,7 @@ public:
         //relaxed memory order since there will be no multi-threaded access
         unsigned nextFree = freeBase.load(std::memory_order_relaxed);
         unsigned nextBlock = r_blocks.load(std::memory_order_relaxed);
-        loop
+        for (;;)
         {
             size32_t bytesFree = dataAreaSize() - nextFree;
             if (bytesFree < chunkSize)
@@ -1611,7 +1611,7 @@ protected:
 #ifdef HAS_EFFICIENT_CAS
             unsigned old_blocks = r_blocks.load(std::memory_order_relaxed);  // can be relaxed because the cas will fail if not up to date.
 #endif
-            loop
+            for (;;)
             {
 #ifndef HAS_EFFICIENT_CAS
                 unsigned old_blocks = r_blocks.load(std::memory_order_relaxed);  // can be relaxed because the cas will fail if not up to date.
@@ -2631,7 +2631,7 @@ public:
 
         unsigned block = heapletToBlock(heaplet);
         unsigned head = headMaybeSpace.load(std::memory_order_relaxed); // can be relaxed since not accessing anything from another thread
-        loop
+        for (;;)
         {
             //Update the next pointer.  BLOCKLIST_ABA_INC is ORed with the value to ensure it is non-zero.
             //Relaxed - no one else can access, and following release will ensure it is available.
@@ -2649,7 +2649,7 @@ public:
         //This must only be called within a critical section since some functions assume only one active thread is
         //allowed to remove elements from the list
         unsigned head = headMaybeSpace.load(std::memory_order_acquire); // acquire so that heaplet->nextSpace is available
-        loop
+        for (;;)
         {
             if (isNullBlock(head))
                 return NULL;
@@ -2710,7 +2710,7 @@ public:
 
         //Not at the head of the list, and head is not NULL
         Heaplet * prevHeaplet = blockToHeaplet(head);
-        loop
+        for (;;)
         {
             unsigned next = prevHeaplet->nextSpace.load(std::memory_order_relaxed);
             if (isNullBlock(next))
@@ -2849,7 +2849,7 @@ public:
         Heaplet * headHeaplet;
         Heaplet * preserved = NULL;
         //First free any empty blocks at the head of the maybe space list
-        loop
+        for (;;)
         {
             unsigned head = headMaybeSpace.load(std::memory_order_acquire);
             if (isNullBlock(head))
@@ -2885,7 +2885,7 @@ public:
         if (headHeaplet)
         {
             Heaplet * prevHeaplet = headHeaplet;
-            loop
+            for (;;)
             {
                 unsigned curSpace = prevHeaplet->nextSpace.load(std::memory_order_relaxed);
                 if (isNullBlock(curSpace))
@@ -3317,7 +3317,7 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsig
             //Scan through all the memory, checking for a block marked as free - should terminate very quickly unless highly fragmented
             const size_t startOffset = nextMatchOffset;
             size32_t offset = startOffset;
-            loop
+            for (;;)
             {
                 ret = data() + offset;
                 offset += size;
@@ -3356,7 +3356,7 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsig
 #ifdef HAS_EFFICIENT_CAS
         unsigned old_blocks = r_blocks.load(std::memory_order_acquire); // acquire ensures that *(unsigned *)ret is up to date
 #endif
-        loop
+        for (;;)
         {
 #ifndef HAS_EFFICIENT_CAS
             unsigned old_blocks = r_blocks.load(std::memory_order_acquire); // acquire ensures that *(unsigned *)ret is up to date
@@ -3638,7 +3638,7 @@ class BufferedRowCallbackManager
 
         virtual int run()
         {
-            loop
+            for (;;)
             {
                 goSem.wait();
                 if (abort)
@@ -3895,7 +3895,7 @@ public:
 
     void runReleaseBufferThread()
     {
-        loop
+        for (;;)
         {
             releaseBuffersSem.wait();
             if (abortBufferThread)
@@ -4657,7 +4657,7 @@ public:
         if (minimizeFootprint)
             releaseCallbackMemory(SpillAllCost, minimizeFootprintCritical, false, 0);
 
-        loop
+        for (;;)
         {
             unsigned lastReleaseSeq = getReleaseSeq();
             //We need to ensure that the number of allocated pages is updated atomically so multiple threads can't all
@@ -5440,7 +5440,7 @@ HugeHeaplet * CHugeHeap::allocateHeaplet(memsize_t _size, unsigned allocatorId, 
 {
     unsigned numPages = PAGES(_size + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
 
-    loop
+    for (;;)
     {
         rowManager->checkLimit(numPages, maxSpillCost);
 
@@ -5500,7 +5500,7 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
     }
 
     unsigned numPages = newPages - oldPages;
-    loop
+    for (;;)
     {
         // NOTE: we request permission only for the difference between the old
         // and new sizes, even though we may temporarily hold both. This not only
@@ -5580,7 +5580,7 @@ void CChunkedHeap::gatherStats(CRuntimeStatisticCollection & result)
     if (start)
     {
         Heaplet * finger = start;
-        loop
+        for (;;)
         {
             finger->mergeStats(merged);
             finger = getNext(finger);
@@ -5603,7 +5603,7 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
     //The latter is done outside the spinblock, to reduce the window for contention.
     ChunkedHeaplet * donorHeaplet;
     char * chunk;
-    loop
+    for (;;)
     {
         {
             NonReentrantSpinBlock b(heapletLock);
@@ -5622,7 +5622,7 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
             }
 
             //Now walk the list of blocks which may potentially have some free space:
-            loop
+            for (;;)
             {
                 Heaplet * next = popFromSpaceList();
                 if (!next)
@@ -5699,7 +5699,7 @@ unsigned CChunkedHeap::doAllocateRowBlock(unsigned allocatorId, unsigned maxSpil
     //The latter is done outside the spinblock, to reduce the window for contention.
     ChunkedHeaplet * donorHeaplet;
     unsigned allocated = 0;
-    loop
+    for (;;)
     {
         {
             NonReentrantSpinBlock b(heapletLock);
@@ -5718,7 +5718,7 @@ unsigned CChunkedHeap::doAllocateRowBlock(unsigned allocatorId, unsigned maxSpil
             }
 
             //Now walk the list of blocks which may potentially have some free space:
-            loop
+            for (;;)
             {
                 Heaplet * next = popFromSpaceList();
                 if (!next)
@@ -5800,7 +5800,7 @@ const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state
     //heaplets with potential space
     if (finger)
     {
-        loop
+        for (;;)
         {
            //This cast is safe because we are within a member of CChunkedHeap
             ChunkedHeaplet * chunkedFinger = static_cast<ChunkedHeaplet *>(finger);
@@ -5863,7 +5863,7 @@ void CChunkedHeap::checkScans()
         if (start)
         {
             Heaplet * finger = start;
-            loop
+            for (;;)
             {
                 finger->mergeStats(merged);
                 finger = getNext(finger);
@@ -6035,7 +6035,7 @@ class CDataBufferManager : implements IDataBufferManager, public CInterface
         DataBufferBottom *finger = freeChain;
         if (finger)
         {
-            loop
+            for (;;)
             {
                 // NOTE - do NOT put a CriticalBlock c(finger->crit) here since:
                 // 1. It's not needed - no-one modifies finger->nextBottom chain but me and I hold CDataBufferManager::crit
@@ -6083,7 +6083,7 @@ public:
         if (freePending.exchange(false, std::memory_order_acquire))
             freeUnused();
 
-        loop
+        for (;;)
         {
             if (curBlock)
             {
@@ -6131,7 +6131,7 @@ public:
             DataBufferBottom *finger = freeChain;
             if (finger)
             {
-                loop
+                for (;;)
                 {
                     CriticalBlock c(finger->crit);
                     if (finger->freeChain)
@@ -7148,7 +7148,7 @@ protected:
         try
         {
             unsigned i = 0;
-            loop
+            for (;;)
             {
                 ASSERT(rm1->allocate(i++, 0) != NULL);
             }
@@ -8249,7 +8249,7 @@ protected:
         void * prev = rowManager->allocate(requestSize, 1);
         try
         {
-            loop
+            for (;;)
             {
                 memsize_t nextSize = (memsize_t)(requestSize*1.25);
                 void *next = rowManager->allocate(nextSize, 1);
@@ -8281,7 +8281,7 @@ protected:
         void * prev2 = rowManager->allocate(requestSize, 1);
         try
         {
-            loop
+            for (;;)
             {
                 memsize_t nextSize = (memsize_t)(requestSize*1.25);
                 void *next1 = rowManager->allocate(nextSize, 1);
@@ -8317,7 +8317,7 @@ protected:
         void * prev = rowManager->allocate(requestSize, 1);
         try
         {
-            loop
+            for (;;)
             {
                 memsize_t nextSize = (memsize_t)(requestSize*1.25);
                 memsize_t curSize = RoxieRowCapacity(prev);
@@ -8349,7 +8349,7 @@ protected:
         void * prev2 = rowManager->allocate(requestSize, 1);
         try
         {
-            loop
+            for (;;)
             {
                 memsize_t nextSize = (memsize_t)(requestSize*1.25);
                 memsize_t newSize1 = RoxieRowCapacity(prev1);

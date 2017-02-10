@@ -177,7 +177,7 @@ bool SegMonitorList::incrementKey(unsigned segno, void *keyBuffer) const
 unsigned SegMonitorList::_lastRealSeg() const
 {
     unsigned seg = segMonitors.length();
-    loop
+    for (;;)
     {
         if (!seg)
             return 0;
@@ -789,7 +789,7 @@ public:
         if (keyCursor)
         {
             unsigned lastRealSeg = segs.lastRealSeg();
-            loop
+            for (;;)
             {
                 if (_lookup(true, lastRealSeg))
                 {
@@ -851,7 +851,7 @@ public:
                 else
                     return 0;
             }
-            loop
+            for (;;)
             {
                 if (_lookup(true, lastFullSeg))
                 {
@@ -1567,7 +1567,7 @@ const byte *CKeyIndex::loadBlob(unsigned __int64 blobid, size32_t &blobSize)
     blobSize = sizeRemaining;
     byte *ret = (byte *) malloc(sizeRemaining);
     byte *finger = ret;
-    loop
+    for (;;)
     {
         size32_t gotHere = blobNode->getBlobData(offset, finger);
         assertex(gotHere <= sizeRemaining);
@@ -1781,7 +1781,7 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, bool seekForward)
     }
     if (!lwm)
         node.set(key.rootNode);
-    loop
+    for (;;)
     {
         unsigned int a = lwm;
         int b = node->getNumKeys();
@@ -1854,7 +1854,7 @@ bool CKeyCursor::ltEqual(const char *src, char *dst, bool seekForward)
     }
     if (!lwm)
         node.set(key.rootNode);
-    loop
+    for (;;)
     {
         unsigned int a = lwm;
         int b = node->getNumKeys();
@@ -2452,7 +2452,7 @@ public:
                 DBGLOG("SKIP: merging key = %d", key);
 #endif
             unsigned compares = 0;
-            loop
+            for (;;)
             {
                 if (CKeyLevelManager::lookupSkip(seek, seekOffset, seeklen) )
                 {
@@ -2578,7 +2578,7 @@ public:
             assertex(keySize);
             if (!keyBuffer) keyBuffer = (char *) malloc(keySize);
             segs.setLow(0, keyBuffer);
-            loop
+            for (;;)
             {
                 keyCursor = keyset->queryPart(i)->getCursor(ctx);
                 matched = false;
@@ -2587,7 +2587,7 @@ public:
                 bool found;
                 unsigned lskips = 0;
                 unsigned lnullSkips = 0;
-                loop
+                for (;;)
                 {
                     if (seek)
                     {
@@ -3091,7 +3091,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
                     builder->processKeyData(keybuf, count*10, datasize);
             }
             unsigned idx = 9;
-            loop
+            for (;;)
             {
                 if (keybuf[idx]=='9')
                     keybuf[idx--]='0';
@@ -3166,7 +3166,7 @@ protected:
             tlk1a->finishSegmentMonitors();
             tlk1a->reset();
 
-/*          loop
+/*          for (;;)
             {
                 offset_t fpos;
                 if (!tlk1a->lookup(true))

@@ -219,7 +219,7 @@ public:
             bool somematch=false;
             if (r1==r2) { // check for identical
                 r=r1;
-                loop {
+                for (;;) {
                     r--;
                     if (!nodes[r]->equals(&grp->queryNode(r)))
                         break;
@@ -249,7 +249,7 @@ public:
             do {
                 r1--;
                 r=r2;
-                loop {
+                for (;;) {
                     r--;
                     if (!matched2[r]) {
                         if (nodes[r1]->equals(&grp->queryNode(r))) {

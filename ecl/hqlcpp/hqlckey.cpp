@@ -352,7 +352,7 @@ KeyedJoinInfo::~KeyedJoinInfo()
 
 IHqlExpression * KeyedJoinInfo::querySimplifiedKey(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -769,7 +769,7 @@ IHqlExpression * KeyedJoinInfo::optimizeTransfer(HqlExprArray & fields, HqlExprA
             //Check for an expression of the form LEFT.x.y.z.a.b.c, but if any of x,y,z, are datasets then process later.
             IHqlExpression * cur = filter;
             IHqlExpression * ds;
-            loop
+            for (;;)
             {
                 ds = cur->queryChild(0);
                 //if a select from a dataset, then wait until we recurse to here
@@ -1680,7 +1680,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyPatch(BuildCtx & ctx, IHqlE
 
 IHqlExpression * querySelectorTable(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         IHqlExpression * selector = expr->queryChild(0);
         if (selector->getOperator() != no_select)

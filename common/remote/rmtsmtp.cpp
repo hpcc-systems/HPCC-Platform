@@ -484,7 +484,7 @@ public:
         warnings = _warnings;
         CSMTPValidator validator;
         if(strlen(senderHeader) + sender.length() > 998)
-            throw MakeStringException(0, "email sender address too long: %u characters", sender.length());
+            throw MakeStringException(0, "email sender address too long: %" I64F "u characters",  static_cast<__uint64>(sender.length()));
         validator.validateAddress(sender.get(), "email sender address");
 
         getRecipients(validator, _to);
@@ -492,7 +492,7 @@ public:
             throw MakeStringException(0, "Email recipient address list too long: %u characters", to.length());
 
         if(strlen(subjectHeader) + subject.length() > 998)
-            throw MakeStringException(0, "Email subject too long: %u characters", subject.length());
+            throw MakeStringException(0, "Email subject too long: %" I64F "u characters",  static_cast<__uint64>(subject.length()));
         validator.validateValue(subject.get(), "email subject");
     }
 

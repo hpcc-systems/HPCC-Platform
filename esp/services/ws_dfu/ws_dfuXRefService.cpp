@@ -39,7 +39,7 @@ static void appendReplyMessage(bool json, StringBuffer &reply, const char *href,
     va_end(args);
     StringBuffer fmsg;
     const char *s=msg.str();
-    loop {
+    for (;;) {
         char c=*(s++);
         if (!c||(c=='\n')) {
             Owned<IPropertyTree> tree = createPTree("Message");

@@ -66,7 +66,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                 return 0;
             size32_t minRequired = 4096; // MORE - make configurable
             size32_t thisLineLength;
-            loop
+            for (;;)
             {
                 size32_t avail;
                 const void *peek = inputStream->peek(minRequired, avail);
@@ -162,7 +162,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         const void *nextRow()
         {
             RtlDynamicRowBuilder row(allocator);
-            loop
+            for (;;)
             {
                 if (eoi || activity.abortSoon)
                     return NULL;
@@ -196,7 +196,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
             {
                 bool gotWanted = false;
                 CMessageBuffer msgMb;
-                loop
+                for (;;)
                 {
                     if (!receiveMsg(msgMb, queryJobChannel().queryMyRank()-1, mpTag) || 0 == msgMb.length())
                     {
@@ -213,7 +213,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                     else
                     {
                         unsigned which;
-                        loop
+                        for (;;)
                         {
                             msgMb.read(which);
                             assertex(!gotHeaderLines->testSet(which));

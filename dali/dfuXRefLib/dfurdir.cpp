@@ -66,7 +66,7 @@ public:
         Owned<IFile> dir = createIFile(rfn);
         if (!port) {
             unsigned retrycount = 0;
-            loop {
+            for (;;) {
                 try {
                     dir->isDirectory(); // kludge to force connection
                     break;
@@ -177,7 +177,7 @@ IPropertyTree *getDirectory(const char * directory, INode * node, unsigned short
 {
     //DBGLOG("IPropertyTree * getDirectory");
     unsigned retries = 0;
-    loop {
+    for (;;) {
         StringAttr nextDir;
         try {
             Owned<IPropertyTree> dirTree = createPTree("machine");
@@ -187,7 +187,7 @@ IPropertyTree *getDirectory(const char * directory, INode * node, unsigned short
 
             XREFDirectoryBuilder builder;
             const char * cur = directory;
-            loop
+            for (;;)
             {
                 const char * sep = strchr(cur, ';');
                 if (sep)

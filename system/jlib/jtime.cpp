@@ -831,7 +831,7 @@ static void carryTimeInc(unsigned &yr, unsigned &mon, unsigned &dy, unsigned &hr
         if (dy<=daysInMonth(yr,mon))
             return;
     }
-    loop {
+    for (;;) {
         yr += (mon-1)/12;
         mon = (mon-1)%12+1;
         unsigned dinm = daysInMonth(yr,mon);
@@ -898,7 +898,7 @@ static const char *parseCronItem(const char *s,UnsignedArray &a,unsigned first,u
             }
         }
         else {
-            loop {
+            for (;;) {
                 s = getnumorname(s,n,first,last);
                 if (n!=NotFound) {
                     if (*s=='-') { // range

@@ -91,7 +91,7 @@ static void decodeHexPairsX(const char *input, unsigned inputLen, void *&outData
     outLen = inputLen/2;
     outData = malloc(outLen);
     char *tgt = (char *)outData;
-    loop
+    for (;;)
     {
         byte high = hex2num(*input++);
         *tgt++ = (high << 4) | hex2num(*input++);
@@ -770,11 +770,11 @@ public:
                 throw MakeStringException(0, "// unsupported here");
             path++;
         }
-        loop
+        for (;;)
         {
             const char *startQ = strchr(path, '[');
             const char *nextSep;
-            loop
+            for (;;)
             {
                 nextSep = strchr(path, '/');
                 if (startQ && (!nextSep || startQ < nextSep))
@@ -877,7 +877,7 @@ public:
         {
             const char *q = qualifier;
             bool numeric = true;
-            loop
+            for (;;)
             {
                 if ('\0' == *q) break;
                 else if (!isdigit(*q)) { numeric = false; break; }

@@ -34,7 +34,7 @@ static unsigned csvread(IIOStream &stream, char *dst, unsigned max, bool stopEOL
 {
     char *p = dst;
     char c;
-    loop
+    for (;;)
     { 
         if (!stream.read(1, &c))
             return 0;

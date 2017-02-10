@@ -541,7 +541,7 @@ PyObject *PythonThreadContext::compileEmbeddedScript(size32_t lenChars, const ch
 static int countFields(const RtlFieldInfo * const * fields)
 {
     unsigned count = 0;
-    loop
+    for (;;)
     {
         if (!*fields)
             break;

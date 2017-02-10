@@ -45,7 +45,7 @@ static bool extractAttributeReference(StringBuffer & attributeName, const char *
 {
     const char * dot = NULL;
     const char * cur = text;
-    loop
+    for (;;)
     {
         char next = *cur;
         if (next == '.' || next == '/')
@@ -98,7 +98,7 @@ static void parseAttribute(IPropertyTree *destTree, const char *text, const char
 
             while (isspace(*text)) text++;
             const char * form = text;
-            loop
+            for (;;)
             {
                 if (text[0]=='*' && text[1]=='/')
                 {

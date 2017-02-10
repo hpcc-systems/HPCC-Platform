@@ -25,7 +25,7 @@
 void expandCommaList(StringArray & target, const char * text)
 {
     const char * cur = text;
-    loop
+    for (;;)
     {
         const char * comma = strchr(cur, ',');
         if (!comma)

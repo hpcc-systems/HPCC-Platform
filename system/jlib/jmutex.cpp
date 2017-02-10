@@ -238,7 +238,7 @@ void NamedMutex::lock()
     // first lock locally
     threadmutex.lock();
     // then lock globally
-    loop {
+    for (;;) {
         if (lock_file(mutexfname))
             return;
         Sleep(POLLTIME);
@@ -252,7 +252,7 @@ bool NamedMutex::lockWait(unsigned timeout)
     if (!threadmutex.lockWait(timeout))
         return false;
     // then lock globally
-    loop {
+    for (;;) {
         if (lock_file(mutexfname))
             return true;
         unsigned elapsed = msTick()-t;
@@ -332,7 +332,7 @@ void Monitor::notifyAll()
 #ifdef USECHECKEDCRITICALSECTIONS
 CheckedReadLockBlock::CheckedReadLockBlock(ReadWriteLock &l, unsigned timeout, const char *fname,unsigned lnum) : lock(l)
 {
-    loop
+    for (;;)
     {
         if (lock.lockRead(timeout))
             break;
@@ -343,7 +343,7 @@ CheckedReadLockBlock::CheckedReadLockBlock(ReadWriteLock &l, unsigned timeout, c
 
 CheckedWriteLockBlock::CheckedWriteLockBlock(ReadWriteLock &l, unsigned timeout, const char *fname,unsigned lnum) : lock(l)
 {
-    loop
+    for (;;)
     {
         if (lock.lockWrite(timeout))
             break;
@@ -354,7 +354,7 @@ CheckedWriteLockBlock::CheckedWriteLockBlock(ReadWriteLock &l, unsigned timeout,
 
 void checkedReadLockEnter(ReadWriteLock &lock, unsigned timeout, const char *fname, unsigned lnum)
 {
-    loop
+    for (;;)
     {
         if (lock.lockRead(timeout))
             break;
@@ -365,7 +365,7 @@ void checkedReadLockEnter(ReadWriteLock &lock, unsigned timeout, const char *fna
 
 void checkedWriteLockEnter(ReadWriteLock &lock, unsigned timeout, const char *fname, unsigned lnum)
 {
-    loop
+    for (;;)
     {
         if (lock.lockWrite(timeout))
             break;
@@ -378,7 +378,7 @@ void checkedWriteLockEnter(ReadWriteLock &lock, unsigned timeout, const char *fn
 
 void checkedCritEnter(CheckedCriticalSection &crit, unsigned timeout, const char *fname, unsigned lnum)
 {
-    loop
+    for (;;)
     {
         if (crit.lockWait(timeout))
             break;
@@ -394,7 +394,7 @@ void checkedCritLeave(CheckedCriticalSection &crit)
 CheckedCriticalBlock::CheckedCriticalBlock(CheckedCriticalSection &c, unsigned timeout, const char *fname,unsigned lnum) 
     : crit(c)       
 { 
-    loop
+    for (;;)
     {
         if (crit.lockWait(timeout))
             break;
@@ -405,7 +405,7 @@ CheckedCriticalBlock::CheckedCriticalBlock(CheckedCriticalSection &c, unsigned t
 
 CheckedCriticalUnblock::~CheckedCriticalUnblock()
 { 
-    loop
+    for (;;)
     {
         if (crit.lockWait(timeout))
             break;

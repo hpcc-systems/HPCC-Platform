@@ -486,7 +486,7 @@ public:
         resetDenorm();
         prevleft.setown(nextleft.getClear());
         if (!eofL) {
-            loop {
+            for (;;) {
                 nextleft.setown(strmL->nextRow());
                 if (!nextleft) 
                     break;
@@ -511,7 +511,7 @@ public:
         rightmatched = !rightouter;
         prevright.setown(nextright.getClear());
         if (!eofR) {
-            loop {
+            for (;;) {
                 nextright.setown(strmR->nextRow());
                 if (!nextright) 
                     break;
@@ -1351,7 +1351,7 @@ public:
 
         // first move 'mid' forwards until mid>=left
         int low = 0;
-        loop {
+        for (;;) {
             CRollingCacheElem * r = cache->mid(0);
             if (!r)
                 break; // hit eos
@@ -1372,7 +1372,7 @@ public:
                 low--;
         }
         // now scan back (note low should be filled even at eos)
-        loop {
+        for (;;) {
             CRollingCacheElem * pr = cache->mid(low-1);
             if (!pr)
                 break; // hit start 
@@ -1391,7 +1391,7 @@ public:
         int high = 0;
         if (cache->mid(0)) { // check haven't already hit end
             // now scan fwd
-            loop {
+            for (;;) {
                 high++;
                 CRollingCacheElem * nr = cache->mid(high);
                 if (!nr) 
@@ -1683,7 +1683,7 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
             Owned<IEngineRowAllocator> allocator = parent->activity.getRowAllocator(rowIf->queryRowMetaData(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
 
             IRowWriter *rowWriter = rowStream->queryWriter();
-            loop
+            for (;;)
             {
                 work.clear();
                 workready.signal();
@@ -1769,7 +1769,7 @@ public:
          * When all work has been added to workers, a end work item marker is added to the workqueue
          * which causes the workers to finish, mark stopped and flush their stream.
          */
-        loop
+        for (;;)
         {
             if (eos)
                 return NULL;
@@ -1883,7 +1883,7 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
 
             Owned<IRowWriter> rowWriter = parent->multiWriter->getWriter();
             PROGLOG("CMulticoreUnorderedJoinHelper::cWorker started");
-            loop
+            for (;;)
             {
                 cWorkItem *work = parent->workqueue.dequeue();
                 if (!work||((work->lgroup.ordinality()==0)&&(work->rgroup.ordinality()==0)))

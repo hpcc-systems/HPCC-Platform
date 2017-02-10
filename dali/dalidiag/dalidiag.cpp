@@ -137,7 +137,7 @@ void timeQorSDS(bool timeq)
     HiresTimer hrt;
     unsigned last = msTick();
     PrintLog("last 10   last 100 last 1000 change");
-    loop {
+    for (;;) {
         i++;
         hrt.reset();
         if (timeq) {
@@ -393,14 +393,14 @@ void nqPingPong(const char *q,const char *q2)
         MemoryBuffer mb;
         while (channel2->probe())
             channel2->get(mb.clear());
-        loop {
+        for (;;) {
             Sleep(getRandom()%500);
             PROGLOG("queue put to %s",q);
             mb.clear().append(q2);
             channel1->put(mb);
             Sleep(getRandom()%500);
             PROGLOG("queue got from %s",q2);
-            loop {
+            for (;;) {
                 channel2->get(mb.clear(),60*1000);
                 if (mb.length())
                     break;
@@ -419,7 +419,7 @@ void nqPingPong(const char *q,const char *q2)
             Owned<IQueueChannel> channel1=qconn->open(q);
             while (channel1->probe())
                 channel1->get(mb.clear());
-            loop {
+            for (;;) {
                 Sleep(getRandom()%1000);
                 channel1->get(mb.clear(),60*1000);
                 StringAttr replyq;
@@ -467,7 +467,7 @@ static unsigned __int64 hextoll(const char *str, bool *error=NULL)
     unsigned __int64 factor = 1;
     unsigned __int64 rolling = 0;
     char *ptr = (char *)str+len-1;
-    loop
+    for (;;)
     {
         char c = *ptr;
         unsigned v;
@@ -695,7 +695,7 @@ int main(int _argc, char* argv[])
                     break;
                 }
                 else {
-                    loop {
+                    for (;;) {
                         getDaliDiagnosticValue(arg,buf.clear());
                         if (stricmp(arg,"build")==0) {
                             if (strcmp(buf.str(),"$I""d$")==0)

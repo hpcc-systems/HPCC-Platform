@@ -58,7 +58,7 @@ bool isSequenceRoot(IHqlExpression * expr)
 
 bool canBuildSequenceInline(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -194,7 +194,7 @@ void TransformSequenceBuilder::buildSequence(BuildCtx & ctx, BuildCtx * declarec
 //Gather the different select levels, return the root dataset (if not in scope)
 IHqlExpression * gatherSelectorLevels(HqlExprArray & iterators, IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         IHqlExpression * root = queryRoot(expr);
         if (!root || root->getOperator() != no_select)

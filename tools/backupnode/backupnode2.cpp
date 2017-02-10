@@ -441,7 +441,7 @@ void applyPartsFile(IFileIO *in,void (* sync)(const char *,const char *))
     Owned<IFileIOStream> strm = createBufferedIOStream(in);
 #endif
     CFileStreamReader reader(strm);
-    loop {
+    for (;;) {
         size32_t sz;
         char *line = reader.nextLine(sz);
         if (!line)

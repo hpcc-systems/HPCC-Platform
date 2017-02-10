@@ -450,7 +450,7 @@ StringBuffer & StringBuffer::limited_valist_appendf(unsigned szLimit, const char
     else
     {
         size = BUF_SIZE * 2;
-        loop
+        for (;;)
         {
             if (0 != szLimit && size>szLimit) size = szLimit; // if so, will be last attempt
             if (size>MAX_BUF_SIZE)
@@ -857,7 +857,7 @@ StringBuffer &  StringBuffer::loadFile(IFile* f)
     char buf[2048];
     const unsigned requestedSize = sizeof(buf);
     offset_t pos = 0;
-    loop
+    for (;;)
     {
         size32_t len = io->read(pos, requestedSize, buf);
         if (len == 0)
@@ -1290,7 +1290,7 @@ StringAttr::StringAttr(const char * _text)
   text = _text ? strdup(_text) : NULL;
 }
 
-StringAttr::StringAttr(const char * _text, unsigned _len)
+StringAttr::StringAttr(const char * _text, size_t _len)
 {
     text = NULL;
     set(_text, _len);
@@ -1323,7 +1323,7 @@ void StringAttr::set(const char * _text)
     free(oldtext);
 }
 
-void StringAttr::set(const char * _text, unsigned _len)
+void StringAttr::set(const char * _text, size_t _len)
 {
     char * oldtext = text;
     text = (char *)malloc(_len+1);
@@ -1588,7 +1588,7 @@ void extractItem(StringBuffer & res, const char * src, const char * sep, int whi
     
     finger = (unsigned char *)src;
     unsigned char next;
-    loop
+    for (;;)
     { 
         while (isSeparator[(next = *finger)])
         { 
@@ -2287,7 +2287,7 @@ StringBuffer & appendStringAsSQL(StringBuffer & out, unsigned len, const char * 
 
     out.ensureCapacity(2 + len);
     out.append('\'');
-    loop
+    for (;;)
     {
         char * next = (char *)memchr(src, '\'', len);
         if (!next)
@@ -2459,7 +2459,7 @@ char *j_strtok_r(char *str, const char *delim, char **saveptr)
     if (!str) 
         str = *saveptr;
     char c;
-    loop {
+    for (;;) {
         c = *str;
         if (!c) {
             *saveptr = str;

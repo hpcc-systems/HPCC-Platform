@@ -197,7 +197,7 @@ bool CppWriterTemplate::loadTemplate(const char * filename, const char *dir)
                 }
                 
                 unsigned end = start;
-                loop
+                for (;;)
                 {
                     if (end >= len)
                         throwError(HQLERR_MissingTemplateTerminator);
@@ -378,12 +378,12 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
 {
     TypeNameBuilder result(name);
 
-    loop
+    for (;;)
     {
         bool isPointer = false;
         bool outOfLine= false;
         ITypeInfo * fullType = type;
-        loop
+        for (;;)
         {
             typemod_t tmod = type->queryModifier();
             if (tmod == typemod_none)

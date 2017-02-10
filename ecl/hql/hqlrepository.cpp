@@ -91,7 +91,7 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
 {
     Linked<IHqlScope> parentScope = ctx.queryRepository()->queryRootScope();
     const char * item = attrname;
-    loop
+    for (;;)
     {
         const char * dot = strchr(item, '.');
         IIdAtom * moduleName;

@@ -274,7 +274,7 @@ public:
     }
     void addSessionIds(CProcessSessionState &other, bool prevOnly)
     {
-        loop
+        for (;;)
         {
             SessionId id = other.dequeuePreviousSessionId();
             if (!id)
@@ -1166,7 +1166,7 @@ public:
 
     int run()
     {
-        loop {
+        for (;;) {
             contsem.wait();
             if (!running)
                 break;
@@ -1654,7 +1654,7 @@ protected:
         PROGLOG("Session stopping %" I64F "x %s",id,abort?"aborted":"ok");
         CHECKEDCRITICALBLOCK(sessmanagersect,60000);
         // do in multiple stages as may remove one or more sub sessions
-        loop
+        for (;;)
         {
             CIArrayOf<CSessionSubscriptionStub> tonotify;
             SuperHashIteratorOf<CSessionSubscriptionStub> iter(stubTable);

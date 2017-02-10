@@ -113,7 +113,7 @@ public:
     {
         if (inputStopped) return NULL;
         sortedRows.clearRows(); // NB: In a child query, this will mean the rows ptr will remain at high-water mark
-        loop
+        for (;;)
         {
             OwnedConstThorRow row = input->nextRow();
             if (!row)
@@ -143,14 +143,14 @@ public:
             if (global)
             {
                 unsigned indent = 0;
-                loop
+                for (;;)
                 {
                     if (topology.getPos()>=topology.length())
                         break;
 
                     IArrayOf<IRowStream> streams;
                     streams.append(*retStream.getClear());
-                    loop
+                    for (;;)
                     {
                         unsigned node;
                         topology.read(node);

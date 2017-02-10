@@ -777,7 +777,7 @@ public:
             MemoryBuffer mbmn;
             MemoryBuffer mbmx;
             MemoryBuffer mbmd;
-            loop
+            for (;;)
             {
 #ifdef _TRACE
                 iter++;
@@ -1219,7 +1219,7 @@ public:
         bool usesampling = true;        
 #endif
         bool useAux = false; // JCSMORE using existing partioning and auxillary rowIf (only used if overflow)
-        loop
+        for (;;)
         {
             OwnedMalloc<rowcount_t> splitMap, splitMapUpper;
             CTimer timer;

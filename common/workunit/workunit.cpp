@@ -548,7 +548,7 @@ protected:
 
     bool nextSubGraph()
     {
-        loop
+        for (;;)
         {
             if (!subgraphIter->next())
                 return false;
@@ -561,7 +561,7 @@ protected:
     {
         if (!graphIter)
             return false;
-        loop
+        for (;;)
         {
             if (!graphIter->next())
                 return false;
@@ -618,7 +618,7 @@ protected:
 
     bool nextChildScope()
     {
-        loop
+        for (;;)
         {
             if (collections.ordinality() == 0)
                 return false;
@@ -3028,7 +3028,7 @@ public:
             SessionId agent = -1;
             bool agentSessionStopped = false;
             unsigned start = msTick();
-            loop
+            for (;;)
             {
                 ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
                 switch (ret)
@@ -3104,7 +3104,7 @@ public:
         if (conn)
         {
             unsigned start = msTick();
-            loop
+            for (;;)
             {
                 ret = (WUAction) getEnum(conn->queryRoot(), "Action", actions);
                 if (ret != original)
@@ -5695,7 +5695,7 @@ public:
 
     virtual bool next()
     {
-        loop
+        for (;;)
         {
             if (!PARENT::next())
                 return false;
@@ -8691,7 +8691,7 @@ IStringVal & CLocalWUStatistic::getDescription(IStringVal & str, bool createDefa
         }
         else
         {
-            loop
+            for (;;)
             {
                 char c = *scope++;
                 if (!c)
@@ -9961,14 +9961,14 @@ const char * skipLeadingXml(const char * text)
     if (memcmp(text, UTF8_BOM, 3) == 0)
         text += 3;
 
-    loop
+    for (;;)
     {
         if (isspace(*text))
             text++;
         else if (text[0] == '<' && text[1] == '?')
         {
             text += 2;
-            loop
+            for (;;)
             {
                 if (!*text) break;
                 if (text[0] == '?' && text[1] == '>')
@@ -9982,7 +9982,7 @@ const char * skipLeadingXml(const char * text)
         else if (text[0] == '<' && text[1] == '!' && text[2] == '-' && text[3] == '-')
         {
             text += 4;
-            loop
+            for (;;)
             {
                 if (!*text) break;
                 if (text[0] == '-' && text[1] == '-' && text[2] == '>')
@@ -10165,7 +10165,7 @@ extern WORKUNIT_API IPropertyTree * resolveQueryAlias(IPropertyTree * queryRegis
     unsigned cnt = 0;
     StringBuffer lc(alias);
     const char * search = lc.toLowerCase().str();
-    loop
+    for (;;)
     {
         xpath.set("Alias[@name='").append(search).append("']/@id");
         const char * queryId = queryRegistry->queryProp(xpath);

@@ -112,7 +112,7 @@ public:
         unsigned s=0;
         for (; s<nslaves; s++)
         {
-            loop
+            for (;;)
             {
                 if (!queryJobChannel().queryJobComm().send(mb, s+1, mpTag)) return;
                 if (!receiveMsg(mb, s+1, mpTag)) return;
@@ -212,7 +212,7 @@ class CWorkUnitWriteLocalActivityMaster : public CWorkUnitWriteMasterBase
         virtual void main()
         {
             started = true;
-            loop
+            for (;;)
             {
                 CriticalBlock b(crit);
                 if (0 == senders.ordinality())

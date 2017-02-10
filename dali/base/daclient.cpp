@@ -261,7 +261,7 @@ bool updateDaliEnv(IPropertyTree *env, bool forceGroupUpdate, const char *daliIp
         return false;
     }
     SocketEndpoint daliep;
-    loop {
+    for (;;) {
         const char *ps = dalis->query().queryProp("@port");
         unsigned port = ps?atoi(ps):0;
         if (!port)

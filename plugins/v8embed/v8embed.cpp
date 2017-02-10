@@ -667,7 +667,7 @@ public:
         assertex(typeInfo);
         RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
         int idx = 0;
-        loop
+        for (;;)
         {
             roxiemem::OwnedConstRoxieRow row = val->ungroupedNextRow();
             if (!row)

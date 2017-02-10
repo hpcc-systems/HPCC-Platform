@@ -167,7 +167,7 @@ public:
 
     void deinit()
     {
-        loop
+        for (;;)
         {
             CStringTuple *item = todo.dequeue();
             if (!item) break;
@@ -224,7 +224,7 @@ public:
     void main()
     {
         threaded.adjustPriority(-2);
-        loop
+        for (;;)
         {
             sem.wait();
             if (aborted) break;

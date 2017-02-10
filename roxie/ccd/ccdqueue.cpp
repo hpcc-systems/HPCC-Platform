@@ -291,7 +291,7 @@ public:
                 finger += debugLen + sizeof(unsigned short);
                 lengthRemaining -= debugLen + sizeof(unsigned short);
             }
-            loop
+            for (;;)
             {
                 assertex(lengthRemaining>0);
                 if (!*finger)
@@ -1281,7 +1281,7 @@ public:
         {
             try
             {
-                loop
+                for (;;)
                 {
                     queue->wait();
                     if (stopped)
@@ -1684,7 +1684,7 @@ public:
     virtual int run()
     {
         started.signal();
-        loop
+        for (;;)
         {
             try
             {
@@ -2507,7 +2507,7 @@ CLocalMessageCollator::CLocalMessageCollator(IRowManager *_rowManager, ruid_t _r
 CLocalMessageCollator::~CLocalMessageCollator()
 {
     IMessageResult *goer;
-    loop
+    for (;;)
     {
         goer = pending.dequeue();
         if (!goer)

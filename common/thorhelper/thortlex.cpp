@@ -48,7 +48,7 @@ position_t MultiLexer::skipWhitespace(position_t pos)
     const byte * cur = state.start+pos;
     const byte * end = state.end;
     const byte * best = cur;
-    loop
+    for (;;)
     {
         const AsciiDfaState & curState = states[activeState];
 
@@ -84,7 +84,7 @@ unsigned MultiLexer::next(position_t pos, GrammarSymbolArray & symbols)
     unsigned * transitions = tokens.queryTransitions();
     const byte * best = NULL;
     const AsciiDfaState * bestState = NULL;
-    loop
+    for (;;)
     {
         const AsciiDfaState & curState = states[activeState];
 

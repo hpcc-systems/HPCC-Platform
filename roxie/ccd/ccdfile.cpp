@@ -219,7 +219,7 @@ public:
             bool firstTime = true;
             RoxieFileStatus fileStatus = FileNotFound;
 
-            loop
+            for (;;)
             {
                 if (currentIdx >= sources.length())
                     currentIdx = 0;
@@ -310,7 +310,7 @@ public:
     {
         CriticalBlock b(crit);
         unsigned tries = 0;
-        loop
+        for (;;)
         {
             try
             {
@@ -389,7 +389,7 @@ public:
     virtual bool createHardFileLink()
     {
         unsigned tries = 0;
-        loop
+        for (;;)
         {
             StringBuffer filesTried;
             if (currentIdx >= sources.length())
@@ -949,7 +949,7 @@ public:
             int fileCopiedCount = 0;
             bool fileCopied = false;
 
-            loop
+            for (;;)
             {
                 fileCopied = false;
                 Linked<ILazyFileIO> next;
@@ -1020,7 +1020,7 @@ public:
             DBGLOG("HandleCloser thread %p starting", this);
         try
         {
-            loop
+            for (;;)
             {
                 toClose.wait(10 * 60 * 1000);  // check expired file handles every 10 minutes 
                 if (closing)

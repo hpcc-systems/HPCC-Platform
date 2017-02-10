@@ -138,7 +138,7 @@ public:
         wu->subscribe(SubscribeOptionAbort);
         try
         {
-            loop
+            for (;;)
             {
                 if (sem.wait(2000))
                     break;

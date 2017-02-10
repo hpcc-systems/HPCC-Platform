@@ -1192,7 +1192,7 @@ static char *SoundexCode(const char *s,int l,char *res)
   r[2] = '0';
   r[3] = '0';
   r[4] = 0;
-  loop {
+  for (;;) {
     if (!l||!*s) {
       *r = '!';
       return res;
@@ -1250,14 +1250,14 @@ static bool WildMatchN ( const char *src, int srclen, int srcidx,
       srcidx++;
     }
     else {
-      loop {
+        for (;;) {
         if (patidx == patlen)
           return true;
         if (pat[patidx] != '*')
             break;
         patidx++;
       }
-      loop {
+        for (;;) {
         //No need to guard patLen since guaranteed to contain an ASTERISK
         const char tail_char = pat[patlen-1];
         if (tail_char == '*')
@@ -1302,7 +1302,7 @@ bool jlib_decl WildMatch(const char *src, const char *pat, bool nocase)
 
 bool jlib_decl containsWildcard(const char * pattern)
 {
-    loop
+    for (;;)
     {
         char c = *pattern++;
         switch (c)
@@ -1351,7 +1351,7 @@ static bool WildMatchNreplace ( const char *src, int srclen, int srcidx,
             srcidx++;
         }
         else {
-            loop {
+            for (;;) {
                 if (patidx == patlen) {
                     wild.append(srcidx);
                     wildlen.append(srclen-srcidx);
@@ -1388,7 +1388,7 @@ bool jlib_decl WildMatchReplace(const char *src, const char *pat, const char *re
     UnsignedArray wildlen;
     if (!WildMatchNreplace(src,(size32_t)strlen(src),0,pat,(size32_t)strlen(pat),0,nocase,wild,wildlen))
         return false;
-    loop {
+    for (;;) {
         char c = *(repl++);
         if (!c)
             break;
@@ -1471,7 +1471,7 @@ bool StringMatcher::queryAddEntry(unsigned len, const char * text, unsigned acti
         return false;
 
     entry * curTable = firstLevel;
-    loop
+    for (;;)
     {
         byte c = *text++;
         entry & curElement = curTable[c];

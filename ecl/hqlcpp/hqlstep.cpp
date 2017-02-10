@@ -206,7 +206,7 @@ void adjustValue(SharedHqlExpr & total, IHqlExpression * value, bool invert)
 
 IHqlExpression * SteppingCondition::simplifyArgument(IHqlExpression * expr, SharedHqlExpr & delta, bool invert)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -427,7 +427,7 @@ static void throwTooComplexToStep(IHqlExpression * expr)
 
 IHqlExpression * SteppingFieldSelection::extractSelect(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -654,7 +654,7 @@ void SteppingFieldSelection::generateSteppingMetaMember(HqlCppTranslator & trans
 IHqlExpression * SteppingFieldSelection::invertTransform(IHqlExpression * expr, IHqlExpression * select)
 {
     LinkedHqlExpr result = select;
-    loop
+    for (;;)
     {
         node_operator op = expr->getOperator();
         switch (op)

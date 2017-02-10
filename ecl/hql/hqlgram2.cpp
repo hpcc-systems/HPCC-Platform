@@ -490,7 +490,7 @@ void HqlGram::cleanCurTransform()
 {
     attribute pseudoErrPos;
     pseudoErrPos.pos.clear();
-    loop
+    for (;;)
     {
         IHqlExpression * ret = endTransform(pseudoErrPos);
         if (!ret)
@@ -1771,7 +1771,7 @@ IHqlExpression * HqlGram::forceEnsureExprType(IHqlExpression * expr, ITypeInfo *
 /* All in parms: linked */
 static bool containsSelect(IHqlExpression * expr, IHqlExpression * ds)
 {
-    loop
+    for (;;)
     {
         if (expr == ds)
             return true;
@@ -3067,7 +3067,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
     lexObject->getPosition(start);
     int prev = 0;
     YYSTYPE nextToken;
-    loop
+    for (;;)
     {
         int next = lexObject->yyLex(nextToken, false, NULL);
         switch (next)
@@ -6885,7 +6885,7 @@ IHqlExpression * HqlGram::createBuildFileFromTable(IHqlExpression * table, const
 
 IHqlExpression * queryRootIndex(IHqlExpression * index)
 {
-    loop
+    for (;;)
     {
         node_operator op = index->getOperator();
         if (op == no_compound)
@@ -7947,7 +7947,7 @@ bool HqlGram::isExplicitlyDistributed(IHqlExpression *e)
 
 static bool isFromFile(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -8026,7 +8026,7 @@ bool HqlGram::isDiskFile(IHqlExpression * expr)
 
 bool HqlGram::isFilteredDiskFile(IHqlExpression * expr)
 {
-    loop
+    for (;;)
     {
         switch (expr->getOperator())
         {
@@ -9173,7 +9173,7 @@ bool HqlGram::isVirtualFunction(DefineIdSt * defineid, const attribute & errpos)
 //Allow the types to be grouped by different expressions, and sorted by different fields.
 static bool isEquivalentType(ITypeInfo * derivedType, ITypeInfo * baseType)
 {
-    loop
+    for (;;)
     {
         if (isSameUnqualifiedType(derivedType, baseType))
             return true;
@@ -10316,7 +10316,7 @@ void HqlGram::canNotAssignTypeWarn(ITypeInfo* expected, ITypeInfo* given, const 
 IIdAtom * HqlGram::getNameFromExpr(attribute& attr)
 {
     OwnedHqlExpr expr = attr.getExpr();
-    loop
+    for (;;)
     {
         IHqlExpression * name = queryNamedSymbol(expr);
         if (name)

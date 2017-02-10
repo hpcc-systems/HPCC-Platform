@@ -1740,7 +1740,7 @@ void TomitaContext::calculateFollowing()
     
     //Need to be careful about recursion:  keep repeating until no more items added.
     grammarRule->addFollowOwn(*LINK(eofToken));
-    loop
+    for (;;)
     {
         bool changed = false;
         ForEachItemIn(idx, rules)

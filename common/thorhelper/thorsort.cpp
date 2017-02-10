@@ -103,7 +103,7 @@ void tbbqsortstable(void ** rows, size_t n, const ICompare & compare, void ** te
 inline void * * mergePartitions(const ICompare & compare, void * * result, size_t n1, void * * ret1, size_t n2, void * * ret2)
 {
     void * * tgt = result;
-    loop
+    for (;;)
     {
        if (compare.docompare(*ret1, *ret2) <= 0)
        {
@@ -298,7 +298,7 @@ class TbbParallelMergeSorter
         }
         virtual task * execute()
         {
-            loop
+            for (;;)
             {
                 //On entry next is assumed to be used once by this function
                 if ((n <= multiThreadedBlockThreshold) || (depth >= sorter.singleThreadDepth))

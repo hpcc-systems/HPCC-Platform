@@ -350,7 +350,7 @@ public:
         if (!kept && !groupOp)
             return NULL;
         OwnedConstThorRow next;
-        loop
+        for (;;)
         {
             next.setown(inputStream->nextRow());
             if (!next)
@@ -422,7 +422,7 @@ public:
         if (eos)
             return NULL;
 
-        loop
+        for (;;)
         {
             OwnedConstThorRow row = dedupHelper->nextRow();
             if (row)
@@ -492,7 +492,7 @@ public:
         if (eog())
             return NULL;
         OwnedConstThorRow next;
-        loop
+        for (;;)
         {
             next.setown(inputStream->nextRow());
             if (!next)
@@ -571,7 +571,7 @@ public:
 
         try
         {
-            loop
+            for (;;)
             {
                 groupLoader->loadGroup(inputStream, abortSoon, &rows);
                 unsigned count = rows.ordinality();

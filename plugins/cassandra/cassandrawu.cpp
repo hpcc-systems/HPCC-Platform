@@ -1778,7 +1778,7 @@ public:
     virtual bool next()
     {
         Owned<IConstWorkUnitInfo> last = current.getClear();
-        loop
+        for (;;)
         {
             const CassandraIterator *nextSource = nextMergedSource();
             if (!nextSource)
@@ -2054,7 +2054,7 @@ public:
     virtual bool next()
     {
         current.clear();
-        loop
+        for (;;)
         {
             unsigned idx = 0;
             unsigned target = 0;
@@ -2068,7 +2068,7 @@ public:
                 if (idx==sources)
                     idx = 0;
                 int diff;
-                loop
+                for (;;)
                 {
                     assert(idx != target);
                     diff = inputs.item(idx).compare(&inputs.item(target));
@@ -3173,7 +3173,7 @@ public:
             suffixLength = 0;
         }
         Owned<CassandraPrepared> prepared = prepareStatement("INSERT INTO workunits (partition, wuid) VALUES (?,?) IF NOT EXISTS;");
-        loop
+        for (;;)
         {
             // Create a unique WUID by adding suffixes until we managed to add a new value
             StringBuffer useWuid(wuid);
@@ -3606,7 +3606,7 @@ public:
         SessionId agent = 0;
         bool agentSessionStopped = false;
         unsigned start = msTick();
-        loop
+        for (;;)
         {
             CassandraFuture future(cass_session_execute(querySession(), statement));
             future.wait("Lookup wu state");
@@ -3679,7 +3679,7 @@ public:
         statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
         statement.bindString(1, wuid);
         WUAction ret = WUActionUnknown;
-        loop
+        for (;;)
         {
             CassandraFuture future(cass_session_execute(querySession(), statement));
             future.wait("Lookup wu action");

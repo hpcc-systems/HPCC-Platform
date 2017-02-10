@@ -2018,7 +2018,7 @@ ITypeInfo * makeModifier(ITypeInfo * basetype, typemod_t kind, IInterface * extr
 
 #ifdef _DEBUG
     ITypeInfo * cur = basetype;
-    loop
+    for (;;)
     {
         if (cur->queryModifier() == typemod_none)
             break;
@@ -3229,7 +3229,7 @@ ITypeInfo * queryUnqualifiedType(ITypeInfo * t)
 {
     if (!t)
         return t;
-    loop
+    for (;;)
     {
         ITypeInfo * base = t->queryTypeBase();
         if (base == t)
@@ -3242,7 +3242,7 @@ ITypeInfo * getFullyUnqualifiedType(ITypeInfo * t)
 {
     if (!t)
         return t;
-    loop
+    for (;;)
     {
         ITypeInfo * base = t->queryTypeBase();
         if (base == t)
@@ -3275,7 +3275,7 @@ ITypeInfo * removeModifier(ITypeInfo * t, typemod_t modifier)
 
 bool hasModifier(ITypeInfo * t, typemod_t modifier)
 {
-    loop
+    for (;;)
     {
         typemod_t curModifier = t->queryModifier();
         if (curModifier == modifier)
@@ -3288,7 +3288,7 @@ bool hasModifier(ITypeInfo * t, typemod_t modifier)
 
 ITypeInfo * queryModifier(ITypeInfo * t, typemod_t modifier)
 {
-    loop
+    for (;;)
     {
         typemod_t curModifier = t->queryModifier();
         if (curModifier == modifier)
