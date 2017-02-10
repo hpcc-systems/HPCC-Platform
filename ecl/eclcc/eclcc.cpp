@@ -1182,7 +1182,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             gatherParseWarnings(ctx.errs, instance.query, parseCtx.orphanedWarnings);
 
             if (instance.query && !optGenerateMeta && !optEvaluateResult)
-                instance.query.setown(convertAttributeToQuery(instance.query, ctx));
+                instance.query.setown(convertAttributeToQuery(instance.query, ctx, syntaxChecking));
 
             unsigned __int64 parseTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
             instance.stats.parseTime = (unsigned)nanoToMilli(parseTimeNs);
