@@ -17,12 +17,13 @@
  <Software>
   <DropZone build="_"
             buildSet="DropZone"
-            computer="localhost"
             description="DropZone process"
             directory="${RUNTIME_PATH}/mydropzone"
             name="mydropzone"
             ECLWatchVisible="true"
-            umask="022"/>
+            umask="022">
+            <ServerList name="ServerList" server="localhost"/>
+  </DropZone>
   <RoxieCluster allFilesDynamic="true"
                 blindLogging="false"
                 blobCacheMem="0"
