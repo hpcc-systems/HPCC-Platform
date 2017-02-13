@@ -741,13 +741,99 @@
         syntax:</para>
 
         <programlisting format="linespecific">&lt;Methods&gt;
-  &lt;Method name="myMthd1" url="http://&lt;RoxieIP&gt;:9876/somepath?someparam=value" user="me" password="mypw"/&gt;
-  &lt;Method name="myMthd2" url="http://&lt;RoxieIP&gt;:9876/somepath?someparam=value" user="me" password="mypw"/&gt;
+  &lt;Method name="myMthd1" url="&lt;RoxieIP&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
+  &lt;Method name="myMthd2" url="&lt;RoxieIP&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
 &lt;/Methods&gt;</programlisting>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting format="linespecific">esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+        <programlisting format="linespecific">esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml 
+                  -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+
+        <sect3>
+          <title>Configuring ESDL binding methods</title>
+
+          <para>The DESDL binding methods can optionally provide context
+          information to the target ECL query. The way this information is
+          configured, is by appending child elements to the Method
+          (&lt;Method&gt;...&lt;/Method&gt;) portion of the ESDL
+          Binding.</para>
+
+          <para>For example, the following XML provides a sample ESDL
+          Binding.</para>
+
+          <programlisting>&lt;Methods&gt; 
+  &lt;Method name="AddThis" url="&lt;RoxieIP&gt;:9876" querytype="roxie" queryname="AddThis"/&gt; 
+&lt;/Methods&gt;</programlisting>
+
+          <para>If this Method requires context information, for example about
+          gateways, then you could include the Gateways Structure
+          (&lt;Gateways&gt;...&lt;/Gateways&gt;) depicted as follows.</para>
+
+          <programlisting>&lt;Methods&gt;
+  &lt;Method name="AddThis" url="&lt;RoxieIP&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
+    &lt;!--Optional Method Context Information start--&gt;
+    &lt;Gateways&gt;
+      &lt;Gateway name="mygateway" url="1.1.1.1:2222/someservice/somemethod/&gt;
+      &lt;Gateway name="anothergateway" url="2.2.2.2:9999/someservice/somemethod/&gt;
+    &lt;/Gateways&gt;
+    &lt;!--Optional Method Context Information end--&gt;
+  &lt;/Method&gt;
+&lt;/Methods&gt;</programlisting>
+
+          <para>The DESDL ESP does not pose any restrictions on the layout of
+          this information, only that it is valid XML. This provides the
+          flexibility to include context information in any valid XML
+          format.</para>
+
+          <para>Roxie (query) ECL developers need to decide what information
+          they will need from the ESP request and design how that information
+          is laid-out in the ESP request and ESDL binding
+          configuration.</para>
+
+          <para>In the following example, every "AddThis" request processed by
+          the ESP and sent to Roxie would contain the sample gateway
+          information in the request context.</para>
+
+          <programlisting>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"&gt;
+&lt;soap:Body&gt;
+  &lt;roxie.AddThis&gt;
+   &lt;Context&gt;
+    &lt;Row&gt;
+     &lt;Common&gt;
+      &lt;ESP&gt;
+       &lt;ServiceName&gt;wsmath&lt;/ServiceName&gt;
+       &lt;Config&gt;
+        &lt;Method name="AddThis" url="&lt;RoxieIP&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
+          &lt;Gateways&gt;
+            &lt;Gateway name="mygateway" url="1.1.1.1:2222/someservice/somemethod/&gt;
+            &lt;Gateway name="anothergateway" url="2.2.2.2:9999/someservice/somemethod/&gt;
+          &lt;/Gateways&gt;
+        &lt;/Method&gt;
+       &lt;/Config&gt;
+      &lt;/ESP&gt;
+        &lt;TransactionId&gt;sometrxid&lt;/TransactionId&gt;
+     &lt;/Common&gt;
+    &lt;/Row&gt;
+   &lt;/Context&gt;
+   &lt;AddThisRequest&gt;
+    &lt;Row&gt;
+     &lt;Number1&gt;34&lt;/Number1&gt;
+     &lt;Number2&gt;232&lt;/Number2&gt;
+    &lt;/Row&gt;
+   &lt;/AddThisRequest&gt;
+  &lt;/roxie.AddThis&gt;
+&lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</programlisting>
+
+          <para>The ECL query consumes this information and is free to do
+          whatever it needs to with it. In some instances, the query needs to
+          send a request to a gateway in order to properly process the current
+          request. It can interrogate the context information for the
+          appropriate gateway's connection information, then use that
+          information to create the actual gateway request connection.</para>
+        </sect3>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_list-bindings" role="brk">
