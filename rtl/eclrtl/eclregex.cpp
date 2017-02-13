@@ -24,7 +24,9 @@
 #include "platform.h"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
+#ifdef _USE_ICU
 #include "unicode/regex.h"
+#endif
 
 #define UTF8_CODEPAGE "UTF-8"
 #define UTF8_MAXSIZE     4
@@ -260,6 +262,7 @@ ECLRTL_API void rtlDestroyStrRegExprFindInstance(IStrRegExprFindInstance * findI
 
 // RegEx Compiler for unicode strings
 
+#ifdef _USE_ICU
 class CUStrRegExprFindInstance : implements IUStrRegExprFindInstance
 {
 private:
@@ -440,6 +443,20 @@ ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * fin
     if (findInst)
         delete (CUStrRegExprFindInstance*)findInst;
 }
+#else
+ECLRTL_API ICompiledUStrRegExpr * rtlCreateCompiledUStrRegExpr(const UChar * regExpr, bool isCaseSensitive)
+{
+    rtlFail(0, "ICU regex disabled");
+}
+
+ECLRTL_API void rtlDestroyCompiledUStrRegExpr(ICompiledUStrRegExpr * compiledExpr)
+{
+}
+
+ECLRTL_API void rtlDestroyUStrRegExprFindInstance(IUStrRegExprFindInstance * findInst)
+{
+}
+#endif
 
 #else // _USE_BOOST_REGEX or _USE_C11_REGEX not set
 ECLRTL_API ICompiledStrRegExpr * rtlCreateCompiledStrRegExpr(const char * regExpr, bool isCaseSensitive)

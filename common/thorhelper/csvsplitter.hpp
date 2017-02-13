@@ -26,7 +26,6 @@
 
 #include "jregexp.hpp"
 #include "eclhelper.hpp"
-#include "unicode/utf.h"
 
 /**
  * CSVSplitter - splits CSV files into fields and rows.

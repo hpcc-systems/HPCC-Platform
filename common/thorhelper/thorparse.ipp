@@ -20,7 +20,6 @@
 
 //MORE: Most of this should really be in a thorrparse.ipp instead.  Move later.
 
-#include "unicode/utf.h"
 #include "thorrparse.hpp"
 #include "eclhelper.hpp"
 
