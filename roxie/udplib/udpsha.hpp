@@ -88,8 +88,8 @@ public:
 
 
 template < class _et >
-class simple_queue {
-    
+class simple_queue
+{
     _et             *elements;
     unsigned int    element_count;
     int             first;
@@ -100,7 +100,7 @@ class simple_queue {
     Semaphore       free_space;
     
 public: 
-    void push(_et element) 
+    void push(const _et &element)
     {
         free_space.wait();
         c_region.enter();
@@ -112,7 +112,7 @@ public:
         data_avail.signal();
     }
     
-    bool push(_et element,long timeout) 
+    bool push(const _et &element,long timeout)
     {
         if (free_space.wait(timeout) ) {
             c_region.enter();
