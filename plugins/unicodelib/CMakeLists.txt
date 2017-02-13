@@ -23,24 +23,27 @@
 #    Cmake Input File for unicodelib
 #####################################################
 
-project( unicodelib ) 
+if (USE_ICU)
 
-set (    SRCS 
-         unicodelib.cpp 
-    )
+    project( unicodelib )
 
-include_directories ( 
-         ./../../system/include 
-         ./../../system/jlib 
-    )
+    set (    SRCS
+             unicodelib.cpp
+        )
 
-ADD_DEFINITIONS( -D_USRDLL -DUNICODELIB_EXPORTS )
+    include_directories (
+             ./../../system/include
+             ./../../system/jlib
+        )
 
-HPCC_ADD_LIBRARY( unicodelib SHARED ${SRCS} )
-install ( TARGETS unicodelib DESTINATION plugins )
-target_link_libraries ( unicodelib 
-    jlib 
-    ${ICU_LIBRARIES} 
-    )
+    ADD_DEFINITIONS( -D_USRDLL -DUNICODELIB_EXPORTS )
 
+    HPCC_ADD_LIBRARY( unicodelib SHARED ${SRCS} )
+    install ( TARGETS unicodelib DESTINATION plugins )
+    target_link_libraries ( unicodelib
+        jlib
+        ${ICU_LIBRARIES}
+        )
+
+endif (USE_ICU)
 

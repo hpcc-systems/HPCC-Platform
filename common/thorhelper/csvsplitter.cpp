@@ -22,7 +22,9 @@
 #include "junicode.hpp"
 #include "eclhelper.hpp"
 
+#ifdef _USE_ICU
 #include "unicode/uchar.h"
+#endif
 
 #include "csvsplitter.hpp"
 #include "eclrtl.hpp"
@@ -420,6 +422,10 @@ void CSVOutputStream::writeUnicode(size32_t len, const UChar * data)
     rtlFree(utf8Data);
 }
 
+#ifndef _USE_ICU
+static inline bool u_isspace(UChar next) { return isspace((byte)next); }
+#endif
+
 void CSVOutputStream::writeUtf8(size32_t len, const char * data)
 {
     append(prefix);
@@ -498,7 +504,7 @@ void CSVOutputStream::writeUtf8(size32_t len, const char * data)
         else 
             append((size32_t)(e-(const byte *)data),data);
     }
-    prefix = separator; 
+    prefix = separator;
 }
 
 void CSVOutputStream::writeString(size32_t len, const char * data)

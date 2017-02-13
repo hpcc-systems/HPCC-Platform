@@ -25,12 +25,13 @@
 #include "eclrtl.hpp"
 #include "thorcommon.ipp"
 
+#ifdef _USE_ICU
 #include "unicode/utf.h"
 #include "unicode/uchar.h"
 #include "unicode/schriter.h"
 #include "unicode/coll.h"
 #include "unicode/ustring.h"
-
+#endif
 
 #ifdef TRACE_REGEX
 #define MATCH   traceMatch
@@ -128,6 +129,7 @@ bool isUnicodeMatch(unsigned code, unsigned next)
 {
     switch (code)
     {
+#ifdef _USE_ICU
     case RCCalnum: return u_isalnum(next) != 0;
     case RCCcntrl: return u_iscntrl(next) != 0;
     case RCClower: return u_islower(next) != 0;
@@ -140,6 +142,7 @@ bool isUnicodeMatch(unsigned code, unsigned next)
     case RCCgraph: return u_isprint(next) && !u_isspace(next);
     case RCCpunct: return u_isprint(next) && !(u_isspace(next) || u_isalnum(next));
     case RCCxdigit: return (next < 128) && isxdigit(next);          // should be good enough.
+#endif
     case RCCany:   return true;
     default:
         UNIMPLEMENTED;
@@ -857,12 +860,16 @@ RegexMatchAction RegexEndRecursivePattern::beginMatch(RegexState & state)
 
 void encodeUnicode(StringBuffer & out, size32_t len, const UChar * text)
 {
+#ifdef _USE_ICU
     UnicodeString unicode(text, len);
     unsigned len8 = unicode.extract(0, unicode.length(), 0, 0, "UTF-8");
     char * text8 = (char *)malloc(len8);
     unicode.extract(0, unicode.length(), text8, len8, "UTF-8");
     encodeXML(text8, out, ENCODE_WHITESPACE, len8, true);
     free(text8);
+#else
+    throw MakeStringException(99, "System was built without Unicode support");
+#endif
 }
 
 
@@ -922,6 +929,7 @@ RegexMatchAction RegexUnicodePattern::beginMatch(RegexState & state)
 
 //---------------------------------------------------------------------------
 
+#ifdef _USE_ICU
 RegexUnicodeIPattern::RegexUnicodeIPattern(unsigned _len, const UChar * _text)
 {
     UChar * curLower = (UChar *)lower.allocate(_len*2);
@@ -1198,6 +1206,7 @@ RegexMatchAction RegexUtf8IPattern::beginMatch(RegexState & state)
         return pushMatched(state);
     return RegexMatchBacktrack;
 }
+#endif
 
 //---------------------------------------------------------------------------
 
@@ -1327,6 +1336,7 @@ void RegexAsciiISetPattern::addRange(unsigned low, unsigned high)
 
 //---------------------------------------------------------------------------
 
+#ifdef _USE_ICU
 RegexUnicodeSetPattern::RegexUnicodeSetPattern(bool _caseSensitive)
 {
     inverted = false;
@@ -1474,7 +1484,7 @@ void RegexUnicodeSetPattern::toXMLattr(StringBuffer & out, RegexXmlState & state
         out.append("\"");
     }
 }
-
+#endif
 
 
 
@@ -3063,12 +3073,14 @@ RegexPattern * deserializeRegex(MemoryBuffer & in)
         case ThorRegexAsciiI:       next = new RegexAsciiIPattern();                    break;
         case ThorRegexAsciiSet:     next = new RegexAsciiSetPattern();                  break;
         case ThorRegexAsciiISet:    next = new RegexAsciiISetPattern();                 break;
+#ifdef _USE_ICU
         case ThorRegexUnicode:      next = new RegexUnicodePattern();                   break;
         case ThorRegexUnicodeI:     next = new RegexUnicodeIPattern();                  break;
         case ThorRegexUnicodeSet:   next = new RegexUnicodeSetPattern();                break;
         case ThorRegexUtf8:         next = new RegexUtf8Pattern();                      break;
         case ThorRegexUtf8I:        next = new RegexUtf8IPattern();                     break;
 //      case ThorRegexUnicodeISet:  next = new RegexUnicodeISetPattern();               break;
+#endif
         case ThorRegexStart:        next = new RegexStartPattern();                     break;
         case ThorRegexFinish:       next = new RegexFinishPattern();                    break;
         case ThorRegexBeginToken:   next = new RegexBeginTokenPattern();                break;
