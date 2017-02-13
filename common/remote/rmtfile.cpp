@@ -467,25 +467,6 @@ unsigned getDaliServixVersion(const IpAddress &ip,StringBuffer &ver)
     return getDaliServixVersion(ep,ver);
 }
 
-int remoteExec(const SocketEndpoint &_ep,const char *cmdline, const char *workdir,bool sync,
-                                 size32_t insize, void *inbuf, MemoryBuffer *outbuf)
-{
-    SocketEndpoint ep(_ep);
-    setDafsEndpointPort(ep);
-    if (ep.isNull())
-        return false;
-    try {
-        Owned<ISocket> socket = ISocket::connect_wait(ep,5000);
-        return remoteExec(socket, cmdline, workdir, sync, insize, inbuf, outbuf);
-    }
-    catch (IException *e)
-    {
-        EXCLOG(e,"remoteExec");
-        e->Release();
-    }
-    return -2;
-}
-
 extern REMOTE_API int setDafileSvrTraceFlags(const SocketEndpoint &_ep,byte flags)
 {
     SocketEndpoint ep(_ep);
@@ -609,42 +590,7 @@ void setRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxreadtime)
     clientSetRemoteFileTimeouts(maxconnecttime,maxreadtime);
 }
 
-class CScriptThread : public Thread
-{
-    StringAttr script;
-    SocketEndpoint ep;
-    Semaphore done;
-    bool ok;
-public:
-    CScriptThread(SocketEndpoint &_ep,const char *_script)
-        : script(_script), ep(_ep)
-    {
-        ok = false;
-    }
-
-    int run()
-    {
-        try {
-            int ret = remoteExec(ep,script.get(),"/c$",true,0,NULL,NULL);
-            if (ret==0)
-                ok = true;
-        }
-        catch (IException *e) {
-            EXCLOG(e,"validateNodes CScriptThread");
-            e->Release();
-        }
-        done.signal();
-        return 0;
-    }
-
-    bool waitok(unsigned timeout)
-    {
-        done.wait(timeout);
-        return ok;
-    }
-};
-
-unsigned validateNodes(const SocketEndpointArray &epso,const char *dataDir, const char *mirrorDir, bool chkver, const char *script, unsigned scripttimeout, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename)
+unsigned validateNodes(const SocketEndpointArray &epso,const char *dataDir, const char *mirrorDir, bool chkver, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename)
 {
     // used for detecting duff nodes
     IPointerArrayOf<ISocket> sockets;
@@ -679,18 +625,14 @@ unsigned validateNodes(const SocketEndpointArray &epso,const char *dataDir, cons
         StringAttr dataDir, mirrorDir;
         bool chkv;
         const char *filename;
-        const char *script;
-        unsigned scripttimeout;
 public:
-        casyncfor(const SocketEndpointArray &_eps,const IPointerArrayOf<ISocket> &_sockets,const char *_dataDir,const char *_mirrorDir,bool _chkv, const char *_script, unsigned _scripttimeout, const char *_filename,SocketEndpointArray &_failures, StringArray &_failedmessages,UnsignedArray &_failedcodes,CriticalSection &_sect)
+        casyncfor(const SocketEndpointArray &_eps,const IPointerArrayOf<ISocket> &_sockets,const char *_dataDir,const char *_mirrorDir,bool _chkv, const char *_filename,SocketEndpointArray &_failures, StringArray &_failedmessages,UnsignedArray &_failedcodes,CriticalSection &_sect)
             : eps(_eps), sockets(_sockets), failures(_failures),
               failedmessages(_failedmessages), failedcodes(_failedcodes), sect(_sect),
               dataDir(_dataDir), mirrorDir(_mirrorDir)
         { 
             chkv = _chkv;
             filename = _filename;
-            script = _script;
-            scripttimeout = (script&&*script)?_scripttimeout:0;
         }
         void Do(unsigned i)
         {
@@ -813,16 +755,6 @@ public:
                 }
                 while (0 != drives);
             }
-            if (!code&&scripttimeout) { // use a second thread to implement script timeout
-                Owned<CScriptThread> thread = new CScriptThread(ep,script);
-                thread->start();
-                if (!thread->waitok(scripttimeout)) {
-                    code |=  DAFS_SCRIPT_FAIL;
-                    if (errstr.length())
-                        errstr.append(',');
-                    errstr.append("FAILED: ").append(script);
-                }
-            }
             if (code) {
                 CriticalBlock block(sect);
                 failures.append(ep);
@@ -830,7 +762,7 @@ public:
                 failedmessages.append(errstr.str());
             }
         }
-    } afor(eps,sockets,dataDir,mirrorDir,chkver,script,scripttimeout,filename,failures,failedmessages,failedcodes,sect);
+    } afor(eps,sockets,dataDir,mirrorDir,chkver,filename,failures,failedmessages,failedcodes,sect);
     afor.For(eps.ordinality(), 10, false, true);
     return failures.ordinality();
 }

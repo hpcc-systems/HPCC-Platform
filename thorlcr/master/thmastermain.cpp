@@ -424,7 +424,7 @@ bool checkClusterRelicateDAFS(IGroup &grp)
     SocketEndpointArray failures;
     UnsignedArray failedcodes;
     StringArray failedmessages;
-    validateNodes(epa,NULL,NULL,true,NULL,0,failures,failedcodes,failedmessages);
+    validateNodes(epa,NULL,NULL,true,failures,failedcodes,failedmessages);
     ForEachItemIn(i,failures) {
         SocketEndpoint ep(failures.item(i));
         ep.port = 0;
