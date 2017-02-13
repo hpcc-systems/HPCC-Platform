@@ -224,9 +224,10 @@
         </listitem>
 
         <listitem>
-          <para><?dbfo keep-together="always"?>Select <emphasis
-          role="bold">Advanced View</emphasis> and then select the source
-          environment XML file to edit.</para>
+          <?dbfo keep-together="always"?>
+
+          <para>Select <emphasis role="bold">Advanced View</emphasis> and then
+          select the source environment XML file to edit.</para>
 
           <para><graphic fileref="images/desdl-openconfig.jpg" /></para>
         </listitem>
@@ -240,18 +241,20 @@
           and select <emphasis role="bold">New Esp Services</emphasis> &gt;
           <emphasis role="bold">Dynamic ESDL</emphasis>.</para>
 
-          <para></para>
-
           <para><graphic fileref="images/desdl-addDESDL.jpg" /></para>
         </listitem>
 
         <listitem>
+          <?dbfo keep-together="always"?>
+
           <para>Provide a name for the service.</para>
 
-          <para><graphic fileref="images/dsdl-NametheServoice.jpg" /></para>
+          <para><graphic fileref="images/dsdl-NametheService.jpg" /></para>
         </listitem>
 
         <listitem>
+          <?dbfo keep-together="always"?>
+
           <para>Select your ESP , then select the ESP Service Bindings
           tab.</para>
 
@@ -259,6 +262,8 @@
         </listitem>
 
         <listitem>
+          <?dbfo keep-together="always"?>
+
           <para>Right-click in the list of bindings and select <emphasis
           role="bold">Add</emphasis></para>
 
@@ -319,6 +324,8 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         </listitem>
 
         <listitem>
+          <?dbfo keep-together="always"?>
+
           <para>Restart the HPCC system on <emphasis
           role="bold">every</emphasis> node. The following command starts the
           HPCC system on an individual node:</para>
@@ -492,13 +499,29 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
             <para>Create the configuration XML file</para>
 
             <programlisting>&lt;Methods&gt;
-    &lt;Method name="AddThis" url="&lt;RoxieIP&gt;:9876" querytype="roxie" queryname="AddThis"/&gt;
+  &lt;Method name="AddThis" url="&lt;RoxieIP&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
+    &lt;!--Optional Method Context Information start--&gt;
+    &lt;Gateways&gt;
+       &lt;Gateway name="mygateway" url="1.1.1.1:2222/someservice/somemethod/&gt;
+       &lt;Gateway name="anothergateway" url="2.2.2.2:9999/someservice/somemethod/&gt;
+    &lt;/Gateways&gt;
+    &lt;!--Optional Method Context Information end--&gt;
+  &lt;/Method&gt;
 &lt;/Methods&gt;</programlisting>
 
             <para>Where name is the name of your method(s) and url is the
             Roxie server's IP and port and queryname is the published name
             (alias) of the query. For a multi-node Roxie, you can use a range
             in the form of nnn.nnn.nnn.n-nnn.</para>
+
+            <para>Optionally, your method could include context information as
+            illustrated in the above example. The context information should
+            be formated such that it is consumable by the target ECL query.
+            The HPCC DESDL ESP does not impose any restrictions on the context
+            information passed in the configuration file other than it must be
+            valid XML.</para>
+
+            <!-- /* Refer to DESDL XML Configurations?  */  Ex. For more information on XXXX see XXXX.-->
           </listitem>
 
           <listitem>
@@ -509,7 +532,8 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
             <para>Bind the service methods to the queries using a the
             configuration XML.</para>
 
-            <programlisting>esdl bind-service myesp 8003 MathService.1 MathService --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010
+            <programlisting>esdl bind-service myesp 8003 MathService.1 MathService --config MathSvcCfg.xml 
+                  -s nnn.nnn.nnn.nnn -p 8010
 </programlisting>
 
             <para>Where myesp is the name of your ESP process, 8003 is the
