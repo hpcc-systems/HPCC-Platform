@@ -971,8 +971,16 @@ public:
 
         StringBuffer ecl;
 
+        xform->setParameter("diffmode", "'Monitor'");
+        xform->setParameter("diffaction", "'Create'");
         xform->transform(ecl);
-        filename.setf("Monitor_%s.ecl", optMethod.str());
+        filename.setf("Monitor_create_%s.ecl", optMethod.str());
+        saveAsFile(".", filename, ecl);
+
+        xform->setParameter("diffmode", "'Monitor'");
+        xform->setParameter("diffaction", "'Run'");
+        xform->transform(ecl.clear());
+        filename.setf("Monitor_run_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
         xform->setParameter("diffmode", "'Compare'");

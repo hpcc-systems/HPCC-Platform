@@ -22,6 +22,7 @@
     <xsl:param name="responseType" select="''"/>
     <xsl:param name="requestType" select="''"/>
     <xsl:param name="diffmode" select="'Monitor'"/>
+    <xsl:param name="diffaction" select="'Run'"/>
     <xsl:variable name="docname" select="/esxdl/@name"/>
     <xsl:template match="/">
         <xsl:apply-templates select="esxdl"/>
@@ -182,14 +183,18 @@ END;
   string csndServer := '127.0.0.1' : stored('cassandraServer', FORMAT(SEQUENCE(1)));
   string csndUser := '' : stored('cassandraUser', FORMAT(SEQUENCE(2)));
   string csndPassword := '' : stored('cassandraPassword', FORMAT(PASSWORD, SEQUENCE(3)));
-  string csndKeySpace := 'eclresultmonitoring' : stored('cassandraKeyspace', FORMAT(SEQUENCE(4)));
+
+  string csndKeySpaceFrom := 'monitors_a' : stored('fromKeyspace', FORMAT(SEQUENCE(4)));
+  string csndKeySpaceTo := 'monitors_a' : stored('toKeyspace', FORMAT(SEQUENCE(4)));
 
   string monAction := 'Create' : STORED('MonAction', FORMAT(SELECT('Create,Run'), SEQUENCE(5)));
   string userId := '' : stored('UserId', FORMAT(SEQUENCE(6)));
-  string service_url := '' : stored('QueryURL', FORMAT(SEQUENCE(7)));
-  string service_name := '' : stored('QueryName', FORMAT(SEQUENCE(8)));
-  string MonitorIdIn := '' : stored('MonitorId', FORMAT(SEQUENCE(9)));
+  string serviceURL := '' : stored('QueryURL', FORMAT(SEQUENCE(7)));
+  string serviceName := '' : stored('QueryName', FORMAT(SEQUENCE(8)));
 
+<xsl:if test="$diffaction='Run'">
+  string monitorIdIn := '' : stored('MonitorId', FORMAT(SEQUENCE(9)));
+</xsl:if>
   requestIn := DATASET([], the_requestLayout) : STORED ('<xsl:value-of select="$requestType"/>', FEW, FORMAT(FIELDWIDTH(100),FIELDHEIGHT(30), sequence(100)));
 
 MonSoapcall(DATASET(the_requestLayout) req) := FUNCTION
@@ -197,22 +202,22 @@ MonSoapcall(DATASET(the_requestLayout) req) := FUNCTION
   // Wrap it so that request would look like:
   // <AssetReportRequest><Row><User>...</User><Options>..</Options><SearchBy>...</SearchBy></Row></AssetReportRequest>
   in_rec := record
-    dataset (the_requestLayout) <xsl:value-of select="$requestType"/> {xpath('<xsl:value-of select="$requestType"/>'), maxcount(1)};
+    DATASET (the_requestLayout) <xsl:value-of select="$requestType"/> {xpath('<xsl:value-of select="$requestType"/>/Row'), maxcount(1)};
   end;
 
   in_rec Format () := transform
     Self.<xsl:value-of select="$requestType"/> := req;
   end;
 
-  ds_request := dataset ([Format()]);
+  ds_request := DATASET ([Format()]);
 
   // execute soapcall
   ar_results := SOAPCALL (ds_request,
-                          service_url,
-                          service_name,
+                          serviceURL,
+                          serviceName,
                           {ds_request},
-                          dataset (the_responseLayout),
-                          TIMEOUT(6), RETRY(1));
+                          DATASET (the_responseLayout),
+                          TIMEOUT(6), RETRY(1), LITERAL, XPATH('*/Results/Result/Dataset/Row'));
 
   RETURN ar_results;
 END;
@@ -227,12 +232,12 @@ END;
 // we start to throttle, and maxRetries controls how many times inserts that fail because Cassandra is too busy
 // will be retried.
 
-monitorStoreRec getStoredMonitor(string id) := EMBED(cassandra : server(csndServer), user(csndUser), password(csndPassword), keyspace('eclresultmonitoring'))
-  SELECT monitorId, result from monitors WHERE monitorId=? LIMIT 1;
+monitorStoreRec getStoredMonitor(string id) := EMBED(cassandra : server(csndServer), user(csndUser), password(csndPassword), keyspace(csndKeySpaceFrom))
+  SELECT monitorId, result from monitor WHERE monitorId=? LIMIT 1;
 ENDEMBED;
 
-updateMonitor(dataset(monitorStoreRec) values) := EMBED(cassandra : server(csndServer), user(csndUser), password(csndPassword), keyspace('eclresultmonitoring'), maxFutures(100), maxRetries(10))
-  INSERT INTO monitors (monitorId, result) values (?,?);
+updateMonitor(dataset(monitorStoreRec) values) := EMBED(cassandra : server(csndServer), user(csndUser), password(csndPassword), keyspace(csndKeySpaceTo), maxFutures(100), maxRetries(10))
+  INSERT INTO monitor (monitorId, result) values (?,?);
 ENDEMBED;
 
   MonitorResultRec := RECORD
@@ -284,10 +289,14 @@ RunMonitor (string id, dataset(the_requestLayout) req) := MODULE
   END;
 END;
 
-  createAction := CreateMonitor(userId, requestIn).Result();
-  runAction := RunMonitor(MonitorIdIn, requestIn).Result();
-
-  executedAction := IF(monAction='Create', createAction, runAction);
+<xsl:choose>
+  <xsl:when test="$diffaction='Create'">
+  executedAction := CreateMonitor(userId, requestIn).Result();
+  </xsl:when>
+  <xsl:otherwise>
+  executedAction := RunMonitor(monitorIdIn, requestIn).Result();
+  </xsl:otherwise>
+</xsl:choose>
 
   output(executedAction.id, NAMED('MonitorId'));
   output(executedAction.report, NAMED('Result'));
@@ -553,7 +562,7 @@ END;
     <xsl:variable name="field"><xsl:call-template name="output_ecl_name"/></xsl:variable>
       SELF.<xsl:value-of select="$field"/> := _df_<xsl:value-of select="$type"/><xsl:text>(</xsl:text>
 <xsl:call-template name="output_active_check">
-  <xsl:with-param name="pathvar">'/' + path + '/<xsl:call-template name="output_ecl_name"/>'</xsl:with-param>
+  <xsl:with-param name="pathvar">path + '/<xsl:call-template name="output_ecl_name"/>'</xsl:with-param>
 </xsl:call-template>
 <xsl:text>, path + '/</xsl:text><xsl:value-of select="$field"/>').AsRecord(L.<xsl:value-of select="$field"/>, R.<xsl:value-of select="$field"/>);
   </xsl:when>
