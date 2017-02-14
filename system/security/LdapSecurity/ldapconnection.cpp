@@ -5370,8 +5370,6 @@ private:
         while(nextptr != NULL)
         {
             prevptr = nextptr + 2;
-            if (prevptr == nullptr || *prevptr == '\0')
-                break;
             nextptr = strstr(prevptr, "::");
         }
         if(prevptr != NULL && *prevptr != '\0')
