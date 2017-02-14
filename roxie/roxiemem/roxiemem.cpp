@@ -1075,14 +1075,10 @@ void HeapletBase::release(const void *ptr)
 
 void HeapletBase::releaseRowset(unsigned count, byte * * rowset)
 {
-    if (rowset)
+    if (isValidRoxiePtr(rowset))
     {
-        //MORE: There is a small window of simultaneous releases that could lead to the children being leaked
-        //This should really implemented as a destructor, possibly of a special activity number
-        if (!isShared(rowset))
-            ReleaseRoxieRowArray(count, (const void * *)rowset);
-
-        release(rowset);
+        HeapletBase *h = findBase(rowset);
+        h->noteReleased(count, rowset);
     }
 }
 
@@ -1615,6 +1611,49 @@ public:
         }
     }
 
+    virtual void noteReleased(unsigned numRows, byte * * rowset) override
+    {
+        checkPtr(rowset, "Release");
+
+        char *ptr = (char *) rowset - chunkHeaderSize;
+        ChunkHeader * header = (ChunkHeader *)ptr;
+        //If count == 1 then no other thread can be releasing at the same time - so avoid locked operation
+        //Subtract 1 here to try and minimize the conditional branches/simplify the fast path
+        unsigned rowCount = header->count.load(std::memory_order_relaxed)-1;
+
+        //NOTEs on memory order:
+        //    The fetch_sub() needs to have memory_order_release to ensure earlier *reads* in this thread happen before
+        //    any side-effects on another thread (which could occur after the row has been deleted).
+        //
+        //    The store (when count==1) cannot be effected by another thread since the other thread will never call the
+        //    destructor, so the store can be relaxed.  (There is no other thread to synchronize with.)
+        //
+        //    An acquire fence would normally be required before the destructor to ensure that data written from another
+        //    thread is correctly interpreted in the destructor.  (This would be true even if the data was updated inside
+        //    a critical section.)
+        //    However if we assert that data that is used in the destructor can only be initialised on the creating thread
+        //    (i.e. rows, row arrays) the the acquire is not required.  If this assumption is broken the destructor must
+        //    contain an acquire barrier.
+
+        //It is coded this way to avoid re-evaluating ROWCOUNT() == 0. You could code it using a goto, but it generates worse code.
+        if ((ROWCOUNT(rowCount) == 0) ?
+                //If the count is zero then use comma expression to set the count for the record to zero as a
+                //side-effect of this condition.  Could be avoided if leak checking and checkHeap worked differently.
+                (header->count.store(rowCount, std::memory_order_relaxed), true) :
+                //otherwise atomically decrement the count, and check if this thread was the last one to release
+                //Note: the assignment to rowCount allows the compiler to reuse a register, improving the code slightly
+                ROWCOUNT(rowCount = header->count.fetch_sub(1, std::memory_order_release)) == 1)
+        {
+            //See note above detailing the missing acquire barrier
+            ReleaseRoxieRowArray(numRows, (const void * *)rowset);
+
+#ifdef _CLEAR_FREED_ROW
+            memset((void *)rowset, 0xdd, chunkCapacity);
+#endif
+            inlineReleasePointer(ptr);
+        }
+    }
+
     virtual void _internalFreeNoDestructor(const void * _ptr)
     {
         char *ptr = (char *) _ptr - chunkHeaderSize;
@@ -1869,6 +1908,31 @@ public:
         }
     }
 
+    virtual void noteReleased(unsigned numRows, byte * * rowset) override
+    {
+        char *ptr = (char *) rowset - chunkHeaderSize;
+        ChunkHeader * header = (ChunkHeader *)ptr;
+
+        //If count == 1 then no other thread can be releasing at the same time - so avoid locked operation
+        //Subtract 1 here to try and minimize the conditional branches
+        unsigned rowCount = header->count.load(std::memory_order_relaxed)-1;
+
+        //NORE: See comment on FixedSizeHeaplet::noteReleased() regarding the memory order operands
+
+        //No need to reassign to rowCount if dec and read is required - since only top bit is used, and that must be the same
+        //No need to ensure header->count is 0 because the free list overlaps the count so it is never checked.
+        if (ROWCOUNT(rowCount) == 0 || ROWCOUNT(header->count.fetch_sub(1, std::memory_order_release)) == 1)
+        {
+            //No need for a fence - there is no problem if reads from below are processed before the condition since read only.
+            ReleaseRoxieRowArray(numRows, (const void * *)rowset);
+
+#ifdef _CLEAR_FREED_ROW
+            memset((void *)rowset, 0xdd, chunkCapacity);
+#endif
+            inlineReleasePointer(ptr);
+        }
+    }
+
     virtual void _internalFreeNoDestructor(const void * _ptr)
     {
         char *ptr = (char *) _ptr - chunkHeaderSize;
@@ -2051,6 +2115,27 @@ public:
             //No need for a memory barrier - any reads moved earlier will be valid
             if (allocatorId & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
                 allocatorCache->onDestroy(allocatorId & MAX_ACTIVITY_ID, (void *)ptr);
+
+            CHeap * savedHeap = heap;
+            addToSpaceList();
+            // after the following dec(count) it is possible that the page could be freed, so cannot access any members of this
+            // the memory order release ensures savedHeap is evaluated before the decrement
+            unsigned cnt = count.fetch_sub(1, std::memory_order_release);
+            assertex(cnt == 2);
+            noteEmptyPage(savedHeap);
+        }
+    }
+
+    virtual void noteReleased(unsigned numRows, byte * * rowset) override
+    {
+        //NORE: See comment on FixedSizeHeaplet::noteReleased() regarding the memory order operands
+
+        //If rowCount == 1 then this must be the last reference - avoid a locked operation.
+        //rowCount is not used once the heaplet is known to be freed, so no need to ensure rowCount=0
+        if (rowCount.load(std::memory_order_relaxed) == 1 || rowCount.fetch_sub(1, std::memory_order_release) == 1)
+        {
+            //No need for a memory barrier - any reads moved earlier will be valid
+            ReleaseRoxieRowArray(numRows, (const void * *)rowset);
 
             CHeap * savedHeap = heap;
             addToSpaceList();
@@ -5768,6 +5853,11 @@ void DataBufferBottom::noteReleased(const void *ptr)
     DataBuffer * buffer = queryDataBuffer(ptr);
     assertex(buffer);
     buffer->noteReleased(ptr);
+}
+
+void DataBufferBottom::noteReleased(unsigned numRows, byte * * rowset)
+{
+    throwUnexpected();
 }
 
 void DataBufferBottom::noteLinked(const void *ptr)
