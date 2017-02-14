@@ -53,6 +53,9 @@
 - [ ] There are no similar instances of the same problem that should be addressed
   - [ ] I have addressed them here
   - [ ] I have raised JIRA issues to address them separately
+- [ ] This is a user interface / front-end modification
+  - [ ] I have tested my changes in multiple modern browers
+  - [ ] The component(s) render as expected
 
 ## Testing:
 <!-- Please describe how this change has been tested.-->
