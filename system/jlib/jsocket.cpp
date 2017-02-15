@@ -399,7 +399,7 @@ public:
     void        close();
     void        errclose();
     bool        connectionless() { return (sockmode!=sm_tcp)&&(sockmode!=sm_tcp_server); }
-    void        shutdown(unsigned mode);
+    void        shutdown(unsigned mode=SHUTDOWN_READWRITE);
 
     ISocket*    accept(bool allowcancel);
     int         wait_read(unsigned timeout);
@@ -1164,6 +1164,7 @@ void CSocket::cancel_accept()
 #endif
     if (!in_accept) {
         accept_cancel_state = accept_cancelled;
+        shutdown();
         errclose();
         return;
     }
