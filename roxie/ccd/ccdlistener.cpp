@@ -1342,7 +1342,7 @@ public:
         }
         return *logctx;
     }
-    virtual bool initQuery(StringBuffer &target, const char *name)
+    virtual void initQuery(StringBuffer &target, const char *name)
     {
         queryName.set(name);
         queryFactory.setown(globalPackageSetManager->getQuery(name, &target, NULL, *logctx));
@@ -1356,12 +1356,10 @@ public:
                     targetMsg.append(", in target ").append(target);
                 throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s%s", queryName.get(), targetMsg.str());
             }
-            else
-                throw MakeStringException(ROXIE_NO_PACKAGES_ACTIVE, "Unknown query %s (no packages active)", queryName.get());
-            return false;
+
+            throw MakeStringException(ROXIE_NO_PACKAGES_ACTIVE, "Unknown query %s (no packages active)", queryName.get());
         }
         queryFactory->checkSuspended();
-        return true;
     }
     virtual void noteQueryActive()
     {
