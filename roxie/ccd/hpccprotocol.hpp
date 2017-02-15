@@ -26,7 +26,7 @@
 
 interface IHpccProtocolMsgContext : extends IInterface
 {
-    virtual bool initQuery(StringBuffer &target, const char *queryname) = 0;
+    virtual void initQuery(StringBuffer &target, const char *queryname) = 0;
     virtual void noteQueryActive() = 0;
     virtual unsigned getQueryPriority() = 0;
     virtual IContextLogger *queryLogContext() = 0;
