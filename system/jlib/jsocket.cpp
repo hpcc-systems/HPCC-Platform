@@ -403,6 +403,7 @@ public:
 
     ISocket*    accept(bool allowcancel);
     int         wait_read(unsigned timeout);
+    void        logPollError(unsigned revents, const char *rwstr);
     int         wait_write(unsigned timeout);
     int         name(char *name,size32_t namemax);
     int         peer_name(char *name,size32_t namemax);
@@ -1503,8 +1504,36 @@ void CSocket::udpconnect()
 
 }
 
-
-
+void CSocket::logPollError(unsigned revents, const char *rwstr)
+{
+    if (revents & POLLERR)
+    {
+        char lname[256];
+        int lport = name(lname, sizeof(lname));
+        char rname[256];
+        int rport = peer_name(rname, sizeof(rname));
+        StringBuffer errStr;
+        errStr.appendf("%s POLLERR %u l: %s:%d r: %s:%d", rwstr, sock, lname, lport, rname, rport);
+        int serror = 0;
+        socklen_t serrlen = sizeof(serror);
+        int srtn = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char *)&serror, &serrlen);
+        if (srtn != 0)
+            serror = ERRNO();
+        LOGERR2(serror,2,errStr.str());
+    }
+    else if (revents & POLLNVAL)
+    {
+        StringBuffer errStr;
+        errStr.appendf("%s POLLINVAL", rwstr);
+        LOGERR2(999,3,errStr.str());
+    }
+    else
+    {
+        StringBuffer errStr;
+        errStr.appendf("%s unknown poll() revents: 0x%x", rwstr, revents);
+        LOGERR2(999,4,errStr.str());
+    }
+}
 
 int CSocket::wait_read(unsigned timeout)
 {
@@ -1561,31 +1590,9 @@ int CSocket::wait_read(unsigned timeout)
                 // ok
                 break;
             }
-            else if (fds[0].revents & POLLERR)
-            {
-                char lname[256];
-                int lport = name(lname, sizeof(lname));
-                char rname[256];
-                int rport = peer_name(rname, sizeof(rname));
-                StringBuffer errStr;
-                errStr.appendf("wait_read POLLERR %u l: %s:%d r: %s:%d", sock, lname, lport, rname, rport);
-                int serror = 0;
-                socklen_t serrlen = sizeof(serror);
-                int srtn = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char *)&serror, &serrlen);
-                if (srtn != 0)
-                    serror = ERRNO();
-                LOGERR2(serror,2,errStr.str());
-                // MCK - do we always force error ?
-                ret = -1;
-            }
-            else if (fds[0].revents & POLLNVAL)
-            {
-                LOGERR2(998,5,"wait_read POLLNVAL");
-                ret = -1;
-            }
             else
             {
-                LOGERR2(999,6,"wait_read !(POLLIN|POLLHUP)");
+                logPollError(fds[0].revents, "wait_read");
                 ret = -1;
             }
 #endif
@@ -1647,31 +1654,14 @@ int CSocket::wait_write(unsigned timeout)
                 // ok
                 break;
             }
-            else if (fds[0].revents & POLLERR)
+            else if (fds[0].revents & POLLHUP)
             {
-                char lname[256];
-                int lport = name(lname, sizeof(lname));
-                char rname[256];
-                int rport = peer_name(rname, sizeof(rname));
-                StringBuffer errStr;
-                errStr.appendf("wait_write POLLERR %u l: %s:%d r: %s:%d", sock, lname, lport, rname, rport);
-                int serror = 0;
-                socklen_t serrlen = sizeof(serror);
-                int srtn = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char *)&serror, &serrlen);
-                if (srtn != 0)
-                    serror = ERRNO();
-                LOGERR2(serror,2,errStr.str());
-                // MCK - do we always force error ?
-                ret = -1;
-            }
-            else if (fds[0].revents & POLLNVAL)
-            {
-                LOGERR2(998,5,"wait_write POLLNVAL");
+                LOGERR2(998,5,"wait_write POLLHUP");
                 ret = -1;
             }
             else
             {
-                LOGERR2(999,6,"wait_write !POLLOUT");
+                logPollError(fds[0].revents, "wait_write");
                 ret = -1;
             }
 #endif
