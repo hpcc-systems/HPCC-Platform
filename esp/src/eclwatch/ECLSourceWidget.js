@@ -128,16 +128,23 @@ define([
 
             clearErrors: function (errWarnings) {
                 for (var i = 0; i < this.markers.length; ++i) {
-                    this.editor.clearMarker(this.markers[i]);
+                    this.markers[i].clear();
                 }
                 this.markers = [];
             },
 
             setErrors: function (errWarnings) {
                 for (var i = 0; i < errWarnings.length; ++i) {
-                    this.markers.push(this.editor.setMarker(parseInt(
-                            errWarnings[i].LineNo, 10) - 1, "",
-                            errWarnings[i].Severity + "Line"));
+                    var line = parseInt(errWarnings[i].LineNo, 10);
+                    this.markers.push(this.editor.doc.markText({
+                        line: line - 1,
+                        ch: 0
+                    },{
+                        line: line, 
+                        ch: 0
+                    },{
+                        className: errWarnings[i].Severity + "Line"
+                    }));
                 }
             },
 
@@ -148,12 +155,20 @@ define([
 
             clearHighlightLines: function () {
                 for (var i = 0; i < this.highlightLines.length; ++i) {
-                    this.editor.setLineClass(this.highlightLines[i], null, null);
+                    this.highlightLines[i].clear();
                 }
             },
 
             highlightLine: function (line) {
-                this.highlightLines.push(this.editor.setLineClass(line - 1, "highlightline"));
+                this.highlightLines.push(this.editor.doc.markText({
+                    line: line - 1, 
+                    ch: 0
+                },{
+                    line: line, 
+                    ch: 0
+                },{
+                    className: "highlightline"
+                }));
             },
 
             setText: function (text) {
