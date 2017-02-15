@@ -5372,7 +5372,7 @@ private:
             prevptr = nextptr + 2;
             nextptr = strstr(prevptr, "::");
         }
-        if(prevptr != NULL && *prevptr != '\0')
+        if(*prevptr != '\0')
             ldapname.append(prevptr);
     }
 
