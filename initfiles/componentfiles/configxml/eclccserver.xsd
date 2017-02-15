@@ -196,6 +196,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="enableEclccDali" type="xs:boolean" use="optional" default="true">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Enables passing Dali address to eclcc for compile-time file resolution.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="enableSysLog" type="xs:boolean" use="optional" default="true">
                 <xs:annotation>
                     <xs:appinfo>

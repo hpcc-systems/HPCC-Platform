@@ -555,7 +555,12 @@ public:
     {
         SocketEndpointArray epa;
         epa.fromText(s,defport);
-        return createIGroup(epa);
+        ForEachItemIn(idx, epa)
+        {
+            if (!epa.item(idx).isNull())
+                return createIGroup(epa);
+        }
+        throw MakeStringException(0, "Invalid group %s (all nodes null)", s);
     }
 
     void serialize(MemoryBuffer &tgt) const 

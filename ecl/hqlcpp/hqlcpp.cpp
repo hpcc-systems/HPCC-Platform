@@ -1792,6 +1792,8 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsFatal",true),
         DebugOption(options.optimizeCriticalFunctions,"optimizeCriticalFunctions",true),
         DebugOption(options.addLikelihoodToGraph,"addLikelihoodToGraph", true),
+        DebugOption(options.translateDFSlayouts,"translateDFSlayouts", false),
+        DebugOption(options.reportDFSinfo,"reportDFSinfo", 0),
     };
 
     //get options values from workunit

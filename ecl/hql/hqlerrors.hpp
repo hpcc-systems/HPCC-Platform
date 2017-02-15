@@ -485,6 +485,18 @@
 #define HQLERR_PropertyArgumentNotConstant      3135
 #define HQLERR_InvalidErrorCategory             3136
 #define HQLERR_MultipleHashWebserviceCalls      3137
+#define HQLWRN_FieldNotPresentInDFS             3138
+#define HQLWRN_DFSlookupFailure                 3139
+#define HQLWRN_DFSlookupInvalidRecord           3140
+#define HQLWRN_DFSlookupNoRecord                3141
+#define HQLWRN_DFSlookupNoFile                  3142
+#define HQLERR_DFSlookupFailure                 3143
+#define HQLERR_DFSlookupIncompatible            3144
+#define HQLINFO_DFSlookupSubstituted            3145
+#define HQLINFO_FieldNotPresentInECL            3146
+#define HQLWRN_DFSlookupTypeMismatch            3147
+#define HQLWRN_NoFieldsMatch                    3148
+#define HQLWRN_DFSdenied                        3149
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
@@ -524,6 +536,10 @@
 #define HQLERR_PropertyArgumentNotConstant_Text "The argument to attribute '%s' must be a constant"
 #define HQLERR_InvalidErrorCategory_Text        "Unrecognised ONWARNING category '%s'"
 #define HQLERR_MultipleHashWebserviceCalls_Text "#webservice can only be called once"
+#define HQLWRN_FieldNotPresentInDFS_Text        "Field %s is not present in DFS file - default value will be used"
+#define HQLWRN_DFSlookupFailure_Text            "Error in DFS file resolution"
+#define HQLERR_DFSlookupFailure_Text            "Failed to resolve record information in DFS for file %s"
+#define HQLERR_DFSlookupIncompatible_Text       "Resolved record information is not compatible file %s"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

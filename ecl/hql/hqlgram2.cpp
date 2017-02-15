@@ -8586,6 +8586,15 @@ void HqlGram::checkValidRecordMode(IHqlExpression * dataset, attribute & atr, at
     }
 }
 
+void HqlGram::checkValidLookupFlag(IHqlExpression * dataset, IHqlExpression * filename, attribute & atr)
+{
+    if (getBoolAttribute(dataset, lookupAtom, false))
+    {
+        if (!filename->isConstant())
+            reportError(ERR_EXPECTED_CONST, atr, "LOOKUP attribute requires a constant filename");
+    }
+}
+
 
 void HqlGram::checkValidCsvRecord(const attribute & errpos, IHqlExpression * record)
 {
@@ -9271,6 +9280,94 @@ bool HqlGram::checkAllowed(const attribute & errpos, const char *category, const
     return true;
 }
 
+bool HqlGram::checkDFSfields(IHqlExpression *dfsRecord, IHqlExpression *defaultRecord, const attribute& errpos)
+{
+    if (dfsRecord==defaultRecord)
+        return true;
+    bool ret = true;
+    IHqlSimpleScope *srcScope = dfsRecord->querySimpleScope();
+    ForEachChild(idx, defaultRecord)
+    {
+        IHqlExpression *subfield = defaultRecord->queryChild(idx);
+        switch (subfield->getOperator())
+        {
+        case no_record:
+            if (!checkDFSfields(dfsRecord, subfield, errpos))
+                ret = false;
+            break;
+        case no_ifblock:
+            if (!checkDFSfields(dfsRecord, subfield->queryChild(1), errpos))
+                ret = false;
+            break;
+        case no_field:
+            {
+                OwnedHqlExpr match = srcScope->lookupSymbol(subfield->queryId());
+                if (!match)
+                {
+                    reportError(HQLERR_DFSlookupIncompatible, errpos, "Default record does not match resolved record - field %s not found", str(subfield->queryId()));
+                    ret = false;
+                }
+                else if (subfield->getOperator() != match->getOperator())
+                {
+                    reportError(HQLERR_DFSlookupIncompatible, errpos, "Default record does not match resolved record - field %s incompatible", str(subfield->queryId()));
+                    ret = false;
+                }
+                else if (subfield->queryRecord() && match->queryRecord() && subfield->queryType()->getTypeCode()==match->queryType()->getTypeCode())
+                {
+                        ret = checkDFSfields(match->queryRecord(), match->queryRecord(), errpos) && ret;
+                }
+                else if (match->queryRecord() || subfield->queryRecord())
+                {
+                    reportError(HQLERR_DFSlookupIncompatible, errpos, "Default record does not match resolved record - field %s incompatible", str(subfield->queryId()));
+                    ret = false;
+                }
+                else
+                {
+                    if (!checkCompatible(match->queryType(), subfield->queryType(), errpos, false))
+                    {
+                        reportError(HQLERR_DFSlookupIncompatible, errpos, "Default record does not match resolved record - field %s incompatible", str(subfield->queryId()));
+                        ret = false;
+                    }
+                }
+            }
+        }
+    }
+    return ret;
+}
+
+IHqlExpression * HqlGram::lookupDFSlayout(const attribute &err, IHqlExpression *_name, IHqlExpression *_default, IHqlExpression *_lookupAttr, bool isOpt)
+{
+    OwnedHqlExpr defaultRecord(_default);
+    OwnedHqlExpr lookupAttr(_lookupAttr);
+    OwnedHqlExpr nameExpr(_name);
+    if (lookupAttr)
+    {
+        IHqlExpression * value = lookupAttr->queryChild(0);
+        if (!getBoolValue(value, true))
+            return defaultRecord.getClear();  // LOOKUP(FALSE) was specified
+    }
+    if (lookupCtx.queryParseContext().codegenCtx)
+    {
+        if (!nameExpr->queryValue())
+            reportError(ERR_EXPECTED_CONST, err, "LOOKUP attribute requires a constant filename");
+        else
+        {
+            StringBuffer lookupName;
+            nameExpr->queryValue()->getStringValue(lookupName);
+            OwnedHqlExpr rec = lookupCtx.queryParseContext().codegenCtx->lookupDFSlayout(lookupName, *errorHandler, err.pos, isOpt);
+            if (rec)
+            {
+                if (!checkDFSfields(rec, defaultRecord, err))
+                    reportError(HQLERR_DFSlookupIncompatible, err, "Default record does not match resolved record for file %s", lookupName.str());
+                return rec.getClear();
+            }
+        }
+    }
+    if (isOpt)
+        return defaultRecord.getClear();
+    else
+        return appendOwnedOperand(defaultRecord, createAttribute(lookupAtom, nameExpr.getClear()));
+}
 
 bool HqlGram::okToAddSideEffects(IHqlExpression * expr)
 {
@@ -9591,6 +9688,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     case no_externalcall: 
         // I'm not convinced this works at all - code appears to
         // translate a external dataset returning a function into a dataset with a functional mode.
+        // This question needs resolving for the DFS transformation to be safe
         if (etype && etype->getTypeCode()==type_record)
         {
             IHqlExpression *recordDef = queryExpression(etype);

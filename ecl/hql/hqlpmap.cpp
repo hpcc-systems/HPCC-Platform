@@ -1013,6 +1013,10 @@ bool isNullProject(IHqlExpression * expr, bool canIgnorePayload, bool canLoseFie
         else
             return false;
     }
+#ifdef TEST_INDEX_PROJECT
+    if (expr->hasAttribute(keyedAtom))
+        return false;
+#endif
     return isSimpleProject(expr);
 }
 

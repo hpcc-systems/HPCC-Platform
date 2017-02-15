@@ -65,6 +65,12 @@ const char * const helpText[] = {
     "!   -save-temps   Do not delete intermediate files",
     "    -shared       Generate workunit shared object instead of a stand-alone exe",
     "",
+    "File resolution options:",
+    "    -dfs=ip       Use specified ip for DFS filename resolution",
+    "    -scope=prefix Use specified scope prefix in DFS filename resolution",
+    "    -user=id      Use specified username in DFS filename resolution",
+    "    -password=xxx Use specified password in DFS filename resolution (blank to prompt)"
+    "",
     "Other options:",
     "!   -aoption[=value] Set an application option",
     "!   --allow=str   Allow use of named feature",

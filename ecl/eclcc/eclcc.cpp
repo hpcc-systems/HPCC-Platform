@@ -29,6 +29,11 @@
 #include <pwd.h>
 #endif
 
+#include "portlist.h"
+#include "dadfs.hpp"
+#include "dasess.hpp"
+#include "daclient.hpp"
+#include "mpcomm.hpp"
 #include "hqlecl.hpp"
 #include "hqlir.hpp"
 #include "hqlerrors.hpp"
@@ -48,6 +53,7 @@
 
 #include "build-config.h"
 #include "rmtfile.hpp"
+#include "deffield.hpp"
 
 #include "reservedwords.hpp"
 #include "eclcc.hpp"
@@ -244,7 +250,11 @@ public:
         defaultAllowed[false] = true;  // May want to change that?
         defaultAllowed[true] = true;
     }
-
+    ~EclCC()
+    {
+        if (daliConnected)
+            ::closedownClientProcess();
+    }
     bool printKeywordsToXml();
     int parseCommandLineOptions(int argc, const char* argv[]);
     void loadOptions();
@@ -252,8 +262,11 @@ public:
     bool processFiles();
     void processBatchedFile(IFile & file, bool multiThreaded);
 
+    // interface ICodegenContextCallback
+
     virtual void noteCluster(const char *clusterName);
     virtual bool allowAccess(const char * category, bool isSigned);
+    virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override;
 
 protected:
     void addFilenameDependency(StringBuffer & target, EclCompileInstance & instance, const char * filename);
@@ -289,6 +302,10 @@ protected:
     Owned<IEclRepository> libraryRepository;
     Owned<IEclRepository> bundlesRepository;
     Owned<IEclRepository> includeRepository;
+    mutable CriticalSection dfsCrit;
+    mutable MapStringToMyClass<IHqlExpression> fileCache;
+    mutable MapStringTo<int> fileMissCache;  // values are the error code
+    mutable Owned<IUserDescriptor> udesc;    // For file lookups
     const char * programName;
 
     StringBuffer cppIncludePath;
@@ -309,6 +326,11 @@ protected:
     StringAttr optOutputFilename;
     StringAttr optQueryRepositoryReference;
     StringAttr optComponentName;
+    StringAttr optDFS;
+    StringAttr optScope;
+    StringAttr optUser;
+    StringAttr optPassword;
+    StringAttr optWUID;
     FILE * batchLog = nullptr;
 
     StringAttr optManifestFilename;
@@ -336,6 +358,7 @@ protected:
     unsigned batchSplit = 1;
     unsigned optLogDetail = 0;
     unsigned optMaxErrors = 0;
+    unsigned optDaliTimeout = 30000;
     bool optUnsuppressImmediateSyntaxErrors = false;
     bool logVerbose = false;
     bool logTimings = false;
@@ -358,11 +381,14 @@ protected:
     bool optOnlyCompile = false;
     bool optSaveQueryText = false;
     bool optSaveQueryArchive = false;
+    bool optSyntax = false;
     bool optLegacyImport = false;
     bool optLegacyWhen = false;
     bool optGenerateHeader = false;
     bool optShowPaths = false;
     bool optNoSourcePath = false;
+    mutable bool daliConnected = false;
+    mutable bool disconnectReported = false;
     int argc;
     const char **argv;
 };
@@ -1870,6 +1896,157 @@ bool EclCompileInstance::reportErrorSummary()
 void EclCC::noteCluster(const char *clusterName)
 {
 }
+
+IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const
+{
+    CriticalBlock b(dfsCrit);  // Overkill at present but maybe one day codegen will start threading?
+    if (!optDFS || disconnectReported)
+    {
+        // Dali lookup disabled, yet translation requested. Should we report if OPT set?
+        if (!(optArchive || optGenerateDepend || optSyntax || optGenerateMeta || optEvaluateResult || disconnectReported))
+        {
+            VStringBuffer msg("Error looking up file %s in DFS - DFS not configured", filename);
+            errs.reportWarning(CategoryDFS, HQLWRN_DFSlookupFailure, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
+            disconnectReported = true;
+        }
+        return nullptr;
+    }
+    if (!daliConnected)
+    {
+        try
+        {
+            Owned<IGroup> serverGroup = createIGroup(optDFS.str(), DALI_SERVER_PORT);
+            if (!initClientProcess(serverGroup, DCR_EclCC, 0, NULL, NULL, optDaliTimeout))
+            {
+                VStringBuffer msg("Error looking up file %s in DFS - failed to connect to %s", filename, optDFS.str());
+                errs.reportError(HQLWRN_DFSlookupFailure, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
+                disconnectReported = true;
+                return nullptr;
+            }
+            if (!optUser.isEmpty())
+            {
+                udesc.setown(createUserDescriptor());
+                udesc->set(optUser, optPassword);
+            }
+        }
+        catch (IException *E)
+        {
+            StringBuffer emsg;
+            VStringBuffer msg("Error looking up file %s in DFS - failed to connect to %s (%s)", filename, optDFS.str(), E->errorMessage(emsg).str());
+            E->Release();
+            errs.reportError(HQLWRN_DFSlookupFailure, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
+            disconnectReported = true;
+            return nullptr;
+        }
+        daliConnected = true;
+    }
+
+    // Do any scope manipulation
+    StringBuffer lookupName;  // do NOT move inside the curly braces below - this needs to stay in scope longer than that
+    if (filename[0]=='~')
+        filename++;
+    else if (!optScope.isEmpty())
+    {
+         lookupName.appendf("%s::%s", optScope.str(), filename);
+         filename = lookupName.str();
+    }
+
+    // First lookup the name in our cache...
+    Linked<IHqlExpression> ret = fileCache.getValue(filename);
+    if (ret)
+        return ret.getClear();
+
+    int err = 0;
+    OwnedHqlExpr diskRecord;
+
+    // check the nohit cache...
+    int *nohit = fileMissCache.getValue(filename);
+    if (nohit)
+        err = *nohit;
+    else
+    {
+        // Look up the file in Dali
+        try
+        {
+            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(filename, udesc, false, false);
+            if (dfsFile)
+            {
+                const char *recordECL = dfsFile->queryAttributes().queryProp("ECL");
+                if (recordECL)
+                {
+                    MultiErrorReceiver errs;
+                    diskRecord.setown(parseQuery(recordECL, &errs));
+                    if (errs.errCount())
+                        err = HQLWRN_DFSlookupInvalidRecord;
+                    else
+                    {
+                        diskRecord.set(diskRecord->queryBody());  // Remove location info - it's meaningless
+                        if (dfsFile->queryAttributes().hasProp("_record_layout"))
+                        {
+                            MemoryBuffer mb;
+                            dfsFile->queryAttributes().getPropBin("_record_layout", mb);
+                            Owned<IDefRecordMeta> meta = deserializeRecordMeta(mb, true);
+                            int numKeyed = meta->numKeyedFields();
+                            if (numKeyed)
+                            {
+                                // NOTE - the index puts the payload on the no_newkeyindex, not on the record - so we will have to migrate it there
+                                int dfsPayload = getFlatFieldCount(diskRecord) - numKeyed;
+                                assertex(dfsPayload >= 0);
+                                diskRecord.setown(appendOwnedOperand(diskRecord, createAttribute(_payload_Atom, createConstant(dfsPayload))));
+                            }
+                        }
+                    }
+                }
+                else
+                    err = HQLWRN_DFSlookupNoRecord;
+            }
+            else
+                err = HQLWRN_DFSlookupNoFile;
+        }
+        catch (IException *E)
+        {
+            unsigned errCode = E->errorCode();
+            if (errCode==DFSERR_LookupAccessDenied)
+                err = HQLWRN_DFSdenied;
+            else
+                throw;  // Anything else is an internal error which will be caught elsewhere
+        }
+    }
+    if (err)
+    {
+        // Report error, and add it to the nohit cache
+        const char *reason = nullptr;
+        switch (err)
+        {
+        case HQLWRN_DFSlookupInvalidRecord:
+            reason = "invalid layout information found";
+            break;
+        case HQLWRN_DFSlookupNoRecord:
+            reason = "no layout information found";
+            break;
+        case HQLWRN_DFSdenied:
+            reason = "access denied";
+            break;
+        case HQLWRN_DFSlookupNoFile:
+            if (!isOpt)
+                reason = "file not found";
+            break;
+        }
+        if (reason)
+        {
+            VStringBuffer msg("Error looking up file %s in DFS - %s", filename, reason);
+            errs.reportWarning(CategoryDFS, err, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
+        }
+        if (!nohit)
+            fileMissCache.setValue(filename, err);
+        return nullptr;
+    }
+    assertex(diskRecord);
+    // Add it to the cache
+    fileCache.setValue(filename, diskRecord);
+    return diskRecord.getClear();
+}
+
 bool EclCC::allowAccess(const char * category, bool isSigned)
 {
     ForEachItemIn(idx1, deniedPermissions)
@@ -1940,6 +2117,36 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optCheckEclVersion, "-checkVersion"))
         {
         }
+        else if (iter.matchOption(optDFS, "-dfs") || /*deprecated*/ iter.matchOption(optDFS, "-dali"))
+        {
+            // Note - we wait until first use before actually connecting to dali
+        }
+        else if (iter.matchOption(optDaliTimeout, "--dfs-timeout") || /*deprecated*/ iter.matchOption(optDaliTimeout, "--dali-timeout"))
+        {
+        }
+        else if (iter.matchOption(optUser, "-user"))
+        {
+        }
+        else if (iter.matchOption(tempArg, "-password"))
+        {
+            if (tempArg.isEmpty())
+            {
+                StringBuffer pw;
+                passwordInput("Password: ", pw);
+                optPassword.set(pw);
+            }
+            else
+                optPassword.set(tempArg);
+        }
+        else if (iter.matchOption(tempArg, "-token"))
+        {
+            // For use by eclccserver - not documented in usage()
+            extractToken(tempArg, optWUID, StringAttrAdaptor(optUser), StringAttrAdaptor(optPassword));
+        }
+        else if (iter.matchOption(optWUID, "-wuid"))
+        {
+            // For use by eclccserver - not documented in usage()
+        }
         else if (iter.matchOption(tempArg, "--deny"))
         {
             if (stricmp(tempArg, "all")==0)
@@ -1991,6 +2198,10 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(tempBool, "-save-temps"))
         {
             setDebugOption("saveEclTempFiles", tempBool);
+        }
+        else if (iter.matchOption(tempArg, "-scope"))
+        {
+            optScope.set(tempArg);
         }
         else if (iter.matchFlag(showHelp, "-help") || iter.matchFlag(showHelp, "--help"))
         {
@@ -2081,6 +2292,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (iter.matchFlag(tempBool, "-syntax"))
         {
+            optSyntax = tempBool;
             setDebugOption("syntaxCheck", tempBool);
         }
         else if (iter.matchOption(optMaxErrors, "--maxErrors"))

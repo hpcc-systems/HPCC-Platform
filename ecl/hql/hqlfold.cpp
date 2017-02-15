@@ -3035,6 +3035,18 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             }
             break;
         }
+    case no_nameof:
+        {
+            IHqlExpression *ds = expr->queryChild(0);
+            switch (ds->getOperator())
+            {
+            case no_newkeyindex:
+                return LINK(ds->queryChild(3));
+            case no_table:
+                return LINK(ds->queryChild(0));
+            }
+            break;
+        }
     case no_charlen:
         {
             IHqlExpression * child = expr->queryChild(0);
