@@ -154,11 +154,25 @@ public:
             {
                 initMb.append(numParts);
                 initMb.append(superIndexWidth); // 0 if not superIndex
-                initMb.append((superIndex && superIndex->isInterleaved()) ? numSuperIndexSubs : 0);
-                unsigned p=0;
+                bool interleaved = superIndex && superIndex->isInterleaved();
+                initMb.append(interleaved ? numSuperIndexSubs : 0);
                 UnsignedArray parts;
-                for (; p<numParts; p++)
-                    parts.append(p);
+                if (!superIndex || interleaved) // serialize first numParts parts, TLK are at end and are serialized separately.
+                {
+                    for (unsigned p=0; p<numParts; p++)
+                        parts.append(p);
+                }
+                else // non-interleaved superindex
+                {
+                    unsigned p=0;
+                    for (unsigned i=0; i<numSuperIndexSubs; i++)
+                    {
+                        for (unsigned kp=0; kp<superIndexWidth; kp++)
+                            parts.append(p++);
+                        if (keyHasTlk)
+                            p++; // TLK's serialized separately.
+                    }
+                }
                 indexFileDesc->serializeParts(initMb, parts);
                 if (localKey)
                     keyHasTlk = false; // not used
