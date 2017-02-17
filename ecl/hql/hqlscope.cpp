@@ -72,7 +72,7 @@ IHqlExpression * ScopeCheckerBase::queryCurrentScope()
     return curScopeState;
 }
 
-void ScopeCheckerBase::pushScope()                              { curScopeState.clear(); ScopedTransformer::pushScope(); }
+void ScopeCheckerBase::pushScope(IHqlExpression * context)  { curScopeState.clear(); ScopedTransformer::pushScope(context); }
 void ScopeCheckerBase::pushEvaluateScope(IHqlExpression * expr, IHqlExpression * transformed) { curScopeState.clear(); ScopedTransformer::pushEvaluateScope(expr, transformed); }
 void ScopeCheckerBase::popScope()                               { curScopeState.clear(); ScopedTransformer::popScope(); }
 void ScopeCheckerBase::suspendScope()                           { curScopeState.clear(); ScopedTransformer::suspendScope(); }
@@ -114,7 +114,7 @@ void ScopeConsistencyChecker::checkConsistent(IHqlExpression * root, const HqlEx
     ForEachItemIn(i, _activeTables)
         activeTables.append(OLINK(_activeTables.item(i)));
     if (root->isDataset())
-        pushScope();
+        pushScope(root);
     analyse(root, 0);
     if (root->isDataset())
         popScope();

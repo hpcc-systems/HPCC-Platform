@@ -39,6 +39,7 @@
 //#define VERYIFY_OPTIMIZE
 #ifdef _DEBUG
  #define TRACK_ACTIVE_EXPRESSIONS               // Useful for examining the transform path in a debugger
+ //#define TRACE_DEEP_SCOPES
 #endif
 
 static unsigned transformerDepth;
@@ -3432,7 +3433,7 @@ void ScopedTransformer::analyseAssign(IHqlExpression * expr)
     IHqlExpression * right = expr->queryChild(1);
     if (left->isDataset() || left->isDatarow())
     {
-        pushScope();
+        pushScope(expr);
         analyseExpr(right);
         popScope();
     }
@@ -3480,7 +3481,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
     case no_createdictionary:
         {
             IHqlExpression * dataset = expr->queryChild(0);
-            pushScope();
+            pushScope(expr);
             if ((op == no_within) || (op == no_notwithin))
                 innerScope->isWithin = true;
             analyseExpr(dataset);
@@ -3496,7 +3497,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
         {
             //Ugly - should probably try and remove these from the parse tree
             IHqlExpression * dataset = expr->queryChild(0);
-            pushScope();
+            pushScope(expr);
             analyseExpr(dataset);
             bool nested = setLeft(dataset, querySelSeq(expr));
             unsigned numChildren = expr->numChildren();
@@ -3509,7 +3510,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
     case no_keydiff:
     case no_rowdiff:
         {
-            pushScope();
+            pushScope(expr);
             analyseExpr(expr->queryChild(0));
             analyseExpr(expr->queryChild(1));
             popScope();
@@ -3525,7 +3526,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
             unsigned first = 0;
             if (value->isDataset())
             {
-                pushScope();
+                pushScope(expr);
                 analyseExpr(value);
                 popScope();
                 first++;
@@ -3538,7 +3539,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
     case no_keypatch:
     case no_selectnth:
         {
-            pushScope();
+            pushScope(expr);
             analyseExpr(expr->queryChild(0));
             popScope();
             unsigned numChildren = expr->numChildren();
@@ -3570,7 +3571,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
             IHqlExpression * right = expr->queryChild(1);
             if (left->isDataset() || left->isDatarow())
             {
-                pushScope();
+                pushScope(expr);
                 analyseExpr(left);
                 analyseExpr(right);
                 popScope();
@@ -3585,7 +3586,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
     case no_keyed:
     case no_loopbody:
         {
-            pushScope();
+            pushScope(expr);
             ForEachChild(idx, expr)
                 analyseExpr(expr->queryChild(idx));
             popScope();
@@ -3629,7 +3630,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
             if (expr->hasAttribute(newAtom))
             {
                 IHqlExpression * dataset = expr->queryChild(0);
-                pushScope();
+                pushScope(expr);
                 analyseExpr(dataset);
                 bool nested = setDataset(dataset, dataset);
                 analyseExpr(expr->queryChild(1));
@@ -3655,7 +3656,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
             suspendAllScopes(info);
 
             if (expr->isDataset())
-                pushScope();
+                pushScope(expr);
             analyseExpr(expr->queryChild(0));
             if (expr->isDataset())
                 popScope();
@@ -3697,7 +3698,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
             {
                 IHqlExpression * cur = expr->queryChild(idx);
                 if (cur->isDataset())
-                    pushScope();
+                    pushScope(expr);
                 analyseExpr(cur);
                 if (cur->isDataset())
                     popScope();
@@ -3775,7 +3776,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
                     if (expr->getOperator() == no_normalize)                // right can be dependent on left
                     {
                         bool nested = setLeft(left, selSeq);
-                        pushScope();
+                        pushScope(expr);
                         analyseExpr(right);
                         popScope();
                         clearDataset(nested);
@@ -3858,7 +3859,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
     case no_createdictionary:
         {
             IHqlExpression * dataset = expr->queryChild(0);
-            pushScope();
+            pushScope(expr);
             IHqlExpression * transformedDs = transform(dataset);
             children.append(*transformedDs);
             bool nested = setDataset(dataset, transformedDs);
@@ -3872,7 +3873,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
         {
             //ugly - see comment above
             IHqlExpression * dataset = expr->queryChild(0);
-            pushScope();
+            pushScope(expr);
             IHqlExpression * transformedDs = transform(dataset);
             children.append(*transformedDs);
             bool nested = setLeft(dataset, querySelSeq(expr));
@@ -3885,7 +3886,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
     case no_keydiff:
     case no_rowdiff:
         {
-            pushScope();
+            pushScope(expr);
             children.append(*transform(expr->queryChild(0)));
             children.append(*transform(expr->queryChild(1)));
             for (idx = 2; idx < numChildren; idx++)
@@ -3900,7 +3901,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
             unsigned first = 0;
             if (value->isDataset())
             {
-                pushScope();
+                pushScope(expr);
                 children.append(*transform(value));
                 popScope();
                 first++;
@@ -3912,7 +3913,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
     case no_selectnth:
     case no_keypatch:
         {
-            pushScope();
+            pushScope(expr);
             children.append(*transform(expr->queryChild(0)));
             popScope();
             for (idx = 1; idx < numChildren; idx++)
@@ -3936,7 +3937,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
             children.append(*LINK(left));
             if (left->isDataset() || left->isDatarow())
             {
-                pushScope();
+                pushScope(expr);
                 children.append(*transform(right));
                 popScope();
             }
@@ -3958,7 +3959,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
             IHqlExpression * right = expr->queryChild(1);
             if (left->isDataset() || left->isDatarow())
             {
-                pushScope();
+                pushScope(expr);
                 children.append(*transform(left));
                 children.append(*transform(right));
                 popScope();
@@ -3973,7 +3974,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
     case no_keyed:
     case no_loopbody:
         {
-            pushScope();
+            pushScope(expr);
             ForEachChild(idx, expr)
                 children.append(*transform(expr->queryChild(idx)));
             popScope();
@@ -4023,7 +4024,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
             IHqlExpression * dataset = expr->queryChild(0);
             if (expr->hasAttribute(newAtom))
             {
-                pushScope();
+                pushScope(expr);
                 IHqlExpression * transformedDs = transform(dataset);
                 children.append(*transformedDs);
                 bool nested = setDataset(dataset, transformedDs);
@@ -4053,7 +4054,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
             suspendAllScopes(info);
 
             if (expr->isDataset())
-                pushScope();
+                pushScope(expr);
             children.append(*transform(expr->queryChild(0)));
             if (expr->isDataset())
                 popScope();
@@ -4099,7 +4100,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
             {
                 IHqlExpression * cur = expr->queryChild(idx);
                 if (cur->isDataset())
-                    pushScope();
+                    pushScope(expr);
                 children.append(*transform(cur));
                 if (cur->isDataset())
                     popScope();
@@ -4234,15 +4235,30 @@ IHqlExpression * ScopedTransformer::getEvaluateScope(IHqlExpression * scope)
 }
 
 
-void ScopedTransformer::pushScope()
+void ScopedTransformer::pushScope(IHqlExpression * context)
 {
-    innerScope = new ScopeInfo;
+    innerScope = new ScopeInfo(context);
     scopeStack.append(*innerScope);
+#ifdef TRACE_DEEP_SCOPES
+    static unsigned maxDepth = 8;
+    if (scopeStack.ordinality() > maxDepth)
+    {
+        printf("----- nesting -----\n");
+        ForEachItemIn(i, scopeStack)
+        {
+            ScopeInfo & cur = scopeStack.item(i);
+            StringBuffer temp;
+            toUserECL(temp, cur.context, false);
+            printf("%p: %s", cur.dataset, temp.str());
+        }
+        maxDepth = scopeStack.ordinality();
+    }
+#endif
 }
 
 void ScopedTransformer::pushEvaluateScope(IHqlExpression * dataset, IHqlExpression * transformed)
 {
-    innerScope = new ScopeInfo;
+    innerScope = new ScopeInfo(dataset);
     scopeStack.append(*innerScope);
 
     innerScope->setDataset(dataset->queryNormalizedSelector(true), transformed);
@@ -4472,7 +4488,7 @@ IHqlExpression * ScopedTransformer::doTransformRootExpr(IHqlExpression * expr)
     IHqlExpression * ret;
     if (expr->isDataset())
     {
-        pushScope();
+        pushScope(expr);
         ret = NewHqlTransformer::doTransformRootExpr(expr);
         popScope();
     }

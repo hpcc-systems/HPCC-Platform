@@ -9639,7 +9639,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
         }
     }
 
-    pushScope();
+    pushScope(expr);
     OwnedHqlExpr newDs = transformNewDataset(ds, false);
     popScope();
 
@@ -9762,7 +9762,7 @@ IHqlExpression * HqlScopeTagger::transformAmbiguous(IHqlExpression * expr, bool 
     case type_table:
     case type_groupedtable:
         {
-            pushScope();
+            pushScope(expr);
             OwnedHqlExpr ret = transformNewDataset(expr, isActiveOk);
             popScope();
             return ret.getClear();
