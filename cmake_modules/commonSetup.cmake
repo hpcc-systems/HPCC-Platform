@@ -232,6 +232,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
 
   if ( CLIENTTOOLS_ONLY )
+      set(PYEMBED ON)
       set(PLATFORM OFF)
       set(DEVEL OFF)
   endif()
