@@ -208,7 +208,7 @@ function getFirstNodeName(dt, parentName,fldType) {
       break;
     }
   }
-  
+
   if (typeof (rec) === 'undefined')
     return;
 
@@ -255,6 +255,84 @@ function saveOpenEditors(myDataTable) {
   }
 }
 
+function isValidIPSubNetRange(start, end)
+{
+  errorMessage = "";
+  var startInt = parseInt(start);
+  var endInt = parseInt(end);
+  if (!isNaN(startInt))
+  {
+    if (startInt > 255)
+      errorMessage = "IP subnet range exceeds boundry: " + start;
+
+    if (end)
+    {
+      if (isNaN(endInt))
+        errorMessage = "IP subnet range end is not a valid valud: " + end;
+      else if (endInt > 255)
+        errorMessage = "IP subnet range end exceeds boundry: " + end;
+      else if (startInt >= endInt)
+        errorMessage = "IP range is invalid: " + start + "-" + end;
+    }
+  }
+  else
+    errorMessage = "IP range contains non-numeric values: " + start;
+
+  return errorMessage;
+}
+
+function isValidNetworkAddress(addressList, theName, ignoredot, checkspecial)
+{
+  var errorString = "";
+  addressList = addressList.replace(/;$/, "");
+  var addressArray = new Array();
+  addressArray = addressList.split(";");
+
+  const urlPattern = /^(http[s]?:\/\/)?([^:\/\s]+)(?:\:([0-9]+))?((\/\w+)*\/)?([\w\-\.]+[^#?\s]+)?(.*)?(#[\w\-]+)?$/;
+
+  for (var currAddIndex = 0; currAddIndex < addressArray.length; currAddIndex++)
+  {
+    var currentAddress = addressArray[currAddIndex];
+    var match = currentAddress.match(urlPattern);
+    if (match == null)
+        errorString = errorString + theName + ": " + currentAddress + " does not appear to be a valid network address.\n";
+    else
+    {
+      if (match[1])
+            errorString = errorString + theName + ": " + currentAddress + " contains a URL connection protocol.\n";
+      else if (match[2] == null)
+          errorString = errorString + theName + ": " + currentAddress + " does not appear to contain a host.";
+      else if (match[3] || match[4] || match[5] || match[6])
+          errorString = errorString + theName + ": " + currentAddress + " should only contain a host name or ip/ip range.\n";
+      else
+      {
+          const ipRangePattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?:-(\d{1,3}))?$/;
+          var ipRangeMatch = currentAddress.match(ipRangePattern);
+
+          if (ipRangeMatch) //IP form, perhaps range
+          {
+            if (checkspecial)
+            {
+              if (currentAddress == "0.0.0.0" || currentAddress == "255.255.255.255")
+                errorString = errorString + theName + ': ' + IPvalue + ' is a special IP address and cannot be used here.';
+            }
+
+            if (ignoredot && currentAddress === ".")
+              continue;
+
+            if(ipRangeMatch[5] != null) //IP range format detected
+            {
+                var invalidIPSubNet = isValidIPSubNetRange(ipRangeMatch[4], ipRangeMatch[5]);
+                if (invalidIPSubNet)
+                  errorString = errorString + theName + ": " + invalidIPSubNet + "\n";
+            }
+          }
+        }
+     }
+  }
+  return errorString;
+}
+
 function isValidIPAddress(ipList, theName, ignoredot, checkspecial) {
   var errorString = "";
   var k = 0;
@@ -285,7 +363,7 @@ function isValidIPAddress(ipList, theName, ignoredot, checkspecial) {
         errorString = errorString + theName + ': ' + IPvalue + ' is a special IP address and cannot be used here.';
     }
 
-    if (ignoredot && IPvalue === ".") 
+    if (ignoredot && IPvalue === ".")
       continue;
 
     if (ipArray == null)
@@ -346,7 +424,7 @@ function addUniqueToArray(arr, itm) {
             flag = true;
           else
             return;
-        } 
+        }
     }
 
     if (arr.length == 0)
@@ -371,3 +449,4 @@ function isNotInEnv(notInEnvList, name)
   else
     return false;
 }
+

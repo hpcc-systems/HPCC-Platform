@@ -4722,21 +4722,58 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
 
   if (!strcmp(operation, "New"))
   {
-    StringBuffer sbTemp;
-    IPropertyTree* pCompTree = createPTree(XML_TAG_HARDWARE);
-    generateHardwareHeaders(pEnvRoot, sbTemp, false, pCompTree, true);
+    const char* prefix = pParams->queryProp("@prefix");
+    const char* domain = pParams->queryProp(XML_ATTR_DOMAIN);
+    const char* cType = pParams->queryProp(XML_ATTR_COMPUTERTYPE);
+    const char* netAddress = pParams->queryProp("@startIP");
+    const char* hostName = pParams->queryProp("@hostname");
 
-    StringBuffer sbNewName(type);
-    xpath.clear().appendf("%s", type);
+    StringBuffer sName;
 
-    getUniqueName(pEnvRoot, sbNewName, xpath.str(), XML_TAG_HARDWARE);
-    xpath.clear().append(type).append("/").append(XML_ATTR_NAME);
-    pCompTree->setProp(xpath.str(), sbNewName);
+    if ( (!netAddress || !*netAddress) && (hostName && *hostName))
+    {
+      netAddress = hostName;
+      sName.set(hostName);
+    }
+    else
+    {
+      sName.set(prefix);
+    }
 
-    pEnvRoot->queryPropTree(XML_TAG_HARDWARE)->addPropTree(type, pCompTree->queryPropTree(type));
+    // Create string for common attributes
+    StringBuffer attr, val, sAttributes;
+    attr.appendf(" %s=\"%s\" %s=\"%s\"", &XML_ATTR_DOMAIN[1], domain, &XML_ATTR_COMPUTERTYPE[1], cType);
 
-    resp.setCompName(sbNewName.str());
+    StringBuffer sNode("<" XML_TAG_HARDWARE ">");
+    StringBuffer strCheckXPath;
+    strCheckXPath.setf("%s/%s[%s=\"%s\"][1]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, netAddress);
+
+    sNode.appendf("<" XML_TAG_COMPUTER " %s=\"%s\" %s=\"%s\" %s/>",
+                  &XML_ATTR_NAME[1], getUniqueName(pEnvRoot, sName, XML_TAG_COMPUTER, XML_TAG_HARDWARE),
+                  &XML_ATTR_NETADDRESS[1], netAddress,
+                  attr.str());
+    sNode.append("</" XML_TAG_HARDWARE ">");
+    IPropertyTree* pTree = createPTreeFromXMLString(sNode);
+
+    if (m_bCloud)
+    {
+      StringBuffer sbMsg;
+      CCloudActionHandler lockCloud(this, CLOUD_LOCK_ENV, CLOUD_UNLOCK_ENV, m_userWithLock.str(), "8015", pTree);
+      bool ret = lockCloud.start(sbMsg);
+      if (!ret || sbMsg.length())
+      {
+        resp.setStatus("false");
+        throw MakeStringException(-1, "Cannot add new range of computers as environment lock could not be obtained. Reason(s):\n%s", sbMsg.str());
+      }
+    }
+
+    if (pTree)
+    {
+      mergePTree(pEnvRoot->queryPropTree(XML_TAG_HARDWARE), pTree);
+      resp.setCompName(sName.str());
+    }
     resp.setStatus("true");
+
   }
   else if (!strcmp(operation, "NewRange"))
   {

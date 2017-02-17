@@ -137,8 +137,8 @@ if(document.getElementById('advButton').checked)
  else if(document.getElementById('wizButton').checked)
    return '1';
  else
-   return '0'; 
-} 
+   return '0';
+}
 
 function invokeWizard() {
   var handleCancelForDisplayScreen = function() {
@@ -240,10 +240,10 @@ function handleAdvance(createFile) {
      getSummaryPage();
      return;
   }
-  
+
   if (top.document.displayModeDialog1)
     top.document.displayModeDialog1.hide();
-  
+
  var xmlArgs = 'reloadEnv=true::lockEnv=false';
   if (createFile)
     xmlArgs += '::createFile=true';
@@ -304,7 +304,7 @@ function getFileName(flag, wiz) {
     str = "ReqInfo.FileName=" + document.forms['treeForm'].sourcefile.value;
 
   str += '&ReqInfo.UserId=' + document.forms['treeForm'].userid.value;
-  
+
   if (flag)
     str += "&";
 
@@ -612,7 +612,7 @@ function createNavigationTree(navTreeData) {
 
         if (compName === "Environment" && document.forms['treeForm'].wizops.value === '3')
           getWaitDlg().show();
-          
+
         if (oArgs.event.shiftKey == false && oArgs.event.ctrlKey == false)
           document.getElementById('center1frame').src = '/WsDeploy/DisplaySettings?Cmd=Select&' + getFileName(true) + 'XmlArgs=' + navDT.selectionToXML(record, selectedRows);
         if (top.document.lastSelectedRow !== 'Hardware' && record.getData('BuildSet') === '')
@@ -690,7 +690,7 @@ function createNavigationTree(navTreeData) {
          clickCurrentSelOrName(this, firstRec.getData('Name'));
       }
     }
-    else{   
+    else{
       navDT.clearTextSelection();
       var selectedRows;
       top.document.lastSelectedRow = record.getData('Name');
@@ -1433,7 +1433,7 @@ function createNavigationTree(navTreeData) {
         if (o.responseText.indexOf("<?xml") === 0) {
           var tmp = o.responseText.split(/<ReqValue>/g);
           var tmp1, instances;
-          
+
           if (tmp.length > 1) {
             tmp1 = tmp[1].split(/<\/ReqValue>/g);
             if (tmp1.length > 1)
@@ -1480,7 +1480,7 @@ function createNavigationTree(navTreeData) {
     }
     navDT.tt.hide();
   });
-  
+
   navDT.subscribe("tableKeyEvent", function(oArgs) {
     if (oArgs.event.keyCode === 9) {
       var tabView = top.document.RightTabView;
@@ -1663,7 +1663,7 @@ function askUserToSave(navtable, dounlock) {
     //    clickCurrentSelOrName(navDT);
     //                            this.hide();
     //    }
-    //    
+    //
     //    var handleSave = function() {
     //      unlockEnvironment(navDT, true);
     //      clickCurrentSelOrName(navDT);
@@ -2077,7 +2077,7 @@ function saveEnvironmentAs() {
                                                                   scope: top.document.envSaveAsDialog,
                                                                   correctScope: true});
     top.document.envSaveAsDialog.cfg.queueProperty("keylisteners", kl);
-    
+
     document.getElementById('envSaveAsDialog').style.display = 'block';
     top.document.envSaveAsDialog.render();
     top.document.envSaveAsDialog.center();
@@ -2285,7 +2285,7 @@ function displayOpenEnvDialog() {
     var loc = window.location.href.split(/\?/g);
     var newwin = top.open(loc[0] + "?sourcefile=" + fileName, txt === "Ok" ? "_self" : "_blank");
   }
-  
+
   initOpenEnvPanel(handleSubmit);
 
   document.getElementById('openEnvPanel').style.display = 'block';
@@ -2630,6 +2630,7 @@ function promptVerifyPwd(category, params, attrName, oldValue, newValue, recordI
 function promptNewRange(domains, computerTypes, type) {
   if (!top.document.navDT.panelCfgAddComputers) {
     function onAddComputersButtonClick(p_oEvent) {
+    var op = 'NewRange';
       switch (this.get("id")) {
         case "cfgAddComputersCancel":
           top.document.navDT.panelCfgAddComputers.hide();
@@ -2641,44 +2642,71 @@ function promptNewRange(domains, computerTypes, type) {
             var prefix = document.getElementById('cfgAddComputersNamePrefix');
             var startIP = document.getElementById('cfgAddComputersStartIP');
             var endIP = document.getElementById('cfgAddComputersStopIP');
+            var hostname = document.getElementById('cfgAddComputersHostname');
             var isRange = document.getElementById('isRange');
+            if (!isRange.checked)
+            {
+              op = 'New';
+            }
+            else
+            {
+              if (prefix.value === "")
+              {
+                alert("Prefix cannot be empty when adding a range.");
+                prefix.focus();
+                return;
+              }
+            }
+
             document.forms['treeForm'].computerRangeEnd.value = endIP.value;
 
-            if (prefix.value === "") {
-              alert("Prefix cannot be empty.");
+            if (hostname.value === "" && startIP.value === ""){
+              alert("Either hostname or IP must be specified.");
               prefix.focus();
               return;
             }
-
             var errMsg = "";
-            errMsg = isValidIPAddress(startIP.value, "Start IP Address", false, false);
-
-            if (errMsg.length > 0) {
-              alert(errMsg);
-              startIP.select();
-              startIP.focus();
-              return;
-            }
-
-            if (isRange.checked) {
-              errMsg = "";
-              errMsg = isValidIPAddress(endIP.value, "Stop IP Address", false, false);
-
+            if (hostname.value != "")
+            {
+              errMsg = isValidNetworkAddress(hostname.value, "Computer hostname", false, false)
               if (errMsg.length > 0) {
                 alert(errMsg);
-                endIP.select();
-                endIP.focus();
+                hostname.select();
+                hostname.focus();
                 return;
               }
             }
             else
-              endIP.value = startIP.value;
+            {
+              errMsg = isValidIPAddress(startIP.value, "Start IP Address", false, false);
 
+              if (errMsg.length > 0) {
+                alert(errMsg);
+                startIP.select();
+                startIP.focus();
+                return;
+              }
+
+              if (isRange.checked) {
+                errMsg = "";
+                errMsg = isValidIPAddress(endIP.value, "Stop IP Address", false, false);
+
+                if (errMsg.length > 0) {
+                  alert(errMsg);
+                  endIP.select();
+                  endIP.focus();
+                  return;
+                }
+              }
+              else
+                endIP.value = startIP.value;
+            }
             var xmlArgs = '<XmlArgs domain="' + domainsDropDown.value +
                             '" computerType="' + cTypesDropDown.value +
                             '" prefix="' + prefix.value +
                             '" startIP="' + startIP.value +
-                            '" endIP="' + endIP.value + '" />';
+                            '" endIP="' + endIP.value +
+                            '" hostname="' +hostname.value +'" />';
             top.document.navDT.panelCfgAddComputers.hide();
             getWaitDlg().show();
             YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleComputer', {
@@ -2718,7 +2746,7 @@ function promptNewRange(domains, computerTypes, type) {
               },
               scope: this
             },
-            getFileName(true) + 'Operation=NewRange&XmlArgs=' + xmlArgs);
+            getFileName(true) + 'Operation=' + op + '&XmlArgs=' + xmlArgs);
 
             break;
           }
@@ -3070,7 +3098,7 @@ function initSelectComputersPanel(paramdt, fnSave, enableNumNodes, slavesPresent
   var fnCancel = function() {
     this.hide();
   }
-  
+
   var fnAddComputers = function(){
     var params = "queryType=DomainsAndComputerTypes";
     YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/GetValue', {
@@ -3084,7 +3112,7 @@ function initSelectComputersPanel(paramdt, fnSave, enableNumNodes, slavesPresent
               result = tmp1[0];
             else
               result = '';
-             
+
             var domains = result.split(/<Domains>/g);
             var domainArr = new Array();
             if (domains.length > 0) {
@@ -3092,7 +3120,7 @@ function initSelectComputersPanel(paramdt, fnSave, enableNumNodes, slavesPresent
               if (domains1.length > 0)
                 domainArr = domains1[0].split(/,/g);
             }
-              
+
             var cTypes = result.split(/<ComputerTypes>/g);
             var cTypeArr = new Array();
             if (cTypes.length > 0) {
@@ -3120,7 +3148,7 @@ function initSelectComputersPanel(paramdt, fnSave, enableNumNodes, slavesPresent
     if (!document.getElementById('slavesPerNodeDiv')) {
       var newdiv = document.createElement("div");
       newdiv.id = "slavesPerNodeDiv";
-      var newtext = document.createElement("LABEL"); 
+      var newtext = document.createElement("LABEL");
       newtext.innerHTML = "Number of thor slaves per node(default 1): ";
       var aTextBox = document.createElement('input');
       aTextBox.type = 'text';
@@ -3138,7 +3166,7 @@ function initSelectComputersPanel(paramdt, fnSave, enableNumNodes, slavesPresent
         }
       }
     }
-    
+
     document.getElementById('slavesPerNodeDiv').style.display = 'block';
     document.getElementById('slavesPerNodeDiv').style.styleFloat = "left";
     document.getElementById('slavesPerNodeDiv').style.cssFloat = "left";
@@ -3266,7 +3294,7 @@ function populateReplaceRoxieServers() {
             }
           }
         });
-        
+
         left4.roxieComputersTable = roxieComputersDataTable;
         left4.roxieComputersDataSource = roxieComputersDataSource;
         myDTDrags = {};
@@ -3368,7 +3396,7 @@ function thorInstSelToXML(self, selectedRows, paramdt, type, validateComputers, 
   var compName = top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('Name');
   var xmlStr = "<ThorData type=\"" + type + "\" name=\"" + compName +
                "\" validateComputers=\"" + validateComputers +
-               "\" slavesPerNode=\"" + slavesPerNode + 
+               "\" slavesPerNode=\"" + slavesPerNode +
                "\" skipExisting = \"" + skip + "\">";
   //var selectedRows = table.getSelectedRows();
   if (typeof (selectedRows) !== 'undefined') {
@@ -3595,7 +3623,7 @@ function unlockUser() {
     clearInterval(top.document.navDT.keepAliveInt);
     top.document.navDT.keepAliveInt = 0;
   }
-  
+
   var form = document.forms['treeForm'];
   if (form.isLocked.value === "true")
     unlockEnvironment(top.document.navDT, false);
@@ -3635,7 +3663,7 @@ function updateEnvCtrls(flag) {
   var fileopened = window.location.href.split(/\?/g);
   if (document.forms['treeForm'].wizops.value != '3' || fileopened.length <= 1)
     document.getElementById('ReadWrite').disabled = true;
-  
+
   if (flag) {
     Dom.removeClass(sbtn, "yui-button-disabled");
     Dom.removeClass(vbtn, "yui-button-disabled");
@@ -3807,7 +3835,7 @@ function createDDRows(id, sGroup, config, srcDT, rightViewDom) {
 function wizardPanel(){
 if(top.document.displayModeDialog1)
   top.document.displayModeDialog1.hide();
-  
+
  if(!top.document.wizardpanel)
  {
     top.document.wizardpanel = new YAHOO.widget.Panel('wizardPanel', {
@@ -3820,7 +3848,7 @@ if(top.document.displayModeDialog1)
       width: '500',
       height: '540px'
     });
-    
+
     top.document.wizardpanel.renderEvent.subscribe(function() {
       if(!top.document.wizardpanel.layout){
         top.document.wizardpanel.layout = new YAHOO.widget.Layout('wizardLayout', {
@@ -3832,7 +3860,7 @@ if(top.document.displayModeDialog1)
           ]
         });
       }
-      
+
       top.document.wizardpanel.layout.on('render',handleWizardScreen);
       top.document.wizardpanel.layout.render();
     });
@@ -3857,12 +3885,12 @@ function handleWizardScreen() {
       if (document.getElementById('ip').value === ''){
        document.getElementById('ipListText').value="Sample : X.X.X.X; X.X.X.X-XXX;";
        document.getElementById('ipListText').style.color="Gray";
-       document.forms['treeForm'].textClear.value = "false"; 
+       document.forms['treeForm'].textClear.value = "false";
       }
     }
      unlockEnvForWizard(gotoWizBack, false);
   };
-  
+
   var handleWizardDialog1Cancel = function() {
     var gotoWizCancel = function() {
       top.document.wizardDialog1.hide();
@@ -3872,18 +3900,18 @@ function handleWizardScreen() {
       else
         top.document.displayModeDialog1.hide();
     }
-    
+
     unlockEnvForWizard(gotoWizCancel, false);
   }
-       
+
   if(!top.document.wizardDialog1)
   {
     var centers=top.document.wizardpanel.layout.getSizes();
-    top.document.wizardDialog1 = new YAHOO.widget.Dialog('wizardIPAddressScreen', 
-    {   
+    top.document.wizardDialog1 = new YAHOO.widget.Dialog('wizardIPAddressScreen',
+    {
       width:((top.document.wizardpanel.layout.getUnitByPosition('center').get('width')) - 2),
       height:((top.document.wizardpanel.layout.getUnitByPosition('center').get('height')) - 2),
-      visible : true, 
+      visible : true,
       draggable : false,
       modal : false,
       close : false,
@@ -3898,9 +3926,9 @@ function handleWizardScreen() {
   if(document.forms['treeForm'].wizops.value != '3')
      document.getElementById('autoIP').disabled=true;
   document.getElementById('wizardIPAddressScreen').style.display='block';
-  top.document.wizardDialog1.render();    
-  top.document.wizardDialog1.show(); 
-  
+  top.document.wizardDialog1.render();
+  top.document.wizardDialog1.show();
+
 }
 
 function validateWizardDialog1(ipList){
@@ -3910,12 +3938,13 @@ function validateWizardDialog1(ipList){
   ipList=removeNL(ipList);
   ipList =getUniqueIP(ipList);
   ipList=removeSpaces(ipList);
-  
+
   if (document.forms['treeForm'].ipMode.value !== '2'){
     var theName ="IPAddress";
     document.getElementById('ipListText').value=ipList;
-    var errorString = isValidIPAddress(ipList, theName, true, true)
-    
+    //var errorString = isValidIPAddress(ipList, theName, true, true)
+    var errorString = isValidNetworkAddress(ipList, theName, true, true)
+
     if( errorString === '') {
      saveIPList();
      finalIPList = ipList ;
@@ -3929,7 +3958,7 @@ function validateWizardDialog1(ipList){
   else {
     finalIPList = document.getElementById('ipListText').value;
   }
-  
+
   if(finalIPList !== '' && errorString === '')
   {
      handleNumNodesScreen();
@@ -3956,20 +3985,20 @@ YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/NavMenuEvent', {
               alert(temp1[0]);
               top.document.displayModeDialog1.show();
             }
-            else if( temp1[0].match(/Cannot/) != null || temp1[0].match(/Another/) != null ){ 
+            else if( temp1[0].match(/Cannot/) != null || temp1[0].match(/Another/) != null ){
               alert(temp1[0]);
-              top.document.displayModeDialog1.show();         
+              top.document.displayModeDialog1.show();
             }
           }
         }
-        
+
         if (!isErr) {
           var form = document.forms['treeForm'];
           form.isWizLocked.value = "true";
           getWaitDlg().hide();
           wizardPanel();
         }
-          
+
       }
       else if (o.responseText.indexOf("<html") === 0) {
         var temp = o.responseText.split(/td align=\"left\">/g);
@@ -4069,7 +4098,7 @@ function formXMLStringFromIPList(ipList)
         xmlStr = "<Computerlist hasrange =\"true\">" + tempStr;
         hasrange = "true";
       }
-      xmlStr = xmlStr + "<ComputerRange netAddress=\"" + IPvalue + "\"/>"   
+      xmlStr = xmlStr + "<ComputerRange netAddress=\"" + IPvalue + "\"/>"
     }
     else {
      xmlStr = xmlStr + "<Computer netAddress=\"" + IPvalue + "\"/>" ;
@@ -4105,7 +4134,7 @@ function clearTextArea()
     document.getElementById("ipListText").value = document.forms['treeForm'].ip.value;
     indentIP();
   }
-  document.forms['treeForm'].textClear.value = "true"; 
+  document.forms['treeForm'].textClear.value = "true";
 }
 
 function saveIPList()
@@ -4156,7 +4185,7 @@ function removeNL(s) {
               ip.charAt(k) != '\r' &&
               ip.charAt(k) != '\t' &&
               ip.charAt(k) != ',' &&
-              ip.charAt(k) != '\s'
+              ip.charAt(k) != ' ' //escaped space char is browser dependant
              ) {
             r += ip.charAt(k);
           }
@@ -4244,13 +4273,13 @@ populateNumberOfNode();
     //Validation of number nodes against the number of IPs
     validateNumNodesDialog();
   };
-                           
+
   var handleNumNodesDialogBack = function() {
     top.document.numNodesDialog.hide();
     top.document.wizardDialog1.show();
     indentIP();
   };
-  
+
   var handleNumNodesDialogCancel = function() {
     var gotoWizCancel = function() {
      top.document.numNodesDialog.hide();
@@ -4259,16 +4288,16 @@ populateNumberOfNode();
       if(!top.document.navDT && document.forms['treeForm'].sumparams.value !== '1')
         top.document.displayModeDialog1.show();
     }
-    
+
     unlockEnvForWizard(gotoWizCancel, false);
   }
-                  
+
   if(!top.document.numNodesDialog)  {
-    top.document.numNodesDialog = new YAHOO.widget.Dialog('wizardNumNodesPage', 
-    {   
+    top.document.numNodesDialog = new YAHOO.widget.Dialog('wizardNumNodesPage',
+    {
       width:((top.document.wizardpanel.layout.getUnitByPosition('center').get('width')) - 2),
       height:((top.document.wizardpanel.layout.getUnitByPosition('center').get('height')) - 2),
-      visible : true, 
+      visible : true,
       draggable : false,
       modal : false,
       close : false,
@@ -4279,28 +4308,28 @@ populateNumberOfNode();
           { text:"Back", handler:handleNumNodesDialogBack},
           { text:"Next", handler:handleNumNodesDialogNext, isDefault:true }]
     });
-    
+
     top.document.numNodesDialog.cancelEvent.subscribe(function(){
       document.getElementById('top1').style.display='block';
       document.getElementById('mybutton').style.display='none';
     });
-    
+
     top.document.numNodesDialog.renderEvent.subscribe(function(){
       if(document.forms['treeForm'].wizops.value != '3'){
          document.getElementById('slavesPerNode').disabled=true;
       }
     });
   }
-  document.getElementById('wizardNumNodesPage').style.display='block';  
+  document.getElementById('wizardNumNodesPage').style.display='block';
   top.document.numNodesDialog.render();
-  top.document.numNodesDialog.show();  
-  
+  top.document.numNodesDialog.show();
+
 }
 
 function populateNumberOfNode(){
   var numberIPs = ipCount();
   var defaultNodes = parseInt(numberIPs);
-  
+
   if( parseInt(defaultNodes) <= 1){
     document.getElementById('node4Thor').value = "1";
     document.getElementById('node4Support').value = "0";
@@ -4322,7 +4351,7 @@ function populateNumberOfNode(){
   }
 
   document.getElementById('node4RoxieServ').value = "0";
-}   
+}
 
 function validateNumNodesDialog() {
   if (!(isInteger(document.getElementById('node4Thor').value)) ||
@@ -4356,7 +4385,7 @@ slave node. This is not recommended in an environment with more than \
     }
     else{
       alert("Number of nodes should be less then number of IPs provided.");
-    }   
+    }
   }
 }
 
@@ -4367,12 +4396,15 @@ function ipCount(){
   var ipArr= new Array();
   ipArr = ipList.split(";");
   var cnt = 0;
-  var ipPattern =/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-  
+  const ipPattern =/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+  const ipRangePattern="([0-9][0-9]?[0-9]?)\.([0-9][0-9]?[0-9]?)\.([0-9][0-9]?[0-9]?)\.([0-9][0-9]?[0-9]?\-[0-9][0-9]?[0-9]?)"
+
   for(var k=0; k < ipArr.length ;k++ )
   {
-
-    if (ipArr[k].match("-") != null )
+	  var currentval = ipArr[k]; 
+	  var mymatch = currentval.match(ipRangePattern);
+	  
+    if (ipArr[k].match(ipRangePattern) != null ) //an actual range, not a dash in a hostname
     {
       var ip=new Array();
       ip = ipArr[k].split("-");
@@ -4388,7 +4420,7 @@ function ipCount(){
            endAddr=tempAddr;
         }
         while(startAddr != endAddr)
-        { 
+        {
           cnt++;
           startAddr++;
         }
@@ -4396,7 +4428,7 @@ function ipCount(){
     }
     cnt++;
   }
-  return cnt;   
+  return cnt;
 }
 
 function submitInformation() {
@@ -4407,7 +4439,7 @@ function submitInformation() {
   var iplist = document.getElementById('ipListText').value;
   var slavesPerNode = document.getElementById('slavesPerNode').value;
   var roxieOnDemand = document.getElementById('roxieOnDemand').checked;
-  
+
   var xmlStr = "<XmlArgs username=\"" ;
   xmlStr += "\" password=\"";
   xmlStr += "\" roxieNodes=\"" + roxieSrvNode;
@@ -4421,7 +4453,7 @@ function submitInformation() {
   var button = top.document.numNodesDialog.getButtons();
   button[0].set("disabled",true);
   button[1].set("disabled",true);
-  
+
 getStaticProgressBar().show();
 YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/BuildEnvironment', {
   success: function(o) {
@@ -4482,29 +4514,29 @@ YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/BuildEnvironment', {
 },
     getFileName(true, true) + 'XmlArgs=' + xmlStr);
 }//submitInformation
- 
+
 function getStaticProgressBar(){
 
   var xx=400, yy=400 ;
   if(top.document.wizardpanel) {
      xx=((YAHOO.util.Dom.getX(top.document.wizardpanel.layout.getUnitByPosition('center'))) + 60);
-     yy=((YAHOO.util.Dom.getY(top.document.wizardpanel.layout.getUnitByPosition('center'))) + 200);                        
+     yy=((YAHOO.util.Dom.getY(top.document.wizardpanel.layout.getUnitByPosition('center'))) + 200);
   }
 
   if( !top.document.staticProgress1 )
   {
-    top.document.staticProgress1 =  new YAHOO.widget.Panel("staticProgress",  
+    top.document.staticProgress1 =  new YAHOO.widget.Panel("staticProgress",
       { width:"250px",
         x:xx,
         y:yy,
-        close:false, 
-        draggable:false, 
+        close:false,
+        draggable:false,
         zindex:9999,
         modal:false,
         visible:true,
         underlay: 'none',
         container:'wizardcenter'
-      } 
+      }
     );
   }
   document.getElementById('staticProgress').style.display='block';
@@ -4519,7 +4551,7 @@ function summaryPageForWizard()
   top.document.numNodesDialog.hide();
   top.document.wizardDialog1.hide();
   top.document.wizardpanel.hide();
-     
+
   var myButtons;
   var headerText = "Environment summary for " + document.forms['treeForm'].wizfile.value;
   getStaticProgressBar().show();
@@ -4542,11 +4574,11 @@ function summaryPageForWizard()
       top.document.sumPanel.hide();
       top.document.wizardpanel.hide();
       var loc = window.location.href.split(/\?/g);
-      var newwin = top.open(loc[0] + "?sourcefile=" + document.forms['treeForm'].wizfile.value, "_self");  
+      var newwin = top.open(loc[0] + "?sourcefile=" + document.forms['treeForm'].wizfile.value, "_self");
     }
     unlockEnvForWizard(gotoAdv, true);
   };
-  
+
   var handleSummaryPageCancel = function(o) {
     var gotoWizCancel = function() {
        top.document.sumPanel.hide();
@@ -4558,13 +4590,13 @@ function summaryPageForWizard()
      }
      unlockEnvForWizard(gotoWizCancel, false);
   };
-  
+
  if(!top.document.sumPanel){
     top.document.sumPanel = new YAHOO.widget.Dialog('summaryPage',
     {
     width:500,
     height :550,
-    visible : false, 
+    visible : false,
     draggable : true,
     modal : true,
     close : false,
@@ -4575,7 +4607,7 @@ function summaryPageForWizard()
                 { text:"Finish", handler:handleSummaryFinish, isDefault:true},
                 { text:"Advanced View", handler:handleSummaryGotoAdvance }]
     });
-    
+
     top.document.sumPanel.renderEvent.subscribe(function(){
      if (!top.document.sumPanel.layout) {
         top.document.sumPanel.layout = new YAHOO.widget.Layout('summaryPageLayout', {
@@ -4587,52 +4619,52 @@ function summaryPageForWizard()
         top.document.sumPanel.layout.render();
       }
       populateSummaryDetails(false, 'summaryPageTable');
-         
+
       if(document.forms['treeForm'].wizops.value != '3'){
         var btn = top.document.sumPanel.cfg.getProperty("buttons");
         (top.document.sumPanel.getButtons())[3].set("disabled", true);
         btn[3].htmlButton.title = "This operation is only supported in Enterprise and above editions. Please contact HPCC Systems at http://www.hpccsystems.com/contactus";
       }
-     
+
     });
   }
-  
-  resize = new YAHOO.util.Resize('summaryPage', { 
-    handles: ['br'], 
-    autoRatio: true, 
-    status: false,   
-    minWidth: 480,   
-    minHeight: 450     
-  });   
-  
-  resize.on('resize', function(args) { 
-     var panelHeight = args.height, 
-     padding = 20; 
-     //Hack to trick IE into behaving 
-     YAHOO.util.Dom.setStyle('summaryPageLayout', 'display', 'none'); 
-     this.cfg.setProperty("height", panelHeight + 'px'); 
-     top.document.sumPanel.layout.set('height', this.body.offsetHeight - padding); 
-     top.document.sumPanel.layout.set('width', this.body.offsetWidth - padding); 
-     YAHOO.util.Dom.setStyle('summaryPageLayout', 'display', 'block'); 
-     top.document.sumPanel.layout.resize(); 
-           
-  }, top.document.sumPanel, true); 
- 
+
+  resize = new YAHOO.util.Resize('summaryPage', {
+    handles: ['br'],
+    autoRatio: true,
+    status: false,
+    minWidth: 480,
+    minHeight: 450
+  });
+
+  resize.on('resize', function(args) {
+     var panelHeight = args.height,
+     padding = 20;
+     //Hack to trick IE into behaving
+     YAHOO.util.Dom.setStyle('summaryPageLayout', 'display', 'none');
+     this.cfg.setProperty("height", panelHeight + 'px');
+     top.document.sumPanel.layout.set('height', this.body.offsetHeight - padding);
+     top.document.sumPanel.layout.set('width', this.body.offsetWidth - padding);
+     YAHOO.util.Dom.setStyle('summaryPageLayout', 'display', 'block');
+     top.document.sumPanel.layout.resize();
+
+  }, top.document.sumPanel, true);
+
   document.getElementById('summaryPage').style.display = 'block';
   top.document.sumPanel.render();
   top.document.sumPanel.show();
   top.document.sumPanel.center();
-  
+
 }
 
 function summaryPageForAdvance() {
   if (top.document.messageDialogBox)
     top.document.messageDialogBox.hide();
-    
+
   var myButtons;
   var headerText = "Environment summary for " + document.forms['treeForm'].wizfile.value;
   getStaticProgressBar().show();
-  
+
   var handleSummaryCancel = function(o) {
      this.hide();
      document.forms['treeForm'].sumparams.value = '0';
@@ -4641,7 +4673,7 @@ function summaryPageForAdvance() {
      var fileopened = window.location.href.split(/\?/g);
      if (fileopened.length <= 1)
        invokeWizard();
-     
+
   };
 
   var handleSummaryGotoAdvance = function(o) {
@@ -4657,7 +4689,7 @@ function summaryPageForAdvance() {
     {
     width:500,
     height :550,
-    visible : false, 
+    visible : false,
     draggable : true,
     modal : false,
     close : false,
@@ -4666,7 +4698,7 @@ function summaryPageForAdvance() {
     buttons :[ { text:"ok", handler:handleSummaryCancel, isDefault:true},
                { text:"Advanced View", handler:handleSummaryGotoAdvance }]
     });
-    
+
     top.document.advSumPanel.renderEvent.subscribe(function(){
      if (!top.document.advSumPanel.layout) {
         top.document.advSumPanel.layout = new YAHOO.widget.Layout('sumPageLayout', {
@@ -4676,44 +4708,44 @@ function summaryPageForAdvance() {
       }
       top.document.advSumPanel.layout.render();
       populateSummaryDetails(true, 'sumPageTable');
-         
+
       if(document.forms['treeForm'].wizops.value != '3'){
         var btn = top.document.advSumPanel.cfg.getProperty("buttons");
         (top.document.advSumPanel.getButtons())[1].set("disabled", true);
         btn[1].htmlButton.title = "This operation is only supported in Enterprise and above editions. Please contact HPCC Systems at http://www.hpccsystems.com/contactus";
       }
-     
+
     });
   }
-  
-  resize = new YAHOO.util.Resize('sumPage', { 
-    handles: ['br'], 
-    autoRatio: true, 
-    status: false,   
-    minWidth: 480,   
-    minHeight: 450   
-  });   
-  
-  resize.on('resize', function(args) { 
-     var panelHeight = args.height, 
-     padding = 20; 
-     //Hack to trick IE into behaving 
-     YAHOO.util.Dom.setStyle('sumPageLayout', 'display', 'none'); 
-     this.cfg.setProperty("height", panelHeight + 'px'); 
-     top.document.advSumPanel.layout.set('height', this.body.offsetHeight - padding); 
-     top.document.advSumPanel.layout.set('width', this.body.offsetWidth - padding); 
-     YAHOO.util.Dom.setStyle('sumPageLayout', 'display', 'block'); 
-     top.document.advSumPanel.layout.resize(); 
-           
-   }, top.document.advSumPanel, true); 
-  
+
+  resize = new YAHOO.util.Resize('sumPage', {
+    handles: ['br'],
+    autoRatio: true,
+    status: false,
+    minWidth: 480,
+    minHeight: 450
+  });
+
+  resize.on('resize', function(args) {
+     var panelHeight = args.height,
+     padding = 20;
+     //Hack to trick IE into behaving
+     YAHOO.util.Dom.setStyle('sumPageLayout', 'display', 'none');
+     this.cfg.setProperty("height", panelHeight + 'px');
+     top.document.advSumPanel.layout.set('height', this.body.offsetHeight - padding);
+     top.document.advSumPanel.layout.set('width', this.body.offsetWidth - padding);
+     YAHOO.util.Dom.setStyle('sumPageLayout', 'display', 'block');
+     top.document.advSumPanel.layout.resize();
+
+   }, top.document.advSumPanel, true);
+
   document.getElementById('sumPage').style.display = 'block';
   top.document.advSumPanel.render();
   top.document.advSumPanel.show();
   top.document.advSumPanel.center();
-  
+
 }
- 
+
 
 function populateSummaryDetails(linkFlag, sumDataTable)
 {
@@ -4730,8 +4762,8 @@ function populateSummaryDetails(linkFlag, sumDataTable)
       if(!linkFlag)
         dt = top.document.summaryDataSourceWiz;
       else
-        dt = top.document.summaryDataSource; 
-      
+        dt = top.document.summaryDataSource;
+
       if (!dt) {
           var summaryColumnDefs = [ { key: "name", width: 175, label: "Component/Esp Services", formatter: function(el, oRecord, oColumn, oData){
              if(oRecord.getData('espservice') === 'true'){
@@ -4742,7 +4774,7 @@ function populateSummaryDetails(linkFlag, sumDataTable)
             },sortable: true,  resizeable:true},
             { key: "buildset", width: 100, label: "BuildSet" ,sortable: true,  resizeable:true},
             { key: "netaddresses", width: 196, className:"classForSum", label: "Net Addresses/Port", sortable: true,  resizeable:true }];
-          
+
         var xmlStr = '<?xml version="1.0" encoding="UTF-8"?><Component name="" buildset="" netaddresses=""/>';
         var summaryDataSource = new YAHOO.util.DataSource(xmlStr);
         summaryDataSource.responseType = YAHOO.util.DataSource.TYPE_XML;
@@ -4759,7 +4791,7 @@ function populateSummaryDetails(linkFlag, sumDataTable)
           top.document.summaryDataSourceWiz = summaryDataSource;
         }
       }
-      
+
       if(linkFlag){
         top.document.summaryDataSource.handleResponse("", o, { success: top.document.summaryDataTable.onDataReturnInitializeTable,
           scope: top.document.summaryDataTable
@@ -4769,7 +4801,7 @@ function populateSummaryDetails(linkFlag, sumDataTable)
         top.document.summaryDataSourceWiz.handleResponse("", o, { success: top.document.summaryDataTableWiz.onDataReturnInitializeTable,
           scope: top.document.summaryDataTableWiz
         }, this, 999);
-      }  
+      }
    },
    failure: function(o) {
       getStaticProgressBar().hide();
@@ -4783,7 +4815,6 @@ function populateSummaryDetails(linkFlag, sumDataTable)
    getFileName(true, true)  + 'PrepareLinkFlag=' + true);
 }
 
-
 function isRangeClicked(flag) {
   var form = document.forms['treeForm'];
 
@@ -4792,11 +4823,20 @@ function isRangeClicked(flag) {
     cfgAddComputersStopIP.value = "";
     cfgAddComputersStopIP.disabled = true;
     cfgAddComputersStopIPLabel.disabled = true;
+
+    cfgAddComputersHostname.value = "";
+    cfgAddComputersHostname.disabled = false;
+    cfgAddComputersHostnameLabel.disabled = false;
   }
   else {
     cfgAddComputersStopIP.value = form.computerRangeEnd.value;
     cfgAddComputersStopIP.disabled = false;
     cfgAddComputersStopIPLabel.disabled = false;
+
+    //form.computerRangeEnd.value = cfgAddComputersHostname.value;
+    cfgAddComputersHostname.value = "";
+    cfgAddComputersHostname.disabled = true;
+    cfgAddComputersHostnameLabel.disabled = true;
   }
 }
 
@@ -4829,7 +4869,7 @@ function loadAndCheckFileNames(value)
 
           var files = result.split(/;/g);
           if (value === '2' || value === '4') {
-            //first remove the items 
+            //first remove the items
             var element;
             if (value === '2')
               element = document.getElementById('fileDropDownMenu');
@@ -4844,7 +4884,7 @@ function loadAndCheckFileNames(value)
             optn.text = "";
             optn.value = "";
             element.options.add(optn);
-            
+
             for (var i = 0; i < files.length; i++) {
               if (files[i] !== '') {
                 var optn = document.createElement("OPTION");
@@ -4975,7 +5015,7 @@ function handleBlankEnvironment() {
     success: function(o) {
       if (o.responseText.indexOf("<?xml") === 0) {
         var loc = window.location.href.split(/\?/g);
-        var newwin = top.open(loc[0] + "?sourcefile=" + document.forms['treeForm'].sourcefile.value, "_self");  
+        var newwin = top.open(loc[0] + "?sourcefile=" + document.forms['treeForm'].sourcefile.value, "_self");
       }
       else if (o.responseText.indexOf("<html") === 0) {
         var temp = o.responseText.split(/td align=\"left\">/g);
@@ -5033,10 +5073,10 @@ function callHtmlSummaryPage()
   top.document.sumPanel.hide();
   var loc = window.location.href.split(/\?/g);
   var url = loc[0] + "?sourcefile=" + document.forms['treeForm'].wizfile.value;
-  
+
   var msgToDisplay = 'Successfully generated the file ' + '<a href="' + url + '">' + document.forms['treeForm'].wizfile.value + '</a>';
   top.document.layout.render();
-  
+
   if (document.getElementById('ReadWrite') && !top.document.navDT)
   {
     document.getElementById('ReadWrite').disabled = true;
@@ -5044,7 +5084,7 @@ function callHtmlSummaryPage()
     document.getElementById('saveasbutton').disabled = false;
     document.getElementById('validatebutton').disabled = true;
   }
-  
+
   document.getElementById('top1').style.display = 'block';
   getMessagePanel(msgToDisplay).show();
 }
@@ -5054,7 +5094,7 @@ function getMessagePanel(msgToDisplay)
   var handleClose = function() {
     this.hide();
   };
-    
+
   if(!top.document.messageDialogBox)
   {
     top.document.messageDialogBox = new YAHOO.widget.Dialog("messagePanel",
@@ -5069,7 +5109,7 @@ function getMessagePanel(msgToDisplay)
         modal: true
       });
   }
-  
+
   top.document.messageDialogBox.renderEvent.subscribe(function() {
      if(top.document.navDT){
        this.cfg.setProperty("modal", true);
@@ -5094,9 +5134,9 @@ function getMessagePanel(msgToDisplay)
   document.getElementById('messagePanel').style.display = 'block' ;
   top.document.messageDialogBox.render(document.body);
   top.document.messageDialogBox.center();
-  
+
   return top.document.messageDialogBox;
-}     
+}
 
 function checkForEE() {
   if (document.forms['treeForm'].wizops.value != '3') {
@@ -5173,19 +5213,19 @@ function focusIPList() {
       rn.moveStart('character',len)
       rn.select()
    }
-} 
+}
 
 function getSummaryPage()
 {
   summaryPageForAdvance();
- 
+
   var fileopened = window.location.href.split(/\?/g);
   if (fileopened.length <= 1) {
     top.document.layout.render();
     document.getElementById('top1').style.display = 'block';
     top.document.layout.getUnitByPosition('left').close(true);
   }
-  
+
   document.forms['treeForm'].sumparams.value = '1';
   updateWizCtrls();
   return;
