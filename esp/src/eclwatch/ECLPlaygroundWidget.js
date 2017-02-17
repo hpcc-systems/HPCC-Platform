@@ -92,10 +92,10 @@ define([
             this.stackController = registry.byId(this.id + "StackController");
             this.stackContainer = registry.byId(this.id + "StackContainer");
             this.errWarnWidget = registry.byId(this.id + "_ErrWarn");
-            this.resultsWidget = registry.byId(this.id + "_Results");
-            this.resultsWidget.onErrorClick = function (line, col) {
+            this.errWarnWidget.onErrorClick = function (line, col) {
                 context.editorControl.setCursor(line, col);
             };
+            this.resultsWidget = registry.byId(this.id + "_Results");
             this.visualizeWidget = registry.byId(this.id + "_Visualize");
         },
 

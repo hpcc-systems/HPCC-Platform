@@ -983,10 +983,11 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       if("${GPG_VERSION}" VERSION_GREATER "2.1")
           set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --pinentry-mode loopback")
       endif()
-      set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --batch --no-tty --output ${CMAKE_CURRENT_BINARY_DIR}/${module} --clearsign ${module}")
+      set(GPG_COMMAND_STR "${GPG_COMMAND_STR} --batch --yes --no-tty --output ${CMAKE_CURRENT_BINARY_DIR}/${module} --clearsign ${module}")
       add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${module}
         COMMAND bash "-c" "${GPG_COMMAND_STR}"
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${module}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Adding signed ${module} to project"
         )
@@ -994,6 +995,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${module}
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${module} ${CMAKE_CURRENT_BINARY_DIR}/${module}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${module}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Adding unsigned ${module} to project"
         VERBATIM
