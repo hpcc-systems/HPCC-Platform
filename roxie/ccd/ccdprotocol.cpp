@@ -1364,15 +1364,11 @@ public:
     }
     void extractName(HttpHelper &httpHelper, const char *msg, const IContextLogger &logctx, const char *peer, unsigned port)
     {
-        StringAttr urlName;
-        if (httpHelper.queryQueryName()) //"Adaptive REST" query name and attrs can come from URL
+        const char *urlName = httpHelper.queryQueryName(); //"Adaptive REST" query name and attrs can come from URL
+        if (httpHelper.isHttpGet() || httpHelper.isMappedToInputParameter()) //these types can't have roxie attrs in the content body
         {
-            urlName.set(httpHelper.queryQueryName());
-            if (httpHelper.isMappedToInputParameter()) //this type of content can't have roxie level attrs in
-            {
-                name.set(urlName);
-                return;
-            }
+            name.set(urlName); //if blank will return error as expected
+            return;
         }
 
         Owned<IPullPTreeReader> parser;
@@ -1383,7 +1379,7 @@ public:
         if (!parser)
             return;
         while (more && parser->next());
-        if (urlName.length())
+        if (urlName && *urlName)
         {
             name.set(urlName);
             return;
