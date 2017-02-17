@@ -127,9 +127,9 @@ bool isAsciiMatch(unsigned code, unsigned next)
 
 bool isUnicodeMatch(unsigned code, unsigned next)
 {
+#ifdef _USE_ICU
     switch (code)
     {
-#ifdef _USE_ICU
     case RCCalnum: return u_isalnum(next) != 0;
     case RCCcntrl: return u_iscntrl(next) != 0;
     case RCClower: return u_islower(next) != 0;
@@ -142,11 +142,13 @@ bool isUnicodeMatch(unsigned code, unsigned next)
     case RCCgraph: return u_isprint(next) && !u_isspace(next);
     case RCCpunct: return u_isprint(next) && !(u_isspace(next) || u_isalnum(next));
     case RCCxdigit: return (next < 128) && isxdigit(next);          // should be good enough.
-#endif
     case RCCany:   return true;
     default:
         UNIMPLEMENTED;
     }
+#else
+    rtlThrowNoUnicode();
+#endif
 }
 
 
@@ -868,7 +870,7 @@ void encodeUnicode(StringBuffer & out, size32_t len, const UChar * text)
     encodeXML(text8, out, ENCODE_WHITESPACE, len8, true);
     free(text8);
 #else
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 #endif
 }
 
@@ -3080,6 +3082,13 @@ RegexPattern * deserializeRegex(MemoryBuffer & in)
         case ThorRegexUtf8:         next = new RegexUtf8Pattern();                      break;
         case ThorRegexUtf8I:        next = new RegexUtf8IPattern();                     break;
 //      case ThorRegexUnicodeISet:  next = new RegexUnicodeISetPattern();               break;
+#else
+        case ThorRegexUnicode:
+        case ThorRegexUnicodeI:
+        case ThorRegexUnicodeSet:
+        case ThorRegexUtf8:
+        case ThorRegexUtf8I:
+            rtlThrowNoUnicode();
 #endif
         case ThorRegexStart:        next = new RegexStartPattern();                     break;
         case ThorRegexFinish:       next = new RegexFinishPattern();                    break;

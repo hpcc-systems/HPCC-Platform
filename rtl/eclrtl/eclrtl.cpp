@@ -1554,12 +1554,12 @@ void rtlConcatVUnicode(UChar * * tgt, ...)
 #else
 void rtlConcatUnicode(unsigned & tlen, UChar * * tgt, ...)
 {
-    UNIMPLEMENTED;
+    rtlThrowNoUnicode();
 }
 
 void rtlConcatVUnicode(UChar * * tgt, ...)
 {
-    UNIMPLEMENTED;
+    rtlThrowNoUnicode();
 }
 #endif
 
@@ -2330,7 +2330,7 @@ void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UCha
     tgtStr.extract(0, tlen, tgt);
     tgt[tlen] = 0x0000;
 #else
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 #endif
 }
 
@@ -2615,8 +2615,8 @@ int rtlCompareUnicodeUnicodeStrength(unsigned l1, UChar const * p1, unsigned l2,
     return ucol_strcoll(queryRTLLocale(locale)->queryCollator(strength), p1, l1, p2, l2);
 }
 #else
-int rtlCompareUnicodeUnicode(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale) { throw MakeStringException(99, "System was built without Unicode support"); }
-int rtlCompareUnicodeUnicodeStrength(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale, unsigned strength) { throw MakeStringException(99, "System was built without Unicode support"); }
+int rtlCompareUnicodeUnicode(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale) { rtlThrowNoUnicode(); }
+int rtlCompareUnicodeUnicodeStrength(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale, unsigned strength) { rtlThrowNoUnicode(); }
 #endif
 
 int rtlCompareVUnicodeVUnicode(UChar const * p1, UChar const * p2, char const * locale)
@@ -2650,12 +2650,12 @@ void rtlKeyUnicodeStrengthX(unsigned & tlen, void * & tgt, unsigned slen, const 
 #else
 void rtlKeyUnicodeX(unsigned & tlen, void * & tgt, unsigned slen, const UChar * src, const char * locale)
 {
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 }
 
 void rtlKeyUnicodeStrengthX(unsigned & tlen, void * & tgt, unsigned slen, const UChar * src, const char * locale, unsigned strength)
 {
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 }
 
 #endif
@@ -2708,7 +2708,7 @@ ECLRTL_API int rtlPrefixDiffUnicodeEx(unsigned l1, const UChar * p1, unsigned l2
     if (l1 != l2)
         return (l1 < l2) ? -(int)(len+origin+1) : (int)(len+origin+1);
 #else
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 #endif
     return 0;
 }
@@ -2757,9 +2757,9 @@ void rtlUnicodeToUpper(size32_t l, UChar * t, char const * locale)
     unicodeNormalizedCopy(buff, t, l);
 }
 #else
-void rtlUnicodeToLower(size32_t l, UChar * t, char const * locale) { throw MakeStringException(99, "System was built without Unicode support"); }
-void rtlUnicodeToLowerX(size32_t & lenout, UChar * & out, size32_t l, const UChar * t, char const * locale) { throw MakeStringException(99, "System was built without Unicode support"); }
-void rtlUnicodeToUpper(size32_t l, UChar * t, char const * locale) { throw MakeStringException(99, "System was built without Unicode support"); }
+void rtlUnicodeToLower(size32_t l, UChar * t, char const * locale) { rtlThrowNoUnicode(); }
+void rtlUnicodeToLowerX(size32_t & lenout, UChar * & out, size32_t l, const UChar * t, char const * locale) { rtlThrowNoUnicode(); }
+void rtlUnicodeToUpper(size32_t l, UChar * t, char const * locale) { rtlThrowNoUnicode(); }
 #endif
 
 //=============================================================================
@@ -3202,7 +3202,7 @@ void rtlCodepageToUnicode(unsigned outlen, UChar * out, unsigned inlen, char con
 
 void rtlCodepageToVUnicode(unsigned outlen, UChar * out, unsigned inlen, char const * in, char const * codepage)
 {
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 }
 
 void rtlCodepageToUnicodeUnescape(unsigned outlen, UChar * out, unsigned inlen, char const * in, char const * codepage)
@@ -3228,7 +3228,7 @@ void rtlUnicodeToData(unsigned outlen, void * out, unsigned inlen, UChar const *
 
 void rtlUnicodeToVCodepage(unsigned outlen, char * out, unsigned inlen, UChar const * in, char const * codepage)
 {
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 }
 
 void rtlCodepageToUnicodeX(unsigned & outlen, UChar * & out, unsigned inlen, char const * in, char const * codepage)
@@ -3240,7 +3240,7 @@ void rtlCodepageToUnicodeX(unsigned & outlen, UChar * & out, unsigned inlen, cha
 
 UChar * rtlCodepageToVUnicodeX(unsigned inlen, char const * in, char const * codepage)
 {
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 }
 
 #endif
@@ -3361,7 +3361,7 @@ void rtlUnicodeToCodepageX(unsigned & outlen, char * & out, unsigned inlen, UCha
 
 char * rtlUnicodeToVCodepageX(unsigned inlen, UChar const * in, char const * codepage)
 {
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 }
 #endif
 
@@ -3486,7 +3486,7 @@ bool rtlCodepageToCodepageX(unsigned & outlen, char * & out, unsigned maxoutlen,
 
 int rtlSingleUtf8ToCodepage(char * out, unsigned inlen, char const * in, char const * outcodepage)
 {
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 }
 
 #endif
@@ -3630,7 +3630,7 @@ hash64_t rtlHash64Unicode(unsigned length, UChar const * k, hash64_t hval)
         }
     }
 #else
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 #endif
     return hval;
 }
@@ -3726,7 +3726,7 @@ unsigned rtlHash32Unicode(unsigned length, UChar const * k, unsigned hval)
         }
     }
 #else
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 #endif
     return hval;
 }
@@ -3826,7 +3826,7 @@ unsigned rtlHashUnicode(unsigned length, UChar const * k, unsigned initval)
 
     return rtlHashData(trimLength*sizeof(UChar), k, initval);
 #else
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 #endif
 }
 
@@ -4072,6 +4072,11 @@ void rtlThrowOutOfMemory(int code, const char *msg)
 void rtlReportRowOverflow(unsigned size, unsigned max)
 {
     throw MakeStringException(MSGAUD_user, 1000, "Row size %u exceeds the maximum size specified(%u)", size, max);
+}
+
+void rtlThrowNoUnicode()
+{
+    throw MakeStringException(99, "System was built without Unicode support");
 }
 
 void rtlReportFieldOverflow(unsigned size, unsigned max, const char * name)
@@ -4917,7 +4922,7 @@ ECLRTL_API void rtlUtf8SpaceFill(unsigned tlen, char * tgt, unsigned offset)
 }
 #else
 
-ECLRTL_API void rtlConcatUtf8(unsigned & tlen, char * * tgt, ...) { throw MakeStringException(99, "System was built without Unicode support"); }
+ECLRTL_API void rtlConcatUtf8(unsigned & tlen, char * * tgt, ...) { rtlThrowNoUnicode(); }
 
 #endif
 
@@ -5242,7 +5247,7 @@ unsigned rtlCodepageConvert(void * converter, unsigned targetLength, char * targ
 #else
 void * rtlOpenCodepageConverter(char const * sourceName, char const * targetName, bool & failed)
 {
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 }
 
 void rtlCloseCodepageConverter(void * converter)

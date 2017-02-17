@@ -398,6 +398,7 @@ __declspec(noreturn) ECLRTL_API void rtlFailUnexpected() __attribute__((noreturn
 __declspec(noreturn) ECLRTL_API void rtlFailOnAssert() __attribute__((noreturn));
 __declspec(noreturn) ECLRTL_API void rtlFailDivideByZero() __attribute__((noreturn));
 __declspec(noreturn) ECLRTL_API void rtlThrowOutOfMemory(int code, const char *msg) __attribute__((noreturn));
+__declspec(noreturn) ECLRTL_API void rtlThrowNoUnicode() __attribute__((noreturn));
 
 ECLRTL_API void rtlReportFieldOverflow(unsigned size, unsigned max, const char * name);
 ECLRTL_API void rtlReportRowOverflow(unsigned size, unsigned max);
