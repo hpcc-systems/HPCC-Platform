@@ -840,7 +840,7 @@ static bool canConsume(const ParseInformation & options, unsigned nextChar, unsi
         return u_foldCase(nextChar, U_FOLD_CASE_DEFAULT) == u_foldCase(matcherChar, U_FOLD_CASE_DEFAULT);
     }
 #else
-    throw MakeStringException(99, "System was built without Unicode support");
+    rtlThrowNoUnicode();
 #endif
 
     return (nextChar == tolower(matcherChar)) || (nextChar == toupper(matcherChar));
@@ -889,6 +889,8 @@ bool HqlRegexExpr::canConsume(unsigned nextChar)
                                     if (u_foldCase(nextChar, U_FOLD_CASE_DEFAULT) >= u_foldCase(low, U_FOLD_CASE_DEFAULT) &&
                                         u_foldCase(nextChar, U_FOLD_CASE_DEFAULT) <= u_foldCase(high, U_FOLD_CASE_DEFAULT))
                                         return !invert;
+#else
+                                    rtlThrowNoUnicode();
 #endif
                                 }
                                 else
@@ -940,16 +942,19 @@ void HqlRegexExpr::gatherConsumeSymbols(SymbolArray & symbols)
             unsigned charValue = (unsigned)expr->queryValue()->getIntValue();
             if (!caseSensitive && (options.type != type_utf8))
             {
-#ifdef _USE_ICU
                 if (options.type == type_unicode)
                 {
+#ifdef _USE_ICU
                     //MORE: Unicode - can you have several values, what about case conversion?
                     //MORE: String might need expanding to ('a'|'A')('ss'|'SS'|'B') or something similar.
                     symbols.addUnique(u_tolower(charValue));
                     symbols.addUnique(u_toupper(charValue));
+#else
+                    rtlThrowNoUnicode();
+#endif
                 }
                 else
-#endif
+
                 {
                     symbols.addUnique(tolower(charValue));
                     symbols.addUnique(toupper(charValue));
@@ -1018,7 +1023,7 @@ void HqlRegexExpr::gatherConsumeSymbols(SymbolArray & symbols)
                 }
             }
 #else
-            UNIMPLEMENTED;
+            rtlThrowNoUnicode();
 #endif
         }
         else
@@ -1478,7 +1483,7 @@ void HqlRegexExpr::generateRegex(GenerateRegexCtx & ctx)
 #ifdef _USE_ICU
                 pattern = new RegexUnicodeSetPattern(caseSensitive);
 #else
-                UNIMPLEMENTED;
+                rtlThrowNoUnicode();
 #endif
             else if (caseSensitive)
                 pattern = new RegexAsciiSetPattern;
@@ -1515,26 +1520,32 @@ void HqlRegexExpr::generateRegex(GenerateRegexCtx & ctx)
             unsigned len = castValue->queryType()->getStringLen();
             switch (ctx.info.type)
             {
-#ifdef _USE_ICU
             case type_unicode:
                 {
+#ifdef _USE_ICU
                     const UChar * data = (const UChar *)castValue->queryValue();
                     if (caseSensitive)
                         created.setown(new RegexUnicodePattern(len, data));
                     else
                         created.setown(new RegexUnicodeIPattern(len, data));
                     break;
+#else
+                    rtlThrowNoUnicode();
+#endif
                 }
             case type_utf8:
                 {
+#ifdef _USE_ICU
                     const char * data = (const char *)castValue->queryValue();
                     if (caseSensitive)
                         created.setown(new RegexUtf8Pattern(len, data));
                     else
                         created.setown(new RegexUtf8IPattern(len, data));
                     break;
-                }
+#else
+                    rtlThrowNoUnicode();
 #endif
+                }
             case type_string:
                 {
                     const char * data = (const char *)castValue->queryValue();
