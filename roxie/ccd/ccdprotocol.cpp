@@ -1336,9 +1336,13 @@ public:
     }
 };
 
-//ADF - Haven't changed it yet, but this should eliminate the need to parse the query twice below
-//I can load the query and lookup the parse flags before doing a full parse
-//if it turns out I need more info I may delete this.
+enum class WhiteSpaceHandling
+{
+    Default,
+    Strip,
+    Preserve
+};
+
 class QueryNameExtractor : implements IPTreeNotifyEvent, public CInterface
 {
 public:
@@ -1348,17 +1352,29 @@ public:
     unsigned headerDepth;
     bool isSoap;
     bool isRequestArray;
-    bool stripWhitespace;
+    bool isRequest = false;
+    WhiteSpaceHandling whitespace=WhiteSpaceHandling::Default;
     bool more;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    QueryNameExtractor(TextMarkupFormat _mlFmt, bool _stripWhitespace) : mlFmt(_mlFmt), headerDepth(0), isSoap(false), isRequestArray(false), stripWhitespace(_stripWhitespace), more(true)
+    QueryNameExtractor(TextMarkupFormat _mlFmt) : mlFmt(_mlFmt), headerDepth(0), isSoap(false), isRequestArray(false), more(true)
     {
     }
-    void extractName(const char *msg, const IContextLogger &logctx, const char *peer, unsigned port)
+    void extractName(HttpHelper &httpHelper, const char *msg, const IContextLogger &logctx, const char *peer, unsigned port)
     {
+        StringAttr urlName;
+        if (httpHelper.queryQueryName()) //"Adaptive REST" query name and attrs can come from URL
+        {
+            urlName.set(httpHelper.queryQueryName());
+            if (httpHelper.isMappedToInputParameter()) //this type of content can't have roxie level attrs in
+            {
+                name.set(urlName);
+                return;
+            }
+        }
+
         Owned<IPullPTreeReader> parser;
         if (mlFmt==MarkupFmt_JSON)
             parser.setown(createPullJSONStringReader(msg, *this));
@@ -1367,6 +1383,11 @@ public:
         if (!parser)
             return;
         while (more && parser->next());
+        if (urlName.length())
+        {
+            name.set(urlName);
+            return;
+        }
         if (name.isEmpty())
         {
             const char *fmt = mlFmt==MarkupFmt_XML ? "XML" : "JSON";
@@ -1382,6 +1403,7 @@ public:
         }
         else if (nameStr.endsWith("Request"))
         {
+            isRequest = true;
             name.set(nameStr.str(), nameStr.length() - strlen("Request"));
         }
     }
@@ -1418,9 +1440,9 @@ public:
     }
     virtual void newAttribute(const char *attr, const char *value)
     {
-        if (!name.isEmpty() && streq(attr, "@_stripWhitespaceFromStoredDataset"))
+        if (!name.isEmpty() && strieq(attr, "@stripWhitespaceFromStoredDataset"))
         {
-            stripWhitespace = strToBool(value);
+            whitespace = strToBool(value) ? WhiteSpaceHandling::Strip : WhiteSpaceHandling::Preserve;
             more = false;
         }
     }
@@ -1515,68 +1537,45 @@ private:
         }
     }
 
-    void skipProtocolRoot(Owned<IPropertyTree> &queryPT, HttpHelper &httpHelper, StringAttr &queryName, bool &isRequest, bool &isRequestArray)
+    void skipProtocolRoot(Owned<IPropertyTree> &queryPT, HttpHelper &httpHelper, const char *queryName)
     {
         if (queryPT)
         {
-            queryName.set(queryPT->queryName());
-            isRequest = false;
-            isRequestArray = false;
+            const char *tagName = queryPT->queryName();
             if (httpHelper.isHttp())
             {
                 if (httpHelper.queryRequestMlFormat()==MarkupFmt_JSON)
                 {
-                    if (strieq(queryName, "__array__"))
+                    if (strieq(tagName, "__array__"))
                         throw MakeStringException(ROXIE_DATA_ERROR, "JSON request array not implemented");
-                    isRequest=true;
-                    if (strieq(queryName, "__object__"))
+                    if (strieq(tagName, "__object__"))
                     {
                         queryPT.setown(queryPT->getPropTree("*[1]"));
-                        queryName.set(queryPT->queryName());
                         if (!queryPT)
                             throw MakeStringException(ROXIE_DATA_ERROR, "Malformed JSON request (missing Body)");
                     }
                 }
                 else
                 {
-                    if (strieq(queryName, "envelope"))
+                    if (strieq(tagName, "envelope"))
                         queryPT.setown(queryPT->getPropTree("Body/*"));
                     else if (!strnicmp(httpHelper.queryContentType(), "application/soap", strlen("application/soap")))
                         throw MakeStringException(ROXIE_DATA_ERROR, "Malformed SOAP request");
                     if (!queryPT)
                         throw MakeStringException(ROXIE_DATA_ERROR, "Malformed SOAP request (missing Body)");
-                    String reqName(queryPT->queryName());
                     queryPT->removeProp("@xmlns:m");
-
-                    // following code is moved from main() - should be no performance hit
-                    String requestString("Request");
-                    String requestArrayString("RequestArray");
-
-                    if (reqName.endsWith(requestArrayString))
-                    {
-                        isRequestArray = true;
-                        queryName.set(reqName.str(), reqName.length() - requestArrayString.length());
-                    }
-                    else if (reqName.endsWith(requestString))
-                    {
-                        isRequest = true;
-                        queryName.set(reqName.str(), reqName.length() - requestString.length());
-                    }
-                    else
-                        queryName.set(reqName.str());
-
-                    queryPT->renameProp("/", queryName.get());  // reset the name of the tree
+                    queryPT->renameProp("/", queryName);  // reset the name of the tree
                 }
             }
         }
+        else
+            throw MakeStringException(ROXIE_DATA_ERROR, "Malformed request");
     }
 
-    void sanitizeQuery(Owned<IPropertyTree> &queryPT, StringAttr &queryName, StringBuffer &saniText, HttpHelper &httpHelper, const char *&uid, bool &isRequest, bool &isRequestArray, bool &isBlind, bool &isDebug)
+    void sanitizeQuery(Owned<IPropertyTree> &queryPT, StringAttr &queryName, StringBuffer &saniText, HttpHelper &httpHelper, const char *&uid, bool &isBlind, bool &isDebug)
     {
         if (queryPT)
         {
-            skipProtocolRoot(queryPT, httpHelper, queryName, isRequest, isRequestArray);
-
             // convert to XML with attribute values in single quotes - makes replaying queries easier
             uid = queryPT->queryProp("@uid");
             if (!uid)
@@ -1585,10 +1584,8 @@ private:
             isDebug = queryPT->getPropBool("@debug") || queryPT->getPropBool("_Probe", false);
             toXML(queryPT, saniText, 0, isBlind ? (XML_SingleQuoteAttributeValues | XML_Sanitize) : XML_SingleQuoteAttributeValues);
         }
-        else
-            throw MakeStringException(ROXIE_DATA_ERROR, "Malformed request");
     }
-    void createQueryPTree(Owned<IPropertyTree> &queryPT, HttpHelper &httpHelper, const char *text, byte flags, PTreeReaderOptions options)
+    void createQueryPTree(Owned<IPropertyTree> &queryPT, HttpHelper &httpHelper, const char *text, byte flags, byte options, const char *queryName)
     {
         StringBuffer logxml;
         if (httpHelper.queryRequestMlFormat()==MarkupFmt_URL)
@@ -1599,10 +1596,27 @@ private:
             return;
         }
         if (httpHelper.queryRequestMlFormat()==MarkupFmt_JSON)
-            queryPT.setown(createPTreeFromJSONString(text, flags, options));
+            queryPT.setown(createPTreeFromJSONString(text, flags, (PTreeReaderOptions) options));
         else
-            queryPT.setown(createPTreeFromXMLString(text, flags, options));
+            queryPT.setown(createPTreeFromXMLString(text, flags, (PTreeReaderOptions) options));
         queryPT.setown(httpHelper.checkAddWrapperForAdaptiveInput(queryPT.getClear(), flags));
+        skipProtocolRoot(queryPT, httpHelper, queryName);
+        if (queryPT->hasProp("_stripWhitespaceFromStoredDataset"))
+        {
+            bool stripTag = queryPT->getPropBool("_stripWhitespaceFromStoredDataset");
+            bool stripFlag = (options & ptr_ignoreWhiteSpace) != 0;
+            if (stripTag != stripFlag)
+            {
+                if (stripTag)
+                    options |= ptr_ignoreWhiteSpace;
+                else
+                    options &= ~ptr_ignoreWhiteSpace;
+                //The tag _stripWhitespaceFromStoredDataset can appear anywhere at the same level as query inputs
+                //it can't be checked until after parsing the full request, so if it changes the parse flags
+                //we have to parse the request again now
+                createQueryPTree(queryPT, httpHelper, text, flags, options, queryName);
+            }
+        }
     }
 
     void doMain(const char *runQuery)
@@ -1685,7 +1699,7 @@ readAnother:
 
         StringAttr queryName;
         StringAttr queryPrefix;
-        bool stripWhitespace = msgctx->getStripWhitespace();
+        WhiteSpaceHandling whitespace = WhiteSpaceHandling::Default;
         try
         {
             if (httpHelper.isHttpGet() || httpHelper.isFormPost())
@@ -1696,11 +1710,13 @@ readAnother:
             }
             else if (mlRequestFmt==MarkupFmt_XML || mlRequestFmt==MarkupFmt_JSON)
             {
-                QueryNameExtractor extractor(mlRequestFmt, stripWhitespace);
-                extractor.extractName(rawText.str(), logctx, peerStr, ep.port);
+                QueryNameExtractor extractor(mlRequestFmt);
+                extractor.extractName(httpHelper, rawText.str(), logctx, peerStr, ep.port);
                 queryName.set(extractor.name);
                 queryPrefix.set(extractor.prefix);
-                stripWhitespace = extractor.stripWhitespace;
+                whitespace = extractor.whitespace;
+                isRequest = extractor.isRequest;
+                isRequestArray = extractor.isRequestArray;
                 if (httpHelper.isHttp())
                     httpHelper.setUseEnvelope(extractor.isSoap);
             }
@@ -1712,10 +1728,9 @@ readAnother:
                 bool aclupdate = strieq(queryName, "aclupdate"); //ugly
                 byte iptFlags = aclupdate ? ipt_caseInsensitive : 0;
 
-                createQueryPTree(queryPT, httpHelper, rawText, iptFlags, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces));
+                createQueryPTree(queryPT, httpHelper, rawText, iptFlags, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces), queryName);
 
-                IPropertyTree *root = queryPT;
-                skipProtocolRoot(queryPT, httpHelper, queryName, isRequest, isRequestArray);
+                //IPropertyTree *root = queryPT;
                 if (!strchr(queryName, ':'))
                 {
                     VStringBuffer fullname("control:%s", queryName.str()); //just easier to keep for debugging and internal checking
@@ -1733,12 +1748,30 @@ readAnother:
             }
             else
             {
+                StringBuffer querySetName;
+                if (isHTTP)
+                {
+                    client->setHttpMode(queryName, isRequestArray, httpHelper);
+                    querySetName.set(httpHelper.queryTarget());
+                    if (querySetName.length())
+                    {
+                        const char *target = global->targetAliases->queryProp(querySetName.str());
+                        if (target)
+                            querySetName.set(target);
+                    }
+                }
+
+                msgctx->initQuery(querySetName, queryName); //needed here to allow checking hash options
+
+                if (whitespace == WhiteSpaceHandling::Default) //value in the request wins
+                    whitespace = msgctx->getStripWhitespace() ? WhiteSpaceHandling::Strip : WhiteSpaceHandling::Preserve; //might be changed by hash option, returns default otherwise
+
                 unsigned readFlags = (unsigned) global->defaultXmlReadFlags | ptr_ignoreNameSpaces;
                 readFlags &= ~ptr_ignoreWhiteSpace;
-                readFlags |= (stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none);
+                readFlags |= (whitespace == WhiteSpaceHandling::Strip ? ptr_ignoreWhiteSpace : ptr_none);
                 try
                 {
-                    createQueryPTree(queryPT, httpHelper, rawText.str(), ipt_caseInsensitive, (PTreeReaderOptions)readFlags);
+                    createQueryPTree(queryPT, httpHelper, rawText.str(), ipt_caseInsensitive, (PTreeReaderOptions)readFlags, queryName);
                 }
                 catch (IException *E)
                 {
@@ -1748,7 +1781,7 @@ readAnother:
                 }
 
                 uid = NULL;
-                sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isRequest, isRequestArray, isBlind, isDebug);
+                sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug);
                 if (uid)
                     msgctx->setTransactionId(uid);
                 else
@@ -1796,99 +1829,84 @@ readAnother:
                 }
                 else
                 {
-                    StringBuffer querySetName;
+                    int bindCores = queryPT->getPropInt("@bindCores", msgctx->getBindCores());
+                    if (bindCores > 0)
+                        listener->setThreadAffinity(bindCores);
+                    IArrayOf<IPropertyTree> requestArray;
                     if (isHTTP)
                     {
-                        client->setHttpMode(queryName, isRequestArray, httpHelper);
-                        querySetName.set(httpHelper.queryTarget());
-                        if (querySetName.length())
+                        if (isRequestArray)
                         {
-                            const char *target = global->targetAliases->queryProp(querySetName.str());
-                            if (target)
-                                querySetName.set(target);
-                        }
-                    }
-                    if (msgctx->initQuery(querySetName, queryName))
-                    {
-                        int bindCores = queryPT->getPropInt("@bindCores", msgctx->getBindCores());
-                        if (bindCores > 0)
-                            listener->setThreadAffinity(bindCores);
-                        IArrayOf<IPropertyTree> requestArray;
-                        if (isHTTP)
-                        {
-                            if (isRequestArray)
-                            {
-                                StringBuffer reqIterString;
-                                reqIterString.append(queryName).append("Request");
+                            StringBuffer reqIterString;
+                            reqIterString.append(queryName).append("Request");
 
-                                Owned<IPropertyTreeIterator> reqIter = queryPT->getElements(reqIterString.str());
-                                ForEach(*reqIter)
-                                {
-                                    IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
-                                    Owned<IPropertyTreeIterator> iter = reqIter->query().getElements("*");
-                                    ForEach(*iter)
-                                    {
-                                        fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
-                                    }
-                                    requestArray.append(*fixedreq);
-                                }
-                            }
-                            else
+                            Owned<IPropertyTreeIterator> reqIter = queryPT->getElements(reqIterString.str());
+                            ForEach(*reqIter)
                             {
                                 IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
-                                Owned<IPropertyTreeIterator> iter = queryPT->getElements("*");
+                                Owned<IPropertyTreeIterator> iter = reqIter->query().getElements("*");
                                 ForEach(*iter)
                                 {
                                     fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
                                 }
                                 requestArray.append(*fixedreq);
                             }
-                            if (httpHelper.getTrim())
-                                protocolFlags |= HPCC_PROTOCOL_TRIM;
                         }
                         else
                         {
-                            const char *format = queryPT->queryProp("@format");
-                            if (format)
+                            IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
+                            Owned<IPropertyTreeIterator> iter = queryPT->getElements("*");
+                            ForEach(*iter)
                             {
-                                if (stricmp(format, "raw") == 0)
-                                {
-                                    protocolFlags |= HPCC_PROTOCOL_NATIVE_RAW;
-                                    if (client) //not stand alone roxie exe
-                                        protocolFlags |= HPCC_PROTOCOL_BLOCKED;
-                                    mlResponseFmt = MarkupFmt_Unknown;
-                                }
-                                else if (stricmp(format, "bxml") == 0)
-                                {
-                                    protocolFlags |= HPCC_PROTOCOL_BLOCKED;
-                                    mlResponseFmt = MarkupFmt_XML;
-                                }
-                                else if (stricmp(format, "ascii") == 0)
-                                {
-                                    protocolFlags |= HPCC_PROTOCOL_NATIVE_ASCII;
-                                    mlResponseFmt = MarkupFmt_Unknown;
-                                }
-                                else if (stricmp(format, "xml") != 0) // xml is the default
-                                    throw MakeStringException(ROXIE_INVALID_INPUT, "Unsupported format specified: %s", format);
+                                fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
                             }
-                            if (queryPT->getPropBool("@trim", false))
-                                protocolFlags |= HPCC_PROTOCOL_TRIM;
-                            msgctx->setIntercept(queryPT->getPropBool("@log", false));
-                            msgctx->setTraceLevel(queryPT->getPropInt("@traceLevel", logctx.queryTraceLevel()));
+                            requestArray.append(*fixedreq);
                         }
-
-                        msgctx->noteQueryActive();
-
-                        if (isHTTP)
+                        if (httpHelper.getTrim())
+                            protocolFlags |= HPCC_PROTOCOL_TRIM;
+                    }
+                    else
+                    {
+                        const char *format = queryPT->queryProp("@format");
+                        if (format)
                         {
-                            CHttpRequestAsyncFor af(queryName, sink, msgctx, requestArray, *client, httpHelper, protocolFlags, memused, slavesReplyLen, sanitizedText, logctx, (PTreeReaderOptions)readFlags, querySetName);
-                            af.For(requestArray.length(), global->numRequestArrayThreads);
+                            if (stricmp(format, "raw") == 0)
+                            {
+                                protocolFlags |= HPCC_PROTOCOL_NATIVE_RAW;
+                                if (client) //not stand alone roxie exe
+                                    protocolFlags |= HPCC_PROTOCOL_BLOCKED;
+                                mlResponseFmt = MarkupFmt_Unknown;
+                            }
+                            else if (stricmp(format, "bxml") == 0)
+                            {
+                                protocolFlags |= HPCC_PROTOCOL_BLOCKED;
+                                mlResponseFmt = MarkupFmt_XML;
+                            }
+                            else if (stricmp(format, "ascii") == 0)
+                            {
+                                protocolFlags |= HPCC_PROTOCOL_NATIVE_ASCII;
+                                mlResponseFmt = MarkupFmt_Unknown;
+                            }
+                            else if (stricmp(format, "xml") != 0) // xml is the default
+                                throw MakeStringException(ROXIE_INVALID_INPUT, "Unsupported format specified: %s", format);
                         }
-                        else
-                        {
-                            Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags, (PTreeReaderOptions)readFlags);
-                            sink->onQueryMsg(msgctx, queryPT, protocol, protocolFlags, (PTreeReaderOptions)readFlags, querySetName, 0, memused, slavesReplyLen);
-                        }
+                        if (queryPT->getPropBool("@trim", false))
+                            protocolFlags |= HPCC_PROTOCOL_TRIM;
+                        msgctx->setIntercept(queryPT->getPropBool("@log", false));
+                        msgctx->setTraceLevel(queryPT->getPropInt("@traceLevel", logctx.queryTraceLevel()));
+                    }
+
+                    msgctx->noteQueryActive();
+
+                    if (isHTTP)
+                    {
+                        CHttpRequestAsyncFor af(queryName, sink, msgctx, requestArray, *client, httpHelper, protocolFlags, memused, slavesReplyLen, sanitizedText, logctx, (PTreeReaderOptions)readFlags, querySetName);
+                        af.For(requestArray.length(), global->numRequestArrayThreads);
+                    }
+                    else
+                    {
+                        Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags, (PTreeReaderOptions)readFlags);
+                        sink->onQueryMsg(msgctx, queryPT, protocol, protocolFlags, (PTreeReaderOptions)readFlags, querySetName, 0, memused, slavesReplyLen);
                     }
                 }
             }

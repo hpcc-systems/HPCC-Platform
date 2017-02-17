@@ -51,7 +51,7 @@ if(USE_CBLAS)
     ADD_DEFINITIONS(-D_USRDLL -DECLBLAS_EXPORTS)
 
     HPCC_ADD_LIBRARY(eclblas SHARED ${SRCS})
-    install(TARGETS eclblas DESTINATION plugins )
+    install ( TARGETS eclblas RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )  # No need to put in plugins dir
     target_link_libraries(eclblas
         eclrtl
         ${CBLAS_LIBRARIES})
