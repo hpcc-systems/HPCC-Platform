@@ -1585,15 +1585,15 @@ int CSocket::wait_read(unsigned timeout)
                 ret = -1;
             }
 #else
-            if (fds[0].revents & (POLLIN | POLLHUP))
-            {
-                // ok
-                break;
-            }
-            else
+            if ( (fds[0].revents & (POLLERR | POLLNVAL)) || (!(fds[0].revents & (POLLIN | POLLHUP))) )
             {
                 logPollError(fds[0].revents, "wait_read");
                 ret = -1;
+            }
+            else
+            {
+                // POLLIN | POLLHUP ok
+                break;
             }
 #endif
             break;
@@ -1649,10 +1649,10 @@ int CSocket::wait_write(unsigned timeout)
                 ret = -1;
             }
 #else
-            if (fds[0].revents & POLLOUT)
+            if ( (fds[0].revents & (POLLERR | POLLNVAL)) || (!(fds[0].revents & (POLLOUT | POLLHUP))) )
             {
-                // ok
-                break;
+                logPollError(fds[0].revents, "wait_write");
+                ret = -1;
             }
             else if (fds[0].revents & POLLHUP)
             {
@@ -1661,8 +1661,8 @@ int CSocket::wait_write(unsigned timeout)
             }
             else
             {
-                logPollError(fds[0].revents, "wait_write");
-                ret = -1;
+                // POLLOUT ok
+                break;
             }
 #endif
             break;
