@@ -8588,7 +8588,7 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
                     case no_null:
                     {
                         rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
-                        break;
+                        return true;
                     }
                     case no_inlinetable:
                     {
