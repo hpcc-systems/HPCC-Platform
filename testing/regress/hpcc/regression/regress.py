@@ -23,6 +23,7 @@ import sys
 import time
 import thread
 import threading
+import inspect
 
 from ..common.config import Config
 from ..common.error import Error
@@ -217,6 +218,7 @@ class Regression:
         oldCnt = -1
         suite.setStarTime(time.time())
         suiteItems = suite.getSuite()
+        exc=None
         try:
             self.StartTimeoutThread()
             while cnt in range(self.maxtasks):
@@ -317,12 +319,24 @@ class Regression:
                     time.sleep(0.2)
 
             # All tasks are scheduled
+
+        except Exception as e:
+            exc = e
+            pass
+
+        except KeyboardInterrupt as e:
+            exc = e
+            pass
+
+        finally:
             #Some of them finished, others are not yet, but should check the still running tasks' timeout and retry state
             for threadId in range(self.maxthreads):
-                    if self.exitmutexes[threadId].locked():
-                        query = suiteItems[self.taskParam[threadId]['taskId']]
-                        self.retryCount = int(self.config.maxAttemptCount)
-                        self.CheckTimeout(self.taskParam[threadId]['taskId']+1, threadId,  query)
+                if self.exitmutexes[threadId].locked():
+                    if exc != None:
+                        print("Thread :%d, is locked" % (threadId))
+                    query = suiteItems[self.taskParam[threadId]['taskId']]
+                    self.retryCount = int(self.config.maxAttemptCount)
+                    self.CheckTimeout(self.taskParam[threadId]['taskId']+1, threadId,  query)
 
             self.StopTimeoutThread()
             logging.warn('%s','' , extra={'filebuffer':True,  'filesort':True})
@@ -331,14 +345,9 @@ class Regression:
             suite.close()
             self.closeLogging()
 
-        except Exception as e:
-            self.StopTimeoutThread()
-            suite.close()
-            raise(e)
-
-        except KeyboardInterrupt as e:
-            suite.close()
-            raise(e)
+            if exc != None:
+                print str(exc)+"(line: "+str(inspect.stack()[0][2])+")"
+                raise(exc)
 
 
     def StartTimeoutThread(self):
