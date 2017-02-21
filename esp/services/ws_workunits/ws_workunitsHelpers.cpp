@@ -481,15 +481,13 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
     try
     {
         IArrayOf<IEspECLHelpFile> helpers;
+        unsigned helpersCount = 2;   //  ECL + Workunit XML are also helpers...
 
         Owned <IConstWUQuery> query = cw->getQuery();
         if(!query)
         {
             ERRLOG("Cannot get Query for this workunit.");
             info.setHelpersDesc("Cannot get Query for this workunit.");
-
-            if (!(flags & WUINFO_IncludeHelpers))
-                return;
         }
         else
         {
@@ -522,14 +520,11 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
                 info.setHasArchiveQuery(query->hasArchive());
             }
 
-            if (!(flags & WUINFO_IncludeHelpers))
-                return;
-
             for (unsigned i = 0; i < FileTypeSize; i++)
-                getHelpFiles(query, (WUFileType) i, helpers);
+                getHelpFiles(query, (WUFileType) i, helpers, flags, helpersCount);
         }
 
-        getWorkunitThorLogInfo(helpers, info);
+        getWorkunitThorLogInfo(helpers, info, flags, helpersCount);
 
         if (cw->getWuidVersion() > 0)
         {
@@ -540,6 +535,10 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
                 IPropertyTree& eclAgent = eclAgents->query();
                 eclAgent.getProp("@log",logName);
                 if (!logName.length())
+                    continue;
+
+                helpersCount++;
+                if (!(flags & WUINFO_IncludeHelpers))
                     continue;
 
                 Owned<IEspECLHelpFile> h= createECLHelpFile("","");
@@ -571,6 +570,10 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
                 if (name.length() < 1)
                     continue;
 
+                helpersCount++;
+                if (!(flags & WUINFO_IncludeHelpers))
+                    break;
+
                 Owned<IEspECLHelpFile> h= createECLHelpFile("","");
                 h->setName(name.str());
                 h->setType(File_EclAgentLog);
@@ -586,6 +589,7 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
         }
 
         info.setHelpers(helpers);
+        info.setHelpersCount(helpersCount);
     }
     catch(IException* e)
     {
@@ -1060,7 +1064,7 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned long flags)
     getWorkflow(info, flags);
 }
 
-unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info)
+unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info, unsigned long flags, unsigned& helpersCount)
 {
     unsigned countThorLog = 0;
 
@@ -1113,17 +1117,21 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
                 else
                     fileType.appendf("%s%d", File_ThorLog, countThorLog);
 
-                Owned<IEspECLHelpFile> h= createECLHelpFile("","");
-                h->setName(logName.str());
-                h->setDescription(processName.str());
-                h->setType(fileType.str());
-                if (version >= 1.43)
+                helpersCount++;
+                if (flags & WUINFO_IncludeHelpers)
                 {
-                    offset_t fileSize;
-                    if (getFileSize(logName.str(), NULL, fileSize))
-                        h->setFileSize(fileSize);
+                    Owned<IEspECLHelpFile> h= createECLHelpFile("","");
+                    h->setName(logName.str());
+                    h->setDescription(processName.str());
+                    h->setType(fileType.str());
+                    if (version >= 1.43)
+                    {
+                        offset_t fileSize;
+                        if (getFileSize(logName.str(), NULL, fileSize))
+                            h->setFileSize(fileSize);
+                    }
+                    helpers.append(*h.getLink());
                 }
-                helpers.append(*h.getLink());
 
                 if (version < 1.38)
                     continue;
@@ -1167,16 +1175,20 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
             else
                 fileType.appendf("%s%d", File_ThorLog, countThorLog);
 
-            Owned<IEspECLHelpFile> h= createECLHelpFile("","");
-            h->setName(name.str());
-            h->setType(fileType.str());
-            if (version >= 1.43)
+            helpersCount++;
+            if (flags & WUINFO_IncludeHelpers)
             {
-                offset_t fileSize;
-                if (getFileSize(name.str(), NULL, fileSize))
-                    h->setFileSize(fileSize);
+                Owned<IEspECLHelpFile> h= createECLHelpFile("","");
+                h->setName(name.str());
+                h->setType(fileType.str());
+                if (version >= 1.43)
+                {
+                    offset_t fileSize;
+                    if (getFileSize(name.str(), NULL, fileSize))
+                        h->setFileSize(fileSize);
+                }
+                helpers.append(*h.getLink());
             }
-            helpers.append(*h.getLink());
         }
 
         StringBuffer logDir;
@@ -1678,7 +1690,7 @@ bool WsWuInfo::getFileSize(const char* fileName, const char* IPAddress, offset_t
     return true;
 }
 
-void WsWuInfo::getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEspECLHelpFile>& helpers)
+void WsWuInfo::getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEspECLHelpFile>& helpers, unsigned long flags, unsigned& helpersCount)
 {
     if (!query)
         return;
@@ -1689,6 +1701,10 @@ void WsWuInfo::getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEsp
         SCMStringBuffer name, Ip, description;
         IConstWUAssociatedFile & cur = iter->query();
         if (cur.getType() != type)
+            continue;
+
+        helpersCount++;
+        if (!(flags & WUINFO_IncludeHelpers))
             continue;
 
         cur.getName(name);
