@@ -207,6 +207,7 @@ GetDFUWorkunitResponse
 
 ESPrequest CreateDFUWorkunit
 {
+    [min_ver("1.14")] string DFUServerQueue;
 };
 
 ESPresponse [exceptions_inline]
@@ -327,6 +328,7 @@ ESPrequest [nil_remove] SprayFixed
     [min_ver("1.09")] bool recordStructurePresent(false);
 
     [min_ver("1.10")] bool quotedTerminator(true);
+    [min_ver("1.14")] string DFUServerQueue;
 };
 
 ESPresponse [exceptions_inline] 
@@ -377,6 +379,7 @@ ESPrequest [nil_remove] SprayVariable
     [min_ver("1.10")] bool quotedTerminator(true);
     [min_ver("1.11")] string sourceRowPath;
     [min_ver("1.11")] bool isJSON(false);
+    [min_ver("1.14")] string DFUServerQueue;
 };
 
 ESPresponse [exceptions_inline] 
@@ -392,6 +395,7 @@ ESPrequest [nil_remove] Replicate
     string cluster;
     bool   repeatLast(false);
     bool   onlyRepeated(false);
+    [min_ver("1.14")] string DFUServerQueue;
 };  
 
 ESPresponse [exceptions_inline] 
@@ -418,6 +422,7 @@ ESPrequest Despray
     bool   wrap(false);
     bool   multiCopy(false);
     [min_ver("1.02")] bool SingleConnection;
+    [min_ver("1.14")] string DFUServerQueue;
 
     bool   compress(false);
     string encrypt;
@@ -464,6 +469,7 @@ ESPrequest [nil_remove] Copy
     string decrypt;
 
     [min_ver("1.12")] bool preserveCompression(true);
+    [min_ver("1.14")] string DFUServerQueue;
 };
 
 ESPresponse [exceptions_inline] 
@@ -487,6 +493,7 @@ ESPrequest Rename
     string srcname;
     string dstname;
     bool   overwrite;
+    [min_ver("1.14")] string DFUServerQueue;
 };
 
 ESPresponse [exceptions_inline] 
@@ -650,9 +657,19 @@ ESPresponse [exceptions_inline, nil_remove] GetSprayTargetsResponse
     ESParray<ESPstruct GroupNode, GroupNode> GroupNodes; 
 };
 
+ESPrequest GetDFUServerQueuesRequest
+{
+    string DFUServerName;
+};
+
+ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
+{
+    ESParray<string> Names;
+};
+
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.13"),
+    version("1.14"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;
@@ -687,6 +704,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/dfuwuaction_results.xslt")] DeleteDropZoneFiles(DeleteDropZoneFilesRequest, DFUWorkunitsActionResponse);
     ESPmethod [min_ver("1.13")] DropZoneFileSearch(DropZoneFileSearchRequest, DropZoneFileSearchResponse);
     ESPmethod GetSprayTargets(GetSprayTargetsRequest, GetSprayTargetsResponse);
+    ESPmethod [min_ver("1.14")] GetDFUServerQueues(GetDFUServerQueuesRequest, GetDFUServerQueuesResponse);
 };
 
 SCMexportdef(FileSpray);

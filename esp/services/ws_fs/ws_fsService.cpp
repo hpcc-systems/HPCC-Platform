@@ -105,6 +105,28 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
     
     xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/QueueLabel", process, service);
     cfg->getProp(xpath.str(), m_QueueLabel);
+    StringArray qlist;
+    getDFUServerQueueNames(qlist, nullptr);
+    if (qlist.ordinality())
+    {
+        if (!m_QueueLabel.length())
+            m_QueueLabel.append(qlist.item(0));
+        else
+        {
+            bool found = false;
+            ForEachItemIn(i, qlist)
+            {
+                const char* qname = qlist.item(i);
+                if (qname && strieq(qname, m_QueueLabel.str()))
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                throw MakeStringException(-1, "Invalid DFU Queue Label %s in configuration file", m_QueueLabel.str());
+        }
+    }
 
     xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/MonitorQueueLabel", process, service);
     cfg->getProp(xpath.str(), m_MonitorQueueLabel);
@@ -1446,10 +1468,8 @@ bool CFileSprayEx::onCreateDFUWorkunit(IEspContext &context, IEspCreateDFUWorkun
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
+        setDFUServerQueueReq(req.getDFUServerQueue(), wu);
+        setUserAuth(context, wu);
         wu->commit();
         const char * d = wu->queryId();
         IEspDFUWorkunit &result = resp.updateResult();
@@ -1854,10 +1874,8 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         wu->setClusterName(gName.str());
 
         wu->setJobName(destTitle.str());
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
+        setDFUServerQueueReq(req.getDFUServerQueue(), wu);
+        setUserAuth(context, wu);
         wu->setCommand(DFUcmd_import);
 
         IDFUfileSpec *source = wu->queryUpdateSource();
@@ -2027,10 +2045,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
 
         wu->setClusterName(gName.str());
         wu->setJobName(destTitle.str());
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
+        setDFUServerQueueReq(req.getDFUServerQueue(), wu);
+        setUserAuth(context, wu);
         wu->setCommand(DFUcmd_import);
 
         IDFUfileSpec *source = wu->queryUpdateSource();
@@ -2173,10 +2189,8 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
         StringBuffer jobname = "Replicate: ";
         jobname.append(srcname);
         wu->setJobName(jobname.str());
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
+        setDFUServerQueueReq(req.getDFUServerQueue(), wu);
+        setUserAuth(context, wu);
         wu->setCommand(DFUcmd_replicate);
 
         IDFUfileSpec *source = wu->queryUpdateSource();
@@ -2298,10 +2312,8 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
 
         wu->setJobName(srcTitle.str());
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
+        setDFUServerQueueReq(req.getDFUServerQueue(), wu);
+        setUserAuth(context, wu);
         wu->setCommand(DFUcmd_export);
 
         IDFUfileSpec *source = wu->queryUpdateSource();
@@ -2461,10 +2473,8 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
         wu->setJobName(dstname);
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
+        setDFUServerQueueReq(req.getDFUServerQueue(), wu);
+        setUserAuth(context, wu);
         if(destNodeGroup.length() > 0)
             wu->setClusterName(destNodeGroup.str());
         if (supercopy)
@@ -2580,10 +2590,8 @@ bool CFileSprayEx::onRename(IEspContext &context, IEspRename &req, IEspRenameRes
         ParseLogicalPath(req.getDstname(), destTitle);
 
         wu->setJobName(destTitle.str());
-        wu->setQueue(m_QueueLabel.str());
-        StringBuffer user, passwd;
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
+        setDFUServerQueueReq(req.getDFUServerQueue(), wu);
+        setUserAuth(context, wu);
         wu->setCommand(DFUcmd_rename);
 
 #if 0 // TBD - Handling for multiple clusters? the cluster should be specified by user if needed
@@ -3474,6 +3482,37 @@ bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRe
     }
     catch(IException* e)
     {   
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+void CFileSprayEx::setDFUServerQueueReq(const char* dfuServerQueue, IDFUWorkUnit* wu)
+{
+    wu->setQueue((dfuServerQueue && dfuServerQueue) ? dfuServerQueue : m_QueueLabel.str());
+}
+
+void CFileSprayEx::setUserAuth(IEspContext &context, IDFUWorkUnit* wu)
+{
+    StringBuffer user, passwd;
+    wu->setUser(context.getUserID(user).str());
+    wu->setPassword(context.getPassword(passwd).str());
+}
+
+bool CFileSprayEx::onGetDFUServerQueues(IEspContext &context, IEspGetDFUServerQueuesRequest &req, IEspGetDFUServerQueuesResponse &resp)
+{
+    try
+    {
+        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, false))
+            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
+
+        StringArray qlist;
+        getDFUServerQueueNames(qlist, req.getDFUServerName());
+        resp.setNames(qlist);
+    }
+    catch(IException* e)
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 

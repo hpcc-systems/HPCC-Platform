@@ -4611,6 +4611,28 @@ IStringVal &getProcessQueueNames(IStringVal &ret, const char *process, const cha
 #define ECLSCHEDULER_QUEUE_EXT ".eclscheduler"
 #define ECLAGENT_QUEUE_EXT ".agent"
 
+extern WORKUNIT_API void getDFUServerQueueNames(StringArray &ret, const char *process)
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
+        return;
+
+    StringBuffer xpath = "Software/DfuServerProcess";
+    if (!isEmptyString(process))
+        xpath.appendf("[@name=\"%s\"]", process);
+
+    Owned<IPropertyTree> root = &env->getPTree();
+    Owned<IPropertyTreeIterator> targets = root->getElements(xpath.str());
+    ForEach(*targets)
+    {
+        IPropertyTree &target = targets->query();
+        if (target.hasProp("@queue"))
+            ret.appendUniq(target.queryProp("@queue"));
+    }
+    return;
+}
+
 extern WORKUNIT_API IStringVal &getEclCCServerQueueNames(IStringVal &ret, const char *process)
 {
     return getProcessQueueNames(ret, process, "EclCCServerProcess", ECLCCSERVER_QUEUE_EXT);
