@@ -34,7 +34,6 @@ private:
     StringAttr   m_name;
     StringAttr   m_relativeBasedn;
     MemoryBuffer m_descriptor;
-    unsigned     m_permissions;
     StringAttr   m_dn;
     StringAttr   m_objectClass;
 
