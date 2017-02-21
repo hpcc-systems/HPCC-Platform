@@ -25,13 +25,37 @@
 #define LOGGINGMANAGERLIB "loggingmanager"
 #define LOGGINGDBSINGLEINSERT "SingleInsert"
 
+interface IEspLogEntry  : implements IInterface
+{
+    virtual void setEspContext(IEspContext* ctx)  = 0;
+    virtual void setUserContextTree(IPropertyTree* tree) = 0;
+    virtual void setUserRequestTree(IPropertyTree* tree) = 0;
+    virtual void setLogInfoTree(IPropertyTree* tree) = 0;
+    virtual void setExtraLog(IInterface* extra) = 0;
+    virtual void setOption(const char* ptr) = 0;
+    virtual void setLogContent(const char* ptr) = 0;
+    virtual void setBackEndResp(const char* ptr) = 0;
+    virtual void setUserResp(const char* ptr) = 0;
+    virtual void setLogDatasets(const char* ptr) = 0;
+
+    virtual IEspContext* getEspContext() = 0;
+    virtual IPropertyTree* getUserContextTree() = 0;
+    virtual IPropertyTree* getUserRequestTree() = 0;
+    virtual IPropertyTree* getLogInfoTree() = 0;
+    virtual IInterface* getExtraLog() = 0;
+    virtual const char* getOption() = 0;
+    virtual const char* getLogContent() = 0;
+    virtual const char* getBackEndResp() = 0;
+    virtual const char* getUserResp() = 0;
+    virtual const char* getLogDatasets() = 0;
+};
+
 interface ILoggingManager : implements IInterface
 {
     virtual bool init(IPropertyTree* loggingConfig, const char* service) = 0;
-    virtual bool updateLog(IEspContext& espContext, const char* option, const char* logContent, StringBuffer& status) = 0;
-    virtual bool updateLog(const char* option, IEspContext& espContext, IPropertyTree* userContext, IPropertyTree* userRequest,
-        const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status) = 0;
-    virtual bool updateLog(IEspContext& espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) = 0;
+    virtual IEspLogEntry* createLogEntry() = 0;
+    virtual bool updateLog(IEspLogEntry* entry, StringBuffer& status) = 0;
+    virtual bool updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) = 0;
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status) = 0;
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp) = 0;
     virtual bool getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status) = 0;

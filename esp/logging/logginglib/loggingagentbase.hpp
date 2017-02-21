@@ -42,19 +42,25 @@ interface IEspUpdateLogRequestWrap : extends IInterface
     virtual IPropertyTree* getESPContext()=0;
     virtual IPropertyTree* getUserContext()=0;
     virtual IPropertyTree* getUserRequest()=0;
+    virtual IPropertyTree* getLogRequestTree()=0;
+    virtual IInterface* getExtraLog()=0;
     virtual const char* getBackEndResponse()=0;
     virtual const char* getUserResponse()=0;
     virtual const char* getLogDatasets()=0;
+    virtual const bool getNoResend()=0;
     virtual void setGUID(const char* val)=0;
     virtual void setOption(const char* val)=0;
     virtual void setUpdateLogRequest(const char* val)=0;
     virtual void setESPContext(IPropertyTree* val)=0;
     virtual void setUserContext(IPropertyTree* val)=0;
     virtual void setUserRequest(IPropertyTree* val)=0;
+    virtual void setLogRequestTree(IPropertyTree* val)=0;
+    virtual void setExtraLog(IInterface* val)=0;
     virtual void setBackEndResponse(const char* val)=0;
     virtual void setUserResponse(const char* val)=0;
     virtual void setLogDatasets(const char* val)=0;
     virtual unsigned incrementRetryCount() = 0;
+    virtual void setNoResend(bool val)=0;
     virtual void clearOriginalContent() = 0;
 };
 
@@ -66,10 +72,13 @@ class CUpdateLogRequestWrap : implements IEspUpdateLogRequestWrap, public CInter
     Owned<IPropertyTree> espContext;
     Owned<IPropertyTree> userContext;
     Owned<IPropertyTree> userRequest;
+    Owned<IPropertyTree> logRequestTree;
+    Owned<IInterface> extraLog;
     StringAttr  backEndResponse;
     StringAttr  userResponse;
     StringAttr  logDatasets;
     unsigned    retryCount;
+    bool        noResend = false;;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -86,12 +95,13 @@ public:
         espContext.setown(_espContext);
         userRequest.setown(_userRequest);
     };
-    ~CUpdateLogRequestWrap()
+    CUpdateLogRequestWrap(const char* _GUID, const char* _option, IPropertyTree* _logInfo,
+        IInterface* _extraLog) : GUID(_GUID), option(_option), retryCount(0)
     {
-        espContext.clear();
-        userRequest.clear();
-        userContext.clear();
+        logRequestTree.setown(_logInfo);
+        extraLog.setown(_extraLog);
     };
+
     void clearOriginalContent()
     {
         espContext.clear();
@@ -101,6 +111,8 @@ public:
         logDatasets.clear();
         backEndResponse.clear();
         updateLogRequest.clear();
+        logRequestTree.clear();
+        extraLog.clear();
     };
 
     const char* getGUID() {return GUID.get();};
@@ -109,19 +121,25 @@ public:
     IPropertyTree* getESPContext() {return espContext.getLink();};
     IPropertyTree* getUserContext() {return userContext.getLink();};
     IPropertyTree* getUserRequest() {return userRequest.getLink();};
+    IPropertyTree* getLogRequestTree() {return logRequestTree.getLink();};
+    IInterface* getExtraLog() {return extraLog.getLink();};
     const char* getBackEndResponse() {return backEndResponse.get();};
     const char* getUserResponse() {return userResponse.get();};
     const char* getLogDatasets() {return logDatasets.get();};
+    const bool getNoResend() {return noResend;};
     void setGUID(const char* val) {GUID.set(val);};
     void setOption(const char* val) {option.set(val);};
     void setUpdateLogRequest(const char* val) {updateLogRequest.set(val);};
     void setESPContext(IPropertyTree* val) {espContext.setown(val);};
     void setUserContext(IPropertyTree* val) {userContext.setown(val);};
     void setUserRequest(IPropertyTree* val) {userRequest.setown(val);};
+    void setLogRequestTree(IPropertyTree* val) {logRequestTree.setown(val);};
+    void setExtraLog(IInterface* val) {extraLog.setown(val);};
     void setBackEndResponse(const char* val) {backEndResponse.set(val);};
     void setUserResponse(const char* val) {userResponse.set(val);};
     void setLogDatasets(const char* val) {logDatasets.set(val);};
     unsigned incrementRetryCount() { retryCount++; return retryCount;};
+    void setNoResend(bool val) { noResend = val; };
 };
 
 interface IEspLogAgent : extends IInterface

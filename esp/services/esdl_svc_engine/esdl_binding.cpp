@@ -662,8 +662,17 @@ bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IPropertyTree
     bool success = true;
     if (m_oLoggingManager)
     {
+        Owned<IEspLogEntry> entry = m_oLoggingManager->createLogEntry();
+        entry->setOption(LOGGINGDBSINGLEINSERT);
+        entry->setEspContext(&espcontext);
+        entry->setUserContextTree(reqcontext);
+        entry->setUserRequestTree(request);
+        entry->setUserResp(finalresp);
+        entry->setBackEndResp(rawresp);
+        entry->setLogDatasets(logdata);
+
         StringBuffer logresp;
-        success = m_oLoggingManager->updateLog(LOGGINGDBSINGLEINSERT, espcontext, reqcontext, request, rawresp, finalresp, logdata, logresp);
+        success = m_oLoggingManager->updateLog(entry, logresp);
         ESPLOG(LogMin,"ESDLService: Attempted to log ESP transaction: %s", logresp.str());
     }
 
