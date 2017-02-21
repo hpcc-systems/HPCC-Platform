@@ -5811,9 +5811,18 @@ inline bool appendv4range(SocketEndpointArray *array,char *str,SocketEndpoint &e
             *s = 0;
             s = (char *)getnum(s+1,port);
         }
-        else if (*s=='-') {
-            *s = 0;
-            s = (char *)getnum(s+1,rng);
+        else if (*s=='-')
+        {
+            if (!notip && dc==3 )//don't assume '-' is an ip range delimiter
+            {                    //also, IP range is only supported in 4rth octet
+                *s = 0;
+                s = (char *)getnum(s+1,rng);
+            }
+            else
+            {
+                notip = true;
+                s++;
+            }
         }
         else if (*s=='*') {
             *s = 0;
