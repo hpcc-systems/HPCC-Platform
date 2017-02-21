@@ -4741,12 +4741,10 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
     }
 
     // Create string for common attributes
-    StringBuffer attr, val, sAttributes;
-    attr.appendf(" %s=\"%s\" %s=\"%s\"", &XML_ATTR_DOMAIN[1], domain, &XML_ATTR_COMPUTERTYPE[1], cType);
+    StringBuffer attr;
+    attr.setf(" %s=\"%s\" %s=\"%s\"", &XML_ATTR_DOMAIN[1], domain, &XML_ATTR_COMPUTERTYPE[1], cType);
 
     StringBuffer sNode("<" XML_TAG_HARDWARE ">");
-    StringBuffer strCheckXPath;
-    strCheckXPath.setf("%s/%s[%s=\"%s\"][1]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, netAddress);
 
     sNode.appendf("<" XML_TAG_COMPUTER " %s=\"%s\" %s=\"%s\" %s/>",
                   &XML_ATTR_NAME[1], getUniqueName(pEnvRoot, sName, XML_TAG_COMPUTER, XML_TAG_HARDWARE),

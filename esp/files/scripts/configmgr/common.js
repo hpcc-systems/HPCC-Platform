@@ -306,6 +306,9 @@ function isValidNetworkAddress(addressList, theName, ignoredot, checkspecial)
           errorString = errorString + theName + ": " + currentAddress + " should only contain a host name or ip/ip range.\n";
       else
       {
+          if (ignoredot && currentAddress === ".")
+              continue;
+
           const ipRangePattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?:-(\d{1,3}))?$/;
           var ipRangeMatch = currentAddress.match(ipRangePattern);
 
@@ -316,9 +319,6 @@ function isValidNetworkAddress(addressList, theName, ignoredot, checkspecial)
               if (currentAddress == "0.0.0.0" || currentAddress == "255.255.255.255")
                 errorString = errorString + theName + ': ' + IPvalue + ' is a special IP address and cannot be used here.';
             }
-
-            if (ignoredot && currentAddress === ".")
-              continue;
 
             if(ipRangeMatch[5] != null) //IP range format detected
             {

@@ -3942,7 +3942,6 @@ function validateWizardDialog1(ipList){
   if (document.forms['treeForm'].ipMode.value !== '2'){
     var theName ="IPAddress";
     document.getElementById('ipListText').value=ipList;
-    //var errorString = isValidIPAddress(ipList, theName, true, true)
     var errorString = isValidNetworkAddress(ipList, theName, true, true)
 
     if( errorString === '') {
@@ -4401,9 +4400,6 @@ function ipCount(){
 
   for(var k=0; k < ipArr.length ;k++ )
   {
-	  var currentval = ipArr[k]; 
-	  var mymatch = currentval.match(ipRangePattern);
-	  
     if (ipArr[k].match(ipRangePattern) != null ) //an actual range, not a dash in a hostname
     {
       var ip=new Array();
