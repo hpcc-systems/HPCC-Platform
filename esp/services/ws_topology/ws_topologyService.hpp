@@ -134,6 +134,8 @@ public:
 
     bool onTpMachineInfo(IEspContext &context, IEspTpMachineInfoRequest &req, IEspTpMachineInfoResponse &resp);
 
+    bool onTpDropZoneQuery(IEspContext &context, IEspTpDropZoneQueryRequest &req, IEspTpDropZoneQueryResponse &resp);
+
     bool onTpSetMachineStatus(IEspContext &context,IEspTpSetMachineStatusRequest  &req, IEspTpSetMachineStatusResponse &resp);
 
     bool onTpSwapNode(IEspContext &context,IEspTpSwapNodeRequest  &req, IEspTpSwapNodeResponse &resp);

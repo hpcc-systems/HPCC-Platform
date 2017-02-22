@@ -23,6 +23,7 @@
 #include "jthread.hpp"
 #include "dfuwu.hpp"
 #include "environment.hpp"
+#include "TpWrapper.hpp"
 
 class Schedule : public Thread
 {
@@ -107,24 +108,24 @@ protected:
     Owned<IPropertyTree> directories;
 
     void addToQueryString(StringBuffer &queryString, const char *name, const char *value);
-    int doFileCheck(const char* mask, const char* netaddr, const char* osStr, const char* path);
     void getInfoFromSasha(IEspContext &context, const char *sashaServer, const char* wuid, IEspDFUWorkunit *info);
     bool getArchivedWUInfo(IEspContext &context, IEspGetDFUWorkunit &req, IEspGetDFUWorkunitResponse &resp);
     bool GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &req, IEspGetDFUWorkunitsResponse &resp);
-    bool getDropZoneFiles(IEspContext &context, const char* netaddr, const char* osStr, const char* path, IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp);
+    bool getDropZoneFiles(IEspContext &context, const char* dropZone, const char* netaddr, const char* path, IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp);
     bool ParseLogicalPath(const char * pLogicalPath, StringBuffer &title);
     bool ParseLogicalPath(const char * pLogicalPath, const char *group, const char* cluster, StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder);
     StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
     void appendGroupNode(IArrayOf<IEspGroupNode>& groupNodes, const char* nodeName, const char* clusterType, bool replicateOutputs);
     bool getOneDFUWorkunit(IEspContext& context, const char* wuid, IEspGetDFUWorkunitsResponse& resp);
-    void getDropZoneInfoByIP(const char* destIP, const char* destFile, StringBuffer& path, StringBuffer& mask);
-    void queryDropZoneInfo(const char* dropZone, StringBuffer& path, EnvMachineOS& os, IpAddress& ip);
+    void getDropZoneInfoByIP(double clientVersion, const char* destIP, const char* destFile, StringBuffer& path, StringBuffer& mask);
+    bool checkDropZoneIPAndPath(double clientVersion, const char* dropZone, const char* netAddr, const char* path);
     void addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* dropZonePath, StringBuffer& relativePath,
         const char pathSep, IArrayOf<IEspPhysicalFileStruct>& filesInFolder, IArrayOf<IEspPhysicalFileStruct>&files);
     bool searchDropZoneFileInFolder(IEspContext& context, IFile* f, const char* nameFilter, bool returnAll,
         const char* dropZonePath, StringBuffer& relativePath, const char pathSep, IArrayOf<IEspPhysicalFileStruct>& files);
     void setDFUServerQueueReq(const char* dfuServerQueue, IDFUWorkUnit* wu);
     void setUserAuth(IEspContext &context, IDFUWorkUnit* wu);
+    void appendDropZoneFiles(IEspContext& context, IpAddress& ip, const char* dir, const char* nameFilter, IArrayOf<IEspPhysicalFileStruct>& files);
 };
 
 #endif //_ESPWIZ_FileSpray_HPP__

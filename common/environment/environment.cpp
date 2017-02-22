@@ -95,25 +95,6 @@ protected:
     unsigned maxIndex = 0;
 };
 
-class CConstDropZoneIteratorByComputer : public CSimpleInterfaceOf<IConstDropZoneInfoIterator>
-{
-public:
-    CConstDropZoneIteratorByComputer(const char * computer);
-
-    virtual bool first() override;
-    virtual bool next() override;
-    virtual bool isValid() override;
-    virtual IConstDropZoneInfo & query() override;
-    virtual unsigned count() const override;
-
-protected:
-    StringBuffer computerName;
-    Owned<IConstDropZoneInfo> curr;
-    Owned<CLocalEnvironment> constEnv;
-    unsigned index = 1;
-    unsigned maxIndex = 0;
-};
-
 //==========================================================================================
 
 class CConstInstanceInfo;
@@ -129,7 +110,6 @@ private:
     mutable bool dropZoneCacheBuilt;
     mutable bool machineCacheBuilt;
     StringBuffer xPath;
-    Owned<IPropertyTree> numOfDropzonesByComputer;
     mutable unsigned numOfMachines;
     mutable unsigned numOfDropZones;
 
@@ -139,12 +119,6 @@ private:
     void buildMachineCache() const;
     void buildDropZoneCache() const;
     void init();
-    StringBuffer & createComputerNameXpath(const char * computer, StringBuffer &xpath) const
-    {
-        xpath.append("numberOfDropZones[@name=\"");
-        xpath.append(computer).append("\"]/number");
-        return xpath;
-    }
     mutable bool isDropZoneRestrictionLoaded = false;
     mutable bool dropZoneRestrictionEnabled = true;
 
@@ -164,7 +138,6 @@ public:
     virtual IConstMachineInfo * getMachineByAddress(const char * machineIp) const;
     virtual IConstMachineInfo * getMachineForLocalHost() const;
     virtual IConstDropZoneInfo * getDropZone(const char * name) const;
-    virtual IConstDropZoneInfo * getDropZoneByComputer(const char * computer) const;
     virtual IConstInstanceInfo * getInstance(const char * type, const char * version, const char *domain) const;
     virtual CConstInstanceInfo * getInstanceByIP(const char *type, const char *version, IpAddress &ip) const;
     virtual IConstComputerTypeInfo * getComputerType(const char * name) const;
@@ -181,23 +154,13 @@ public:
 
     virtual IConstMachineInfoIterator * getMachineIterator() const;
 
-    virtual IConstDropZoneInfo * getDropZoneByComputer(const char * computer, const char * dzname) const;
-    virtual IConstDropZoneInfoIterator * getDropZoneIteratorByComputer(const char * computer) const;
+    virtual IConstDropZoneInfoIterator * getDropZoneIteratorByAddress(const char * address) const;
     virtual IConstDropZoneInfo * getDropZoneByAddressPath(const char * netaddress, const char *targetPath) const;
 
     virtual IConstDropZoneInfoIterator * getDropZoneIterator() const;
 
     unsigned getNumberOfMachines() const { buildMachineCache(); return numOfMachines; }
     IConstMachineInfo * getMachineByIndex(unsigned index) const;
-
-    unsigned getNumberOfDropZonesByComputer(const char * computer) const
-    {
-        buildDropZoneCache();
-        StringBuffer xpath;
-        createComputerNameXpath(computer, xpath);
-        return numOfDropzonesByComputer->getPropInt(xpath);
-    }
-    IConstDropZoneInfo * getDropZoneByComputerByIndex(const char * computer, unsigned index) const;
 
     unsigned getNumberOfDropZones() const { buildDropZoneCache(); return numOfDropZones; }
     IConstDropZoneInfo * getDropZoneByIndex(unsigned index) const;
@@ -286,8 +249,6 @@ public:
             { return c->getMachineForLocalHost(); }
     virtual IConstDropZoneInfo * getDropZone(const char * name) const
             { return c->getDropZone(name); }
-    virtual IConstDropZoneInfo * getDropZoneByComputer(const char * computer) const
-            { return c->getDropZoneByComputer(computer); }
     virtual IConstInstanceInfo * getInstance(const char *type, const char *version, const char *domain) const
             { return c->getInstance(type, version, domain); }
     virtual bool getRunInfo(IStringVal & path, IStringVal & dir, const char *type, const char *version, const char *machineaddr,const char *defprogname) const
@@ -308,10 +269,8 @@ public:
 
     virtual IConstMachineInfoIterator * getMachineIterator() const
             { return c->getMachineIterator(); }
-    virtual IConstDropZoneInfo * getDropZoneByComputer(const char * computer, const char * dzname) const
-            { return c->getDropZoneByComputer(computer, dzname); }
-    virtual IConstDropZoneInfoIterator * getDropZoneIteratorByComputer(const char * computer) const
-            { return c->getDropZoneIteratorByComputer(computer); }
+    virtual IConstDropZoneInfoIterator * getDropZoneIteratorByAddress(const char * address) const
+            { return c->getDropZoneIteratorByAddress(address); }
     virtual IConstDropZoneInfo * getDropZoneByAddressPath(const char * netaddress, const char *targetPath) const
             { return c->getDropZoneByAddressPath(netaddress, targetPath); }
     virtual IConstDropZoneInfoIterator * getDropZoneIterator() const
@@ -1082,7 +1041,6 @@ void CLocalEnvironment::init()
     dropZoneCacheBuilt = false;
     numOfMachines = 0;
     numOfDropZones = 0;
-    numOfDropzonesByComputer.setown(createPTree("computers"));
     isDropZoneRestrictionLoaded = false;
 }
 
@@ -1204,31 +1162,6 @@ void CLocalEnvironment::buildDropZoneCache() const
             {
                 StringBuffer x("Software/DropZone[@name=\"");
                 x.append(name).append("\"]");
-                Owned<IConstEnvBase> cached = new CConstDropZoneInfo((CLocalEnvironment *) this, &it->query());
-                cache.setValue(x.str(), cached);
-            }
-            const char * computer = it->query().queryProp("@computer");
-            if (computer)
-            {
-                StringBuffer xpath;
-                createComputerNameXpath(computer, xpath);
-                unsigned numOfDropZoneByComputer = numOfDropzonesByComputer->getPropInt(xpath.str(), -1);
-                if (numOfDropZoneByComputer == -1)
-                {
-                    numOfDropZoneByComputer = 0;
-                    IPropertyTree * val = createPTree("numberOfDropZones");
-                    val->addPropInt("@number",numOfDropZoneByComputer);
-                    val->addProp("@name", computer);
-                    numOfDropzonesByComputer->addPropTree("numberOfDropZones",val);
-                }
-                numOfDropZoneByComputer++;
-                numOfDropzonesByComputer->setPropInt(xpath.str(), numOfDropZoneByComputer);
-
-                StringBuffer x("Software/DropZone[@computer=\"");
-                x.append(computer);
-                x.append(DROPZONE_BY_MACHINE_SUFFIX).append(numOfDropZoneByComputer);
-                x.append("\"]");
-
                 Owned<IConstEnvBase> cached = new CConstDropZoneInfo((CLocalEnvironment *) this, &it->query());
                 cache.setValue(x.str(), cached);
             }
@@ -1360,59 +1293,6 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZone(const char * name) const
         return nullptr;
     buildDropZoneCache();
     VStringBuffer xpath("Software/DropZone[@name=\"%s\"]", name);
-    synchronized procedure(safeCache);
-    return (CConstDropZoneInfo *) getCache(xpath.str());
-}
-
-
-IConstDropZoneInfo * CLocalEnvironment::getDropZoneByComputer(const char * computer) const
-{
-    if (!computer)
-        return nullptr;
-    buildDropZoneCache();
-
-    StringBuffer x;
-    createComputerNameXpath(computer, x);
-    unsigned numOfDropZoneByComputer = numOfDropzonesByComputer->getPropInt(x, -1);
-    if (numOfDropZoneByComputer == -1)
-        return nullptr;
-
-    StringBuffer xpath("Software/DropZone[@computer=\"");
-    xpath.append(computer);
-    xpath.append(DROPZONE_BY_MACHINE_SUFFIX).append(DEFAULT_DROPZONE_INDEX);
-    xpath.append("\"]");
-
-    synchronized procedure(safeCache);
-    return (CConstDropZoneInfo *) getCache(xpath.str());
-}
-
-IConstDropZoneInfo * CLocalEnvironment::getDropZoneByComputer(const char * computer, const char * dzname) const
-{
-    IConstDropZoneInfo * dzInfo = getDropZone(dzname);
-    if (!dzInfo)
-        return nullptr;
-
-    SCMStringBuffer cachedComputer;
-    dzInfo->getComputerName(cachedComputer);
-
-    if (!streq(computer, cachedComputer.str()))
-        return nullptr;
-
-    return dzInfo;
-
-}
-
-IConstDropZoneInfo * CLocalEnvironment::getDropZoneByComputerByIndex(const char * computer, unsigned index) const
-{
-    if (!computer || (index == 0))
-        return nullptr;
-
-    buildDropZoneCache();
-    if (index > getNumberOfDropZonesByComputer(computer))
-        return nullptr;
-
-    StringBuffer xpath("Software/DropZone[@computer=\"");
-    xpath.append(computer).append(DROPZONE_BY_MACHINE_SUFFIX).append(index).append("\"]");
     synchronized procedure(safeCache);
     return (CConstDropZoneInfo *) getCache(xpath.str());
 }
@@ -1623,7 +1503,6 @@ void CLocalEnvironment::clearCache()
         p.setown(conn->getRoot());
     }
     cache.kill();
-    numOfDropzonesByComputer.clear();
     init();
     resetPasswordsFromSDS();
 }
@@ -1684,12 +1563,73 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZoneByAddressPath(const char * ne
     return LINK(dropZone);
 }
 
-
-
-IConstDropZoneInfoIterator * CLocalEnvironment::getDropZoneIteratorByComputer(const char * computer) const
+IConstDropZoneInfoIterator * CLocalEnvironment::getDropZoneIteratorByAddress(const char *addr) const
 {
-    return new CConstDropZoneIteratorByComputer(computer);
+    class CByAddrIter : public CSimpleInterfaceOf<IConstDropZoneInfoIterator>
+    {
+        IArrayOf<IConstDropZoneInfo> matches;
+        unsigned cur = NotFound;
+
+    public:
+        CByAddrIter(IConstDropZoneInfoIterator *baseIter, const char *addr)
+        {
+            IpAddress toMatch(addr);
+            ForEach(*baseIter)
+            {
+                IConstDropZoneInfo &dz = baseIter->query();
+                Owned<IConstDropZoneServerInfoIterator> serverIter = dz.getServers();
+                ForEach(*serverIter)
+                {
+                    IConstDropZoneServerInfo &serverElem = serverIter->query();
+                    StringBuffer serverName;
+                    IpAddress serverIp(serverElem.getServer(serverName).str());
+                    if (serverIp.ipequals(toMatch))
+                    {
+                        matches.append(*LINK(&dz));
+                        break;
+                    }
+                }
+            }
+        }
+        virtual bool first() override
+        {
+            if (0 == matches.ordinality())
+            {
+                cur = NotFound;
+                return false;
+            }
+            cur = 0;
+            return true;
+        }
+        virtual bool next() override
+        {
+            if (cur+1==matches.ordinality())
+            {
+                cur = NotFound;
+                return false;
+            }
+            ++cur;
+            return true;
+        }
+        virtual bool isValid() override
+        {
+            return NotFound != cur;
+        }
+        virtual IConstDropZoneInfo &query() override
+        {
+            assertex(NotFound != cur);
+            return matches.item(cur);
+        }
+        virtual unsigned count() const override
+        {
+            return matches.ordinality();
+        }
+    };
+    Owned<IConstDropZoneInfoIterator> baseIter = new CConstDropZoneInfoIterator();
+    return new CByAddrIter(baseIter, addr);
 }
+
+
 
 IConstDropZoneInfoIterator * CLocalEnvironment::getDropZoneIterator() const
 {
@@ -1755,53 +1695,6 @@ unsigned CConstMachineInfoIterator::count() const
 {
     return maxIndex;
 }
-
-//--------------------------------------------------
-
-CConstDropZoneIteratorByComputer::CConstDropZoneIteratorByComputer(const char * computer)
-{
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    constEnv.setown((CLocalEnvironment *)factory->openEnvironment());
-    computerName.set(computer);
-    maxIndex = constEnv->getNumberOfDropZonesByComputer(computer);
-}
-
-bool CConstDropZoneIteratorByComputer::first()
-{
-    index = 1;
-    curr.setown(constEnv->getDropZoneByComputerByIndex(computerName.str(), index));
-    return curr != nullptr;
-}
-bool CConstDropZoneIteratorByComputer::next()
-{
-    if (index < maxIndex)
-    {
-        index++;
-        curr.setown(constEnv->getDropZoneByComputerByIndex(computerName.str(), index));
-    }
-    else
-        curr.clear();
-
-    return curr != nullptr;
-}
-
-bool CConstDropZoneIteratorByComputer::isValid()
-{
-    return curr != nullptr;
-}
-
-IConstDropZoneInfo & CConstDropZoneIteratorByComputer::query()
-{
-    return *curr;
-}
-
-unsigned CConstDropZoneIteratorByComputer::count() const
-{
-    return maxIndex;
-}
-
-//--------------------------------------------------
-
 
 CConstDropZoneServerInfoIterator::CConstDropZoneServerInfoIterator(const IConstDropZoneInfo * dropZone)
 {

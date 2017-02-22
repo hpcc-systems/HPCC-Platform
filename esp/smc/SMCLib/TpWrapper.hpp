@@ -134,6 +134,7 @@ private:
     const char* getNodeNameTag(const char* MachineType);
     void fetchInstances(const char* ServiceType, IPropertyTree& service, IArrayOf<IEspTpMachine>& tpMachines);
     bool checkGroupReplicateOutputs(const char* groupName, const char* kind);
+    void appendTpDropZone(double clientVersion, IConstEnvironment* constEnv, IConstDropZoneInfo& dropZoneInfo, IArrayOf<IConstTpDropZone>& list);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -155,12 +156,13 @@ public:
                         set<string>* pMachineNames=NULL);
     void getMachineList(double clientVersion, const char* clusterName, const char* MachineType, const char* ParentPath, const char* Status,
                                 const char* Directory, bool& multiSlaves, IArrayOf<IEspTpMachine> &MachineList);
-    void getDropZoneList(const char* MachineType, const char* MachinePath, const char* Directory, IArrayOf<IEspTpMachine> &MachineList);
+    void getDropZoneMachineList(double clientVersion, bool ECLWatchVisibleOnly, IArrayOf<IEspTpMachine> &MachineList);
     void setMachineInfo(const char* name,const char* type,IEspTpMachine& machine);
     void resolveGroupInfo(const char* groupName,StringBuffer& Cluster, StringBuffer& ClusterPrefix);
     void getMachineInfo(IEspTpMachine& machineInfo,IPropertyTree& machine,const char* ParentPath,const char* MachineType,const char* nodenametag);
     void getMachineInfo(double clientVersion, const char* name, const char* netAddress, IEspTpMachine& machineInfo);
     void setTpMachine(IConstMachineInfo* machine, IEspTpMachine& tpMachine);
+    IEspTpMachine* createTpMachineEx(const char* name, const char* type, IConstMachineInfo* machineInfo);
 
     void getTpDaliServers(IArrayOf<IConstTpDali>& list);
     void getTpEclServers(IArrayOf<IConstTpEclServer>& ServiceList, const char* name = NULL);
@@ -172,7 +174,7 @@ public:
     void getTpDfuServers(IArrayOf<IConstTpDfuServer>& list);
     void getTpSashaServers(IArrayOf<IConstTpSashaServer>& list);
     void getTpLdapServers(IArrayOf<IConstTpLdapServer>& list);
-    void getTpDropZones(IArrayOf<IConstTpDropZone>& list);
+    void getTpDropZones(double clientVersion, const char* name, bool ECLWatchVisibleOnly, IArrayOf<IConstTpDropZone>& list);
     void getTpFTSlaves(IArrayOf<IConstTpFTSlave>& list);
     void getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list);
     void getTpGenesisServers(IArrayOf<IConstTpGenesisServer>& list);

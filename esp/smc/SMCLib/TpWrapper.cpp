@@ -132,7 +132,7 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
         }
         else if (strcmp("DROPZONE",ClusterType) == 0)
         {
-            getDropZoneList(eqDropZone,"/Environment/Software", ClusterDirectory, MachineList);
+            getDropZoneMachineList(clientVersion, false, MachineList);
         }
         else if (strcmp("STANDBYNNODE",ClusterType) == 0)
         {
@@ -588,61 +588,6 @@ void CTpWrapper::getTpLdapServers(IArrayOf<IConstTpLdapServer>& list)
            const int nMachines = tpMachines.length();
            for (int i=0; i<nMachines; i++)
               tpMachines.item(i).setPort(port);
-        }
-        pService->setTpMachines(tpMachines);
-
-        list.append(*pService.getLink());
-    }
-}
-
-void CTpWrapper::getTpDropZones(IArrayOf<IConstTpDropZone>& list)
-{
-    Owned<IPropertyTree> root = getEnvironment("Software");
-    if (!root)
-        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> m_pConstEnvironment = factory->openEnvironment();
-
-    Owned<IPropertyTreeIterator> services= root->getElements(eqDropZone);
-    ForEach(*services)
-    {
-        IPropertyTree& serviceTree = services->query();
-        if (!serviceTree.getPropBool("@ECLWatchVisible", true))
-            continue;
-
-        Owned<IEspTpDropZone> pService = createTpDropZone("","");
-        pService->setName(serviceTree.queryProp("@name"));
-        pService->setDescription(serviceTree.queryProp("@description"));
-        pService->setBuild(serviceTree.queryProp("@build"));
-
-        const char* directory = serviceTree.queryProp("@directory");
-
-        IArrayOf<IEspTpMachine> tpMachines;
-        const char* computer = serviceTree.queryProp("@computer");
-        if (computer && *computer)
-        {
-              StringBuffer computerName;
-              if (strcmp(computer, "."))
-                  computerName.append(computer);
-              else
-                    computerName.append("localhost");
-
-              Owned<IEspTpMachine> machine = createTpMachine("", "");
-
-            setMachineInfo(computerName, "DropZone", *machine);
-            StringBuffer tmpPath;
-            StringBuffer ppath("/Environment/Software");
-            setAttPath(ppath, "", "name", computerName, tmpPath);
-            machine->setPath(tmpPath.str());
-
-           if (directory && *directory)
-              machine->setDirectory(directory);
-
-              Owned<IConstMachineInfo> pMachineInfo =  m_pConstEnvironment->getMachine(computerName.str());
-              machine->setOS(pMachineInfo->getOS());
-
-           tpMachines.append(*machine.getLink());
         }
         pService->setTpMachines(tpMachines);
 
@@ -1667,56 +1612,162 @@ const char* CTpWrapper::getNodeNameTag(const char* MachineType)
         return "@computer";
 }
 
-void CTpWrapper::getDropZoneList(const char* MachineType,
-                                            const char* ParentPath,
-                                            const char* Directory,
-                                            IArrayOf<IEspTpMachine> &MachineList)
+void CTpWrapper::getDropZoneMachineList(double clientVersion, bool ECLWatchVisibleOnly, IArrayOf<IEspTpMachine> &MachineList)
 {
     try
     {
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-        Owned<IPropertyTree> root0 = &constEnv->getPTree();
-        if (!root0)
-            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-    
-        char* xpath = (char*)ParentPath;
-        if (!strnicmp(xpath, "/Environment/", 13))
-            xpath += 13;
+        IArrayOf<IConstTpDropZone> list;
+        getTpDropZones(clientVersion, nullptr, ECLWatchVisibleOnly, list);
+        ForEachItemIn(i, list)
+        {
+            IConstTpDropZone& dropZone = list.item(i);
 
-        IPropertyTree* root = root0->queryPropTree( xpath );
-        if (!root)
-            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
+            IArrayOf<IConstTpMachine>& tpMachines = dropZone.getTpMachines();
+            ForEachItemIn(ii, tpMachines)
+            {
+                IConstTpMachine& tpMachine = tpMachines.item(ii);
+                Owned<IEspTpMachine> machine = createTpMachine();
+                machine->copy(tpMachine);
 
-        Owned<IPropertyTreeIterator> nodes=  root->getElements(eqDropZone);
-        if (nodes->first()) {
-            do {
-
-                IPropertyTree &machine = nodes->query();
-            
-                IEspTpMachine & machineInfo = *(createTpMachine("",""));
-                const char* name = machine.queryProp("@computer");
-                StringBuffer ppath(ParentPath);
-                StringBuffer tmpPath;
-                setAttPath(ppath,machine.queryName(),"name",name,tmpPath);
-                machineInfo.setPath(tmpPath.str());
-                setMachineInfo(name,MachineType,machineInfo);
-                machineInfo.setDirectory(machine.queryProp("@directory"));
-                MachineList.append(machineInfo);
-
-            } while (nodes->next());
+                MachineList.append(*machine.getLink());
+            }
         }
     }
-    catch(IException* e){   
-        StringBuffer msg;
-        e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
+    catch(IException* e)
+    {
+        EXCLOG(e);
         e->Release();
     }
-    catch(...){
-        WARNLOG("Unknown Exception caught within CTpWrapper::getDropZoneList");
+    catch(...)
+    {
+        WARNLOG("Unknown Exception caught within CTpWrapper::getDropZoneMachineList");
     }
     
+}
+
+//For a given dropzone or every dropzones (check ECLWatchVisible if needed), read: "@name",
+// "@description", "@build", "@directory", "@ECLWatchVisible" into an IEspTpDropZone object.
+//For each ServerList, read "@name" and "@server" (hostname or IP) into an IEspTpMachine object.
+//Add the IEspTpMachine object into the IEspTpDropZone.
+
+void CTpWrapper::getTpDropZones(double clientVersion, const char* name, bool ECLWatchVisibleOnly, IArrayOf<IConstTpDropZone>& list)
+{
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+    if (!isEmptyString(name))
+    {
+        Owned<IConstDropZoneInfo> pDropZoneInfo = constEnv->getDropZone(name);
+        if (pDropZoneInfo && (!ECLWatchVisibleOnly || pDropZoneInfo->isECLWatchVisible()))
+            appendTpDropZone(clientVersion, constEnv, *pDropZoneInfo, list);
+    }
+    else
+    {
+        Owned<IConstDropZoneInfoIterator> it = constEnv->getDropZoneIterator();
+        ForEach(*it)
+        {
+            IConstDropZoneInfo& dropZoneInfo = it->query();
+            if (!ECLWatchVisibleOnly || dropZoneInfo.isECLWatchVisible())
+                appendTpDropZone(clientVersion, constEnv, dropZoneInfo, list);
+        }
+    }
+}
+
+
+void CTpWrapper::appendTpDropZone(double clientVersion, IConstEnvironment* constEnv, IConstDropZoneInfo& dropZoneInfo, IArrayOf<IConstTpDropZone>& list)
+{
+    SCMStringBuffer dropZoneName, description, directory, umask, build, computer;
+    dropZoneInfo.getName(dropZoneName);
+    dropZoneInfo.getDescription(description);
+    dropZoneInfo.getDirectory(directory);
+    dropZoneInfo.getUMask(umask);
+    dropZoneInfo.getComputerName(computer);
+
+    Owned<IEspTpDropZone> dropZone = createTpDropZone();
+    if (dropZoneName.length() > 0)
+        dropZone->setName(dropZoneName.str());
+    if (description.length() > 0)
+        dropZone->setDescription(description.str());
+    if (directory.length() > 0)
+        dropZone->setPath(directory.str());
+    if (build.length() > 0)
+        dropZone->setBuild(build.str());
+    dropZone->setECLWatchVisible(dropZoneInfo.isECLWatchVisible());
+
+    IArrayOf<IEspTpMachine> tpMachines;
+    Owned<IConstDropZoneServerInfoIterator> itr = dropZoneInfo.getServers();
+    ForEach(*itr)
+    {
+        IConstDropZoneServerInfo& dropZoneServer = itr->query();
+
+        StringBuffer name, server, networkAddress;
+        dropZoneServer.getName(name);
+        dropZoneServer.getServer(server);
+        if (name.isEmpty() && server.isEmpty())
+            continue;
+
+        Owned<IEspTpMachine> machine = createTpMachine();
+        if (!name.isEmpty())
+            machine->setName(name.str());
+        if (!server.isEmpty())
+        {
+            IpAddress ipAddr;
+            ipAddr.ipset(server.str());
+            ipAddr.getIpText(networkAddress);
+            machine->setNetaddress(networkAddress.str());
+        }
+        if (directory.length() > 0)
+        {
+            machine->setDirectory(directory.str());
+            machine->setOS(getPathSepChar(directory.str()) == '/' ? MachineOsLinux : MachineOsW2K);
+        }
+        tpMachines.append(*machine.getLink());
+    }
+    dropZone->setTpMachines(tpMachines);
+
+    list.append(*dropZone.getLink());
+}
+
+IEspTpMachine* CTpWrapper::createTpMachineEx(const char* name, const char* type, IConstMachineInfo* machineInfo)
+{
+    if (!machineInfo)
+        return nullptr;
+
+    Owned<IEspTpMachine> machine = createTpMachine();
+    machine->setName(name);
+    machine->setType(type);
+    machine->setOS(machineInfo->getOS());
+
+    Owned<IConstDomainInfo> domain = machineInfo->getDomain();
+    if (domain)
+    {
+        SCMStringBuffer sName;
+        machine->setDomain(domain->getName(sName).str());
+    }
+
+    SCMStringBuffer netAddr;
+    machineInfo->getNetAddress(netAddr);
+    if (netAddr.length() > 0)
+    {
+        StringBuffer networkAddress;
+        IpAddress ipAddr;
+        ipAddr.ipset(netAddr.str());
+        ipAddr.getIpText(networkAddress);
+        machine->setNetaddress(networkAddress.str());
+    }
+
+    switch(machineInfo->getState())
+    {
+        case MachineStateAvailable:
+            machine->setAvailable("Available");
+            break;
+        case MachineStateUnavailable:
+            machine->setAvailable("Unavailable");
+            break;
+        default:
+            machine->setAvailable("Unknown");
+            break;
+    }
+    return machine.getClear();
 }
 
 void CTpWrapper::setMachineInfo(const char* name,const char* type,IEspTpMachine& machine)
@@ -1808,3 +1859,4 @@ void CTpWrapper::getAttPath(const char* Path,StringBuffer& returnStr)
     StringBuffer decodedStr;
     JBASE64_Decode(Path, returnStr);
 }
+
