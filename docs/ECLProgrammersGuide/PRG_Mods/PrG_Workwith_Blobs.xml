@@ -23,8 +23,9 @@
     <para>In the HPCCClientTools.PDF there is a chapter devoted to the
     DFUplus.exe program. This is a command line tool with specific options
     that allow you to spray and despray files into BLOBs in the HPCC. In all
-    the examples below, we'll assume you have a DFUPLUS.INI file in the same folder as the executable containing
-    the standard content described in that section of the PDF.</para>
+    the examples below, we'll assume you have a DFUPLUS.INI file in the same
+    folder as the executable containing the standard content described in that
+    section of the PDF.</para>
 
     <para>The key to making a spray operation write to BLOBs is the use of the
     <emphasis>prefix=Filename,Filesize</emphasis> option. For example, the
@@ -35,6 +36,14 @@
     <programlisting>C:\&gt;dfuplus action=spray srcip=10.150.51.26 srcfile=c:\import\*.jpg,c:\import\*.bmp 
             dstcluster=le_thor dstname=LE::imagedb overwrite=1 
             PREFIX=FILENAME,FILESIZE nosplit=1</programlisting>
+
+    <para>When using the wildcard characters (* and ?) to spray multiple
+    source files (<emphasis>srcfile</emphasis>) to a single
+    <emphasis>dstname</emphasis>, you MUST use both the
+    <emphasis>filename</emphasis> and <emphasis>filesize</emphasis>
+    (FILENAME,FILESIZE) options if you need to be able to despray the contents
+    of each record in the <emphasis>dstname</emphasis> back to the multiple
+    source files they originally came from. </para>
   </sect2>
 
   <sect2 id="Working_with_BLOB_Data">
