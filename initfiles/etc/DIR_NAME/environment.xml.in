@@ -22,7 +22,7 @@
             name="mydropzone"
             ECLWatchVisible="true"
             umask="022">
-            <ServerList name="ServerList" server="localhost"/>
+            <ServerList name="ServerList" server="."/>
   </DropZone>
   <RoxieCluster allFilesDynamic="true"
                 blindLogging="false"
