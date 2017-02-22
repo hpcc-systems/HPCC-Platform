@@ -92,7 +92,7 @@ public:
 size32_t ECLRTL_API getMinSize(const RtlFieldInfo * const * fields)
 {
     size32_t minSize = 0;
-    loop
+    for(;;)
     {
         const RtlFieldInfo * cur = *fields;
         if (!cur)
