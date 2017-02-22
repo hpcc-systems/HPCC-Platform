@@ -21,13 +21,16 @@ define([
     "dojo/store/Observable",
     "dojo/store/util/QueryResults",
     "dojo/Stateful",
+    "dojo/topic",
+    "dojo/i18n",
+    "dojo/i18n!./nls/hpcc",
 
     "hpcc/WsDfu",
     "hpcc/FileSpray",
     "hpcc/ESPRequest",
     "hpcc/ESPUtil",
     "hpcc/ESPResult"
-], function (declare, arrayUtil, lang, Deferred, Observable, QueryResults, Stateful,
+], function (declare, arrayUtil, lang, Deferred, Observable, QueryResults, Stateful, topic, i18n, nlsHPCC,
         WsDfu, FileSpray, ESPRequest, ESPUtil, ESPResult) {
 
     var _logicalFiles = {};
@@ -56,6 +59,7 @@ define([
         idProperty: "__hpcc_id",
         startProperty: "PageStartFrom",
         countProperty: "PageSize",
+        i18n: nlsHPCC,
 
         _watched: [],
         create: function (id) {
@@ -71,6 +75,17 @@ define([
                     break;
             }
         },
+        preProcessFullResponse: function (response, request) {
+            var context = this;
+            if (lang.exists("DFUQueryResponse.Warning", response) && response.DFUQueryResponse.Warning) {
+                dojo.publish("hpcc/brToaster", {
+                    Severity: "Warning",
+                    Source: "WsDfu.DFUQuery",
+                    Exceptions: [{ Source: context.i18n.TooManyFiles, Message: context.i18n.TheReturnedResults + ": " + response.DFUQueryResponse.NumFiles + ", " + context.i18n.RepresentsASubset }]
+                });
+            }
+        },
+
         update: function (id, item) {
             var storeItem = this.get(id);
             storeItem.updateData(item);
