@@ -1344,6 +1344,9 @@ public:
     }
     virtual void initQuery(StringBuffer &target, const char *name)
     {
+        if (!name || !*name)
+            throw MakeStringException(ROXIE_UNKNOWN_QUERY, "ERROR: Query name not specified");
+
         queryName.set(name);
         queryFactory.setown(globalPackageSetManager->getQuery(name, &target, NULL, *logctx));
         if (!queryFactory)

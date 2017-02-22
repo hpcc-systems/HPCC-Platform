@@ -441,6 +441,9 @@ public:
         const char* bptr = acistr;
         const char* eptr = acistr;
 
+        m_isDeny = false;//set later in this ctor
+        m_permission = NewSecAccess_None;//set later in this ctor
+
         // <OID>
         while(*bptr == ' ')
             bptr++;
@@ -510,7 +513,6 @@ public:
         }
 
         //calculate the secperm
-        m_permission = 0;
         if(strchr(m_perms.str(), 'r') != NULL && strchr(m_perms.str(), 'w') != NULL && strchr(m_perms.str(), 'd') != NULL)
         {
             m_permission |= NewSecAccess_Full;
@@ -895,6 +897,8 @@ AciProcessor::AciProcessor(IPropertyTree* cfg)
 
     m_sidcache.setown(createPTree());
     m_cfg->getProp(".//@ldapAddress", m_server);
+    m_ldap_client = nullptr;
+    m_servertype = LDAPSERVER_UNKNOWN;
 }
 
 bool AciProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescriptor>& sdlist, IArrayOf<ISecResource>& resources)
@@ -972,7 +976,7 @@ void AciProcessor::cacheSid(const char* name, int len, const void* sidbuf)
 void AciProcessor::lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE acttype)
 {
     throw MakeStringException(-1, "You shouldn't need function lookupSid");
-
+/*preserve dead code for reference
     act_sid.clear();
 
     MemoryBuffer mb;
@@ -989,6 +993,7 @@ void AciProcessor::lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TY
             cacheSid(act_name, act_sid.length(), (const void*)act_sid.toByteArray());
         }
     }
+*/
 }
 
 int AciProcessor::sdSegments(CSecurityDescriptor* sd)

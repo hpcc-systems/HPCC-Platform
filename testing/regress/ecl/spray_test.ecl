@@ -24,6 +24,8 @@ import Std.File AS FileServices;
 //noThorLCR
 //noThor
 
+//class=spray
+
 //version sprayFixed=true
 //version sprayFixed=false
 
@@ -39,9 +41,16 @@ Layout_Person := RECORD
   BOOLEAN good;
 END;
 
-sprayPrepFileName := '~REGRESS::spray_prep';
-desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
-sprayOutFileName := '~REGRESS::spray_test';
+#if (sprayFixed)
+    sprayPrepFileName := '~REGRESS::spray_prep_fixed';
+    desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_fixed';
+    sprayOutFileName := '~REGRESS::spray_test_fixed';
+#else
+    sprayPrepFileName := '~REGRESS::spray_prep';
+    desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
+    sprayOutFileName := '~REGRESS::spray_test';
+
+#end
 
 allPeople := DATASET([ {'foo', 10, 1},
                        {'bar', 12, 0},

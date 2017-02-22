@@ -28,6 +28,10 @@ CLdapSecUser::CLdapSecUser(const char *name, const char *pw) :
     m_pw(pw), m_authenticateStatus(AS_UNKNOWN)
 {
     setName(name);
+    setUserID(0);
+    setPosixenabled(false);
+    setSudoersEnabled(false);
+    setInSudoers(false);
 }
 
 CLdapSecUser::~CLdapSecUser()

@@ -2453,7 +2453,7 @@ public:
         offset_t ret;
         replyBuffer.read(ret);
 
-        if ((ret==(offset_t)-1) || (ret < len))
+        if ((ret==(offset_t)-1) || ((len != ((offset_t)-1)) && (ret < len)))
             throw createDafsException(DISK_FULL_EXCEPTION_CODE,"append failed, disk full?");    // though could be file missing TBD
         return ret;
     }
@@ -4283,7 +4283,6 @@ public:
         file->rename(toname);
         reply.append((unsigned)RFEnoerror);
         return true;
-        return false;
     }
 
     bool cmdMove(MemoryBuffer & msg, MemoryBuffer & reply,CRemoteClientHandler &client)
@@ -4299,7 +4298,6 @@ public:
         file->move(toname);
         reply.append((unsigned)RFEnoerror);
         return true;
-        return false;
     }
 
     bool cmdCopy(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)

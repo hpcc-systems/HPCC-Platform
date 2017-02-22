@@ -97,6 +97,7 @@ public:
     virtual bool onDropZoneFiles(IEspContext &context, IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp);
     virtual bool onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZoneFilesRequest &req, IEspDFUWorkunitsActionResponse &resp);
     virtual bool onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRequest &req, IEspGetSprayTargetsResponse &resp);
+    virtual bool onGetDFUServerQueues(IEspContext &context, IEspGetDFUServerQueuesRequest &req, IEspGetDFUServerQueuesResponse &resp);
 
 protected:
     StringBuffer m_QueueLabel;
@@ -122,6 +123,8 @@ protected:
         const char pathSep, IArrayOf<IEspPhysicalFileStruct>& filesInFolder, IArrayOf<IEspPhysicalFileStruct>&files);
     bool searchDropZoneFileInFolder(IEspContext& context, IFile* f, const char* nameFilter, bool returnAll,
         const char* dropZonePath, StringBuffer& relativePath, const char pathSep, IArrayOf<IEspPhysicalFileStruct>& files);
+    void setDFUServerQueueReq(const char* dfuServerQueue, IDFUWorkUnit* wu);
+    void setUserAuth(IEspContext &context, IDFUWorkUnit* wu);
 };
 
 #endif //_ESPWIZ_FileSpray_HPP__

@@ -231,7 +231,7 @@ void CLogThread::sendLog()
                 e->Release();
 
                 bool willRetry = false;
-                if (maxLogRetries != 0)
+                if (!logRequest->getNoResend() && (maxLogRetries != 0))
                 {
                     unsigned retry = logRequest->incrementRetryCount();
                     if (retry > maxLogRetries)
