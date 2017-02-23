@@ -41,7 +41,7 @@
 #include "sacmd.hpp"
 #include "exception_util.hpp"
 
-#define DFU_WU_URL          "DfuWorkunitsAccess" 
+#define DFU_WU_URL          "DfuWorkunitsAccess"
 #define DFU_EX_URL          "DfuExceptionsAccess"
 #define FILE_SPRAY_URL      "FileSprayAccess"
 #define FILE_DESPRAY_URL    "FileDesprayAccess"
@@ -102,7 +102,7 @@ int Schedule::run()
 void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
     StringBuffer xpath;
-    
+
     xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/QueueLabel", process, service);
     cfg->getProp(xpath.str(), m_QueueLabel);
     StringArray qlist;
@@ -195,12 +195,12 @@ void ParsePath(const char * fullPath, StringBuffer &ip, StringBuffer &filePath, 
     ptr = fullPath + strlen(fullPath) - 1;
     while(ptr > fullPath && *ptr != '\\')
         ptr--;
-    title.append(ptr + 1);  
+    title.append(ptr + 1);
 }
 
 const char * const NODATETIME="1970-01-01T00:00:00Z";
 
-// Assign from a dfuwu workunit structure to an esp request workunit structure. 
+// Assign from a dfuwu workunit structure to an esp request workunit structure.
 static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWorkunit &dest)
 {
     if(src == NULL)
@@ -221,12 +221,12 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         if (clusterName && *clusterName)
         {
             StringBuffer clusterNameForDisplay(clusterName);
-            
+
             Owned<IPropertyTreeIterator> clusters= root->getElements("Software/Topology/Cluster");
             if (clusters->first())
             {
                 do {
-                    IPropertyTree &cluster = clusters->query(); 
+                    IPropertyTree &cluster = clusters->query();
                     const char* name = cluster.queryProp("@name");
                     if (!name || !*name)
                         continue;
@@ -237,7 +237,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
                     {
                         if (thorClusters->first())
                         {
-                            IPropertyTree &thorCluster = thorClusters->query();                 
+                            IPropertyTree &thorCluster = thorClusters->query();
                             const char* process = thorCluster.queryProp("@process");
                             if (process && *process)
                             {
@@ -251,7 +251,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
 
                         if (roxieClusters->first())
                         {
-                            IPropertyTree &roxieCluster = roxieClusters->query();                   
+                            IPropertyTree &roxieCluster = roxieClusters->query();
                             const char* process = roxieCluster.queryProp("@process");
                             if (process && *process)
                             {
@@ -268,7 +268,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
             dest.setClusterName(clusterNameForDisplay.str());
         }
     }
-    
+
     if ((version > 1.05) && src->getDFUServerName(tmp.clear()).length())
         dest.setDFUServerName(tmp.str());
 
@@ -308,7 +308,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         tmpstr.append(" ");
         stoppAt.getTimeString(tmpstr);
         dest.setTimeStopped(tmpstr.str());
-        
+
         StringBuffer prgmsg;
         prog->formatProgressMessage(prgmsg);
         dest.setProgressMessage(prgmsg.str());
@@ -370,7 +370,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
                             dest.setSourceIP(socket.str());
                         }
                         const char *defaultdir = info->queryDefaultDir();
-                        if (defaultdir&&*defaultdir) 
+                        if (defaultdir&&*defaultdir)
                             addPathSepChar(dir.append(defaultdir));
                         file->getRawFileMask(dir);
                         dest.setSourceFilePath(dir.str());
@@ -448,7 +448,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
                             dest.setDestIP(socket.str());
                         }
                         const char *defaultdir = info->queryDefaultDir();
-                        if (defaultdir&&*defaultdir) 
+                        if (defaultdir&&*defaultdir)
                             addPathSepChar(dir.append(defaultdir));
                         file->getRawFileMask(dir);
                         dest.setDestFilePath(dir.str());
@@ -528,14 +528,14 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* group
                 }
             }
         }
-        else 
+        else
         {
             // Error here?
         }
     }
 
     makePhysicalPartName(pLogicalPath,0,0,folder,false,os,defaultFolder.str());
-    
+
     const char *n = pLogicalPath;
     const char* p;
     do {
@@ -553,7 +553,7 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, StringBuffer &tit
         return false;
 
     title.clear();
-    
+
     const char *n = pLogicalPath;
     const char* p;
     do {
@@ -661,7 +661,7 @@ bool CFileSprayEx::onDFUWUSearch(IEspContext &context, IEspDFUWUSearchRequest & 
             throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
         Owned<IPropertyTreeIterator> clusterIterator = root->getElements("Software/Topology/Cluster");
-        if (clusterIterator->first()) 
+        if (clusterIterator->first())
         {
             do {
                 IPropertyTree &cluster = clusterIterator->query();
@@ -676,7 +676,7 @@ bool CFileSprayEx::onDFUWUSearch(IEspContext &context, IEspDFUWUSearchRequest & 
         resp.setClusterNames(dfuclusters);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -716,7 +716,7 @@ int readFromCommaSeparatedString(const char *commaSeparatedString, StringBuffer*
                 strcpy(item, pStr);
                 pStr = NULL;
             }
-             
+
             output[numOfItems] = item;
             numOfItems++;
         }
@@ -733,14 +733,14 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
     StringBuffer sashaAddress;
     IArrayOf<IConstTpSashaServer> sashaservers;
     CTpWrapper dummy;
-    dummy.getTpSashaServers(sashaservers);  
+    dummy.getTpSashaServers(sashaservers);
     ForEachItemIn(i, sashaservers)
     {
         IConstTpSashaServer& sashaserver = sashaservers.item(i);
         IArrayOf<IConstTpMachine> &sashaservermachine = sashaserver.getTpMachines();
         sashaAddress.append(sashaservermachine.item(0).getNetaddress());
     }
-        
+
     SocketEndpoint ep;
     ep.set(sashaAddress,DEFAULT_SASHA_PORT);
     Owned<INode> sashaserver = createINode(ep);
@@ -754,23 +754,23 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
         begin = 0;
 
     Owned<ISashaCommand> cmd = createSashaCommand();
-    cmd->setAction(SCA_LIST);                           
-    cmd->setOnline(false);                              
-    cmd->setArchived(true);             
-    cmd->setDFU(true);  
+    cmd->setAction(SCA_LIST);
+    cmd->setOnline(false);
+    cmd->setArchived(true);
+    cmd->setDFU(true);
    cmd->setLimit((int) count+1);
    cmd->setStart((int)begin);
     if(req.getCluster() && *req.getCluster())
         cmd->setCluster(req.getCluster());
     if(req.getOwner() && *req.getOwner())
-        cmd->setOwner(req.getOwner());          
+        cmd->setOwner(req.getOwner());
     if(req.getJobname() && *req.getJobname())
-        cmd->setJobName(req.getJobname());          
+        cmd->setJobName(req.getJobname());
     if(req.getStateReq() && *req.getStateReq())
         cmd->setState(req.getStateReq());
     cmd->setOutputFormat("owner,jobname,cluster,state,command");//date range/owner/jobname/state*/
 
-    if (!cmd->send(sashaserver)) 
+    if (!cmd->send(sashaserver))
     {
         StringBuffer msg;
         msg.appendf("Cannot connect to archive server at %s",sashaAddress.str());
@@ -780,7 +780,7 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
     IArrayOf<IEspDFUWorkunit> results;
     __int64 actualCount = cmd->numIds();
     StringBuffer s;
-    for (unsigned j=0;j<actualCount;j++) 
+    for (unsigned j=0;j<actualCount;j++)
     {
         const char *wuidStr = cmd->queryId(j);
         if (!wuidStr)
@@ -799,11 +799,11 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
         if (strArray[2].length() > 0)
             resultWU->setJobName(strArray[2].str());
         if (strArray[3].length() > 0)
-            resultWU->setClusterName(strArray[3].str());   
+            resultWU->setClusterName(strArray[3].str());
         if (strArray[4].length() > 0)
-            resultWU->setStateMessage(strArray[4].str());   
+            resultWU->setStateMessage(strArray[4].str());
         if (strArray[5].length() > 0)
-            resultWU->setCommand(atoi(strArray[5].str()));   
+            resultWU->setCommand(atoi(strArray[5].str()));
 
         results.append(*resultWU.getLink());
     }
@@ -951,7 +951,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
         if (clusters->first())
         {
             do {
-                IPropertyTree &cluster = clusters->query(); 
+                IPropertyTree &cluster = clusters->query();
                 const char* name = cluster.queryProp("@name");
                 if (!name || !*name)
                     continue;
@@ -963,7 +963,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
                     bool bFound = false;
                     if (thorClusters->first())
                     {
-                        IPropertyTree &thorCluster = thorClusters->query();                 
+                        IPropertyTree &thorCluster = thorClusters->query();
                         const char* process = thorCluster.queryProp("@process");
                         if (process && *process)
                         {
@@ -978,7 +978,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
 
                     if (!bFound && roxieClusters->first())
                     {
-                        IPropertyTree &roxieCluster = roxieClusters->query();                   
+                        IPropertyTree &roxieCluster = roxieClusters->query();
                         const char* process = roxieCluster.queryProp("@process");
                         if (process && *process)
                         {
@@ -1104,7 +1104,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             resultWU->setJobName(wu->getJobName(jobname).str());
             resultWU->setCommand(wu->getCommand());
             resultWU->setUser(wu->getUser(user).str());
-            
+
             const char* clusterName = wu->getClusterName(cluster).str();
             if (clusterName)
             {
@@ -1214,7 +1214,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
         resp.setResults(result);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -1238,21 +1238,21 @@ void CFileSprayEx::getInfoFromSasha(IEspContext &context, const char *sashaServe
     Owned<ISashaCommand> cmd = createSashaCommand();
     cmd->addId(wuid);
     cmd->setAction(SCA_GET);
-    cmd->setArchived(true);             
-    cmd->setDFU(true);  
+    cmd->setArchived(true);
+    cmd->setDFU(true);
     SocketEndpoint ep(sashaServer, DEFAULT_SASHA_PORT);
     Owned<INode> node = createINode(ep);
-    if (!cmd->send(node,1*60*1000)) 
+    if (!cmd->send(node,1*60*1000))
     {
         DBGLOG("Cannot connect to Sasha server at %s",sashaServer);
         throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to archive server at %s.",sashaServer);
     }
-    if (cmd->numIds()==0) 
+    if (cmd->numIds()==0)
     {
         DBGLOG("Could not read archived %s",wuid);
         throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT,"Cannot read workunit %s.",wuid);
     }
-    
+
     unsigned num = cmd->numResults();
     if (num < 1)
         return;
@@ -1261,7 +1261,7 @@ void CFileSprayEx::getInfoFromSasha(IEspContext &context, const char *sashaServe
     cmd->getResult(0,res);
     if(res.length() < 1)
         return;
-    
+
     Owned<IPropertyTree> wu = createPTreeFromXMLString(res.str());
     if (!wu)
         return;
@@ -1318,7 +1318,7 @@ void CFileSprayEx::getInfoFromSasha(IEspContext &context, const char *sashaServe
         const char * state = progress->queryProp("@state");
         const char * timeStarted = progress->queryProp("@timestarted");
         const char * timeStopped = progress->queryProp("@timestopped");
-    
+
         if (state && *state)
             info->setStateMessage(state);
         if (timeStarted && *timeStarted)
@@ -1346,7 +1346,7 @@ bool CFileSprayEx::getArchivedWUInfo(IEspContext &context, IEspGetDFUWorkunit &r
         StringBuffer sashaAddress;
         IArrayOf<IConstTpSashaServer> sashaservers;
         CTpWrapper dummy;
-        dummy.getTpSashaServers(sashaservers);  
+        dummy.getTpSashaServers(sashaservers);
         ForEachItemIn(i, sashaservers)
         {
             IConstTpSashaServer& sashaserver = sashaservers.item(i);
@@ -1402,7 +1402,7 @@ bool CFileSprayEx::onGetDFUWorkunit(IEspContext &context, IEspGetDFUWorkunit &re
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Dfu workunit %s not found.", req.getWuid());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -1439,7 +1439,7 @@ bool CFileSprayEx::onGetDFUProgress(IEspContext &context, IEspProgressRequest &r
             StringBuffer statestr;
             encodeDFUstate(prog->getState(), statestr);
             resp.setState(statestr.str());
-            
+
             resp.setSlavesDone(prog->getSlavesDone());
 
             StringBuffer msg;
@@ -1452,7 +1452,7 @@ bool CFileSprayEx::onGetDFUProgress(IEspContext &context, IEspProgressRequest &r
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -1478,7 +1478,7 @@ bool CFileSprayEx::onCreateDFUWorkunit(IEspContext &context, IEspCreateDFUWorkun
         result.setReplicate(true);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -1530,7 +1530,7 @@ bool CFileSprayEx::onUpdateDFUWorkunit(IEspContext &context, IEspUpdateDFUWorkun
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(reqWU.getID()).str());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -1674,7 +1674,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
         resp.setDFUActionResults(results);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -1702,7 +1702,7 @@ bool CFileSprayEx::onDeleteDFUWorkunits(IEspContext &context, IEspDeleteDFUWorku
         resp.setRedirectUrl("/FileSpray/GetDFUWorkunits");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -1729,7 +1729,7 @@ bool CFileSprayEx::onDeleteDFUWorkunit(IEspContext &context, IEspDeleteDFUWorkun
         resp.setRedirectUrl("/FileSpray/GetDFUWorkunits");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -1752,7 +1752,7 @@ bool CFileSprayEx::onSubmitDFUWorkunit(IEspContext &context, IEspSubmitDFUWorkun
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(req.getWuid()).str());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -1776,7 +1776,7 @@ bool CFileSprayEx::onAbortDFUWorkunit(IEspContext &context, IEspAbortDFUWorkunit
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(req.getWuid()).str());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -1813,7 +1813,7 @@ bool CFileSprayEx::onGetDFUExceptions(IEspContext &context, IEspGetDFUExceptions
         resp.setResult(result);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -1985,7 +1985,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         submitDFUWorkUnit(wu.getClear());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -2164,7 +2164,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         submitDFUWorkUnit(wu.getClear());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -2212,7 +2212,7 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
         submitDFUWorkUnit(wu.getClear());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -2389,7 +2389,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         submitDFUWorkUnit(wu.getClear());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -2440,12 +2440,12 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
 
         ParseLogicalPath(dstname, destNodeGroup.str(), NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
 
-        StringBuffer fileMask; 
+        StringBuffer fileMask;
         constructFileMask(destTitle.str(), fileMask);
 
         const char* srcDali = req.getSourceDali();
         bool supercopy = req.getSuperCopy();
-        if (supercopy) 
+        if (supercopy)
         {
             StringBuffer user, passwd;
             context.getUserID(user);
@@ -2453,7 +2453,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             StringBuffer u(user);
             StringBuffer p(passwd);
             Owned<INode> foreigndali;
-            if (srcDali) 
+            if (srcDali)
             {
                 SocketEndpoint ep(srcDali);
                 foreigndali.setown(createINode(ep));
@@ -3481,7 +3481,7 @@ bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRe
         resp.setGroupNodes(sprayTargets);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
 
@@ -3490,7 +3490,7 @@ bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRe
 
 void CFileSprayEx::setDFUServerQueueReq(const char* dfuServerQueue, IDFUWorkUnit* wu)
 {
-    wu->setQueue((dfuServerQueue && dfuServerQueue) ? dfuServerQueue : m_QueueLabel.str());
+    wu->setQueue((dfuServerQueue && *dfuServerQueue) ? dfuServerQueue : m_QueueLabel.str());
 }
 
 void CFileSprayEx::setUserAuth(IEspContext &context, IDFUWorkUnit* wu)
