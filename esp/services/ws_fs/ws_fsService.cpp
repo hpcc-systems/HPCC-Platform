@@ -3494,7 +3494,7 @@ bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRe
 
 void CFileSprayEx::setDFUServerQueueReq(const char* dfuServerQueue, IDFUWorkUnit* wu)
 {
-    wu->setQueue((dfuServerQueue && dfuServerQueue) ? dfuServerQueue : m_QueueLabel.str());
+    wu->setQueue((dfuServerQueue && *dfuServerQueue) ? dfuServerQueue : m_QueueLabel.str());
 }
 
 void CFileSprayEx::setUserAuth(IEspContext &context, IDFUWorkUnit* wu)
