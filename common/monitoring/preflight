@@ -63,7 +63,12 @@ if [ "${1:0:1}" == '-' ]; then
 
     #find machineInfo and output:
 
-    mem=`free | head -n 3 | tail -n 1 | awk '{print $3,$4}'`
+    checkSwapLine=`free | head -n 3 | tail -n 1 | awk '{print $1}'`
+    if ! [ "$checkSwapLine" = "Swap:" ]; then
+        mem=`free | head -n 3 | tail -n 1 | awk '{print $3,$4}'`
+    else
+        mem=`free | head -n 2 | tail -n 1 | awk '{print $2-$7,$7}'`
+    fi
     cpu=`vmstat 1 2 | tail -n 1 | awk '{print $15}'`
     echo CPU-Idle: $cpu%
     cuptime=`uptime | cut -f 1,2 -d ','`
