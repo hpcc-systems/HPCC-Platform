@@ -1984,13 +1984,13 @@ public:
     }
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
     {
+        CriticalBlock b(contextCrit);
         if (activityId && graph)
         {
             IRoxieServerActivity *act = graph->queryActivity(activityId);
             if (act)
                 return act->registerTimer(activityId, name);
         }
-        CriticalBlock b(contextCrit);
         ISectionTimer *timer = functionTimers.getValue(name);
         if (!timer)
         {

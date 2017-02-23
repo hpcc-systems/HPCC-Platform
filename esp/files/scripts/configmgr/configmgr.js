@@ -845,7 +845,7 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
 
     if (compName === "Hardware" && (attrName === "netAddress" || attrName === "mask" || attrName === "subnet")) {
       var errMsg = "";
-      errMsg = isValidIPAddress(newValue, attrName, true, false);
+      errMsg = isValidNetworkAddress(newValue, attrName, true, false);
 
       if (errMsg.length > 0) {
         alert(errMsg);
