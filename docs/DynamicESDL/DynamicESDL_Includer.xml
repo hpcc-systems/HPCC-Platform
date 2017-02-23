@@ -499,7 +499,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
             <para>Create the configuration XML file</para>
 
             <programlisting>&lt;Methods&gt;
-  &lt;Method name="AddThis" url="&lt;RoxieIP&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
+  &lt;Method name="AddThis" url="&lt;RoxieIPRange&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
     &lt;!--Optional Method Context Information start--&gt;
     &lt;Gateways&gt;
        &lt;Gateway name="mygateway" url="1.1.1.1:2222/someservice/somemethod/&gt;
@@ -510,9 +510,11 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
 &lt;/Methods&gt;</programlisting>
 
             <para>Where name is the name of your method(s) and url is the
-            Roxie server's IP and port and queryname is the published name
-            (alias) of the query. For a multi-node Roxie, you can use a range
-            in the form of nnn.nnn.nnn.n-nnn.</para>
+            Roxie server's IP address and port, finally queryname is the
+            published name (alias) of the query. For a multi-node Roxie, you
+            can use a range in the form of nnn.nnn.nnn.n-nnn. The ESP
+            schedules requests to the target Roxie in a round-robin
+            fashion.</para>
 
             <para>Optionally, your method could include context information as
             illustrated in the above example. The context information should
