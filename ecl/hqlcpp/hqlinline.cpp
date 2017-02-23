@@ -1358,7 +1358,8 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
             else if (!cur.isBinary())
             {
                 //CSV and xml datasets need their elements serialized into the parent extract
-                newRow = new NonLocalIndirectRow(cur, NULL, childSerialization);
+                ColumnToOffsetMap * map = translator.queryRecordOffsetMap(cur.queryRecord(), false);
+                newRow = new NonLocalIndirectRow(cur, map, childSerialization);
             }
             else if (serialization)
             {
@@ -1382,7 +1383,10 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
                 else
                     expandedAlias.set(&matchAlias.item(match));
 
-                newRow = new BoundAliasRow(cur, NULL, expandedAlias);
+                //At the moment do not use offset classes in the child query, until we also serialize a pointeter to the
+                //offset class.  This would be much better once co-local extracts were implemented with c++ classes.
+                ColumnToOffsetMap * map = translator.queryRecordOffsetMap(cur.queryRecord(), false);
+                newRow = new BoundAliasRow(cur, map, expandedAlias);
                 newRow->setInherited(true);
             }
             else
@@ -1408,7 +1412,8 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
         ForEachItemInRev(i, activeRows)
         {
             BoundRow & cur = activeRows.item(i);
-            nonlocalBoundCursors.append(*new NonLocalIndirectRow(cur, NULL, childSerialization));
+            ColumnToOffsetMap * map = translator.queryRecordOffsetMap(cur.queryRecord(), false);
+            nonlocalBoundCursors.append(*new NonLocalIndirectRow(cur, map, childSerialization));
         }
     }
 }

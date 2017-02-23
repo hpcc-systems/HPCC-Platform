@@ -89,6 +89,26 @@ public:
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t ECLRTL_API getMinSize(const RtlFieldInfo * const * fields)
+{
+    size32_t minSize = 0;
+    for(;;)
+    {
+        const RtlFieldInfo * cur = *fields;
+        if (!cur)
+            return minSize;
+        minSize += cur->type->getMinSize();
+        fields++;
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlTypeInfoBase::getMinSize() const
+{
+    return length;
+}
+
 size32_t RtlTypeInfoBase::size(const byte * self, const byte * selfrow) const 
 {
     return length; 
@@ -301,6 +321,11 @@ __int64 RtlSwapIntTypeInfo::getInt(const void * ptr) const
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlPackedIntTypeInfo::getMinSize() const
+{
+    return 1;
+}
+
 size32_t RtlPackedIntTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     return rtlGetPackedSize(self); 
@@ -352,6 +377,13 @@ __int64 RtlPackedIntTypeInfo::getInt(const void * ptr) const
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlStringTypeInfo::getMinSize() const
+{
+    if (isFixedSize())
+        return length;
+    return sizeof(size32_t);
+}
 
 size32_t RtlStringTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
@@ -479,6 +511,13 @@ __int64 RtlStringTypeInfo::getInt(const void * ptr) const
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlDataTypeInfo::getMinSize() const
+{
+    if (isFixedSize())
+        return length;
+    return sizeof(size32_t);
+}
+
 size32_t RtlDataTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (isFixedSize())
@@ -576,6 +615,13 @@ __int64 RtlDataTypeInfo::getInt(const void * ptr) const
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlVarStringTypeInfo::getMinSize() const
+{
+    if (isFixedSize())
+        return length;
+    return 1;
+}
+
 size32_t RtlVarStringTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (isFixedSize())
@@ -668,6 +714,13 @@ __int64 RtlVarStringTypeInfo::getInt(const void * ptr) const
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlQStringTypeInfo::getMinSize() const
+{
+    if (isFixedSize())
+        return rtlQStrSize(length);
+    return sizeof(size32_t);
+}
 
 size32_t RtlQStringTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
@@ -775,6 +828,11 @@ size32_t RtlDecimalTypeInfo::calcSize() const
     return (getDecimalDigits()+2)/2;
 }
 
+size32_t RtlDecimalTypeInfo::getMinSize() const
+{
+    return calcSize();
+}
+
 size32_t RtlDecimalTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     return calcSize();
@@ -879,6 +937,13 @@ __int64 RtlCharTypeInfo::getInt(const void * ptr) const
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlUnicodeTypeInfo::getMinSize() const
+{
+    if (isFixedSize())
+        return length * sizeof(UChar);
+    return sizeof(size32_t);
+}
+
 size32_t RtlUnicodeTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (isFixedSize())
@@ -980,6 +1045,13 @@ __int64 RtlUnicodeTypeInfo::getInt(const void * ptr) const
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlVarUnicodeTypeInfo::getMinSize() const
+{
+    if (isFixedSize())
+        return length * sizeof(UChar);
+    return sizeof(UChar);
+}
+
 size32_t RtlVarUnicodeTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (isFixedSize())
@@ -1055,6 +1127,11 @@ __int64 RtlVarUnicodeTypeInfo::getInt(const void * ptr) const
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlUtf8TypeInfo::getMinSize() const
+{
+    return sizeof(size32_t);
+}
 
 size32_t RtlUtf8TypeInfo::size(const byte * self, const byte * selfrow) const 
 {
@@ -1185,6 +1262,11 @@ inline size32_t toXMLFields(const RtlFieldInfo * const * cur, const byte * self,
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlRecordTypeInfo::getMinSize() const
+{
+    return ::getMinSize(fields);
+}
+
 size32_t RtlRecordTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     return sizeFields(fields, self, self);
@@ -1250,6 +1332,11 @@ __int64 RtlCompoundTypeInfo::getInt(const void * ptr) const
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlSetTypeInfo::getMinSize() const
+{
+    return sizeof(bool) + sizeof(size32_t);
+}
 
 size32_t RtlSetTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
@@ -1354,6 +1441,13 @@ size32_t RtlSetTypeInfo::toXML(const byte * self, const byte * selfrow, const Rt
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlRowTypeInfo::getMinSize() const
+{
+    if (isLinkCounted())
+        return sizeof(void *);
+    return child->getMinSize();
+}
+
 size32_t RtlRowTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (isLinkCounted())
@@ -1386,6 +1480,13 @@ size32_t RtlRowTypeInfo::toXML(const byte * self, const byte * selfrow, const Rt
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlDatasetTypeInfo::getMinSize() const
+{
+    if (isLinkCounted())
+        return sizeof(size32_t) + sizeof(void * *);
+    return sizeof(size32_t);
+}
 
 size32_t RtlDatasetTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
@@ -1522,6 +1623,13 @@ size32_t RtlDatasetTypeInfo::toXML(const byte * self, const byte * selfrow, cons
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlDictionaryTypeInfo::getMinSize() const
+{
+    if (isLinkCounted())
+        return sizeof(size32_t) + sizeof(void * *);
+    return sizeof(size32_t);
+}
+
 size32_t RtlDictionaryTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     if (isLinkCounted())
@@ -1622,6 +1730,11 @@ size32_t RtlDictionaryTypeInfo::toXML(const byte * self, const byte * selfrow, c
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlIfBlockTypeInfo::getMinSize() const
+{
+    return 0;
+}
+
 size32_t RtlIfBlockTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (getCondition(selfrow))
@@ -1681,6 +1794,13 @@ unsigned __int64 RtlBitfieldTypeInfo::unsignedValue(const void * self) const
 }
 
 
+size32_t RtlBitfieldTypeInfo::getMinSize() const
+{
+    if (fieldType & RFTMislastbitfield)
+        return getBitfieldIntSize();
+    return 0;
+}
+
 size32_t RtlBitfieldTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (fieldType & RFTMislastbitfield)
@@ -1727,6 +1847,12 @@ __int64 RtlBitfieldTypeInfo::getInt(const void * ptr) const
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlUnimplementedTypeInfo::getMinSize() const
+{
+    rtlFailUnexpected();
+    return 0;
+}
 
 size32_t RtlUnimplementedTypeInfo::size(const byte * self, const byte * selfrow) const 
 {

@@ -90,6 +90,7 @@ extern HQL_API bool hasActiveTopDataset(IHqlExpression * expr);
 
 extern HQL_API unsigned getFieldCount(IHqlExpression * expr);
 extern HQL_API unsigned getFlatFieldCount(IHqlExpression * expr);
+extern HQL_API unsigned getVarSizeFieldCount(IHqlExpression * expr, bool expandRows);
 extern HQL_API unsigned isEmptyRecord(IHqlExpression * record);
 extern HQL_API unsigned isSimpleRecord(IHqlExpression * record);
 extern HQL_API void getSimpleFields(HqlExprArray &out, IHqlExpression *record);
@@ -105,7 +106,7 @@ extern HQL_API int getResultSequenceValue(IHqlExpression * expr);
 extern HQL_API unsigned countTotalFields(IHqlExpression * record, bool includeVirtual);
 extern HQL_API bool transformContainsSkip(IHqlExpression * transform);
 extern HQL_API bool transformListContainsSkip(IHqlExpression * transforms);
-extern HQL_API bool recordContainsNestedRecord(IHqlExpression * record);
+extern HQL_API bool recordContainsNestedRow(IHqlExpression * record);
 extern HQL_API IHqlExpression * queryStripCasts(IHqlExpression * expr);
 extern HQL_API bool remainingChildrenMatch(IHqlExpression * left, IHqlExpression * right, unsigned first);
 
@@ -341,6 +342,7 @@ extern HQL_API bool isUngroup(IHqlExpression * expr);
 extern HQL_API bool containsExpression(IHqlExpression * expr, IHqlExpression * search);
 extern HQL_API bool containsOperator(IHqlExpression * expr, node_operator search);
 extern HQL_API bool containsIfBlock(IHqlExpression * record);
+extern HQL_API bool canCreateRtlTypeInfo(IHqlExpression * record); // Can we generate completely valid rtltypeinfo?
 extern HQL_API IHqlExpression * removeAnnotations(IHqlExpression * expr, IHqlExpression * search);
 
 class HQL_API DependencyGatherer

@@ -1803,7 +1803,7 @@ void InlineDatasetBuilder::buildDeclare(BuildCtx & ctx)
 
 BoundRow * InlineDatasetBuilder::buildCreateRow(BuildCtx & ctx)
 {
-    Owned<BoundRow> cursor = translator.createTableCursor(dataset, cursorVar, no_self, NULL);
+    Owned<BoundRow> cursor = translator.createTableCursor(dataset, cursorVar, false, no_self, NULL);
     ctx.associate(*cursor);
     return cursor;
 }

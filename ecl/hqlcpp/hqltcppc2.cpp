@@ -224,7 +224,7 @@ bool CMemberInfo::hasDatasetLimits() const
 
 CChildDatasetColumnInfo::CChildDatasetColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column, RecordOffsetMap & map, unsigned defaultMaxRecordSize) : CColumnInfo(_container, _prior, _column)
 {
-    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize);
+    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize, false);
     maxChildSize = offsetMap->getMaxSize();
 #ifdef _DEBUG
     assertex(!recordRequiresSerialization(column->queryRecord(), internalAtom));
@@ -397,7 +397,7 @@ CChildLimitedDatasetColumnInfo::CChildLimitedDatasetColumnInfo(CContainerInfo * 
         countField.setown(ensureExprType(countField, sizetType));
     if (sizeField)
         sizeField.setown(ensureExprType(sizeField, sizetType));
-    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize);
+    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize, false);
     maxChildSize = offsetMap->getMaxSize();
     fixedChildSize = offsetMap->isFixedWidth() ? maxChildSize : UNKNOWN_LENGTH;
 }
@@ -621,7 +621,7 @@ AColumnInfo * CChildLimitedDatasetColumnInfo::lookupColumn(IHqlExpression * sear
 
 CChildLinkedDatasetColumnInfo::CChildLinkedDatasetColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column, RecordOffsetMap & map, unsigned defaultMaxRecordSize) : CColumnInfo(_container, _prior, _column)
 {
-    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize);
+    ColumnToOffsetMap * offsetMap = map.queryMapping(column->queryRecord(), defaultMaxRecordSize, false);
     maxChildSize = offsetMap->getMaxSize();
 }
 

@@ -2235,6 +2235,43 @@ unsigned getFlatFieldCount(IHqlExpression * expr)
 }
 
 
+unsigned getVarSizeFieldCount(IHqlExpression * expr, bool expandRows)
+{
+    //MORE: Is it worth caching the results of these functions as attributes?
+    switch (expr->getOperator())
+    {
+    case no_record:
+        {
+            unsigned count = 0;
+            ForEachChild(i, expr)
+                count += getVarSizeFieldCount(expr->queryChild(i), expandRows);
+            return count;
+        }
+    case no_ifblock:
+        return getVarSizeFieldCount(expr->queryChild(1), expandRows);
+    case no_field:
+        {
+            ITypeInfo * type = expr->queryType();
+            if (expandRows)
+            {
+                if (type->getTypeCode() == type_row)
+                    return getVarSizeFieldCount(expr->queryRecord(), expandRows);
+            }
+            if (isArrayRowset(type))
+                return 0;
+            return isUnknownSize(type) ? 1 : 0;
+        }
+    case no_attr:
+    case no_attr_link:
+    case no_attr_expr:
+        return 0;
+    default:
+        //UNIMPLEMENTED;
+        return 0;
+    }
+}
+
+
 unsigned isEmptyRecord(IHqlExpression * record)
 {
     ForEachChild(i, record)
@@ -3374,7 +3411,7 @@ bool isEmptyList(IHqlExpression * expr)
 }
 
 
-bool recordContainsNestedRecord(IHqlExpression * record)
+bool recordContainsNestedRow(IHqlExpression * record)
 {
     ForEachChild(i, record)
     {
@@ -3382,11 +3419,11 @@ bool recordContainsNestedRecord(IHqlExpression * record)
         switch (cur->getOperator())
         {
         case no_record:
-            if (recordContainsNestedRecord(cur))
+            if (recordContainsNestedRow(cur))
                 return true;
             break;
         case no_ifblock:
-            if (recordContainsNestedRecord(cur->queryChild(1)))
+            if (recordContainsNestedRow(cur->queryChild(1)))
                 return true;
             break;
         case no_field:
@@ -4456,6 +4493,41 @@ bool containsIfBlock(IHqlExpression * record)
         }
     }
     return false;
+}
+
+
+bool canCreateRtlTypeInfo(IHqlExpression * record)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            if (!canCreateRtlTypeInfo(cur))
+                return false;
+            break;
+        case no_field:
+            switch (cur->queryType()->getTypeCode())
+            {
+            case type_row:
+                if (!canCreateRtlTypeInfo(cur->queryRecord()))
+                    return false;
+                break;
+            case type_table:
+            case type_groupedtable:
+                if (cur->hasAttribute(countAtom) || cur->hasAttribute(sizeofAtom))
+                    return false;
+                break;
+            case type_alien:
+                return false;
+            }
+            break;
+        case no_ifblock:
+            return false;
+        }
+    }
+    return true;
 }
 
 

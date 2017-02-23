@@ -1186,7 +1186,8 @@ void SourceBuilder::buildTransformBody(BuildCtx & transformCtx, IHqlExpression *
         {
             //NOTE: The source is not link counted - it comes from a prefetched row, and does not include any virtual file position field.
             OwnedHqlExpr boundSrc = createVariable("left", makeRowReferenceType(physicalRecord));
-            transformCtx.associateOwn(*new BoundRow(tableExpr->queryNormalizedSelector(), boundSrc, translator.queryRecordOffsetMap(physicalRecord), no_none, NULL));
+            IHqlExpression * accessor = NULL;
+            transformCtx.associateOwn(*new BoundRow(tableExpr->queryNormalizedSelector(), boundSrc, accessor, translator.queryRecordOffsetMap(physicalRecord, (accessor != NULL)), no_none, NULL));
         }
     }
 
@@ -2147,7 +2148,7 @@ void SourceBuilder::buildGroupAggregateHashHelper(ParentExtract * extractBuilder
     instance->classctx.addQuotedLiteral("virtual IHash * queryHash() { return &hash; }");
 
     BuildCtx classctx(instance->nestedctx);
-    translator.beginNestedClass(classctx, "hash", "IHash", NULL, extractBuilder);
+    IHqlStmt * classStmt = translator.beginNestedClass(classctx, "hash", "IHash", NULL, extractBuilder);
 
     {
         MemberFunction func(translator, classctx, "virtual unsigned hash(const void * _self)");
@@ -2157,7 +2158,7 @@ void SourceBuilder::buildGroupAggregateHashHelper(ParentExtract * extractBuilder
         translator.buildReturn(func.ctx, hash);
     }
 
-    translator.endNestedClass();
+    translator.endNestedClass(classStmt);
 }
 
 void SourceBuilder::buildGroupAggregateCompareHelper(ParentExtract * extractBuilder, IHqlExpression * aggregate, HqlExprArray & recordFields, HqlExprArray & aggregateFields)
@@ -2211,7 +2212,7 @@ void SourceBuilder::buildGroupAggregateCompareHelper(ParentExtract * extractBuil
     instance->classctx.addQuotedLiteral("virtual ICompare * queryCompareRowElement() { return &compareRowElement; }");
 
     BuildCtx classctx(instance->nestedctx);
-    translator.beginNestedClass(classctx, "compareRowElement", "ICompare", NULL, extractBuilder);
+    IHqlStmt * classStmt = translator.beginNestedClass(classctx, "compareRowElement", "ICompare", NULL, extractBuilder);
 
     {
         MemberFunction func(translator, classctx, "virtual int docompare(const void * _left, const void * _right) const");
@@ -2223,7 +2224,7 @@ void SourceBuilder::buildGroupAggregateCompareHelper(ParentExtract * extractBuil
         translator.doBuildReturnCompare(func.ctx, order, no_eq, false, false);
     }
 
-    translator.endNestedClass();
+    translator.endNestedClass(classStmt);
 }
 
 

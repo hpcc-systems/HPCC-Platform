@@ -38,6 +38,7 @@ set (    SRCS
          rtlrank.cpp 
          rtlfield.cpp 
          rtlread.cpp 
+         rtlrecord.cpp
          rtltype.cpp 
          rtlxml.cpp
          
@@ -52,6 +53,7 @@ set (    SRCS
          rtlkey2.hpp
          rtlkey.hpp
          rtlread_imp.hpp
+         rtlrecord.hpp
          rtlsize.hpp
          rtltype.hpp
          rtlbcdtest.cpp 
@@ -101,6 +103,7 @@ if (NOT PLUGIN)
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlds_imp.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlfield.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlkey.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rtlrecord.hpp
   )
     install ( FILES ${iFILES} DESTINATION componentfiles/cl/include COMPONENT Runtime )
   ENDFOREACH ( iFILES )

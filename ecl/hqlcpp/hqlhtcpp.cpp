@@ -240,12 +240,13 @@ static IHqlExpression * createResultName(IHqlExpression * name)
 
 //---------------------------------------------------------------------------
 
-ColumnToOffsetMap * RecordOffsetMap::queryMapping(IHqlExpression * record, unsigned maxRecordSize)
+ColumnToOffsetMap * RecordOffsetMap::queryMapping(IHqlExpression * record, unsigned maxRecordSize, bool useAccessorClass)
 {
-    ColumnToOffsetMap * match = find(record);
+    OwnedHqlExpr key = useAccessorClass ? createAttribute(classAtom, LINK(record)) : LINK(record);
+    ColumnToOffsetMap * match = find(key);
     if (!match)
     {
-        match = new ColumnToOffsetMap(record, 1, maxRecordSize, false);
+        match = new ColumnToOffsetMap(key, record, ordinality(), 1, maxRecordSize, false, useAccessorClass);
         match->init(*this);
         addOwn(*match);
     }
@@ -2967,7 +2968,7 @@ void getMemberClassName(StringBuffer & className, const char * member)
     className.append((char)toupper(member[0])).append(member+1).append("Class");
 }
 
-void HqlCppTranslator::beginNestedClass(BuildCtx & ctx, const char * member, const char * bases, const char * memberExtra, ParentExtract * extract)
+IHqlStmt * HqlCppTranslator::beginNestedClass(BuildCtx & ctx, const char * member, const char * bases, const char * memberExtra, ParentExtract * extract)
 {
 //  ActivityInstance * activity = queryCurrentActivity(ctx);
 //  Owned<ParentExtract> nestedUse;
@@ -2983,7 +2984,8 @@ void HqlCppTranslator::beginNestedClass(BuildCtx & ctx, const char * member, con
         begin.append(" : public ").append(bases);
     end.append(" ").append(member).append(memberExtra).append(";");
 
-    ctx.addQuotedCompound(begin.str(), end.str());
+    IHqlStmt * stmt = ctx.addQuotedCompound(begin.str(), end.str());
+    stmt->setIncomplete(true);
 
     OwnedHqlExpr colocalName = createVariable("activity", makeVoidType());
     ActivityInstance * activity = queryCurrentActivity(ctx);
@@ -2994,10 +2996,12 @@ void HqlCppTranslator::beginNestedClass(BuildCtx & ctx, const char * member, con
         ctx.associateOwn(*nested);
         nested->initContext();
     }
+    return stmt;
 }
 
-void HqlCppTranslator::endNestedClass()
+void HqlCppTranslator::endNestedClass(IHqlStmt * stmt)
 {
+    stmt->setIncomplete(false);
 }
 
 void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, IHqlExpression * value)
@@ -3300,10 +3304,9 @@ void HqlCppTranslator::getRecordSize(BuildCtx & ctx, IHqlExpression * dataset, C
 
 unsigned HqlCppTranslator::getMaxRecordSize(IHqlExpression * record)
 {
-    ColumnToOffsetMap * map = queryRecordOffsetMap(record);
-    if (!map)
+    if (!record)
         return 0;
-    return map->getMaxSize();
+    return ::getMaxRecordSize(record, options.maxRecordSize);
 }
 
 unsigned HqlCppTranslator::getCsvMaxLength(IHqlExpression * csvAttr)
@@ -3325,8 +3328,7 @@ unsigned HqlCppTranslator::getCsvMaxLength(IHqlExpression * csvAttr)
 
 bool HqlCppTranslator::isFixedWidthDataset(IHqlExpression * dataset)
 {
-    IHqlExpression * record = dataset->queryRecord();
-    return queryRecordOffsetMap(record)->isFixedWidth();
+    return isFixedSizeRecord(dataset->queryRecord());
 }
 
 
@@ -3493,7 +3495,7 @@ bool HqlCppTranslator::buildMetaPrefetcherClass(BuildCtx & ctx, IHqlExpression *
         MemberFunction func(*this, prefetcher.startctx, "virtual void readAhead(IRowDeserializerSource & in)");
         OwnedHqlExpr helper = createVariable("in", makeBoolType());
 
-        ok = queryRecordOffsetMap(record)->buildReadAhead(*this, func.ctx, helper);
+        ok = queryRecordOffsetMap(record, false)->buildReadAhead(*this, func.ctx, helper);
     }
 
     if (ok)
@@ -3518,6 +3520,7 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
     */
 
     bool contextDependent = false;
+    LinkedHqlExpr extra = rowRecord;
     switch  (expr->getOperator())
     {
     case no_field:
@@ -3525,7 +3528,7 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
         {
         case type_bitfield:
             {
-                ColumnToOffsetMap * map = queryRecordOffsetMap(rowRecord);
+                ColumnToOffsetMap * map = queryRecordOffsetMap(rowRecord, false);
                 AColumnInfo * root = map->queryRootColumn();
                 CBitfieldInfo * resolved = static_cast<CBitfieldInfo *>(root->lookupColumn(expr));
                 assertex(resolved);
@@ -3554,7 +3557,7 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
     }
 
     if (contextDependent)
-        return createAttribute(rtlFieldKeyMarkerAtom, LINK(expr), LINK(rowRecord));
+        return createAttribute(rtlFieldKeyMarkerAtom, LINK(expr), extra.getClear());
     return LINK(expr);
 }
 
@@ -3563,24 +3566,17 @@ bool checkXpathIsNonScalar(const char *xpath)
     return (strpbrk(xpath, "/?*[]<>")!=NULL); //anything other than a single tag/attr name cannot name a scalar field
 }
 
-unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpression * fieldKey)
+unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord)
 {
+    OwnedHqlExpr fieldKey = getRtlFieldKey(field, rowRecord);
+
     BuildCtx declarectx(*code, declareAtom);
     HqlExprAssociation * match = declarectx.queryMatchExpr(fieldKey);
     if (match)
     {
         IHqlExpression * mapped = match->queryExpr();
-        if (instanceName)
-            mapped->queryChild(0)->toString(*instanceName);
+        mapped->queryChild(0)->toString(instanceName);
         return (unsigned)getIntValue(mapped->queryChild(1));
-    }
-
-    IHqlExpression * field = fieldKey;
-    IHqlExpression * rowRecord = NULL;
-    if (field->isAttribute())
-    {
-        field = fieldKey->queryChild(0);
-        rowRecord = fieldKey->queryChild(1);
     }
 
     StringBuffer name;
@@ -3600,6 +3596,10 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
         case type_row:
             //Backward compatibility - should revisit
             fieldType.set(fieldType->queryChildType());
+            break;
+        case type_bitfield:
+            //fieldKey contains a field with a type annotated with offsets/isLastBitfield
+            fieldType.set(fieldKey->queryType());
             break;
         }
 
@@ -3629,9 +3629,6 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
             if (checkXpathIsNonScalar(xpathName))
                 typeFlags |= RFTMhasnonscalarxpath;
         }
-
-        StringBuffer typeName;
-        typeFlags = buildRtlType(typeName, fieldType, typeFlags); //benefit to adding other flags to generated code as well?
 
         StringBuffer lowerName;
         lowerName.append(field->queryName()).toLowerCase();
@@ -3672,6 +3669,9 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
         }
 
         StringBuffer definition;
+        StringBuffer typeName;
+        typeFlags = buildRtlType(typeName, fieldType, typeFlags); //benefit to adding other flags to generated code as well?
+
         definition.append("const RtlFieldStrInfo ").append(name).append("(\"").append(lowerName).append("\",").append(xpathCppText).append(",&").append(typeName);
         if (defaultInitializer.length())
             definition.append(',').append(defaultInitializer);
@@ -3686,8 +3686,7 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
     OwnedHqlExpr nameExpr = createVariable(name.str(), makeBoolType());
     OwnedHqlExpr mapped = createAttribute(fieldAtom, LINK(nameExpr), getSizetConstant(typeFlags));
     declarectx.associateExpr(fieldKey, mapped);
-    if (instanceName)
-        instanceName->append(name);
+    instanceName.append(name);
     return typeFlags;
 }
 
@@ -3752,18 +3751,14 @@ unsigned HqlCppTranslator::expandRtlRecordFields(StringBuffer & fieldListText, I
     ForEachChild(i, record)
     {
         IHqlExpression * cur = record->queryChild(i);
-        StringBuffer next;
         unsigned childType = 0;
         switch (cur->getOperator())
         {
         case no_field:
         case no_ifblock:
-            {
-                OwnedHqlExpr fieldKey = getRtlFieldKey(cur, rowRecord);
-                childType = buildRtlField(&fieldListText, fieldKey);
-                fieldListText.append(",");
-                break;
-            }
+            childType = buildRtlField(fieldListText, cur, rowRecord);
+            fieldListText.append(",");
+            break;
         case no_record:
             childType = expandRtlRecordFields(fieldListText, cur, rowRecord);
             break;
@@ -3791,12 +3786,6 @@ unsigned HqlCppTranslator::buildRtlRecordFields(StringBuffer & instanceName, IHq
 
     instanceName.append(name);
     return fieldFlags;
-}
-
-unsigned HqlCppTranslator::getRtlFieldInfo(StringBuffer & fieldInfoName, IHqlExpression * field, IHqlExpression * rowRecord)
-{
-    OwnedHqlExpr fieldKey = getRtlFieldKey(field, rowRecord);
-    return buildRtlField(&fieldInfoName, fieldKey);
 }
 
 unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo * type, unsigned typeFlags)
@@ -3927,7 +3916,25 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             IHqlExpression * record = ::queryRecord(type);
             className.append("RtlRecordTypeInfo");
             arguments.append(",");
-            childType = buildRtlRecordFields(arguments, record, record);
+            StringBuffer fieldsInstance;
+            childType = buildRtlRecordFields(fieldsInstance, record, record);
+            arguments.append(fieldsInstance);
+
+            //The following code could be used to generate an extra list of fields with nested records expanded out,
+            //but it causes some queries to grow significantly, so not currently used.
+#if 0
+            if (!recordContainsNestedRow(record))
+            {
+                arguments.append(fieldsInstance).append(",");
+                arguments.append(fieldsInstance);
+            }
+            else
+            {
+                arguments.append(fieldsInstance).append(",");
+                childType |= buildRtlRecordFields(arguments, record, record, true);
+            }
+#endif
+
 //          fieldType |= (childType & RFTMcontainsifblock);
             length = getMinRecordSize(record);
             if (!isFixedRecordSize(record))
@@ -3951,7 +3958,10 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             arguments.append(",&");
             childType = buildRtlType(arguments, ::queryRecordType(type), 0);
             if (hasLinkCountedModifier(type))
+            {
                 fieldType |= RFTMlinkcounted;
+                fieldType &= ~RFTMunknownsize;
+            }
             break;
         }
     case type_dictionary:
@@ -3960,7 +3970,10 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             arguments.append(",&");
             childType = buildRtlType(arguments, ::queryRecordType(type), 0);
             if (hasLinkCountedModifier(type))
+            {
                 fieldType |= RFTMlinkcounted;
+                fieldType &= ~RFTMunknownsize;
+            }
             StringBuffer lookupHelperName;
             buildDictionaryHashClass(::queryRecord(type), lookupHelperName);
             arguments.append(",&").append(lookupHelperName.str());
@@ -4055,13 +4068,12 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
     BuildCtx metactx(declarectx);
 
     IHqlExpression * record = instance.queryRecord();
-    ColumnToOffsetMap * map = queryRecordOffsetMap(record);
 
     unsigned flags = MDFhasserialize;       // we always generate a serialize since 
     bool useTypeForXML = false;
     if (instance.isGrouped())
         flags |= MDFgrouped;
-    if (map)
+    if (record)
         flags |= MDFhasxml;
     if (record)
     {
@@ -4095,7 +4107,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
     {
         //Serialization classes need to be generated for all meta information - because they may be called by parent row classes
         //however, the CFixedOutputMetaData base class contains a default implementation - reducing the required code.
-        if (map && (!map->isFixedWidth() || (flags & MDFneedserializemask)))
+        if (record && (isVariableSizeRecord(record) || (flags & MDFneedserializemask)))
         {
             //Base class provides a default variable width implementation
             if (flags & MDFneedserializedisk)
@@ -4133,9 +4145,9 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
         }
 
         s.append("struct ").append(instance.metaName).append(" : public ");
-        if (!map)
+        if (!record)
             s.append("CActionOutputMetaData");
-        else if (map->isFixedWidth())
+        else if (isFixedSizeRecord(record))
             s.append("CFixedOutputMetaData");
         else
             s.append("CVariableOutputMetaData");
@@ -4144,26 +4156,21 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
         IHqlStmt * metaclass = metactx.addQuotedCompound(s, endText.str());
         metaclass->setIncomplete(true);
 
-        if (map)
+        if (record)
         {
-            if (map->isFixedWidth())
+            if (isFixedSizeRecord(record))
             {
-                unsigned fixedSize = map->getFixedRecordSize();
+                unsigned fixedSize = getMinRecordSize(record);
                 s.clear().append("inline ").append(instance.metaName).append("() : CFixedOutputMetaData(").append(fixedSize).append(") {}");
                 metactx.addQuoted(s);
             }
             else
             {
                 unsigned minSize = getMinRecordSize(record);
-                unsigned maxLength = map->getMaxSize();
+                unsigned maxLength = getMaxRecordSize(record);
                 if (maxLength < minSize)
                     reportError(queryLocation(record), ECODETEXT(HQLERR_MaximumSizeLessThanMinimum_XY), maxLength, minSize);
                     
-#ifdef _DEBUG
-                //Paranoia check to ensure the two methods agree.
-                unsigned calcMinSize = map->getTotalMinimumSize();
-                assertex(minSize == calcMinSize);
-#endif
                 //These use a CVariableOutputMetaData base class instead, and trade storage for number of virtuals
                 s.clear().append("inline ").append(instance.metaName).append("() : CVariableOutputMetaData(").append(minSize).append(") {}");
                 metactx.addQuoted(s);
@@ -4721,10 +4728,9 @@ IHqlExpression * HqlCppTranslator::convertBetweenCountAndSize(const CHqlBoundExp
         UNIMPLEMENTED;
     }
 
-    ColumnToOffsetMap * map = queryRecordOffsetMap(record);
-    if (map->isFixedWidth())
+    if (isFixedSizeRecord(record))
     {
-        unsigned fixedSize = map->getFixedRecordSize();
+        unsigned fixedSize = getMinRecordSize(record);
         if (fixedSize == 0)
             throwError(HQLERR_ZeroLengthIllegal);
         if (type->getTypeCode() == type_groupedtable)
@@ -5418,7 +5424,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
 void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHqlExpression * orderExpr, IHqlExpression * datasetLeft, IHqlExpression * datasetRight, IHqlExpression * selSeq)
 {
     BuildCtx classctx(ctx);
-    beginNestedClass(classctx, name, "ICompare");
+    IHqlStmt * classStmt = beginNestedClass(classctx, name, "ICompare");
 
     {
         MemberFunction func(*this, classctx, "virtual int docompare(const void * _left, const void * _right) const" OPTIMIZE_FUNCTION_ATTRIBUTE);
@@ -5434,7 +5440,7 @@ void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHql
             buildReturn(func.ctx, orderExpr);
     }
 
-    endNestedClass();
+    endNestedClass(classStmt);
 }
 
 
@@ -5466,7 +5472,7 @@ void HqlCppTranslator::buildCompareMember(BuildCtx & ctx, const char * name, IHq
 void HqlCppTranslator::buildCompareEqClass(BuildCtx & ctx, const char * name, IHqlExpression * orderExpr, IHqlExpression * datasetLeft, IHqlExpression * datasetRight, IHqlExpression * selSeq)
 {
     BuildCtx classctx(ctx);
-    beginNestedClass(classctx, name, "ICompareEq");
+    IHqlStmt * classStmt = beginNestedClass(classctx, name, "ICompareEq");
 
     {
         MemberFunction func(*this, classctx, "virtual bool match(const void * _left, const void * _right) const");
@@ -5482,7 +5488,7 @@ void HqlCppTranslator::buildCompareEqClass(BuildCtx & ctx, const char * name, IH
             buildReturn(func.ctx, orderExpr);
     }
 
-    endNestedClass();
+    endNestedClass(classStmt);
 }
 
 
@@ -5500,7 +5506,7 @@ void HqlCppTranslator::buildCompareEqMemberLR(BuildCtx & ctx, const char * name,
 void HqlCppTranslator::buildNaryCompareClass(BuildCtx & ctx, const char * name, IHqlExpression * expr, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid)
 {
     BuildCtx classctx(ctx);
-    beginNestedClass(classctx, name, "INaryCompareEq");
+    IHqlStmt * classStmt = beginNestedClass(classctx, name, "INaryCompareEq");
 
     {
         MemberFunction func(*this, classctx, "virtual bool match(unsigned numRows, const void * * _rows) const");
@@ -5514,7 +5520,7 @@ void HqlCppTranslator::buildNaryCompareClass(BuildCtx & ctx, const char * name, 
         buildReturn(func.ctx, expr);
     }
 
-    endNestedClass();
+    endNestedClass(classStmt);
 }
 
 
@@ -5565,7 +5571,7 @@ void HqlCppTranslator::buildHashClass(BuildCtx & ctx, const char * name, IHqlExp
     ctx.addQuoted(s);
 
     BuildCtx classctx(ctx);
-    beginNestedClass(classctx, name, "IHash");
+    IHqlStmt * classStmt = beginNestedClass(classctx, name, "IHash");
 
     {
         MemberFunction hashFunc(*this, classctx, "virtual unsigned hash(const void * _self)");
@@ -5576,14 +5582,14 @@ void HqlCppTranslator::buildHashClass(BuildCtx & ctx, const char * name, IHqlExp
         buildReturn(hashFunc.ctx, orderExpr, returnType);
     }
 
-    endNestedClass();
+    endNestedClass(classStmt);
 }
 
 
 void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHqlExpression * sortList, const DatasetReference & dataset)
 {
     BuildCtx comparectx(ctx);
-    beginNestedClass(comparectx, name, "ICompare");
+    IHqlStmt * classStmt = beginNestedClass(comparectx, name, "ICompare");
 
     {
         MemberFunction func(*this, comparectx, "virtual int docompare(const void * _left, const void * _right) const" OPTIMIZE_FUNCTION_ATTRIBUTE);
@@ -5594,7 +5600,7 @@ void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHql
         buildReturnOrder(func.ctx, sortList, dataset);
     }
 
-    endNestedClass();
+    endNestedClass(classStmt);
 }
 
 
@@ -5620,11 +5626,9 @@ void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, StringBu
         appendUniqueId(lookupHelperName.append("lu"), getConsistentUID(record));
 
         BuildCtx classctx(declarectx);
-        //I suspect all the priorities should be killed.  This is here because you can have type info constructors accessing the
-        //dictionary hash functions.
-        classctx.setNextPriority(HashFunctionPrio);
+        classctx.setNextPriority(TypeInfoPrio);
 
-        beginNestedClass(classctx, lookupHelperName, "IHThorHashLookupInfo");
+        IHqlStmt * classStmt = beginNestedClass(classctx, lookupHelperName, "IHThorHashLookupInfo");
         OwnedHqlExpr searchRecord = getDictionarySearchRecord(record);
         OwnedHqlExpr keyRecord = getDictionaryKeyRecord(record);
 
@@ -5662,7 +5666,7 @@ void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, StringBu
 
         buildCompareMemberLR(classctx, "CompareLookup", compare, source, dict, seq);
         buildCompareMember(classctx, "Compare", keyedDictList, dictRef);
-        endNestedClass();
+        endNestedClass(classStmt);
 
         if (queryOptions().spanMultipleCpp)
         {
@@ -5869,6 +5873,8 @@ bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedL
             wu()->setDebugValue("__Calculated__Complexity__", complexityText, true);
             noteFinishedTiming("compile:calculate complexity", startCycles);
         }
+
+        buildRowAccessors();
     }
 
     ::Release(outputLibrary);
@@ -7000,7 +7006,11 @@ void HqlCppTranslator::buildRecordSerializeExtract(BuildCtx & ctx, IHqlExpressio
 
 BoundRow * HqlCppTranslator::bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * bound, node_operator side, IHqlExpression * selSeq)
 {
-    BoundRow * cursor = createTableCursor(dataset, bound, side, selSeq);
+    IHqlExpression * record = dataset->queryRecord();
+    bool useRowAccessor = useRowAccessorClass(record, side == no_self);
+    BoundRow * cursor = createTableCursor(dataset, bound, useRowAccessor, side, selSeq);
+    if (useRowAccessor)
+        cursor->prepareAccessor(*this, ctx);
     ctx.associateOwn(*cursor);
     return cursor;
 }
@@ -7023,30 +7033,23 @@ BoundRow * HqlCppTranslator::rebindTableCursor(BuildCtx & ctx, IHqlExpression * 
 }
 
 
-BoundRow * HqlCppTranslator::createTableCursor(IHqlExpression * dataset, IHqlExpression * bound, node_operator side, IHqlExpression * selSeq)
+BoundRow * HqlCppTranslator::createTableCursor(IHqlExpression * dataset, IHqlExpression * bound, bool useAccessorClass, node_operator side, IHqlExpression * selSeq)
 {
-    return new BoundRow(dataset, bound, queryRecordOffsetMap(dataset->queryRecord()), side, selSeq);
+    return new BoundRow(dataset, bound, NULL, queryRecordOffsetMap(dataset->queryRecord(), useAccessorClass), side, selSeq);
 }
 
 BoundRow * HqlCppTranslator::recreateTableCursor(IHqlExpression * dataset, BoundRow * row, node_operator side, IHqlExpression * selSeq)
 {
-    return new BoundRow(row, dataset, side, selSeq);
-}
+    ColumnToOffsetMap * columnMap = queryRecordOffsetMap(row->queryRecord(), false);
+    return new BoundRow(dataset, row->queryBound(), nullptr, columnMap, side, selSeq);
 
-BoundRow * HqlCppTranslator::createTableCursor(IHqlExpression * dataset, const char * name, bool isLinkCounted, node_operator side, IHqlExpression * selSeq)
-{
-    Owned<ITypeInfo> type = makeRowReferenceType(NULL);
-    if (isLinkCounted)
-        type.setown(makeAttributeModifier(type.getClear(), getLinkCountedAttr()));
-    Owned<IHqlExpression> bound = createVariable(name, type.getClear());
-    return createTableCursor(dataset, bound, side, selSeq);
 }
 
 BoundRow * HqlCppTranslator::bindXmlTableCursor(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * bound, node_operator side, IHqlExpression * selSeq, bool translateVirtuals)
 {
     Owned<ColumnToOffsetMap> xmlMap = new XmlColumnToOffsetMap(dataset->queryRecord(), getDefaultMaxRecordSize(), translateVirtuals);
     xmlMap->init(recordMap);
-    BoundRow * cursor = new BoundRow(dataset, bound, xmlMap, side, selSeq);
+    BoundRow * cursor = new BoundRow(dataset, bound, NULL, xmlMap, side, selSeq);
     ctx.associateOwn(*cursor);
     return cursor;
 }
@@ -7062,7 +7065,7 @@ BoundRow * HqlCppTranslator::bindCsvTableCursor(BuildCtx & ctx, IHqlExpression *
 {
     Owned<ColumnToOffsetMap> csvMap = new CsvColumnToOffsetMap(dataset->queryRecord(), getDefaultMaxRecordSize(), translateVirtuals, encoding);
     csvMap->init(recordMap);
-    BoundRow * cursor = new BoundRow(dataset, bound, csvMap, side, selSeq);
+    BoundRow * cursor = new BoundRow(dataset, bound, NULL, csvMap, side, selSeq);
     ctx.associateOwn(*cursor);
     return cursor;
 }
@@ -7117,7 +7120,9 @@ BoundRow * HqlCppTranslator::bindTableCursorOrRow(BuildCtx & ctx, IHqlExpression
 
 BoundRow * HqlCppTranslator::createBoundRow(IHqlExpression * dataset, IHqlExpression * bound)
 {
-    return new BoundRow(dataset->queryBody(), bound, queryRecordOffsetMap(dataset->queryRecord()));
+    bool useAccessor = false;
+    IHqlExpression * accessor = NULL;
+    return new BoundRow(dataset->queryBody(), bound, accessor, queryRecordOffsetMap(dataset->queryRecord(), (accessor != NULL)));
 }
 
 BoundRow * HqlCppTranslator::bindSelectorAsSelf(BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * expr)
@@ -7591,8 +7596,7 @@ void HqlCppTranslator::ensureSerialized(const CHqlBoundTarget & variable, BuildC
                 else
                 {
                     IHqlExpression * record = ::queryRecord(type);
-                    ColumnToOffsetMap * map = queryRecordOffsetMap(record);
-                    length.setown(getSizetConstant(map->getMaxSize()));
+                    length.setown(getSizetConstant(getMaxRecordSize(record)));
                 }
                 break;
             }
@@ -7958,11 +7962,10 @@ void HqlCppTranslator::doBuildExprSizeof(BuildCtx & ctx, IHqlExpression * expr, 
             case type_row:
                 {
                     OwnedHqlExpr record = getSerializedForm(child->queryRecord(), diskAtom);
-                    ColumnToOffsetMap * map = queryRecordOffsetMap(record);
-                    if (map->isFixedWidth())
-                        size = map->getFixedRecordSize();
+                    if (isFixedSizeRecord(record))
+                        size = getMinRecordSize(record);
                     else
-                        size = map->getMaxSize();
+                        size = getMaxRecordSize(record);
                 }
                 break;
             case type_alien:
@@ -8077,10 +8080,9 @@ void HqlCppTranslator::doBuildExprSizeof(BuildCtx & ctx, IHqlExpression * expr, 
                 {
                     e->Release();
                     OwnedHqlExpr record = getSerializedForm(child->queryRecord(), diskAtom);
-                    ColumnToOffsetMap * map = queryRecordOffsetMap(record);
-                    if (map->isFixedWidth())
+                    if (isFixedSizeRecord(record))
                     {
-                        tgt.expr.setown(getSizetConstant(map->getFixedRecordSize()));
+                        tgt.expr.setown(getSizetConstant(getMinRecordSize(record)));
                         return;
                     }
                     throwError(HQLERR_CannotDetermineSizeVar);
@@ -9638,7 +9640,7 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
 
     BuildCtx classctx(subctx);
     StringBuffer s;
-    beginNestedClass(classctx, "csv", "ICsvParameters");
+    IHqlStmt * classStmt = beginNestedClass(classctx, "csv", "ICsvParameters");
 
     doBuildBoolFunction(classctx, "queryEBCDIC", queryAttribute(ebcdicAtom, attrs)!=NULL);
 
@@ -9733,7 +9735,7 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
 
     doBuildUnsignedFunction(classctx, "getFlags", flags.str()+1);
 
-    endNestedClass();
+    endNestedClass(classStmt);
 
     subctx.addQuotedLiteral("virtual ICsvParameters * queryCsvParameters() { return &csv; }");
 }
@@ -11635,7 +11637,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
         ctx.addQuoted(s);
 
         BuildCtx classctx(nestedctx);
-        beginNestedClass(classctx, compareName.str(), "ICompare");
+        IHqlStmt * classStmt = beginNestedClass(classctx, compareName.str(), "ICompare");
 
         {
             MemberFunction func(*this, classctx, "virtual int docompare(const void * _left, const void * _right) const" OPTIMIZE_FUNCTION_ATTRIBUTE);
@@ -11647,7 +11649,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
             buildReturnOrder(func.ctx, groupOrder, dataset);
         }
 
-        endNestedClass();
+        endNestedClass(classStmt);
     }
 }
 
@@ -11714,8 +11716,8 @@ void HqlCppTranslator::generateSerializeFunction(BuildCtx & ctx, const char * fu
     func.ctx.addQuotedLiteral("const unsigned char * src = (const unsigned char *) _src;");
 
     OwnedHqlExpr selSeq = createDummySelectorSequence();
-    BoundRow * tgtCursor = bindSelf(ctx, tgtDataset.queryDataset(), "crSelf");
-    BoundRow * srcCursor = bindTableCursor(ctx, srcDataset.queryDataset(), "src", no_left, selSeq);
+    BoundRow * tgtCursor = bindSelf(func.ctx, tgtDataset.queryDataset(), "crSelf");
+    BoundRow * srcCursor = bindTableCursor(func.ctx, srcDataset.queryDataset(), "src", no_left, selSeq);
 
     IHqlExpression * leftSelect = srcCursor->querySelector();
     IHqlExpression * selfSelect = tgtCursor->querySelector();
@@ -11817,7 +11819,7 @@ void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator 
     memberName.append("serializer").append(sideText);
 
     BuildCtx classctx(nestedctx);
-    beginNestedClass(classctx, memberName, "ISortKeySerializer");
+    IHqlStmt * classStmt = beginNestedClass(classctx, memberName, "ISortKeySerializer");
 
     DatasetReference keyActiveRef(keyInfo.keyDataset, no_activetable, NULL);
     OwnedHqlExpr keyOrder = createValueSafe(no_sortlist, makeSortListType(NULL), keyInfo.keyCompares);
@@ -11829,7 +11831,7 @@ void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator 
     buildCompareMember(classctx, "CompareKey", keyOrder, keyActiveRef);
     doCompareLeftRight(classctx, "CompareKeyRow", keyActiveRef, dataset, keyInfo.keyCompares, keyInfo.filteredSorts);
 
-    endNestedClass();
+    endNestedClass(classStmt);
 
     s.clear().append("virtual ISortKeySerializer * querySerialize").append(sideText).append("() { return &").append(memberName).append("; }");
     nestedctx.addQuoted(s);
@@ -14070,8 +14072,8 @@ void HqlCppTranslator::buildDedupSerializeFunction(BuildCtx & ctx, const char * 
     ensureRowAllocated(func.ctx, "crSelf");
     func.ctx.addQuotedLiteral("const unsigned char * src = (const unsigned char *) _src;");
 
-    BoundRow * tgtCursor = bindSelf(ctx, tgtDataset, "crSelf");
-    BoundRow * srcCursor = bindTableCursor(ctx, srcDataset, "src", no_left, selSeq);
+    BoundRow * tgtCursor = bindSelf(func.ctx, tgtDataset, "crSelf");
+    BoundRow * srcCursor = bindTableCursor(func.ctx, srcDataset, "src", no_left, selSeq);
     ForEachItemIn(idx2, srcValues)
     {
         Owned<IHqlExpression> self = tgtCursor->bindToRow(&tgtValues.item(idx2), queryActiveTableSelector());
@@ -14747,19 +14749,20 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
         getMemberClassName(className, memberName.str());
 
         ExpressionFormat format;
+        IHqlStmt * classStmt = nullptr;
         if (streamed)
         {
-            beginNestedClass(iterclassctx, memberName, "CNormalizeStreamedChildIterator");
+            classStmt = beginNestedClass(iterclassctx, memberName, "CNormalizeStreamedChildIterator");
             format = FormatStreamedDataset;
         }
         else if (outOfLine)
         {
-            beginNestedClass(iterclassctx, memberName, "CNormalizeLinkedChildIterator");
+            classStmt = beginNestedClass(iterclassctx, memberName, "CNormalizeLinkedChildIterator");
             format = FormatLinkedDataset;
         }
         else
         {
-            beginNestedClass(iterclassctx, memberName, "CNormalizeChildIterator");
+            classStmt = beginNestedClass(iterclassctx, memberName, "CNormalizeChildIterator");
             format = FormatBlockedDataset;
 
             MetaInstance childmeta(*this, childDataset->queryRecord(), isGrouped(childDataset));
@@ -14832,7 +14835,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
                 func.ctx.addQuoted(s);
         }
 
-        endNestedClass();
+        endNestedClass(classStmt);
 
         s.clear().append("INormalizeChildIterator * queryIterator() { return &").append(memberName).append("; }");
         instance->startctx.addQuoted(s);
@@ -18711,22 +18714,35 @@ void HqlCppTranslator::buildConnectOrders(BuildCtx & ctx, ABoundActivity * slave
 }
 
 
-ColumnToOffsetMap * HqlCppTranslator::queryRecordOffsetMap(IHqlExpression * record)
+bool HqlCppTranslator::useRowAccessorClass(IHqlExpression * record, bool isTargetRow)
+{
+    if (isTargetRow)
+        return false;
+    if (isFixedRecordSize(record))
+        return false;
+    if (!canCreateRtlTypeInfo(record))
+        return false;
+    return getVarSizeFieldCount(record, true) >= options.varFieldAccessorThreshold;
+}
+
+
+ColumnToOffsetMap * HqlCppTranslator::queryRecordOffsetMap(IHqlExpression * record, bool useAccessorClass)
 {
     if (record)
-        return recordMap.queryMapping(record, options.maxRecordSize);
+        return recordMap.queryMapping(record, options.maxRecordSize, useAccessorClass);
     return NULL;
 }
 
 unsigned HqlCppTranslator::getFixedRecordSize(IHqlExpression * record)
 {
-    return queryRecordOffsetMap(record)->getFixedRecordSize();
+    assertex(isFixedSizeRecord(record));
+    return getMinRecordSize(record);
 }
 
 
 bool HqlCppTranslator::isFixedRecordSize(IHqlExpression * record)
 {
-    return queryRecordOffsetMap(record)->isFixedWidth();
+    return ::isFixedSizeRecord(record);
 }
 
 void HqlCppTranslator::buildReturnRecordSize(BuildCtx & ctx, BoundRow * cursor)
@@ -18738,7 +18754,38 @@ void HqlCppTranslator::buildReturnRecordSize(BuildCtx & ctx, BoundRow * cursor)
 
 bool HqlCppTranslator::recordContainsIfBlock(IHqlExpression * record)
 {
-    return queryRecordOffsetMap(record)->queryContainsIfBlock();
+    return ::containsIfBlock(record);
+}
+
+
+void HqlCppTranslator::buildRowAccessors()
+{
+    HashIterator iter(recordMap);
+    ForEach(iter)
+    {
+        ColumnToOffsetMap * map = static_cast<ColumnToOffsetMap *>(&iter.query());
+        buildRowAccessor(map);
+    }
+
+}
+
+void HqlCppTranslator::buildRowAccessor(ColumnToOffsetMap * map)
+{
+    if (!map->usesAccessor())
+        return;
+
+    const bool isRead = true;
+    IHqlExpression * record = map->queryRecord();
+    BuildCtx declarectx(*code, declareAtom);
+    BuildCtx ctx(declarectx);
+    OwnedHqlExpr search = createAttribute(accessorAtom, LINK(record), createConstant(isRead));
+    if (ctx.queryMatchExpr(search))
+        return;
+
+    StringBuffer accessorName;
+    map->buildAccessor(accessorName, *this, ctx, NULL);
+
+    declarectx.associateExpr(search, search);
 }
 
 //-- Code to transform the expressions ready for generating source code.

@@ -36,6 +36,7 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 #ifndef CHEAP_UCHAR_DEF
 #include "unicode/utf.h"
 #endif
+#include "rtlconst.hpp"
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
@@ -357,6 +358,7 @@ interface RtlITypeInfo
 
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const = 0;
     virtual __int64 getInt(const void * ptr) const = 0;
+    virtual size32_t getMinSize() const = 0;
 };
 
 
@@ -377,6 +379,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     inline unsigned getBitfieldIntSize() const { return (length & 0xff); }
     inline unsigned getBitfieldNumBits() const { return (length >> 8) & 0xff; }
     inline unsigned getBitfieldShift() const { return (length >> 16) & 0xff; }
+    inline unsigned getType() const { return (fieldType & RFTMkind); }
 
 public:
     unsigned fieldType;
