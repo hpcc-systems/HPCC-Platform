@@ -3371,7 +3371,9 @@ void formIPList(const char* ip, StringArray& formattedIpList)
           const char* ip = sArray.item(i);
           if(ip && *ip)
           {
-              if( strchr(ip, '-') != 0 )
+              //we should only enter this section IF we encounter a true ip range, not just a hostname with a dash
+              IpAddress range;
+              if(range.ipsetrange(ip) >1 && !range.isHost())
               {
                 StringArray rangeArr, commIPPart ;
                 StringBuffer comip;
