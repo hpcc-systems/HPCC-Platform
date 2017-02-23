@@ -17120,6 +17120,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
         CHqlBoundExpr bound;
         //MORE: This shouldn't be done this way...
         OwnedHqlExpr normalized = normalizeListCasts(values);
+        if (options.spotCSE)
+            normalized.setown(spotScalarCSE(normalized, NULL, queryOptions().spotCseInIfDatasetConditions));
 
         if (normalized->getOperator() == no_alias)
             buildExpr(instance->startctx, normalized, bound);
