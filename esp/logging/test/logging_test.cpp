@@ -139,9 +139,9 @@ void sendRequest()
         Sleep(5000); //Waiting for loggingManager to start
         Owned<IEspLogEntry> entry = loggingManager->createLogEntry();
         entry->setOption(option.str());
-        entry->setEspContext(espContext);
-        entry->setUserContextTree(userContextTree);
-        entry->setUserRequestTree(userRequestTree);
+        entry->setOwnEspContext(LINK(espContext));
+        entry->setOwnUserContextTree(LINK(userContextTree));
+        entry->setOwnUserRequestTree(LINK(userRequestTree));
         entry->setUserResp(userRespXML.str());
         entry->setBackEndResp(backEndResp);
         entry->setLogDatasets(logDatasetsXML.str());
@@ -169,7 +169,7 @@ void sendRequest()
 
         Owned<IEspLogEntry> entry = loggingManager->createLogEntry();
         entry->setOption(option.str());
-        entry->setEspContext(espContext);
+        entry->setOwnEspContext(LINK(espContext));
         entry->setLogContent(logContentXML.str());
         loggingManager->updateLog(entry, status);
     }
