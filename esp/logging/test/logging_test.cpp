@@ -139,9 +139,9 @@ void sendRequest()
         Sleep(5000); //Waiting for loggingManager to start
         Owned<IEspLogEntry> entry = loggingManager->createLogEntry();
         entry->setOption(option.str());
-        entry->setEspContext(espContext);
-        entry->setUserContextTree(userContextTree);
-        entry->setUserRequestTree(userRequestTree);
+        entry->setEspContext(LINK(espContext));
+        entry->setUserContextTree(LINK(userContextTree));
+        entry->setUserRequestTree(LINK(userRequestTree));
         entry->setUserResp(userRespXML.str());
         entry->setBackEndResp(backEndResp);
         entry->setLogDatasets(logDatasetsXML.str());

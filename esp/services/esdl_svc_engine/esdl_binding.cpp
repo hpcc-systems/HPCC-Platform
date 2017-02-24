@@ -664,9 +664,9 @@ bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IPropertyTree
     {
         Owned<IEspLogEntry> entry = m_oLoggingManager->createLogEntry();
         entry->setOption(LOGGINGDBSINGLEINSERT);
-        entry->setEspContext(&espcontext);
-        entry->setUserContextTree(reqcontext);
-        entry->setUserRequestTree(request);
+        entry->setEspContext(LINK(&espcontext));
+        entry->setUserContextTree(LINK(reqcontext));
+        entry->setUserRequestTree(LINK(request));
         entry->setUserResp(finalresp);
         entry->setBackEndResp(rawresp);
         entry->setLogDatasets(logdata);
