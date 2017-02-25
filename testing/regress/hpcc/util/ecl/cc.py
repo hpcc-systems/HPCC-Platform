@@ -40,7 +40,7 @@ class ECLCC(Shell):
         except Error as err:
             logging.debug("getArchive exception:'%s'",  repr(err))
             self.makeArchiveError = str(err)
-            return repr(err)
+            return (repr(err), repr( err))
 
     def makeArchive(self, ecl):
         self.addIncludePath(ecl.dir_inc)
@@ -51,7 +51,7 @@ class ECLCC(Shell):
             os.mkdir(dirname)
         if os.path.isfile(filename):
             os.unlink(filename)
-        result = self.getArchive(ecl)
+        result, stderr = self.getArchive(ecl)
 
         if result.startswith( 'Error()'):
             retVal = False
@@ -73,6 +73,9 @@ class ECLCC(Shell):
                 ecl.diff += repr(self.makeArchiveError)
             self.makeArchiveError=''
         else:
+            logging.debug("%3d. makeArchive (stderr:'%s')", ecl.getTaskId(), stderr )
+            if 'arning' in stderr:
+                ecl.setEclccWarning(stderr)
             logging.debug("%3d. makeArchive (filename:'%s')", ecl.getTaskId(), filename )
             FILE = open(filename, "w")
             FILE.write(result)

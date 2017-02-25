@@ -58,4 +58,4 @@ class Shell:
             exception.output = err_msg
             logging.debug("exception.output:'%s'",  err_msg)
             raise Error('1001', err=str(err_msg))
-        return stdout
+        return stdout, stderr
