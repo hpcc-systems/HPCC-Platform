@@ -4563,7 +4563,6 @@ void ScopedDependentTransformer::pushChildContext(IHqlExpression * expr, IHqlExp
 {
     //NB: For this transformer it is the tables that are in scope that matter
     IHqlExpression * scope = expr->queryNormalizedSelector(false);
-    //NB: Do no call createComma because that calls createDataset which unwinds a comma list!
     bool identical = false;
     if (childScope)
     {
@@ -4572,7 +4571,10 @@ void ScopedDependentTransformer::pushChildContext(IHqlExpression * expr, IHqlExp
         {
             IHqlExpression * prev = cur->queryChild(0);
             if (prev == scope)
+            {
                 identical = true;
+                break;
+            }
             cur = cur->queryChild(1);
         }
         if (cur == scope)
@@ -4582,6 +4584,7 @@ void ScopedDependentTransformer::pushChildContext(IHqlExpression * expr, IHqlExp
     scopeMatched.append(identical);
     if (!identical)
     {
+        //NB: Do no call createComma because that calls createDataset which unwinds a comma list!
         if (childScope)
             childScope.setown(createValue(no_comma,LINK(scope), childScope.getClear()));
         else
