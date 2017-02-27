@@ -106,7 +106,7 @@ def queryWuid(jobname,  taskId):
     args.append('--server=' + gConfig.espIp)
     args.append('--username=' + gConfig.username)
     args.append('--password=' + gConfig.password)
-    res = shell.command(cmd, *defaults)(*args)
+    res, stderr = shell.command(cmd, *defaults)(*args)
     logging.debug("%3d. queryWuid(%s, cmd :'%s') result is: '%s'",  taskId,  jobname, cmd,  res)
     wuid = "Not found"
     state = 'N/A'

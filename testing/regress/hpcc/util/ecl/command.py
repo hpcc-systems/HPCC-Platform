@@ -88,8 +88,9 @@ class ECLcmd(Shell):
         results=''
         try:
             #print "runCmd:", args
-            results = self.__ECLcmd()(*args)
+            results, stderr = self.__ECLcmd()(*args)
             logging.debug("%3d. results:'%s'", eclfile.getTaskId(),  results)
+            logging.debug("%3d. stderr :'%s'", eclfile.getTaskId(),  stderr)
             data = '\n'.join(line for line in
                              results.split('\n') if line) + "\n"
             ret = data.split('\n')
