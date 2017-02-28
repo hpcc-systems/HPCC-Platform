@@ -188,7 +188,11 @@ extern thorhelper_decl ICsvToRawTransformer * createCsvRawTransformer(ICsvToRowT
 
 
 #ifndef CHEAP_UCHAR_DEF
+#ifdef _USE_ICU
 #include "unicode/utf.h"
+#else
+typedef unsigned short UChar;
+#endif
 #endif
 
 interface IXMLSelect : extends IInterface

@@ -28,7 +28,11 @@
 #ifndef U_OVERRIDE_CXX_ALLOCATION
 #define U_OVERRIDE_CXX_ALLOCATION 0 // Enabling this forces all allocation of ICU objects to ICU's heap, but is incompatible with jmemleak
 #endif //U_OVERRIDE_CXX_ALLOCATION
+#ifdef _USE_ICU
 #include "unicode/utf.h"
+#else
+typedef unsigned short UChar;
+#endif
 #endif //CHEAP_UCHAR_DEF
 
 #if !defined(ECLRTL_LOCAL)
@@ -394,6 +398,7 @@ __declspec(noreturn) ECLRTL_API void rtlFailUnexpected() __attribute__((noreturn
 __declspec(noreturn) ECLRTL_API void rtlFailOnAssert() __attribute__((noreturn));
 __declspec(noreturn) ECLRTL_API void rtlFailDivideByZero() __attribute__((noreturn));
 __declspec(noreturn) ECLRTL_API void rtlThrowOutOfMemory(int code, const char *msg) __attribute__((noreturn));
+__declspec(noreturn) ECLRTL_API void rtlThrowNoUnicode() __attribute__((noreturn));
 
 ECLRTL_API void rtlReportFieldOverflow(unsigned size, unsigned max, const char * name);
 ECLRTL_API void rtlReportRowOverflow(unsigned size, unsigned max);

@@ -60,8 +60,10 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
     )
 
-# NOTE - this should not be needed, it's the result of poor encapsulation and using CLdapSecManager directly 
-include_directories ( ${OPENLDAP_INCLUDE_DIR} )
+if (USE_OPENLDAP)
+    # NOTE - this should not be needed, it's the result of poor encapsulation and using CLdapSecManager directly
+    include_directories ( ${OPENLDAP_INCLUDE_DIR} )
+endif ()
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_SMC_EXPORTS )
 

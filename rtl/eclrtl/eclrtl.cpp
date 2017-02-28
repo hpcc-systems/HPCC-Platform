@@ -28,6 +28,7 @@
 #include "eclrtl.hpp"
 #include "rtlbcd.hpp"
 #include "eclrtl_imp.hpp"
+#ifdef _USE_ICU
 #include "unicode/uchar.h"
 #include "unicode/ucol.h"
 #include "unicode/ustring.h"
@@ -36,6 +37,7 @@
 #include "unicode/regex.h"
 #include "unicode/normlzr.h"
 #include "unicode/locid.h"
+#endif
 #include "jlog.hpp"
 #include "jmd5.hpp"
 #include "rtlqstr.ipp"
@@ -58,6 +60,10 @@ MODULE_EXIT()
 {
     random_->Release();
 }
+
+#ifndef _USE_ICU
+static inline bool u_isspace(UChar next) { return isspace((byte)next); }
+#endif
 
 //=============================================================================
 // Miscellaneous string functions...
@@ -121,6 +127,30 @@ ECLRTL_API byte * * rtlLinkRowset(byte * * rowset)
 
 // escape
 
+bool rtlGetNormalizedUnicodeLocaleName(unsigned len, char const * in, char * out)
+{
+    bool isPrimary = true;
+    bool ok = true;
+    unsigned i;
+    for(i=0; i<len; i++)
+        if(in[i] == '_')
+        {
+            out[i] = '_';
+            isPrimary = false;
+        }
+        else if(isalpha(in[i]))
+        {
+            out[i] = (isPrimary ? tolower(in[i]) : toupper(in[i]));
+        }
+        else
+        {
+            out[i] = 0;
+            ok = false;
+        }
+    return ok;
+}
+
+#ifdef _USE_ICU
 static bool stripIgnorableCharacters(size32_t & lenResult, UChar * & result, size32_t length, const UChar * in)
 {
     unsigned numStripped = 0;
@@ -237,29 +267,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 MODULE_EXIT()
 {
     delete localeMap;
-}
-
-bool rtlGetNormalizedUnicodeLocaleName(unsigned len, char const * in, char * out)
-{
-    bool isPrimary = true;
-    bool ok = true;
-    unsigned i;
-    for(i=0; i<len; i++)
-        if(in[i] == '_')
-        {
-            out[i] = '_';
-            isPrimary = false;
-        }
-        else if(isalpha(in[i]))
-        {
-            out[i] = (isPrimary ? tolower(in[i]) : toupper(in[i]));
-        }
-        else
-        {
-            out[i] = 0;
-            ok = false;
-        }
-    return ok;
 }
 
 RTLLocale * queryRTLLocale(char const * locale)
@@ -433,6 +440,7 @@ void normalizeUnicodeString(UnicodeString const & in, UnicodeString & out)
     Normalizer::compose(in, false, 0, out, err);
     assertex(U_SUCCESS(err));
 }
+#endif
 
 // padding
 
@@ -1473,6 +1481,7 @@ void rtlConcatVStr(char * * tgt, ...)
     *tgt = buffer;
 }
 
+#ifdef _USE_ICU
 void rtlConcatUnicode(unsigned & tlen, UChar * * tgt, ...)
 {
     va_list args;
@@ -1542,6 +1551,17 @@ void rtlConcatVUnicode(UChar * * tgt, ...)
     buffer[idx++] = 0x0000;
     *tgt = buffer;
 }
+#else
+void rtlConcatUnicode(unsigned & tlen, UChar * * tgt, ...)
+{
+    rtlThrowNoUnicode();
+}
+
+void rtlConcatVUnicode(UChar * * tgt, ...)
+{
+    rtlThrowNoUnicode();
+}
+#endif
 
 //List of strings with length of -1 to mark the end...
 void rtlConcatStrF(unsigned tlen, void * _tgt, int fill, ...)
@@ -1591,6 +1611,7 @@ void rtlConcatVStrF(unsigned tlen, char * tgt, ...)
 }
 
 
+#ifdef _USE_ICU
 void rtlConcatUnicodeF(unsigned tlen, UChar * tgt, ...)
 {
     va_list args;
@@ -1634,7 +1655,7 @@ void rtlConcatVUnicodeF(unsigned tlen, UChar * tgt, ...)
         tgt[idx++] = 0;
     tgt[tlen] = 0;
 }
-
+#endif
 
 //------------------------------------------------------------------------------------------------
 // The followinf concat functions are all deprecated in favour of the variable number of argument
@@ -1674,6 +1695,7 @@ void rtlConcatVStrToVStr(unsigned tlen, void * _tgt, const char * src)
     rtlVStrToVStr(tlen-tend, tgt+tend, src);
 }
 
+#ifdef _USE_ICU
 unsigned rtlConcatUnicodeToUnicode(unsigned tlen, UChar * tgt, unsigned idx, unsigned slen, UChar const * src)
 {
     UErrorCode err = U_ZERO_ERROR;
@@ -1684,6 +1706,7 @@ unsigned rtlConcatVUnicodeToUnicode(unsigned tlen, UChar * tgt, unsigned idx, UC
 {
     return rtlConcatUnicodeToUnicode(tlen, tgt, idx, rtlUnicodeStrlen(src), src);
 }
+#endif
 
 void rtlESpaceFill(unsigned tlen, char * tgt, unsigned idx)
 {
@@ -1920,8 +1943,16 @@ unsigned rtlTrimDataLen(size32_t l, const void * _t)
     return l;
 }
 
+inline size32_t rtlQuickTrimUnicode(size32_t len, UChar const * str)
+{
+    while (len && u_isspace(str[len-1]))
+        len--;
+    return len;
+}
+
 unsigned rtlTrimUnicodeStrLen(size32_t l, UChar const * t)
 {
+#ifdef _USE_ICU
     if (!l)
         return 0;
     UCharCharacterIterator iter(t, l);
@@ -1930,13 +1961,9 @@ unsigned rtlTrimUnicodeStrLen(size32_t l, UChar const * t)
             break;
     if(u_isspace(iter.current32())) return iter.getIndex(); // required as the reverse iteration above doesn't hit the first character
     return iter.getIndex() + 1;
-}
-
-inline size32_t rtlQuickTrimUnicode(size32_t len, UChar const * str)
-{
-    while (len && u_isspace(str[len-1]))
-        len--;
-    return len;
+#else
+    return rtlQuickTrimUnicode(l, t);
+#endif
 }
 
 unsigned rtlTrimVStrLen(const char * t)
@@ -1967,11 +1994,15 @@ inline unsigned rtlLeftTrimStrStart(size32_t slen, const char * src)
 
 inline unsigned rtlLeftTrimUnicodeStrStart(size32_t slen, UChar const * src)
 {
+#ifdef _USE_ICU
     UCharCharacterIterator iter(src, slen);
     for(iter.first32(); iter.hasNext(); iter.next32())
         if(!u_isspace(iter.current32()))
             break;
     return iter.getIndex();
+#else
+    return slen;
+#endif
 }
 
 inline unsigned rtlLeftTrimVStrStart(const char * src)
@@ -2020,6 +2051,7 @@ inline void rtlTrimUtf8Start(unsigned & trimLen, size32_t & trimSize, size32_t l
     trimSize = cur-start;
 }
 
+
 inline char * rtlDupSubString(const char * src, unsigned len)
 {
     char * buffer = (char *)rtlMalloc(len + 1);
@@ -2055,8 +2087,8 @@ inline void rtlCopySubString(size32_t tlen, char * tgt, unsigned slen, const cha
 
 unsigned rtlTrimUtf8StrLen(size32_t len, const char * t)
 {
-    const byte * cur = (const byte *)t;
     unsigned trimLength = 0;
+    const byte * cur = (const byte *)t;
     for (unsigned i=0; i < len; i++)
     {
         unsigned next = readUtf8Character(UTF8_MAXSIZE, cur);
@@ -2285,6 +2317,7 @@ void rtlTrimAll(unsigned & tlen, char * & tgt, unsigned slen, const char * src)
 
 void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UChar * src)
 {
+#ifdef _USE_ICU
     UnicodeString rawStr;
     UCharCharacterIterator iter(src, slen);
     for(iter.first32(); iter.hasNext(); iter.next32())
@@ -2296,6 +2329,9 @@ void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UCha
     tgt = (UChar *)rtlMalloc((tlen+1)*2);
     tgtStr.extract(0, tlen, tgt);
     tgt[tlen] = 0x0000;
+#else
+    rtlThrowNoUnicode();
+#endif
 }
 
 void rtlTrimVAll(unsigned & tlen, char * & tgt, const char * src)
@@ -2560,6 +2596,7 @@ int rtlCompareEStrEStr(unsigned l1, const char * p1, unsigned l2, const char * p
 }
 
 const static UChar nullUStr = 0;
+#ifdef _USE_ICU
 int rtlCompareUnicodeUnicode(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale)
 {
     while(l1 && u_isUWhiteSpace(p1[l1-1])) l1--;
@@ -2577,6 +2614,10 @@ int rtlCompareUnicodeUnicodeStrength(unsigned l1, UChar const * p1, unsigned l2,
     if (!p2) p2 = &nullUStr;
     return ucol_strcoll(queryRTLLocale(locale)->queryCollator(strength), p1, l1, p2, l2);
 }
+#else
+int rtlCompareUnicodeUnicode(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale) { rtlThrowNoUnicode(); }
+int rtlCompareUnicodeUnicodeStrength(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale, unsigned strength) { rtlThrowNoUnicode(); }
+#endif
 
 int rtlCompareVUnicodeVUnicode(UChar const * p1, UChar const * p2, char const * locale)
 {
@@ -2588,6 +2629,7 @@ int rtlCompareVUnicodeVUnicodeStrength(UChar const * p1, UChar const * p2, char 
     return rtlCompareUnicodeUnicodeStrength(rtlUnicodeStrlen(p1), p1, rtlUnicodeStrlen(p2), p2, locale, strength);
 }
 
+#ifdef _USE_ICU
 void rtlKeyUnicodeX(unsigned & tlen, void * & tgt, unsigned slen, const UChar * src, const char * locale)
 {
     while(slen && u_isUWhiteSpace(src[slen-1])) slen--;
@@ -2605,6 +2647,18 @@ void rtlKeyUnicodeStrengthX(unsigned & tlen, void * & tgt, unsigned slen, const 
     tgt = rtlMalloc(tlen);
     ucol_getSortKey(coll, src, slen, (unsigned char *)tgt, tlen);
 }
+#else
+void rtlKeyUnicodeX(unsigned & tlen, void * & tgt, unsigned slen, const UChar * src, const char * locale)
+{
+    rtlThrowNoUnicode();
+}
+
+void rtlKeyUnicodeStrengthX(unsigned & tlen, void * & tgt, unsigned slen, const UChar * src, const char * locale, unsigned strength)
+{
+    rtlThrowNoUnicode();
+}
+
+#endif
 
 ECLRTL_API int rtlPrefixDiffStrEx(unsigned l1, const char * p1, unsigned l2, const char * p2, unsigned origin)
 {
@@ -2636,6 +2690,7 @@ ECLRTL_API int rtlPrefixDiffStr(unsigned l1, const char * p1, unsigned l2, const
 //MORE: I'm not sure this can really be implemented....
 ECLRTL_API int rtlPrefixDiffUnicodeEx(unsigned l1, const UChar * p1, unsigned l2, const UChar * p2, char const * locale, unsigned origin)
 {
+#ifdef _USE_ICU
     while(l1 && u_isUWhiteSpace(p1[l1-1])) l1--;
     while(l2 && u_isUWhiteSpace(p2[l2-1])) l2--;
     unsigned len = l1 < l2 ? l1 : l2;
@@ -2652,6 +2707,9 @@ ECLRTL_API int rtlPrefixDiffUnicodeEx(unsigned l1, const UChar * p1, unsigned l2
     }
     if (l1 != l2)
         return (l1 < l2) ? -(int)(len+origin+1) : (int)(len+origin+1);
+#else
+    rtlThrowNoUnicode();
+#endif
     return 0;
 }
 
@@ -2674,6 +2732,7 @@ void rtlStringToUpper(size32_t l, char * t)
         *t = toupper(*t);
 }
 
+#ifdef _USE_ICU
 void rtlUnicodeToLower(size32_t l, UChar * t, char const * locale)
 {
     UChar * buff = (UChar *)rtlMalloc(l*2);
@@ -2697,6 +2756,11 @@ void rtlUnicodeToUpper(size32_t l, UChar * t, char const * locale)
     u_strToUpper(buff, l, t, l, locale, &err);
     unicodeNormalizedCopy(buff, t, l);
 }
+#else
+void rtlUnicodeToLower(size32_t l, UChar * t, char const * locale) { rtlThrowNoUnicode(); }
+void rtlUnicodeToLowerX(size32_t & lenout, UChar * & out, size32_t l, const UChar * t, char const * locale) { rtlThrowNoUnicode(); }
+void rtlUnicodeToUpper(size32_t l, UChar * t, char const * locale) { rtlThrowNoUnicode(); }
+#endif
 
 //=============================================================================
 // Miscellaneous helper functions...
@@ -2849,6 +2913,8 @@ int rtlNewSearchStringTable(unsigned count, unsigned elemlen, char * * table, un
     return -1;
 }
 
+
+#ifdef _USE_ICU
 int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, UChar * * table, unsigned width, const UChar * search, const char * locale)
 {
     UCollator * coll = queryRTLLocale(locale)->queryCollator();
@@ -2894,6 +2960,7 @@ int rtlNewSearchVUnicodeTable(unsigned count, UChar * * table, const UChar * sea
 
     return -1;
 }
+#endif
 
 //-----------------------------------------------------------------------------
 
@@ -3017,6 +3084,7 @@ void rtlStrToEStr(unsigned outlen, char *out, unsigned inlen, const char *in)
 
 //---------------------------------------------------------------------------
 
+#ifdef _USE_ICU
 void rtlCodepageToUnicode(unsigned outlen, UChar * out, unsigned inlen, char const * in, char const * codepage)
 {
     //If the input contains a character which doesn't exist in its claimed codepage, this will
@@ -3038,16 +3106,6 @@ void rtlCodepageToVUnicode(unsigned outlen, UChar * out, unsigned inlen, char co
     if (len >= outlen) len = outlen-1;
     out[len] = 0;
     vunicodeEnsureIsNormalized(outlen, out);
-}
-
-void rtlVCodepageToUnicode(unsigned outlen, UChar * out, char const * in, char const * codepage)
-{
-    rtlCodepageToUnicode(outlen, out, strlen(in), in, codepage);
-}
-
-void rtlVCodepageToVUnicode(unsigned outlen, UChar * out, char const * in, char const * codepage)
-{
-    rtlCodepageToVUnicode(outlen, out, strlen(in), in, codepage);
 }
 
 void rtlCodepageToUnicodeUnescape(unsigned outlen, UChar * out, unsigned inlen, char const * in, char const * codepage)
@@ -3103,22 +3161,6 @@ void rtlUnicodeToVCodepage(unsigned outlen, char * out, unsigned inlen, UChar co
     if (len >= outlen) len = outlen-1;
     out[len] = 0;
 }
-
-void rtlVUnicodeToCodepage(unsigned outlen, char * out, UChar const * in, char const * codepage)
-{
-    rtlUnicodeToCodepage(outlen, out, rtlUnicodeStrlen(in), in, codepage);
-}
-
-void rtlVUnicodeToData(unsigned outlen, void * out, UChar const * in)
-{
-    rtlUnicodeToData(outlen, out, rtlUnicodeStrlen(in), in);
-}
-
-void rtlVUnicodeToVCodepage(unsigned outlen, char * out, UChar const * in, char const * codepage)
-{
-    rtlUnicodeToVCodepage(outlen, out, rtlUnicodeStrlen(in), in, codepage);
-}
-
 void rtlCodepageToUnicodeX(unsigned & outlen, UChar * & out, unsigned inlen, char const * in, char const * codepage)
 {
     //If the input contains a character which doesn't exist in its claimed codepage, this will
@@ -3146,6 +3188,88 @@ UChar * rtlCodepageToVUnicodeX(unsigned inlen, char const * in, char const * cod
     return out;
 }
 
+#else
+void rtlCodepageToUnicode(unsigned outlen, UChar * out, unsigned inlen, char const * in, char const * codepage)
+{
+    if (inlen > outlen)
+        inlen = outlen;
+    unsigned i = 0;
+    for (; i < inlen; i++)
+        out[i] = in[i];
+    while (i < outlen)
+        out[i++] = 0x0020;
+}
+
+void rtlCodepageToVUnicode(unsigned outlen, UChar * out, unsigned inlen, char const * in, char const * codepage)
+{
+    rtlThrowNoUnicode();
+}
+
+void rtlCodepageToUnicodeUnescape(unsigned outlen, UChar * out, unsigned inlen, char const * in, char const * codepage)
+{
+    rtlCodepageToUnicode(outlen, out, inlen, in, codepage);
+}
+
+void rtlUnicodeToCodepage(unsigned outlen, char * out, unsigned inlen, UChar const * in, char const * codepage)
+{
+    if (inlen > outlen)
+        inlen = outlen;
+    unsigned i = 0;
+    for (; i < inlen; i++)
+        out[i] = (char)in[i];
+    while (i < outlen)
+        out[i++] = ' ';
+}
+
+void rtlUnicodeToData(unsigned outlen, void * out, unsigned inlen, UChar const * in)
+{
+    rtlUnicodeToCodepage(outlen, (char *)out, inlen, in, nullptr);
+}
+
+void rtlUnicodeToVCodepage(unsigned outlen, char * out, unsigned inlen, UChar const * in, char const * codepage)
+{
+    rtlThrowNoUnicode();
+}
+
+void rtlCodepageToUnicodeX(unsigned & outlen, UChar * & out, unsigned inlen, char const * in, char const * codepage)
+{
+    outlen = inlen;
+    out = (UChar *)rtlMalloc(outlen*2);
+    rtlCodepageToUnicode(outlen, out, inlen, in, codepage);
+}
+
+UChar * rtlCodepageToVUnicodeX(unsigned inlen, char const * in, char const * codepage)
+{
+    rtlThrowNoUnicode();
+}
+
+#endif
+
+void rtlVCodepageToUnicode(unsigned outlen, UChar * out, char const * in, char const * codepage)
+{
+    rtlCodepageToUnicode(outlen, out, strlen(in), in, codepage);
+}
+
+void rtlVCodepageToVUnicode(unsigned outlen, UChar * out, char const * in, char const * codepage)
+{
+    rtlCodepageToVUnicode(outlen, out, strlen(in), in, codepage);
+}
+
+void rtlVUnicodeToCodepage(unsigned outlen, char * out, UChar const * in, char const * codepage)
+{
+    rtlUnicodeToCodepage(outlen, out, rtlUnicodeStrlen(in), in, codepage);
+}
+
+void rtlVUnicodeToData(unsigned outlen, void * out, UChar const * in)
+{
+    rtlUnicodeToData(outlen, out, rtlUnicodeStrlen(in), in);
+}
+
+void rtlVUnicodeToVCodepage(unsigned outlen, char * out, UChar const * in, char const * codepage)
+{
+    rtlUnicodeToVCodepage(outlen, out, rtlUnicodeStrlen(in), in, codepage);
+}
+
 void rtlVCodepageToUnicodeX(unsigned & outlen, UChar * & out, char const * in, char const * codepage)
 {
     rtlCodepageToUnicodeX(outlen, out, strlen(in), in, codepage);
@@ -3156,6 +3280,7 @@ UChar * rtlVCodepageToVUnicodeX(char const * in, char const * codepage)
     return rtlCodepageToVUnicodeX(strlen(in), in, codepage);
 }
 
+#ifdef _USE_ICU
 void rtlCodepageToUnicodeXUnescape(unsigned & outlen, UChar * & out, unsigned inlen, char const * in, char const * codepage)
 {
     //If the input contains a character which doesn't exist in its claimed codepage, this will
@@ -3201,11 +3326,6 @@ void rtlUnicodeToCodepageX(unsigned & outlen, char * & out, unsigned inlen, UCha
     ucnv_fromUChars(conv, out, outlen, in, inlen, &err);
 }
 
-void rtlUnicodeToDataX(unsigned & outlen, void * & out, unsigned inlen, UChar const * in)
-{
-    rtlUnicodeToCodepageX(outlen, (char * &)out, inlen, in, ASCII_LIKE_CODEPAGE);
-}
-
 char * rtlUnicodeToVCodepageX(unsigned inlen, UChar const * in, char const * codepage)
 {
     //If the unicode contains a character which doesn't exist in the destination codepage,
@@ -3220,6 +3340,34 @@ char * rtlUnicodeToVCodepageX(unsigned inlen, UChar const * in, char const * cod
     ucnv_fromUChars(conv, out, outlen, in, inlen, &err);
     out[outlen] = 0x00;
     return out;
+}
+#else
+void rtlCodepageToUnicodeXUnescape(unsigned & outlen, UChar * & out, unsigned inlen, char const * in, char const * codepage)
+{
+    rtlCodepageToUnicodeX(outlen, out, inlen, in, codepage);
+}
+
+void rtlCodepageToUtf8XUnescape(unsigned & outlen, char * & out, unsigned inlen, char const * in, char const * codepage)
+{
+    rtlCodepageToUtf8X(outlen, out, inlen, in, codepage);
+}
+
+void rtlUnicodeToCodepageX(unsigned & outlen, char * & out, unsigned inlen, UChar const * in, char const * codepage)
+{
+    outlen = inlen;
+    out = (char *)rtlMalloc(outlen);
+    rtlUnicodeToCodepage(outlen, out, inlen, in, codepage);
+}
+
+char * rtlUnicodeToVCodepageX(unsigned inlen, UChar const * in, char const * codepage)
+{
+    rtlThrowNoUnicode();
+}
+#endif
+
+void rtlUnicodeToDataX(unsigned & outlen, void * & out, unsigned inlen, UChar const * in)
+{
+    rtlUnicodeToCodepageX(outlen, (char * &)out, inlen, in, ASCII_LIKE_CODEPAGE);
 }
 
 void rtlVUnicodeToCodepageX(unsigned & outlen, char * & out, UChar const * in, char const * codepage)
@@ -3252,6 +3400,7 @@ void rtlUnicodeToStrX(unsigned & outlen, char * & out, unsigned inlen, UChar con
     rtlUnicodeToCodepageX(outlen, out, inlen, in, ASCII_LIKE_CODEPAGE);
 }
 
+#ifdef _USE_ICU
 void rtlUnicodeToEscapedStrX(unsigned & outlen, char * & out, unsigned inlen, UChar const * in)
 {
     StringBuffer outbuff;
@@ -3309,6 +3458,38 @@ int rtlSingleUtf8ToCodepage(char * out, unsigned inlen, char const * in, char co
         return -1;
     return static_cast<int>(trailbytes); //cast okay as is certainly 0--3
 }
+
+#else
+void rtlUnicodeToEscapedStrX(unsigned & outlen, char * & out, unsigned inlen, UChar const * in)
+{
+    return rtlUnicodeToStrX(outlen, out, inlen, in);
+}
+
+bool rtlCodepageToCodepage(unsigned outlen, char * out, unsigned inlen, char const * in, char const * outcodepage, char const * incodepage)
+{
+    if (inlen > outlen)
+        inlen = outlen;
+    memcpy(out, in, inlen);
+    if (inlen < outlen)
+        memset(out+inlen, ' ', outlen-inlen);
+    return true;
+}
+
+bool rtlCodepageToCodepageX(unsigned & outlen, char * & out, unsigned maxoutlen, unsigned inlen, char const * in, char const * outcodepage, char const * incodepage)
+{
+    if (inlen > maxoutlen)
+        inlen = maxoutlen;
+    outlen = inlen;
+    out = (char *)rtlMalloc(inlen);
+    return rtlCodepageToCodepage(outlen, out, inlen, in, outcodepage, incodepage);
+}
+
+int rtlSingleUtf8ToCodepage(char * out, unsigned inlen, char const * in, char const * outcodepage)
+{
+    rtlThrowNoUnicode();
+}
+
+#endif
 
 //---------------------------------------------------------------------------
 
@@ -3416,8 +3597,10 @@ hash64_t rtlHash64VStr(const char *str, hash64_t hval)
     return hval;
 }
 
+
 hash64_t rtlHash64Unicode(unsigned length, UChar const * k, hash64_t hval)
 {
+#ifdef _USE_ICU
     unsigned trimLength = rtlTrimUnicodeStrLen(length, k);
     for (unsigned i=0; i < trimLength; i++)
     {
@@ -3446,6 +3629,9 @@ hash64_t rtlHash64Unicode(unsigned length, UChar const * k, hash64_t hval)
             }
         }
     }
+#else
+    rtlThrowNoUnicode();
+#endif
     return hval;
 }
 
@@ -3510,6 +3696,7 @@ unsigned rtlHash32VStr(const char *str, unsigned hval)
 
 unsigned rtlHash32Unicode(unsigned length, UChar const * k, unsigned hval)
 {
+#ifdef _USE_ICU
     unsigned trimLength = rtlTrimUnicodeStrLen(length, k);
     for (unsigned i=0; i < trimLength; i++)
     {
@@ -3538,6 +3725,9 @@ unsigned rtlHash32Unicode(unsigned length, UChar const * k, unsigned hval)
             }
         }
     }
+#else
+    rtlThrowNoUnicode();
+#endif
     return hval;
 }
 
@@ -3626,6 +3816,7 @@ unsigned rtlHashString( unsigned length, const char *_k, unsigned initval)
 
 unsigned rtlHashUnicode(unsigned length, UChar const * k, unsigned initval)
 {
+#ifdef _USE_ICU
     unsigned trimLength = rtlTrimUnicodeStrLen(length, k);
     //Because of the implementation of HASH we need to strip ignoreable code points instead of skipping them
     size32_t tempLength;
@@ -3634,6 +3825,9 @@ unsigned rtlHashUnicode(unsigned length, UChar const * k, unsigned initval)
         return rtlHashData(tempLength*2, temp.getustr(), initval);
 
     return rtlHashData(trimLength*sizeof(UChar), k, initval);
+#else
+    rtlThrowNoUnicode();
+#endif
 }
 
 unsigned rtlHashVStr(const char * k, unsigned initval)
@@ -3878,6 +4072,11 @@ void rtlThrowOutOfMemory(int code, const char *msg)
 void rtlReportRowOverflow(unsigned size, unsigned max)
 {
     throw MakeStringException(MSGAUD_user, 1000, "Row size %u exceeds the maximum size specified(%u)", size, max);
+}
+
+void rtlThrowNoUnicode()
+{
+    throw MakeStringException(99, "System was built without Unicode support");
 }
 
 void rtlReportFieldOverflow(unsigned size, unsigned max, const char * name)
@@ -4265,6 +4464,36 @@ double rtlCreateRealNull()
 }
 
 
+
+unsigned rtlUtf8Size(const void * data)
+{
+    return readUtf8Size(data);
+}
+
+unsigned rtlUtf8Size(unsigned len, const void * _data)
+{
+    const byte * data = (const byte *)_data;
+    size32_t offset = 0;
+    for (unsigned i=0; i< len; i++)
+        offset += readUtf8Size(data+offset);
+    return offset;
+}
+
+unsigned rtlUtf8Length(unsigned size, const void * _data)
+{
+    const byte * data = (const byte *)_data;
+    size32_t length = 0;
+    for (unsigned offset=0; offset < size; offset += readUtf8Size(data+offset))
+        length++;
+    return length;
+}
+
+unsigned rtlUtf8Char(const void * data)
+{
+    return readUtf8Char(data);
+}
+
+
 void rtlUnicodeToUnicode(size32_t outlen, UChar * out, size32_t inlen, UChar const *in)
 {
     if(inlen>outlen) inlen = outlen;
@@ -4324,40 +4553,48 @@ void rtlDecPushUnicode(size32_t len, UChar const * data)
     rtlFree(buff);
 }
 
+void rtlUtf8ToUtf8(size32_t outlen, char * out, size32_t inlen, const char *in)
+{
+    //Packs as many characaters as it can into the target, but don't include any half characters
+    size32_t offset = 0;
+    size32_t outsize = outlen*UTF8_MAXSIZE;
+    for (unsigned i=0; i< inlen; i++)
+    {
+        unsigned nextSize = readUtf8Size(in+offset);
+        if (offset + nextSize > outsize)
+            break;
+        offset += nextSize;
+    }
+    memcpy(out, in, offset);
+    if (offset != outsize)
+        memset(out+offset, ' ', outsize-offset);
+}
+
+void rtlUtf8ToUtf8X(size32_t & outlen, char * & out, size32_t inlen, const char *in)
+{
+    unsigned insize = rtlUtf8Size(inlen, in);
+    char * buffer = (char *)rtlMalloc(insize);
+    memcpy(buffer, in, insize);
+    outlen = inlen;
+    out = buffer;
+}
+
+#ifdef _USE_ICU
 unsigned rtlUnicodeStrlen(UChar const * str)
 {
     return u_strlen(str);
 }
+#else
+unsigned rtlUnicodeStrlen(UChar const * str)
+{
+    unsigned len = 0;
+    while (*str++)
+        len++;
+    return len;
+}
+#endif
 
 //---------------------------------------------------------------------------
-
-unsigned rtlUtf8Size(const void * data)
-{
-    return readUtf8Size(data);
-}
-
-unsigned rtlUtf8Size(unsigned len, const void * _data)
-{
-    const byte * data = (const byte *)_data;
-    size32_t offset = 0;
-    for (unsigned i=0; i< len; i++)
-        offset += readUtf8Size(data+offset);
-    return offset;
-}
-
-unsigned rtlUtf8Length(unsigned size, const void * _data)
-{
-    const byte * data = (const byte *)_data;
-    size32_t length = 0;
-    for (unsigned offset=0; offset < size; offset += readUtf8Size(data+offset))
-        length++;
-    return length;
-}
-
-unsigned rtlUtf8Char(const void * data)
-{
-    return readUtf8Char(data);
-}
 
 void rtlUtf8ToData(size32_t outlen, void * out, size32_t inlen, const char *in)
 {
@@ -4418,32 +4655,6 @@ void rtlStrToUtf8X(size32_t & outlen, char * & out, size32_t inlen, const char *
     outlen = rtlUtf8Length(outsize, out);
 }
 
-void rtlUtf8ToUtf8(size32_t outlen, char * out, size32_t inlen, const char *in)
-{
-    //Packs as many characaters as it can into the target, but don't include any half characters
-    size32_t offset = 0;
-    size32_t outsize = outlen*UTF8_MAXSIZE;
-    for (unsigned i=0; i< inlen; i++)
-    {
-        unsigned nextSize = readUtf8Size(in+offset);
-        if (offset + nextSize > outsize)
-            break;
-        offset += nextSize;
-    }
-    memcpy(out, in, offset);
-    if (offset != outsize)
-        memset(out+offset, ' ', outsize-offset);
-}
-
-void rtlUtf8ToUtf8X(size32_t & outlen, char * & out, size32_t inlen, const char *in)
-{
-    unsigned insize = rtlUtf8Size(inlen, in);
-    char * buffer = (char *)rtlMalloc(insize);
-    memcpy(buffer, in, insize);
-    outlen = inlen;
-    out = buffer;
-}
-
 static int rtlCompareUtf8Utf8ViaUnicode(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)
 {
     rtlDataAttr uleft(llen*sizeof(UChar));
@@ -4453,6 +4664,7 @@ static int rtlCompareUtf8Utf8ViaUnicode(size32_t llen, const char * left, size32
     return rtlCompareUnicodeUnicode(llen, uleft.getustr(), rlen, uright.getustr(), locale);
 }
 
+#ifdef _USE_ICU
 int rtlCompareUtf8Utf8(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)
 {
     //MORE: Do a simple comparison as long as there are no non->0x80 characters around
@@ -4494,6 +4706,16 @@ int rtlCompareUtf8Utf8Strength(size32_t llen, const char * left, size32_t rlen, 
     rtlUtf8ToUnicode(rlen, uright.getustr(), rlen, right);
     return rtlCompareUnicodeUnicodeStrength(llen, uleft.getustr(), rlen, uright.getustr(), locale, strength);
 }
+#else
+int rtlCompareUtf8Utf8(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)
+{
+    return rtlCompareStrStr(rtlUtf8Size(llen, left), left, rtlUtf8Size(rlen, right), right);
+}
+int rtlCompareUtf8Utf8Strength(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale, unsigned strength)
+{
+    return rtlCompareUtf8Utf8(llen, left, rlen, right, locale);
+}
+#endif
 
 void rtlDecPushUtf8(size32_t len, const char * data)
 {
@@ -4625,6 +4847,7 @@ ECLRTL_API void rtlUtf8ToLower(size32_t l, char * t, char const * locale)
     }
 }
 
+#ifdef _USE_ICU
 ECLRTL_API void rtlConcatUtf8(unsigned & tlen, char * * tgt, ...)
 {
     //Going to have to go via unicode because of normalization.  However, it might be worth optimizing the case where no special characters are present
@@ -4697,6 +4920,11 @@ ECLRTL_API void rtlUtf8SpaceFill(unsigned tlen, char * tgt, unsigned offset)
     //no special characters=>easy route.
     memset(tgt+offset, ' ', tlen*UTF8_MAXSIZE-offset);
 }
+#else
+
+ECLRTL_API void rtlConcatUtf8(unsigned & tlen, char * * tgt, ...) { rtlThrowNoUnicode(); }
+
+#endif
 
 ECLRTL_API unsigned rtlHash32Utf8(unsigned length, const char * k, unsigned initval)
 {
@@ -4935,6 +5163,7 @@ ECLRTL_API size32_t rtlCountToSize(unsigned count, const void * data, IRecordSiz
 
 //---------------------------------------------------------------------------
 
+#ifdef _USE_ICU
 class rtlCodepageConverter
 {
 public:
@@ -5015,6 +5244,26 @@ unsigned rtlCodepageConvert(void * converter, unsigned targetLength, char * targ
 {
     return ((rtlCodepageConverter *)converter)->convert(targetLength, target, sourceLength, source, failed);
 }
+#else
+void * rtlOpenCodepageConverter(char const * sourceName, char const * targetName, bool & failed)
+{
+    rtlThrowNoUnicode();
+}
+
+void rtlCloseCodepageConverter(void * converter)
+{
+}
+
+void rtlCodepageConvertX(void * converter, unsigned & targetLength, char * & target, unsigned sourceLength, char const * source, bool & failed, bool preflight)
+{
+}
+
+unsigned rtlCodepageConvert(void * converter, unsigned targetLength, char * target, unsigned sourceLength, char const * source, bool & failed)
+{
+    return 0;
+}
+
+#endif
 
 //---------------------------------------------------------------------------
 

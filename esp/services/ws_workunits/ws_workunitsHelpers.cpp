@@ -29,7 +29,10 @@
 #include "dllserver.hpp"
 #include "wujobq.hpp"
 #include "hqlexpr.hpp"
+
+#ifndef _NO_LDAP
 #include "ldapsecurity.ipp"
+#endif
 
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"

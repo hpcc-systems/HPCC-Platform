@@ -18,7 +18,11 @@
 #ifndef __THORRALGO_IPP_
 #define __THORRALGO_IPP_
 
+#ifdef _USE_ICU
 #include "unicode/utf.h"
+#else
+typedef unsigned short UChar;
+#endif
 #include "thorparse.ipp"
 #include "thorrparse.hpp"
 #include "eclhelper.hpp"

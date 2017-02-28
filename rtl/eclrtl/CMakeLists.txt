@@ -63,7 +63,6 @@ include_directories (
          ./../../system/jlib 
          ./../../roxie/roxiemem
          ./../../testing/unittests
-         ${ICU_INCLUDE_DIR}
          ${BOOST_REGEX_INCLUDE_DIR}
     )
 
@@ -83,11 +82,21 @@ endif ()
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
 target_link_libraries ( eclrtl 
       ${BOOST_REGEX_LIBRARIES}
-      ${ICU_LIBRARIES}
       jlib
       nbcd
       roxiemem
     )
+
+if (USE_ICU)
+    include_directories (
+         ${ICU_INCLUDE_DIR}
+        )
+    target_link_libraries ( eclrtl
+          ${ICU_LIBRARIES}
+        )
+endif ()
+
+
 
 if (NOT PLUGIN)
   install ( TARGETS eclrtl RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
