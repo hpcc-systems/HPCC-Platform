@@ -1437,9 +1437,10 @@ bool CThorSpillableRowArray::_flush(bool force)
     }
 }
 
-bool CThorSpillableRowArray::shrink() // NB: if read active should be protected inside a CThorArrayLockBlock
+bool CThorSpillableRowArray::shrink()
 {
     // NB: Should only be called from writer thread
+    CThorArrayLockBlock block(*this);
     _flush(true);
     rowidx_t prevMaxRows = maxRows;
     shrink(numRows);
