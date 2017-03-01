@@ -22,8 +22,6 @@
 
 #include "hqltrans.ipp"
 
-//#define NEW_CSE_PROCESSING
-
 //---------------------------------------------------------------------------
 
 class CseSpotterInfo : public NewTransformInfo
@@ -95,46 +93,156 @@ public:
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
 };
 
-#ifdef NEW_CSE_PROCESSING
+
+/*
+ * This class is used to track the information for a single IHqlExpression - its parent expressions and parent alises.
+ * This is then used to work out the "best" place in the expression graph to evaluate the aliases.
+ * It can be seen as converts a declarative lazy-evaluated graph to an imperative graph - with nodes to force aliases
+ * to be evaluated.
+ */
 class CseScopeInfo : public NewTransformInfo
 {
 public:
     CseScopeInfo(IHqlExpression * expr) : NewTransformInfo(expr) 
     { 
-        firstParent = NULL; 
-        commonLocation = NULL; 
-        seq = 0; 
-        hasSharedParent = false;
-        calcedCommonLocation = false;
-        isUnconditional = false;
     }
 
-    void addParent(IHqlExpression * nextParent)
+    void addParent(CseScopeInfo * nextParent)
     {
+        parents.append(nextParent);
+//REVISIT: Consider removing duplicate parents with the following code - but may have implications for processing conditionals
 //      if (firstParent)
 //      {
 //          if (nextParent)
 //          {
 //              if ((nextParent != firstParent) && !parents.contains(nextParent))
-                    parents.append(nextParent);
+//                  parents.append(nextParent);
 //          }
 //          else
 //              firstParent = NULL;
 //      }
     }
 
-    HqlExprArray aliasesToDefine;
-    // use a pointer for the first match to avoid reallocation for unshared items
-    IHqlExpression * firstParent;
-    CseScopeInfo * commonLocation;
-    PointerArrayOf<IHqlExpression> parents;
-    unsigned seq;
-    bool hasSharedParent;
-    bool calcedCommonLocation;
-    bool isUnconditional;
+    void addChildAlias(CseScopeInfo * alias)
+    {
+        if (!childAliases.contains(*alias))
+            childAliases.append(*alias);
+    }
+
+    void inheritAliases(CseScopeInfo * alias)
+    {
+        if (!alias || (alias == inheritedAliases))
+            return;
+        if (inheritedAliases)
+        {
+            //REVISIT: The following call may not be needed if the order of the aliases isn't significant.
+            //Check later if it reduces the processing.
+            expandInheritedAliases();
+            alias->cloneAliases(childAliases);
+        }
+        else
+            inheritedAliases = alias;
+    }
+
+    void addParentAlias(CseScopeInfo * alias)
+    {
+        if (!parentAliases.contains(*alias))
+            parentAliases.append(*alias);
+    }
+
+    void cloneAliases(ICopyArrayOf<CseScopeInfo> & target) const;
+    void connectChildAliases(CseScopeInfo * parent);
+    void connectChildAliases() { connectChildAliases(this); }
+    void expandInheritedAliases();
+    CseScopeInfo * queryScopeLocation();
+
+    bool hasMultipleParents()
+    {
+        ensureCalculated();
+        return (commonNode != this);
+    }
+
+    //What should I take as my parent to walk up the expressions - either my direct parent, or my common ancestor
+    CseScopeInfo * queryCommonNode()
+    {
+        ensureCalculated();
+        return commonNode;
+    }
+
+    CseScopeInfo * queryCommonParent()
+    {
+        ensureCalculated();
+        if (!commonNode || commonNode != this)
+            return commonNode;
+        return firstParent;
+    }
+
+    CseScopeInfo * queryEvalLocation()
+    {
+        ensureCalculated();
+        return evalLocation;
+    }
+
+    CseScopeInfo * queryAlias()
+    {
+        if (isAlias)
+            return this;
+        CseScopeInfo * parent = queryCommonParent();
+        if (!parent)
+            return nullptr;
+        return parent->queryAlias();
+    }
+
+    bool queryAliasMoved()
+    {
+        CseScopeInfo * alias = queryAlias();
+        return alias && alias->hasMoved();
+    }
+
+    CseScopeInfo * queryValidPath();
+
+    bool hasMoved()
+    {
+        ensureCalculated();
+        return moved;
+    }
+
+private:
+    inline void ensureCalculated() __attribute__((always_inline))
+    {
+        if (!calcedCommonLocation)
+            calcCommonLocation();
+    }
+    void calcCommonLocation();
+
+public:
+    HqlExprArray aliasesToDefine;            // Which aliases need to be evaluated when this expression is evaluated
+    CseScopeInfo * firstParent = nullptr;    // use a pointer for the first match to avoid reallocation for unshared items
+    PointerArrayOf<CseScopeInfo> parents;    // list of all parent expressions - other than firstParent
+    ICopyArrayOf<CseScopeInfo> childAliases; // List of child aliases - interpret in conjunction with inheritedAliases
+    CseScopeInfo * inheritedAliases = nullptr;// Which expression aliases should be inherited from - saves appending to childAliases for common case.
+    ICopyArrayOf<CseScopeInfo> parentAliases;// List of all aliases which this alias is used by.  (Not set for non-aliases)
+    unsigned seq = 0;                        // A unique sequence number used for tracing and finding a common parent
+    unsigned minDepth = UINT_MAX;            // REVISIT: Not sure this actually works!  Currently unused.  May need a shortest path pointer instead.
+    bool isUnconditional = false;            // Is this expression unconditional = not currently used.
+    bool isAlias = false;                    // Is this an alias?
+
+private:
+    //The following are calculated after walking the graph
+    bool calcedCommonLocation = false;       // Has the derived location information been calculated for this node?
+    bool moved = false;                      // Should this expression be evaluated in a different location in the graph?
+    CseScopeInfo * commonNode = nullptr;     // Either self, or with multiple parents the node that contains all instances of self
+    CseScopeInfo * evalLocation = nullptr;   // Where should this alias logically be evaluated
 };
 
 
+/*
+ * This class introduces no_alias_scope nodes into the expression graph to indicate where cses (no_alias) should be evaluated.
+ * It is complicated by
+ * - multiple uses of the same expression.
+ * - Some shared nodes not being able to have no_alias_scope added around them (e.g, no_mapto)
+ * - Dependencies between aliases meaning if one alias moves any aliases it relies on may also need to.
+ */
 class CseScopeTransformer : public NewHqlTransformer
 {
 public:
@@ -147,70 +255,15 @@ public:
 protected:
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
 
-    CseScopeInfo * calcCommonLocation(CseScopeInfo * extra);
-    IHqlExpression * findAliasLocation(CseScopeInfo * extra);
-    CseScopeInfo * findCommonPath(CseScopeInfo * left, CseScopeInfo * right);
-    CseScopeInfo * selectParent(CseScopeInfo * info);
-
-    inline CseScopeInfo * queryExtra(IHqlExpression * expr) { return (CseScopeInfo*)NewHqlTransformer::queryTransformExtra(expr); }
+    inline CseScopeInfo * queryBodyExtra(IHqlExpression * expr) { return (CseScopeInfo*)NewHqlTransformer::queryTransformExtra(expr->queryBody()); }
 
 protected:
-    CIArrayOf<CseScopeInfo> allCSEs;
-    IHqlExpression * activeParent;
-    unsigned seq;
-    unsigned conditionDepth;
+    IArrayOf<CseScopeInfo> allCSEs;             // all aliases encountered - aliases are never depenedent on a later item in the list
+    CseScopeInfo * activeParent = nullptr;      // current active parent - used when analysing the graph
+    unsigned seq = 0;                           // current sequence number
+    unsigned conditionDepth = 0;                // used to track whether the current expression is conditional
+    unsigned depth = 0;                         // how deep.  REVISIT - currently flawed
 };
-#else
-//NB: path isn't linked for efficiency.
-typedef ICopyArrayOf<IHqlExpression> PathArray;
-
-class CSEentry : public CInterface
-{
-public:
-    CSEentry(IHqlExpression * _value, PathArray & _path);
-
-    void findCommonPath(PathArray & otherPath);
-
-protected:
-    void ensurePathValid();
-
-public:
-    HqlExprAttr         value;
-    PathArray           path;
-    CIArrayOf<CSEentry> dependsOn;
-};
-
-    
-class CseScopeInfo : public NewTransformInfo
-{
-public:
-    CseScopeInfo(IHqlExpression * expr) : NewTransformInfo(expr) { }
-
-    Owned<CSEentry>     cseUse;
-    CIArrayOf<CSEentry> cseDefine;
-};
-
-
-class CseScopeTransformer : public NewHqlTransformer
-{
-public:
-    CseScopeTransformer();
-
-    virtual void analyseExpr(IHqlExpression * expr);
-            bool attachCSEs(IHqlExpression * root);
-    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
-
-protected:
-    virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
-
-    inline CseScopeInfo * queryExtra(IHqlExpression * expr) { return (CseScopeInfo*)NewHqlTransformer::queryTransformExtra(expr); }
-
-protected:
-    CIArrayOf<CSEentry> allCSEs;
-    PathArray path;
-    CIArrayOf<CSEentry> activeCSE;
-};
-#endif
 
 
 IHqlExpression * spotScalarCSE(IHqlExpression * expr, IHqlExpression * limit, bool spotCseInIfDatasetConditions);

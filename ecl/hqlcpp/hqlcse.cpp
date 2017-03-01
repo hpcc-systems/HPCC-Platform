@@ -32,6 +32,7 @@
 
 #ifdef _DEBUG
 //#define TRACE_CSE
+//#define TRACE_CSE_SCOPE
 #endif
 
 //The following allows x != y and x == y to be commoned up.  It works, but currently disabled
@@ -39,6 +40,7 @@
 //work because the alias will always be evaluated.  (e.g., salt1.xhql)
 //Really aliases need to be functional and executed on demand or something similar.
 //#define OPTIMIZE_INVERSE
+
 
 //---------------------------------------------------------------------------
 
@@ -696,7 +698,6 @@ IHqlExpression * ConjunctionTransformer::createTransformed(IHqlExpression * expr
 
 //---------------------------------------------------------------------------
 
-#ifdef NEW_CSE_PROCESSING
 inline bool canInsertCodeAlias(IHqlExpression * expr)
 {
     switch (expr->getOperator())
@@ -717,13 +718,251 @@ inline bool canInsertCodeAlias(IHqlExpression * expr)
 }
 
 
-static HqlTransformerInfo cseScopeTransformerInfo("CseScopeTransformer");
-CseScopeTransformer::CseScopeTransformer() 
-: NewHqlTransformer(cseScopeTransformerInfo)
+//Which expression node contains all references to left and right?
+CseScopeInfo * findCommonPath(CseScopeInfo * left, CseScopeInfo * right)
 {
-    activeParent = NULL;
-    seq = 0;
-    conditionDepth = 0;
+    for (;;)
+    {
+        if (!left || !right)
+            return NULL;
+        if (left == right)
+            return left;
+
+        //By using the sequence number we originally traversed the tree, if we always selected the higher sequence we can guarantee that we
+        //will converge on a common node if there is one (since seq of a parent is always less than all its children)
+        if (left->seq > right->seq)
+            left = left->queryCommonParent();
+        else
+            right = right->queryCommonParent();
+    }
+}
+
+void CseScopeInfo::calcCommonLocation()
+{
+    assertex(!calcedCommonLocation);
+
+    CseScopeInfo * common = this;
+    CseScopeInfo * thisLocation = this;
+    CseScopeInfo * parent = nullptr;
+    bool singleParent = true; // Does this specific node only have a single parent node?
+    moved = false;
+    if (firstParent)
+    {
+        CseScopeInfo *firstParentExtra = firstParent;
+        parent = firstParentExtra;
+        CseScopeInfo * parentPath = parent ? parent->queryValidPath() : nullptr;
+        moved = firstParent->hasMoved();
+        ForEachItemIn(i, parents)
+        {
+            CseScopeInfo * parentExtra = parents.item(i);
+            //REVISIT: Think about IF() conditions.... - otherwise duplicates could be removed.
+            if (parentExtra != firstParentExtra)
+            {
+                singleParent = false;
+                CseScopeInfo * newParent = findCommonPath(parent, parentExtra);
+
+                if (isAlias)
+                {
+                    //If the common parent is the same as the firstParent then don't treat it as being moved
+                    if (newParent != parent)
+                    {
+                        // If parent nodes are no_mapto or similar, they wouldn't be treated as different
+                        if (parent->queryValidPath() != newParent->queryValidPath())
+                        {
+                            //The common parent is definitely different..
+                            moved = true;
+                        }
+                    }
+                }
+                else
+                    moved = true;
+
+                parent = newParent;
+                if (!parent)
+                    break;
+            }
+        }
+
+        if (!singleParent)
+            common = parent;
+
+        if (parent)
+        {
+            if (isAlias)
+            {
+                //If there are multiple paths to this node, but the common nodes do not create aliases (e.g., no_mapto)
+                //then this needs to be evaluated on that nodes commonParent's location.
+                CseScopeInfo * parentLocation = parent->queryEvalLocation();
+                if (moved)
+                    thisLocation = parentLocation;
+
+                //If the path to the parent has changed, then the path to this alias has changed.
+                if (!parentLocation || parent->hasMoved())
+                {
+                    thisLocation = parentLocation;
+                    moved = true;
+                }
+
+                //If the path to the calculated parent doesn't match the path to the first parent, then this alias will
+                //need to be evaluated in the parent's location
+                if ((parent != firstParentExtra) &&
+                    (parent->queryValidPath() != firstParentExtra->queryValidPath()))
+                {
+                    thisLocation = parentLocation;;
+                    moved = true;
+                }
+
+                //If any parent alias has moved (so it will be evaluated earlier), then the insertion point for this alias
+                //will be the restricted to the insertion point for the parent alias - to ensure it is evaluated first.
+                ForEachItemIn(i, parentAliases)
+                {
+                    CseScopeInfo & alias = parentAliases.item(i);
+                    if (alias.hasMoved())
+                    {
+                        CseScopeInfo * aliasLocation = alias.queryEvalLocation();
+                        CseScopeInfo * newLocation;
+                        //Need to find the common path between the parent and the aliases
+                        if (thisLocation == this)
+                            newLocation = findCommonPath(parent, aliasLocation);
+                        else
+                            newLocation = findCommonPath(thisLocation, aliasLocation);
+
+                        //If the shared location is different from the parent, or if the parent is higher up the graph
+                        //than the alias (e.g. if it was already the root)
+                        if (newLocation != parent)
+//REVISIT: The following also improved the generated code
+                        //if ((newLocation != parent) || parent->minDepth < alias.minDepth)
+//REVISIT: This improved code for some queries, but isn't really correct!
+//                      if (newLocation != parent || parent->seq < alias.seq)
+                        {
+                            moved = true;
+
+                            if (newLocation)
+                                thisLocation=newLocation->queryValidPath();
+                            else
+                                thisLocation=newLocation;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (parent->hasMoved())
+                {
+                    common = parent->queryCommonNode();
+                    moved = true;
+                }
+
+                if (singleParent && !parent->hasMoved())
+                {
+                    thisLocation = this;
+                }
+                else
+                {
+                    thisLocation = parent->queryEvalLocation();
+                }
+            }
+        }
+        else
+        {
+            //Multiple paths with no common parent
+            common = nullptr;
+            thisLocation = nullptr;
+            moved = true;
+        }
+    }
+
+    calcedCommonLocation = true;
+    commonNode = common;
+    evalLocation = thisLocation;
+
+#ifdef TRACE_CSE_SCOPE
+    StringBuffer parentText, aliasText;
+    if (firstParent)
+    {
+        parentText.append(firstParent->seq);
+        ForEachItemIn(i1, parents)
+            parentText.append(",").append(parents.item(i1)->seq);
+    }
+    ForEachItemIn(i2, parentAliases)
+    {
+        if (i2)
+            aliasText.append(",");
+        aliasText.append(parentAliases.item(i2).seq);
+    }
+    CseScopeInfo * commonParent = queryCommonParent();
+    CseScopeInfo * parentAlias = commonParent ? commonParent->queryAlias() : nullptr;
+    CseScopeInfo * myLocation = queryScopeLocation();
+    printf("%u: %s [%s:%s] parent(%u:%u) common(%u) location(%u%s) child(%u)\n", seq, getOpString(original->getOperator()),
+                    parentText.str(), aliasText.str(),
+                    parent ? parent->seq : 0,
+                    parentAlias ? parentAlias->seq : 0,
+                    commonNode ? commonNode->seq : 0,
+                    myLocation ? myLocation->seq : 0, moved ? ",moved" : "",
+                    evalLocation ? evalLocation->seq : 0
+                    );
+#endif
+}
+
+void CseScopeInfo::cloneAliases(ICopyArrayOf<CseScopeInfo> & target) const
+{
+    unsigned max = childAliases.ordinality();
+    target.ensure(target.ordinality() + max);
+    for (unsigned i=0; i < max; ++i)
+        target.append(childAliases.item(i));
+}
+
+void CseScopeInfo::connectChildAliases(CseScopeInfo * parent)
+{
+    ForEachItemIn(i, childAliases)
+        childAliases.item(i).addParentAlias(parent);
+
+    if (inheritedAliases)
+        inheritedAliases->connectChildAliases(parent);
+}
+
+void CseScopeInfo::expandInheritedAliases()
+{
+    if (inheritedAliases)
+    {
+        inheritedAliases->cloneAliases(childAliases);
+        inheritedAliases = nullptr;
+    }
+}
+
+CseScopeInfo * CseScopeInfo::queryScopeLocation()
+{
+    CseScopeInfo * location = queryEvalLocation();
+    if (!location)
+        return nullptr;
+
+    if (location != this)
+        return location->queryValidPath();
+
+    //REVISIT: could probably return nullptr if it isn't moving to avoid creating a no_aliasscope
+    CseScopeInfo * parent = queryCommonParent();
+    if (!parent)
+        return nullptr;
+
+    CseScopeInfo * best = parent->queryEvalLocation();
+    return best->queryValidPath();
+}
+
+CseScopeInfo * CseScopeInfo::queryValidPath()
+{
+    //REVISIT: Is it worth caching this expression?
+    if (canInsertCodeAlias(original))
+        return this;
+
+    CseScopeInfo * parent = queryCommonParent();
+    if (!parent)
+        return nullptr;
+    return parent->queryValidPath();
+}
+
+static HqlTransformerInfo cseScopeTransformerInfo("CseScopeTransformer");
+CseScopeTransformer::CseScopeTransformer() : NewHqlTransformer(cseScopeTransformerInfo)
+{
 }
 
 void CseScopeTransformer::analyseExpr(IHqlExpression * expr)
@@ -732,48 +971,72 @@ void CseScopeTransformer::analyseExpr(IHqlExpression * expr)
     if (!containsNonGlobalAlias(expr))
         return;
 
-    node_operator op = expr->getOperator();
-    CseScopeInfo * splitter = queryExtra(expr);
-    if (splitter->seq)
+    CseScopeInfo * extra = queryBodyExtra(expr);
+    if (extra->seq)
     {
-        splitter->hasSharedParent = true;
-        splitter->addParent(activeParent);
-        return;
+        //REVISIT: Flawed since this will not update the depth for any child expressions.
+        if (depth < extra->minDepth)
+            extra->minDepth = depth;
+        extra->addParent(activeParent);
     }
-
-    splitter->firstParent = activeParent;
-    splitter->seq = ++seq;
-    splitter->isUnconditional = (conditionDepth == 0);
-
+    else
     {
-        IHqlExpression * savedParent = activeParent;
-        activeParent = expr;
-        switch (op)
+        extra->firstParent = activeParent;
+        extra->seq = ++seq;
+        extra->isUnconditional = (conditionDepth == 0);
+        extra->minDepth = depth;
+
+        node_operator op = expr->getOperator();
+        if (op == no_alias)
+            extra->isAlias = true;
+
+        depth++;
         {
-        case no_if:
-        case no_or:
-        case no_and:
-        case no_case:
+            CseScopeInfo * savedParent = activeParent;
+            activeParent = extra;
+            switch (op)
             {
-                analyseExpr(expr->queryChild(0));
-                conditionDepth++;
-                ForEachChildFrom(i, expr, 1)
-                    analyseExpr(expr->queryChild(i));
-                conditionDepth--;
+            case no_if:
+            case no_or:
+            case no_and:
+            case no_case:
+                {
+                    //REVISIT: isUnconditional is not currently used - could delete this code if there is no benefit
+                    //         or could use a base class that calculates it for us
+                    analyseExpr(expr->queryChild(0));
+                    conditionDepth++;
+                    ForEachChildFrom(i, expr, 1)
+                        analyseExpr(expr->queryChild(i));
+                    conditionDepth--;
+                    break;
+                }
+            //REVISIT: Do something clever with activeParent for assignments within transforms to improve insert location.
+            default:
+                NewHqlTransformer::analyseExpr(expr);
                 break;
             }
-        default:
-            NewHqlTransformer::analyseExpr(expr);
-            break;
+            activeParent = savedParent;
         }
-        activeParent = savedParent;
+        depth--;
+
+        //Add here so the cse are in the correct order to cope with dependencies...
+        if (op == no_alias)
+        {
+            extra->connectChildAliases();
+            assertex(!expr->hasAttribute(globalAtom));
+            allCSEs.append(*LINK(extra));
+            //REVISIT: Can now kill the child alias array since no longer required.
+        }
     }
 
-    //Add here so the cse are in the correct order to cope with dependencies...
-    if (op == no_alias)
+    if (activeParent)
     {
-        assertex(!expr->hasAttribute(globalAtom));
-        allCSEs.append(*LINK(splitter));
+        if (extra->isAlias)
+            activeParent->addChildAlias(extra);
+        else if (!extra->childAliases.empty())
+            activeParent->inheritAliases(extra);
+        else
+            activeParent->inheritAliases(extra->inheritedAliases);
     }
 }
 
@@ -783,14 +1046,27 @@ bool CseScopeTransformer::attachCSEs(IHqlExpression * root)
     ForEachItemIn(idx, allCSEs)
     {
         CseScopeInfo& cur = allCSEs.item(idx);
-        IHqlExpression * aliasLocation = findAliasLocation(&cur);
-        if (!aliasLocation && cur.isUnconditional)
-            aliasLocation = root;
+        CseScopeInfo * aliasLocation = cur.queryScopeLocation();
 
-        if (aliasLocation && aliasLocation != cur.original)
+        //REVISIT:
+        //if (!aliasLocation && cur.isUnconditional)
+        //    aliasLocation = root;
+
+        //REVISIT:
+        //if (aliasLocation && aliasLocation != cur.original)
+        if (aliasLocation)
         {
-            queryExtra(aliasLocation)->aliasesToDefine.append(*LINK(cur.original));
+#ifdef TRACE_CSE_SCOPE
+            printf("Attach %u at %u\n", cur.seq, aliasLocation->seq);
+#endif
+            aliasLocation->aliasesToDefine.append(*LINK(cur.original));
             changed = true;
+        }
+        else
+        {
+#ifdef TRACE_CSE_SCOPE
+            printf("Nowhere to attach %u\n", cur.seq);
+#endif
         }
     }
     return changed;
@@ -798,17 +1074,16 @@ bool CseScopeTransformer::attachCSEs(IHqlExpression * root)
 
 IHqlExpression * CseScopeTransformer::createTransformed(IHqlExpression * expr)
 {
-    //Can't short-circuit transformation if (!containsAlias(expr)) because it means references to transformed datasets won't get patched up
+    //NB: Can not short-circuit transformation if (!containsAlias(expr)) because references to transformed datasets will not get patched up
     IHqlExpression * body = expr->queryBody(true);
     if (body != expr)
     {
         OwnedHqlExpr ret = transform(body);
         return expr->cloneAnnotation(ret);
     }
-    //slight difference from before...
 
     IHqlExpression * transformed = NewHqlTransformer::createTransformed(expr);
-    CseScopeInfo * splitter = queryExtra(expr);
+    CseScopeInfo * splitter = queryBodyExtra(expr);
     if (splitter->aliasesToDefine.ordinality())
     {
         HqlExprArray args;
@@ -834,283 +1109,6 @@ ANewTransformInfo * CseScopeTransformer::createTransformInfo(IHqlExpression * ex
 {
     return CREATE_NEWTRANSFORMINFO(CseScopeInfo, expr);
 }
-
-
-//First find the highest shared parent node (or this if no parents are shared)
-CseScopeInfo * CseScopeTransformer::calcCommonLocation(CseScopeInfo * extra)
-{
-    if (extra->calcedCommonLocation)
-        return extra->commonLocation;
-    CseScopeInfo * commonLocation = extra;
-    if (extra->firstParent)
-    {
-        CseScopeInfo * firstParentExtra = queryExtra(extra->firstParent);
-        CseScopeInfo * commonParent = calcCommonLocation(firstParentExtra);
-        if ((extra->parents.ordinality() == 0) && (!firstParentExtra->hasSharedParent || extra->firstParent->getOperator() == no_alias))
-//      if ((extra->parents.ordinality() == 0) && !firstParentExtra->hasSharedParent)
-        {
-            //assertex(commonParent == firstParentExtra);
-            //commonParent = extra;
-        }
-        else
-        {
-            extra->hasSharedParent = true;
-            commonLocation = commonParent;
-            ForEachItemIn(i, extra->parents)
-            {
-                CseScopeInfo * nextExtra = calcCommonLocation(queryExtra(extra->parents.item(i)));
-                if (nextExtra->isUnconditional)
-                    extra->isUnconditional = true;
-                commonLocation = findCommonPath(commonLocation, nextExtra);
-                if (!commonLocation && extra->isUnconditional)
-                    break;
-            }
-        }
-    }
-    else
-    {
-        if (extra->hasSharedParent)
-            commonLocation = NULL;
-    }
-    extra->calcedCommonLocation = true;
-    extra->commonLocation = commonLocation;
-    return commonLocation;
-}
-
-IHqlExpression * CseScopeTransformer::findAliasLocation(CseScopeInfo * extra)
-{
-    CseScopeInfo * best = calcCommonLocation(extra);
-    for (;;)
-    {
-        if (!best)
-            return NULL;
-        IHqlExpression * bestLocation = best->original;
-        if (canInsertCodeAlias(bestLocation))
-            return bestLocation;
-        best = selectParent(best);
-    }
-}
-
-
-CseScopeInfo * CseScopeTransformer::selectParent(CseScopeInfo * info)
-{
-    if (info->hasSharedParent)
-        return info->commonLocation;
-    if (!info->firstParent)
-        return NULL;
-    return queryExtra(info->firstParent);
-}
-
-CseScopeInfo * CseScopeTransformer::findCommonPath(CseScopeInfo * left, CseScopeInfo * right)
-{
-    for (;;)
-    {
-        if (!left || !right)
-            return NULL;
-        if (left == right)
-            return left;
-
-        if (left->seq > right->seq)
-            left = selectParent(left);
-        else
-            right = selectParent(right);
-    }
-}
-#else
-CSEentry::CSEentry(IHqlExpression * _value, PathArray & _path)
-{
-    value.set(_value);
-
-    unsigned depth=_path.ordinality();
-    path.ensure(depth);
-    ForEachItemIn(idx, _path)
-        path.append(_path.item(idx));
-    ensurePathValid();
-}
-
-void CSEentry::ensurePathValid()
-{
-    //It is not valid to insert a no_code_alias at certain points....
-    while (path.ordinality())
-    {
-        switch (path.tos().getOperator())
-        {
-        case no_range:
-        case no_rangefrom:
-        case no_rangeto:
-        case no_rangecommon:
-        case no_mapto:
-        case no_recordlist:
-        case no_transformlist:
-        case no_rowvalue:
-        case no_sortlist:
-            path.pop();
-            break;
-        default:
-            return;
-        }
-    }
-}
-
-
-void CSEentry::findCommonPath(PathArray & otherPath)
-{
-    unsigned prevPath = path.ordinality();
-    unsigned maxPath = path.ordinality();
-    if (maxPath > otherPath.ordinality())
-        maxPath = otherPath.ordinality();
-    unsigned idx;
-    for (idx = 0; idx < maxPath; idx++)
-    {
-        IHqlExpression * l = &path.item(idx);
-        IHqlExpression * r = &otherPath.item(idx);
-        if (l != r)
-            break;
-    }
-    //Ensure the new location is valid for receiving the CSE
-    while (idx != 0)
-    {
-        if (canWrapWithCSE(&path.item(idx-1)))
-            break;
-        idx--;
-    }
-    path.trunc(idx);
-
-    if (prevPath != path.ordinality())
-    {
-        ForEachItemIn(idx2, dependsOn)
-            dependsOn.item(idx2).findCommonPath(path);
-    }
-    ensurePathValid();
-}
-
-static HqlTransformerInfo cseScopeTransformerInfo("CseScopeTransformer");
-CseScopeTransformer::CseScopeTransformer() 
-: NewHqlTransformer(cseScopeTransformerInfo)
-{
-}
-
-void CseScopeTransformer::analyseExpr(IHqlExpression * expr)
-{
-    expr = expr->queryBody();
-    if (!containsNonGlobalAlias(expr))
-        return;
-    CSEentry * cse = NULL;
-    node_operator op = expr->getOperator();
-    if (op == no_alias)
-    {
-        assertex(!expr->hasAttribute(globalAtom));
-
-        CseScopeInfo * splitter = queryExtra(expr);
-
-        //PrintLog("splitter: %s", expr->toString(StringBuffer()).str());
-        if (splitter->cseUse)
-        {
-            //Find the common path, and map the alias.
-            CSEentry * cse = splitter->cseUse;
-            cse->findCommonPath(path);
-
-            if (activeCSE.ordinality())
-                activeCSE.tos().dependsOn.append(*LINK(cse));
-            return;
-        }
-
-        cse = new CSEentry(expr, path);
-        splitter->cseUse.setown(cse);
-
-        if (activeCSE.ordinality())
-            activeCSE.tos().dependsOn.append(*LINK(cse));
-        activeCSE.append(*LINK(cse));
-    }
-
-#if 0
-    if ((op == no_transform) || (op == no_newtransform))
-    {
-        //For a transform add each assignment as a path point - so the aliases for assignments don't end up
-        //before aliases for skip attributes.
-        path.append(*expr);
-        ForEachChild(i, expr)
-        {
-            IHqlExpression * cur = expr->queryChild(i);
-            analyseExpr(cur);
-            path.append(*cur);
-        }
-        ForEachChild(i2, expr)
-            path.pop();
-        path.pop();
-    }
-    else
-#endif
-
-    {
-        path.append(*expr);
-        NewHqlTransformer::analyseExpr(expr);
-        path.pop();
-    }
-
-    //Add here so the cse are in the correct order to cope with dependencies...
-    if (cse)
-    {
-        allCSEs.append(*LINK(cse));
-        activeCSE.pop();
-    }
-}
-
-bool CseScopeTransformer::attachCSEs(IHqlExpression * /*root*/)
-{
-    bool changed = false;
-    ForEachItemIn(idx, allCSEs)
-    {
-        CSEentry & cur = allCSEs.item(idx);
-        if (cur.path.ordinality())
-        {
-            IHqlExpression & location = cur.path.tos();
-            queryExtra(&location)->cseDefine.append(OLINK(cur));
-            changed = true;
-        }
-    }
-    return changed;
-}
-
-IHqlExpression * CseScopeTransformer::createTransformed(IHqlExpression * expr)
-{
-    //Can't short-circuit transformation if (!containsAlias(expr)) because it means references to transformed datasets won't get patched up
-    IHqlExpression * body = expr->queryBody(true);
-    if (body != expr)
-    {
-        OwnedHqlExpr ret = transform(body);
-        return expr->cloneAnnotation(ret);
-    }
-    //slight difference from before...
-
-    IHqlExpression * transformed = NewHqlTransformer::createTransformed(expr);
-    CseScopeInfo * splitter = queryExtra(expr);
-    if (splitter->cseDefine.ordinality())
-    {
-        HqlExprArray args;
-        args.append(*transformed);
-        ForEachItemIn(idx, splitter->cseDefine)
-        {
-            CSEentry & cur = splitter->cseDefine.item(idx);
-            args.append(*transform(cur.value));
-        }
-        if (expr->isDataset())
-            transformed = createDataset(no_alias_scope, args);
-        else if (expr->isDatarow())
-            transformed = createRow(no_alias_scope, args);
-        else
-            transformed = createValue(no_alias_scope, transformed->getType(), args);
-    }
-
-    return transformed;
-}
-
-
-ANewTransformInfo * CseScopeTransformer::createTransformInfo(IHqlExpression * expr)
-{
-    return CREATE_NEWTRANSFORMINFO(CseScopeInfo, expr);
-}
-#endif
 
 
 IHqlExpression * spotScalarCSE(IHqlExpression * expr, IHqlExpression * limit, bool spotCseInIfDatasetConditions)
