@@ -17,7 +17,7 @@
 
 //class=embedded
 
-IMPORT Python;
+IMPORT Python3;
 
 childrec := RECORD
    string name => unsigned value;
@@ -40,15 +40,15 @@ namesRecord := RECORD
     SET OF STRING ss1;
 END;
 
-dataset(namesRecord) blockedNames(string prefix) := EMBED(Python)
+dataset(namesRecord) blockedNames(string prefix) := EMBED(Python3)
   return ["Gavin","John","Bart"]
 ENDEMBED;
 
-_linkcounted_ dataset(namesRecord) linkedNames(string prefix) := EMBED(Python)
+_linkcounted_ dataset(namesRecord) linkedNames(string prefix) := EMBED(Python3)
   return ["Gavin","John","Bart"]
 ENDEMBED;
 
-dataset(namesRecord) streamedNames(data d, utf8 u) := EMBED(Python)
+dataset(namesRecord) streamedNames(data d, utf8 u) := EMBED(Python3)
   return [  \
      ("Gavin", "Halliday", [("a", 1),("b", 2),("c", 3)], [("aa", 11)], ("aaa", 111), 250, -1,  U'là',  U'là',  U'là', 1, d, False, ["1","2"]), \
      ("John", "Smith", [], [], ("c", 3), 250, -1,  U'là',  U'là',  u, 2, d, True, set(["3"])) \
@@ -57,7 +57,7 @@ ENDEMBED;
 
 // Test use of Python generator object for lazy evaluation...
 
-dataset(childrec) testGenerator(unsigned lim) := EMBED(Python:time)
+dataset(childrec) testGenerator(unsigned lim) := EMBED(Python3:time)
   num = 0
   while num < lim:
     yield ("Generate:", num)
@@ -73,7 +73,7 @@ count(c(value < 500));
 count(c(value > 500));
 
 // Test Python code returning named tuples
-childrec tnamed(string s) := EMBED(Python)
+childrec tnamed(string s) := EMBED(Python3)
   import collections;
   childrec = collections.namedtuple("childrec", "value,name")
   return childrec(1,s)
@@ -83,7 +83,7 @@ output(tnamed('Yo').name);
 
 // Test passing records into Python
 
-dataset(namesRecord) streamInOut(dataset(namesRecord) recs) := EMBED(Python)
+dataset(namesRecord) streamInOut(dataset(namesRecord) recs) := EMBED(Python3)
   for rec in recs:
     if rec.name1 == 'Gavin':
        yield rec

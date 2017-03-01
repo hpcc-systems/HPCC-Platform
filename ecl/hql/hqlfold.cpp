@@ -698,7 +698,7 @@ void *loadExternalEntryPoint(IHqlExpression* expr, unsigned foldOptions, ITempla
         }
     }
 #ifdef _DEBUG
-    if (streq(library, "libpyembed.dylib") || streq(library, "libv8embed.dylib") || streq(library, "libjavaembed.dylib"))
+    if (streq(library, "libpy3embed.dylib") || streq(library, "libpyembed.dylib") || streq(library, "libv8embed.dylib") || streq(library, "libjavaembed.dylib"))
     {
         Dl_info info;
         if (dladdr((const void *) rtlStrToUInt4, &info))  // Any function in eclrtl would do...
