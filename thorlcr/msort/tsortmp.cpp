@@ -188,10 +188,11 @@ rowcount_t SortSlaveMP::OverflowAdjustMapStop( unsigned mapsize, rowcount_t *map
     return ret;
 }
 
-void SortSlaveMP::MultiMerge(unsigned mapsize,rowcount_t *map,unsigned num,SocketEndpoint* endpoints) /* async */
+void SortSlaveMP::MultiMerge(rowcount_t globalCount, unsigned mapsize,rowcount_t *map,unsigned num,SocketEndpoint* endpoints) /* async */
 {
     CMessageBuffer mb;
     mb.append((byte)FN_MultiMerge);
+    mb.append(globalCount);
     mb.append(mapsize).append(mapsize*sizeof(rowcount_t),map);
     mb.append(num);
     while (num--) {
@@ -202,10 +203,11 @@ void SortSlaveMP::MultiMerge(unsigned mapsize,rowcount_t *map,unsigned num,Socke
 }
 
 
-void SortSlaveMP::MultiMergeBetween(unsigned mapsize,rowcount_t *map,rowcount_t *mapupper,unsigned num,SocketEndpoint* endpoints) /* async */
+void SortSlaveMP::MultiMergeBetween(rowcount_t globalCount, unsigned mapsize,rowcount_t *map,rowcount_t *mapupper,unsigned num,SocketEndpoint* endpoints) /* async */
 {
     CMessageBuffer mb;
     mb.append((byte)FN_MultiMergeBetween);
+    mb.append(globalCount);
     mb.append(mapsize).append(mapsize*sizeof(rowcount_t),map);
     mb.append(mapsize*sizeof(rowcount_t),mapupper);
     mb.append(num);
@@ -413,6 +415,8 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
             case FN_MultiMerge: {
                 replydone = true;
                 comm->reply(mbout);
+                rowcount_t globalCount;
+                mb.read(globalCount);
                 unsigned mapsize;
                 mb.read(mapsize);
                 const void *map = mb.readDirect(mapsize*sizeof(rowcount_t));
@@ -424,12 +428,14 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                     ep.deserialize(mb);
                     epa.append(ep);
                 }
-                slave.MultiMerge(mapsize,(rowcount_t *)map,num,epa.getArray());
+                slave.MultiMerge(globalCount, mapsize,(rowcount_t *)map,num,epa.getArray());
             }
             break;
             case FN_MultiMergeBetween: {
                 replydone = true;
                 comm->reply(mbout);
+                rowcount_t globalCount;
+                mb.read(globalCount);
                 unsigned mapsize;
                 mb.read(mapsize);
                 const void *map = mb.readDirect(mapsize*sizeof(rowcount_t));
@@ -442,7 +448,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                     ep.deserialize(mb);
                     epa.append(ep);
                 }
-                slave.MultiMergeBetween(mapsize,(rowcount_t *)map,(rowcount_t *)mapupper,num,epa.getArray());
+                slave.MultiMergeBetween(globalCount, mapsize,(rowcount_t *)map,(rowcount_t *)mapupper,num,epa.getArray());
             }
             break;
             case FN_SingleMerge: {
