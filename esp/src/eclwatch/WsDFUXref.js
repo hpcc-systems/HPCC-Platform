@@ -14,8 +14,13 @@
 #    limitations under the License.
 ############################################################################## */
 define([
+    "dojo/_base/array",
+    "dojo/_base/lang",
+    "dojo/topic",
+
     "hpcc/ESPRequest"
-], function (ESPRequest) {
+], function (arrayUtil, lang, topic,
+    ESPRequest) {
 
     return {
         WUGetXref: function (params) {
@@ -28,10 +33,70 @@ define([
             return ESPRequest.send("WsDFUXRef", "DFUXRefUnusedFiles", params);
         },
         DFUXRefFoundFiles: function (params) {
-            return ESPRequest.send("WsDFUXRef", "DFUXRefFoundFiles", params);
+            var request = {
+                Cluster: params
+            }
+            return ESPRequest.send("WsDFUXRef", "DFUXRefFoundFiles", {
+                request: request
+            }).then(function (response){
+                var results = [];
+                var newRows = [];
+                if (lang.exists("DFUXRefFoundFilesQueryResponse.DFUXRefFoundFilesQueryResult.File", response)) {
+                    results = response.DFUXRefFoundFilesQueryResponse.DFUXRefFoundFilesQueryResult.File;
+                    if (results.length) {
+                        arrayUtil.forEach(results, function (row, idx) {
+                            newRows.push({
+                                Name: row.Partmask,
+                                Modified: row.Modified,
+                                Parts: row.Numparts,
+                                Size: row.Size
+                            });
+                        });
+                    } else if (results.Partmask) {
+                        newRows.push({
+                            Name: results.Partmask,
+                            Modified: results.Modified,
+                            Parts: results.Numparts,
+                            Size: results.Size
+                        });
+                    }
+                }
+                return newRows;
+            });
         },
         DFUXRefOrphanFiles: function (params) {
-            return ESPRequest.send("WsDFUXRef", "DFUXRefOrphanFiles", params);
+            var request = {
+                Cluster:params
+            }
+            return ESPRequest.send("WsDFUXRef", "DFUXRefOrphanFiles", {
+                request: request
+            }).then(function (response){
+                var results = [];
+                var newRows = [];
+                if (lang.exists("DFUXRefOrphanFilesQueryResponse.DFUXRefOrphanFilesQueryResult.File", response)) {
+                    results = response.DFUXRefOrphanFilesQueryResponse.DFUXRefOrphanFilesQueryResult.File
+                    if (results.length) {
+                        arrayUtil.forEach(results, function (row, idx) {
+                           newRows.push({
+                                Name: row.Partmask,
+                                Modified: row.Modified,
+                                PartsFound: row.Partsfound,
+                                TotalParts: row.Numparts,
+                                Size: row.Size
+                            });
+                        });
+                    } else if (results.Partmask) {
+                        newRows.push({
+                            Name: results.Partmask,
+                            Modified: results.Modified,
+                            PartsFound: results.Partsfound,
+                            TotalParts: results.Numparts,
+                            Size: results.Size
+                        });
+                    }
+                }
+                return newRows;
+            });
         },
         DFUXRefMessages: function (params) {
             return ESPRequest.send("WsDFUXRef", "DFUXRefMessages", params);
@@ -40,13 +105,75 @@ define([
             return ESPRequest.send("WsDFUXRef", "DFUXRefCleanDirectories", params);
         },
         DFUXRefLostFiles: function (params) {
-            return ESPRequest.send("WsDFUXRef", "DFUXRefLostFiles", params);
+            var request = {
+                Cluster: params
+            }
+            return ESPRequest.send("WsDFUXRef", "DFUXRefLostFiles", {
+                request: request
+            }).then(function (response){
+                var results = [];
+                var newRows = [];
+                if (lang.exists("DFUXRefLostFilesQueryResponse.DFUXRefLostFilesQueryResult.File", response)) {
+                    results = response.DFUXRefLostFilesQueryResponse.DFUXRefLostFilesQueryResult.File
+                    if (results.length) {
+                        arrayUtil.forEach(results, function (row, idx) {
+                           newRows.push({
+                                Name: row.Name,
+                                Modified: row.Modified,
+                                Numparts: row.Numparts,
+                                Size: row.Size,
+                                Partslost: row.Partslost,
+                                Primarylost: row.Primarylost,
+                                Replicatedlost: row.Replicatedlost
+                            });
+                        });
+                    } else if (results.Name) {
+                        newRows.push({
+                            Name: results.Name,
+                            Modified: results.Modified,
+                            Numparts: results.Numparts,
+                            Size: results.Size,
+                            Partslost: results.Partslost,
+                            Primarylost: results.Primarylost,
+                            Replicatedlost: results.Replicatedlost
+                        });
+                    }
+                }
+                return newRows
+            });
+
         },
         DFUXRefDirectories: function (params) {
             return ESPRequest.send("WsDFUXRef", "DFUXRefDirectories", params);
         },
         DFUXRefBuildCancel: function (params) {
             return ESPRequest.send("WsDFUXRef", "DFUXRefBuildCancel", params);
+        },
+        DFUXRefArrayAction: function (xrefFiles, actionType, cluster, type) {
+            arrayUtil.forEach(xrefFiles, function (item, idx) {
+                item.qualifiedName = item.Name;
+            });
+            var request = {
+                XRefFiles: xrefFiles,
+                Action: actionType,
+                Cluster:cluster,
+                Type: type
+            };
+            ESPRequest.flattenArray(request, "XRefFiles", "qualifiedName");
+            return ESPRequest.send("WsDFUXRef", "DFUXRefArrayAction", {
+                request: request
+            }).then(function (response) {
+                if (lang.exists("DFUXRefArrayActionResponse.DFUXRefArrayActionResult", response)) {
+                    if (response.DFUXRefArrayActionResponse.DFUXRefArrayActionResult.Value) {
+                        dojo.publish("hpcc/brToaster", {
+                            Severity: "Message",
+                            Source: "WsDfu.DFUXRefArrayAction",
+                            Exceptions: [{Message: response.DFUXRefArrayActionResponse.DFUXRefArrayActionResult.Value}]
+                        });
+                    }
+                }
+                return response;
+            });
         }
     };
 });

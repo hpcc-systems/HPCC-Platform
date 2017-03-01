@@ -347,10 +347,16 @@ define([
                     retVal += "\n";
                 }
                 if (idx >= 10) {
-                    retVal += "..." + (arr.length - 10) + " " + this.i18n.More + "...";
-                    return true;                    
+                    retVal += "\n..." + (arr.length - 10) + " " + this.i18n.More + "...";
+                    return true;
                 }
-                retVal += field ? item[field] : item;
+                var lineStr = field ? item[field] : item;
+                if (lineStr.length > 50) {
+                    retVal += "..." + item[field].slice(25,item[field].length);
+                }
+                else {
+                   retVal += lineStr;
+                }
             }, this);
             return retVal;
         },

@@ -67,28 +67,22 @@ define([
                 id: this.id + "Delete",
                 disabled: false,
                 onClick: function (val) {
-                    if (confirm(context.i18n.RunningServerStrain)) {
-                        var selections = context.grid.getSelected();
-                        WsDFUXref.DFUXRefBuild({
-                            request: {
-                                Cluster: selections[0].Name
-                            }
-                        }).then(function (response) {
-                            if (response) {
-                                context.refreshGrid();
-                            }
-                        });
-                    }
-
+                    context._onDeleteFiles();
                 },
                 label: this.i18n.Delete
             }).placeAt(this.openButton.domNode, "after");
+            dojo.destroy(this.id + "Open");
 
             var retVal = new declare([ESPUtil.Grid(true, true)])({
                 store: this.store,
                 selectionMode: "single",
                 allowSelectAll: false,
                 columns: {
+                    col1: selector({
+                        width: 27,
+                        selectorType: 'checkbox',
+                        label: ""
+                    }),
                     Name: {label: this.i18n.Name, width:100, sortable: false},
                     Modified: {label: this.i18n.Modified, width: 30, sortable: false},
                     PartsFound: {label: this.i18n.PartsFound, width: 30, sortable: false},
@@ -100,29 +94,29 @@ define([
             return retVal;
         },
 
+        _onDeleteFiles: function (event) {
+            var context = this;
+            var selections = this.grid.getSelected();
+            var list = this.arrayToList(selections, "Name");
+            if (confirm(this.i18n.DeleteSelectedFiles + "\n" + list)) {
+                WsDFUXref.DFUXRefArrayAction(selections, this.i18n.Delete, context.params.Name, "Orphan").then(function (response) {
+                    context.refreshGrid();
+                });
+            }
+        },
+
+        refreshActionState: function (event) {
+            var selection = this.grid.getSelected();
+            var hasSelection = selection.length;
+
+            registry.byId(this.id + "Delete").set("disabled", !hasSelection);
+        },
+
         refreshGrid: function () {
             var context = this;
 
-            WsDFUXref.DFUXRefOrphanFiles({
-                request: {
-                    Cluster: this.params.Name
-                }
-            }).then(function (response) {
-                var results = [];
-                var newRows = [];
-                if (lang.exists("DFUXRefOrphanFilesQueryResponse.DFUXRefOrphanFilesQueryResult.File", response)) {
-                    results = response.DFUXRefOrphanFilesQueryResponse.DFUXRefOrphanFilesQueryResult.File
-                }
-                arrayUtil.forEach(results, function (row, idx) {
-                   newRows.push({
-                        Name: row.Partmask,
-                        Modified: row.Modified,
-                        PartsFound: row.Partsfound,
-                        TotalParts: row.Numparts,
-                        Size: row.Size
-                    });
-                });
-                context.store.setData(newRows);
+            WsDFUXref.DFUXRefOrphanFiles(this.params.Name).then(function(response){
+                context.store.setData(response);
                 context.grid.set("query", {});
             });
         }
