@@ -1,6 +1,7 @@
 #include "platform.h"
 #include "jbuff.hpp"
 #include "tsorts.hpp"
+#include "thormisc.hpp"
 
 
 #include "tsortmp.hpp"
@@ -55,6 +56,10 @@ inline MemoryBuffer &deserializeblk(MemoryBuffer &mb,size32_t &bsize,byte *&blk)
     return ret;
 }
 
+SortSlaveMP::SortSlaveMP(CActivityBase *_activity) : activity(_activity)
+{
+}
+
 void SortSlaveMP::init(ICommunicator *_comm,rank_t _rank,mptag_t _tag)
 {
     comm.set(_comm);
@@ -77,10 +82,12 @@ bool SortSlaveMP::sendRecv(CMessageBuffer &mb, unsigned timeout)
             mb.read(err);
             StringAttr errstr;
             mb.read(errstr);
-            throw MakeStringException(err, "%s", errstr.get());
+            IThorException *e = MakeActivityException(activity, err, "Global Sort");
+            e->setSlave(rank);
+            throw e;
         }
     }
-    throw MakeStringException(-1,"SortSlaveMP::sendRecv() protocol error %d",(int)ok);
+    throw MakeActivityException(activity, -1,"SortSlaveMP::sendRecv() protocol error %d", (int)ok);
     return false;
 }
 

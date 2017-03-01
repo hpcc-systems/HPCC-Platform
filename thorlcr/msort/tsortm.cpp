@@ -90,18 +90,14 @@ public:
     bool            overflow;
     unsigned        scale;     // num times overflowed
     
-    CActivityBase *activity;
-    
-    
-    CSortNode(CActivityBase *_activity, ICommunicator *comm,rank_t _rank, SocketEndpoint &sep,mptag_t _mpTagRPC, CSortMaster &_sorter) 
-        : sorter(_sorter)
+    CSortNode(CActivityBase *activity, ICommunicator *comm,rank_t _rank, SocketEndpoint &sep,mptag_t _mpTagRPC, CSortMaster &_sorter)
+        : SortSlaveMP(activity), sorter(_sorter)
     { 
         endpoint = sep; 
         mpport = getFixedPort(comm->queryGroup().queryNode(_rank).endpoint().port,TPORT_mp); // this is a bit odd 
         mpTagRPC = _mpTagRPC;
         state = NS_null;
         beat=0; 
-        activity = _activity;
         overflow = false;
         scale = 1;
         numrecs = 0;
