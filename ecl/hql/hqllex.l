@@ -1334,7 +1334,7 @@ BITFIELD{digit}+    {
                       }
 
                       Owned<ITypeInfo> int64 = makeIntType(8, false);
-                      ITypeInfo * type = makeBitfieldType(size, int64);
+                      ITypeInfo * type = makeBitfieldType(size, int64.getClear());
                       assert(type!=NULL);
 
                       returnToken.setType(type); 
