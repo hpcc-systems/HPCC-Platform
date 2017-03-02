@@ -316,6 +316,7 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
  
       if(m_compIpMap.find(buildSetName) != NULL)
       {
+        delete instDetails; // Possibly previously NEW'ed, delete to avoid override
         instDetails = m_compIpMap.getValue(buildSetName);
 
         if( (instDetails->getIpAssigned()).ordinality() != numOfNodes)
