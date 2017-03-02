@@ -275,7 +275,7 @@ void MemberFunction::finish()
     if (!stmt)
         return;
 
-    if ((flags & MFopt) && (stmt->numChildren() == 0), false)
+    if ((flags & MFopt) && (stmt->numChildren() == 0))
         stmt->setIncluded(false);
 
     stmt = nullptr;
