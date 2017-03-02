@@ -1050,11 +1050,9 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const
 
     try
     {
-        if(!ensureSDSPath(ESDL_DEFS_ROOT_PATH))
-            ESPLOG(LogNormal, "ESP Binding '%s' could not ensure %s element on Dali.", binding, ESDL_DEFS_ROOT_PATH);
 
-        if(!ensureSDSPath(ESDL_BINDINGS_ROOT_PATH))
-            ESPLOG(LogNormal, "ESP Binding '%s' could not ensure %s element on Dali.", binding, ESDL_BINDINGS_ROOT_PATH);
+        ensureSDSPath(ESDL_DEFS_ROOT_PATH);
+        ensureSDSPath(ESDL_BINDINGS_ROOT_PATH);
 
         m_esdlBndCfg.set(fetchESDLBinding(process, binding, m_esdlStateFilesLocation));
 
