@@ -1490,6 +1490,13 @@ void StringArray::appendListUniq(const char *list, const char *delim)
     DelimToStringArray(list, *this, delim, true);
 }
 
+void StringArray::appendList(StringArray &list)
+{
+    ensure(list.ordinality());
+    ForEachItemIn(idx,list)
+        append(list.item(idx));
+}
+
 void StringArray::sortAscii(bool nocase)
 {
     PARENT::sort(nocase ? CCmp::compareNC : CCmp::compare);
@@ -1503,6 +1510,17 @@ void StringArray::sortAsciiReverse(bool nocase)
 void StringArray::sortCompare(int (*compare)(const char * const * l, const char * const * r))
 {
     PARENT::sort(compare);
+}
+
+void StringArray::pruneEmpty()
+{
+    aindex_t idx = ordinality();
+    while(idx > 0)
+    {
+        --idx;
+        if (*PARENT::element(idx)==0)
+            PARENT::remove(idx);
+    }
 }
 
 

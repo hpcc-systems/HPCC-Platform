@@ -375,6 +375,10 @@ class CBitSetThreadSafe : public CBitSetBase<CBitSetArrayHelper>
             }
         }
     }
+    // Comparison operator not implemented as it will threadsafety here requires too much extra code
+    virtual bool operator==(const IBitSet &_rhs) const
+    { UNIMPLEMENTED; }
+
 public:
     CBitSetThreadSafe()
     {
@@ -476,6 +480,17 @@ public:
             memset(mem, 0, bitSetUnits*sizeof(bits_t));
         fixedMemory = true;
     }
+    CBitSet(unsigned maxBits, bool reset)
+    {
+        size32_t memRequired = getBitSetMemoryRequirement(maxBits);
+        if (reset)
+            mb.appendBytes(0, memRequired);
+        else
+            mb.ensureCapacity(memRequired);
+        mem = (bits_t *)mb.bufferBase();
+        bitSetUnits = memRequired/sizeof(bits_t);
+        fixedMemory = false;
+    }
     CBitSet(MemoryBuffer &buffer)
     {
         deserialize(buffer);
@@ -489,11 +504,28 @@ public:
         buffer.append((unsigned)(BitsPerItem*bitSetUnits));
         buffer.append(bitSetUnits*sizeof(bits_t), mem);
     }
+    virtual bool operator==(const IBitSet &_rhs) const
+    {
+        CBitSet const *rhs = static_cast<CBitSet const *>(&_rhs);
+        if (getWidth()!=rhs->getWidth())
+            return false;
+        for (unsigned n = 0; n<getWidth(); ++n)
+        {
+            if (getBits(n)!=rhs->getBits(n))
+                return false;
+        };
+        return true;
+    }
 };
 
 extern jlib_decl IBitSet *createBitSet(unsigned maxBits, const void *mem, bool reset)
 {
     return new CBitSet(maxBits, mem, reset);
+}
+
+extern jlib_decl IBitSet *createBitSet(unsigned maxBits, bool reset)
+{
+    return new CBitSet(maxBits, reset);
 }
 
 extern jlib_decl IBitSet *createBitSet()
