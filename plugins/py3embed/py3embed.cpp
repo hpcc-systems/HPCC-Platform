@@ -19,6 +19,7 @@
 #include "Python.h"
 #include "frameobject.h"
 #include "jexcept.hpp"
+#include "jutil.hpp"
 #include "jthread.hpp"
 #include "hqlplugins.hpp"
 #include "deftype.hpp"
@@ -31,11 +32,15 @@
 #include "roxiemem.hpp"
 #include "enginecontext.hpp"
 
+#if PY_MAJOR_VERSION >=3
+  #define Py_TPFLAGS_HAVE_ITER 0
+#endif
+
 static const char * compatibleVersions[] = {
-    "Python2.7 Embed Helper 1.0.0",
+    "Python3.x Embed Helper 1.0.0",
     NULL };
 
-static const char *version = "Python2.7 Embed Helper 1.0.0";
+static const char *version = "Python3.x Embed Helper 1.0.0";
 
 extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
@@ -48,14 +53,14 @@ extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
         return false;
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = version;
-    pb->moduleName = "python";
+    pb->moduleName = "python3";
     pb->ECL = NULL;
     pb->flags = PLUGIN_MULTIPLE_VERSIONS;
-    pb->description = "Python2.7 Embed Helper";
+    pb->description = "Python3.x Embed Helper";
     return true;
 }
 
-namespace pyembed {
+namespace py3embed {
 
 // Use class OwnedPyObject for any objects that are not 'borrowed references'
 // so that the appropriate Py_DECREF call is made when the OwnedPyObject goes
@@ -123,7 +128,9 @@ static void checkPythonError()
         PyErr_Fetch(pType.ref(), pValue.ref(), pTraceBack.ref());
         OwnedPyObject valStr = PyObject_Str(pValue);
         PyErr_Clear();
-        failx("%s", PyString_AsString(valStr));
+        assertex(PyUnicode_Check(valStr));
+        const char *text = PyUnicode_AsUTF8AndSize(valStr, NULL);
+        failx("%s", text);
     }
 }
 
@@ -187,7 +194,7 @@ public:
                 StringBuffer path(pathsep-modname, modname);
                 modname.remove(0, 1+pathsep-modname);
                 PyObject *sys_path = PySys_GetObject((char *) "path");
-                OwnedPyObject new_path = PyString_FromString(path);
+                OwnedPyObject new_path = PyUnicode_FromString(path);
                 if (sys_path)
                 {
                     PyList_Insert(sys_path, 0, new_path);
@@ -234,44 +241,12 @@ static void releaseContext()
     }
 }
 
-#ifndef _WIN32
-static bool findLoadedModule(StringBuffer &ret,  const char *match)
-{
-    bool found = false;
-    FILE *diskfp = fopen("/proc/self/maps", "r");
-    if (diskfp)
-    {
-        char ln[_MAX_PATH];
-        while (fgets(ln, sizeof(ln), diskfp))
-        {
-            if (strstr(ln, match))
-            {
-                const char *fullName = strchr(ln, '/');
-                if (fullName)
-                {
-                    char * lf = (char *) strchr(fullName, '\n');
-                    if (lf)
-                    {
-                        *lf = 0;
-                        ret.set(fullName);
-                        found = true;
-                        break;
-                    }
-                }
-            }
-        }
-        fclose(diskfp);
-    }
-    return found;
-}
-#endif
-
 // Use a global object to ensure that the Python interpreter is initialized on main thread
 
-static class Python27GlobalState
+static class Python3xGlobalState
 {
 public:
-    Python27GlobalState()
+    Python3xGlobalState()
     {
         pythonLibrary = (HINSTANCE) 0;
 #ifndef _WIN32
@@ -284,26 +259,16 @@ public:
             return;
         }
 #endif
-#ifndef _WIN32
-        // We need to ensure all symbols in the python2.x so are loaded - due to bugs in some distro's python installations
-        // However this will likely break python3.
-        // Therefore on systems where both are present, do NOT do this - people using centos systems that suffer from issue
-        // https://bugs.centos.org/view.php?id=6063 will need to choose which version of python plugin to install but not both
-
-        StringBuffer modname, py3modname;
-        if  (findLoadedModule(modname, "libpython2.") && !findLoadedModule(py3modname, "libpython3."))
-            pythonLibrary = dlopen(modname.str(), RTLD_NOW|RTLD_GLOBAL);
-#endif
         // Initialize the Python Interpreter
         Py_Initialize();
-        const char *argv[] = { nullptr };
-        PySys_SetArgvEx(0, (char **) argv, 0);
+        const wchar_t *argv[] = { nullptr };
+        PySys_SetArgvEx(0, (wchar_t **) argv, 0);
         PyEval_InitThreads();
         preservedScopes.setown(PyDict_New());
         tstate = PyEval_SaveThread();
         initialized = true;
     }
-    ~Python27GlobalState()
+    ~Python3xGlobalState()
     {
         if (threadContext)
             delete threadContext;   // The one on the main thread won't get picked up by the thread hook mechanism
@@ -332,11 +297,7 @@ public:
         {
             OwnedPyObject globals = PyDict_New();
             OwnedPyObject locals = PyDict_New();
-            OwnedPyObject dummyString = PyString_FromString("Dummy");
-            OwnedPyObject dummyTuple = PyTuple_New(0);
-            OwnedPyObject empty = PyString_FromString("");
-            OwnedPyX<PyCodeObject> code = PyCode_New(0,0,0,0,empty,dummyTuple,dummyTuple,dummyTuple,dummyTuple,dummyTuple,dummyString,dummyString,0,empty);
-//            OwnedPyX<PyCodeObject> code = PyCode_NewEmpty("<dummy>","<dummy>", 0); // (this would be easier but won't compile in Python 2.6)
+            OwnedPyX<PyCodeObject> code = PyCode_NewEmpty("<dummy>","<dummy>", 0);
             checkPythonError();
             PyFrameObject *frame = PyFrame_New(threadstate, code, globals, locals);
             checkPythonError();
@@ -362,7 +323,7 @@ public:
         if (!namedtuple)
         {
             namedtupleTypes.setown(PyDict_New());
-            OwnedPyObject pName = PyString_FromString("collections");
+            OwnedPyObject pName = PyUnicode_FromString("collections");
             OwnedPyObject collections = PyImport_Import(pName);
             checkPythonError();
             namedtuple.setown(PyObject_GetAttrString(collections, "namedtuple"));
@@ -383,13 +344,15 @@ public:
             names.append(str(field->name));
             fields++;
         }
-        OwnedPyObject pnames = PyString_FromString(names.str());
+        OwnedPyObject pnames = PyUnicode_FromString(names.str());
         OwnedPyObject mynamedtupletype;
+        checkPythonError();
         mynamedtupletype.set(PyDict_GetItem(namedtupleTypes, pnames));   // NOTE - returns borrowed reference
         if (!mynamedtupletype)
         {
-            OwnedPyObject recname = PyString_FromString("namerec");     // MORE - do we care what the name is?
+            OwnedPyObject recname = PyUnicode_FromString("namerec");     // MORE - do we care what the name is?
             OwnedPyObject ntargs = PyTuple_Pack(2, recname.get(), pnames.get());
+            checkPythonError();
             OwnedPyX<PyFrameObject> frame = pushDummyFrame();
             mynamedtupletype.setown(PyObject_CallObject(namedtuple, ntargs));
             popDummyFrame(frame);
@@ -485,17 +448,34 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     // we do this by doing a dynamic load of the pyembed library
 #ifdef _WIN32
     ::GetModuleFileName((HINSTANCE)&__ImageBase, helperLibraryName, _MAX_PATH);
-    if (strstr(path, "pyembed"))
+    if (strstr(path, "py3embed"))
     {
         HINSTANCE h = LoadSharedObject(helperLibraryName, false, false);
         DBGLOG("LoadSharedObject returned %p", h);
     }
 #else
-    StringBuffer modname;
-    if (findLoadedModule(modname, "libpyembed"))
+    FILE *diskfp = fopen("/proc/self/maps", "r");
+    if (diskfp)
     {
-        HINSTANCE h = LoadSharedObject(modname, false, false);
-        // Deliberately leak this handle
+        char ln[_MAX_PATH];
+        while (fgets(ln, sizeof(ln), diskfp))
+        {
+            if (strstr(ln, "libpy3embed"))
+            {
+                const char *fullName = strchr(ln, '/');
+                if (fullName)
+                {
+                    char *tail = (char *) strstr(fullName, SharedObjectExtension);
+                    if (tail)
+                    {
+                        tail[strlen(SharedObjectExtension)] = 0;
+                        HINSTANCE h = LoadSharedObject(fullName, false, false);
+                        break;
+                    }
+                }
+            }
+        }
+        fclose(diskfp);
     }
 #endif
     return true;
@@ -589,9 +569,7 @@ static __int64 getSignedResult(const RtlFieldInfo *field, PyObject *obj)
 {
     assertex(obj && obj != Py_None);
     __int64 ret;
-    if (PyInt_Check(obj))
-        ret = PyInt_AsUnsignedLongLongMask(obj);
-    else if (PyLong_Check(obj))
+    if (PyLong_Check(obj))
         ret = (__int64) PyLong_AsLongLong(obj);
     else
         typeError("integer", field);
@@ -602,9 +580,7 @@ static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, PyObject *o
 {
     assertex(obj && obj != Py_None);
     unsigned __int64 ret;
-    if (PyInt_Check(obj))
-        ret = PyInt_AsUnsignedLongLongMask(obj);
-    else if (PyLong_Check(obj))
+    if (PyLong_Check(obj))
         ret =  (unsigned __int64) PyLong_AsUnsignedLongLong(obj);
     else
         typeError("integer", field);
@@ -614,11 +590,20 @@ static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, PyObject *o
 static void getStringResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, char * &result)
 {
     assertex(obj && obj != Py_None);
-    if (PyString_Check(obj))
+    if (PyUnicode_Check(obj))
     {
-        const char * text =  PyString_AsString(obj);
+        OwnedPyObject temp_bytes = PyUnicode_AsEncodedString(obj, ASCII_LIKE_CODEPAGE, "ignore");
         checkPythonError();
-        size_t lenBytes = PyString_Size(obj);
+        const char * text =  PyBytes_AsString(temp_bytes);
+        checkPythonError();
+        size_t lenBytes = PyBytes_Size(temp_bytes);
+        rtlStrToStrX(chars, result, lenBytes, text);
+    }
+    else if (PyBytes_Check(obj))
+    {
+        const char * text = PyBytes_AsString(obj);
+        checkPythonError();
+        size_t lenBytes = PyBytes_Size(obj);
         rtlStrToStrX(chars, result, lenBytes, text);
     }
     else
@@ -630,10 +615,8 @@ static void getUTF8Result(const RtlFieldInfo *field, PyObject *obj, size32_t &ch
     assertex(obj && obj != Py_None);
     if (PyUnicode_Check(obj))
     {
-        OwnedPyObject utf8 = PyUnicode_AsUTF8String(obj);
-        checkPythonError();
-        size_t lenBytes = PyString_Size(utf8);
-        const char * text =  PyString_AsString(utf8);
+        Py_ssize_t lenBytes;
+        const char *text = PyUnicode_AsUTF8AndSize(obj, &lenBytes);
         checkPythonError();
         size32_t numchars = rtlUtf8Length(lenBytes, text);
         rtlUtf8ToUtf8X(chars, result, numchars, text);
@@ -664,32 +647,34 @@ static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultByt
         switch ((type_t) elemType)
         {
         case type_int:
-            rtlWriteInt(outData, pyembed::getSignedResult(NULL, elem), elemSize);
+            rtlWriteInt(outData, py3embed::getSignedResult(NULL, elem), elemSize);
             break;
         case type_unsigned:
-            rtlWriteInt(outData, pyembed::getUnsignedResult(NULL, elem), elemSize);
+            rtlWriteInt(outData, py3embed::getUnsignedResult(NULL, elem), elemSize);
             break;
         case type_real:
             if (elemSize == sizeof(double))
-                * (double *) outData = (double) pyembed::getRealResult(NULL, elem);
+                * (double *) outData = (double) py3embed::getRealResult(NULL, elem);
             else
             {
                 assertex(elemSize == sizeof(float));
-                * (float *) outData = (float) pyembed::getRealResult(NULL, elem);
+                * (float *) outData = (float) py3embed::getRealResult(NULL, elem);
             }
             break;
         case type_boolean:
             assertex(elemSize == sizeof(bool));
-            * (bool *) outData = pyembed::getBooleanResult(NULL, elem);
+            * (bool *) outData = py3embed::getBooleanResult(NULL, elem);
             break;
         case type_string:
         case type_varstring:
         {
-            if (!PyString_Check(elem))
+            if (!PyUnicode_Check(elem))
                 rtlFail(0, "pyembed: type mismatch - return value in list was not a STRING");
-            const char * text =  PyString_AsString(elem);
+            OwnedPyObject temp_bytes = PyUnicode_AsEncodedString(elem, ASCII_LIKE_CODEPAGE, "ignore");
             checkPythonError();
-            size_t lenBytes = PyString_Size(elem);
+            const char * text =  PyBytes_AsString(temp_bytes);
+            checkPythonError();
+            size_t lenBytes = PyBytes_Size(temp_bytes);
             if (elemSize == UNKNOWN_LENGTH)
             {
                 if (elemType == type_string)
@@ -722,10 +707,8 @@ static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultByt
         {
             if (!PyUnicode_Check(elem))
                 rtlFail(0, "pyembed: type mismatch - return value in list was not a unicode STRING");
-            OwnedPyObject utf8 = PyUnicode_AsUTF8String(elem);
-            checkPythonError();
-            size_t lenBytes = PyString_Size(utf8);
-            const char * text =  PyString_AsString(utf8);
+            Py_ssize_t lenBytes;
+            const char *text = PyUnicode_AsUTF8AndSize(elem, &lenBytes);
             checkPythonError();
             size32_t numchars = rtlUtf8Length(lenBytes, text);
             if (elemType == type_utf8)
@@ -790,10 +773,8 @@ static void getUnicodeResult(const RtlFieldInfo *field, PyObject *obj, size32_t 
     assertex(obj && obj != Py_None);
     if (PyUnicode_Check(obj))
     {
-        OwnedPyObject utf8 = PyUnicode_AsUTF8String(obj);
-        checkPythonError();
-        size_t lenBytes = PyString_Size(utf8);
-        const char * text =  PyString_AsString(utf8);
+        Py_ssize_t lenBytes;
+        const char *text = PyUnicode_AsUTF8AndSize(obj, &lenBytes);
         checkPythonError();
         size32_t numchars = rtlUtf8Length(lenBytes, text);
         rtlUtf8ToUnicodeX(chars, result, numchars, text);
@@ -815,47 +796,47 @@ public:
     virtual bool getBooleanResult(const RtlFieldInfo *field)
     {
         nextField(field);
-        return pyembed::getBooleanResult(field, elem);
+        return py3embed::getBooleanResult(field, elem);
     }
     virtual void getDataResult(const RtlFieldInfo *field, size32_t &len, void * &result)
     {
         nextField(field);
-        pyembed::getDataResult(field, elem, len, result);
+        py3embed::getDataResult(field, elem, len, result);
     }
     virtual double getRealResult(const RtlFieldInfo *field)
     {
         nextField(field);
-        return pyembed::getRealResult(field, elem);
+        return py3embed::getRealResult(field, elem);
     }
     virtual __int64 getSignedResult(const RtlFieldInfo *field)
     {
         nextField(field);
-        return pyembed::getSignedResult(field, elem);
+        return py3embed::getSignedResult(field, elem);
     }
     virtual unsigned __int64 getUnsignedResult(const RtlFieldInfo *field)
     {
         nextField(field);
-        return pyembed::getUnsignedResult(field, elem);
+        return py3embed::getUnsignedResult(field, elem);
     }
     virtual void getStringResult(const RtlFieldInfo *field, size32_t &chars, char * &result)
     {
         nextField(field);
-        pyembed::getStringResult(field, elem, chars, result);
+        py3embed::getStringResult(field, elem, chars, result);
     }
     virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char * &result)
     {
         nextField(field);
-        pyembed::getUTF8Result(field, elem, chars, result);
+        py3embed::getUTF8Result(field, elem, chars, result);
     }
     virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar * &result)
     {
         nextField(field);
-        pyembed::getUnicodeResult(field, elem, chars, result);
+        py3embed::getUnicodeResult(field, elem, chars, result);
     }
     virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value)
     {
         nextField(field);
-        double ret = pyembed::getRealResult(field, elem);
+        double ret = py3embed::getRealResult(field, elem);
         value.setReal(ret);
     }
 
@@ -983,7 +964,7 @@ public:
     }
     virtual void processString(unsigned len, const char *value, const RtlFieldInfo * field)
     {
-        addArg(PyString_FromStringAndSize(value, len));
+        addArg(PyUnicode_FromStringAndSize(value, len));
     }
     virtual void processBool(bool value, const RtlFieldInfo * field)
     {
@@ -1167,8 +1148,7 @@ PyObject* ECLDatasetIterator_iternext(PyObject *self)
 
 static PyTypeObject ECLDatasetIteratorType =
 {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ECLDatasetIterator._MyIter",      /*tp_name*/
     sizeof(ECLDatasetIterator),       /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -1232,7 +1212,7 @@ private:
     PyThreadState * &state;
 };
 
-void Python27GlobalState::unregister(const char *key)
+void Python3xGlobalState::unregister(const char *key)
 {
     checkThreadContext();
     GILBlock b(threadContext->threadState);
@@ -1274,7 +1254,7 @@ public:
         if (!row)
             return NULL;
         RtlDynamicRowBuilder rowBuilder(resultAllocator);
-        size32_t len = pyembed::getRowResult(row, rowBuilder);
+        size32_t len = py3embed::getRowResult(row, rowBuilder);
         return rowBuilder.finalizeRowClear(len);
     }
     virtual void stop()
@@ -1290,14 +1270,14 @@ protected:
     OwnedPyObject resultIterator;
 };
 
-// Each call to a Python function will use a new Python27EmbedFunctionContext object
+// Each call to a Python function will use a new Python3xEmbedFunctionContext object
 // This takes care of ensuring that the Python GIL is locked while we are executing python code,
 // and released when we are not
 
-class Python27EmbedContextBase : public CInterfaceOf<IEmbedFunctionContext>
+class Python3xEmbedContextBase : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    Python27EmbedContextBase(PythonThreadContext *_sharedCtx)
+    Python3xEmbedContextBase(PythonThreadContext *_sharedCtx)
     : sharedCtx(_sharedCtx)
     {
         PyEval_RestoreThread(sharedCtx->threadState);
@@ -1361,13 +1341,13 @@ public:
             bool isNew;
             globals.setown(globalState.getNamedScope(scopeKey, isNew));
             if (isNew && engine)
-                engine->onTermination(Python27GlobalState::unregister, scopeKey.str(), wuidScope);
+                engine->onTermination(Python3xGlobalState::unregister, scopeKey.str(), wuidScope);
         }
         else
             globals.setown(PyDict_New());
         PyDict_SetItemString(globals, "__builtins__",  PyEval_GetBuiltins());  // required for import to work
     }
-    ~Python27EmbedContextBase()
+    ~Python3xEmbedContextBase()
     {
         // We need to clear these before calling savethread, or we won't own the GIL
         locals.clear();
@@ -1379,39 +1359,39 @@ public:
 
     virtual bool getBooleanResult()
     {
-        return pyembed::getBooleanResult(NULL, result);
+        return py3embed::getBooleanResult(NULL, result);
     }
     virtual void getDataResult(size32_t &__chars, void * &__result)
     {
-        pyembed::getDataResult(NULL, result, __chars, __result);
+        py3embed::getDataResult(NULL, result, __chars, __result);
     }
     virtual double getRealResult()
     {
-        return pyembed::getRealResult(NULL, result);
+        return py3embed::getRealResult(NULL, result);
     }
     virtual __int64 getSignedResult()
     {
-        return pyembed::getSignedResult(NULL, result);
+        return py3embed::getSignedResult(NULL, result);
     }
     virtual unsigned __int64 getUnsignedResult()
     {
-        return pyembed::getUnsignedResult(NULL, result);
+        return py3embed::getUnsignedResult(NULL, result);
     }
     virtual void getStringResult(size32_t &__chars, char * &__result)
     {
-        pyembed::getStringResult(NULL, result, __chars, __result);
+        py3embed::getStringResult(NULL, result, __chars, __result);
     }
     virtual void getUTF8Result(size32_t &__chars, char * &__result)
     {
-        pyembed::getUTF8Result(NULL, result, __chars, __result);
+        py3embed::getUTF8Result(NULL, result, __chars, __result);
     }
     virtual void getUnicodeResult(size32_t &__chars, UChar * &__result)
     {
-        pyembed::getUnicodeResult(NULL, result, __chars, __result);
+        py3embed::getUnicodeResult(NULL, result, __chars, __result);
     }
     virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
     {
-        pyembed::getSetResult(result, __isAllResult, __resultBytes, __result, elemType, elemSize);
+        py3embed::getSetResult(result, __isAllResult, __resultBytes, __result, elemType, elemSize);
     }
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
@@ -1420,12 +1400,12 @@ public:
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
     {
         RtlDynamicRowBuilder rowBuilder(_resultAllocator);
-        size32_t len = pyembed::getRowResult(result, rowBuilder);
+        size32_t len = py3embed::getRowResult(result, rowBuilder);
         return (byte *) rowBuilder.finalizeRowClear(len);
     }
     virtual size32_t getTransformResult(ARowBuilder & builder)
     {
-        return pyembed::getRowResult(result, builder);
+        return py3embed::getRowResult(result, builder);
     }
     virtual void bindBooleanParam(const char *name, bool val)
     {
@@ -1461,11 +1441,11 @@ public:
     }
     virtual void bindStringParam(const char *name, size32_t len, const char *val)
     {
-        addArg(name, PyString_FromStringAndSize(val, len));
+        addArg(name, PyUnicode_Decode(val, len, ASCII_LIKE_CODEPAGE, "ignore"));
     }
     virtual void bindVStringParam(const char *name, const char *val)
     {
-        addArg(name, PyString_FromString(val));
+        addArg(name, PyUnicode_FromString(val));
     }
     virtual void bindUTF8Param(const char *name, size32_t chars, const char *val)
     {
@@ -1510,7 +1490,7 @@ public:
             case type_varstring:
             {
                 size32_t numChars = strlen((const char *) inData);
-                thisElem.setown(PyString_FromStringAndSize((const char *) inData, numChars));
+                thisElem.setown(PyUnicode_FromStringAndSize((const char *) inData, numChars));
                 if (elemSize == UNKNOWN_LENGTH)
                     thisSize = numChars + 1;
                 break;
@@ -1521,7 +1501,7 @@ public:
                     thisSize = * (size32_t *) inData;
                     inData += sizeof(size32_t);
                 }
-                thisElem.setown(PyString_FromStringAndSize((const char *) inData, thisSize));
+                thisElem.setown(PyUnicode_FromStringAndSize((const char *) inData, thisSize));
                 break;
             case type_real:
                 if (elemSize == sizeof(double))
@@ -1596,14 +1576,14 @@ protected:
     OwnedPyObject script;
 };
 
-class Python27EmbedScriptContext : public Python27EmbedContextBase
+class Python3xEmbedScriptContext : public Python3xEmbedContextBase
 {
 public:
-    Python27EmbedScriptContext(PythonThreadContext *_sharedCtx)
-    : Python27EmbedContextBase(_sharedCtx)
+    Python3xEmbedScriptContext(PythonThreadContext *_sharedCtx)
+    : Python3xEmbedContextBase(_sharedCtx)
     {
     }
-    ~Python27EmbedScriptContext()
+    ~Python3xEmbedScriptContext()
     {
     }
     virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
@@ -1628,7 +1608,7 @@ public:
 
     virtual void callFunction()
     {
-        result.setown(PyEval_EvalCode((PyCodeObject *) script.get(), globals, locals));
+        result.setown(PyEval_EvalCode(script.get(), globals, locals));
         checkPythonError();
         if (!result || result == Py_None)
             result.set(PyDict_GetItemString(globals, "__result__"));
@@ -1653,15 +1633,15 @@ protected:
     StringBuffer argstring;
 };
 
-class Python27EmbedImportContext : public Python27EmbedContextBase
+class Python3xEmbedImportContext : public Python3xEmbedContextBase
 {
 public:
-    Python27EmbedImportContext(PythonThreadContext *_sharedCtx)
-    : Python27EmbedContextBase(_sharedCtx)
+    Python3xEmbedImportContext(PythonThreadContext *_sharedCtx)
+    : Python3xEmbedContextBase(_sharedCtx)
     {
         argcount = 0;
     }
-    ~Python27EmbedImportContext()
+    ~Python3xEmbedImportContext()
     {
     }
     virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
@@ -1702,7 +1682,7 @@ private:
     OwnedPyObject args;
 };
 
-class Python27EmbedContext : public CInterfaceOf<IEmbedContext>
+class Python3xEmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
     virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
@@ -1712,11 +1692,11 @@ public:
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
     {
         checkThreadContext();
-        Owned<Python27EmbedContextBase> ret;
+        Owned<Python3xEmbedContextBase> ret;
         if (flags & EFimport)
-            ret.setown(new Python27EmbedImportContext(threadContext));
+            ret.setown(new Python3xEmbedImportContext(threadContext));
         else
-            ret.setown(new Python27EmbedScriptContext(threadContext));
+            ret.setown(new Python3xEmbedScriptContext(threadContext));
         ret->setScopes(ctx, options);
         return ret.getClear();
     }
@@ -1728,7 +1708,7 @@ public:
 
 extern DECL_EXPORT IEmbedContext* getEmbedContext()
 {
-    return new Python27EmbedContext;
+    return new Python3xEmbedContext;
 }
 
 extern DECL_EXPORT bool syntaxCheck(const char *script)

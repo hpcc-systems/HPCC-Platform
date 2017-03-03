@@ -15,20 +15,16 @@
 ################################################################################
 
 
-# Component: pyembed
+# Component: py3embed
 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for pyembed
+#    Cmake Input File for py3embed
 #####################################################
 
-set(debug_python OFF)   # A lot slower but can assist in debugging...
-set(DEBUG_PYTHON_LIBRARY "/usr/lib/libpython2.7_d.so")
-
-project(pyembed)
-
-if(PYEMBED)
+project(py3embed)
+if(PY3EMBED)
     unset(PYTHONLIBS_FOUND CACHE)
     unset(PYTHON_LIBRARY CACHE)
     unset(PYTHON_LIBRARIES CACHE)
@@ -36,22 +32,23 @@ if(PYEMBED)
     unset(PYTHON_INCLUDE_DIR CACHE)
     unset(PYTHON_DEBUG_LIBRARIES CACHE)
     unset(PYTHONLIBS_VERSION_STRING CACHE)
-    ADD_PLUGIN(pyembed PACKAGES PythonLibs MINVERSION 2.6 MAXVERSION 2.7)
-    set(PYTHON2LIBS_FOUND ${PYTHONLIBS_FOUND})
-    set(PYTHON2_LIBRARY ${PYTHON_LIBRARY})
-    set(PYTHON2_LIBRARIES ${PYTHON_LIBRARIES})
-    set(PYTHON2_INCLUDE_PATH ${PYTHON_INCLUDE_PATH})
-    set(PYTHON2_INCLUDE_DIR ${PYTHON_INCLUDE_DIR})
-    set(PYTHON2_DEBUG_LIBRARIES ${PYTHON_DEBUG_LIBRARIES})
-    set(PYTHON2LIBS_VERSION_STRING ${PYTHONLIBS_VERSION_STRING})
-    message("Python2 library is ${PYTHON2_LIBRARY}")
-    if(MAKE_PYEMBED)
+    ADD_PLUGIN(py3embed PACKAGES PythonLibs MINVERSION 3.3)
+    set(PYTHON3LIBS_FOUND ${PYTHONLIBS_FOUND})
+    set(PYTHON3_LIBRARY ${PYTHON_LIBRARY})
+    set(PYTHON3_LIBRARIES ${PYTHON_LIBRARIES})
+    set(PYTHON3_INCLUDE_PATH ${PYTHON_INCLUDE_PATH})
+    set(PYTHON3_INCLUDE_DIR ${PYTHON_INCLUDE_DIR})
+    set(PYTHON3_DEBUG_LIBRARIES ${PYTHON_DEBUG_LIBRARIES})
+    set(PYTHON3LIBS_VERSION_STRING ${PYTHONLIBS_VERSION_STRING})
+    message("Python3 library is ${PYTHON3_LIBRARY}")
+
+    if(MAKE_PY3EMBED)
         set(
             SRCS
-            pyembed.cpp)
+            py3embed.cpp)
 
         include_directories(
-            "${PYTHON2_INCLUDE_DIR}"
+            "${PYTHON3_INCLUDE_DIR}"
             ./../../system/include
             ./../../rtl/eclrtl
             ./../../rtl/include
@@ -63,29 +60,23 @@ if(PYEMBED)
             ./../../roxie/roxiemem
             ./../../system/jlib)
 
-        add_definitions(-D_USRDLL -DPYEMBED_EXPORTS)
-        if(debug_python)
-            add_definitions(-DPy_DEBUG)
-        endif()
+        add_definitions(-D_USRDLL -DPY3EMBED_EXPORTS)
 
-        HPCC_ADD_LIBRARY(pyembed SHARED ${SRCS})
+        HPCC_ADD_LIBRARY(py3embed SHARED ${SRCS})
         if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
             message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
         elseif(NOT APPLE)
-            set_target_properties(pyembed PROPERTIES NO_SONAME 1)
+            set_target_properties(py3embed PROPERTIES NO_SONAME 1)
         endif()
 
         install(
-            TARGETS pyembed
+            TARGETS py3embed
             DESTINATION plugins)
-        if(debug_python)
-            target_link_libraries(pyembed ${DEBUG_PYTHON2_LIBRARY})
-        else()
-            target_link_libraries(pyembed ${PYTHON2_LIBRARY})
-        endif()
+
+        target_link_libraries(py3embed ${PYTHON3_LIBRARY})
 
         target_link_libraries(
-            pyembed
+            py3embed
             eclrtl
             roxiemem
             jlib)
@@ -93,7 +84,7 @@ if(PYEMBED)
 endif()
 if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
-        FILES ${CMAKE_CURRENT_SOURCE_DIR}/python.ecllib
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/python3.ecllib
         DESTINATION plugins
         COMPONENT Runtime)
 endif()

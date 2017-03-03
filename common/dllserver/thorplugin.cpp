@@ -634,7 +634,10 @@ bool SafePluginMap::addPlugin(const char *path, const char *dllname)
         if (!dll)
         {
             Owned<PluginDll> n = new PluginDll(path, NULL);
-            if (!n->load(true, false) || !n->init(pluginCtx))
+            // Note - we used to load plugins with global=true, but that caused issues when loading
+            // Python3 and Python2 plugins at the same time as the export similar symbols
+            // Loading with global=false should not cause any adverse issues
+            if (!n->load(false, false) || !n->init(pluginCtx))
                 throw MakeStringException(0, "Failed to load plugin %s", path);
             if (trace)
                 n->logLoaded();
