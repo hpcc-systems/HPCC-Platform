@@ -45,7 +45,10 @@ class SortSlaveMP: implements ISortSlaveMP
 
     bool sendRecv(CMessageBuffer &mbuff, unsigned timeout=MP_WAIT_FOREVER);
 
+protected:
+    CActivityBase *activity = nullptr;
 public:
+    SortSlaveMP(CActivityBase *activity);
     void init(ICommunicator *_comm, rank_t _rank,mptag_t _tag);
     bool Connect(unsigned _part, unsigned _numnodes);
     void StartGather();
