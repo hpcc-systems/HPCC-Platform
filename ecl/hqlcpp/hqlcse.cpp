@@ -365,7 +365,7 @@ IHqlExpression * CseSpotter::createTransformed(IHqlExpression * expr)
 //          aliasValue.setown(splitter->annotatedExpr->cloneAllAnnotations(aliasValue));
         OwnedHqlExpr alias = createAliasOwn(aliasValue.getClear(), splitter);
         return alias.getClear();
-        return expr->cloneAllAnnotations(alias);
+        //return expr->cloneAllAnnotations(alias);
     }
     return transformed.getClear();
 }

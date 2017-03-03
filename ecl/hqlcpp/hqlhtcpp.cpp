@@ -11684,7 +11684,7 @@ void HqlCppTranslator::generateSerializeAssigns(BuildCtx & ctx, IHqlExpression *
         case no_ifblock:
             //Filter on target...
             UNIMPLEMENTED;
-            generateSerializeAssigns(ctx, cur->queryChild(1), selector, selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, needToClear, serializeOp, serialForm);
+            //generateSerializeAssigns(ctx, cur->queryChild(1), selector, selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, needToClear, serializeOp, serialForm);
             break;
         }
     }
@@ -11780,7 +11780,7 @@ bool HqlCppTranslator::extractSerializeKey(SerializeKeyInfo & info, const Datase
             return false;
     }
 
-    bool aggressive = false;
+    const bool aggressive = false;
     // When projecting is done by the serialize() function this will be worth changing to true
     // otherwise the extra cost of the project probably isn't likely to outweigh the extra copy
     unsigned numToSerialize = aggressive ? info.filteredSorts.ordinality() : sorts.ordinality();

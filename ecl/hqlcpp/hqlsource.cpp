@@ -3681,7 +3681,7 @@ MonitorExtractor::MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator
     expandKeyableFields();
     cleanlyKeyedExplicitly = false;
     keyedExplicitly = false;
-    allowDynamicFormatChange = tableExpr && !tableExpr->hasAttribute(fixedAtom);
+    allowDynamicFormatChange = !tableExpr->hasAttribute(fixedAtom);
 }
 
 void MonitorExtractor::callAddAll(BuildCtx & ctx, IHqlExpression * targetVar)

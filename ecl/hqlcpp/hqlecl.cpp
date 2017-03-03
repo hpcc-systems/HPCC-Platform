@@ -604,11 +604,10 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     if (ok && deleteGenerated)
     {
         StringBuffer temp;
-        remove(temp.clear().append(wuname).append(".cpp").str());
-        remove(temp.clear().append(wuname).append(".hpp").str());
+        removeFileTraceIfFail(temp.clear().append(wuname).append(".hpp").str());
         ForEachItemIn(i, sourceFiles)
         {
-            remove(sourceFiles.item(i));
+            removeFileTraceIfFail(sourceFiles.item(i));
         }
     }
     return ok;
