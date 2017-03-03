@@ -175,7 +175,9 @@ protected:
         }
 
         Owned<IThorRowInterfaces> rowif = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta());
-        Owned<IThorRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize());
+        Owned<IThorRowInterfaces> auxrowif;
+        if (helper->querySortedRecordSize())
+            auxrowif.setown(createRowInterfaces(helper->querySortedRecordSize()));
         try
         {
             imaster->SortSetup(rowif,helper->queryCompare(),helper->querySerialize(),cosortfilenames.length()!=0,true,cosortfilenames.str(),auxrowif);
