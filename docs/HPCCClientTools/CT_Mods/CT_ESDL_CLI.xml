@@ -741,8 +741,8 @@
         syntax:</para>
 
         <programlisting format="linespecific">&lt;Methods&gt;
-  &lt;Method name="myMthd1" url="&lt;RoxieIP&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
-  &lt;Method name="myMthd2" url="&lt;RoxieIP&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
+  &lt;Method name="myMthd1" url="&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
+  &lt;Method name="myMthd2" url="&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
 &lt;/Methods&gt;</programlisting>
 
         <para><emphasis role="bold">Example:</emphasis></para>
@@ -763,7 +763,7 @@
           Binding.</para>
 
           <programlisting>&lt;Methods&gt; 
-  &lt;Method name="AddThis" url="&lt;RoxieIP&gt;:9876" querytype="roxie" queryname="AddThis"/&gt; 
+  &lt;Method name="AddThis" url="&lt;RoxieIPRange&gt;:9876" querytype="roxie" queryname="AddThis"/&gt; 
 &lt;/Methods&gt;</programlisting>
 
           <para>If this Method requires context information, for example about
@@ -771,7 +771,7 @@
           (&lt;Gateways&gt;...&lt;/Gateways&gt;) depicted as follows.</para>
 
           <programlisting>&lt;Methods&gt;
-  &lt;Method name="AddThis" url="&lt;RoxieIP&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
+  &lt;Method name="AddThis" url="&lt;RoxieIPRange&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
     &lt;!--Optional Method Context Information start--&gt;
     &lt;Gateways&gt;
       &lt;Gateway name="mygateway" url="1.1.1.1:2222/someservice/somemethod/&gt;
@@ -805,7 +805,7 @@
       &lt;ESP&gt;
        &lt;ServiceName&gt;wsmath&lt;/ServiceName&gt;
        &lt;Config&gt;
-        &lt;Method name="AddThis" url="&lt;RoxieIP&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
+        &lt;Method name="AddThis" url="&lt;RoxieIPRange&gt;:9876" querytype="roxie" queryname="AddThis"&gt;
           &lt;Gateways&gt;
             &lt;Gateway name="mygateway" url="1.1.1.1:2222/someservice/somemethod/&gt;
             &lt;Gateway name="anothergateway" url="2.2.2.2:9999/someservice/somemethod/&gt;
@@ -1116,8 +1116,8 @@
         syntax:</para>
 
         <programlisting>&lt;Methods&gt;
-  &lt;Method name="myMthd1" url="http://&lt;RoxieIP&gt;:9876/somepath?someparam=value" user="me" password="mypw"/&gt;
-  &lt;Method name="myMthd2" url="http://&lt;RoxieIP&gt;:9876/somepath?someparam=value" user="me" password="mypw"/&gt;
+  &lt;Method name="myMthd1" url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
+  &lt;Method name="myMthd2" url="http://&lt;RoxieIPRange&gt;:9876/path?param=value" user="me" password="mypw"/&gt;
 &lt;/Methods&gt;</programlisting>
 
         <para><emphasis role="bold">Example:</emphasis></para>

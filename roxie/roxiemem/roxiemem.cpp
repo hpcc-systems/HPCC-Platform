@@ -5757,9 +5757,11 @@ void DataBufferBottom::released()
     unsigned expected = 0;
     if (count.compare_exchange_strong(expected, DEAD_PSEUDO_COUNT, std::memory_order_release))
     {
+        //Need to save the value of owner because the object can be freed as soon as okToFree is set
+        CDataBufferManager * savedOwner = owner;
         //No acquire fence required since the following code doesn't read anything from the object
         okToFree.store(true, std::memory_order_release);
-        owner->freePending.store(true, std::memory_order_release);
+        savedOwner->freePending.store(true, std::memory_order_release);
     }
 }
 
