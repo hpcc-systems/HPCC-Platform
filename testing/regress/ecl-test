@@ -165,6 +165,8 @@ class RegressMain:
                                 nargs=1,  default = ['all'],   metavar="class[,class,...]")
         executionParser.add_argument('--excludeclass', '-e', help="exclude subclass(es) of the suite. Default value is 'none'",
                                 nargs=1,  default = ['none'],   metavar="class[,class,...]")
+        executionParser.add_argument('--handleEclccWarningFile', '-w', help="Create/overwrite/delete ECLCC warning file.",
+                                action='store_true')
 
         parser = argparse.ArgumentParser(prog=prog, description=description,  parents=[helperParser, commonParser,  executionParser])
 

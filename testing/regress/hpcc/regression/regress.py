@@ -504,35 +504,43 @@ class Regression:
         res = 0
         wuid = None
         if ECLCC().makeArchive(query):
-            eclCmd = ECLcmd()
-            try:
-                if publish:
-                    res = eclCmd.runCmd("publish", cluster, query, report[0],
-                                      server=self.config.espIp,
-                                      username=self.config.username,
-                                      password=self.config.password, 
-                                      retryCount=self.config.maxAttemptCount)
-                else:
-                    res = eclCmd.runCmd("run", cluster, query, report[0],
-                                      server=self.config.espIp,
-                                      username=self.config.username,
-                                      password=self.config.password, 
-                                      retryCount=self.config.maxAttemptCount)
-            except Error as e:
-                logging.debug("Exception raised:'%s'"  % ( str(e)),  extra={'taskId':cnt})
+            if query.isEclccWarningChanged():
+                logging.debug("Should check Eclcc Warning:'%s'"  % (query.getEclccWarning()),  extra={'taskId':cnt})
                 res = False
                 wuid = 'Not found'
                 query.setWuid(wuid)
-                query.diff = query.getBaseEcl()+"\n\t"+str(e)
+                query.diff = query.getEclccWarningChanges()
                 report[0].addResult(query)
-                pass
-            except:
-                logging.error("Unexpected error:'%s'" %( sys.exc_info()[0]) ,  extra={'taskId':cnt})
+            else:
+                eclCmd = ECLcmd()
+                try:
+                    if publish:
+                        res = eclCmd.runCmd("publish", cluster, query, report[0],
+                                          server=self.config.espIp,
+                                          username=self.config.username,
+                                          password=self.config.password,
+                                          retryCount=self.config.maxAttemptCount)
+                    else:
+                        res = eclCmd.runCmd("run", cluster, query, report[0],
+                                          server=self.config.espIp,
+                                          username=self.config.username,
+                                          password=self.config.password,
+                                          retryCount=self.config.maxAttemptCount)
+                except Error as e:
+                    logging.debug("Exception raised:'%s'"  % ( str(e)),  extra={'taskId':cnt})
+                    res = False
+                    wuid = 'Not found'
+                    query.setWuid(wuid)
+                    query.diff = query.getBaseEcl()+"\n\t"+str(e)
+                    report[0].addResult(query)
+                    pass
+                except:
+                    logging.error("Unexpected error:'%s'" %( sys.exc_info()[0]) ,  extra={'taskId':cnt})
 
-            wuid = query.getWuid()
-            logging.debug("CMD result: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})
-            if wuid == 'Not found':
-                res = False
+                wuid = query.getWuid()
+                logging.debug("CMD result: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})
+                if wuid == 'Not found':
+                    res = False
         else:
             res = False
             report[0].addResult(query)

@@ -27,6 +27,7 @@ Result:
 |                       [--noversion]
 |                       [--runclass class[,class,...]]
 |                       [--excludeclass class[,class,...]]
+|                       [--handleEclccWarningFile]
 |                       {list,setup,run,query} ...
 | 
 |       HPCC Platform Regression suite
@@ -59,6 +60,8 @@ Result:
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 exclude subclass(es) of the suite. Default value is 'none'
+|        --handleEclccWarningFile, -w
+|                                 Create/overwrite/delete ECLCC warning file.
 |
 
 Important!
@@ -820,4 +823,68 @@ The Regression Suite processes the engineParams definition(s) sequentially and a
 If your HPCC System is configured to use LDAP authentication you should change value of "username" and "password" fields in ecl-test.json file to yours.
 
 Alternatively, ensure that your test system has a user "regress" with password "regress" and appropriate rights to be able to run the suite.
+
+
+11. Handling ECLCC warnings:
+----------------------------
+There is a new feature of the Regression Test Engine: Eclcc warning check.
+
+With this feature, the engine checks the Eclcc compiler output (stderr stream) for every ECL test cases and looking for warnings.
+
+The possible events are:
+Test pass:
+    1. The test compiled without any warning. In this case the execution continuous as previously.
+    2. The test compiled with warnings, but the engine found ‘.eclccwarn’ file with all warnings. In this case the state is well known  and the test execution continuous as previously
+
+Test failing:
+    3. Suddenly the test compiled with one or more warnings. If this situation is new no eclccwarn file associated to that test case then the engine reports those new warnings as error and the test aborted.
+    4. The test compiled with warnings, the engine found .eclccwarn file, but there is some difference (warning(s) appear or disappear). In this case engine reports the difference between current compiler output and the state stored in .eclccwarn file. Further execution of test is  aborted
+    5. The test compiled without warnings, but the engine found .eclccwarn file. This means the warning(s) suddenly/unintentionally disappeared and the engine reports that changes and abort the test.
+
+For this checking the in events 2-5 the engine need an .eclccwarn file. To generate that file there is two ways:
+    1. Manually: 
+        a. In this case the ECL code should  compile with eclcc command like this:
+              eclcc  <ecl_file>.ecl  2> <ecl_file>.eclccwarn
+           with the stderr stream redirected into a file
+
+        b. Because the warning report contains the path to the ECL file and this path can be different from system to system and execution by execution (OBT, Smoketest, developer environment, etc.) all path should remove from the generated <ecl_file>.eclccwarn file. 
+
+        c. The edited <ecl_file>.eclccwarn must copy to the same place where the associated key file (<ecl_file>.xml) located.
+
+        d. Example:
+            i. Here is a simple ECL file with one line of code:
+                    '1'[1..2]
+               stored in ‘ecl/eclccwarning.ecl’ file.
+
+            ii. Execute it with:
+                    eclcc ecl/eclccwarning.ecl 2>eclccwarning.eclccwarn
+
+            iii. The content of the ‘eclccwarning.eclccwarn’ file is:
+                    ecl/eclccwarning.ecl(1,5): warning C2121: Invalid substring range: index 2 out of bound: 1..1
+                    0 error, 1 warning
+
+                So, the ‘.eclccwarn’ file contains the path ‘ecl/’ and in must remove:
+                    eclccwarning.ecl(1,5): warning C2121: Invalid substring range: index 2 out of bound: 1..1
+                    0 error, 1 warning
+                
+            iv. Copy the edited file into ecl/key/ directory and the next run of Regression Test Engine it will be used to check compiler warnings.
+           
+    2. Automated: (Warning!!! This is an easier but dangerous way!)
+        a. In this case the ECL code can run with Regression Test Engine like this:
+                ./ecl-test query –t <target_cluster> –w <ecl_file>.ecl  
+           The newly implemented –w or --handleEclccWarningFile parameter force the engine to create, rewrite or delete the <ecl_file>.eclccwarn file. Depend on the result of warning check.
+
+        b. This means
+            i. In event 3 a new warning file created.
+            
+            ii. In event 4 the existing warnings file overwritten by a new result
+                Warning! If appearing/disappearing of warning is not intentional, the previous warning state lost.
+                
+            iii. In event 5, all warnings disappeared the warning file is deleted.
+                Warning! It is same problem as II.
+                
+        c. Important! 
+           The –w or  --handleEclccWarningFile parameter working with query with wildcards and run mode and can cause to overwrite or remove all associated warning files.
+
+Last comment: the warning file is part of the (Regression) suite, so it must be handled same way as the ECL test code and the test related key file. 
 

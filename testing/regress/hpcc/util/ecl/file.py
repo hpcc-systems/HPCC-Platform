@@ -82,6 +82,8 @@ class ECLFile:
         self.versionId=0
         self.timeout = 0
         self.args = args
+        self.eclccWarning = ''
+        self.eclccWarningChanges = ''
 
         #If there is a --publish CL parameter then force publish this ECL file
         self.forcePublish=False
@@ -527,3 +529,73 @@ class ECLFile:
     def getDParameters(self):
         logging.debug("%3d. getDParameters (ecl:'%s', D parameters are:'%s')", self.taskId,  self.ecl, self.paramD)
         return self.paramD
+
+    def setEclccWarning(self,  warning):
+        logging.debug("%3d. setEclccWarning (ecl:'%s', warning(s) is:'%s')", self.taskId,  self.ecl, warning)
+        self.eclccWarning = warning.strip().replace(self.dir_ec+'/','').split('\n')
+
+    def getEclccWarning(self):
+        logging.debug("%3d. getEclccWarning (ecl:'%s', warning(s) is:'%s')", self.taskId,  self.ecl, self.eclccWarning)
+        return self.eclccWarning
+
+    def isEclccWarningChanged(self):
+        retVal = False
+        expectedKeyPath = self.getExpected()
+        expectedKeyPath = expectedKeyPath.replace('.xml', '.eclccwarn')
+        logging.debug("%3d. EXP: " + expectedKeyPath,  self.taskId )
+        eclccKeyContent = []
+        if os.path.isfile(expectedKeyPath):
+            # put warning file content into self.eclccWarningChanges
+            eclccKeyContent = open(expectedKeyPath, 'r').readlines()
+            eclccKeyContent = [x.strip() for x in eclccKeyContent]
+            logging.debug("%3d. eclccKeyContent: " + "\n".join(eclccKeyContent),  self.taskId )
+        elif '' != self.eclccWarning:
+            logging.debug("%3d. Eclcc warning file '%s' doesn't exist." % (self.taskId, expectedKeyPath))
+            eclccKeyContent = []
+            if self.args.handleEclccWarningFile:
+                logging.debug("%3d. Create '%s' eclcc warning file." %(self.taskId, expectedKeyPath ))
+                open(expectedKeyPath, 'w').write("\n".join(self.eclccWarning))
+                pass
+        try:
+            diffLines = ''
+            d = list(difflib.unified_diff(eclccKeyContent, self.eclccWarning, fromfile=expectedKeyPath, tofile="eclcc warning",  lineterm = ""))
+            diffLines = "\n".join(d)
+
+            logging.debug("%3d. diffLines: " + diffLines,  self.taskId )
+            if len(diffLines) > 0:
+                self.eclccWarningChanges += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())
+                self.eclccWarningChanges += "\tEclcc generated warning changed\n"
+                logging.debug( "type(diffLines) is %s: ",  repr(type(diffLines)), extra={'taskId':self.taskId})
+                if type(diffLines) == type(u' '):
+                    diffLines = unicodedata.normalize('NFKD', diffLines).encode('ascii','ignore').replace('\'','').replace('\\u', '\\\\u')
+                    diffLines = str(diffLines)
+                else:
+                    diffLines = str(diffLines)
+                self.eclccWarningChanges += str(diffLines)
+                retVal = True
+                if self.args.handleEclccWarningFile:
+                    if 0 < len(self.eclccWarning):
+                        logging.debug("%3d. Overwrite '%s' with current eclcc warning!" %(self.taskId, expectedKeyPath ))
+                        open(expectedKeyPath, 'w').write("\n".join(self.eclccWarning))
+                    else:
+                        logging.debug("%3d. Remove '%s' with current eclcc warning!" %(self.taskId, expectedKeyPath ))
+                        os.unlink(expectedKeyPath)
+                    pass
+            logging.debug("%3d. self.diff: '" + self.eclccWarningChanges +"'",  self.taskId )
+        except Exception as e:
+            logging.debug( e, extra={'taskId':self.taskId})
+            logging.debug("%s",  traceback.format_exc().replace("\n","\n\t\t"),  extra={'taskId':self.taskId} )
+            logging.debug("EXP: %s",  eclccKeyContent,  extra={'taskId':self.taskId})
+            logging.debug("REC: %s",  self.eclccWarning,  extra={'taskId':self.taskId})
+            retVal = True
+        finally:
+            if self.eclccWarningChanges == '':
+                retVal = False
+            else:
+                retVal = True
+
+        return retVal
+
+    def getEclccWarningChanges(self):
+        # return with self.eclccWarningChanges
+        return self.eclccWarningChanges+"\n"

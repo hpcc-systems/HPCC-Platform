@@ -5054,14 +5054,17 @@ public:
 
     void run(SocketEndpoint &listenep, bool useSSL)
     {
+        Owned<ISocket> acceptSocket, secureRejectSocket;
         if (listenep.isNull())
-            acceptsock.setown(ISocket::create(listenep.port));
-        else {
+            acceptSocket.setown(ISocket::create(listenep.port));
+        else
+        {
             StringBuffer ips;
             listenep.getIpText(ips);
-            acceptsock.setown(ISocket::create_ip(listenep.port,ips.str()));
+            acceptSocket.setown(ISocket::create_ip(listenep.port,ips.str()));
         }
-        if (useSSL) {
+        if (useSSL)
+        {
             if (!securitySettings.certificate)
                 throw createDafsException(DAFSERR_connection_failed,"SSL Certificate information not found in environment.conf");
             if (listenep.port <= 0)
@@ -5071,15 +5074,24 @@ public:
             }
             //Create unsecure socket to reject non-ssl client requests
             if (listenep.isNull())
-                rejectsock.setown(ISocket::create(DAFILESRV_PORT));
+                secureRejectSocket.setown(ISocket::create(DAFILESRV_PORT));
             else
             {
                 StringBuffer ips;
                 listenep.getIpText(ips);
-                rejectsock.setown(ISocket::create_ip(DAFILESRV_PORT,ips.str()));
+                secureRejectSocket.setown(ISocket::create_ip(DAFILESRV_PORT,ips.str()));
             }
         }
+        run(acceptSocket.getClear(), secureRejectSocket.getClear());
+    }
+    void run(ISocket *socket, ISocket *secureRejectSocket)
+    {
+        acceptsock.setown(socket);
+        rejectsock.setown(secureRejectSocket);
+        bool useSSL = secureRejectSocket ? true : false;
 #ifdef _DEBUG
+        SocketEndpoint listenep;
+        socket->getPeerEndpoint(listenep);
         StringBuffer sb;
         listenep.getUrlStr(sb);
         DBGLOG("Server accepting %sfrom %s", useSSL?"SECURE ":"", sb.str());
@@ -5093,10 +5105,12 @@ public:
             readSocks.append(rejectsock->OShandle());
         }
 
-        for (;;) {
+        for (;;)
+        {
             Owned<ISocket> sock;
             bool sockavail = false;
-            try {
+            try
+            {
                 if (!useSSL)
                     sockavail = acceptsock->wait_read(1000*60*1)!=0;
                 else
@@ -5128,7 +5142,8 @@ public:
                     }
                 }
 #if 0
-                if (!sockavail) {
+                if (!sockavail)
+                {
                     JSocketStatistics stats;
                     getSocketStatistics(stats);
                     StringBuffer s;
@@ -5137,7 +5152,8 @@ public:
                 }
 #endif
             }
-            catch (IException *e) {
+            catch (IException *e)
+            {
                 EXCLOG(e,"CRemoteFileServer(1)");
                 e->Release();
                 // not sure what to do so just accept
@@ -5145,8 +5161,10 @@ public:
             }
             if (stopping)
                 break;
-            if (sockavail) {
-                try {
+            if (sockavail)
+            {
+                try
+                {
                     sock.setown(acceptsock->accept(true));
                     if (useSSL)
                     {
@@ -5164,7 +5182,8 @@ public:
                         break;
                     runClient(sock.getClear());
                 }
-                catch (IException *e) {
+                catch (IException *e)
+                {
                     EXCLOG(e,"CRemoteFileServer");
                     e->Release();
                     sock.clear();
@@ -5447,3 +5466,315 @@ IRemoteFileServer * createRemoteFileServer(unsigned maxThreads, unsigned maxThre
     return new CRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy);
 }
 
+
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+#include "rmtfile.hpp"
+
+static unsigned serverPort = DAFILESRV_PORT+1; // do not use standard port, which if in a URL will be converted to local parth if IP is local
+static StringBuffer basePath;
+static Owned<CSimpleInterface> serverThread;
+
+
+class RemoteFileTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(RemoteFileTest);
+        CPPUNIT_TEST(testStartServer);
+        CPPUNIT_TEST(testBasicFunctionality);
+        CPPUNIT_TEST(testCopy);
+        CPPUNIT_TEST(testOther);
+        CPPUNIT_TEST(testConfiguration);
+        CPPUNIT_TEST(testDirectoryMonitoring);
+        CPPUNIT_TEST(testFinish);
+    CPPUNIT_TEST_SUITE_END();
+
+    size32_t testLen = 1024;
+
+protected:
+    void testStartServer()
+    {
+        Owned<ISocket> socket;
+
+        unsigned endPort = MP_END_PORT;
+        while (1)
+        {
+            try
+            {
+                socket.setown(ISocket::create(serverPort));
+                break;
+            }
+            catch (IJSOCK_Exception *e)
+            {
+                if (e->errorCode() != JSOCKERR_port_in_use)
+                {
+                    StringBuffer eStr;
+                    e->errorMessage(eStr);
+                    e->Release();
+                    CPPUNIT_ASSERT_MESSAGE(eStr.str(), 0);
+                }
+                else if (serverPort == endPort)
+                {
+                    e->Release();
+                    CPPUNIT_ASSERT_MESSAGE("Could not find a free port to use for remote file server", 0);
+                }
+            }
+            ++serverPort;
+        }
+
+        basePath.append("//");
+        SocketEndpoint ep(serverPort);
+        ep.getUrlStr(basePath);
+
+        char cpath[_MAX_DIR];
+        if (!GetCurrentDirectory(_MAX_DIR, cpath))
+            CPPUNIT_ASSERT_MESSAGE("Current directory path too big", 0);
+        else
+            basePath.append(cpath);
+        addPathSepChar(basePath);
+
+        PROGLOG("basePath = %s", basePath.str());
+
+        class CServerThread : public CSimpleInterface, implements IThreaded
+        {
+            CThreaded threaded;
+            Owned<CRemoteFileServer> server;
+            Linked<ISocket> socket;
+        public:
+            CServerThread(CRemoteFileServer *_server, ISocket *_socket) : server(_server), socket(_socket), threaded("CServerThread")
+            {
+                threaded.init(this);
+            }
+            ~CServerThread()
+            {
+                threaded.join();
+            }
+        // IThreaded
+            virtual void main()
+            {
+                server->run(socket, nullptr);
+            }
+        };
+        enableDafsAuthentication(false);
+        Owned<IRemoteFileServer> server = createRemoteFileServer();
+        serverThread.setown(new CServerThread(QUERYINTERFACE(server.getClear(), CRemoteFileServer), socket.getClear()));
+    }
+    void testBasicFunctionality()
+    {
+        VStringBuffer filePath("%s%s", basePath.str(), "file1");
+
+        // create file
+        Owned<IFile> iFile = createIFile(filePath);
+        CPPUNIT_ASSERT(iFile);
+        Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
+        CPPUNIT_ASSERT(iFileIO);
+
+        // write out 1k of random data and crc
+        MemoryBuffer mb;
+        char *buf = (char *)mb.reserveTruncate(testLen);
+        for (unsigned b=0; b<1024; b++)
+            buf[b] = getRandom()%256;
+        CRC32 crc;
+        crc.tally(testLen, buf);
+        unsigned writeCrc = crc.get();
+
+        size32_t sz = iFileIO->write(0, testLen, buf);
+        CPPUNIT_ASSERT(sz == testLen);
+
+        // close file
+        iFileIO.clear();
+
+        // validate remote crc
+        CPPUNIT_ASSERT(writeCrc == iFile->getCRC());
+
+        // exists
+        CPPUNIT_ASSERT(iFile->exists());
+
+        // validate size
+        CPPUNIT_ASSERT(iFile->size() == testLen);
+
+        // read back and validate read data's crc against written
+        iFileIO.setown(iFile->open(IFOread));
+        CPPUNIT_ASSERT(iFileIO);
+        sz = iFileIO->read(0, testLen, buf);
+        iFileIO.clear();
+        CPPUNIT_ASSERT(sz == testLen);
+        crc.reset();
+        crc.tally(testLen, buf);
+        CPPUNIT_ASSERT(writeCrc == crc.get());
+    }
+    void testCopy()
+    {
+        VStringBuffer filePath("%s%s", basePath.str(), "file1");
+        Owned<IFile> iFile = createIFile(filePath);
+
+        // test file copy
+        VStringBuffer filePathCopy("%s%s", basePath.str(), "file1copy");
+        Owned<IFile> iFile1Copy = createIFile(filePathCopy);
+        iFile->copyTo(iFile1Copy);
+
+        // read back copy and validate read data's crc against written
+        Owned<IFileIO> iFileIO = iFile1Copy->open(IFOreadwrite); // open read/write for appendFile in next step.
+        CPPUNIT_ASSERT(iFileIO);
+        MemoryBuffer mb;
+        char *buf = (char *)mb.reserveTruncate(testLen);
+        size32_t sz = iFileIO->read(0, testLen, buf);
+        CPPUNIT_ASSERT(sz == testLen);
+        CRC32 crc;
+        crc.tally(testLen, buf);
+        CPPUNIT_ASSERT(iFile->getCRC() == crc.get());
+
+        // check appendFile functionality. NB after this "file1copy" should be 2*testLen
+        CPPUNIT_ASSERT(testLen == iFileIO->appendFile(iFile));
+        iFileIO.clear();
+
+        // validate new size
+        CPPUNIT_ASSERT(iFile1Copy->size() == 2 * testLen);
+
+        // setSize test, truncate copy to original size
+        iFileIO.setown(iFile1Copy->open(IFOreadwrite));
+        iFileIO->setSize(testLen);
+
+        // validate new size
+        CPPUNIT_ASSERT(iFile1Copy->size() == testLen);
+    }
+    void testOther()
+    {
+        VStringBuffer filePath("%s%s", basePath.str(), "file1");
+        Owned<IFile> iFile = createIFile(filePath);
+        // rename
+        iFile->rename("file2");
+
+        // create a directory
+        VStringBuffer subDirPath("%s%s", basePath.str(), "subdir1");
+        Owned<IFile> subDirIFile = createIFile(subDirPath);
+        subDirIFile->createDirectory();
+
+        // check isDirectory result
+        CPPUNIT_ASSERT(subDirIFile->isDirectory());
+
+        // move previous created and renamed file into new sub-directory
+        // ensure not present before move
+        VStringBuffer subDirFilePath("%s/%s", subDirPath.str(), "file2");
+        Owned<IFile> iFile2 = createIFile(subDirFilePath);
+        iFile2->remove();
+        iFile->move(subDirFilePath);
+
+        // count sub-directory files with a wildcard
+        unsigned count=0;
+        Owned<IDirectoryIterator> iter = subDirIFile->directoryFiles("*2");
+        ForEach(*iter)
+            ++count;
+        CPPUNIT_ASSERT(1 == count);
+
+        // check isFile result
+        CPPUNIT_ASSERT(iFile2->isFile());
+
+        // validate isReadOnly before after setting
+        CPPUNIT_ASSERT(!iFile2->isReadOnly());
+        iFile2->setReadOnly(true);
+        CPPUNIT_ASSERT(iFile2->isReadOnly());
+
+        // get/set Time and validate result
+        CDateTime createTime, modifiedTime, accessedTime;
+        CPPUNIT_ASSERT(subDirIFile->getTime(&createTime, &modifiedTime, &accessedTime));
+        CDateTime newModifiedTime = modifiedTime;
+        newModifiedTime.adjustTime(-86400); // -1 day
+        CPPUNIT_ASSERT(subDirIFile->setTime(&createTime, &newModifiedTime, &accessedTime));
+        CPPUNIT_ASSERT(subDirIFile->getTime(&createTime, &modifiedTime, &accessedTime));
+        CPPUNIT_ASSERT(modifiedTime == newModifiedTime);
+
+
+        // test set file permissions
+        iFile2->setFilePermissions(0777);
+    }
+    void testConfiguration()
+    {
+        SocketEndpoint ep(serverPort); // test trace open connections
+        CPPUNIT_ASSERT(setDafileSvrTraceFlags(ep, 0x08));
+
+        StringBuffer infoStr;
+        CPPUNIT_ASSERT(RFEnoerror == getDafileSvrInfo(ep, 10, infoStr));
+
+        CPPUNIT_ASSERT(RFEnoerror == setDafileSvrThrottleLimit(ep, ThrottleStd, DEFAULT_STDCMD_PARALLELREQUESTLIMIT+1, DEFAULT_STDCMD_THROTTLEDELAYMS+1, DEFAULT_STDCMD_THROTTLECPULIMIT+1, DEFAULT_STDCMD_THROTTLEQUEUELIMIT+1));
+    }
+    void testDirectoryMonitoring()
+    {
+        VStringBuffer subDirPath("%s%s", basePath.str(), "subdir1");
+        Owned<IFile> subDirIFile = createIFile(subDirPath);
+        subDirIFile->createDirectory();
+
+        VStringBuffer filePath("%s/%s", subDirPath.str(), "file1");
+        class CDelayedFileCreate : implements IThreaded
+        {
+            CThreaded threaded;
+            StringAttr filePath;
+            Semaphore doneSem;
+        public:
+            CDelayedFileCreate(const char *_filePath) : filePath(_filePath), threaded("CDelayedFileCreate")
+            {
+                threaded.init(this);
+            }
+            ~CDelayedFileCreate()
+            {
+                stop();
+            }
+            void stop()
+            {
+                doneSem.signal();
+                threaded.join();
+            }
+            // IThreaded impl.
+            virtual void main()
+            {
+                MilliSleep(1000); // give monitorDirectory a chance to be monitoring
+
+                // create file
+                Owned<IFile> iFile = createIFile(filePath);
+                CPPUNIT_ASSERT(iFile);
+                Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
+                CPPUNIT_ASSERT(iFileIO);
+                iFileIO.clear();
+
+                doneSem.wait(60 * 1000);
+
+                CPPUNIT_ASSERT(iFile->remove());
+            }
+        } delayedFileCreate(filePath);
+        Owned<IDirectoryDifferenceIterator> iter = subDirIFile->monitorDirectory(nullptr, nullptr, false, false, 2000, 60 * 1000);
+        ForEach(*iter)
+        {
+            StringBuffer fname;
+            iter->getName(fname);
+            PROGLOG("fname = %s", fname.str());
+        }
+        delayedFileCreate.stop();
+    }
+    void testFinish()
+    {
+        // clearup
+        VStringBuffer filePathCopy("%s%s", basePath.str(), "file1copy");
+        Owned<IFile> iFile1Copy = createIFile(filePathCopy);
+        CPPUNIT_ASSERT(iFile1Copy->remove());
+
+        VStringBuffer subDirPath("%s%s", basePath.str(), "subdir1");
+        VStringBuffer subDirFilePath("%s/%s", subDirPath.str(), "file2");
+        Owned<IFile> iFile2 = createIFile(subDirFilePath);
+        CPPUNIT_ASSERT(iFile2->remove());
+
+        Owned<IFile> subDirIFile = createIFile(subDirPath);
+        CPPUNIT_ASSERT(subDirIFile->remove());
+
+        SocketEndpoint ep(serverPort);
+        Owned<ISocket> sock = ISocket::connect_timeout(ep, 60 * 1000);
+        CPPUNIT_ASSERT(RFEnoerror == stopRemoteServer(sock));
+
+        serverThread.clear();
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( RemoteFileTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RemoteFileTest, "RemoteFileTests" );
+
+
+#endif // _USE_CPPUNIT

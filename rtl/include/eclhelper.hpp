@@ -34,7 +34,11 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 #include "jscm.hpp"
 #ifndef CHEAP_UCHAR_DEF
+#ifdef _USE_ICU
 #include "unicode/utf.h"
+#else
+typedef unsigned short UChar;
+#endif
 #endif
 #include "rtlconst.hpp"
 

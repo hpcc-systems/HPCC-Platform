@@ -81,7 +81,7 @@ define([
                 },
                 label: this.i18n.DeleteEmptyDirectories
             }).placeAt(this.openButton.domNode, "after");
-            new ToolbarSeparator().placeAt(this.openButton.domNode, "after");
+            dojo.destroy(this.id + "Open");
 
             var retVal = new declare([ESPUtil.Grid(true, true)])({
                 store: this.store,

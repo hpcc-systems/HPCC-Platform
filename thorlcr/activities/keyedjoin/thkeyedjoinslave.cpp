@@ -1852,7 +1852,7 @@ public:
             unsigned numSuperIndexSubs;
             data.read(superWidth);
             data.read(numSuperIndexSubs);
-            if (numSuperIndexSubs)
+            if (numSuperIndexSubs) // if 0 means not interleaved
             {
                 CPartDescriptorArray _indexParts;
                 deserializePartFileDescriptors(data, _indexParts);

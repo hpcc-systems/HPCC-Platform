@@ -56,6 +56,7 @@ include_directories (
          ./../../system/include 
          ./../../system/jlib 
          ./../../system/security/securesocket
+         ./../../testing/unittests
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DREMOTE_EXPORTS )
@@ -67,6 +68,7 @@ target_link_libraries ( remote
     jlib 
     mp
     ${URIPARSER_LIBRARIES}
+    ${CPPUNIT_LIBRARIES}
     )
 
 IF (USE_OPENSSL)

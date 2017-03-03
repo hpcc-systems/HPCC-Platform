@@ -183,13 +183,23 @@ define([
                 if (lang.exists("DFUXRefListResponse.DFUXRefListResult.XRefNode", response)) {
                     results = response.DFUXRefListResponse.DFUXRefListResult.XRefNode;
                 }
-                arrayUtil.forEach(results, function (row, idx) {
-                   newRows.push({
-                        Name: row.Name,
-                        Modified: row.Modified,
-                        Status: row.Status
+
+                if (results.length) {
+                    arrayUtil.forEach(results, function (row, idx) {
+                       newRows.push({
+                            Name: row.Name,
+                            Modified: row.Modified,
+                            Status: row.Status
+                        });
+                    });                    
+                } else {
+                    newRows.push({
+                        Name: results.Name,
+                        Modified: results.Modified,
+                        Status: results.Status
                     });
-                });
+                }
+                
                 context.store.setData(newRows);
                 context.grid.set("query", {});
             });

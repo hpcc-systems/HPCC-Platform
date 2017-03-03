@@ -20,7 +20,7 @@
 <?xml-stylesheet type="text/xsl" href="C:\Development\deployment\xmlenv\esp.xsl"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default"
     xmlns:seisint="http://seisint.com" xmlns:exslt="http://exslt.org/common" exclude-result-prefixes="seisint exslt">
-   
+
     <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
     <!--xsl:template match="text()"/-->
     <xsl:param name="process" select="'esp'"/>
@@ -29,23 +29,25 @@
     <xsl:param name="serviceFilesList" select="''"/>
     <xsl:param name="deployedFromDali" select="''"/>
     <xsl:param name="apos">'</xsl:param>
-    
-    
+
+
    <xsl:variable name="oldPathSeparator">
     <xsl:choose>
         <xsl:when test="$isLinuxInstance = 1">\:</xsl:when>
         <xsl:otherwise>/$</xsl:otherwise>
-    </xsl:choose>   
+    </xsl:choose>
    </xsl:variable>
-   
-   
+
+
    <xsl:variable name="newPathSeparator">
     <xsl:choose>
         <xsl:when test="$isLinuxInstance = 1">/$</xsl:when>
         <xsl:otherwise>\:</xsl:otherwise>
-    </xsl:choose>   
+    </xsl:choose>
    </xsl:variable>
 
+    <xsl:variable name="break"><xsl:text>&#xa;</xsl:text></xsl:variable>
+    <xsl:variable name="indent"><xsl:text>&#32;&#32;</xsl:text></xsl:variable>
     <xsl:variable name="espProcess" select="/Environment/Software/EspProcess[@name=$process]"/>
     <xsl:variable name="espBindingProtocol" select="/Environment/Software/EspProcess[@name=$process]/EspBinding/@protocol"/>
     <xsl:variable name="method" select="/Environment/Software/EspProcess[@name=$process]/EspBinding/@type"/>
@@ -68,8 +70,8 @@
       </Software>
         </xsl:copy>
     </xsl:template>
-    
-    
+
+
     <xsl:template match="/Environment/Software/EspProcess">
         <!-- note that this can only be @name=$process since it is guided by template
           for /Environment above -->
@@ -80,9 +82,9 @@
             <xsl:attribute name="directory">
                <xsl:value-of select="translate(Instance[@name=$instance]/@directory, $oldPathSeparator, $newPathSeparator)"/>
             </xsl:attribute>
-            
+
             <xsl:call-template name="addEnvironmentInfo"/>
-            
+
             <xsl:for-each select="Authentication">
                 <xsl:if test="@method='ldap' or @method='ldaps'">
                     <xsl:call-template name="doLdapSecurity">
@@ -181,7 +183,15 @@
                     </xsl:call-template>
                 </xsl:variable>
                 <xsl:variable name="bindName" select="concat('WSESPControl_Binding_', $process)"/>
+                <xsl:value-of disable-output-escaping="yes" select="$break" />
+                <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                <xsl:value-of disable-output-escaping="yes" select="$indent" />
                 <EspService name="{$serviceName}" type="WSESPControl" plugin="{$servicePlugin}"/>
+                 <xsl:value-of disable-output-escaping="yes" select="$break" />
+                <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                <xsl:value-of disable-output-escaping="yes" select="$indent" />
                 <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$espBindingProtocol}" type="ws_espcontrolSoapBinding" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$controlPort}"/>
             </xsl:if>
             <xsl:variable name="importedServiceDefinitionFiles">
@@ -194,7 +204,7 @@
         </xsl:copy>
 
     </xsl:template>
-    
+
     <xsl:template match="/Environment/Software/EspProtocol">
         <xsl:variable name="protocolName" select="@name"/>
         <xsl:if test="../EspBinding[@protocol=$protocolName]">
@@ -227,8 +237,8 @@
         </xsl:if>
         <xsl:copy-of select="$serviceFileNode"/>
     </xsl:template>
-    
-    
+
+
     <xsl:template match="EspBinding">
        <xsl:variable name="name" select="@name"/>
        <xsl:variable name="port" select="@port"/>
@@ -264,16 +274,16 @@
                             <xsl:value-of select="concat('Multiple ESP bindings on port ', $port, ' of ESP ', $apos, $process, $apos)"/>
                             <xsl:text> are defined as default.  Last one would dictate root level access.</xsl:text>
                         </xsl:with-param>
-                    </xsl:call-template>                
+                    </xsl:call-template>
                 </xsl:when>
             </xsl:choose>
        </xsl:for-each>
     </xsl:template>
-    
-    
+
+
     <xsl:template match="EspBinding" mode="maxRequestEntityLength">
     <xsl:param name="max"/>
-        <xsl:variable name="svcValue" 
+        <xsl:variable name="svcValue"
             select="number(/Environment/Software/EspService[@name=current()/@service]/@maxRequestEntityLength)"/>
         <xsl:variable name="newMax">
             <xsl:choose>
@@ -297,15 +307,15 @@
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
-    
+
     <!--don't produce in output -->
     <xsl:template match="EspProcess/Instance|EspProcess/HTTPS|ProtocolX"/>
-    
-    
+
+
     <!--don't produce in output -->
     <xsl:template match="@buildSet|@maxRequestEntityLength"/>
-    
-    
+
+
     <xsl:template match="/|@*|node()">
         <!--matches any attribute or child of any types-->
         <xsl:copy>
@@ -313,8 +323,8 @@
             <xsl:apply-templates select="@*|node()"/>
         </xsl:copy>
     </xsl:template>
-    
-    
+
+
     <xsl:template name="doLdapSecurity">
         <xsl:param name="method"/>
         <xsl:param name="ldapServer"/>
@@ -390,7 +400,7 @@
             </xsl:element>
         </xsl:for-each>
     </xsl:template>
-    
+
     <xsl:template name="dohtpasswdSecurity">
         <xsl:param name="method"/>
         <xsl:param name="htpasswdFile"/>
@@ -404,7 +414,7 @@
         <xsl:param name="method"/>
         <xsl:param name="accurintSecurity"/>
         <xsl:param name="localDomain"/>
-        
+
         <xsl:for-each select="/Environment/Software/AccurintServerProcess[@name=$accurintSecurity]">
             <xsl:element name="AccurintSecurity">
                 <xsl:attribute name="name">accurintserver</xsl:attribute>
@@ -435,8 +445,8 @@
             </xsl:element>
         </xsl:for-each>
     </xsl:template>
-    
-    
+
+
     <xsl:template match="@daliServers">
         <xsl:variable name="daliServerName" select="."/>
         <xsl:attribute name="daliServers">
@@ -452,13 +462,13 @@
        <xsl:apply-templates select="@*|node()"/>
     </xsl:template>
 
-    
+
     <xsl:template name="getNetAddress">
         <xsl:param name="computer"/>
         <xsl:value-of select="/Environment/Hardware/Computer[@name=$computer]/@netAddress"/>
     </xsl:template>
-    
-    
+
+
     <xsl:template name="makeServicePluginName">
         <xsl:param name="plugin"/>
         <xsl:choose>
@@ -467,24 +477,32 @@
                 <xsl:value-of select="$plugin"/>.dll</xsl:otherwise>
         </xsl:choose>
     </xsl:template>
-    
-    
+
+
      <xsl:template match="EspService" mode="processImportedServiceDefinitions">
          <xsl:variable name="name" select="@name"/>
          <xsl:if test="not(preceding-sibling::EspService[@name=$name])">
+            <xsl:value-of disable-output-escaping="yes" select="$break" />
+            <xsl:value-of disable-output-escaping="yes" select="$indent" />
+            <xsl:value-of disable-output-escaping="yes" select="$indent" />
+            <xsl:value-of disable-output-escaping="yes" select="$indent" />
             <xsl:copy>
                <xsl:apply-templates select="*|@*[string(.) != '']|text()" mode="processImportedServiceDefinitions"/>
             </xsl:copy>
          </xsl:if>
      </xsl:template>
-     
-     <xsl:template match="EspBinding" mode="processImportedServiceDefinitions">         
+
+     <xsl:template match="EspBinding" mode="processImportedServiceDefinitions">
          <xsl:if test="not(preceding-sibling::EspBinding[@name=current()/@name])">
+            <xsl:value-of disable-output-escaping="yes" select="$break" />
+            <xsl:value-of disable-output-escaping="yes" select="$indent" />
+            <xsl:value-of disable-output-escaping="yes" select="$indent" />
+            <xsl:value-of disable-output-escaping="yes" select="$indent" />
             <xsl:variable name="bindNode" select="."/>
             <!--note that the name of this generated binding is not same as the original binding name
-              and is mangled in this format: "[service-name]_[binding-name]_[esp-name]".  Besides, the 
-              service name does not have to be same as @service in original esp binding, for instance, 
-              eclwatch is actually a collection of half a dozen services.  Find the matching binding 
+              and is mangled in this format: "[service-name]_[binding-name]_[esp-name]".  Besides, the
+              service name does not have to be same as @service in original esp binding, for instance,
+              eclwatch is actually a collection of half a dozen services.  Find the matching binding
               that ends with mangled name "_[binding-name]_[esp-name]". -->
             <xsl:variable name="origBindName">
                <xsl:for-each select="$espProcess/EspBinding">
@@ -495,12 +513,12 @@
                </xsl:for-each>
             </xsl:variable>
             <xsl:variable name="envBindNode" select="$espProcess/EspBinding[@name = $origBindName]"/>
-         
+
             <xsl:copy>
                <xsl:apply-templates select="@*[string(.) != '']" mode="processImportedServiceDefinitions">
                 <xsl:with-param name="envBindNode" select="$envBindNode"/>
                </xsl:apply-templates>
-               
+
                <!--if the generated EspBinding failed to propagate @wsdlServiceAddress from the original binding then add it there -->
                <xsl:if test="$envBindNode"><!--found matching original binding node in the environment-->
                   <xsl:if test="string($bindNode/@wsdlServiceAddress) = ''">
@@ -508,16 +526,16 @@
                   </xsl:if>
                   <xsl:if test="string($bindNode/@defaultServiceVersion) = ''">
                      <xsl:copy-of select="$envBindNode/@defaultServiceVersion"/>
-                  </xsl:if>              
+                  </xsl:if>
                </xsl:if>
 
-	       <xsl:if test="$envBindNode/CustomBindingParameter">
+           <xsl:if test="$envBindNode/CustomBindingParameter">
                  <CustomBindingParameters>
                     <xsl:for-each select="$envBindNode/CustomBindingParameter">
                        <xsl:copy-of select="."/>
                     </xsl:for-each>
                  </CustomBindingParameters>
-	       </xsl:if>
+           </xsl:if>
 
                <!-- if the generated EspBinding/Authenticate is missing @workunitsBasedn then add it there -->
                <xsl:variable name="defaultWorkunitsBasedn">
@@ -558,7 +576,7 @@
                 </xsl:call-template>
             </Environment>
         </xsl:template>
-        
+
      <xsl:template match="/Environment/Software/EspProcess" mode="EclWatch">
         <xsl:for-each select="EspBinding">
             <xsl:variable name="protocol" select="@protocol"/>
@@ -577,7 +595,7 @@
                </xsl:if>
         </xsl:for-each>
      </xsl:template>
-     
+
         <xsl:template name="printUniqueTokens">
             <xsl:param name="s"/><!--space delimited string of tokens with space as last char-->
             <xsl:param name="enclosingTagName"/>
@@ -600,7 +618,7 @@
                 </xsl:choose>
             </xsl:if>
         </xsl:template>
-        
+
         <xsl:template name="message">
             <xsl:param name="text"/>
             <xsl:choose>
@@ -626,5 +644,4 @@
             <xsl:apply-templates select="@*|*|text()" mode="processImportedServiceDefinitions"/>
          </xsl:copy>
      </xsl:template>
-        
 </xsl:stylesheet>

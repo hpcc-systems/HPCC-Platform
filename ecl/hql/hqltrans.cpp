@@ -4563,29 +4563,54 @@ void ScopedDependentTransformer::pushChildContext(IHqlExpression * expr, IHqlExp
 {
     //NB: For this transformer it is the tables that are in scope that matter
     IHqlExpression * scope = expr->queryNormalizedSelector(false);
-    //NB: Do no call createComma because that calls createDataset which unwinds a comma list!
+    bool identical = false;
     if (childScope)
-        childScope.setown(createValue(no_comma,LINK(scope), childScope.getClear()));
-    else
-        childScope.set(scope);
-
-    //Need map the selectors for all the datasets that are in scope - not just the current one.  If the same
-    //one occurs twice, the more recent will take precedence.
-    ForEachItemIn(idx, scopeStack)
     {
-        ScopeInfo & cur = scopeStack.item(idx);
-        IHqlExpression * dataset = cur.dataset;
-        if (dataset)
-            initializeActiveSelector(dataset, cur.transformedDataset);
+        IHqlExpression * cur = childScope;
+        while (cur->getOperator() == no_comma)
+        {
+            IHqlExpression * prev = cur->queryChild(0);
+            if (prev == scope)
+            {
+                identical = true;
+                break;
+            }
+            cur = cur->queryChild(1);
+        }
+        if (cur == scope)
+            identical = true;
+    }
+
+    scopeMatched.append(identical);
+    if (!identical)
+    {
+        //NB: Do no call createComma because that calls createDataset which unwinds a comma list!
+        if (childScope)
+            childScope.setown(createValue(no_comma,LINK(scope), childScope.getClear()));
+        else
+            childScope.set(scope);
+
+        //Need map the selectors for all the datasets that are in scope - not just the current one.  If the same
+        //one occurs twice, the more recent will take precedence.
+        ForEachItemIn(idx, scopeStack)
+        {
+            ScopeInfo & cur = scopeStack.item(idx);
+            IHqlExpression * dataset = cur.dataset;
+            if (dataset)
+                initializeActiveSelector(dataset, cur.transformedDataset);
+        }
     }
 }
 
 void ScopedDependentTransformer::popChildContext()
 {
-    if (childScope->getOperator() == no_comma)
-        childScope.set(childScope->queryChild(1));
-    else
-        childScope.clear();
+    if (!scopeMatched.popGet())
+    {
+        if (childScope->getOperator() == no_comma)
+            childScope.set(childScope->queryChild(1));
+        else
+            childScope.clear();
+    }
 }
 
 
