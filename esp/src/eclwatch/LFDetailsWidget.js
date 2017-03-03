@@ -249,52 +249,52 @@ define([
         initTab: function() {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.summaryWidget.id) {
-                } else if (currSel.id == this.contentWidget.id) {
+                if (currSel.id === this.summaryWidget.id) {
+                } else if (currSel.id === this.contentWidget.id) {
                     this.contentWidget.init({
                         NodeGroup: this.logicalFile.NodeGroup,
                         LogicalName: this.logicalFile.Name
                     });
-                } else if (currSel.id == this.sourceWidget.id) {
+                } else if (currSel.id === this.sourceWidget.id) {
                     this.sourceWidget.init({
                         ECL: this.logicalFile.Ecl
                     });
-                } else if (currSel.id == this.defWidget.id) {
+                } else if (currSel.id === this.defWidget.id) {
                     var context = this;
                     this.logicalFile.fetchDEF(function (response) {
                         context.defWidget.init({
                             ECL: response
                         });
                     });
-                } else if (currSel.id == this.xmlWidget.id) {
+                } else if (currSel.id === this.xmlWidget.id) {
                     var context = this;
                     this.logicalFile.fetchXML(function (response) {
                         context.xmlWidget.init({
                             ECL: response
                         });
                     });
-                } else if (currSel.id == this.filePartsWidget.id) {
+                } else if (currSel.id === this.filePartsWidget.id) {
                     this.filePartsWidget.init({
                         fileParts: lang.exists("logicalFile.DFUFileParts.DFUPart", this) ? this.logicalFile.DFUFileParts.DFUPart : []
                     });
-                } else if (currSel.id == this.widget._Queries.id && !this.widget._Queries.__hpcc_initalized) {
+                } else if (currSel.id === this.widget._Queries.id && !this.widget._Queries.__hpcc_initalized) {
                     this.widget._Queries.init({
                         LogicalName: this.logicalFile.Name
                     });
-                } else if (currSel.id == this.widget._Graphs.id && !this.widget._Graphs.__hpcc_initalized) {
+                } else if (currSel.id === this.widget._Graphs.id && !this.widget._Graphs.__hpcc_initalized) {
                     this.widget._Graphs.init({
                         NodeGroup: this.logicalFile.NodeGroup,
                         LogicalName: this.logicalFile.Name
                     });
-                } else if (this.workunitWidget && currSel.id == this.workunitWidget.id) {
+                } else if (this.workunitWidget && currSel.id === this.workunitWidget.id) {
                     this.workunitWidget.init({
                         Wuid: this.logicalFile.Wuid
                     });
-                } else if (this.dfuWorkunitWidget && currSel.id == this.dfuWorkunitWidget.id) {
+                } else if (this.dfuWorkunitWidget && currSel.id === this.dfuWorkunitWidget.id) {
                     this.dfuWorkunitWidget.init({
                         Wuid: this.logicalFile.Wuid
                     });
-                } else if (currSel.id == this.fileBelongsToWidget.id) {
+                } else if (currSel.id === this.fileBelongsToWidget.id) {
                     this.fileBelongsToWidget.init({
                         NodeGroup: this.logicalFile.NodeGroup,
                         Name: this.logicalFile.Name

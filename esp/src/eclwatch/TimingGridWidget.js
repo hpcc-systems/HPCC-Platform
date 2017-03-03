@@ -125,7 +125,7 @@ define([
             },
 
             setQuery: function (graphName) {
-                if (!graphName || graphName == "*") {
+                if (!graphName || graphName === "*") {
                     this.timingGrid.refresh();
                 } else {
                     this.timingGrid.set("query", {

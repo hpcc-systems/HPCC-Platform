@@ -324,7 +324,7 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.workunitsTab.id) {
+                if (currSel.id === this.workunitsTab.id) {
                 } else {
                     if (!currSel.initalized) {
                         currSel.init(currSel.params);
@@ -521,14 +521,14 @@ define([
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
                 if (selection[i] && selection[i].Protected !== null) {
-                    if (selection[i].Protected != "0") {
+                    if (selection[i].Protected !== false) {
                         hasProtected = true;
                     } else {
                         hasNotProtected = true;
                     }
                 }
                 if (selection[i] && selection[i].StateID !== null) {
-                    if (selection[i].StateID == "4") {
+                    if (selection[i].StateID === 4) {
                         hasFailed = true;
                     } else {
                         hasNotFailed = true;

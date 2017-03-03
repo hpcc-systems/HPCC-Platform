@@ -135,51 +135,51 @@ define([
 
         initTab: function () {
             var currSel = this.getSelectedChild();
-            if (currSel.id == this.summaryTab.id && !this.summaryTabLoaded) {
+            if (currSel.id === this.summaryTab.id && !this.summaryTabLoaded) {
                 this.summaryTabLoaded = true;
-            } else if (currSel.id == this.workunitsTab.id && !this.workunitsTabLoaded) {
+            } else if (currSel.id === this.workunitsTab.id && !this.workunitsTabLoaded) {
                 this.workunitsTabLoaded = true;
                 this.workunitsTab.init({
                     Wuid: this.query.Wuid
                 });
-            } else if (currSel.id == this.errorsTab.id && !this.errorsTabLoaded) {
+            } else if (currSel.id === this.errorsTab.id && !this.errorsTabLoaded) {
                 this.errorsTabLoaded = true;
                 this.errorsTab.init({
                     QuerySetId:this.params.QuerySetId,
                     Id: this.params.Id
                 });
-            } else if (currSel.id == this.graphsTab.id && !this.graphsTabLoaded) {
+            } else if (currSel.id === this.graphsTab.id && !this.graphsTabLoaded) {
                 this.graphsTabLoaded = true;
                 this.graphsTab.init({
                     QuerySetId: this.params.QuerySetId,
                     Id: this.params.Id
                 });
-            } else if (currSel.id == this.logicalFilesTab.id && !this.logicalFilesTabLoaded) {
+            } else if (currSel.id === this.logicalFilesTab.id && !this.logicalFilesTabLoaded) {
                 this.logicalFilesTabLoaded = true;
                 this.logicalFilesTab.init({
                     QuerySetId: this.params.QuerySetId,
                     Id: this.params.Id
                 });
-            } else if (currSel.id == this.superFilesTab.id && !this.superFilesTabLoaded) {
+            } else if (currSel.id === this.superFilesTab.id && !this.superFilesTabLoaded) {
                 this.superFilesTabLoaded = true;
                 this.superFilesTab.init({
                     QuerySetId:this.params.QuerySetId,
                     Id: this.params.Id
                 });
-            } else if (currSel.id == this.librariesUsedTab.id && !this.librariesUsedTabLoaded) {
+            } else if (currSel.id === this.librariesUsedTab.id && !this.librariesUsedTabLoaded) {
                 this.librariesUsedTabLoaded = true;
                 this.librariesUsedTab.init({
                     QuerySetId:this.params.QuerySetId,
                     Id: this.params.Id
                 });
-            } else if (currSel.id == this.widget._Resources.id && !this.resourcesWidgetLoaded) {
+            } else if (currSel.id === this.widget._Resources.id && !this.resourcesWidgetLoaded) {
                 this.resourcesWidgetLoaded = true;
                 this.widget._Resources.init({
                     Wuid: this.query.Wuid,
                     QuerySetId: this.params.QuerySetId,
                     Id: this.params.Id
                 });
-            } else if (currSel.id == this.testPagesTab.id && !this.testPagesTabLoaded) {
+            } else if (currSel.id === this.testPagesTab.id && !this.testPagesTabLoaded) {
                 this.testPagesTabLoaded = true;
                 this.testPagesTab.init({
                     QuerySetId: this.params.QuerySetId,

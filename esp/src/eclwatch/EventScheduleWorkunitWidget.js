@@ -100,7 +100,7 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.eventTab.id) {
+                if (currSel.id === this.eventTab.id) {
                 } else {
                     currSel.init(currSel.params);
                 }

@@ -29,7 +29,7 @@ define([
             entities, Toaster) {
 
     var initUi = function () {
-        var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)));
+        var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0)));
         var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
 
         require([

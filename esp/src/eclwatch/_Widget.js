@@ -60,7 +60,7 @@ define([
             var k = 0;
             var value;
 
-            if (arguments.length == 2) {
+            if (arguments.length === 2) {
                 value = arguments[1];
             } else {
                 while (k < len && !(k in o)) {
@@ -333,7 +333,7 @@ define([
                 for (var j = 0; j < indent; j++) {
                     padding += '  ';
                 }
-                if (fromTo == 'opening->closing')
+                if (fromTo === 'opening->closing')
                     formatted = formatted.substr(0, formatted.length - 1) + ln + '\n'; // substr removes line break (\n) from prev loop
                 else
                     formatted += padding + ln + '\n';

@@ -582,7 +582,7 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.landingZonesTab.id) {
+                if (currSel.id === this.landingZonesTab.id) {
                 } else {
                     if (!currSel.initalized) {
                         currSel.init(currSel.params);

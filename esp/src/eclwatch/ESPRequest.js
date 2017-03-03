@@ -40,7 +40,7 @@ define([
         getParamFromURL: function (key) {
             var value = "";
             if (dojo.doc.location.search) {
-                var searchStr = dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0));
+                var searchStr = dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0));
                 value = searchStr ? dojo.queryToObject(searchStr)[key] : "";
             }
 
@@ -184,7 +184,7 @@ define([
             var retVal = this.getValues(domXml, tagName, knownObjectArrays);
             if (retVal.length === 0) {
                 return null;
-            } else if (retVal.length != 1) {
+            } else if (retVal.length !== 1) {
                 alert("Invalid length:  " + retVal.length);
             }
             return retVal[0];
@@ -195,7 +195,7 @@ define([
             var items = domXml.getElementsByTagName(tagName);
             var parentNode = items.length ? items[0].parentNode : null; //  Prevent <Dataset><row><field><row> scenario
             for (var i = 0; i < items.length; ++i) {
-                if (items[i].parentNode == parentNode)
+                if (items[i].parentNode === parentNode)
                     retVal.push(this.flattenXml(items[i], knownObjectArrays));
             }
             return retVal;
@@ -210,7 +210,7 @@ define([
                 if (childNode.childNodes) {
                     if (childNode.nodeName && knownObjectArrays != null && dojo.indexOf(knownObjectArrays, childNode.nodeName) >= 0) {
                         retValArr.push(this.flattenXml(childNode, knownObjectArrays));
-                    } else if (childNode.nodeName == "#text") {
+                    } else if (childNode.nodeName === "#text") {
                         retValStr += childNode.nodeValue;
                     } else if (childNode.childNodes.length === 0) {
                         retVal[childNode.nodeName] = null;

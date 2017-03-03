@@ -591,7 +591,7 @@ define([
         },
         getGraphIndex: function (name) {
             for (var i = 0; i < this.graphs.length; ++i) {
-                if (this.graphs[i].Name == name) {
+                if (this.graphs[i].Name === name) {
                     return i;
                 }
             }
@@ -609,7 +609,7 @@ define([
         getApplicationValueIndex: function (application, name) {
             if (lang.exists("ApplicationValues.ApplicationValue", this)) {
                 for (var i = 0; i < this.ApplicationValues.ApplicationValue.length; ++i) {
-                    if (this.ApplicationValues.ApplicationValue[i].Application == application && this.ApplicationValues.ApplicationValue[i].Name == name) {
+                    if (this.ApplicationValues.ApplicationValue[i].Application === application && this.ApplicationValues.ApplicationValue[i].Name === name) {
                         return i;
                     }
                 }

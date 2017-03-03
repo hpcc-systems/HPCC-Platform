@@ -69,14 +69,14 @@ define([
 
             var context = this;
             this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if (nval.id == context.id + "Validate" && !context.validateWidgetLoaded) {
+                if (nval.id === context.id + "Validate" && !context.validateWidgetLoaded) {
                     context.validateWidgetLoaded = true;
                     context.validateWidget.init({
                         target: context.target,
                         process: context.process,
                         packageMap: context.packageMap
                     });
-                } else if (nval.id == context.id + "XML" && !context.xmlWidgetLoaded) {
+                } else if (nval.id === context.id + "XML" && !context.xmlWidgetLoaded) {
                     context.xmlWidgetLoaded = true;
                     context.xmlWidget.init({
                         target: context.target,

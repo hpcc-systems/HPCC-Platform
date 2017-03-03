@@ -327,7 +327,7 @@ define([
             }
             switch (stateID) {
                 case 1: //WUStateCompiled
-                    if (actionEx && actionEx == "compile") {
+                    if (actionEx && actionEx === "compile") {
                         return true;
                     }
                     break;

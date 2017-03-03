@@ -179,7 +179,7 @@ define([
             var text = ""
             for (var key in obj) {
                 text += "<tr><td>" + key + ":</td>";
-                if (typeof obj[key] == "object") {
+                if (typeof obj[key] === "object") {
                     text += "[<br/>";
                     for (var i = 0; i < obj[key].length; ++i) {
                         text += this.objectToText(obj[key][i]);

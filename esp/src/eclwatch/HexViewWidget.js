@@ -77,14 +77,14 @@ define([
             },
 
             _onWidthChange: function (event) {
-                if (this.lineLength != event) {
+                if (this.lineLength !== event) {
                     this.lineLength = event;
                     this.displayHex();
                 }
             },
 
             _onEbcdicChange: function (event) {
-                if (this.showEbcdic != event) {
+                if (this.showEbcdic !== event) {
                     this.showEbcdic = event;
                     this.displayHex();
                 }

@@ -179,7 +179,7 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.logTab.id) {
+                if (currSel.id === this.logTab.id) {
                 } else {
                     if (!currSel.initalized) {
                     }

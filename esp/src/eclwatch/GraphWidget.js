@@ -74,14 +74,14 @@ define([
         query: function (query, options) {
             var sortSet = options && options.sort;
             if (sortSet) {
-                this.data.sort(typeof sortSet == "function" ? sortSet : function (a, b) {
+                this.data.sort(typeof sortSet === "function" ? sortSet : function (a, b) {
                     for (var sort, i = 0; sort = sortSet[i]; i++) {
                         var aValue = a[sort.attribute];
                         var bValue = b[sort.attribute];
                         // valueOf enables proper comparison of dates
                         aValue = aValue != null ? aValue.valueOf() : aValue;
                         bValue = bValue != null ? bValue.valueOf() : bValue;
-                        if (aValue != bValue) {
+                        if (aValue !== bValue) {
                             return !!sort.descending == (bValue == null || aValue > bValue) ? -1 : 1;   // jshint ignore:line
                         }
                     }
@@ -99,7 +99,7 @@ define([
         calcColumns: function () {
             arrayUtil.forEach(this.data, function (item, idx) {
                 for (var key in item) {
-                    if (key != "id" && key.substring(0, 1) != "_") {
+                    if (key !== "id" && key.substring(0, 1) !== "_") {
                         if (!this.cacheColumns[key]) {
                             this.cacheColumns[key] = item[key].length;
                         } else if (item[key].length > this.cacheColumns[key]) {
@@ -140,7 +140,7 @@ define([
                 }
             }, this);
             for (var key in this.cacheColumns) {
-                if (skip.indexOf(key) === -1 && highPriority.indexOf(key) === -1 && lowPriority.indexOf(key) === -1 && key.substring(0, 1) != "_") {
+                if (skip.indexOf(key) === -1 && highPriority.indexOf(key) === -1 && lowPriority.indexOf(key) === -1 && key.substring(0, 1) !== "_") {
                     target.push({
                         field: key, label: key, width: this.getColumnWidth(key)
                     });
@@ -194,7 +194,7 @@ define([
                 this.add(item);
 
                 for (var key in item) {
-                    if (key != "id" && key.substring(0, 1) != "_") {
+                    if (key !== "id" && key.substring(0, 1) !== "_") {
                         if (!this.cacheColumns[key]) {
                             this.cacheColumns[key] = item[key].length;
                         } else if (item[key].length > this.cacheColumns[key]) {
@@ -836,7 +836,7 @@ define([
                         }
 
                         for (var key in props) {
-                            if (key[0] == "_")
+                            if (key[0] === "_")
                                 continue;
                             ensureHeader();
                             tr = domConstruct.create("tr", null, table);
