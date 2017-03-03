@@ -92,6 +92,9 @@
                         <xsl:with-param name="ldapConnections" select="@ldapConnections"/>
                         <xsl:with-param name="passwordExpirationWarningDays" select="@passwordExpirationWarningDays"/>
                         <xsl:with-param name="checkViewPermissions" select="@checkViewPermissions"/>
+                        <xsl:with-param name="sessionsEnabled" select="@sessionsEnabled"/>
+                        <xsl:with-param name="sessionTimeout" select="@sessionTimeout"/>
+                        <xsl:with-param name="sessionTimeoutWarning" select="@sessionTimeoutWarning"/>
                         <xsl:with-param name="localDomain" select="/Environment/Hardware/Computer[@name=$computerName]/@domain"/>
                     </xsl:call-template>
                 </xsl:if>
@@ -323,6 +326,9 @@
         <xsl:param name="localDomain"/>
         <xsl:param name="passwordExpirationWarningDays"/>
         <xsl:param name="checkViewPermissions"/>
+        <xsl:param name="sessionsEnabled"/>
+        <xsl:param name="sessionTimeout"/>
+        <xsl:param name="sessionTimeoutWarning"/>
         <xsl:variable name="ldapServerNode" select="/Environment/Software/LDAPServerProcess[@name=$ldapServer]"/>
         <xsl:if test="not($ldapServerNode)">
            <xsl:message terminate="yes">LDAP server is either not specified or is invalid!</xsl:message>
@@ -333,6 +339,30 @@
                 <xsl:attribute name="ldapProtocol"><xsl:value-of select="$method"/></xsl:attribute>
                 <xsl:attribute name="localDomain"><xsl:value-of select="$localDomain"/></xsl:attribute>
                 <xsl:attribute name="checkViewPermissions"><xsl:value-of select="$checkViewPermissions"/></xsl:attribute>
+		<xsl:attribute name="sessionsEnabled">
+                    <xsl:choose>
+                        <xsl:when test="string($sessionsEnabled) != ''">
+                            <xsl:value-of select="$sessionsEnabled"/>
+                        </xsl:when>
+                        <xsl:otherwise>true</xsl:otherwise>
+                    </xsl:choose>
+                </xsl:attribute>
+		<xsl:attribute name="sessionTimeout">
+                    <xsl:choose>
+                        <xsl:when test="string($sessionTimeout) != ''">
+                            <xsl:value-of select="$sessionTimeout"/>
+                        </xsl:when>
+                        <xsl:otherwise>60</xsl:otherwise>
+                    </xsl:choose>
+                </xsl:attribute>
+                <xsl:attribute name="sessionTimeoutWarning">
+                    <xsl:choose>
+                        <xsl:when test="string($sessionTimeoutWarning) != ''">
+                            <xsl:value-of select="$sessionTimeoutWarning"/>
+                        </xsl:when>
+                        <xsl:otherwise>5</xsl:otherwise>
+                    </xsl:choose>
+                </xsl:attribute>
                 <xsl:attribute name="authMethod">
                    <xsl:choose>
                       <xsl:when test="string($ldapAuthMethod) != ''">

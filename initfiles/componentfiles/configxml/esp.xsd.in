@@ -345,6 +345,27 @@
                             </xs:appinfo>
                           </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="sessionsEnabled" type="xs:boolean" use="optional" default="true">
+                          <xs:annotation>
+                            <xs:appinfo>
+                              <tooltip>Enable login/logout session support</tooltip>
+                            </xs:appinfo>
+                          </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="sessionTimout" use="optional" default="60">
+                          <xs:annotation>
+                            <xs:appinfo>
+                              <tooltip>Minutes to wait before logging out inactive user sessions</tooltip>
+                            </xs:appinfo>
+                          </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="sessionTimeoutWarning" use="optional" default="5">
+                          <xs:annotation>
+                            <xs:appinfo>
+                              <tooltip>Inactive user session timeout warning interval, in minutes</tooltip>
+                            </xs:appinfo>
+                          </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="HTTPS" minOccurs="0">
