@@ -19,6 +19,7 @@
 #define ZCRYPT_HPP__
 
 #include "platform.h"
+#include "jbuff.hpp"
 
 #ifndef ZCRYPT_API
 #ifndef ZCRYPT_EXPORTS
@@ -94,9 +95,12 @@ ZCRYPT_API void releaseIZ(IZInterface* iz);
 class StringBuffer;
 typedef unsigned char byte;
 
-// Compress a character buffer using zlib in gzip format with given compression level
-ZCRYPT_API char* gzip( const char* inputBuffer, unsigned int inputSize,
-    unsigned int* outlen, int compressionLevel=GZ_DEFAULT_COMPRESSION);
+enum class ZlibCompressionType {GZIP, ZLIB_DEFLATE, DEFLATE};
+
+ZCRYPT_API void zlib_deflate(MemoryBuffer &mb, const char* inputBuffer, unsigned int inputSize, int compressionLevel, ZlibCompressionType zltype);
+ZCRYPT_API void gzip(MemoryBuffer &mb, const char* inputBuffer, unsigned int inputSize, int compressionLevel=GZ_DEFAULT_COMPRESSION);
+
+ZCRYPT_API void httpInflate(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput, bool use_gzip);
 ZCRYPT_API void gunzip(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput);
 ZCRYPT_API bool isgzipped(const byte* content, size_t length);
 ZCRYPT_API void removeZipExtension(StringBuffer & target, const char * source);
