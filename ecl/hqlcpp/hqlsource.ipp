@@ -194,7 +194,7 @@ protected:
     IHqlExpression * invertTransforms(IHqlExpression * left, IHqlExpression * right);
     bool isEqualityFilter(IHqlExpression * select);
     bool isKeySelect(IHqlExpression * select);
-    bool isIndexInvariant(IHqlExpression * expr);
+    bool isIndexInvariant(IHqlExpression * expr, bool includeRoot);
     bool isPrevSelectKeyed(IHqlExpression * select);
     bool matchSubstringFilter(KeyConditionInfo & matches, node_operator op, IHqlExpression * left, IHqlExpression * right, KeyedKind keyedKind, bool & duplicate);
     IHqlExpression * isKeyableFilter(IHqlExpression * left, IHqlExpression * right, bool & duplicate, node_operator compareOp, KeyFailureInfo & reason, KeyedKind keyedKind);

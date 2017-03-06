@@ -4287,7 +4287,7 @@ IHqlExpression * MonitorExtractor::unwindConjunction(HqlExprArray & matches, IHq
     ForEachItemInRev(i, matches)
     {
         IHqlExpression & cur = matches.item(i);
-        if (isIndexInvariant(&cur))
+        if (isIndexInvariant(&cur, false))
         {
             invariant.setown(extendConditionOwn(op, LINK(&cur), invariant.getClear()));
             matches.remove(i);
@@ -5006,7 +5006,7 @@ bool MonitorExtractor::okToKey(IHqlExpression * select, KeyedKind keyedKind)
     return true;
 }
 
-bool MonitorExtractor::isIndexInvariant(IHqlExpression * expr)
+bool MonitorExtractor::isIndexInvariant(IHqlExpression * expr, bool includeRoot)
 {
     if (containsAssertKeyed(expr))
         return false;
@@ -5020,11 +5020,16 @@ bool MonitorExtractor::isIndexInvariant(IHqlExpression * expr)
         IHqlExpression * cur = &scopeUsed.item(i);
         for (;;)
         {
-            if (cur == search || queryRoot(cur) == search)
+            if (cur == search)
                 return false;
-            cur = queryNextMultiLevelDataset(cur, true);
-            if (!cur)
+
+            if (includeRoot && (queryRoot(cur) == search))
+                return false;
+
+            IHqlExpression * parent = queryNextMultiLevelDataset(cur, true);
+            if (!parent)
                 break;
+            cur = parent;
         }
     }
     return true;
@@ -5194,7 +5199,7 @@ IHqlExpression * MonitorExtractor::isKeyableFilter(IHqlExpression * left, IHqlEx
     case no_select:
         if (isKeySelect(left) && okToKey(left, keyedKind))
         {
-            if (isIndexInvariant(right))
+            if (isIndexInvariant(right, false))
                 return left;
             reason.set(KFRtoocomplex, left);
         }
@@ -5225,7 +5230,7 @@ IHqlExpression * MonitorExtractor::isKeyableFilter(IHqlExpression * left, IHqlEx
         }
     case no_add:
     case no_sub:
-        if (isIndexInvariant(left->queryChild(1)))
+        if (isIndexInvariant(left->queryChild(1), false))
             return isKeyableFilter(left->queryChild(0), right, duplicate, compareOp, reason, keyedKind);
         reason.set(KFRtoocomplex, left);
         return NULL;
@@ -5555,7 +5560,7 @@ bool MonitorExtractor::matchSubstringFilter(KeyConditionInfo & matches, node_ope
     IHqlExpression * selector = left->queryChild(0);
     if (!isKeySelect(selector) || !okToKey(selector, keyedKind))
         return false;
-    if (!isIndexInvariant(right))
+    if (!isIndexInvariant(right, false))
         return false;
     ITypeInfo * fieldType = selector->queryType();
     unsigned fieldLength = fieldType->getStringLen();
@@ -5686,7 +5691,7 @@ bool MonitorExtractor::extractOrFilter(KeyConditionInfo & matches, IHqlExpressio
     ForEachItemIn(idx, conds)
     {
         IHqlExpression & cur = conds.item(idx);
-        if (isIndexInvariant(&cur))
+        if (isIndexInvariant(&cur, false))
             extendOrCondition(invariant, &cur);
         else
         {
@@ -5787,7 +5792,7 @@ bool MonitorExtractor::extractIfFilter(KeyConditionInfo & matches, IHqlExpressio
     //Really, I should analyse left and right.  Iterate each selector referenced.  If there are no post conditions then
     //generate IF(a, X, Y) compound expression, otherwise generate the default below.
     IHqlExpression * cond = expr->queryChild(0);
-    if ((keyedKind != KeyedNo) && isIndexInvariant(cond))
+    if ((keyedKind != KeyedNo) && isIndexInvariant(cond, false))
     {
         //Convert IF(a, X, Y) to... IF (a, X, true) AND IF (a, true, Y) to... (NOT a OR X) AND (a OR Y)
         OwnedHqlExpr inverseCond = getInverse(cond);
@@ -5864,7 +5869,7 @@ void MonitorExtractor::extractFilters(HqlExprArray & exprs, SharedHqlExpr & extr
         default:
             if (!keyedExplicitly)
                 extractFilters(keyed, &cur, KeyedNo);
-            else if (!cur.isAttribute() && isIndexInvariant(&cur))
+            else if (!cur.isAttribute() && isIndexInvariant(&cur, true))
                 keyed.appendPreFilter(&cur);
             else
                 keyed.appendPostFilter(&cur);
@@ -5928,7 +5933,7 @@ bool MonitorExtractor::extractBoolFieldFilter(KeyConditionInfo & matches, IHqlEx
 
 bool MonitorExtractor::extractFilters(KeyConditionInfo & matches, IHqlExpression * expr, KeyedKind keyedKind)
 {
-    if (!expr->isAttribute() && isIndexInvariant(expr))
+    if (!expr->isAttribute() && isIndexInvariant(expr, true))
     {
         extendAndCondition(matches.preFilter, expr);
         return true;
