@@ -9012,7 +9012,7 @@ extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, 
     return str;
 }
 
-extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords)
+extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords, bool splitStats)
 {
     const IExtendedWUInterface *ewu = queryExtendedWU(wu);
     if (ewu)
@@ -9024,6 +9024,17 @@ extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const
             p.set(ewu->queryPTree());
         if (hidePasswords && p->hasProp("Variables/Variable[Format/@password]"))
             return exportWorkUnitToXMLFileWithHiddenPasswords(p, filename, extraXmlFlags);
+        if (splitStats)
+        {
+            StringBuffer statsFilename;
+            statsFilename.append(filename).append(".stats");
+            IPropertyTree * stats = p->queryPropTree("Statistics");
+            if (stats)
+            {
+                saveXML(statsFilename, stats, 0, XML_Format|XML_SortTags|extraXmlFlags);
+                p->removeProp("Statistics");
+            }
+        }
         saveXML(filename, p, 0, XML_Format|XML_SortTags|extraXmlFlags);
     }
     else

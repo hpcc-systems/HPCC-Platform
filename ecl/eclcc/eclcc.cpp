@@ -1668,7 +1668,7 @@ void EclCC::generateOutput(EclCompileInstance & instance)
         else
             xmlFilename.append(DEFAULT_OUTPUTNAME);
         xmlFilename.append(".xml");
-        exportWorkUnitToXMLFile(instance.wu, xmlFilename, 0, true, false, false);
+        exportWorkUnitToXMLFile(instance.wu, xmlFilename, 0, true, false, false, false);
     }
 }
 
@@ -2285,7 +2285,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             if (info.wu &&
                 (info.wu->getDebugValueBool("generatePartialOutputOnError", false) || info.queryErrorProcessor().errCount() == 0))
             {
-                exportWorkUnitToXMLFile(info.wu, xmlFilename, XML_NoBinaryEncode64, true, false, false);
+                exportWorkUnitToXMLFile(info.wu, xmlFilename, XML_NoBinaryEncode64, true, false, false, true);
                 Owned<IFile> xml = createIFile(xmlFilename);
                 info.stats.xmlSize = xml->size();
             }
