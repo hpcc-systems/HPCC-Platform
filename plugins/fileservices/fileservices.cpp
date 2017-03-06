@@ -198,63 +198,129 @@ static IPropertyTree *getEnvironmentTree(IConstEnvironment * daliEnv)
     return getHPCCEnvironment();
 }
 
-static StringAttr espurl;           // Default ESP url if none specified
+static void setServerAccess(CClientFileSpray &server, IConstWorkUnit * wu)
+{
+    StringBuffer user, password, token;
+    wu->getSecurityToken(StringBufferAdaptor(token));
+    extractToken(token.str(), wu->queryWuid(), StringBufferAdaptor(user), StringBufferAdaptor(password));
+    server.setUsernameToken(user.str(), password.str(), "");
+}
+
+static StringArray availableWsFS;
 static CriticalSection espURLcrit;
 
-static const char *getEspServerURL(const char *param)
+static void addConfiguredWsFSUrl(const char * url)
+{
+    CriticalBlock b(espURLcrit);
+    availableWsFS.appendUniq(url);
+}
+
+static bool contactWsFS(const char * espurl, IConstWorkUnit * wu)
+{
+    CClientFileSpray server;
+    server.addServiceUrl(espurl);
+    setServerAccess(server, wu);
+
+    try
+    {
+        Owned<IClientEchoDateTime> req = server.createEchoDateTimeRequest();
+        Owned<IClientEchoDateTimeResponse> result = server.EchoDateTime(req);
+
+        if (result->getResult())
+            return true;
+    }
+    catch(IException *ie)
+    {
+        StringBuffer error;
+        ie->errorMessage(error);
+        PROGLOG("Could not contact WsFS: '%s': %s",espurl, error.str());
+        ie->Release();
+    }
+    catch(...)
+    {
+        PROGLOG("Could not contact WsFS: '%s'",espurl);
+    }
+    return false;
+}
+
+static const char * getNextAliveWsFSURL(IConstWorkUnit * wu)
+{
+    CriticalBlock b(espURLcrit);
+
+    for (int index = 0; index < availableWsFS.length(); index++)
+    {
+        const char * currentUrl = availableWsFS.item(index);
+        if (contactWsFS(currentUrl, wu))
+            return currentUrl;
+    }
+
+    return nullptr;
+}
+
+static bool isUrlListEmpty()
+{
+    CriticalBlock b(espURLcrit);
+    return availableWsFS.length() == 0;
+}
+
+static const char *getAccessibleEspServerURL(const char *param, IConstWorkUnit * wu)
 {
     if (param&&*param)
         return param;
 
     CriticalBlock b(espURLcrit);
-    if (espurl.isEmpty())
+    if (isUrlListEmpty())
     {
         Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
         Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
-        StringBuffer tmp;
+        StringBuffer wsfsurl;
         if (env.get()) {
             Owned<IPropertyTreeIterator> iter1 = env->getElements("Software/EspProcess");
-            ForEach(*iter1) {
+            ForEach(*iter1)
+            {
                 Owned<IPropertyTreeIterator> iter2 = iter1->query().getElements("EspBinding");
-                ForEach(*iter2) {
+                ForEach(*iter2)
+                {
                     Owned<IPropertyTreeIterator> iter3 = iter2->query().getElements("AuthenticateFeature");
-                    ForEach(*iter3) {
+                    ForEach(*iter3)
+                    {
                         // if any enabled feature has service ws_fs then use this binding
                         if (iter3->query().getPropBool("@authenticate")&&
-                            iter3->query().getProp("@service",tmp.clear())&&
-                            (strcmp(tmp.str(),"ws_fs")==0)) {
-                            if (iter2->query().getProp("@protocol",tmp.clear())) {
-                                tmp.append("://");
+                            iter3->query().getProp("@service",wsfsurl.clear())&&
+                            (strcmp(wsfsurl.str(),"ws_fs")==0)){
+                            if (iter2->query().getProp("@protocol",wsfsurl.clear())) {
+                                wsfsurl.append("://");
                                 StringBuffer espname;
                                 if (iter1->query().getProp("@name",espname)) {
                                     StringBuffer espinst;
                                     if (iter1->query().getProp("Instance[1]/@computer",espinst)) {
                                         StringBuffer ipq;
-                                        if (env->getProp(ipq.appendf("Hardware/Computer[@name=\"%s\"]/@netAddress",espinst.str()).str(),tmp)) {
-                                            tmp.append(':').append(iter2->query().getPropInt("@port",8010)).append("/FileSpray"); // FileSpray seems to be fixed
-                                            espurl.set(tmp);
-                                            PROGLOG("fileservices using esp URL: %s",espurl.get());
-                                            break;
+                                        if (env->getProp(ipq.appendf("Hardware/Computer[@name=\"%s\"]/@netAddress",espinst.str()).str(),wsfsurl))
+                                        {
+                                            wsfsurl.append(':').append(iter2->query().getPropInt("@port",8010)).append("/FileSpray"); // FileSpray seems to be fixed
+                                            addConfiguredWsFSUrl(wsfsurl.str());
+                                            break; //There can be multiple AuthFeatures per ESP Instance
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    if (!espurl.isEmpty()) 
-                        break;
-                }
-                if (!espurl.isEmpty()) 
-                    break;
-            }
+                    }//AuthenticateFeature
+                }//ESPBinding
+            }//ESPProcess
         }
+        if (isUrlListEmpty())
+            throw MakeStringException(-1,"Could not find any WS FileSpray in the target HPCC configuration.");
     }
-    if (espurl.isEmpty()) 
-        throw MakeStringException(-1,"Cannot determine ESP Url");
-    return espurl.get();
+
+    const char * wsfsurl = getNextAliveWsFSURL(wu);
+    if (!wsfsurl||!*wsfsurl)
+        throw MakeStringException(-1,"Could not contact any of the configured WS FileSpray instances, check HPCC configuration and system health.");
+
+    PROGLOG("FileServices: Targeting ESP WsFileSpray URL: %s", wsfsurl);
+
+    return wsfsurl;
 }
-
-
 
 StringBuffer & constructLogicalName(IConstWorkUnit * wu, const char * partialLogicalName, StringBuffer & result)
 {
@@ -635,14 +701,6 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 }
 
 
-static void setServerAccess(CClientFileSpray &server, IConstWorkUnit * wu)
-{
-    StringBuffer user, password, token;
-    wu->getSecurityToken(StringBufferAdaptor(token));
-    extractToken(token.str(), wu->queryWuid(), StringBufferAdaptor(user), StringBufferAdaptor(password));
-    server.setUsernameToken(user.str(), password.str(), "");
-}
-
 FILESERVICES_API void FILESERVICES_CALL fsSprayFixed(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int recordSize, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, bool failIfNoSourceFile)
 {
     CTXFREE(parentCtx, fsfSprayFixed(ctx, sourceIP, sourcePath, recordSize, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile));
@@ -654,7 +712,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayFixed(ICodeContext *ctx, const
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
-    server.addServiceUrl(getEspServerURL(espServerIpPort));
+    server.addServiceUrl(getAccessibleEspServerURL(espServerIpPort, wu));
     setServerAccess(server, wu);
 
     Owned<IClientSprayFixed> req = server.createSprayFixedRequest();
@@ -705,7 +763,7 @@ static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, c
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
-    server.addServiceUrl(getEspServerURL(espServerIpPort));
+    server.addServiceUrl(getAccessibleEspServerURL(espServerIpPort,wu));
     setServerAccess(server, wu);
 
     Owned<IClientSprayVariable> req = server.createSprayVariableRequest();
@@ -823,7 +881,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayXml(ICodeContext *ctx, const c
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
-    server.addServiceUrl(getEspServerURL(espServerIpPort));
+    server.addServiceUrl(getAccessibleEspServerURL(espServerIpPort,wu));
     setServerAccess(server, wu);
 
     Owned<IClientSprayVariable> req = server.createSprayVariableRequest();
@@ -886,7 +944,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfDespray(ICodeContext *ctx, const ch
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
-    server.addServiceUrl(getEspServerURL(espServerIpPort));
+    server.addServiceUrl(getAccessibleEspServerURL(espServerIpPort,wu));
     if (wu)
         setServerAccess(server, wu);
 
@@ -931,7 +989,8 @@ FILESERVICES_API char * FILESERVICES_CALL implementCopy(ICodeContext *ctx, const
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
-    server.addServiceUrl(getEspServerURL(espServerIpPort));
+
+    server.addServiceUrl(getAccessibleEspServerURL(espServerIpPort,wu));
     setServerAccess(server, wu);
 
     Owned<IClientCopy> req = server.createCopyRequest();
@@ -1016,7 +1075,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfReplicate(ICodeContext *ctx, const 
 
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
-    server.addServiceUrl(getEspServerURL(espServerIpPort));
+    server.addServiceUrl(getAccessibleEspServerURL(espServerIpPort,wu));
     setServerAccess(server, wu);
 
     Owned<IClientReplicate> req = server.createReplicateRequest();
@@ -1512,7 +1571,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fslWaitDfuWorkunit(ICodeContext *ctx,
 {
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
-    server.addServiceUrl(getEspServerURL(espServerIpPort));
+    server.addServiceUrl(getAccessibleEspServerURL(espServerIpPort,wu));
     setServerAccess(server, wu);
     StringBuffer s("Waiting for DFU Workunit ");
     s.append(wuid);
@@ -1534,7 +1593,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAbortDfuWorkunit(ICodeContext *ctx, c
 {
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
-    server.addServiceUrl(getEspServerURL(espServerIpPort));
+    server.addServiceUrl(getAccessibleEspServerURL(espServerIpPort,wu));
     setServerAccess(server, wu);
     Owned<IClientAbortDFUWorkunit> abortReq = server.createAbortDFUWorkunitRequest();
     abortReq->setWuid(wuid);
@@ -1553,7 +1612,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorLogicalFileName(ICodeContex
 {
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
-    server.addServiceUrl(getEspServerURL(espServerIpPort));
+    server.addServiceUrl(getAccessibleEspServerURL(espServerIpPort,wu));
     setServerAccess(server, wu);
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
@@ -1583,7 +1642,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorFile(ICodeContext *ctx, con
 {
     CClientFileSpray server;
     Owned<IConstWorkUnit> wu = getWorkunit(ctx);
-    server.addServiceUrl(getEspServerURL(espServerIpPort));
+    server.addServiceUrl(getAccessibleEspServerURL(espServerIpPort,wu));
     setServerAccess(server, wu);
     if (shotcount == 0)
         shotcount = -1;
