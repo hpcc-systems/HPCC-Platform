@@ -29,8 +29,8 @@ interface ISortSlaveMP
     virtual void MultiBinChopStop(unsigned num,rowcount_t *pos)=0;
     virtual void OverflowAdjustMapStart(unsigned mapsize,rowcount_t *map,size32_t keybuffsize,const byte *keybuff, byte cmpfn, bool useaux)=0; /* async */
     virtual rowcount_t OverflowAdjustMapStop(unsigned mapsize, rowcount_t *map)=0;
-    virtual void MultiMerge(unsigned mapsize,rowcount_t *map,unsigned num,SocketEndpoint* endpoints)=0; /* async */
-    virtual void MultiMergeBetween(unsigned mapsize,rowcount_t *map,rowcount_t *mapupper,unsigned num,SocketEndpoint* endpoints)=0; /* async */
+    virtual void MultiMerge(rowcount_t globalCount, unsigned mapsize,rowcount_t *map,unsigned num,SocketEndpoint* endpoints)=0; /* async */
+    virtual void MultiMergeBetween(rowcount_t globalCount, unsigned mapsize,rowcount_t *map,rowcount_t *mapupper,unsigned num,SocketEndpoint* endpoints)=0; /* async */
     virtual void SingleMerge()=0; /* async */
     virtual bool FirstRowOfFile(const char *filename,size32_t &rowbuffsize, byte * &rowbuf)=0;
     virtual void GetMultiNthRow(unsigned numsplits,size32_t &mkeybuffsize, void * &mkeybuf)=0;              
@@ -50,7 +50,10 @@ class SortSlaveMP: implements ISortSlaveMP
 
     bool sendRecv(CMessageBuffer &mbuff, unsigned timeout=MP_WAIT_FOREVER);
 
+protected:
+    CActivityBase *activity = nullptr;
 public:
+    SortSlaveMP(CActivityBase *activity);
     void init(ICommunicator *_comm, rank_t _rank,mptag_t _tag);
     bool Connect(unsigned _part, unsigned _numnodes);
     void StartGather();
@@ -63,8 +66,8 @@ public:
     void MultiBinChopStop(unsigned num,rowcount_t *pos);
     void OverflowAdjustMapStart(unsigned mapsize,rowcount_t *map,size32_t keybuffsize,const byte *keybuff, byte cmpfn,bool useaux); /* async */
     rowcount_t OverflowAdjustMapStop(unsigned mapsize, rowcount_t *map);
-    void MultiMerge(unsigned mapsize,rowcount_t *map,unsigned num,SocketEndpoint* endpoints); /* async */
-    void MultiMergeBetween(unsigned mapsize,rowcount_t *map,rowcount_t *mapupper,unsigned num,SocketEndpoint* endpoints); /* async */
+    void MultiMerge(rowcount_t globalCount, unsigned mapsize,rowcount_t *map,unsigned num,SocketEndpoint* endpoints); /* async */
+    void MultiMergeBetween(rowcount_t globalCount, unsigned mapsize,rowcount_t *map,rowcount_t *mapupper,unsigned num,SocketEndpoint* endpoints); /* async */
     void SingleMerge(); /* async */
     bool FirstRowOfFile(const char *filename,size32_t &rowbuffsize, byte * &rowbuf);
     void GetMultiNthRow(unsigned numsplits,size32_t &mkeybuffsize, void * &mkeybuf);                

@@ -176,7 +176,7 @@ define([
             }
             if (lang.exists("Result.Row", response)) {
                 var context = this;
-                var retVal = this.formatRows(context._structure, response.Result.Row);
+                var retVal = context._structure ? this.formatRows(context._structure, response.Result.Row) : response.Result.Row;
                 arrayUtil.forEach(retVal, function (item, index) {
                     item.__hpcc_rowNum = request.Start + index + 1;
                     item.__hpcc_id = context.idPrefix + "_" + item.__hpcc_rowNum;

@@ -678,11 +678,13 @@ inline void LogErr(unsigned err,unsigned ref,const char *info,unsigned lineno,co
         PROGLOG("jsocket(%d,%d)%s%s err = %d%s%s",ref,lineno,
            (info&&*info)?" ":"",(info&&*info)?info:"",err,
            (tracename&&*tracename)?" : ":"",(tracename&&*tracename)?tracename:"");
+#ifdef _TRACELINKCLOSED
         if ((JSE_NOTCONN == err) || (JSE_CONNRESET == err) || (JSE_CONNABORTED == err))
         {
             PROGLOG("Socket not connected, stack:");
             PrintStackReport();
         }
+#endif
     }
 }
 
@@ -4826,7 +4828,7 @@ public:
                                     {
                                         tonotify.append(*epsi);
 #ifdef _TRACELINKCLOSED
-                                        // temporary, to help diagnose spurios socket closes (hpcc-15043)
+                                        // temporary, to help diagnose spurious socket closes (hpcc-15043)
                                         // currently no implementation of notifySelected() uses the mode
                                         // argument so we can pass in the epoll events mask and log that
                                         // if there is no data and the socket gets closed

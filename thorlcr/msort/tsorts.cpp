@@ -603,6 +603,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     InterruptableSemaphore startmergesem;
     size32_t transferblocksize, midkeybufsize;
     CRuntimeStatisticCollection spillStats;
+    rowcount_t globalCount = 0;
 
     class CRowToKeySerializer : public CSimpleInterfaceOf<IOutputRowSerializer>
     {
@@ -987,14 +988,15 @@ public:
         free(overflowmap);
         return grandtotal;
     }
-    virtual void MultiMerge(unsigned mapsize,rowcount_t *map,
+    virtual void MultiMerge(rowcount_t globalCount, unsigned mapsize,rowcount_t *map,
                     unsigned num,SocketEndpoint* endpoints)
     {
-        MultiMergeBetween(mapsize,map,NULL,num,endpoints);
+        MultiMergeBetween(globalCount, mapsize,map,NULL,num,endpoints);
     }
-    virtual void MultiMergeBetween(unsigned mapsize, rowcount_t * map, rowcount_t * mapupper, unsigned num, SocketEndpoint * endpoints)
+    virtual void MultiMergeBetween(rowcount_t _globalCount, unsigned mapsize, rowcount_t * map, rowcount_t * mapupper, unsigned num, SocketEndpoint * endpoints)
     {
         assertex(transferserver.get()!=NULL);
+        globalCount = _globalCount;
         if (intercept)
             rowArray.kill(); // don't need samples any more. All merged from disk.
         try
@@ -1207,6 +1209,15 @@ public:
         rowArray.setup(rowif);
         dbgassertex(transferserver);
         transferserver->setRowIF(rowif);
+
+        if (_auxrowif && (0 == globalCount)) // cosorting, but 0 partitions because primary side is empty, revert to primary serializer
+        {
+            _keyserializer = nullptr;
+            _auxrowif = nullptr;
+            _primarySecondaryCompare = nullptr;
+            _primarySecondaryUpperCompare = nullptr;
+            primaryCompare = nullptr;
+        }
         if (_auxrowif&&_auxrowif->queryRowMetaData())
             auxrowif.set(_auxrowif);
         else
