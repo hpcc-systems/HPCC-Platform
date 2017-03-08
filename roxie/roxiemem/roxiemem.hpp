@@ -129,6 +129,7 @@ protected:
     }
 
     virtual void noteReleased(const void *ptr) = 0;
+    virtual void noteReleased(unsigned count, byte * * rowset) = 0;
     virtual bool _isShared(const void *ptr) const = 0;
     virtual memsize_t _capacity() const = 0;
     virtual void _setDestructorFlag(const void *ptr) = 0;
@@ -242,7 +243,8 @@ private:
 
     void released();
 
-    virtual void noteReleased(const void *ptr);
+    virtual void noteReleased(const void *ptr) override;
+    virtual void noteReleased(unsigned count, byte * * rowset) override;
     virtual bool _isShared(const void *ptr) const;
     virtual memsize_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);

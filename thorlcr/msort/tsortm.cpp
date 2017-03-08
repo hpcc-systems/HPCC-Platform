@@ -90,18 +90,14 @@ public:
     bool            overflow;
     unsigned        scale;     // num times overflowed
     
-    CActivityBase *activity;
-    
-    
-    CSortNode(CActivityBase *_activity, ICommunicator *comm,rank_t _rank, SocketEndpoint &sep,mptag_t _mpTagRPC, CSortMaster &_sorter) 
-        : sorter(_sorter)
+    CSortNode(CActivityBase *activity, ICommunicator *comm,rank_t _rank, SocketEndpoint &sep,mptag_t _mpTagRPC, CSortMaster &_sorter)
+        : SortSlaveMP(activity), sorter(_sorter)
     { 
         endpoint = sep; 
         mpport = getFixedPort(comm->queryGroup().queryNode(_rank).endpoint().port,TPORT_mp); // this is a bit odd 
         mpTagRPC = _mpTagRPC;
         state = NS_null;
         beat=0; 
-        activity = _activity;
         overflow = false;
         scale = 1;
         numrecs = 0;
@@ -386,6 +382,15 @@ public:
         ActPrintLog(activity, "Sort setup cosort=%s, needconnect=%s %s",cosort?"true":"false",needconnect?"true":"false",_keyserializer?"has key serializer":"");
         assertex(_icompare);
         rowif.set(_rowif);
+        if (cosort)
+        {
+            if (!partitioninfo->IsOK()) // i.e. no split points (0 rows on primary side)
+            {
+                _auxrowif = nullptr;
+                _keyserializer = nullptr;
+            }
+            cosort = false;
+        }
         if (_auxrowif&&_auxrowif->queryRowMetaData())
             auxrowif.set(_auxrowif);
         else
@@ -1422,9 +1427,9 @@ public:
                     char url[100];
                     slave.endpoint.getUrlStr(url,sizeof(url));
                     if (splitMapUpper)
-                        slave.MultiMergeBetween(numnodes*numnodes,splitMap,splitMapUpper,numnodes,endpoints);
+                        slave.MultiMergeBetween(total, numnodes*numnodes,splitMap,splitMapUpper,numnodes,endpoints);
                     else
-                        slave.MultiMerge(numnodes*numnodes,splitMap,numnodes,endpoints);
+                        slave.MultiMerge(total, numnodes*numnodes,splitMap,numnodes,endpoints);
     //              ActPrintLog(activity, "Merge %d started: %d rows on %s",i,tot[i],url);
                 }
             }
