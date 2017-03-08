@@ -756,7 +756,7 @@ IPropertyTree *CClientRemoteTree::ownPTree(IPropertyTree *tree)
         return tree;
     }
     else
-        return PTree::ownPTree(tree);
+        return PARENT::ownPTree(tree);
 }
 
 IPropertyTree *CClientRemoteTree::create(const char *name, IPTArrayValue *value, ChildMap *children, bool existing)
@@ -797,7 +797,7 @@ void CClientRemoteTree::setLocal(size32_t size, const void *data, bool _binary)
 {
     clearState(CPS_PropAppend);
     mergeState(CPS_Changed);
-    PTree::setLocal(size, data, _binary);
+    PARENT::setLocal(size, data, _binary);
 }
 
 void CClientRemoteTree::appendLocal(size32_t size, const void *data, bool binary)
@@ -807,7 +807,7 @@ void CClientRemoteTree::appendLocal(size32_t size, const void *data, bool binary
     {
         if (0 != (CPS_PropAppend & state))
         {
-            PTree::appendLocal(size, data, binary);
+            PARENT::appendLocal(size, data, binary);
             return;
         }
         else if (0 == (CPS_Changed & state))
@@ -820,7 +820,7 @@ void CClientRemoteTree::appendLocal(size32_t size, const void *data, bool binary
                 {
                     mergeState(CPS_PropAppend);
                     registerPropAppend(sz);
-                    PTree::appendLocal(size, data, binary);
+                    PARENT::appendLocal(size, data, binary);
                     return;
                 }
             }
@@ -830,14 +830,14 @@ void CClientRemoteTree::appendLocal(size32_t size, const void *data, bool binary
                 {
                     mergeState(CPS_PropAppend);
                     registerPropAppend(0); // whole value on commit to be sent for external append.
-                    PTree::appendLocal(size, data, binary);
+                    PARENT::appendLocal(size, data, binary);
                     return;
                 }
             }
         }
     }
     mergeState(CPS_Changed);
-    PTree::appendLocal(size, data, binary);
+    PARENT::appendLocal(size, data, binary);
 }
 
 void CClientRemoteTree::addingNewElement(IPropertyTree &child, int pos)
@@ -847,26 +847,26 @@ void CClientRemoteTree::addingNewElement(IPropertyTree &child, int pos)
     if (pos >= 0)
         ((CRemoteTreeBase &)child).mergeState(CPS_InsPos);
 #endif
-    PTree::addingNewElement(child, pos);
+    PARENT::addingNewElement(child, pos);
 }
 
 void CClientRemoteTree::removingElement(IPropertyTree *tree, unsigned pos)
 {
     CRemoteTreeBase *child = QUERYINTERFACE(tree, CRemoteTreeBase); assertex(child);
     registerDeleted(child->queryName(), pos, child->queryServerId());
-    PTree::removingElement(tree, pos);
+    PARENT::removingElement(tree, pos);
 }
 
-void CClientRemoteTree::setAttr(const char *attr, const char *val)
+void CClientRemoteTree::setAttribute(const char *attr, const char *val)
 {
-    PTree::setAttr(attr, val);
+    PARENT::setAttribute(attr, val);
     mergeState(CPS_AttrChanges);
     registerAttrChange(attr);
 }
 
-bool CClientRemoteTree::removeAttr(const char *attr)
+bool CClientRemoteTree::removeAttribute(const char *attr)
 {
-    if (PTree::removeAttr(attr))
+    if (PARENT::removeAttribute(attr))
     {
         registerDeletedAttr(attr);
         return true;

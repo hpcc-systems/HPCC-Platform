@@ -1624,7 +1624,7 @@ public:
     virtual void resetAsExternal(IPropertyTree &_tree)
     {
         PTree &tree = *QUERYINTERFACE(&_tree, PTree);
-        tree.clear();
+        ::Release(tree.detach());
     }
     virtual void readValue(const char *name, MemoryBuffer &mb)
     {
@@ -2265,7 +2265,7 @@ void CServerConnection::aborted(SessionId id)
 enum IncCmd { None, PropDelete, AttrDelete, PropChange, PropNew, PropExisting, ChildEndMarker, PropRename, AttrChange };
 
 CRemoteTreeBase::CRemoteTreeBase(const char *name, IPTArrayValue *value, ChildMap *children)
-    : PTree(name, ipt_none, value, children)
+    : SDS_PTREE(name, ipt_none, value, children)
 {
     serverId = 0;
 }
@@ -3010,7 +3010,7 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
                         Owned<IAttributeIterator> iter = e.getAttributes();
                         ForEach(*iter)
                         {
-                            if (removeAttr(iter->queryName()))
+                            if (removeAttribute(iter->queryName()))
                                 mergePDState(res, PDS_Data);
                         }
                         break;
