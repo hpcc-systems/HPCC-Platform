@@ -99,6 +99,8 @@ define([
                 this.loadESDLDefinitions(params);
             } else if (params.Logs === true) {
                 this.loadLogs(params);
+            } else if (params.DFUSprayQueues === true) {
+                this.loadSprayQueues();
             } else {
                 this.loadTargets();
             }
@@ -331,6 +333,24 @@ define([
                     }
                 }
             });
+        },
+
+        loadSprayQueues: function () {
+            var context = this;
+            WsTopology.TpServiceQuery({
+                load: function (response) {
+                    if (lang.exists("TpServiceQueryResponse.ServiceList.TpDfuServers", response)) {
+                        var targetData = response.TpServiceQueryResponse.ServiceList.TpDfuServers.TpDfuServer;
+                        for (var i = 0; i < targetData.length; ++i) {
+                            context.options.push({
+                                label: targetData[i].Queue,
+                                value: targetData[i].Queue
+                            })
+                        }
+                         context._postLoad();
+                    }
+                }
+            })
         },
 
         loadSprayTargets: function () {
