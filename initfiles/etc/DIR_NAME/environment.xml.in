@@ -384,7 +384,7 @@
                          resource="OwnWorkunitsAccess"
                          service="ws_workunits"/>
     <AuthenticateFeature authenticate="Yes"
-                         description="Access to others&apos; workunits"
+                         description="Access to workunits owned by others"
                          path="OthersWorkunitsAccess"
                          resource="OthersWorkunitsAccess"
                          service="ws_workunits"/>
@@ -620,7 +620,7 @@
                          path="OwnWorkunitsAccess"
                          resource="OwnWorkunitsAccess"
                          service="ws_workunits"/>
-    <AuthenticateFeature description="Access to others&apos; workunits"
+    <AuthenticateFeature description="Access to workunits owned by others"
                          path="OthersWorkunitsAccess"
                          resource="OthersWorkunitsAccess"
                          service="ws_workunits"/>
@@ -914,7 +914,7 @@
                           path="OwnWorkunitsAccess"
                           resource="OwnWorkunitsAccess"
                           service="ws_workunits"/>
-     <AuthenticateFeature description="Access to others&apos; workunits"
+     <AuthenticateFeature description="Access to workunits owned by others"
                           path="OthersWorkunitsAccess"
                           resource="OthersWorkunitsAccess"
                           service="ws_workunits"/>
