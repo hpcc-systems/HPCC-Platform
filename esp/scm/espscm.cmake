@@ -30,7 +30,6 @@ set ( ESPSCM_SRCS
       ecllib.ecm
       esp.ecm
       ws_access.ecm
-      esploggingservice.ecm
       soapesp.ecm
       ws_ecl_client.ecm
       ws_fs.ecm
