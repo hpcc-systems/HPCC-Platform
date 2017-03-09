@@ -27,7 +27,7 @@
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
-#include "rtlfield_imp.hpp"
+#include "rtlfield.hpp"
 #include "nbcd.hpp"
 #include "roxiemem.hpp"
 #include "enginecontext.hpp"
@@ -341,7 +341,7 @@ public:
             const RtlFieldInfo *field = *fields;
             if (names.length())
                 names.append(',');
-            names.append(str(field->name));
+            names.append(field->name);
             fields++;
         }
         OwnedPyObject pnames = PyUnicode_FromString(names.str());
@@ -537,7 +537,7 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
 {
     VStringBuffer msg("pyembed: type mismatch - %s expected", expected);
     if (field)
-        msg.appendf(" for field %s", str(field->name));
+        msg.appendf(" for field %s", field->name);
     rtlFail(0, msg.str());
 }
 
@@ -926,7 +926,7 @@ protected:
             elem.setown(pushback.getClear());
         else if (field && named) // If it's named tuple, expect to always resolve fields by name, not position
         {
-            elem.setown(PyObject_GetAttrString(parent, str(field->name)));
+            elem.setown(PyObject_GetAttrString(parent, field->name));
         }
         else if (iter)
             elem.setown(PyIter_Next(iter));
