@@ -1187,8 +1187,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             unsigned __int64 parseTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
             instance.stats.parseTime = (unsigned)nanoToMilli(parseTimeNs);
 
-            if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
-                updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile:parseTime", StTimeElapsed, NULL, parseTimeNs);
+            updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile:parseTime", StTimeElapsed, NULL, parseTimeNs);
 
             if (exportDependencies)
             {
@@ -1290,8 +1289,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     unsigned __int64 totalTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
     instance.stats.generateTime = (unsigned)nanoToMilli(totalTimeNs) - instance.stats.parseTime;
     //MORE: This is done too late..
-    if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
-        updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
+    updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
 }
 
 void EclCC::processDefinitions(EclRepositoryArray & repositories)

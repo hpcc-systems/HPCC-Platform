@@ -5970,7 +5970,7 @@ protected:
 
 void HqlCppTranslator::ensureWorkUnitUpdated()
 {
-    if (timeReporter && options.addTimingToWorkunit)
+    if (timeReporter)
     {
         WuTimingUpdater updater(wu());
         timeReporter->report(updater);
