@@ -203,7 +203,7 @@ END;
     string100 Message {xpath('Message')};
   END;
 
-  soapout_rec := record
+  soapoutRec := record
     dataset (the_responseLayout) ds {xpath('Dataset/Row')};
     exceptionRec Exception {xpath('Exception')};
   end;
@@ -227,7 +227,7 @@ MonSoapcall(DATASET(the_requestLayout) req) := FUNCTION
                           serviceURL,
                           serviceName,
                           {ds_request},
-                          DATASET (soapout_rec),
+                          DATASET (soapoutRec),
                           TIMEOUT(6), RETRY(1), LITERAL, XPATH('*/Results/Result'));
   RETURN ar_results;
 END;
@@ -254,7 +254,7 @@ ENDEMBED;
     string id;
     string responseXML;
     dataset(the_responseLayout) report;
-//    dataset(soapout_rec) soap;
+//    dataset(soapoutRec) soap;
 //    dataset(the_responseLayout) prior;
   END;
 
