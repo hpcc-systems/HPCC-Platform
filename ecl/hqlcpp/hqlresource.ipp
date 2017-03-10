@@ -85,6 +85,7 @@ public:
     bool     spillMultiCondition;
     bool     spotThroughAggregate;
     bool     alwaysReuseGlobalSpills;
+    bool     unlimitedResources = false;
 
     IHqlExpression * graphIdExpr;
     unsigned nextResult;

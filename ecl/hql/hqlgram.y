@@ -9824,6 +9824,7 @@ loopOptions
 
 loopOption
     : commonAttribute
+    | FEW               {   $$.setExpr(createAttribute(fewAtom), $1); }
     ;
 
 graphOptions

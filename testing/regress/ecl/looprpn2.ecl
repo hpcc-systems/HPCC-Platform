@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
 stepRecord := 
             record
 string          next{maxlength(20)};
@@ -60,7 +59,7 @@ processExpression(dataset(stepRecord) actions) := function
     END;
                 
     initial := dataset([], stateRecord);
-    result := LOOP(initial, count(actions), processNext(rows(left), counter, actions[NOBOUNDCHECK counter]));
+    result := LOOP(initial, count(actions), processNext(rows(left), counter, actions[NOBOUNDCHECK counter]), FEW);
     return result;
 end;
 

@@ -8705,7 +8705,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
     OwnedHqlExpr childquery = createLoopSubquery(dataset, selSeq, rowsid, body->queryChild(0), filter, loopCond, counter, (parallel != NULL), loopAgainResult);
 
     ChildGraphBuilder builder(*this, childquery);
-    unique_id_t loopId = builder.buildLoopBody(subctx, (parallel != NULL));
+    unique_id_t loopId = builder.buildLoopBody(subctx, (parallel != NULL), getBoolAttribute(expr, fewAtom));
     instance->addAttributeInt("_loopid", loopId);
 
     if (loopAgainResult)
@@ -8757,7 +8757,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGraphLoop(BuildCtx & ctx, IHql
     //output dataset is result 0
     //input dataset is fed in using result 1
     //counter (if required) is fed in using result 2[0].counter;
-    unique_id_t loopId = buildGraphLoopSubgraph(subctx, dataset, selSeq, rowsid, body->queryChild(0), counter, (parallel != NULL));
+    unique_id_t loopId = buildGraphLoopSubgraph(subctx, dataset, selSeq, rowsid, body->queryChild(0), counter, (parallel != NULL), getBoolAttribute(expr, fewAtom));
     instance->addAttributeInt("_loopid", loopId);
 
     buildInstanceSuffix(instance);

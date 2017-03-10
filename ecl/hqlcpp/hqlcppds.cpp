@@ -1512,7 +1512,7 @@ void ChildGraphBuilder::generateGraph(BuildCtx & ctx)
     //Remove this line once all engines use the new child queries exclusively
     if (numResults == 0) numResults++;
 
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(graphctx, childQuery, numResults, no_none);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(graphctx, childQuery, numResults, no_none, false);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(graphctx, PETchild, represents, resourced, true);
     if (!translator.queryOptions().serializeRowsetInExtract)
@@ -1560,7 +1560,7 @@ void ChildGraphBuilder::generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * re
     BuildCtx aliasctx(ctx);
     aliasctx.addGroup();
 
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_none);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_none, false);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETchild, represents, resourced, false);
     createBuilderAlias(aliasctx, extractBuilder);
@@ -1586,12 +1586,12 @@ void ChildGraphBuilder::createBuilderAlias(BuildCtx & ctx, ParentExtract * extra
     ctx.addQuoted(s);
 }
 
-unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, bool multiInstance)
+unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, bool multiInstance, bool unlimitedResources)
 {
     BuildCtx subctx(ctx);
     subctx.addGroup();
 
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_loop);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_loop, unlimitedResources);
     //Add a flag to indicate multi instance
     if (multiInstance)
         resourced.setown(appendOwnedOperand(resourced, createAttribute(multiInstanceAtom)));
@@ -1687,14 +1687,14 @@ protected:
 
 
 
-unique_id_t ChildGraphBuilder::buildGraphLoopBody(BuildCtx & ctx, bool isParallel)
+unique_id_t ChildGraphBuilder::buildGraphLoopBody(BuildCtx & ctx, bool isParallel, bool unlimitedResources)
 {
     BuildCtx subctx(ctx);
     subctx.addGroup();
 
     IHqlExpression * query = childQuery->queryChild(2);
     translator.traceExpression("Before Loop resource", query);
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_loop);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_loop, unlimitedResources);
     translator.traceExpression("After Loop resource", resourced);
 
     //Add a flag to indicate multi instance
@@ -1725,7 +1725,7 @@ unique_id_t ChildGraphBuilder::buildRemoteGraph(BuildCtx & ctx)
     BuildCtx subctx(ctx);
     subctx.addGroup();
 
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_allnodes);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_allnodes, false);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETremote, represents, GraphRemote, false);
 
@@ -1786,7 +1786,7 @@ void HqlCppTranslator::buildAssignChildDataset(BuildCtx & ctx, const CHqlBoundTa
 }
 
 
-IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * childQuery, unsigned numResults, node_operator graphKind)
+IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * childQuery, unsigned numResults, node_operator graphKind, bool unlimitedResources)
 {
     if (options.paranoidCheckNormalized || options.paranoidCheckDependencies)
         DBGLOG("Before resourcing a child graph");
@@ -1835,7 +1835,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     if (graphKind == no_loop)
     {
         bool insideChild = insideChildQuery(ctx);
-        resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults, insideChild));
+        resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults, insideChild, unlimitedResources));
     }
     else
         resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
@@ -1879,7 +1879,7 @@ void HqlCppTranslator::buildChildDataset(BuildCtx & ctx, IHqlExpression * expr, 
 }
 
 
-unique_id_t HqlCppTranslator::buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, bool multiInstance)
+unique_id_t HqlCppTranslator::buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, bool multiInstance, bool unlimitedResources)
 {
     ChildGraphExprBuilder graphBuilder(0);
 
@@ -1901,7 +1901,7 @@ unique_id_t HqlCppTranslator::buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpress
     OwnedHqlExpr subquery = graphBuilder.getGraph();
 
     ChildGraphBuilder builder(*this, subquery);
-    return builder.buildGraphLoopBody(ctx, multiInstance);
+    return builder.buildGraphLoopBody(ctx, multiInstance, unlimitedResources);
 }
 
 unique_id_t HqlCppTranslator::buildRemoteSubgraph(BuildCtx & ctx, IHqlExpression * dataset)

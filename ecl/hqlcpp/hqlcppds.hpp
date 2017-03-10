@@ -48,8 +48,8 @@ class ChildGraphBuilder : public CInterface
 public:
     ChildGraphBuilder(HqlCppTranslator & _translator, IHqlExpression * subgraph);
 
-    unique_id_t buildGraphLoopBody(BuildCtx & ctx, bool multiInstance);
-    unique_id_t buildLoopBody(BuildCtx & ctx, bool multiInstance);
+    unique_id_t buildGraphLoopBody(BuildCtx & ctx, bool multiInstance, bool unlimitedResources);
+    unique_id_t buildLoopBody(BuildCtx & ctx, bool multiInstance, bool unlimitedResources);
     unique_id_t buildRemoteGraph(BuildCtx & ctx);
     void generateGraph(BuildCtx & ctx);
     void generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * retGraphExpr);
