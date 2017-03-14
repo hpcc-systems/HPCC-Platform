@@ -40,8 +40,8 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">DayOfYear</emphasis> function calculate the
-  number of whole months between two dates.</para>
+  <para>The <emphasis role="bold">MonthsBetween</emphasis> function calculates
+  the number of whole months between two dates.</para>
 
   <para>Example:</para>
 
