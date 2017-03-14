@@ -277,7 +277,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.29")] string DebugValuesDesc;
     [min_ver("1.29")] string ApplicationValuesDesc;
     [min_ver("1.29")] string WorkflowsDesc;
-    [min_ver("1.31")] bool HasArchiveQuery(false);
+    [min_ver("1.31")] bool HasArchiveQuery;
     [min_ver("1.38")] ESParray<ESPstruct ThorLogInfo> ThorLogList;
     [min_ver("1.47")] ESParray<string, URL> ResourceURLs;
     [min_ver("1.50")] int ResultViewCount;
