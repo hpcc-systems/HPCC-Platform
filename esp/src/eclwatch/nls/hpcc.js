@@ -439,6 +439,7 @@ define({root:
     PlaceholderFirstName: "John",
     PlaceholderLastName: "Smith",
     Playground: "Playground",
+    PleaseEnableCookies: "ECL Watch requires cookies enabled to continue.",
     PleasePickADefinition: "Please pick a definition",
     PleaseSelectAGroupToAddUser: "Please select a group to add the user to",
     PleaseSelectAUserOrGroup: "Please select a user or a group along with a file name",

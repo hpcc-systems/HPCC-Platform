@@ -439,6 +439,7 @@ define(
     PlaceholderFirstName: "John",
     PlaceholderLastName: "Smith",
     Playground: "Patio de juegos",
+    PleaseEnableCookies: "ECL Watch requiere que las cookies esten habilitadas para poder continuar.",
     PleaseEnterANumber: "Por favor escriba un numero 1 -",
     PleasePickADefinition: "Por favor seleccione una definición",
     PleaseSelectADynamicESDLService: "Por favor seleccione un servicio de ESDL dinámico",
