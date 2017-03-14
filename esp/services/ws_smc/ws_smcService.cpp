@@ -319,6 +319,8 @@ void CActivityInfo::readTargetClusterInfo(IConstWUClusterInfo& cluster, IPropert
     targetCluster->queueName.set(smcQueue->queueName.str());
 
     bool validQueue = readJobQueue(smcQueue->queueName.str(), targetCluster->queuedWUIDs, smcQueue->queueState, smcQueue->queueStateDetails);
+    if (!validQueue)
+        smcQueue->notFoundInJobQueues = true;
     if (validQueue && smcQueue->queueState.length())
         targetCluster->queueStatus.set(smcQueue->queueState.str());
 
@@ -329,24 +331,43 @@ void CActivityInfo::readTargetClusterInfo(IConstWUClusterInfo& cluster, IPropert
             targetCluster->clusterStatusDetails.appendf("Cluster %s not listening for workunits; ", clusterName.str());
     }
 
-    readJobQueue(targetCluster->serverQueue.queueName.str(), targetCluster->wuidsOnServerQueue, targetCluster->serverQueue.queueState, targetCluster->serverQueue.queueStateDetails);
+    validQueue = readJobQueue(targetCluster->serverQueue.queueName.str(), targetCluster->wuidsOnServerQueue, targetCluster->serverQueue.queueState, targetCluster->serverQueue.queueStateDetails);
+    if (!validQueue)
+        targetCluster->serverQueue.notFoundInJobQueues = true;
 }
 
 bool CActivityInfo::readJobQueue(const char* queueName, StringArray& wuids, StringBuffer& state, StringBuffer& stateDetails)
 {
     if (!queueName || !*queueName)
+    {
+        state.set("Unknown");
+        stateDetails.set("Empty queue name");
         return false;
+    }
 
     if (!jobQueueSnapshot)
     {
+        state.set("Unknown");
+        stateDetails.set("jobQueueSnapshot not found");
         WARNLOG("CActivityInfo::readJobQueue: jobQueueSnapshot not found.");
         return false;
     }
 
-    Owned<IJobQueueConst> jobQueue = jobQueueSnapshot->getJobQueue(queueName);
-    if (!jobQueue)
+    Owned<IJobQueueConst> jobQueue;
+    try
     {
-        WARNLOG("CActivityInfo::readJobQueue: failed to get info for job queue %s", queueName);
+        jobQueue.setown(jobQueueSnapshot->getJobQueue(queueName));
+        if (!jobQueue)
+        {
+            WARNLOG("CActivityInfo::readJobQueue: failed to get info for job queue %s", queueName);
+            return false;
+        }
+    }
+    catch(IException* e)
+    {
+        state.set("Unknown");
+        e->errorMessage(stateDetails);
+        e->Release();
         return false;
     }
 
@@ -1028,6 +1049,8 @@ void CWsSMCEx::getClusterQueueStatus(const CWsSMCTargetCluster& targetCluster, C
         else
             queueStatusType = QueueRunningNotFound;
     }
+    else if (jobQueue->notFoundInJobQueues)
+        queueStatusType = QueuePausedOrStoppedNotFound;
     else if (!queuePausedOrStopped)
         queueStatusType = RunningNormal;
     else if (jobQueue->countRunningJobs > 0)
