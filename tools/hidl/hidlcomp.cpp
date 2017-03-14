@@ -3153,6 +3153,9 @@ void EspMessageInfo::write_esp_ipp()
         outf("\n\tC%s(IEspContext* ctx, const char *serviceName, IProperties *params, MapStrToBuf *attachments);", name_);
     }   
 
+    if (espm_type_==espm_request)
+        outs("\n\tIEspClientRpcSettings &rpc(){return *static_cast<IEspClientRpcSettings*>(this);}\n\n");
+
     outf("\n\tvirtual const char *getNsURI(){return %s;}\n", getMetaString("ns_uri", "NULL"));
     outf("\n\tvirtual const char *getNsPrefix(){return %s;}\n", getMetaString("ns_var", "NULL"));
     outs("\n\tvirtual const char *getRootName(){return m_msgName.str();}\n");
@@ -5224,6 +5227,7 @@ void EspMessageInfo::write_cpp_interfaces()
     switch (espm_type_)
     {
     case espm_request:
+        outs("\n\tvirtual IEspClientRpcSettings &rpc() = 0;\n\n");
         write_esp_methods(espaxm_setters, true, true);
         write_esp_mapinfo(true);
         break;

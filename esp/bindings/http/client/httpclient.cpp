@@ -37,7 +37,6 @@
      CHttpClient Implementation
 **************************************************************************/
 #define URL_MAX  512
-#define HTTP_CLIENT_DEFAULT_CONNECT_TIMEOUT 3000
 
 CHttpClientContext::CHttpClientContext()
 {
@@ -122,7 +121,7 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
 
 
 
-CHttpClient::CHttpClient(const char *proxy, const char* url) : m_proxy(proxy), m_url(url), m_disableKeepAlive(false), m_timeout(0)
+CHttpClient::CHttpClient(const char *proxy, const char* url) : m_proxy(proxy), m_url(url), m_disableKeepAlive(false)
 {
     StringBuffer protocol,username,password, host, port, path;
     Utils::SplitURL(url, protocol,username,password, host, port, path);
@@ -184,9 +183,14 @@ void CHttpClient::setProxy(const char* proxy)
     m_proxy.clear().append(proxy);
 }
 
+void CHttpClient::setConnectTimeOutMs(unsigned timeout)
+{
+    m_connectTimeoutMs =  timeout;
+}
+
 void CHttpClient::setTimeOut(unsigned int timeout)
 {
-    m_timeout =  timeout;
+    m_readTimeoutSecs =  timeout;
 }
 
 int CHttpClient::connect(StringBuffer& errmsg)
@@ -222,10 +226,7 @@ int CHttpClient::connect(StringBuffer& errmsg)
 
     try
     {
-        if(m_timeout)
-            m_socket = ISocket::connect_timeout(ep,m_timeout);
-        else
-            m_socket = ISocket::connect_timeout(ep, HTTP_CLIENT_DEFAULT_CONNECT_TIMEOUT);
+        m_socket = ISocket::connect_timeout(ep, m_connectTimeoutMs);
 
         if(strcmp(m_protocol.get(), "HTTPS") == 0)
         {
@@ -342,10 +343,10 @@ int CHttpClient::sendRequest(const char* method, const char* contenttype, String
     }
 #endif
 
-    if(m_timeout)
-        httpresponse->setTimeOut(m_timeout);
-
     httprequest->send();
+
+    if (m_readTimeoutSecs)
+        httpresponse->setTimeOut(m_readTimeoutSecs);
     httpresponse->receive(false, NULL);  // MORE - pass in IMultiException if we want to see exceptions (which are not fatal)
 
 #ifdef COOKIE_HANDLING
@@ -462,10 +463,10 @@ int CHttpClient::sendRequest(IProperties *headers, const char* method, const cha
     }
 #endif
 
-    if(m_timeout)
-        httpresponse->setTimeOut(m_timeout);
-
     httprequest->send();
+
+    if (m_readTimeoutSecs)
+        httpresponse->setTimeOut(m_readTimeoutSecs);
     httpresponse->receive(alwaysReadContent, me);  // MORE - pass in IMultiException if we want to see exceptions (which are not fatal)
 
 #ifdef COOKIE_HANDLING
@@ -638,6 +639,9 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
 #endif
     httprequest->send();
     Owned<IMultiException> me = MakeMultiException();
+
+    if (m_readTimeoutSecs)
+        httpresponse->setTimeOut(m_readTimeoutSecs);
     httpresponse->receive(true, me);
 
 #ifdef COOKIE_HANDLING
