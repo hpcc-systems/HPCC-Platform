@@ -40,7 +40,8 @@ enum ClusterStatusType
     QueuePausedOrStoppedWithJobs = 1,
     QueuePausedOrStoppedWithNoJob = 2,
     QueuePausedOrStoppedNotFound = 3,
-    QueueRunningNotFound = 4
+    QueueRunningNotFound = 4,
+    QueueNotFound = 5
 };
 
 enum WsSMCStatusServerType
@@ -60,6 +61,7 @@ public:
     SCMStringBuffer queueName;
     StringBuffer queueState, queueStateDetails;
     bool foundQueueInStatusServer;
+    bool notFoundInJobQueues = false;
     unsigned countRunningJobs;
     unsigned countQueuedJobs;
     ClusterStatusType statusType;
