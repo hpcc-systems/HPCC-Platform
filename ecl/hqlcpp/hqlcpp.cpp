@@ -1602,7 +1602,6 @@ void HqlCppTranslator::cacheOptions()
 #else
         DebugOption(options.regressionTest,"regressionTest", false),
 #endif
-        DebugOption(options.addTimingToWorkunit, "addTimingToWorkunit", true),
         //recreating case can cause duplicate branches in weird situations.
         DebugOption(options.recreateMapFromIf,"recreateMapFromIf", !targetThor()),
 
