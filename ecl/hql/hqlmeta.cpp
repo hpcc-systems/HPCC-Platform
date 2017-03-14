@@ -1224,7 +1224,7 @@ bool isSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isL
     if (numToGroup > numExistingOrder)
         return false;
 
-    bool allowReordering = false;
+    const bool allowReordering = false;  // MORE: Can this be set to true?
     if (!allowReordering)
     {
         // Each of the leading components of the sort criteria need to match the elements in the group.

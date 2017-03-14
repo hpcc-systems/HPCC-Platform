@@ -46,9 +46,7 @@ FuncCallStack::~FuncCallStack() {
     
     // Free memory used by string/data parameters
     for(int i = 0; i < numToFree; i++) {
-        if(toFree[i]) {
-            free(toFree[i]);
-        }
+        free(toFree[i]);
     }
 }
 

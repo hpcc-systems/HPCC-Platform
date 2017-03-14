@@ -586,7 +586,7 @@ static void generatePrecompiledHeader()
 
 static void removePrecompiledHeader()
 {
-    remove("eclinclude4.hpp.gch");
+    removeFileTraceIfFail("eclinclude4.hpp.gch");
 }
 #endif
 

@@ -1738,7 +1738,7 @@ IHqlExpression * foldEmbeddedCall(IHqlExpression* expr, unsigned foldOptions, IT
         {
             double value = paramValue->getRealValue();
             if (paramType->getSize()==4)
-                __ctx->bindFloatParam(name, value);
+                __ctx->bindFloatParam(name, (float)value);
             else
                 __ctx->bindRealParam(name, value);
             break;

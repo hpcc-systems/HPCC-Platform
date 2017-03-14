@@ -1392,9 +1392,6 @@ IHqlExpression * peepholeAddExpr(IHqlExpression * left, IHqlExpression * right)
     if (!ret)
         return value;
     return createValue(no_add, left->getType(), ret, value);
-    if ((left->getOperator() == no_constant) && (right->getOperator() == no_constant))
-        return getSizetConstant((size32_t)left->queryValue()->getIntValue() + (size32_t)right->queryValue()->getIntValue());
-    return createValue(no_add, left->getType(), LINK(left), LINK(right));
 }
 
 bool rightFollowsLeft(IHqlExpression * left, IHqlExpression * leftLen, IHqlExpression * right)
