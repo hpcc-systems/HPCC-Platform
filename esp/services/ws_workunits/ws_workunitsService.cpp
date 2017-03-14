@@ -4442,6 +4442,8 @@ void CWsWorkunitsEx::addThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& w
 
         StringBuffer groupName, logDir;
         getClusterThorGroupName(groupName, processName.str());
+        if (groupName.isEmpty())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", processName.str());
         getConfigurationDirectory(directories, "log", "thor", processName.str(), logDir);
         Owned<IStringIterator> thorLogs = cwu->getLogs("Thor", processName.str());
         ForEach (*thorLogs)
