@@ -60,6 +60,7 @@ public:
     SCMStringBuffer queueName;
     StringBuffer queueState, queueStateDetails;
     bool foundQueueInStatusServer;
+    bool notFoundInJobQueues = false;
     unsigned countRunningJobs;
     unsigned countQueuedJobs;
     ClusterStatusType statusType;
