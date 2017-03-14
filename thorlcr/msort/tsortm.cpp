@@ -384,12 +384,11 @@ public:
         rowif.set(_rowif);
         if (cosort)
         {
-            if (!partitioninfo->IsOK()) // i.e. no split points (0 rows on primary side)
+            if (!partitioninfo || !partitioninfo->IsOK()) // i.e. no split points (0 rows on primary side)
             {
                 _auxrowif = nullptr;
                 _keyserializer = nullptr;
             }
-            cosort = false;
         }
         if (_auxrowif&&_auxrowif->queryRowMetaData())
             auxrowif.set(_auxrowif);
@@ -416,12 +415,8 @@ public:
         maxrecsonnode = 0;
         numnodes = slaves.ordinality();
         estrecsize = 100;
-        if (!partitioninfo) // if cosort use aux
-        {
-            if (cosort)
-                ActPrintLog(activity, "Cosort with no prior partition");
+        if (!partitioninfo)
             partitioninfo = new PartitionInfo(activity, keyIf);
-        }
         free(partitioninfo->nodes);
         free(partitioninfo->mpports);
         partitioninfo->numnodes=numnodes;
