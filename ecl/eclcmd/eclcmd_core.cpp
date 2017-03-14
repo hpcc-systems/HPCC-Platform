@@ -66,14 +66,16 @@ void expandDefintionsAsDebugValues(const IArrayOf<IEspNamedValue> & definitions,
 
 }
 
-bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true, bool compress=true)
+void checkFeatures(IClientWsWorkunits *client, bool &useCompression, int &major, int &minor, int &point)
 {
-    bool useCompression = false;
     try
     {
         Owned<IClientWUCheckFeaturesRequest> req = client->createWUCheckFeaturesRequest();
         Owned<IClientWUCheckFeaturesResponse> resp = client->WUCheckFeatures(req);
         useCompression = resp->getDeployment().getUseCompression();
+        major = resp->getBuildVersionMajor();
+        minor = resp->getBuildVersionMinor();
+        point = resp->getBuildVersionPoint();
     }
     catch(IException *E) //most likely an older ESP
     {
@@ -82,6 +84,15 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
     catch(...)
     {
     }
+}
+
+bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true, bool compress=true)
+{
+    int major = 0;
+    int minor = 0;
+    int point = 0;
+    bool useCompression = false;
+    checkFeatures(client, useCompression, major, minor, point);
 
     bool compressed = false;
     if (useCompression)
@@ -516,6 +527,19 @@ private:
     bool optDontAppendCluster; //Undesirable but here temporarily because DALI may have locking issues
 };
 
+inline unsigned nextWait(unsigned wait, unsigned waited)
+{
+    if (waited < 5000)
+        return 1000;
+    if (waited < 30000)
+        return 5000;
+    if (waited < 60000)
+        return 10000;
+    if (waited < 120000)
+        return 30000;
+    return 60000;
+}
+
 class EclCmdRun : public EclCmdWithEclTarget
 {
 public:
@@ -542,6 +566,10 @@ public:
                 continue;
             if (iter.matchFlag(optNoRoot, ECLOPT_NOROOT))
                 continue;
+            if (iter.matchFlag(optPoll, ECLOPT_POLL))
+                continue;
+            if (iter.matchFlag(optPre64, "--pre64")) //only for troubleshooting, do not document
+                continue;
             if (iter.matchOption(optExceptionSeverity, ECLOPT_EXCEPTION_LEVEL))
                 continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
@@ -565,6 +593,197 @@ public:
             }
         }
         return true;
+    }
+
+    int checkComplete(IClientWsWorkunits* client, IClientWUWaitRequest* req)
+    {
+        Owned<IClientWUWaitResponse> resp = client->WUWaitComplete(req);
+        if (resp->getExceptions().ordinality())
+            throw LINK(&resp->getExceptions());
+        return resp->getStateID();
+    }
+
+    int checkComplete(IClientWsWorkunits* client, IClientWUInfoRequest* req)
+    {
+        Owned<IClientWUInfoResponse> resp = client->WUInfo(req);
+        if (resp->getExceptions().ordinality())
+            throw LINK(&resp->getExceptions());
+        int state = resp->getWorkunit().getStateID();
+        switch (state)
+        {
+        case WUStateCompleted:
+        case WUStateFailed:
+        case WUStateAborted:
+            return state;
+        }
+
+        return WUStateUnknown; //emulate result from waitForWorkUnit which will be called for non-legacy builds
+    }
+
+    void initPollRequest(Owned<IClientWUInfoRequest> &req, IClientWsWorkunits* client, const char *wuid)
+    {
+        req.setown(client->createWUInfoRequest());
+        req->setWuid(wuid);
+        req->setTruncateEclTo64k(true);
+        req->setIncludeExceptions(false);
+        req->setIncludeGraphs(false);
+        req->setIncludeSourceFiles(false);
+        req->setIncludeResults(false);
+        req->setIncludeResultsViewNames(false);
+        req->setIncludeVariables(false);
+        req->setIncludeTimers(false);
+        req->setIncludeDebugValues(false);
+        req->setIncludeApplicationValues(false);
+        req->setIncludeWorkflows(false);
+        req->setIncludeXmlSchemas(false);
+        req->setIncludeResourceURLs(false);
+        req->setSuppressResultSchemas(true);
+    }
+
+    void initPollRequest(Owned<IClientWUWaitRequest> &req, IClientWsWorkunits* client, const char *wuid)
+    {
+        req.setown(client->createWUWaitCompleteRequest());
+        req->setWuid(wuid);
+        req->setWait(0); //Just return the current state
+    }
+
+    int pollForCompletion(IClientWsWorkunits* client, const char *wuid, bool optimized)
+    {
+        Owned<IClientWUInfoRequest> reqInfo;
+        Owned<IClientWUWaitRequest> reqQuick;
+
+        if (optimized)
+            initPollRequest(reqQuick, client, wuid);
+        else
+            initPollRequest(reqInfo, client, wuid);
+
+        int state = WUStateUnknown;
+        unsigned start = msTick();
+        for(;;)
+        {
+            if (optimized)
+                state = checkComplete(client, reqQuick);
+            else
+                state = checkComplete(client, reqInfo);
+            if (state != WUStateUnknown)
+                break;
+            unsigned waited = msTick() - start;
+            if (optWaitTime!=(unsigned)-1 && waited>=optWaitTime)
+                return WUStateUnknown;
+            Sleep(nextWait(optWaitTime, waited));
+        }
+        return state;
+    }
+
+    void gatherLegacyServerResults(IClientWsWorkunits* client, const char *wuid)
+    {
+        Owned<IClientWUInfoRequest> req = client->createWUInfoRequest();
+        req->setWuid(wuid);
+        req->setIncludeExceptions(true);
+        req->setIncludeGraphs(false);
+        req->setIncludeSourceFiles(false);
+        req->setIncludeResults(false); //ECL layout results, not xml
+        req->setIncludeResultsViewNames(false);
+        req->setIncludeVariables(false);
+        req->setIncludeTimers(false);
+        req->setIncludeDebugValues(false);
+        req->setIncludeApplicationValues(false);
+        req->setIncludeWorkflows(false);
+        req->setIncludeXmlSchemas(false);
+        req->setIncludeResourceURLs(false);
+        req->setSuppressResultSchemas(true);
+        Owned<IClientWUInfoResponse> resp = client->WUInfo(req);
+
+        IConstECLWorkunit &wu = resp->getWorkunit();
+        IArrayOf<IConstECLException> &exceptions = wu.getExceptions();
+        unsigned count = wu.getResultCount();
+        if (count<=0 && exceptions.ordinality()<=0)
+            return;
+        fputs("<Result>\n", stdout);
+        ForEachItemIn(pos, exceptions)
+        {
+            IConstECLException &e = exceptions.item(pos);
+            fprintf(stdout, " <Exception><Code>%d</Code><Source>%s</Source><Message>%s</Message></Exception>\n", e.getCode(), e.getSource(), e.getMessage());
+        }
+        Owned<IClientWUResultRequest> resReq = client->createWUResultRequest();
+        resReq->setWuid(wuid);
+        resReq->setSuppressXmlSchema(true);
+        for (unsigned seq=0; seq<count; seq++)
+        {
+            resReq->setSequence(seq);
+            Owned<IClientWUResultResponse> resp = client->WUResult(resReq);
+
+            if (resp->getExceptions().ordinality())
+                throw LINK(&resp->getExceptions());
+            fwrite(resp->getResult(), 8, 1, stdout);
+            //insert name attribute into <Dataset> tag
+            fprintf(stdout, " name='%s'", resp->getName());
+            fputs(resp->getResult()+8, stdout);
+        }
+        fputs("</Result>\n", stdout);
+    }
+
+    void getAndOutputResults(IClientWsWorkunits* client, const char *wuid)
+    {
+        Owned<IClientWUFullResultRequest> req = client->createWUFullResultRequest();
+        req->setWuid(wuid);
+        req->setNoRootTag(optNoRoot);
+        req->setExceptionSeverity(optExceptionSeverity);
+
+        Owned<IClientWUFullResultResponse> resp = client->WUFullResult(req);
+        if (resp->getResults())
+            fprintf(stdout, "%s\n", resp->getResults());
+    }
+
+    void processResults(IClientWsWorkunits* client, const char *wuid, bool optimized)
+    {
+        if (optimized)
+            getAndOutputResults(client, wuid);
+        else
+            gatherLegacyServerResults(client, wuid);
+    }
+
+    int pollForResults(IClientWsWorkunits* client, const char *wuid)
+    {
+        int major = 0;
+        int minor = 0;
+        int point = 0;
+        bool useCompression = false;
+        checkFeatures(client, useCompression, major, minor, point);
+        bool optimized = !optPre64 && (major>=6 && minor>=3);
+
+        try
+        {
+            int state = pollForCompletion(client, wuid, optimized);
+            switch (state)
+            {
+            case WUStateCompleted:
+                processResults(client, wuid, optimized);
+                return 0;
+            case WUStateUnknown:
+                fprintf(stderr, "Timed out waiting for %s to complete, workunit is still running.\n", wuid);
+                break;
+            case WUStateFailed:
+            case WUStateAborted:
+                fprintf(stderr, "%s %s.\n", wuid, getWorkunitStateStr((WUState)state));
+                break;
+            default:
+                fprintf(stderr, "%s in unrecognized state.\n", wuid);
+                break;
+            }
+        }
+        catch (IMultiException *ME)
+        {
+            outputMultiExceptionsEx(*ME);
+            ME->Release();
+        }
+        catch (IException *E)
+        {
+            StringBuffer msg;
+            fprintf(stderr, "Exception polling for results: %d: %s\n", E->errorCode(), E->errorMessage(msg).str());
+            E->Release();
+        }
+        return 1;
     }
     virtual int processCMD()
     {
@@ -604,7 +823,7 @@ public:
             req->setCluster(wuCluster.str());
         else if (optTargetCluster.length())
             req->setCluster(optTargetCluster.get());
-        req->setWait((int)optWaitTime);
+        req->setWait((int)(optPoll ? 0 : optWaitTime));
         if (optInput.length())
             req->setInput(optInput.get());
         req->setExceptionSeverity(optExceptionSeverity); //throws exception if invalid value
@@ -629,8 +848,20 @@ public:
         StringBuffer respwuid(resp->getWuid());
         if (optVerbose && respwuid.length() && !streq(wuid.str(), respwuid.str()))
             fprintf(stdout, "As %s\n", respwuid.str());
-        if (!streq(resp->getState(), "completed"))
+        if (optPoll)
+            return pollForResults(client, wuid);
+
+        switch (getWorkUnitState(resp->getState()))
+        {
+        case WUStateRunning:
+            fprintf(stderr, "Timed out waiting for %s to complete, workunit is still running.\n", wuid.str()); //server side waiting timed out
+            break;
+        case WUStateCompleted:
+            break;
+        default:
             fprintf(stderr, "%s %s\n", respwuid.str(), resp->getState());
+        }
+
         if (resp->getResults())
             fprintf(stdout, "%s\n", resp->getResults());
 
@@ -662,6 +893,7 @@ public:
             "   -in,--input=<file|xml>    file or xml content to use as query input\n"
             "   -X<name>=<value>          sets the stored input value (stored('name'))\n"
             "   --wait=<ms>               time to wait for completion\n"
+            "   --poll                    poll for results, rather than remain connected\n"
             "   --exception-level=<level> minimum severity level for exceptions\n"
             "                             values: 'info', 'warning', 'error'\n",
             stdout);
@@ -674,6 +906,8 @@ private:
     IArrayOf<IEspNamedValue> variables;
     unsigned optWaitTime;
     bool optNoRoot;
+    bool optPoll;
+    bool optPre64;  //only for troubleshooting, do not document
 };
 
 void outputQueryActionResults(const IArrayOf<IConstQuerySetQueryActionResult> &results, const char *act, const char *qs)

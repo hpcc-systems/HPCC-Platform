@@ -3017,12 +3017,35 @@ public:
 
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
     {
-        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuid, SubscribeOptionState);
-        LocalIAbortHandler abortHandler(*waiter);
         WUState ret = WUStateUnknown;
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid);
         Owned<IRemoteConnection> conn = sdsManager->connect(wuRoot.str(), session, 0, SDS_LOCK_TIMEOUT);
+        if (timeout == 0) //no need to subscribe
+        {
+            ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
+            switch (ret)
+            {
+            case WUStateCompiled:
+            case WUStateUploadingFiles:
+                if (!compiled)
+                    break;
+            //fall through
+            case WUStateCompleted:
+            case WUStateFailed:
+            case WUStateAborted:
+                return ret;
+            case WUStateWait:
+                if(returnOnWaitState)
+                    return ret;
+            default:
+                break;
+            }
+            return WUStateUnknown;
+        }
+
+        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuid, SubscribeOptionState);
+        LocalIAbortHandler abortHandler(*waiter);
         if (conn)
         {
             SessionId agent = -1;

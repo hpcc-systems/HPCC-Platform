@@ -129,6 +129,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_INPUT_S "-in"
 
 #define ECLOPT_NOROOT "--noroot"
+#define ECLOPT_POLL "--poll"
 
 #define ECLOPT_WUID "--wuid"
 #define ECLOPT_WUID_S "-wu"

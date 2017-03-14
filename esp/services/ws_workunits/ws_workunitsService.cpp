@@ -1052,6 +1052,58 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
     return true;
 }
 
+bool CWsWorkunitsEx::onWUFullResult(IEspContext &context, IEspWUFullResultRequest &req, IEspWUFullResultResponse &resp)
+{
+    try
+    {
+        StringBuffer wuid = req.getWuid();
+        WsWuHelpers::checkAndTrimWorkunit("WUFullResult", wuid);
+
+        ErrorSeverity severity = checkGetExceptionSeverity(req.getExceptionSeverity());
+
+        if (!wuid.length())
+            throw MakeStringException(ECLWATCH_MISSING_PARAMS,"Workunit or Query required");
+        if (!looksLikeAWuid(wuid, 'W'))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid.str());
+        PROGLOG("WUFullResults: %s", wuid.str());
+
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
+        if (!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", wuid.str());
+
+        ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
+
+        resp.setWuid(wuid.str());
+
+        switch (cw->getState())
+        {
+            case WUStateCompleted:
+            case WUStateFailed:
+            case WUStateUnknown:
+            {
+                SCMStringBuffer result;
+                unsigned flags = WorkUnitXML_SeverityTags;
+                if (req.getNoRootTag())
+                    flags |= WorkUnitXML_NoRoot;
+                if (context.getResponseFormat()==ESPSerializationJSON)
+                    getFullWorkUnitResultsJSON(context.queryUserId(), context.queryPassword(), cw.get(), result, flags, severity);
+                else
+                    getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, flags, severity);
+                resp.setResults(result.str());
+                break;
+            }
+            default:
+                throw MakeStringException(ECLWATCH_CANNOT_GET_WU_RESULT, "Cannot get results Workunit %s %s.", wuid.str(), getWorkunitStateStr(cw->getState()));
+        }
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 
 bool CWsWorkunitsEx::onWUWaitCompiled(IEspContext &context, IEspWUWaitRequest &req, IEspWUWaitResponse &resp)
 {
