@@ -69,7 +69,7 @@ const char* getUserFieldNames(UserField field)
     return NULL;
 }
 
-const char* GroupFieldNames[] = { "@name", "@managedby", "@desc" };
+const char* GroupFieldNames[] = { "@name", "@groupOwner", "@desc" };
 
 const char* getGroupFieldNames(GroupField field)
 {
