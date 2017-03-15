@@ -100,6 +100,7 @@ CSlaveMessageHandler::CSlaveMessageHandler(CJobMaster &_job, mptag_t _mptag) : t
 {
     stopped = false;
     threaded.init(this);
+    childGraphInitTimeout = job.getOptUInt(THOROPT_CHILD_GRAPH_INIT_TIMEOUT, 5*60) * 1000; // default 5 minutes
 }
 
 CSlaveMessageHandler::~CSlaveMessageHandler()
@@ -266,7 +267,7 @@ void CSlaveMessageHandler::main()
                         graph->serializeActivityInitData(slave, msg, iter);
                     }
                     job.queryJobChannel(0).queryJobComm().reply(msg);
-                    if (!job.queryJobChannel(0).queryJobComm().recv(msg, slave+1, replyTag, NULL, MEDIUMTIMEOUT))
+                    if (!job.queryJobChannel(0).queryJobComm().recv(msg, slave+1, replyTag, NULL, childGraphInitTimeout))
                         throwUnexpected();
                     if (exception)
                         throw exception.getClear();
