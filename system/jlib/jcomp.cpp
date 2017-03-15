@@ -722,26 +722,26 @@ StringBuffer & CppCompiler::getObjectName(StringBuffer & out, const char * filen
 void CppCompiler::removeTemporaries()
 {
     DBGLOG("Remove temporaries");
+
+    StringBuffer temp;
     switch (targetCompiler)
     {
     case Vs6CppCompiler:
+        {
+            removeFileTraceIfFail(temp.clear().append(targetDir).append(coreName).append(".exp").str());
+            removeFileTraceIfFail(temp.clear().append(targetDir).append(coreName).append(".lib").str());
+            removeFileTraceIfFail(temp.clear().append(targetDir).append(coreName).append(".res").str());
+            break;
+        }
     case GccCppCompiler:
         {
-            StringBuffer temp;
-            remove(temp.clear().append(targetDir).append(coreName).append(".exp").str());
-            remove(getObjectName(temp.clear(), coreName).str());
-            remove(temp.clear().append(targetDir).append(coreName).append(".lib").str());
-#ifdef _WIN32
-            remove(temp.clear().append(targetDir).append(coreName).append(".res").str());
-#else
             temp.clear().append(coreName).append(".res.s*");
             DBGLOG("Remove %s%s",targetDir.str(), temp.str());
             Owned<IDirectoryIterator> resTemps = createDirectoryIterator(targetDir, temp.str());
             ForEach(*resTemps)
             {
-                remove(resTemps->getName(temp.clear().append(targetDir)).str());
+                removeFileTraceIfFail(resTemps->getName(temp.clear().append(targetDir)).str());
             }
-#endif
             break;
         }
     }

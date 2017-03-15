@@ -75,7 +75,7 @@ kill_slaves()
         # we want to kill only slaves that have already been started in run_thor
         if [[ -r $instancedir/uslaves ]]; then
             clusternodes=$(cat $instancedir/uslaves 2> /dev/null | wc -l)
-            $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/init_thorslave stop localhost $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
+            $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/init_thorslave stop localhost $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
             FRUNSSH_RC=$?
             if [[ ${FRUNSSH_RC} -gt 0 ]]; then
                 log "Error ${FRUNSSH_RC} in frunssh"

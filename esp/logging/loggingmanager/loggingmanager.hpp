@@ -45,11 +45,11 @@ public:
 
     CEspLogEntry(void) { };
 
-    void setEspContext(IEspContext* ctx) { espContext.setown(ctx); };
-    void setUserContextTree(IPropertyTree* tree) { userContextTree.setown(tree); };
-    void setUserRequestTree(IPropertyTree* tree) { userRequestTree.setown(tree); };
-    void setLogInfoTree(IPropertyTree* tree) { logInfoTree.setown(tree); };
-    void setExtraLog(IInterface* extra) { extraLog.setown(extra); };
+    void setOwnEspContext(IEspContext* ctx) { espContext.setown(ctx); };
+    void setOwnUserContextTree(IPropertyTree* tree) { userContextTree.setown(tree); };
+    void setOwnUserRequestTree(IPropertyTree* tree) { userRequestTree.setown(tree); };
+    void setOwnLogInfoTree(IPropertyTree* tree) { logInfoTree.setown(tree); };
+    void setOwnExtraLog(IInterface* extra) { extraLog.setown(extra); };
     void setOption(const char* ptr) { option.set(ptr); };
     void setLogContent(const char* ptr) { logContent.set(ptr); };
     void setBackEndResp(const char* ptr) { backEndResp.set(ptr); };

@@ -1603,7 +1603,6 @@ void HqlCppTranslator::cacheOptions()
 #else
         DebugOption(options.regressionTest,"regressionTest", false),
 #endif
-        DebugOption(options.addTimingToWorkunit, "addTimingToWorkunit", true),
         //recreating case can cause duplicate branches in weird situations.
         DebugOption(options.recreateMapFromIf,"recreateMapFromIf", !targetThor()),
 
@@ -7876,7 +7875,8 @@ void HqlCppTranslator::doBuildAssignList(BuildCtx & ctx, const CHqlBoundTarget &
 
     //This is an assignment, a non-constant set would end up creating two temporaries.
     unsigned numItems = expr->numChildren();
-    if (((numItems > 0) && (numItems < 3)) || isComplexSet(expr) || !isConstantSet(expr))
+    ITypeInfo * elementType = type->queryChildType();
+    if (((numItems > 0) && (numItems < 3) && !isUnknownSize(elementType)) || isComplexSet(expr) || !isConstantSet(expr))
     {
         Owned<IHqlCppSetBuilder> builder = createTempSetBuilder(target.queryType()->queryChildType(), target.isAll);
         builder->buildDeclare(ctx);

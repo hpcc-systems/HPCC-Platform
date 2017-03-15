@@ -1412,7 +1412,7 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, I
 extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit(const char *XML);
 extern WORKUNIT_API IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p);
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress, bool hidePasswords);
-extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords);
+extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords, bool splitStats);
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, const char *password);
 extern WORKUNIT_API void abortWorkUnit(const char *wuid);
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser);

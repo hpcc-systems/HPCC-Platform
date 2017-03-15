@@ -100,7 +100,9 @@ define([
             }, null);
         },
         _onDelete: function (event) {
-            this.wu.doDelete();
+            if (confirm(this.i18n.YouAreAboutToDeleteThisWorkunit)) {
+                this.wu.doDelete();
+            }
         },
         _onAbort: function (event) {
             this.wu.abort();

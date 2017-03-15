@@ -2506,7 +2506,7 @@ static void dumpWorkunit(const char *wuid, bool includeProgress)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
-    exportWorkUnitToXMLFile(workunit, "stdout:", 0, true, includeProgress, true);
+    exportWorkUnitToXMLFile(workunit, "stdout:", 0, true, includeProgress, true, false);
 }
 
 static void dumpProgress(const char *wuid, const char * graph)

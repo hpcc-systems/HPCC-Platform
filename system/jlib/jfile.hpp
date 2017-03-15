@@ -616,7 +616,7 @@ extern jlib_decl size32_t SendFile(ISocket *target, IFileIO *fileio,offset_t sta
 extern jlib_decl void asyncClose(IFileIO *io);
 extern jlib_decl bool containsFileWildcard(const char * path);
 extern jlib_decl bool isDirectory(const char * path);
-
+extern jlib_decl void removeFileTraceIfFail(const char * filename);
 extern jlib_decl IFileIOCache* createFileIOCache(unsigned max);
 extern jlib_decl IFile * createSentinelTarget();
 extern jlib_decl void writeSentinelFile(IFile * file);

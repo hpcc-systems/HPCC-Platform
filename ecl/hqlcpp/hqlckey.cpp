@@ -613,7 +613,7 @@ static IHqlExpression * expandDatasetReferences(IHqlExpression * expr, IHqlExpre
         break;
     case childdataset_left: 
         UNIMPLEMENTED;
-        mapParent.setown(createSelector(no_left, dsParent, querySelSeq(ds)));
+        //mapParent.setown(createSelector(no_left, dsParent, querySelSeq(ds)));
         break;
     default:
         UNIMPLEMENTED;

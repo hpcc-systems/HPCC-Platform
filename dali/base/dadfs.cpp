@@ -1243,13 +1243,11 @@ static void setUserDescriptor(Linked<IUserDescriptor> &udesc,IUserDescriptor *us
     udesc.set(user);
 }
 
+static bool scopePermissionsAvail = true;
 static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor *user,unsigned auditflags)
 {  // scope must be normalized already
-    static bool permissionsavail=true;
-    if (auditflags==(unsigned)-1)
-        return permissionsavail ? SecAccess_Access : SecAccess_None;
     SecAccessFlags perms = SecAccess_Full;
-    if (permissionsavail&&scopename&&*scopename&&((*scopename!='.')||scopename[1])) {
+    if (scopePermissionsAvail && scopename && *scopename && (*scopename != '.' || scopename[1])) {
         if (!user)
         {
 #ifdef NULL_DALIUSER_STACKTRACE
@@ -1262,7 +1260,7 @@ static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor 
         perms = querySessionManager().getPermissionsLDAP(queryDfsXmlBranchName(DXB_Scope),scopename,user,auditflags);
         if (perms<0) {
             if (perms == SecAccess_Unavailable) {
-                permissionsavail=false;
+                scopePermissionsAvail=false;
                 perms = SecAccess_Full;
             }
             else
@@ -9850,7 +9848,7 @@ public:
             PROGLOG("TIMING(filescan): %s: took %dms",trc.str(), tookMs);
         sdsLock.unlock(); // unlock to perform authentification
 
-        bool auth = querySessionManager().checkScopeScansLDAP()&&getScopePermissions(NULL,udesc,(unsigned)-1);
+        bool auth = scopePermissionsAvail && querySessionManager().checkScopeScansLDAP();
         StringArray authScopes;
         CIArrayOf<CFileMatch> matchingFiles;
         start = msTick();
@@ -9905,7 +9903,7 @@ public:
             PROGLOG("TIMING(filescan): %s: took %dms",trc.str(), tookMs);
         sdsLock.unlock(); // unlock to perform authentification
 
-        bool auth = querySessionManager().checkScopeScansLDAP()&&getScopePermissions(NULL,udesc,(unsigned)-1);
+        bool auth = scopePermissionsAvail && querySessionManager().checkScopeScansLDAP();
         StringArray authScopes;
         CIArrayOf<CFileMatch> matchingFiles;
         start = msTick();

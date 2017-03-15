@@ -202,16 +202,14 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 timings.findstr(max, 3);
                 timings.findstr(count, 4);
                 timings.findstr(ave, 5);
-                if (workunit->getDebugValueBool("addTimingToWorkunit", true))
-                {
-                    unsigned __int64 nval = atoi64(total) * 1000000; // in milliseconds
-                    unsigned __int64 nmax = atoi64(max) * 1000; // in microseconds
-                    unsigned __int64 cnt = atoi64(count);
-                    const char * scope = section.str();
-                    StatisticScopeType scopeType = SSTcompilestage;
-                    StatisticKind kind = StTimeElapsed;
-                    workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, nval, cnt, nmax, StatsMergeReplace);
-                }
+
+                unsigned __int64 nval = atoi64(total) * 1000000; // in milliseconds
+                unsigned __int64 nmax = atoi64(max) * 1000; // in microseconds
+                unsigned __int64 cnt = atoi64(count);
+                const char * scope = section.str();
+                StatisticScopeType scopeType = SSTcompilestage;
+                StatisticKind kind = StTimeElapsed;
+                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, nval, cnt, nmax, StatsMergeReplace);
             }
             else
             {
@@ -330,8 +328,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             eclccCmd.append(" -");
         if (mainDefinition.length())
             eclccCmd.append(" -main ").append(mainDefinition);
-        if (workunit->getDebugValueBool("addTimingToWorkunit", true))
-            eclccCmd.append(" --timings");
+        eclccCmd.append(" --timings");
 
         Owned<IPipeProcess> pipe = createPipeProcess();
         pipe->setenv("ECLCCSERVER_THREAD_INDEX", idxStr.str());
@@ -415,8 +412,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
 
                 cycle_t elapsedCycles = get_cycles_now() - startCycles;
-                if (workunit->getDebugValueBool("addTimingToWorkunit", true))
-                    updateWorkunitTimeStat(workunit, SSTcompilestage, "compile", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
+                updateWorkunitTimeStat(workunit, SSTcompilestage, "compile", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
 
                 workunit->commit();
                 return true;
@@ -590,7 +586,7 @@ static void generatePrecompiledHeader()
 
 static void removePrecompiledHeader()
 {
-    remove("eclinclude4.hpp.gch");
+    removeFileTraceIfFail("eclinclude4.hpp.gch");
 }
 #endif
 

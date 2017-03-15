@@ -467,11 +467,9 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
             setSaveGeneratedFiles(true);
 
         doExpand(translator);
-        if (wu->getDebugValueBool("addTimingToWorkunit", true))
-        {
-            unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
-            updateWorkunitTimeStat(wu, SSTcompilestage, "compile:generate c++", StTimeElapsed, NULL, elapsed);
-        }
+        unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
+        updateWorkunitTimeStat(wu, SSTcompilestage, "compile:generate c++", StTimeElapsed, NULL, elapsed);
+
         if (wu->getDebugValueBool("addMemoryToWorkunit", true))
         {
             memsize_t peakVm, peakResident;
@@ -525,8 +523,7 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
     }
 
     cycle_t elapsedCycles = get_cycles_now() - startCycles;
-    if (wu->getDebugValueBool("addTimingToWorkunit", true))
-        updateWorkunitTimeStat(wu, SSTcompilestage, "compile:write c++", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
+    updateWorkunitTimeStat(wu, SSTcompilestage, "compile:write c++", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
 }
 
 bool HqlDllGenerator::abortRequested()
@@ -604,11 +601,10 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     if (ok && deleteGenerated)
     {
         StringBuffer temp;
-        remove(temp.clear().append(wuname).append(".cpp").str());
-        remove(temp.clear().append(wuname).append(".hpp").str());
+        removeFileTraceIfFail(temp.clear().append(wuname).append(".hpp").str());
         ForEachItemIn(i, sourceFiles)
         {
-            remove(sourceFiles.item(i));
+            removeFileTraceIfFail(sourceFiles.item(i));
         }
     }
     return ok;

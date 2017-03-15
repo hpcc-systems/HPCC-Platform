@@ -107,7 +107,7 @@ define([
             }
         },
         _onDelete: function (event) {
-            if (confirm(this.i18n.DeleteSelectedWorkunits)) {
+            if (confirm(this.i18n.YouAreAboutToDeleteThisQueryset)) {
                 this.query.doDelete();
             }
         },

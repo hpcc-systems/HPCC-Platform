@@ -5293,13 +5293,6 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
     {
         doBuildAliasValue(ctx, expr, tgt, NULL);
         return;
-
-        if (!isCurrentActiveGraph(ctx, expr->queryChild(1)))
-        {
-            if (!buildExprInCorrectContext(ctx, expr, tgt, false))
-                throwError(HQLERR_GraphContextNotFound);
-            return;
-        }
     }
 
     switch (expr->queryType()->getTypeCode())

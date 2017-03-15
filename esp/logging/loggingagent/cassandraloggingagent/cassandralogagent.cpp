@@ -16,7 +16,6 @@
 ############################################################################## */
 
 #include "LoggingErrors.hpp"
-#include "esploggingservice_esp.ipp"
 #include "cassandralogagent.hpp"
 
 static const int defaultMaxTriesGTS = -1;
