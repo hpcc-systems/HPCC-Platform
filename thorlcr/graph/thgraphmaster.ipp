@@ -92,6 +92,7 @@ class CSlaveMessageHandler : public CInterface, implements IThreaded
     CThreaded threaded;
     bool stopped;
     mptag_t mptag;
+    unsigned childGraphInitTimeout;
 public:
     CSlaveMessageHandler(CJobMaster &job, mptag_t mptag);
     ~CSlaveMessageHandler();
