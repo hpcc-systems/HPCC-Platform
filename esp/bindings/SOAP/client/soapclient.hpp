@@ -27,6 +27,7 @@
 
 //ESP Bindings
 #include "SOAP/Platform/soapmessage.hpp"
+#include "http/client/httpclient.hpp"
 
 class esp_http_decl CSoapClient : implements ISoapClient, public CInterface
 {
@@ -36,6 +37,9 @@ private:
     StringAttr                  m_realm;
     bool                        m_disableKeepAlive;
     Owned<ITransportClient> m_transportclient;
+    unsigned m_connectTimeoutMs = 0;
+    unsigned m_readTimeoutSecs = 0;
+
     int postRequest(const char* contenttype, const char* soapaction, IRpcMessage& rpccall, 
                          StringBuffer& responsebuf, CMimeMultiPart* resp_multipart, IRpcMessageArray *headers=NULL);
 
@@ -45,6 +49,20 @@ public:
     CSoapClient(){m_disableKeepAlive=false;}
     CSoapClient(ITransportClient* transportclient){m_transportclient.setown(transportclient); m_disableKeepAlive=false;}
     virtual ~CSoapClient() {};
+
+    void setConnectTimeoutMs(unsigned val)
+    {
+        m_connectTimeoutMs = val;
+        if (m_transportclient)
+            static_cast<IHttpClient*>(m_transportclient.get())->setConnectTimeOutMs(m_connectTimeoutMs); //until we support something other than soap over http, static_cast
+    }
+    void setReadTimeoutSecs(unsigned val)
+    {
+        m_readTimeoutSecs = val;
+        if (m_transportclient)
+            static_cast<IHttpClient*>(m_transportclient.get())->setTimeOut(m_readTimeoutSecs); //until we support something other than soap over http, static_cast
+    }
+
     virtual int setUsernameToken(const char* userid, const char* password, const char* realm);
     virtual void disableKeepAlive() { m_disableKeepAlive = true;}
 

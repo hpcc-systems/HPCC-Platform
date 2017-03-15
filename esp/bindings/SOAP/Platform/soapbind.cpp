@@ -225,7 +225,13 @@ void CSoapRequestBinding::post(const char *proxy, const char* url, IRpcResponseB
     serialize(*static_cast<IRpcMessage*>(&rpccall));
     
     CSoapClient soapclient; //to add support for handling cookies soapclient(false);
+    if (connectTimeoutMs_)
+        soapclient.setConnectTimeoutMs(connectTimeoutMs_);
+    if (readTimeoutSecs_)
+        soapclient.setReadTimeoutSecs(readTimeoutSecs_);
+
     soapclient.setUsernameToken(getUserId(), getPassword(), getRealm());
+
     int result = soapclient.postRequest(soapaction, rpccall, rpcresponse);
 
     if(result == SOAP_OK)

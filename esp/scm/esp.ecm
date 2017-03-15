@@ -239,6 +239,14 @@ SCMinterface IEspRequest(IEspStruct)
 {
 };
 
+SCMinterface IEspClientRpcSettings(IEspStruct)
+{
+    void setConnectTimeOutMs(unsigned val);
+    unsigned getConnectTimeOutMs();
+
+    void setReadTimeOutSecs(unsigned val);
+    unsigned getReadTimeOutSecs();
+};
 
 SCMinterface IEspResponse(IEspStruct)
 {
@@ -246,7 +254,6 @@ SCMinterface IEspResponse(IEspStruct)
     const IMultiException& getExceptions();
     void  noteException(IException& e);
 };
-
 
 SCMinterface IEspService(IInterface)
 {

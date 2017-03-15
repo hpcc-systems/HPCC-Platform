@@ -125,7 +125,8 @@ public:
 
 class esp_http_decl CSoapRequestBinding : public CSoapComplexType,
     implements IRpcRequestBinding,
-    implements IEspRequest
+    implements IEspRequest,
+    implements IEspClientRpcSettings
 {
 private:
     StringBuffer url_;
@@ -133,6 +134,8 @@ private:
     StringBuffer userid_;
     StringBuffer password_;
     StringBuffer realm_;
+    unsigned connectTimeoutMs_ = 0;
+    unsigned readTimeoutSecs_ = 0;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -147,6 +150,12 @@ public:
 
     void setThunkHandle(void * val){thunk_=val;}
     void * getThunkHandle(){return thunk_;}
+
+    void setConnectTimeOutMs(unsigned timeout) override {connectTimeoutMs_ = timeout;}
+    unsigned getConnectTimeOutMs() override {return connectTimeoutMs_;}
+
+    void setReadTimeOutSecs(unsigned timeout) override {readTimeoutSecs_ = timeout;}
+    unsigned getReadTimeOutSecs() override {return readTimeoutSecs_;}
 
     void setUrl(const char *url){url_.clear().append(url);} 
     const char * getUrl(){return url_.str();}
