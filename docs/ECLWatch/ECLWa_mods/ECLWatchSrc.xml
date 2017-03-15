@@ -362,7 +362,7 @@
 
         <para>The Workunit Details Action Buttons allow you to perform actions
         on the selected workunit. Press the corresponding Action button to
-        allow you to perform the following actions. </para>
+        allow you to perform the following actions.</para>
 
         <itemizedlist>
           <listitem>
@@ -1143,8 +1143,10 @@
                            vendor="eclwatchSS" />
               </imageobject>
             </mediaobject>
-          </figure>You can browse or search for logical files from this page
-        using the Filter drop menu. <variablelist>
+          </figure></para>
+
+        <para>You can browse or search for logical files from this page using
+        the Filter drop menu. <variablelist>
             <varlistentry>
               <term>Note:</term>
 
@@ -1152,7 +1154,29 @@
                 <para>Filter criteria are not case sensitive.</para>
               </listitem>
             </varlistentry>
-          </variablelist><figure>
+          </variablelist></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/caution.png" /></entry>
+
+                  <entry>If there are more than 100,000 logical files present
+                  you may see a warning message. </entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para><figure>
             <title>Logical Files Page</title>
 
             <mediaobject>
