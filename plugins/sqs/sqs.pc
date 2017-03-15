@@ -1,0 +1,11 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: SQSHPCC
+Description: This is a plugin for HPCC allowing to dialog with SQS AWS 
+Version: 0.0.1
+Requires:
+Libs: -L${libdir} -lssl -lcrypto -lz
+Cflags: -I${includedir}

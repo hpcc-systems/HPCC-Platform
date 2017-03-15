@@ -1,0 +1,2 @@
+/hpcc/HPCC-Platform/plugins/sqs/CMakeFiles/edit_cache.dir
+/hpcc/HPCC-Platform/plugins/sqs/CMakeFiles/rebuild_cache.dir
