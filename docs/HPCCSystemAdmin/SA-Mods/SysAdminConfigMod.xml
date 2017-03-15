@@ -128,7 +128,7 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Enter the IP addresses.</para>
+            <para>Enter the IP addresses or hostname(s).</para>
 
             <para>IP Addresses can be specified individually using semi-colon
             delimiters. You can also specify a range of IPs using a hyphen
