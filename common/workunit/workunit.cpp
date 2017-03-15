@@ -9031,7 +9031,7 @@ extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const
             IPropertyTree * stats = p->queryPropTree("Statistics");
             if (stats)
             {
-                saveXML(statsFilename, stats, 0, XML_Format|XML_SortTags|extraXmlFlags);
+                saveXML(statsFilename, stats, 0, (XML_Format|XML_SortTags|extraXmlFlags) & ~XML_LineBreakAttributes);
                 p->removeProp("Statistics");
             }
         }
