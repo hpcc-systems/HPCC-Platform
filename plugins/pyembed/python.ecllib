@@ -15,9 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
-EXPORT Language := SERVICE : plugin('pyembed')
-  integer getEmbedContext():cpp,pure,fold,namespace='pyembed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
-  boolean syntaxCheck(const varstring src):cpp,pure,namespace='pyembed',entrypoint='syntaxCheck';
+EXPORT Language := SERVICE : plugin('py2embed')
+  integer getEmbedContext():cpp,pure,fold,namespace='py2embed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
+  boolean syntaxCheck(const varstring src):cpp,pure,namespace='py2embed',entrypoint='syntaxCheck';
 END;
 EXPORT getEmbedContext := Language.getEmbedContext;
 EXPORT syntaxCheck := Language.syntaxCheck;

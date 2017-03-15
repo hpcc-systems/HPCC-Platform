@@ -457,9 +457,9 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
             m_pServiceMethodTargets->addPropTree("Target", createPTreeFromIPT(&itns->query()));
 
         StringBuffer classPath;
-        Owned<IProperties> envConf = createProperties(CONFIG_DIR PATHSEPSTR "environment.conf", true);
-        if (envConf && envConf->hasProp("classpath"))
-            envConf->getProp("classpath", classPath);
+        const IProperties &envConf = queryEnvironmentConf();
+        if (envConf.hasProp("classpath"))
+            envConf.getProp("classpath", classPath);
         else
             classPath.append(INSTALL_DIR).append(PATHSEPCHAR).append("classes");
 

@@ -98,12 +98,10 @@ public:
         {
             newPath.append(origPath).append(ENVSEPCHAR);
         }
-        StringBuffer envConf;
-        envConf.append(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
-        Owned<IProperties> conf = createProperties(envConf.str(), true);
-        if (conf && conf->hasProp("classpath"))
+        const IProperties &conf = queryEnvironmentConf();
+        if (conf.hasProp("classpath"))
         {
-            conf->getProp("classpath", newPath);
+            conf.getProp("classpath", newPath);
             newPath.append(ENVSEPCHAR);
         }
         else
@@ -113,21 +111,21 @@ public:
         newPath.append(".");
         optionStrings.append(newPath);
 
-        if (conf && conf->hasProp("jvmlibpath"))
+        if (conf.hasProp("jvmlibpath"))
         {
             StringBuffer libPath;
             libPath.append("-Djava.library.path=");
-            conf->getProp("jvmlibpath", libPath);
+            conf.getProp("jvmlibpath", libPath);
             optionStrings.append(libPath);
         }
 
         // Options we should set (but allow for override with jvmoptions below)
         optionStrings.append("-XX:-UseLargePages");
 
-        if (conf && conf->hasProp("jvmoptions"))
+        if (conf.hasProp("jvmoptions"))
         {
             // Use space as field sep as ':' and ';' are valid
-            optionStrings.appendList(conf->queryProp("jvmoptions"), " ");
+            optionStrings.appendList(conf.queryProp("jvmoptions"), " ");
         }
 
         // Options we know we always want set

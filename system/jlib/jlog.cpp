@@ -2661,17 +2661,15 @@ private:
         rolling = true;
         append = true;
         flushes = true;
-        Owned<IProperties> conf = createProperties(CONFIG_DIR PATHSEPSTR "environment.conf", true);
-        StringBuffer logFields;
-        conf->getProp("logfields", logFields);
-        if (logFields.length())
+        const char *logFields = queryEnvironmentConf().queryProp("logfields");
+        if (!isEmptyString(logFields))
             msgFields = LogMsgFieldsFromAbbrevs(logFields);
         else
             msgFields = MSGFIELD_STANDARD;
         msgAudiences = MSGAUD_all;
         msgClasses = MSGCLS_all;
         maxDetail = DefaultDetail;
-        name.set(component);//logfile defaults to component name. Change via setName(), setPrefix() and setPostfix()
+        name.set(component); //logfile defaults to component name. Change via setName(), setPrefix() and setPostfix()
         extension.set(".log");
         local = false;
         createAlias = true;

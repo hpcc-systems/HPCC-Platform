@@ -346,6 +346,58 @@ static bool isCorruptDll(const char *errorMessage)
 
 }
 //-----------------------------------------------------------------------
+#ifdef __APPLE__
+bool findLoadedModule(StringBuffer &ret,  const char *match)
+{
+    bool found = false;
+    unsigned count = _dyld_image_count();
+    for (unsigned i = 0; i<count; i++)
+    {
+        const char *ln = _dyld_get_image_name(i);
+        if (ln)
+        {
+            if (strstr(ln, match))
+            {
+                ret.set(ln);
+                found = true;
+                break;
+            }
+        }
+    }
+    return found;
+}
+#elif !defined(WIN32)
+bool findLoadedModule(StringBuffer &ret,  const char *match)
+{
+    bool found = false;
+    FILE *diskfp = fopen("/proc/self/maps", "r");
+    if (diskfp)
+    {
+        char ln[_MAX_PATH];
+        while (fgets(ln, sizeof(ln), diskfp))
+        {
+            if (strstr(ln, match))
+            {
+                const char *fullName = strchr(ln, '/');
+                if (fullName)
+                {
+                    char * lf = (char *) strchr(fullName, '\n');
+                    if (lf)
+                    {
+                        *lf = 0;
+                        ret.set(fullName);
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+        fclose(diskfp);
+    }
+    return found;
+}
+#endif
+
 HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
 {
 #if defined(_WIN32)
@@ -2300,37 +2352,35 @@ StringBuffer & fillConfigurationDirectoryEntry(const char *dir,const char *name,
     return dirout;
 }
 
-IPropertyTree *getHPCCEnvironment(const char *configFileName)
+IPropertyTree *getHPCCEnvironment()
 {
-    StringBuffer configFileSpec(configFileName);
-    if (!configFileSpec.length())
-#ifdef _WIN32 
-        return NULL;
-#else
-        configFileSpec.set(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
-#endif  
-    Owned<IProperties> props = createProperties(configFileSpec.str());
-    if (props)
+    StringBuffer envfile;
+    if (queryEnvironmentConf().getProp("environment",envfile) && envfile.length())
     {
-        StringBuffer envfile;
-        if (props->getProp("environment",envfile)&&envfile.length())
+        if (!isAbsolutePath(envfile.str()))
         {
-            if (!isAbsolutePath(envfile.str()))
-            {
-                StringBuffer tail(envfile);
-                splitDirTail(configFileSpec.str(),envfile.clear());
-                addPathSepChar(envfile).append(tail);
-            }
-            Owned<IFile> file = createIFile(envfile.str());
-            if (file)
-            {
-                Owned<IFileIO> fileio = file->open(IFOread);
-                if (fileio)
-                    return createPTree(*fileio);
-            }
+            envfile.insert(0, CONFIG_DIR PATHSEPSTR);
+        }
+        Owned<IFile> file = createIFile(envfile.str());
+        if (file)
+        {
+            Owned<IFileIO> fileio = file->open(IFOread);
+            if (fileio)
+                return createPTree(*fileio);
         }
     }
     return NULL;
+}
+
+static Owned<IProperties> envConfFile;
+static CriticalSection envConfCrit;
+
+jlib_decl const IProperties &queryEnvironmentConf()
+{
+    CriticalBlock b(envConfCrit);
+    if (!envConfFile)
+        envConfFile.setown(createProperties(CONFIG_DIR PATHSEPSTR ENV_CONF_FILE, true));
+    return *envConfFile;
 }
 
 static CriticalSection securitySettingsCrit;

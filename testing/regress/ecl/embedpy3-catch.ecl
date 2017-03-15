@@ -16,7 +16,7 @@
 ############################################################################## */
 
 //class=embedded
-
+//class=python3
 //nothor
 
 //Thor doesn't handle CATCH properly, see HPCC-9059

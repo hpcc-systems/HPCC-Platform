@@ -15,20 +15,20 @@
 ################################################################################
 
 
-# Component: pyembed
+# Component: py2embed
 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for pyembed
+#    Cmake Input File for py2embed
 #####################################################
 
 set(debug_python OFF)   # A lot slower but can assist in debugging...
 set(DEBUG_PYTHON_LIBRARY "/usr/lib/libpython2.7_d.so")
 
-project(pyembed)
+project(py2embed)
 
-if(PYEMBED)
+if(PY2EMBED)
     unset(PYTHONLIBS_FOUND CACHE)
     unset(PYTHON_LIBRARY CACHE)
     unset(PYTHON_LIBRARIES CACHE)
@@ -36,7 +36,7 @@ if(PYEMBED)
     unset(PYTHON_INCLUDE_DIR CACHE)
     unset(PYTHON_DEBUG_LIBRARIES CACHE)
     unset(PYTHONLIBS_VERSION_STRING CACHE)
-    ADD_PLUGIN(pyembed PACKAGES PythonLibs MINVERSION 2.6 MAXVERSION 2.7)
+    ADD_PLUGIN(py2embed PACKAGES PythonLibs MINVERSION 2.6 MAXVERSION 2.7)
     set(PYTHON2LIBS_FOUND ${PYTHONLIBS_FOUND})
     set(PYTHON2_LIBRARY ${PYTHON_LIBRARY})
     set(PYTHON2_LIBRARIES ${PYTHON_LIBRARIES})
@@ -45,7 +45,7 @@ if(PYEMBED)
     set(PYTHON2_DEBUG_LIBRARIES ${PYTHON_DEBUG_LIBRARIES})
     set(PYTHON2LIBS_VERSION_STRING ${PYTHONLIBS_VERSION_STRING})
     message("Python2 library is ${PYTHON2_LIBRARY}")
-    if(MAKE_PYEMBED)
+    if(MAKE_PY2EMBED)
         set(
             SRCS
             pyembed.cpp)
@@ -63,29 +63,29 @@ if(PYEMBED)
             ./../../roxie/roxiemem
             ./../../system/jlib)
 
-        add_definitions(-D_USRDLL -DPYEMBED_EXPORTS)
+        add_definitions(-D_USRDLL -DPY2EMBED_EXPORTS)
         if(debug_python)
             add_definitions(-DPy_DEBUG)
         endif()
 
-        HPCC_ADD_LIBRARY(pyembed SHARED ${SRCS})
+        HPCC_ADD_LIBRARY(py2embed SHARED ${SRCS})
         if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
             message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
         elseif(NOT APPLE)
-            set_target_properties(pyembed PROPERTIES NO_SONAME 1)
+            set_target_properties(py2embed PROPERTIES NO_SONAME 1)
         endif()
 
         install(
-            TARGETS pyembed
-            DESTINATION plugins)
+            TARGETS py2embed
+            DESTINATION versioned/python2)
         if(debug_python)
-            target_link_libraries(pyembed ${DEBUG_PYTHON2_LIBRARY})
+            target_link_libraries(py2embed ${DEBUG_PYTHON2_LIBRARY})
         else()
-            target_link_libraries(pyembed ${PYTHON2_LIBRARY})
+            target_link_libraries(py2embed ${PYTHON2_LIBRARY})
         endif()
 
         target_link_libraries(
-            pyembed
+            py2embed
             eclrtl
             roxiemem
             jlib)
