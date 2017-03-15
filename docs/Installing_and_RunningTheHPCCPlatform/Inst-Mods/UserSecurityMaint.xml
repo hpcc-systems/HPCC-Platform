@@ -1528,8 +1528,6 @@
           </tgroup>
         </informaltable></para>
 
-      <para></para>
-
       <sect4 id="FeaturePermissions_Login">
         <title>Some Feature Permissions Notes</title>
 
@@ -2090,14 +2088,23 @@
     </sect3>
   </sect2>
 
-  <sect2 id="permissions_cache">
+  <sect2 id="permissions_cache" role="brk">
     <title>Permission Caching</title>
+
+    <para>A helpful feature found on the Permissions tab is the
+    <emphasis>Clear Permissions Cache</emphasis> button. The <emphasis>Clear
+    Permissions Cache</emphasis> button clears the cached permissions from
+    Dali and ESP.</para>
 
     <para>When you change a permission in ECL Watch, the settings are cached
     in the ESP server and stored in the Dali server. The information in the
     cache is updated at a configurable interval. This value can be set in the
-    Configuration Manager under the LDAP Server settings Attributes tab. The
-    default cacheTimeout is 5 minutes.</para>
+    Configuration Manager under the <emphasis>LDAP Server settings
+    Attributes</emphasis> tab. The default cacheTimeout is 5 minutes.</para>
+
+    <para><graphic fileref="../../images/Perm002.jpg"
+    vendor="eclwatchSS" />The Permissions Cache can be cleared from anywhere
+    on the permissions tab in ECL Watch.</para>
 
     <para>When you want a permission change to take effect immediately, you
     can clear the cache and force Dali to update the permission settings by
@@ -2106,5 +2113,63 @@
     this feature judiciously as overall system performance is affected
     temporarily while the LDAP settings in the Dali System Data Store
     repopulate.</para>
+  </sect2>
+
+  <sect2 id="Advanced_Permissions" role="brk">
+    <title>Advanced Permissions</title>
+
+    <para>On the Permissions tab is the <emphasis
+    role="bold">Advanced</emphasis> (Permissions) button. The Advanced
+    menu/button provides access to manage file and workunit scope security.
+    The Advanced button is only enabled when you select either File or
+    Workunit Scopes on the Permissions tab.</para>
+
+    <para><graphic fileref="../../images/Perm022.jpg"
+    vendor="eclwatchSS" /></para>
+
+    <para>Press the Advanced button to display the Advanced permissions menu.
+    The Advanced menu is context aware, so if you select File Scopes from the
+    Permissions tab, then you can only choose to apply the relevant file scope
+    permissions, likewise if you selected workunits scopes.</para>
+
+    <para><emphasis role="bold">File Scans</emphasis></para>
+
+    <para>Using the Advanced Menu with File Scopes selected:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Enable or disable file scope security</para>
+      </listitem>
+
+      <listitem>
+        <para>Access the file scope default permission page</para>
+      </listitem>
+
+      <listitem>
+        <para>Access the Physical Files permission page</para>
+      </listitem>
+
+      <listitem>
+        <para>Check the file permissions - This option opens a dialog where
+        you can input a File name and select Users and Groups for the File
+        security scope.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para><graphic fileref="../../images/Perm023.jpg"
+    vendor="eclwatchSS" /></para>
+
+    <para><emphasis role="bold">Workunit scans</emphasis></para>
+
+    <para>Using the Advanced Menu with the Workunit Scopes selected opens only
+    the Default Permissions tab for the Workunit Scope (Default)
+    Permissions.</para>
+
+    <para><emphasis role="bold">NOTE:</emphasis> File or Workunit Scope
+    security needs to be enabled in your system configuration in order to use
+    File or Workunit Scope security on your system.</para>
+
+    <!-- /*Note: Maybe include the doc or steps for configuring your system to use File or Workunit scope security */
+-->
   </sect2>
 </sect1>

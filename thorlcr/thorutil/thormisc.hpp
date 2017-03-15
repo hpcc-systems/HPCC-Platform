@@ -74,6 +74,7 @@
 #define THOROPT_WRITE_CRC             "crcWriteEnabled"         // Calculate CRC's for disk outputs and store in file meta data                  (default = true)
 #define THOROPT_READCOMPRESSED_CRC    "crcReadCompressedEnabled"  // Enabled CRC validation on compressed disk reads if file CRC are available   (default = false)
 #define THOROPT_WRITECOMPRESSED_CRC   "crcWriteCompressedEnabled" // Calculate CRC's for compressed disk outputs and store in file meta data     (default = false)
+#define THOROPT_CHILD_GRAPH_INIT_TIMEOUT "childGraphInitTimeout"  // Time to wait for child graphs to respond to initialization                  (default = 5*60 seconds)
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 
