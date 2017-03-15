@@ -27,11 +27,11 @@
 
 interface IEspLogEntry  : implements IInterface
 {
-    virtual void setEspContext(IEspContext* ctx)  = 0;
-    virtual void setUserContextTree(IPropertyTree* tree) = 0;
-    virtual void setUserRequestTree(IPropertyTree* tree) = 0;
-    virtual void setLogInfoTree(IPropertyTree* tree) = 0;
-    virtual void setExtraLog(IInterface* extra) = 0;
+    virtual void setOwnEspContext(IEspContext* ctx)  = 0;
+    virtual void setOwnUserContextTree(IPropertyTree* tree) = 0;
+    virtual void setOwnUserRequestTree(IPropertyTree* tree) = 0;
+    virtual void setOwnLogInfoTree(IPropertyTree* tree) = 0;
+    virtual void setOwnExtraLog(IInterface* extra) = 0;
     virtual void setOption(const char* ptr) = 0;
     virtual void setLogContent(const char* ptr) = 0;
     virtual void setBackEndResp(const char* ptr) = 0;

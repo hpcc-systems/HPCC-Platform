@@ -616,7 +616,6 @@ struct HqlCppOptions
     bool                allowAmbiguousSelector;
     bool                regressionTest;
     bool                recreateMapFromIf;
-    bool                addTimingToWorkunit;
     bool                reduceNetworkTraffic;
     bool                optimizeProjectsPreservePersists;
     bool                showMetaText;
@@ -1094,8 +1093,7 @@ public:
     ITimeReporter * queryTimeReporter() const { return timeReporter; }
     void noteFinishedTiming(const char * name, cycle_t startCycles)
     {
-        if (options.addTimingToWorkunit)
-            timeReporter->addTiming(name, get_cycles_now()-startCycles);
+        timeReporter->addTiming(name, get_cycles_now()-startCycles);
     }
 
     void updateClusterType();

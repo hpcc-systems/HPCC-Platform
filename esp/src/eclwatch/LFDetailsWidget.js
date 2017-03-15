@@ -141,10 +141,10 @@ define([
             this.logicalFile.save(dom.byId(context.id + "Description").value);
         },
         _onDelete: function (event) {
-            this.logicalFile.doDelete({
-                load: function (response) {
-                }
-            });
+            if (confirm(this.i18n.YouAreAboutToDeleteThisFile)) {
+                this.logicalFile.doDelete({
+                });
+            }
         },
 
         getTitle: function () {

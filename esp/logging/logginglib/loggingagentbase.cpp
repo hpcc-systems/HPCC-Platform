@@ -16,7 +16,6 @@
 ############################################################################## */
 
 #include "LoggingErrors.hpp"
-#include "esploggingservice_esp.ipp"
 #include "loggingagentbase.hpp"
 
 static const char* const defaultTransactionTable = "transactions";

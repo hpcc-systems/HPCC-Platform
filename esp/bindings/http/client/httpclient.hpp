@@ -21,12 +21,15 @@
 #include "esphttp.hpp"
 #include "soapesp.hpp"
 
+#define HTTP_CLIENT_DEFAULT_CONNECT_TIMEOUT 3000
+
 interface IHttpClient : extends ITransportClient
 {
     virtual void setProxy(const char* proxy) = 0;
     virtual void setUserID(const char* userid) = 0;
     virtual void setPassword(const char* password) = 0;
     virtual void setRealm(const char* realm) = 0;
+    virtual void setConnectTimeOutMs(unsigned timeout) = 0;
     virtual void setTimeOut(unsigned int timeout) = 0;
     virtual void disableKeepAlive() = 0;
 

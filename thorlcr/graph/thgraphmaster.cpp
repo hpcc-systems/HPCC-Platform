@@ -100,6 +100,7 @@ CSlaveMessageHandler::CSlaveMessageHandler(CJobMaster &_job, mptag_t _mptag) : t
 {
     stopped = false;
     threaded.init(this);
+    childGraphInitTimeout = job.getOptUInt(THOROPT_CHILD_GRAPH_INIT_TIMEOUT, 5*60) * 1000; // default 5 minutes
 }
 
 CSlaveMessageHandler::~CSlaveMessageHandler()
@@ -266,7 +267,7 @@ void CSlaveMessageHandler::main()
                         graph->serializeActivityInitData(slave, msg, iter);
                     }
                     job.queryJobChannel(0).queryJobComm().reply(msg);
-                    if (!job.queryJobChannel(0).queryJobComm().recv(msg, slave+1, replyTag, NULL, MEDIUMTIMEOUT))
+                    if (!job.queryJobChannel(0).queryJobComm().recv(msg, slave+1, replyTag, NULL, childGraphInitTimeout))
                         throwUnexpected();
                     if (exception)
                         throw exception.getClear();
@@ -2530,14 +2531,33 @@ void CMasterGraph::getFinalProgress()
     msg.append(queryGraphId());
     jobM->broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "graphEnd", NULL, true);
 
+    Owned<IBitSet> respondedBitSet = createBitSet();
     unsigned n=queryJob().queryNodes();
     while (n--)
     {
         rank_t sender;
         if (!queryNodeComm().recv(msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT))
         {
-            GraphPrintLog("Timeout receiving final progress from slaves, %d slaves did not respond", n+1);
-            return;
+            StringBuffer slaveList;
+            n=queryJob().queryNodes();
+            unsigned s = 0;
+            for (;;)
+            {
+                unsigned ns = respondedBitSet->scan(s, true); // scan for next respondent
+
+                // list all non-respondents up to this found respondent (or rest of slaves)
+                while (s<ns && s<n) // NB: if scan find nothing else set, ns = (unsigned)-1
+                {
+                    if (slaveList.length())
+                        slaveList.append(",");
+                    ++s; // inc. 1st as slaveList is list of slaves that are 1 based.
+                    slaveList.append(s);
+                }
+                ++s;
+                if (s>=n)
+                    break;
+            }
+            throw MakeGraphException(this, 0, "Timeout receiving final progress from slaves - these slaves failed to respond: %s", slaveList.str());
         }
         bool error;
         msg.read(error);
@@ -2547,6 +2567,7 @@ void CMasterGraph::getFinalProgress()
             e->setSlave(sender);
             throw e.getClear();
         }
+        respondedBitSet->set(((unsigned)sender)-1);
         if (0 == msg.remaining())
             continue;
 

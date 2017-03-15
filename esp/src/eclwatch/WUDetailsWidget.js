@@ -177,7 +177,9 @@ define([
             this.wu.clone();
         },
         _onDelete: function (event) {
-            this.wu.doDelete();
+            if (confirm(this.i18n.YouAreAboutToDeleteThisWorkunit)) {
+                this.wu.doDelete();
+            }
         },
         _onResubmit: function (event) {
             this.wu.resubmit();

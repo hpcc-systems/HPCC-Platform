@@ -6725,3 +6725,9 @@ jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blan
     }
     return target.append(temp);
 }
+
+void removeFileTraceIfFail(const char * filename)
+{
+    if (remove(filename) != 0)
+        DBGLOG("Could not remove file '%s'", filename);
+}

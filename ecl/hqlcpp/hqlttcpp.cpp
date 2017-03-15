@@ -10618,15 +10618,16 @@ void AnnotationNormalizerTransformer::analyseExpr(IHqlExpression * expr)
     if (alreadyVisited(expr))
         return;
     IHqlExpression * body = expr->queryBody();
+    node_operator op = body->getOperator();
     if (expr != body)
     {
-        queryLocationIndependentExtra(body)->noteAnnotation(expr);
+        if ((op != no_select) || isNewSelector(body))
+            queryLocationIndependentExtra(body)->noteAnnotation(expr);
         //Note: expr already tested if expr == body...
         if (alreadyVisited(body))
             return;
     }
 
-    node_operator op = body->getOperator();
     switch (op)
     {
     case no_attr_expr:

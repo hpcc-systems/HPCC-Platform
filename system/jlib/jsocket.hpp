@@ -278,6 +278,10 @@ public:
     //
     virtual ISocket* accept(bool allowcancel=false) = 0; // not needed for UDP
 
+    //
+    // log poll() errors
+    //
+    virtual void logPollError(unsigned revents, const char *rwstr) = 0;
 
     //
     // This method is called to check whether a socket has data ready

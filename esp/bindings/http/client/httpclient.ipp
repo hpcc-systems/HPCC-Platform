@@ -92,7 +92,9 @@ private:
     StringBuffer m_proxy;
     ISocket*   m_socket;
     bool          m_disableKeepAlive;
-    unsigned int m_timeout;
+
+    unsigned m_connectTimeoutMs = HTTP_CLIENT_DEFAULT_CONNECT_TIMEOUT;
+    unsigned m_readTimeoutSecs = 0;
 
     StringAttr m_userid;
     StringAttr m_password;
@@ -120,6 +122,7 @@ public:
     virtual void setUserID(const char* userid);
     virtual void setPassword(const char* password);
     virtual void setRealm(const char* realm);
+    virtual void setConnectTimeOutMs(unsigned timeout) override;
     virtual void setTimeOut(unsigned int timeout);
 };
 

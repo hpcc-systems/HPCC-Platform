@@ -153,11 +153,9 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
     if(m_transportclient.get() == NULL)
     {
         Owned<IHttpClientContext> httpctx = getHttpClientContext();
-        IHttpClient* httpclient = httpctx->createHttpClient(call->getProxy(), call->get_url());
-        m_transportclient.setown(httpclient);
+        Owned<IHttpClient> httpclient = httpctx->createHttpClient(call->getProxy(), call->get_url());
         if (m_disableKeepAlive)
             httpclient->disableKeepAlive();
-
         if(m_username.length() > 0)
         {
             httpclient->setUserID(m_username.get());
@@ -167,6 +165,13 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
         {
             httpclient->setRealm(m_realm.get());
         }
+
+        if (m_connectTimeoutMs)
+            httpclient->setConnectTimeOutMs(m_connectTimeoutMs);
+        if (m_readTimeoutSecs)
+            httpclient->setTimeOut(m_readTimeoutSecs);
+
+        m_transportclient.setown(httpclient.getClear());
     }
 
     if (!soap_request.get() || !soap_response.get())

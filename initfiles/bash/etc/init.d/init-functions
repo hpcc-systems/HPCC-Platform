@@ -209,7 +209,11 @@ log() {
   local msg=$@
   local header=$( date +%Y_%m_%d_%H_%M_%S )
   local header="${header}: "
-  printf "%s%s\n" "$header" "$msg" >> $logfile
+  (printf "%s%s\n" "$header" "$msg" >> $logfile) 2> /dev/null
+  if [[ $? -ne 0 ]]; then
+    echo "unable to write to ${logfile}" 1>&2
+    return 1
+  fi
 
   return 0
 }

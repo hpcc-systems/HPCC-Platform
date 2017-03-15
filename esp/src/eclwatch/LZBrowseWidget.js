@@ -108,6 +108,12 @@ define([
             this.uploadFileList = registry.byId(this.id + "UploadFileList");
             this.dropZoneTargetSelect = registry.byId(this.id + "DropZoneTargetSelect");
             this.dropZoneFolderSelect = registry.byId(this.id + "DropZoneFolderSelect");
+            this.dfuSprayFixedQueues = registry.byId(this.id + "SprayFixedDFUSprayQueues");
+            this.dfuSprayDelimitedQueues = registry.byId(this.id + "SprayDelimitedDFUQueues");
+            this.dfuSprayXMLQueues = registry.byId(this.id + "SprayXMLDFUQueues");
+            this.dfuSprayJSONQueues = registry.byId(this.id + "SprayJSONDFUQueues");
+            this.dfuSprayVariableQueues = registry.byId(this.id + "SprayVariableDFUQueues");
+            this.dfuSprayBLOBQueues = registry.byId(this.id + "SprayBLOBDFUQueues");
             this.fileListDialog = registry.byId(this.id + "FileListDialog");
             this.overwriteCheckbox = registry.byId(this.id + "FileOverwriteCheckbox");
             this.fixedSprayReplicateCheckbox = registry.byId(this.id + "FixedSprayReplicate");
@@ -493,6 +499,24 @@ define([
             });
             this.sprayFixedDestinationSelect.init({
                 SprayTargets: true
+            });
+            this.dfuSprayFixedQueues.init({
+                DFUSprayQueues: true
+            });
+            this.dfuSprayDelimitedQueues.init({
+                DFUSprayQueues: true
+            });
+            this.dfuSprayXMLQueues.init({
+                DFUSprayQueues: true
+            });
+            this.dfuSprayJSONQueues.init({
+                DFUSprayQueues: true
+            });
+            this.dfuSprayVariableQueues.init({
+                DFUSprayQueues: true
+            });
+            this.dfuSprayBLOBQueues.init({
+                DFUSprayQueues: true
             });
             this.sprayDelimitedDestinationSelect.init({
                 SprayTargets: true
