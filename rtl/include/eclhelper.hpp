@@ -628,15 +628,15 @@ interface ICodeContext : public IResourceContext
     // Graphs, child queries etc
 
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) = 0;
-    virtual unsigned getGraphLoopCounter() const { return 0; }
+    virtual unsigned getGraphLoopCounter() const = 0;
     virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal) = 0;
-    virtual IEclGraphResults * resolveLocalQuery(__int64 activityId) { return NULL; }
+    virtual IEclGraphResults * resolveLocalQuery(__int64 activityId) = 0;
 
     // Logging etc
 
     virtual unsigned logString(const char *text) const = 0;
     virtual const IContextLogger &queryContextLogger() const = 0;
-    virtual IDebuggableContext *queryDebugContext() const { return NULL; }
+    virtual IDebuggableContext *queryDebugContext() const = 0;
 
     // Memory management
 

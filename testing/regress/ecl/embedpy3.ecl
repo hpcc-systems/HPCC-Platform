@@ -23,7 +23,7 @@ IMPORT Python3;
 
 Python3.Language.syntaxcheck('1+2');
 
-integer add1(integer val) := EMBED(Python3)
+integer add1(integer val) := EMBED(Python3 : TIME)
 val+1
 ENDEMBED;
 

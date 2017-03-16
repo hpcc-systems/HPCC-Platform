@@ -34,7 +34,7 @@ void ActivityArray::append(IActivityFactory &cur)
     activities.append(cur);
 }
 
-unsigned ActivityArray::findActivityIndex(unsigned id)
+unsigned ActivityArray::findActivityIndex(unsigned id) const
 {
     unsigned *ret = hash.getValue(id);
     if (ret)

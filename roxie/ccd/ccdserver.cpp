@@ -921,6 +921,21 @@ protected:
 
     IHThorArg &basehelper;
     IRoxieSlaveContext *ctx;
+    class InterceptRegisterTimer : public IndirectCodeContext
+    {
+    public:
+        InterceptRegisterTimer(CRoxieServerActivity &_activity) : activity(_activity) {}
+        virtual ISectionTimer *registerTimer(unsigned activityId, const char * name)
+        {
+            if (activityId == activity.queryId())
+                return activity.registerTimer(activityId, name);
+            else
+                return ctx->registerTimer(activityId, name);
+        }
+    private:
+        CRoxieServerActivity &activity;
+    } interceptedCtx;
+
     const IRoxieServerActivityFactory *factory;
     IRoxieServerActivityCopyArray dependencies;
     IntArray dependencyIndexes;
@@ -951,6 +966,7 @@ public:
 
     CRoxieServerActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : ctx(_ctx),
+          interceptedCtx(*this),
           factory(_factory),
           basehelper(_factory->getHelper()),
           activityId(_factory->queryId()),
@@ -972,7 +988,10 @@ public:
         aborted = false;
     }
     
-    CRoxieServerActivity(IRoxieSlaveContext *_ctx, IHThorArg & _helper) : ctx(_ctx), factory(NULL), basehelper(_helper), stats(allStatistics)
+    CRoxieServerActivity(IRoxieSlaveContext *_ctx, IHThorArg & _helper)
+    : ctx(_ctx),
+      interceptedCtx(*this),
+      factory(NULL), basehelper(_helper), stats(allStatistics)
     {
         activityId = 0;
         input = NULL;
@@ -1038,7 +1057,7 @@ public:
     {
         stats.deserializeMerge(buf);
     }
-    virtual ISectionTimer *registerTimer(unsigned activityId, const char * name)
+    virtual ISectionTimer *registerTimer(unsigned _activityId, const char * name)
     {
         CriticalBlock b(statscrit); // reuse statscrit to protect functionTimers - it will not be held concurrently
         ISectionTimer *timer = functionTimers.getValue(name);
@@ -1049,19 +1068,6 @@ public:
             timer->Release(); // Value returned is not linked
         }
         return timer;
-    }
-    virtual IRoxieServerActivity * queryChildActivity(unsigned activityId)
-    {
-        ForEachItemIn(i, childGraphs)
-        {
-            IRoxieServerActivity * activity = childGraphs.item(i).queryActivity(activityId);
-            if (activity)
-                return activity;
-        }
-#ifdef _DEBUG
-        throwUnexpectedX("Unable to map child activity id to an activity");
-#endif
-        return nullptr;
     }
     void mergeStrandStats(unsigned strandProcessed, const ActivityTimeAccumulator & strandCycles, const CRuntimeStatisticCollection & strandStats)
     {
@@ -1309,7 +1315,8 @@ public:
         if (createPending)
         {
             createPending = false;
-            basehelper.onCreate(ctx->queryCodeContext(), colocalParent, NULL);
+            interceptedCtx.set(ctx->queryCodeContext());
+            basehelper.onCreate(&interceptedCtx, colocalParent, NULL);
         }
     }
 
@@ -26824,7 +26831,7 @@ protected:
     StringAttr graphName;
     Owned<CGraphResults> results;
     CGraphResults graphLoopResults;
-    ActivityArray & graphDefinition;
+    const ActivityArray & graphDefinition;
     CriticalSection evaluateCrit;
 
     IProbeManager *probeManager;
@@ -26834,7 +26841,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CActivityGraph(IRoxieSlaveContext *_ctx, const char *_graphName, unsigned _id, ActivityArray &x, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx)
+    CActivityGraph(IRoxieSlaveContext *_ctx, const char *_graphName, unsigned _id, const ActivityArray &x, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx)
         : probeManager(_probeManager), graphDefinition(x), graphName(_graphName), graphSlaveContext(_ctx, _logctx)
     {
         id = x.getLibraryGraphId();
@@ -26854,18 +26861,6 @@ public:
     virtual const char *queryName() const
     {
         return graphName.get();
-    }
-
-    virtual IRoxieServerActivity *queryActivity(unsigned _activityId)
-    {
-        unsigned idx = graphDefinition.recursiveFindActivityIndex(_activityId);
-        if (idx==NotFound)
-            return nullptr;
-        assertex(activities.isItem(idx));
-        IRoxieServerActivity *activity = &activities.item(idx);
-        if (activity->queryId() == _activityId)
-            return activity;
-        return activity->queryChildActivity(_activityId);
     }
 
     void createGraph(IRoxieSlaveContext *_ctx)

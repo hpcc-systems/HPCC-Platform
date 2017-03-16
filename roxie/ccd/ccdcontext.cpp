@@ -1656,6 +1656,7 @@ public:
 
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash) { throwUnexpected(); }
 
+    virtual unsigned getGraphLoopCounter() const override { return 0; }
     virtual unsigned getNodes() { throwUnexpected(); }
     virtual unsigned getNodeNum() { throwUnexpected(); }
     virtual char *getFilePart(const char *logicalPart, bool create=false) { throwUnexpected(); }
@@ -1982,12 +1983,6 @@ public:
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
     {
         CriticalBlock b(contextCrit);
-        if (activityId && graph)
-        {
-            IRoxieServerActivity *act = graph->queryActivity(activityId);
-            if (act)
-                return act->registerTimer(activityId, name);
-        }
         ISectionTimer *timer = functionTimers.getValue(name);
         if (!timer)
         {

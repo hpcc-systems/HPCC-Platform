@@ -577,6 +577,10 @@ public:
     {
         return ctx->registerTimer(activityId, name);
     }
+    virtual unsigned getGraphLoopCounter() const override
+    {
+        return ctx->getGraphLoopCounter();
+    }
 protected:
     ICodeContext * ctx;
 };
