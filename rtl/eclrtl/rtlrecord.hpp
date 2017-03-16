@@ -69,7 +69,7 @@ protected:
     const RtlFieldInfo * const * originalFields;
 };
 
-struct ECLRTL_API RtlRow
+class ECLRTL_API RtlRow
 {
 public:
     RtlRow(const RtlRecord & _info, const void * optRow, unsigned numOffsets, size_t * _variableOffsets);
@@ -127,7 +127,7 @@ public:
         return offsetCalculator.getRecordSize();
     }
 
-    virtual size32_t getFixedSize()
+    virtual size32_t getFixedSize() const
     {
         return offsetInformation.getFixedSize();
     }
