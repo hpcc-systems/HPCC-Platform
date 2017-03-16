@@ -658,7 +658,6 @@ public:
             initPollRequest(reqInfo, client, wuid);
 
         int state = WUStateUnknown;
-        unsigned start = msTick();
         for(;;)
         {
             if (optimized)
@@ -667,7 +666,7 @@ public:
                 state = checkComplete(client, reqInfo);
             if (state != WUStateUnknown)
                 break;
-            unsigned waited = msTick() - start;
+            unsigned waited = msTick() - startTimeMs;
             if (optWaitTime!=(unsigned)-1 && waited>=optWaitTime)
                 return WUStateUnknown;
             Sleep(nextWait(optWaitTime, waited));
@@ -785,6 +784,24 @@ public:
         }
         return 1;
     }
+    int getInitialRunWait()
+    {
+        if (!optPoll)
+            return optWaitTime;
+        return (optWaitTime < 10000) ? optWaitTime : 10000; //stay connected for the first 10 seconds even if polling
+    }
+    bool isFinalState(WUState state)
+    {
+        switch (state)
+        {
+        case WUStateCompleted:
+        case WUStateFailed:
+        case WUStateAborted:
+            return true;
+        }
+        return false;
+    }
+
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
@@ -823,7 +840,8 @@ public:
             req->setCluster(wuCluster.str());
         else if (optTargetCluster.length())
             req->setCluster(optTargetCluster.get());
-        req->setWait((int)(optPoll ? 0 : optWaitTime));
+
+        req->setWait(getInitialRunWait());
         if (optInput.length())
             req->setInput(optInput.get());
         req->setExceptionSeverity(optExceptionSeverity); //throws exception if invalid value
@@ -834,6 +852,7 @@ public:
         if (variables.length())
             req->setVariables(variables);
 
+        startTimeMs = msTick();
         Owned<IClientWURunResponse> resp = client->WURun(req);
 
         if (checkMultiExceptionsQueryNotFound(resp->getExceptions()))
@@ -848,10 +867,11 @@ public:
         StringBuffer respwuid(resp->getWuid());
         if (optVerbose && respwuid.length() && !streq(wuid.str(), respwuid.str()))
             fprintf(stdout, "As %s\n", respwuid.str());
-        if (optPoll)
+        WUState state = getWorkUnitState(resp->getState());
+        if (optPoll && !isFinalState(state))
             return pollForResults(client, wuid);
 
-        switch (getWorkUnitState(resp->getState()))
+        switch (state)
         {
         case WUStateRunning:
             fprintf(stderr, "Timed out waiting for %s to complete, workunit is still running.\n", wuid.str()); //server side waiting timed out
@@ -905,6 +925,7 @@ private:
     StringAttr optExceptionSeverity;
     IArrayOf<IEspNamedValue> variables;
     unsigned optWaitTime;
+    unsigned startTimeMs = 0;
     bool optNoRoot;
     bool optPoll;
     bool optPre64;  //only for troubleshooting, do not document
