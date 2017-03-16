@@ -1003,7 +1003,7 @@ protected:
 class HQL_API ScopeInfo : public CInterface
 {
 public:
-    ScopeInfo() { isWithin = false; }
+    ScopeInfo(IHqlExpression * _context) : context(_context) { isWithin = false; }
     inline void clear()                                             { dataset.clear(); left.clear(); right.clear(); }
     inline void setDataset(IHqlExpression * _dataset, IHqlExpression * transformed)             
                                                                     { dataset.set(_dataset); transformedDataset.set(transformed); }
@@ -1021,6 +1021,7 @@ public:
     IHqlDataset * queryActiveDataset();
 
 public:
+    IHqlExpression * context;
     HqlExprAttr     dataset;
     HqlExprAttr     transformedDataset;
     HqlExprAttr     left;
@@ -1062,7 +1063,7 @@ protected:
     IHqlExpression * getScopeState();
 
 //Functions for keeping track of what tables are currently in scope...
-    virtual void pushScope();
+    virtual void pushScope(IHqlExpression * context);
     virtual void pushEvaluateScope(IHqlExpression * expr, IHqlExpression * transformed);
     virtual void popScope();
     virtual void popEvaluateScope();
