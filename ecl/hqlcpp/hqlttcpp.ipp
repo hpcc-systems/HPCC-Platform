@@ -827,6 +827,35 @@ protected:
 
 //---------------------------------------------------------------------------
 
+class DFSLayoutTransformer : public NewHqlTransformer
+{
+public:
+    DFSLayoutTransformer(IErrorReceiver &_errs, ICodegenContextCallback * _ctxCallback, HqlCppOptions const &_options);
+
+protected:
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
+
+protected:
+    ICodegenContextCallback * ctxCallback;
+    IErrorReceiver &errs;
+    HqlCppOptions const &options;
+};
+
+
+//---------------------------------------------------------------------------
+
+class KeyedProjectTransformer : public NewHqlTransformer
+{
+public:
+    KeyedProjectTransformer();
+
+protected:
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr) override;
+};
+
+
+//---------------------------------------------------------------------------
+
 class NestedSelectorInfo : public NewTransformInfo
 {
 public:

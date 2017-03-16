@@ -200,6 +200,7 @@ enum WarnErrorCategory
     CategoryUnexpected, // Code that could be correct, but has the potential for unexpected behaviour
     CategoryCpp,        // Warning passed through from C++ compiler
     CategorySecurity,   // Security warnings - operations that will be refused at codegen time unless unused.
+    CategoryDFS,        // DFS resolution issues - field translation may not have occurred even though requested
 
     CategoryError,      // Typically severity fatal
     CategoryAll,

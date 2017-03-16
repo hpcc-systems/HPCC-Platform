@@ -26,6 +26,11 @@
 #include "hqlatoms.hpp"
 #include "build-config.h"
 
+#ifdef _DEBUG
+ //#define TEST_INDEX_PROJECT  // Force index translation (to default specified record) on all indexes - for testing!
+#endif
+
+
 #define stringify(x) # x
 #define estringify(x) stringify(x)
 
@@ -189,6 +194,14 @@ interface ICodegenContextCallback : public IInterface
 {
     virtual void noteCluster(const char *clusterName) = 0;
     virtual bool allowAccess(const char * category, bool isSigned) = 0;
+    /**
+     * Lookup a file in DFS and return the record definition
+     *
+     * @param filename      The logical filename. Scope expansion/~ removal should not have been done
+     * @param errs          Where to report errors
+     * @param location      Location to use when reporting errors
+     */
+    virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const = 0;
 };
 
 

@@ -8865,6 +8865,233 @@ IHqlExpression * FilteredIndexOptimizer::createTransformed(IHqlExpression * expr
 //==============================================================================================================
 
 
+static HqlTransformerInfo DFSLayoutTransformerInfo("DFSLayoutTransformer");
+DFSLayoutTransformer::DFSLayoutTransformer(IErrorReceiver &_errs, ICodegenContextCallback * _ctxCallback, HqlCppOptions const &_options)
+: NewHqlTransformer(DFSLayoutTransformerInfo), errs(_errs), options(_options)
+{
+    ctxCallback = _ctxCallback;
+}
+
+
+IHqlExpression * DFSLayoutTransformer::createTransformed(IHqlExpression * expr)
+{
+    OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
+    int filenameIdx = 0;
+    int recordIdx = 0;
+    switch (transformed->getOperator())
+    {
+    case no_table:
+        filenameIdx = 0;
+        recordIdx = 1;
+        break;
+    case no_keyindex:
+        throwUnexpected();  // They have already been translated into no_newkeyindex by HqlTreeNormalizer::transformKeyIndex
+        break;
+    case no_newkeyindex:
+        // Args are flatfile, record, transform, name. Offset of first payload field indicated by value of __payload_Atom attribute
+        filenameIdx = 3;
+        recordIdx = 1;
+        break;
+    default:
+        return transformed.getClear();
+    }
+    LinkedHqlExpr ds = transformed;
+    IHqlExpression * filename = ds->queryChild(filenameIdx);
+    bool translate = getBoolAttribute(ds, lookupAtom, options.translateDFSlayouts && filename->isConstant());
+    if (translate)
+    {
+        ECLlocation where(ds);
+        OwnedHqlExpr folded  = foldHqlExpression(errs, filename, nullptr, HFOforcefold);
+        StringBuffer fileNameText;
+        getStringValue(fileNameText, folded);
+        if (fileNameText.length())   // PIPE creates a no_table with a blank filename, it seems
+        {
+            // Need to work out what to do about numKeyedFields and what happens if it changes
+            // If payload fields are added/removed, no problem, just transform as with datasets
+            // If keyed fields are added/removed, may be trickier
+            OwnedHqlExpr dfsLayout = ctxCallback->lookupDFSlayout(fileNameText, errs, where, ds->hasAttribute(optAtom));
+            if (dfsLayout)
+            {
+                IHqlExpression *wanted = ds->queryRecord();
+                // If wanted contains any virtual fields, clone them onto dfsLayout
+                if (containsVirtualFields(wanted))
+                {
+                    HqlExprArray newFields;
+                    unwindChildren(newFields, dfsLayout);
+                    getVirtualFields(newFields, wanted);
+                    dfsLayout.setown(dfsLayout->clone(newFields));
+                }
+                IHqlExpression *payload = dfsLayout->queryAttribute(_payload_Atom);
+                unsigned dfsPayload = 0;
+                if (payload)
+                {
+                    dfsPayload = getIntValue(payload->queryChild(0));
+                    dfsLayout.setown(removeAttribute(dfsLayout, _payload_Atom));
+                }
+
+                // Check if the layout fetched from DFS matches the ECL layout
+                if (recordTypesMatch(dfsLayout, wanted))
+                    return transformed.getClear();   // No substitution needed
+                if (options.reportDFSinfo >= 2)
+                {
+                    VStringBuffer msg( "LOOKUP %s found modified record structure", fileNameText.str());
+                    errs.reportWarning(CategoryInformation, HQLINFO_DFSlookupSubstituted, msg.str(), str(where.sourcePath), where.lineno, where.column, where.position);
+                    reportDroppedFields(wanted, dfsLayout, errs, where);
+                }
+                if (transformed->getOperator() == no_newkeyindex)
+                {
+                    // update the transform used by full keyed join to map fields
+                    // note it gets updated again if the rhs of the keyed join has translation applied
+                    IHqlExpression *oldTransform = ds->queryChild(2);
+                    assertex(oldTransform->getOperator()==no_newtransform);
+
+                    OwnedHqlExpr seq = createSelectorSequence();
+                    OwnedHqlExpr left = createSelector(no_left, oldTransform, seq);
+                    OwnedHqlExpr self = getSelf(dfsLayout);
+                    MultiErrorReceiver dummy;
+                    OwnedHqlExpr transformECLtoDFS = createMappingTransform(self, left, true, dummy, where);  // transforms from ECL layout to DFS layout. Don't report missing here!
+
+                    NewProjectMapper2 mapper;
+                    mapper.setMapping(oldTransform);
+                    OwnedHqlExpr newTransform = mapper.expandFields(transformECLtoDFS, left, nullptr, nullptr);
+                    ds.setown(replaceChild(ds, 2, newTransform));
+                    // The payload attribute specifies how many UNKEYED fields there are - so if we added or removed any fields we may need to change it
+                    assertex(dfsPayload >= 0);
+                    if (dfsPayload != numPayloadFields(ds))
+                    {
+                        // Note - this doesn't merit a warning - but if we changed the number of keyed it might?
+                        ds.setown(replaceOwnedAttribute(ds, createExprAttribute(_payload_Atom, createConstant((int) dfsPayload))));
+                    }
+                }
+
+                OwnedHqlExpr diskread = replaceChild(ds, recordIdx, dfsLayout);
+                OwnedHqlExpr seq = createSelectorSequence();
+                OwnedHqlExpr left = createSelector(no_left, diskread, seq);
+                OwnedHqlExpr self = getSelf(wanted);
+                IHqlExpression * transform = createMappingTransform(self, left, true, errs, where);  // transforms from dfsLayout to wanted
+                HqlExprArray args;
+                args.append(*diskread.getClear());
+                args.append(*transform);
+                args.append(*seq.getClear());
+                args.append(*createAttribute(keyedAtom));
+                return createDataset(no_hqlproject, args);
+            }
+        }
+    }
+#ifdef TEST_INDEX_PROJECT
+    else if (transformed->getOperator()==no_newkeyindex)
+    {
+        OwnedHqlExpr dfsLayout = LINK(ds->queryRecord());
+        OwnedHqlExpr diskread = replaceChild(ds, recordIdx, dfsLayout);
+        OwnedHqlExpr seq = createSelectorSequence();
+        OwnedHqlExpr left = createSelector(no_left, diskread, seq);
+        OwnedHqlExpr self = getSelf(dfsLayout);
+        ECLlocation where(ds);
+        IHqlExpression * transform = createMappingTransform(self, left, true, errs, where);
+        OwnedHqlExpr ret =  createDataset(no_hqlproject, diskread.getClear(), createComma(transform, LINK(seq)));
+        ret.setown(appendAttribute(ret, keyedAtom));
+        DBGLOG("Adding implicit project %p for testing", ret.get());
+        return ret.getClear();
+    }
+#endif
+    return transformed.getClear();
+}
+
+
+//==============================================================================================================
+
+
+static HqlTransformerInfo KeyedProjectTransformerInfo("KeyedProjectTransformer");
+KeyedProjectTransformer::KeyedProjectTransformer()
+: NewHqlTransformer(KeyedProjectTransformerInfo)
+{
+}
+
+
+IHqlExpression * KeyedProjectTransformer::createTransformed(IHqlExpression * expr)
+{
+    OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
+    auto op = transformed->getOperator();
+    if (op == no_join || op == no_denormalize || op == no_denormalizegroup || op == no_keyeddistribute)
+    {
+        // Merge a KEYED PROJECT into a join, so that it can become a KEYED JOIN
+        // These may have come about through DFS lookup translation, but (at least some of) this transformation is also applicable if user put them in
+        OwnedHqlExpr rhs = LINK(transformed->queryChild(1));
+        node_operator rhsOp = rhs->getOperator();
+#if 0
+        // This code allows example hfrs4 to compile with TEST_INDEX_PROJECT set, but it's not technically correct
+        // We should be patching up the child rather than just ignoring the no_compund node.
+        if (rhsOp == no_compound)
+        {
+            rhs.set(LINK(rhs->queryChild(1)));
+            rhsOp = rhs->getOperator();
+        }
+#endif
+        if (rhsOp == no_compound_indexread)  // This may not be needed now that the code is moved earlier?
+        {
+            rhs.set(LINK(rhs->queryChild(0)));
+            rhsOp = rhs->getOperator();
+        }
+        if (op != no_keyeddistribute && queryAttributeChild(transformed, keyedAtom, 0))
+        {
+            // Full keyed joins need to skip any keyed project that may have been inserted on the KEYED attr
+            IHqlExpression *index = queryAttributeChild(transformed, keyedAtom, 0);
+            if (index->getOperator()==no_hqlproject && index->hasAttribute(keyedAtom) && !hasUnknownTransform(index))
+                transformed.setown(replaceOwnedAttribute(transformed, createExprAttribute(keyedAtom, LINK(index->queryChild(0)))));
+        }
+        if (rhsOp == no_hqlproject && rhs->hasAttribute(keyedAtom) && !hasUnknownTransform(rhs))
+        {
+            TableProjectMapper mapper(rhs);
+            IHqlExpression * selSeq = querySelSeq(transformed);
+            OwnedHqlExpr oldRight = createSelector(no_right, rhs, selSeq);
+            OwnedHqlExpr newRight = createSelector(no_right, rhs->queryChild(0), selSeq);
+            OwnedHqlExpr translatedFilter = mapper.expandFields(transformed->queryChild(2), oldRight, newRight);
+            OwnedHqlExpr expandedTransform;
+            if (op != no_keyeddistribute)
+                expandedTransform.setown(mapper.expandFields(transformed->queryChild(3), oldRight, newRight));
+            if (translatedFilter && (expandedTransform || op == no_keyeddistribute))
+            {
+                DBGLOG("KeyedProjectTransformer: Merge KEYED PROJECT into JOIN");
+                HqlExprArray args;
+                args.append(*LINK(transformed->queryChild(0)));
+                args.append(*LINK(rhs->queryChild(0)));
+                args.append(*translatedFilter.getClear());
+                if (op == no_keyeddistribute)
+                    unwindChildren(args, transformed, 3);
+                else
+                {
+                    args.append(*expandedTransform.getClear());
+                    unwindChildren(args, transformed, 4);
+                }
+                transformed.setown(transformed->clone(args));
+            }
+            if (op != no_keyeddistribute && transformed->hasAttribute(keyedAtom) && queryAttributeChild(transformed, keyedAtom, 0))
+            {
+                // Full keyed joins also need to update the transformation from RHS disk file to INDEX record, in the light of any changes
+                // to the RHS since declared. It's not clear that this should be done to user-specified KEYED PROJECTs though...
+                IHqlExpression *index = queryAttributeChild(transformed, keyedAtom, 0);
+                assertex (index->getOperator() == no_newkeyindex);
+                IHqlExpression *oldFlatFile = index->queryChild(0);
+                IHqlExpression *newFlatFile = rhs->queryChild(0);
+                IHqlExpression *oldTransform = index->queryChild(2);
+                assertex(oldTransform->isTransform());
+
+                HqlExprArray args;
+                args.append(*LINK(newFlatFile));
+                args.append(*LINK(index->queryChild(1)));
+                args.append(*mapper.expandFields(oldTransform, oldFlatFile, newFlatFile));
+                unwindChildren(args, index, 3);
+                transformed.setown(replaceOwnedAttribute(transformed, createExprAttribute(keyedAtom, index->clone(args))));
+            }
+        }
+    }
+    return transformed.getClear();
+}
+
+
+//==============================================================================================================
+
+
 static HqlTransformerInfo localUploadTransformerInfo("LocalUploadTransformer");
 LocalUploadTransformer::LocalUploadTransformer(IWorkUnit * _wu) : NewHqlTransformer(localUploadTransformerInfo)
 {
@@ -8875,9 +9102,8 @@ LocalUploadTransformer::LocalUploadTransformer(IWorkUnit * _wu) : NewHqlTransfor
 IHqlExpression * LocalUploadTransformer::createTransformed(IHqlExpression * expr)
 {
     OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
-    if (transformed->hasAttribute(localUploadAtom))
+    if (transformed->getOperator() == no_table && transformed->hasAttribute(localUploadAtom))
     {
-        assertex(transformed->getOperator() == no_table);
         IHqlExpression * filename = transformed->queryChild(0);
         IHqlExpression * mode = transformed->queryChild(2);
         assertex(filename->getOperator() == no_constant);
@@ -12343,6 +12569,14 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
     case no_record:
         {
             OwnedHqlExpr transformed = completeTransform(expr);
+            if (transformed->hasAttribute(lookupAtom))
+            {
+                StringBuffer filename;
+                IHqlExpression *dfsAttr = transformed->queryAttribute(lookupAtom);
+                if (dfsAttr)
+                    getStringValue(filename, dfsAttr->queryChild(0));
+                translator.reportError(expr, ECODETEXT(HQLERR_DFSlookupFailure), filename.str());
+            }
             if (transformed->hasAttribute(packedAtom))
                 transformed.setown(getPackedRecord(transformed));
 
@@ -13123,6 +13357,23 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         normalizeAnnotations(translator, exprs);
 
     translator.traceExpressions("after scope tag", exprs);
+    {
+        cycle_t startCycles = get_cycles_now();
+        DFSLayoutTransformer transformer(translator.queryErrorProcessor(), translator.queryCallback(), translator.queryOptions());
+        HqlExprArray transformed;
+        transformer.transformRoot(exprs, transformed);
+        replaceArray(exprs, transformed);
+        translator.noteFinishedTiming("compile:tree transform: normalize.DFStransform", startCycles);
+    }
+
+    {
+        cycle_t startCycles = get_cycles_now();
+        KeyedProjectTransformer transformer;
+        HqlExprArray transformed;
+        transformer.transformRoot(exprs, transformed);
+        replaceArray(exprs, transformed);
+        translator.noteFinishedTiming("compile:tree transform: normalize.KeyedProjectTransformer", startCycles);
+    }
 
     {
         cycle_t startCycles = get_cycles_now();
@@ -13130,7 +13381,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         HqlExprArray transformed;
         transformer.transformArray(exprs, transformed);
         replaceArray(exprs, transformed);
-        translator.noteFinishedTiming("compile:tree transform: normalize.linkedChildRows", startCycles);;
+        translator.noteFinishedTiming("compile:tree transform: normalize.linkedChildRows", startCycles);
     }
 
     if (seenLocalUpload)

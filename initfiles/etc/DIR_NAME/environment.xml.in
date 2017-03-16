@@ -232,6 +232,7 @@
                       buildSet="eclccserver"
                       daliServers="mydali"
                       description="EclCCServer process"
+                      enableEclccDali="true"
                       enableSysLog="true"
                       generatePrecompiledHeader="true"
                       maxEclccProcesses="4"
@@ -242,6 +243,7 @@
              name="s1"
              netAddress="."/>
    <Option name="maxCompileThreads" value="2"/>
+   <Option name="passDFSToEclcc" value="1"/>
   </EclCCServerProcess>
   <EspProcess build="_"
               buildSet="esp"

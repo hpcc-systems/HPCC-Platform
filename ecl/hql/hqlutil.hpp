@@ -153,9 +153,31 @@ extern HQL_API bool isOpRedundantForCompare(IHqlExpression * expr);
 
 extern HQL_API bool isLengthPreservingCast(IHqlExpression * expr);
 
+/**
+ * Report fields that are present in one record but not in another
+ *
+ * @param newRecord     The record in which to search
+ * @param oldRecord     The record providing the fields to search for
+ * @param errs          Where to report errors
+ * @param location      Location to use when reporting errors
+ */
+extern HQL_API void reportDroppedFields(IHqlExpression * newRecord, IHqlExpression * oldRecord, IErrorReceiver &err, ECLlocation &location);
+
 extern HQL_API IHqlExpression * createTransformFromRow(IHqlExpression * expr);
 extern HQL_API IHqlExpression * createNullTransform(IHqlExpression * record);
-extern HQL_API IHqlExpression * createMappingTransform(IHqlExpression * selfSelector, IHqlExpression * inSelector);
+
+/**
+ * Create a transform that maps from a row inSelector to a target selfSelector. If replaceMissingWithDefault is true,
+ * the source can be a subset of the target, and the default values for the fields are used to initialize the target fields.
+ * If false, all target fields must be present in source.
+ *
+ * @param selfSelector  The target for the transform
+ * @param inSelector    The source row for the transform
+ * @param replaceMissingWithDefault  If true, use default value for target fields not present in source
+ * @param err           Where to report errors
+ * @param location      Location to use when reporting errors
+ */
+extern HQL_API IHqlExpression * createMappingTransform(IHqlExpression * selfSelector, IHqlExpression * inSelector, bool replaceMissingWithDefault, IErrorReceiver &err, ECLlocation &location);
 
 extern HQL_API IHqlExpression * getFailCode(IHqlExpression * failExpr);
 extern HQL_API IHqlExpression * getFailMessage(IHqlExpression * failExpr, bool nullIfOmitted);
@@ -189,6 +211,13 @@ extern HQL_API IHqlExpression * convertSetResultToExtract(IHqlExpression * setRe
 extern HQL_API IHqlExpression * removeDatasetWrapper(IHqlExpression * ds);
 extern HQL_API void gatherGraphReferences(HqlExprCopyArray & graphs, IHqlExpression * value, bool externalIds);
 
+/**
+ * Get a list of all virtual fields from a record
+ *
+ * @param virtuals      The receiving array
+ * @param record        The record in which to search
+ */
+extern HQL_API void getVirtualFields(HqlExprArray & virtuals, IHqlExpression * record);
 extern HQL_API bool containsVirtualFields(IHqlExpression * record);
 extern HQL_API IHqlExpression * removeVirtualFields(IHqlExpression * record);
 extern HQL_API void unwindTransform(HqlExprCopyArray & exprs, IHqlExpression * transform);

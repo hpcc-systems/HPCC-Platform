@@ -1079,7 +1079,10 @@ IHqlExpression * ComplexImplicitProjectInfo::createOutputProject(IHqlExpression 
     OwnedHqlExpr seq = createSelectorSequence();
     OwnedHqlExpr left = createSelector(no_left, ds, seq);
     OwnedHqlExpr self = getSelf(queryOutputRecord());
-    IHqlExpression * transform = createMappingTransform(self, left);
+    MultiErrorReceiver errs;
+    ECLlocation dummyLocation(0, 0, 0, NULL);  // MORE - shame there is not a global one that could be used for this?
+    IHqlExpression * transform = createMappingTransform(self, left, false, errs, dummyLocation);
+    assertex(!errs.errCount());
     if (ds->isDataset())
         return createDataset(no_hqlproject, LINK(ds), createComma(transform, LINK(seq)));
     else

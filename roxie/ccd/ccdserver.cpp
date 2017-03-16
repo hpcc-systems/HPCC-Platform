@@ -25207,7 +25207,7 @@ public:
 
         // called from front puller thread
         // buffer up an IndexRead request
-        if (helper.leftCanMatch(row))
+        if (keySet && helper.leftCanMatch(row))
         {
             RtlDynamicRowBuilder extractedBuilder(indexReadAllocator);
             unsigned indexReadSize = helper.extractIndexReadFields(extractedBuilder, row);
@@ -26021,7 +26021,7 @@ public:
     {
         // called from front puller thread
         // buffer up an IndexRead request
-        if (helper.leftCanMatch(row) && keySet)
+        if (keySet && helper.leftCanMatch(row))
         {
             RtlDynamicRowBuilder extractBuilder(indexReadAllocator);
             unsigned indexReadRecordSize = helper.extractIndexReadFields(extractBuilder, row);

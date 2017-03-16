@@ -37,10 +37,13 @@ include_directories (
          ./../../common/workunit 
          ./../../common/deftype 
          ./../../system/include 
-         ./../../ecl/hql 
+         ./../../ecl/hql
+         ./../../dali/base
+         ./../../system/mp
          ./../../rtl/include 
          ./../../system/jlib 
          ./../../common/remote
+         ./../../system/security/shared
          ./../../system/security/zcrypt
     )
 
