@@ -912,9 +912,6 @@
             <para>Press the <emphasis role="bold">Next</emphasis>
             button.</para>
 
-            <para>Alternatively, you could find the IP addresses using Auto
-            Discovery by selecting the Auto Discovery button.</para>
-
             <para>Now you will define how many nodes to use for the Roxie and
             Thor clusters.</para>
           </listitem>
