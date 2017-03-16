@@ -1577,7 +1577,7 @@ public:
 unsigned CRowStreamWriter::wrnum=0;
 #endif
 
-IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor)
+IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned flags, ICompressor *compressor, size32_t compressorBlkSz)
 {
     OwnedIFileIO iFileIO;
     if (TestRwFlag(flags, rw_compress))
@@ -1585,7 +1585,10 @@ IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned fla
         size32_t fixedSize = rowIf->queryRowMetaData()->querySerializedDiskMeta()->getFixedSize();
         if (fixedSize && TestRwFlag(flags, rw_grouped))
             ++fixedSize; // row writer will include a grouping byte
-        iFileIO.setown(createCompressedFileWriter(iFile, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags)));
+        ICompressedFileIO *compressedFileIO = createCompressedFileWriter(iFile, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, getCompMethod(flags));
+        if (compressorBlkSz)
+            compressedFileIO->setBlockSize(compressorBlkSz);
+        iFileIO.setown(compressedFileIO);
     }
     else
         iFileIO.setown(iFile->open((flags & rw_extend)?IFOwrite:IFOcreate));
@@ -1595,7 +1598,7 @@ IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned fla
     return createRowWriter(iFileIO, rowIf, flags);
 }
 
-IExtRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned flags)
+IExtRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned flags, size32_t compressorBlkSz)
 {
     if (TestRwFlag(flags, rw_compress))
         throw MakeStringException(0, "Unsupported createRowWriter flags");
