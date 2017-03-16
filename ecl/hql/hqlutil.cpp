@@ -1306,7 +1306,7 @@ IHqlExpression * getNormalizedFilename(IHqlExpression * filename)
 {
     NullErrorReceiver errorProcessor;
     OwnedHqlExpr folded = foldHqlExpression(errorProcessor, filename, NULL, HFOloseannotations);
-    return lowerCaseHqlExpr(folded);
+    return normalizeFilenameExpr(folded);
 }
 
 bool canBeSlidingJoin(IHqlExpression * expr)

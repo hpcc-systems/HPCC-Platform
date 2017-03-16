@@ -393,7 +393,7 @@ void NewThorStoredReplacer::doAnalyse(IHqlExpression * expr)
         else if ((kind == constAtom) || (kind == storedAtom))
         {
             //assume there won't be many of these... otherwise we should use a hash table
-            OwnedHqlExpr lowerName = lowerCaseHqlExpr(expr->queryChild(1));
+            OwnedHqlExpr lowerName = getLowerCaseConstantExpr(expr->queryChild(1));
             IHqlExpression * searchExpr = lowerName->queryBody();
             IHqlExpression * newValue = expr->queryChild(2);
             //Use lowerName->queryBody() to remove named symbols/location annotations etc.
@@ -465,7 +465,7 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
                 {
                 case no_stored:
                     {
-                        OwnedHqlExpr storedName = lowerCaseHqlExpr(cur.queryChild(0));
+                        OwnedHqlExpr storedName = getLowerCaseConstantExpr(cur.queryChild(0));
                         IHqlExpression * searchName = storedName->queryBody();
                         unsigned match = storedNames.find(*searchName);
                         if (match != NotFound)
@@ -482,7 +482,7 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
                 case no_attr_expr:
                     if (cur.queryName() == labeledAtom)
                     {
-                        OwnedHqlExpr storedName = lowerCaseHqlExpr(cur.queryChild(0));
+                        OwnedHqlExpr storedName = getLowerCaseConstantExpr(cur.queryChild(0));
                         IHqlExpression * searchName = storedName->queryBody();
                         unsigned match = storedNames.find(*searchName);
                         if (match != NotFound)
@@ -5232,7 +5232,7 @@ IHqlExpression * GlobalAttributeInfo::createSetValue(IHqlExpression * value, IHq
 
 IHqlExpression * GlobalAttributeInfo::getStoredKey()
 {
-    return createAttribute(nameAtom, LINK(sequence), lowerCaseHqlExpr(originalLabel));
+    return createAttribute(nameAtom, LINK(sequence), getLowerCaseConstantExpr(originalLabel));
 }
 
 void GlobalAttributeInfo::setCluster(IHqlExpression * expr)
@@ -12753,7 +12753,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         {
             HqlExprArray children;
             OwnedHqlExpr name = transform(expr->queryChild(0));
-            children.append(*lowerCaseHqlExpr(name));
+            children.append(*getLowerCaseConstantExpr(name));
             return completeTransform(expr, children);
         }
     case no_merge:
