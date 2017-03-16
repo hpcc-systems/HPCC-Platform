@@ -273,53 +273,56 @@ static const char *getAccessibleEspServerURL(const char *param, IConstWorkUnit *
     {
         Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
         Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
-        StringBuffer wsfsurl;
-        if (env.get()) {
-            Owned<IPropertyTreeIterator> iter1 = env->getElements("Software/EspProcess");
-            ForEach(*iter1)
+
+        if (env.get())
+        {
+            StringBuffer wsFSUrl;
+            StringBuffer espInstanceComputerName;
+            StringBuffer bindingProtocol;
+            StringBuffer instanceAddressXPath;
+            StringBuffer instanceAddress;
+
+            Owned<IPropertyTreeIterator> espProcessIter = env->getElements("Software/EspProcess");
+            ForEach(*espProcessIter)
             {
-                Owned<IPropertyTreeIterator> iter2 = iter1->query().getElements("EspBinding");
-                ForEach(*iter2)
+                Owned<IPropertyTreeIterator> espBindingIter = espProcessIter->query().getElements("EspBinding");
+                ForEach(*espBindingIter)
                 {
-                    Owned<IPropertyTreeIterator> iter3 = iter2->query().getElements("AuthenticateFeature");
-                    ForEach(*iter3)
+                    espBindingIter->query().getProp("@service",wsFSUrl.clear());
+                    if (wsFSUrl.length() && (stricmp(wsFSUrl.str(),"EclWatch")==0 || stricmp(wsFSUrl.str(),"ws_fs")==0))
                     {
-                        // if any enabled feature has service ws_fs then use this binding
-                        if (iter3->query().getPropBool("@authenticate")&&
-                            iter3->query().getProp("@service",wsfsurl.clear())&&
-                            (strcmp(wsfsurl.str(),"ws_fs")==0)){
-                            if (iter2->query().getProp("@protocol",wsfsurl.clear())) {
-                                wsfsurl.append("://");
-                                StringBuffer espname;
-                                if (iter1->query().getProp("@name",espname)) {
-                                    StringBuffer espinst;
-                                    if (iter1->query().getProp("Instance[1]/@computer",espinst)) {
-                                        StringBuffer ipq;
-                                        if (env->getProp(ipq.appendf("Hardware/Computer[@name=\"%s\"]/@netAddress",espinst.str()).str(),wsfsurl))
-                                        {
-                                            wsfsurl.append(':').append(iter2->query().getPropInt("@port",8010)).append("/FileSpray"); // FileSpray seems to be fixed
-                                            addConfiguredWsFSUrl(wsfsurl.str());
-                                            break; //There can be multiple AuthFeatures per ESP Instance
-                                        }
+                        if (espBindingIter->query().getProp("@protocol",bindingProtocol.clear()))
+                        {
+                            Owned<IPropertyTreeIterator> espInstanceIter = espProcessIter->query().getElements("Instance");
+                            ForEach(*espInstanceIter)
+                            {
+                                if (espInstanceIter->query().getProp("@computer",espInstanceComputerName.clear()))
+                                {
+                                    instanceAddressXPath.setf("Hardware/Computer[@name=\"%s\"]/@netAddress",espInstanceComputerName.str());
+                                    if (env->getProp(instanceAddressXPath.str(),instanceAddress.clear()))
+                                    {
+                                        wsFSUrl.setf("%s://%s:%d/FileSpray", bindingProtocol.str(), instanceAddress.str(), espBindingIter->query().getPropInt("@port",8010)); // FileSpray seems to be fixed
+                                        addConfiguredWsFSUrl(wsFSUrl.str());
                                     }
                                 }
                             }
                         }
-                    }//AuthenticateFeature
+                    }//EclWatch || ws_fs binding
                 }//ESPBinding
             }//ESPProcess
         }
+
         if (isUrlListEmpty())
             throw MakeStringException(-1,"Could not find any WS FileSpray in the target HPCC configuration.");
     }
 
-    const char * wsfsurl = getNextAliveWsFSURL(wu);
-    if (!wsfsurl||!*wsfsurl)
+    const char * nextWsFSUrl = getNextAliveWsFSURL(wu);
+    if (!nextWsFSUrl||!*nextWsFSUrl)
         throw MakeStringException(-1,"Could not contact any of the configured WS FileSpray instances, check HPCC configuration and system health.");
 
-    PROGLOG("FileServices: Targeting ESP WsFileSpray URL: %s", wsfsurl);
+    PROGLOG("FileServices: Targeting ESP WsFileSpray URL: %s", nextWsFSUrl);
 
-    return wsfsurl;
+    return nextWsFSUrl;
 }
 
 StringBuffer & constructLogicalName(IConstWorkUnit * wu, const char * partialLogicalName, StringBuffer & result)
