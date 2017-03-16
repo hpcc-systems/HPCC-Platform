@@ -4929,14 +4929,14 @@ public:
                 }
                 break;
             }
-#if 0
-            //MORE: These should be constant folded , otherwise it can mess up the graph commoning. (see outmod.xhql)
-        case no_crc:
-        case no_hash:
-        case no_hash32:
-        case no_hash64:
-            return LINK(expr);
-#endif
+        case no_selectnth:
+        case NO_AGGREGATE:
+        case no_createset:
+            //Selectively check to see if this subtree needs to be transformed - only transform if it contains
+            //the selector being substituted, or if it needs transforming to update selectors that have changed
+            if (!expr->usesSelector(selector) && !needToUpdateSelectors(expr))
+                return LINK(expr);
+            break;
         }
         if (expr->isConstant())
             return LINK(expr);

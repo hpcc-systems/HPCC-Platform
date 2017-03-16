@@ -493,6 +493,12 @@ protected:
 
 protected:
     void setMappingOnly(IHqlExpression * oldValue, IHqlExpression * newValue);
+    /*
+     * Returns true if the expression needs to be transformed because selectors it depends on have been transformed.
+     * Used to avoiding walking sections of the expression graph that will not be changed.  It isn't free, so should be
+     * used selectively.
+     */
+    bool needToUpdateSelectors(IHqlExpression * expr);
 
 protected:
     unsigned            pass;
