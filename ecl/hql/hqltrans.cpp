@@ -140,6 +140,7 @@ void HqlTransformStats::endNewTransform(IHqlExpression * expr, IHqlExpression * 
 
 void HqlTransformStats::add(const HqlTransformStats & other) 
 { 
+#ifdef TRANSFORM_STATS_DETAILS
     numAnalyse += other.numAnalyse;
     numAnalyseCalls += other.numAnalyseCalls;
     numTransforms += other.numTransforms;
@@ -152,6 +153,7 @@ void HqlTransformStats::add(const HqlTransformStats & other)
         maxDepth = other.maxDepth;
     if (maxGlobalDepth < other.maxGlobalDepth)
         maxGlobalDepth = other.maxGlobalDepth;
+#endif
 #ifdef TRANSFORM_STATS_TIME
     totalTime += other.totalTime;
     childTime += other.childTime;
@@ -163,17 +165,27 @@ void HqlTransformStats::add(const HqlTransformStats & other)
 #endif
 }
 
+void HqlTransformStats::gatherTransformStats(IStatisticTarget & target, const char * scope) const
+{
+#ifdef TRANSFORM_STATS_TIME
+    target.addStatistic(SSTcompilestage, scope, StTimeTotalExecute, nullptr, cycle_to_nanosec(totalTime), 1, 0, StatsMergeSum);
+    target.addStatistic(SSTcompilestage, scope, StTimeLocalExecute, nullptr, cycle_to_nanosec(totalTime-(childTime-recursiveTime)), 1, 0, StatsMergeSum);
+#endif
+}
+
 StringBuffer & HqlTransformStats::getText(StringBuffer & out) const
 { 
 #ifdef TRANSFORM_STATS_TIME
-    out.append(" ti:").append(totalTime-(childTime-recursiveTime)).append(" tt:").append(totalTime).append(" tr:").append(recursiveTime);
+    out.append(" ti:").append(cycle_to_millisec(totalTime-(childTime-recursiveTime))).append(" tt:").append(cycle_to_millisec(totalTime)).append(" tr:").append(cycle_to_millisec(recursiveTime));
 #endif
+#ifdef TRANSFORM_STATS_DETAILS
     out.append(" a:").append(numAnalyse);
     out.append(" ac:").append(numAnalyseCalls);
     out.append(" t:").append(numTransforms).append(" ts:").append(numTransformsSame);
     out.append(" tc:").append(numTransformCalls).append(" tcs:").append(numTransformsSame+numTransformCallsSame);
     out.append(" ts:").append(numTransformSelects).append(" tss:").append(numTransformSelectsSame);
     out.append(" md:").append(maxDepth).append(" mgd:").append(maxGlobalDepth);
+#endif
 
 #ifdef TRANSFORM_STATS_OPS
     if (numAnalyse || numTransforms)
@@ -212,10 +224,25 @@ HqlTransformerInfo::HqlTransformerInfo(const char * _name)
 
 HqlTransformerInfo::~HqlTransformerInfo()
 {
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_ONEXIT
+ #ifdef TRANSFORM_STATS
     StringBuffer s;
     if (getStatsText(s))
         printf("%s\n", s.str());
+ #endif
+#endif
+}
+
+void HqlTransformerInfo::gatherTransformStats(IStatisticTarget & target) const
+{
+#ifdef TRANSFORM_STATS
+    if (numInstances)
+    {
+        StringBuffer scope;
+        scope.append("compile:transform:").append(name);
+        target.addStatistic(SSTcompilestage, scope, StNumStarted, nullptr, numInstances, 1, 0, StatsMergeSum);
+        stats.gatherTransformStats(target, scope);
+    }
 #endif
 }
 
@@ -255,6 +282,18 @@ void dbglogTransformStats(bool reset)
                 cur->resetStats();
         }
     }
+}
+
+void gatherTransformStats(IStatisticTarget & target)
+{
+    ForEachItemIn(i, allTransformers)
+        allTransformers.item(i)->gatherTransformStats(target);
+}
+
+void clearTransformStats()
+{
+    ForEachItemIn(i, allTransformers)
+        allTransformers.item(i)->resetStats();
 }
 
 
@@ -375,19 +414,20 @@ static void insertScopeSymbols(IHqlScope * newScope, HqlExprArray const & symbol
 
 //---------------------------------------------------------------------------
 
-static HqlTransformerBase * activeTransformer;      // not thread safe
+static __thread HqlTransformerBase * activeTransformer = nullptr;
 
 #ifdef TRANSFORM_STATS_TIME
 void HqlTransformerBase::beginTime()
 {
-    startTime = msTick();
+    startTime = get_cycles_now();
     prev = activeTransformer;
     activeTransformer = this;
 }
 
 void HqlTransformerBase::endTime()
 {
-    stats.totalTime = (msTick() - startTime);
+    assertex(activeTransformer == this);
+    stats.totalTime = (get_cycles_now() - startTime);
     if (prev)
         prev->noteChildTime(stats.totalTime, &info==&prev->info);
     activeTransformer = prev;
@@ -765,14 +805,14 @@ void QuickHqlTransformer::analyseArray(const HqlExprArray & exprs)
 
 IHqlExpression * QuickHqlTransformer::transform(IHqlExpression * expr)
 {
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
     stats.beginTransform();
 #endif
 
     IHqlExpression * match = static_cast<IHqlExpression *>(expr->queryTransformExtra());
     if (match && (match != alreadyVisitedMarker))
     {
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
         stats.endMatchTransform(expr, match);
 #endif
         return LINK(match);
@@ -780,7 +820,7 @@ IHqlExpression * QuickHqlTransformer::transform(IHqlExpression * expr)
 
     IHqlExpression * ret = createTransformed(expr);
 
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
     stats.endNewTransform(expr, ret);
 #endif
     expr->setTransformExtra(ret);
@@ -1172,7 +1212,7 @@ bool NewHqlTransformer::alreadyVisited(ANewTransformInfo * extra)
     if (extra->lastPass == pass)
         return true;
 
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
     stats.numAnalyse++;
 #endif
 
@@ -1251,7 +1291,7 @@ void NewHqlTransformer::quickAnalyseTransform(IHqlExpression * expr)
 
 void NewHqlTransformer::analyseExpr(IHqlExpression * expr)
 {
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
     stats.numAnalyseCalls++;
 #endif
 
@@ -1558,7 +1598,7 @@ IHqlExpression * NewHqlTransformer::createTransformed(IHqlExpression * expr)
 
 IHqlExpression * NewHqlTransformer::transformSelector(IHqlExpression * expr)
 {
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
     stats.numTransformSelects++;
 #endif
 
@@ -1566,7 +1606,7 @@ IHqlExpression * NewHqlTransformer::transformSelector(IHqlExpression * expr)
     IHqlExpression * transformed = queryAlreadyTransformedSelector(expr);
     if (transformed)
     {
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
         if (expr ==  transformed)
             stats.numTransformSelectsSame++;
 #endif
@@ -1579,7 +1619,7 @@ IHqlExpression * NewHqlTransformer::transformSelector(IHqlExpression * expr)
         transformed = LINK(transformed->queryNormalizedSelector());
     else
         transformed = createTransformedSelector(expr);
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
     if (expr ==  transformed)
         stats.numTransformSelectsSame++;
 #endif
@@ -1787,7 +1827,7 @@ void NewHqlTransformer::setTransformedSelector(IHqlExpression * expr, IHqlExpres
 /* In expr: not linked. Return: linked */
 IHqlExpression * NewHqlTransformer::transform(IHqlExpression * expr)
 {
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
     stats.beginTransform();
 #endif
 
@@ -1797,7 +1837,7 @@ IHqlExpression * NewHqlTransformer::transform(IHqlExpression * expr)
 #ifdef _DEBUG
         assertex(!(expr->isDatarow() && transformed->isDataset()));         // spot converting RIGHT to dataset without active row wrapper.
 #endif
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
         stats.endMatchTransform(expr, transformed);
 #endif
         return LINK(transformed);
@@ -1811,7 +1851,7 @@ IHqlExpression * NewHqlTransformer::transform(IHqlExpression * expr)
     activeExprStack.pop();
 #endif
 
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
     stats.endNewTransform(expr, transformed);
 #endif
 

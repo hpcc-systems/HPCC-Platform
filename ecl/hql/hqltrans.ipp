@@ -33,10 +33,13 @@
 
 typedef MapOwnedToOwned<IHqlExpression, IHqlExpression> MapOwnedHqlToOwnedHql;
 
-//NOTE: eclcc needs to be run with the -m option for the summary to be output
+//NOTE: eclcc needs to be run with the --leakcheck option for the summary to be output to stdout with TRANSFORM_STATS_ONEXIT option
+
 //#define TRANSFORM_STATS
-//#define TRANSFORM_STATS_OPS
 //#define TRANSFORM_STATS_TIME
+//#define TRANSFORM_STATS_DETAILS
+//#define TRANSFORM_STATS_ONEXIT
+//#define TRANSFORM_STATS_OPS
 //#define TRANSFORM_STATS_MEMORY
 //#define ALLOW_TRANSFORM_TRACING
 
@@ -46,6 +49,7 @@ public:
     HqlTransformStats();
 
     void add(const HqlTransformStats & other);
+    void gatherTransformStats(IStatisticTarget & target, const char * scope) const;
     StringBuffer & getText(StringBuffer & out) const;
 
     void clear();
@@ -63,9 +67,9 @@ public:
     unsigned __int64 numTransformSelects;
     unsigned __int64 numTransformSelectsSame;
 #ifdef TRANSFORM_STATS_TIME
-    unsigned __int64 totalTime;
-    unsigned __int64 childTime;
-    unsigned __int64 recursiveTime;
+    cycle_t totalTime;
+    cycle_t childTime;
+    cycle_t recursiveTime;
 #endif
     unsigned depth;
     unsigned maxDepth;
@@ -89,6 +93,7 @@ public:
         stats.add(_other);
     }
 #endif
+    void gatherTransformStats(IStatisticTarget & target) const;
     bool getStatsText(StringBuffer & s) const;
     void resetStats();
 
@@ -157,7 +162,7 @@ public:
 #ifdef TRANSFORM_STATS_TIME
     void beginTime();
     void endTime();
-    void noteChildTime(unsigned __int64 childTime, bool recursive)      
+    void noteChildTime(cycle_t childTime, bool recursive)
     { 
         stats.childTime += childTime; 
         if (recursive)
@@ -1220,6 +1225,8 @@ extern HQL_API IHqlExpression * convertWorkflowToImplicitParmeters(HqlExprArray 
 extern HQL_API IHqlExpression * quickFullReplaceExpression(IHqlExpression * expr, IHqlExpression * oldValue, IHqlExpression * newValue);
 extern HQL_API IHqlExpression * quickFullReplaceExpressions(IHqlExpression * expr, const HqlExprArray & oldValues, const HqlExprArray & newValues);
 extern HQL_API void dbglogTransformStats(bool reset);
+extern HQL_API void gatherTransformStats(IStatisticTarget & target);
+extern HQL_API void clearTransformStats();
 
 #ifdef OPTIMIZE_TRANSFORM_ALLOCATOR
 size32_t beginTransformerAllocator();
