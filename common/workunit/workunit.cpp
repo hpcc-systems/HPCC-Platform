@@ -6836,7 +6836,7 @@ unsigned CLocalWorkUnit::getApplicationValueCount() const
     
 }
 
-StringBuffer &appendPTreeOpenTag(StringBuffer &s, IPropertyTree *tree, const char *name, unsigned indent)
+StringBuffer &appendPTreeOpenTag(StringBuffer &s, IPropertyTree *tree, const char *name, unsigned indent, bool hidePasswords)
 {
     appendXMLOpenTag(s, name, NULL, false);
     Owned<IAttributeIterator> attrs = tree->getAttributes(true);
@@ -6847,6 +6847,8 @@ StringBuffer &appendPTreeOpenTag(StringBuffer &s, IPropertyTree *tree, const cha
         bool doindent = false;
         ForEach(*attrs)
         {
+            if (hidePasswords && streq(attrs->queryName(), "@token"))
+                continue;
             if (doindent)
                 s.append('\n').appendN(attributeindent, ' ');
             else if (count > 3)
@@ -6870,7 +6872,7 @@ IStringVal &CLocalWorkUnit::getXmlParams(IStringVal &str, bool hidePasswords) co
         toXML(paramTree, xml);
     else
     {
-        appendPTreeOpenTag(xml.append(' '), paramTree, "Parameters", 0).append('\n');
+        appendPTreeOpenTag(xml.append(' '), paramTree, "Parameters", 0, false).append('\n');
 
         Owned<IPropertyTreeIterator> elems = paramTree->getElements("*");
         ForEach(*elems)
@@ -8944,7 +8946,7 @@ void exportWorkUnitToXMLWithHiddenPasswords(IPropertyTree *p, IIOStream &out, un
     if (!name)
         name = "__unnamed__";
     StringBuffer temp;
-    writeStringToStream(out, appendPTreeOpenTag(temp, p, name, 1));
+    writeStringToStream(out, appendPTreeOpenTag(temp, p, name, 1, true));
 
     Owned<IPropertyTreeIterator> elems = p->getElements("*", iptiter_sort);
     ForEach(*elems)
@@ -8952,7 +8954,7 @@ void exportWorkUnitToXMLWithHiddenPasswords(IPropertyTree *p, IIOStream &out, un
         IPropertyTree &elem = elems->query();
         if (streq(elem.queryName(), "Parameters"))
         {
-            writeStringToStream(out, appendPTreeOpenTag(temp.clear().append(' '), &elem, "Parameters", 2).append('\n'));
+            writeStringToStream(out, appendPTreeOpenTag(temp.clear().append(' '), &elem, "Parameters", 2, false).append('\n'));
             Owned<IPropertyTreeIterator> params = elem.getElements("*", iptiter_sort);
             ForEach(*params)
             {
@@ -8970,7 +8972,7 @@ void exportWorkUnitToXMLWithHiddenPasswords(IPropertyTree *p, IIOStream &out, un
         }
         else if (streq(elem.queryName(), "Variables"))
         {
-            writeStringToStream(out, appendPTreeOpenTag(temp.clear().append(' '), &elem, "Variables", 2).append('\n'));
+            writeStringToStream(out, appendPTreeOpenTag(temp.clear().append(' '), &elem, "Variables", 2, false).append('\n'));
             Owned<IPropertyTreeIterator> vars = elem.getElements("*", iptiter_sort);
             ForEach(*vars)
             {
@@ -9026,13 +9028,13 @@ extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, 
             p.setown(ewu->getUnpackedTree(includeProgress));
         else
             p.set(ewu->queryPTree());
-        if (hidePasswords && p->hasProp("Variables/Variable[Format/@password]"))
+        if (hidePasswords)
             return exportWorkUnitToXMLWithHiddenPasswords(p, str);
-        toXML(p, str, 0, XML_Format|XML_SortTags);
+        else
+            return toXML(p, str, 0, XML_Format|XML_SortTags);
     }
     else
-        str.append("Unrecognized workunit format");
-    return str;
+        return str.append("Unrecognized workunit format");
 }
 
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords, bool splitStats)
@@ -9045,7 +9047,7 @@ extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const
             p.setown(ewu->getUnpackedTree(includeProgress));
         else
             p.set(ewu->queryPTree());
-        if (hidePasswords && p->hasProp("Variables/Variable[Format/@password]"))
+        if (hidePasswords)
             return exportWorkUnitToXMLFileWithHiddenPasswords(p, filename, extraXmlFlags);
         if (splitStats)
         {
