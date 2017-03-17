@@ -33,6 +33,7 @@
 #include "hqlplugins.hpp"
 #include "workunit.hpp"
 #include "eclhelper.hpp"
+#include "jhash.hpp"
 
 extern "C" {
 FILESERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);

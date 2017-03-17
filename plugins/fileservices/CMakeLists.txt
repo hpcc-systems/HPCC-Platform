@@ -57,6 +57,7 @@ include_directories (
          ./../../rtl/eclrtl 
          ./../../dali/dfu 
          ./../../dali/dfuplus
+         ./../../system/jlib
             )
 
 ADD_DEFINITIONS( -D_USRDLL -DFILESERVICES_EXPORTS )
