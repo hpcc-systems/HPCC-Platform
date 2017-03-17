@@ -21364,7 +21364,17 @@ public:
                 varFileInfo.setown(resolveLFN(fileName, isOpt));
                 numParts = 0;
                 if (varFileInfo)
+                {
                     numParts = varFileInfo->getNumParts();
+                    const IPropertyTree *options =  varFileInfo->queryProperties();
+                    if (options)
+                    {
+                        size32_t dfsSize = options->getPropInt("@recordSize");
+                        CachedOutputMetaData diskMeta(helper.queryDiskRecordSize()->querySerializedDiskMeta());
+                        if (dfsSize && diskMeta.isFixedSize() && dfsSize != diskMeta.getFixedSize())
+                            throw MakeStringException(0, "Published record size %d for file %s does not match coded record size %d", dfsSize, fileName.get(), diskMeta.getFixedSize());
+                    }
+                }
             }
             if (!numParts)
             {
@@ -22371,6 +22381,17 @@ public:
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
+            if (datafile)
+            {
+                const IPropertyTree *options =  datafile->queryProperties();
+                if (options)
+                {
+                    size32_t dfsSize = options->getPropInt("@recordSize");
+                    CachedOutputMetaData diskMeta(helper->queryDiskRecordSize()->querySerializedDiskMeta());
+                    if (dfsSize && diskMeta.isFixedSize() && dfsSize != diskMeta.getFixedSize())
+                        throw MakeStringException(0, "Published record size %d for file %s does not match coded record size %d", dfsSize, fileName.get(), diskMeta.getFixedSize());
+                }
+            }
             bool isSimple = (datafile && datafile->getNumParts()==1 && !_queryFactory.queryOptions().disableLocalOptimizations);
             if (isLocal || isSimple)
             {
