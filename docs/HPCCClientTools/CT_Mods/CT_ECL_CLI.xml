@@ -974,6 +974,15 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 </row>
 
                 <row>
+                  <entry>--poll</entry>
+
+                  <entry>Submits a job asynchronously. Polls the server until
+                  the state of the workunit changes to completed. It then
+                  retrieves the results. <para>Combine with the --wait option
+                  to limit the time that it polls. </para></entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -2472,7 +2481,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry> --daliip=&lt;ip&gt;</entry>
+                  <entry>--daliip=&lt;ip&gt;</entry>
 
                   <entry>IP of the remote Dali to use for logical file
                   lookups</entry>
@@ -2505,7 +2514,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--update-super-files </entry>
+                  <entry>--update-super-files</entry>
 
                   <entry>Update local DFS superfiles if remote DALI has
                   changed</entry>
@@ -2623,7 +2632,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>partname</entry>
 
-                  <entry>Name of the part to retrieve </entry>
+                  <entry>Name of the part to retrieve</entry>
                 </row>
 
                 <row>
@@ -2726,7 +2735,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
               <row>
                 <entry>target</entry>
 
-                <entry>Name of target to use </entry>
+                <entry>Name of target to use</entry>
               </row>
 
               <row>
