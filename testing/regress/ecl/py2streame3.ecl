@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,28 +16,29 @@
 ############################################################################## */
 
 //class=embedded
-
-//nothor
-
-//Thor doesn't handle CATCH properly, see HPCC-9059
-//skip type==thorlcr TBD
+//class=python2
 
 IMPORT Python;
 
-integer testThrow(integer val) := EMBED(Python)
-raise Exception('Error from Python')
+childrec := RECORD
+   string name => unsigned value;
+END;
+
+titleRec := { string title };
+titles := dataset(['', 'Mr. ', 'Rev. '], titleRec);
+
+// Test defining a transform
+transform(childrec) testTransformTitle(titleRec inrec, unsigned lim) := EMBED(Python)
+  return (inrec.title, lim)
 ENDEMBED;
 
-// Can't catch an expression(only a dataset)
-d := dataset([{ 1, '' }], { integer a, string m} ) : stored('nofold');
+// Test defining a transform
+//MORE: The embed function shpo
+transform(childrec) testTransformTitle2(_linkcounted_ row(titleRec) inrec, unsigned lim) := EMBED(Python)
+  return (inrec.title, lim)
+ENDEMBED;
 
-d t := transform
-  self.a := FAILCODE;
-  self.m := FAILMESSAGE;
-  self := [];
-end;
-
-catch(d(testThrow(a) = a), onfail(t));
-
-
-
+sequential(
+output(project(titles, testTransformTitle(LEFT, 10)));
+output(project(titles, testTransformTitle2(LEFT, 10)));
+);
