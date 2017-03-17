@@ -259,6 +259,25 @@ IHqlExpression * getLocalSequenceNumber()       { return LINK(cachedLocalSequenc
 IHqlExpression * getStoredSequenceNumber()      { return LINK(cachedStoredSequenceNumber); }
 IHqlExpression * getOnceSequenceNumber()        { return createConstant(signedType->castFrom(true, (__int64)ResultSequenceOnce)); }
 
+//Does the record (or a base record) contain an ifblock?  This could be tracking using a flag if it started being called a lot.
+bool recordContainsIfBlock(IHqlExpression * record)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_ifblock:
+            return true;
+        case no_record:
+            if (recordContainsIfBlock(cur))
+                return true;
+            break;
+        }
+    }
+    return false;
+}
+
 //---------------------------------------------------------------------------
 
 bool containsAggregate(IHqlExpression * expr)
@@ -8442,7 +8461,6 @@ protected:
     bool expandAssignChildren(IHqlExpression * expr);
     bool expandAssignElement(IHqlExpression * expr);
 
-    bool doBuildTransformRow(IHqlExpression * transform);
     bool processElement(IHqlExpression * expr, IHqlExpression * parentSelector);
     bool processRecord(IHqlExpression * record, IHqlExpression * parentSelector);
 
@@ -8599,7 +8617,7 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
                         IHqlExpression * transforms = rhs->queryChild(0);
                         ForEachChild(i, transforms)
                         {
-                            if (!buildTransformRow(transforms->queryChild(i)))
+                            if (!createConstantRow(out, transforms->queryChild(i)))
                                 return false;
                         }
                         byte * patchPos = (byte *)out.bufferBase() + patchOffset;
@@ -8732,19 +8750,11 @@ bool ConstantRowCreator::processRecord(IHqlExpression * record, IHqlExpression *
 
 bool ConstantRowCreator::buildTransformRow(IHqlExpression * transform)
 {
-    HqlExprCopyArray savedAssigns;
-    savedAssigns.swapWith(assigns);
-    bool result = doBuildTransformRow(transform);
-    savedAssigns.swapWith(assigns);
-    return result;
-}
-
-bool ConstantRowCreator::doBuildTransformRow(IHqlExpression * transform)
-{
     expectedIndex = 0;
     if (!expandAssignChildren(transform))
         return false;
-    //if (recordContainsIfBlock(record))
+
+    if (recordContainsIfBlock(transform->queryRecord()))
         mapper.setown(new NestedHqlMapTransformer);
 
     unsigned savedLength = out.length();
