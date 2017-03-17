@@ -75,6 +75,7 @@ private:
     IEspContainer *container;
     MapStringToMyClass<ISmartSocketFactory> connMap;
     MapStringToMyClass<IEmbedServiceContext> javaServiceMap;
+    MapStringToMyClass<IException> javaExceptionMap;
     Owned<ILoggingManager> m_oLoggingManager;
     bool m_bGenerateLocalTrxId;
 
