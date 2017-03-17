@@ -813,6 +813,19 @@ ESPresponse [exceptions_inline,http_encode(0)] WUResultResponse
     [json_inline(1)] string Result;
 };
 
+ESPrequest WUFullResultRequest
+{
+    string Wuid;
+    bool NoRootTag(0);
+    ESPenum WUExceptionSeverity ExceptionSeverity("info");
+};
+
+ESPresponse [exceptions_inline,http_encode(0)] WUFullResultResponse
+{
+    string Wuid;
+    [json_inline(1)] string Results;
+};
+
 ESPrequest WUResultViewRequest
 {
     string Wuid;
@@ -1811,6 +1824,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/graph_gvc.xslt")]     WUGVCGraphInfo(WUGVCGraphInfoRequest, WUGVCGraphInfoResponse);
     ESPmethod [description("Stub for Ajax GVC Graph."), help(""), resp_xsl_default("/esp/xslt/GvcGraph.xslt")] GVCAjaxGraph(GVCAjaxGraphRequest, GVCAjaxGraphResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/result.xslt")]        WUResult(WUResultRequest, WUResultResponse);
+    ESPmethod WUFullResult(WUFullResultRequest, WUFullResultResponse);
     ESPmethod WUResultView(WUResultViewRequest, WUResultViewResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuid_jobs.xslt")]     WUJobList(WUJobListRequest, WUJobListResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuaction_results.xslt")] WUAction(WUActionRequest, WUActionResponse); 
