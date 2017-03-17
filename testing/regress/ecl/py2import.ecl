@@ -16,21 +16,13 @@
 ############################################################################## */
 
 //class=embedded
+//class=python2
 
 import python;
+string pcat(string a, string b) := IMPORT(Python, '/opt/HPCCSystems/examples/embed/python_cat.cat':time);
+pcat('Hello ', 'world!');
 
-string anagram(string word) := EMBED(Python)
-  def anagram(w):
-    if word == 'cat':
-      return 'act'
-    else:
-      return w
-
-  return anagram(word)
+integer padd(integer a, integer b) := EMBED(Python :time)
+   return a + b
 ENDEMBED;
-
-anagram('dog');
-anagram('cat');
-
-
-
+padd(1, 2)*5;

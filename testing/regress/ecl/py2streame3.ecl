@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,12 +16,29 @@
 ############################################################################## */
 
 //class=embedded
+//class=python2
 
-import python;
-string pcat(string a, string b) := IMPORT(Python, '/opt/HPCCSystems/examples/embed/python_cat.cat':time);
-pcat('Hello ', 'world!');
+IMPORT Python;
 
-integer padd(integer a, integer b) := EMBED(Python :time)
-   return a + b
+childrec := RECORD
+   string name => unsigned value;
+END;
+
+titleRec := { string title };
+titles := dataset(['', 'Mr. ', 'Rev. '], titleRec);
+
+// Test defining a transform
+transform(childrec) testTransformTitle(titleRec inrec, unsigned lim) := EMBED(Python)
+  return (inrec.title, lim)
 ENDEMBED;
-padd(1, 2)*5;
+
+// Test defining a transform
+//MORE: The embed function shpo
+transform(childrec) testTransformTitle2(_linkcounted_ row(titleRec) inrec, unsigned lim) := EMBED(Python)
+  return (inrec.title, lim)
+ENDEMBED;
+
+sequential(
+output(project(titles, testTransformTitle(LEFT, 10)));
+output(project(titles, testTransformTitle2(LEFT, 10)));
+);

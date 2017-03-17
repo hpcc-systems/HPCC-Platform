@@ -16,28 +16,22 @@
 ############################################################################## */
 
 //class=embedded
+//class=python2
 
-//nothor
+import python;
 
-//Thor doesn't handle CATCH properly, see HPCC-9059
-//skip type==thorlcr TBD
+string anagram(string word) := EMBED(Python)
+  def anagram(w):
+    if word == 'cat':
+      return 'act'
+    else:
+      return w
 
-IMPORT Python;
-
-integer testThrow(integer val) := EMBED(Python)
-raise Exception('Error from Python')
+  return anagram(word)
 ENDEMBED;
 
-// Can't catch an expression(only a dataset)
-d := dataset([{ 1, '' }], { integer a, string m} ) : stored('nofold');
-
-d t := transform
-  self.a := FAILCODE;
-  self.m := FAILMESSAGE;
-  self := [];
-end;
-
-catch(d(testThrow(a) = a), onfail(t));
+anagram('dog');
+anagram('cat');
 
 
 
