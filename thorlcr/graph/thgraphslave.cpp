@@ -1372,6 +1372,8 @@ public:
         e->setSeverity((ErrorSeverity)severity);
         jobChannel.fireException(e);
     }
+    virtual unsigned getGraphLoopCounter() const override { return 0; }
+    virtual IDebuggableContext *queryDebugContext() const override { return nullptr; }
     virtual unsigned getNodes() { return jobChannel.queryJob().querySlaves(); }
     virtual unsigned getNodeNum() { return jobChannel.queryMyRank()-1; }
     virtual char *getFilePart(const char *logicalName, bool create=false)

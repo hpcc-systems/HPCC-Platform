@@ -602,6 +602,7 @@ public:
     void addTimings();
 
 // ICodeContext
+    virtual unsigned getGraphLoopCounter() const override { return 0; }
     virtual unsigned getNodes();
     virtual unsigned getNodeNum() { return 0; }
     virtual char *getFilePart(const char *logicalPart, bool create=false);
