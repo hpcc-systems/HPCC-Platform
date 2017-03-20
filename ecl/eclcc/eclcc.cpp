@@ -2491,6 +2491,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
 
                 resetUniqueId();
                 resetLexerUniqueNames();
+                clearTransformStats();
             }
 
             Owned<IErrorReceiver> localErrs = createFileErrorReceiver(logFile);
@@ -2499,6 +2500,8 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             if (info.wu &&
                 (info.wu->getDebugValueBool("generatePartialOutputOnError", false) || info.queryErrorProcessor().errCount() == 0))
             {
+                WuStatisticTarget statsTarget(info.wu, "eclcc");
+                gatherTransformStats(statsTarget);
                 exportWorkUnitToXMLFile(info.wu, xmlFilename, XML_NoBinaryEncode64, true, false, false, true);
                 Owned<IFile> xml = createIFile(xmlFilename);
                 info.stats.xmlSize = xml->size();
