@@ -2835,10 +2835,10 @@ IRoxieQueryPackageManagerSet *globalPackageSetManager = NULL;
 
 extern void loadPlugins()
 {
-    if (pluginDirectory.length() && isDirectory(pluginDirectory.str()))
+    if (pluginDirectory.length())
     {
         plugins = new SafePluginMap(&PluginCtx, traceLevel >= 1);
-        plugins->loadFromDirectory(pluginDirectory);
+        plugins->loadFromList(pluginDirectory);
     }
 }
 

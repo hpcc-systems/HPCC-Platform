@@ -16,6 +16,7 @@
 ############################################################################## */
 
 //class=embedded
+//class=python3
 
 import python3;
 string pcat(string a, string b) := IMPORT(Python3, '/opt/HPCCSystems/examples/embed/python_cat.cat':time);

@@ -43,12 +43,12 @@ class PropertyIteratorOf : implements PITER, public CInterface
 {
 protected:
     HashIterator *piter;
-    HashTable &properties;
+    const HashTable &properties;
 
 public:
     IMPLEMENT_IINTERFACE; 
 
-    PropertyIteratorOf(HashTable &_properties) : properties(_properties)
+    PropertyIteratorOf(const HashTable &_properties) : properties(_properties)
     {
         properties.Link();
         piter = new HashIterator(properties);
@@ -77,7 +77,7 @@ typedef IPropertyIterator char_ptrIPropertyIterator;
 class char_ptrPropertyIterator : public PropertyIteratorOf<const char *, char_ptrIPropertyIterator>
 {
 public:
-    char_ptrPropertyIterator(HashTable &_properties) : PropertyIteratorOf<const char *, char_ptrIPropertyIterator>(_properties) { }
+    char_ptrPropertyIterator(const HashTable &_properties) : PropertyIteratorOf<const char *, char_ptrIPropertyIterator>(_properties) { }
     virtual const char *getPropKey()
     {
         IMapping &cur = piter->query();
@@ -214,10 +214,10 @@ public:
                 finger++;
         }
     }
-    virtual PTYPE toPType(const char *p) = 0;
-    virtual const char *fromPType(PTYPE p) = 0;
-    virtual PTYPE toKeyVal(const void *) = 0;
-    virtual int getPropInt(PTYPE propname, int dft)
+    virtual PTYPE toPType(const char *p) const = 0;
+    virtual const char *fromPType(PTYPE p) const = 0;
+    virtual PTYPE toKeyVal(const void *) const = 0;
+    virtual int getPropInt(PTYPE propname, int dft) const override
     {
         if (propname)
         {
@@ -227,7 +227,7 @@ public:
         }
         return dft;
     }
-    virtual bool getPropBool(PTYPE propname, bool dft) 
+    virtual bool getPropBool(PTYPE propname, bool dft) const override
     {
         if (propname)
         {
@@ -237,7 +237,7 @@ public:
         }
         return dft;
     }
-    virtual bool getProp(PTYPE propname, StringBuffer &ret)
+    virtual bool getProp(PTYPE propname, StringBuffer &ret) const override
     {
         if (propname)
         {
@@ -250,7 +250,7 @@ public:
         }
         return false;
     }
-    virtual const char *queryProp(PTYPE propname)
+    virtual const char *queryProp(PTYPE propname) const override
     {
         if (propname)
         {
@@ -260,7 +260,7 @@ public:
         }
         return NULL;
     }
-    virtual void saveFile(const char *filename)
+    virtual void saveFile(const char *filename) const override
     {
         FILE *outFile = fopen(filename, "w" TEXT_TRANS);
         if (outFile)
@@ -324,7 +324,7 @@ public:
             return properties.remove(propname);
         return false;
     }
-    virtual bool hasProp(PTYPE propname)
+    virtual bool hasProp(PTYPE propname) const override
     {
         if (propname)
         {
@@ -371,7 +371,7 @@ public:
             setProp(ptype, value);
         }
     }
-    virtual IPROPITER *getIterator()
+    virtual IPROPITER *getIterator() const override
     {
         return new PROPITER(properties);
     }
@@ -383,9 +383,9 @@ class PCLASS : public CPropertiesBase<PTYPE, MAPPING, PTYPE##IProperties, PTYPE#
 public:                                                                                                 \
     PCLASS(const char *filename, bool nocase) : CPropertiesBase<PTYPE, MAPPING, PTYPE##IProperties, PTYPE##IPropertyIterator, PTYPE##PropertyIterator>(nocase) { loadFile(filename); } \
     PCLASS(bool nocase) : CPropertiesBase<PTYPE, MAPPING, PTYPE##IProperties, PTYPE##IPropertyIterator, PTYPE##PropertyIterator>(nocase)    { }         \
-    virtual PTYPE toPType(const char *p) { return conv2##PTYPE(p); }                                    \
-    virtual const char *fromPType(PTYPE p) { return conv##PTYPE##2(p); }                                \
-    virtual PTYPE toKeyVal(const void *p) { return tokv##PTYPE(p); }                                \
+    virtual PTYPE toPType(const char *p) const override { return conv2##PTYPE(p); }                                    \
+    virtual const char *fromPType(PTYPE p) const override { return conv##PTYPE##2(p); }                                \
+    virtual PTYPE toKeyVal(const void *p) const override { return tokv##PTYPE(p); }                                \
 };
 typedef IProperties char_ptrIProperties;
 MAKECPropertyOf(Atom, char_ptr, StringAttrMapping, CProperties);

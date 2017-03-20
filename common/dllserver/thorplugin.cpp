@@ -21,8 +21,10 @@
 #include "jsocket.hpp"
 #include "jprop.hpp"
 #include "jdebug.hpp"
+#include "jregexp.hpp"
 #include "jlzw.hpp"
 #include "eclrtl.hpp"
+#include "build-config.h"
 #if defined(__APPLE__)
 #include <mach-o/getsect.h>
 #include <sys/mman.h>
@@ -612,11 +614,35 @@ extern DLLSERVER_API bool getManifestXMLFromFile(const char *filename, StringBuf
     return getResourceXMLFromFile(filename, "MANIFEST", 1000, xml);
 }
 
-
 //-------------------------------------------------------------------------------------------------------------------
 
-
-//-------------------------------------------------------------------------------------------------------------------
+extern DLLSERVER_API void getAdditionalPluginsPath(StringBuffer &pluginsPath, const char *_base)
+{
+    // We only add the additional plugins if the plugins path already includes the default plugins location
+    StringBuffer base(_base);
+    removeTrailingPathSepChar(base);
+    StringBuffer defaultLocation(base);
+    defaultLocation.append(PATHSEPSTR "plugins");
+    StringArray paths;
+    paths.appendList(pluginsPath, ENVSEPSTR);
+    if (paths.contains(defaultLocation))
+    {
+        const char *additional = queryEnvironmentConf().queryProp("additionalPlugins");
+        if (additional)
+        {
+            StringArray additionalPaths;
+            additionalPaths.appendList(additional, ENVSEPSTR);
+            ForEachItemIn(idx, additionalPaths)
+            {
+                const char *additionalPath = additionalPaths.item(idx);
+                pluginsPath.append(ENVSEPCHAR);
+                if (!isAbsolutePath(additionalPath))
+                    pluginsPath.append(base).append(PATHSEPSTR "versioned" PATHSEPSTR);
+                pluginsPath.append(additionalPath);
+            }
+        }
+    }
+}
 
 bool SafePluginMap::addPlugin(const char *path, const char *dllname)
 {

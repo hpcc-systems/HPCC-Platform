@@ -685,32 +685,11 @@ void *loadExternalEntryPoint(IHqlExpression* expr, unsigned foldOptions, ITempla
     IHqlExpression * funcdef = expr->queryExternalDefinition();
     IHqlExpression *body = funcdef->queryChild(0);
     // Get the handle to the library and procedure.
-#ifdef __APPLE__
+#ifndef _WIN32
     StringBuffer fullLibraryPath;
-    // OSX is not good at finding eclrtl. This hack is a workaround
-    if (streq(library, "libeclrtl.dylib"))
-    {
-        Dl_info info;
-        if (dladdr((const void *) rtlStrToUInt4, &info))  // Any function in eclrtl would do...
-        {
-            fullLibraryPath.set(info.dli_fname);
-            library = fullLibraryPath.str();
-        }
-    }
-#ifdef _DEBUG
-    if (streq(library, "libpy3embed.dylib") || streq(library, "libpyembed.dylib") || streq(library, "libv8embed.dylib") || streq(library, "libjavaembed.dylib"))
-    {
-        Dl_info info;
-        if (dladdr((const void *) rtlStrToUInt4, &info))  // Any function in eclrtl would do...
-        {
-            fullLibraryPath.set(info.dli_fname);
-            fullLibraryPath.replaceString("libeclrtl.dylib", library);
-            library = fullLibraryPath.str();
-        }
-    }
+    if (findLoadedModule(fullLibraryPath, library))
+        library = fullLibraryPath.str();
 #endif
-#endif
-
     hDLL=LoadSharedObject(library, false, false);
     if (!LoadSucceeded(hDLL))
     {

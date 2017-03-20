@@ -35,6 +35,7 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
          ./../../ecl/hqlcpp 
          ./../../common/workunit 
+         ./../../common/dllserver 
          ./../../common/deftype 
          ./../../system/include 
          ./../../ecl/hql
@@ -67,6 +68,7 @@ target_link_libraries ( eclcc
          thorhelper 
          hql
          hqlcpp
+         dllserver
     )
 
 IF (USE_ZLIB)

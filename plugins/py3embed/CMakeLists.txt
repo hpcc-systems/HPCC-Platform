@@ -71,7 +71,7 @@ if(PY3EMBED)
 
         install(
             TARGETS py3embed
-            DESTINATION plugins)
+            DESTINATION versioned/python3)
 
         target_link_libraries(py3embed ${PYTHON3_LIBRARY})
 

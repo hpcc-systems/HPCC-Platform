@@ -55,7 +55,7 @@ extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
-namespace pyembed {
+namespace py2embed {
 
 // Use class OwnedPyObject for any objects that are not 'borrowed references'
 // so that the appropriate Py_DECREF call is made when the OwnedPyObject goes
@@ -233,38 +233,6 @@ static void releaseContext()
         threadHookChain = NULL;
     }
 }
-
-#ifndef _WIN32
-static bool findLoadedModule(StringBuffer &ret,  const char *match)
-{
-    bool found = false;
-    FILE *diskfp = fopen("/proc/self/maps", "r");
-    if (diskfp)
-    {
-        char ln[_MAX_PATH];
-        while (fgets(ln, sizeof(ln), diskfp))
-        {
-            if (strstr(ln, match))
-            {
-                const char *fullName = strchr(ln, '/');
-                if (fullName)
-                {
-                    char * lf = (char *) strchr(fullName, '\n');
-                    if (lf)
-                    {
-                        *lf = 0;
-                        ret.set(fullName);
-                        found = true;
-                        break;
-                    }
-                }
-            }
-        }
-        fclose(diskfp);
-    }
-    return found;
-}
-#endif
 
 // Use a global object to ensure that the Python interpreter is initialized on main thread
 
@@ -483,16 +451,17 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     // Make sure we are never unloaded (as Python may crash if we are)
     // we do this by doing a dynamic load of the pyembed library
+    // This also allows eclcc to be able to use the library for constant folding
 #ifdef _WIN32
     ::GetModuleFileName((HINSTANCE)&__ImageBase, helperLibraryName, _MAX_PATH);
-    if (strstr(path, "pyembed"))
+    if (strstr(path, "py2embed"))
     {
         HINSTANCE h = LoadSharedObject(helperLibraryName, false, false);
         DBGLOG("LoadSharedObject returned %p", h);
     }
 #else
     StringBuffer modname;
-    if (findLoadedModule(modname, "libpyembed"))
+    if (findLoadedModule(modname, "libpy2embed"))
     {
         HINSTANCE h = LoadSharedObject(modname, false, false);
         // Deliberately leak this handle
@@ -664,23 +633,23 @@ static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultByt
         switch ((type_t) elemType)
         {
         case type_int:
-            rtlWriteInt(outData, pyembed::getSignedResult(NULL, elem), elemSize);
+            rtlWriteInt(outData, py2embed::getSignedResult(NULL, elem), elemSize);
             break;
         case type_unsigned:
-            rtlWriteInt(outData, pyembed::getUnsignedResult(NULL, elem), elemSize);
+            rtlWriteInt(outData, py2embed::getUnsignedResult(NULL, elem), elemSize);
             break;
         case type_real:
             if (elemSize == sizeof(double))
-                * (double *) outData = (double) pyembed::getRealResult(NULL, elem);
+                * (double *) outData = (double) py2embed::getRealResult(NULL, elem);
             else
             {
                 assertex(elemSize == sizeof(float));
-                * (float *) outData = (float) pyembed::getRealResult(NULL, elem);
+                * (float *) outData = (float) py2embed::getRealResult(NULL, elem);
             }
             break;
         case type_boolean:
             assertex(elemSize == sizeof(bool));
-            * (bool *) outData = pyembed::getBooleanResult(NULL, elem);
+            * (bool *) outData = py2embed::getBooleanResult(NULL, elem);
             break;
         case type_string:
         case type_varstring:
@@ -815,47 +784,47 @@ public:
     virtual bool getBooleanResult(const RtlFieldInfo *field)
     {
         nextField(field);
-        return pyembed::getBooleanResult(field, elem);
+        return py2embed::getBooleanResult(field, elem);
     }
     virtual void getDataResult(const RtlFieldInfo *field, size32_t &len, void * &result)
     {
         nextField(field);
-        pyembed::getDataResult(field, elem, len, result);
+        py2embed::getDataResult(field, elem, len, result);
     }
     virtual double getRealResult(const RtlFieldInfo *field)
     {
         nextField(field);
-        return pyembed::getRealResult(field, elem);
+        return py2embed::getRealResult(field, elem);
     }
     virtual __int64 getSignedResult(const RtlFieldInfo *field)
     {
         nextField(field);
-        return pyembed::getSignedResult(field, elem);
+        return py2embed::getSignedResult(field, elem);
     }
     virtual unsigned __int64 getUnsignedResult(const RtlFieldInfo *field)
     {
         nextField(field);
-        return pyembed::getUnsignedResult(field, elem);
+        return py2embed::getUnsignedResult(field, elem);
     }
     virtual void getStringResult(const RtlFieldInfo *field, size32_t &chars, char * &result)
     {
         nextField(field);
-        pyembed::getStringResult(field, elem, chars, result);
+        py2embed::getStringResult(field, elem, chars, result);
     }
     virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char * &result)
     {
         nextField(field);
-        pyembed::getUTF8Result(field, elem, chars, result);
+        py2embed::getUTF8Result(field, elem, chars, result);
     }
     virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar * &result)
     {
         nextField(field);
-        pyembed::getUnicodeResult(field, elem, chars, result);
+        py2embed::getUnicodeResult(field, elem, chars, result);
     }
     virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value)
     {
         nextField(field);
-        double ret = pyembed::getRealResult(field, elem);
+        double ret = py2embed::getRealResult(field, elem);
         value.setReal(ret);
     }
 
@@ -1274,7 +1243,7 @@ public:
         if (!row)
             return NULL;
         RtlDynamicRowBuilder rowBuilder(resultAllocator);
-        size32_t len = pyembed::getRowResult(row, rowBuilder);
+        size32_t len = py2embed::getRowResult(row, rowBuilder);
         return rowBuilder.finalizeRowClear(len);
     }
     virtual void stop()
@@ -1379,39 +1348,39 @@ public:
 
     virtual bool getBooleanResult()
     {
-        return pyembed::getBooleanResult(NULL, result);
+        return py2embed::getBooleanResult(NULL, result);
     }
     virtual void getDataResult(size32_t &__chars, void * &__result)
     {
-        pyembed::getDataResult(NULL, result, __chars, __result);
+        py2embed::getDataResult(NULL, result, __chars, __result);
     }
     virtual double getRealResult()
     {
-        return pyembed::getRealResult(NULL, result);
+        return py2embed::getRealResult(NULL, result);
     }
     virtual __int64 getSignedResult()
     {
-        return pyembed::getSignedResult(NULL, result);
+        return py2embed::getSignedResult(NULL, result);
     }
     virtual unsigned __int64 getUnsignedResult()
     {
-        return pyembed::getUnsignedResult(NULL, result);
+        return py2embed::getUnsignedResult(NULL, result);
     }
     virtual void getStringResult(size32_t &__chars, char * &__result)
     {
-        pyembed::getStringResult(NULL, result, __chars, __result);
+        py2embed::getStringResult(NULL, result, __chars, __result);
     }
     virtual void getUTF8Result(size32_t &__chars, char * &__result)
     {
-        pyembed::getUTF8Result(NULL, result, __chars, __result);
+        py2embed::getUTF8Result(NULL, result, __chars, __result);
     }
     virtual void getUnicodeResult(size32_t &__chars, UChar * &__result)
     {
-        pyembed::getUnicodeResult(NULL, result, __chars, __result);
+        py2embed::getUnicodeResult(NULL, result, __chars, __result);
     }
     virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
     {
-        pyembed::getSetResult(result, __isAllResult, __resultBytes, __result, elemType, elemSize);
+        py2embed::getSetResult(result, __isAllResult, __resultBytes, __result, elemType, elemSize);
     }
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
@@ -1420,12 +1389,12 @@ public:
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
     {
         RtlDynamicRowBuilder rowBuilder(_resultAllocator);
-        size32_t len = pyembed::getRowResult(result, rowBuilder);
+        size32_t len = py2embed::getRowResult(result, rowBuilder);
         return (byte *) rowBuilder.finalizeRowClear(len);
     }
     virtual size32_t getTransformResult(ARowBuilder & builder)
     {
-        return pyembed::getRowResult(result, builder);
+        return py2embed::getRowResult(result, builder);
     }
     virtual void bindBooleanParam(const char *name, bool val)
     {

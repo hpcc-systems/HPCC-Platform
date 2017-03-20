@@ -33,6 +33,7 @@ extern mach_timebase_info_data_t timebase_info;   // Calibration for nanosecond 
 //#define NAMEDCOUNTS
 
 interface IPropertyTree;
+interface IProperties;
 
 void jlib_decl MilliSleep(unsigned milli);
 long jlib_decl atolong_l(const char * s,int l);
@@ -61,6 +62,17 @@ int jlib_decl numtostr(char *dst, unsigned short value);
 int jlib_decl numtostr(char *dst, unsigned int value);
 int jlib_decl numtostr(char *dst, unsigned long value);
 int jlib_decl numtostr(char *dst, unsigned __int64 _value);
+
+#ifndef _WIN32
+/**
+ * Return full path name of a currently loaded dll that matches the supplied tail
+ *
+ * @param ret    StringBuffer to receive full path name
+ * @param match  Partial name to be located
+ * @return       True if a matching loaded dll was found
+ */
+extern jlib_decl bool findLoadedModule(StringBuffer &ret,  const char *match);
+#endif
 
 extern jlib_decl HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError);
 extern jlib_decl void FreeSharedObject(HINSTANCE h);
@@ -326,7 +338,22 @@ public:
 
 extern jlib_decl StringBuffer passwordInput(const char* prompt, StringBuffer& passwd);
 
-extern jlib_decl IPropertyTree *getHPCCEnvironment(const char *configFileName=NULL);
+/**
+ * Return a reference to a shared IProperties object representing the environment.conf settings.
+ * The object is loaded when first needed, and freed at program termination. This function is threadsafe.
+ *
+ * @return    The environment.conf properties
+ *
+ */
+extern jlib_decl const IProperties &queryEnvironmentConf();
+
+/**
+ * Return an owned copy of the local environment.xml file
+ *
+ * @return    The environment.xml property tree
+ *
+ */
+extern jlib_decl IPropertyTree *getHPCCEnvironment();
 extern jlib_decl bool getConfigurationDirectory(const IPropertyTree *dirtree, // NULL to use HPCC config
                                                 const char *category, 
                                                 const char *component,
