@@ -54,7 +54,7 @@ class Shell:
         if retCode or ((len(stderr) > 0) and ('Error' in stderr)):
             exception = CalledProcessError(
                 process.returncode, repr(args))
-            err_msg = "retCode: "+str(retCode)+", msg:'"+str(''.join(filter(None, [stdout, stderr])))+"'"
+            err_msg = "retCode: "+str(retCode)+"\n'"+str(''.join(filter(None, [stderr])))+"'"
             exception.output = err_msg
             logging.debug("exception.output:'%s'",  err_msg)
             raise Error('1001', err=str(err_msg))
