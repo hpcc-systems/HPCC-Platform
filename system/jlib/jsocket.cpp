@@ -2866,7 +2866,6 @@ static StringAttr cachehostname;
 static IpAddress cachehostip;
 static IpAddress localhostip;
 static CriticalSection hostnamesect;
-static StringBuffer EnvConfPath;
 
 const char * GetCachedHostName()
 {
@@ -2875,13 +2874,8 @@ const char * GetCachedHostName()
     {
 #ifndef _WIN32
         IpAddress ip;
-        if (EnvConfPath.length() == 0)
-            EnvConfPath.append(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
-        Owned<IProperties> conf = createProperties(EnvConfPath.str(), true);
-
-        StringBuffer ifs;
-        conf->getProp("interface", ifs);
-        if (getInterfaceIp(ip, ifs.str()))
+        const char *ifs = queryEnvironmentConf().queryProp("interface");
+        if (getInterfaceIp(ip, ifs))
         {
             StringBuffer ips;
             ip.getIpText(ips);
@@ -5057,14 +5051,13 @@ ISocketSelectHandler *createSocketSelectHandler(const char *trc)
     {
         CriticalBlock block(epollsect);
         // DBGLOG("createSocketSelectHandler(): epoll_method = %d",epoll_method);
-        if (epoll_method == EPOLL_INIT) {
-            Owned<IProperties> conf = createProperties(CONFIG_DIR PATHSEPSTR "environment.conf", true);
-            if (conf->getPropBool("use_epoll", true)) {
+        if (epoll_method == EPOLL_INIT)
+        {
+            if (queryEnvironmentConf().getPropBool("use_epoll", true))
                 epoll_method = EPOLL_ENABLED;
-            } else {
+            else
                 epoll_method = EPOLL_DISABLED;
-            }
-            // DBGLOG("createSocketSelectHandler(): after reading conf file, epoll_method = %d",epoll_method);
+        // DBGLOG("createSocketSelectHandler(): after reading conf file, epoll_method = %d",epoll_method);
         }
     }
     if (epoll_method == EPOLL_ENABLED)

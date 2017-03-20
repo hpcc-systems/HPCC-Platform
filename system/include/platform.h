@@ -67,8 +67,10 @@
 #endif
 
 #define _FILE_OFFSET_BITS 64
+#ifndef _WIN32
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE 1
+#endif
 #endif
 #if defined(__linux__)
 #ifndef _GNU_SOURCE

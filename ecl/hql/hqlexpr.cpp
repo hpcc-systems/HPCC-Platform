@@ -9101,7 +9101,7 @@ public:
 
     virtual IHqlExpression * transform(IHqlExpression * expr)
     {
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
         stats.beginTransform();
 #endif
         IHqlExpression * match = static_cast<IHqlExpression *>(expr->queryTransformExtra());
@@ -9115,7 +9115,7 @@ public:
                 reportError(errors, HQLERR_CycleWithModuleDefinition, loc, HQLERR_CycleWithModuleDefinition_Text, idText);
             }
 
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
             stats.endMatchTransform(expr, match);
 #endif
             return LINK(match);
@@ -9130,7 +9130,7 @@ public:
         else
             ret = LINK(expr);
 
-#ifdef TRANSFORM_STATS
+#ifdef TRANSFORM_STATS_DETAILS
         stats.endNewTransform(expr, ret);
 #endif
 

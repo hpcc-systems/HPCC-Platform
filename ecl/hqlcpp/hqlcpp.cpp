@@ -1794,6 +1794,8 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeCriticalFunctions,"optimizeCriticalFunctions",true),
         DebugOption(options.addLikelihoodToGraph,"addLikelihoodToGraph", true),
         DebugOption(options.varFieldAccessorThreshold,"varFieldAccessorThreshold",3),   // Generate accessor classes for rows with #variable width fields >= threshold
+        DebugOption(options.translateDFSlayouts,"translateDFSlayouts", false),
+        DebugOption(options.reportDFSinfo,"reportDFSinfo", 0),
     };
 
     //get options values from workunit
@@ -9467,7 +9469,13 @@ void checkRankRange(IHqlExpression * index, IHqlExpression * list)
         IHqlExpression * sequence = queryAttributeChild(list, sequenceAtom, 0);
         IHqlExpression * name = queryAttributeChild(list, namedAtom, 0);
         getStoredDescription(s, sequence, name, true);
-        throwError1(HQLERR_RankOnStored, s.str());
+        throwError1(HQLERR_RankOnNonList, s.str());
+    }
+    if (list->getOperator() != no_list)
+    {
+        StringBuffer s;
+        getExprECL(list, s);
+        throwError1(HQLERR_RankOnNonList, s.str());
     }
 }
 
@@ -9482,6 +9490,9 @@ void HqlCppTranslator::doBuildExprRank(BuildCtx & ctx, IHqlExpression * expr, CH
 {
     IHqlExpression * index = expr->queryChild(0);
     IHqlExpression * list = expr->queryChild(1);
+    if (list->getOperator() == no_alias_scope)
+        list = list->queryChild(0);
+
     checkRankRange(index, list);
 
     CHqlBoundExpr bound, boundIndex;
@@ -9502,6 +9513,9 @@ void HqlCppTranslator::doBuildExprRanked(BuildCtx & ctx, IHqlExpression * expr, 
 {
     IHqlExpression * index = expr->queryChild(0);
     IHqlExpression * list = expr->queryChild(1);
+    if (list->getOperator() == no_alias_scope)
+        list = list->queryChild(0);
+
     checkRankRange(index, list);
 
     CHqlBoundExpr bound, boundIndex;

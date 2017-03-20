@@ -83,6 +83,8 @@ WarnErrorCategory getCategory(const char * category)
         return CategoryCpp;
     if (strieq(category, "security"))
         return CategorySecurity;
+    if (strieq(category, "dfs"))
+        return CategoryDFS;
     return CategoryUnknown;
 }
 

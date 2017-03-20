@@ -55,7 +55,8 @@ extern HQLFOLD_API IHqlExpression * foldHqlExpression(IHqlExpression * expr); //
 extern HQLFOLD_API IHqlExpression * foldHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * expr, ITemplateContext *context=NULL, unsigned options=0);
 extern HQLFOLD_API IHqlExpression * foldScopedHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * dataset, IHqlExpression * expr, unsigned options=0);
 extern HQLFOLD_API void foldHqlExpression(IErrorReceiver & errorProcessor, HqlExprArray & tgt, HqlExprArray & src, unsigned options=0);
-extern HQLFOLD_API IHqlExpression * lowerCaseHqlExpr(IHqlExpression * expr);
+extern HQLFOLD_API IHqlExpression * getLowerCaseConstantExpr(IHqlExpression * expr);
+extern HQLFOLD_API IHqlExpression * normalizeFilenameExpr(IHqlExpression * expr);
 extern HQLFOLD_API IHqlExpression * foldExprIfConstant(IHqlExpression * expr);
 extern HQLFOLD_API bool queryCompareConstantValues(int & result, IHqlExpression * left, IHqlExpression * right);
 extern HQLFOLD_API IHqlExpression * foldConstantCaseExpr(IHqlExpression * expr);

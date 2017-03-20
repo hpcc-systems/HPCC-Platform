@@ -1306,7 +1306,7 @@ IHqlExpression * getNormalizedFilename(IHqlExpression * filename)
 {
     NullErrorReceiver errorProcessor;
     OwnedHqlExpr folded = foldHqlExpression(errorProcessor, filename, NULL, HFOloseannotations);
-    return lowerCaseHqlExpr(folded);
+    return normalizeFilenameExpr(folded);
 }
 
 bool canBeSlidingJoin(IHqlExpression * expr)
@@ -5451,6 +5451,27 @@ IHqlExpression * removeDatasetWrapper(IHqlExpression * ds)
 
 //-------------------------------------------------------------------------------------------------------
 
+void getVirtualFields(HqlExprArray & virtuals, IHqlExpression * record)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_field:
+            if (cur->hasAttribute(virtualAtom))
+                virtuals.append(*LINK(cur));
+            break;
+        case no_ifblock:
+            getVirtualFields(virtuals, cur->queryChild(1));
+            break;
+        case no_record:
+            getVirtualFields(virtuals, cur);
+            break;
+        }
+    }
+}
+
 bool containsVirtualFields(IHqlExpression * record)
 {
     ForEachChild(i, record)
@@ -8907,7 +8928,56 @@ StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static void createMappingAssigns(HqlExprArray & assigns, IHqlExpression * selfSelector, IHqlExpression * oldSelector, IHqlSimpleScope * oldScope, IHqlExpression * newRecord)
+static bool doReportDroppedFields(IHqlSimpleScope * newScope, IHqlExpression * oldRecord, IErrorReceiver &err, ECLlocation &location)
+{
+    bool allDropped = true; // until we find one that isn't
+    ForEachChild(i, oldRecord)
+    {
+        IHqlExpression * cur = oldRecord->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            allDropped = doReportDroppedFields(newScope, cur, err, location) && allDropped;
+            break;
+        case no_ifblock:
+            allDropped = doReportDroppedFields(newScope, cur->queryChild(1), err, location) && allDropped;
+            break;
+        case no_field:
+            {
+                OwnedHqlExpr newField = newScope->lookupSymbol(cur->queryId());
+                if (!newField)
+                {
+                    VStringBuffer msg("Field %s is present in DFS file but not in ECL definition", str(cur->queryId()));
+                    err.reportWarning(CategoryInformation, HQLINFO_FieldNotPresentInECL, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
+                }
+                else
+                {
+                    allDropped = false;
+                    if (newField->queryType() != cur->queryType())
+                    {
+                        VStringBuffer msg("Field %s type mismatch: DFS reports ", str(cur->queryId()));
+                        cur->queryType()->getECLType(msg).append(" but ECL declared ");
+                        newField->queryType()->getECLType(msg);
+                        err.reportWarning(CategoryDFS, HQLWRN_DFSlookupTypeMismatch, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
+                    }
+                }
+            }
+        }
+    }
+    return allDropped;
+}
+
+void reportDroppedFields(IHqlExpression * newRecord, IHqlExpression * oldRecord, IErrorReceiver &err, ECLlocation &location)
+{
+    if (doReportDroppedFields(newRecord->querySimpleScope(), oldRecord, err, location))
+    {
+        err.reportWarning(CategoryDFS, HQLWRN_NoFieldsMatch, "No matching fields found in ECL definition", str(location.sourcePath), location.lineno, location.column, location.position);
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+static void createMappingAssigns(HqlExprArray & assigns, IHqlExpression * selfSelector, IHqlExpression * oldSelector, IHqlSimpleScope * oldScope, IHqlExpression * newRecord, bool replaceMissingWithDefault, IErrorReceiver &err, ECLlocation &location)
 {
     ForEachChild(i, newRecord)
     {
@@ -8915,39 +8985,65 @@ static void createMappingAssigns(HqlExprArray & assigns, IHqlExpression * selfSe
         switch (cur->getOperator())
         {
         case no_record:
-            createMappingAssigns(assigns, selfSelector, oldSelector, oldScope, cur);
+            createMappingAssigns(assigns, selfSelector, oldSelector, oldScope, cur, replaceMissingWithDefault, err, location);
             break;
         case no_ifblock:
-            createMappingAssigns(assigns, selfSelector, oldSelector, oldScope, cur->queryChild(1));
+            createMappingAssigns(assigns, selfSelector, oldSelector, oldScope, cur->queryChild(1), replaceMissingWithDefault, err, location);
             break;
         case no_field:
             {
+                OwnedHqlExpr oldSelected;
                 OwnedHqlExpr oldField = oldScope->lookupSymbol(cur->queryId());
-                assertex(oldField);
+                if (!oldField)
+                {
+                    assertex(replaceMissingWithDefault);
+                    oldSelected.setown(createNullExpr(cur));
+                    VStringBuffer msg("Field %s is not present in DFS file - default value will be used", str(cur->queryId()));
+                    err.reportWarning(CategoryInformation, HQLWRN_FieldNotPresentInDFS, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
+                }
+                else
+                {
+                    oldSelected.setown(createSelectExpr(LINK(oldSelector), LINK(oldField)));
+                }
                 OwnedHqlExpr selfSelected = createSelectExpr(LINK(selfSelector), LINK(cur));
-                OwnedHqlExpr oldSelected = createSelectExpr(LINK(oldSelector), LINK(oldField));
-
                 if (selfSelected->queryRecord() != oldSelected->queryRecord())
                 {
-                    assertex(oldSelected->isDatarow());
+                    if (!oldSelected->isDatarow())
+                    {
+                        assertex(replaceMissingWithDefault);
+                        VStringBuffer msg("Field %s cannot be mapped - incompatible type ", str(cur->queryId()));
+                        cur->queryType()->getECLType(msg).append(" (expected ");
+                        getFriendlyTypeStr(oldSelected->queryType(),msg).append(')');
+                        err.reportError(HQLERR_DFSlookupIncompatible, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
+                    }
                     OwnedHqlExpr childSelf = getSelf(cur);
-                    OwnedHqlExpr childTransform = createMappingTransform(childSelf, oldSelected);
+                    OwnedHqlExpr childTransform = createMappingTransform(childSelf, oldSelected, replaceMissingWithDefault, err, location);
                     OwnedHqlExpr createRowExpr = createRow(no_createrow, childTransform.getClear());
                     assigns.append(*createAssign(selfSelected.getClear(), createRowExpr.getClear()));
                 }
                 else
+                {
+                    if (!cur->queryType()->assignableFrom(oldSelected->queryType()))
+                    {
+                        assertex(replaceMissingWithDefault);
+                        VStringBuffer msg("Field %s cannot be mapped - incompatible type ", str(cur->queryId()));
+                        cur->queryType()->getECLType(msg).append(" (expected ");
+                        getFriendlyTypeStr(oldSelected->queryType(),msg).append(')');
+                        err.reportError(HQLERR_DFSlookupIncompatible, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
+                    }
                     assigns.append(*createAssign(selfSelected.getClear(), oldSelected.getClear()));
+                }
             }
         }
     }
 }
 
-IHqlExpression * createMappingTransform(IHqlExpression * selfSelector, IHqlExpression * inSelector)
+IHqlExpression * createMappingTransform(IHqlExpression * selfSelector, IHqlExpression * inSelector, bool replaceMissingWithDefault, IErrorReceiver &err, ECLlocation &location)
 {
     HqlExprArray assigns;
     IHqlExpression * selfRecord = selfSelector->queryRecord();
     IHqlExpression * inRecord = inSelector->queryRecord();
-    createMappingAssigns(assigns, selfSelector, inSelector, inRecord->querySimpleScope(), selfRecord);
+    createMappingAssigns(assigns, selfSelector, inSelector, inRecord->querySimpleScope(), selfRecord, replaceMissingWithDefault, err, location);
     return createValue(no_transform, makeTransformType(selfRecord->getType()), assigns);
 
 }

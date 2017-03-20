@@ -48,6 +48,14 @@ extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, Mem
 extern DLLSERVER_API void compressResource(MemoryBuffer & compressed, size32_t len, const void *data);
 extern DLLSERVER_API void appendResource(MemoryBuffer & mb, size32_t len, const void *data, bool compress);
 
+/**
+ * Check with environment.conf to see whether to add any of the versioned plugin directories
+ *
+ * @param pluginsPath   The additional plugin locations are appended to this string
+ * @param base          The home directory - relative paths are assumed to be relative to base/versioned
+ */
+extern DLLSERVER_API void getAdditionalPluginsPath(StringBuffer &pluginsPath, const char *base);
+
 class DLLSERVER_API SimplePluginCtx : implements IPluginContextEx
 {
 public:

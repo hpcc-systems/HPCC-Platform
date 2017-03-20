@@ -183,7 +183,6 @@ public:
     }
 
     bool isZero() const;
-
     inline void setNullExpr() 
     { 
         atr_type=t_expr; 
@@ -489,6 +488,24 @@ public:
     IHqlExpression * createSortExpr(node_operator op, attribute & dsAttr, const attribute & orderAttr, HqlExprArray & args);
     IHqlExpression * createIffDataset(IHqlExpression * record, IHqlExpression * value);
     IHqlExpression * createSetRange(attribute & array, attribute & range);
+    /**
+     * Check that RECORDOF,LOOKUP finds a compatible record in dfs
+     *
+     * @param newRecord     The record retrieved from DFS
+     * @param defaultRecord The record provided in the ECL code
+     * @param errpos        Where to report errors
+     */
+    bool checkDFSfields(IHqlExpression *dfsRecord, IHqlExpression *defaultRecord, const attribute& errpos);
+    /**
+     * Check usage of RECORDOF,LOOKUP and create no_record expression
+     *
+     * @param errpos        Where to report errors
+     * @param _name         The expression representing the logical filename
+     * @param _default      The default record definition provided in the ECL code
+     * @param _lookupAttr   The LOOKUP attribute expression
+     * @param isOpt         Indicates whether ,OPT was present
+     */
+    IHqlExpression * lookupDFSlayout(const attribute &errpos, IHqlExpression *_name, IHqlExpression *_default, IHqlExpression *_lookupAttr, bool isOpt);
 
     bool isSingleValuedExpressionList(const attribute & attr);
     bool convertAllToAttribute(attribute &atr);
@@ -702,6 +719,7 @@ public:
     void checkValidRecordMode(IHqlExpression * dataset, attribute & atr, attribute & modeatr);
     void checkValidCsvRecord(const attribute & errpos, IHqlExpression * record);
     void checkValidPipeRecord(const attribute & errpos, IHqlExpression * record, IHqlExpression * attrs, IHqlExpression * expr);
+    void checkValidLookupFlag(IHqlExpression * dataset, IHqlExpression * filename, attribute & atr);
 
     void createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind);
     void createAppendFiles(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind);

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,29 +15,19 @@
     limitations under the License.
 ############################################################################## */
 
-//class=embedded
+//class=file
+//class=error
 
-//nothor
+import $.setup;
+Files := setup.Files(false, false, false);
 
-//Thor doesn't handle CATCH properly, see HPCC-9059
-//skip type==thorlcr TBD
+// Test compile-time field translation for indexes - error cases
 
-IMPORT Python;
+#option ('reportDFSinfo',2);
+DG_IndexName := Files.DG_IndexOut+'INDEX';
 
-integer testThrow(integer val) := EMBED(Python)
-raise Exception('Error from Python')
-ENDEMBED;
+// layout change causes KEYED to fail
 
-// Can't catch an expression(only a dataset)
-d := dataset([{ 1, '' }], { integer a, string m} ) : stored('nofold');
-
-d t := transform
-  self.a := FAILCODE;
-  self.m := FAILMESSAGE;
-  self := [];
-end;
-
-catch(d(testThrow(a) = a), onfail(t));
-
-
+slimmed := INDEX(Files.DG_FlatFile, { DG_lastname }, DG_IndexName, LOOKUP(TRUE));
+choosen(slimmed(KEYED(DG_lastname = 'SMITH')),10);   // Not keyable once translated...
 

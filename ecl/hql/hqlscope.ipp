@@ -48,7 +48,7 @@ protected:
     IHqlExpression * queryCurrentScope();
 
 // overload to keep track of the current scope.
-    virtual void pushScope();
+    virtual void pushScope(IHqlExpression * context);
     virtual void pushEvaluateScope(IHqlExpression * expr, IHqlExpression * _transformed);
     virtual void popScope();
 

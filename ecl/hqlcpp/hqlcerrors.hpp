@@ -45,7 +45,7 @@
 #define HQLERR_IllegalPattern                   4018
 #define HQLERR_VarSizeSortUseThor               4020
 #define HQLERR_SubstringOutOfRange              4021
-#define HQLERR_RankOnStored                     4022
+#define HQLERR_RankOnNonList                    4022
 #define HQLERR_CastInfiniteString               4023
 #define HQLERR_TooFewParameters                 4024
 #define HQLERR_IndexTypeNotSupported            4025
@@ -352,7 +352,7 @@
 #define HQLERR_IllegalPattern_Text              "Illegal pattern '%s..%s'"
 #define HQLERR_VarSizeSortUseThor_Text          "THOR must be used for sorting or joining datasets with variable width rows"
 #define HQLERR_SubstringOutOfRange_Text         "Substring index %d is outside the field range"
-#define HQLERR_RankOnStored_Text                "RANK/RANKED not supported on list %s"
+#define HQLERR_RankOnNonList_Text               "RANK/RANKED not supported on %s"
 #define HQLERR_CastInfiniteString_Text          "Cannot cast a string of unknown length to another character set"
 #define HQLERR_TooFewParameters_Text            "Not enough parameters passed to function '%s'"
 #define HQLERR_IndexTypeNotSupported_Text       "Index is not supported for type %s yet"

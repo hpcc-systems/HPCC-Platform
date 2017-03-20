@@ -540,6 +540,7 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
 
         virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToXML(lenResult, result, info, row, flags); }
         virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToJSON(lenResult, result, info, row, flags); }
+        virtual IDebuggableContext *queryDebugContext() const override { return ctx->queryDebugContext(); }
         virtual unsigned getGraphLoopCounter() const
         {
             return containerGraph->queryLoopCounter();           // only called if value is valid

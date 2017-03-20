@@ -591,6 +591,7 @@ struct HqlCppOptions
     unsigned            defaultExpiry;
     unsigned            varFieldAccessorThreshold;
     int                 defaultNumPersistInstances;
+    unsigned            reportDFSinfo;
     CompilerType        targetCompiler;
     DBZaction           divideByZeroAction;
     bool                peephole;
@@ -778,6 +779,7 @@ struct HqlCppOptions
     bool                embeddedWarningsAsErrors;
     bool                optimizeCriticalFunctions;
     bool                addLikelihoodToGraph;
+    bool                translateDFSlayouts;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1145,6 +1147,7 @@ public:
     void ensureHasAddress(BuildCtx & ctx, CHqlBoundExpr & tgt);
     void normalizeBoundExpr(BuildCtx & ctx, CHqlBoundExpr & bound);
 
+    ICodegenContextCallback * queryCallback() { return ctxCallback; }
     IWorkUnit * wu()           { return code->workunit; }
     void useInclude(const char * name)                      { code->useInclude(name); }
     HqlCppInstance * queryCode() const                      { return code; }

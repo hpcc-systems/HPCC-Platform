@@ -329,7 +329,20 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         if (mainDefinition.length())
             eclccCmd.append(" -main ").append(mainDefinition);
         eclccCmd.append(" --timings");
-
+        if (globals->getPropBool("@enableEclccDali", true))
+        {
+            const char *daliServers = globals->queryProp("@daliServers");
+            if (!daliServers)
+                daliServers = ".";
+            eclccCmd.appendf(" -dfs=%s", daliServers);
+            const char *wuScope = workunit->queryWuScope();
+            if (!isEmptyString(wuScope))
+                eclccCmd.appendf(" -scope=%s", wuScope);
+            SCMStringBuffer token;
+            workunit->getSecurityToken(token);
+            if (token.length())
+                eclccCmd.appendf(" -wuid=%s -token=%s", workunit->queryWuid(), token.str());
+        }
         Owned<IPipeProcess> pipe = createPipeProcess();
         pipe->setenv("ECLCCSERVER_THREAD_INDEX", idxStr.str());
         Owned<IPropertyTreeIterator> options = globals->getElements("./Option");

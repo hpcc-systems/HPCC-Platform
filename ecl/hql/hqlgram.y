@@ -3240,6 +3240,7 @@ indexFlag
                             $$.setExpr(createExprAttribute(steppedAtom, args));
                             $$.setPosition($1);
                         }
+    | lookupOption
     | PRELOAD           {   $$.setExpr(createAttribute(preloadAtom)); $$.setPosition($1); }
     | OPT               {   $$.setExpr(createAttribute(optAtom)); $$.setPosition($1); }
     | SORT KEYED        {
@@ -3777,6 +3778,17 @@ optRecordDef
                         }
     ;
 
+optOpt
+    : ',' OPT           {
+                            $$.setInt(1);
+                            $$.setPosition($1);
+                        }
+    |                   {
+                            $$.setInt(0);
+                            $$.clearPosition();
+                        }
+    ;
+
 scopedActionId
     : ACTION_ID
     | moduleScopeDot ACTION_ID leaveScope
@@ -4255,6 +4267,30 @@ recordDef
 
                             $$.setExpr(LINK(record));
                             $$.setPosition($1);
+                        }
+    | RECORDOF '(' dataSet ',' recordDef ',' lookupOption optOpt ')'
+                        {
+                            OwnedHqlExpr name = createValue(no_nameof, makeStringType(UNKNOWN_LENGTH, NULL, NULL), $3.getExpr());
+                            IHqlExpression * record = parser->lookupDFSlayout($1, foldHqlExpression(name), $5.getExpr(), $7.getExpr(), $8.getInt());
+                            $$.setExpr(record, $1);
+                        }
+    | RECORDOF '(' dataSet ',' lookupOption ')'
+                        {
+                            OwnedHqlExpr name = createValue(no_nameof, makeStringType(UNKNOWN_LENGTH, NULL, NULL), $3.getExpr());
+                            IHqlExpression * record = parser->lookupDFSlayout($1, foldHqlExpression(name), LINK(queryNullRecord()), $5.getExpr(), false);
+                            $$.setExpr(record, $1);
+                        }
+    | RECORDOF '(' constExpression  ',' recordDef ',' lookupOption optOpt ')'
+                        {
+                            parser->normalizeExpression($3, type_string, true);
+                            IHqlExpression * record = parser->lookupDFSlayout($1, $3.getExpr(), $5.getExpr(), $7.getExpr(), $8.getInt());
+                            $$.setExpr(record, $1);
+                        }
+    | RECORDOF '(' constExpression ',' lookupOption ')'
+                        {
+                            parser->normalizeExpression($3, type_string, true);
+                            IHqlExpression * record = parser->lookupDFSlayout($1, $3.getExpr(), LINK(queryNullRecord()), $5.getExpr(), false);
+                            $$.setExpr(record, $1);
                         }
     | VALUE_MACRO recordDef ENDMACRO
                         {
@@ -8779,7 +8815,9 @@ simpleDataSet
                                 HqlExprArray args;
                                 unwindChildren(args, transform);
                                 transform.setown(createValue(no_newtransform, transform->getType(), args));
-                                $$.setExpr(createDataset(no_newkeyindex, dataset, createComma(record.getClear(), transform.getClear(), extra.getClear(), parser->getGpgSignature())));
+                                OwnedHqlExpr index = createDataset(no_newkeyindex, dataset, createComma(record.getClear(), transform.getClear(), extra.getClear(), parser->getGpgSignature()));
+                                parser->checkValidLookupFlag(dataset, index->queryChild(3), $1);
+                                $$.setExpr(index.getClear());
                             }
                             else
                                 $$.setExpr(createDataset(no_keyindex, dataset, createComma(record.getClear(), extra.getClear(), parser->getGpgSignature())));
@@ -8791,8 +8829,10 @@ simpleDataSet
                             OwnedHqlExpr record = $3.getExpr();
                             OwnedHqlExpr extra = $4.getExpr();
                             parser->extractIndexRecordAndExtra(record, extra);
-                            $$.setExpr(parser->createIndexFromRecord(record, extra, $3));
-                            parser->checkIndexRecordTypes($$.queryExpr(), $1);
+                            IHqlExpression *index = parser->createIndexFromRecord(record, extra, $3);
+                            parser->checkValidLookupFlag(index, index->queryChild(3), $1);
+                            parser->checkIndexRecordTypes(index, $1);
+                            $$.setExpr(index);
                             $$.setPosition($1);
                         }
     | INDEX '(' startTopFilter ',' expression optIndexFlags ')' endTopFilter
@@ -8806,11 +8846,12 @@ simpleDataSet
                                 HqlExprArray args;
                                 unwindChildren(args, dataset);
                                 if (keyOp == no_keyindex)
-                                    args.replace(*newName.getClear(), 2);
+                                    args.replace(*newName.getLink(), 2);
                                 else
-                                    args.replace(*newName.getClear(), 3);
+                                    args.replace(*newName.getLink(), 3);
                                 $6.unwindCommaList(args);
                                 dataset.setown(createDataset(keyOp, args));
+                                parser->checkValidLookupFlag(dataset, newName, $5);
                             }
                             else
                                 parser->reportError(ERR_EXPECTED_INDEX,$3,"Index aliasing syntax - expected an index as the first parameter");
@@ -8846,8 +8887,9 @@ simpleDataSet
                                 filename.setown(createValue(no_assertconstant, filename->getType(), LINK(filename->queryChild(0))));
                                 options.setown(createComma(options.getClear(), createAttribute(localUploadAtom)));
                             }
-                            IHqlExpression * dataset = createNewDataset(filename.getClear(), $6.getExpr(), mode.getClear(), NULL, NULL, parser->getGpgSignature(), options.getClear());
+                            IHqlExpression * dataset = createNewDataset(filename.getLink(), $6.getExpr(), mode.getClear(), NULL, NULL, parser->getGpgSignature(), options.getClear());
                             parser->checkValidRecordMode(dataset, $4, $9);
+                            parser->checkValidLookupFlag(dataset, filename, $3);
                             $$.setExpr(dataset);
                             $$.setPosition($1);
                         }
@@ -8889,8 +8931,9 @@ simpleDataSet
                                 filename.setown(createValue(no_assertconstant, filename->getType(), LINK(filename->queryChild(0))));
                                 options.setown(createComma(options.getClear(), createAttribute(localUploadAtom)));
                             }
-                            IHqlExpression * dataset = createNewDataset(filename.getClear(), record.getClear(), mode.getClear(), NULL, NULL, parser->getGpgSignature(), options.getClear());
+                            IHqlExpression * dataset = createNewDataset(filename.getLink(), record.getClear(), mode.getClear(), NULL, NULL, parser->getGpgSignature(), options.getClear());
                             parser->checkValidRecordMode(dataset, $4, $9);
+                            parser->checkValidLookupFlag(dataset, filename, $3);
                             $$.setExpr(dataset, $1);
                         }
     | DATASET '(' dataSet ',' thorFilenameOrList ',' mode optDsOptions dsEnd
@@ -8900,12 +8943,13 @@ simpleDataSet
                             parser->normalizeExpression($5, type_string, false);
 
                             IHqlExpression * origin = $3.getExpr();
-                            IHqlExpression * filename = $5.getExpr();
+                            OwnedHqlExpr filename = $5.getExpr();
                             IHqlExpression * mode = $7.getExpr();
                             IHqlExpression * attrs = createComma(createAttribute(_origin_Atom, origin), $8.getExpr());
-                            IHqlExpression * dataset = createNewDataset(filename, LINK(origin->queryRecord()), mode, NULL, NULL, parser->getGpgSignature(), attrs);
+                            IHqlExpression * dataset = createNewDataset(filename.getLink(), LINK(origin->queryRecord()), mode, NULL, NULL, parser->getGpgSignature(), attrs);
 
-                            parser->checkValidRecordMode(dataset, $4, $7);
+                            parser->checkValidRecordMode(dataset, $3, $7);
+                            parser->checkValidLookupFlag(dataset, filename, $3);
                             $$.setExpr(dataset);
                             $$.setPosition($1);
                         }
@@ -10081,6 +10125,7 @@ dsOption
     | TOK_BITMAP        {   $$.setExpr(createAttribute(bitmapAtom)); }
     | __COMPRESSED__    {   $$.setExpr(createAttribute(__compressed__Atom)); }
     | __GROUPED__       {   $$.setExpr(createAttribute(groupedAtom)); }
+    | lookupOption
     | PRELOAD           {   $$.setExpr(createAttribute(preloadAtom)); }
     | PRELOAD '(' constExpression ')'
                         {   $$.setExpr(createExprAttribute(preloadAtom, $3.getExpr())); }
@@ -10102,6 +10147,13 @@ dsOption
     | AVE '(' constExpression ')'
                         {   $$.setExpr(createExprAttribute(aveAtom, $3.getExpr()), $1); }
     | commonAttribute
+    ;
+
+lookupOption
+    : LOOKUP optConstBoolArg
+                        {
+                            $$.setExpr(createExprAttribute(lookupAtom, $2.getExpr()), $1);
+                        }
     ;
 
 dsOptions

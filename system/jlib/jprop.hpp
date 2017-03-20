@@ -38,23 +38,23 @@ interface jlib_decl IPropertyIteratorOf : extends IInterface
 template <class PTYPE, class PITER>
 interface jlib_decl IPropertiesOf : extends serializable
 {
-    virtual int getPropInt(PTYPE propname, int dft=0) = 0;
-    virtual bool getProp(PTYPE propname, StringBuffer &ret) = 0;
-    virtual const char *queryProp(PTYPE propname) = 0;
+    virtual int getPropInt(PTYPE propname, int dft=0) const = 0;
+    virtual bool getProp(PTYPE propname, StringBuffer &ret) const = 0;
+    virtual const char *queryProp(PTYPE propname) const = 0;
     virtual void setProp(PTYPE propname, int val) = 0;
     virtual void setProp(PTYPE propname, const char *val) = 0;
     virtual void appendProp(PTYPE propname, const char *val) = 0;
-    virtual bool hasProp(PTYPE propname) = 0;
-    virtual PITER *getIterator() = 0;
+    virtual bool hasProp(PTYPE propname) const = 0;
+    virtual PITER *getIterator() const = 0;
     virtual void loadFile(const char *filename) = 0;
     virtual void loadProps(const char *text) = 0;
     virtual void loadProp(const char *text) = 0;
     virtual void loadProp(const char *text, int dft) = 0;
     virtual void loadProp(const char *text, bool dft) = 0;
     virtual void loadProp(const char *text, const char * dft) = 0;
-    virtual void saveFile(const char *filename) = 0;
+    virtual void saveFile(const char *filename) const = 0;
     virtual bool removeProp(PTYPE propname) = 0;
-    virtual bool getPropBool(PTYPE propname, bool dft=false) = 0;
+    virtual bool getPropBool(PTYPE propname, bool dft=false) const = 0;
 };
 
 #ifdef _MSC_VER

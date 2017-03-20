@@ -686,32 +686,11 @@ void *loadExternalEntryPoint(IHqlExpression* expr, unsigned foldOptions, ITempla
     IHqlExpression * funcdef = expr->queryExternalDefinition();
     IHqlExpression *body = funcdef->queryChild(0);
     // Get the handle to the library and procedure.
-#ifdef __APPLE__
+#ifndef _WIN32
     StringBuffer fullLibraryPath;
-    // OSX is not good at finding eclrtl. This hack is a workaround
-    if (streq(library, "libeclrtl.dylib"))
-    {
-        Dl_info info;
-        if (dladdr((const void *) rtlStrToUInt4, &info))  // Any function in eclrtl would do...
-        {
-            fullLibraryPath.set(info.dli_fname);
-            library = fullLibraryPath.str();
-        }
-    }
-#ifdef _DEBUG
-    if (streq(library, "libpy3embed.dylib") || streq(library, "libpyembed.dylib") || streq(library, "libv8embed.dylib") || streq(library, "libjavaembed.dylib"))
-    {
-        Dl_info info;
-        if (dladdr((const void *) rtlStrToUInt4, &info))  // Any function in eclrtl would do...
-        {
-            fullLibraryPath.set(info.dli_fname);
-            fullLibraryPath.replaceString("libeclrtl.dylib", library);
-            library = fullLibraryPath.str();
-        }
-    }
+    if (findLoadedModule(fullLibraryPath, library))
+        library = fullLibraryPath.str();
 #endif
-#endif
-
     hDLL=LoadSharedObject(library, false, false);
     if (!LoadSucceeded(hDLL))
     {
@@ -3036,6 +3015,18 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             }
             break;
         }
+    case no_nameof:
+        {
+            IHqlExpression *ds = expr->queryChild(0);
+            switch (ds->getOperator())
+            {
+            case no_newkeyindex:
+                return LINK(ds->queryChild(3));
+            case no_table:
+                return LINK(ds->queryChild(0));
+            }
+            break;
+        }
     case no_charlen:
         {
             IHqlExpression * child = expr->queryChild(0);
@@ -4870,8 +4861,11 @@ IHqlExpression * NullFolderMixin::queryOptimizeAggregateInline(IHqlExpression * 
 
 //---------------------------------------------------------------------------
 
-IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
+static IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
 {
+    IValue * value = expr->queryValue();
+    assertex(value);
+
     ITypeInfo * type = expr->queryType();
     switch (type->getTypeCode())
     {
@@ -4886,8 +4880,6 @@ IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
         return LINK(expr);
     }
 
-    IValue * value = expr->queryValue();
-    assertex(value);
     const void * data = value->queryValue();
     unsigned size = type->getSize();
     unsigned stringLen = type->getStringLen();
@@ -4910,6 +4902,13 @@ IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
         return LINK(expr);
 
     return createConstant(createValueFromMem(LINK(type), lower.get()));
+}
+
+
+IHqlExpression * getLowerCaseConstantExpr(IHqlExpression * expr)
+{
+    OwnedHqlExpr folded = foldHqlExpression(expr);
+    return getLowerCaseConstant(folded);
 }
 
 //---------------------------------------------------------------------------
@@ -4940,14 +4939,14 @@ public:
                 }
                 break;
             }
-#if 0
-            //MORE: These should be constant folded , otherwise it can mess up the graph commoning. (see outmod.xhql)
-        case no_crc:
-        case no_hash:
-        case no_hash32:
-        case no_hash64:
-            return LINK(expr);
-#endif
+        case no_selectnth:
+        case NO_AGGREGATE:
+        case no_createset:
+            //Selectively check to see if this subtree needs to be transformed - only transform if it contains
+            //the selector being substituted, or if it needs transforming to update selectors that have changed
+            if (!expr->usesSelector(selector) && !needToUpdateSelectors(expr))
+                return LINK(expr);
+            break;
         }
         if (expr->isConstant())
             return LINK(expr);
@@ -7078,28 +7077,54 @@ IHqlExpression * foldExprIfConstant(IHqlExpression * expr)
 
 //---------------------------------------------------------------------------
 
-static HqlTransformerInfo lowerCaseTransformerInfo("LowerCaseTransformer");
-class LowerCaseTransformer : public NewHqlTransformer
+static HqlTransformerInfo normalizeFilenameTransformerInfo("NormalizeFilenameTransformer");
+class NormalizeFilenameTransformer : public NewHqlTransformer
 {
 public:
-    LowerCaseTransformer() : NewHqlTransformer(lowerCaseTransformerInfo) {}
+    NormalizeFilenameTransformer() : NewHqlTransformer(normalizeFilenameTransformerInfo) {}
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr)
     {
-        switch (expr->getOperator())
+        node_operator op = expr->getOperator();
+        switch (op)
         {
         case no_constant:
             return getLowerCaseConstant(expr);
+        case no_cast:
+        case no_implicitcast:
+        case no_concat:
+        case no_nofold:
+        case no_nocombine:
+        case no_nohoist:
+        case no_alias:
+        case no_globalscope:
+        case no_map:
+        case no_trim:
+            return NewHqlTransformer::createTransformed(expr);
+        case no_if:
+        case no_mapto:
+        case no_case:
+            break;
+        default:
+            return LINK(expr);
         }
-        return NewHqlTransformer::createTransformed(expr);
+
+        HqlExprArray args;
+        args.append(*LINK(expr->queryChild(0)));
+        return completeTransform(expr, args);
     }
 };
 
-IHqlExpression * lowerCaseHqlExpr(IHqlExpression * expr)
+/*
+ * The purpose of this function is to normalize a filename as much as possible, so that differences in case for
+ * string constants do not prevent a write to a file, and a subsequent read from the same file to be treated as
+ * the same filenames.  It doesn't aim to be perfect, but to avoid the most common problems.
+ */
+IHqlExpression * normalizeFilenameExpr(IHqlExpression * expr)
 {
     if (expr->getOperator() == no_constant)
         return getLowerCaseConstant(expr);
-    LowerCaseTransformer transformer;
+    NormalizeFilenameTransformer transformer;
     return transformer.transformRoot(expr);
 }
 

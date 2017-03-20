@@ -518,23 +518,15 @@ You need to have Javascript enabled in order to use ConfigMgr. Please enable Jav
              <div class="bd noborders" style="background-color: White;border:none">
                <h1>Environment setup</h1>
                <h2>Welcome to wizard mode!</h2>
-                Define IP Addresses for the environment being configured. Choose manual entry to enter IP addresses or 
-                auto discovery to acquire the list of IP Addresses via auto discovery script.
-                Manual entry format:X.X.X.X; X.X.X.X-XXX;
+                Define IP Addresses and/or hostnames for the environment being configured.
+                IP Address format:X.X.X.X; X.X.X.X-XXX;
                 <br>
                 <br>
-                <label style="font-weight:bold">List IP Addresses</label>&nbsp;<br><br>
                 <table border="0" cellpadding="0" cellspacing="0" height="169px">
                   <tr>
                     <td>
-                      <fieldset>
-                        <label><input id="manualIP" type="radio" name="ipRadiobutton" value="1" checked onclick="if(this.checked) document.forms['treeForm'].ipMode.value='1';enableTextArea(true);clearTextArea();" />Manual
-                          Entry</label>
-                        <label id="autoipId" onmouseover="showTooltipForButtons(event)"><input id="autoIP" type="radio" name="ipRadiobutton" disabled value="2" onmouseover="showTooltipForButtons(event)" onclick="if (this.checked) document.forms['treeForm'].ipMode.value='2';getIPAddrThrAutoGenScript();enableTextArea(false)" title="This operation is only supported in Enterprise Editions (or higher )."/>Auto
-                          Discovery</label>
-                      </fieldset>
                       <textarea id="ipListText" name="ipListText" rows="8" cols="69" wrap onclick="if(document.forms['treeForm'].textClear.value !== 'true') clearTextArea();"
-                        onkeyup="addNewLine(event)" class="textAreaCSS">Sample: X.X.X.X; X.X.X.X - XXX;</textarea>
+                        onkeyup="addNewLine(event)" class="textAreaCSS">Sample: X.X.X.X; X.X.X.X - XXX;  MyHostName.net;</textarea>
                         <!--onchange="document.forms['treeForm'].isChanged.value='true'" -->
                     </td>
                   </tr>

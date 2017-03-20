@@ -833,6 +833,8 @@ public:
     }
 
 // ICodeContext
+    virtual unsigned getGraphLoopCounter() const override { return 0; }
+    virtual IDebuggableContext *queryDebugContext() const override { return nullptr; }
     virtual void setResultBool(const char *name, unsigned sequence, bool result)
     {
         WorkunitUpdate w(&workunit->lock());

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-//class=embedded
+string option := 'Y' : stored('option');
 
-import python;
-string pcat(string a, string b) := IMPORT(Python, '/opt/HPCCSystems/examples/embed/python_cat.cat':time);
-pcat('Hello ', 'world!');
+filename := IF(option = 'Y', 'hello', 'goodbye');
 
-integer padd(integer a, integer b) := EMBED(Python :time)
-   return a + b
-ENDEMBED;
-padd(1, 2)*5;
+ds := DATASET(filename, { unsigned id } , THOR);
+
+p := ds : PERSIST('ds');
+
+OUTPUT(COUNT(p));

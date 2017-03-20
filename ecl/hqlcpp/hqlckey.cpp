@@ -207,6 +207,7 @@ void HqlCppTranslator::buildJoinMatchFunction(BuildCtx & ctx, const char * name,
         bindTableCursor(matchFunc.ctx, right, "right", no_right, selSeq);
 
         OwnedHqlExpr cseMatch = options.spotCSE ? spotScalarCSE(match, NULL, queryOptions().spotCseInIfDatasetConditions) : LINK(match);
+        traceExpression("join match", cseMatch);
         buildReturn(matchFunc.ctx, cseMatch);
     }
 }
