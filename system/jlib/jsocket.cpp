@@ -4815,17 +4815,38 @@ public:
                                 if (!epsi->del)
                                 {
                                     unsigned int ep_mode = 0;
-                                    if (epevents[j].events & (EPOLLIN | EPOLLHUP | EPOLLERR))
+                                    if (epevents[j].events & EPOLLHUP)
+                                    {
+                                        epsi->del = true;
+                                        selectvarschange = true;
+                                    }
+                                    if (epevents[j].events & EPOLLIN)
                                         ep_mode |= SELECTMODE_READ;
                                     if (epevents[j].events & EPOLLOUT)
                                         ep_mode |= SELECTMODE_WRITE;
                                     if (epevents[j].events & EPOLLPRI)
                                         ep_mode |= SELECTMODE_EXCEPT;
+                                    if (epevents[j].events & EPOLLERR)
+                                    {
+                                        char lname[256];
+                                        int lport = epsi->sock->name(lname, sizeof(lname));
+                                        char rname[256];
+                                        int rport = epsi->sock->peer_name(rname, sizeof(rname));
+                                        StringBuffer errStr;
+                                        errStr.appendf("epoll_wait EPOLLERR %u:%u l: %s:%d r: %s:%d", tfd, ep_mode, lname, lport, rname, rport);
+                                        int serror = 0;
+                                        socklen_t serrlen = sizeof(serror);
+                                        int srtn = getsockopt(tfd, SOL_SOCKET, SO_ERROR, (char *)&serror, &serrlen);
+                                        if (srtn != 0)
+                                            serror = ERRNO();
+                                        LOGERR(serror,13,errStr.str());
+                                        // MCK - dont add to ep_mode, assume already set
+                                    }
                                     if (ep_mode != 0)
                                     {
                                         tonotify.append(*epsi);
 #ifdef _TRACELINKCLOSED
-                                        // temporary, to help diagnose spurios socket closes (hpcc-15043)
+                                        // temporary, to help diagnose spurious socket closes (hpcc-15043)
                                         // currently no implementation of notifySelected() uses the mode
                                         // argument so we can pass in the epoll events mask and log that
                                         // if there is no data and the socket gets closed
