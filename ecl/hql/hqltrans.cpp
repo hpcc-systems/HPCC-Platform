@@ -1974,6 +1974,21 @@ void NewHqlTransformer::setMapping(IHqlExpression * oldValue, IHqlExpression * n
     setMappingOnly(oldValue, newValue);
 }
 
+bool NewHqlTransformer::needToUpdateSelectors(IHqlExpression * expr)
+{
+    HqlExprCopyArray scopesUsed;
+    expr->gatherTablesUsed(nullptr, &scopesUsed);
+    ForEachItemIn(i, scopesUsed)
+    {
+        IHqlExpression * cur = &scopesUsed.item(i);
+        IHqlExpression * transformed = transformSelector(cur);
+        if (cur != transformed)
+            return true;
+    }
+    return false;
+}
+
+
 void NewHqlTransformer::setMappingOnly(IHqlExpression * oldValue, IHqlExpression * newValue)
 {
     for (;;)
