@@ -141,7 +141,7 @@ define([
 
             createDetail: function (id, row, params) {
                 if (row.GraphName) {
-                    localParams = {
+                    var localParams = {
                         Wuid: this.wu.Wuid,
                         GraphName: row.GraphName,
                         SubGraphId: row.SubGraphId ? row.SubGraphId : null,

@@ -237,7 +237,7 @@ define([
         }
     });
 
-    _StoreSingletons = [];
+    var _StoreSingletons = [];
     return {
         getURL: function (_params) {
             var requestHelper = new RequestHelper();

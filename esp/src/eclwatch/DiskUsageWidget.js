@@ -24,6 +24,7 @@ define([
 
     "dgrid/selector",
 
+    "hpcc/_Widget",
     "hpcc/WsDfu",
     "hpcc/ESPUtil",
     "hpcc/FilterDropDownWidget",
@@ -44,7 +45,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, on,
                 registry,
                 selector,
-                WsDfu, ESPUtil, FilterDropDownWidget,
+                _Widget, WsDfu, ESPUtil, FilterDropDownWidget,
                 template) {
     return declare("DiskUsageWidget", [_Widget, ESPUtil.FormHelper], {
         templateString: template,

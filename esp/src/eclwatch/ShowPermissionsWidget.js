@@ -224,20 +224,6 @@ define([
             row[field] = value;
         },
 
-        createInheritedPermissionsTab: function (something) {
-            var tab = new ContentPane({
-                title:formCount,
-                id:''+formCount,
-                content:cont,
-                'class':'tab',
-                closable: true,
-                onClose:function(){
-                    return confirm(this.i18n.ReallyWantToRemove);
-                }
-            });
-            dijit.byId('tabContainer').addChild(tab);
-        },
-
         refreshActionState: function (selection) {
             registry.byId(this.id + "Open").set("disabled", true);
         }

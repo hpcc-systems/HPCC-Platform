@@ -25,10 +25,11 @@ define([
     "hpcc/ESPRequest",
     "hpcc/ESPQueue",
     "hpcc/ESPWorkunit",
-    "hpcc/ESPDFUWorkunit"
+    "hpcc/ESPDFUWorkunit",
+    "hpcc/WsWorkunits"
 
 ], function (declare, arrayUtil, lang, Memory, Observable,
-    WsSMC, ESPUtil, ESPRequest, ESPQueue, ESPWorkunit, ESPDFUWorkunit) {
+    WsSMC, ESPUtil, ESPRequest, ESPQueue, ESPWorkunit, ESPDFUWorkunit, WsWorkunits) {
 
     var _workunits = {};
 

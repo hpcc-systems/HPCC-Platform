@@ -87,7 +87,7 @@ define([
                         process: context.process,
                         packageMap: context.packageMap
                     });
-                } else if (nval.id == context.id + "Parts" && !context.partsWidgetLoaded) {
+                } else if (nval.id === context.id + "Parts" && !context.partsWidgetLoaded) {
                     context.partsWidgetLoaded = true;
                     context.partsWidget.init({
                         target: context.target,

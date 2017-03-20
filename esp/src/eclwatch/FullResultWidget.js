@@ -26,7 +26,9 @@ define([
 
     "dijit/registry",
 
+    "dgrid/Grid",
     "dgrid/selector",
+    "dgrid/extensions/DijitRegistry",
 
     "hpcc/_Widget",
     "hpcc/ESPBase",
@@ -43,7 +45,7 @@ define([
     "dijit/ToolbarSeparator"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, iframe, Memory, Observable,
                 registry,
-                selector,
+                Grid, selector, DijitRegistry,
                 _Widget, ESPBase, ESPWorkunit, ESPLogicalFile, ESPUtil,
                 template) {
     return declare("FullResultWidget", [_Widget], {

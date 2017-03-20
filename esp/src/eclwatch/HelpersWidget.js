@@ -145,7 +145,7 @@ define([
                 var label = document.createTextNode("");
                 var downloadLabal = domConstruct.toDom("<b> " + this.i18n.Download + ":  </b>");
                 domConstruct.place(downloadLabal, this.openButton.domNode, "after");
-                tmpSplitter = new ToolbarSeparator().placeAt(this.openButton.domNode, "after");
+                var tmpSplitter = new ToolbarSeparator().placeAt(this.openButton.domNode, "after");
 
                 var retVal = new declare([ESPUtil.Grid(false, true)])({
                     store: this.store,
@@ -270,9 +270,6 @@ define([
                 var canShowContent = false;
                 var canDownload = false;
                 arrayUtil.forEach(selection, function (item, idx) {
-                    if (item.Type !== "dll") {
-                        isNotDll = true;
-                    }
                     canShowContent = canShowContent ? canShowContent : this.canShowContent(item.Type);
                     canDownload = true;
                 }, this);

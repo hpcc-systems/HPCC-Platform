@@ -333,12 +333,13 @@ define([
         },
 
         loadGetDFUWorkunitResponse: function (prefix, response) {
+            var context = this;
             var workunit = lang.getObject("GetDFUWorkunitResponse.result", false, response)
             if (workunit && workunit.State !== 999) {
                 var idPrefix = prefix.split(" ").join("_");
                 this.store.add({
                     storeID: ++context._rowID,
-                    id: context.id + item.ID,
+                    id: context.id + workunit.ID,
                     Type: context.i18n.DFUWorkunit,
                     Reason: prefix,
                     Summary: workunit.ID,

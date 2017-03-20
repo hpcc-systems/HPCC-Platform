@@ -535,27 +535,6 @@ define([
             return null;
         },
 
-        loadRunning: function (response) {
-            var items = lang.getObject("ActivityResponse.Running", false, response)
-            if (items) {
-                var context = this;
-                arrayUtil.forEach(items, function (item, idx) {
-                    context.store.add({
-                        id: "ActivityRunning" + idx,
-                        ClusterName: item.ClusterName,
-                        Wuid: item.Wuid,
-                        Owner: item.Owner,
-                        Jobname: item.Owner,
-                        Summary: item.Name + " (" + prefix + ")",
-                        _type: "LogicalFile",
-                        _name: item.Name
-                    });
-                });
-                return items.length;
-            }
-            return 0;
-        },
-
         refreshGrid: function (args) {
             this.firstLoad = false;
             this.activity.refresh();

@@ -112,7 +112,7 @@ define([
                 },
                 label: context.i18n.AddBinding
             }).placeAt(this.refreshButton.domNode, "after");
-            tmpSplitter = new ToolbarSeparator().placeAt(this.addBindingButton.domNode, "before");
+            var tmpSplitter = new ToolbarSeparator().placeAt(this.addBindingButton.domNode, "before");
             this.deleteBindingButton = new Button({
                 id: this.id + "DeleteBinding",
                 disabled: true,

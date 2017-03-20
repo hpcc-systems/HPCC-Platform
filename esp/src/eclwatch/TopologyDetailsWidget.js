@@ -216,7 +216,7 @@ define([
             } else if (currSel.id === this.widget._Logs.id && !this.widget._Logs.__hpcc_initalized) {
                 this.widget._Logs.__hpcc_initalized = true;
                 this.widget._Logs.init(this.params);
-            } else if (currSel.id == this.widget._GetNumberOfFilesToCopy.id && !this.widget._GetNumberOfFilesToCopy.__hpcc_initalized) {
+            } else if (currSel.id === this.widget._GetNumberOfFilesToCopy.id && !this.widget._GetNumberOfFilesToCopy.__hpcc_initalized) {
                 this.widget._GetNumberOfFilesToCopy.__hpcc_initalized = true;
                 this.widget._GetNumberOfFilesToCopy.init(this.params);
             }

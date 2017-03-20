@@ -211,7 +211,7 @@ define([
             }).then(function (response) {
                 if (lang.exists("ConfigureESDLBindingMethodResponse.status", response)) {
                     if (response.ConfigureESDLBindingMethodResponse.status.Code === 0) {
-                        context.store.remove(selection[idx].__hpcc_id);
+                        //  MV Is this needed (idx is invalid)?:  context.store.remove(selection[idx].__hpcc_id);
                     }
                     context.refresh(context.params);
                 }
