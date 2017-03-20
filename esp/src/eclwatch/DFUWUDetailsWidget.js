@@ -147,8 +147,8 @@ define([
 
             var currSel = this.getSelectedChild();
             if (!currSel.initalized) {
-                if (currSel.id == this.summaryWidget.id) {
-                } else if (currSel.id == this.xmlWidget.id) {
+                if (currSel.id === this.summaryWidget.id) {
+                } else if (currSel.id === this.xmlWidget.id) {
                     var context = this;
                     this.wu.fetchXML(function (response) {
                         context.xmlWidget.init({
@@ -165,7 +165,7 @@ define([
             var text = ""
             for (var key in obj) {
                 text += "<tr><td>" + key + ":</td>";
-                if (typeof obj[key] == "object") {
+                if (typeof obj[key] === "object") {
                     text += "[<br/>";
                     for (var i = 0; i < obj[key].length; ++i) {
                         text += this.objectToText(obj[key][i]);
@@ -195,7 +195,7 @@ define([
         setTextContent: function (id, value) {
             var domNode = dom.byId(this.id + id);
             var pNode = this.getAncestor(domNode, "LI");
-            if (typeof value != 'undefined') {
+            if (typeof value !== 'undefined') {
                 if (pNode) {
                     domClass.remove(pNode, "hidden");
                 }
@@ -210,7 +210,7 @@ define([
         setValue: function (id, value) {
             var domNode = dom.byId(this.id + id);
             var pNode = this.getAncestor(domNode, "LI");
-            if (typeof value != 'undefined') {
+            if (typeof value !== 'undefined') {
                 if (pNode) {
                     domClass.remove(pNode, "hidden");
                 }

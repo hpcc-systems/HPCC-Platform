@@ -251,7 +251,7 @@ define([
                 }).then(function (response) {
                     if (lang.exists("UserEditResponse.Groups.Group", response)) {
                         arrayUtil.some(response.UserEditResponse.Groups.Group, function (item, idx) {
-                            if(item.name == "Administrators" || "Directory Administrators"){
+                            if(item.name === "Administrators" || item.name === "Directory Administrators"){
                                 dojoConfig.isAdmin = true;
                                 registry.byId(context.id + "SetBanner").set("disabled", false);
                                 if (context.widget._OPS.refresh) {

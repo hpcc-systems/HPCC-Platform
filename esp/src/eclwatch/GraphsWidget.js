@@ -329,12 +329,12 @@ define([
             var timingItems = [];
 
             //  Get Selected Items  ---
-            if (sourceControl == this.grid) {
+            if (sourceControl === this.grid) {
                 arrayUtil.forEach(sourceControl.getSelected(), function (item, idx) {
                     timingItems.push(item);
                 });
             }
-            if (sourceControl == this.timingTreeMap) {
+            if (sourceControl === this.timingTreeMap) {
                 arrayUtil.forEach(sourceControl.getSelected(), function (item, idx) {
                     if (item.children) {
                         if (item.children.length) {
@@ -351,10 +351,10 @@ define([
             }
 
             //  Set Selected Items  ---
-            if (sourceControl != this.grid) {
+            if (sourceControl !== this.grid) {
                 this.grid.setSelected(graphItems);
             }
-            if (sourceControl != this.timingTreeMap) {
+            if (sourceControl !== this.timingTreeMap) {
                 this.timingTreeMap.setSelectedGraphs(timingItems);
             }
         }

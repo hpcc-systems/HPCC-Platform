@@ -165,7 +165,7 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.queriesTab.id) {
+                if (currSel.id === this.queriesTab.id) {
                 } else {
                     currSel.init(currSel.hpcc.params);
                 }

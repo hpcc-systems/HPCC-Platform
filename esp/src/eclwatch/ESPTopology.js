@@ -479,7 +479,7 @@ define([
                 //  Sanity Checking  ---
                 for (var key in data) {
                     if (!(data[key] instanceof Object)) {
-                        if (retVal.get(key) != data[key] && key !== "HasThorSpareProcess") {
+                        if (retVal.get(key) !== data[key] && key !== "HasThorSpareProcess") {
                             var d = 0;//throw "Duplicate ID";
                         }
                     }

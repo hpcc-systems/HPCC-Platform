@@ -139,15 +139,15 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
 
-            if (currSel.id == this.memberOfWidget.id) {
+            if (currSel.id === this.memberOfWidget.id) {
                 this.memberOfWidget.init({
                     username: this.user
                 });
-            } else if (currSel.id == this.permissionsWidget.id) {
+            } else if (currSel.id === this.permissionsWidget.id) {
                 this.permissionsWidget.init({
                     username: this.user
                 });
-            } else if (currSel.id == this.activePermissionsWidget.id) {
+            } else if (currSel.id === this.activePermissionsWidget.id) {
                 this.activePermissionsWidget.init({
                     IsGroup: false,
                     IncludeGroup: true,

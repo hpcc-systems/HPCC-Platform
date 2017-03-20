@@ -171,7 +171,7 @@ define([
             }
         },
         preProcessResponse: function (response, request) {
-            if (response.Total == -1 || response.Total === 9223372036854776000 || response.Total === Number.MAX_VALUE) {
+            if (response.Total === -1 || response.Total === 9223372036854776000 || response.Total === Number.MAX_VALUE) {
                 response.Total = response.Start + response.Count + 1000;
             }
             if (lang.exists("Result.Row", response)) {
@@ -196,7 +196,7 @@ define([
     var Result = declare(null, {
         i18n: nlsHPCC,
         store: null,
-        Total: "-1",
+        Total: -1,
 
         constructor: function (args) {
             if (args) {
@@ -237,7 +237,7 @@ define([
         },
 
         isComplete: function () {
-            return this.Total != "-1";
+            return this.Total !== -1;
         },
 
         canShowResults: function () {
@@ -251,7 +251,7 @@ define([
 
         getFirstSchemaNode: function (node, name) {
             if (node && node.attributes) {
-                if ((node.baseName && node.baseName == name) || (node.localName && node.localName == name) || (typeof (node.getAttribute) != "undefined" && node.getAttribute("name") == name)) {
+                if ((node.baseName && node.baseName === name) || (node.localName && node.localName === name) || (typeof (node.getAttribute) !== "undefined" && node.getAttribute("name") === name)) {
                     return node;
                 }
             }
@@ -394,7 +394,7 @@ define([
             var retVal = [];
             for (var i = 0; i < sequence.childNodes.length; ++i) {
                 var node = sequence.childNodes[i];
-                if (typeof (node.getAttribute) != "undefined") {
+                if (typeof (node.getAttribute) !== "undefined") {
                     var name = node.getAttribute("name");
                     var type = node.getAttribute("type");
                     var children = this.getRowStructureFromSchema(node, prefix + name + "_");
@@ -488,7 +488,7 @@ define([
         getRowStructureFromData: function (rows) {
             var retVal = [];
             for (var key in rows[0]) {
-                if (key != "myInjectedRowNum") {
+                if (key !== "myInjectedRowNum") {
                     var context = this;
                     retVal.push({
                         label: key,
@@ -578,7 +578,7 @@ define([
 
             for (var i = 0; i < sequence.childNodes.length; ++i) {
                 var node = sequence.childNodes[i];
-                if (typeof (node.getAttribute) != "undefined") {
+                if (typeof (node.getAttribute) !== "undefined") {
                     var name = node.getAttribute("name");
                     var type = node.getAttribute("type");
                     if (name && type) {
@@ -616,7 +616,7 @@ define([
                     var length = underbarPos > 0 ? underbarPos : type.length;
                     var i = length - 1;
                     for (; i >= 0; --i) {
-                        if (numStr.indexOf(type.charAt(i)) == -1)
+                        if (numStr.indexOf(type.charAt(i)) === -1)
                             break;
                     }
                     if (i + 1 < length) {

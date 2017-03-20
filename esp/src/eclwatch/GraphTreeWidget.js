@@ -310,7 +310,7 @@ define([
         },
 
         _doFind: function (prev) {
-            if (this.findText != this.widget.FindField.value) {
+            if (this.findText !== this.widget.FindField.value) {
                 this.findText = this.widget.FindField.value;
                 this.found = this.global.findAsGlobalID(this.findText);
                 this.syncSelectionFrom(this.found);
@@ -415,7 +415,7 @@ define([
                 dom.byId(this.id + "Warning").innerHTML = this.i18n.WarnOldGraphControl + " (" + this.global.version.version + ")";
             }
 
-            if (params.SafeMode && params.SafeMode != "false") {
+            if (params.SafeMode && params.SafeMode !== "false") {
                 this.main.depth.set("value", 1);
                 var dotAttrs = this.global.getDotMetaAttributes();
                 dotAttrs = dotAttrs.replace("\n//graph[splines=\"line\"];", "\ngraph[splines=\"line\"];");
@@ -708,21 +708,21 @@ define([
             var selectedGlobalIDs = sourceControlOrGlobalIDs instanceof Array ? sourceControlOrGlobalIDs : [];
             if (sourceControl) {
                 //  Get Selected Items  ---
-                if (sourceControl == this.widget.TimingsTreeMap) {
+                if (sourceControl === this.widget.TimingsTreeMap) {
                     var items = sourceControl.getSelected();
                     for (var i = 0; i < items.length; ++i) {
                         if (items[i].SubGraphId) {
                             selectedGlobalIDs.push(items[i].SubGraphId);
                         }
                     }
-                } else if (sourceControl == this.widget.ActivitiesTreeMap) {
+                } else if (sourceControl === this.widget.ActivitiesTreeMap) {
                     var items = sourceControl.getSelected();
                     for (var i = 0; i < items.length; ++i) {
                         if (items[i].ActivityID) {
                             selectedGlobalIDs.push(items[i].ActivityID);
                         }
                     }
-                } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid || sourceControl == this.subgraphsGrid || sourceControl == this.treeGrid) {
+                } else if (sourceControl === this.verticesGrid || sourceControl === this.edgesGrid || sourceControl === this.subgraphsGrid || sourceControl === this.treeGrid) {
                     var items = sourceControl.getSelected();
                     for (var i = 0; i < items.length; ++i) {
                         if (lang.exists("_globalID", items[i])) {
@@ -737,27 +737,27 @@ define([
             }
 
             //  Set Selected Items  ---
-            if (sourceControl != this.treeGrid) {
+            if (sourceControl !== this.treeGrid) {
                 this.treeGrid.setSelection(selectedGlobalIDs);
             }
-            if (sourceControl != this.widget.TimingsTreeMap) {
+            if (sourceControl !== this.widget.TimingsTreeMap) {
                 this.widget.TimingsTreeMap.setSelectedAsGlobalID(selectedGlobalIDs);
             }
-            if (sourceControl != this.widget.ActivitiesTreeMap) {
+            if (sourceControl !== this.widget.ActivitiesTreeMap) {
                 this.widget.ActivitiesTreeMap.setSelectedAsGlobalID(selectedGlobalIDs);
             }
-            if (sourceControl != this.subgraphsGrid && this.subgraphsGrid.store) {
+            if (sourceControl !== this.subgraphsGrid && this.subgraphsGrid.store) {
                 this.subgraphsGrid.setSelection(selectedGlobalIDs);
             }
-            if (sourceControl != this.verticesGrid && this.verticesGrid.store) {
+            if (sourceControl !== this.verticesGrid && this.verticesGrid.store) {
                 this.verticesGrid.setSelection(selectedGlobalIDs);
             }
-            if (sourceControl != this.edgesGrid && this.edgesGrid.store) {
+            if (sourceControl !== this.edgesGrid && this.edgesGrid.store) {
                 this.edgesGrid.setSelection(selectedGlobalIDs);
             }
 
             //  Refresh Graph Controls  ---
-            if (sourceControl != this.main) {
+            if (sourceControl !== this.main) {
                 this.setMainRootItems(selectedGlobalIDs);
             }
 

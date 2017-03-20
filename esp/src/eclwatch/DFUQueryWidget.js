@@ -414,7 +414,7 @@ define([
         initTab: function() {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.workunitsTab.id) {
+                if (currSel.id === this.workunitsTab.id) {
                 } else {
                     if (!currSel.initalized) {
                         currSel.init(currSel._hpccParams);

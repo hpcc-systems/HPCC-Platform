@@ -265,7 +265,7 @@ define([
         initTab: function () {
             var context = this;
             var currSel = this.getSelectedChild();
-            if (currSel.id == this.widget._Summary.id && !this.widget._Summary.__hpcc_initalized) {
+            if (currSel.id === this.widget._Summary.id && !this.widget._Summary.__hpcc_initalized) {
                 this.widget._Summary.__hpcc_initalized = true;
                 var table = domConstruct.create("table", {id: this.id + "serviceInformation"});
                 if (this.params.__hpcc_parentName) {
@@ -291,7 +291,7 @@ define([
                     }
                     this.details.setContent(table);
                 }
-            } else if (currSel.id == this.widget._Binding.id && !this.widget._Binding.__hpcc_initalized) {
+            } else if (currSel.id === this.widget._Binding.id && !this.widget._Binding.__hpcc_initalized) {
                 this.widget._Binding.__hpcc_initalized = true;
 
                 var xml = context.formatXml(context.params.__binding_info.Definition.Interface)

@@ -91,17 +91,17 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
 
-            if (currSel.id == this.membersWidget.id) {
+            if (currSel.id === this.membersWidget.id) {
                 this.membersWidget.init({
                     groupname: this.group
                 });
-            } else if (currSel.id == this.activePermissionsWidget.id) {
+            } else if (currSel.id === this.activePermissionsWidget.id) {
                 this.activePermissionsWidget.init({
                     IsGroup: true,
                     IncludeGroup: false,
                     AccountName: this.group
                 });
-            } else if (currSel.id == this.groupPermissionsWidget.id) {
+            } else if (currSel.id === this.groupPermissionsWidget.id) {
                 this.groupPermissionsWidget.init({
                     IsGroup: true,
                     IncludeGroup: false,

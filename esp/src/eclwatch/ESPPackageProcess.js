@@ -55,19 +55,19 @@ define([
             packageMaps.sort(function(a, b){
                 var vA = a.Id;
                 var vB = b.Id;
-                if (sortIn.attribute == 'Target') {
+                if (sortIn.attribute === 'Target') {
                     vA = a.Target;
                     vB = b.Target;
                 }
-                else if (sortIn.attribute == 'Process') {
+                else if (sortIn.attribute === 'Process') {
                     vA = a.Process;
                     vB = b.Process;
                 }
-                else if (sortIn.attribute == 'Description') {
+                else if (sortIn.attribute === 'Description') {
                     vA = a.Description;
                     vB = b.Description;
                 }
-                else if (sortIn.attribute == 'Active') {
+                else if (sortIn.attribute === 'Active') {
                     vA = a.Active;
                     vB = b.Active;
                 }

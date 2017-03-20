@@ -257,7 +257,7 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id == this.workunitsTab.id) {
+                if (currSel.id === this.workunitsTab.id) {
                 } else {
                     currSel.init(currSel.params);
                 }
@@ -451,12 +451,12 @@ define([
             var hasNotFailed = false;
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
-                if (selection[i] && selection[i].isProtected && selection[i].isProtected != "0") {
+                if (selection[i] && selection[i].isProtected && selection[i].isProtected !== false) {
                     hasProtected = true;
                 } else {
                     hasNotProtected = true;
                 }
-                if (selection[i] && selection[i].State && selection[i].State == "5") {
+                if (selection[i] && selection[i].State && selection[i].State === 5) {
                     hasFailed = true;
                 } else {
                     hasNotFailed = true;

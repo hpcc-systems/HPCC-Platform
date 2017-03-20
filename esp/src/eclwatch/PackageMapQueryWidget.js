@@ -99,7 +99,7 @@ define([
 
             var context = this;
             this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if ((nval.id != context.id + "Packages") && (!nval.initalized)) {
+                if ((nval.id !== context.id + "Packages") && (!nval.initalized)) {
                     nval.init(nval.params, context.targets);
                 }
                 context.selectedTab = nval;
@@ -197,7 +197,7 @@ define([
             var defaultTarget = null;
             for (var i = 0; i < this.targets.length; ++i) {
                 var target = this.targets[i];
-                if (target.Type == 'roxie') {//only roxie has package map for now.
+                if (target.Type === 'roxie') {//only roxie has package map for now.
                     this.addPackageMapTargetSelect.options.push({label: target.Name, value: target.Name});
                     if (defaultTarget == null)
                         defaultTarget = target;
@@ -345,7 +345,7 @@ define([
         addProcessSelections: function (processSelect, processes, processData) {
             for (var i = 0; i < processData.length; ++i) {
                 var process = processData[i];
-                if ((processes != null) && (processes.indexOf(process) != -1))
+                if ((processes != null) && (processes.indexOf(process) !== -1))
                     continue;
                 processes.push(process);
                 processSelect.options.push({label: process, value: process});
@@ -363,14 +363,14 @@ define([
             processes.length = 0;
             for (var i = 0; i < this.targets.length; ++i) {
                 var target = this.targets[i];
-                if ((target.Processes !== undefined) && ((targetName == 'ANY') || (targetName == target.Name))) {
+                if ((target.Processes !== undefined) && ((targetName === 'ANY') || (targetName === target.Name))) {
                     this.addProcessSelections(processSelect, processes, target.Processes.Item);
-                    if (targetName != 'ANY') {
+                    if (targetName !== 'ANY') {
                         defaultProcess = target.Processes.Item[0];
                         break;
-                    } else if ((defaultProcess == 'ANY') || (!foundRoxie && (target.Type == 'roxie'))){
+                    } else if ((defaultProcess === 'ANY') || (!foundRoxie && (target.Type === 'roxie'))){
                         defaultProcess = target.Processes.Item[0];
-                        if (target.Type == 'roxie')
+                        if (target.Type === 'roxie')
                             foundRoxie = true;
                     }
                 }
@@ -386,9 +386,9 @@ define([
             for (var i = 0; i < this.targets.length; ++i) {
                 var target = this.targets[i];
                 this.targetSelect.options.push({label: target.Name, value: target.Name});
-                if ((this.targetSelected == 'ANY') || (!foundRoxie && (target.Type == 'roxie'))) {
+                if ((this.targetSelected === 'ANY') || (!foundRoxie && (target.Type === 'roxie'))) {
                     this.targetSelected = target.Name;
-                    if (target.Type == 'roxie')
+                    if (target.Type === 'roxie')
                         foundRoxie = true;
                 }
                 if (target.Processes !== undefined)
@@ -476,9 +476,9 @@ define([
             this.processSelected  = this.processSelect.getValue();
             //var processFilterSelected  = this.processFilterSelect.getValue();
             var processFilterSelected  = "*";
-            if ((this.targetSelected == " ") || (this.targetSelected == "ANY"))
+            if ((this.targetSelected === " ") || (this.targetSelected === "ANY"))
                 this.targetSelected = "";
-            if ((this.processSelected == " ") || (this.processSelected == "ANY"))
+            if ((this.processSelected === " ") || (this.processSelected === "ANY"))
                 this.processSelected = "";
             if (processFilterSelected === "")
                 processFilterSelected = "*";
@@ -498,8 +498,8 @@ define([
             var hasSelection = (selection.length > 0);
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
             registry.byId(this.id + "Delete").set("disabled", !hasSelection);
-            registry.byId(this.id + "Activate").set("disabled", selection.length != 1);
-            registry.byId(this.id + "Deactivate").set("disabled", selection.length != 1);
+            registry.byId(this.id + "Activate").set("disabled", selection.length !== 1);
+            registry.byId(this.id + "Deactivate").set("disabled", selection.length !== 1);
         },
 
         showPackageMapDetails: function (id, params) {
