@@ -1,8 +1,7 @@
-#Description
-   (SQS plugin allows to push message using ECL code)
+#[Description] (SQS plugin allows to push message using ECL code)
    * First you have to put your aws accessKey in the credential file into .aws folder. This folder is located into home dir of hpcc process. "~/hpcc/.aws/" if it doesn't exist, you should create it.
 
-##[Example]
+#[Example]
  * import sqs;
 	publisher:=sqs.SQSPublisher('QueueName');
 	publisher.PublishMessage('Put your message here');

@@ -24,7 +24,7 @@ if(SQS)
 
     # Link to the SDK shared libraries.
     add_definitions(-DUSE_IMPORT_EXPORT)
-   # add_subdirectory(doc)
+#    add_subdirectory(doc)
     include_directories (BEFORE ${INCLUDE_DIR})
     set(
             SRCS

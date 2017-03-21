@@ -99,7 +99,7 @@ SQSHPCCPlugin::SQSHPCC::SQSHPCC(const string& _queuename)
 SQSHPCCPlugin::SQSHPCC::~SQSHPCC()
  {
 
- Aws::ShutdownAPI(this->options);
+// Aws::ShutdownAPI(this->options);
   this->queueName="";
   delete(this->sqsClient);
 }
@@ -148,6 +148,22 @@ SQSHPCCPlugin::Response  SQSHPCCPlugin::SQSHPCC::sendMessage(const char* message
   return ref;
 }
 
+
+
+bool SQSHPCCPlugin::SQSHPCC::disconnect() 
+{
+
+	try 
+	{
+	Aws::ShutdownAPI(this->options);
+    
+         return true;
+	}
+	catch(...)
+	{
+          return false;
+	}	
+}
 
 
 /**
@@ -414,8 +430,8 @@ ECL_SQS_API bool ECL_SQS_CALL publishMessage(ICodeContext * ctx,const char* regi
           
 //         cout << "The result is " << ref.body << endl; 
          //return (res.code == 3);
-         hpcc->~SQSHPCC();
-         // delete(hpcc);
+       //  hpcc->~SQSHPCC();
+         delete(hpcc);
          return true;
 	}	
      catch(...)
@@ -436,8 +452,8 @@ ECL_SQS_API bool ECL_SQS_CALL isQueueExist(ICodeContext* ctx,const char* region,
      hpcc->setSQSConfiguration("HTPPS",region);
      hpcc->setQueueUrlFromQueueName();
      bool isExist = hpcc->isQueueExist();
-     hpcc->~SQSHPCC();
-   //  delete(hpcc);
+   //  hpcc->~SQSHPCC();
+     delete(hpcc);
 
      return isExist;
 }
@@ -451,12 +467,14 @@ ECL_SQS_API bool createQueue(ICodeContext* ctx,const char* region, const char* q
 	try
  	{
           SQSHPCCPlugin::Response response = hpcc->createQueue();
-          hpcc->~SQSHPCC();
+     //     hpcc->~SQSHPCC();
+          delete(hpcc);
           return true;
 	}
         catch(...)
         {
-	  hpcc->~SQSHPCC();
+	//  hpcc->~SQSHPCC();
+	delete(hpcc);
 	  return false;
 	}	
     
@@ -472,12 +490,14 @@ ECL_SQS_API bool ECL_SQS_CALL deleteQueue(ICodeContext * ctx,const char* region,
         try
         {
           SQSHPCCPlugin::Response response = hpcc->deleteQueue();
-	hpcc->~SQSHPCC(); 
+//	hpcc->~SQSHPCC(); 
+	delete(hpcc);
           return true;
         }
         catch(...)
         {
-          hpcc->~SQSHPCC();
+         // hpcc->~SQSHPCC();
+	delete(hpcc);
           return false;
         }
 }

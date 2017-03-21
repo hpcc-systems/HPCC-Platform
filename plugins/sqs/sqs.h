@@ -87,7 +87,7 @@ class SQSHPCC
 			   const std::string& region); 
   void setAwsCredentials(const char* accessKeyId, 
                           const char* secretKey); 
-
+  bool disconnect();
   bool isQueueExist();
 
   void setQueueUrlFromQueueName();
