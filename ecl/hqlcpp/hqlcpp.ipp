@@ -581,6 +581,7 @@ struct HqlCppOptions
     unsigned            subgraphToRegenerate;
     unsigned            defaultPersistExpiry;
     unsigned            defaultExpiry;
+    unsigned            searchDistanceThreshold;
     int                 defaultNumPersistInstances;
     unsigned            reportDFSinfo;
     CompilerType        targetCompiler;

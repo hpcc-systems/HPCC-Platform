@@ -229,6 +229,7 @@ public:
     OwnedHqlExpr colocalMember;
     Owned<ParentExtract> nestedExtract;
     SubGraphInfo * subgraph;
+    unsigned __int64 startDistance = 0;
 };
 
 

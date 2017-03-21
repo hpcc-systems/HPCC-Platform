@@ -120,12 +120,14 @@ public:
 
     void appendOwn(HqlExprAssociation & next);
     bool zap(HqlExprAssociation & next);
+    HqlExprAssociation * queryAssociation(IHqlExpression * search, AssocKind kind, HqlExprCopyArray * selectors);
 
 protected:
     HqlStmt *                       owner;
     CIArrayOf<HqlExprAssociation>   defs;
     // A bit mask of which types of associations this contains.  Don't worry about false positives.
     unsigned                        associationMask;
+    unsigned                        maxCursor = 0;
     AssociationCache                exprAssociationCache;
 };
 
