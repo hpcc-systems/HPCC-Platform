@@ -2123,22 +2123,21 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
                 record = dataset->queryChild(0)->queryRecord();
             if (record)
             {
-                size32_t maxSize = getMaxRecordSize(record, translator.getDefaultMaxRecordSize());
+                size32_t minSize = getMinRecordSize(record);
                 if (isVariableSizeRecord(record))
                 {
-                    size32_t minSize = getMinRecordSize(record);
                     size32_t expectedSize = getExpectedRecordSize(record);
                     StringBuffer temp;
                     temp.append(minSize).append("..");
                     if (maxRecordSizeUsesDefault(record))
                         temp.append("?");
                     else
-                        temp.append(maxSize);
+                        temp.append(getMaxRecordSize(record, translator.getDefaultMaxRecordSize()));
                     temp.append("(").append(expectedSize).append(")");
                     addAttribute("recordSize", temp.str());
                 }
                 else
-                    addAttributeInt("recordSize", maxSize);
+                    addAttributeInt("recordSize", minSize);
             }
         }
 
