@@ -92,6 +92,9 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
 
         logFailSafe.setown(createFailSafeLogger(_service, _agentName, logsDir));
     }
+    time_t tNow;
+    time(&tNow);
+    localtime_r(&tNow, &m_startTime);
 }
 
 CLogThread::~CLogThread()
@@ -113,7 +116,6 @@ int CLogThread::run()
     while(!stopping)
     {
         m_sem.wait(UPDATELOGTHREADWAITINGTIME);
-
         sendLog();
         if(logFailSafe.get())
         {
@@ -130,7 +132,7 @@ void CLogThread::stop()
     try
     {
         CriticalBlock b(logQueueCrit);
-        if (!logQueue.ordinality() && logFailSafe.get())
+        if (!logQueue.ordinality() && logFailSafe.get() && logFailSafe->canRollCurrentLog())
             logFailSafe->RollCurrentLog();
         //If logQueue is not empty, the log files are rolled over so that queued jobs can be read
         //when the CLogThread is restarted.
@@ -245,8 +247,6 @@ void CLogThread::sendLog()
                 }
                 if (!willRetry)
                 {
-                    if(ensureFailSafe && logFailSafe.get())
-                        logFailSafe->AddACK(GUID);
                     logRequest->Release();
                 }
                 ERRLOG("%s", errorMessage.str());
