@@ -2741,7 +2741,6 @@ void HttpHelper::parseRequestHeaders(const char *headers)
     val = queryRequestHeader("Authorization");
     if (val && !strncmp(val, "Basic ", 6))
         setAuthToken(val+6);
-
 }
 
 void HttpHelper::parseURL()

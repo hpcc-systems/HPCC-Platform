@@ -1108,7 +1108,7 @@ void zlib_deflate(MemoryBuffer &mb, const char* inputBuffer, unsigned int inputS
 
     // Create output memory buffer for compressed data. The zlib documentation states that
     // destination buffer size must be at least 0.1% larger than avail_in plus 12 bytes.
-    const unsigned long outsize = (unsigned long)floorf((float)inputSize * 1.01f) + 12;
+    const unsigned long outsize = (unsigned long) inputSize + inputSize / 1000 + 13;
     Bytef* outbuf = (Bytef*) mb.reserveTruncate(outsize);
 
     do
