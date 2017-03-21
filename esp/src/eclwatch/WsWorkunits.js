@@ -137,6 +137,10 @@ define([
             return ESPRequest.send("WsWorkunits", "WUListQueries", params);
         },
 
+        WUGetNumFileToCopy: function (params) {
+            return ESPRequest.send("WsWorkunits", "WUGetNumFileToCopy", params);
+        },
+
         CreateQuerySetStore: function (options) {
             var store = new QuerySetStore(options);
             return Observable(store);
