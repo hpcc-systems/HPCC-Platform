@@ -845,7 +845,7 @@ ecl unpublish roxie "FindpersonService*"
 ecl run thor W20150914-125557 --input=data.xml --wait=1000
 ecl run thor findperson --input=data.xml --wait=1000
 ecl run thor libW20150914-125557.so --input=data.xml --wait=1000
-ecl run thor - --input=data.xml --wait=1000
+ecl run thor - --input=data.xml --poll --wait=1000
 ecl run thor findperson.ecl --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" 
 ecl run thor findperson.ecl -I C:\MyECL\ 
 </programlisting>
@@ -976,10 +976,10 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 <row>
                   <entry>--poll</entry>
 
-                  <entry>Submits a job asynchronously. Polls the server until
-                  the state of the workunit changes to completed. It then
-                  retrieves the results. <para>Combine with the --wait option
-                  to limit the time that it polls. </para></entry>
+                  <entry>Submits a job asynchronously and polls the server
+                  until the state of the workunit changes to completed. It
+                  then retrieves the results. Combine with the --wait option
+                  to limit the time that it polls.</entry>
                 </row>
 
                 <row>
