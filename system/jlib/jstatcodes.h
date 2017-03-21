@@ -184,6 +184,8 @@ enum StatisticKind
     StNumAllocations,
     StNumAllocationScans,
     StNumDiskRetries,
+    StTimeGenerate,
+    StCycleGenerateCycles,
 
     StMax,
 

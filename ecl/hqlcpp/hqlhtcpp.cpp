@@ -2179,6 +2179,10 @@ void ActivityInstance::noteChildActivityLocation(IHqlExpression * pass)
 
 void ActivityInstance::buildPrefix()
 {
+    const HqlCppOptions & options = translator.queryOptions();
+    if (options.generateActivityThresholdCycles != 0)
+        startTime = get_cycles_now();
+
     startDistance = querySearchDistance();
     StringBuffer s;
 
@@ -2301,6 +2305,24 @@ void ActivityInstance::buildSuffix()
             addAttributeInt("approxClassSize", approxSize);
     }
 
+    if (options.generateActivityThresholdCycles != 0)
+    {
+        cycle_t totalTime = get_cycles_now() - startTime;
+        cycle_t localTime = totalTime - nestedTime;
+        if (localTime > options.generateActivityThresholdCycles)
+        {
+            if (containerActivity)
+                containerActivity->nestedTime += totalTime;
+
+            unsigned __int64 generateTime = cycle_to_nanosec(localTime);
+            //Record as a statistic rather than a graph attribute to avoid stats iterators needing to walk the graph
+            //We could also record local and totalTime if they differ - but that would then need another stats kind
+            StringBuffer scope;
+            getScope(scope);
+            translator.wu()->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTactivity, scope, StTimeGenerate, nullptr, generateTime, 1, 0, StatsMergeReplace);
+        }
+    }
+
     unsigned __int64 searchDistance = querySearchDistance() - startDistance;
     if (searchDistance > options.searchDistanceThreshold)
         addAttributeInt("searchDistance", searchDistance);
@@ -2360,6 +2382,21 @@ void ActivityInstance::buildMetaMember()
     }
 }
 
+
+void ActivityInstance::getScope(StringBuffer & scope) const
+{
+    if (containerActivity)
+    {
+        containerActivity->getScope(scope);
+        scope.append(":");
+    }
+    else if (translator.activeGraph)
+        scope.append(translator.activeGraph->name).append(":");
+
+    if (subgraph)
+        scope.append(SubGraphScopePrefix).append(subgraph->id).append(":");
+    scope.append(ActivityScopePrefix).append(activityId);
+}
 
 void ActivityInstance::addConstructorMetaParameter()
 {

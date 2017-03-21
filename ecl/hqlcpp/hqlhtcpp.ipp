@@ -145,6 +145,7 @@ public:
     void buildPrefix();
     void buildSuffix();
     void buildMetaMember();
+    void getScope(StringBuffer & scope) const; // return the full scope name of this activity
 
     void addAttribute(const char * name, const char * value);
     void addAttribute(const char * name, IHqlExpression * expr);
@@ -229,6 +230,8 @@ public:
     OwnedHqlExpr colocalMember;
     Owned<ParentExtract> nestedExtract;
     SubGraphInfo * subgraph;
+    cycle_t startTime = 0;
+    cycle_t nestedTime = 0;
     unsigned __int64 startDistance = 0;
 };
 

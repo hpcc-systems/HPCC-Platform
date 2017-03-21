@@ -824,6 +824,38 @@ HqlExprAssociation * BuildCtx::queryFirstCommonAssociation(AssocKind searchKind)
 }
 
 
+void BuildCtx::walkAssociations(AssocKind searchMask, IAssociationVisitor & visitor)
+{
+    HqlStmts * searchStmts = curStmts;
+
+    // search all statements in the tree before this one, to see
+    // if an expression already exists...  If so return the target
+    // of the assignment.
+    for (;;)
+    {
+        if (searchStmts->associationMask & searchMask)
+        {
+            CIArray & defs = searchStmts->defs;
+            ForEachItemInRev(idx, searchStmts->defs)
+            {
+                HqlExprAssociation & cur = (HqlExprAssociation &)searchStmts->defs.item(idx);
+                if (cur.getKind() & searchMask)
+                {
+                    if (visitor.visit(cur))
+                        return;
+                }
+            }
+        }
+
+        HqlStmt * limitStmt = searchStmts->queryStmt();
+        if (!limitStmt)
+            break;
+        searchStmts = limitStmt->queryContainer();
+    }
+}
+
+
+
 HqlExprAssociation * BuildCtx::queryMatchExpr(IHqlExpression * search)
 {
     HqlExprCopyArray selectors;
