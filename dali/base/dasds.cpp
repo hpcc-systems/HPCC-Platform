@@ -7812,8 +7812,6 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLoc
     if (!tree) return;
 
     unsigned index = (unsigned)-1;
-    StringBuffer path;
-    connection->queryPTreePath().getAbsolutePath(path);
     if (connection->queryParent())
     {
         if (deleteRoot || RTM_MODE(connection->queryMode(), RTM_DELETE_ON_DISCONNECT))
@@ -7835,6 +7833,11 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLoc
         deleteRoot = false;
 
     bool orphaned = ((CServerRemoteTree*)connection->queryRootUnvalidated())->isOrphaned();
+    StringBuffer path;
+    if (!orphaned) // see below, path/delta only recorded if not orphaned. Cannot calulate path if connection root has already been deleted
+        connection->queryPTreePath().getAbsolutePath(path);
+    else
+        DBGLOG("Disconnecting orphaned connection: %s, deleteRoot=%s", connection->queryXPath(), deleteRoot?"true":"false");
     // Still want disconnection to be performed & recorded, if orphaned
     if (!deleteRoot && unlock(tree->queryServerId(), id, true)) // unlock returns true if last unlock and there was a setDROLR on it
         deleteRoot = true;
