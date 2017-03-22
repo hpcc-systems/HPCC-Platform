@@ -295,7 +295,7 @@ public:
                 }
                 else // only sort non-partition side
                 {
-                    imaster->SortSetup(secondaryRowIf, secondaryCompare, primaryKeySerializer, true, true, NULL, primaryRowIf);
+                    imaster->SortSetup(secondaryRowIf, secondaryCompare, primaryKeySerializer, false, true, NULL, primaryRowIf);
                     ActPrintLog("JOIN waiting for barrier.1");
                     if (barrier->wait(false)) // local sort complete
                     {

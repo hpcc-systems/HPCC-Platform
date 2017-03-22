@@ -4129,6 +4129,18 @@ void CHqlRealExpression::updateFlagsAfterOperands()
                 infoFlags = (infoFlags &~HEFthrowds)|HEFthrowscalar;
             infoFlags2 |= HEF2containsNewDataset;
         }
+        if (isDataset())
+        {
+            IHqlExpression * left = queryChild(0);
+            while (left->getOperator() == no_select)
+            {
+                if (!left->isDatarow())
+                    break;
+                left = left->queryChild(0);
+            }
+            if (left->isDataset())
+                infoFlags2 |= HEF2containsImplicitNormalize;
+        }
         break;
     case no_filepos:
     case no_file_logicalname:

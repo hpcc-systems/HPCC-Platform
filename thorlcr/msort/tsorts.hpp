@@ -58,6 +58,7 @@ public:
     virtual IRowStream * startMerge(rowcount_t &totalrows)=0;
     virtual void stopMerge()=0;
     virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
+    virtual rowcount_t getGlobalCount() const = 0;
 };
 
 interface IDiskUsage;

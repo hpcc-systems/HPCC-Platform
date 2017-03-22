@@ -178,7 +178,7 @@ enum
     HEF2containsSelf            = 0x00000010,
     HEF2containsNewDataset      = 0x00000020,
     HEF2constant                = 0x00000040,
-    HEF2____unused1____         = 0x00000080,
+    HEF2containsImplicitNormalize = 0x00000080,             // does it contain an expression of the form dataset.child?
     HEF2globalAction            = 0x00000100,               // Can only be evaluated globally
     HEF2containsCall            = 0x00000200,
     HEF2containsDelayedCall     = 0x00000400,
@@ -186,7 +186,7 @@ enum
     //NB: infoFlags2 is currently 2 bytes
     HEF2alwaysInherit           = (HEF2workflow|HEF2containsCall|HEF2containsDelayedCall),
     HEF2intersectionFlags       = (HEF2constant),
-    HEF2unionFlags              = (HEF2alwaysInherit)|(HEF2mustHoist|HEF2assertstepped|HEF2containsNonGlobalAlias|HEF2containsNewDataset|HEF2globalAction|HEF2containsSelf),
+    HEF2unionFlags              = (HEF2alwaysInherit)|(HEF2mustHoist|HEF2assertstepped|HEF2containsNonGlobalAlias|HEF2containsNewDataset|HEF2globalAction|HEF2containsSelf|HEF2containsImplicitNormalize),
     HEF2assigninheritFlags      = ~(HEF2alwaysInherit),         // An assign inherits all but this list from the rhs value 
 };
 
@@ -1728,6 +1728,7 @@ inline bool containsCall(IHqlExpression * expr, bool includeOutOfLine)
     unsigned mask = includeOutOfLine ? HEF2containsCall : HEF2containsDelayedCall;
     return (expr->getInfoFlags2() & mask) != 0;
 }
+inline bool containsImplicitNormalize(IHqlExpression * expr) { return (expr->getInfoFlags2() & HEF2containsImplicitNormalize) != 0; }
 
 inline bool hasDynamic(IHqlExpression * expr)           { return expr->hasAttribute(dynamicAtom); }
 inline bool isAbstractDataset(IHqlExpression * expr)    
