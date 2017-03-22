@@ -148,7 +148,7 @@ public:
     EclCmdRoxieAttach(bool _attach) : optMsToWait(10000), attach(_attach)
     {
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         for (; !iter.done(); iter.next())
         {
@@ -160,16 +160,17 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return false;
+                    return EclCmdOptionNoMatch;
                 }
                 continue;
             }
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
@@ -253,7 +254,7 @@ public:
     EclCmdRoxieCheckOrReload(bool _reload) : optMsToWait(10000), reload(_reload), optRetry(false)
     {
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         for (; !iter.done(); iter.next())
         {
@@ -265,7 +266,7 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return false;
+                    return EclCmdOptionNoMatch;
                 }
                 continue;
             }
@@ -273,10 +274,11 @@ public:
                 continue;
             if (reload && iter.matchFlag(optRetry, ECLOPT_RETRY))
                 continue;
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
@@ -372,7 +374,7 @@ public:
     EclCmdRoxieUnusedFiles() : optCheckPackageMaps(false), optDeleteFiles(false), optDeleteSubFiles(false), optDeleteRecursive(false)
     {
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         for (; !iter.done(); iter.next())
         {
@@ -384,7 +386,7 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return false;
+                    return EclCmdOptionNoMatch;
                 }
                 continue;
             }
@@ -396,10 +398,11 @@ public:
                 continue;
             if (iter.matchFlag(optDeleteFiles, ECLOPT_DELETE_FILES))
                 continue;
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {

@@ -230,20 +230,22 @@ public:
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
-            if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdWithEclTarget::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
+
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
@@ -298,10 +300,10 @@ public:
         optTimeLimit = (unsigned) -1;
         optWarnTimeLimit = (unsigned) -1;
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
@@ -355,10 +357,11 @@ public:
                 continue;
             if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
-            if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdWithEclTarget::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
@@ -547,10 +550,10 @@ public:
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject | eclObjWuid | eclObjQuery;
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
@@ -572,10 +575,11 @@ public:
                 continue;
             if (iter.matchOption(optExceptionSeverity, ECLOPT_EXCEPTION_LEVEL))
                 continue;
-            if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdWithEclTarget::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
@@ -1105,11 +1109,11 @@ public:
     {
         optObj.accept = eclObjWuid;
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
-        bool retVal = false;
+        eclCmdOptionMatchIndicator retVal = EclCmdOptionNoMatch;
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
@@ -1117,17 +1121,18 @@ public:
             if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
             {
                 optObj.type = eclObjWuid;
-                retVal = true;
+                retVal = EclCmdOptionMatch;
                 continue;
             }
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
             {
                 optObj.type = eclObjQuery;
-                retVal = true;
+                retVal = EclCmdOptionMatch;
                 continue;
             }
-            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
         return retVal;
     }
@@ -1234,11 +1239,11 @@ public:
     {
         optObj.accept = eclObjWuid;
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
-        bool retVal = false;
+        eclCmdOptionMatchIndicator retVal = EclCmdOptionNoMatch;
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
@@ -1246,15 +1251,16 @@ public:
             if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
             {
                 optObj.type = eclObjWuid;
-                retVal = true;
+                retVal = EclCmdOptionMatch;
                 continue;
             }
             if (iter.matchOption(optListLimit, ECLOPT_RESULT_LIMIT))
             {
                 continue;
             }
-            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
         return retVal;
     }
@@ -1317,26 +1323,27 @@ public:
     {
 
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
-        bool retVal = false;
+        eclCmdOptionMatchIndicator retVal = EclCmdOptionNoMatch;
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
             {
-                retVal = true;
+                retVal = EclCmdOptionMatch;
                 continue;
             }
             if (iter.matchOption(optListLimit, ECLOPT_RESULT_LIMIT))
             {
                 continue;
             }
-            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
         return retVal;
     }
@@ -1400,11 +1407,11 @@ public:
     {
         optObj.accept = eclObjWuid;
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
-        bool retVal = false;
+        eclCmdOptionMatchIndicator retVal = EclCmdOptionNoMatch;
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
@@ -1412,21 +1419,22 @@ public:
             if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
             {
                 optObj.type = eclObjWuid;
-                retVal = true;
+                retVal = EclCmdOptionMatch;
                 continue;
             }
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
             {
                 optObj.type = eclObjQuery;
-                retVal = true;
+                retVal = EclCmdOptionMatch;
                 continue;
             }
             if (iter.matchOption(optListLimit, ECLOPT_RESULT_LIMIT))
             {
                 continue;
             }
-            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
         return retVal;
     }

@@ -23,9 +23,16 @@
 
 //=========================================================================================
 
+enum eclCmdOptionMatchIndicator
+{
+    EclCmdOptionNoMatch=0,
+    EclCmdOptionMatch=1,
+    EclCmdOptionCompletion=2
+};
+
 interface IEclCommand : extends IInterface
 {
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)=0;
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)=0;
     virtual bool finalizeOptions(IProperties *globals)=0;
     virtual int processCMD()=0;
     virtual void usage()=0;
@@ -214,13 +221,6 @@ public:
     unsigned accept;
 };
 
-enum eclCmdOptionMatchIndicator
-{
-    EclCmdOptionNoMatch=0,
-    EclCmdOptionMatch=1,
-    EclCmdOptionCompletion=2
-};
-
 class EclCmdCommon : implements IEclCommand, public CInterface
 {
 public:
@@ -329,7 +329,7 @@ public:
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
     virtual bool finalizeOptions(IProperties *globals);
-    virtual bool parseCommandLineOptions(ArgvIterator &iter);
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter);
 
     virtual void usage()
     {
