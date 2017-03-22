@@ -474,6 +474,7 @@ class WuTool : public CppUnit::TestFixture
         CPPUNIT_TEST(testValidate);
         CPPUNIT_TEST(testList);
         CPPUNIT_TEST(testList2);
+        CPPUNIT_TEST(testList3);
         CPPUNIT_TEST(testListByAppValue);
         CPPUNIT_TEST(testListByAppValueWild);
         CPPUNIT_TEST(testListByFilesRead);
@@ -1568,6 +1569,81 @@ protected:
         }
         DBGLOG("%d workunits descending thortime, page by page in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == before);
+    }
+
+    void testList3()
+    {
+        // Now by owner and 2 states via generic mechanism
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned start = msTick();
+        Owned<IConstWorkUnitIterator> wus;
+        __int64 cachehint = 0;
+        unsigned startRow = 0;
+
+        unsigned numCompleted = 0;
+        unsigned numFailed = 0;
+        WUSortField sortByOwner[] = { WUSFuser, WUSFstate, WUSFterm };
+
+        unsigned before = factory->numWorkUnits();
+        if (before > 0)
+        {
+            start = msTick();
+            wus.setown(factory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), sortByOwner, "WuTestUser00\0completed|failed", 0, 10000, NULL, NULL));
+            ForEach(*wus)
+            {
+                IConstWorkUnitInfo &wu = wus->query();
+                ASSERT(streq(wu.queryUser(), "WuTestUser00"));
+                ASSERT((wu.getState()==WUStateCompleted) || (wu.getState()==WUStateFailed));
+                if ((wu.getState()==WUStateCompleted))
+                    numCompleted++;
+                else
+                    numFailed++;
+            }
+            DBGLOG("%d completed workunits listed and %d failed workunits listed in %d ms", numCompleted, numFailed, msTick()-start);
+        }
+
+        if ((numCompleted > 0) || (numFailed > 0))
+            return;
+
+        StringArray wuidsNew;
+        unsigned newCompleted = 2;
+        unsigned newFailed = 3;
+        for (int i = 0; i < newCompleted + newFailed; i++)
+        {
+            VStringBuffer userId("WuTestUser00");
+            VStringBuffer clusterName("WuTestCluster0");
+            Owned<IWorkUnit>wu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
+            if (i % 2)
+                wu->setState(WUStateCompleted);
+            else
+                wu->setState(WUStateFailed);
+            wu->setUser(userId);
+            wu->setClusterName(clusterName);
+            wuidsNew.append(wu->queryWuid());
+        }
+        DBGLOG("Temporarily added %d completed workunits and %d failed workunits only for this test.", newCompleted, newFailed);
+
+        unsigned numCompletedWithNew = 0;
+        unsigned numFailedWithNew = 0;
+        start = msTick();
+        wus.setown(factory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), sortByOwner, "WuTestUser00\0completed|failed", 0, 10000, NULL, NULL));
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryUser(), "WuTestUser00"));
+            ASSERT((wu.getState()==WUStateCompleted) || (wu.getState()==WUStateFailed));
+            if ((wu.getState()==WUStateCompleted))
+                numCompletedWithNew++;
+            else
+                numFailedWithNew++;
+        }
+        DBGLOG("%d completed workunits listed and %d failed workunits listed in %d ms", numCompletedWithNew, numFailedWithNew, msTick()-start);
+        ASSERT((numCompletedWithNew==numCompleted + newCompleted) && (numFailedWithNew==numFailed + newFailed));
+
+        for (int i = 0; i < newCompleted + newFailed; i++)
+        {
+            factory->deleteWorkUnit(wuidsNew.item(i));
+        }
     }
 
     void testListByAppValue()
