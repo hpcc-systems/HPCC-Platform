@@ -198,7 +198,24 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
 
         const char *errText = soap_response->get_err();
         if (errText && *errText)
-            errmsg.appendf("[%s]", errText);
+        {
+            if (retstatus == SOAP_SERVER_ERROR) //check for special case of VERY ugly soapfault string
+            {
+                const char *faultString = strstr(errText, "string=[");
+                if (faultString)
+                {
+                    faultString += 8;
+                    const char *endString = strchr(faultString, ']');
+                    if (endString)
+                    {
+                        errmsg.clear().append(endString-faultString, faultString);
+                        errText = nullptr;
+                    }
+                }
+            }
+            if (errText)
+                errmsg.appendf("[%s]", errText);
+        }
 
         throw MakeStringException(retstatus, "%s", errmsg.str());
     }

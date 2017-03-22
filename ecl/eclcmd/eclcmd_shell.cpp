@@ -140,7 +140,7 @@ int EclCMDShell::run()
     catch (IException *E)
     {
         StringBuffer m;
-        fputs(E->errorMessage(m).newline().str(), stderr);
+        fputs(E->errorMessage(m.newline()).newline().str(), stderr);
         E->Release();
         return 2;
     }
