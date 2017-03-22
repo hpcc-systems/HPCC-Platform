@@ -2881,6 +2881,67 @@ public:
                                                 ISecManager *secmgr,
                                                 ISecUser *secuser)
     {
+        class CQueryOrFilter : public CInterface, implements IInterface
+        {
+            int fmt;
+            StringAttr name;
+            StringArray values;
+        public:
+            IMPLEMENT_IINTERFACE;
+
+            CQueryOrFilter() {};
+
+            void setName(const char* _name) { name.set(_name); };
+            void setFormat(int _fmt) { fmt = _fmt; };
+            void appendValue(const char* _value) { values.append(_value); };
+            const char* getName() { return name.get(); };
+            int getFormat() { return fmt; };
+            StringArray& getValues() { return values; };
+        };
+        class CWorkUnitsPagerHelper : public CInterface, implements IInterface
+        {
+        public:
+            IMPLEMENT_IINTERFACE;
+
+            CWorkUnitsPagerHelper() {};
+            void setOrFilter(CQueryOrFilter& orFilter, int fmt, const char* name, const char* value, const char* sep)
+            {
+                if (!strieq(name, getEnumText(WUSFstate,workunitSortFields)) && !strieq(name, getEnumText(WUSFuser,workunitSortFields))
+                    && !strieq(name, getEnumText(WUSFcluster,workunitSortFields)))
+                    throw MakeStringException(WUERR_InvalidUserInput, "OR filters not allowed for %s", name);
+
+                StringArray vlist;
+                vlist.appendListUniq(value, sep);
+                ForEachItemIn(q, vlist)
+                {
+                    const char* v = vlist.item(q);
+                    if (!isEmptyString(v))
+                        orFilter.appendValue(v);
+                }
+                if (orFilter.getValues().length() < 2)
+                    throw MakeStringException(WUERR_InvalidUserInput, "Invalid OR filter %s for %s", value, name);
+
+                orFilter.setName(name);
+                orFilter.setFormat(fmt);
+            };
+            void appendFilterToQueryString(StringBuffer& query, int fmt, const char* name, const char* value)
+            {
+                query.append('[').append(name).append('=');
+                if (fmt&WUSFnocase)
+                    query.append('?');
+                if (fmt&WUSFwild)
+                    query.append('~');
+                query.append('"').append(value).append("\"]");
+            };
+            void addToWUTree(IPropertyTree* wuTree, IPropertyTreeIterator* from)
+            {
+                ForEach (*from)
+                {
+                    IPropertyTree& pt = from->query();
+                    wuTree->addPropTree(pt.queryName(), LINK(&pt));
+                }
+            };
+        };
         class CWorkUnitsPager : public CSimpleInterface, implements IElementsPager
         {
             StringAttr xPath;
@@ -2888,12 +2949,13 @@ public:
             StringAttr nameFilterLo;
             StringAttr nameFilterHi;
             StringArray unknownAttributes;
+            CQueryOrFilter* orFilter;
 
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-            CWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi, StringArray& _unknownAttributes)
-                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
+            CWorkUnitsPager(const char* _xPath, CQueryOrFilter* _orFilter, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi, StringArray& _unknownAttributes)
+                : xPath(_xPath), orFilter(_orFilter), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
             {
                 ForEachItemIn(x, _unknownAttributes)
                     unknownAttributes.append(_unknownAttributes.item(x));
@@ -2903,7 +2965,31 @@ public:
                 Owned<IRemoteConnection> conn = querySDS().connect("WorkUnits", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
                 if (!conn)
                     return NULL;
-                Owned<IPropertyTreeIterator> iter = conn->getElements(xPath);
+                Owned<IPropertyTreeIterator> iter;
+                if (!orFilter)
+                {
+                    iter.setown(conn->getElements(xPath.get()));
+                }
+                else
+                {
+                    CWorkUnitsPagerHelper helper;
+                    Owned<IPropertyTree> wuTree = createPTree("WorkUnits");
+
+                    const char* name = orFilter->getName();
+                    int fmt = orFilter->getFormat();
+                    StringArray& values = orFilter->getValues();
+                    ForEachItemIn(i, values)
+                    {
+                        StringBuffer path = xPath.get();
+                        const char* value = values.item(i);
+                        helper.appendFilterToQueryString(path, fmt, name, value);
+                        Owned<IPropertyTreeIterator> itr = conn->getElements(path.str());
+                        if (itr)
+                            helper.addToWUTree(wuTree, itr);
+                    }
+                    if(wuTree->hasChildren())
+                        iter.setown(wuTree->getElements("*"));
+                }
                 if (!iter)
                     return NULL;
                 sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), unknownAttributes, elements);
@@ -2946,6 +3032,9 @@ public:
                 return ret;
             }
         };
+        CWorkUnitsPagerHelper helper;
+        bool hasOrFilter = false;
+        CQueryOrFilter orFilter;
         Owned<ISortedElementsTreeFilter> sc = new CScopeChecker(secmgr,secuser);
         StringBuffer query;
         StringBuffer so;
@@ -2984,12 +3073,16 @@ public:
                 }
                 else
                 {
-                    query.append('[').append(getEnumText(subfmt,workunitSortFields)).append('=');
-                    if (fmt&WUSFnocase)
-                        query.append('?');
-                    if (fmt&WUSFwild)
-                        query.append('~');
-                    query.append('"').append(fv).append("\"]");
+                    const char* fieldName = getEnumText(subfmt,workunitSortFields);
+                    if (!strchr(fv, '|'))
+                        helper.appendFilterToQueryString(query, fmt, fieldName, fv);
+                    else if (hasOrFilter)
+                        throw MakeStringException(WUERR_InvalidUserInput, "Multiple OR filters not allowed");
+                    else
+                    {
+                        helper.setOrFilter(orFilter, fmt, fieldName, fv, "|");
+                        hasOrFilter = true;
+                    }
                 }
                 fv = fv + strlen(fv)+1;
             }
@@ -3010,7 +3103,7 @@ public:
             so.append(getEnumText(sortorder&0xff,workunitSortFields));
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
+        Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), hasOrFilter ? &orFilter : nullptr, so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
         Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,secmgr?sc:NULL,"",cachehint,results,total,NULL);
         return new CConstWUArrayIterator(results);
     }
