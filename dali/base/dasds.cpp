@@ -7310,9 +7310,10 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
                 unsigned l = _deltaPath.length();
                 const char *t = queryHead(headPath.str(), _deltaPath);
                 assertex(l != _deltaPath.length());
-                headPath.clear();
                 if (t)
-                    headPath.append(t);
+                    headPath.remove(0, _deltaPath.length());
+                else
+                    headPath.clear();
                 if (++s>=connection->queryPTreePath().ordinality())
                     break;
             }
