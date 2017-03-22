@@ -632,7 +632,7 @@ public:
     virtual IEngineContext *queryEngineContext() { return NULL; }
     virtual IWorkUnit *updateWorkUnit() const { throwUnexpected(); }
     virtual unsigned getGraphLoopCounter() const override { return queryContext->queryCodeContext()->getGraphLoopCounter(); }
-    virtual IEclGraphResults * resolveLocalQuery(__int64 activityId) override { return queryContext->queryCodeContext()->resolveLocalQuery(activityId); }
+    virtual IEclGraphResults * resolveLocalQuery(__int64 activityId) override { return NULL; } // Only want to do this on the server
     virtual IDebuggableContext *queryDebugContext() const override { return queryContext->queryCodeContext()->queryDebugContext(); }
 
 };

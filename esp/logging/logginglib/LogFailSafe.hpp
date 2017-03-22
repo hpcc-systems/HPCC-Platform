@@ -40,6 +40,7 @@ interface ILogFailSafe : IInterface
 
     virtual void RolloverAllLogs()=0;//
     virtual bool PopPendingLogRecord(StringBuffer& GUID, StringBuffer& cache) = 0;//
+    virtual bool canRollCurrentLog() = 0;
 };
 
 extern LOGGINGCOMMON_API ILogFailSafe* createFailSafeLogger(const char* logType="", const char* logsdir="./logs");
@@ -87,6 +88,7 @@ public:
 
     virtual void RolloverAllLogs();//
     virtual bool PopPendingLogRecord(StringBuffer& GUID, StringBuffer& cache);//
+    virtual bool canRollCurrentLog() { return m_Added.getItemCount() == m_Cleared.getItemCount(); };
 };
 
 #endif // !_LOGFAILSAFE_HPP__

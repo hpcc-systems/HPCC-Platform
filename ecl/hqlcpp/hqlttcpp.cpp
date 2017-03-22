@@ -8961,6 +8961,9 @@ IHqlExpression * DFSLayoutTransformer::createTransformed(IHqlExpression * expr)
                         // Note - this doesn't merit a warning - but if we changed the number of keyed it might?
                         ds.setown(replaceOwnedAttribute(ds, createExprAttribute(_payload_Atom, createConstant((int) dfsPayload))));
                     }
+                    // NOTE - we assume that the dfs info will always include a fileposition field, even if the ECL definition did not.
+                    // Hence we always need to set the filepositionAtom indicator to true
+                    ds.setown(replaceOwnedAttribute(ds, createExprAttribute(filepositionAtom, createConstant(true))));
                 }
 
                 OwnedHqlExpr diskread = replaceChild(ds, recordIdx, dfsLayout);

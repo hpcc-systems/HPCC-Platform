@@ -406,7 +406,7 @@ void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &ent
         catch (IException *E)
         {
             DBGLOG(E, "DynamicESDL-JavaMethod:");
-            E->Release();
+            javaExceptionMap.setValue(javaScopedClass, E);
         }
     }
 }
@@ -592,7 +592,17 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 
             Linked<IEmbedServiceContext> srvctx = javaServiceMap.getValue(javaScopedClass);
             if (!srvctx)
-                throw makeWsException(ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "ESDL", "Java class %s not loaded for method %s", javaScopedClass, mthName);
+            {
+                StringBuffer errmsg;
+                errmsg.appendf("Java class %s not loaded for method %s", javaScopedClass, mthName);
+                Linked<IException> exception = javaExceptionMap.getValue(javaScopedClass);
+                if(exception)
+                {
+                    errmsg.append(". Cause: ");
+                    exception->errorMessage(errmsg);
+                }
+                throw makeWsException(ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "ESDL", "%s", errmsg.str());
+            }
 
             //"WsWorkunits.WsWorkunitsService.WUAbort:(LWsWorkunits/EsdlContext;LWsWorkunits/WUAbortRequest;)LWsWorkunits/WUAbortResponse;";
             VStringBuffer signature("%s:(L%s/EsdlContext;L%s/%s;)L%s/%s;", javaScopedMethod, javaPackage, javaPackage, mthdef.queryRequestType(), javaPackage, mthdef.queryResponseType());
