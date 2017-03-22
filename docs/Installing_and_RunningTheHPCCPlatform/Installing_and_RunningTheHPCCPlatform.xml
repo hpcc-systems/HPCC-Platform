@@ -894,8 +894,8 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Enter the all the IP addresses you want to use in this
-            HPCC.</para>
+            <para>Enter all the IP addresses you want to use for this HPCC.
+            Alternatively, you could enter the hostname(s).</para>
 
             <para>The IP addresses do not need to be contiguous. In the image
             below, we specified the IP addresses nn.nnn.nnn.1-100 and
@@ -911,9 +911,6 @@
           <listitem>
             <para>Press the <emphasis role="bold">Next</emphasis>
             button.</para>
-
-            <para>Alternatively, you could find the IP addresses using Auto
-            Discovery by selecting the Auto Discovery button.</para>
 
             <para>Now you will define how many nodes to use for the Roxie and
             Thor clusters.</para>

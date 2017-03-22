@@ -163,13 +163,14 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Enter the IP addresses.</para>
+            <para>Enter the IP addresses or hostname(s). </para>
 
             <para>IP Addresses can be specified individually using semi-colon
             delimiters. You can also specify a range of IPs using a hyphen
             (for example, nnn.nnn.nnn.x-y). In the image below, we specified
             the IP addresses 10.239.219.1 through 10.239.219.100 using the
-            range syntax, and also a single IP 10.239.219.111.</para>
+            range syntax, and also a single IP 10.239.219.111. Alternatively,
+            you can enter the hostnames. </para>
 
             <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg"
             vendor="configmgrSS" /></para>
@@ -1400,7 +1401,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </para>
 
           <para>Additional information about the available Authentication
-          methods: </para>
+          methods:</para>
 
           <para>
             <informaltable colsep="1" frame="all" rowsep="1">
@@ -1445,8 +1446,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 </tbody>
               </tgroup>
             </informaltable>
-
-            
           </para>
         </sect3>
 
