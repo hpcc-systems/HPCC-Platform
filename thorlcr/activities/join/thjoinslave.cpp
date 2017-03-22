@@ -541,6 +541,7 @@ public:
         OwnedConstThorRow partitionRow;
         rowcount_t totalrows;
 
+        bool usePrimaryPartition = true;
         if (noSortPartitionSide())
         {
             partitionRow.setown(primaryInputStream->ungroupedNextRow());
@@ -571,9 +572,14 @@ public:
                 return false;
             ActPrintLog("JOIN barrier.2 raised");
             sorter->stopMerge();
+            if (0 == sorter->getGlobalCount())
+                usePrimaryPartition = false;
         }
         // NB: on secondary sort, the primaryKeySerializer is used
-        sorter->Gather(secondaryRowIf, secondaryInputStream, secondaryCompare, primarySecondaryCompare, primarySecondaryUpperCompare, primaryKeySerializer, primaryCompare, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, primaryRowIf); // primaryKeySerializer *is* correct
+        if (usePrimaryPartition)
+            sorter->Gather(secondaryRowIf, secondaryInputStream, secondaryCompare, primarySecondaryCompare, primarySecondaryUpperCompare, primaryKeySerializer, primaryCompare, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, primaryRowIf); // primaryKeySerializer *is* correct
+        else
+            sorter->Gather(secondaryRowIf, secondaryInputStream, secondaryCompare, nullptr, nullptr, nullptr, nullptr, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, nullptr);
         mergeStats(spillStats, sorter);
         //MORE: Stats from spilling the primaryStream??
         partitionRow.clear();
