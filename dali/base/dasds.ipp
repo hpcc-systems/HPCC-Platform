@@ -225,7 +225,9 @@ class CBranchChange;
 ///////////////////
 class CSubscriberContainerList;
 
-class CRemoteTreeBase : public PTree
+#define SDS_PTREE CAtomPTree
+
+class CRemoteTreeBase : public SDS_PTREE
 {
 public:
     CRemoteTreeBase(MemoryBuffer &mb);
@@ -238,24 +240,15 @@ public:
 
     void clearChildren();
     CRemoteTreeBase *createChild(int pos, const char *childName);
-    
+
     inline __int64 queryServerId() { return serverId; }
     virtual void setServerId(__int64 _serverId);
     virtual CSubscriberContainerList *getSubscribers(const char *xpath, CPTStack &stack) { UNIMPLEMENTED; return NULL; } // JCSMORE
 
-// PTree
-    virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, CRemoteTreeBase)); }
-    virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) = 0;
-    virtual IPropertyTree *create(MemoryBuffer &mb) = 0;
-
-// ITrackChanges
-    virtual ChangeInfo *queryChanges() { assertex(false); return NULL; }
-    virtual void registerRenamed(const char *newName, const char *oldName, unsigned pos, __int64 id) { }
-    virtual void registerDeleted(const char *name, unsigned pos, __int64 id) { }
-    virtual void registerDeletedAttr(const char *attr) { }
-    virtual void clearChanges() { assertex(false); }
-    virtual void registerAttrChange(const char *attr) { }
-    virtual void registerPropAppend(size32_t l) { }
+// PTree overrides
+    virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, CRemoteTreeBase)); }
+    virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override = 0;
+    virtual IPropertyTree *create(MemoryBuffer &mb) override = 0;
 
 protected: // data
     __int64 serverId;

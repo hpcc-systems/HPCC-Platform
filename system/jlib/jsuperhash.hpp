@@ -478,11 +478,8 @@ friend class AtomRefTable;
 typedef const char constcharptr;
 class jlib_decl AtomRefTable : public SuperHashTableOf<HashKeyElement, constcharptr>
 {
-protected:
-    CriticalSection crit;
-    bool nocase;
-
-    inline HashKeyElement *createKeyElement(const char *key)
+public:
+    static HashKeyElement *createKeyElement(const char *key, bool nocase)
     {
         size32_t l = (size32_t)strlen(key);
         HashKeyElement *hke = (HashKeyElement *) checked_malloc(sizeof(HashKeyElement)+l+1,-605);
@@ -492,6 +489,16 @@ protected:
         else
             hke->hashValue = hashc((const unsigned char *)key, l, 0);
         hke->linkCount = 0;
+        return hke;
+    }
+
+protected:
+    CriticalSection crit;
+    bool nocase;
+
+    inline HashKeyElement *createKeyElement(const char *key)
+    {
+        HashKeyElement *hke = createKeyElement(key, nocase);
         verifyex(add(*hke));
         return hke;
     }

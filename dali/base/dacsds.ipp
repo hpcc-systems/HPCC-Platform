@@ -287,6 +287,8 @@ public:
 ////////////////////
 class CClientRemoteTree : implements ITrackChanges, public CRemoteTreeBase
 {
+    typedef CRemoteTreeBase PARENT;
+
     DECL_NAMEDCOUNT;
     IPropertyTree *_queryBranch(const char *xpath);
     ChildMap *_checkChildren();
@@ -307,12 +309,8 @@ public:
     virtual void Link() const;
     virtual bool Release() const;
 
-    virtual bool renameTree(IPropertyTree *tree, const char *newName);
-
-    virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, CClientRemoteTree)); }
-    
-    virtual void deserializeSelfRT(MemoryBuffer &mb);
-    virtual void deserializeChildrenRT(MemoryBuffer &src);
+    virtual void deserializeSelfRT(MemoryBuffer &mb) override;
+    virtual void deserializeChildrenRT(MemoryBuffer &src) override;
 
     inline void addServerTreeInfo(byte STIInfo) { serverTreeInfo += STIInfo; }
     inline bool queryLazyFetch() const { return connection.queryLazyFetch(); }
@@ -324,48 +322,51 @@ public:
     void checkExt() const;
 
     virtual bool setLazyFetch(bool fetch) { return connection.setLazyFetch(fetch); }
-    virtual ChildMap *checkChildren() const;
-    virtual IPropertyTree *create(const char *name, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false);
-    virtual IPropertyTree *create(MemoryBuffer &mb);
-    virtual void createChildMap();
-    virtual IPropertyTree *ownPTree(IPropertyTree *tree);
-    virtual void setLocal(size32_t size, const void *data, bool _binary);
-    virtual void appendLocal(size32_t size, const void *data, bool binary);
-    virtual void addingNewElement(IPropertyTree &child, int pos);
-    virtual void removingElement(IPropertyTree *tree, unsigned pos);
-    virtual void setAttr(const char *attr, const char *val);
-    virtual bool removeAttr(const char *attr);
+
+// PTree overrides
+    virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, CClientRemoteTree)); }
+    virtual ChildMap *checkChildren() const override;
+    virtual IPropertyTree *create(const char *name, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override;
+    virtual IPropertyTree *create(MemoryBuffer &mb) override;
+    virtual void createChildMap() override;
+    virtual IPropertyTree *ownPTree(IPropertyTree *tree) override;
+    virtual void setLocal(size32_t size, const void *data, bool _binary) override;
+    virtual void appendLocal(size32_t size, const void *data, bool binary) override;
+    virtual void addingNewElement(IPropertyTree &child, int pos) override;
+    virtual void removingElement(IPropertyTree *tree, unsigned pos) override;
+    virtual void setAttribute(const char *attr, const char *val) override;
+    virtual bool removeAttribute(const char *attr) override;
 
 // IPropertyTree
-    virtual void addProp(const char *xpath, const char *val);
-    virtual void setProp(const char *xpath, const char *val);
-    virtual void addPropInt64(const char *xpath, __int64 val);
-    virtual void setPropInt64(const char *xpath, __int64 val);
-    virtual void setPropBin(const char *xpath, size32_t size, const void *data);
-    virtual IPropertyTree *setPropTree(const char *xpath, IPropertyTree *val);
-    virtual IPropertyTree *addPropTree(const char *xpath, IPropertyTree *val);
-    virtual bool removeProp(const char *xpath);
-    virtual bool removeTree(IPropertyTree *child);
-    virtual IPropertyTreeIterator *getElements(const char *xpath, IPTIteratorCodes flags = iptiter_null) const;
-    virtual bool isCompressed(const char *xpath=NULL) const;
-    virtual bool getProp(const char *xpath, StringBuffer &ret) const;
-    virtual const char *queryProp(const char * xpath) const;
-    virtual bool getPropBool(const char *xpath, bool dft=false) const;
-    virtual __int64 getPropInt64(const char *xpath, __int64 dft=0) const;
-    virtual bool getPropBin(const char *xpath, MemoryBuffer &ret) const;
-    virtual void localizeElements(const char *xpath, bool allTail=false);
-    virtual IPropertyTree *queryBranch(const char *xpath) const;
-    virtual bool hasChildren() const { return (children && children->count()) || (!children && 0 != (serverTreeInfo & STI_HaveChildren)); }
+    virtual bool renameTree(IPropertyTree *tree, const char *newName) override;
+    virtual void addProp(const char *xpath, const char *val) override;
+    virtual void setProp(const char *xpath, const char *val) override;
+    virtual void addPropInt64(const char *xpath, __int64 val) override;
+    virtual void setPropInt64(const char *xpath, __int64 val) override;
+    virtual void setPropBin(const char *xpath, size32_t size, const void *data) override;
+    virtual IPropertyTree *setPropTree(const char *xpath, IPropertyTree *val) override;
+    virtual IPropertyTree *addPropTree(const char *xpath, IPropertyTree *val) override;
+    virtual bool removeProp(const char *xpath) override;
+    virtual bool removeTree(IPropertyTree *child) override;
+    virtual IPropertyTreeIterator *getElements(const char *xpath, IPTIteratorCodes flags = iptiter_null) const override;
+    virtual bool isCompressed(const char *xpath=NULL) const override;
+    virtual bool getProp(const char *xpath, StringBuffer &ret) const override;
+    virtual const char *queryProp(const char * xpath) const override;
+    virtual bool getPropBool(const char *xpath, bool dft=false) const override;
+    virtual __int64 getPropInt64(const char *xpath, __int64 dft=0) const override;
+    virtual bool getPropBin(const char *xpath, MemoryBuffer &ret) const override;
+    virtual void localizeElements(const char *xpath, bool allTail=false) override;
+    virtual IPropertyTree *queryBranch(const char *xpath) const override;
+    virtual bool hasChildren() const override { return (children && children->count()) || (!children && 0 != (serverTreeInfo & STI_HaveChildren)); }
 
 // ITrackChanges
-    virtual ChangeInfo *queryChanges();
-    virtual void registerRenamed(const char *newName, const char *oldName, unsigned pos, __int64 id);
-    virtual void registerDeleted(const char *name, unsigned position, __int64 id);
-    virtual void registerDeletedAttr(const char *attr);
-    virtual void clearChanges();
-
-    virtual void registerAttrChange(const char *attr);
-    virtual void registerPropAppend(size32_t l);
+    virtual ChangeInfo *queryChanges() override;
+    virtual void registerRenamed(const char *newName, const char *oldName, unsigned pos, __int64 id) override;
+    virtual void registerDeleted(const char *name, unsigned position, __int64 id) override;
+    virtual void registerDeletedAttr(const char *attr) override;
+    virtual void clearChanges() override;
+    virtual void registerAttrChange(const char *attr) override;
+    virtual void registerPropAppend(size32_t l) override;
 
 private: // data
     unsigned state;
