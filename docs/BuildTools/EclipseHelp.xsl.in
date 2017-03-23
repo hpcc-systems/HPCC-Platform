@@ -10,7 +10,7 @@
      $: EclipseHelp.xsl 1676 2013-09-23 16:20:PanaG :$
      ********************************************************************
 
-     This file is used by EclipseHelp Intended to generate Eclispe Help.
+     This file is used by EclipseHelp to generate HTML based Eclispe Help Files.
      It is based on the XSL DocBook Stylesheet distribution from Norman Walsh.
      Modified and customized for HPCC Systems by GPanagiotatos - 2013
 
@@ -29,5 +29,11 @@
 <xsl:param name="chunk.section.depth" select="1" />
 <xsl:param name="toc.section.depth">1</xsl:param>
 <xsl:param name="generate.toc">book toc</xsl:param>
+
+<!--FIX-HPCC-15278-GP-3-17--> 
+ <xsl:template match="processing-instruction('linebreak')">
+   <BR/>
+ </xsl:template>
+
 
 </xsl:stylesheet>
