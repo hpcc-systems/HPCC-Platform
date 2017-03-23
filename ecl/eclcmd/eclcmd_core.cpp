@@ -159,8 +159,12 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
     }
     catch (IException *E)
     {
+        StringBuffer msg;
+        int code = E->errorCode();
         //ESP doesn't want to process requests that are too large, and so disconnects before reading
         //  this causes issues capturing the error returned... check if that may have been the issue
+        if (code==SOAP_AUTHENTICATION_ERROR || (code==SOAP_SERVER_ERROR && streq(E->errorMessage(msg).str(), "401: Unauthorized Access")))
+            throw;
         if (useCompression) //newer build, not a maxRequestEntityLength issue
             throw;
         size32_t maxEntity = getMaxRequestEntityLength(cmd); //only do the work to grab max buffersize if we've failed
