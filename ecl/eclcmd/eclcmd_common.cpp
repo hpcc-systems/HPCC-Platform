@@ -761,15 +761,16 @@ bool EclCmdWithQueryTarget::finalizeOptions(IProperties *globals)
     return EclCmdCommon::finalizeOptions(globals);
 }
 
-bool EclCmdWithQueryTarget::parseCommandLineOptions(ArgvIterator &iter)
+eclCmdOptionMatchIndicator EclCmdWithQueryTarget::parseCommandLineOptions(ArgvIterator &iter)
 {
     if (iter.done())
-        return false;
+        return EclCmdOptionNoMatch;
 
     for (; !iter.done(); iter.next())
     {
-        if (EclCmdWithQueryTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-            return false;
+        eclCmdOptionMatchIndicator ind = EclCmdWithQueryTarget::matchCommandLineOption(iter, true);
+        if (ind != EclCmdOptionMatch)
+            return ind;
     }
-    return true;
+    return EclCmdOptionMatch;
 }

@@ -96,9 +96,11 @@ int EclCMDShell::processCMD(ArgvIterator &iter)
         c->usage();
         return 0;
     }
-    if (!c->parseCommandLineOptions(iter))
+    switch (c->parseCommandLineOptions(iter))
     {
-        c->usage();
+    case EclCmdOptionNoMatch:
+        c->usage(); //fall through
+    case EclCmdOptionCompletion:
         return 0;
     }
     if (!c->finalizeOptions(globals))

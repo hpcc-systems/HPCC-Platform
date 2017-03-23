@@ -92,10 +92,10 @@ public:
     EclCmdQueriesList() : flags(0), optInactive(false), optCheckAllNodes(false)
     {
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
@@ -134,15 +134,16 @@ public:
                         break;
                     default:
                         fprintf(stderr, "Unrecognized --show flag = %c\n", *ch);
-                        return false;
+                        return EclCmdOptionNoMatch;
                     }
                 }
                 continue;
             }
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
@@ -309,10 +310,10 @@ public:
     EclCmdQueryFiles()
     {
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
@@ -326,14 +327,15 @@ public:
                 else
                 {
                     fprintf(stderr, "\n%s option not recognized\n", arg);
-                    return false;
+                    return EclCmdOptionNoMatch;
                 }
                 continue;
             }
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
@@ -410,10 +412,10 @@ public:
         optTimeLimit = (unsigned) -1;
         optWarnTimeLimit = (unsigned) -1;
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
@@ -427,7 +429,7 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return false;
+                    return EclCmdOptionNoMatch;
                 }
                 continue;
             }
@@ -475,10 +477,11 @@ public:
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
@@ -615,10 +618,10 @@ public:
         optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false)
     {
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
@@ -632,7 +635,7 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return false;
+                    return EclCmdOptionNoMatch;
                 }
                 continue;
             }
@@ -656,10 +659,11 @@ public:
                 continue;
             if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
@@ -768,10 +772,10 @@ public:
         optTimeLimit = (unsigned) -1;
         optWarnTimeLimit = (unsigned) -1;
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         if (iter.done())
-            return false;
+            return EclCmdOptionNoMatch;
 
         for (; !iter.done(); iter.next())
         {
@@ -785,7 +789,7 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return false;
+                    return EclCmdOptionNoMatch;
                 }
                 continue;
             }
@@ -803,10 +807,11 @@ public:
                 continue;
             if (iter.matchOption(optComment, ECLOPT_COMMENT))
                 continue;
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {

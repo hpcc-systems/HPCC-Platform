@@ -987,7 +987,7 @@ public:
       : EclCmdCommon(false), bundleCompulsory(_bundleCompulsory)
     {
     }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         for (; !iter.done(); iter.next())
         {
@@ -999,14 +999,15 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return false;
+                    return EclCmdOptionNoMatch;
                 }
                 continue;
             }
-            if (matchCommandLineOption(iter, true) != EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
@@ -1167,7 +1168,7 @@ protected:
 class EclCmdBundleBaseWithVersion : public EclCmdBundleBase
 {
 public:
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
     {
         for (; !iter.done(); iter.next())
         {
@@ -1179,14 +1180,15 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return false;
+                    return EclCmdOptionNoMatch;
                 }
                 continue;
             }
-            if (matchCommandLineOption(iter, true) != EclCmdOptionMatch)
-                return false;
+            eclCmdOptionMatchIndicator ind = matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
         }
-        return true;
+        return EclCmdOptionMatch;
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
     {
