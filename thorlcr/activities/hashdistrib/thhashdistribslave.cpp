@@ -3005,7 +3005,11 @@ void CHashTableRowTable::init(rowidx_t sz)
     // reinitialize if need bigger or if requested size is much smaller than existing
     rowidx_t newMaxRows = activity.queryRowManager()->getExpectedCapacity(sz * sizeof(rowidx_t *), activity.allocFlags) / sizeof(rowidx_t *);
     if (newMaxRows <= maxRows && ((maxRows-newMaxRows) <= HASHDEDUP_HT_INC_SIZE))
+    {
+        clear();
         return;
+    }
+    clearRows();
     ReleaseThorRow(rows);
     OwnedConstThorRow newRows = allocateRowTable(sz);
     if (!newRows)

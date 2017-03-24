@@ -7302,12 +7302,10 @@ public:
 
     virtual void reset()
     {
-#ifdef _DEBUG
         while (survivors.isItem(survivorIndex))
         {
             ReleaseRoxieRow(survivors.item(survivorIndex++));
         }
-#endif
         survivors.kill();
         eof = false;
         first = true;
