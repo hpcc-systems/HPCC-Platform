@@ -104,6 +104,7 @@ class SQSHPCC
   const char *const getRegion(const std::string& region);
   void upstr(char* s);
   std::string convertAwsStringToCharPtr(Aws::String str);
+  char*  convertStringToChar(const string& str);
 };
 
 
