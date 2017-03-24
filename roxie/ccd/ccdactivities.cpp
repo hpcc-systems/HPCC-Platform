@@ -863,7 +863,10 @@ public:
         helper = (IHThorDiskReadBaseArg *) basehelper;
         variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
         isOpt = (helper->getFlags() & TDRoptional) != 0;
-        diskSize.set(helper->queryDiskRecordSize());
+        Linked<IOutputMetaData> diskMeta(helper->queryDiskRecordSize()->querySerializedDiskMeta());
+        if (diskMeta->isGrouped())
+            diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta.getClear()));
+        diskSize.set(diskMeta);
         processed = 0;
         readPos = 0;
         isKeyed = false;
@@ -899,6 +902,21 @@ public:
 
     virtual void setVariableFileInfo()
     {
+        const IPropertyTree *options =  varFileInfo->queryProperties();
+        if (options)
+        {
+            bool isGrouped = options->getPropBool("@grouped");
+            if (isGrouped && !diskSize.isGrouped())
+            {
+                // We are prepared to read contents of a grouped persist ungrouped... But not vice versa
+                WARNLOG("Published group information for file %s does not match coded information - assuming grouped", queryDynamicFileName());
+                Owned<IOutputMetaData> diskMeta(new CSuffixedOutputMeta(+1, LINK(diskSize.queryOriginal())));
+                diskSize.set(diskMeta);
+            }
+            size32_t dfsSize = options->getPropInt("@recordSize");
+            if (dfsSize && diskSize.isFixedSize() && dfsSize != diskSize.getFixedSize())
+                throw MakeStringException(ROXIE_LAYOUT_MISMATCH, "Published record size %d for file %s (%s) does not match coded record size %d", dfsSize, queryDynamicFileName(), isGrouped ? "grouped" : "ungrouped", diskSize.getFixedSize());
+        }
         unsigned channel = packet->queryHeader().channel;
         varFiles.setown(varFileInfo->getIFileIOArray(isOpt, channel)); // MORE could combine 
         manager.setown(varFileInfo->getIndexManager(isOpt, channel, varFiles, diskSize, false, 0));

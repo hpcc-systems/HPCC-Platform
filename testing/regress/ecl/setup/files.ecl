@@ -52,6 +52,7 @@ EXPORT STRING indexPrefix := IF(multiPart AND useLocal, 'local',
 EXPORT DG_FileOut           := '~REGRESS::' + filePrefix + '::DG_';
 EXPORT DG_IndexOut           := '~REGRESS::' + indexPrefix + '::DG_';
 EXPORT DG_ParentFileOut     := '~REGRESS::' + filePrefix + '::DG_Parent.d00';
+EXPORT DG_ParentFileOutGrouped     := '~REGRESS::' + filePrefix + '::DG_ParentGrouped.d00';
 EXPORT DG_ChildFileOut      := '~REGRESS::' + filePrefix + '::DG_Child.d00';
 EXPORT DG_GrandChildFileOut := '~REGRESS::' + filePrefix + '::DG_GrandChild.d00';
 EXPORT DG_FetchFileName     := '~REGRESS::' + filePrefix + '::C.DG_FetchFile';
@@ -122,6 +123,7 @@ END;
 EXPORT DG_BlankSet := dataset([{0,'','',0}],DG_OutRec);
 
 EXPORT DG_FlatFile      := DATASET(DG_FileOut+'FLAT',{DG_OutRec,UNSIGNED8 filepos{virtual(fileposition)}},FLAT);
+EXPORT DG_FlatFileGrouped := DATASET(DG_FileOut+'GROUPED',{DG_OutRec,UNSIGNED8 filepos{virtual(fileposition)}},FLAT,__GROUPED__);
 EXPORT DG_FlatFileEvens := DATASET(DG_FileOut+'FLAT_EVENS',{DG_OutRec,UNSIGNED8 filepos{virtual(fileposition)}},FLAT);
 
 EXPORT DG_NormalIndexFile      := INDEX(DG_FlatFile, { DG_firstname, DG_lastname }, { DG_Prange, filepos }, DG_IndexOut+'INDEX');
