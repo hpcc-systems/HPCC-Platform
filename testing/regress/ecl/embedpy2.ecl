@@ -152,9 +152,15 @@ unsigned usepersistscope2(unsigned a) := EMBED(Python: globalscope('yi'),persist
   return a + b
 ENDEMBED;
 
+unsigned usepersistscope2b := EMBED(Python: globalscope('yi'),persist('workunit'))
+  global b
+  return b
+ENDEMBED;
+
 sequential(
   persistscope1(1),
   persistscope2(1),
   usepersistscope1(1),
-  usepersistscope2(1)
+  usepersistscope2(1),
+  usepersistscope2b
 );
