@@ -1,20 +1,20 @@
 
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
+  HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+  http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-############################################################################## */
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  ############################################################################## */
 
 #ifndef SQSHPCC_H
 #define SQSHPCC_H
@@ -51,88 +51,88 @@
 
 extern  "C" 
 {
-   ECL_SQS_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
-   ECL_SQS_API void setPluginContext(IPluginContext * _ctx);
+  ECL_SQS_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
+  ECL_SQS_API void setPluginContext(IPluginContext * _ctx);
 }
 #endif
 
 extern "C++" 
 {
-namespace SQSHPCCPlugin
-{
- using namespace std;
- typedef struct {
-    int code;
-    std::string body;
-    bool success;
-  } Response;
+  namespace SQSHPCCPlugin
+  {
+    using namespace std;
+    typedef struct {
+      int code;
+      std::string body;
+      bool success;
+    } Response;
 
 
 
   
-class SQSHPCC
-{
+    class SQSHPCC
+    {
 
- public:
-  explicit SQSHPCC(const std::string& _queueName);
-  ~SQSHPCC();
+    public:
+      explicit SQSHPCC(const std::string& _queueName);
+      ~SQSHPCC();
  
-  Response sendMessage(const char* message);
-  Response createQueue();
-  Response deleteQueue();
-  Response deleteMessage(const std::string& message);
-  Response receiveMessage();
+      Response sendMessage(const char* message);
+      Response createQueue();
+      Response deleteQueue();
+      Response deleteMessage(const std::string& message);
+      Response receiveMessage();
 
-  void setSQSConfiguration(const std::string& protocol,
-			   const std::string& region); 
-  void setAwsCredentials(const char* accessKeyId, 
-                          const char* secretKey); 
-  bool disconnect();
-  bool isQueueExist();
+      void setSQSConfiguration(const std::string& protocol,
+			       const std::string& region); 
+      void setAwsCredentials(const char* accessKeyId, 
+			     const char* secretKey); 
+      bool disconnect();
+      bool isQueueExist();
 
-  void setQueueUrlFromQueueName();
+      void setQueueUrlFromQueueName();
 
- protected:
+    protected:
 
- private:
-  std::string queueName;
-  Aws::String queueUrl;
-  Aws::SQS::SQSClient* sqsClient;
-  Aws::SDKOptions options;
-  Aws::Auth::AWSCredentials* credentials;
-  bool isRegionExist(const std::string& region);
-  const char *const getRegion(const std::string& region);
-  void upstr(char* s);
-  std::string convertAwsStringToCharPtr(Aws::String str);
-  char*  convertStringToChar(const string& str);
-};
+    private:
+      std::string queueName;
+      Aws::String queueUrl;
+      Aws::SQS::SQSClient* sqsClient;
+      Aws::SDKOptions options;
+      Aws::Auth::AWSCredentials* credentials;
+      bool isRegionExist(const std::string& region);
+      const char *const getRegion(const std::string& region);
+      void upstr(char* s);
+      std::string convertAwsStringToCharPtr(Aws::String str);
+      char*  convertStringToChar(const string& str);
+    };
 
 
     //----------------------------------------------------------------------
 
-        /**
-         * Queues the message for publishing to aws queue
-         * 
-         * @param   Reqion          
-         * @param   QueueName
-         * @param   message            The message to send
-         *
-         * @return  true if the message was cached successfully
-         */
-        ECL_SQS_API bool ECL_SQS_CALL publishMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message); 
+    /**
+     * Queues the message for publishing to aws queue
+     * 
+     * @param   Reqion          
+     * @param   QueueName
+     * @param   message            The message to send
+     *
+     * @return  true if the message was cached successfully
+     */
+    ECL_SQS_API bool ECL_SQS_CALL publishMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message); 
 
-     //---------------------------------------------------------------------
+    //---------------------------------------------------------------------
 
-       /** 
-        *
-        *
-        */
-       ECL_SQS_API bool ECL_SQS_CALL createQueue(ICodeContext * ctx,const char* region, const char* queueName);
+    /** 
+     *
+     *
+     */
+    ECL_SQS_API bool ECL_SQS_CALL createQueue(ICodeContext * ctx,const char* region, const char* queueName);
 
-       ECL_SQS_API bool ECL_SQS_CALL isQueueExist(ICodeContext* ctx,const char* region, const char* queueName);
+    ECL_SQS_API bool ECL_SQS_CALL isQueueExist(ICodeContext* ctx,const char* region, const char* queueName);
      
-      ECL_SQS_API bool ECL_SQS_CALL deleteQueue(ICodeContext * ctx,const char* region, const char* queueName);      
+    ECL_SQS_API bool ECL_SQS_CALL deleteQueue(ICodeContext * ctx,const char* region, const char* queueName);      
 	
-}
+  }
 }
 #endif
