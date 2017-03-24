@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+// In slowest systems where Regression Test Engine executed with --PQ <n> on Thor
+//timeout 900
+
 import teststd;
 
 evaluate(teststd);

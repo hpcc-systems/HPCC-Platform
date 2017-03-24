@@ -19,6 +19,8 @@
 //nothorlcr
 //noroxie
 
+//class=error
+
 //Test division by zero - fail instead of returning 0
 #option ('divideByZero', 'nan'); 
 
