@@ -419,7 +419,10 @@ bool CLdapSecResourceList::copyTo(ISecResourceList& destination)
 ISecResource* CLdapSecResourceList::addResource(const char * name)
 {
     if(!name || !*name)
+    {
+        DBGLOG("CLdapSecResourceList::addResource resource name must be provided");
         return NULL;
+    }
 
     ISecResource* resource = m_rmap[name];
     if(resource == NULL)
@@ -435,10 +438,16 @@ ISecResource* CLdapSecResourceList::addResource(const char * name)
 void CLdapSecResourceList::addResource(ISecResource * resource)
 {
     if(resource == NULL)
+    {
+        DBGLOG("CLdapSecResourceList::addResource2 ISecResource cannot be NULL");
         return;
+    }
     const char* name = resource->getName();
     if(!name || !*name)
+    {
+        DBGLOG("CLdapSecResourceList::addResource2 resource name must be provided");
         return;
+    }
 
     ISecResource* r = m_rmap[name];
     if(r == NULL)
@@ -456,7 +465,10 @@ bool CLdapSecResourceList::addCustomResource(const char * name, const char * con
 ISecResource * CLdapSecResourceList::getResource(const char * Resource)
 {
     if(!Resource || !*Resource)
+    {
+        DBGLOG("CLdapSecResourceList::getResource resource name must be provided");
         return NULL;
+    }
 
     ISecResource* r = m_rmap[Resource];
     if(r)
@@ -496,7 +508,10 @@ ISecPropertyIterator * CLdapSecResourceList::getPropertyItr()
 ISecProperty* CLdapSecResourceList::findProperty(const char* name)
 {
     if(!name || !*name)
+    {
+        DBGLOG("CLdapSecResourceList::findProperty property name must be provided");
         return NULL;
+    }
     return m_rmap[name];
 }
 
@@ -604,7 +619,10 @@ bool CLdapSecManager::unsubscribe(ISecAuthenticEvents & events)
 bool CLdapSecManager::authenticate(ISecUser* user)
 {
     if(!user)
+    {
+        DBGLOG("CLdapSecManager::authenticate user cannot be NULL");
         return false;
+    }
 
     if(user->getAuthenticateStatus() == AS_AUTHENTICATED)
         return true;
@@ -1068,7 +1086,10 @@ ISecItemIterator* CLdapSecManager::getResourcesSorted(SecResourceType rtype, con
 void CLdapSecManager::setExtraParam(const char * name, const char * value)
 {
     if(name == NULL || name[0] == '\0')
+    {
+        DBGLOG("CLdapSecManager::setExtraParam name must be provided");
         return;
+    }
 
     if (!m_extraparams)
         m_extraparams.setown(createProperties(false));
@@ -1335,7 +1356,7 @@ bool CLdapSecManager::createUserScopes()
         ISecUser &user = it->get();
         if (!m_ldap_client->createUserScope(user))
         {
-            PROGLOG("Error creating scope for user '%s'", user.getName());
+            PROGLOG("CLdapSecManager::createUserScopes Error creating user scope for user '%s'", user.getName());
             rc = false;
         }
         it->next();
