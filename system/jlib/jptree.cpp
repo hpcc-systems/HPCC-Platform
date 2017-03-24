@@ -59,10 +59,10 @@ class NullPTreeIterator : implements IPropertyTreeIterator, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 // IPropertyTreeIterator
-    virtual bool first() { return false; }
-    virtual bool next() { return false; }
-    virtual bool isValid() { return false; }
-    virtual IPropertyTree & query() { assertex(false); return *(IPropertyTree *)NULL; }
+    virtual bool first() override { return false; }
+    virtual bool next() override { return false; }
+    virtual bool isValid() override { return false; }
+    virtual IPropertyTree & query() override { assertex(false); return *(IPropertyTree *)NULL; }
 } *nullPTreeIterator;
 
 IPropertyTreeIterator *createNullPTreeIterator() { return LINK(nullPTreeIterator); } // initialize in init mod below.
@@ -135,10 +135,10 @@ IPropertyTreeIterator *ChildMap::getIterator(bool sort)
         CPTHashIterator(SuperHashTable &table) { hiter = new SuperHashIteratorOf<IPropertyTree>(table); }
         ~CPTHashIterator() { hiter->Release(); }
     // IPropertyTreeIterator
-        virtual bool first() { return hiter->first(); }
-        virtual bool next() { return hiter->next(); }
-        virtual bool isValid() { return hiter->isValid(); }
-        virtual IPropertyTree & query() { return hiter->query(); }
+        virtual bool first() override { return hiter->first(); }
+        virtual bool next() override { return hiter->next(); }
+        virtual bool isValid() override { return hiter->isValid(); }
+        virtual IPropertyTree & query() override { return hiter->query(); }
     };
     class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
     {
@@ -435,7 +435,7 @@ public:
     void addIterator(IPropertyTreeIterator *iter) { iters.append(*iter); }
 
 // IPropertyTreeIterator impl.
-    virtual bool first()
+    virtual bool first() override
     {
         cp = 0;
         iterCount = iters.ordinality();
@@ -445,7 +445,7 @@ public:
             return false;
     }
 
-    virtual bool next()
+    virtual bool next() override
     {
         while (currentIter)
         {
@@ -461,9 +461,9 @@ public:
         return false;
     }
 
-    virtual bool isValid() { return (NULL != current); }
+    virtual bool isValid() override { return (NULL != current); }
 
-    virtual IPropertyTree & query() { assertex(current); return *current; }
+    virtual IPropertyTree & query() override { assertex(current); return *current; }
 
 private:
     bool nextIterator()
@@ -1710,31 +1710,31 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
         {
         }
     // IAttributeIterator impl.
-        virtual bool first()
+        virtual bool first() override
         {
             cur = parent->getNextAttribute(nullptr);
             return cur ? true : false;
         }
-        virtual bool next()
+        virtual bool next() override
         {
             cur = parent->getNextAttribute(cur);
             return cur ? true : false;
         }
-        virtual bool isValid() { return cur ? true : false; }
-        virtual const char *queryName() const
+        virtual bool isValid() override { return cur ? true : false; }
+        virtual const char *queryName() const override
         {
             return cur->key->get();
         }
-        virtual const char *queryValue() const
+        virtual const char *queryValue() const override
         {
             return cur->value->get();
         }
-        virtual StringBuffer &getValue(StringBuffer &out)
+        virtual StringBuffer &getValue(StringBuffer &out) override
         {
             out.append(queryValue());
             return out;
         }
-        virtual unsigned count() { return parent->getAttributeCount(); }
+        virtual unsigned count() override { return parent->getAttributeCount(); }
     };
     class CSortedAttributeIterator : implements IAttributeIterator, public CInterface
     {
@@ -1774,37 +1774,37 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
         }
 
     // IAttributeIterator impl.
-        virtual bool first()
+        virtual bool first() override
         {
             if (!iter) return false;
             if (!iter->first()) { cur = NULL; return false; }
             cur = &iter->query();
             return true;
         }
-        virtual bool next()
+        virtual bool next() override
         {
             if (!iter) return false;
             if (!iter->next()) { cur = NULL; return false; }
             cur = &iter->query();
             return true;
         }
-        virtual bool isValid() { return cur!=NULL; }
-        virtual const char *queryName() const
+        virtual bool isValid() override { return cur!=NULL; }
+        virtual const char *queryName() const override
         {
             assertex(cur);
             return cur->key->get();
         }
-        virtual const char *queryValue() const
+        virtual const char *queryValue() const override
         {
             assertex(cur);
             return cur->value->get();
         }
-        virtual StringBuffer &getValue(StringBuffer &out)
+        virtual StringBuffer &getValue(StringBuffer &out) override
         {
             assertex(cur);
             return out.append(queryValue());
         }
-        virtual unsigned count() { return attrs.ordinality(); }
+        virtual unsigned count() override { return attrs.ordinality(); }
     };
     if (sorted)
         return new CSortedAttributeIterator(this);
@@ -1826,7 +1826,7 @@ public:
     }
 
 // IPropertyTreeIterator
-    virtual bool first()
+    virtual bool first() override
     {
         if (!index)
             return false;
@@ -1846,16 +1846,16 @@ public:
         } while (++current <= index);
         return false;
     }
-    virtual bool isValid()
+    virtual bool isValid() override
     {
         return celem && (index >= current);
     }
-    virtual bool next()
+    virtual bool next() override
     {
         celem = NULL;
         return false;
     }
-    virtual IPropertyTree & query()
+    virtual IPropertyTree & query() override
     {
         return *celem;
     }
@@ -3950,7 +3950,7 @@ public:
         resetState();
     }
 protected:
-    virtual void reset()
+    virtual void reset() override
     {
         resetState();
         PARENT::reset();
@@ -4263,7 +4263,7 @@ protected:
     }
 
 // IEntityHelper impl.
-    virtual bool find(const char *entity, StringBuffer &value)
+    virtual bool find(const char *entity, StringBuffer &value) override
     {
         return lookupRefValue(entity, value);
     }
@@ -4332,15 +4332,15 @@ public:
         resetState();
     }
 
-    virtual void reset()
+    virtual void reset() override
     {
         resetState();
         PARENT::reset();
     }
 
 // IPTreeReader
-    virtual void load() { loadXML(); }
-    virtual offset_t queryOffset() { return curOffset; }
+    virtual void load() override { loadXML(); }
+    virtual offset_t queryOffset() override { return curOffset; }
 
     void loadXML()
     {
@@ -4645,20 +4645,20 @@ public:
     }
 
 // IPullPTreeReader
-    virtual void load()
+    virtual void load() override
     {
         while (next()) {}
     }
 
-    virtual void reset()
+    virtual void reset() override
     {
         PARENT::reset();
         resetState();
     }
 
-    virtual offset_t queryOffset() { return curOffset; }
+    virtual offset_t queryOffset() override { return curOffset; }
 
-    virtual bool next()
+    virtual bool next() override
     {
         switch (state)
         {
@@ -5315,9 +5315,9 @@ jlib_decl StringBuffer &toXML(const IPropertyTree *tree, StringBuffer &ret, unsi
     public:
         IMPLEMENT_IINTERFACE;
         CAdapter(StringBuffer &_out) : out(_out) { }
-        virtual void flush() { }
-        virtual size32_t read(size32_t len, void * data) { UNIMPLEMENTED; return 0; }
-        virtual size32_t write(size32_t len, const void * data) { out.append(len, (const char *)data); return len; }
+        virtual void flush() override { }
+        virtual size32_t read(size32_t len, void * data) override { UNIMPLEMENTED; return 0; }
+        virtual size32_t write(size32_t len, const void * data) override { out.append(len, (const char *)data); return len; }
     } adapter(ret);
     _toXML(tree->queryBranch(NULL), adapter, indent, flags);
     return ret;
@@ -5567,9 +5567,9 @@ jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, uns
     public:
         IMPLEMENT_IINTERFACE;
         CAdapter(StringBuffer &_out) : out(_out) { }
-        virtual void flush() { }
-        virtual size32_t read(size32_t len, void * data) { UNIMPLEMENTED; return 0; }
-        virtual size32_t write(size32_t len, const void * data) { out.append(len, (const char *)data); return len; }
+        virtual void flush() override { }
+        virtual size32_t read(size32_t len, void * data) override { UNIMPLEMENTED; return 0; }
+        virtual size32_t write(size32_t len, const void * data) override { out.append(len, (const char *)data); return len; }
     } adapter(ret);
     bool delimit = false;
     _toJSON(tree->queryBranch(NULL), adapter, indent, flags, delimit, true);
@@ -6071,8 +6071,8 @@ class COrderedPTree : public DEFAULT_PTREE_TYPE
         COrderedChildMap<BASECHILDMAP>() : BASECHILDMAP() { }
         ~COrderedChildMap<BASECHILDMAP>() { SELF::kill(); }
 
-        virtual unsigned numChildren() { return order.ordinality(); }
-        virtual IPropertyTreeIterator *getIterator(bool sort)
+        virtual unsigned numChildren() override { return order.ordinality(); }
+        virtual IPropertyTreeIterator *getIterator(bool sort) override
         {
             class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
             {
@@ -6088,7 +6088,7 @@ class COrderedPTree : public DEFAULT_PTREE_TYPE
             };
             return new CPTArrayIterator(order, sort);
         }
-        virtual bool set(const char *key, IPropertyTree *tree)
+        virtual bool set(const char *key, IPropertyTree *tree) override
         {
             IPropertyTree *existing = find(*key);
             if (existing)
@@ -6105,11 +6105,11 @@ class COrderedPTree : public DEFAULT_PTREE_TYPE
             return true;
 
         }
-        virtual bool replace(const char *key, IPropertyTree *tree) // provides different semantics, used if element being replaced is not to be treated as deleted.
+        virtual bool replace(const char *key, IPropertyTree *tree) override // provides different semantics, used if element being replaced is not to be treated as deleted.
         {
             return set(key, tree);
         }
-        virtual bool remove(const char *key)
+        virtual bool remove(const char *key) override
         {
             IPropertyTree *child = BASECHILDMAP::find(*key);
             if (!child)
@@ -6117,7 +6117,7 @@ class COrderedPTree : public DEFAULT_PTREE_TYPE
             order.zap(*child);
             return BASECHILDMAP::removeExact(child);
         }
-        virtual bool removeExact(IPropertyTree *child)
+        virtual bool removeExact(IPropertyTree *child) override
         {
             order.zap(*child);
             return BASECHILDMAP::removeExact(child);
@@ -6127,18 +6127,18 @@ public:
     COrderedPTree(const char *name=NULL, byte flags=ipt_none, IPTArrayValue *value=NULL, ChildMap *children=NULL)
         : DEFAULT_PTREE_TYPE(name, flags|ipt_ordered, value, children) { }
 
-    virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, COrderedPTree)); }
-    virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
+    virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, COrderedPTree)); }
+    virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override
     {
         return new COrderedPTree(name, flags, value, children);
     }
-    virtual IPropertyTree *create(MemoryBuffer &mb)
+    virtual IPropertyTree *create(MemoryBuffer &mb) override
     {
         IPropertyTree *tree = new COrderedPTree();
         tree->deserialize(mb);
         return tree;
     }
-    virtual void createChildMap()
+    virtual void createChildMap() override
     {
         if (isnocase())
             children = new COrderedChildMap<ChildMapNC>();

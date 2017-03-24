@@ -162,23 +162,23 @@ interface IPTArrayValue
 class CPTArray : implements IPTArrayValue, private IArray
 {
 public:
-    virtual bool isArray() const { return true; }
-    virtual bool isCompressed() const { return false; }
-    virtual const void *queryValue() const { UNIMPLEMENTED; }
-    virtual MemoryBuffer &getValue(MemoryBuffer &tgt, bool binary) const { UNIMPLEMENTED; }
-    virtual StringBuffer &getValue(StringBuffer &tgt, bool binary) const { UNIMPLEMENTED; }
-    virtual size32_t queryValueSize() const { UNIMPLEMENTED; }
-    virtual IPropertyTree *queryElement(unsigned idx) const { return (idx<ordinality()) ? &((IPropertyTree &)item(idx)) : NULL; }
-    virtual void addElement(IPropertyTree *tree) { append(*tree); }
-    virtual void setElement(unsigned idx, IPropertyTree *tree) { add(*tree, idx); }
-    virtual void removeElement(unsigned idx) { remove(idx); }
-    virtual unsigned elements() const { return ordinality(); }
-    virtual const void *queryValueRaw() const { UNIMPLEMENTED; return NULL; }
-    virtual size32_t queryValueRawSize() const { UNIMPLEMENTED; return 0; }
+    virtual bool isArray() const override { return true; }
+    virtual bool isCompressed() const override { return false; }
+    virtual const void *queryValue() const override { UNIMPLEMENTED; }
+    virtual MemoryBuffer &getValue(MemoryBuffer &tgt, bool binary) const override { UNIMPLEMENTED; }
+    virtual StringBuffer &getValue(StringBuffer &tgt, bool binary) const override { UNIMPLEMENTED; }
+    virtual size32_t queryValueSize() const override { UNIMPLEMENTED; }
+    virtual IPropertyTree *queryElement(unsigned idx) const override { return (idx<ordinality()) ? &((IPropertyTree &)item(idx)) : NULL; }
+    virtual void addElement(IPropertyTree *tree) override { append(*tree); }
+    virtual void setElement(unsigned idx, IPropertyTree *tree) override { add(*tree, idx); }
+    virtual void removeElement(unsigned idx) override { remove(idx); }
+    virtual unsigned elements() const override { return ordinality(); }
+    virtual const void *queryValueRaw() const override { UNIMPLEMENTED; return NULL; }
+    virtual size32_t queryValueRawSize() const override { UNIMPLEMENTED; return 0; }
 
 // serializable
-    virtual void serialize(MemoryBuffer &tgt) { UNIMPLEMENTED; }
-    virtual void deserialize(MemoryBuffer &src) { UNIMPLEMENTED; }
+    virtual void serialize(MemoryBuffer &tgt) override { UNIMPLEMENTED; }
+    virtual void deserialize(MemoryBuffer &src) override { UNIMPLEMENTED; }
 };
 
 
@@ -191,23 +191,23 @@ public:
     }
     CPTValue(size32_t size, const void *data, bool binary=false, bool raw=false, bool compressed=false);
 
-    virtual bool isArray() const { return false; }
-    virtual bool isCompressed() const { return compressed; }
-    virtual const void *queryValue() const;
-    virtual MemoryBuffer &getValue(MemoryBuffer &tgt, bool binary) const;
-    virtual StringBuffer &getValue(StringBuffer &tgt, bool binary) const;
-    virtual size32_t queryValueSize() const;
-    virtual IPropertyTree *queryElement(unsigned idx) const { UNIMPLEMENTED; return NULL; }
-    virtual void addElement(IPropertyTree *tree) { UNIMPLEMENTED; }
-    virtual void setElement(unsigned idx, IPropertyTree *tree) { UNIMPLEMENTED; }
-    virtual void removeElement(unsigned idx) { UNIMPLEMENTED; }
-    virtual unsigned elements() const {  UNIMPLEMENTED; return (unsigned)-1; }
-    virtual const void *queryValueRaw() const { return get(); }
-    virtual size32_t queryValueRawSize() const { return (size32_t)length(); }
+    virtual bool isArray() const override { return false; }
+    virtual bool isCompressed() const override { return compressed; }
+    virtual const void *queryValue() const override;
+    virtual MemoryBuffer &getValue(MemoryBuffer &tgt, bool binary) const override;
+    virtual StringBuffer &getValue(StringBuffer &tgt, bool binary) const override;
+    virtual size32_t queryValueSize() const override;
+    virtual IPropertyTree *queryElement(unsigned idx) const override { UNIMPLEMENTED; return NULL; }
+    virtual void addElement(IPropertyTree *tree) override { UNIMPLEMENTED; }
+    virtual void setElement(unsigned idx, IPropertyTree *tree) override { UNIMPLEMENTED; }
+    virtual void removeElement(unsigned idx) override { UNIMPLEMENTED; }
+    virtual unsigned elements() const override {  UNIMPLEMENTED; return (unsigned)-1; }
+    virtual const void *queryValueRaw() const override { return get(); }
+    virtual size32_t queryValueRawSize() const override { return (size32_t)length(); }
 
 // serilizable
-    virtual void serialize(MemoryBuffer &tgt);
-    virtual void deserialize(MemoryBuffer &src);
+    virtual void serialize(MemoryBuffer &tgt) override;
+    virtual void deserialize(MemoryBuffer &src) override;
 
 private:
     mutable bool compressed;
@@ -504,7 +504,7 @@ public:
     ~CAtomPTree();
     virtual void setName(const char *_name) override;
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (nullptr != QUERYINTERFACE(tree, CAtomPTree)); }
-    virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false)
+    virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) override
     {
         return new CAtomPTree(name, flags, value, children);
     }
@@ -592,7 +592,7 @@ class PTIdMatchIterator : public PTLocalIteratorBase
 public:
     PTIdMatchIterator(const PTree *tree, const char *id, bool nocase, bool sort) : PTLocalIteratorBase(tree, id, nocase, sort) { }
 
-    virtual bool match();
+    virtual bool match() override;
 };
 
 class StackElement;
