@@ -1602,9 +1602,6 @@ protected:
             DBGLOG("%d completed workunits listed and %d failed workunits listed in %d ms", numCompleted, numFailed, msTick()-start);
         }
 
-        if ((numCompleted > 0) || (numFailed > 0))
-            return;
-
         StringArray wuidsNew;
         unsigned newCompleted = 2;
         unsigned newFailed = 3;
