@@ -4604,16 +4604,12 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, BoundRow * targetRow, IHql
     }
 
     BuildCtx subctx(ctx);
-    IHqlStmt * stmt = subctx.addGroup();
-    stmt->setIncomplete(true);
+    TemporaryGroup group(subctx);
 
     Owned<BoundRow> rowBuilder = createRowBuilder(subctx, targetRow);
     Owned<IReferenceSelector> createdRef = createReferenceSelector(rowBuilder);
     buildRowAssign(subctx, createdRef, expr);
     finalizeTempRow(subctx, targetRow, rowBuilder);
-
-    stmt->setIncomplete(false);
-    stmt->mergeScopeWithContainer();
 }
 
 

@@ -34,8 +34,18 @@
 #include "hqlutil.hpp"
 
 #define CLEAR_COPY_THRESHOLD            100
+#ifdef _DEBUG
+//#define TRACK_SEARCH_DISTANCE
+#endif
 
 static unsigned doCalcTotalChildren(const IHqlStmt * stmt);
+
+#ifdef TRACK_SEARCH_DISTANCE
+static unsigned __int64 searchDistance = 0;
+unsigned __int64 querySearchDistance() { return searchDistance; }
+#else
+unsigned __int64 querySearchDistance() { return 0; }
+#endif
 
 //---------------------------------------------------------------------------
 
@@ -587,6 +597,10 @@ found:
 
 void BuildCtx::associate(HqlExprAssociation & next)
 {
+#ifdef _DEBUG
+    if (next.represents->getOperator() == no_self)
+        assertex(!queryAssociation(next.represents, next.getKind(), NULL));
+#endif
     assertex(next.represents->queryBody() == next.represents);
     if (!ignoreInput)
     {
@@ -705,72 +719,10 @@ bool BuildCtx::isOuterContext() const
     }
 }
 
+
 HqlExprAssociation * BuildCtx::queryAssociation(IHqlExpression * search, AssocKind kind, HqlExprCopyArray * selectors)
 {
-    HqlStmts * searchStmts = curStmts;
-
-    if (!search)
-        return NULL;
-    search = search->queryBody();
-    unsigned searchMask = kind;
-    if (selectors)
-        searchMask |= AssocCursor;
-
-    // search all statements in the tree before this one, to see
-    // if an expression already exists...  If so return the target
-    // of the assignment.
-    for (;;)
-    {
-        unsigned stmtMask = searchStmts->associationMask;
-        if (stmtMask & searchMask)
-        {
-            //Safe to use the hash iterator if no selectors, or this definition list contains no cursors
-            if ((kind == AssocExpr) && (!selectors || !(stmtMask & AssocCursor)))
-            {
-                HqlExprAssociation * match = searchStmts->exprAssociationCache.find(*search);
-                if (match)
-                    return match;
-            }
-            else
-            {
-                const CIArrayOf<HqlExprAssociation> & defs = searchStmts->defs;
-                if (!selectors)
-                {
-                    ForEachItemInRev(idx, defs)
-                    {
-                        HqlExprAssociation & cur = defs.item(idx);
-                        IHqlExpression * represents = cur.represents.get();
-                        if (represents == search)
-                            if (cur.getKind() == kind)
-                                return &cur;
-                    }
-                }
-                else
-                {
-                    ForEachItemInRev(idx, defs)
-                    {
-                        HqlExprAssociation & cur = defs.item(idx);
-                        IHqlExpression * represents = cur.represents.get();
-                        AssocKind curKind = cur.getKind();
-                        if (curKind == AssocCursor)
-                        {
-                            if (selectors->contains(*represents))
-                                return NULL;
-                        }
-                        if (represents == search)
-                            if (curKind == kind)
-                                return &cur;
-                    }
-                }
-            }
-        }
-
-        HqlStmt * limitStmt = searchStmts->queryStmt();
-        if (!limitStmt)
-            break;
-        searchStmts = limitStmt->queryContainer();
-    }
-    return NULL;
+    return curStmts->queryAssociation(search, kind, selectors);
 }
 
 
@@ -1067,10 +1019,30 @@ HqlStmts::HqlStmts(HqlStmt * _owner) : owner(_owner)
 
 void HqlStmts::appendOwn(HqlExprAssociation & next)
 {
+    AssocKind kind = next.getKind();
+    if (kind == AssocCursor)
+    {
+        //Self selectors are unique, so no need to check if they already exists in the context
+        if (next.represents->getOperator() != no_self)
+        {
+            //If a cursor is hiding another cursor then indicate the hash table can not be used
+            if (queryAssociation(next.represents, kind, nullptr))
+                associationMask |= AssocSequentialSearch;
+        }
+#ifdef _DEBUG
+        else
+        {
+            assertex(!queryAssociation(next.represents, next.getKind(), NULL));
+        }
+#endif
+    }
+
     defs.append(next);
-    associationMask |= next.getKind();
-    if (next.getKind() == AssocExpr)
+    associationMask |= kind;
+    if (kind == AssocExpr)
         exprAssociationCache.replace(next);
+    if (kind == AssocCursor)
+        maxCursor = defs.ordinality();
 }
 
 void HqlStmts::inheritDefinitions(HqlStmts & other)
@@ -1080,10 +1052,12 @@ void HqlStmts::inheritDefinitions(HqlStmts & other)
     {
         HqlExprAssociation & cur = other.defs.item(i);
         defs.append(OLINK(cur));
-        if (cur.getKind() == AssocExpr)
+        AssocKind kind = cur.getKind();
+        if (kind == AssocExpr)
             exprAssociationCache.replace(cur);
+        if (kind == AssocCursor)
+            maxCursor = defs.ordinality();
     }
-
 }
 
 void HqlStmts::appendStmt(HqlStmt & stmt)
@@ -1151,7 +1125,92 @@ bool HqlStmts::zap(HqlExprAssociation & next)
     }
 
     defs.remove(match);
+    if (defs.ordinality() < maxCursor)
+        maxCursor = defs.ordinality();
     return true;
+}
+
+
+HqlExprAssociation * HqlStmts::queryAssociation(IHqlExpression * search, AssocKind kind, HqlExprCopyArray * selectors)
+{
+    HqlStmts * searchStmts = this;
+    if (!search)
+        return NULL;
+    search = search->queryBody();
+    unsigned searchMask = kind;
+    if (selectors)
+        searchMask |= AssocSequentialSearch;
+
+    // search all statements in the tree before this one, to see
+    // if an expression already exists...  If so return the target
+    // of the assignment.
+    for (;;)
+    {
+        unsigned stmtMask = searchStmts->associationMask;
+        if (stmtMask & searchMask)
+        {
+            //Safe to use the hash iterator if no selectors, or this definition list contains no cursors
+            if (((kind == AssocExpr)) && (!selectors || !(stmtMask & AssocSequentialSearch)))
+            {
+                HqlExprAssociation * match = searchStmts->exprAssociationCache.find(*search);
+                if (match)
+                    return match;
+            }
+            else
+            {
+                const CIArrayOf<HqlExprAssociation> & defs = searchStmts->defs;
+                unsigned max = defs.ordinality();
+                //If searching for a cursor, then restrict the search to the known range.
+                //This is also valid even if selectors != null - since selectors also match AssocCursor.
+                if (kind == AssocCursor)
+                    max = searchStmts->maxCursor;
+                if (!selectors)
+                {
+                    for (unsigned idx=max; idx--; )
+                    {
+                        HqlExprAssociation & cur = defs.item(idx);
+                        IHqlExpression * represents = cur.represents.get();
+#ifdef TRACK_SEARCH_DISTANCE
+                        searchDistance++;
+#endif
+                        if (represents == search)
+                        {
+                            if (cur.getKind() == kind)
+                                return &cur;
+                        }
+                    }
+                }
+                else
+                {
+                    for (unsigned idx=max; idx--; )
+                    {
+                        HqlExprAssociation & cur = defs.item(idx);
+                        IHqlExpression * represents = cur.represents.get();
+                        AssocKind curKind = cur.getKind();
+                        if (curKind == AssocCursor)
+                        {
+                            if (selectors->contains(*represents))
+                                return NULL;
+                        }
+#ifdef TRACK_SEARCH_DISTANCE
+                        searchDistance++;
+#endif
+                        if (represents == search)
+                        {
+                            if (curKind == kind)
+                                return &cur;
+                        }
+                    }
+                }
+            }
+        }
+
+        HqlStmt * limitStmt = searchStmts->queryStmt();
+        if (!limitStmt)
+            break;
+        searchStmts = limitStmt->queryContainer();
+    }
+    return NULL;
 }
 
 
