@@ -3046,6 +3046,8 @@ bool CAtomPTree::removeAttribute(const char *key)
         return false;
     numAttrs--;
     CriticalBlock block(hashcrit);
+    attrHT->removekey(del->key, isnocase());
+    attrHT->removeval(del->value);
     AttrValue *newattrs = newAttrArray(numAttrs);
     if (newattrs)
     {
