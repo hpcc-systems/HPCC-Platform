@@ -18,6 +18,8 @@
 // The following script uses embeded R code to train some models on data passed to R
 // from HPCC. The results are then returned to HPCC and output.
 
+//nothor
+
 IMPORT R;
 
 ////// Get some example data from R (in practice this may be a dataset on the ECL side)

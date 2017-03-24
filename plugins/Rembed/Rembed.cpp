@@ -97,6 +97,14 @@ extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
 namespace Rembed
 {
+// Copied from Rcpp 3.3's environment.h, in case an older version of Rcpp is in use
+inline Rcpp::Environment _new_env(SEXP parent, int size = 29) {
+    Rcpp::Shield<SEXP> sizeSEXP(Rf_ScalarInteger(size));
+    Rcpp::Shield<SEXP> parentSEXP(parent);
+    return R_NewHashedEnv(parentSEXP, sizeSEXP);
+}
+
+
 
 __declspec(noreturn) static void failx(const char *msg, ...) __attribute__((format(printf, 1, 2), noreturn));
 
@@ -179,7 +187,7 @@ public:
         Linked<REnvironment> ret = preservedScopes.getValue(key);
         if (!ret)
         {
-            ret.setown(new REnvironment(Rcpp::new_env(Rcpp::Environment::global_env())));
+            ret.setown(new REnvironment(_new_env(Rcpp::Environment::global_env())));
             preservedScopes.setValue(key, ret);  // NOTE - links arg
             isNew = true;
         }
@@ -690,7 +698,7 @@ public:
                 engine->onTermination(RGlobalState::unregister, scopeKey.str(), wuidScope);
         }
         else
-            env.setown(new REnvironment(Rcpp::new_env(Rcpp::Environment::global_env())));
+            env.setown(new REnvironment(_new_env(Rcpp::Environment::global_env())));
     }
     ~REmbedFunctionContext()
     {
