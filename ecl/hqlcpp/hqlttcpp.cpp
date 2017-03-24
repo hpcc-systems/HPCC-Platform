@@ -2067,6 +2067,40 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
     return NULL;
 }
 
+static IHqlExpression *getEmbedOptionString(IHqlExpression *funcdef)
+{
+    IHqlExpression * outofline = funcdef->queryChild(0);
+    IHqlExpression * bodyCode = outofline->queryChild(0);
+    HqlExprArray attrArgs;
+    ForEachChild(idx, bodyCode)
+    {
+        IHqlExpression *child = bodyCode->queryChild(idx);
+        if (child->isAttribute() && !isInternalEmbedAttr(child->queryName()))
+        {
+            StringBuffer attrParam;
+            if (attrArgs.ordinality())
+                attrParam.append(",");
+            attrParam.append(child->queryName());
+
+            IHqlExpression * value = child->queryChild(0);
+            if (value)
+                attrParam.append("=");
+            attrArgs.append(*createConstant(attrParam));
+            if (value)
+                attrArgs.append(*ensureExprType(value, unknownStringType));
+        }
+    }
+    OwnedHqlExpr folded;
+    if (attrArgs.length())
+    {
+        OwnedHqlExpr concat = createUnbalanced(no_concat, unknownStringType, attrArgs);
+        OwnedHqlExpr cast = ensureExprType(concat, unknownVarStringType);
+        folded.setown(foldHqlExpression(cast));
+    }
+    else
+        folded.setown(createBlankString());
+    return folded.getClear();
+}
 
 static HqlTransformerInfo thorHqlTransformerInfo("ThorHqlTransformer");
 ThorHqlTransformer::ThorHqlTransformer(HqlCppTranslator & _translator, ClusterType _targetClusterType, IConstWorkUnit * wu, unsigned & _implicitFunctionId)
@@ -2174,9 +2208,18 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
                     args.append(*createAttribute(allocatorAtom));
             }
             OwnedHqlExpr body = createWrapper(no_outofline, expr->queryType(), args);
-            IHqlExpression * formals = createValue(no_sortlist, makeSortListType(NULL));
+            HqlExprArray newFormals;
+            if (expr->hasAttribute(languageAtom))
+            {
+                HqlExprArray attrs;
+                attrs.append(*createAttribute(_hidden_Atom));
+                newFormals.append(*createParameter(__optionsId, 0, LINK(unknownVarStringType), attrs));
+            }
+            IHqlExpression * formals = createValue(no_sortlist, makeSortListType(NULL), newFormals);
             OwnedHqlExpr funcdef = createFunctionDefinition(createIdAtom(funcname), body.getClear(), formals, NULL, NULL);
             HqlExprArray actuals;
+            if (expr->hasAttribute(languageAtom))
+                actuals.append(*getEmbedOptionString(funcdef));
             return createBoundFunction(NULL, funcdef, actuals, nullptr, true);
         }
     }
@@ -6331,41 +6374,6 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
         IHqlExpression * defaults = newFuncDef->queryChild(2);
         assertex(outofline->getOperator() == no_outofline);
         IHqlExpression * bodyCode = outofline->queryChild(0);
-        HqlExprArray attrArgs;
-        ForEachChild(idx, bodyCode)
-        {
-            IHqlExpression *child = bodyCode->queryChild(idx);
-            if (child->isAttribute() && !isInternalEmbedAttr(child->queryName()))
-            {
-                StringBuffer attrParam;
-                if (attrArgs.ordinality())
-                    attrParam.append(",");
-                attrParam.append(child->queryName());
-
-                IHqlExpression * value = child->queryChild(0);
-                if (value)
-                    attrParam.append("=");
-                attrArgs.append(*createConstant(attrParam));
-                if (value)
-                    attrArgs.append(*ensureExprType(value, unknownStringType));
-            }
-        }
-        OwnedHqlExpr folded;
-        if (attrArgs.length())
-        {
-            OwnedHqlExpr concat = createUnbalanced(no_concat, unknownStringType, attrArgs);
-            OwnedHqlExpr cast = ensureExprType(concat, unknownVarStringType);
-
-            // It's not legal to use parameters in the options, since it becomes ambiguous whether they should be bound to embed variables or not.
-            // Check that they didn't and give a sensible error message
-            OwnedHqlExpr boundCast = replaceInlineParameters(newFuncDef, cast);
-            if (cast != boundCast)
-                throwError(HQLERR_EmbedParamNotSupportedInOptions);
-
-            folded.setown(foldHqlExpression(cast));
-        }
-        else
-            folded.setown(createBlankString());
 
         HqlExprArray newFormals;
         unwindChildren(newFormals, formals);
@@ -6378,7 +6386,7 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
             unwindChildren(newDefaults, defaults, 0);
         while (newDefaults.length() < formals->numChildren())
             newDefaults.append(*createOmittedValue());
-        newDefaults.append(*folded.getClear());
+        newDefaults.append(*getEmbedOptionString(newFuncDef));
 
         IHqlExpression *query = bodyCode->queryChild(0);
         if (!query->queryValue())
