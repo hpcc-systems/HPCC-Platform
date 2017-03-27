@@ -139,9 +139,6 @@ fi
 
 check_getopt
 
-#changing ownership of the home directory for user.
-chown -cR $user:$group ${home}/${user} 1>/dev/null 2>/dev/null
-
 basepath=`pwd`
 
 COMPS=$(${configgen_path}/configgen -env ${envfile} -list)
@@ -278,7 +275,8 @@ log "Debug log written to $LOG_DIR/hpcc-init.debug"
 [ -e $LOG_DIR/hpcc-init.debug ] && rm -rf ${LOG_DIR}/hpcc-init.debug
 touch ${LOG_DIR}/hpcc-init.debug
 chown ${user}:${group} ${LOG_DIR}/hpcc-init.debug
-exec 2>$LOG_DIR/hpcc-init.debug
+PS4='+\011$(date "+%T.%N")\011'
+exec 3>&2 2>$LOG_DIR/hpcc-init.debug
 set -x
 
 if [ -z ${component} ]; then
