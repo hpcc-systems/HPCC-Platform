@@ -843,14 +843,16 @@ define([
                             domConstruct.create("td", { innerHTML: Utility.xmlEncode(key) }, tr);
                             domConstruct.create("td", { innerHTML: Utility.xmlEncode(props[key]) }, tr);
                         }
-                        arrayUtil.filter(wu.helpers, function (d) {
-                            return globalID && d.minActivityId <= globalID && globalID <= d.maxActivityId;
-                        }).forEach(function (d) {
-                            ensureHeader();
-                            tr = domConstruct.create("tr", null, table);
-                            domConstruct.create("td", { innerHTML: this.i18n.Helper }, tr);
-                            domConstruct.create("td", { innerHTML: "<a href='" + "/WsWorkunits/WUFile?Wuid=" + wu.Wuid + "&Name=" + d.Name + "&IPAddress=" + d.IPAddress + "&Description=" + d.Description + "&Type=" + d.Type + "' target='_blank'>" + d.Description + "</a>" }, tr);
-                        }, this);
+                        if (wu && wu.helpers) {
+                            arrayUtil.filter(wu.helpers, function (d) {
+                                return globalID && d.minActivityId <= globalID && globalID <= d.maxActivityId;
+                            }).forEach(function (d) {
+                                ensureHeader();
+                                tr = domConstruct.create("tr", null, table);
+                                domConstruct.create("td", { innerHTML: this.i18n.Helper }, tr);
+                                domConstruct.create("td", { innerHTML: "<a href='" + "/WsWorkunits/WUFile?Wuid=" + wu.Wuid + "&Name=" + d.Name + "&IPAddress=" + d.IPAddress + "&Description=" + d.Description + "&Type=" + d.Type + "' target='_blank'>" + d.Description + "</a>" }, tr);
+                            }, this);
+                        }
                         if (first === false) {
                             domConstruct.create("br", null, place);
                         }
