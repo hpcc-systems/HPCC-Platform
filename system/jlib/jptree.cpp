@@ -1474,7 +1474,13 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                 IPropertyTree *_val = ownPTree(val);
                 dbgassertex(QUERYINTERFACE(_val, PTree));
                 PTree *__val = static_cast<PTree *>(_val);
+
+                /* NB: potentially param xpath is a reference to the existing name.
+                 * So fetch new name ptr after set.
+                 */
                 __val->setName(xpath);
+                xpath = __val->queryName();
+
                 addingNewElement(*_val, -1);
                 if (checkChildren())
                 {
@@ -1656,7 +1662,7 @@ bool PTree::removeProp(const char *xpath)
                     {
                         StringAttr digit(digitStart, xxpath-digitStart);
                         unsigned i = atoi(digit);
-                        if (i <= child->value->elements())
+                        if (i && i <= child->value->elements())
                         {
                             removingElement(child->value->queryElement(i-1), i-1);
                             child->value->removeElement(i-1);
@@ -2363,8 +2369,7 @@ void PTree::clone(IPropertyTree &srcTree, IPropertyTree &dstTree, bool sub)
             {
                 IPropertyTree &child = iter->query();
                 IPropertyTree *newChild = clone(child, false, sub);
-                StringAttr name(newChild->queryName());
-                dstTree.addPropTree(name, newChild);
+                dstTree.addPropTree(newChild->queryName(), newChild);
             }
             while (iter->next());
         }
