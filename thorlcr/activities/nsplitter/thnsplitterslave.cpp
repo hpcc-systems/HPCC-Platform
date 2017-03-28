@@ -336,6 +336,7 @@ public:
         {
             ForEachItemInRev(s, stalledWriters)
                 stalledWriters.popGet()->signal();
+            stalledWriterIdxs.kill();
         }
     }
 
