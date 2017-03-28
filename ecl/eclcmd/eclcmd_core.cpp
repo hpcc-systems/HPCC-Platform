@@ -932,11 +932,11 @@ private:
     StringAttr optInput;
     StringAttr optExceptionSeverity;
     IArrayOf<IEspNamedValue> variables;
-    unsigned optWaitTime;
+    unsigned optWaitTime = 0;
     unsigned startTimeMs = 0;
-    bool optNoRoot;
-    bool optPoll;
-    bool optPre64;  //only for troubleshooting, do not document
+    bool optNoRoot = false;
+    bool optPoll = false;
+    bool optPre64 = false;  //only for troubleshooting, do not document
 };
 
 void outputQueryActionResults(const IArrayOf<IConstQuerySetQueryActionResult> &results, const char *act, const char *qs)
