@@ -65,9 +65,9 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 //--------------------------------------------------------------------------------------------------------------------
 
 // Textual forms of the different enumerations, first items are for none and all.
-static const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", NULL };
-static const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
-static const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", nullptr };
+static constexpr const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", "en", "txt", "bool", NULL };
+static constexpr const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
+static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "unknown", nullptr };
 
 static unsigned matchString(const char * const * names, const char * search)
 {
@@ -86,6 +86,62 @@ static unsigned matchString(const char * const * names, const char * search)
         if (strieq(next, search))
             return i;
         i++;
+    }
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+static const StatisticScopeType scoreOrder[] = {
+    SSTedge,
+    SSTactivity,
+    SSTnone,
+    SSTall,
+    SSTglobal,
+    SSTgraph,
+    SSTsubgraph,
+    SSTallocator,
+    SSTsection,
+    SSTcompilestage,
+    SSTdfuworkunit,
+    SSTfunction,
+    SSTworkflow,
+    SSTchildgraph,
+    SSTunknown
+};
+static int scopePriority[SSTmax];
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    static_assert(_elements_in(scoreOrder) == SSTmax, "Elements missing from scoreOrder[]");
+    for (unsigned i=0; i < _elements_in(scoreOrder); i++)
+        scopePriority[scoreOrder[i]] = i;
+    return true;
+}
+
+
+extern jlib_decl int compareScopeName(const char * left, const char * right)
+{
+    StatsScopeId leftId;
+    StatsScopeId rightId;
+    for(;;)
+    {
+        leftId.extractScopeText(left, &left);
+        rightId.extractScopeText(right, &right);
+        int result = leftId.compare(rightId);
+        if (result != 0)
+            return result;
+        left = strchr(left, ':');
+        right = strchr(right, ':');
+        if (!left || !right)
+        {
+            if (left)
+                return +2;
+            if (right)
+                return -2;
+            return 0;
+        }
+        left++;
+        right++;
     }
 }
 
@@ -350,6 +406,9 @@ void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasur
     case SMeasureCycle:
         out.append(value);
         break;
+    case SMeasureBool:
+        out.append(boolToStr(value != 0));
+        break;
     default:
         out.append(value).append('?');
     }
@@ -395,6 +454,9 @@ const char * queryMeasurePrefix(StatisticMeasure measure)
     case SMeasurePercent:       return "Per";
     case SMeasureIPV4:          return "Ip";
     case SMeasureCycle:         return "Cycle";
+    case SMeasureEnum:          return "";
+    case SMeasureText:          return "";
+    case SMeasureBool:          return "Is";
     default:
         return "Unknown";
     }
@@ -443,6 +505,9 @@ StatsMergeAction queryMergeMode(StatisticMeasure measure)
     case SMeasurePercent:       return StatsMergeReplace;
     case SMeasureIPV4:          return StatsMergeKeepNonZero;
     case SMeasureCycle:         return StatsMergeSum;
+    case SMeasureEnum:          return StatsMergeKeepNonZero;
+    case SMeasureText:          return StatsMergeKeepNonZero;
+    case SMeasureBool:          return StatsMergeKeepNonZero;
     default:
 #ifdef _DEBUG
         throwUnexpected();
@@ -1019,6 +1084,8 @@ StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
         return out.append(WorkflowScopePrefix).append(id);
     case SSTchildgraph:
         return out.append(ChildGraphScopePrefix).append(id);
+    case SSTunknown:
+        return out.append(name);
     default:
 #ifdef _DEBUG
         throwUnexpected();
@@ -1032,11 +1099,31 @@ unsigned StatsScopeId::getHash() const
     switch (scopeType)
     {
     case SSTfunction:
+    case SSTunknown:
         return hashc((const byte *)name.get(), strlen(name), (unsigned)scopeType);
     default:
         return hashc((const byte *)&id, sizeof(id), (unsigned)scopeType);
     }
 }
+
+int StatsScopeId::compare(const StatsScopeId & other) const
+{
+    if (scopeType != other.scopeType)
+        return scopePriority[scopeType] - scopePriority[other.scopeType];
+    if (id != other.id)
+        return (int)(id - other.id);
+    if (extra != other.extra)
+        return (int)(extra - other.extra);
+    if (name && other.name)
+        return strcmp(name, other.name);
+    if (name)
+        return +1;
+    if (other.name)
+        return -1;
+    return 0;
+}
+
+
 
 bool StatsScopeId::matches(const StatsScopeId & other) const
 {
@@ -1114,37 +1201,107 @@ void StatsScopeId::setId(StatisticScopeType _scopeType, unsigned _id, unsigned _
     extra = _extra;
 }
 
-bool StatsScopeId::setScopeText(const char * text)
+bool StatsScopeId::setScopeText(const char * text, char * * next)
 {
-    if (MATCHES_CONST_PREFIX(text, ActivityScopePrefix))
-        setActivityId(atoi(text + CONST_STRLEN(ActivityScopePrefix)));
-    else if (MATCHES_CONST_PREFIX(text, GraphScopePrefix))
-        setId(SSTgraph, atoi(text + CONST_STRLEN(GraphScopePrefix)));
-    else if (MATCHES_CONST_PREFIX(text, SubGraphScopePrefix))
-        setSubgraphId(atoi(text + CONST_STRLEN(SubGraphScopePrefix)));
-    else if (MATCHES_CONST_PREFIX(text, EdgeScopePrefix))
+    switch (*text)
     {
-        const char * underscore = strchr(text, '_');
-        if (!underscore)
-            return false;
-        setEdgeId(atoi(text + CONST_STRLEN(EdgeScopePrefix)), atoi(underscore+1));
+    case ActivityScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, ActivityScopePrefix))
+        {
+            if (isdigit(text[CONST_STRLEN(ActivityScopePrefix)]))
+            {
+                unsigned id = strtoul(text + CONST_STRLEN(ActivityScopePrefix), next, 10);
+                setActivityId(id);
+                return true;
+            }
+        }
+        break;
+    case GraphScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, GraphScopePrefix))
+        {
+            if (isdigit(text[CONST_STRLEN(GraphScopePrefix)]))
+            {
+                unsigned id = strtoul(text + CONST_STRLEN(GraphScopePrefix), next, 10);
+                setId(SSTgraph, id);
+                return true;
+            }
+        }
+        break;
+    case SubGraphScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, SubGraphScopePrefix))
+        {
+            if (isdigit(text[CONST_STRLEN(SubGraphScopePrefix)]))
+            {
+                unsigned id = strtoul(text + CONST_STRLEN(SubGraphScopePrefix), next, 10);
+                setSubgraphId(id);
+                return true;
+            }
+        }
+        break;
+    case EdgeScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, EdgeScopePrefix))
+        {
+            const char * underscore = strchr(text, '_');
+            if (!underscore || !isdigit(underscore[1]))
+                return false;
+            unsigned id1 = atoi(text + CONST_STRLEN(EdgeScopePrefix));
+            unsigned id2 = strtoul(underscore+1, next, 10);
+            setEdgeId(id1, id2);
+            return true;
+        }
+        break;
+    case FunctionScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, FunctionScopePrefix))
+        {
+            setFunctionId(text+CONST_STRLEN(FunctionScopePrefix));
+            return true;
+        }
+        break;
+    case WorkflowScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, WorkflowScopePrefix))
+        {
+            setWorkflowId(atoi(text+CONST_STRLEN(WorkflowScopePrefix)));
+            return true;
+        }
+        break;
+    case ChildGraphScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, ChildGraphScopePrefix))
+        {
+            setChildGraphId(atoi(text+CONST_STRLEN(ChildGraphScopePrefix)));
+            return true;
+        }
+        break;
     }
-    else if (MATCHES_CONST_PREFIX(text, FunctionScopePrefix))
-        setFunctionId(text+CONST_STRLEN(FunctionScopePrefix));
-    else if (MATCHES_CONST_PREFIX(text, WorkflowScopePrefix))
-        setWorkflowId(atoi(text+CONST_STRLEN(WorkflowScopePrefix)));
-    else if (MATCHES_CONST_PREFIX(text, ChildGraphScopePrefix))
-        setChildGraphId(atoi(text+CONST_STRLEN(ChildGraphScopePrefix)));
-    else
-        return false;
-
-    return true;
+    return false;
 }
+
+void StatsScopeId::extractScopeText(const char * text, const char * * next)
+{
+    if (!setScopeText(text, (char * *)next))
+    {
+        scopeType = SSTunknown;
+        const char * end = strchr(text, ':');
+        if (end)
+        {
+            name.set(text, end-text);
+            if (next)
+                *next = end;
+        }
+        else
+        {
+            name.set(text);
+            if (next)
+                *next = text + strlen(text);
+        }
+    }
+}
+
 
 void StatsScopeId::setActivityId(unsigned _id)
 {
     setId(SSTactivity, _id);
 }
+
 void StatsScopeId::setEdgeId(unsigned _id, unsigned _output)
 {
     setId(SSTedge, _id, _output);
@@ -1195,6 +1352,20 @@ public:
 };
 typedef IArrayOf<CStatisticCollection> CollectionArray;
 
+static int compareCollection(IInterface * const * pl, IInterface * const *pr);
+
+class SortedCollectionIterator : public ArrayIIteratorOf<IArrayOf<IStatisticCollection>, IStatisticCollection, IStatisticCollectionIterator>
+{
+    IArrayOf<IStatisticCollection> elems;
+public:
+    SortedCollectionIterator(IStatisticCollectionIterator &iter) : ArrayIIteratorOf<IArrayOf<IStatisticCollection>, IStatisticCollection, IStatisticCollectionIterator>(elems)
+    {
+        ForEach(iter)
+            elems.append(iter.get());
+        elems.sort(compareCollection);
+    }
+};
+
 class CStatisticCollection : public CInterfaceOf<IStatisticCollection>
 {
     friend class CollectionHashTable;
@@ -1231,21 +1402,21 @@ public:
     StringBuffer &toXML(StringBuffer &out) const;
 
 //interface IStatisticCollection:
-    virtual StatisticScopeType queryScopeType() const
+    virtual StatisticScopeType queryScopeType() const override
     {
         return id.queryScopeType();
     }
-    virtual unsigned __int64 queryWhenCreated() const
+    virtual unsigned __int64 queryWhenCreated() const override
     {
         if (parent)
             return parent->queryWhenCreated();
         return 0;
     }
-    virtual StringBuffer & getScope(StringBuffer & str) const
+    virtual StringBuffer & getScope(StringBuffer & str) const override
     {
         return id.getScopeText(str);
     }
-    virtual StringBuffer & getFullScope(StringBuffer & str) const
+    virtual StringBuffer & getFullScope(StringBuffer & str) const override
     {
         if (parent)
         {
@@ -1255,7 +1426,7 @@ public:
         id.getScopeText(str);
         return str;
     }
-    virtual unsigned __int64 queryStatistic(StatisticKind kind) const
+    virtual unsigned __int64 queryStatistic(StatisticKind kind) const override
     {
         ForEachItemIn(i, stats)
         {
@@ -1265,23 +1436,39 @@ public:
         }
         return 0;
     }
-    virtual unsigned getNumStatistics() const
+    virtual bool getStatistic(StatisticKind kind, unsigned __int64 & value) const override
+    {
+        ForEachItemIn(i, stats)
+        {
+            const Statistic & cur = stats.item(i);
+            if (cur.kind == kind)
+            {
+                value = cur.value;
+                return true;
+            }
+        }
+        return false;
+    }
+    virtual unsigned getNumStatistics() const override
     {
         return stats.ordinality();
     }
-    virtual void getStatistic(StatisticKind & kind, unsigned __int64 & value, unsigned idx) const
+    virtual void getStatistic(StatisticKind & kind, unsigned __int64 & value, unsigned idx) const override
     {
         const Statistic & cur = stats.item(idx);
         kind = cur.kind;
         value = cur.value;
     }
-    virtual IStatisticCollectionIterator & getScopes(const char * filter)
+    virtual IStatisticCollectionIterator & getScopes(const char * filter, bool sorted) override
     {
         assertex(!filter);
-        return * new SuperHashIIteratorOf<IStatisticCollection, IStatisticCollectionIterator, false>(children);
+        Owned<IStatisticCollectionIterator> hashIter = new SuperHashIIteratorOf<IStatisticCollection, IStatisticCollectionIterator, false>(children);
+        if (!sorted)
+            return *hashIter.getClear();
+        return * new SortedCollectionIterator(*hashIter);
     }
 
-    virtual void getMinMaxScope(IStringVal & minValue, IStringVal & maxValue, StatisticScopeType searchScopeType) const
+    virtual void getMinMaxScope(IStringVal & minValue, IStringVal & maxValue, StatisticScopeType searchScopeType) const override
     {
         if (id.queryScopeType() == searchScopeType)
         {
@@ -1300,7 +1487,7 @@ public:
             iter.query().getMinMaxScope(minValue, maxValue, searchScopeType);
     }
 
-    virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const
+    virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const override
     {
         unsigned activityId = id.queryActivity();
         if (activityId)
@@ -1379,6 +1566,8 @@ public:
             iter.query().serialize(out);
     }
 
+    inline const StatsScopeId & queryScopeId() const { return id; }
+
 private:
     StatsScopeId id;
     CStatisticCollection * parent;
@@ -1403,6 +1592,13 @@ StringBuffer &CStatisticCollection::toXML(StringBuffer &out) const
         iter.query().toXML(out);
     out.append("</Scope>\n");
     return out;
+}
+
+static int compareCollection(IInterface * const * pl, IInterface * const *pr)
+{
+    CStatisticCollection * l = static_cast<CStatisticCollection *>(static_cast<IStatisticCollection *>(*pl));
+    CStatisticCollection * r = static_cast<CStatisticCollection *>(static_cast<IStatisticCollection *>(*pr));
+    return l->queryScopeId().compare(r->queryScopeId());
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -2577,7 +2773,7 @@ void StatisticsFilter::setKind(const char * _kind)
     {
         const char * prefix = queryMeasurePrefix((StatisticMeasure)i1);
         size_t len = strlen(prefix);
-        if (strnicmp(_kind, prefix, len) == 0)
+        if (len && strnicmp(_kind, prefix, len) == 0)
         {
             setMeasure((StatisticMeasure)i1);
             //Treat When* and When as filters on times.
@@ -2674,9 +2870,9 @@ static void checkDistributedKind(StatisticKind kind)
 
 void verifyStatisticFunctions()
 {
-    assertex(_elements_in(measureNames) == SMeasureMax+1 && !measureNames[SMeasureMax]);
-    assertex(_elements_in(creatorTypeNames) == SCTmax+1 && !creatorTypeNames[SCTmax]);
-    assertex(_elements_in(scopeTypeNames) == SSTmax+1 && !scopeTypeNames[SSTmax]);
+    static_assert(_elements_in(measureNames) == SMeasureMax+1 && !measureNames[SMeasureMax], "measureNames needs updating");
+    static_assert(_elements_in(creatorTypeNames) == SCTmax+1 && !creatorTypeNames[SCTmax], "creatorTypeNames needs updating");
+    static_assert(_elements_in(scopeTypeNames) == SSTmax+1 && !scopeTypeNames[SSTmax], "scopeTypeNames needs updating");
 
     //Check the various functions return values for all possible values.
     for (unsigned i1=SMeasureAll; i1 < SMeasureMax; i1++)

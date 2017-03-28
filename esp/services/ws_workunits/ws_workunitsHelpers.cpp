@@ -390,12 +390,12 @@ void WsWuInfo::doGetTimers(IArrayOf<IEspECLTimer>& timers)
         ForEach(*it)
         {
             IConstWUStatistic & cur = it->query();
-            SCMStringBuffer name, scope;
+            SCMStringBuffer name;
             cur.getDescription(name, true);
-            cur.getScope(scope);
+            const char * scope = cur.queryScope();
 
             bool isThorTiming = false;//Should it be renamed as isClusterTiming?
-            if ((cur.getCreatorType() == SCTsummary) && (cur.getKind() == StTimeElapsed) && isGlobalScope(scope.str()))
+            if ((cur.getCreatorType() == SCTsummary) && (cur.getKind() == StTimeElapsed) && isGlobalScope(scope))
             {
                 SCMStringBuffer creator;
                 cur.getCreator(creator);
@@ -412,7 +412,7 @@ void WsWuInfo::doGetTimers(IArrayOf<IEspECLTimer>& timers)
                 totalThorTimerCount += cur.getCount();
             }
             else
-                addTimerToList(name, scope.str(), cur, timers);
+                addTimerToList(name, scope, cur, timers);
         }
     }
 
@@ -826,13 +826,12 @@ void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData)
     ForEach(*times)
     {
         IConstWUStatistic & cur = times->query();
-        SCMStringBuffer scope;
-        cur.getScope(scope);
+        const char * scope = cur.queryScope();
 
         StringAttr graphName;
         unsigned graphNum;
         unsigned subGraphId;
-        if (parseGraphScope(scope.str(), graphName, graphNum, subGraphId))
+        if (parseGraphScope(scope, graphName, graphNum, subGraphId))
         {
             unsigned time = (unsigned)nanoToMilli(cur.getValue());
 
@@ -1629,7 +1628,7 @@ void WsWuInfo::getStats(StatisticsFilter& filter, bool createDescriptions, IArra
     {
         IConstWUStatistic & cur = stats->query();
         StringBuffer xmlBuf, tsValue;
-        SCMStringBuffer curCreator, curScope, curDescription, curFormattedValue;
+        SCMStringBuffer curCreator, curDescription, curFormattedValue;
 
         StatisticCreatorType curCreatorType = cur.getCreatorType();
         StatisticScopeType curScopeType = cur.getScopeType();
@@ -1639,8 +1638,8 @@ void WsWuInfo::getStats(StatisticsFilter& filter, bool createDescriptions, IArra
         unsigned __int64 count = cur.getCount();
         unsigned __int64 max = cur.getMax();
         unsigned __int64 ts = cur.getTimestamp();
+        const char * curScope = cur.queryScope();
         cur.getCreator(curCreator);
-        cur.getScope(curScope);
         cur.getDescription(curDescription, createDescriptions);
         cur.getFormattedValue(curFormattedValue);
 
@@ -1654,8 +1653,8 @@ void WsWuInfo::getStats(StatisticsFilter& filter, bool createDescriptions, IArra
             wuStatistic->setCreator(curCreator.str());
         if (curScopeType != SSTnone)
             wuStatistic->setScopeType(queryScopeTypeName(curScopeType));
-        if (curScope.length())
-            wuStatistic->setScope(curScope.str());
+        if (!isEmpty(curScope))
+            wuStatistic->setScope(curScope);
         if (curMeasure != SMeasureNone)
             wuStatistic->setMeasure(queryMeasureName(curMeasure));
         if (curKind != StKindNone)

@@ -25,13 +25,15 @@
 project( workunit ) 
 
 set (    SRCS 
-         workunit.cpp 
+         workunit.cpp
+         wuattr.cpp
          wujobq.cpp
          package.cpp
          workflow.cpp
          referencedfilelist.cpp
                  
-         workunit.hpp 
+         workunit.hpp
+         wuattr.hpp
          wuerror.hpp
          wujobq.hpp
          package.h

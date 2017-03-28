@@ -235,10 +235,13 @@ int main(int argc, const char *argv[])
 #ifdef _USE_CPPUNIT
         if (action && (stricmp(action, "-selftest")==0))
         {
+            StringBuffer testName;
+            if (!globals->getProp("test", testName))
+                testName.set("WuTool");
             testSize = globals->getPropInt("testSize", 100);
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_prefix);
             CppUnit::TextUi::TestRunner runner;
-            CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry("WuTool");
+            CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry(testName.str());
             runner.addTest( registry.makeTest() );
             ret = runner.run( "", false );
         }
@@ -1951,5 +1954,78 @@ StringArray WuTool::wuids;
 
 CPPUNIT_TEST_SUITE_REGISTRATION( WuTool );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( WuTool, "WuTool" );
+
+class WuDetails : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(WuDetails);
+        CPPUNIT_TEST(testWuDetails);
+    CPPUNIT_TEST_SUITE_END();
+protected:
+    class AttributeScopeVisitor : public IWuScopeVisitor
+    {
+    public:
+        virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & cur) override
+        {
+            StringBuffer text;
+            text.append(value);
+            noteProperty(queryStatisticName(kind), text);
+        }
+        virtual void noteAttribute(WuAttr attr, const char * value)
+        {
+            noteProperty(queryWuAttributeName(attr), value);
+        }
+        virtual void noteHint(const char * kind, const char * value)
+        {
+            noteProperty(kind, value);
+        }
+        virtual void noteProperty(const char * kind, const char * value)
+        {
+            DBGLOG("  Attr %s=%s", kind, value);
+        }
+    };
+
+    void testWuDetails(IConstWorkUnit * wu)
+    {
+        const StatisticsFilter filter;
+        Owned<IConstWUScopeIterator> iter = &wu->getScopeIterator(&filter);
+        DBGLOG("%s %s", wu->queryWuid(), wu->queryClusterName());
+        AttributeScopeVisitor visitor;
+        StringBuffer prevScope;
+        ForEach(*iter)
+        {
+            const char * scope = iter->queryScope();
+            DBGLOG("Scope: %s %s", scope, queryScopeTypeName(iter->getScopeType()));
+            //Ensure the scopes are iterated in the correct order.
+            if (!prevScope.isEmpty())
+                ASSERT(compareScopeName(prevScope.str(), scope) < 0);
+            prevScope.set(scope);
+
+            iter->playProperties(visitor);
+        }
+    }
+
+    void testWuDetails()
+    {
+#if 0
+        WUSortField filterByJob[] = { WUSFjob, WUSFterm };
+        CCycleTimer timer;
+        Owned<IConstWorkUnitIterator> wus;
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        wus.setown(factory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), filterByJob, "sqfilt-multiPart(false)*\0", 0, 10000, NULL, NULL));
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wuinfo = wus->query();
+            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuinfo.queryWuid());
+            testWuDetails(wu);
+        }
+        wus.clear();
+
+        DBGLOG("wuDetails %u ms", timer.elapsedMs());
+#endif
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( WuDetails );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( WuDetails, "WuDetails" );
 
 #endif

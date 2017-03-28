@@ -54,7 +54,8 @@ public:
     void deserialize(MemoryBuffer & in, unsigned version);
     void serialize(MemoryBuffer & out) const;
 
-    bool setScopeText(const char * text);
+    void extractScopeText(const char * text, const char * * next);
+    bool setScopeText(const char * text, char * * next = nullptr);
     void setId(StatisticScopeType _scopeType, unsigned _id, unsigned _extra = 0);
     void setActivityId(unsigned _id);
     void setEdgeId(unsigned _id, unsigned _output);
@@ -62,6 +63,8 @@ public:
     void setSubgraphId(unsigned _id);
     void setWorkflowId(unsigned _id);
     void setChildGraphId(unsigned _id);
+
+    int compare(const StatsScopeId & other) const;
 
     bool operator == (const StatsScopeId & other) const { return matches(other); }
 
@@ -82,8 +85,9 @@ public:
     virtual StringBuffer & getScope(StringBuffer & str) const = 0;
     virtual unsigned __int64 queryStatistic(StatisticKind kind) const = 0;
     virtual unsigned getNumStatistics() const = 0;
+    virtual bool getStatistic(StatisticKind kind, unsigned __int64 & value) const = 0;
     virtual void getStatistic(StatisticKind & kind, unsigned __int64 & value, unsigned idx) const = 0;
-    virtual IStatisticCollectionIterator & getScopes(const char * filter) = 0;
+    virtual IStatisticCollectionIterator & getScopes(const char * filter, bool sorted) = 0;
     virtual void getMinMaxScope(IStringVal & minValue, IStringVal & maxValue, StatisticScopeType searchScopeType) const = 0;
     virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const = 0;
     virtual void serialize(MemoryBuffer & out) const = 0;
@@ -598,6 +602,11 @@ extern jlib_decl void setStatisticsComponentName(StatisticCreatorType processTyp
 extern jlib_decl void verifyStatisticFunctions();
 extern jlib_decl void formatTimeCollatable(StringBuffer & out, unsigned __int64 value, bool nano);
 extern jlib_decl unsigned __int64 extractTimeCollatable(const char *s, bool nano);
+
+//Scopes need to be processed in a consistent order so they can be merged.
+//activities are in numeric order
+//edges must come before activities.
+extern jlib_decl int compareScopeName(const char * left, const char * right);
 
 //This interface is primarily here to reduce the dependency between the different components.
 interface IStatisticTarget

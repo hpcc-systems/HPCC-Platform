@@ -46,23 +46,23 @@ class WORKUNIT_API CLocalWUStatistic : implements IConstWUStatistic, public CInt
     Owned<IPropertyTree> p;
 public:
     IMPLEMENT_IINTERFACE;
+
     CLocalWUStatistic(IPropertyTree *p);
 
-    virtual IStringVal & getCreator(IStringVal & str) const;
-    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const;
-    virtual IStringVal & getFormattedValue(IStringVal & str) const;
-    virtual IStringVal & getType(IStringVal & str) const;
-    virtual IStringVal & getScope(IStringVal & str) const;
-    virtual StatisticMeasure getMeasure() const;
-    virtual StatisticCreatorType getCreatorType() const;
-    virtual StatisticScopeType getScopeType() const;
-    virtual StatisticKind getKind() const;
-    virtual unsigned __int64 getValue() const;
-    virtual unsigned __int64 getCount() const;
-    virtual unsigned __int64 getMax() const;
-    virtual unsigned __int64 getTimestamp() const;
+    virtual IStringVal & getCreator(IStringVal & str) const override;
+    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const override;
+    virtual IStringVal & getFormattedValue(IStringVal & str) const override;
+    virtual const char * queryScope() const override;
+    virtual StatisticMeasure getMeasure() const override;
+    virtual StatisticCreatorType getCreatorType() const override;
+    virtual StatisticScopeType getScopeType() const override;
+    virtual StatisticKind getKind() const override;
+    virtual unsigned __int64 getValue() const override;
+    virtual unsigned __int64 getCount() const override;
+    virtual unsigned __int64 getMax() const override;
+    virtual unsigned __int64 getTimestamp() const override;
 
-    virtual bool matches(const IStatisticsFilter * filter) const;
+    virtual bool matches(const IStatisticsFilter * filter) const override;
 };
 
 //==========================================================================================
@@ -303,6 +303,7 @@ public:
     virtual IConstWUResultIterator & getTemporaries() const;
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const;
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const;
+    virtual IConstWUScopeIterator & getScopeIterator(const IStatisticsFilter * filter) const override;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const;
     virtual IStringVal & getXmlParams(IStringVal & params, bool hidePasswords) const;
     virtual const IPropertyTree *getXmlParams() const;

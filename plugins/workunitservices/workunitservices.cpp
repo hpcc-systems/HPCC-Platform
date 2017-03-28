@@ -539,9 +539,7 @@ WORKUNITSERVICES_API void wsWorkunitTimeStamps(ICodeContext *ctx, size32_t & __l
         {
             IConstWUStatistic & cur = stats->query();
 
-            SCMStringBuffer scope;
-            cur.getScope(scope);
-
+            const char * curScope = cur.queryScope();
             StatisticKind kind = cur.getKind();
             const char * kindName = queryStatisticName(kind);
             assertex(kindName && memicmp(kindName, "when", 4) == 0);
@@ -555,7 +553,7 @@ WORKUNITSERVICES_API void wsWorkunitTimeStamps(ICodeContext *ctx, size32_t & __l
             const char * at = strchr(creator.str(), '@');
             const char * instance = at ? at + 1 : creator.str();
 
-            fixedAppend(mb, 32, scope.str());
+            fixedAppend(mb, 32, curScope);
             fixedAppend(mb, 16, kindName); // id
             fixedAppend(mb, 20, formattedTime);            // time
             fixedAppend(mb, 16, instance);                 // item correct here
@@ -687,7 +685,7 @@ public:
         StatisticCreatorType creatorType = cur.getCreatorType();
         cur.getCreator(creator);
         StatisticScopeType scopeType = cur.getScopeType();
-        cur.getScope(scope);
+        const char * scope = cur.queryScope();
         cur.getDescription(description, true);
         StatisticMeasure measure = cur.getMeasure();
         StatisticKind kind = cur.getKind();
@@ -699,7 +697,7 @@ public:
         varAppend(mb, queryCreatorTypeName(creatorType));
         varAppend(mb, creator.str());
         varAppend(mb, queryScopeTypeName(scopeType));
-        varAppend(mb, scope.str());
+        varAppend(mb, scope);
         varAppend(mb, queryStatisticName(kind));
         varAppend(mb, description.str());
         varAppend(mb, queryMeasureName(measure));
@@ -724,7 +722,6 @@ protected:
     Linked<IEngineRowAllocator> resultAllocator;
     Linked<IConstWUStatisticIterator> iter;
     SCMStringBuffer creator;
-    SCMStringBuffer scope;
     SCMStringBuffer description;
 };
 
