@@ -63,6 +63,7 @@
 #include "rtlds_imp.hpp"
 #include "rtlfield_imp.hpp"
 #include "nbcd.hpp"
+#include "enginecontext.hpp"
 
 static const char * compatibleVersions[] =
 { "R Embed Helper 1.0.0", NULL };
@@ -96,6 +97,26 @@ extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
 namespace Rembed
 {
+// Copied from Rcpp 3.3's environment.h, in case an older version of Rcpp is in use
+inline Rcpp::Environment _new_env(SEXP parent, int size = 29) {
+    Rcpp::Shield<SEXP> sizeSEXP(Rf_ScalarInteger(size));
+    Rcpp::Shield<SEXP> parentSEXP(parent);
+    return R_NewHashedEnv(parentSEXP, sizeSEXP);
+}
+
+
+
+__declspec(noreturn) static void failx(const char *msg, ...) __attribute__((format(printf, 1, 2), noreturn));
+
+static void failx(const char *message, ...)
+{
+    va_list args;
+    va_start(args,message);
+    StringBuffer msg;
+    msg.append("rembed: ").valist_appendf(message,args);
+    va_end(args);
+    rtlFail(0, msg.str());
+}
 
 class OwnedRoxieRowSet : public ConstPointerArray
 {
@@ -105,6 +126,22 @@ public:
         ForEachItemIn(idx, *this)
             rtlReleaseRow(item(idx));
     }
+};
+
+class REnvironment : public CInterfaceOf<IInterface>
+{
+public:
+    inline REnvironment(Rcpp::Environment _env)
+    : env(_env)
+    {
+    }
+    inline Rcpp::Environment &query()
+    {
+        return env;
+    }
+private:
+    REnvironment(const REnvironment &);
+    Rcpp::Environment env;
 };
 
 // Use a global object to ensure that the R instance is initialized only once
@@ -133,28 +170,11 @@ public:
             DBGLOG("LoadSharedObject returned %p", h);
         }
 #else
-        FILE *diskfp = fopen("/proc/self/maps", "r");
-        if (diskfp)
+        StringBuffer modname;
+        if (findLoadedModule(modname, "Rembed"))
         {
-            char ln[_MAX_PATH];
-            while (fgets(ln, sizeof(ln), diskfp))
-            {
-                if (strstr(ln, "libRembed"))
-                {
-                    const char *fullName = strchr(ln, '/');
-                    if (fullName)
-                    {
-                        char *tail = (char *) strstr(fullName, SharedObjectExtension);
-                        if (tail)
-                        {
-                            tail[strlen(SharedObjectExtension)] = 0;
-                            HINSTANCE h = LoadSharedObject(fullName, false, false);
-                            break;
-                        }
-                    }
-                }
-            }
-            fclose(diskfp);
+            HINSTANCE h = LoadSharedObject(modname, false, false);
+            // Deliberately leak this handle
         }
 #endif
     }
@@ -162,10 +182,37 @@ public:
     {
         delete R;
     }
+    REnvironment *getNamedScope(const char *key, bool &isNew)
+    {
+        Linked<REnvironment> ret = preservedScopes.getValue(key);
+        if (!ret)
+        {
+            ret.setown(new REnvironment(_new_env(Rcpp::Environment::global_env())));
+            preservedScopes.setValue(key, ret);  // NOTE - links arg
+            isNew = true;
+        }
+        else
+            isNew = false;
+        return ret.getClear();
+    }
+    void releaseNamedScope(const char *key)
+    {
+        preservedScopes.remove(key);
+    }
+    static void unregister(const char *key);
     RInside *R;
+private:
+    MapStringToMyClass<REnvironment> preservedScopes;
 }* globalState = NULL;
 
 static CriticalSection RCrit;  // R is single threaded - need to own this before making any call to R
+
+void RGlobalState::unregister(const char *key)
+{
+    CriticalBlock b(RCrit);
+    if (globalState)
+        globalState->releaseNamedScope(key);
+}
 
 static RGlobalState *queryGlobalState()
 {
@@ -587,9 +634,71 @@ protected:
 class REmbedFunctionContext: public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    REmbedFunctionContext(RInside &_R, const char *options)
+    REmbedFunctionContext(RInside &_R)
     : R(_R), block(RCrit), result(R_NilValue)
     {
+    }
+    void setScopes(ICodeContext *codeCtx, const char *_options)
+    {
+        StringArray options;
+        options.appendList(_options, ",");
+        StringBuffer scopeKey;
+        const char *scopeKey2 = nullptr;
+        bool registerCallback = false;
+        bool wuidScope = false;
+        IEngineContext *engine = nullptr;
+        ForEachItemIn(idx, options)
+        {
+            const char *opt = options.item(idx);
+            const char *val = strchr(opt, '=');
+            if (val)
+            {
+                StringBuffer optName(val-opt, opt);
+                val++;
+                if (strieq(optName, "globalscope"))
+                    scopeKey2 = val;
+                else if (strieq(optName, "persist"))
+                {
+                    if (scopeKey.length())
+                        failx("persist option specified more than once");
+                    if (strieq(val, "global"))
+                        scopeKey.append("global");
+                    else if (strieq(val, "workunit"))
+                    {
+                        engine = codeCtx->queryEngineContext();
+                        wuidScope = true;
+                        if (!engine)
+                            failx("Persist mode 'workunit' not supported here");
+                    }
+                    else if (strieq(val, "query"))
+                    {
+                        engine = codeCtx->queryEngineContext();
+                        wuidScope = false;
+                        if (!engine)
+                            failx("Persist mode 'query' not supported here");
+                    }
+                    else
+                        failx("Unrecognized persist mode %s", val);
+                }
+                else
+                    failx("Unrecognized option %s", optName.str());
+            }
+            else
+                failx("Unrecognized option %s", opt);
+        }
+        if (engine)
+            engine->getQueryId(scopeKey, wuidScope);
+        if (scopeKey2)
+            scopeKey.append(':').append(scopeKey2);
+        if (scopeKey.length())
+        {
+            bool isNew;
+            env.setown(globalState->getNamedScope(scopeKey, isNew));
+            if (isNew && engine)
+                engine->onTermination(RGlobalState::unregister, scopeKey.str(), wuidScope);
+        }
+        else
+            env.setown(new REnvironment(_new_env(Rcpp::Environment::global_env())));
     }
     ~REmbedFunctionContext()
     {
@@ -848,47 +957,47 @@ public:
 
     virtual void bindBooleanParam(const char *name, bool val)
     {
-        R[name] = val;
+        env->query()[name] = val;
     }
     virtual void bindDataParam(const char *name, size32_t len, const void *val)
     {
         std::vector<byte> vval;
         const byte *cval = (const byte *) val;
         vval.assign(cval, cval+len);
-        R[name] = vval;
+        env->query()[name] = vval;
     }
     virtual void bindFloatParam(const char *name, float val)
     {
-        R[name] = val;
+        env->query()[name] = val;
     }
     virtual void bindRealParam(const char *name, double val)
     {
-        R[name] = val;
+        env->query()[name] = val;
     }
     virtual void bindSignedSizeParam(const char *name, int size, __int64 val)
     {
-        R[name] = (long int) val;
+        env->query()[name] = (long int) val;
     }
     virtual void bindSignedParam(const char *name, __int64 val)
     {
-        R[name] = (long int) val;
+        env->query()[name] = (long int) val;
     }
     virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val)
     {
-        R[name] = (long int) val;
+        env->query()[name] = (long int) val;
     }
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
     {
-        R[name] = (unsigned long int) val;
+        env->query()[name] = (unsigned long int) val;
     }
     virtual void bindStringParam(const char *name, size32_t len, const char *val)
     {
         std::string s(val, len);
-        R[name] = s;
+        env->query()[name] = s;
     }
     virtual void bindVStringParam(const char *name, const char *val)
     {
-        R[name] = val;
+        env->query()[name] = val;
     }
     virtual void bindUTF8Param(const char *name, size32_t chars, const char *val)
     {
@@ -913,7 +1022,7 @@ public:
     std::vector<type> vval; \
     const type *start = (const type *) setData; \
     vval.assign(start, start+numElems); \
-    R[name] = vval; \
+    env->query()[name] = vval; \
 }
 
         case type_boolean:
@@ -977,7 +1086,7 @@ public:
                 inData += thisSize;
                 numElems++;
             }
-            R[name] = vval;
+            env->query()[name] = vval;
             break;
         }
         default:
@@ -1008,7 +1117,7 @@ public:
         row_names(0) = "1";
         myList.attr("class") = "data.frame";
         myList.attr("row.names") = row_names;
-        R[name] = myList;
+        env->query()[name] = myList;
     }
     virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
     {
@@ -1048,7 +1157,7 @@ public:
         }
         myList.attr("class") = "data.frame";
         myList.attr("row.names") = row_names;
-        R[name] = myList;
+        env->query()[name] = myList;
     }
 
     virtual void importFunction(size32_t lenChars, const char *utf)
@@ -1057,16 +1166,18 @@ public:
     }
     virtual void compileEmbeddedScript(size32_t lenChars, const char *utf)
     {
-        StringBuffer text(rtlUtf8Size(lenChars, utf), utf);
+        StringBuffer text;
+        text.append(rtlUtf8Size(lenChars, utf), utf);
         text.stripChar('\r');
-        func.assign(text.str());
+        func.set(text.str());
     }
 
     virtual void callFunction()
     {
         try
         {
-            result = R.parseEval(func);
+            Rcpp::ExpressionVector exp(func) ;
+            result = exp.eval(env->query());
         }
         catch (std::exception &E)
         {
@@ -1076,8 +1187,9 @@ public:
 private:
     RInside &R;
     RInside::Proxy result;
-    std::string func;
+    StringAttr func;
     CriticalBlock block;
+    Owned<REnvironment> env;
 };
 
 class REmbedContext: public CInterfaceOf<IEmbedContext>
@@ -1089,7 +1201,9 @@ public:
     }
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
     {
-        return new REmbedFunctionContext(*queryGlobalState()->R, options);
+        Owned<REmbedFunctionContext> ret =  new REmbedFunctionContext(*queryGlobalState()->R);
+        ret->setScopes(ctx, options);
+        return ret.getClear();
     }
     virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
     {

@@ -38,6 +38,9 @@ if(REMBED)
             ./../../rtl/include
             ./../../rtl/nbcd
             ./../../common/deftype
+            ./../../common/thorhelper
+            ./../../dali/base
+            ./../../system/mp
             ./../../system/jlib)
 
         add_definitions(-D_USRDLL -DREMBED_EXPORTS)
