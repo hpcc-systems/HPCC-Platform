@@ -18,6 +18,9 @@
 //nothor
 //nothorlcr
 //noroxie
+
+//class=error
+
 //fail
 
 //Test division by zero - default action to return 0

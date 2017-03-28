@@ -19,6 +19,8 @@
 //nothorlcr
 //noroxie
 
+//class=error
+
 //Test division by zero - default action to return 0
 #option ('divideByZero', '0'); 
 
