@@ -429,7 +429,7 @@ public:
               }
            }
 
-           m_warnings.clear().append(transform.getMessages());
+           m_warnings.set(transform.getMessages());
            transform.closeResultTarget();
 #ifdef _WIN32
            //Samba maps the Windows archive, system, and hidden file attributes to the owner, group, and world 
@@ -444,33 +444,17 @@ public:
          }
          if (m_warnings.length() > 0)
          {
-             bDeleteFile = false;
-             throw MakeStringException(-1, "%s", m_warnings.str());
+             // do not delete file, warning is not fatal
+             formatMessage(target,xsl,m_warnings);
+             WARNLOG("%s",m_errorString.str());
          }
-
          break;
        }
        catch (IException* e)
        {
          StringBuffer warning;
-         e->errorMessage(warning);
-
-         //for better readability of warning, remove redundant prefix of "[XSLT warning: ", if present
-         const char* pattern = "[XSLT warning: ";
-         int len = strlen(pattern);
-         if (!strncmp(warning, pattern, len))
-           warning.remove(0, len);
-
-         //remove the excessive info about XSLT context when this was thrown
-         const char* begin = warning.str();
-         const char* end   = strstr(begin, ", style tree node:");
-
-         if (end)
-           warning.setLength(end-begin);
-
-         m_errorString.appendf("Cannot create %s\nusing XSL transform %s\n\n%s", target, xsl, warning.str());
+         formatMessage(target,xsl,e->errorMessage(warning),true);
          e->Release();
-
          //remove incomplete (invalid) output file produced thus far
          if (bDeleteFile && !DeleteFile(target))
            WARNLOG("Couldn't delete file %s", target);
@@ -490,6 +474,31 @@ public:
          break;
      }
      return (m_errorCode == 0);
+   }
+   //---------------------------------------------------------------------------
+   //  messageFormat
+   //---------------------------------------------------------------------------
+   void formatMessage(const char * target, const char * xsl, StringBuffer & in, bool isError=false)
+   {
+     StringBuffer message;
+     message.set(in.str());
+     //for better readability of warning, remove redundant prefix of "[XSLT warning: ", if present
+     const char* pattern = "[XSLT warning: ";
+     int len = strlen(pattern);
+     if (!strncmp(message, pattern, len))
+       message.remove(0, len);
+
+     //remove the excessive info about XSLT context when this was thrown
+     const char* begin = message.str();
+     const char* end   = strstr(begin, ", style tree node:");
+
+     if (end)
+       message.setLength(end-begin);
+
+     if (isError)
+       m_errorString.appendf("Cannot create %s\nusing XSL transform %s\n\n%s", target, xsl, message.str());
+     else
+       m_errorString.appendf("In %s : %s", xsl, message.str());
    }
    //---------------------------------------------------------------------------
    //  copyFile
