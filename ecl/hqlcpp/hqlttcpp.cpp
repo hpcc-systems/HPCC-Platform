@@ -8964,7 +8964,6 @@ IHqlExpression * DFSLayoutTransformer::createTransformed(IHqlExpression * expr)
                     OwnedHqlExpr newTransform = mapper.expandFields(transformECLtoDFS, left, nullptr, nullptr);
                     ds.setown(replaceChild(ds, 2, newTransform));
                     // The payload attribute specifies how many UNKEYED fields there are - so if we added or removed any fields we may need to change it
-                    assertex(dfsPayload >= 0);
                     if (dfsPayload != numPayloadFields(ds))
                     {
                         // Note - this doesn't merit a warning - but if we changed the number of keyed it might?
