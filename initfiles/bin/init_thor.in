@@ -89,8 +89,6 @@ kill_slaves()
             else
                 log "Frunssh successful"
             fi
-        else
-            log "Could not locate $instancedir/uslaves file"
         fi
     fi
 

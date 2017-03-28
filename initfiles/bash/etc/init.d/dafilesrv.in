@@ -34,9 +34,11 @@
 #                         chkconfig Parameters
 ##-----------------------------------------------------------------------------
 
+### BEGIN INIT INFO
 # chkconfig: 235 30 80
 # Description: Starts the HPCC processes
 # Provides: dafilesrv
+### END INIT INFO
 
 ##-----------------------------------------------------------------------------
 #                         General Purpose Functions
