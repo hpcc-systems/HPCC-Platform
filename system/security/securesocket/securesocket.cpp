@@ -134,6 +134,7 @@ private:
     bool        m_address_match;
     CStringSet* m_peers;
     int         m_loglevel;
+    bool        m_isSecure;
 private:
     StringBuffer& get_cn(X509* cert, StringBuffer& cn);
     bool verify_cert(X509* cert);
@@ -375,6 +376,10 @@ public:
         throw MakeStringException(-1, "not implemented");
     }
 
+    virtual bool isSecure() const override
+    {
+        return m_isSecure;
+    }
 };
 
 
@@ -390,6 +395,7 @@ CSecureSocket::CSecureSocket(ISocket* sock, SSL_CTX* ctx, bool verify, bool addr
     m_address_match = address_match;
     m_peers = peers;;
     m_loglevel = loglevel;
+    m_isSecure = false;
 
     if(m_ssl == NULL)
     {
@@ -408,6 +414,7 @@ CSecureSocket::CSecureSocket(int sockfd, SSL_CTX* ctx, bool verify, bool address
     m_address_match = address_match;
     m_peers = peers;;
     m_loglevel = loglevel;
+    m_isSecure = false;
 
     if(m_ssl == NULL)
     {
@@ -597,6 +604,7 @@ int CSecureSocket::secure_accept()
 
     }
 
+    m_isSecure = true;
     return 0;
 }
 
@@ -641,6 +649,7 @@ int CSecureSocket::secure_connect()
 
     }
 
+    m_isSecure = true;
     return 0;
 }
 
