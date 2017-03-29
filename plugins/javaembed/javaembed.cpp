@@ -180,7 +180,7 @@ public:
     JavaVM *javaVM;       /* denotes a Java VM */
 } *globalState;
 
-static char helperLibraryName[_MAX_PATH];
+static StringBuffer helperLibraryName;
 
 #ifdef _WIN32
     EXTERN_C IMAGE_DOS_HEADER __ImageBase;
@@ -192,36 +192,19 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     // Make sure we are never unloaded (as JVM does not support it)
     // we do this by doing a dynamic load of the javaembed library
 #ifdef _WIN32
-    ::GetModuleFileName((HINSTANCE)&__ImageBase, helperLibraryName, _MAX_PATH);
+    char ln[_MAX_PATH];
+    ::GetModuleFileName((HINSTANCE)&__ImageBase, ln, _MAX_PATH);
     if (strstr(path, "javaembed"))
     {
-        HINSTANCE h = LoadSharedObject(helperLibraryName, false, false);
+        HINSTANCE h = LoadSharedObject(ln, false, false);
+        helperLibraryName.set(ln);
         DBGLOG("LoadSharedObject returned %p", h);
     }
 #else
-    FILE *diskfp = fopen("/proc/self/maps", "r");
-    if (diskfp)
+    if (findLoadedModule(helperLibraryName, "javaembed"))
     {
-        char ln[_MAX_PATH];
-        while (fgets(ln, sizeof(ln), diskfp))
-        {
-            if (strstr(ln, "libjavaembed"))
-            {
-                const char *fullName = strchr(ln, '/');
-                if (fullName)
-                {
-                    char *tail = (char *) strstr(fullName, SharedObjectExtension);
-                    if (tail)
-                    {
-                        tail[strlen(SharedObjectExtension)] = 0;
-                        strcpy(helperLibraryName, fullName);
-                        HINSTANCE h = LoadSharedObject(fullName, false, false);
-                        break;
-                    }
-                }
-            }
-        }
-        fclose(diskfp);
+        HINSTANCE h = LoadSharedObject(helperLibraryName, false, false);
+        // Deliberately leak this handle
     }
 #endif
     return true;
