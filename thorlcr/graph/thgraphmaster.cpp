@@ -833,7 +833,7 @@ public:
     }
 
 // ICodeContext
-    virtual void setResultBool(const char *name, unsigned sequence, bool result)
+    virtual void setResultBool(const char *name, unsigned sequence, bool result) override
     {
         WorkunitUpdate w(&workunit->lock());
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -845,7 +845,7 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultBool");
     }
-    virtual void setResultData(const char *name, unsigned sequence, int len, const void *result)
+    virtual void setResultData(const char *name, unsigned sequence, int len, const void *result) override
     {
         WorkunitUpdate w(&workunit->lock());
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -857,7 +857,7 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultData");
     }
-    virtual void setResultDecimal(const char * name, unsigned sequence, int len, int precision, bool isSigned, const void *val)
+    virtual void setResultDecimal(const char * name, unsigned sequence, int len, int precision, bool isSigned, const void *val) override
     {
         WorkunitUpdate w(&workunit->lock());
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -869,7 +869,7 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultDecimal");
     }
-    virtual void setResultInt(const char *name, unsigned sequence, __int64 result, unsigned size)
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 result, unsigned size) override
     {
         WorkunitUpdate w(&workunit->lock());
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -881,7 +881,7 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultInt");
     }
-    virtual void setResultRaw(const char *name, unsigned sequence, int len, const void *result)
+    virtual void setResultRaw(const char *name, unsigned sequence, int len, const void *result) override
     {
         WorkunitUpdate w(&workunit->lock());
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -893,7 +893,7 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultData");
     }
-    virtual void setResultReal(const char *name, unsigned sequence, double result)
+    virtual void setResultReal(const char *name, unsigned sequence, double result) override
     {
         WorkunitUpdate w(&workunit->lock());
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -905,7 +905,7 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultReal");
     }
-    virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void *result, ISetToXmlTransformer *)
+    virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void *result, ISetToXmlTransformer *) override
     {
         WorkunitUpdate w(&workunit->lock());
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -918,7 +918,7 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultData");
     }
-    virtual void setResultString(const char *name, unsigned sequence, int len, const char *result)
+    virtual void setResultString(const char *name, unsigned sequence, int len, const char *result) override
     {
         WorkunitUpdate w(&workunit->lock());
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -930,7 +930,7 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultString");
     }
-    virtual void setResultUnicode(const char * name, unsigned sequence, int len, UChar const * result)
+    virtual void setResultUnicode(const char * name, unsigned sequence, int len, UChar const * result) override
     {
         WorkunitUpdate w(&workunit->lock());
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -942,7 +942,7 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultUnicode");
     }
-    virtual void setResultVarString(const char * name, unsigned sequence, const char *result)
+    virtual void setResultVarString(const char * name, unsigned sequence, const char *result) override
     {
         WorkunitUpdate w(&workunit->lock());
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -954,7 +954,7 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultVarString");
     }
-    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 result, unsigned size)
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 result, unsigned size) override
     {
         WorkunitUpdate w(&workunit->lock());
         Owned<IWUResult> r = updateWorkUnitResult(w, name, sequence);
@@ -966,17 +966,17 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultUInt");
     }
-    virtual void setResultVarUnicode(const char * stepname, unsigned sequence, UChar const *val)
+    virtual void setResultVarUnicode(const char * stepname, unsigned sequence, UChar const *val) override
     {
         setResultUnicode(stepname, sequence, rtlUnicodeStrlen(val), val);
     }
-    virtual bool getResultBool(const char * stepname, unsigned sequence) 
+    virtual bool getResultBool(const char * stepname, unsigned sequence) override
     { 
         PROTECTED_GETRESULT(stepname, sequence, "Bool", "bool",
             return r->getResultBool();
         );
     }
-    virtual void getResultData(unsigned & tlen, void * & tgt, const char * stepname, unsigned sequence)
+    virtual void getResultData(unsigned & tlen, void * & tgt, const char * stepname, unsigned sequence) override
     {
         PROTECTED_GETRESULT(stepname, sequence, "Data", "data",
             SCMStringBuffer result;
@@ -985,13 +985,13 @@ public:
             tgt = (char *)result.s.detach();
         );
     }
-    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence)
+    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) override
     {
         PROTECTED_GETRESULT(stepname, sequence, "Decimal", "decimal",
             r->getResultDecimal(tgt, tlen, precision, isSigned);
         );
     }
-    virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override
     {
         tgt = NULL;
         PROTECTED_GETRESULT(stepname, sequence, "Raw", "raw",
@@ -1001,7 +1001,7 @@ public:
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
         );
     }
-    virtual void getResultSet(bool & isAll, unsigned & tlen, void * & tgt, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    virtual void getResultSet(bool & isAll, unsigned & tlen, void * & tgt, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override
     {
         tgt = NULL;
         PROTECTED_GETRESULT(stepname, sequence, "Raw", "raw",
@@ -1012,19 +1012,19 @@ public:
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
         );
     }
-    virtual __int64 getResultInt(const char * name, unsigned sequence) 
+    virtual __int64 getResultInt(const char * name, unsigned sequence) override
     { 
         PROTECTED_GETRESULT(name, sequence, "Int", "integer",
             return r->getResultInt();
         );
     }
-    virtual double getResultReal(const char * name, unsigned sequence)
+    virtual double getResultReal(const char * name, unsigned sequence) override
     {
         PROTECTED_GETRESULT(name, sequence, "Real", "real",
             return r->getResultReal();
         );
     }
-    virtual void getResultString(unsigned & tlen, char * & tgt, const char * stepname, unsigned sequence)
+    virtual void getResultString(unsigned & tlen, char * & tgt, const char * stepname, unsigned sequence) override
     {
         PROTECTED_GETRESULT(stepname, sequence, "String", "string",
             SCMStringBuffer result;
@@ -1033,7 +1033,7 @@ public:
             tgt = (char *)result.s.detach();
         );
     }
-    virtual void getResultStringF(unsigned tlen, char * tgt, const char * stepname, unsigned sequence)
+    virtual void getResultStringF(unsigned tlen, char * tgt, const char * stepname, unsigned sequence) override
     {
         PROTECTED_GETRESULT(stepname, sequence, "String", "string",
             SCMStringBuffer result;
@@ -1041,7 +1041,7 @@ public:
             rtlStrToStr(tlen, tgt, result.length(), result.s.str());
         );
     }
-    virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * stepname, unsigned sequence)
+    virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * stepname, unsigned sequence) override
     {
         PROTECTED_GETRESULT(stepname, sequence, "Unicode", "unicode",
             MemoryBuffer result;
@@ -1051,7 +1051,7 @@ public:
             memcpy(tgt, result.toByteArray(), tlen*2);
         );
     }
-    virtual char * getResultVarString(const char * stepname, unsigned sequence) 
+    virtual char * getResultVarString(const char * stepname, unsigned sequence) override
     { 
         PROTECTED_GETRESULT(stepname, sequence, "VarString", "string",
             SCMStringBuffer result;
@@ -1059,7 +1059,7 @@ public:
             return result.s.detach();
         );
     }
-    virtual UChar * getResultVarUnicode(const char * stepname, unsigned sequence)
+    virtual UChar * getResultVarUnicode(const char * stepname, unsigned sequence) override
     {
         PROTECTED_GETRESULT(stepname, sequence, "VarUnicode", "unicode",
             MemoryBuffer result;
@@ -1069,13 +1069,13 @@ public:
             return (UChar *)result.detach();
         );
     }
-    virtual unsigned getResultHash(const char * name, unsigned sequence) 
+    virtual unsigned getResultHash(const char * name, unsigned sequence) override
     { 
         PROTECTED_GETRESULT(name, sequence, "Hash", "hash",
             return r->getResultHash();
         );
     }
-    virtual unsigned getExternalResultHash(const char * wuid, const char * stepname, unsigned sequence)
+    virtual unsigned getExternalResultHash(const char * wuid, const char * stepname, unsigned sequence) override
     {
         try
         {
@@ -1089,7 +1089,7 @@ public:
             throw MakeStringException(TE_FailedToRetrieveWorkunitValue, "Failed to retrieve external data hash %s from workunit %s", stepname, wuid);
         }
     }
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override
     {
         tgt = NULL;
         PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
@@ -1102,7 +1102,7 @@ public:
             rtlDataset2RowsetX(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray(), isGrouped);
         );
     }
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
+    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override
     {
         tcount = 0;
         tgt = NULL;
@@ -1116,7 +1116,7 @@ public:
             rtlDeserializeDictionary(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray());
         );
     }
-    virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override
     {
         tgt = NULL;
         try
@@ -1134,7 +1134,7 @@ public:
             throw MakeStringException(TE_FailedToRetrieveWorkunitValue, "Failed to retrieve external data value %s from workunit %s", stepname, wuid);
         }
     }
-    virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source)
+    virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source) override
     {
         DBGLOG("%s", text);
         try
@@ -1159,7 +1159,7 @@ public:
             DBGLOG("Unable to record exception in workunit: unknown exception");
         }
     }
-    virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort)
+    virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) override
     {
         DBGLOG("%s", text);
         try
@@ -1181,11 +1181,11 @@ public:
         if (isAbort)
             rtlFailOnAssert();      // minimal implementation
     }
-    virtual unsigned __int64 getFileOffset(const char *logicalName) { assertex(false); return 0; }
-    virtual unsigned getNodes() { return jobChannel.queryJob().querySlaves(); }
-    virtual unsigned getNodeNum() { throw MakeThorException(0, "Unsupported. getNodeNum() called in master"); return (unsigned)-1; }
-    virtual char *getFilePart(const char *logicalName, bool create=false) { assertex(false); return NULL; }
-    virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash)
+    virtual unsigned __int64 getFileOffset(const char *logicalName) override { assertex(false); return 0; }
+    virtual unsigned getNodes() override { return jobChannel.queryJob().querySlaves(); }
+    virtual unsigned getNodeNum() override { throw MakeThorException(0, "Unsupported. getNodeNum() called in master"); return (unsigned)-1; }
+    virtual char *getFilePart(const char *logicalName, bool create=false) override { assertex(false); return NULL; }
+    virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash) override
     {
         unsigned checkSum = 0;
         Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(jobChannel.queryJob(), name, false, true, false); // NB: do not update accessed
@@ -1203,21 +1203,21 @@ public:
         }
         return hash;
     }
-    virtual IDistributedFileTransaction *querySuperFileTransaction()
+    virtual IDistributedFileTransaction *querySuperFileTransaction() override
     {
         if (!superfiletransaction.get())
             superfiletransaction.setown(createDistributedFileTransaction(userDesc, this));
         return superfiletransaction.get();
     }
-    virtual char *getJobName()
+    virtual char *getJobName() override
     {
         return strdup(workunit->queryJobName());
     }
-    virtual char *getClusterName()
+    virtual char *getClusterName() override
     {
         return strdup(workunit->queryClusterName());
     }
-    virtual char *getGroupName()
+    virtual char *getGroupName() override
     {
         StringBuffer out;
         if (globals)
@@ -1225,14 +1225,14 @@ public:
         return out.detach();
     }
 // ICodeContextExt impl.
-    virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence)
+    virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence) override
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid);
         externalWU->remoteCheckAccess(userDesc, false);
         return getWorkUnitResult(externalWU, name, sequence);
     }
-    virtual IConstWUResult *getResultForGet(const char *name, unsigned sequence)
+    virtual IConstWUResult *getResultForGet(const char *name, unsigned sequence) override
     {
         Owned<IConstWUResult> r = getResult(name, sequence);
         if (!r || (r->getResultStatus() == ResultStatusUndefined))
@@ -1241,6 +1241,10 @@ public:
             throw MakeStringException(TE_FailedToRetrieveWorkunitValue, "value %s in workunit is undefined", getResultText(s,name,sequence));
         }
         return r.getClear();
+    }
+    virtual IWorkUnit *updateWorkUnit() const override
+    {
+        return &workunit->lock();
     }
 };
 

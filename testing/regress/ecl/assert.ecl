@@ -1,3 +1,4 @@
+#option('pickBestEngine', 0);
 /*##############################################################################
 
     HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
@@ -63,4 +64,4 @@ rec t(ds l) := transform
 
 o3 := output(project(ds, t(LEFT)));
 sequential(o1, o2, o3);
-
+ASSERT(COUNT(ds) = 9); // should be 2
