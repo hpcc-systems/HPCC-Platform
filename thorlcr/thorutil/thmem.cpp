@@ -1327,7 +1327,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
     rowidx_t n = numCommitted();
     if (0 == n)
         return 0;
-    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save %" RIPF "d rows", tracingPrefix, n);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save (skipNulls=%s, allowNulls=%s) max rows = %"  RIPF "u", tracingPrefix, boolToStr(skipNulls), boolToStr(allowNulls), n);
 
     if (_spillCompInfo)
         assertex(0 == writeCallbacks.ordinality()); // incompatible
@@ -1355,6 +1355,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
     }
     Owned<IExtRowWriter> writer = createRowWriter(&iFile, rowIf, rwFlags);
     rowidx_t i=0;
+    rowidx_t rowsWritten=0;
     try
     {
         const void **rows = getBlock(n);
@@ -1379,6 +1380,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
             }
             if (row)
             {
+                ++rowsWritten;
                 rows[i] = NULL;
                 writer->putRow(row); // NB: putRow takes ownership/should avoid leaking if fails
             }
@@ -1400,7 +1402,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
     firstRow += n;
     offset_t bytesWritten = writer->getPosition();
     writer.clear();
-    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, bytes = %" I64F "d", tracingPrefix, (__int64)bytesWritten);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, rows written = %" RIPF "u, bytes = %" I64F "u", tracingPrefix, rowsWritten, (__int64)bytesWritten);
     return n;
 }
 

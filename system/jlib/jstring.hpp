@@ -554,6 +554,7 @@ inline StringBuffer& operator << (StringBuffer& s, const TValue& value)
 
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);
 extern jlib_decl bool strToBool(const char * text);
+inline const char *boolToStr(bool b) { return b ? "true" : "false"; }
 extern jlib_decl bool strToBool(size_t len, const char * text);
 extern jlib_decl bool clipStrToBool(size_t len, const char * text);
 extern jlib_decl bool clipStrToBool(const char * text);
