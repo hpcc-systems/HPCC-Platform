@@ -2843,7 +2843,9 @@ public:
             }
             else if (!anyActivity)
             {
-                if (traceLevel)
+                if (!pingsReceived && roxieMulticastEnabled)
+                    DBGLOG("PING: NO replies received! Please check multicast settings, and that your network supports multicast.");
+                else if (traceLevel)
                     DBGLOG("PING: %d replies received, average delay %d", pingsReceived, pingsReceived ? pingsElapsed / pingsReceived : 0);
                 pingsReceived = 0;
                 pingsElapsed = 0;
