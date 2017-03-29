@@ -53,7 +53,7 @@ public:
     virtual unsigned count() const override;
 
 protected:
-    IConstMachineInfo * curr = nullptr;
+    Owned<IConstMachineInfo> curr;
     Owned<CLocalEnvironment> constEnv;
     unsigned index = 1;
     unsigned maxIndex = 0;
@@ -89,7 +89,7 @@ public:
     virtual unsigned count() const override;
 
 protected:
-    IConstDropZoneInfo * curr = nullptr;
+    Owned<IConstDropZoneInfo> curr;
     Owned<CLocalEnvironment> constEnv;
     unsigned index = 1;
     unsigned maxIndex = 0;
@@ -108,7 +108,7 @@ public:
 
 protected:
     StringBuffer computerName;
-    IConstDropZoneInfo * curr = nullptr;
+    Owned<IConstDropZoneInfo> curr;
     Owned<CLocalEnvironment> constEnv;
     unsigned index = 1;
     unsigned maxIndex = 0;
@@ -1680,8 +1680,8 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZoneByAddressPath(const char * ne
             }
         }
     }
-    // Both path and machine matched
-    return dropZone;
+
+    return LINK(dropZone);
 }
 
 
@@ -1725,20 +1725,20 @@ CConstMachineInfoIterator::CConstMachineInfoIterator()
 bool CConstMachineInfoIterator::first()
 {
     index = 1;
-    curr = constEnv->getMachineByIndex(index);
-    return (curr != nullptr);
+    curr.setown(constEnv->getMachineByIndex(index));
+    return curr != nullptr;
 }
 bool CConstMachineInfoIterator::next()
 {
     if (index < maxIndex)
     {
         index++;
-        curr = constEnv->getMachineByIndex(index);
+        curr.setown(constEnv->getMachineByIndex(index));
     }
     else
-        curr = nullptr;
+        curr.clear();
 
-    return (curr ? true : false);
+    return curr != nullptr;
 }
 
 bool CConstMachineInfoIterator::isValid()
@@ -1769,20 +1769,20 @@ CConstDropZoneIteratorByComputer::CConstDropZoneIteratorByComputer(const char * 
 bool CConstDropZoneIteratorByComputer::first()
 {
     index = 1;
-    curr = constEnv->getDropZoneByComputerByIndex(computerName.str(), index);
-    return (curr != nullptr);
+    curr.setown(constEnv->getDropZoneByComputerByIndex(computerName.str(), index));
+    return curr != nullptr;
 }
 bool CConstDropZoneIteratorByComputer::next()
 {
     if (index < maxIndex)
     {
         index++;
-        curr = constEnv->getDropZoneByComputerByIndex(computerName.str(), index);
+        curr.setown(constEnv->getDropZoneByComputerByIndex(computerName.str(), index));
     }
     else
-        curr = nullptr;
+        curr.clear();
 
-    return (curr ? true : false);
+    return curr != nullptr;
 }
 
 bool CConstDropZoneIteratorByComputer::isValid()
@@ -1895,8 +1895,8 @@ CConstDropZoneInfoIterator::CConstDropZoneInfoIterator()
 bool CConstDropZoneInfoIterator::first()
 {
     index = 1;
-    curr = constEnv->getDropZoneByIndex(index);
-    return (curr != nullptr);
+    curr.setown(constEnv->getDropZoneByIndex(index));
+    return curr != nullptr;
 }
 
 bool CConstDropZoneInfoIterator::next()
@@ -1904,12 +1904,12 @@ bool CConstDropZoneInfoIterator::next()
     if (index < maxIndex)
     {
         index++;
-        curr = constEnv->getDropZoneByIndex(index);
+        curr.setown(constEnv->getDropZoneByIndex(index));
     }
     else
-        curr = nullptr;
+        curr.clear();
 
-    return (curr ? true : false);
+    return curr != nullptr;
 }
 
 bool CConstDropZoneInfoIterator::isValid()
