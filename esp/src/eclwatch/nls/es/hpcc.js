@@ -428,6 +428,7 @@ define(
     Pause: "Pausa",
     PauseNow: "Pausar",
     PctComplete: "% completado",
+    PercentCompressed: "Porcentaje comprimido",
     PercentDone: "Porcentaje completado",
     PerformingLayout: "Generando disposición...",
     Permission: "Permiso",
