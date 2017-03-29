@@ -828,6 +828,7 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
         if (tgtQueryName && *tgtQueryName)
         {
             soapmsg.append("<soap:Body><").append(tgtQueryName).append(">");
+            soapmsg.appendf("<_TransactionId>%s</_TransactionId>", context.queryTransactionID());
 
             if (tgtctx)
                 toXML(tgtctx.get(), soapmsg);
@@ -860,6 +861,7 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
         throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_CLIENT, "ESP",
                    "No target URL configured for %s!", mthdef.queryMethodName());
     }
+
     processResponse(context,srvdef,mthdef,ns,out);
 
 }
@@ -2571,6 +2573,7 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
                     roxiemsg.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">");
                     roxiemsg.append("<soap:Body><").append(tgtQueryName).append(">");
 
+                    roxiemsg.appendf("<_TransactionId>%s</_TransactionId>", context->queryTransactionID());
                     if (tgtctx)
                         toXML(tgtctx.get(), roxiemsg);
 
