@@ -46,8 +46,8 @@
 #include <signal.h>
 #include <paths.h>
 #include <cmath>
-#include "build-config.h"
 #endif
+#include "build-config.h"
 
 #include "portlist.h"
 

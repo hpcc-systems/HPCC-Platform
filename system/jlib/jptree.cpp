@@ -69,26 +69,32 @@ IPropertyTreeIterator *createNullPTreeIterator() { return LINK(nullPTreeIterator
 
 
 //===================================================================
-AtomRefTable *CAtomPTree::keyTable = nullptr;
-AtomRefTable *CAtomPTree::keyTableNC = nullptr;
-CriticalSection CAtomPTree::hashcrit;
-CAttrValHashTable *CAtomPTree::attrHT = nullptr;
-AttrValue **CAtomPTree::freelist = nullptr;
-unsigned CAtomPTree::freelistmax = 0;
-CLargeMemoryAllocator CAtomPTree::freeallocator((memsize_t)-1, 0x1000*sizeof(AttrValue), true);
 
+static AtomRefTable *keyTable = nullptr;
+static AtomRefTable *keyTableNC = nullptr;
+static CriticalSection hashcrit;
+static CAttrValHashTable *attrHT = nullptr;
+static AttrValue **freelist = nullptr;
+static unsigned freelistmax = 0;
+static CLargeMemoryAllocator freeallocator((memsize_t)-1, 0x1000*sizeof(AttrValue), true);
 
 MODULE_INIT(INIT_PRIORITY_JPTREE)
 {
     nullPTreeIterator = new NullPTreeIterator;
-    CAtomPTree::init();
+	keyTable = new AtomRefTable;
+	keyTableNC = new AtomRefTable(true);
+	attrHT = new CAttrValHashTable;
     return true;
 }
 
 MODULE_EXIT()
 {
     nullPTreeIterator->Release();
-    CAtomPTree::kill();
+	delete attrHT;
+	keyTable->Release();
+	keyTableNC->Release();
+	free(freelist);
+	freelist = NULL;
 }
 
 
