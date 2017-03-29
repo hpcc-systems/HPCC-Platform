@@ -655,7 +655,7 @@ define([
             },
 
             loadXGMML: function (xgmml, merge, timers, skipRender) {
-                if (this.hasPlugin() && this.xgmml !== xgmml) {
+                if (this.hasPlugin() && xgmml && this.xgmml !== xgmml) {
                     this.xgmml = xgmml;
                     this._plugin._skipRender = skipRender;
                     if (merge) {
