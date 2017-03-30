@@ -181,6 +181,7 @@ public:
 
     unsigned getNumberOfDropZones() const { buildDropZoneCache(); return numOfDropZones; }
     IConstDropZoneInfo * getDropZoneByIndex(unsigned index) const;
+    bool isDropZoneRestrictionEnabled() const;
 };
 
 class CLockedEnvironment : implements IEnvironment, public CInterface
@@ -295,6 +296,8 @@ public:
             { return c->getDropZoneByAddressPath(netaddress, targetPath); }
     virtual IConstDropZoneInfoIterator * getDropZoneIterator() const
             { return c->getDropZoneIterator(); }
+    virtual bool isDropZoneRestrictionEnabled() const
+            { return c->isDropZoneRestrictionEnabled(); }
 };
 
 void CLockedEnvironment::commit()
@@ -1640,6 +1643,12 @@ IConstDropZoneInfoIterator * CLocalEnvironment::getDropZoneIterator() const
 IConstMachineInfoIterator * CLocalEnvironment::getMachineIterator() const
 {
     return new CConstMachineInfoIterator();
+}
+
+bool CLocalEnvironment::isDropZoneRestrictionEnabled() const
+{
+    //TODO implement it
+    return true;
 }
 
 //==========================================================================================
