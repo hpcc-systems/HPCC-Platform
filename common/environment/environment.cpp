@@ -127,6 +127,8 @@ private:
         xpath.append(computer).append("\"]/number");
         return xpath;
     }
+    mutable bool isDropZoneRestrictionLoaded = false;
+    mutable bool dropZoneRestrictionEnabled = true;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1037,6 +1039,7 @@ void CLocalEnvironment::init()
     numOfMachines = 0;
     numOfDropZones = 0;
     numOfDropzonesByComputer.setown(createPTree("computers"));
+    isDropZoneRestrictionLoaded = false;
 }
 
 CLocalEnvironment::~CLocalEnvironment()
@@ -1647,8 +1650,13 @@ IConstMachineInfoIterator * CLocalEnvironment::getMachineIterator() const
 
 bool CLocalEnvironment::isDropZoneRestrictionEnabled() const
 {
-    //TODO implement it
-    return true;
+    if (!isDropZoneRestrictionLoaded)
+    {
+        dropZoneRestrictionEnabled = queryEnvironmentConf().getPropBool("useDropZoneRestriction", true);
+        isDropZoneRestrictionLoaded=true;
+    }
+
+    return dropZoneRestrictionEnabled;
 }
 
 //==========================================================================================
