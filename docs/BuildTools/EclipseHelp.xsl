@@ -30,4 +30,11 @@
 <xsl:param name="variablelist.as.table" select="1" />
 <xsl:param name="generate.toc">book toc</xsl:param>
 
+
+<!--HPCC-15278-GP-3-17-PI-HTML-HACK--> 
+ <xsl:template match="processing-instruction('linebreak')">
+   <BR/>
+ </xsl:template>
+
+
 </xsl:stylesheet>
