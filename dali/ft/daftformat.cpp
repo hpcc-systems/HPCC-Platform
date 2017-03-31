@@ -702,18 +702,31 @@ void CCsvPartitioner::getRecordStructure(StringBuffer & _recordStructure)
     if (nullptr == strstr(recordStructure.str(),"END;"))
     {
         const byte *buffer = bufferBase();
-        ensureBuffered(headerSize);
-        assertex((headerSize == 0) || (numInBuffer != bufferOffset));
+        unsigned processSize = bufferSize;
 
-        unsigned size = getSplitRecordSize(buffer, headerSize, false);
+        if (!ensureBuffered(headerSize) && (numInBuffer < headerSize))
+        {
+            // This means the stream/file is shorter than the headerSize, however it can hold
+            // valid records
+            processSize = numInBuffer;
+        }
+
+        unsigned size = getSplitRecordSize(buffer, processSize, false);
 
         if (size == 0)
             throwError1(DFTERR_PartitioningZeroSizedRowLink,((offset_t)(buffer+bufferOffset)));
 
         if (size > bufferSize)
         {
-            LOG(MCdebugProgressDetail, unknownJob, "First record size %d (0x%08x) is larger than the buffer size: %d", size, size, bufferSize);
+            LOG(MCdebugProgressDetail, unknownJob, "First record size %d (0x%08x) is larger than the buffer size: %d. Please check the separator and terminator parameters.", size, size, bufferSize);
             throwError2(DFTERR_WrongSplitRecordSize, size, size);
+        }
+        else if (isFirstRow)
+        {
+            // Possibly reached the end of the file but the processing is still in first row
+            // so no terminator detected
+            LOG(MCdebugProgressDetail, unknownJob, "%d (0x%08x) bytes processed, but there is no terminator found. Please check the separator and terminator parameters.", size, size);
+            throwError1(DFTERR_EndOfCsvRecordNotFound, size);
         }
     }
 
