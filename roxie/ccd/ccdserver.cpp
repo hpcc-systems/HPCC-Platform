@@ -13310,12 +13310,14 @@ class CRoxieServerNonEmptyActivity : public CRoxieServerMultiInputBaseActivity
     unsigned savedParentExtractSize;
     const byte * savedParentExtract;
     bool foundInput;
+    bool unusedStopped;
 
 public:
     CRoxieServerNonEmptyActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
         : CRoxieServerMultiInputBaseActivity(_ctx, _factory, _probeManager, _numInputs)
     {
         foundInput = false;
+        unusedStopped = false;
         selectedStream = NULL;
         savedParentExtractSize = 0;;
         savedParentExtract = NULL;
@@ -13331,13 +13333,14 @@ public:
 
     virtual void stop()
     {
-        if (foundInput)
+        if (unusedStopped)
         {
             if (selectedStream)
                 selectedStream->stop();
         }
         else
         {
+            //May possibly call stop too many times if input->start() throws an exception (e.g. due to a dependency)
             for (unsigned i = 0; i < numStreams; i++)
                 streamArray[i]->stop();
         }
@@ -13348,6 +13351,7 @@ public:
     {
         CRoxieServerMultiInputBaseActivity::reset(); 
         foundInput = false;
+        unusedStopped = false;
         selectedStream = NULL;
     }
 
@@ -13375,11 +13379,13 @@ public:
                     //Found a row so stop remaining
                     for (unsigned j=i+1; j < numInputs; j++)
                         streamArray[j]->stop();
+                    unusedStopped = true;
                     processed++;
                     return next;
                 }
                 selectedStream->stop();
             }
+            unusedStopped = true;
             selectedStream = NULL;
             return NULL;
         }
