@@ -46,11 +46,9 @@
 #endif
 
 
-#ifdef _DEBUG
-#define _CLEAR_ALLOCATED_ROW
-#define _CLEAR_FREED_ROW
+//#define _CLEAR_ALLOCATED_ROW
+//#define _CLEAR_FREED_ROW
 //#define _CLEAR_ALLOCATED_HUGE_ROW
-#endif
 
 #ifdef _WIN32
 //Visual studio complains that the constructors for heaplets could throw exceptions, so there should be a matching
