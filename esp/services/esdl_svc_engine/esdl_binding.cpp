@@ -534,6 +534,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
     {
         if (m_oLoggingManager)
         {
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-trxid");
             StringBuffer wsaddress;
             short int port;
             context.getServAddress(wsaddress, port);
@@ -550,6 +551,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             StringBuffer trxidstatus;
             if (!m_oLoggingManager->getTransactionID(&trxidbasics,trxid, trxidstatus))
                 ESPLOG(LogMin,"DESDL: Logging Agent generated Transaction ID failed: %s", trxidstatus.str());
+            context.addTraceSummaryTimeStamp(LogNormal, "end-trxid");
         }
         else
             ESPLOG(LogMin,"DESDL: Transaction ID could not be fetched from logging manager!");
@@ -621,7 +623,10 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
              }
 
              writer.setown(dynamic_cast<IXmlWriterExt *>(javactx->bindParamWriter(m_esdl, javaPackage, mthdef.queryRequestType(), "request")));
+             context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc");
              m_pEsdlTransformer->process(context, EsdlRequestMode, srvdef.queryName(), mthdef.queryName(), *req, writer, 0, NULL);
+             context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc");
+
              javactx->paramWriterCommit(writer);
              javactx->callFunction();
 
@@ -641,18 +646,25 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             //Preprocess Request
             StringBuffer reqcontent;
             unsigned xflags = (isPublishedQuery(implType)) ? ROXIEREQ_FLAGS : ESDLREQ_FLAGS;
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc");
             m_pEsdlTransformer->process(context, EsdlRequestMode, srvdef.queryName(), mthdef.queryName(), *req, reqWriter.get(), xflags, NULL);
+            context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc");
 
             if(isPublishedQuery(implType))
                 tgtctx.setown(createTargetContext(context, tgtcfg.get(), srvdef, mthdef, req));
 
             reqcontent.set(reqWriter->str());
+            context.addTraceSummaryTimeStamp(LogNormal, "ser-xmlreq");
+
             handleFinalRequest(context, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy);
+            context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq");
 
             if (isPublishedQuery(implType))
             {
+                context.addTraceSummaryTimeStamp(LogNormal, "srt-procres");
                 Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSON : WTStandard);
                 m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), respWriter.get(), logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
+                context.addTraceSummaryTimeStamp(LogNormal, "end-procres");
 
                 out.append(respWriter->str());
             }
@@ -663,7 +675,9 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         }
     }
 
+    context.addTraceSummaryTimeStamp(LogNormal, "srt-resLogging");
     handleResultLogging(context, tgtctx.get(), req,  origResp.str(), out.str(), logdata.str());
+    context.addTraceSummaryTimeStamp(LogNormal, "end-resLogging");
     ESPLOG(LogMax,"Customer Response: %s", out.str());
 }
 
@@ -1335,6 +1349,7 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
     StringBuffer source;
     StringBuffer orderstatus;
 
+    context.addTraceSummaryTimeStamp(LogMin, "reqRecvd");
     Owned<IMultiException> me = MakeMultiException(source.appendf("EsdlBindingImpl::%s()", methodName).str());
 
     IEsdlDefMethod *mthdef = NULL;
@@ -1345,7 +1360,7 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
     else
     {
         IEsdlDefService *srvdef = m_esdl->queryService(serviceName);
-
+        context.addTraceSummaryTimeStamp(LogMax, "esdlServDefCrtd");
         if (!srvdef)
             me->append(*MakeStringException(-1, "Service %s definiton not found", serviceName));
         else
@@ -1380,9 +1395,11 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
                     unsigned timetaken = msTick() - context.queryCreationTime();
                     context.addTraceSummaryTimeStamp(LogMin, "respSent");
 
-                     m_pESDLService->esdl_log(context, *srvdef, *mthdef, tgtcfg.get(), tgtctx.get(), req_pt.get(), out.str(), logdata.str(), timetaken);
-
                     ESPLOG(LogMax,"EsdlBindingImpl:onGetInstantQuery response: %s", out.str());
+
+                    m_pESDLService->esdl_log(context, *srvdef, *mthdef, tgtcfg.get(), tgtctx.get(), req_pt.get(), out.str(), logdata.str(), timetaken);
+                    context.addTraceSummaryTimeStamp(LogMin, "respLogged");
+
                     return 0;
                 }
                 catch (IMultiException* mex)
