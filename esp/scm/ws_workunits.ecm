@@ -1250,6 +1250,7 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     bool UpdateSuperFiles(false); //update content of superfiles if changed
     bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
@@ -1263,6 +1264,7 @@ ESPresponse [exceptions_inline] WUPublishWorkunitResponse
     [min_ver("1.39")] bool Suspended;
     [min_ver("1.39")] string ErrorMessage;
     ESParray<ESPStruct WUCopyLogicalClusterFileSections, Cluster> ClusterFiles;
+    [min_ver("1.68")] ESParray<ESPStruct LogicalFileError, File> FileErrors;
 };
 
 ESPrequest [nil_remove] WUQueryConfigRequest
@@ -1629,11 +1631,13 @@ ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
     bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
     bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 {
     string QueryId;
+    [min_ver("1.68")] ESParray<ESPStruct LogicalFileError, File> FileErrors;
 };
 
 ESPrequest [nil_remove] WUCopyQuerySetRequest
@@ -1651,12 +1655,14 @@ ESPrequest [nil_remove] WUCopyQuerySetRequest
     bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
     bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
 };
 
 ESPresponse [exceptions_inline] WUCopyQuerySetResponse
 {
     ESParray<string, QueryId> CopiedQueries;
     ESParray<string, QueryId> ExistingQueries;
+    [min_ver("1.68")] ESParray<ESPStruct LogicalFileError, File> FileErrors;
 };
 
 ESPrequest [nil_remove] WUGetZAPInfoRequest
@@ -1812,7 +1818,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
 
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.67"), default_client_version("1.67"),
+    version("1.68"), default_client_version("1.68"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

@@ -27,3 +27,9 @@ ESPStruct [nil_remove] NameAndType
     string Type;
 };
 
+ESPStruct [nil_remove] LogicalFileError
+{
+    string Error;
+    string LogicalName;
+};
+
