@@ -2756,6 +2756,11 @@ int EsdlBindingImpl::onGetRespSampleXml(IEspContext &ctx, CHttpRequest* request,
     return onGetSampleXml(false, ctx, request, response, serv, method);
 }
 
+int EsdlBindingImpl::onGetRespSampleJson(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
+{
+    return 0;
+}
+
 int EsdlBindingImpl::onGetSampleXml(bool isRequest, IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
     StringBuffer schema;

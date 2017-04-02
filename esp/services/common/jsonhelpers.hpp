@@ -29,6 +29,7 @@
 #define REQSF_SAMPLE_DATA  0x0002
 #define REQSF_TRIM         0x0004
 #define REQSF_ESCAPEFORMATTERS 0x0008
+#define REQSF_FORMAT       0x0010
 #define REQSF_EXCLUSIVE (REQSF_SAMPLE_DATA | REQSF_TRIM)
 
 namespace JsonHelpers
@@ -229,12 +230,30 @@ namespace JsonHelpers
         else
             out.append("null");
     }
-    static void buildJsonMsg(StringArray& parentTypes, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *reqTree, unsigned flags)
+    inline void checkNewlineJsonMsg(StringBuffer &out, unsigned &level, unsigned flags, int increment)
+    {
+        if (!(flags & REQSF_FORMAT))
+            return;
+        out.newline();
+        level+=increment;
+        if (level>0)
+            out.pad(level);
+    }
+    inline void checkDelimitJsonMsg(StringBuffer &out, unsigned level, unsigned flags)
+    {
+        delimitJSON(out, (flags & REQSF_FORMAT));
+        if (out.length() && out.charAt(out.length()-1)=='\n')
+            out.pad(level);
+    }
+    static void buildJsonMsg(unsigned &level, StringArray& parentTypes, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *reqTree, unsigned flags)
     {
         assertex(type!=NULL);
 
         if (flags & REQSF_ROOT)
+        {
             out.append("{");
+            checkNewlineJsonMsg(out, level, flags, 2);
+        }
 
         const char* typeName = type->queryName();
         if (type->isComplexType())
@@ -246,6 +265,7 @@ namespace JsonHelpers
             if (tag)
                 appendJSONName(out, tag);
             out.append('{');
+            checkNewlineJsonMsg(out, level, flags, 2);
             int taglen=out.length()+1;
             if (type->getSubType()==SubType_Complex_SimpleContent)
             {
@@ -266,24 +286,46 @@ namespace JsonHelpers
                 int flds = type->getFieldCount();
                 for (int idx=0; idx<flds; idx++)
                 {
-                    delimitJSON(out);
-                    IPropertyTree *childtree = NULL;
+                    checkDelimitJsonMsg(out, level, flags);
+                    IXmlType *childType = type->queryFieldType(idx);
                     const char *childname = type->queryFieldName(idx);
-                    if (reqTree)
-                        childtree = reqTree->queryPropTree(childname);
-                    buildJsonMsg(parentTypes, type->queryFieldType(idx), out, childname, childtree, flags & ~REQSF_ROOT);
+                    bool repeats = type->queryFieldRepeats(idx);
+                    if (repeats)
+                    {
+                        Owned<IPropertyTreeIterator> children;
+                        if (reqTree)
+                            children.setown(reqTree->getElements(childname));
+                        appendJSONName(out, childname);
+                        out.append('[');
+                        checkNewlineJsonMsg(out, level, flags, 2);
+                        if (!children)
+                            buildJsonMsg(level, parentTypes, childType, out, NULL, NULL, flags & ~REQSF_ROOT);
+                        else
+                        {
+                            ForEach(*children)
+                                buildJsonMsg(level, parentTypes, childType, out, NULL, &children->query(), flags & ~REQSF_ROOT);
+                        }
+                        checkNewlineJsonMsg(out, level, flags, -2);
+                        out.append(']');
+                    }
+                    else
+                    {
+                        IPropertyTree *childtree = NULL;
+                        if (reqTree)
+                            childtree = reqTree->queryPropTree(childname);
+                        buildJsonMsg(level, parentTypes, childType, out, childname, childtree, flags & ~REQSF_ROOT);
+                    }
                 }
             }
 
             if (typeName)
                 parentTypes.pop();
+            checkNewlineJsonMsg(out, level, flags, -2); //end of children
             out.append("}");
         }
         else if (type->isArray())
         {
-            if (typeName && !parentTypes.appendUniq(typeName))
-                return; // recursive
-
+            bool skipContent = (typeName && !parentTypes.appendUniq(typeName)); // recursive
             const char* itemName = type->queryFieldName(0);
             IXmlType*   itemType = type->queryFieldType(0);
             if (!itemName || !itemType)
@@ -293,21 +335,29 @@ namespace JsonHelpers
             if (tag)
                 out.appendf("\"%s\": ", tag);
             out.append('{');
+            checkNewlineJsonMsg(out, level, flags, 2);
             out.appendf("\"%s\": [", itemName);
-            int taglen=out.length();
-            if (reqTree)
+            checkNewlineJsonMsg(out, level, flags, 2);
+            if (!skipContent)
             {
-                Owned<IPropertyTreeIterator> items = reqTree->getElements(itemName);
-                ForEach(*items)
-                    buildJsonMsg(parentTypes, itemType, delimitJSON(out), NULL, &items->query(), flags & ~REQSF_ROOT);
+                if (reqTree)
+                {
+                    Owned<IPropertyTreeIterator> items = reqTree->getElements(itemName);
+                    ForEach(*items)
+                    {
+                        checkDelimitJsonMsg(out, level, flags);
+                        buildJsonMsg(level, parentTypes, itemType, out, NULL, &items->query(), flags & ~REQSF_ROOT);
+                    }
+                }
+                else
+                    buildJsonMsg(level, parentTypes, itemType, out, NULL, NULL, flags & ~REQSF_ROOT);
+                if (typeName)
+                    parentTypes.pop();
             }
-            else
-                buildJsonMsg(parentTypes, itemType, out, NULL, NULL, flags & ~REQSF_ROOT);
 
+            checkNewlineJsonMsg(out, level, flags, -2);
             out.append(']');
-
-            if (typeName)
-                parentTypes.pop();
+            checkNewlineJsonMsg(out, level, flags, -2);
             out.append("}");
         }
         else // simple type
@@ -317,7 +367,15 @@ namespace JsonHelpers
         }
 
         if (flags & REQSF_ROOT)
+        {
+            checkNewlineJsonMsg(out, level, flags, -2);
             out.append('}');
+        }
+    }
+    static void buildJsonMsg(StringArray& parentTypes, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *reqTree, unsigned flags)
+    {
+        unsigned level = 0;
+        buildJsonMsg(level, parentTypes, type, out, tag, reqTree, flags);
     }
 };
 #endif // _JSONHELPERS_HPP__

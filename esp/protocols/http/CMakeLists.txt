@@ -60,6 +60,7 @@ include_directories (
          ./../../../system/xmllib 
          ./../../../system/jlib 
          ./../../platform 
+         ./../../services/common
          ./../../../system/security/shared 
          ./../../../system/security/LdapSecurity
     )

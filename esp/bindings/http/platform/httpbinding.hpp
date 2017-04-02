@@ -90,6 +90,7 @@ interface IEspHttpBinding
     virtual int onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  const char *serv, const char *method)=0;
     virtual int onGetReqSampleXml(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)=0;
     virtual int onGetRespSampleXml(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method)=0;
+    virtual int onGetRespSampleJson(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method)=0;
     virtual int onStartUpload(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)=0;
     virtual int onFinishUpload(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method,
     StringArray& fileNames, StringArray& files, IMultiException *me)=0;
@@ -248,6 +249,7 @@ public:
 
     virtual int onGetReqSampleXml(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
     virtual int onGetRespSampleXml(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method);
+    virtual int onGetRespSampleJson(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method);
 
     virtual int onStartUpload(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
     virtual int onFinishUpload(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method,
@@ -295,6 +297,9 @@ protected:
     bool getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method,bool standalone);
     virtual void appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method){}
     void generateSampleXml(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method);
+    void generateSampleXml(bool isRequest, IEspContext &context, CHttpRequest* request, StringBuffer &content, const char *serv, const char *method);
+    void generateSampleJson(bool isRequest, IEspContext &context, CHttpRequest* request, StringBuffer &content, const char *serv, const char *method);
+    void generateSampleJson(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method);
     void generateSampleXmlFromSchema(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method, const char * schemaxml);
     virtual void getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, const char *serv, const char *method);
     void onBeforeSendResponse(IEspContext& context, CHttpRequest* request,MemoryBuffer& contentconst,

@@ -75,6 +75,7 @@ interface XMLLIB_API IXmlType : implements IInterface
     virtual size_t  getFieldCount() = 0;
     virtual IXmlType* queryFieldType(int idx) = 0;
     virtual const char* queryFieldName(int idx) = 0; 
+    virtual bool queryFieldRepeats(int idx) = 0;
 
     virtual bool isArray() = 0; 
     virtual XmlSubType getSubType() = 0;
