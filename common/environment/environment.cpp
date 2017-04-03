@@ -59,6 +59,24 @@ protected:
     unsigned maxIndex = 0;
 };
 
+class CConstDropZoneServerInfoIterator : public CSimpleInterfaceOf<IConstDropZoneServerInfoIterator>
+{
+public:
+    CConstDropZoneServerInfoIterator(const IConstDropZoneInfo * dropZone);
+
+    virtual bool first() override;
+    virtual bool next() override;
+    virtual bool isValid() override;
+    virtual IConstDropZoneServerInfo & query() override;
+    virtual unsigned count() const override;
+
+protected:
+    Owned<IConstDropZoneServerInfo> curr;
+    Owned<CLocalEnvironment> constEnv;
+    Owned<IPropertyTreeIterator> serverListIt;
+    unsigned maxIndex = 0;
+};
+
 class CConstDropZoneInfoIterator : public CSimpleInterfaceOf<IConstDropZoneInfoIterator>
 {
 public:
@@ -913,6 +931,28 @@ public:
 
 };
 
+class CConstDropZoneServerInfo : public CConstEnvBase, implements IConstDropZoneServerInfo
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_ICONSTENVBASE;
+    CConstDropZoneServerInfo(CLocalEnvironment *env, IPropertyTree *root) : CConstEnvBase(env, root), prop(root) {}
+
+    virtual StringBuffer & getName(StringBuffer & name) const
+    {
+        name.append(prop->queryProp("@name"));
+        return name;
+    }
+    virtual StringBuffer & getServer(StringBuffer & server) const
+    {
+        server.append(prop->queryProp("@server"));
+        return server;
+    }
+
+private:
+    IPropertyTree * prop;
+};
+
 class CConstDropZoneInfo : public CConstEnvBase, implements IConstDropZoneInfo
 {
 public:
@@ -944,6 +984,10 @@ public:
     virtual bool isECLWatchVisible() const
     {
         return root->getPropBool("@ECLWatchVisible", true);
+    }
+    virtual IConstDropZoneServerInfoIterator * getServers() const
+    {
+        return new CConstDropZoneServerInfoIterator(this);
     }
 };
 
@@ -1580,52 +1624,61 @@ void CLocalEnvironment::clearCache()
 
 IConstDropZoneInfo * CLocalEnvironment::getDropZoneByAddressPath(const char * netaddress, const char *targetFilePath) const
 {
-    IConstDropZoneInfo * retVal = nullptr;
-
-    Owned<IConstMachineInfo> machineInfo = getMachineByAddress(netaddress);
-    if (!machineInfo)
-        return retVal;
-
-    SCMStringBuffer machineName;
-    machineInfo->getName(machineName);
-    const char * pmachineName = machineName.str();
-    Owned<IConstDropZoneInfoIterator> zoneIt= getDropZoneIteratorByComputer(pmachineName);
-#ifdef _DEBUG
-    LOG(MCdebugInfo, unknownJob, "Check remote drop zones (%d) by iterator on '%s':", zoneIt->count(), pmachineName);
-#endif
-
-    SCMStringBuffer dropzonePath;
-    const char * pdropzonePath = nullptr;
+    IConstDropZoneInfo * dropZone = nullptr;
+    IpAddress targetIp(netaddress);
     unsigned dropzonePathLen = _MAX_PATH + 1;
 
+#ifdef _DEBUG
+    LOG(MCdebugInfo, unknownJob, "Netaddress: '%s', targetFilePath: '%s'", netaddress, targetFilePath);
+#endif
+    // Check the directory path first
+
+    Owned<IConstDropZoneInfoIterator> zoneIt = getDropZoneIterator();
     ForEach(*zoneIt)
     {
         SCMStringBuffer dropZoneDir;
         zoneIt->query().getDirectory(dropZoneDir);
         StringBuffer fullDropZoneDir(dropZoneDir.str());
         addPathSepChar(fullDropZoneDir);
-        const char * pdropzoneDir = fullDropZoneDir.str();
+        IConstDropZoneInfo * candidateDropZone = nullptr;
 
-        // Check target file path starts with this Drop zone path
-        // the drop zone paths can be nested (nothing forbids it) like
-        // dz1: /a/b/c/d
-        // dz2: /a/b/c
-        // dz3: /a/b
-        // check all and select the shortest
-
-        if (strncmp(pdropzoneDir, targetFilePath, strlen(pdropzoneDir)) == 0)
+        if (strncmp(fullDropZoneDir, targetFilePath, fullDropZoneDir.length()) == 0)
         {
-            if (dropzonePathLen > strlen(pdropzoneDir))
+            candidateDropZone = &zoneIt->query();
+
+            // The backward compatibility built in IConstDropZoneServerInfoIterator
+            Owned<IConstDropZoneServerInfoIterator> dropzoneServerListIt = candidateDropZone->getServers();
+            ForEach(*dropzoneServerListIt)
             {
-                dropzonePathLen = strlen(pdropzoneDir);
-                dropzonePath.set(pdropzoneDir);
-                pdropzonePath = dropzonePath.str();
-                retVal = &zoneIt->query();
+                StringBuffer dropzoneServer;
+                dropzoneServerListIt->query().getServer(dropzoneServer);
+                // It can be a hostname or an IP -> get the IP
+                IpAddress serverIP(dropzoneServer.str());
+
+#ifdef _DEBUG
+                StringBuffer serverIpString;
+                serverIP.getIpText(serverIpString);
+                LOG(MCdebugInfo, unknownJob, "Listed server: '%s', IP: '%s'", dropzoneServer.str(), serverIpString.str());
+#endif
+                if (targetIp.ipequals(serverIP))
+                {
+                    // OK the target is a valid machine in the server list we have a right drop zone candidate
+                    // Keep this candidate drop zone if its directory path is shorter than we already have
+                    if (dropzonePathLen > fullDropZoneDir.length())
+                    {
+                       dropzonePathLen = fullDropZoneDir.length();
+                       dropZone = candidateDropZone;
+                    }
+                    break;
+                }
             }
         }
     }
-    return retVal;
+    // Both path and machine matched
+    return dropZone;
 }
+
+
 
 IConstDropZoneInfoIterator * CLocalEnvironment::getDropZoneIteratorByComputer(const char * computer) const
 {
@@ -1726,6 +1779,89 @@ IConstDropZoneInfo & CConstDropZoneIteratorByComputer::query()
 }
 
 unsigned CConstDropZoneIteratorByComputer::count() const
+{
+    return maxIndex;
+}
+
+//--------------------------------------------------
+
+
+CConstDropZoneServerInfoIterator::CConstDropZoneServerInfoIterator(const IConstDropZoneInfo * dropZone)
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    constEnv.setown((CLocalEnvironment *)factory->openEnvironment());
+
+    // For backward compatibility
+    SCMStringBuffer dropZoneMachineName;
+    // Returns dropzone '@computer' value if it is exists
+    dropZone->getComputerName(dropZoneMachineName);
+
+    if (0 != dropZoneMachineName.length())
+    {
+        // Create a ServerList for legacy element.
+        Owned<IPropertyTree> legacyServerList = createPTree();
+
+        Owned<IConstMachineInfo> machineInfo = constEnv->getMachine(dropZoneMachineName.str());
+        if (machineInfo)
+        {
+            SCMStringBuffer dropZoneMachineNetAddress;
+            machineInfo->getNetAddress(dropZoneMachineNetAddress);
+
+            // Create a single ServerList record related to @computer
+            //<ServerList name="ServerList" server="<IP_of_@computer>"/>
+            Owned<IPropertyTree> newRecord = createPTree();
+            newRecord->setProp("@name", "ServerList");
+            newRecord->setProp("@server", dropZoneMachineNetAddress.str());
+            legacyServerList->addPropTree("ServerList",newRecord.getClear());
+
+            maxIndex = 1;
+        }
+        else
+        {
+            // Something is terrible wrong because there is no matching machine for DropZone @computer
+            maxIndex = 0;
+        }
+        serverListIt.setown(legacyServerList->getElements("ServerList"));
+    }
+    else
+    {
+        Owned<IPropertyTree> pSrc = &dropZone->getPTree();
+        serverListIt.setown(pSrc->getElements("ServerList"));
+        maxIndex = pSrc->getCount("ServerList");
+    }
+}
+
+bool CConstDropZoneServerInfoIterator::first()
+{
+    bool hasFirst = serverListIt->first();
+    if (hasFirst)
+        curr.setown(new CConstDropZoneServerInfo(constEnv, &serverListIt->query()));
+    else
+        curr.clear();
+    return hasFirst;
+}
+
+bool CConstDropZoneServerInfoIterator::next()
+{
+    bool hasNext = serverListIt->next();
+    if (hasNext)
+        curr.setown(new CConstDropZoneServerInfo(constEnv, &serverListIt->query()));
+    else
+        curr.clear();
+    return hasNext;
+}
+
+bool CConstDropZoneServerInfoIterator::isValid()
+{
+    return nullptr != curr;
+}
+
+IConstDropZoneServerInfo & CConstDropZoneServerInfoIterator::query()
+{
+    return *curr;
+}
+
+unsigned CConstDropZoneServerInfoIterator::count() const
 {
     return maxIndex;
 }
