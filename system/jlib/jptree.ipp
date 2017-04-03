@@ -471,13 +471,6 @@ public:
 
 class jlib_decl CAtomPTree : public PTree
 {
-    static AtomRefTable *keyTable, *keyTableNC;
-    static CriticalSection hashcrit;
-    static CAttrValHashTable *attrHT;
-    static AttrValue **freelist; // entry 0 not used
-    static unsigned freelistmax;
-    static CLargeMemoryAllocator freeallocator;
-
     AttrValue *newAttrArray(unsigned n);
     void freeAttrArray(AttrValue *a, unsigned n);
 
@@ -485,21 +478,6 @@ protected:
     virtual void setAttribute(const char *attr, const char *val) override;
     virtual bool removeAttribute(const char *k) override;
 public:
-    static inline void init()
-    {
-        keyTable = new AtomRefTable;
-        keyTableNC = new AtomRefTable(true);
-        attrHT = new CAttrValHashTable;
-    }
-    static inline void kill()
-    {
-        delete attrHT;
-        keyTable->Release();
-        keyTableNC->Release();
-        free(freelist);
-        freelist = NULL;
-    }
-
     CAtomPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~CAtomPTree();
     virtual void setName(const char *_name) override;

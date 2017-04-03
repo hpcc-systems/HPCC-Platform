@@ -69,26 +69,32 @@ IPropertyTreeIterator *createNullPTreeIterator() { return LINK(nullPTreeIterator
 
 
 //===================================================================
-AtomRefTable *CAtomPTree::keyTable = nullptr;
-AtomRefTable *CAtomPTree::keyTableNC = nullptr;
-CriticalSection CAtomPTree::hashcrit;
-CAttrValHashTable *CAtomPTree::attrHT = nullptr;
-AttrValue **CAtomPTree::freelist = nullptr;
-unsigned CAtomPTree::freelistmax = 0;
-CLargeMemoryAllocator CAtomPTree::freeallocator((memsize_t)-1, 0x1000*sizeof(AttrValue), true);
 
+static AtomRefTable *keyTable = nullptr;
+static AtomRefTable *keyTableNC = nullptr;
+static CriticalSection hashcrit;
+static CAttrValHashTable *attrHT = nullptr;
+static AttrValue **freelist = nullptr;
+static unsigned freelistmax = 0;
+static CLargeMemoryAllocator freeallocator((memsize_t)-1, 0x1000*sizeof(AttrValue), true);
 
 MODULE_INIT(INIT_PRIORITY_JPTREE)
 {
     nullPTreeIterator = new NullPTreeIterator;
-    CAtomPTree::init();
+	keyTable = new AtomRefTable;
+	keyTableNC = new AtomRefTable(true);
+	attrHT = new CAttrValHashTable;
     return true;
 }
 
 MODULE_EXIT()
 {
     nullPTreeIterator->Release();
-    CAtomPTree::kill();
+	delete attrHT;
+	keyTable->Release();
+	keyTableNC->Release();
+	free(freelist);
+	freelist = NULL;
 }
 
 
@@ -3600,7 +3606,9 @@ IPropertyTree *ensurePTree(IPropertyTree *root, const char *xpath)
 
 IPTreeReadException *createPTreeReadException(int code, const char *msg, const char *context, unsigned line, offset_t offset)
 {
-    class jlib_thrown_decl CPTreeReadException : implements IPTreeReadException, public CInterface
+    //Do not use jlib_thrown_decl because it causes problems with VS2017 - I think because of beforeDispose() in CInterfaceOf.
+    //The type of the object actually thrown is IPTreeReadException  which does have a jlib_thrown_decl - so it will still be caught.
+    class CPTreeReadException : implements CInterfaceOf<IPTreeReadException>
     {
         int code;
         StringAttr msg;
@@ -3620,8 +3628,6 @@ IPTreeReadException *createPTreeReadException(int code, const char *msg, const c
             return out;
         }
     public:
-        IMPLEMENT_IINTERFACE;
-
         CPTreeReadException(int _code, const char *_msg, const char *_context, unsigned _line, offset_t _offset) : code(_code), msg(_msg), context(_context), line(_line), offset(_offset) { }
 
         // IException
