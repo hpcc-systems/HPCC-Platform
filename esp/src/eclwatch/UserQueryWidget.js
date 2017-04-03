@@ -607,20 +607,24 @@ define([
                     username: {
                         width: 180,
                         label: this.i18n.Username,
+                        sortable: true,
                         formatter: function (_name, idx) {
                             return "<a href='#' class='dgrid-row-url'>" + _name + "</a>"
                         }
                     },
                     employeeID: {
                         width: 180,
+                        sortable: true,
                         label: this.i18n.EmployeeID
                     },
                     fullname: {
-                        label: this.i18n.FullName
+                        label: this.i18n.FullName,
+                        sortable: true
                     },
                     passwordexpiration: {
                         width: 180,
-                        label: this.i18n.PasswordExpiration
+                        label: this.i18n.PasswordExpiration,
+                        sortable: true
                     }
                 }
             }, this.id + "UsersGrid");

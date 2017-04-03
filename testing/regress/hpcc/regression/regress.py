@@ -511,6 +511,14 @@ class Regression:
                 query.setWuid(wuid)
                 query.diff = query.getEclccWarningChanges()
                 report[0].addResult(query)
+            elif query.testFail():
+                logging.debug("Intentionally fails",  extra={'taskId':cnt})
+                res = True
+                wuid="No WUID"
+                url = "N/A (Intentionally fails)"
+                query.setWuid(wuid)
+                query.diff = ''
+                report[0].addResult(query)
             else:
                 eclCmd = ECLcmd()
                 try:
@@ -550,6 +558,8 @@ class Regression:
             url = "http://" + self.config.espIp+self.config.espSocket
             url += "/?Widget=WUDetailsWidget&Wuid="
             url += wuid
+        elif query.testFail():
+            res = True
         else:
             url = "N/A"
             res = False

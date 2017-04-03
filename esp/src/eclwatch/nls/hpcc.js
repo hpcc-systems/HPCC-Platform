@@ -429,6 +429,7 @@ define({root:
     Pause: "Pause",
     PauseNow: "Pause Now",
     PctComplete: "% Complete",
+    PercentCompressed: "Percent Compressed",
     PercentDone: "Percent Done",
     PerformingLayout: "Performing Layout...",
     PermissionName: "Permission Name",

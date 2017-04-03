@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,23 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
-//nothorlcr
-//noroxie
+//class=file
+//version multiPart=false
+//version multiPart=true
 
-//class=error
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, true);
+useLocal := #IFDEFINED(root.useLocal, false);
 
-//fail
+//--- end of version configuration ---
 
-//Test division by zero - default action to return 0
-#option ('divideByZero', 'fail'); 
+import $.setup;
+Files := setup.Files(multiPart, useLocal, false);
 
-unsigned cintZero := 0;
-real crealZero := 0.0;
-decimal10_2 cdecZero := 0.0D;
-
-unsigned intZero := 0 : stored('intZero');
-real realZero := 0.0 : stored('realZero');
-decimal10_2 decZero := 0.0D : stored('decZero');
-
-output(100.1D / decZero);
+TABLE(Files.DG_FlatFileGrouped, {DG_FirstName, COUNT(GROUP)});

@@ -743,6 +743,7 @@ static bool isString(enum_field_types type)
 {
     switch (type)
     {
+    case MYSQL_TYPE_BIT:  // Slightly dubious but MySQL seems to represent them as string fields in their gui...
     case MYSQL_TYPE_TINY_BLOB:
     case MYSQL_TYPE_MEDIUM_BLOB:
     case MYSQL_TYPE_LONG_BLOB:
@@ -833,6 +834,8 @@ static double getRealResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
         NullFieldProcessor p(field);
         return p.doubleResult;
     }
+    if (bound.buffer_type == MYSQL_TYPE_BIT)
+        return (double) getUnsignedResult(field, bound);
     if (isInteger(bound.buffer_type))
     {
         if (bound.is_unsigned)
@@ -857,6 +860,11 @@ static __int64 getSignedResult(const RtlFieldInfo *field, const MYSQL_BIND &boun
     }
     if (isDateTime(bound.buffer_type))
         return getDateTimeValue(bound);
+    if (bound.buffer_type == MYSQL_TYPE_BIT)
+    {
+        // These are stored as big-endian values it seems...
+        return (__int64) rtlReadSwapUInt(bound.buffer, *bound.length);
+    }
     if (isInteger(bound.buffer_type))
     {
         if (bound.is_unsigned)
@@ -877,6 +885,8 @@ static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, const MYSQL
     }
     if (isDateTime(bound.buffer_type))
         return getDateTimeValue(bound);
+    if (bound.buffer_type == MYSQL_TYPE_BIT)
+        return rtlReadSwapUInt(bound.buffer, *bound.length);
     if (!isInteger(bound.buffer_type))
         typeError("integer", field);
     if (bound.is_unsigned)

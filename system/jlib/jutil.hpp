@@ -25,7 +25,6 @@
 #include "jbuff.hpp"
 
 #if defined (__APPLE__)
-#include <mach-o/dyld.h>
 #include <mach/mach_time.h>
 extern mach_timebase_info_data_t timebase_info;   // Calibration for nanosecond timer
 #endif

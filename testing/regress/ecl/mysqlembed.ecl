@@ -20,15 +20,17 @@
 
 IMPORT mysql;
 
-myServer := 'localhost' : stored('myServer');
-myUser := 'rchapman' : stored('myUser');
-myDb := 'test' : stored('myDb');
+import ^ as root;
+myServer := #IFDEFINED(root.mysqlserver, 'localhost');
+myUser := #IFDEFINED(root.mysqluser, 'rchapman');
+myDb := #IFDEFINED(root.mysqldb, 'test');
 
 stringrec := RECORD
    string name
 END;
 
 childrec := RECORD(stringrec)
+   integer2 bval {default(-1)},
    integer4 value { default(99999) },
    boolean boolval { default(true) },
    real8 r8 {default(99.99)},
@@ -47,19 +49,19 @@ stringrec extractName(childrec l) := TRANSFORM
   SELF := l;
 END;
 
-init := DATASET([{'name1', 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße'},
-                 {'name2', 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là', '2015-12-25 01:23:45' }], childrec);
+init := DATASET([{'name1', 0x4161, 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße'},
+                 {'name2', 66, 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là', '2015-12-25 01:23:45' }], childrec);
 
 drop() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   DROP TABLE IF EXISTS tbl1;
 ENDEMBED;
 
 create() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
-  CREATE TABLE tbl1 ( name VARCHAR(20), value INT, boolval TINYINT, r8 DOUBLE, r4 FLOAT, d BLOB, ddd DECIMAL(10,2), u1 VARCHAR(10), u2 VARCHAR(10), dt DATETIME );
+  CREATE TABLE tbl1 ( name VARCHAR(20), bval BIT(15), value INT, boolval TINYINT, r8 DOUBLE, r4 FLOAT, d BLOB, ddd DECIMAL(10,2), u1 VARCHAR(10), u2 VARCHAR(10), dt DATETIME );
 ENDEMBED;
 
 initialize(dataset(childrec) values) := EMBED(mysql : server(myServer),user(myUser),database(myDB))
-  INSERT INTO tbl1 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+  INSERT INTO tbl1 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 ENDEMBED;
 
 initializeNulls() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
@@ -67,7 +69,7 @@ initializeNulls() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
 ENDEMBED;
 
 initializeUtf8() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
-  INSERT INTO tbl1 values ('utf8test', 1, 1, 1.2, 3.4, 'aa55aa55', 1234567.89, 'Straße', 'Straße', '2019-02-01 23:59:59');
+  INSERT INTO tbl1 values ('utf8test', 65, 1, 1, 1.2, 3.4, 'aa55aa55', 1234567.89, 'Straße', 'Straße', '2019-02-01 23:59:59');
 ENDEMBED;
 
 dataset(childrec) testMySQLDS() := EMBED(mysql : server(myServer),user(myUser),database(myDB),PROJECTED('OUTPUTFIELDS'))

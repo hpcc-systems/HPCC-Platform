@@ -590,7 +590,8 @@ struct HqlCppOptions
     unsigned            defaultPersistExpiry;
     unsigned            defaultExpiry;
     unsigned            varFieldAccessorThreshold;
-    int                 defaultNumPersistInstances;
+    unsigned            searchDistanceThreshold;
+   int                 defaultNumPersistInstances;
     unsigned            reportDFSinfo;
     CompilerType        targetCompiler;
     DBZaction           divideByZeroAction;

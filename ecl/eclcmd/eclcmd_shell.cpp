@@ -96,9 +96,11 @@ int EclCMDShell::processCMD(ArgvIterator &iter)
         c->usage();
         return 0;
     }
-    if (!c->parseCommandLineOptions(iter))
+    switch (c->parseCommandLineOptions(iter))
     {
-        c->usage();
+    case EclCmdOptionNoMatch:
+        c->usage(); //fall through
+    case EclCmdOptionCompletion:
         return 0;
     }
     if (!c->finalizeOptions(globals))
@@ -140,7 +142,7 @@ int EclCMDShell::run()
     catch (IException *E)
     {
         StringBuffer m;
-        fputs(E->errorMessage(m).newline().str(), stderr);
+        fputs(E->errorMessage(m.newline()).newline().str(), stderr);
         E->Release();
         return 2;
     }

@@ -54,24 +54,28 @@ class ECLCC(Shell):
         result, stderr = self.getArchive(ecl)
 
         if result.startswith( 'Error()'):
-            retVal = False
-            ecl.diff += ("%3d. Test: %s\n") % (ecl.getTaskId(), ecl.getBaseEclRealName())
-            ecl.diff += '  eclcc returns with:\n\t'
-            try:
-                lines = repr(self.makeArchiveError).replace('\\n',  '\n\t').splitlines(True)
-                for line in lines:
-                    lowerLine = line.lower()
-                    if  (": error " in lowerLine) or (": warning " in lowerLine):
-                        ecl.diff += line.replace("'",  "")
-                    elif ("): error " in  line) or ("): warning " in lowerLine):
-                        ecl.diff += line.replace("\\'", "'")
-                    else:
-                        ecl.diff += line
-                #ecl.diff += repr(self.makeArchiveError).replace('\\n',  '\n\t')
-            except Exception as ex:
-                logging.debug("Exception:'%s'",  str(ex))
-                ecl.diff += repr(self.makeArchiveError)
-            self.makeArchiveError=''
+            if ecl.testFail():
+                logging.debug("%3d. Fail is the expected result (ecl:'%s')", ecl.getTaskId(),  ecl.getBaseEclRealName())
+                retVal = True
+            else:
+                retVal = False
+                ecl.diff += ("%3d. Test: %s\n") % (ecl.getTaskId(), ecl.getBaseEclRealName())
+                ecl.diff += '  eclcc returns with:\n\t'
+                try:
+                    lines = repr(self.makeArchiveError).replace('\\n',  '\n\t').splitlines(True)
+                    for line in lines:
+                        lowerLine = line.lower()
+                        if  (": error " in lowerLine) or (": warning " in lowerLine):
+                            ecl.diff += line.replace("'",  "")
+                        elif ("): error " in  line) or ("): warning " in lowerLine):
+                            ecl.diff += line.replace("\\'", "'")
+                        else:
+                            ecl.diff += line
+                    #ecl.diff += repr(self.makeArchiveError).replace('\\n',  '\n\t')
+                except Exception as ex:
+                    logging.debug("Exception:'%s'",  str(ex))
+                    ecl.diff += repr(self.makeArchiveError)
+                self.makeArchiveError=''
         else:
             logging.debug("%3d. makeArchive (stderr:'%s')", ecl.getTaskId(), stderr )
             if 'arning' in stderr:

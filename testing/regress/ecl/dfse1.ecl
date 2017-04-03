@@ -17,6 +17,7 @@
 
 //class=file
 //class=error
+//fail
 
 import $.setup;
 Files := setup.Files(false, false, false);

@@ -5900,8 +5900,8 @@ inline bool appendv4range(SocketEndpointArray *array,char *str,SocketEndpoint &e
         }
         else if (*s=='-')
         {
-            if (!notip && dc==3 )//don't assume '-' is an ip range delimiter
-            {                    //also, IP range is only supported in 4th octet
+            if (!notip)//don't assume '-' is an ip range delimiter
+            {          //Allow '-' in any octet due to ip group support
                 *s = 0;
                 s = (char *)getnum(s+1,rng);
             }

@@ -7318,12 +7318,10 @@ public:
 
     virtual void reset()
     {
-#ifdef _DEBUG
         while (survivors.isItem(survivorIndex))
         {
             ReleaseRoxieRow(survivors.item(survivorIndex++));
         }
-#endif
         survivors.kill();
         eof = false;
         first = true;
@@ -11448,7 +11446,7 @@ protected:
     bool encrypted;
     bool grouped;
     IHThorDiskWriteArg &helper;
-    CachedOutputMetaData diskmeta;
+    Owned<IRecordSize> diskmeta;
     Owned<IRoxieWriteHandler> writer;
 
     bool tallycrc;
@@ -11530,13 +11528,15 @@ protected:
 
 public:
     CRoxieServerDiskWriteActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, 0), helper((IHThorDiskWriteArg &)basehelper)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, 0), helper((IHThorDiskWriteArg &) basehelper)
     {
         extend = ((helper.getFlags() & TDWextend) != 0);
         overwrite = ((helper.getFlags() & TDWoverwrite) != 0);
-        grouped = false; // don't think we need to support it...
-        diskmeta.set(helper.queryDiskRecordSize());
-        blockcompressed = (((helper.getFlags() & TDWnewcompress) != 0) || (((helper.getFlags() & TDXcompress) != 0) && (diskmeta.getFixedSize() >= MIN_ROWCOMPRESS_RECSIZE))); //always use new compression
+        grouped = (helper.getFlags() & TDXgrouped) != 0;
+        diskmeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
+        if (grouped)
+            diskmeta.setown(createDeltaRecordSize(diskmeta, +1));
+        blockcompressed = (((helper.getFlags() & TDWnewcompress) != 0) || (((helper.getFlags() & TDXcompress) != 0) && (diskmeta->getFixedSize() >= MIN_ROWCOMPRESS_RECSIZE))); //always use new compression
         encrypted = false; // set later
         tallycrc = true;
         uncompressedBytesWritten = 0;
@@ -11570,7 +11570,7 @@ public:
             blockcompressed = true;
         }
         if (blockcompressed)
-            io.setown(createCompressedFileWriter(writer->queryFile(), (diskmeta.isFixedSize() ? diskmeta.getFixedSize() : 0), extend, true, ecomp));
+            io.setown(createCompressedFileWriter(writer->queryFile(), (diskmeta->isFixedSize() ? diskmeta->getFixedSize() : 0), extend, true, ecomp));
         else
             io.setown(writer->queryFile()->open(extend ? IFOwrite : IFOcreate));
         if (!io)
@@ -11628,11 +11628,17 @@ public:
     {
         for (;;)
         {
-            const void *nextrec = inputStream->ungroupedNextRow();
-            if (!nextrec)
-                break;
+            const void *row = inputStream->nextRow();
+            if (!row)
+            {
+                row = inputStream->nextRow();
+                if (!row)
+                    break;
+                if (grouped)
+                    outSeq->putRow(NULL);
+            }
             processed++;
-            outSeq->putRow(nextrec);
+            outSeq->putRow(row);
         }
     }
 
@@ -21406,6 +21412,7 @@ protected:
     bool maySkip;
     bool isLocal;
     bool forceRemote;
+    bool isGrouped = false;
     CachedOutputMetaData diskSize;
     Owned<const IResolvedFile> varFileInfo;
     Owned<IFileIOArray> varFiles;
@@ -21437,7 +21444,15 @@ public:
         rowLimit = (unsigned __int64) -1;
         isKeyed = false;
         stopAfter = I64C(0x7FFFFFFFFFFFFFFF);
-        diskSize.set(helper.queryDiskRecordSize());
+        Linked<IOutputMetaData> diskMeta(helper.queryDiskRecordSize()->querySerializedDiskMeta());
+        if (diskMeta->isGrouped())
+        {
+            diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta.getClear()));
+            isGrouped = true;
+            if (useRemote())
+                UNIMPLEMENTED;
+        }
+        diskSize.set(diskMeta);
         variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
         isOpt = (helper.getFlags() & TDRoptional) != 0;
     }
@@ -21474,7 +21489,26 @@ public:
                 varFileInfo.setown(resolveLFN(fileName, isOpt));
                 numParts = 0;
                 if (varFileInfo)
+                {
                     numParts = varFileInfo->getNumParts();
+                    const IPropertyTree *options =  varFileInfo->queryProperties();
+                    if (options)
+                    {
+                        isGrouped = options->getPropBool("@grouped");
+                        if (isGrouped && !diskSize.isGrouped())
+                        {
+                            // We are prepared to read contents of a grouped persist ungrouped... But not vice versa
+                            VStringBuffer msg("Published group information for file %s does not match coded information - assuming grouped", fileName.get());
+                            WARNLOG("%s", msg.str());
+                            ctx->queryCodeContext()->addWuException(msg.str(), ROXIE_LAYOUT_MISMATCH, SeverityError, "roxie");
+                            Owned<IOutputMetaData> diskMeta(new CSuffixedOutputMeta(+1, LINK(diskSize.queryOriginal())));
+                            diskSize.set(diskMeta);
+                        }
+                        size32_t dfsSize = options->getPropInt("@recordSize");
+                        if (dfsSize && diskSize.isFixedSize() && dfsSize != diskSize.getFixedSize())
+                            throw MakeStringException(ROXIE_LAYOUT_MISMATCH, "Published record size %d for file %s (%s) does not match coded record size %d", dfsSize, fileName.get(), isGrouped ? "grouped" : "ungrouped", diskSize.getFixedSize());
+                    }
+                }
             }
             if (!numParts)
             {
@@ -21625,7 +21659,9 @@ class CRoxieServerDiskReadActivity : public CRoxieServerDiskReadBaseActivity
     IHThorCompoundReadExtra * readHelper;
     ConstPointerArray readrows;
     bool readAheadDone;
+    bool eogPending;
     unsigned readIndex;
+    unsigned lastGroupProcessed;
 
 public:
     CRoxieServerDiskReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
@@ -21635,6 +21671,8 @@ public:
         readHelper = (IHThorDiskReadArg *)&helper;
         readAheadDone = false;
         readIndex = 0;
+        eogPending = false;
+        lastGroupProcessed = processed;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -21644,6 +21682,8 @@ public:
         CRoxieServerDiskReadBaseActivity::start(parentExtractSize, parentExtract, paused);
         readAheadDone = false;
         readIndex = 0;
+        eogPending = false;
+        lastGroupProcessed = processed;
     }
 
     virtual void reset()
@@ -21652,6 +21692,8 @@ public:
         readrows.kill();
         readAheadDone = false;
         readIndex = 0;
+        eogPending = false;
+        lastGroupProcessed = processed;
         CRoxieServerDiskReadBaseActivity::reset();
     }
 
@@ -21737,6 +21779,12 @@ public:
 
     const void *_nextRow()
     {
+        if (eogPending && (lastGroupProcessed != processed))
+        {
+            eogPending = false;
+            lastGroupProcessed = processed;
+            return NULL;
+        }
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         unsigned transformedSize = 0;
         if (isKeyed)
@@ -21770,9 +21818,29 @@ public:
                     transformedSize = 0;
                 else
                     transformedSize = readHelper->transform(rowBuilder, nextRec);
+                bool eog;
+                if (isGrouped)
+                {
+                    size32_t sizeRead = diskSize.getRecordSize(nextRec);
+                    eog = nextRec[sizeRead-1];
+                }
+                else
+                    eog = false;
                 deserializeSource.finishedRow();
                 if (transformedSize)
+                {
+                    if (isGrouped)
+                        eogPending = eog;
                     break;
+                }
+                else
+                {
+                    if (eog && (lastGroupProcessed != processed))
+                    {
+                        lastGroupProcessed = processed;
+                        return NULL;
+                    }
+                }
             }
         }
         return rowBuilder.finalizeRowClear(transformedSize);
@@ -22488,6 +22556,26 @@ public:
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
+            Linked<IOutputMetaData> diskMeta(helper->queryDiskRecordSize()->querySerializedDiskMeta());
+            if (diskMeta->isGrouped())
+                diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta.getClear()));
+            if (datafile)
+            {
+                const IPropertyTree *options =  datafile->queryProperties();
+                if (options)
+                {
+                    bool isGrouped = options->getPropBool("@grouped");
+                    if (isGrouped && !diskMeta->isGrouped())
+                    {
+                        // We are prepared to read contents of a grouped persist ungrouped... But not vice versa
+                        WARNLOG("Published group information for file %s does not match coded information - assuming grouped", fileName.get());
+                        diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta.getClear()));
+                    }
+                    size32_t dfsSize = options->getPropInt("@recordSize");
+                    if (dfsSize && diskMeta->isFixedSize() && dfsSize != diskMeta->getFixedSize())
+                        throw MakeStringException(ROXIE_LAYOUT_MISMATCH, "Published record size %d for file %s (%s) does not match coded record size %d", dfsSize, fileName.get(), isGrouped ? "grouped" : "ungrouped", diskMeta->getFixedSize());
+                }
+            }
             bool isSimple = (datafile && datafile->getNumParts()==1 && !_queryFactory.queryOptions().disableLocalOptimizations);
             if (isLocal || isSimple)
             {
@@ -22495,7 +22583,7 @@ public:
                 {
                     unsigned channel = isLocal ? queryFactory.queryChannel() : 0;
                     files.setown(datafile->getIFileIOArray(isOpt, channel));
-                    manager.setown(datafile->getIndexManager(isOpt, channel, files, helper->queryDiskRecordSize(), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false), _graphNode.getPropInt("att[@name=\"_preloadSize\"]/@value", 0)));
+                    manager.setown(datafile->getIndexManager(isOpt, channel, files, diskMeta, _graphNode.getPropBool("att[@name=\"preload\"]/@value", false), _graphNode.getPropInt("att[@name=\"_preloadSize\"]/@value", 0)));
                     const IPropertyTree *options = datafile->queryProperties();
                     if (options)
                     {

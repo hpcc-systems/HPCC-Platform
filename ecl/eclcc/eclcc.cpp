@@ -253,7 +253,15 @@ public:
     ~EclCC()
     {
         if (daliConnected)
-            ::closedownClientProcess();
+        {
+            try
+            {
+                ::closedownClientProcess();
+            }
+            catch (...)
+            {
+            }
+        }
     }
     bool printKeywordsToXml();
     int parseCommandLineOptions(int argc, const char* argv[]);
@@ -435,9 +443,9 @@ static int doMain(int argc, const char *argv[])
     if (argc>=2 && stricmp(argv[1], "-selftest")==0)
         return doSelfTest(argc, argv);
 
+    EclCC processor(argc, argv);
     try
     {
-        EclCC processor(argc, argv);
         int ret = processor.parseCommandLineOptions(argc, argv);
         if (ret != 0)
             return ret;

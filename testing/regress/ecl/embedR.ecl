@@ -141,15 +141,41 @@ testSet7([1.1,2.2,3.3]);
 testSet8([1.2,2.3,3.4]);
 testSet9([-111,0,113]);
 
-s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
-s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));
+s1 :=DATASET(2500, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
+s2 :=DATASET(2500, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));
 SUM(NOFOLD(s1 + s2), a);
 
-s1b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := COUNTER+1));
-s2b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := (COUNTER/2)+1));
+s1b :=DATASET(2500, TRANSFORM({ integer a }, SELF.a := COUNTER+1));
+s2b :=DATASET(2500, TRANSFORM({ integer a }, SELF.a := (COUNTER/2)+1));
 SUM(NOFOLD(s1b + s2b), a);
 
 testDsOut(1);
 testRecordOut(1);
 testRecordOut2(1);
 testDsIn(SORT(testDsOut(1), mpg));
+
+unsigned persistscope1(unsigned a) := EMBED(R: globalscope('yo'),persist('workunit'))
+  b <- a + 1
+  return(a)
+ENDEMBED;
+
+unsigned usepersistscope1(unsigned a) := EMBED(R: globalscope('yo'),persist('workunit'))
+  return (a + b)
+ENDEMBED;
+
+unsigned persistscope2(unsigned a) := EMBED(R: globalscope('yi'),persist('workunit'))
+  b <- a + 11
+  return (a)
+ENDEMBED;
+
+unsigned usepersistscope2(unsigned a) := EMBED(R: globalscope('yi'),persist('workunit'))
+  return(a + b)
+ENDEMBED;
+
+sequential(
+  persistscope1(1),
+  persistscope2(1),
+  usepersistscope1(1),
+  usepersistscope2(1)
+);
+

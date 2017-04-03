@@ -845,7 +845,7 @@ ecl unpublish roxie "FindpersonService*"
 ecl run thor W20150914-125557 --input=data.xml --wait=1000
 ecl run thor findperson --input=data.xml --wait=1000
 ecl run thor libW20150914-125557.so --input=data.xml --wait=1000
-ecl run thor - --input=data.xml --wait=1000
+ecl run thor - --input=data.xml --poll --wait=1000
 ecl run thor findperson.ecl --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" 
 ecl run thor findperson.ecl -I C:\MyECL\ 
 </programlisting>
@@ -971,6 +971,15 @@ ecl run thor findperson.ecl -I C:\MyECL\
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--poll</entry>
+
+                  <entry>Submits a job asynchronously and polls the server
+                  until the state of the workunit changes to completed. It
+                  then retrieves the results. Combine with the --wait option
+                  to limit the time that it polls.</entry>
                 </row>
 
                 <row>
@@ -2472,7 +2481,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry> --daliip=&lt;ip&gt;</entry>
+                  <entry>--daliip=&lt;ip&gt;</entry>
 
                   <entry>IP of the remote Dali to use for logical file
                   lookups</entry>
@@ -2505,7 +2514,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--update-super-files </entry>
+                  <entry>--update-super-files</entry>
 
                   <entry>Update local DFS superfiles if remote DALI has
                   changed</entry>
@@ -2623,7 +2632,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>partname</entry>
 
-                  <entry>Name of the part to retrieve </entry>
+                  <entry>Name of the part to retrieve</entry>
                 </row>
 
                 <row>
@@ -2726,7 +2735,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
               <row>
                 <entry>target</entry>
 
-                <entry>Name of target to use </entry>
+                <entry>Name of target to use</entry>
               </row>
 
               <row>

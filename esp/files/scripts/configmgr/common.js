@@ -302,8 +302,8 @@ function isValidNetworkAddress(addressList, theName, ignoredot, checkspecial)
             errorString = errorString + theName + ": " + currentAddress + " contains a URL connection protocol.\n";
       else if (match[2] == null)
           errorString = errorString + theName + ": " + currentAddress + " does not appear to contain a host.";
-      else if (match[3] || match[4] || match[5] || match[6])
-          errorString = errorString + theName + ": " + currentAddress + " should only contain a host name or ip/ip range.\n";
+      else if (match[3] || match[4] || match[5] || match[6] || match[7] || match[8])
+          errorString = errorString + theName + ": '" + currentAddress + "' should only contain a host name or ip/ip range.\n";
       else
       {
           if (ignoredot && currentAddress === ".")

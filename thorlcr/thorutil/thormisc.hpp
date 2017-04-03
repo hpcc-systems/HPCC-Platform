@@ -75,6 +75,7 @@
 #define THOROPT_READCOMPRESSED_CRC    "crcReadCompressedEnabled"  // Enabled CRC validation on compressed disk reads if file CRC are available   (default = false)
 #define THOROPT_WRITECOMPRESSED_CRC   "crcWriteCompressedEnabled" // Calculate CRC's for compressed disk outputs and store in file meta data     (default = false)
 #define THOROPT_CHILD_GRAPH_INIT_TIMEOUT "childGraphInitTimeout"  // Time to wait for child graphs to respond to initialization                  (default = 5*60 seconds)
+#define THOROPT_SORT_COMPBLKSZ        "sortCompBlkSz"           // Block size used by compressed spill in a spilling sort                        (default = 0, uses row writer default)
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 

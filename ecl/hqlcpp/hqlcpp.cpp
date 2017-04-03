@@ -1589,6 +1589,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.expirePersists, "expirePersists", true),
         DebugOption(options.defaultPersistExpiry, "defaultPersistExpiry", DEFAULT_PERSIST_EXPIRY_PERIOD),
         DebugOption(options.defaultExpiry, "defaultExpiry", DEFAULT_EXPIRY_PERIOD),
+        DebugOption(options.searchDistanceThreshold, "searchDistanceThreshold", 1000000),
 
         DebugOption(options.checkAsserts,"checkAsserts", true),
         DebugOption(options.assertSortedDistributed,"assertSortedDistributed", false),
@@ -4449,11 +4450,9 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, BuildCtx & declareCtx, CHql
     case type_dictionary:
         {
             createTempFor(declareCtx, type, tempTarget, modifier, format);
-            IHqlStmt * stmt = subctx.addGroup();
-            stmt->setIncomplete(true);
+            TemporaryGroup group(subctx);
+
             buildDatasetAssign(subctx, tempTarget, expr);
-            stmt->setIncomplete(false);
-            stmt->mergeScopeWithContainer();
             break;
         }
     default:
@@ -4461,11 +4460,9 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, BuildCtx & declareCtx, CHql
             createTempFor(declareCtx, type, tempTarget, modifier, format);
             if (ignoreSetAll)
                 tempTarget.isAll.clear();
-            IHqlStmt * stmt = subctx.addGroup();
-            stmt->setIncomplete(true);
+
+            TemporaryGroup group(subctx);
             buildExprAssign(subctx, tempTarget, expr);
-            stmt->setIncomplete(false);
-            stmt->mergeScopeWithContainer();
             break;
         }
     }

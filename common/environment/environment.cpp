@@ -127,6 +127,8 @@ private:
         xpath.append(computer).append("\"]/number");
         return xpath;
     }
+    mutable bool isDropZoneRestrictionLoaded = false;
+    mutable bool dropZoneRestrictionEnabled = true;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -181,6 +183,7 @@ public:
 
     unsigned getNumberOfDropZones() const { buildDropZoneCache(); return numOfDropZones; }
     IConstDropZoneInfo * getDropZoneByIndex(unsigned index) const;
+    bool isDropZoneRestrictionEnabled() const;
 };
 
 class CLockedEnvironment : implements IEnvironment, public CInterface
@@ -295,6 +298,8 @@ public:
             { return c->getDropZoneByAddressPath(netaddress, targetPath); }
     virtual IConstDropZoneInfoIterator * getDropZoneIterator() const
             { return c->getDropZoneIterator(); }
+    virtual bool isDropZoneRestrictionEnabled() const
+            { return c->isDropZoneRestrictionEnabled(); }
 };
 
 void CLockedEnvironment::commit()
@@ -1034,6 +1039,7 @@ void CLocalEnvironment::init()
     numOfMachines = 0;
     numOfDropZones = 0;
     numOfDropzonesByComputer.setown(createPTree("computers"));
+    isDropZoneRestrictionLoaded = false;
 }
 
 CLocalEnvironment::~CLocalEnvironment()
@@ -1640,6 +1646,17 @@ IConstDropZoneInfoIterator * CLocalEnvironment::getDropZoneIterator() const
 IConstMachineInfoIterator * CLocalEnvironment::getMachineIterator() const
 {
     return new CConstMachineInfoIterator();
+}
+
+bool CLocalEnvironment::isDropZoneRestrictionEnabled() const
+{
+    if (!isDropZoneRestrictionLoaded)
+    {
+        dropZoneRestrictionEnabled = queryEnvironmentConf().getPropBool("useDropZoneRestriction", true);
+        isDropZoneRestrictionLoaded=true;
+    }
+
+    return dropZoneRestrictionEnabled;
 }
 
 //==========================================================================================

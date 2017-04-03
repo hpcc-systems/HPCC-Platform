@@ -1002,7 +1002,17 @@ ZCRYPT_API void releaseIZ(IZInterface* iz)
 
 }
 
-static void throwGZipException(const char* operation, int errorCode)
+inline const char *getZlibHeaderTypeName(ZlibCompressionType zltype)
+{
+    if (zltype==ZlibCompressionType::GZIP)
+        return "gzip";
+    if (zltype==ZlibCompressionType::ZLIB_DEFLATE)
+        return "zlib_deflate";
+    //DEFLATE, no header
+    return "deflate";
+}
+
+static void throwZlibException(const char* operation, int errorCode, ZlibCompressionType zltype)
 {
     const char* errorMsg;
     switch (errorCode)
@@ -1029,21 +1039,31 @@ static void throwGZipException(const char* operation, int errorCode)
             errorMsg = "Unknown exception";
             break;
     }
-    throw MakeStringException(500, "Exception in gzip %s: %s.", operation, errorMsg);
+    throw MakeStringException(500, "Exception in %s %s: %s.", getZlibHeaderTypeName(zltype), operation, errorMsg);
 }
 
-// Compress a character buffer using zlib in gzip format with given compression level
+inline int getWindowBits(ZlibCompressionType zltype)
+{
+    if (zltype==ZlibCompressionType::GZIP)
+        return 15+16;
+    if (zltype==ZlibCompressionType::ZLIB_DEFLATE)
+        return 15;
+    //DEFLATE, no header
+    return -15;
+}
+
+// Compress a character buffer using zlib in gzip/zlib_deflate format with given compression level
 //
-char* gzip( const char* inputBuffer, unsigned int inputSize, unsigned int* outlen, int compressionLevel)
+void zlib_deflate(MemoryBuffer &mb, const char* inputBuffer, unsigned int inputSize, int compressionLevel, ZlibCompressionType zltype)
 {
     if (inputBuffer == NULL || inputSize == 0)
-        throw MakeStringException(500, "gzip failed: input buffer is empty!");
+        throw MakeStringException(500, "%s failed: input buffer is empty!", gzip ? "gzip" : "zlib_deflate");
 
     /* Before we can begin compressing (aka "deflating") data using the zlib
      functions, we must initialize zlib. Normally this is done by calling the
      deflateInit() function; in this case, however, we'll use deflateInit2() so
-     that the compressed data will have gzip headers. This will make it easy to
-     decompress the data later using a tool like gunzip, WinZip, etc.
+     that the compressed data will have gzip headers if requested. This will make
+     it easy to decompress the data later using a tool like gunzip, WinZip, etc.
      deflateInit2() accepts many parameters, the first of which is a C struct of
      type "z_stream" defined in zlib.h. The properties of this struct are used to
      control how the compression algorithms work. z_stream is also used to
@@ -1078,9 +1098,9 @@ char* gzip( const char* inputBuffer, unsigned int inputSize, unsigned int* outle
                       Z_DEFAULT_STRATEGY for normal data, Z_FILTERED for data
                       produced by a filter (or predictor), or Z_HUFFMAN_ONLY to
                       force Huffman encoding only (no string match) */
-    int ret = deflateInit2(&zs, compressionLevel, Z_DEFLATED, (15+16), 8, Z_DEFAULT_STRATEGY);
+    int ret = deflateInit2(&zs, compressionLevel, Z_DEFLATED, getWindowBits(zltype), 8, Z_DEFAULT_STRATEGY);
     if (ret != Z_OK)
-        throwGZipException("initialization", ret);
+        throwZlibException("initialization", ret, zltype);
 
     // set the z_stream's input
     zs.next_in = (Bytef*)inputBuffer;
@@ -1088,8 +1108,8 @@ char* gzip( const char* inputBuffer, unsigned int inputSize, unsigned int* outle
 
     // Create output memory buffer for compressed data. The zlib documentation states that
     // destination buffer size must be at least 0.1% larger than avail_in plus 12 bytes.
-    const unsigned long outsize = (unsigned long)floorf((float)inputSize * 1.01f) + 12;
-    Bytef* outbuf = new Bytef[outsize];
+    const unsigned long outsize = (unsigned long) inputSize + inputSize / 1000 + 13;
+    Bytef* outbuf = (Bytef*) mb.reserveTruncate(outsize);
 
     do
     {
@@ -1112,35 +1132,38 @@ char* gzip( const char* inputBuffer, unsigned int inputSize, unsigned int* outle
         ret = deflate(&zs, Z_FINISH);
     } while (ret == Z_OK);
 
-    if (ret != Z_STREAM_END)          // an error occurred that was not EOS
-    {
-        // Free data structures that were dynamically created for the stream.
-        deflateEnd(&zs);
-        delete[] outbuf;
-        *outlen = 0;
-        throwGZipException("compression", ret);
-    }
-
     // Free data structures that were dynamically created for the stream.
     deflateEnd(&zs);
-    *outlen = zs.total_out;
-    return (char*) outbuf;
+
+    if (ret != Z_STREAM_END)          // an error occurred that was not EOS
+    {
+        mb.clear();
+        throwZlibException("compression", ret, zltype);
+    }
+
+    mb.setLength(zs.total_out);
 }
 
-void gunzip(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput)
+// Compress a character buffer using zlib in gzip format with given compression level
+//
+void gzip(MemoryBuffer &mb, const char* inputBuffer, unsigned int inputSize, int compressionLevel)
+{
+    zlib_deflate(mb, inputBuffer, inputSize, compressionLevel, ZlibCompressionType::GZIP);
+}
+
+bool zlib_inflate(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput, ZlibCompressionType zltype, bool inflateException)
 {
     if (comprLen == 0)
-        return;
+        return true;
 
     const int CHUNK_OUT = 16384;
     z_stream d_stream; // decompression stream
     memset( &d_stream, 0, sizeof(z_stream));
     d_stream.next_in = (byte*) compressed;
     d_stream.avail_in = comprLen;
-
-    int ret = inflateInit2(&d_stream, (15+16));
+    int ret = inflateInit2(&d_stream, getWindowBits(zltype));
     if (ret != Z_OK)
-        throwGZipException("initialization", ret);
+        throwZlibException("initialization", ret, zltype); //don't ignore this
 
     unsigned int outLen = 0;
 
@@ -1163,7 +1186,27 @@ void gunzip(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput
     if (ret != Z_STREAM_END)
     {
         sOutput.clear();
-        throwGZipException("decompression", ret);
+        if (!inflateException)
+            return false;
+        throwZlibException("decompression", ret, zltype);
+    }
+    return true;
+}
+
+void gunzip(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput)
+{
+    zlib_inflate(compressed, comprLen, sOutput, ZlibCompressionType::GZIP, true);
+}
+
+void httpInflate(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput, bool use_gzip)
+{
+    if (use_gzip)
+    {
+        zlib_inflate(compressed, comprLen, sOutput, ZlibCompressionType::GZIP, true);
+    }
+    else if (!zlib_inflate(compressed, comprLen, sOutput, ZlibCompressionType::ZLIB_DEFLATE, false)) //this is why gzip is preferred, deflate can mean 2 things
+    {
+        zlib_inflate(compressed, comprLen, sOutput, ZlibCompressionType::DEFLATE, true);
     }
 }
 

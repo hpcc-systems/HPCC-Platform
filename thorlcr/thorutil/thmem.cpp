@@ -61,6 +61,7 @@ static CriticalSection MTcritsect;  // held when blocked
 static Owned<ILargeMemLimitNotify> MTthresholdnotify;
 static bool MTlocked = false;
 
+#define DEFAULT_SORT_COMPBLKSZ 0x10000 // 64K
 
 void checkMultiThorMemoryThreshold(bool inc)
 {
@@ -1360,7 +1361,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
     rowidx_t n = numCommitted();
     if (0 == n)
         return 0;
-    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save %" RIPF "d rows", tracingPrefix, n);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save (skipNulls=%s, allowNulls=%s) max rows = %"  RIPF "u", tracingPrefix, boolToStr(skipNulls), boolToStr(allowNulls), n);
 
     if (_spillCompInfo)
         assertex(0 == writeCallbacks.ordinality()); // incompatible
@@ -1386,8 +1387,9 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
         nextCB = &cbCopy.popGet();
         nextCBI = nextCB->queryRecordNumber();
     }
-    Owned<IExtRowWriter> writer = createRowWriter(&iFile, rowIf, rwFlags);
+    Owned<IExtRowWriter> writer = createRowWriter(&iFile, rowIf, rwFlags, nullptr, compBlkSz);
     rowidx_t i=0;
+    rowidx_t rowsWritten=0;
     try
     {
         const void **rows = getBlock(n);
@@ -1412,6 +1414,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
             }
             if (row)
             {
+                ++rowsWritten;
                 rows[i] = NULL;
                 writer->putRow(row); // NB: putRow takes ownership/should avoid leaking if fails
             }
@@ -1433,7 +1436,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
     firstRow += n;
     offset_t bytesWritten = writer->getPosition();
     writer.clear();
-    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, bytes = %" I64F "d", tracingPrefix, (__int64)bytesWritten);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, rows written = %" RIPF "u, bytes = %" I64F "u", tracingPrefix, rowsWritten, (__int64)bytesWritten);
     return n;
 }
 
@@ -1830,6 +1833,20 @@ public:
         }
         spillCycles = 0;
         sortCycles = 0;
+        if (iCompare)
+        {
+            /* NB: See HPCC-17231 for details
+             *
+             * If creating spill files that will be merged, e.g. for sorted stream,
+             * reduce default compressed file block size.
+             * If the block size is large, the expanded block size can be many times larger and
+             * if there are a lot of spill files, the merge opens them all and causes excessive
+             * memory usage.
+             */
+            size32_t compBlkSz = activity.getOptUInt(THOROPT_SORT_COMPBLKSZ, DEFAULT_SORT_COMPBLKSZ);
+            activity.ActPrintLog("Spilling will use compressed block size = %u", compBlkSz);
+            spillableRows.setCompBlockSize(compBlkSz);
+        }
     }
     ~CThorRowCollectorBase()
     {

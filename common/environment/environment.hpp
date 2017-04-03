@@ -139,6 +139,7 @@ interface IConstEnvironment : extends IConstEnvBase
     // returns a drop zone that is defined on IP with the shortest path that's a parent of targetPath
     virtual IConstDropZoneInfo * getDropZoneByAddressPath(const char * netaddress, const char *targetPath) const = 0;
     virtual IConstDropZoneInfoIterator * getDropZoneIterator() const = 0;
+    virtual bool isDropZoneRestrictionEnabled() const = 0;
 };
 
 

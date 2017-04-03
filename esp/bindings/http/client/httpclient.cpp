@@ -529,8 +529,10 @@ static void parseSoapFault(const char* content, StringBuffer& msg)
 {
     const char* start = strstr(content, ":Fault");//match any namespace like 'soap' or 'soapenv' etc. before :Fault
     if (start)
+        start = strchr(start, '>');
+    if (start)
     {
-        start += 8;
+        start += 1;
         msg.append("SOAP fault:");
 
       int textLen;

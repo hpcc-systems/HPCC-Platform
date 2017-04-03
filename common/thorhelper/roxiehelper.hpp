@@ -31,6 +31,7 @@
 void parseHttpParameterString(IProperties *p, const char *str);
 
 enum class HttpMethod {NONE, GET, POST};
+enum class HttpCompression {NONE, GZIP, DEFLATE, ZLIB_DEFLATE};
 
 class THORHELPER_API HttpHelper : public CInterface
 {
@@ -45,6 +46,7 @@ private:
     StringArray *validTargets;
     Owned<IProperties> parameters;
     Owned<IProperties> form;
+    Owned<IProperties> reqHeaders;
 private:
     inline void setHttpHeaderValue(StringAttr &s, const char *v, bool ignoreExt)
     {
@@ -67,7 +69,39 @@ public:
         const char *control = queryTarget();
         return (control && strieq(control, "control"));
     }
-
+    inline HttpCompression getReqCompression()
+    {
+        const char *encoding = queryRequestHeader("Content-Encoding");
+        if (encoding)
+        {
+            if (strieq(encoding, "gzip") || strieq(encoding, "x-gzip"))
+                return HttpCompression::GZIP;
+            if (strieq(encoding, "deflate") || strieq(encoding, "x-deflate"))
+                return HttpCompression::DEFLATE;
+        }
+        return HttpCompression::NONE;
+    }
+    inline HttpCompression getRespCompression()
+    {
+        const char *encoding = queryRequestHeader("Accept-Encoding");
+        if (encoding)
+        {
+            StringArray encodingList;
+            encodingList.appendList(encoding, ",");
+            if (encodingList.contains("gzip"))
+                return HttpCompression::GZIP;
+            if (encodingList.contains("deflate"))
+                return HttpCompression::DEFLATE;
+            //The reason gzip is preferred is that deflate can mean either of two formats
+            //"x-deflate" isn't any clearer, but since either works either way, we can use the alternate name
+            //to our advantage.  Differentiating here just gives us a way of allowing clients to specify
+            //in case they can't handle one or the other (e.g. SOAPUI can't handle ZLIB_DEFLATE which I think
+            //is the "most proper" choice)
+            if (encodingList.contains("x-deflate"))
+                return HttpCompression::ZLIB_DEFLATE;
+        }
+        return HttpCompression::NONE;
+    }
     bool getUseEnvelope(){return useEnvelope;}
     void setUseEnvelope(bool _useEnvelope){useEnvelope=_useEnvelope;}
     bool getTrim() {return parameters->getPropBool(".trim", true); /*http currently defaults to true, maintain compatibility */}
@@ -89,6 +123,12 @@ public:
         return queryName.str();
     }
 
+    inline const char *queryRequestHeader(const char *header)
+    {
+        if (!reqHeaders)
+            return nullptr;
+        return reqHeaders->queryProp(header);
+    }
     inline void setAuthToken(const char *v)
     {
         setHttpHeaderValue(authToken, v, false);
@@ -107,6 +147,7 @@ public:
             parseURL();
         }
     }
+    void parseRequestHeaders(const char *headers);
     inline bool isFormPost()
     {
         return (strnicmp(queryContentType(), "application/x-www-form-urlencoded", strlen("application/x-www-form-urlencoded"))==0);
@@ -314,6 +355,7 @@ protected:
     bool heartbeat;
     bool adaptiveRoot = false;
     TextMarkupFormat mlResponseFmt = MarkupFmt_Unknown;
+    HttpCompression respCompression = HttpCompression::NONE;
     StringAttr contentHead;
     StringAttr contentTail;
     PointerArray queued;

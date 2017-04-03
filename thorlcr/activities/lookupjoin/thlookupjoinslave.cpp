@@ -2014,11 +2014,15 @@ protected:
             doBroadcastRHS(stopping);
 
             rowidx_t rhsRows = 0;
+            bool globalBroadcastSpilt = false;
             {
                 CriticalBlock b(broadcastSpillingLock);
                 rhsRows = getGlobalRHSTotal(); // flushes all rhsSlaveRows arrays to calculate total.
                 if (hasFailedOverToLocal())
+                {
                     overflowWriteStream.clear(); // broadcast has finished, no more can be written
+                    globalBroadcastSpilt = true;
+                }
             }
             if (!hasFailedOverToLocal())
             {
@@ -2099,6 +2103,14 @@ protected:
 
                 rightRowManager->removeRowBuffer(this);
 
+                if (!globalBroadcastSpilt && hasFailedOverToLocal()) // i.e. global broadcast didn't spill, but has since
+                {
+                    ForEachItemIn(a, rhsSlaveRows)
+                    {
+                        CThorSpillableRowArray &rows = *rhsSlaveRows.item(a);
+                        rows.flush();
+                    }
+                }
                 ActPrintLog("Broadcasting final spilt status: %s", hasFailedOverToLocal() ? "spilt" : "did not spill");
                 // NB: Will cause other slaves to flush non-local if any have and failedOverToLocal will be set on all
                 doBroadcastStop(broadcast2MpTag, hasFailedOverToLocal() ? bcastflag_spilt : bcastflag_null);

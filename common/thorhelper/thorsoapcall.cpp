@@ -1404,6 +1404,10 @@ private:
     {
         if (strieq(encoding, "gzip"))
             return true;
+        if (strieq(encoding, "deflate"))
+            return true;
+        if (strieq(encoding, "x-deflate"))
+            return true;
         return false;
     }
 
@@ -1423,21 +1427,19 @@ private:
 
     void decodeContent(const char* contentEncodingType, StringBuffer& content)
     {
-        StringBuffer contentDecoded;
-        unsigned contentLength = content.length();
-        if (strieq(contentEncodingType, "gzip"))
-        {
 #ifdef _USE_ZLIB
-            gunzip((const byte*)content.str(), contentLength, contentDecoded);
-            PROGLOG("Content decoded from %d bytes to %d bytes", contentLength, contentDecoded.length());
+        unsigned contentLength = content.length();
+        StringBuffer contentDecoded;
+
+        httpInflate((const byte*)content.str(), contentLength, contentDecoded, strieq(contentEncodingType, "gzip"));
+        PROGLOG("Content decoded from %d bytes to %d bytes", contentLength, contentDecoded.length());
+        content = contentDecoded;
+
+        if (soapTraceLevel > 6 || master->logXML)
+            master->logctx.CTXLOG("Content decoded. Original %s %d", CONTENT_LENGTH, contentLength);
 #else
             throw MakeStringException(-1, "_USE_ZLIB is required for Content-Encoding:%s", contentEncodingType);
 #endif
-        }
-
-        content = contentDecoded;
-        if (soapTraceLevel > 6 || master->logXML)
-            master->logctx.CTXLOG("Content decoded. Original %s %d", CONTENT_LENGTH, contentLength);
     }
 
     bool checkContentEncoding(const char* httpheaders, StringBuffer& contentEncodingType)
@@ -1454,19 +1456,25 @@ private:
         return true;
     }
 
-    void encodeContent(const char* contentEncodingType, StringBuffer& content)
+    ZlibCompressionType getEncodeFormat(const char *name)
     {
-        if (strieq(contentEncodingType, "gzip"))
-        {
+        if (strieq(name, "gzip"))
+            return ZlibCompressionType::GZIP;
+        if (strieq(name, "x-deflate"))
+            return ZlibCompressionType::ZLIB_DEFLATE;
+        if (strieq(name, "deflate"))
+            return ZlibCompressionType::DEFLATE;
+        return ZlibCompressionType::GZIP; //already checked above, shouldn't be here
+    }
+
+    void encodeContent(const char* contentEncodingType, MemoryBuffer& mb)
+    {
 #ifdef _USE_ZLIB
-            unsigned outlen;
-            char* outbuf = gzip( xmlWriter.str(), xmlWriter.length(), &outlen, GZ_BEST_SPEED);
-            content.setBuffer(outlen+1, outbuf, outlen);
-            PROGLOG("Content encoded from %d bytes to %d bytes", xmlWriter.length(), outlen);
+        zlib_deflate(mb, xmlWriter.str(), xmlWriter.length(), GZ_BEST_SPEED, getEncodeFormat(contentEncodingType));
+        PROGLOG("Content encoded from %d bytes to %d bytes", xmlWriter.length(), mb.length());
 #else
-            throw MakeStringException(-1, "_USE_ZLIB is required for Content-Encoding:%s", contentEncodingType);
+        throw MakeStringException(-1, "_USE_ZLIB is required for Content-Encoding:%s", contentEncodingType);
 #endif
-        }
     }
 
     void logRequest(bool contentEncoded, StringBuffer& request)
@@ -1540,7 +1548,7 @@ private:
         {
             request.append("Host: ").append(url.host).append(":").append(url.port).append("\r\n");//http 1.1
 
-            StringBuffer contentEncodingType, encodedContentBuf;
+            StringBuffer contentEncodingType;
             if (!checkContentEncoding(httpheaders, contentEncodingType))
             {
                 request.append(CONTENT_LENGTH).append(xmlWriter.length()).append("\r\n\r\n");
@@ -1550,9 +1558,10 @@ private:
             else
             {
                 logRequest(true, request);
+                MemoryBuffer encodedContentBuf;
                 encodeContent(contentEncodingType.str(), encodedContentBuf);
                 request.append(CONTENT_LENGTH).append(encodedContentBuf.length()).append("\r\n\r\n");
-                request.append(encodedContentBuf.length(), encodedContentBuf.str());//add SOAP xml content
+                request.append(encodedContentBuf.length(), encodedContentBuf.toByteArray());
             }
         }
         else

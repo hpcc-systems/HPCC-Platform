@@ -2211,6 +2211,7 @@ void ActivityInstance::noteChildActivityLocation(IHqlExpression * pass)
 
 void ActivityInstance::buildPrefix()
 {
+    startDistance = querySearchDistance();
     StringBuffer s;
 
     sourceFileSequence.setown(getSizetConstant(translator.beginFunctionGetCppIndex(activityId, isChildActivity())));
@@ -2331,6 +2332,10 @@ void ActivityInstance::buildSuffix()
         if (!options.obfuscateOutput && options.showActivitySizeInGraph)
             addAttributeInt("approxClassSize", approxSize);
     }
+
+    unsigned __int64 searchDistance = querySearchDistance() - startDistance;
+    if (searchDistance > options.searchDistanceThreshold)
+        addAttributeInt("searchDistance", searchDistance);
 
 //  if (!isMember)
 //      classGroupStmt->setIncomplete(false);
@@ -7136,7 +7141,8 @@ BoundRow * HqlCppTranslator::bindSelectorAsSelf(BuildCtx & ctx, IReferenceSelect
     {
         if (rootRow->querySide() == no_self)
         {
-            ctx.associate(*rootRow);
+            //No need to associate since it is already present in the context
+            //ctx.associate(*rootRow);
             return rootRow;
         }
         return bindSelf(ctx, expr, rootRow->queryBound(), rootRow->queryBuilder());

@@ -43,9 +43,9 @@ protected:
     virtual void setinmax() = 0;
     virtual void flushcommitted() = 0;
 
-    void initCommon()
+    void initCommon(size32_t initialSize)
     {
-        blksz = inma.capacity();
+        blksz = initialSize;
         *(size32_t *)outbuf = 0;
         outlen = sizeof(size32_t);
         inlen = 0;
@@ -75,7 +75,7 @@ public:
     virtual void open(void *buf,size32_t max)
     {
         if (max<1024)
-            throw MakeStringException(-1,"CFcmpCompressor::open - block size (%d) not large enough", blksz);
+            throw MakeStringException(-1,"CFcmpCompressor::open - block size (%d) not large enough", max);
         wrmax = max;
         if (buf)
         {
@@ -97,7 +97,7 @@ public:
         outBufStart = 0;
         dynamicOutSz = 0;
         inbuf = (byte *)inma.ensureCapacity(max);
-        initCommon();
+        initCommon(max);
     }
 
     virtual void open(MemoryBuffer &mb, size32_t initialSize)
@@ -117,7 +117,7 @@ public:
         outBufStart = mb.length();
         outbuf = (byte *)outBufMb->ensureCapacity(initialSize);
         dynamicOutSz = outBufMb->capacity();
-        initCommon();
+        initCommon(initialSize);
     }
 
     virtual void close()

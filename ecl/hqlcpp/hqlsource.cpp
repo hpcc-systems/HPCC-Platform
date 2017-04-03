@@ -1189,6 +1189,7 @@ void SourceBuilder::buildTransformBody(BuildCtx & transformCtx, IHqlExpression *
             IHqlExpression * accessor = NULL;
             transformCtx.associateOwn(*new BoundRow(tableExpr->queryNormalizedSelector(), boundSrc, accessor, translator.queryRecordOffsetMap(physicalRecord, (accessor != NULL)), no_none, NULL));
         }
+        transformCtx.addGroup();
     }
 
     rootSelfRow = translator.bindSelf(transformCtx, expr, "crSelf");
@@ -1456,6 +1457,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
                 //translator.associateSkipReturnMarker(subctx, failedFilterValue, NULL);
             }
             translator.doTransform(subctx, transform, rowBuilder);
+            ctx.addGroup();
             associateTargetCursor(subctx, ctx, tempRow, rowBuilder, expr);
         }
         break;
@@ -1476,6 +1478,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
                 //translator.associateSkipReturnMarker(subctx, failedFilterValue, NULL);
             }
             translator.doTransform(subctx, transform, rowBuilder);
+            ctx.addGroup();
             associateTargetCursor(subctx, ctx, tempRow, rowBuilder, expr);
         }
         break;

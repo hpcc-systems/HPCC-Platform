@@ -38,7 +38,8 @@ define([
         responseTotalQualifier: "UserQueryResponse.TotalUsers",
         idProperty: "username",
         startProperty: "PageStartFrom",
-        countProperty: "PageSize"
+        countProperty: "PageSize",
+        SortbyProperty: 'SortBy'
     });
 
     var GroupsStore = declare([ESPRequest.Store], {
@@ -48,7 +49,19 @@ define([
         responseTotalQualifier: "GroupQueryResponse.TotalGroups",
         idProperty: "name",
         startProperty: "PageStartFrom",
-        countProperty: "PageSize"
+        countProperty: "PageSize",
+        SortbyProperty: 'SortBy',
+
+        preRequest: function (request) {
+            switch (request.SortBy) {
+                case "name":
+                    request.SortBy = "Name";
+                    break;
+                case "groupOwner":
+                    request.SortBy = "ManagedBy";
+                    break;
+            }
+        }
     });
 
     var CONCAT_SYMBOL = ":";

@@ -582,6 +582,8 @@ albumIndex  := INDEX(albumTable,{ Artist, Title, filepos }, '~REGRESS::superalbu
 SEQUENTIAL(
   OUTPUT(ds,,'~REGRESS::albums.d00',OVERWRITE),
   FileServices.DeleteSuperFile('~REGRESS::superalbums.key'),
+  FileServices.DeleteSuperFile('~REGRESS::superalbums-sub.key'),
+  FileServices.DeleteSuperFile('~REGRESS::superalbums-sub-sub.key'),
   FileServices.DeleteSuperFile('~REGRESS::superalbums'),
   BUILDINDEX(albumIndex3,OVERWRITE),
   BUILDINDEX(albumIndex1,OVERWRITE,DISTRIBUTE(albumIndex3)),
@@ -604,6 +606,19 @@ SEQUENTIAL(
   FileServices.RemoveSuperFile('~REGRESS::superalbums.key','~REGRESS::albums4.key'),
   FileServices.RemoveSuperFile('~REGRESS::superalbums.key','~REGRESS::albums3.key'),
   FileServices.FinishSuperFileTransaction(),
-  OUTPUT(SORT(FETCH(albumTable, albumIndex, RIGHT.filepos),Title,filepos))
+  OUTPUT(SORT(FETCH(albumTable, albumIndex, RIGHT.filepos),Title,filepos));
+
+  FileServices.ClearSuperFile('~REGRESS::superalbums.key');
+  FileServices.CreateSuperFile('~REGRESS::superalbums-sub.key');
+  FileServices.CreateSuperFile('~REGRESS::superalbums-sub-sub.key');
+  FileServices.AddSuperFile('~REGRESS::superalbums.key','~REGRESS::albums1.key'),
+  FileServices.AddSuperFile('~REGRESS::superalbums-sub-sub.key','~REGRESS::albums2.key'),
+  FileServices.AddSuperFile('~REGRESS::superalbums-sub-sub.key','~REGRESS::albums3.key'),
+  FileServices.AddSuperFile('~REGRESS::superalbums-sub-sub.key','~REGRESS::albums4.key'),
+  FileServices.AddSuperFile('~REGRESS::superalbums-sub-sub.key','~REGRESS::albums5.key'),
+  FileServices.AddSuperFile('~REGRESS::superalbums-sub.key', '~REGRESS::superalbums-sub-sub.key');
+  FileServices.AddSuperFile('~REGRESS::superalbums.key', '~REGRESS::superalbums-sub.key');
+
+  OUTPUT(SORT(albumIndex(Artist='Pixies'), Artist, Title, filepos));
 );
 

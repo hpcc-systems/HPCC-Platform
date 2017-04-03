@@ -583,3 +583,13 @@
  <Row><id>132</id><title>death to the pixies                                                             </title><artist>Pixies                                                          </artist><tracks>21</tracks><mins>55</mins><secs>37</secs><player>0</player><position>132</position><filepos>10560</filepos></Row>
  <Row><id>276</id><title>live from the Bataclan                                                          </title><artist>Jeff Buckley                                                    </artist><tracks>4</tracks><mins>34</mins><secs>47</secs><player>0</player><position>277</position><filepos>5376</filepos></Row>
 </Dataset>
+<Dataset name='Result 9'>
+ <Row><artist>Pixies                                                          </artist><title>At the BBC                                                                      </title><filepos>98496</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Bossanova                                                                       </title><filepos>28800</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Complete `B` Sides                                                              </title><filepos>14208</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Doolittle                                                                       </title><filepos>11520</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Pixies                                                                          </title><filepos>82560</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Surfer Rosa &amp; Come on Pilgrim                                                   </title><filepos>90624</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Trompe Le Monde                                                                 </title><filepos>93888</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>death to the pixies                                                             </title><filepos>10560</filepos></Row>
+</Dataset>

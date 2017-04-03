@@ -409,6 +409,7 @@ class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray, implem
     rowidx_t commitRows;  // can only be updated by writing thread within a critical section
     mutable CriticalSection cs;
     ICopyArrayOf<IWritePosCallback> writeCallbacks;
+    size32_t compBlkSz = 0; // means use default
 
     void initCommon();
     bool _flush(bool force);
@@ -431,6 +432,7 @@ public:
     void safeUnregisterWriteCallback(IWritePosCallback &cb);
     inline void setAllowNulls(bool b) { CThorExpandingRowArray::setAllowNulls(b); }
     inline void setDefaultMaxSpillCost(unsigned defaultMaxSpillCost) { CThorExpandingRowArray::setDefaultMaxSpillCost(defaultMaxSpillCost); }
+    inline void setCompBlockSize(size32_t sz) { compBlkSz = sz; }
     inline unsigned queryDefaultMaxSpillCost() const { return CThorExpandingRowArray::queryDefaultMaxSpillCost(); }
     inline rowidx_t queryMaxRows() const { return CThorExpandingRowArray::queryMaxRows(); }
     roxiemem::IRowManager *queryRowManager() const { return CThorExpandingRowArray::queryRowManager(); }

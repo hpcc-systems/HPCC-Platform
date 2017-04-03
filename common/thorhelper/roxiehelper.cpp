@@ -27,6 +27,7 @@
 #include "mpbase.hpp"
 #include "dafdesc.hpp"
 #include "dadfs.hpp"
+#include "zcrypt.hpp"
 
 unsigned traceLevel = 0;
 
@@ -1479,10 +1480,17 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         unsigned left = 0;
         char *buf;
 
-        if (pHttpHelper != NULL && strncmp((char *)&len, "POST", 4) == 0)
+        if (pHttpHelper)
         {
-#define MAX_HTTP_HEADERSIZE 8000
-            pHttpHelper->setHttpMethod(HttpMethod::POST);
+            if (strncmp((char *)&len, "POST", 4) == 0)
+                pHttpHelper->setHttpMethod(HttpMethod::POST);
+            else if (strncmp((char *)&len, "GET", 3) == 0)
+                pHttpHelper->setHttpMethod(HttpMethod::GET);
+        }
+
+        if (pHttpHelper && pHttpHelper->isHttp())
+        {
+#define MAX_HTTP_HEADERSIZE 16000 //arbitrary per line limit, most web servers are lower, but REST queries can be complex..
             char header[MAX_HTTP_HEADERSIZE + 1]; // allow room for \0
             sock->read(header, 1, MAX_HTTP_HEADERSIZE, bytesRead, timeout);
             header[bytesRead] = 0;
@@ -1491,38 +1499,34 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
             {
                 *payload = 0;
                 payload += 4;
-                char *str;
 
                 pHttpHelper->parseHTTPRequestLine(header);
+                const char *headers = strstr(header, "\r\n");
+                if (headers)
+                    pHttpHelper->parseRequestHeaders(headers+2);
 
-                // capture authentication token
-                if ((str = strstr(header, "Authorization: Basic ")) != NULL)
-                    pHttpHelper->setAuthToken(str+21);
-
-                // capture content type
-                if ((str = strstr(header, "Content-Type: ")) != NULL)
-                    pHttpHelper->setContentType(str+14);
-
-                if (strstr(header, "Expect: 100-continue"))
+                if (pHttpHelper->isHttpGet())
                 {
-                    StringBuffer cont("HTTP/1.1 100 Continue\n\n"); //tell client to go ahead and send body
+                    pHttpHelper->checkTarget();
+                    return true;
+                }
+
+                const char *val = pHttpHelper->queryRequestHeader("Expect");
+                if (val && streq(val, "100-continue"))
+                {
+                    StringBuffer cont("HTTP/1.1 100 Continue\r\n\r\n"); //tell client to go ahead and send body
                     sock->write(cont, cont.length());
                 }
 
                 // determine payload length
-                str = strstr(header, "Content-Length: ");
-                if (str)
+                val = pHttpHelper->queryRequestHeader("Content-Length");
+                if (val)
                 {
-                    len = atoi(str + strlen("Content-Length: "));
+                    len = atoi(val);
                     buf = ret.reserveTruncate(len);
                     left = len - (bytesRead - (payload - header));
                     if (len > left)
                         memcpy(buf, payload, len - left);
-                    if (pHttpHelper->isFormPost())
-                    {
-                        pHttpHelper->checkTarget();
-                        pHttpHelper->setFormContent(ret);
-                    }
                 }
                 else
                     left = len = 0;
@@ -1532,28 +1536,6 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
 
             if (!len)
                 throw MakeStringException(THORHELPER_DATA_ERROR, "Badly formed HTTP header");
-        }
-        else if (pHttpHelper != NULL && strncmp((char *)&len, "GET", 3) == 0)
-        {
-#define MAX_HTTP_GET_LINE 16000 //arbitrary per line limit, most web servers are lower, but urls for queries can be complex..
-                pHttpHelper->setHttpMethod(HttpMethod::GET);
-                char headerline[MAX_HTTP_GET_LINE + 1];
-                Owned<IBufferedSocket> linereader = createBufferedSocket(sock);
-
-                int bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
-                pHttpHelper->parseHTTPRequestLine(headerline);
-
-                bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
-                while(bytesread >= 0 && *headerline && *headerline!='\r')
-                {
-                    // capture authentication token
-                    if (!strnicmp(headerline, "Authorization: Basic ", 21))
-                        pHttpHelper->setAuthToken(headerline+21);
-                    bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
-                }
-
-                pHttpHelper->checkTarget();
-                return true;
         }
         else if (strnicmp((char *)&len, "STAT", 4) == 0)
             isStatus = true;
@@ -1574,10 +1556,28 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         }
 
         if (left)
-        {
             sock->read(buf + (len - left), left, left, bytesRead, timeout);
-        }
 
+        if (len && pHttpHelper)
+        {
+            if (pHttpHelper->getReqCompression()!=HttpCompression::NONE)
+            {
+        #ifdef _USE_ZLIB
+                StringBuffer decoded;
+                httpInflate((const byte*)ret.str(), len, decoded, pHttpHelper->getReqCompression()==HttpCompression::GZIP);
+                PROGLOG("%s Content decoded from %d bytes to %d bytes", pHttpHelper->queryRequestHeader("Content-Encoding"), len, decoded.length());
+                ret.swapWith(decoded);
+        #else
+                throw MakeStringException(THORHELPER_UNSUPPORTED_ENCODING, "Unsupported Content-Encoding (_USE_ZLIB is required): %s", pHttpHelper->queryRequestHeader("Content-Encoding"));
+        #endif
+            }
+
+            if (pHttpHelper->isFormPost())
+            {
+                pHttpHelper->checkTarget();
+                pHttpHelper->setFormContent(ret);
+            }
+        }
         return len != 0;
     }
     catch (IException *E)
@@ -1599,6 +1599,7 @@ void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, HttpHelper 
     CriticalBlock c(crit); // Should not be needed
     httpMode = true;
     mlResponseFmt = httphelper.queryResponseMlFormat();
+    respCompression = httphelper.getRespCompression();
     heartbeat = false;
     assertex(contentHead.length()==0 && contentTail.length()==0);
     if (mlResponseFmt==MarkupFmt_JSON)
@@ -1741,49 +1742,125 @@ bool CSafeSocket::sendHeartBeat(const IContextLogger &logctx)
         return true;
 };
 
+class HttpResponseHandler
+{
+private:
+    CriticalBlock c; // should not be anyone writing but better to be safe
+    StringBuffer header;
+    StringBuffer content;
+    ISocket *sock = nullptr;
+    HttpCompression compression = HttpCompression::NONE;
+    unsigned int sent = 0;
+public:
+
+    HttpResponseHandler(ISocket *s, CriticalSection &crit) : sock(s), c(crit)
+    {
+    }
+    inline bool compressing()
+    {
+        return compression!=HttpCompression::NONE;
+    }
+    inline const char *traceName()
+    {
+        return compressing() ? "compressor" : "socket";
+    }
+    inline const char *compressTypeName()
+    {
+        return compression==HttpCompression::GZIP ? "gzip" : "deflate";
+    }
+    void init(unsigned length, TextMarkupFormat mlFmt, HttpCompression respCompression)
+    {
+        if (length > 1500)
+            compression = respCompression;
+        header.append("HTTP/1.0 200 OK\r\n");
+        header.append("Content-Type: ").append(mlFmt == MarkupFmt_JSON ? "application/json" : "text/xml").append("\r\n");
+        if (!compressing())
+        {
+            header.append("Content-Length: ").append(length).append("\r\n\r\n");
+            if (traceLevel > 5)
+                DBGLOG("Writing HTTP header length %d to HTTP socket", header.length());
+            sock->write(header.str(), header.length());
+            sent += header.length();
+        }
+        else
+        {
+            header.append("Content-Encoding: ").append(compression==HttpCompression::GZIP ? "gzip" : "deflate").append("\r\n");
+        }
+    }
+    size32_t write(void const* buf, size32_t size)
+    {
+        if (!compressing())
+        {
+            sent += size;
+            return sock->write(buf, size);
+        }
+        content.append(size, (const char *)buf);
+        return size;
+    }
+    size32_t finalize()
+    {
+        if (compressing())
+        {
+            ZlibCompressionType zt = ZlibCompressionType::GZIP;
+            if (compression==HttpCompression::DEFLATE)
+                zt  = ZlibCompressionType::DEFLATE;
+            if (compression==HttpCompression::ZLIB_DEFLATE)
+                zt  = ZlibCompressionType::ZLIB_DEFLATE;
+
+            MemoryBuffer mb;
+            zlib_deflate(mb, content.str(), content.length(), GZ_DEFAULT_COMPRESSION, zt);
+            if (traceLevel > 5)
+                DBGLOG("Compressed content length %u to %u (%s)", content.length(), mb.length(), compressTypeName());
+
+            header.append("Content-Length: ").append(mb.length()).append("\r\n\r\n");
+            if (traceLevel > 5)
+                DBGLOG("Writing HTTP header length %d to HTTP socket (compressed body)", header.length());
+            sock->write(header.str(), header.length());
+            sent += header.length();
+            if (traceLevel > 5)
+                DBGLOG("Writing compressed %s content, length %u, to HTTP socket", compressTypeName(), mb.length());
+
+            sock->write(mb.toByteArray(), mb.length());
+            sent += mb.length();
+        }
+        return sent;
+    }
+
+};
+
 void CSafeSocket::flush()
 {
     if (httpMode)
     {
-        unsigned length = 0;
+        unsigned contentLength = 0;
         if (!adaptiveRoot)
-            length = contentHead.length() + contentTail.length();
+            contentLength = contentHead.length() + contentTail.length();
         ForEachItemIn(idx, lengths)
-            length += lengths.item(idx);
+            contentLength += lengths.item(idx);
 
-        StringBuffer header;
-        header.append("HTTP/1.0 200 OK\r\n");
-        header.append("Content-Type: ").append(mlResponseFmt == MarkupFmt_JSON ? "application/json" : "text/xml").append("\r\n");
-        header.append("Content-Length: ").append(length).append("\r\n\r\n");
+        HttpResponseHandler resp(sock, crit);
 
-
-        CriticalBlock c(crit); // should not be anyone writing but better to be safe
-        if (traceLevel > 5)
-            DBGLOG("Writing HTTP header length %d to HTTP socket", header.length());
-        sock->write(header.str(), header.length());
-        sent += header.length();
+        resp.init(contentLength, mlResponseFmt, respCompression);
         if (!adaptiveRoot || mlResponseFmt != MarkupFmt_JSON)
         {
             if (traceLevel > 5)
-                DBGLOG("Writing content head length %" I64F "u to HTTP socket", static_cast<__uint64>(contentHead.length()));
-            sock->write(contentHead.str(), contentHead.length());
-            sent += contentHead.length();
+                DBGLOG("Writing content head length %" I64F "u to HTTP %s", static_cast<__uint64>(contentHead.length()), resp.traceName());
+            resp.write(contentHead.str(), contentHead.length());
         }
         ForEachItemIn(idx2, queued)
         {
             unsigned length = lengths.item(idx2);
             if (traceLevel > 5)
-                DBGLOG("Writing block length %d to HTTP socket", length);
-            sock->write(queued.item(idx2), length);
-            sent += length;
+                DBGLOG("Writing block length %d to HTTP %s", length, resp.traceName());
+            resp.write(queued.item(idx2), length);
         }
         if (!adaptiveRoot || mlResponseFmt != MarkupFmt_JSON)
         {
             if (traceLevel > 5)
-                DBGLOG("Writing content tail length %" I64F "u to HTTP socket", static_cast<__uint64>(contentTail.length()));
-            sock->write(contentTail.str(), contentTail.length());
-            sent += contentTail.length();
+                DBGLOG("Writing content tail length %" I64F "u to HTTP %s", static_cast<__uint64>(contentTail.length()), resp.traceName());
+            resp.write(contentTail.str(), contentTail.length());
         }
+        sent += resp.finalize();
         if (traceLevel > 5)
             DBGLOG("Total written %d", sent);
     }
@@ -2624,6 +2701,46 @@ void IRoxieContextLogger::CTXLOGae(IException *E, const char *file, unsigned lin
     va_start(args, format);
     CTXLOGaeva(E, file, line, prefix, format, args);
     va_end(args);
+}
+
+void loadHttpHeaders(IProperties *p, const char *finger)
+{
+    while (*finger)
+    {
+        StringBuffer prop, val;
+        while (*finger && *finger != '\r' && *finger != ':')
+            prop.append(*finger++);
+        if (*finger && *finger != '\r')
+        {
+            finger++;
+            while (isspace(*finger) && *finger != '\r')
+                finger++;
+            while (*finger && *finger != '\r')
+                val.append(*finger++);
+            prop.clip();
+            val.clip();
+            if (prop.length())
+                p->setProp(prop.str(), val.str());
+        }
+        if (*finger)
+            finger++;
+        if ('\n'==*finger)
+            finger++;
+    }
+}
+
+void HttpHelper::parseRequestHeaders(const char *headers)
+{
+    if (!reqHeaders)
+        reqHeaders.setown(createProperties());
+    loadHttpHeaders(reqHeaders, headers);
+    const char *val = queryRequestHeader("Content-Type");
+    if (val)
+        setContentType(val); //response type defaults to request type
+
+    val = queryRequestHeader("Authorization");
+    if (val && !strncmp(val, "Basic ", 6))
+        setAuthToken(val+6);
 }
 
 void HttpHelper::parseURL()

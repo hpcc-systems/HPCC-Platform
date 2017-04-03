@@ -2311,6 +2311,8 @@ public:
     void setBlockSize(size32_t size)
     {
         trailer.blockSize = size;
+        compressor->close();
+        compressor->open(compblkptr, size);
     }
     bool readMode()
     {
@@ -2321,8 +2323,6 @@ public:
     {
         return trailer.method();
     }
-
-
 };
 
 

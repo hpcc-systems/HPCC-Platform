@@ -138,16 +138,16 @@ define([
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
                     Wuid: {
-                        label: this.i18n.Workunit, width: 180, sortable: true,
+                        label: this.i18n.Workunit, width: 180, sortable: false,
                         formatter: function (Wuid) {
                             return "<a href='#' class='dgrid-row-url'>" + Wuid + "</a>";
                         }
                     },
-                    Cluster: { label: this.i18n.Cluster, width: 100, sortable: true },
-                    JobName: { label: this.i18n.JobName, sortable: true },
-                    EventName: { label: this.i18n.EventName, width: 180, sortable: true },
-                    EventText: { label: this.i18n.EventText, width: 180, sortable: true },
-                    Owner: { label: this.i18n.Owner, width: 180, sortable: true },
+                    Cluster: { label: this.i18n.Cluster, width: 100, sortable: false },
+                    JobName: { label: this.i18n.JobName, sortable: false },
+                    EventName: { label: this.i18n.EventName, width: 180, sortable: false },
+                    EventText: { label: this.i18n.EventText, width: 180, sortable: false },
+                    Owner: { label: this.i18n.Owner, width: 180, sortable: false },
                     State: { label: this.i18n.State, width: 180, sortable: false }
                 }
             }, this.id + "EventGrid");
