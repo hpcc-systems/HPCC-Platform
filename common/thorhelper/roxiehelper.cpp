@@ -1514,7 +1514,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                 const char *val = pHttpHelper->queryRequestHeader("Expect");
                 if (val && streq(val, "100-continue"))
                 {
-                    StringBuffer cont("HTTP/1.1 100 Continue\n\n"); //tell client to go ahead and send body
+                    StringBuffer cont("HTTP/1.1 100 Continue\r\n\r\n"); //tell client to go ahead and send body
                     sock->write(cont, cont.length());
                 }
 

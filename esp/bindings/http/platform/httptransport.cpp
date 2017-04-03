@@ -608,7 +608,7 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
     getHeader("Expect", expect);
     if (expect.length() && strieq(expect, "100-continue"))
     {
-        StringBuffer cont("HTTP/1.1 100 Continue\n\n"); //tell client to send body
+        StringBuffer cont("HTTP/1.1 100 Continue\r\n\r\n"); //tell client to send body
         m_socket.write(cont, cont.length());
     }
 
