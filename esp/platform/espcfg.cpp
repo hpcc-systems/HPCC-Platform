@@ -467,7 +467,15 @@ void CEspConfig::loadServices()
     map<string, srv_cfg*>::iterator iter = m_services.begin();
     while (iter!=m_services.end())
     {
-        loadService(*(iter->second));
+#ifndef _USE_OPENLDAP
+        const string svcName = iter->first;
+        if (!strstr(svcName.data(), "ws_access"))
+#endif
+            loadService(*(iter->second));
+#ifndef _USE_OPENLDAP
+        else
+            DBGLOG("Not loading service %s, platform built without LDAP", svcName.data());
+#endif
         iter++;
     }
 }
@@ -488,7 +496,15 @@ void CEspConfig::loadBindings()
     
     while (iter!=m_bindings.end())
     {
-        loadBinding(**iter);
+#ifndef _USE_OPENLDAP
+        const char * bindingName = (**iter).name.str();
+        if (!strstr(bindingName, "ws_access"))
+#endif
+            loadBinding(**iter);
+#ifndef _USE_OPENLDAP
+        else
+            DBGLOG("Not binding %s, platform built without LDAP", bindingName);
+#endif
         iter++;
     }
 }
