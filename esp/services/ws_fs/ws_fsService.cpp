@@ -2225,12 +2225,12 @@ void CFileSprayEx::getDropZoneInfoByIP(const char* ip, const char* destFileIn, S
         destFileOut.set(destFileIn);
 
     if (!ip || !*ip)
-        return;
+        throw MakeStringExceptionDirect(ECLWATCH_INVALID_IP, "Network address must be specified for a dropzone!");
 
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     Owned<IConstEnvironment> env = factory->openEnvironment();
     if (!env)
-        return;
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
     SCMStringBuffer directory;
     Owned<IConstDropZoneInfo> dropZone;
@@ -2241,7 +2241,7 @@ void CFileSprayEx::getDropZoneInfoByIP(const char* ip, const char* destFileIn, S
         destFile.set(destFileIn);
         dropZone.setown(env->getDropZoneByAddressPath(ip, destFile.str()));
         if (!dropZone)
-            return;
+            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone not found for network address %s.", ip);
         dropZone->getDirectory(directory);
     }
     else
@@ -2253,17 +2253,17 @@ void CFileSprayEx::getDropZoneInfoByIP(const char* ip, const char* destFileIn, S
             IpAddress ipAddr;
             ipAddr.ipset(ip);
             if (!ipAddr.isLocal())
-                return;
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Computer not found for network address %s.", ip);
             machine.setown(env->getMachineForLocalHost());
             if (!machine)
-                return;
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Computer not found for local host.");
         }
         machine->getName(computer);
         if (!computer.length())
-            return;
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Computer name not found for network address %s.", ip);
         dropZone.setown(env->getDropZoneByComputer(computer.str()));
         if (!dropZone)
-            return;
+            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone not found for network address %s.", ip);
         dropZone->getDirectory(directory);
         destFile.set(directory.str());
         if (destFile.length())
