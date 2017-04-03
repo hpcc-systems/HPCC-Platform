@@ -5,7 +5,7 @@
   <title><emphasis>Geospatial Methods</emphasis></title>
 
   <para>This section covers the Geospatial methods that create geographical
-  map visualizations contained in the Choropleth module. These methods depict
+  map visualizations contained in the Choropleth module. These methods project
   data onto maps using shading to depict values.</para>
 
   <para></para>

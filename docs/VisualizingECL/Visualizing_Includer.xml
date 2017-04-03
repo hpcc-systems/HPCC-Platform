@@ -28,7 +28,7 @@
       of Reed Elsevier Properties Inc., used under license.</para>
 
       <para>HPCC Systems<superscript>®</superscript> is a registered trademark
-      of LexisNexis Risk Data Management Inc.</para>
+      of LexisNexis Risk Data Managemenresul;t Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
       registered trademarks of their respective companies.</para>
@@ -58,7 +58,6 @@
     </mediaobject>
   </bookinfo>
 
- 
   <xi:include href="VisualizingECL/VizMods/VizIntro.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
@@ -75,6 +74,5 @@
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="VisualizingECL/VizMods/Any.xml"
-              xmlns:xi="http://www.w3.org/2001/XInclude" /> 
-  
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 </book>

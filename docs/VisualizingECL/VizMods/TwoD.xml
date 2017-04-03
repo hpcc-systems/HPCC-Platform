@@ -382,7 +382,7 @@ viz_Summary;
     </informaltable>
 
     <para>The <emphasis role="bold">WordCloud </emphasis>visualization method
-    creates a word cloud chart from two-dimensional data. A WordClous is
+    creates a word cloud chart from two-dimensional data. A WordCloud is
     weighted word list in visual design. It is a visual representation for
     text data, typically used to depict the weight or importance of words by
     the font size or color.</para>
