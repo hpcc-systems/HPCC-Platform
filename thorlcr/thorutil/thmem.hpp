@@ -483,6 +483,7 @@ public:
     rowidx_t save(IFile &file, unsigned _spillCompInfo, bool skipNulls, const char *tracingPrefix);
 
     inline rowidx_t numCommitted() const { return commitRows - firstRow; } //MORE::Not convinced this is very safe!
+    inline rowidx_t queryTotalRows() const { return CThorExpandingRowArray::ordinality(); } // includes uncommited rows
 
 // access to
     void swap(CThorSpillableRowArray &src);
