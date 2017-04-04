@@ -11449,7 +11449,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
                 files = i;
                 break;
             }
-            Owned<IDistributedSuperFile> sfile = createSuperFile(sfnames[i],user,false,false,transaction);
+            Owned<IDistributedSuperFile> sfile = createSuperFile(sfnames[i],user,true,false,transaction);
             created = true;
         }
     }
