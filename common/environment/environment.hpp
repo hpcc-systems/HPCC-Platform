@@ -104,6 +104,17 @@ interface IConstInstanceInfo : extends IConstEnvBase
     virtual bool getRunInfo(IStringVal & progpath, IStringVal & workdir, const char * defaultprogname) const = 0;
 };
 
+interface IConstDropZoneServerInfo : extends IConstEnvBase
+{
+    virtual StringBuffer & getName(StringBuffer & name) const = 0;
+    virtual StringBuffer & getServer(StringBuffer & server) const = 0;
+};
+
+interface IConstDropZoneServerInfoIterator : extends IIteratorOf<IConstDropZoneServerInfo>
+{
+    virtual unsigned count() const = 0;
+};
+
 interface IConstDropZoneInfo : extends IConstEnvBase
 {
     virtual IStringVal & getComputerName(IStringVal & str) const = 0;
@@ -111,6 +122,7 @@ interface IConstDropZoneInfo : extends IConstEnvBase
     virtual IStringVal & getDirectory(IStringVal & str) const = 0;
     virtual IStringVal & getUMask(IStringVal & str) const = 0;
     virtual bool isECLWatchVisible() const = 0;
+    virtual IConstDropZoneServerInfoIterator * getServers() const = 0;
 };
 
 interface  IConstDropZoneInfoIterator : extends IIteratorOf<IConstDropZoneInfo>
