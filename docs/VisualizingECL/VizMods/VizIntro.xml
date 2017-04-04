@@ -50,7 +50,7 @@
     that is appropriate for your data shape.</para>
 
     <para>Creating a basic visualization typically requires the following
-    steps: </para>
+    steps:</para>
 
     <para><orderedlist>
         <listitem>
@@ -59,12 +59,12 @@
 
         <listitem>
           <para>Output the dataset with a suitable name, so that visualization
-          can locate the data. </para>
+          can locate the data.</para>
         </listitem>
 
         <listitem>
           <para>Create (and output) a the visualization, referencing the named
-          output from step 2. </para>
+          output from step 2.</para>
         </listitem>
       </orderedlist></para>
 
@@ -139,8 +139,8 @@ viz_bubble;
       </listitem>
 
       <listitem>
-        <para>Press the <emphasis role="bold">Properties</emphasis> button.
-        <emphasis role="bold"></emphasis></para>
+        <para>Press the <emphasis role="bold">Properties</emphasis>
+        button.</para>
 
         <graphic fileref="../../images/viz08.jpg" />
       </listitem>
@@ -153,7 +153,8 @@ viz_bubble;
       </listitem>
 
       <listitem>
-        <para>Press the Save button.<emphasis role="bold"></emphasis></para>
+        <para>Press the <emphasis role="bold">Save</emphasis> button.<emphasis
+        role="bold"></emphasis></para>
       </listitem>
     </orderedlist>
 
