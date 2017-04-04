@@ -160,9 +160,9 @@ public:
     void usage()
     {
         printf("\nUsage:\n\n"
-                "esdl publish <servicename> <filename.(ecm|esdl|xml)> [command options]\n\n"
-                "   <servicename>               The ESDL defined ESP service to publish\n"
+                "esdl publish <filename.(ecm|esdl|xml)> <servicename> [command options]\n\n"
                 "   <filename.(ecm|esdl|xml)>   The ESDL file containing service definition in esdl format (.ecm |.esdl) or in esxdl format (.xml) \n"
+                "   <servicename>               The ESDL defined ESP service to publish, optional if ESDL definition contains a single service definition\n"
                 "Options (use option flag followed by appropriate value):\n"
                 "   --overwrite                 Overwrite the latest version of this ESDL Definition\n"
                 );
@@ -178,9 +178,10 @@ public:
            return false;
        }
 
-       //First 2 parameter's order is fixed.
-       //<servicename>
+       //First parameter is required
        //<filename.(ecm|esdl|xml)>       The ESDL file containing service definition\n"
+       //Second parameter is now optional but can cause request to fail if not provided
+       //<servicename>
        for (int cur = 0; cur < 2 && !iter.done(); cur++)
        {
           const char *arg = iter.query();
@@ -189,18 +190,26 @@ public:
               switch (cur)
               {
                case 0:
-                   optESDLService.set(arg);
+                   optSource.set(arg);
                    break;
                case 1:
-                   optSource.set(arg);
+                   optESDLService.set(arg);
                    break;
               }
           }
           else
           {
-              fprintf(stderr, "\nOption detected before required arguments: %s\n", arg);
-              usage();
-              return false;
+              if (optSource.isEmpty())
+              {
+                  fprintf(stderr, "\nOption detected before required arguments: %s\n", arg);
+                  usage();
+                  return false;
+              }
+              else
+              {
+                  fprintf(stderr, "\nWarning: Target ESDL Service was not specified, this request will fail if ESDL definition contains multiple \n");
+                  break;
+              }
           }
 
           iter.next();
@@ -236,9 +245,6 @@ public:
         if (optSource.isEmpty())
             throw MakeStringException( 0, "Source ESDL definition file (ecm|esdl|xml) must be provided" );
 
-        if (optESDLService.isEmpty())
-            throw MakeStringException( 0, "Name of ESDL based service must be provided" );
-
         return EsdlPublishCmdCommon::finalizeOptions(globals);
     }
 };
@@ -255,7 +261,7 @@ public:
         Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientPublishESDLBindingRequest> request = esdlConfigClient->createPublishESDLBindingRequest();
 
-        fprintf(stdout,"\nAttempting to configure ESDL Service: '%s'\n", optESDLService.get());
+        fprintf(stdout,"\nAttempting to publish ESDL binding: '%s.%s' \n", optTargetESPProcName.get(), optService.get() ? optService.get() : optTargetPort.get() );
 
         request->setEspProcName(optTargetESPProcName);
         request->setEspPort(optTargetPort);
@@ -284,14 +290,15 @@ public:
     void usage()
     {
         printf( "\nUsage:\n\n"
+                //"esdl bind-service <TargetESPProcessName> <TargetESPBindingPort | TargetESPServiceName> <ESDLDefinitionId> <ESDLServiceName> [command options]\n\n"
                 "esdl bind-service <TargetESPProcessName> <TargetESPBindingPort | TargetESPServiceName> <ESDLDefinitionId> <ESDLServiceName> [command options]\n\n"
                 "   TargetESPProcessName                             The target ESP Process name\n"
                 "   TargetESPBindingPort | TargetESPServiceName      Either target ESP binding port or target ESP service name\n"
-                "   ESDLDefinitionId                           The Name and version of the ESDL definition to bind to this service (must already be defined in dali.)\n"
-                "   ESDLServiceName                                  The Name of the ESDL Service (as defined in the ESDL Definition)\n"
+                "   ESDLDefinitionId                                 The Name and version of the ESDL definition to bind to this service (must already be defined in dali.)\n"
+                "   ESDLServiceName                                  The Name of the ESDL Service (as defined in the ESDL Definition) *Required if ESDL definition contains multiple services\n"
 
                 "\nOptions (use option flag followed by appropriate value):\n"
-                "   --config <file|\"xml\">                              Configuration XML for all methods associated with the target Service\n"
+                "   --config <file|\"xml\">                          Configuration XML for all methods associated with the target Service\n"
                 "   --overwrite                                      Overwrite binding if it already exists\n");
 
                 EsdlPublishCmdCommon::usage();
@@ -322,10 +329,11 @@ public:
             return false;
         }
 
-        //First 4 parameter's order is fixed.
+        //First 3 parameter's order is fixed.
         //TargetESPProcessName
         //TargetESPBindingPort | TargetESPServiceName
         //ESDLDefinitionId
+        //4th param is now optional, absence can cause failure
         //ESDLServiceName
         for (int cur = 0; cur < 4 && !iter.done(); cur++)
         {
@@ -350,9 +358,17 @@ public:
            }
            else
            {
-               fprintf(stderr, "\nOption detected before required arguments: %s\n", arg);
-               usage();
-               return false;
+               if (cur < 3)
+               {
+                   fprintf(stderr, "\nOption detected before required arguments: %s\n", arg);
+                   usage();
+                   return false;
+               }
+               else
+               {
+                   fprintf(stderr, "\nWarning ESDL Service name not provided. Can cause failure if ESDL definition contains multiple services\n");
+                   break;
+               }
            }
 
            iter.next();
@@ -399,7 +415,7 @@ public:
             throw MakeStringException( 0, "ESDL definition ID must be provided!" );
 
         if (optESDLService.isEmpty())
-            throw MakeStringException( 0, "ESDL service definition name must be provided!" );
+            fprintf(stderr, "Warning: ESDL service definition name was not provided. Request will fail if ESDL def contains multiple service defined.");
 
         if(optTargetESPProcName.isEmpty())
             throw MakeStringException( 0, "Name of Target ESP process must be provided!" );
