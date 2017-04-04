@@ -2255,8 +2255,10 @@ protected:
             }
             virtual bool spill(bool critical) // called from OOM callback
             {
+                if (!channelCollector->spill(critical))
+                    return false;
                 atomic_set(&spilt, 1);
-                return channelCollector->spill(critical);
+                return true;
             }
             virtual roxiemem::IBufferedRowCallback *queryCallback() { return this; }
         } channelDistributor(*this, cmp);
@@ -2742,7 +2744,7 @@ public:
         {
             if (0 != (sendItem->queryFlags() & bcastflag_spilt))
             {
-                VStringBuffer msg("Notification that node %d spilt", sendItem->queryNode());
+                VStringBuffer msg("Notification that node %d spilt", sendItem->queryNode()+1);
                 clearAllNonLocalRows(msg.str());
             }
         }
