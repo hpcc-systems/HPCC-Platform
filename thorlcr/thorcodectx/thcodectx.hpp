@@ -53,22 +53,22 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<ICodeContextExt>) // This is strangely required by visual studio to ensure Release() is resolved
 
 // ICodeContext
-    virtual const char *loadResource(unsigned id);
-    virtual char *getWuid();
+    virtual const char *loadResource(unsigned id) override;
+    virtual char *getWuid() override;
 
-    virtual char *getExpandLogicalName(const char * logicalName);
-    virtual IUserDescriptor *queryUserDescriptor() { return userDesc; }
+    virtual char *getExpandLogicalName(const char * logicalName) override;
+    virtual IUserDescriptor *queryUserDescriptor() override { return userDesc; }
 
-    virtual unsigned getNodes() { assertex(false); return (unsigned)-1; }
-    virtual unsigned getNodeNum() { assertex(!"getNodeNum should not be called on the master"); return (unsigned)-1; }
-    virtual char *getFilePart(const char *logicalName, bool create=false) { assertex(false); return NULL; }
-    virtual unsigned __int64 getFileOffset(const char *logicalName) { assertex(false); return 0; }
-    virtual char *getJobName();
-    virtual char *getJobOwner();
-    virtual char *getClusterName();
-    virtual unsigned getPriority() const { return 0; }
-    virtual char *getPlatform() { return strdup("thor"); };
-    virtual char *getEnv(const char *name, const char *defaultValue) const
+    virtual unsigned getNodes() override { assertex(false); return (unsigned)-1; }
+    virtual unsigned getNodeNum() override { assertex(!"getNodeNum should not be called on the master"); return (unsigned)-1; }
+    virtual char *getFilePart(const char *logicalName, bool create=false) override { assertex(false); return NULL; }
+    virtual unsigned __int64 getFileOffset(const char *logicalName) override { assertex(false); return 0; }
+    virtual char *getJobName() override;
+    virtual char *getJobOwner() override;
+    virtual char *getClusterName() override;
+    virtual unsigned getPriority() const override { return 0; }
+    virtual char *getPlatform() override { return strdup("thor"); };
+    virtual char *getEnv(const char *name, const char *defaultValue) const override
     {
         const char *val = getenv(name);
         if (val)
@@ -78,7 +78,7 @@ public:
         else
             return strdup("");
     }
-    virtual char *getOS()
+    virtual char *getOS() override
     {
 #ifdef _WIN32
         return strdup("windows");
@@ -86,7 +86,7 @@ public:
         return strdup("linux");
 #endif
     }
-    virtual unsigned logString(const char *text) const
+    virtual unsigned logString(const char *text) const override
     {
         if (text && *text)
         {
@@ -96,31 +96,31 @@ public:
         else
             return 0;
     }
-    virtual const IContextLogger &queryContextLogger() const
+    virtual const IContextLogger &queryContextLogger() const override
     {
         return jobChannel.queryJob().queryContextLogger();
     }
 
-    virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { UNIMPLEMENTED; }
+    virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) override { UNIMPLEMENTED; }
 
-    virtual char *getGroupName(); // thorlib.group()
-    virtual char *queryIndexMetaData(char const * lfn, char const * xpath) { UNIMPLEMENTED; }
-    virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const;
-    virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const;
-    virtual const char *cloneVString(const char *str) const;
-    virtual const char *cloneVString(size32_t len, const char *str) const;
-    virtual IEclGraphResults *resolveLocalQuery(__int64 gid);
-    virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal);
-    virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags);
-    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags);
-    virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence) { throwUnexpected(); }
-    virtual IConstWUResult *getResultForGet(const char *name, unsigned sequence) { throwUnexpected(); }
-    virtual const void * fromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
-    virtual const void * fromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
-    virtual IEngineContext *queryEngineContext() { return NULL; }
-    virtual char *getDaliServers();
-    virtual IWorkUnit *updateWorkUnit() const { throwUnexpected(); }
-    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name);
+    virtual char *getGroupName() override; // thorlib.group()
+    virtual char *queryIndexMetaData(char const * lfn, char const * xpath) override { UNIMPLEMENTED; }
+    virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const override;
+    virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const override;
+    virtual const char *cloneVString(const char *str) const override;
+    virtual const char *cloneVString(size32_t len, const char *str) const override;
+    virtual IEclGraphResults *resolveLocalQuery(__int64 gid) override;
+    virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal) override;
+    virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) override;
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) override;
+    virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence) override { throwUnexpected(); }
+    virtual IConstWUResult *getResultForGet(const char *name, unsigned sequence) override { throwUnexpected(); }
+    virtual const void * fromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) override;
+    virtual const void * fromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) override;
+    virtual IEngineContext *queryEngineContext() override { return NULL; }
+    virtual char *getDaliServers() override;
+    virtual IWorkUnit *updateWorkUnit() const override { throwUnexpected(); }
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) override;
 };
 
 #endif
