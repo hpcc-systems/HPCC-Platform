@@ -2588,6 +2588,22 @@ unsigned getRemoteVersion(ISocket * socket, StringBuffer &ver)
     // used to have a global critical section here
     if (!socket)
         return 0;
+
+    Owned<ISecureSocket> ssock;
+
+    if (securitySettings.useSSL && !socket->isSecure())
+    {
+#ifdef _USE_OPENSSL
+        ssock.setown(createSecureSocket(LINK(socket), ClientSocket));
+        int status = ssock->secure_connect();
+        if (status < 0)
+            throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
+        socket = ssock;
+#else
+        throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
+#endif
+    }
+
     unsigned ret;
     MemoryBuffer sendbuf;
     initSendBuffer(sendbuf);

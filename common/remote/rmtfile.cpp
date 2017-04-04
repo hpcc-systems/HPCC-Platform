@@ -336,8 +336,9 @@ unsigned getDaliServixVersion(const SocketEndpoint &_ep,StringBuffer &ver)
     SocketEndpoint ep(_ep);
     setDafsEndpointPort(ep);
     if (ep.isNull())
-        return false;
-    try {
+        return 0;
+    try
+    {
         Owned<ISocket> socket = ISocket::connect_timeout(ep,10000);
         return getRemoteVersion(socket,ver);
     }

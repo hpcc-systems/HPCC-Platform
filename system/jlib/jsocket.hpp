@@ -384,6 +384,7 @@ public:
     virtual size32_t udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size) = 0;
     virtual bool check_connection() = 0;
 
+    virtual bool isSecure() const = 0;
 
 /*
 Exceptions raised: (when set_raise_exceptions(TRUE))

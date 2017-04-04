@@ -416,8 +416,10 @@ public:
     bool        set_nagle(bool on);
     void        set_linger(int lingersecs); 
     void        set_keep_alive(bool set);
+    void        logConnectionInfo(unsigned timeoutms, unsigned conn_mstime);
     virtual void set_inherit(bool inherit=false);
     virtual bool check_connection();
+    virtual bool isSecure() const override;
 
     
     // Block functions
@@ -1280,6 +1282,10 @@ bool CSocket::connect_timeout( unsigned timeout, bool noexception)
 #ifdef _TRACE
                 setTraceName();
 #endif              
+#ifdef SOCKTRACE
+                unsigned conn_mstime = (usTick() - startt) / 1000;
+                logConnectionInfo(timeout, conn_mstime);
+#endif
                 return true;
             }
         }
@@ -1426,14 +1432,20 @@ void CSocket::connect_wait(unsigned timems)
             CriticalBlock block(crit);
             --connectingcount;
         }
-        if (err==0) {
+        if (err==0)
+        {
             err = post_connect();
-            if (err==0) {
+            if (err==0)
+            {
                 STATS.connects++;
                 STATS.connecttime+=usTick()-startt;
 #ifdef _TRACE
                 setTraceName();
 #endif              
+#ifdef SOCKTRACE
+                unsigned conn_mstime = (usTick() - startt) / 1000;
+                logConnectionInfo(timems, conn_mstime);
+#endif
                 return;
             }
         }
@@ -2577,6 +2589,21 @@ void CSocket::set_ttl(unsigned _ttl)
     DBGLOG("set_ttl: socket fd: %d requested ttl: %d actual ttl: %d", sock, _ttl, ttl0);
 #endif
     return;
+}
+
+void CSocket::logConnectionInfo(unsigned timeoutms, unsigned conn_mstime)
+{
+    char lname[256];
+    int lport = name(lname, sizeof(lname));
+    char rname[256];
+    int rport = peer_name(rname, sizeof(rname));
+    PROGLOG("SOCKTRACE: connect(%u) - time:%u ms fd:%d l:%s:%d r:%s:%d", timeoutms, conn_mstime, sock, lname, lport, rname, rport);
+    // PrintStackReport();
+}
+
+bool CSocket::isSecure() const
+{
+    return false;
 }
 
 CSocket::~CSocket()
