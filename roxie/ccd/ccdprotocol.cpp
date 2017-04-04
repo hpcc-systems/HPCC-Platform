@@ -22,10 +22,11 @@
 #include "roxie.hpp"
 #include "roxiehelper.hpp"
 #include "ccdprotocol.hpp"
+#include "securesocket.hpp"
 
 //================================================================================================================================
 
-IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue);
+IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *certFile, const char *keyFile, const char *passPhrase);
 
 class CHpccProtocolPlugin : implements IHpccProtocolPlugin, public CInterface
 {
@@ -54,9 +55,9 @@ public:
         trapTooManyActiveQueries = ctx.ctxGetPropBool("@trapTooManyActiveQueries", true);
         numRequestArrayThreads = ctx.ctxGetPropInt("@requestArrayThreads", 5);
     }
-    IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config)
+    IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const char *certFile=nullptr, const char *keyFile=nullptr, const char *passPhrase=nullptr)
     {
-        return createProtocolListener(protocol, sink, port, listenQueue);
+        return createProtocolListener(protocol, sink, port, listenQueue, certFile, keyFile, passPhrase);
     }
 public:
     StringArray targetNames;
@@ -218,14 +219,23 @@ class ProtocolSocketListener : public ProtocolListener
     unsigned listenQueue;
     Owned<ISocket> socket;
     SocketEndpoint ep;
+    const char *protocol;
+    const char *certFile;
+    const char *keyFile;
+    const char *passPhrase;
+    Owned<ISecureSocketContext> secureContext;
 
 public:
-    ProtocolSocketListener(IHpccProtocolMsgSink *_sink, unsigned _port, unsigned _listenQueue)
+    ProtocolSocketListener(IHpccProtocolMsgSink *_sink, unsigned _port, unsigned _listenQueue, const char *_protocol, const char *_certFile, const char *_keyFile, const char *_passPhrase)
       : ProtocolListener(_sink)
     {
         port = _port;
         listenQueue = _listenQueue;
         ep.set(port, queryHostIP());
+        protocol = _protocol;
+        certFile = _certFile;
+        keyFile = _keyFile;
+        passPhrase = _passPhrase;
     }
 
     IHpccProtocolMsgSink *queryMsgSink()
@@ -270,8 +280,49 @@ public:
         while (running)
         {
             ISocket *client = socket->accept(true);
+            ISecureSocket *ssock = nullptr;
             if (client)
             {
+                if (protocol && streq(protocol, "ssl"))
+                {
+#ifdef _USE_OPENSSL
+                    try
+                    {
+                        if (!secureContext)
+                            secureContext.setown(createSecureSocketContextEx(certFile, keyFile, passPhrase, ServerSocket));
+                        ssock = secureContext->createSecureSocket(client);
+                    }
+                    catch (IException *E)
+                    {
+                        client->Release();
+                        StringBuffer s;
+                        E->errorMessage(s);
+                        WARNLOG("%s", s.str());
+                        E->Release();
+                        continue;
+                    }
+                    catch (...)
+                    {
+                        client->Release();
+                        WARNLOG("ProtocolSocketListener failure to establish secure connection");
+                        continue;
+                    }
+                    int status = ssock->secure_accept();
+                    if (status < 0)
+                    {
+                        ssock->Release();
+                        client->Release();
+                        // secure_accept may also DBGLOG() errors ...
+                        WARNLOG("ProtocolSocketListener failure to establish secure connection");
+                        continue;
+                    }
+                    client = ssock;
+#else
+                    client->Release();
+                    WARNLOG("ProtocolSocketListener failure to establish secure connection: OpenSSL disabled in build");
+                    continue;
+#endif
+                }
                 client->set_linger(-1);
                 pool->start(client);
             }
@@ -2022,11 +2073,11 @@ void ProtocolSocketListener::runOnce(const char *query)
     p->runOnce(query);
 }
 
-IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue)
+IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *certFile=nullptr, const char *keyFile=nullptr, const char *passPhrase=nullptr)
 {
     if (traceLevel)
         DBGLOG("Creating Roxie socket listener, protocol %s, pool size %d, listen queue %d%s", protocol, sink->getPoolSize(), listenQueue, sink->getIsSuspended() ? " SUSPENDED":"");
-    return new ProtocolSocketListener(sink, port, listenQueue);
+    return new ProtocolSocketListener(sink, port, listenQueue, protocol, certFile, keyFile, passPhrase);
 }
 
 extern IHpccProtocolPlugin *loadHpccProtocolPlugin(IHpccProtocolPluginContext *ctx, IActiveQueryLimiterFactory *_limiterFactory)

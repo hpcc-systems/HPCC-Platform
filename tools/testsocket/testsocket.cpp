@@ -25,9 +25,11 @@
 #include "jdebug.hpp"
 #include "jthread.hpp"
 #include "jfile.hpp"
+#include "securesocket.hpp"
 
 bool abortEarly = false;
 bool forceHTTP = false;
+bool useSSL = false;
 bool abortAfterFirst = false;
 bool echoResults = false;
 bool saveResults = true;
@@ -51,8 +53,10 @@ unsigned runningQueries;
 unsigned multiThreadMax;
 unsigned maxLineSize = 10000000;
 
-ISocket *persistSocket;
-bool persistConnections;
+ISocket *persistSocket = nullptr;
+bool persistConnections = false;
+ISecureSocketContext *persistSecureContext = nullptr;
+ISecureSocket *persistSSock = nullptr;
 
 int repeats = 0;
 StringBuffer queryPrefix;
@@ -371,6 +375,8 @@ int ReceiveThread::run()
 int doSendQuery(const char * ip, unsigned port, const char * base)
 {
     ISocket * socket;
+    ISecureSocketContext *secureContext = nullptr;
+    ISecureSocket *ssock = nullptr;
     __int64 starttime, endtime;
     StringBuffer ipstr;
     try
@@ -404,15 +410,83 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
         starttime= get_cycles_now();
         if (persistConnections)
         {
-            if (!persistSocket) {
+            if (!persistSocket)
+            {
                 SocketEndpoint ep(ip,port);
                 persistSocket = ISocket::connect_timeout(ep, 1000);
+                if (useSSL)
+                {
+#ifdef _USE_OPENSSL
+                    try
+                    {
+                        if (!persistSecureContext)
+                            persistSecureContext = createSecureSocketContext(ClientSocket);
+                        persistSSock = persistSecureContext->createSecureSocket(persistSocket);
+                    }
+                    catch (IException *e)
+                    {
+                        persistSocket->Release();
+                        throw e;
+                    }
+                    catch (...)
+                    {
+                        persistSocket->Release();
+                        throw MakeStringException(1, "SSL connect fail");
+                    }
+                    int status = persistSSock->secure_connect();
+                    if (status < 0)
+                    {
+                        // secure_connect may also DBGLOG() errors ...
+                        persistSSock->Release();
+                        persistSocket->Release();
+                        throw MakeStringException(1, "SSL connect fail");
+                    }
+                    persistSocket = persistSSock;
+#else
+                    persistSocket->Release();
+                    throw MakeStringException(1, "OpenSSL disabled in build");
+#endif
+                }
             }
             socket = persistSocket;
         }
-        else {
+        else
+        {
             SocketEndpoint ep(ip,port);
-            socket = ISocket::connect_timeout(ep,1000);
+            socket = ISocket::connect_timeout(ep, 1000);
+            if (useSSL)
+            {
+#ifdef _USE_OPENSSL
+                try
+                {
+                    secureContext = createSecureSocketContext(ClientSocket);
+                    ssock = secureContext->createSecureSocket(socket);
+                }
+                catch (IException *e)
+                {
+                    socket->Release();
+                    throw e;
+                }
+                catch (...)
+                {
+                    socket->Release();
+                    throw MakeStringException(1, "SSL connect fail");
+                }
+                int status = ssock->secure_connect();
+                if (status < 0)
+                {
+                    // secure_connect may also DBGLOG() errors ...
+                    ssock->Release();
+                    secureContext->Release();
+                    socket->Release();
+                    throw MakeStringException(1, "SSL connect fail");
+                }
+                socket = ssock;
+#else
+                socket->Release();
+                throw MakeStringException(1, "OpenSSL disabled in build");
+#endif
+            }
         }
     }
     catch(IException * e)
@@ -561,6 +635,8 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
 
     if (!persistConnections)
     {
+        if (secureContext)
+            secureContext->Release();
         socket->close();
         socket->Release();
     }
@@ -622,6 +698,7 @@ void usage(int exitCode)
     printf("  -rl       roxie logfile mode\n");
     printf("  -s        add stars to indicate transfer packets\n");
     printf("  -ss       suppress XML Status messages to screen (always suppressed from tracefile)\n");
+    printf("  -ssl      use ssl\n");
     printf("  -td       add debug timing statistics to trace\n");
     printf("  -tf       add full timing statistics to trace\n");
     printf("  -time     add timing to trace\n");
@@ -682,6 +759,11 @@ int main(int argc, char **argv)
         else if (stricmp(argv[arg], "-http") == 0)
         {
             forceHTTP = true;
+            ++arg;
+        }
+        else if (stricmp(argv[arg], "-ssl") == 0)
+        {
+            useSSL = true;
             ++arg;
         }
         else if (stricmp(argv[arg], "-") == 0)
