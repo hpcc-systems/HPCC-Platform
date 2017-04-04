@@ -18,8 +18,6 @@
 // The following script uses embeded R code to train some models on data passed to R
 // from HPCC. The results are then returned to HPCC and output.
 
-//nothor
-
 IMPORT R;
 
 ////// Get some example data from R (in practice this may be a dataset on the ECL side)
@@ -54,8 +52,19 @@ irisPredictedRec := RECORD
   REAL8     glmPreds;
 END;
 
+// Model summary data will be stored and formatted using a single-column dataset
+irisFitRec := RECORD
+  STRING100 fit;
+END;
+
+// We return a record containing predicitons and fit
+resultRec := RECORD
+  DATASET(irisPredictedRec) predictions;
+  DATASET(irisFitRec) fit;
+END;
+
 // Main embedded R script for building and scoring models
-DATASET(irisPredictedRec) runAnalyses(DATASET(irisRec) ds) := EMBED(R : globalscope('runAnalyses'),persist('workunit'))
+resultRec runAnalyses(DATASET(irisRec) ds) := EMBED(R)
 
   ds <- data.frame(lapply(ds, unlist))
   
@@ -67,32 +76,20 @@ DATASET(irisPredictedRec) runAnalyses(DATASET(irisRec) ds) := EMBED(R : globalsc
   dsPreds <- ds['label']
   dsPreds$lmPreds <- predict(lmMdl, ds)
   dsPreds$glmPreds <- predict(glmMdl, ds, type = 'response')
-  
-  # Output to HPCC
-  dsPreds
-ENDEMBED;
 
-// Model summary data will be stored and formatted using a single-column dataset
-irisFitRec := RECORD
-  STRING100 fit;
-END;
-
-// Calculate some goodness-of-fit metrics (this works because the R session is persisted via the named scope)
-DATASET(irisFitRec) goodnessOfFit() := EMBED(R : globalscope('runAnalyses'),persist('workunit'))
+  # Also return the goodness of fit information
   dsFit <- c(
     capture.output(summary(lmMdl)),
     "===================================================",
     capture.output(summary(glmMdl))
   )
-  data.frame(dsFit, stringsAsFactors = F)
+  fit<-data.frame(dsFit, stringsAsFactors = F)
+  
+  # Output to HPCC
+  list(predictions=dsPreds, fit=fit)
 ENDEMBED;
 
-irisPredicted := runAnalyses(irisData);
-irisFit := goodnessOfFit();
-
-// It's important to evaluate these in sequence as irisFit uses some values calculated in irisPredicted
-SEQUENTIAL(
-  OUTPUT(irisPredicted),
-  OUTPUT(irisFit)
-);
+result := runAnalyses(irisData);
+result.predictions;
+result.fit;
 
