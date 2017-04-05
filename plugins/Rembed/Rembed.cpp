@@ -248,7 +248,7 @@ static void getFieldNames(Rcpp::CharacterVector &namevec, const RtlTypeInfo *typ
     {
         const RtlFieldInfo *child = *fields;
         // MORE - nested records may make this interesting
-        namevec.push_back(child->name->queryStr());
+        namevec.push_back(child->name);
         fields++;
     }
 }
@@ -338,7 +338,6 @@ public:
     }
     virtual void processInt(__int64 value, const RtlFieldInfo * field) override
     {
-        namevec.push_back(field->name->queryStr());
         if (inSet)
             theIntSet[setIndex++] = (long int) value;
         else
