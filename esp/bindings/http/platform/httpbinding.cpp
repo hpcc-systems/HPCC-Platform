@@ -46,6 +46,7 @@
 #include "xmlvalidator.hpp"
 #include "xsdparser.hpp"
 #include "espsecurecontext.hpp"
+#include "jsonhelpers.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
 
@@ -558,6 +559,7 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         case sub_serv_soap_builder:
         case sub_serv_reqsamplexml:
         case sub_serv_respsamplexml:
+        case sub_serv_respsamplejson:
             context.setClientVersion(atof(m_defaultSvcVersion));
 
         default:
@@ -605,6 +607,8 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             return onGetReqSampleXml(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_respsamplexml:
             return onGetRespSampleXml(context, request, response, serviceName.str(), methodName.str());
+        case sub_serv_respsamplejson:
+            return onGetRespSampleJson(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_query:
             return onGetQuery(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_file_upload:
@@ -1336,40 +1340,135 @@ static void genSampleXml(StringStack& parent, IXmlType* type, StringBuffer& out,
     }
 }
 
-void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method)
+void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHttpRequest* request, StringBuffer &content, const char *serv, const char *method)
 {
-    StringBuffer serviceQName, methodQName;
-
-    if (!qualifyServiceName(context, serv, method, serviceQName, &methodQName))
-        return;
-
     StringBuffer schemaXml, element;
-    getXMLMessageTag(context, isRequest, methodQName.str(), element);
+    getXMLMessageTag(context, isRequest, method, element);
     getSchema(schemaXml,context,request,serv,method,false);
-    Owned<IXmlSchema> schema = createXmlSchema(schemaXml);
-    if (schema.get())
+    Owned<IXmlSchema> schema;
+    IXmlType* type = nullptr;
+    try
     {
-        IXmlType* type = schema->queryElementType(element);
-        if (type)
+        schema.setown(createXmlSchema(schemaXml));
+        if (!schema)
         {
-            StringBuffer content;
-            StringStack parent;
-            StringBuffer nsdecl("xmlns=\"");
+            content.appendf("<Error>generateSampleXml schema error: %s::%s</Error>", serv, method);
+            return;
+        }
 
-            content.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-            if (context.queryRequestParameters()->hasProp("display"))
-                content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
-
-            genSampleXml(parent,type, content, element, generateNamespace(context, request, serviceQName.str(), methodQName.str(), nsdecl).append('\"').str());
-            response->setContent(content.length(), content.str());
-            response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
-            response->setStatus(HTTP_STATUS_OK);
-            response->send();
+        type = schema->queryElementType(element);
+        if (!type)
+        {
+            content.appendf("<Error>generateSampleXml unknown type: %s in %s::%s</Error>", element.str(), serv, method);
             return;
         }
     }
+    catch (IException *E)
+    {
+        StringBuffer msg;
+        content.appendf("<Error>generateSampleXml Exception: %s in %s::%s</Error>", E->errorMessage(msg).str(), serv, method);
+        E->Release();
+        return;
+    }
+    StringStack parent;
+    StringBuffer nsdecl("xmlns=\"");
+    genSampleXml(parent,type, content, element, generateNamespace(context, request, serv, method, nsdecl).append('\"').str());
+}
 
-    throw MakeStringException(-1,"Unknown type: %s", element.str());
+
+
+void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
+{
+    StringBuffer serviceName;
+    StringBuffer methodName;
+    if (!qualifyServiceName(context, serv, method, serviceName, (method) ? &methodName : nullptr))
+        return;
+
+    StringBuffer content;
+    if (method && *method)
+        generateSampleXml(isRequest, context, request, content, serviceName, methodName);
+    else
+    {
+        MethodInfoArray methods;
+        getQualifiedNames(context, methods);
+
+        content.appendf("<Examples><%s>\n", isRequest ? "Requests" : "Responses");
+        ForEachItemIn(i, methods)
+            generateSampleXml(isRequest, context, request, content, serviceName.str(), methods.item(i).m_label.str());
+        content.appendf("\n</%s></Examples>", isRequest ? "Requests" : "Responses");
+    }
+
+    response->setContent(content.length(), content.str());
+    response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
+    response->setStatus(HTTP_STATUS_OK);
+    response->send();
+    return;
+}
+
+void EspHttpBinding::generateSampleJson(bool isRequest, IEspContext &context, CHttpRequest* request, StringBuffer &content, const char *serv, const char *method)
+{
+    StringBuffer schemaXml, element;
+    getXMLMessageTag(context, isRequest, method, element);
+    getSchema(schemaXml,context,request,serv,method,false);
+
+    Owned<IXmlSchema> schema;
+    IXmlType* type = nullptr;
+    try
+    {
+        schema.setown(createXmlSchema(schemaXml));
+        if (!schema)
+        {
+            content.appendf("{\"Error\": \"generateSampleJson schema error: %s::%s\"}", serv, method);
+            return;
+        }
+
+        type = schema->queryElementType(element);
+        if (!type)
+        {
+            content.appendf("{\"Error\": \"generateSampleJson unknown type: %s in %s::%s\"}", element.str(), serv, method);
+            return;
+        }
+    }
+    catch (IException *E)
+    {
+        StringBuffer msg;
+        content.appendf("{\"Error\": \"generateSampleJson unknown type: %s in %s::%s\"}", E->errorMessage(msg).str(), serv, method);
+        E->Release();
+        return;
+    }
+
+    StringArray parentTypes;
+    JsonHelpers::buildJsonMsg(parentTypes, type, content, element, NULL, REQSF_ROOT|REQSF_SAMPLE_DATA|REQSF_FORMAT);
+}
+
+void EspHttpBinding::generateSampleJson(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
+{
+    StringBuffer serviceName;
+    StringBuffer methodName;
+    if (!qualifyServiceName(context, serv, method, serviceName, (method) ? &methodName : nullptr))
+        return;
+
+    StringBuffer content;
+    if (method && *method)
+        generateSampleJson(isRequest, context, request, content, serviceName, methodName);
+    else
+    {
+        MethodInfoArray methods;
+        getQualifiedNames(context, methods);
+        content.appendf("{\"Examples\": {\"%s\": [\n", isRequest ? "Request" : "Response");
+        ForEachItemIn(i, methods)
+        {
+            delimitJSON(content, true);
+            generateSampleJson(isRequest, context, request, content, serviceName.str(), methods.item(i).m_label.str());
+        }
+        content.append("]}}\n");
+    }
+
+    response->setContent(content.length(), content.str());
+    response->setContentType(HTTP_TYPE_TEXT_PLAIN_UTF8);
+    response->setStatus(HTTP_STATUS_OK);
+    response->send();
+    return;
 }
 
 void EspHttpBinding::generateSampleXmlFromSchema(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method, const char * schemaxml)
@@ -1417,6 +1516,12 @@ int EspHttpBinding::onGetReqSampleXml(IEspContext &ctx, CHttpRequest* request, C
 int EspHttpBinding::onGetRespSampleXml(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
     generateSampleXml(false, ctx, request, response, serv, method);
+    return 0;
+}
+
+int EspHttpBinding::onGetRespSampleJson(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
+{
+    generateSampleJson(false, ctx, request, response, serv, method);
     return 0;
 }
 
@@ -1673,21 +1778,24 @@ int EspHttpBinding::onGetIndex(IEspContext &context, CHttpRequest* request,  CHt
         MethodInfoArray methods;
         getQualifiedNames(context, methods);
 
-        if (supportGeneratedForms() || request->queryParameters()->hasProp("list_forms"))
-        {
-            page.appendContent(new CHtmlText("The following operations are supported:<br/>"));
+        page.appendContent(new CHtmlText("For complete sets of example messages:<br/>"));
+        list = (CHtmlList *)page.appendContent(new CHtmlList);
+        list->appendContent(new CHtmlLink("XML Requests", wsLink.set(urlParams).append("&reqxml_").str()));
+        list->appendContent(new CHtmlLink("XML Responses", wsLink.set(urlParams).append("&respxml_").str()));
+        list->appendContent(new CHtmlLink("JSON Responses", wsLink.set(urlParams).append("&respjson_").str()));
 
-            //links to the form pages
-            list = (CHtmlList *)page.appendContent(new CHtmlList);
-            StringBuffer urlFormParams(urlParams);
-            urlFormParams.append(urlFormParams.length()>0 ? "&form" : "?form");
-            for(int i = 0, tot = methods.length(); i < tot; ++i)
+        page.appendContent(new CHtmlText("The following operations are supported:<br/>"));
+
+        //links to the form pages
+        list = (CHtmlList *)page.appendContent(new CHtmlList);
+        StringBuffer urlFormParams(urlParams);
+        urlFormParams.append(urlFormParams.length()>0 ? "&form" : "?form");
+        for(int i = 0, tot = methods.length(); i < tot; ++i)
+        {
+            CMethodInfo &method = methods.item(i);
             {
-                CMethodInfo &info = methods.item(i);
-                {
-                    wsLink.clear().appendf("%s%s", methods.item(i).m_label.str(),urlFormParams.str());
-                    list->appendContent(new CHtmlLink(methods.item(i).m_label.str(), wsLink.str()));
-                }
+                wsLink.setf("%s%s", method.m_label.str(),urlFormParams.str());
+                list->appendContent(new CHtmlLink(method.m_label.str(), wsLink.str()));
             }
         }
         

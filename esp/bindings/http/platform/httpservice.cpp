@@ -164,6 +164,7 @@ const char* getSubServiceDesc(sub_service stype)
     DEF_CASE(sub_serv_getversion)
     DEF_CASE(sub_serv_reqsamplexml)
     DEF_CASE(sub_serv_respsamplexml)
+    DEF_CASE(sub_serv_respsamplejson)
     DEF_CASE(sub_serv_file_upload)
 
     default: return "invalid-type";

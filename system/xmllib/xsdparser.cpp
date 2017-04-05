@@ -92,6 +92,7 @@ public:
     size_t getFieldCount() { return 0; }
     IXmlType* queryFieldType(int idx) { return NULL; }
     const char* queryFieldName(int idx) { return NULL; }
+    bool queryFieldRepeats(int idx) {  return false; }
 
     const char* queryName() { return m_name.get(); }
 
@@ -455,6 +456,7 @@ protected:
     size_t     m_fldCount;
     char**     m_fldNames;
     IXmlType** m_fldTypes;
+    bool *     m_fldRepeats = nullptr;
     size_t     m_nAttrs;
     IXmlAttribute** m_attrs;
     XmlSubType m_subType;
@@ -462,9 +464,9 @@ protected:
 public: 
     IMPLEMENT_IINTERFACE;
 
-    CComplexType(const char* name, XmlSubType subType, size_t count, IXmlType** els, char** names, size_t nAttrs, IXmlAttribute** attrs=NULL) 
+    CComplexType(const char* name, XmlSubType subType, size_t count, IXmlType** els, char** names, size_t nAttrs, IXmlAttribute** attrs, bool *repeats)
         : m_name(name), m_subType(subType), m_fldCount(count), m_fldNames(names), 
-        m_fldTypes(els), m_nAttrs(nAttrs), m_attrs(attrs) { }
+        m_fldTypes(els), m_nAttrs(nAttrs), m_attrs(attrs), m_fldRepeats(repeats) { }
     
     virtual ~CComplexType() 
     { 
@@ -485,6 +487,8 @@ public:
                 m_attrs[i]->Release();
             delete[] m_attrs;
         }
+        if (m_fldRepeats)
+            delete[] m_fldRepeats;
     }
 
     const char* queryName() {  return m_name.get(); }
@@ -495,6 +499,7 @@ public:
     size_t getFieldCount() { return m_fldCount; }
     IXmlType* queryFieldType(int idx) { return m_fldTypes[idx]; }
     const char* queryFieldName(int idx) {  return m_fldNames[idx]; }
+    bool queryFieldRepeats(int idx) {  return m_fldRepeats ? m_fldRepeats[idx] : false; }
 
     size_t getAttrCount() { return m_nAttrs; }
     IXmlAttribute* queryAttr(int idx) { return m_attrs[idx]; }
@@ -531,6 +536,7 @@ public:
     size_t getFieldCount() { return 1; }
     IXmlType* queryFieldType(int idx) { return m_itemType; }
     const char* queryFieldName(int idx) { return m_itemName.get(); }
+    bool queryFieldRepeats(int idx) {  return true; }
 
     size_t getAttrCount() { return 0; }  // removed assert false to account for arrays
     const char* queryAttrName(int idx) { assert(false); return NULL; }
@@ -565,7 +571,6 @@ protected:
     {  
         if (name)
         {
-            assert(m_types.find(name) == m_types.end());
             m_types[name] = type;
         }
         else
@@ -851,7 +856,7 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
                     throw MakeStringException(-1, "Invalid schema encoutered");
                 }
                 
-                CComplexType* typ = new CComplexType(name,subType,fldCount,types,NULL,nAttrs,attrs);
+                CComplexType* typ = new CComplexType(name,subType,fldCount,types,NULL,nAttrs,attrs, NULL);
                 addCache(name,typ);
                 return typ;
             }
@@ -875,7 +880,8 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
 
             IXmlType** types = fldCount ? new IXmlType*[fldCount] : NULL;
             char** names = fldCount ? new char*[fldCount] : NULL;
-            CComplexType* typ = new CComplexType(name,subType,fldCount,types,names,nAttrs,attrs);
+            bool *repeats = fldCount ? new bool[fldCount] : NULL;
+            CComplexType* typ = new CComplexType(name,subType,fldCount,types,names,nAttrs,attrs, repeats);
             addCache(name,typ);
 
             int fldIdx = 0;
@@ -885,12 +891,14 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
                 
                 const char* itemName = el.queryProp("@name");
                 const char* typeName = el.queryProp("@type");
+                const char *maxOccurs = el.queryProp("@maxOccurs");
                 IXmlType* type = typeName ? queryTypeByName(typeName,el.queryProp("@default")) : parseTypeDef(&el);
                 if (!type)
                     type = getNativeSchemaType("none", el.queryProp("@default")); //really should be tag only, no content?
                 
                 types[fldIdx] = type;
                 names[fldIdx] = strdup(itemName);
+                repeats[fldIdx] = (maxOccurs && streq(maxOccurs, "unbounded"));
                 fldIdx++;
             }
     
