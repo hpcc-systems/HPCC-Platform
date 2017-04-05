@@ -197,6 +197,10 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 {
                     //This is a Pluggable Security Manager
                     m_secmgr.setown(SecLoader::loadPluggableSecManager(bindname, bnd_cfg, secMgrCfg));
+                    if (!m_secmgr.get())
+                    {
+                        throw MakeStringException(-1, "Error loading Pluggable Security Manager : '%s'", m_authmethod.str());
+                    }
                     m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                 }
                 else
