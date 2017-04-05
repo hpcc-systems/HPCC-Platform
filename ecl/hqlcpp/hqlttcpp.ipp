@@ -506,6 +506,7 @@ protected:
     void                      ensureWorkflowAction(UnsignedArray & dependencies, IHqlExpression * expr);
     WorkflowItem *            createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp);
     void percolateScheduledIds(WorkflowArray & workflow);
+    void percolateScheduledIds(WorkflowArray & workflow, UnsignedArray & visited, const UnsignedArray & dependencies, unsigned rootWfid);
 
     void                      cacheWorkflowDependencies(unsigned wfid, UnsignedArray & extra);
 

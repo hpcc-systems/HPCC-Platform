@@ -6969,6 +6969,37 @@ IHqlExpression * WorkflowTransformer::transformSequentialEtc(IHqlExpression * ex
     return ret.getClear();
 }
 
+static WorkflowItem & queryWorkflowItem(WorkflowArray & workflow, unsigned wfid)
+{
+    ForEachItemIn(i, workflow)
+    {
+        WorkflowItem & cur = workflow.item(i);
+        if (cur.queryWfid() == wfid)
+            return cur;
+    }
+    throwUnexpected();
+}
+
+void WorkflowTransformer::percolateScheduledIds(WorkflowArray & workflow, UnsignedArray & visited, const UnsignedArray & dependencies, unsigned rootWfid)
+{
+    ForEachItemIn(i2, dependencies)
+    {
+        unsigned wfid = dependencies.item(i2);
+        if (visited.contains(wfid))
+            continue;
+        visited.append(wfid);
+
+        Owned<IWorkflowItem> child = lookupWorkflowItem(wfid);
+        if (child->queryMode() == WFModeWait)
+            child->setScheduledWfid(rootWfid);
+        else
+        {
+            WorkflowItem & cur = queryWorkflowItem(workflow, wfid);
+            percolateScheduledIds(workflow, visited, cur.dependencies, rootWfid);
+        }
+    }
+}
+
 void WorkflowTransformer::percolateScheduledIds(WorkflowArray & workflow)
 {
     ForEachItemIn(i, workflow)
@@ -6977,12 +7008,8 @@ void WorkflowTransformer::percolateScheduledIds(WorkflowArray & workflow)
         Owned<IWorkflowItem> wf = lookupWorkflowItem(cur.queryWfid());
         if (wf && wf->isScheduledNow())
         {
-            ForEachItemIn(i2, cur.dependencies)
-            {
-                Owned<IWorkflowItem> child = lookupWorkflowItem(cur.dependencies.item(i2));
-                if (child->queryMode() == WFModeWait)
-                    child->setScheduledWfid(cur.queryWfid());
-            }
+            UnsignedArray visited;
+            percolateScheduledIds(workflow, visited, cur.dependencies, cur.queryWfid());
         }
     }
 }
