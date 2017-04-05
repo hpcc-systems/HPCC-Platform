@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,21 +15,24 @@
     limitations under the License.
 ############################################################################## */
 
-ESPStruct [nil_remove] NamedValue
-{
-    string Name;
-    string Value;
-};
+//fail
 
-ESPStruct [nil_remove] NameAndType
-{
-    string Name;
-    string Type;
-};
+//Check that a failure when starting an activity, that is an input to NONEMPTY still stops
+//the other inputs to the NONEMPTY (issue17337)
 
-ESPStruct [nil_remove] LogicalFileError
-{
-    string Error;
-    string LogicalName;
-};
+idRecord := { unsigned id; };
+idDs := DATASET([1,2,3], idRecord);
 
+badDs := FAIL(idRecord, 'Oh no!');
+
+isFalse := FALSE : STORED('false');
+ds1 := IF(isFalse, idDs, badDs);
+c := COUNT(ds1);
+
+x := SORT(NOFOLD(idDs), id);
+
+f := x(c = 0);
+
+res := NONEMPTY(f, x);
+
+output(res);

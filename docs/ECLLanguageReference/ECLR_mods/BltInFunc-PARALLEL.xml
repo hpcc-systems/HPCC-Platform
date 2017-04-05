@@ -62,5 +62,6 @@ SEQUENTIAL(Act1,PARALLEL(Act2,Act3));
 // executes Act2 and Act3 together
 </programlisting>
 
-  <para>See Also: <link linkend="SEQUENTIAL">SEQUENTIAL</link></para>
+  <para>See Also: <link linkend="ORDERED">ORDERED</link> , <link
+  linkend="SEQUENTIAL">SEQUENTIAL</link></para>
 </sect1>

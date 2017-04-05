@@ -284,10 +284,10 @@ bool CWsESDLConfigEx::existsESDLDefinition(const char * definitionid)
     return found;
 }
 
-bool CWsESDLConfigEx::existsESDLMethodDef(const char * esdlDefinitionName, unsigned ver, const char * esdlServiceName, const char * methodName)
+bool CWsESDLConfigEx::existsESDLMethodDef(const char * esdlDefinitionName, unsigned ver, StringBuffer & esdlServiceName, const char * methodName)
 {
     bool found = false;
-    if (!esdlDefinitionName || !*esdlDefinitionName || !methodName || !*methodName || !esdlServiceName ||!*esdlServiceName)
+    if (!esdlDefinitionName || !*esdlDefinitionName || !methodName || !*methodName)
         return found;
 
     StringBuffer lcdefname (esdlDefinitionName);
@@ -300,13 +300,13 @@ bool CWsESDLConfigEx::existsESDLMethodDef(const char * esdlDefinitionName, unsig
         IPropertyTree * esxdl = globalLock->queryRoot();
         if (esxdl)
         {
-            VStringBuffer mxpath("EsdlService[@name='%s']", esdlServiceName);
-
             Owned<IPropertyTreeIterator> it = esxdl->getElements("EsdlService");
+            int servicesCount = esxdl->getCount("EsdlService");
+
             ForEach(*it)
             {
-                IPropertyTree* pChildNode = &it->query();
-                if (stricmp(pChildNode->queryProp("@name"), esdlServiceName)==0)
+                IPropertyTree* pCurrService = &it->query();
+                if ((servicesCount == 1 && !esdlServiceName.length()) || stricmp(pCurrService->queryProp("@name"), esdlServiceName.str())==0)
                 {
                     Owned<IPropertyTreeIterator> it2 = esxdl->getElements("EsdlMethod");
                     ForEach(*it2)
@@ -314,11 +314,15 @@ bool CWsESDLConfigEx::existsESDLMethodDef(const char * esdlDefinitionName, unsig
                         IPropertyTree* pChildNode = &it2->query();
                         if (stricmp(pChildNode->queryProp("@name"), methodName)==0)
                         {
+                            if (!esdlServiceName.length())
+                                esdlServiceName.set(pCurrService->queryProp("@name"));
                             found = true;
                             break;
                         }
                     }
                 }
+                if (found)
+                    break;
             }
         }
 
@@ -384,10 +388,6 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         resp.updateStatus().setCode(0);
 
         StringAttr service(req.getServiceName());
-        if (service.isEmpty())
-            throw MakeStringException(-1, "Name of Service to be defined is required");
-
-        resp.setServiceName(service.get());
 
         const char * inxmldef = req.getXMLDefinition();
         if (!inxmldef || !*inxmldef)
@@ -404,6 +404,15 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         toXML(serviceXMLTree, xml, 0,0);
         fprintf(stderr, "incoming ESDL def: %s", xml.str());
 #endif
+
+        if (service.isEmpty())
+        {
+            if(serviceXMLTree->getCount("EsdlService") == 1)
+                service.set(serviceXMLTree->queryProp("esxdl/EsdlService/@name"));
+            else
+                throw MakeStringException(-1, "Could not publish ESDL definition, name of target esdl service is required if ESDL definition contains multiple services.");
+        }
+
         StringBuffer serviceXpath;
         serviceXpath.appendf("esxdl/EsdlService[@name=\"%s\"]", service.get());
 
@@ -516,7 +525,7 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
                 }
             }
         }
-
+        resp.setServiceName(service.get());
         resp.updateStatus().setDescription(msg.str());
     }
     catch(IException* e)
@@ -668,8 +677,6 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
                 }
             }
         }
-        if (esdlServiceName.length() == 0)
-            throw MakeStringException(-1, "Must provide the ESDL service name as it appears in the ESDL definition.");
 
         StringBuffer esdlDefinitionName;
 
@@ -727,10 +734,13 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
             {
                IPropertyTree &item = iter->query();
                const char * methodName = item.queryProp("@name");
-               if (!existsESDLMethodDef(esdlDefinitionName.str(), esdlver, esdlServiceName.str(), methodName))
+               if (!existsESDLMethodDef(esdlDefinitionName.str(), esdlver, esdlServiceName, methodName))
                {
                    StringBuffer msg;
-                   msg.appendf("Could not configure: Invalid Method name detected: '%s'. Does not exist in ESDL Service Definition: '%s' version '%d'", methodName, esdlServiceName.str(), esdlver);
+                   if (!esdlServiceName.length())
+                       msg.setf("Could not publish ESDL Binding: Please provide target ESDL Service name, and verify method provided is valid: '%s'", methodName);
+                   else
+                       msg.setf("Could not publish ESDL Binding: Invalid Method name detected: '%s'. Does not exist in ESDL Service Definition: '%s' version '%d'", methodName, esdlServiceName.str(), esdlver);
                    resp.updateStatus().setCode(-1);
                    resp.updateStatus().setDescription(msg.str());
                    return false;
@@ -1071,10 +1081,13 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
             {
                 IPropertyTree &item = iter->query();
                 const char * methodName = item.queryProp("@name");
-                if (!existsESDLMethodDef(esdlDefinitionName.str(), esdlver, esdlServiceName.str(), methodName))
+                if (!existsESDLMethodDef(esdlDefinitionName.str(), esdlver, esdlServiceName, methodName))
                 {
                     StringBuffer msg;
-                    msg.appendf("Could not configure: Invalid Method name detected: '%s'. Does not exist in ESDL Service Definition: '%s' version '%d'", methodName, esdlServiceName.str(), esdlver);
+                    if (!esdlServiceName.length())
+                        msg.setf("Could not publish ESDL Binding: Please provide target ESDL Service name, and verify method provided is valid: '%s'", methodName);
+                    else
+                        msg.setf("Could not publish ESDL Binding: Invalid Method name detected: '%s'. Does not exist in ESDL Service Definition: '%s' version '%d'", methodName, esdlServiceName.str(), esdlver);
                     resp.updateStatus().setCode(-1);
                     resp.updateStatus().setDescription(msg.str());
                     return false;

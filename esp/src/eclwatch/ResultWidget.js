@@ -207,7 +207,7 @@ define([
                         pagingLinks: 1,
                         pagingTextBox: true,
                         firstLastArrows: true,
-                        pageSizeOptions: [25, 50, 100],
+                        pageSizeOptions: [25, 50, 100, 1000],
                         store: result.getStore()
                     }, context.id + "Grid");
                     context.grid.set("query", {

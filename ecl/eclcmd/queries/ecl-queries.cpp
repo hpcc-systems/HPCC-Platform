@@ -524,6 +524,7 @@ public:
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
         req->setAllowForeignFiles(optAllowForeign);
+        req->setIncludeFileErrors(true);
 
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
@@ -540,6 +541,9 @@ public:
 
         Owned<IClientWUQuerySetCopyQueryResponse> resp = client->WUQuerysetCopyQuery(req);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (outputQueryFileCopyErrors(resp->getFileErrors()))
+            ret = 1;
+
         if (resp->getQueryId() && *resp->getQueryId())
             fprintf(stdout, "%s/%s\n\n", optTargetQuerySet.str(), resp->getQueryId());
         return ret;
@@ -693,9 +697,13 @@ public:
         req->setAppendCluster(!optDontAppendCluster);
         req->setCopyFiles(!optDontCopyFiles);
         req->setAllowForeignFiles(optAllowForeign);
+        req->setIncludeFileErrors(true);
 
         Owned<IClientWUCopyQuerySetResponse> resp = client->WUCopyQuerySet(req);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (outputQueryFileCopyErrors(resp->getFileErrors()))
+            ret = 1;
+
         StringArray &copied = resp->getCopiedQueries();
         fputs("Queries copied:\n", stdout);
         if (!copied.length())

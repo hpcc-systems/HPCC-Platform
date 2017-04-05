@@ -223,9 +223,10 @@ define([
         },
 
         _onDeschedule: function (event) {
-            if (confirm(this.i18n.DescheduleSelectedWorkunits)) {
-                var context = this;
-                var selection = this.eventGrid.getSelected();
+            var context = this;
+            var selection = this.eventGrid.getSelected();
+            var list = this.arrayToList(selection, "Wuid");
+            if (confirm(this.i18n.DescheduleSelectedWorkunits + "\n" + list)) {
                 WsWorkunits.WUAction(selection, "Deschedule").then(function (response) {
                     context.refreshGrid(response);
                 });

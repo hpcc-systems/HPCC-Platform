@@ -52,7 +52,6 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CEspHttpServer(ISocket& sock, bool viewConfig, int maxRequestEntityLength);
     CEspHttpServer(ISocket& sock, CEspApplicationPort* apport, bool viewConfig, int maxRequestEntityLength);
     virtual ~CEspHttpServer();
 

@@ -46,11 +46,9 @@
 #endif
 
 
-#ifdef _DEBUG
-#define _CLEAR_ALLOCATED_ROW
-#define _CLEAR_FREED_ROW
+//#define _CLEAR_ALLOCATED_ROW
+//#define _CLEAR_FREED_ROW
 //#define _CLEAR_ALLOCATED_HUGE_ROW
-#endif
 
 #ifdef _WIN32
 //Visual studio complains that the constructors for heaplets could throw exceptions, so there should be a matching
@@ -72,7 +70,7 @@ namespace roxiemem {
 
 static unsigned memTraceLevel = 1;
 static memsize_t memTraceSizeLimit = 0;
-static const unsigned ScanReportThreshold = 3; // If average more than 3 scans per allocate then notify us.  More than 10 starts slowing the query down.
+static const unsigned ScanReportThreshold = 10; // If average more than 10 scans per allocate then notify us.  More than 10 starts slowing the query down.
 
 void setMemTraceLevel(unsigned value)
 {

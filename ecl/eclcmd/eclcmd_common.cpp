@@ -43,6 +43,23 @@ int outputMultiExceptionsEx(const IMultiException &me)
     return 1;
 }
 
+bool outputQueryFileCopyErrors(IArrayOf<IConstLogicalFileError> &errors)
+{
+    if (!errors.ordinality())
+        return false;
+    fputs("\nFile Error(s):\n", stderr);
+    ForEachItemIn(i, errors)
+    {
+        IConstLogicalFileError &error = errors.item(i);
+        StringBuffer msg(error.getError());
+        msg.padTo(16);
+        msg.append(error.getLogicalName()).newline();
+        fputs(msg.str(), stderr);
+    }
+    fputs("\n", stderr);
+    return true;
+}
+
 bool checkMultiExceptionsQueryNotFound(const IMultiException &me)
 {
     ForEachItemIn(i, me)

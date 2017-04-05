@@ -144,7 +144,7 @@ public:
 
     void reset()
     {
-        flags &= (RefSubFile | RefFileIndex | RefFileForeign | RefFileSuper | RefSubFile | RefFileInPackage);
+        flags &= ~(RefFileNotOnCluster | RefFileNotFound | RefFileRemote | RefFileCopyInfoFailed | RefFileCloned | RefFileNotOnSource); //these flags are calculated during resolve
     }
 
     IPropertyTree *getRemoteFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix);
@@ -409,7 +409,7 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
     flags |= RefFileNotFound;
 
     StringBuffer dest;
-    DBGLOG("ReferencedFile not found %s [dali=%s, remote=%s, prefix=%s]", logicalName.str(), daliip.get(), remote ? remote->endpoint().getUrlStr(dest).str() : nullptr, remotePrefix);
+    DBGLOG("Remote ReferencedFile not found %s [dali=%s, remote=%s, prefix=%s]", logicalName.str(), daliip.get(), remote ? remote->endpoint().getUrlStr(dest).str() : nullptr, remotePrefix);
 }
 
 void ReferencedFile::resolve(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, INode *remote, const char *remotePrefix, bool checkLocalFirst, StringArray *subfiles, bool _trackSubFiles, bool resolveForeign)

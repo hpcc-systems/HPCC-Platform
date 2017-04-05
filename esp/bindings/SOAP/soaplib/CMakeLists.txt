@@ -56,6 +56,7 @@ include_directories (
          ./../../../../system/jlib 
          ./../../../bindings 
          ./../../../platform 
+         ./../../../services/common
          ./../../../../system/xmllib 
          ./.. 
          ./../../../bindings/SOAP/xpp 

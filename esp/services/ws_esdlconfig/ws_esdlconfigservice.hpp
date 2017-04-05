@@ -40,7 +40,7 @@ public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
     static bool existsESDLDefinition(const char * servicename, unsigned ver);
     static bool existsESDLDefinition(const char * definitionid);
-    static bool existsESDLMethodDef(const char * esdlDefinitionName, unsigned ver, const char * esdlServiceName, const char * methodName);
+    static bool existsESDLMethodDef(const char * esdlDefinitionName, unsigned ver, StringBuffer & esdlServiceName, const char * methodName);
     static int publishESDLBinding(const char * bindingName, IPropertyTree * methodsConfig, const char * espProcName, const char * espPort, const char * esdlDefinitionName, int esdlDefinitionVersion, const char * esdlServiceName, StringBuffer & message, bool overwrite);
     static IPropertyTree * getEspProcessRegistry(const char * espprocname, const char * espbingingport, const char * servicename);
     static IPropertyTree * getESDLDefinitionRegistry(const char * wsEclId, bool readonly);

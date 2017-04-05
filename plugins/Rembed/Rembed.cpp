@@ -241,228 +241,341 @@ MODULE_EXIT()
 //    unload();
 }
 
-// A RDataFrameHeaderBuilder object is used to construct the header for an R dataFrame from an ECL row
-
-class RDataFrameHeaderBuilder : public CInterfaceOf<IFieldProcessor>
+static void getFieldNames(Rcpp::CharacterVector &namevec, const RtlTypeInfo *typeInfo)
 {
-public:
-    RDataFrameHeaderBuilder()
+    const RtlFieldInfo * const *fields = typeInfo->queryFields();
+    while (*fields)
     {
+        const RtlFieldInfo *child = *fields;
+        // MORE - nested records may make this interesting
+        namevec.push_back(child->name->queryStr());
+        fields++;
     }
-    virtual void processString(unsigned len, const char *value, const RtlFieldInfo * field)
-    {
-        addField(field);
-    }
-    virtual void processBool(bool value, const RtlFieldInfo * field)
-    {
-        addField(field);
-    }
-    virtual void processData(unsigned len, const void *value, const RtlFieldInfo * field)
-    {
-        addField(field);
-    }
-    virtual void processInt(__int64 value, const RtlFieldInfo * field)
-    {
-        addField(field);
-    }
-    virtual void processUInt(unsigned __int64 value, const RtlFieldInfo * field)
-    {
-        addField(field);
-    }
-    virtual void processReal(double value, const RtlFieldInfo * field)
-    {
-        addField(field);
-    }
-    virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
-    {
-        addField(field);
-    }
-    virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
-    {
-        addField(field);
-    }
-    virtual void processUnicode(unsigned len, const UChar *value, const RtlFieldInfo * field)
-    {
-        UNSUPPORTED("Unicode/UTF8 fields");
-    }
-    virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field)
-    {
-        addField(field);
-    }
-    virtual void processSetAll(const RtlFieldInfo * field)
-    {
-        UNSUPPORTED("SET fields");
-    }
-    virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field)
-    {
-        UNSUPPORTED("Unicode/UTF8 fields");
-    }
-    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned elements, bool isAll, const byte *data)
-    {
-        UNSUPPORTED("SET fields");
-    }
-    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned rows)
-    {
-        UNSUPPORTED("Nested datasets");
-    }
-    virtual bool processBeginRow(const RtlFieldInfo * field)
-    {
-        return true;
-    }
-    virtual void processEndSet(const RtlFieldInfo * field)
-    {
-        UNSUPPORTED("SET fields");
-    }
-    virtual void processEndDataset(const RtlFieldInfo * field)
-    {
-        UNSUPPORTED("Nested datasets");
-    }
-    virtual void processEndRow(const RtlFieldInfo * field)
-    {
-    }
-    Rcpp::CharacterVector namevec;
-protected:
-    void addField(const RtlFieldInfo * field)
-    {
-        namevec.push_back(field->name);
-    }
-};
+}
 
-// A RDataFrameHeaderBuilder object is used to construct the header for an R dataFrame from an ECL row
+/*
+ * Create a blank dataframe of the specified size, ready to fill with data from an ECL dataset
+ */
+static Rcpp::DataFrame createDataFrame(const RtlTypeInfo *typeInfo, unsigned numRows)
+{
+    Rcpp::CharacterVector namevec;
+    getFieldNames(namevec, typeInfo);
+    Rcpp::List frame(namevec.length()); // Number of columns
+    frame.attr("names") = namevec;
+    for (int i=0; i< frame.length(); i++)
+    {
+        Rcpp::List column(numRows);
+        frame[i] = column;
+    }
+    Rcpp::StringVector row_names(numRows);
+    for (unsigned row = 0; row < numRows; row++)
+    {
+        StringBuffer rowname;
+        rowname.append(row+1);
+        row_names(row) = rowname.str();
+    }
+    frame.attr("class") = "data.frame";
+    frame.attr("row.names") = row_names;
+    return frame;
+}
+
+/*
+ * Create a blank list of the specified type, ready to fill with data from an ECL record
+ */
+static Rcpp::List createList(const RtlTypeInfo *typeInfo)
+{
+    Rcpp::CharacterVector namevec;
+    getFieldNames(namevec, typeInfo);
+    Rcpp::List childRec(namevec.length());
+    childRec.attr("names") = namevec;
+    return childRec;
+}
+
+// A RDataFrameAppender object is used append a row to a R dataFrame from an ECL row
 
 class RDataFrameAppender : public CInterfaceOf<IFieldProcessor>
 {
 public:
-    RDataFrameAppender(Rcpp::List &_list) : list(_list)
+    RDataFrameAppender(Rcpp::DataFrame &_frame)
     {
-        colIdx = 0;
-        rowIdx = 0;
+        stack.append(*new DataFramePosition(_frame));
     }
-    inline void setRowIdx(unsigned _idx)
+    RDataFrameAppender(Rcpp::List &_list)
     {
-        colIdx = 0;
-        rowIdx = _idx;
+        stack.append(*new ListPosition(_list, nullptr));
     }
-    virtual void processString(unsigned len, const char *value, const RtlFieldInfo * field)
+    virtual void processString(unsigned len, const char *value, const RtlFieldInfo * field) override
     {
         std::string s(value, len);
-        Rcpp::List column = list[colIdx];
-        column[rowIdx] = s;
-        colIdx++;
+        if (inSet)
+            theStringSet[setIndex++] = s;
+        else
+        {
+            unsigned r;
+            Rcpp::List l = stack.tos().cell(r);
+            l[r] = s;
+        }
     }
-    virtual void processBool(bool value, const RtlFieldInfo * field)
+    virtual void processBool(bool value, const RtlFieldInfo * field) override
     {
-        Rcpp::List column = list[colIdx];
-        column[rowIdx] = value;
-        colIdx++;
+        if (inSet)
+            theBoolSet[setIndex++] = value;
+        else
+        {
+            unsigned r;
+            Rcpp::List l = stack.tos().cell(r);
+            l[r] = value;
+        }
     }
-    virtual void processData(unsigned len, const void *value, const RtlFieldInfo * field)
+    virtual void processData(unsigned len, const void *value, const RtlFieldInfo * field) override
     {
         std::vector<byte> vval;
         const byte *cval = (const byte *) value;
         vval.assign(cval, cval+len);
-        Rcpp::List column = list[colIdx];
-        column[rowIdx] = vval;
-        colIdx++;
+        unsigned r;
+        Rcpp::List l = stack.tos().cell(r);
+        l[r] = vval;
     }
-    virtual void processInt(__int64 value, const RtlFieldInfo * field)
+    virtual void processInt(__int64 value, const RtlFieldInfo * field) override
     {
-        Rcpp::List column = list[colIdx];
-        column[rowIdx] = (long int) value;  // Rcpp does not support int64
-        colIdx++;
+        namevec.push_back(field->name->queryStr());
+        if (inSet)
+            theIntSet[setIndex++] = (long int) value;
+        else
+        {
+            unsigned r;
+            Rcpp::List l = stack.tos().cell(r);
+            l[r] = (long int) value;  // Rcpp does not support int64
+        }
     }
-    virtual void processUInt(unsigned __int64 value, const RtlFieldInfo * field)
+    virtual void processUInt(unsigned __int64 value, const RtlFieldInfo * field) override
     {
-        Rcpp::List column = list[colIdx];
-        column[rowIdx] = (unsigned long int) value; // Rcpp does not support int64
-        colIdx++;
+        if (inSet)
+            theIntSet[setIndex++] = (unsigned long int) value;
+        else
+        {
+            unsigned r;
+            Rcpp::List l = stack.tos().cell(r);
+            l[r] = (unsigned long int) value;  // Rcpp does not support int64
+        }
     }
-    virtual void processReal(double value, const RtlFieldInfo * field)
+    virtual void processReal(double value, const RtlFieldInfo * field) override
     {
-        Rcpp::List column = list[colIdx];
-        column[rowIdx] = value;
-        colIdx++;
+        if (inSet)
+            theRealSet[setIndex++] = value;
+        else
+        {
+            unsigned r;
+            Rcpp::List l = stack.tos().cell(r);
+            l[r] = value;
+        }
     }
-    virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
+    virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field) override
     {
         Decimal val;
         val.setDecimal(digits, precision, value);
-        Rcpp::List column = list[colIdx];
-        column[rowIdx] = val.getReal();
-        colIdx++;
+        if (inSet)
+            theRealSet[setIndex++] = val.getReal();
+        else
+        {
+            unsigned r;
+            Rcpp::List l = stack.tos().cell(r);
+            l[r] = val.getReal();
+        }
     }
-    virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
+    virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field) override
     {
         Decimal val;
         val.setUDecimal(digits, precision, value);
-        Rcpp::List column = list[colIdx];
-        column[rowIdx] = val.getReal();
-        colIdx++;
+        if (inSet)
+            theRealSet[setIndex++] = val.getReal();
+        else
+        {
+            unsigned r;
+            Rcpp::List l = stack.tos().cell(r);
+            l[r] = val.getReal();
+        }
     }
-    virtual void processUnicode(unsigned len, const UChar *value, const RtlFieldInfo * field)
+    virtual void processUnicode(unsigned len, const UChar *value, const RtlFieldInfo * field) override
     {
         UNSUPPORTED("Unicode/UTF8 fields");
     }
-    virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field)
+    virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field) override
     {
         size32_t charCount;
         rtlDataAttr text;
         rtlQStrToStrX(charCount, text.refstr(), len, value);
         processString(charCount, text.getstr(), field);
     }
-    virtual void processSetAll(const RtlFieldInfo * field)
-    {
-        UNSUPPORTED("SET fields");
-    }
-    virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field)
+    virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field) override
     {
         UNSUPPORTED("Unicode/UTF8 fields");
     }
 
-    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned elements, bool isAll, const byte *data)
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned elements, bool isAll, const byte *data) override
     {
-        UNSUPPORTED("SET fields");
-    }
-    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned rows)
-    {
-        UNSUPPORTED("Nested datasets");
-    }
-    virtual bool processBeginRow(const RtlFieldInfo * field)
-    {
+        if (isAll)
+            UNSUPPORTED("ALL sets are not supported");
+        unsigned r;
+        Rcpp::List l = stack.tos().cell(r);
+        switch (field->type->queryChildType()->fieldType & RFTMkind)
+        {
+        case type_boolean:
+            theBoolSet = Rcpp::LogicalVector(elements);
+            l[r] = theBoolSet;
+            break;
+        case type_unsigned:
+        case type_int:
+            theIntSet = Rcpp::IntegerVector(elements);
+            l[r] = theIntSet;
+            break;
+        case type_decimal:
+        case type_real:
+            theRealSet = Rcpp::NumericVector(elements);
+            l[r] = theRealSet;
+            break;
+        case type_string:
+        case type_varstring:
+            theStringSet = Rcpp::StringVector(elements);
+            l[r] = theStringSet;
+            break;
+        default:
+            UNSUPPORTED("SET types other than BOOLEAN, STRING, INTEGER and REAL");
+        }
+        setIndex = 0;
+        inSet = true;
         return true;
     }
-    virtual void processEndSet(const RtlFieldInfo * field)
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned rows) override
     {
-        UNSUPPORTED("SET fields");
+        Rcpp::DataFrame myFrame = createDataFrame(field->type->queryChildType(), rows);
+        unsigned r;
+        Rcpp::List l = stack.tos().cell(r);
+        l[r] = myFrame;
+        push(myFrame);
+        firstField = true;
+        return true;
     }
-    virtual void processEndDataset(const RtlFieldInfo * field)
+    virtual bool processBeginRow(const RtlFieldInfo * field) override
     {
-        UNSUPPORTED("Nested datasets");
+        // We see this at the start of each row in a child dataset, but also at the start of a nested record
+        // If the field is the outer field, ignore...
+        if (firstField)
+            firstField = false;
+        else
+        {
+            Rcpp::List childRec = createList(field->type);
+            unsigned r;
+            Rcpp::List l = stack.tos().cell(r);
+            l[r] = childRec;
+            stack.append(*new ListPosition(childRec, field));
+        }
+        stack.tos().nextRow();
+        return true;
     }
-    virtual void processEndRow(const RtlFieldInfo * field)
+    virtual void processEndSet(const RtlFieldInfo * field) override
     {
+        inSet = false;
+    }
+    virtual void processEndDataset(const RtlFieldInfo * field) override
+    {
+        pop();
+    }
+    virtual void processEndRow(const RtlFieldInfo * field) override
+    {
+        if (stack.tos().isNestedRow(field))
+            pop();
+        else
+            firstField = true;
     }
 protected:
-    unsigned rowIdx;
-    unsigned colIdx;
-    Rcpp::List &list;
+    interface IDataListPosition : public IInterface
+    {
+        virtual Rcpp::List cell(unsigned &row) = 0;
+        virtual void nextRow() = 0;
+        virtual bool isNestedRow(const RtlFieldInfo *_field) const = 0;
+    };
+    class DataFramePosition : public CInterfaceOf<IDataListPosition>
+    {
+    public:
+        DataFramePosition(Rcpp::DataFrame _frame) : frame(_frame) {}
+        virtual Rcpp::List cell(unsigned &row) override
+        {
+            row = rowIdx-1;        // nextRow is called before the first row, so rowIdx is 1-based
+            curCell = frame[colIdx++];
+            return curCell;
+        }
+        virtual void nextRow() override
+        {
+            rowIdx++;
+            colIdx = 0;
+        }
+        bool isNestedRow(const RtlFieldInfo *_field) const override
+        {
+            return false;
+        }
+    private:
+        unsigned rowIdx = 0;
+        unsigned colIdx = 0;
+        Rcpp::DataFrame frame;
+        Rcpp::List curCell;
+    };
+    class ListPosition : public CInterfaceOf<IDataListPosition>
+    {
+    public:
+        ListPosition(Rcpp::List _list, const RtlFieldInfo *_field)
+        : list(_list), field(_field)
+        {}
+        virtual Rcpp::List cell(unsigned &row) override
+        {
+            row = colIdx++;
+            return list;
+        }
+        virtual void nextRow() override
+        {
+            colIdx = 0;
+        }
+        virtual bool isNestedRow(const RtlFieldInfo *_field) const override
+        {
+            return field==_field;
+        }
+    private:
+        unsigned colIdx = 0;
+        Rcpp::List list;
+        const RtlFieldInfo *field;
+    };
+    void push(Rcpp::DataFrame frame)
+    {
+        stack.append(*new DataFramePosition(frame));
+    }
+    void pop()
+    {
+        stack.pop();
+    }
+    IArrayOf<IDataListPosition> stack;
+    Rcpp::IntegerVector theIntSet;
+    Rcpp::StringVector theStringSet;
+    Rcpp::NumericVector theRealSet;
+    Rcpp::LogicalVector theBoolSet;
+    bool firstField = true;
+    bool inSet = false;
+    unsigned setIndex = 0;
 };
 
-// A RRowBuilder object is used to construct an ECL row from a R dataframe and row index
+// A RRowBuilder object is used to construct ECL rows from R dataframes or lists
 
 class RRowBuilder : public CInterfaceOf<IFieldSource>
 {
 public:
-    RRowBuilder(Rcpp::DataFrame &_frame)
-    : frame(_frame)
+    RRowBuilder(Rcpp::DataFrame &_frame, const RtlFieldInfo *_outerRow)
+    : outerRow(_outerRow)
     {
-        rowIdx = 0;
-        colIdx = 0;
+        stack.append(*new RowState(_frame));
     }
-    inline void setRowIdx(unsigned _rowIdx)
+    RRowBuilder(Rcpp::List &_list, const RtlFieldInfo *_outerRow)
+    : outerRow(_outerRow)
     {
-        rowIdx = _rowIdx;
-        colIdx = 0;
+        stack.append(*new ListState(_list, nullptr));
     }
     virtual bool getBooleanResult(const RtlFieldInfo *field)
     {
@@ -510,61 +623,165 @@ public:
         double ret = ::Rcpp::as<double>(elem);
         value.setReal(ret);
     }
-
     virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll)
     {
-        UNSUPPORTED("SET fields");
+        nextField(field);
+        isAll = false;  // No concept of an 'all' set in Python
+        Rcpp::List childrec = ::Rcpp::as<Rcpp::List>(elem);  // MORE - is converting it to a list inefficient? Keeps the code simpler!
+        stack.append(*new ListState(childrec, field));
     }
     virtual bool processNextSet(const RtlFieldInfo * field)
     {
-        UNSUPPORTED("SET fields");
+        return stack.tos().moreFields();
     }
     virtual void processBeginDataset(const RtlFieldInfo * field)
     {
-        UNSUPPORTED("Nested datasets");
+        nextField(field);
+        push();
     }
     virtual void processBeginRow(const RtlFieldInfo * field)
     {
+        // We see this at the start of each row in a child dataset, but also at the start of a nested record
+        // We want to ignore it if we are expecting the former case...
+        if (firstField)
+            firstField = false;
+        else
+        {
+            nextField(field);
+            Rcpp::List childrec = ::Rcpp::as<Rcpp::List>(elem);
+            stack.append(*new ListState(childrec, field));
+        }
     }
     virtual bool processNextRow(const RtlFieldInfo * field)
     {
-        UNSUPPORTED("Nested datasets");
+        firstField = true;
+        IRowState &cur = stack.tos();
+        return stack.tos().processNextRow();
     }
     virtual void processEndSet(const RtlFieldInfo * field)
     {
-        UNSUPPORTED("SET fields");
+        pop();
     }
     virtual void processEndDataset(const RtlFieldInfo * field)
     {
-        UNSUPPORTED("Nested datasets");
+        pop();
     }
     virtual void processEndRow(const RtlFieldInfo * field)
     {
+        if (stack.tos().isNestedRow(field))
+            pop();
     }
 protected:
+    interface IRowState : public IInterface
+    {
+        virtual Rcpp::RObject nextField() = 0;
+        virtual bool processNextRow() = 0;
+        virtual bool isNestedRow(const RtlFieldInfo *_field) const = 0;
+        virtual bool moreFields() const = 0;
+    };
+    class RowState : public CInterfaceOf<IRowState>
+    {
+    public:
+        RowState(Rcpp::DataFrame _frame) : frame(_frame)
+        {
+            /* these functions have been renamed in Rcpp 0.2.10, but the old names still work... */
+            numRows = frame.nrows();
+            numCols = frame.length();
+        }
+        bool moreFields() const override
+        {
+            return colIdx < numCols;
+        }
+        Rcpp::RObject nextField() override
+        {
+            assertex(colIdx < numCols && rowIdx-1 < numRows);
+            Rcpp::RObject colObject = frame[colIdx];
+            Rcpp::List column = ::Rcpp::as<Rcpp::List>(colObject); // MORE - this can crash if wrong type came from R. But I can't work out how to test that
+            Rcpp::RObject elem = column[rowIdx-1];   // processNextRow gets called before first row, so it's 1-based
+            colIdx++;
+            return elem;
+        }
+        bool processNextRow() override
+        {
+            if (rowIdx < numRows)
+            {
+                rowIdx++;
+                colIdx = 0;
+                return true;
+            }
+            return false;
+        }
+        bool isNestedRow(const RtlFieldInfo *_field) const override
+        {
+            return false;
+        }
+    private:
+        Rcpp::DataFrame frame;
+        unsigned rowIdx = 0;
+        unsigned colIdx = 0;
+        unsigned numRows = 0;
+        unsigned numCols = 0;
+    };
+    class ListState : public CInterfaceOf<IRowState>
+    {
+    public:
+        ListState(Rcpp::List _list, const RtlFieldInfo *_field) : list(_list), field(_field)
+        {
+            numCols = list.length();
+        }
+        Rcpp::RObject nextField() override
+        {
+            assertex (colIdx < numCols);
+            Rcpp::RObject elem = list[colIdx];
+            colIdx++;
+            return elem;
+        }
+        bool moreFields() const override
+        {
+            return colIdx < numCols;
+        }
+        bool processNextRow() override
+        {
+            throwUnexpected();
+        }
+        bool isNestedRow(const RtlFieldInfo *_field) const override
+        {
+            return field==_field;
+        }
+    private:
+        Rcpp::List list;
+        const RtlFieldInfo *field;
+        unsigned colIdx = 0;
+        unsigned numCols = 0;
+    };
     void nextField(const RtlFieldInfo * field)
     {
         // NOTE - we could put support for looking up columns by name here, but for efficiency reasons we only support matching by position
-        Rcpp::RObject colObject = frame[colIdx];
-        Rcpp::List column = ::Rcpp::as<Rcpp::List>(colObject); // MORE - this can crash if wrong type came from R. But I can't work out how to test that
-        Rcpp::RObject t = column[rowIdx];
-        elem = t;
-        colIdx++;
+        IRowState &cur = stack.tos();
+        elem = cur.nextField();
     }
-    Rcpp::DataFrame frame;
-    unsigned rowIdx;
-    unsigned colIdx;
+    void push()
+    {
+        stack.append(*new RowState(::Rcpp::as<Rcpp::DataFrame>(elem)));
+    }
+    void pop()
+    {
+        stack.pop();
+    }
+    IArrayOf<IRowState> stack;
     Rcpp::RObject elem;
+    const RtlFieldInfo *outerRow;
+    bool firstField = true;
 };
 
 static size32_t getRowResult(RInside::Proxy &result, ARowBuilder &builder)
 {
-     // To return a single row, we expect a dataframe (with 1 row)...
-     Rcpp::DataFrame dFrame = ::Rcpp::as<Rcpp::DataFrame>(result);   // Note that this will also accept (and convert) a list
-     RRowBuilder myRRowBuilder(dFrame);
+     // To return a single row, we expect a list...
+     Rcpp::List row = ::Rcpp::as<Rcpp::List>(result);
      const RtlTypeInfo *typeInfo = builder.queryAllocator()->queryOutputMeta()->queryTypeInfo();
      assertex(typeInfo);
      RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+     RRowBuilder myRRowBuilder(row, &dummyField);
      return typeInfo->build(builder, 0, &dummyField, myRRowBuilder);
 }
 
@@ -574,38 +791,28 @@ static size32_t getRowResult(RInside::Proxy &result, ARowBuilder &builder)
 class RRowStream : public CInterfaceOf<IRowStream>
 {
 public:
-    RRowStream(RInside::Proxy &_result, IEngineRowAllocator *_resultAllocator)
+    RRowStream(RInside::Proxy &_result, IEngineRowAllocator *_resultAllocator, const RtlTypeInfo *_typeInfo)
       : dFrame(::Rcpp::as<Rcpp::DataFrame>(_result)),
-        myRRowBuilder(dFrame)
+        resultAllocator(_resultAllocator),
+        typeInfo(_typeInfo),
+        dummyField("<row>", NULL, typeInfo),
+        myRRowBuilder(dFrame, &dummyField)
     {
-        resultAllocator.set(_resultAllocator);
-        // A DataFrame is a list of columns
-        // Each column is a vector (and all columns should be the same length)
-        unsigned numColumns = dFrame.length();
-        assertex(numColumns > 0);
-        Rcpp::List col1 = dFrame[0];
-        numRows = col1.length();
-        idx = 0;
     }
     virtual const void *nextRow()
     {
         CriticalBlock b(RCrit);
         if (!resultAllocator)
             return NULL;
-        if (idx >= numRows)
-        {
-            stop();
-            return NULL;
-        }
-        RtlDynamicRowBuilder builder(resultAllocator);
-        const RtlTypeInfo *typeInfo = builder.queryAllocator()->queryOutputMeta()->queryTypeInfo();
-        assertex(typeInfo);
-        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-        myRRowBuilder.setRowIdx(idx);
         try
         {
+            if (!myRRowBuilder.processNextRow(&dummyField))
+            {
+                stop();
+                return NULL;
+            }
+            RtlDynamicRowBuilder builder(resultAllocator);
             size32_t len = typeInfo->build(builder, 0, &dummyField, myRRowBuilder);
-            idx++;
             return builder.finalizeRowClear(len);
         }
         catch (std::exception &E)
@@ -621,9 +828,9 @@ public:
 protected:
     Rcpp::DataFrame dFrame;
     Linked<IEngineRowAllocator> resultAllocator;
+    const RtlTypeInfo *typeInfo;
+    RtlFieldStrInfo dummyField;
     RRowBuilder myRRowBuilder;
-    unsigned numRows;
-    unsigned idx;
 };
 
 
@@ -923,7 +1130,7 @@ public:
     {
         try
         {
-            return new RRowStream(result, _resultAllocator);
+            return new RRowStream(result, _resultAllocator, _resultAllocator->queryOutputMeta()->queryTypeInfo());
         }
         catch (std::exception &E)
         {
@@ -1096,35 +1303,17 @@ public:
     }
     virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *row)
     {
-        // We create a single-row dataframe
+        // We create a list
         const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
         assertex(typeInfo);
         RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-
-        RDataFrameHeaderBuilder headerBuilder;
-        typeInfo->process(row, row, &dummyField, headerBuilder); // Sets up the R dataframe from the first ECL row
-        Rcpp::List myList(headerBuilder.namevec.length());
-        myList.attr("names") = headerBuilder.namevec;
-        for (int i=0; i<myList.length(); i++)
-        {
-            Rcpp::List column(1);
-            myList[i] = column;
-        }
+        Rcpp::List myList = createList(typeInfo);
         RDataFrameAppender frameBuilder(myList);
-        Rcpp::StringVector row_names(1);
-        frameBuilder.setRowIdx(0);
         typeInfo->process(row, row, &dummyField, frameBuilder);
-        row_names(0) = "1";
-        myList.attr("class") = "data.frame";
-        myList.attr("row.names") = row_names;
         env->query()[name] = myList;
     }
     virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
     {
-        const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
-        assertex(typeInfo);
-        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-
         OwnedRoxieRowSet rows;
         for (;;)
         {
@@ -1133,31 +1322,18 @@ public:
                 break;
             rows.append(row);
         }
-        const byte *firstrow = (const byte *) rows.item(0);
+        const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
+        assertex(typeInfo);
 
-        RDataFrameHeaderBuilder headerBuilder;
-        typeInfo->process(firstrow, firstrow, &dummyField, headerBuilder); // Sets up the R dataframe from the first ECL row
-        Rcpp::List myList(headerBuilder.namevec.length());
-        myList.attr("names") = headerBuilder.namevec;
-        for (int i=0; i<myList.length(); i++)
-        {
-            Rcpp::List column(rows.length());
-            myList[i] = column;
-        }
-        RDataFrameAppender frameBuilder(myList);
-        Rcpp::StringVector row_names(rows.length());
+        Rcpp::DataFrame frame  = createDataFrame(typeInfo, rows.length());
+        RDataFrameAppender frameBuilder(frame);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
         ForEachItemIn(idx, rows)
         {
             const byte * row = (const byte *) rows.item(idx);
-            frameBuilder.setRowIdx(idx);
             typeInfo->process(row, row, &dummyField, frameBuilder);
-            StringBuffer rowname;
-            rowname.append(idx+1);
-            row_names(idx) = rowname.str();
         }
-        myList.attr("class") = "data.frame";
-        myList.attr("row.names") = row_names;
-        env->query()[name] = myList;
+        env->query()[name] = frame;
     }
 
     virtual void importFunction(size32_t lenChars, const char *utf)

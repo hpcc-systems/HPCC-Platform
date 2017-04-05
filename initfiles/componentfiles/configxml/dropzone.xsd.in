@@ -87,33 +87,31 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
-            </xs:sequence>
-            <xs:sequence>
-                <xs:element name="WhiteList" maxOccurs="unbounded">
+                <xs:element name="ServerList" maxOccurs="unbounded">
                     <xs:annotation>
                         <xs:appinfo>
                             <viewChildNodes>true</viewChildNodes>
+                            <title>Server List</title>
                         </xs:appinfo>
                     </xs:annotation>
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="WhiteListEntry" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                            <xs:element name="ServerListEntry" type="xs:string" minOccurs="0" maxOccurs="1"/>
                         </xs:sequence>
                     </xs:complexType>
                     <xs:attribute name="server" type="string" use="required">
                         <xs:annotation>
                             <xs:appinfo>
                                 <title>Server Address</title>
-                                <tooltip>Server Address to add to whitelist</tooltip>
+                                <tooltip>Server Address to associate with this DropZone</tooltip>
                                 <width>120</width>
-                                <colIndex>2</colIndex>
                             </xs:appinfo>
                         </xs:annotation>
                     </xs:attribute>
                     <xs:attribute name="name" type="xs:string" use="required">
                         <xs:annotation>
                             <xs:appinfo>
-                                <colIndex>1</colIndex>
+                                <viewType>hidden</viewType>
                             </xs:appinfo>
                         </xs:annotation>
                     </xs:attribute>
@@ -146,14 +144,6 @@
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>Description for this process</tooltip>
-                    </xs:appinfo>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="computer" type="computerType" use="required">
-                <xs:annotation>
-                    <xs:appinfo>
-                        <tooltip>The computer on which the drop zone is located.</tooltip>
-                        <autogenforwizard>1</autogenforwizard>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>

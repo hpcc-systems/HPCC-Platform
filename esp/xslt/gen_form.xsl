@@ -177,19 +177,12 @@
                                 </xsl:if>
                             </xsl:variable>
                             <b>&gt;<xsl:value-of select="$methodName"/>
-                            </b>&nbsp;<a>
-                                <xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'wsdl'"/></xsl:call-template></xsl:attribute>
-                                <img src="files_/img/wsdl.gif" title="WSDL" border="0" align="bottom"/>
-                            </a>&nbsp;<a>
-                                <xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'xsd'"/></xsl:call-template></xsl:attribute>
-                                <img src="files_/img/xsd.gif" title="Schema" border="0" align="bottom"/>
-                            </a>&nbsp;<a>
-                                <xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'reqxml'"/></xsl:call-template></xsl:attribute>
-                                <img src="files_/img/reqxml.gif" title="Sample Request XML" border="0" align="bottom"/>
-                            </a>&nbsp;<a>
-                                <xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'respxml'"/></xsl:call-template></xsl:attribute>
-                                <img src="files_/img/respxml.gif" title="Sample Response XML" border="0" align="bottom"/>
-                            </a>
+                            </b>&nbsp;&nbsp;
+                                &nbsp;<a><xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'wsdl'"/></xsl:call-template></xsl:attribute>WSDL</a>
+                                &nbsp;<a><xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'xsd'"/></xsl:call-template></xsl:attribute>XSD</a>
+                                &nbsp;<a><xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'reqxml'"/></xsl:call-template></xsl:attribute>XMLRequest</a>
+                                &nbsp;<a><xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'respxml'"/></xsl:call-template></xsl:attribute>XMLResponse</a>
+                                &nbsp;<a><xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'respjson'"/></xsl:call-template></xsl:attribute>JSONResponse</a>
                         </td>
                     </tr>
                     <tr>
@@ -1459,6 +1452,7 @@
                     <xsl:choose>
                         <xsl:when test="$type='reqxml'"><xsl:value-of select="concat($methodName,'?reqxml_','&amp;',$params)"/></xsl:when>
                         <xsl:when test="$type='respxml'"><xsl:value-of select="concat($methodName,'?respxml_','&amp;',$params)"/></xsl:when>
+                        <xsl:when test="$type='respjson'"><xsl:value-of select="concat($methodName,'?respjson_','&amp;',$params)"/></xsl:when>
                         <xsl:when test="$type='xsd'"><xsl:value-of select="concat($methodName,'?xsd','&amp;',$params)"/></xsl:when>
                         <xsl:when test="$type='wsdl'"><xsl:value-of select="concat($methodName,'?wsdl','&amp;',$params)"/></xsl:when>
                         <xsl:when test="$type='action'"><xsl:value-of select="concat($methodName, $queryParams)"/></xsl:when>

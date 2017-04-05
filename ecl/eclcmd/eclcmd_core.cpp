@@ -441,6 +441,7 @@ public:
         req->setUpdateSuperFiles(optUpdateSuperfiles);
         req->setUpdateCloneFrom(optUpdateCloneFrom);
         req->setAppendCluster(!optDontAppendCluster);
+        req->setIncludeFileErrors(true);
 
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
@@ -463,7 +464,11 @@ public:
         if (resp->getReloadFailed())
             fputs("\nAdded to Queryset, but request to reload queries on cluster failed\n", stderr);
 
-        return outputMultiExceptionsEx(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (outputQueryFileCopyErrors(resp->getFileErrors()))
+            ret = 1;
+
+        return ret;
     }
     virtual void usage()
     {
@@ -938,6 +943,162 @@ private:
     bool optPoll = false;
     bool optPre64 = false;  //only for troubleshooting, do not document
 };
+
+class EclCmdResults : public EclCmdCommon
+{
+public:
+    EclCmdResults() : optExceptionSeverity("info")
+    {
+    }
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+            return EclCmdOptionNoMatch;
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optWuid.length())
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return EclCmdOptionCompletion;
+                }
+                if (!looksLikeAWuid(arg, 'W'))
+                {
+                    fprintf(stderr, "\nargument should be a workunit id: %s\n", arg);
+                    return EclCmdOptionCompletion;
+                }
+                optWuid.set(arg);
+                continue;
+            }
+
+            if (iter.matchFlag(optNoRoot, ECLOPT_NOROOT))
+                continue;
+            if (iter.matchOption(optExceptionSeverity, ECLOPT_EXCEPTION_LEVEL))
+                continue;
+            if (iter.matchFlag(optPre64, "--pre64")) //only for troubleshooting, do not document
+                continue;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
+        }
+        return EclCmdOptionMatch;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (optWuid.isEmpty())
+        {
+            fprintf(stderr, "No WUID provided.\n");
+            return 0;
+        }
+
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+
+    int gatherLegacyServerResults(IClientWsWorkunits* client, const char *wuid)
+    {
+        Owned<IClientWUInfoRequest> req = client->createWUInfoRequest();
+        req->setWuid(wuid);
+        req->setIncludeExceptions(true);
+        req->setIncludeGraphs(false);
+        req->setIncludeSourceFiles(false);
+        req->setIncludeResults(false); //ECL layout results, not xml
+        req->setIncludeResultsViewNames(false);
+        req->setIncludeVariables(false);
+        req->setIncludeTimers(false);
+        req->setIncludeDebugValues(false);
+        req->setIncludeApplicationValues(false);
+        req->setIncludeWorkflows(false);
+        req->setIncludeXmlSchemas(false);
+        req->setIncludeResourceURLs(false);
+        req->setSuppressResultSchemas(true);
+        Owned<IClientWUInfoResponse> resp = client->WUInfo(req);
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+
+        IConstECLWorkunit &wu = resp->getWorkunit();
+        IArrayOf<IConstECLException> &exceptions = wu.getExceptions();
+        fputs("<Result>\n", stdout);
+        ForEachItemIn(pos, exceptions)
+        {
+            IConstECLException &e = exceptions.item(pos);
+            fprintf(stdout, " <Exception><Code>%d</Code><Source>%s</Source><Message>%s</Message></Exception>\n", e.getCode(), e.getSource(), e.getMessage());
+        }
+        Owned<IClientWUResultRequest> resReq = client->createWUResultRequest();
+        resReq->setWuid(wuid);
+        resReq->setSuppressXmlSchema(true);
+        unsigned count = wu.getResultCount();
+        for (unsigned seq=0; seq<count; seq++)
+        {
+            resReq->setSequence(seq);
+            Owned<IClientWUResultResponse> resp = client->WUResult(resReq);
+
+            if (resp->getExceptions().ordinality())
+                throw LINK(&resp->getExceptions());
+            fwrite(resp->getResult(), 8, 1, stdout);
+            //insert name attribute into <Dataset> tag
+            fprintf(stdout, " name='%s'", resp->getName());
+            fputs(resp->getResult()+8, stdout);
+        }
+        fputs("</Result>\n", stdout);
+        return ret;
+    }
+
+    int getAndOutputResults(IClientWsWorkunits* client, const char *wuid)
+    {
+        Owned<IClientWUFullResultRequest> req = client->createWUFullResultRequest();
+        req->setWuid(wuid);
+        req->setNoRootTag(optNoRoot);
+        req->setExceptionSeverity(optExceptionSeverity);
+
+        Owned<IClientWUFullResultResponse> resp = client->WUFullResult(req);
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (resp->getResults())
+            fprintf(stdout, "%s\n", resp->getResults());
+        return ret;
+    }
+
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this); //upload_ disables maxRequestEntityLength
+
+        int major = 0;
+        int minor = 0;
+        int point = 0;
+        bool useCompression = false;
+        checkFeatures(client, useCompression, major, minor, point);
+
+        if (!optPre64 && (major>=6 && minor>=3))
+            return getAndOutputResults(client, optWuid);
+
+        return gatherLegacyServerResults(client, optWuid);
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'results' command displays the full results of a workunit in xml form.\n"
+            "\n"
+            "ecl results <wuid>\n"
+            "ecl results <wuid> --noroot\n"
+            "   <wuid>         workunit to get results from\n"
+            " Options:\n"
+            "   --exception-level=<level> minimum severity level for exceptions\n"
+            "                             values: 'info', 'warning', 'error'\n"
+            "   --noroot               output result xml without root tag\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optWuid;
+    StringAttr optExceptionSeverity;
+    bool optNoRoot = false;
+    bool optPre64 = false; //only for troubleshooting gathering results from old servers, do not document
+};
+
 
 void outputQueryActionResults(const IArrayOf<IConstQuerySetQueryActionResult> &results, const char *act, const char *qs)
 {
@@ -1533,6 +1694,8 @@ IEclCommand *createCoreEclCommand(const char *cmdname)
         return new EclCmdUnPublish();
     if (strieq(cmdname, "run"))
         return new EclCmdRun();
+    if (strieq(cmdname, "results"))
+        return new EclCmdResults();
     if (strieq(cmdname, "activate"))
         return new EclCmdActivate();
     if (strieq(cmdname, "deactivate"))

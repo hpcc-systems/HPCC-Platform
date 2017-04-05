@@ -31,7 +31,6 @@
 #ifdef _WIN32
 #include "windows.h"
 #endif
-#include "TpWrapper.hpp"
 
 #include "dalienv.hpp"
 
@@ -2223,7 +2222,7 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
     return true;
 }
 
-void CFileSprayEx::getDropZoneInfoByIP(const char* ip, const char* destFileIn, StringBuffer& destFileOut, StringBuffer& mask)
+void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, const char* destFileIn, StringBuffer& destFileOut, StringBuffer& umask)
 {
     if (destFileIn && *destFileIn)
         destFileOut.set(destFileIn);
@@ -2232,56 +2231,57 @@ void CFileSprayEx::getDropZoneInfoByIP(const char* ip, const char* destFileIn, S
         throw MakeStringExceptionDirect(ECLWATCH_INVALID_IP, "Network address must be specified for a dropzone!");
 
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
+    Owned<IConstEnvironment> constEnv = factory->openEnvironment();
+    if (!constEnv)
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
-
-    SCMStringBuffer directory;
-    Owned<IConstDropZoneInfo> dropZone;
 
     StringBuffer destFile;
     if (isAbsolutePath(destFileIn))
     {
         destFile.set(destFileIn);
-        dropZone.setown(env->getDropZoneByAddressPath(ip, destFile.str()));
+        Owned<IConstDropZoneInfo> dropZone = constEnv->getDropZoneByAddressPath(ip, destFile.str());
         if (!dropZone)
             throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone not found for network address %s.", ip);
+
+        SCMStringBuffer directory, maskBuf;
         dropZone->getDirectory(directory);
-    }
-    else
-    {
-        SCMStringBuffer computer;
-        Owned<IConstMachineInfo> machine = env->getMachineByAddress(ip);
-        if (!machine)
-        {
-            IpAddress ipAddr;
-            ipAddr.ipset(ip);
-            if (!ipAddr.isLocal())
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Computer not found for network address %s.", ip);
-            machine.setown(env->getMachineForLocalHost());
-            if (!machine)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Computer not found for local host.");
-        }
-        machine->getName(computer);
-        if (!computer.length())
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Computer name not found for network address %s.", ip);
-        dropZone.setown(env->getDropZoneByComputer(computer.str()));
-        if (!dropZone)
-            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone not found for network address %s.", ip);
-        dropZone->getDirectory(directory);
-        destFile.set(directory.str());
-        if (destFile.length())
-            addPathSepChar(destFile);
-        destFile.append(destFileIn);
-    }
-    destFileOut.set(destFile.str());
-    if ((destFile.length() >= directory.length()) && !strnicmp(destFile.str(), directory.str(), directory.length()))
-    {
-        SCMStringBuffer maskBuf;
+        destFileOut.set(destFile.str());
         dropZone->getUMask(maskBuf);
         if (maskBuf.length())
-            mask.set(maskBuf.str());
+            umask.set(maskBuf.str());
+
+        return;
     }
+
+    Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIteratorByAddress(ip);
+    if (dropZoneItr->count() < 1)
+        throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone not found for network address %s.", ip);
+
+    bool dzFound = false;
+    ForEach(*dropZoneItr)
+    {
+        IConstDropZoneInfo& dropZoneInfo = dropZoneItr->query();
+
+        SCMStringBuffer dropZoneDirectory, dropZoneUMask;
+        dropZoneInfo.getDirectory(dropZoneDirectory);
+        dropZoneInfo.getUMask(dropZoneUMask);
+        if (!dropZoneDirectory.length())
+            continue;
+
+        if (!dzFound)
+        {
+            dzFound = true;
+            destFileOut.set(dropZoneDirectory.str());
+            addPathSepChar(destFileOut);
+            destFileOut.append(destFileIn);
+            if (dropZoneUMask.length())
+                umask.set(dropZoneUMask.str());
+        }
+        else
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "> 1 dropzones found for network address %s.", ip);
+    }
+    if (!dzFound)
+        throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "No valid dropzone found for network address %s.", ip);
 }
 
 bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDesprayResponse &resp)
@@ -2296,6 +2296,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source logical file not specified.");
 
         PROGLOG("Despray %s", srcname);
+        double version = context.getClientVersion();
         const char* destip = req.getDestIP();
         StringBuffer fnamebuf(req.getDestPath());
         const char* destfile = fnamebuf.trim().str();
@@ -2331,7 +2332,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
             RemoteFilename rfn;
             SocketEndpoint ep(destip);
             StringBuffer destfileWithPath, umask;
-            getDropZoneInfoByIP(destip, destfile, destfileWithPath, umask);
+            getDropZoneInfoByIP(version, destip, destfile, destfileWithPath, umask);
             rfn.setPath(ep, destfileWithPath.str());
             if (umask.length())
                 options->setUMask(umask.str());
@@ -2351,7 +2352,6 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         if(splitprefix && *splitprefix)
             options->setSplitPrefix(splitprefix);
 
-        double version = context.getClientVersion();
         if (version > 1.01)
         {
             if(req.getMaxConnections() > 0)
@@ -2688,86 +2688,6 @@ bool CFileSprayEx::onDFUWUFile(IEspContext &context, IEspDFUWUFileRequest &req, 
     return true;
 }
 
-int CFileSprayEx::doFileCheck(const char* mask, const char* netaddr, const char* osStr, const char* path)
-{
-    int iRet = 1;
-    if (mask && *mask)
-    {
-        char *str = (char *) mask + strlen(mask) - 4;
-        if (!stricmp(str, ".cfg") || !stricmp(str, ".log"))
-            iRet = 0;
-    }
-    else    if (netaddr && *netaddr && path && *path)
-    {
-        iRet = 2;
-
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        factory->validateCache();
-        Owned<IConstEnvironment> env = factory->openEnvironment();
-        Owned<IPropertyTree> pEnvRoot = &env->getPTree();
-        IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
-        Owned<IPropertyTree> pRoot = createPTreeFromXMLString("<Environment/>");
-        IPropertyTree* pSoftware = pRoot->addPropTree("Software", createPTree("Software"));
-        if (pEnvSoftware && pSoftware)
-        {
-            Owned<IPropertyTreeIterator> it = pEnvSoftware->getElements("DropZone");
-            ForEach(*it)
-            {
-                const char* pszComputer = it->query().queryProp("@computer");
-                if (!strcmp(pszComputer, "."))
-                    pszComputer = "localhost";
-
-                StringBuffer xpath, sNetAddr;
-                xpath.appendf("Hardware/Computer[@name='%s']/@netAddress", pszComputer);
-                const char* pszNetAddr = pEnvRoot->queryProp(xpath.str());
-                if (strcmp(pszNetAddr, "."))
-                {
-                    sNetAddr.append(pszNetAddr);
-                }
-                else
-                {
-                    StringBuffer ipStr;
-                    IpAddress ipaddr = queryHostIP();
-                    ipaddr.getIpText(ipStr);
-                    if (ipStr.length() > 0)
-                    {
-#ifdef MACHINE_IP
-                        sNetAddr.append(MACHINE_IP);
-#else
-                        sNetAddr.append(ipStr.str());
-#endif
-                    }
-                }
-#ifdef MACHINE_IP
-                if ((sNetAddr.length() > 0) && !stricmp(sNetAddr.str(), MACHINE_IP))
-#else
-                if ((sNetAddr.length() > 0) && !stricmp(sNetAddr.str(), netaddr))
-#endif
-                {
-                    StringBuffer dir;
-                    IPropertyTree* pDropZone = pSoftware->addPropTree("DropZone", &it->get());
-                    pDropZone->getProp("@directory", dir);
-
-                    if (osStr && *osStr)
-                    {
-                        int os = atoi(osStr);
-                        const char pathSep = (os == OS_WINDOWS) ? '\\' : '/';
-                        dir.replace(pathSep=='\\'?'/':'\\', pathSep);
-                    }
-
-                    if ((dir.length() > 0) && !strnicmp(path, dir.str(), dir.length()))
-                    {
-                        iRet = 0;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    return iRet;
-}
-
 bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IEspFileListResponse &resp)
 {
     try
@@ -2783,7 +2703,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         const char* netaddr = req.getNetaddr();
         if (!netaddr || !*netaddr)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Network address not specified.");
-        const char* mask = req.getMask();
+        const char* fileNameMask = req.getMask();
         bool directoryOnly = req.getDirectoryOnly();
         PROGLOG("FileList:  Netaddr %s, Path %s", netaddr, path);
 
@@ -2798,11 +2718,12 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
                 sPath.append( pathSep );
         }
 
-        int checkReturn = doFileCheck(mask, netaddr, osStr, sPath.str());
-        if (checkReturn > 1)
-            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone is not found in the environment settings.");
-        else if (checkReturn > 0)
-            throw MakeStringException(ECLWATCH_ACCESS_TO_FILE_DENIED, "Access to the file path denied.");
+        if (!isEmptyString(fileNameMask))
+        {
+            const char* ext = pathExtension(sPath.str());
+            if (!strieq(ext, "cfg") && !strieq(ext, "log"))
+                throw MakeStringException(ECLWATCH_ACCESS_TO_FILE_DENIED, "Only cfg or log file allowed.");
+        }
 
         RemoteFilename rfn;
         SocketEndpoint ep;
@@ -2817,9 +2738,6 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
             throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", path);
 
         IArrayOf<IEspPhysicalFileStruct> files;
-        if (mask && !*mask)
-            mask = NULL;
-
         Owned<IDirectoryIterator> di = f->directoryFiles(NULL, false, true);
         if(di.get() != NULL)
         {
@@ -2828,7 +2746,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
                 StringBuffer fname;
                 di->getName(fname);
 
-                if (fname.length() == 0 || (directoryOnly && !di->isDir()) || (!di->isDir() && mask && !WildMatch(fname.str(), mask, true)))
+                if (fname.length() == 0 || (directoryOnly && !di->isDir()) || (!di->isDir() && !isEmptyString(fileNameMask) && !WildMatch(fname.str(), fileNameMask, true)))
                     continue;
 
                 Owned<IEspPhysicalFileStruct> onefile = createPhysicalFileStruct();
@@ -2858,8 +2776,8 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
             resp.setOS(os);
         }
 
-        if (mask && *mask)
-            resp.setMask(mask);
+        if (!isEmptyString(fileNameMask))
+            resp.setMask(fileNameMask);
 
         if (version >= 1.10)
         {
@@ -2876,32 +2794,30 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
     return true;
 }
 
-void CFileSprayEx::queryDropZoneInfo(const char* dropZone, StringBuffer& path, EnvMachineOS& os, IpAddress& ip)
+bool CFileSprayEx::checkDropZoneIPAndPath(double clientVersion, const char* dropZoneName, const char* netAddr, const char* path)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    factory->validateCache();
+    if (isEmptyString(netAddr) || isEmptyString(path))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "NetworkAddress or Path not defined.");
 
-    Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Cannot get environment information.");
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+    Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIteratorByAddress(netAddr);
+    ForEach(*dropZoneItr)
+    {
+        SCMStringBuffer directory, name;
+        IConstDropZoneInfo& dropZoneInfo = dropZoneItr->query();
+        dropZoneInfo.getDirectory(directory);
+        if (directory.length() && (strnicmp(path, directory.str(), directory.length()) == 0))
+        {
+            if (isEmptyString(dropZoneName))
+                return true;
 
-    Owned<IPropertyTree> root = &env->getPTree();
-    VStringBuffer xpath("Software/DropZone[@name='%s']", dropZone);
-    IPropertyTree *pt = root->queryPropTree(xpath.str());
-    if (!pt)
-        throw MakeStringException(ECLWATCH_INVALID_INPUT, "DropZone %s not found.", dropZone);
-
-    const char* computer = pt->queryProp("@computer");
-    IConstMachineInfo* machine = env->getMachine(computer);
-    if (!machine)
-        throw MakeStringException(ECLWATCH_INVALID_INPUT, "DropZone %s: machine %s not found.", dropZone, computer);
-
-    SCMStringBuffer netAddr;
-    machine->getNetAddress(netAddr);
-    ip.ipset(netAddr.str());
-
-    os = machine->getOS();
-    pt->getProp("@directory", path);
+            dropZoneInfo.getName(name);
+            if (strieq(name.str(), dropZoneName))
+                return true;
+        }
+    }
+    return false;
 }
 
 void CFileSprayEx::addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* dropZonePath,
@@ -2971,6 +2887,21 @@ bool CFileSprayEx::searchDropZoneFileInFolder(IEspContext& context, IFile* f, co
     return foundMatch;
 }
 
+void CFileSprayEx::appendDropZoneFiles(IEspContext& context, IpAddress& ip, const char* dir, const char* nameFilter, IArrayOf<IEspPhysicalFileStruct>& files)
+{
+    RemoteFilename rfn;
+    SocketEndpoint ep;
+    ep.ipset(ip);
+    rfn.setPath(ep, dir);
+    Owned<IFile> f = createIFile(rfn);
+    if(!f->isDirectory())
+        throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", dir);
+
+    StringBuffer relativePath;
+    searchDropZoneFileInFolder(context, f, nameFilter, !nameFilter || !*nameFilter, dir,
+        relativePath, getPathSepChar(dir), files);
+}
+
 bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSearchRequest &req, IEspDropZoneFileSearchResponse &resp)
 {
     try
@@ -2978,28 +2909,45 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
         if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Access, false))
             throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to do FileList. Permission denied.");
 
-        const char* dropZone = req.getDropZoneName();
-        if (!dropZone || !*dropZone)
+        const char* dropZoneName = req.getDropZoneName();
+        if (isEmptyString(dropZoneName))
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "DropZone not specified.");
-        PROGLOG("DropZoneFileSearch: %s", dropZone);
 
-        IpAddress ip;
-        EnvMachineOS os;
-        StringBuffer path, relativePath;
-        queryDropZoneInfo(dropZone, path, os, ip);
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+        Owned<IConstDropZoneInfo> dropZoneInfo = constEnv->getDropZone(dropZoneName);
+        if (!dropZoneInfo || (req.getECLWatchVisibleOnly() && !dropZoneInfo->isECLWatchVisible()))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "DropZone %s not found.", dropZoneName);
 
-        RemoteFilename rfn;
-        SocketEndpoint ep;
-        ep.ipset(ip);
-        rfn.setPath(ep, path);
-        Owned<IFile> f = createIFile(rfn);
-        if(!f->isDirectory())
-            throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", path.str());
+        SCMStringBuffer directory, computer;
+        dropZoneInfo->getDirectory(directory);
+        if (!directory.length())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "DropZone Directory not found for %s.", dropZoneName);
+
+        IpAddress ipToMatch;
+        const char* dropZoneServerReq = req.getServer(); //IP or hostname
+        if (!isEmptyString(dropZoneServerReq))
+        {
+            ipToMatch.ipset(dropZoneServerReq);
+            if (ipToMatch.isNull())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid server %s specified.", dropZoneServerReq);
+        }
 
         IArrayOf<IEspPhysicalFileStruct> files;
-        const char* nameFilter = req.getNameFilter();
-        searchDropZoneFileInFolder(context, f, nameFilter, !nameFilter || !*nameFilter, path.str(),
-            relativePath, (os == MachineOsW2K) ? '\\' : '/', files);
+        Owned<IConstDropZoneServerInfoIterator> dropZoneServerItr = dropZoneInfo->getServers();
+        ForEach(*dropZoneServerItr)
+        {
+            StringBuffer server, networkAddress;
+            IConstDropZoneServerInfo& dropZoneServer = dropZoneServerItr->query();
+            dropZoneServer.getServer(server);
+            if (server.isEmpty())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid server for dropzone %s.", dropZoneName);
+
+            IpAddress ipAddr;
+            ipAddr.ipset(server.str());
+            if (isEmptyString(dropZoneServerReq) || ipAddr.ipequals(ipToMatch))
+                appendDropZoneFiles(context, ipAddr, directory.str(), req.getNameFilter(), files);
+        }
         resp.setFiles(files);
     }
     catch(IException* e)
@@ -3101,16 +3049,13 @@ bool CFileSprayEx::onOpenSave(IEspContext &context, IEspOpenSaveRequest &req, IE
     return true;
 }
 
-bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* netaddr, const char* osStr, const char* path,
+bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* dropZone, const char* netaddr, const char* path,
                                     IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp)
 {
-    bool directoryOnly = req.getDirectoryOnly();
-
-    int checkReturn = doFileCheck(NULL, netaddr, osStr, path);
-    if (checkReturn > 1)
+    if (!checkDropZoneIPAndPath(context.getClientVersion(), dropZone, netaddr, path))
         throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone is not found in the environment settings.");
-    else if (checkReturn > 0)
-        throw MakeStringException(ECLWATCH_ACCESS_TO_FILE_DENIED, "Access to the file path denied.");
+
+    bool directoryOnly = req.getDirectoryOnly();
 
     RemoteFilename rfn;
     SocketEndpoint ep;
@@ -3159,6 +3104,7 @@ bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* netaddr, c
     return true;
 }
 
+//This method returns all dropzones and, if NetAddress and Path specified, returns filtered list of files.
 bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp)
 {
     try
@@ -3166,97 +3112,60 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
+        IpAddress ipToMatch;
         const char* netAddress = req.getNetAddress();
-        const char* directory = req.getPath();
-        const char* subfolder = req.getSubfolder();
-
-        StringBuffer netAddressStr, directoryStr, osStr;
-        if (netAddress && *netAddress && directory && *directory)
+        if (!isEmptyString(netAddress))
         {
-            netAddressStr.append(netAddress);
-            directoryStr.append(directory);
+            ipToMatch.ipset(netAddress);
+            if (ipToMatch.isNull())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid server %s specified.", netAddress);
         }
 
+        bool filesFromALinux = false;
         IArrayOf<IEspDropZone> dropZoneList;
-
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> m_constEnv = factory->openEnvironment();
-        Owned<IPropertyTree> pEnvRoot = &m_constEnv->getPTree();
-        IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
-        if (pEnvSoftware)
+        bool ECLWatchVisibleOnly = req.getECLWatchVisibleOnly();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+        Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIterator();
+        ForEach(*dropZoneItr)
         {
-            Owned<IPropertyTreeIterator> it = pEnvSoftware->getElements("DropZone");
-            ForEach(*it)
+            IConstDropZoneInfo& dropZoneInfo = dropZoneItr->query();
+            if (ECLWatchVisibleOnly && !dropZoneInfo.isECLWatchVisible())
+                continue;
+
+            SCMStringBuffer dropZoneName, directory, computerName;
+            dropZoneInfo.getName(dropZoneName);
+            dropZoneInfo.getDirectory(directory);
+            dropZoneInfo.getComputerName(computerName); //legacy env
+            if (!dropZoneName.length() || !directory.length())
+                continue;
+
+            bool isLinux = getPathSepChar(directory.str()) == '/' ? true : false;
+            Owned<IConstDropZoneServerInfoIterator> dropZoneServerItr = dropZoneInfo.getServers();
+            ForEach(*dropZoneServerItr)
             {
-                IPropertyTree& pDropZone = it->query();
-                if (!pDropZone.getPropBool("@ECLWatchVisible", true))
+                IConstDropZoneServerInfo& dropZoneServer = dropZoneServerItr->query();
+
+                StringBuffer name, server, networkAddress;
+                dropZoneServer.getName(name);
+                dropZoneServer.getServer(server);
+                if (name.isEmpty() || server.isEmpty())
                     continue;
 
-                //get IP Address of the computer associated with this drop zone
-                const char* pszName = pDropZone.queryProp("@name");
-                const char* pszComputer = pDropZone.queryProp("@computer");
-                if (!strcmp(pszComputer, "."))
-                    pszComputer = "localhost";
+                IpAddress ipAddr;
+                ipAddr.ipset(server.str());
+                ipAddr.getIpText(networkAddress);
 
-                StringBuffer xpath;
-                xpath.appendf("Hardware/Computer[@name='%s']/@netAddress", pszComputer);
+                Owned<IEspDropZone> aDropZone = createDropZone();
+                aDropZone->setName(dropZoneName.str());
+                aDropZone->setComputer(name.str());
+                aDropZone->setNetAddress(networkAddress.str());
 
-                StringBuffer sNetAddr;
-                const char* pszNetAddr = pEnvRoot->queryProp(xpath.str());
-                if (strcmp(pszNetAddr, "."))
-                {
-                    sNetAddr.append(pszNetAddr);
-                }
-                else
-                {
-                    StringBuffer ipStr;
-                    IpAddress ipaddr = queryHostIP();
-                    ipaddr.getIpText(ipStr);
-                    if (ipStr.length() > 0)
-                    {
-#ifdef MACHINE_IP
-                        sNetAddr.append(MACHINE_IP);
-#else
-                        sNetAddr.append(ipStr.str());
-#endif
-                    }
-                }
-
-                Owned<IConstMachineInfo> machine;
-                if (strcmp(pszNetAddr, "."))
-                    machine.setown(m_constEnv->getMachineByAddress(sNetAddr.str()));
-                else
-                {
-                    machine.setown(m_constEnv->getMachineByAddress(pszNetAddr));
-                    if (!machine)
-                        machine.setown(m_constEnv->getMachineByAddress(sNetAddr.str()));
-                }
-
-                StringBuffer dir;
-                pDropZone.getProp("@directory", dir);
-
-                Owned<IEspDropZone> aDropZone= createDropZone("","");
-
-                if (machine)
-                {
-                    if (machine->getOS() == MachineOsLinux || machine->getOS() == MachineOsSolaris)
-                    {
-                        dir.replace('\\', '/');//replace all '\\' by '/'
-                        aDropZone->setLinux("true");
-                        osStr = "1";
-                    }
-                    else
-                    {
-                        dir.replace('/', '\\');
-                        dir.replace('$', ':');
-                        osStr = "0";
-                    }
-                }
-
-                aDropZone->setComputer(pszComputer);
-                aDropZone->setPath(dir.str());
-                aDropZone->setName(pszName);
-                aDropZone->setNetAddress(sNetAddr.str());
+                aDropZone->setPath(directory.str());
+                if (isLinux)
+                    aDropZone->setLinux("true");
+                if (!isEmptyString(netAddress) && ipAddr.ipequals(ipToMatch))
+                    filesFromALinux = isLinux;
 
                 dropZoneList.append(*aDropZone.getClear());
             }
@@ -3265,39 +3174,32 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         if (dropZoneList.ordinality())
             resp.setDropZones(dropZoneList);
 
-        if (netAddressStr.length() < 1)
+        const char* dzName = req.getDropZoneName();
+        const char* directory = req.getPath();
+        const char* subfolder = req.getSubfolder();
+
+        if (isEmptyString(netAddress) || (isEmptyString(directory) && isEmptyString(subfolder)))
             return true;
 
-        char pathSep = '/';
-        if (osStr && *osStr)
+        StringBuffer netAddressStr, directoryStr, osStr;
+        netAddressStr.set(netAddress);
+        if (!isEmptyString(directory))
+            directoryStr.set(directory);
+        if (!isEmptyString(subfolder))
         {
-            int os = atoi(osStr);
-            if (os == OS_WINDOWS)
-                pathSep = '\\';
-        }
-
-        directoryStr.replace(pathSep=='\\'?'/':'\\', pathSep);
-
-        if (subfolder && *subfolder)
-        {
-            if (*(directoryStr.str() + directoryStr.length() -1) != pathSep)
-                directoryStr.append( pathSep );
-
+            if (directoryStr.length())
+                addPathSepChar(directoryStr);
             directoryStr.append(subfolder);
         }
+        addPathSepChar(directoryStr);
 
-        if (*(directoryStr.str() + directoryStr.length() -1) != pathSep)
-            directoryStr.append( pathSep );
+        getDropZoneFiles(context, dzName, netAddress, directoryStr.str(), req, resp);
 
-        PROGLOG("getDropZoneFiles: netAddress %s, path %s", netAddressStr.str(), directoryStr.str());
-        getDropZoneFiles(context, netAddressStr.str(), osStr.str(), directoryStr.str(), req, resp);
-
-        if (pathSep=='\\')
-            directoryStr.replaceString("\\", "\\\\");
-
-        resp.setNetAddress(netAddressStr.str());
+        resp.setDropZoneName(dzName);
+        resp.setNetAddress(netAddress);
         resp.setPath(directoryStr.str());
-        resp.setOS(atoi(osStr.str()));
+        resp.setOS(filesFromALinux);
+        resp.setECLWatchVisibleOnly(ECLWatchVisibleOnly);
     }
     catch(IException* e)
     {
@@ -3314,43 +3216,31 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
         if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Full, false))
             throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
+        double version = context.getClientVersion();
+        const char* dzName = req.getDropZoneName();
         const char* netAddress = req.getNetAddress();
         const char* directory = req.getPath();
         const char* osStr = req.getOS();
         StringArray & files = req.getNames();
-
-        if (!netAddress || !*netAddress || !directory || !*directory)
-            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone not specified.");
-
         if (!files.ordinality())
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "File not specified.");
 
-        char pathSep = '/';
-        StringBuffer sPath(directory);
-        if (osStr && *osStr)
+        StringBuffer path(directory);
+        if (!isEmptyString(osStr))
         {
-            int os = atoi(osStr);
-            pathSep = (os == OS_WINDOWS) ? '\\' : '/';
-            sPath.replace(pathSep=='\\'?'/':'\\', pathSep);
-            if (*(sPath.str() + sPath.length() -1) != pathSep)
-                sPath.append( pathSep );
+            char pathSep = (atoi(osStr) == OS_WINDOWS) ? '\\' : '/';
+            path.replace(pathSep=='\\' ? '/' : '\\', pathSep);
         }
+        addPathSepChar(path, getPathSepChar(path.str()));
 
-        int checkReturn = doFileCheck(NULL, netAddress, osStr, sPath.str());
-        if (checkReturn > 1)
+        if (!checkDropZoneIPAndPath(version, dzName, netAddress, path.str()))
             throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone is not found in the environment settings.");
-        else if (checkReturn > 0)
-            throw MakeStringException(ECLWATCH_ACCESS_TO_FILE_DENIED, "Access to the file path denied.");
 
         RemoteFilename rfn;
         SocketEndpoint ep;
-#ifdef MACHINE_IP
-        ep.set(MACHINE_IP);
-#else
         ep.set(netAddress);
-#endif
 
-        rfn.setPath(ep, sPath.str());
+        rfn.setPath(ep, path.str());
         Owned<IFile> f = createIFile(rfn);
         if(!f->isDirectory())
             throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", directory);
@@ -3372,9 +3262,7 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
 
             try
             {
-                StringBuffer fileToDelete = sPath;
-                if (*(fileToDelete.str() + fileToDelete.length() -1) != pathSep)
-                    fileToDelete.append( pathSep );
+                StringBuffer fileToDelete = path;
                 fileToDelete.append(file);
 
                 rfn.setPath(ep, fileToDelete.str());

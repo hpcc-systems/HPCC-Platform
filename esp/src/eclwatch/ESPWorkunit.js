@@ -590,9 +590,11 @@ define([
             });
         },
         getGraphIndex: function (name) {
-            for (var i = 0; i < this.graphs.length; ++i) {
+            if (this.graphs) {
+                for (var i = 0; i < this.graphs.length; ++i) {
                 if (this.graphs[i].Name === name) {
-                    return i;
+                        return i;
+                    }
                 }
             }
             return -1;
@@ -830,6 +832,15 @@ define([
             var idx = this.getGraphIndex(name);
             if (idx >= 0) {
                 this.fetchGraphXgmml(idx, onFetchGraphXgmml, force);
+            } else {
+                topic.publish("hpcc/brToaster", {
+                    Severity: "Error",
+                    Source: "ESPWorkunit.fetchGraphXgmmlByName",
+                    Exceptions: [
+                        { Message: this.i18n.FetchingXGMMLFailed }
+                    ]
+                });
+                onFetchGraphXgmml("", "");
             }
         },
         fetchGraphXgmml: function (idx, onFetchGraphXgmml, force) {
@@ -849,6 +860,15 @@ define([
                 if (lang.exists("WUGetGraphResponse.Graphs.ECLGraphEx", response) && response.WUGetGraphResponse.Graphs.ECLGraphEx.length) {
                     context.graphs[idx].xgmml = response.WUGetGraphResponse.Graphs.ECLGraphEx[0].Graph;
                     onFetchGraphXgmml(context.graphs[idx].xgmml, context.graphs[idx].svg);
+                } else {
+                    topic.publish("hpcc/brToaster", {
+                        Severity: "Error",
+                        Source: "ESPWorkunit.fetchGraphXgmml",
+                        Exceptions: [
+                            { Message: context.i18n.FetchingXGMMLFailed }
+                        ]
+                    });
+                    onFetchGraphXgmml("", "");
                 }
             });
         },
