@@ -166,6 +166,22 @@ public:
             {
                 StringBuffer esxml;
                 EsdlCmdHelper::convertECMtoESXDL(sourceFileName, filename.str(), esxml, true, verbose, false, true);
+                if (!serviceName || !*serviceName)
+                {
+                    Owned<IPropertyTree> esdldeftree = createPTreeFromXMLString(esxml);
+                    if (esdldeftree->getCount("EsdlService") == 1)
+                    {
+                        Owned<IPropertyTreeIterator> it = esdldeftree->getElements("EsdlService");
+                        ForEach(*it)
+                        {
+                            IPropertyTree* pChildNode = &it->query();
+                            serviceName = pChildNode->queryProp("@name");
+                        }
+                    }
+                    else
+                        throw( MakeStringException(0, "Target service name must be specified if ESDL definition contains multiple service definitions") );
+                }
+
                 VStringBuffer serviceid("%s.%f", serviceName, version);
                 esdlDef->addDefinitionFromXML(esxml, serviceid.str());
             }
