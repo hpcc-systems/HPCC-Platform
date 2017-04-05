@@ -38,16 +38,6 @@
 /***************************************************************************
  *              CEspHttpServer Implementation
  ***************************************************************************/
-CEspHttpServer::CEspHttpServer(ISocket& sock, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
-{
-    m_request.setown(new CHttpRequest(sock));
-    IEspContext* ctx = createEspContext(createHttpSecureContext(m_request.get()));
-    m_request->setMaxRequestEntityLength(maxRequestEntityLength);
-    m_response.setown(new CHttpResponse(sock));
-    m_request->setOwnContext(ctx);
-    m_response->setOwnContext(LINK(ctx));
-    m_viewConfig=viewConfig;
-}
 
 CEspHttpServer::CEspHttpServer(ISocket& sock, CEspApplicationPort* apport, bool viewConfig, int maxRequestEntityLength):m_socket(sock), m_MaxRequestEntityLength(maxRequestEntityLength)
 {
