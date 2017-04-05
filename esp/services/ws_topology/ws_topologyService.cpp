@@ -1287,7 +1287,7 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
             m_TpWrapper.getTpSashaServers( ServiceList.getTpSashaServers() );   
             m_TpWrapper.getTpGenesisServers( ServiceList.getTpGenesisServers() );
             m_TpWrapper.getTpLdapServers( ServiceList.getTpLdapServers() );
-            m_TpWrapper.getTpDropZones( ServiceList.getTpDropZones() );
+            m_TpWrapper.getTpDropZones(version, nullptr, true, ServiceList.getTpDropZones() );
             m_TpWrapper.getTpFTSlaves( ServiceList.getTpFTSlaves() );
             m_TpWrapper.getTpDkcSlaves( ServiceList.getTpDkcSlaves() );
 
@@ -1768,6 +1768,22 @@ bool CWsTopologyEx::onTpGetServicePlugins(IEspContext &context, IEspTpGetService
             plugins.append(*plugin.getClear());
         }
         resp.setPlugins(plugins);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsTopologyEx::onTpDropZoneQuery(IEspContext &context, IEspTpDropZoneQueryRequest &req, IEspTpDropZoneQueryResponse &resp)
+{
+    try
+    {
+        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
+            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Machine Query. Permission denied.");
+
+        m_TpWrapper.getTpDropZones(context.getClientVersion(), req.getName(), req.getECLWatchVisibleOnly(), resp.getTpDropZones());
     }
     catch(IException* e)
     {

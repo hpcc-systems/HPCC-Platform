@@ -547,6 +547,8 @@ ESPresponse [exceptions_inline] FileListResponse
 ESPrequest [nil_remove] DropZoneFileSearchRequest
 {
     string DropZoneName;
+    [min_ver("1.15")] string Server;
+    [min_ver("1.15")] bool ECLWatchVisibleOnly(false);
     string NameFilter;
 };
 
@@ -612,18 +614,22 @@ ESPStruct [nil_remove] DropZone
 
 ESPrequest DropZoneFilesRequest
 {
+    [min_ver("1.15")] string DropZoneName;
     string NetAddress;
     string Path;
     string OS;
     string Subfolder;
+    [min_ver("1.15")] bool ECLWatchVisibleOnly(false);
     bool DirectoryOnly(false);
 };
 
 ESPresponse [exceptions_inline, nil_remove] DropZoneFilesResponse
 {
+    [min_ver("1.15")] string DropZoneName;
     string NetAddress;
     string Path;
     int OS;
+    [min_ver("1.15")] bool ECLWatchVisibleOnly;
 
     ESParray<ESPStruct DropZone> DropZones; 
     ESParray<ESPStruct PhysicalFileStruct> Files;   
@@ -631,6 +637,7 @@ ESPresponse [exceptions_inline, nil_remove] DropZoneFilesResponse
 
 ESPrequest DeleteDropZoneFilesRequest
 {
+    [min_ver("1.15")]string DropZoneName;
     string NetAddress;
     string Path;
     string OS;
@@ -669,7 +676,7 @@ ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.14"),
+    version("1.15"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;

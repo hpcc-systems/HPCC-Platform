@@ -38,7 +38,7 @@
         <title>EclWatch</title>
         <script language="JavaScript1.2">
           var initialPath = '<xsl:value-of select="/DropZoneFilesResponse/Path"/>';
-          var currentNetAddress = '<xsl:value-of select="/DropZoneFilesResponse/NetAddress"/>';
+          var currentDropZone = '<xsl:value-of select="/DropZoneFilesResponse/NetAddress"/>/<xsl:value-of select="/DropZoneFilesResponse/DropZoneName"/>';
           <xsl:text disable-output-escaping="yes"><![CDATA[
             var intervalId = 0;
             var hideLoading = 1;
@@ -49,7 +49,8 @@
               if (machineDropDown.selectedIndex > 0)
               {
                 selected=machineDropDown.options[machineDropDown.selectedIndex];               
-                document.forms['DropZoneForm'].NetAddress.value=selected.value;
+                var vals = selected.value.split('/');
+                document.forms['DropZoneForm'].NetAddress.value=vals[0];
                 pos = selected.title.indexOf(';');
                 directory = selected.title.substring(0, pos);
                 linux = selected.title.substring(pos+1);
@@ -64,7 +65,7 @@
                   }
                 }
 
-                document.location.href = "/FileSpray/DropZoneFiles?NetAddress=" + selected.value + "&OS=" + sourceOS+ "&Path=" + directory;
+                document.location.href = "/FileSpray/DropZoneFiles?DropZoneName=" + vals[1] + "&NetAddress=" + vals[0] + "&OS=" + sourceOS+ "&Path=" + directory;
               }
               else
               {
@@ -196,11 +197,11 @@
             function getSelectedDropZone()
             {
               machineDropDown = document.forms['DropZoneForm'].machine;
-              if ((machineDropDown.selectedIndex < 1) && (machineDropDown.length > 1) && (currentNetAddress != ""))
+              if ((machineDropDown.selectedIndex < 1) && (machineDropDown.length > 1) && (currentDropZone != "/"))
               {
                 for (i=1; i<machineDropDown.length; i++)
                 {
-                  if (machineDropDown.options[i].value == currentNetAddress)
+                  if (machineDropDown.options[i].value == currentDropZone)
                   {
                     machineDropDown.selectedIndex = i;
                     break;
@@ -209,8 +210,9 @@
               }
               if (machineDropDown.selectedIndex > 0)
               {
-                selected=machineDropDown.options[machineDropDown.selectedIndex];               
-                document.forms['DropZoneForm'].NetAddress.value=selected.value;
+                selected=machineDropDown.options[machineDropDown.selectedIndex];
+                var vals = selected.value.split('/');
+                document.forms['DropZoneForm'].NetAddress.value=vals[0];
                 pos = selected.title.indexOf(';');
                 if (initialPath == '')
                   directory = selected.title.substring(0, pos);
@@ -221,11 +223,11 @@
 
                 document.forms['DropZoneForm'].Directory.value = directory;
 
-                document.forms['DropZoneFileForm'].NetAddress.value=selected.value;
+                document.forms['DropZoneFileForm'].NetAddress.value=vals[0];
                 document.forms['DropZoneFileForm'].Path.value=directory;
                 document.forms['DropZoneFileForm'].OS.value=sourceOS;
 
-                url0 = "/FileSpray/UploadFile?upload_&NetAddress=" + selected.value + "&OS=" + sourceOS + "&Path=" + directory;
+                url0 = "/FileSpray/UploadFile?upload_&DropZoneName=" + vals[1] + "&NetAddress=" + vals[0] + "&OS=" + sourceOS + "&Path=" + directory;
               }
               else
               {
@@ -271,7 +273,7 @@
                               <option>
                                 <xsl:variable name="curip" select="NetAddress"/>
                                 <xsl:attribute name="value">
-                                  <xsl:value-of select="NetAddress"/>
+                                  <xsl:value-of select="NetAddress"/>/<xsl:value-of select="Name"/>
                                 </xsl:attribute>
                                 <xsl:attribute name="title">
                                   <xsl:value-of select="Path"/>;<xsl:value-of select="Linux"/>
@@ -408,7 +410,7 @@
             <input type="checkbox" name="Names_i{position()}" value="{name}" onclick="return checkSelected(this)"/>
           </td>
           <td align="left">
-            <a title="Open folder..." href="javascript:go('/FileSpray/DropZoneFiles?Subfolder={name}&amp;NetAddress={../../NetAddress}&amp;Path={../../Path}&amp;OS={../../OS}')">
+            <a title="Open folder..." href="javascript:go('/FileSpray/DropZoneFiles?Subfolder={name}&amp;DropZoneName={../../DropZoneName}&amp;NetAddress={../../NetAddress}&amp;Path={../../Path}&amp;OS={../../OS}')">
               <img src="/esp/files_/img/folder.gif" width="19" height="16" border="0" alt="Open folder..." style="vertical-align:bottom"/>
             </a>
             <xsl:value-of select="name"/>

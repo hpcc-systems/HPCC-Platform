@@ -204,6 +204,8 @@ ESPStruct TpDropZone
     string Description;
     string Build;
     string Path;
+    [min_ver("1.26")]bool ECLWatchVisible;
+    [min_ver("1.26")]string UMask;
     ESParray<ESPstruct TpMachine> TpMachines;
 
 };
@@ -598,7 +600,18 @@ ESPresponse [exceptions_inline,encode(0)] TpGetServicePluginsResponse
     ESParray<ESPstruct TpEspServicePlugin, Plugin> Plugins;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.25"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPrequest TpDropZoneQueryRequest
+{
+    string Name;
+    bool ECLWatchVisibleOnly;
+};
+
+ESPresponse [nil_remove, exceptions_inline] TpDropZoneQueryResponse
+{
+    ESParray<ESPstruct TpDropZone>    TpDropZones;
+};
+
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.26"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPuses ESPStruct TpBinding;
     ESPuses ESPstruct TpCluster;
@@ -628,6 +641,7 @@ ESPservice [auth_feature("DEFERRED"), noforms, version("1.25"), exceptions_inlin
     ESPmethod [resp_xsl_default("/esp/xslt/cluster_info.xslt")] TpClusterInfo(TpClusterInfoRequest, TpClusterInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/thor_status.xslt")] TpThorStatus(TpThorStatusRequest, TpThorStatusResponse);
 
+    ESPmethod [min_ver("1.26")] TpDropZoneQuery(TpDropZoneQueryRequest, TpDropZoneQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/services.xslt")] TpServiceQuery(TpServiceQueryRequest, TpServiceQueryResponse);
     ESPmethod TpSetMachineStatus(TpSetMachineStatusRequest, TpSetMachineStatusResponse);
     ESPmethod TpSwapNode(TpSwapNodeRequest, TpSwapNodeResponse);

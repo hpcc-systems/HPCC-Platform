@@ -28,6 +28,7 @@
 
 #pragma warning(disable:4786)
 #include "ws_fs_esp.ipp"
+#include "environment.hpp"
 
 class CFileSpraySoapBindingEx : public CFileSpraySoapBinding
 {
@@ -72,9 +73,10 @@ public:
     int onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me);
 
 private:
-    IPropertyTree* createPTreeForXslt(const char* method, const char* dfuwuid);
+    IPropertyTree* createPTreeForXslt(double clientVersion, const char* method, const char* dfuwuid);
     static void xsltTransform(const char* xml, const char* sheet, IProperties *params, StringBuffer& ret);
     void downloadFile(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response);
+    void appendDropZones(double clientVersion, IConstEnvironment* env, const char* dfuwuidSourcePartIP, IPropertyTree* softwareTree);
 };
 
 
