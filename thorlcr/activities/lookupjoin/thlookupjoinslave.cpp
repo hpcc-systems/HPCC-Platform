@@ -1750,12 +1750,13 @@ protected:
     inline bool hasFailedOverToLocal() const { return 0 != atomic_read(&failedOverToLocal); }
     inline bool hasFailedOverToStandard() const { return 0 != atomic_read(&failedOverToStandard); }
     inline bool isRhsCollated() const { return rhsCollated; }
-    rowidx_t clearNonLocalRows(CThorRowArrayWithFlushMarker &rows)
+    rowidx_t clearNonLocalRows(CThorRowArrayWithFlushMarker &rows, unsigned slave)
     {
         CThorArrayLockBlock block(rows);
         rowidx_t clearedRows = 0;
-        rowidx_t numRows = rows.numCommitted();
-        for (rowidx_t r=rows.flushMarker; r<numRows; r++)
+        rowidx_t committedRows = rows.numCommitted();
+        ActPrintLog("clearNonLocalRows[slave=%u], numCommitted=%" RIPF "u, totalRows(inc uncommitted)=%" RIPF "u, flushMarker=%" RIPF "u", slave, committedRows, rows.queryTotalRows(), rows.flushMarker);
+        for (rowidx_t r=rows.flushMarker; r<committedRows; r++)
         {
             unsigned hv = rightHash->hash(rows.query(r));
             if (myNodeNum != (hv % numNodes))
@@ -1767,7 +1768,7 @@ protected:
         /* Record point to which clearNonLocalRows will reach
          * so that can resume from that point, when recalled.
          */
-        rows.flushMarker = numRows;
+        rows.flushMarker = committedRows;
         return clearedRows;
     }
     // Annoyingly similar to above, used post broadcast when rhsSlaveRows collated into 'rhs'
@@ -1811,10 +1812,10 @@ protected:
                 /* NB: It is likely that there will be unflushed rows in the rhsSlaveRows arrays after we are done here.
                  * These will need flushing when all is done and clearNonLocalRows will need recalling to process rest
                  */
-                ForEachItemIn(a, rhsSlaveRows)
+                ForEachItemIn(slave, rhsSlaveRows)
                 {
-                    CThorRowArrayWithFlushMarker &rows = *rhsSlaveRows.item(a);
-                    clearedRows += clearNonLocalRows(rows);
+                    CThorRowArrayWithFlushMarker &rows = *rhsSlaveRows.item(slave);
+                    clearedRows += clearNonLocalRows(rows, slave);
                 }
             }
             ActPrintLog("handleLowMem: clearedRows = %" RIPF "d", clearedRows);
@@ -1824,12 +1825,12 @@ protected:
         if (spillRowArrays) // only do if have to due to memory pressure. Not via foreign node notification.
         {
             // no non-locals left to spill, so flush a rhsSlaveRows array
-            ForEachItemIn(a, rhsSlaveRows)
+            ForEachItemIn(slave, rhsSlaveRows)
             {
-                CThorRowArrayWithFlushMarker &rows = *rhsSlaveRows.item(a);
+                CThorRowArrayWithFlushMarker &rows = *rhsSlaveRows.item(slave);
                 if (rows.numCommitted())
                 {
-                    clearNonLocalRows(rows);
+                    clearNonLocalRows(rows, slave);
                     rows.flushMarker = 0; // reset marker, since save will cause numCommitted to shrink
                     VStringBuffer tempPrefix("spill_%d", container.queryId());
                     StringBuffer tempName;
@@ -1919,12 +1920,12 @@ protected:
              */
 
             rhsSlaveRows.sort(sortBySize); // because want biggest compacted/consumed 1st
-            ForEachItemIn(a, rhsSlaveRows)
+            ForEachItemIn(slave, rhsSlaveRows)
             {
-                CThorRowArrayWithFlushMarker &rows = *rhsSlaveRows.item(a);
-                clearNonLocalRows(rows);
+                CThorRowArrayWithFlushMarker &rows = *rhsSlaveRows.item(slave);
+                clearNonLocalRows(rows, slave);
 
-                ActPrintLog("Compacting rhsSlaveRows[%d], has %" RIPF "d rows", a, rows.numCommitted());
+                ActPrintLog("Compacting rhsSlaveRows[%u], has %" RIPF "u rows", slave, rows.numCommitted());
                 rows.compact();
             }
 
@@ -2202,8 +2203,12 @@ protected:
                 atomic_set(&spilt, 0);
                 //NB: all channels will have done this, before rows are added
             }
+#define HPCC_17331 // Whilst under investigation
             void process(IRowStream *right)
             {
+#ifdef HPCC_17331
+                unsigned skippedNonLocalRows = 0;
+#endif
                 for (;;)
                 {
                     OwnedConstThorRow row = right->nextRow();
@@ -2212,10 +2217,40 @@ protected:
                     unsigned hv = owner.rightHash->hash(row);
                     unsigned slave = hv % owner.numSlaves;
                     unsigned channelDst = owner.queryJob().queryJobSlaveChannelNum(slave+1);
-                    dbgassertex(NotFound != channelDst); // if 0, slave is not a slave of this process
+#ifdef HPCC_17331
+                    if (NotFound == channelDst)
+                    {
+                        if (0 == skippedNonLocalRows++)
+                        {
+                            VStringBuffer errMsg("1st unexpected non-local row detected, slave: %u", slave+1);
+                            IOutputMetaData *inputOutputMeta = owner.rightITDL->queryFromActivity()->queryContainer().queryHelper()->queryOutputMeta();
+                            if (inputOutputMeta->hasXML())
+                            {
+                                CommonXmlWriter xmlWriter(0);
+                                errMsg.append(" - row: ");
+                                inputOutputMeta->toXML((byte *) row.get(), xmlWriter);
+                                errMsg.append(xmlWriter.str());
+                            }
+                            if (owner.queryJob().getOptBool("smartjoin_failonnonlocal", true))
+                            {
+                                errMsg.newline().append("Please see JIRA issue HPCC-17331 and report incident");
+                                throw MakeActivityException(&owner, 0, "%s", errMsg.str());
+                            }
+                            else
+                                owner.ActPrintLog("%s", errMsg.str());
+                        }
+                        continue; // skip row
+                    }
+#else
+                    dbgassertex(NotFound != channelDst); // if NotFound, slave is not a slave of this process
+#endif
                     dbgassertex(channelDst < owner.queryJob().queryJobChannels());
                     channelDistributors[channelDst]->putRow(row.getClear());
                 }
+#ifdef HPCC_17331
+                if (skippedNonLocalRows)
+                    owner.ActPrintLog("WARNING: %u unexpected non-local row(s) detected", skippedNonLocalRows);
+#endif
             }
             void processDistRight(IRowStream *right)
             {
@@ -2231,6 +2266,7 @@ protected:
             virtual bool freeBufferedRows(bool critical)
             {
                 CriticalBlock b(crit);
+                owner.ActPrintLog("CChannelDistributor free memory callback called");
                 unsigned startSpillChannel = nextSpillChannel;
                 for (;;)
                 {
@@ -2267,8 +2303,10 @@ protected:
             }
             virtual bool spill(bool critical) // called from OOM callback
             {
+                if (!channelCollector->spill(critical))
+                    return false;
                 atomic_set(&spilt, 1);
-                return channelCollector->spill(critical);
+                return true;
             }
             virtual roxiemem::IBufferedRowCallback *queryCallback() { return this; }
         } channelDistributor(*this, cmp);
@@ -2754,7 +2792,7 @@ public:
         {
             if (0 != (sendItem->queryFlags() & bcastflag_spilt))
             {
-                VStringBuffer msg("Notification that node %d spilt", sendItem->queryNode());
+                VStringBuffer msg("Notification that node %d spilt", sendItem->queryNode()+1);
                 clearAllNonLocalRows(msg.str());
             }
         }
