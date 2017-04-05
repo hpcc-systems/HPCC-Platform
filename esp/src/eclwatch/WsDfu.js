@@ -22,12 +22,14 @@ define([
     "dojo/store/Observable",
     "dojo/store/util/QueryResults",
     "dojo/topic",
+    "dojo/i18n",
+    "dojo/i18n!./nls/hpcc",
 
     "dojox/xml/parser",
 
     "hpcc/ESPBase",
     "hpcc/ESPRequest"
-], function (declare, lang, Deferred, arrayUtil, Memory, Observable, QueryResults, topic,
+], function (declare, lang, Deferred, arrayUtil, Memory, Observable, QueryResults, topic, i18n, nlsHPCC,
     parser,
     ESPBase, ESPRequest) {
 
@@ -88,6 +90,7 @@ define([
     });
 
     var self = {
+        i18n: nlsHPCC,
         CreateDiskUsageStore: function() {
             var store = new DiskUsageStore();
             return Observable(store);
@@ -160,7 +163,16 @@ define([
         },
 
         DFUQuery: function (params) {
-            return ESPRequest.send("WsDfu", "DFUQuery", params);
+            var context = this;
+            return ESPRequest.send("WsDfu", "DFUQuery", params).then(function (response) {
+                if (lang.exists("DFUQueryResponse.Warning", response) && response.DFUQueryResponse.Warning) {
+                    dojo.publish("hpcc/brToaster", {
+                        Severity: "Warning",
+                        Source: "WsDfu.DFUQuery",
+                        Exceptions: [{ Source: context.i18n.TooManyFiles, Message: context.i18n.TheReturnedResults + ": " + response.DFUQueryResponse.NumFiles + ", " + context.i18n.RepresentsASubset }]
+                    });
+                }
+            });
         },
 
         DFUFileView: function (params) {

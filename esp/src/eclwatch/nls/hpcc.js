@@ -334,6 +334,7 @@ define({root:
     Mask: "Mask",
     Max: "Max",
     MaxNode: "Max Node",
+    MaxNumberOfFiles: "Maximum Number Of Files",
     MaxSize: "Max Size",
     MaximumNumberOfSlaves: "Slave Number",
     MaxRecordLength: "Max Record Length",
