@@ -441,6 +441,7 @@ public:
         req->setUpdateSuperFiles(optUpdateSuperfiles);
         req->setUpdateCloneFrom(optUpdateCloneFrom);
         req->setAppendCluster(!optDontAppendCluster);
+        req->setIncludeFileErrors(true);
 
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
@@ -463,7 +464,11 @@ public:
         if (resp->getReloadFailed())
             fputs("\nAdded to Queryset, but request to reload queries on cluster failed\n", stderr);
 
-        return outputMultiExceptionsEx(resp->getExceptions());
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (outputQueryFileCopyErrors(resp->getFileErrors()))
+            ret = 1;
+
+        return ret;
     }
     virtual void usage()
     {

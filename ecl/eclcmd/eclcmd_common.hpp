@@ -342,6 +342,7 @@ public:
 
 int outputMultiExceptionsEx(const IMultiException &me);
 bool checkMultiExceptionsQueryNotFound(const IMultiException &me);
+bool outputQueryFileCopyErrors(IArrayOf<IConstLogicalFileError> &errors);
 
 
 class EclCmdURL : public StringBuffer

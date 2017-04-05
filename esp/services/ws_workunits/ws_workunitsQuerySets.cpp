@@ -691,31 +691,80 @@ static inline void updateQueryPriority(IPropertyTree *queryTree, const char *val
     }
 }
 
-void copyQueryFilesToCluster(unsigned updateFlags, IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *remotePrefix, const char *target, const char *srcCluster, const char *queryname, bool allowForeignFiles)
+void gatherFileErrors(IReferencedFileList *files, IArrayOf<IConstLogicalFileError> &errors)
 {
-    if (!target || !*target)
-        return;
-
-    SCMStringBuffer process;
-    Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
-    if (clusterInfo && clusterInfo->getPlatform()==RoxieCluster)
+    Owned<IReferencedFileIterator> it = files->getFiles();
+    ForEach(*it)
     {
-        clusterInfo->getRoxieProcess(process);
+        IReferencedFile &file = it->query();
+        unsigned flags = file.getFlags();
+        if (!(flags & (RefFileNotFound | RefFileCopyInfoFailed)))
+            continue;
+        StringBuffer msg;
+        if (flags & RefFileOptional)
+            msg.append("OPT ");
+        if (flags & RefFileNotFound)
+            msg.append("Not Found");
+        else
+            msg.append("Copy Failed");
+
+        Owned<IEspLogicalFileError> error = createLogicalFileError();
+        error->setLogicalName(file.getLogicalName());
+        error->setError(msg);
+        errors.append(*static_cast<IConstLogicalFileError*>(error.getClear()));
+    }
+}
+
+class QueryFileCopier
+{
+public:
+    QueryFileCopier(const char *target_) : target(target_) {}
+    void init(IEspContext &context, bool allowForeignFiles)
+    {
+        files.setown(createReferencedFileList(context.queryUserId(), context.queryPassword(), allowForeignFiles, false));
+        clusterInfo.setown(getTargetClusterInfo(target));
+        StringBufferAdaptor sba(process);
+        if (clusterInfo && clusterInfo->getPlatform()==RoxieCluster)
+            clusterInfo->getRoxieProcess(sba);
         if (!process.length())
             return;
-        Owned<IReferencedFileList> wufiles = createReferencedFileList(context.queryUserId(), context.queryPassword(), allowForeignFiles, false);
-        Owned<IHpccPackageSet> ps = createPackageSet(process.str());
+        ps.setown(createPackageSet(process.str()));
+        if (ps)
+            pm = ps->queryActiveMap(target);
+    }
+    void copy(IConstWorkUnit *cw, unsigned updateFlags)
+    {
         StringBuffer queryid;
         if (queryname && *queryname)
             queryname = queryid.append(queryname).append(".0").str(); //prepublish dummy version number to support fuzzy match like queries="myquery.*" in package
-        wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, queryname);
-        wufiles->resolveFiles(process.str(), remoteIP, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES)), true, false, true);
+        files->addFilesFromQuery(cw, pm, queryname);
+        files->resolveFiles(process.str(), remoteIP, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES)), true, false, true);
         StringBuffer defReplicateFolder;
         getConfigurationDirectory(NULL, "data2", "roxie", process.str(), defReplicateFolder);
         Owned<IDFUhelper> helper = createIDFUhelper();
-        wufiles->cloneAllInfo(updateFlags, helper, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder);
+        files->cloneAllInfo(updateFlags, helper, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder);
     }
-}
+
+    void gatherFileErrors(IArrayOf<IConstLogicalFileError> &errors)
+    {
+        ::gatherFileErrors(files, errors);
+    }
+
+private:
+    Owned <IConstWUClusterInfo> clusterInfo;
+    Owned<IHpccPackageSet> ps;
+    const IHpccPackageMap *pm = nullptr;
+    StringAttr target;
+
+public:
+    Owned<IReferencedFileList> files;
+
+    StringBuffer process;
+    StringAttr remoteIP;
+    StringAttr remotePrefix;
+    StringAttr srcCluster;
+    StringAttr queryname;
+};
 
 bool CWsWorkunitsEx::isQuerySuspended(const char* query, IConstWUClusterInfo *clusterInfo, unsigned wait, StringBuffer& errorMessage)
 {
@@ -810,7 +859,18 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
 
     if (!req.getDontCopyFiles())
-        copyQueryFilesToCluster(updateFlags, context, cw, daliIP, srcPrefix, target.str(), srcCluster, queryName.str(), req.getAllowForeignFiles());
+    {
+        QueryFileCopier cpr(target);
+        cpr.init(context, req.getAllowForeignFiles());
+        cpr.remoteIP.set(daliIP);
+        cpr.remotePrefix.set(srcPrefix);
+        cpr.srcCluster.set(srcCluster);
+        cpr.queryname.set(queryName);
+        cpr.copy(cw, updateFlags);
+
+        if (req.getIncludeFileErrors())
+            cpr.gatherFileErrors(resp.getFileErrors());
+    }
 
     WorkunitUpdate wu(&cw->lock());
     if (req.getUpdateWorkUnitName() && notEmpty(req.getJobName()))
@@ -2390,6 +2450,11 @@ public:
             }
         }
     }
+    void gatherFileErrors(IArrayOf<IConstLogicalFileError> &errors)
+    {
+        ::gatherFileErrors(wufiles, errors);
+    }
+
 private:
     Linked<IEspContext> context;
     Linked<IWorkUnitFactory> factory;
@@ -2465,6 +2530,8 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
         cloner.cloneAll(req.getCloneActiveState());
 
     cloner.cloneFiles();
+    if (req.getIncludeFileErrors())
+        cloner.gatherFileErrors(resp.getFileErrors());
 
     resp.setCopiedQueries(cloner.copiedQueryIds);
     resp.setExistingQueries(cloner.existingQueryIds);
@@ -2554,7 +2621,16 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         if (req.getAppendCluster())
             updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
 
-        copyQueryFilesToCluster(updateFlags, context, cw, daliIP.str(), srcPrefix, target, srcCluster, targetQueryName.get(), req.getAllowForeignFiles());
+        QueryFileCopier cpr(target);
+        cpr.init(context, req.getAllowForeignFiles());
+        cpr.remoteIP.set(daliIP);
+        cpr.remotePrefix.set(srcPrefix);
+        cpr.srcCluster.set(srcCluster);
+        cpr.queryname.set(targetQueryName);
+        cpr.copy(cw, updateFlags);
+
+        if (req.getIncludeFileErrors())
+            cpr.gatherFileErrors(resp.getFileErrors());
     }
 
     WorkunitUpdate wu(&cw->lock());
