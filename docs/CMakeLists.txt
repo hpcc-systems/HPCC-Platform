@@ -69,6 +69,7 @@ add_subdirectory(ECLPlayground)
 add_subdirectory(ECLPluginForEclipse)
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
+add_subdirectory(VisualizingECL)
 
 # Docs automation
 if (DOCS_AUTO)

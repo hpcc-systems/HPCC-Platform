@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="VizIntro">
+  <title><emphasis>Visualization Introduction</emphasis></title>
+
+  <para>The Visualization bundle is an open-source add-on to the HPCC platform
+  to allow you to create visualizations from the results of queries written in
+  ECL.</para>
+
+  <para>Visualizations are an important means of conveying information from
+  massive data. A good visual representation can help a human produce
+  actionable analysis. A visually comprehensive representation of the
+  information can help make the obscure more obvious.</para>
+
+  <para>Pie Charts, Line graphs, Maps, and other visual graphs help us
+  understand the answers found in data queries. Crunching big data is only
+  part of a solution; we must be able to make sense of the data, too. Data
+  visualizations simplify the complex.</para>
+
+  <para>The Visualizer bundle extends the HPCC platform's functionality by
+  allowing you to plot your data onto charts, graphs, and maps to add a visual
+  representation that can be easily understood.</para>
+
+  <para>In addition, the underlying visualization framework supports advanced
+  features to allow you to combine graphs to make interactive
+  dashboards.</para>
+
+  <sect1 id="VizInstall">
+    <title>Installation</title>
+
+    <para>To install the Visualization bundle, use the ecl command line
+    interface.</para>
+
+    <para></para>
+
+    <para><programlisting>ecl bundle install https://github.com/hpcc-systems/Visualizer.git</programlisting></para>
+
+    <para>To use the "ecl bundle install &lt;git url&gt;" command, you must
+    have git installed and configured on your system. Git must be accessible
+    to the user (in the path).</para>
+
+    <para></para>
+  </sect1>
+
+  <sect1 id="VizUsing">
+    <title>Using the Visualization library</title>
+
+    <para>Once installed, you merely IMPORT the library, then call any method
+    that is appropriate for your data shape.</para>
+
+    <para>Creating a basic visualization typically requires the following
+    steps:</para>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Creation of a suitable dataset.</para>
+        </listitem>
+
+        <listitem>
+          <para>Output the dataset with a suitable name, so that visualization
+          can locate the data.</para>
+        </listitem>
+
+        <listitem>
+          <para>Create (and output) a the visualization, referencing the named
+          output from step 2.</para>
+        </listitem>
+      </orderedlist></para>
+
+    <para>To change the appearance of the visualization, dermatology
+    properties can be provided while creating the visualization or can be
+    applied at runtime via the live dermatology property editor.</para>
+
+    <para>For Example:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;
+ds := DATASET([ {'English', 5},
+                {'History', 17},
+                {'Geography', 7},
+                {'Chemistry', 16},
+                {'Irish', 26},
+                {'Spanish', 67},
+                {'Bioligy', 66},
+                {'Physics', 46},
+                {'Math', 98}],
+                {STRING subject, INTEGER4 year});
+data_example := OUTPUT(ds, NAMED('Chart2D__test'));
+data_example;
+viz_bubble := Visualizer.TwoD.Bubble('bubble',, 'Chart2D__test');
+viz_bubble;
+</programlisting>
+
+    <para>This code creates a Bubble chart as shown below:</para>
+
+    <graphic fileref="../../images/viz10.jpg" />
+
+    <para></para>
+
+    <para>See <link linkend="VizMethods">Methods</link> for details about the
+    categories of visualization methods and all available methods.</para>
+  </sect1>
+
+  <sect1 id="VizViewing">
+    <title>Viewing the Visualization</title>
+
+    <para>After running a query with a visualization included, you can see the
+    visualization in ECL Watch. Visualizations are appended to the workunit as
+    additional <emphasis>resources</emphasis> and can be viewed from the
+    <emphasis role="bold">Resources</emphasis> tab on the Workunit Details
+    page.</para>
+
+    <para>Open the workunit, then select the <emphasis
+    role="bold">Resources</emphasis> tab.</para>
+
+    <para><graphic fileref="../../images/viz07.jpg" /></para>
+  </sect1>
+
+  <sect1 id="VizDermProp">
+    <title>Dermatology Properties</title>
+
+    <para>The dermatology layer provides a means of setting properties for the
+    manner in which a visualization appears. For example, you can change the
+    palletteID to a new color scheme. After running a query with a
+    visualization included, it can be viewed within ECL Watch.</para>
+
+    <para>The <emphasis role="bold">Dermatology Editor</emphasis> lets you
+    alter the appearance of the visualization after it has been executed. The
+    same properties can also be specified in the ECL when creating the
+    visualization.</para>
+
+    <para>You can set properties in your ECL code or afterwards in ECL
+    Watch:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Open the workunit, then select the <emphasis
+        role="bold">Resources</emphasis> tab.</para>
+      </listitem>
+
+      <listitem>
+        <para>Press the <emphasis role="bold">Properties</emphasis>
+        button.</para>
+
+        <graphic fileref="../../images/viz08.jpg" />
+      </listitem>
+
+      <listitem>
+        <para>Edit Properties as desired. <emphasis
+        role="bold"></emphasis></para>
+
+        <para><graphic fileref="../../images/viz09.jpg" /></para>
+      </listitem>
+
+      <listitem>
+        <para>Press the <emphasis role="bold">Save</emphasis> button.<emphasis
+        role="bold"></emphasis></para>
+      </listitem>
+    </orderedlist>
+
+    <para></para>
+  </sect1>
+</chapter>
