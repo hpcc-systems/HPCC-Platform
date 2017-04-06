@@ -427,6 +427,7 @@ define([
             }
 
             this.graphName = params.GraphName;
+            this.subGraphId = params.SubGraphId;
             this.widget.TimingsTreeMap.init(lang.mixin({
                 query: {
                     graphsOnly: true,
@@ -458,9 +459,9 @@ define([
                         onGetGraphs: function (graphs) {
                             if (firstLoad === true) {
                                 firstLoad = false;
-                                context.loadGraphFromWu(context.wu, context.graphName);
+                                context.loadGraphFromWu(context.wu, context.graphName, context.subGraphId);
                             } else {
-                                context.refreshGraphFromWU(context.wu, context.graphName);
+                                context.refreshGraphFromWU(context.wu, context.graphName, context.subGraphId);
                             }
                         },
                         onGetTimers: function (timers) {
@@ -478,7 +479,7 @@ define([
 
         refreshData: function () {
             if (this.isWorkunit()) {
-                this.loadGraphFromWu(this.wu, this.graphName, true);
+                this.loadGraphFromWu(this.wu, this.graphName, this.subGraphId, true);
             } else if (this.isQuery()) {
                 this.loadGraphFromQuery(this.targetQuery, this.queryId, this.graphName);
             }
@@ -523,11 +524,11 @@ define([
             this.loadEdges();
         },
 
-        loadGraphFromWu: function (wu, graphName, refresh) {
+        loadGraphFromWu: function (wu, graphName, subGraphId, refresh) {
             var deferred = new Deferred();
             this.main.setMessage(this.i18n.FetchingData);
             var context = this;
-            wu.fetchGraphXgmmlByName(graphName, function (xgmml, svg) {
+            wu.fetchGraphXgmmlByName(graphName, subGraphId, function (xgmml, svg) {
                 context.main.setMessage("");
                 context.loadGraphFromXGMML(xgmml, svg);
                 deferred.resolve();
@@ -535,9 +536,9 @@ define([
             return deferred.promise;
         },
 
-        refreshGraphFromWU: function (wu, graphName) {
+        refreshGraphFromWU: function (wu, graphName, subGraphId) {
             var context = this;
-            wu.fetchGraphXgmmlByName(graphName, function (xgmml) {
+            wu.fetchGraphXgmmlByName(graphName, subGraphId, function (xgmml) {
                 context.mergeGraphFromXGMML(xgmml);
             }, true);
         },
@@ -798,7 +799,7 @@ define([
 
         displayGraphs: function (graphs) {
             for (var i = 0; i < graphs.length; ++i) {
-                this.wu.fetchGraphXgmml(i, function (xgmml) {
+                this.wu.fetchGraphXgmml(i, null, function (xgmml) {
                     this.main.loadXGMML(xgmml, true);
                 });
             }

@@ -828,10 +828,10 @@ define([
                 onGetGraphs: onFetchGraphs
             });
         },
-        fetchGraphXgmmlByName: function (name, onFetchGraphXgmml, force) {
+        fetchGraphXgmmlByName: function (name, subGraphId, onFetchGraphXgmml, force) {
             var idx = this.getGraphIndex(name);
             if (idx >= 0) {
-                this.fetchGraphXgmml(idx, onFetchGraphXgmml, force);
+                this.fetchGraphXgmml(idx, subGraphId, onFetchGraphXgmml, force);
             } else {
                 topic.publish("hpcc/brToaster", {
                     Severity: "Error",
@@ -843,9 +843,12 @@ define([
                 onFetchGraphXgmml("", "");
             }
         },
-        fetchGraphXgmml: function (idx, onFetchGraphXgmml, force) {
-            if (!force && this.graphs && this.graphs[idx] && this.graphs[idx].xgmml) {
+        fetchGraphXgmml: function (idx, subGraphId, onFetchGraphXgmml, force) {
+            if (!force && !subGraphId && this.graphs && this.graphs[idx] && this.graphs[idx].xgmml) {
                 onFetchGraphXgmml(this.graphs[idx].xgmml, this.graphs[idx].svg);
+                return;
+            } else if (!force && subGraphId && this.subgraphs && this.subgraphs[idx + "." + subGraphId] && this.subgraphs[idx + "." + subGraphId].xgmml) {
+                onFetchGraphXgmml(this.subgraphs[idx + "." + subGraphId].xgmml, this.subgraphs[idx + "." + subGraphId].svg);
                 return;
             }
 
@@ -854,12 +857,24 @@ define([
             WsWorkunits.WUGetGraph({
                 request: {
                     Wuid: this.Wuid,
-                    GraphName: this.graphs[idx].Name
+                    GraphName: this.graphs[idx].Name,
+                    SubGraphId: subGraphId
                 }
             }).then(function (response) {
                 if (lang.exists("WUGetGraphResponse.Graphs.ECLGraphEx", response) && response.WUGetGraphResponse.Graphs.ECLGraphEx.length) {
-                    context.graphs[idx].xgmml = response.WUGetGraphResponse.Graphs.ECLGraphEx[0].Graph;
-                    onFetchGraphXgmml(context.graphs[idx].xgmml, context.graphs[idx].svg);
+                    if (subGraphId) {
+                        if (!context.subgraphs) {
+                            context.subgraphs = {};
+                        }
+                        if (!context.subgraphs[idx + "." + subGraphId]) {
+                            context.subgraphs[idx + "." + subGraphId] = {};
+                        }
+                        context.subgraphs[idx + "." + subGraphId].xgmml = "<graph>" + response.WUGetGraphResponse.Graphs.ECLGraphEx[0].Graph + "</graph>";
+                        onFetchGraphXgmml(context.subgraphs[idx + "." + subGraphId].xgmml, context.subgraphs[idx + "." + subGraphId].svg);
+                    } else {
+                        context.graphs[idx].xgmml = response.WUGetGraphResponse.Graphs.ECLGraphEx[0].Graph;
+                        onFetchGraphXgmml(context.graphs[idx].xgmml, context.graphs[idx].svg);
+                    }
                 } else {
                     topic.publish("hpcc/brToaster", {
                         Severity: "Error",
