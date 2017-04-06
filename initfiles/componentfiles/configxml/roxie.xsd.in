@@ -578,12 +578,19 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="fieldTranslationEnabled" type="xs:boolean" use="optional" default="false">
+    <xs:attribute name="fieldTranslationEnabled" use="optional" default="false">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Enables translation (where possible) of mismatched index formats on-the-fly</tooltip>
+          <tooltip>Enables translation (where possible) of mismatched index layouts on-the-fly. Specify 'payload' to attempt to translate payload fields only</tooltip>
         </xs:appinfo>
       </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="false"/>
+          <xs:enumeration value="true"/>
+          <xs:enumeration value="payload"/>
+        </xs:restriction>
+      </xs:simpleType>
     </xs:attribute>
     <xs:attribute name="highTimeout" type="xs:nonNegativeInteger" use="optional" default="2000">
       <xs:annotation>

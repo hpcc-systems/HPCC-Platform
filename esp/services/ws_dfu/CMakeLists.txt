@@ -49,6 +49,7 @@ include_directories (
          ./../../../rtl/eclrtl 
          ./../../../rtl/nbcd
          ./../../../common/environment 
+         ./../../../common/thorhelper 
          ./../../services 
          ./../../../dali/ft 
          ./../common 

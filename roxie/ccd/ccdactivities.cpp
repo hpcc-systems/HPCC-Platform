@@ -156,7 +156,7 @@ public:
         return ret.appendf("%p", this);
     }
 
-    bool getEnableFieldTranslation() const
+    IRecordLayoutTranslator::Mode getEnableFieldTranslation() const
     {
         return queryFactory.queryOptions().enableFieldTranslation;
     }
@@ -308,7 +308,7 @@ protected:
     bool resent;
     bool isOpt;
     bool variableFileName;
-    bool allowFieldTranslation;
+    IRecordLayoutTranslator::Mode allowFieldTranslation;
     Owned<const IResolvedFile> varFileInfo;
 
     virtual void setPartNo(bool filechanged) = 0;

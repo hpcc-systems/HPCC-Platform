@@ -1962,7 +1962,7 @@ public:
         }
         return f.getClear();
     }
-    virtual IKeyArray *getKeyArray(IDefRecordMeta *activityMeta, TranslatorArray *translators, bool isOpt, unsigned channel, bool allowFieldTranslation) const
+    virtual IKeyArray *getKeyArray(IDefRecordMeta *activityMeta, TranslatorArray *translators, bool isOpt, unsigned channel, IRecordLayoutTranslator::Mode allowFieldTranslation) const override
     {
         unsigned maxParts = 0;
         ForEachItemIn(subFile, subFiles)
@@ -1981,8 +1981,8 @@ public:
             if (translators)
             {
                 if (fdesc && thisDiskMeta && activityMeta && !thisDiskMeta->equals(activityMeta))
-                    if (allowFieldTranslation)
-                        translators->append(createRecordLayoutTranslator(lfn, thisDiskMeta, activityMeta));
+                    if (allowFieldTranslation != IRecordLayoutTranslator::NoTranslation)
+                        translators->append(createRecordLayoutTranslator(lfn, thisDiskMeta, activityMeta, allowFieldTranslation));
                     else
                     {
                         DBGLOG("Key layout mismatch: %s", lfn.get());

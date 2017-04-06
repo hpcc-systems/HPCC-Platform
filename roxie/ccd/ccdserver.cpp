@@ -23600,7 +23600,7 @@ public:
     bool maySkip;
     bool sorted;
     bool variableFileName;
-    bool enableFieldTranslation;
+    IRecordLayoutTranslator::Mode enableFieldTranslation;
     unsigned maxSeekLookahead;
     Owned<const IResolvedFile> indexfile;
 
@@ -24722,7 +24722,7 @@ public:
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
                     indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
                     if (indexfile)
-                        keySet.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, isLocal ? queryFactory.queryChannel() : 0, false));
+                        keySet.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, isLocal ? queryFactory.queryChannel() : 0, IRecordLayoutTranslator::NoTranslation));
                 }
                 if (fileName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
@@ -26289,7 +26289,7 @@ class CRoxieServerKeyedJoinActivityFactory : public CRoxieServerMultiInputFactor
     unsigned joinFlags;
     bool isHalfKeyed;
     bool isLocal;
-    bool enableFieldTranslation;
+    IRecordLayoutTranslator::Mode enableFieldTranslation;
     bool variableFetchFileName;
     bool variableIndexFileName;
     bool isSimple;
