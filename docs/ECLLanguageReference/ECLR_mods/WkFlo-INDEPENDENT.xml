@@ -80,8 +80,7 @@
                                      'mythor',DestPath+File2,
                                      -1,ESPportIP))
                            : INDEPENDENT;
-  Output
-  SEQUENTIAL(DeleteOldFiles,SprayNewFiles);
+    SEQUENTIAL(DeleteOldFiles,SprayNewFiles);
 </programlisting>
 
   <para>See Also: <link linkend="GLOBAL">GLOBAL</link></para>
