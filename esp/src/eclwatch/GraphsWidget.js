@@ -292,6 +292,17 @@ define([
                             };
                             graphs.push(graph);
                         });
+                    } else if (lang.exists("WUGraphs.ECLGraph", context.query)) {
+                        arrayUtil.forEach(context.query.WUGraphs.ECLGraph, function (item, idx) {
+                            var graph = {
+                                Name: item.Name || "",
+                                Label: item.Label || "",
+                                Completed: item.Completed || "",
+                                Time: item.Time || 0,
+                                Type: item.Type || ""
+                            };
+                            graphs.push(graph);
+                        });
                     }
                     context.store.setData(graphs);
                     context.grid.refresh();
