@@ -128,6 +128,9 @@ class Logger(object):
                 if record.levelname == 'DEBUG':
                     msg +=" [asctime:"+record.asctime+", process:"+str(record.process)+", processName:"+record.processName+", thread:"+str(record.thread)+", threadName:"+record.threadName+"]"
                     msg = "{0:3d}".format(taskId) + ". Debug-[debug-"+record.asctime+"]: "+msg
+                if record.levelname == 'ERROR':
+                    msg +=" [asctime:"+record.asctime+", process:"+str(record.process)+", processName:"+record.processName+", thread:"+str(record.thread)+", threadName:"+record.threadName+"]"
+                    msg = "{0:3d}".format(taskId) + ". Error-[error-"+record.asctime+"]: "+msg
                 if record.levelname == 'CRITICAL':
                     msg += " [level: "+record.levelname+" ]"
                     msg = "{0:3d}".format(taskId) +". " + msg
