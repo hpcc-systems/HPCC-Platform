@@ -1597,6 +1597,7 @@ void EclAgent::executeThorGraph(const char * graphName)
             thorMaster.getUrlStr(s);
             s.append("; (").append(e->errorCode()).append(", ");
             e->errorMessage(s).append(")");
+            e->Release();
             throw MakeStringExceptionDirect(-1, s.str());
         }
         ThorReplyCodes replyCode;
