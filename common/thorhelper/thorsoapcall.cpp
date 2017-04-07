@@ -290,7 +290,9 @@ private:
             catch (IException *e)
             {
                 StringBuffer s;
-                throw MakeStringException(ROXIE_ABORT_EVENT, "%s", e->errorMessage(s).str());
+                e->errorMessage(s);
+                e->Release();
+                throw MakeStringException(ROXIE_ABORT_EVENT, "%s", s.str());
             }
         }
     }
