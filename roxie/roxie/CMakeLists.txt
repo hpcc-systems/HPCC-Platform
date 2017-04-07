@@ -43,6 +43,7 @@ include_directories (
          ./../../roxie/roxie 
          ./../../roxie/roxiemem 
          ./../../common/thorhelper
+         ./../../common/deftype
          ./../../common/workunit
     )
 

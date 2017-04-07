@@ -118,13 +118,20 @@ protected:
         return (node) ? node->getPropBool("@resolveLocally", false) : true;  // default is false for explicit package files, but true for the default empty package
     }
 
-    virtual bool getSysFieldTranslationEnabled() const {return false;}
-    virtual bool getEnableFieldTranslation() const
+    virtual IRecordLayoutTranslator::Mode getSysFieldTranslationEnabled() const { return IRecordLayoutTranslator::NoTranslation; }
+    virtual IRecordLayoutTranslator::Mode getEnableFieldTranslation() const
     {
         const char *val = queryEnv("control:enableFieldTranslation");
         if (!val) val = queryEnv("enableFieldTranslation"); // Backward compatibility
         if (val)
-            return strToBool(val);
+        {
+            if (strieq(val, "payload"))
+                return IRecordLayoutTranslator::TranslatePayload;
+            else if (strToBool(val))
+                return IRecordLayoutTranslator::TranslateAll;
+            else
+                return IRecordLayoutTranslator::NoTranslation;
+        }
         else
             return getSysFieldTranslationEnabled();
     }

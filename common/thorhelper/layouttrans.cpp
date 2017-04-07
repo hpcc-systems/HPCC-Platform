@@ -501,7 +501,7 @@ IRecordLayoutTranslator::RowTransformContext::~RowTransformContext()
     delete [] ptrs;
 }
 
-CRecordLayoutTranslator::CRecordLayoutTranslator(IDefRecordMeta const * _diskMeta, IDefRecordMeta const * _activityMeta) : diskMeta(const_cast<IDefRecordMeta *>(_diskMeta)), activityMeta(const_cast<IDefRecordMeta *>(_activityMeta)), activityKeySizes(NULL)
+CRecordLayoutTranslator::CRecordLayoutTranslator(IDefRecordMeta const * _diskMeta, IDefRecordMeta const * _activityMeta, IRecordLayoutTranslator::Mode _mode) : diskMeta(const_cast<IDefRecordMeta *>(_diskMeta)), activityMeta(const_cast<IDefRecordMeta *>(_activityMeta)), activityKeySizes(NULL)
 {
     numKeyedDisk = diskMeta->numKeyedFields();
     numKeyedActivity = activityMeta->numKeyedFields();
@@ -516,6 +516,8 @@ CRecordLayoutTranslator::CRecordLayoutTranslator(IDefRecordMeta const * _diskMet
         topMappingLevel.calculateMappings(diskMeta->queryRecord(), numKeyedDisk, activityMeta->queryRecord(), numKeyedActivity);
         calculateActivityKeySizes();
         calculateKeysTransformed();
+        if (keysTransformed && _mode != TranslateAll)
+            throw makeFailure(IRecordLayoutTranslator::Failure::KeyedDisallowed)->append("Translation of key fields would be required");
         transformer.build(numTransformers, mappings);
     }
     catch(Failure * f)
@@ -543,7 +545,7 @@ void CRecordLayoutTranslator::calculateActivityKeySizes()
 
 void CRecordLayoutTranslator::calculateKeysTransformed()
 {
-    keysTransformed = true;;
+    keysTransformed = true;
     if(numKeyedActivity != numKeyedDisk)
         return;
     for(unsigned diskFieldNum=0; diskFieldNum<numKeyedDisk; ++diskFieldNum)
@@ -651,9 +653,9 @@ void ExpandedSegmentMonitorList::setMergeBarrier(unsigned offset)
     // MORE - It's possible that I need to do something here??
 }
 
-IRecordLayoutTranslator * createRecordLayoutTranslator(IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta)
+IRecordLayoutTranslator * createRecordLayoutTranslator(IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta, IRecordLayoutTranslator::Mode _mode)
 {
-    Owned<IRecordLayoutTranslator> layoutTrans = new CRecordLayoutTranslator(diskMeta, activityMeta);
+    Owned<IRecordLayoutTranslator> layoutTrans = new CRecordLayoutTranslator(diskMeta, activityMeta, _mode);
     if(!layoutTrans->querySuccess())
     {
         StringBuffer cause;
@@ -663,7 +665,7 @@ IRecordLayoutTranslator * createRecordLayoutTranslator(IDefRecordMeta const * di
     return layoutTrans.getClear();
 };
 
-extern THORHELPER_API IRecordLayoutTranslator * createRecordLayoutTranslator(size32_t diskMetaSize, const void *diskMetaData, size32_t activityMetaSize, const void *activityMetaData)
+extern THORHELPER_API IRecordLayoutTranslator * createRecordLayoutTranslator(size32_t diskMetaSize, const void *diskMetaData, size32_t activityMetaSize, const void *activityMetaData, IRecordLayoutTranslator::Mode _mode)
 {
     MemoryBuffer activityMetaSerialized;
     activityMetaSerialized.setBuffer(activityMetaSize, (void *) activityMetaData, false);
@@ -673,7 +675,7 @@ extern THORHELPER_API IRecordLayoutTranslator * createRecordLayoutTranslator(siz
     diskMetaSerialized.setBuffer(diskMetaSize, (void *) diskMetaData, false);
     Owned<IDefRecordMeta> diskMeta = deserializeRecordMeta(diskMetaSerialized, true);
 
-    return createRecordLayoutTranslator(diskMeta, activityMeta);
+    return createRecordLayoutTranslator(diskMeta, activityMeta, _mode);
 }
 
 #ifdef DEBUG_HELPERS_REQUIRED
@@ -720,21 +722,21 @@ StringBuffer & CRecordLayoutTranslator::getMappingsAsString(StringBuffer & out) 
 
 #endif
 
-CacheKey::CacheKey(size32_t _s1, void const * _d1, size32_t _s2, void const * _d2)
-    : s1(_s1), d1(static_cast<byte const *>(_d1)), s2(_s2), d2(static_cast<byte const *>(_d2))
+CacheKey::CacheKey(IRecordLayoutTranslator::Mode _mode, size32_t _s1, void const * _d1, size32_t _s2, void const * _d2)
+    : mode(_mode), s1(_s1), d1(static_cast<byte const *>(_d1)), s2(_s2), d2(static_cast<byte const *>(_d2))
 {
-    hashval = hashc(d1, s1, 0);
+    hashval = hashc(d1, s1, (unsigned) mode);
     hashval = hashc(d2, s2, hashval);
 }
 
-CacheValue::CacheValue(size32_t s1, void const * d1, size32_t s2, void const * d2, IRecordLayoutTranslator * _trans)
-    : b1(s1, d1), b2(s2, d2), key((size32_t)b1.length(), b1.get(), (size32_t)b2.length(), b2.get()), trans(_trans)
+CacheValue::CacheValue(IRecordLayoutTranslator::Mode _mode, size32_t s1, void const * d1, size32_t s2, void const * d2, IRecordLayoutTranslator * _trans)
+    : b1(s1, d1), b2(s2, d2), key(_mode, (size32_t)b1.length(), b1.get(), (size32_t)b2.length(), b2.get()), trans(_trans)
 {
 }
 
-IRecordLayoutTranslator * CRecordLayoutTranslatorCache::get(size32_t diskMetaSize, void const  * diskMetaData, size32_t activityMetaSize, void const * activityMetaData, IDefRecordMeta const * activityMeta)
+IRecordLayoutTranslator * CRecordLayoutTranslatorCache::get(IRecordLayoutTranslator::Mode mode, size32_t diskMetaSize, void const  * diskMetaData, size32_t activityMetaSize, void const * activityMetaData, IDefRecordMeta const * activityMeta)
 {
-    CacheKey key(diskMetaSize, diskMetaData, activityMetaSize, activityMetaData);
+    CacheKey key(mode, diskMetaSize, diskMetaData, activityMetaSize, activityMetaData);
     CacheValue * value = find(&key);
     if(!value)
     {
@@ -751,9 +753,9 @@ IRecordLayoutTranslator * CRecordLayoutTranslatorCache::get(size32_t diskMetaSiz
         diskMetaSerialized.setBuffer(diskMetaSize, (void *) diskMetaData, false);
         Owned<IDefRecordMeta> diskMeta = deserializeRecordMeta(diskMetaSerialized, true);
 
-        Owned<IRecordLayoutTranslator> trans = createRecordLayoutTranslator(diskMeta, activityMeta);
+        Owned<IRecordLayoutTranslator> trans = createRecordLayoutTranslator(diskMeta, activityMeta, mode);
 
-        value = new CacheValue(diskMetaSize, diskMetaData, activityMetaSize, activityMetaData, trans.getLink());
+        value = new CacheValue(mode, diskMetaSize, diskMetaData, activityMetaSize, activityMetaData, trans.getLink());
         addNew(value);
     }
     return value->getTranslator();
@@ -868,11 +870,11 @@ public:
         Owned<IRecordLayoutTranslatorCache> cache = createRecordLayoutTranslatorCache();
         CPPUNIT_ASSERT(cache.get() != 0);
         CPPUNIT_ASSERT(cache->count() == 0);
-        Owned<IRecordLayoutTranslator> t1 = cache->get(buff[0].length(), buff[0].bufferBase(), buff[1].length(), buff[1].bufferBase(), NULL);
+        Owned<IRecordLayoutTranslator> t1 = cache->get(IRecordLayoutTranslator::TranslateAll, buff[0].length(), buff[0].bufferBase(), buff[1].length(), buff[1].bufferBase(), NULL);
         CPPUNIT_ASSERT(cache->count() == 1);
-        Owned<IRecordLayoutTranslator> t2 = cache->get(buff[0].length(), buff[0].bufferBase(), buff[1].length(), buff[1].bufferBase(), NULL);
+        Owned<IRecordLayoutTranslator> t2 = cache->get(IRecordLayoutTranslator::TranslateAll, buff[0].length(), buff[0].bufferBase(), buff[1].length(), buff[1].bufferBase(), NULL);
         CPPUNIT_ASSERT(cache->count() == 1);
-        Owned<IRecordLayoutTranslator> t3 = cache->get(buff[0].length(), buff[0].bufferBase(), buff[2].length(), buff[2].bufferBase(), NULL);
+        Owned<IRecordLayoutTranslator> t3 = cache->get(IRecordLayoutTranslator::TranslateAll, buff[0].length(), buff[0].bufferBase(), buff[2].length(), buff[2].bufferBase(), NULL);
         CPPUNIT_ASSERT(cache->count() == 2);
         CPPUNIT_ASSERT(t1.get() == t2.get());
         CPPUNIT_ASSERT(t1.get() != t3.get());
@@ -1114,14 +1116,14 @@ private:
 
     void doTranslate(unsigned disk, unsigned activity)
     {
-        Owned<IRecordLayoutTranslator> trans = new CRecordLayoutTranslator(&meta.item(disk), &meta.item(activity));
+        Owned<IRecordLayoutTranslator> trans = new CRecordLayoutTranslator(&meta.item(disk), &meta.item(activity), IRecordLayoutTranslator::TranslateAll);
         CPPUNIT_ASSERT(trans.get() != NULL);
         CPPUNIT_ASSERT(trans->querySuccess());
     }
     
     void doTranslateFail(unsigned disk, unsigned activity, unsigned code)
     {
-        Owned<IRecordLayoutTranslator> trans = new CRecordLayoutTranslator(&meta.item(disk), &meta.item(activity));
+        Owned<IRecordLayoutTranslator> trans = new CRecordLayoutTranslator(&meta.item(disk), &meta.item(activity), IRecordLayoutTranslator::TranslateAll);
         CPPUNIT_ASSERT(trans.get() != 0);
         CPPUNIT_ASSERT(!trans->querySuccess());
         CPPUNIT_ASSERT(trans->queryFailure().queryCode() == code);

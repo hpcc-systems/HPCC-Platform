@@ -90,7 +90,7 @@ bool rltEnabled(IConstWorkUnit const * wu)
         return wu->getDebugValueBool("hthorLayoutTranslationEnabled", false);
 }
 
-IRecordLayoutTranslator * getRecordLayoutTranslator(IDefRecordMeta const * activityMeta, size32_t activityMetaSize, void const * activityMetaBuff, IDistributedFile * df, IRecordLayoutTranslatorCache * cache)
+IRecordLayoutTranslator * getRecordLayoutTranslator(IDefRecordMeta const * activityMeta, size32_t activityMetaSize, void const * activityMetaBuff, IDistributedFile * df, IRecordLayoutTranslatorCache * cache, IRecordLayoutTranslator::Mode mode)
 {
     IPropertyTree const & props = df->queryAttributes();
     MemoryBuffer diskMetaBuff;
@@ -107,9 +107,9 @@ IRecordLayoutTranslator * getRecordLayoutTranslator(IDefRecordMeta const * activ
     try
     {
         if(cache)
-            return cache->get(diskMetaBuff.length(), diskMetaBuff.bufferBase(), activityMetaSize, activityMetaBuff, activityMeta);
+            return cache->get(mode, diskMetaBuff.length(), diskMetaBuff.bufferBase(), activityMetaSize, activityMetaBuff, activityMeta);
         else
-            return createRecordLayoutTranslator(diskMetaBuff.length(), diskMetaBuff.bufferBase(), activityMetaSize, activityMetaBuff);
+            return createRecordLayoutTranslator(diskMetaBuff.length(), diskMetaBuff.bufferBase(), activityMetaSize, activityMetaBuff, mode);
     }
     catch (IException *E)
     {
@@ -742,7 +742,7 @@ IRecordLayoutTranslator * CHThorIndexReadActivityBase::getLayoutTranslator(IDist
         activityRecordMeta.setown(deserializeRecordMeta(buff, true));
     }
 
-    return getRecordLayoutTranslator(activityRecordMeta, activityRecordMetaSize, activityRecordMetaBuff, f, agent.queryRecordLayoutTranslatorCache());
+    return getRecordLayoutTranslator(activityRecordMeta, activityRecordMetaSize, activityRecordMetaBuff, f, agent.queryRecordLayoutTranslatorCache(), IRecordLayoutTranslator::TranslateAll);
 }
 
 void CHThorIndexReadActivityBase::verifyIndex(IKeyIndex * idx)
@@ -4062,7 +4062,7 @@ protected:
             activityRecordMeta.setown(deserializeRecordMeta(buff, true));
         }
 
-        return getRecordLayoutTranslator(activityRecordMeta, activityRecordMetaSize, activityRecordMetaBuff, f, agent.queryRecordLayoutTranslatorCache());
+        return getRecordLayoutTranslator(activityRecordMeta, activityRecordMetaSize, activityRecordMetaBuff, f, agent.queryRecordLayoutTranslatorCache(), IRecordLayoutTranslator::TranslateAll);
     }
 
     virtual void verifyIndex(IDistributedFile * f, IKeyIndex * idx, IRecordLayoutTranslator * trans)

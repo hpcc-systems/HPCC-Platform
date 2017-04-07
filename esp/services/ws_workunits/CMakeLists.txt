@@ -54,6 +54,7 @@ include_directories (
          ./../../../common/remote
          ./../../../system/jlib
          ./../../../common/environment
+         ./../../../rtl/eclrtl
          ./../../../roxie/roxie
          ./../../services
          ./../common

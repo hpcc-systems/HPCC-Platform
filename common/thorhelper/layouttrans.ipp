@@ -191,7 +191,7 @@ private:
 class CRecordLayoutTranslator : public IRecordLayoutTranslator, public CInterface
 {
 public:
-    CRecordLayoutTranslator(IDefRecordMeta const * _diskMeta, IDefRecordMeta const * _activityMeta);
+    CRecordLayoutTranslator(IDefRecordMeta const * _diskMeta, IDefRecordMeta const * _activityMeta, IRecordLayoutTranslator::Mode _mode);
     ~CRecordLayoutTranslator() { delete [] activityKeySizes; }
     IMPLEMENT_IINTERFACE;
     virtual bool querySuccess() const { return !failure; }
@@ -229,10 +229,11 @@ private:
 class CacheKey
 {
 public:
-    CacheKey(size32_t _s1, void const * _d1, size32_t _s2, void const * _d2);
+    CacheKey(IRecordLayoutTranslator::Mode mode, size32_t _s1, void const * _d1, size32_t _s2, void const * _d2);
     unsigned getHash() const { return hashval; }
-    bool operator==(CacheKey const & other) const { return((s1 == other.s1) && (s2 == other.s2) && (memcmp(d1, other.d1, s1) == 0) && (memcmp(d2, other.d2, s2) == 0)); }
+    bool operator==(CacheKey const & other) const { return((mode == other.mode) && (s1 == other.s1) && (s2 == other.s2) && (memcmp(d1, other.d1, s1) == 0) && (memcmp(d2, other.d2, s2) == 0)); }
 private:
+    IRecordLayoutTranslator::Mode mode;
     size32_t s1;
     byte const * d1;
     size32_t s2;
@@ -243,7 +244,7 @@ private:
 class CacheValue
 {
 public:
-    CacheValue(size32_t s1, void const * d1, size32_t s2, void const * d2, IRecordLayoutTranslator * _trans);
+    CacheValue(IRecordLayoutTranslator::Mode _mode, size32_t s1, void const * d1, size32_t s2, void const * d2, IRecordLayoutTranslator * _trans);
     CacheKey const & queryKey() const { return key; }
     IRecordLayoutTranslator * getTranslator() const { return trans.getLink(); }
 private:
@@ -260,7 +261,7 @@ class CRecordLayoutTranslatorCache : public CacheTable, public IRecordLayoutTran
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CRecordLayoutTranslatorCache() { _releaseAll(); }
-    virtual IRecordLayoutTranslator * get(size32_t diskMetaSize, void const  * diskMetaData, size32_t activityMetaSize, void const * activityMetaData, IDefRecordMeta const * activityMeta = NULL);
+    virtual IRecordLayoutTranslator * get(IRecordLayoutTranslator::Mode mode, size32_t diskMetaSize, void const  * diskMetaData, size32_t activityMetaSize, void const * activityMetaData, IDefRecordMeta const * activityMeta = NULL);
     virtual unsigned count() const { return CacheTable::count(); }
 
 private:
