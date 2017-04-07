@@ -255,7 +255,7 @@
        <xsl:for-each select="preceding-sibling::EspBinding[@port=$port]">
            <xsl:variable name="type2" select="/Environment/Software/EspService[@name=current()/@service]/Properties/@type"/>
             <xsl:choose>
-                <xsl:when test="$type2=$type">
+                <xsl:when test="($type2=$type) and ($type!='DynamicESDL')">
                     <xsl:message terminate="yes">
                         <xsl:text>Port conflict in ESP binding '</xsl:text>
                         <xsl:value-of select="$name"/>
