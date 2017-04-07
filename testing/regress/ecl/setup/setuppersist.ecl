@@ -15,11 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//version persistRefresh=true
-//version persistRefresh=false
-
-import ^ as root;
-
 countryRecord := RECORD
     string country;
     integer4 population;
@@ -35,16 +30,10 @@ ds2 := DATASET([{'Spain', 40397842},
                 {'Switzerland', 7523934},
                 {'United Kingdom', 60609153}], countryRecord);
 
-persistRefresh := #IFDEFINED(root.persistRefresh, true);
+pds1 := ds1:PERSIST('~REGRESS::PersistRefresh', SINGLE, REFRESH(true));
+output(pds1);
 
-#if (persistRefresh)
-    persistFileName := '~REGRESS::PersistRefresh';
-    ds := ds2;
-#else
-    persistFileName := '~REGRESS::PersistNoRefresh';
-    ds := ds1;
-#end
+pds2 := ds2:PERSIST('~REGRESS::PersistNoRefresh', SINGLE, REFRESH(true));
+output(pds2);
 
-CountriesDS := ds:PERSIST(persistFileName, SINGLE, REFRESH(persistRefresh));
 
-OUTPUT(CountriesDS);
