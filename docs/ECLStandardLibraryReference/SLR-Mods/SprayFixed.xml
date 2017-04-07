@@ -21,7 +21,11 @@
   allowoverwrite </emphasis> <emphasis role="bold">]</emphasis> ,<emphasis
   role="bold"> [</emphasis> <emphasis> replicate </emphasis> <emphasis
   role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis> <emphasis>
-  compress </emphasis> <emphasis role="bold">])</emphasis></para>
+  compress </emphasis> <emphasis role="bold">] </emphasis>, <emphasis
+  role="bold">[</emphasis><emphasis>failIfNoSourceFile</emphasis><emphasis
+  role="bold">] </emphasis>,<emphasis
+  role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
+  role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayFixed<indexterm>
@@ -40,8 +44,12 @@
   </emphasis> <emphasis role="bold">]</emphasis> , <emphasis role="bold">
   [</emphasis> <emphasis> allowoverwrite </emphasis> <emphasis role="bold">] ,
   [</emphasis> <emphasis> replicate </emphasis> <emphasis role="bold">] ,
-  [</emphasis> <emphasis> compress </emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+  [</emphasis> <emphasis> compress </emphasis><emphasis role="bold">]
+  </emphasis>, <emphasis
+  role="bold">[</emphasis><emphasis>failIfNoSourceFile</emphasis><emphasis
+  role="bold">]</emphasis>, <emphasis
+  role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
+  role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -134,9 +142,25 @@
         </row>
 
         <row>
+          <entry><emphasis>failIfNoSourceFile</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether a
+          missing file triggers a failure. If omitted, the default is
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>expireDays</emphasis></entry>
+
+          <entry>Optional. A integer value indicating the number of days
+          before automatically removing the file. If omitted, the default is
+          -1 (never expires).</entry>
+        </row>
+
+        <row>
           <entry><emphasis>dfuwuid</emphasis></entry>
 
-          <entry>The attribute name to recieve the null-terminated string
+          <entry>The attribute name to receive the null-terminated string
           containing the DFU workunit ID (DFUWUID) generated for the
           job.</entry>
         </row>
