@@ -27,7 +27,8 @@ source ${INSTALL_DIR}/etc/init.d/hpcc_common
 
 createConf ()
 {
-    awk -f ${reg_path}/regex.awk -v NEW_ENVFILE=$1 -v NEW_PORT=$2 -v NEW_CONFFILE=$3< ${path}${configs}/configmgr/esp.xml >${runtime}/${compName}/esp.xml
+    dir_name=$(basename ${INSTALL_DIR})
+    awk -f ${reg_path}/regex.awk -v NEW_ENVFILE=$1 -v NEW_PORT=$2 -v NEW_CONFFILE=$3< ${path}/etc/${dir_name}/configmgr/esp.xml >${runtime}/${compName}/esp.xml
 }
 
 
