@@ -535,7 +535,7 @@ class Regression:
                                           password=self.config.password,
                                           retryCount=self.config.maxAttemptCount)
                 except Error as e:
-                    logging.debug("Exception raised:'%s'"  % ( str(e)),  extra={'taskId':cnt})
+                    logging.debug("Exception raised:'%s' (line: %s )"  % ( str(e), str(inspect.stack()[0][2]) ),  extra={'taskId':cnt})
                     res = False
                     wuid = 'Not found'
                     query.setWuid(wuid)
@@ -543,7 +543,7 @@ class Regression:
                     report[0].addResult(query)
                     pass
                 except:
-                    logging.error("Unexpected error:'%s'" %( sys.exc_info()[0]) ,  extra={'taskId':cnt})
+                    logging.error("Unexpected error:'%s' (line: %s )" %( sys.exc_info()[0], str(inspect.stack()[0][2]) ) ,  extra={'taskId':cnt})
 
                 wuid = query.getWuid()
                 logging.debug("CMD result: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})
