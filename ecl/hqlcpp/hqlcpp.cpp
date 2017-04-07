@@ -7421,6 +7421,12 @@ bool HqlCppTranslator::ifRequiresAssignment(BuildCtx & ctx, IHqlExpression * exp
 
 void HqlCppTranslator::doBuildAssignIf(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
+    CHqlBoundExpr bound;
+    if (expr->isPure() && ctx.getMatchExpr(expr, bound))
+    {
+        assign(ctx, target, bound);
+        return;
+    }
     if (!ifRequiresAssignment(ctx, expr))
     {
         doBuildExprAssign(ctx, target, expr);
