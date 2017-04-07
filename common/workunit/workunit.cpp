@@ -2911,22 +2911,85 @@ public:
             }
             virtual bool allMatchingElementsReceived() { return true; }//For now, dali always returns all of matched WUs.
         };
-        class CScopeChecker : public CSimpleInterface, implements ISortedElementsTreeFilter
+        class CQueryOrFilter : public CInterface, implements IInterface
+        {
+            StringAttr xPath;
+            MapStringTo<bool> uniqueValues;
+
+        public:
+            IMPLEMENT_IINTERFACE;
+
+            CQueryOrFilter(const char* path) : xPath(path) {};
+
+            bool addValue(const char* value)
+            {
+                bool* found = uniqueValues.getValue(value);
+                if (!found || !*found)
+                {
+                    uniqueValues.setValue(value, true);
+                    return true;
+                }
+                return false;
+            }
+            bool checkValueInTree(IPropertyTree &tree)
+            {
+                const char* value = tree.queryProp(xPath.get());
+                if (isEmptyString(value))
+                    return false;
+
+                bool* found = uniqueValues.getValue(value);
+                return found && *found;
+            }
+        };
+        class CPostFilterChecker : public CSimpleInterface, implements ISortedElementsTreeFilter
         {
             UniqueScopes done;
             ISecManager *secmgr;
             ISecUser *secuser;
             CriticalSection crit;
+            IArrayOf<CQueryOrFilter> orFilters;
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-            CScopeChecker(ISecManager *_secmgr,ISecUser *_secuser)
+            CPostFilterChecker(ISecManager *_secmgr,ISecUser *_secuser)
             {
                 secmgr = _secmgr;
                 secuser = _secuser;
             }
+            bool addOrFilter(const char* path, const char* filters, const char* sep)
+            {
+                if (isEmptyString(path) || isEmptyString(filters) || isEmptyString(sep) || !strstr(filters, sep))
+                    return false;
+
+                Owned<CQueryOrFilter> pFilter = new CQueryOrFilter(path);
+                bool validFilter = false;
+                StringArray qlist;
+                qlist.appendListUniq(filters, sep);
+                ForEachItemIn(q, qlist)
+                {
+                    const char* filter = qlist.item(q);
+                    if (isEmptyString(filter))
+                        continue;
+                    if (pFilter->addValue(filter))
+                        validFilter = true;
+                }
+                if (!validFilter)
+                    return false;
+
+                orFilters.append(*pFilter.getClear());
+                return true;
+            }
             bool isOK(IPropertyTree &tree)
             {
+                if (!checkOrFilters(tree))
+                    return false;
+                return checkScope(tree);
+            }
+            bool checkScope(IPropertyTree &tree)
+            {
+                if (!secmgr)
+                    return true;
+
                 const char *scopename = tree.queryProp("@scope");
                 if (!scopename||!*scopename)
                     return true;
@@ -2945,8 +3008,21 @@ public:
                 }
                 return ret;
             }
+            bool checkOrFilters(IPropertyTree &tree)
+            {
+                if (!orFilters.ordinality())
+                    return true;
+
+                ForEachItemIn(i, orFilters)
+                {
+                    CQueryOrFilter& filter = orFilters.item(i);
+                    if (!filter.checkValueInTree(tree))
+                        return false;
+                }
+                return true;
+            }
         };
-        Owned<ISortedElementsTreeFilter> sc = new CScopeChecker(secmgr,secuser);
+        Owned<ISortedElementsTreeFilter> pfc = new CPostFilterChecker(secmgr,secuser);
         StringBuffer query;
         StringBuffer so;
         StringAttr namefilter("*");
@@ -2982,7 +3058,7 @@ public:
                     if (subfmt==WUSFtotalthortime)
                         sortorder = (WUSortField) (sortorder & ~WUSFnumeric);
                 }
-                else
+                else if (!pfc->addOrFilter(getEnumText(subfmt,workunitSortFields), fv, "|"))
                 {
                     query.append('[').append(getEnumText(subfmt,workunitSortFields)).append('=');
                     if (fmt&WUSFnocase)
@@ -3011,7 +3087,7 @@ public:
         }
         IArrayOf<IPropertyTree> results;
         Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
-        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,secmgr?sc:NULL,"",cachehint,results,total,NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,pfc,"",cachehint,results,total,NULL);
         return new CConstWUArrayIterator(results);
     }
 

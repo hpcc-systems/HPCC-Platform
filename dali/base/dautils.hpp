@@ -271,6 +271,7 @@ IRemoteConnection *getSortedElements( const char *basexpath,
 interface ISortedElementsTreeFilter : extends IInterface
 {
     virtual bool isOK(IPropertyTree &tree) = 0;
+    virtual bool addOrFilter(const char* path, const char* filters, const char* sep) = 0;
 };
 interface IElementsPager : extends IInterface
 {
