@@ -322,7 +322,9 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         query->getQueryText(eclQuery);
         query->getQueryMainDefinition(mainDefinition);
 
-        StringBuffer eclccProgName("eclcc");
+        StringBuffer eclccProgName;
+        splitDirTail(queryCurrentProcessPath(), eclccProgName);
+        eclccProgName.append("eclcc");
         StringBuffer eclccCmd(" -shared");
         if (eclQuery.length())
             eclccCmd.append(" -");
