@@ -284,14 +284,6 @@ if(TOP_LEVEL_PROJECT)
         message("-- Auto Detecting Packaging type")
         message("-- distro uses ${packageManagement}, revision is ${packageRevisionArch}")
 
-        if("${packageManagement}" STREQUAL "RPM")
-            set(CPACK_RPM_SPEC_MORE_DEFINE
-"%define _use_internal_dependency_generator 0
-%define __getdeps() while read file; do /usr/lib/rpm/rpmdeps -%{1} ${file} | %{__grep} -v libRInside.so | %{__grep} -v libRcpp.so ; done | /bin/sort -u
-%define __find_provides /bin/sh -c '%{__getdeps P}'
-%define __find_requires /bin/sh -c '%{__getdeps R}'")
-        endif()
-
         if("${packageManagement}" STREQUAL "DEB")
             set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}${packageRevisionArch}")
         elseif("${packageManagement}" STREQUAL "RPM")
