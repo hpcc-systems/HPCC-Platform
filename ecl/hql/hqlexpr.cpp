@@ -4222,8 +4222,13 @@ void CHqlRealExpression::updateFlagsAfterOperands()
             break;
         }
     case no_clustersize:
-        //wrong, but improves the generated code
-        infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
+        //pure is added with the wfid as a parameter which guarantees that it can be commoned up.
+        if (!hasAttribute(pureAtom))
+            infoFlags |= (HEFnoduplicate);
+
+        //Wrong, but improves the generated code (preventing it being serialized).
+        //Even better would be to evaluate once, but not serialize...
+        infoFlags |= (HEFcontextDependentException);
         break;
     case no_type:
         {
