@@ -300,7 +300,7 @@ public:
     virtual void set(const char *val) { attr.set(val); };
     virtual void clear() { attr.clear(); };
     virtual void setLen(const char *val, unsigned length) { attr.set(val, length); };
-    virtual unsigned length() const { return attr.length(); };
+    virtual unsigned length() const { return (unsigned)attr.length(); };
 
 private:
     StringAttr & attr;
