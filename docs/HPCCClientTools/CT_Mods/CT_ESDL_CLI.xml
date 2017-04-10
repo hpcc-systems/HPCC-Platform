@@ -378,9 +378,9 @@
       <sect2 id="CT_ESDL_CLI_esdl_publish" role="brk">
         <title>esdl publish</title>
 
-        <para><emphasis role="bold">esdl publish &lt;servicename&gt;
-        &lt;filename.ecm&gt; )[<emphasis>options</emphasis>]
-        </emphasis></para>
+        <para><emphasis role="bold">esdl publish
+        &lt;filename.(ecm|esdl|xml)&gt; &lt;servicename&gt;
+        [<emphasis>options</emphasis>] </emphasis></para>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -390,16 +390,17 @@
 
               <tbody>
                 <row>
-                  <entry>servicename</entry>
+                  <entry>filename</entry>
 
-                  <entry>The name of the service to publish</entry>
+                  <entry>The ESDL (*.ecm, *.esdl, or *.xml) file containing
+                  the service definitions.</entry>
                 </row>
 
                 <row>
-                  <entry>filename.ecm</entry>
+                  <entry>servicename</entry>
 
-                  <entry>The ESDL (*.ecm) file containing the service
-                  definitions.</entry>
+                  <entry>The name of the service to publish. Optional if the
+                  ESDL definition contains only one service. </entry>
                 </row>
 
                 <row>
@@ -461,7 +462,7 @@
 
         <para>Examples:</para>
 
-        <programlisting>esdl publish mathservice mathservice.ecm -s nnn.nnn.nnn.nnn --port 8010
+        <programlisting>esdl publish mathservice.ecm mathservice -s nnn.nnn.nnn.nnn --port 8010
 </programlisting>
       </sect2>
 
@@ -660,7 +661,8 @@
                 <entry>ESDLServiceName</entry>
 
                 <entry>The Name of the ESDL Service (as defined in the ESDL
-                Definition)</entry>
+                Definition). Optional if the ESDL definition contains only one
+                service. </entry>
               </row>
 
               <row>
