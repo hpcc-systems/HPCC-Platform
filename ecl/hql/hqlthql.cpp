@@ -448,7 +448,7 @@ StringBuffer &HqltHql::callEclFunction(StringBuffer &s, IHqlExpression * expr, b
 {
     assertex(expr->isNamedSymbol());
     IHqlExpression * funcdef = expr->queryFunctionDefinition();
-    assertex(funcdef->getOperator() == no_funcdef);
+    assertex(funcdef->getOperator() == no_funcdef || funcdef->getOperator() == no_internalselect);
     IHqlExpression * formals = queryFunctionParameters(funcdef);
 
     s.append('(');
