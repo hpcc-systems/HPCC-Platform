@@ -2688,7 +2688,7 @@ public:
 
 
             const char * emplID = user.getEmployeeID();
-            char *employeeID_values[] = {(emplID && *emplID) ? (char*)emplID : NULL, NULL };
+            char *employeeID_values[] = {(emplID && *emplID) ? (char*)emplID : nullptr, nullptr };
             LDAPMod employeeID_attr =
             {
                 LDAP_MOD_REPLACE,
