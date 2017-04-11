@@ -196,8 +196,8 @@ static bool getHomeFolder(StringBuffer & homepath)
 struct EclCompileInstance
 {
 public:
-    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errorProcessor, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen) :
-      inputFile(_inputFile), errorProcessor(&_errorProcessor), errout(_errout), outputFilename(_outputFilename), legacyImport(_legacyImport), legacyWhen(_legacyWhen)
+    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errorProcessor, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen, bool _ignoreSignatures) :
+      inputFile(_inputFile), errorProcessor(&_errorProcessor), errout(_errout), outputFilename(_outputFilename), legacyImport(_legacyImport), legacyWhen(_legacyWhen), ignoreSignatures(_ignoreSignatures)
 {
         stats.parseTime = 0;
         stats.generateTime = 0;
@@ -227,6 +227,7 @@ public:
     bool legacyWhen;
     bool fromArchive = false;
     bool ignoreUnknownImport = false;
+    bool ignoreSignatures = false;
     struct {
         unsigned parseTime;
         unsigned generateTime;
@@ -392,6 +393,7 @@ protected:
     bool optSyntax = false;
     bool optLegacyImport = false;
     bool optLegacyWhen = false;
+    bool optIgnoreSignatures = false;
     bool optGenerateHeader = false;
     bool optShowPaths = false;
     bool optNoSourcePath = false;
@@ -1164,6 +1166,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         }
 
         parseCtx.ignoreUnknownImport = instance.ignoreUnknownImport;
+        parseCtx.ignoreSignatures = instance.ignoreSignatures;
         bool exportDependencies = instance.wu->getDebugValueBool("exportDependencies",false);
         if (exportDependencies)
             parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
@@ -1840,7 +1843,7 @@ bool EclCC::processFiles()
     else if (inputFiles.ordinality() == 0)
     {
         assertex(optQueryRepositoryReference);
-        EclCompileInstance info(NULL, *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen);
+        EclCompileInstance info(NULL, *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures);
         processReference(info, optQueryRepositoryReference);
         ok = (errs->errCount() == 0);
 
@@ -1848,7 +1851,7 @@ bool EclCC::processFiles()
     }
     else
     {
-        EclCompileInstance info(&inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen);
+        EclCompileInstance info(&inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures);
         processFile(info);
         ok = (errs->errCount() == 0);
 
@@ -2248,6 +2251,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optNoLogFile, "--nologfile"))
         {
         }
+        else if (iter.matchFlag(optIgnoreSignatures, "--nogpg"))
+        {
+        }
         else if (iter.matchFlag(optNoStdInc, "--nostdinc"))
         {
         }
@@ -2503,7 +2509,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             }
 
             Owned<IErrorReceiver> localErrs = createFileErrorReceiver(logFile);
-            EclCompileInstance info(&file, *localErrs, logFile, outFilename, optLegacyImport, optLegacyWhen);
+            EclCompileInstance info(&file, *localErrs, logFile, outFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures);
             processFile(info);
             if (info.wu &&
                 (info.wu->getDebugValueBool("generatePartialOutputOnError", false) || info.queryErrorProcessor().errCount() == 0))

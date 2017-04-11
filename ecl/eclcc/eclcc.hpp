@@ -98,6 +98,7 @@ const char * const helpText[] = {
 #ifdef _WIN32
     "!   -m            Enable leak checking",
 #endif
+    "!   --nogpg       Do not run gpg to check signatures on signed code",
     "    --nosourcepath Compile as if the source came from stdin",
     "!   --maxErrors=<n> Limit the number of errors, aborting on the nth (default = 5)",
 #ifndef _WIN32
