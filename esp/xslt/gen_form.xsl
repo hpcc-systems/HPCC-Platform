@@ -40,7 +40,7 @@
     <xsl:param name="includeSoapTest" select="1"/>
     <xsl:param name="includeRoxieTest" select="0"/>
     <xsl:param name="includeJsonTest" select="0"/>
-    <!--xsl:param name="includeGatewayTest" select="0"/-->
+    <xsl:param name="includeJsonReqSample" select="0"/>
     <xsl:param name="schemaRoot" select="xsd:schema"/>
     <xsl:param name="esdl_links" select="0"/>
     
@@ -182,6 +182,9 @@
                                 &nbsp;<a><xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'xsd'"/></xsl:call-template></xsl:attribute>XSD</a>
                                 &nbsp;<a><xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'reqxml'"/></xsl:call-template></xsl:attribute>XMLRequest</a>
                                 &nbsp;<a><xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'respxml'"/></xsl:call-template></xsl:attribute>XMLResponse</a>
+                                <xsl:if test="$includeJsonTest">
+                                    &nbsp;<a><xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'reqjson'"/></xsl:call-template></xsl:attribute>JSONRequest</a>
+                                </xsl:if>
                                 &nbsp;<a><xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'respjson'"/></xsl:call-template></xsl:attribute>JSONResponse</a>
                         </td>
                     </tr>
@@ -1452,6 +1455,7 @@
                     <xsl:choose>
                         <xsl:when test="$type='reqxml'"><xsl:value-of select="concat($methodName,'?reqxml_','&amp;',$params)"/></xsl:when>
                         <xsl:when test="$type='respxml'"><xsl:value-of select="concat($methodName,'?respxml_','&amp;',$params)"/></xsl:when>
+                        <xsl:when test="$type='reqjson'"><xsl:value-of select="concat($methodName,'?reqjson_','&amp;',$params)"/></xsl:when>
                         <xsl:when test="$type='respjson'"><xsl:value-of select="concat($methodName,'?respjson_','&amp;',$params)"/></xsl:when>
                         <xsl:when test="$type='xsd'"><xsl:value-of select="concat($methodName,'?xsd','&amp;',$params)"/></xsl:when>
                         <xsl:when test="$type='wsdl'"><xsl:value-of select="concat($methodName,'?wsdl','&amp;',$params)"/></xsl:when>
