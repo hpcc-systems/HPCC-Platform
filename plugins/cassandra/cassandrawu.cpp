@@ -1526,12 +1526,41 @@ public:
     {
         return field;
     }
-private:
+protected:
     const char *xpath;
     StringAttr pattern;
     StringAttr value;
     WUSortField field;
     bool wild;
+};
+
+class MultiValuePostFilter : public PostFilter
+{
+public:
+    MultiValuePostFilter(WUSortField _field, const char *_value)
+      : PostFilter(_field, _value, false)
+    {
+        setValue(_value);
+    }
+    virtual bool matches(IPTree &p) const
+    {
+        const char *val = p.queryProp(xpath);
+        if (val)
+        {
+            ForEachItemIn(idx, values)
+            {
+                if (strieq(val, values.item(idx)))
+                    return true;
+            }
+        }
+        return false;
+    }
+    void setValue(const char *_value)
+    {
+        values.appendList(_value, "|");
+    }
+private:
+    StringArray values;
 };
 
 class AppValuePostFilter : public CInterfaceOf<IPostFilter>
@@ -3417,6 +3446,8 @@ public:
                         if (s.length())
                             remoteWildFilters.append(*new PostFilter(field, s, true));  // Trailing-only wildcards can be done remotely
                     }
+                    else if (strchr(fv, '|'))
+                        goodFilters.append(*new MultiValuePostFilter(field, fv));
                     else
                         goodFilters.append(*new PostFilter(field, fv, false));
                     break;
@@ -3424,7 +3455,10 @@ public:
                 case WUSFpriority:
                 case WUSFprotected:
                     // These can't be wild, but are not very good filters
-                    poorFilters.append(*new PostFilter(field, fv, false));
+                    if (strchr(fv, '|'))
+                        poorFilters.append(*new MultiValuePostFilter(field, fv));
+                    else
+                        poorFilters.append(*new PostFilter(field, fv, false));
                     break;
                 case WUSFwuid: // Acts as wuidLo when specified as a filter
                 case WUSFwuidhigh:
@@ -3515,14 +3549,40 @@ public:
                 merger->addPostFilters(poorFilters, 0);
                 merger->addPostFilters(remoteWildFilters, 0);
                 const IPostFilter &best = goodFilters.item(0);
-                merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(best.queryXPath(), best.queryValue(), wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+                const char *queryValue = best.queryValue();
+                if (strchr(queryValue, '|'))
+                {
+                    StringArray values;
+                    values.appendListUniq(queryValue, "|");
+                    ForEachItemIn(vidx, values)
+                    {
+                        const char *thisValue = values.item(vidx);
+                        if (!isEmptyString(thisValue))
+                            merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(best.queryXPath(), thisValue, wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+                    }
+                }
+                else
+                    merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(best.queryXPath(), best.queryValue(), wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
             }
             else if (poorFilters.length())
             {
                 merger->addPostFilters(poorFilters, 1);
                 merger->addPostFilters(remoteWildFilters, 0);
                 const IPostFilter &best= poorFilters.item(0);
-                merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(best.queryXPath(), best.queryValue(), wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+                const char *queryValue =best.queryValue();
+                if (strchr(queryValue, '|'))
+                {
+                    StringArray values;
+                    values.appendListUniq(queryValue, "|");
+                    ForEachItemIn(vidx, values)
+                    {
+                        const char *thisValue = values.item(vidx);
+                        if (!isEmptyString(thisValue))
+                            merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(best.queryXPath(), thisValue, wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
+                    }
+                }
+                else
+                    merger->addResult(*new CassandraResult(fetchDataForKeyWithFilter(best.queryXPath(), best.queryValue(), wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
             }
             else if (remoteWildFilters.length())
             {

@@ -487,7 +487,7 @@ class WuTool : public CppUnit::TestFixture
         CPPUNIT_TEST(testQuery);
         CPPUNIT_TEST(testGraph);
         CPPUNIT_TEST(testGraphProgress);
-        CPPUNIT_TEST(testGlobal); 
+        CPPUNIT_TEST(testGlobal);
     CPPUNIT_TEST_SUITE_END();
 protected:
     static StringArray wuids;
@@ -1329,16 +1329,76 @@ protected:
         WUSortField sortByOwner[] = { WUSFuser, WUSFstate, WUSFterm };
         start = msTick();
         wus.setown(factory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), sortByOwner, "WuTestUser00\0completed", 0, 10000, NULL, NULL));
-        numIterated = 0;
+        unsigned numCompleted = 0;
         ForEach(*wus)
         {
             IConstWorkUnitInfo &wu = wus->query();
             ASSERT(streq(wu.queryUser(), "WuTestUser00"));
             ASSERT(wu.getState()==WUStateCompleted);
-            numIterated++;
+            numCompleted++;
         }
-        DBGLOG("%d owned workunits listed the hard way in %d ms", numIterated, msTick()-start);
-        ASSERT(numIterated <= (testSize+49)/50);  // Not sure what the exact answer should be!
+        DBGLOG("%d owned,completed workunits listed the hard way in %d ms", numCompleted, msTick()-start);
+        ASSERT(numCompleted > 0);  // Not sure what the exact answer should be! Around 5/6 of 1/50th ?
+
+        start = msTick();
+        wus.setown(factory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), sortByOwner, "WuTestUser00\0scheduled", 0, 10000, NULL, NULL));
+        unsigned numScheduled = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryUser(), "WuTestUser00"));
+            ASSERT(wu.getState()==WUStateScheduled);
+            numScheduled++;
+        }
+        DBGLOG("%d owned,scheduled workunits listed the hard way in %d ms", numScheduled, msTick()-start);
+        ASSERT(numScheduled > 0);
+        ASSERT(numScheduled + numCompleted == (testSize+49)/50);
+
+        // Use multiple states
+        DBGLOG("Testing multiple states");
+        start = msTick();
+        wus.setown(factory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), sortByOwner, "WuTestUser00\0completed|scheduled", 0, 10000, NULL, NULL));
+        unsigned numCompleted2 = 0;
+        unsigned numScheduled2 = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryUser(), "WuTestUser00"));
+            ASSERT((wu.getState()==WUStateCompleted) || (wu.getState()==WUStateScheduled));
+            if ((wu.getState()==WUStateCompleted))
+                numCompleted2++;
+            else
+                numScheduled2++;
+        }
+        DBGLOG("%d owned,completed and %d owned,scheduled workunits listed via multiple in %d ms", numCompleted2, numScheduled2, msTick()-start);
+        ASSERT(numCompleted == numCompleted2);
+        ASSERT(numScheduled == numScheduled2);
+
+        // Use multiple states only
+        DBGLOG("Testing multiple states only");
+        start = msTick();
+        WUSortField filterByState[] = { WUSFstate, WUSFterm };
+        wus.setown(factory->getWorkUnitsSorted((WUSortField) (WUSFwuid | WUSFreverse), filterByState, "completed|scheduled", 0, 10000, NULL, NULL));
+        unsigned numCompleted3 = 0;
+        unsigned numScheduled3 = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT((wu.getState()==WUStateCompleted) || (wu.getState()==WUStateScheduled));
+            if (strlen(wu.queryUser()) > 10 && memcmp(wu.queryUser(), "WuTestUser", 10)==0)  // Ignore any wu's not part of the test set
+            {
+                if ((wu.getState()==WUStateCompleted))
+                    numCompleted3++;
+                else
+                    numScheduled3++;
+            }
+        }
+        DBGLOG("%d completed and %d scheduled workunits listed via multiple in %d ms", numCompleted3, numScheduled3, msTick()-start);
+        ASSERT(numCompleted3 >= numCompleted2);
+        ASSERT(numScheduled3 >= numScheduled2);
+        ASSERT(numCompleted3 + numScheduled3 == testSize);
+
+
 
         // Get Scheduled Workunits
         start = msTick();
