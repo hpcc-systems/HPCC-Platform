@@ -3325,14 +3325,14 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_subsort:
                 if (transformedCountProject)
                     break;
-                if (increasesRowSize(transformed))
+                if ((options & HOOminimizeNetworkAndMemory) && increasesRowSize(transformed))
                     break;
                 return moveProjectionOverSimple(transformed, true, false);
             case no_distribute:
                 //Cannot move a count project over anything that changes the order of the records.
                 if (transformedCountProject)
                     break;
-                if (increasesRowSize(transformed))
+                if ((options & HOOminimizeNetworkAndMemory) && increasesRowSize(transformed))
                     break;
                 return moveProjectionOverSimple(transformed, true, false);
             case no_distributed:
@@ -3524,7 +3524,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_distribute:
             case no_sort:
             case no_subsort:
-                if (increasesRowSize(transformed))
+                if ((options & HOOminimizeNetworkAndMemory) && increasesRowSize(transformed))
                     break;
                 return moveProjectionOverSimple(transformed, true, false);
             case no_distributed:

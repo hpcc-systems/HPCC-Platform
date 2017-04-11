@@ -1996,6 +1996,23 @@ void ActivityInstance::setInternalSink(bool value)
 }
 
 
+static void getRecordSizeText(StringBuffer & out, IHqlExpression * record)
+{
+    size32_t minSize = getMinRecordSize(record);
+    if (isVariableSizeRecord(record))
+    {
+        size32_t expectedSize = getExpectedRecordSize(record);
+        out.append(minSize).append("..");
+        if (maxRecordSizeUsesDefault(record))
+            out.append("?");
+        else
+            out.append(getMaxRecordSize(record, 0));
+        out.append("(").append(expectedSize).append(")");
+    }
+    else
+        out.append(minSize);
+}
+
 void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alwaysExecuted)
 {
     IPropertyTree * parentGraphNode = subgraph ? subgraph->tree.get() : defaultSubGraph;
@@ -2118,26 +2135,17 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
 
         if (options.noteRecordSizeInGraph)
         {
-            IHqlExpression * record = dataset->queryRecord();
+            LinkedHqlExpr record = dataset->queryRecord();
             if (!record && (getNumChildTables(dataset) == 1))
-                record = dataset->queryChild(0)->queryRecord();
+                record.set(dataset->queryChild(0)->queryRecord());
             if (record)
             {
-                size32_t minSize = getMinRecordSize(record);
-                if (isVariableSizeRecord(record))
-                {
-                    size32_t expectedSize = getExpectedRecordSize(record);
-                    StringBuffer temp;
-                    temp.append(minSize).append("..");
-                    if (maxRecordSizeUsesDefault(record))
-                        temp.append("?");
-                    else
-                        temp.append(getMaxRecordSize(record, translator.getDefaultMaxRecordSize()));
-                    temp.append("(").append(expectedSize).append(")");
-                    addAttribute("recordSize", temp.str());
-                }
-                else
-                    addAttributeInt("recordSize", minSize);
+                //In Thor the serialized record is the interesting value, so include that in the graph
+                if (translator.targetThor())
+                    record.setown(getSerializedForm(record, diskAtom));
+                StringBuffer temp;
+                getRecordSizeText(temp, record);
+                addAttribute("recordSize", temp.str());
             }
         }
 
@@ -9372,7 +9380,7 @@ IHqlExpression * HqlCppTranslator::optimizeCompoundSource(IHqlExpression * expr,
     return ret.getClear();
 }
 
-IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags, bool projectBeforeSpill)
+IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags, bool projectBeforeSpill, bool insideChildQuery)
 {
     LinkedHqlExpr resourced = expr;
     // Second attempt to spot compound disk reads - this time of spill files for thor.
@@ -9399,7 +9407,7 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     {
         cycle_t startCycles = get_cycles_now();
         traceExpression("BeforeOptimize2", resourced);
-        resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags()|HOOcompoundproject));
+        resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags(insideChildQuery)|HOOcompoundproject));
         traceExpression("AfterOptimize2", resourced);
         noteFinishedTiming("compile:optimize graph", startCycles);
     }
@@ -9430,7 +9438,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     // Call optimizer before resourcing so items get moved over conditions, and remove other items
     // which would otherwise cause extra spills.
     traceExpression("BeforeOptimize", resourced);
-    unsigned optFlags = getOptimizeFlags();
+    unsigned optFlags = getOptimizeFlags(false);
 
     checkNormalized(resourced);
     if (options.optimizeGraph)
@@ -9480,11 +9488,11 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     checkNormalized(resourced);
 
     bool createGraphResults = (outputLibraryId != 0) || options.alwaysUseGraphResults;
-    resourced.setown(optimizeGraphPostResource(resourced, csfFlags, options.optimizeSpillProject && !createGraphResults));
+    resourced.setown(optimizeGraphPostResource(resourced, csfFlags, options.optimizeSpillProject && !createGraphResults, false));
     if (options.optimizeSpillProject)
     {
         resourced.setown(convertSpillsToActivities(resourced, createGraphResults));
-        resourced.setown(optimizeGraphPostResource(resourced, csfFlags, false));
+        resourced.setown(optimizeGraphPostResource(resourced, csfFlags, false, false));
     }
 
     checkNormalized(resourced);

@@ -75,7 +75,8 @@ void HqlCppTranslator::addGlobalOnWarning(IHqlExpression * setMetaExpr)
 
 unsigned HqlCppTranslator::getSourceAggregateOptimizeFlags() const
 {
-    return getOptimizeFlags()|HOOfold|HOOinsidecompound;
+    const bool insideChildQuery = false; // value does not currently matter
+    return getOptimizeFlags(insideChildQuery)|HOOfold|HOOinsidecompound;
 }
 
 void HqlCppTranslator::doBuildExprFilepos(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)

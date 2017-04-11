@@ -986,7 +986,7 @@ public:
     inline bool hasDynamicFilename(IHqlExpression * expr) const { return options.allFilenamesDynamic || hasDynamic(expr); }
     inline bool canGenerateStringInline(unsigned len)       { return ((options.inlineStringThreshold == 0) || (len <= options.inlineStringThreshold)); }
 
-    unsigned getOptimizeFlags() const;
+    unsigned getOptimizeFlags(bool insideChildQuery) const;
     unsigned getSourceAggregateOptimizeFlags() const;
     void addGlobalOnWarning(IHqlExpression * setMetaExpr);
 
@@ -1928,7 +1928,7 @@ protected:
     IHqlExpression * getResourcedGraph(IHqlExpression * expr, IHqlExpression * graphIdExpr);
     IHqlExpression * getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * childQuery, unsigned numResults, node_operator graphKind, bool unlimitedResources);
     IHqlExpression * optimizeCompoundSource(IHqlExpression * expr, unsigned flags);
-    IHqlExpression * optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags, bool projectBeforeSpill);
+    IHqlExpression * optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags, bool projectBeforeSpill, bool insideChildQuery);
     bool isInlineOk();
     GraphLocalisation getGraphLocalisation(IHqlExpression * expr, bool isInsideChildQuery);
     bool isAlwaysCoLocal();
