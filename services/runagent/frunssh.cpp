@@ -76,7 +76,8 @@ int main( int argc, char *argv[] )
                 buf.setLength(buf.length()-1);
                 buf.clip();
             }
-            PROGLOG("%d: ssh(%d): %s",i+1,unsArray.item(i),buf.str());
+            if (buf.length())
+                PROGLOG("%d: ssh(%d): %s",i+1,unsArray.item(i),buf.str());
         }
     }
     catch(IException *e)
