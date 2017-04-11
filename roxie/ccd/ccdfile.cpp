@@ -37,6 +37,10 @@
 #ifdef __linux__
 #include <sys/mman.h>
 #endif
+#if defined (__linux__)
+#include <sys/syscall.h>
+#include "ioprio.h"
+#endif
 
 atomic_t numFilesOpen[2];
 
@@ -942,8 +946,21 @@ public:
     int runBackgroundCopy()
     {
         bctStarted.signal();
+#if defined(__linux__) && defined(SYS_ioprio_set)
+        if (backgroundCopyClass)
+            syscall(SYS_ioprio_set, IOPRIO_WHO_PROCESS, 0, IOPRIO_PRIO_VALUE(backgroundCopyClass, backgroundCopyPrio));
+#endif
         if (traceLevel)
+        {
+#if defined(__linux__) && defined(SYS_ioprio_get)
+            int ioprio = syscall(SYS_ioprio_get, IOPRIO_WHO_PROCESS, 0);
+            int ioclass = IOPRIO_PRIO_CLASS(ioprio);
+            ioprio = IOPRIO_PRIO_DATA(ioprio);
+            DBGLOG("Background copy thread %p starting, io priority class %d, priority %d", this, ioclass, ioprio);
+#else
             DBGLOG("Background copy thread %p starting", this);
+#endif
+        }
         try
         {
             int fileCopiedCount = 0;
