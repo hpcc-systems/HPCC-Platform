@@ -1,0 +1,40 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the License);
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an AS IS BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+
+// Service definition
+SHARED sqs := SERVICE : plugin('sqs'), namespace('SQSHPCCPlugin')
+
+    BOOLEAN PublishMessage(CONST VARSTRING region, CONST VARSTRING queueName, CONST VARSTRING message) : cpp,action,context,entrypoint='publishMessage';
+    BOOLEAN IsQueueExist(CONST VARSTRING region,CONST VARSTRING queueName):cpp,action,context,entrypoint='isQueueExist';
+    BOOLEAN CreateQueue(CONST VARSTRING region,CONST VARSTRING queueName):cpp,action,context,entrypoint='createQueue';
+END;
+
+/**
+ * Module wrapping message publishing functions.
+ *
+ * @param   queue           The name of the queue this module will be publishing to;
+ *                          cannot be an empty string; REQUIRED
+ * @param   region          The AWS region is the zone where is the queue SQS is located. By default is "eu_west_1"       
+ */
+EXPORT SQSPublisher(VARSTRING queue, VARSTRING region = 'eu_west_1') := MODULE
+
+
+  EXPORT BOOLEAN PublishMessage(CONST VARSTRING message) := sqs.PublishMessage(region,queue,message);
+  EXPORT BOOLEAN IsQueueExist():= sqs.isQueueExist(region,queue);
+  EXPORT BOOLEAN CreateQueue():= sqs.createQueue(region,queue);
+END;
