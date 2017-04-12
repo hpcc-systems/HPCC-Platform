@@ -1678,7 +1678,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyPatch(BuildCtx & ctx, IHqlE
     //virtual int getSequence() = 0;
     doBuildSequenceFunc(instance->classctx, querySequence(expr), false);
     HqlExprArray xmlnsAttrs;
-    Owned<IWUResult> result = createDatasetResultSchema(querySequence(expr), NULL, original->queryRecord(), xmlnsAttrs, false, true);
+    Owned<IWUResult> result = createDatasetResultSchema(querySequence(expr), NULL, original->queryRecord(), xmlnsAttrs, false, true, 0);
 
     buildExpiryHelper(instance->createctx, expr->queryAttribute(expireAtom));
 

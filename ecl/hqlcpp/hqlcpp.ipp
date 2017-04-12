@@ -1854,10 +1854,10 @@ protected:
     void generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator index, const DatasetReference & dataset, const HqlExprArray & sorts, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight, bool isLocal);
     void addSchemaField(IHqlExpression *field, MemoryBuffer &schema, IHqlExpression *selector);
     void addSchemaFields(IHqlExpression * record, MemoryBuffer &schema, IHqlExpression *selector);
-    void addSchemaResource(int seq, const char * name, IHqlExpression * record);
+    void addSchemaResource(int seq, const char * name, IHqlExpression * record, unsigned keyedCount);
     void addSchemaResource(int seq, const char * name, unsigned len, const char * schemaXml);
     void doAddSchemaFields(IHqlExpression * record, MemoryBuffer &schema, IHqlExpression *selector);
-    IWUResult * createDatasetResultSchema(IHqlExpression * sequenceExpr, IHqlExpression * name, IHqlExpression * record, HqlExprArray &xmlnsAttrs, bool createTransformer, bool isFile);
+    IWUResult * createDatasetResultSchema(IHqlExpression * sequenceExpr, IHqlExpression * name, IHqlExpression * record, HqlExprArray &xmlnsAttrs, bool createTransformer, bool isFile, unsigned keyedCount);
 
     void buildReturnCsvValue(BuildCtx & ctx, IHqlExpression * _expr);
     void buildCsvListFunc(BuildCtx & classctx, const char * func, IHqlExpression * value, const char * defaultValue);

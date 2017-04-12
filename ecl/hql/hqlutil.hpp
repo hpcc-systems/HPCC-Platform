@@ -699,7 +699,7 @@ extern HQL_API bool createMangledFunctionName(StringBuffer & mangled, IHqlExpres
 
 extern HQL_API void extractXmlName(StringBuffer & name, StringBuffer * itemName, StringBuffer * valueName, IHqlExpression * field, const char * defaultItemName, bool reading);
 extern HQL_API void extractXmlName(SharedHqlExpr & name, OwnedHqlExpr * itemName, OwnedHqlExpr * valueName, IHqlExpression * field, const char * defaultItemName, bool reading);
-extern HQL_API void getRecordXmlSchema(StringBuffer & result, IHqlExpression * record, bool useXPath);
+extern HQL_API void getRecordXmlSchema(StringBuffer & result, IHqlExpression * record, bool useXPath, unsigned keyedCount);
 
 extern HQL_API IHqlExpression * querySimplifyInExpr(IHqlExpression * expr);
 extern HQL_API IHqlExpression * createSizeof(IHqlExpression * expr);
