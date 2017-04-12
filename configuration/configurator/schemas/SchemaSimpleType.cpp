@@ -28,12 +28,12 @@ using namespace CONFIGURATOR;
 #define StringBuffer ::StringBuffer
 #define IPropertyTree ::IPropertyTree
 
-CXSDNodeBase* CSimpleType::getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName)
+const CXSDNodeBase* CSimpleType::getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const
 {
     return (this->checkSelf(eNodeType, pName, this->getName()) ? this : nullptr);
 }
 
-CXSDNodeBase* CSimpleType::getNodeByTypeAndNameDescending(NODE_TYPES eNodeType, const char *pName)
+const CXSDNodeBase* CSimpleType::getNodeByTypeAndNameDescending(NODE_TYPES eNodeType, const char *pName) const
 {
     return (this->checkSelf(eNodeType, pName, this->getName()) ? this : nullptr);
 }
