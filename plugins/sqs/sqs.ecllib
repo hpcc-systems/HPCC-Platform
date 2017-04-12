@@ -29,7 +29,7 @@ END;
  *
  * @param   queue           The name of the queue this module will be publishing to;
  *                          cannot be an empty string; REQUIRED
- * @param   region          The region of AWS is the zone where is the queue SQS. By default is "eu_west_1"       
+ * @param   region          The AWS region is the zone where is the queue SQS is located. By default is "eu_west_1"       
  */
 EXPORT SQSPublisher(VARSTRING queue, VARSTRING region = 'eu_west_1') := MODULE
 

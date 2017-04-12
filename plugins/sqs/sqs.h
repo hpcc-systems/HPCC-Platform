@@ -88,7 +88,7 @@ extern "C++"
       void setAwsCredentials(const char* accessKeyId, 
 			     const char* secretKey); 
       bool disconnect();
-      bool isQueueExist();
+      bool QueueExists();
 
       void setQueueUrlFromQueueName();
 
@@ -100,7 +100,7 @@ extern "C++"
       Aws::SQS::SQSClient* sqsClient;
       Aws::SDKOptions options;
       Aws::Auth::AWSCredentials* credentials;
-      bool isRegionExist(const std::string& region);
+      bool RegionExists(const std::string& region);
       const char *const getRegion(const std::string& region);
       void upstr(char* s);
       std::string convertAwsStringToCharPtr(Aws::String str);
@@ -129,7 +129,7 @@ extern "C++"
      */
     ECL_SQS_API bool ECL_SQS_CALL createQueue(ICodeContext * ctx,const char* region, const char* queueName);
 
-    ECL_SQS_API bool ECL_SQS_CALL isQueueExist(ICodeContext* ctx,const char* region, const char* queueName);
+    ECL_SQS_API bool ECL_SQS_CALL QueueExists(ICodeContext* ctx,const char* region, const char* queueName);
      
     ECL_SQS_API bool ECL_SQS_CALL deleteQueue(ICodeContext * ctx,const char* region, const char* queueName);      
 	
