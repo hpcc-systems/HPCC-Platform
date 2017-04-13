@@ -39,10 +39,6 @@
                 </select>
             </div>
             <div id="${id}OverviewTabContainer" data-dojo-props="region: 'center', tabPosition: 'bottom'" data-dojo-type="dijit.layout.StackContainer">
-                <div id="${id}TreeGridCP" tooltip="${i18n.Tree}" style="padding: 0px; overflow: hidden" data-dojo-props="iconClass:'iconFolderTree', showTitle: false" data-dojo-type="dijit.layout.ContentPane">
-                    <div id="${id}TreeGrid">
-                    </div>
-                </div>
                 <div id="${id}SubgraphsGridCP" tooltip="${i18n.Subgraphs}" style="padding: 0px; overflow: hidden" data-dojo-props="iconClass:'iconFolderList', showTitle: false" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}SubgraphsGrid">
                     </div>
@@ -53,6 +49,10 @@
                 </div>
                 <div id="${id}EdgesGridCP" tooltip="${i18n.Edges}" style="padding: 0px; overflow: hidden" data-dojo-props="iconClass:'iconEdgeList', showTitle: false" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}EdgesGrid">
+                    </div>
+                </div>
+                <div id="${id}TreeGridCP" tooltip="${i18n.Tree}" style="padding: 0px; overflow: hidden" data-dojo-props="iconClass:'iconFolderTree', showTitle: false" data-dojo-type="dijit.layout.ContentPane">
+                    <div id="${id}TreeGrid">
                     </div>
                 </div>
                 <div id="${id}TimingsTreeMap" tooltip="${i18n.TimingsMap}" data-dojo-props="iconClass:'iconTreeMap', showTitle: false" data-dojo-type="TimingTreeMapWidget">
