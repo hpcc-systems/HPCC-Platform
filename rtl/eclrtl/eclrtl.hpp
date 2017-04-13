@@ -185,7 +185,7 @@ ECLRTL_API int rtlNewSearchStringTable(unsigned count, unsigned elemlen, char * 
 
 ECLRTL_API int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, UChar * * table, unsigned width, const UChar * search, const char * locale);
 ECLRTL_API int rtlNewSearchVUnicodeTable(unsigned count, UChar * * table, const UChar * search, const char * locale);
-ECLRTL_API int rtlNewSearchUtf8Table(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search, const char * locale);
+ECLRTL_API int rtlNewSearchUtf8Table(unsigned count, char * * table, const char * search, const char * locale);
 
 
 ECLRTL_API int rtlSearchTableInteger8(unsigned count, __int64 * table, __int64 search);
