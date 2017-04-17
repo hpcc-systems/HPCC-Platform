@@ -36,7 +36,7 @@
     <para>In Configuration Manager, the ECLCC Server component has a tab named
     <emphasis role="bold">Options</emphasis>. This tab allows you to enter
     name value pairs for permissions to execute various types of embedded code
-    or plug-ins.</para>
+    or plugins.</para>
 
     <para><emphasis role="bold">Name</emphasis></para>
 
@@ -90,7 +90,7 @@
             <entry><emphasis>cpp</emphasis></entry>
 
             <entry>Allow/Deny C++ and other embedded languages. For languages
-            other than C++ and Cassandra, an optional plug-in must also be
+            other than C++ and Cassandra, an optional plugin must also be
             installed</entry>
           </row>
 
@@ -127,7 +127,7 @@
     unchanged.</para>
 
     <para>We have signed the SERVICE definitions provided by the ECL standard
-    plug-ins and included the public key in the HPCC platform installation.
+    plugins and included the public key in the HPCC platform installation.
     Code that tries to use service definitions that are signed will continue
     to work as before but, code that tries to call arbitrary library functions
     using user-supplied SERVICE definitions will give compile errors, if the

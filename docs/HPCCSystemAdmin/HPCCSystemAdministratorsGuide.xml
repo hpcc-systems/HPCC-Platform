@@ -331,11 +331,11 @@
         <sect3 id="SysAdm_Eclipse">
           <title>Eclipse</title>
 
-          <para>With the ECL plug-in for Eclipse, you can use the Eclipse IDE
+          <para>With the ECL plugin for Eclipse, you can use the Eclipse IDE
           to create and execute queries into your data on an HPCC platform
           using Enterprise Control Language (ECL). Eclipse is open-source, and
           multi-platform and it can be used to interface with your data and
-          workunits on HPCC. The ECL plug-in for Eclipse is also
+          workunits on HPCC. The ECL plugin for Eclipse is also
           open-source.</para>
         </sect3>
 
@@ -1915,7 +1915,7 @@ heapUseTransparentHugePages</programlisting>
       Systems<superscript>®</superscript> web portal. Visit the HPCC
       Systems<superscript>®</superscript> Web Portal at <ulink
       url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> for
-      software updates, plug-ins, support, documentation, and more. This is
+      software updates, plugins, support, documentation, and more. This is
       where you can find resources useful for running and maintaining HPCC on
       the web portal.</para>
 

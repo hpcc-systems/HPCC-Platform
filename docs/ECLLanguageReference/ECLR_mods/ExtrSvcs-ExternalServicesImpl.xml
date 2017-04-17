@@ -380,17 +380,17 @@
     a[][20].</para>
   </sect2>
 
-  <sect2 id="Plug-In_Requirements">
-    <title>Plug-In Requirements</title>
+  <sect2 id="PlugIn_Requirements">
+    <title>Plugin Requirements</title>
 
-    <para>Plug-ins require an exported function with the following signature
+    <para>Plugins require an exported function with the following signature
     under Windows:</para>
 
     <para>Extern "C" _declspec(dllexport) bool
     getECLPluginDefinition(ECLPluginDefinitionBlock *pb)</para>
 
     <para>The function must fill the passed structure with correct information
-    for the features of the plug-in. The structure is defined as
+    for the features of the plugin. The structure is defined as
     follows:</para>
 
     <para><emphasis role="bold">Warning:</emphasis> This function may be
@@ -412,14 +412,14 @@
     Const char *ECL;
        // ECL Service definition for non-HOLE applications
     Unsigned flags;
-       // Type of plug-in - for user plugin use 1
+       // Type of plugin - for user plugin use 1
     Const char *version ;
        // Text describing version of plugin - used in debugging
     Const char *description;
        // Text describing plugin
   } </programlisting>
 
-    <para>To initialize information in a plug-in, use a global variable or
+    <para>To initialize information in a plugin, use a global variable or
     class and it will be appropriately constructed/destructed when the plugin
     is loaded and unloaded.</para>
   </sect2>
