@@ -33,9 +33,11 @@ GENERATE_BASH(processor ${bash-vars} "prerm.in" noInstall)
 
 ADD_CUSTOM_TARGET(ProcessFiles-initfiles-sbin ALL DEPENDS ${outFiles} ${noInstall})
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/regex.awk.in.cmake" "${CMAKE_CURRENT_BINARY_DIR}/regex.awk")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/backup.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/backup.sh" @ONLY)
 
 FOREACH( oFILES
     ${outFiles}
+    ${CMAKE_CURRENT_BINARY_DIR}/backup.sh
     ${CMAKE_CURRENT_BINARY_DIR}/regex.awk
     ${CMAKE_CURRENT_SOURCE_DIR}/alter_confs.sh
     ${CMAKE_CURRENT_SOURCE_DIR}/cluster_script.py

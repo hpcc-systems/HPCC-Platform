@@ -1,0 +1,55 @@
+#!/bin/bash
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+source @INSTALL_DIR@/etc/init.d/hpcc_common
+set_environmentvars
+source @ADMIN_PATH@/hpcc_setenv ""
+component=$(basename ${PWD})
+logpthtail="$(date +%Y_%m_%d_%H_%M_%S)"
+export logfile="@LOG_PATH@/${component}/${component}_${logpthtail}.log"
+
+if [[ ! -e "@RUNTIME_PATH@/${component}/backupnode.conf" ]]; then
+    log "Cannot locate backupnode.conf"
+    exit 1
+fi
+cfg.parser @RUNTIME_PATH@/${component}/backupnode.conf
+cfg.section.default
+
+exec 2>@LOG_PATH@/${component}/${component}.debug
+set -x
+
+OFS=${IFS}
+IFS=','
+read -a thorlist <<< "${thorlist}"
+IFS=${OFS}
+
+log "Writing out pid file"
+echo "$$" > @PID_PATH@/${component}.pid
+
+log "Starting Backupnode for the following targets:"
+for i in ${thorlist[@]}; do
+    log "-- ${i}"
+done
+
+
+trap "pkill -P $$;log \"Terminated init_backupnode\";exit 0" SIGINT SIGTERM
+
+for target in ${thorlist[@]}; do
+    @ADMIN_PATH@/backup.sh ${target} ${logfile} &
+done
+
+wait

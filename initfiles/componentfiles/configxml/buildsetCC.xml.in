@@ -44,6 +44,11 @@
              processName="DaliServerProcess"
              schema="dali.xsd"/>
    <BuildSet installSet="deploy_map.xml"
+             name="backupnode"
+             path="componentfiles/backupnode"
+             processName="BackupNodeProcess"
+             schema="backupnode.xsd"/>
+   <BuildSet installSet="deploy_map.xml"
              name="daliplugin"
              path="componentfiles/daliplugin"
              processName="DaliServerPlugin"
