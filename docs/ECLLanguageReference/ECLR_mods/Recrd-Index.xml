@@ -229,6 +229,35 @@
   undefined in general, as it depends on the size of the cluster on which it
   was built and the size of the cluster on which it is used.</para>
 
+  <para>These data types are supported in the keyed portion of an
+  INDEX:<itemizedlist>
+      <listitem>
+        <para>BOOLEAN </para>
+      </listitem>
+
+      <listitem>
+        <para>INTEGER</para>
+      </listitem>
+
+      <listitem>
+        <para>UNSIGNED</para>
+      </listitem>
+
+      <listitem>
+        <para>STRING</para>
+      </listitem>
+
+      <listitem>
+        <para>DATA</para>
+      </listitem>
+
+      <listitem>
+        <para>QSTRING</para>
+
+        <para>All STRINGs must be fixed length.</para>
+      </listitem>
+    </itemizedlist></para>
+
   <sect2 id="Keyed_Access_INDEX">
     <title>Keyed Access INDEX</title>
 
