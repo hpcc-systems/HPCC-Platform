@@ -6,7 +6,7 @@
 
   <para>This section details the steps to configure your HPCC platform to use
   authentication. There are currently a few ways to use authentication with
-  your HPCC system: simple htpasswd authentication, LDAP, or another plug-in
+  your HPCC system: simple htpasswd authentication, LDAP, or another plugin
   security method.</para>
 
   <para>The htpasswd authentication method is basic password authentication.
@@ -125,7 +125,7 @@
       <orderedlist continuation="continues">
         <listitem>
           <para>Create an instance of the <emphasis role="bold">Security
-          Manager</emphasis> Plug-in: <orderedlist numeration="loweralpha">
+          Manager</emphasis> Plugin: <orderedlist numeration="loweralpha">
               <listitem>
                 <para>Right-click on Navigator Pane on the left side.</para>
               </listitem>
@@ -145,7 +145,7 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Configure the htpasswd plug-in<figure>
+          <para>Configure the htpasswd plugin<figure>
               <title>Security Mgr Configuration page</title>
 
               <mediaobject>
@@ -203,7 +203,7 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Associate the Security Manager Plug-in with the ESP binding(s)
+          <para>Associate the Security Manager Plugin with the ESP binding(s)
           <orderedlist numeration="loweralpha">
               <listitem>
                 <para>Click on the target <emphasis role="bold">Esp</emphasis>
