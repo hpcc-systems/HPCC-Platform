@@ -703,6 +703,13 @@ void CCsvPartitioner::getRecordStructure(StringBuffer & _recordStructure)
     {
         const byte *buffer = bufferBase();
         ensureBuffered(headerSize);
+        if (numInBuffer == 0)
+        {
+            // Zero length file, do not process
+            _recordStructure.clear();
+            return;
+        }
+
         assertex((headerSize == 0) || (numInBuffer != bufferOffset));
 
         unsigned size = getSplitRecordSize(buffer, headerSize, false);
