@@ -214,7 +214,7 @@
 
     <para>This section describes how to install the Eclipse IDE. If you
     already have the Eclipse IDE installed, skip this section and go to
-    <emphasis>Installing the ECL PlugIn</emphasis>.</para>
+    <emphasis>Installing the ECL Plugin</emphasis>.</para>
 
     <sect1 id="Used_to_Build_Queries" role="nobrk">
       <title>Getting Eclipse</title>
@@ -275,7 +275,7 @@
             <?dbfo keep-together="always"?>
 
             <para>Provide a suitable name, for example, <emphasis
-            role="bluebold">ECL_PlugIn.</emphasis></para>
+            role="bluebold">ECL_Plugin.</emphasis></para>
           </listitem>
 
           <listitem>
