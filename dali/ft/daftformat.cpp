@@ -711,6 +711,13 @@ void CCsvPartitioner::getRecordStructure(StringBuffer & _recordStructure)
             processSize = numInBuffer;
         }
 
+        if (processSize == 0)
+        {
+            // Zero length file, do not process
+            _recordStructure.clear();
+            return;
+        }
+
         unsigned size = getSplitRecordSize(buffer, processSize, false);
 
         if (size == 0)
