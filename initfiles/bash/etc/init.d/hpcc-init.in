@@ -39,8 +39,9 @@
 # Short-Description: Controls HPCC Processes
 # Provides: hpcc-init
 # Required-Start: dafilesrv
-# Default-Start: 2 3 4 5
-# Default-Stop: 0 1 6
+# Required-Stop:
+# Default-Start:
+# Default-Stop:
 ### END INIT INFO
 
 ##-----------------------------------------------------------------------------
