@@ -246,20 +246,6 @@
               </xs:appinfo>
             </xs:annotation>
           </xs:attribute>
-          <xs:attribute name="SwapNodeCheckScript" type="xs:string" use="optional">
-            <xs:annotation>
-              <xs:appinfo>
-                <tooltip>Script to run to check node functioning (non zero exit from script indicates not.)</tooltip>
-              </xs:appinfo>
-            </xs:annotation>
-          </xs:attribute>
-          <xs:attribute name="SwapNodeCheckScriptTimeout" type="xs:nonNegativeInteger" use="optional" default="0">
-            <xs:annotation>
-              <xs:appinfo>
-                <tooltip>Interval (in seconds) beyond which check node script must return (if 0 disable check node script)</tooltip>
-              </xs:appinfo>
-            </xs:annotation>
-          </xs:attribute>
           </xs:complexType>
         </xs:element>
         <xs:element name="Storage">

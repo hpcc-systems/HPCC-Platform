@@ -70,8 +70,6 @@ extern REMOTE_API IRemoteFileServer * createRemoteFileServer(unsigned maxThreads
 extern REMOTE_API int setDafsTrace(ISocket * socket,byte flags);
 extern REMOTE_API int setDafsThrottleLimit(ISocket * socket, ThrottleClass throttleClass, unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit, unsigned queueLimit, StringBuffer *errMsg=NULL);
 extern REMOTE_API bool enableDafsAuthentication(bool on);
-extern int remoteExec(ISocket * socket, const char *cmdline, const char *workdir,bool sync,
-                size32_t insize, void *inbuf, MemoryBuffer *outbuf);
 extern void remoteExtractBlobElements(const SocketEndpoint &ep, const char * prefix, const char * filename, ExtractedBlobArray & extracted);
 extern int getDafsInfo(ISocket * socket, unsigned level, StringBuffer &retstr);
 extern void setDafsEndpointPort(SocketEndpoint &ep);

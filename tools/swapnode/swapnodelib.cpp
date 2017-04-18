@@ -421,7 +421,7 @@ public:
                     getConfigurationDirectory(environment->queryPropTree("Software/Directories"),"data","thor",thorname,dataDir); // if not defined can't check
                     getConfigurationDirectory(environment->queryPropTree("Software/Directories"),"mirror","thor",thorname,mirrorDir); // if not defined can't check
 
-                    validateNodes(epa,dataDir.str(),mirrorDir.str(),false,options->queryProp("SwapNode/@swapNodeCheckScript"),options->getPropInt("SwapNode/@swapNodeCheckScriptTimeout")*1000,failures,failedcodes,failedmessages);
+                    validateNodes(epa,dataDir.str(),mirrorDir.str(),false,failures,failedcodes,failedmessages);
 
                     dt.setNow();
                     dt.getString(ts.clear());
@@ -586,7 +586,7 @@ class CAutoSwapNode : public CSwapNode
         if (options->getPropBool("SwapNode/@swapNodeCheckMirrorDrive",true))
             getConfigurationDirectory(environment->queryPropTree("Software/Directories"),"mirror","thor",thorname,mirrorDir); // if not defined can't check
 
-        validateNodes(epa1, dataDir.str(), mirrorDir.str(), false, options->queryProp("SwapNode/@swapNodeCheckScript"), options->getPropInt("SwapNode/@swapNodeCheckScriptTimeout")*1000, badepa, failedcodes, failedmessages);
+        validateNodes(epa1, dataDir.str(), mirrorDir.str(), false, badepa, failedcodes, failedmessages);
         if (!badepa.ordinality()) {
             PROGLOG("SWAPNODE: on recheck all bad nodes passed (%s,%s)",groupName.get(),ts.str());
             return false;

@@ -920,8 +920,8 @@ enum {
     RFCcreatedir,
     RFCgetdir,
     RFCstop,        // not supported
-    RFCexec,        // not supported
-    RFCkill,        // not supported
+    RFCexec,        // legacy cmd removed
+    RFCdummy1,      // legacy placeholder
     RFCredeploy,    // not supported
     RFCgetcrc,
 //
