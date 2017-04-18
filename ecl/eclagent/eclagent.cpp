@@ -40,6 +40,7 @@
 #include "workunit.hpp"
 #include "eventqueue.hpp"
 #include "schedulectrl.hpp"
+#include "jhtree.hpp"
 
 #include "mpbase.hpp"
 #include "daclient.hpp"

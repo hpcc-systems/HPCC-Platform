@@ -287,6 +287,7 @@ cycle_t nanosec_to_cycle(__int64 ns)
     return (__int64)((double)ns / cycleToNanoScale);
 }
 
+#if !(defined(INLINE_GET_CYCLES_NOW) && defined(HAS_GOOD_CYCLE_COUNTER))
 cycle_t jlib_decl get_cycles_now()
 {
     if (useRDTSC)
@@ -295,6 +296,7 @@ cycle_t jlib_decl get_cycles_now()
     QueryPerformanceCounter(&temp);
     return temp.QuadPart;
 }
+#endif
 
 double getCycleToNanoScale()
 {
@@ -2785,7 +2787,7 @@ void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath, const char
 
     MEMORYSTATUS memstatus;
     GlobalMemoryStatus(&memstatus);
-    hdwInfo.totalMemory = memstatus.dwTotalPhys / (1024*1024); // in MB
+    hdwInfo.totalMemory = (unsigned)(memstatus.dwTotalPhys / (1024*1024)); // in MB
 
     ULARGE_INTEGER diskAvailStruct;
     ULARGE_INTEGER diskTotalStruct;
@@ -2903,7 +2905,7 @@ public:
             }
         }
         else if (file&&fgets (ln, sizeof(ln), file)) {
-            unsigned i = strlen(ln);
+            size_t i = strlen(ln);
             while (i&&((ln[i-1]==10)||(ln[i-1]==13)))
                 i--;
             ln[i] = 0;
@@ -3221,7 +3223,7 @@ static int MemoryLeakReportHook(int nRptType,char *szMsg,int  *retVal)
             // this works  better in VS 2008 libraries (which fault in fopen)
             int handle = _open(_logFile, O_RDWR | O_CREAT, _S_IREAD | _S_IWRITE);
             _lseek(handle,0,SEEK_END);
-            _write(handle,szMsg,strlen(szMsg));
+            _write(handle,szMsg,(unsigned)strlen(szMsg));
             _close(handle);
 #else
             FILE *handle = fopen(_logFile, "a");

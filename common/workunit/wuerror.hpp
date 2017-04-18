@@ -52,4 +52,5 @@
 #define WUERR_WorkunitPluginError               5027
 #define WUERR_WorkunitVersionMismatch           5028
 #define WUERR_InvalidFieldUsage                 5029
+#define WUERR_InvalidUserInput                  5030
 #endif

@@ -506,7 +506,7 @@ define([
             this.main.setMessage(this.i18n.FetchingData);
             this.local.setMessage(this.i18n.FetchingData);
             var context = this;
-            wu.fetchGraphXgmmlByName(graphName, function (xgmml, svg) {
+            wu.fetchGraphXgmmlByName(graphName, null, function (xgmml, svg) {
                 context.overview.setMessage("");
                 context.main.setMessage("");
                 context.local.setMessage("");
@@ -518,7 +518,7 @@ define([
 
         refreshGraphFromWU: function (wu, graphName) {
             var context = this;
-            wu.fetchGraphXgmmlByName(graphName, function (xgmml) {
+            wu.fetchGraphXgmmlByName(graphName, null, function (xgmml) {
                 context.mergeGraphFromXGMML(xgmml);
             }, true);
         },
@@ -724,7 +724,7 @@ define([
 
         displayGraphs: function (graphs) {
             for (var i = 0; i < graphs.length; ++i) {
-                this.wu.fetchGraphXgmml(i, function (xgmml) {
+                this.wu.fetchGraphXgmml(i, null, function (xgmml) {
                     this.main.loadXGMML(xgmml, true);
                 });
             }

@@ -423,7 +423,6 @@ public:
             theBoolSet = Rcpp::LogicalVector(elements);
             l[r] = theBoolSet;
             break;
-        case type_unsigned:
         case type_int:
             theIntSet = Rcpp::IntegerVector(elements);
             l[r] = theIntSet;

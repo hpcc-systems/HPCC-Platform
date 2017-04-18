@@ -163,14 +163,14 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Enter the IP addresses or hostname(s). </para>
+            <para>Enter the IP addresses or hostname(s).</para>
 
             <para>IP Addresses can be specified individually using semi-colon
             delimiters. You can also specify a range of IPs using a hyphen
             (for example, nnn.nnn.nnn.x-y). In the image below, we specified
             the IP addresses 10.239.219.1 through 10.239.219.100 using the
             range syntax, and also a single IP 10.239.219.111. Alternatively,
-            you can enter the hostnames. </para>
+            you can enter the hostnames.</para>
 
             <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg"
             vendor="configmgrSS" /></para>
@@ -1293,8 +1293,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <orderedlist>
             <listitem>
-              <para>Select ESP - MyEsp in the Navigator panel on the left
-              side.</para>
+              <para>Select <emphasis role="bold">ESP - myesp</emphasis> in the
+              Navigator panel on the left side.</para>
             </listitem>
 
             <listitem>
@@ -1920,7 +1920,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>right-click on the Master and select Add Slaves.</para>
+            <para>Right-click on the Master and select Add Slaves.</para>
 
             <para>
               <graphic fileref="images/CM-111.jpg" vendor="configmgrSS" />

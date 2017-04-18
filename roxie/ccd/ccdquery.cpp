@@ -397,6 +397,21 @@ void QueryOptions::updateFromWorkUnit(bool &value, IConstWorkUnit &wu, const cha
     value = wu.getDebugValueBool(name, value);
 }
 
+void QueryOptions::updateFromWorkUnit(IRecordLayoutTranslator::Mode &value, IConstWorkUnit &wu, const char *name)
+{
+    SCMStringBuffer val;
+    wu.getDebugValue(name, val);
+    if (val.length())
+    {
+        if (strieq(val.str(), "payload"))
+            value = IRecordLayoutTranslator::TranslatePayload;
+        else if (strToBool(val.str()))
+            value = IRecordLayoutTranslator::TranslateAll;
+        else
+            value = IRecordLayoutTranslator::NoTranslation;
+    }
+}
+
 void QueryOptions::setFromContext(const IPropertyTree *ctx)
 {
     if (ctx)
@@ -1971,11 +1986,11 @@ extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned
     return createSlaveQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
 }
 
-IRecordLayoutTranslator * createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta)
+IRecordLayoutTranslator * createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta, IRecordLayoutTranslator::Mode mode)
 {
     try
     {
-        return ::createRecordLayoutTranslator(diskMeta, activityMeta);
+        return ::createRecordLayoutTranslator(diskMeta, activityMeta, mode);
     }
     catch (IException *E)
     {

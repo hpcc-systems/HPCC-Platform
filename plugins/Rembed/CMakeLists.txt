@@ -25,7 +25,7 @@
 project(Rembed)
 
 if(REMBED)
-    ADD_PLUGIN(Rembed PACKAGES R)
+    ADD_PLUGIN(Rembed PACKAGES R MINVERSION 0.12.1)
     if(MAKE_REMBED)
         set(
             SRCS
@@ -49,15 +49,22 @@ if(REMBED)
         endif()
 
         HPCC_ADD_LIBRARY(Rembed SHARED ${SRCS})
-        install(
-            TARGETS Rembed
-            DESTINATION plugins)
-
+        SET_DEPENDENCIES(CPACK_DEBIAN_PACKAGE_DEPENDS R-base-core r-cran-rcpp r-cran-inline)
+        SET_DEPENDENCIES(CPACK_RPM_PACKAGE_REQUIRES R-Rcpp)
         target_link_libraries(
             Rembed
             ${R_LIBRARIES}
             eclrtl
             jlib)
+
+        install(
+            TARGETS Rembed
+            DESTINATION plugins)
+        install(
+            FILES ${RINSIDE_LIBRARY}
+            DESTINATION ${LIB_DIR}
+            PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+            COMPONENT Runtime)
     endif()
 endif()
 

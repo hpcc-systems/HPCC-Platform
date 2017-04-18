@@ -33,10 +33,12 @@
 #                         chkconfig Parameters
 ##-----------------------------------------------------------------------------
 
+### BEGIN INIT INFO
 # chkconfig: 235 40 90
 # Description: Starts the HPCC processes
 # Provides: hpcc-init
 # Required-Start: dafilesrv
+### END INIT INFO
 
 ##-----------------------------------------------------------------------------
 #                         General Purpose Functions                           
@@ -138,9 +140,6 @@ if [ $? -ne 1 ];then
 fi
 
 check_getopt
-
-#changing ownership of the home directory for user.
-chown -cR $user:$group ${home}/${user} 1>/dev/null 2>/dev/null
 
 basepath=`pwd`
 
@@ -278,7 +277,8 @@ log "Debug log written to $LOG_DIR/hpcc-init.debug"
 [ -e $LOG_DIR/hpcc-init.debug ] && rm -rf ${LOG_DIR}/hpcc-init.debug
 touch ${LOG_DIR}/hpcc-init.debug
 chown ${user}:${group} ${LOG_DIR}/hpcc-init.debug
-exec 2>$LOG_DIR/hpcc-init.debug
+PS4='+\011$(date "+%T.%N")\011'
+exec 3>&2 2>$LOG_DIR/hpcc-init.debug
 set -x
 
 if [ -z ${component} ]; then

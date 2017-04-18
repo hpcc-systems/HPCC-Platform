@@ -2687,8 +2687,8 @@ public:
             };
 
 
-            StringBuffer emplID(user.getEmployeeID());
-            char *employeeID_values[] = {(char*)emplID.str(), NULL };
+            const char * emplID = user.getEmployeeID();
+            char *employeeID_values[] = {(emplID && *emplID) ? (char*)emplID : nullptr, nullptr };
             LDAPMod employeeID_attr =
             {
                 LDAP_MOD_REPLACE,
@@ -2711,8 +2711,7 @@ public:
                 attrs[ind++] = &cn_attr;
             }
 
-            if (!emplID.isEmpty())
-                attrs[ind++] = &employeeID_attr;
+            attrs[ind++] = &employeeID_attr;
             
             attrs[ind] = NULL;
             
@@ -5909,7 +5908,7 @@ private:
         {
             attrs[ind++] = &username_attr;
             attrs[ind++] = &dispname_attr;
-            if (user.getEmployeeID())
+            if (employeeID && *employeeID)
                 attrs[ind++] = &employeeID_attr;
         }
         else

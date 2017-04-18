@@ -514,7 +514,10 @@ public:
                     res.setLength(res.length()-1);
                 if (reply.item(n)) {
                     errCode = reply.item(n);
-                    multiException->append(*MakeStringExceptionDirect(errCode,res.str()));
+                    if (res.length())
+                        multiException->append(*MakeStringExceptionDirect(errCode,res.str()));
+                    else
+                        multiException->append(*MakeStringExceptionDirect(errCode,cmd.str()));
                 }
             }
             if (errCode)
@@ -524,8 +527,12 @@ public:
             StringBuffer res(replytext.item(0));
             while (res.length()&&(res.charAt(res.length()-1)<=' '))
                 res.setLength(res.length()-1);
-            if (reply.item(0))
-                throw MakeStringExceptionDirect(reply.item(0), res.str());
+            if (reply.item(0)) {
+                if (res.length())
+                    throw MakeStringExceptionDirect(reply.item(0), res.str());
+                else
+                    throw MakeStringExceptionDirect(reply.item(0), cmd.str());
+            }
         }
     }
     void exec(

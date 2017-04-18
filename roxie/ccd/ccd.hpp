@@ -31,6 +31,7 @@
 #include "roxiedebug.ipp"
 #include "eclrtl.hpp"
 #include "workunit.hpp"
+#include "layouttrans.hpp"
 
 #ifdef CCD_EXPORTS
 #define CCD_API DECL_EXPORT
@@ -417,7 +418,7 @@ struct PartNoType
 extern unsigned statsExpiryTime;
 extern time_t startupTime;
 extern unsigned miscDebugTraceLevel;
-extern bool fieldTranslationEnabled;
+extern IRecordLayoutTranslator::Mode fieldTranslationEnabled;
 
 extern unsigned defaultParallelJoinPreload;
 extern unsigned defaultConcatPreload;

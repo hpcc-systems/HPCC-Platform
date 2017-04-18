@@ -20,7 +20,6 @@
 
 #include "deffield.hpp"
 #include "rtlkey.hpp"
-#include "jhtree.hpp"
 #include "thorhelper.hpp"
 
 #ifdef _DEBUG
@@ -33,7 +32,7 @@ public:
     class THORHELPER_API Failure : public CInterface
     {
     public:
-        typedef enum { BadStructure = 1, MissingDiskField, UnkeyedDiskField, UntranslatableField, UnsupportedFilter } Code;
+        typedef enum { BadStructure = 1, MissingDiskField, UnkeyedDiskField, UntranslatableField, UnsupportedFilter, KeyedDisallowed } Code;
         
         virtual Code queryCode() const = 0;
         virtual StringBuffer & getDetail(StringBuffer & out) const = 0;
@@ -66,6 +65,8 @@ public:
         offset_t fposIn;
     };
 
+    typedef enum { NoTranslation = 0, TranslateAll = 1, TranslatePayload = 2 } Mode;
+
     virtual bool querySuccess() const = 0;
     virtual Failure const & queryFailure() const = 0;
     virtual void checkSizes(char const * filename, size32_t activitySize, size32_t diskSize) const = 0;
@@ -79,13 +80,13 @@ public:
 #endif
 };
 
-extern THORHELPER_API IRecordLayoutTranslator * createRecordLayoutTranslator(IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta);
-extern THORHELPER_API IRecordLayoutTranslator * createRecordLayoutTranslator(size32_t diskMetaSize, const void *diskMetaData, size32_t activityMetaSize, const void *activityMetaData);
+extern THORHELPER_API IRecordLayoutTranslator * createRecordLayoutTranslator(IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta, IRecordLayoutTranslator::Mode _mode);
+extern THORHELPER_API IRecordLayoutTranslator * createRecordLayoutTranslator(size32_t diskMetaSize, const void *diskMetaData, size32_t activityMetaSize, const void *activityMetaData, IRecordLayoutTranslator::Mode _mode);
 
 class THORHELPER_API IRecordLayoutTranslatorCache : public IInterface
 {
 public:
-    virtual IRecordLayoutTranslator * get(size32_t diskMetaSize, void const  * diskMetaData, size32_t activityMetaSize, void const * activityMetaData, IDefRecordMeta const * activityMeta = NULL) = 0; //if activityMeta is NULL, it is calculated by deserializing from buffer --- but option to supply so caller can deserialize once and use many
+    virtual IRecordLayoutTranslator * get(IRecordLayoutTranslator::Mode mode, size32_t diskMetaSize, void const  * diskMetaData, size32_t activityMetaSize, void const * activityMetaData, IDefRecordMeta const * activityMeta = NULL) = 0; //if activityMeta is NULL, it is calculated by deserializing from buffer --- but option to supply so caller can deserialize once and use many
     virtual unsigned count() const = 0;
 };
 

@@ -44,14 +44,33 @@ IF (NOT R_FOUND)
     SET (RCPP_LIBRARY "")    # Newer versions of Rcpp are header-only, with no associated library.
   ENDIF()
 
+  #Rcpp/config.h
+  #define RCPP_VERSION Rcpp_Version(0,12,3)
+  FILE(STRINGS "${RCPP_INCLUDE_DIR}/Rcpp/config.h" version_string REGEX "#define RCPP_VERSION Rcpp_Version\\(")
+  #major
+  STRING(REGEX REPLACE "#define RCPP_VERSION Rcpp_Version\\(" "" major "${version_string}")
+  STRING(REGEX REPLACE ",[0-9]+,[0-9]+\\)" "" major "${major}")
+  #minor
+  STRING(REGEX REPLACE "#define RCPP_VERSION Rcpp_Version\\([0-9]+," "" minor "${version_string}")
+  STRING(REGEX REPLACE ",[0-9]+\\)" "" minor "${minor}")
+  #patch
+  STRING(REGEX REPLACE "#define RCPP_VERSION Rcpp_Version\\([0-9]+,[0-9]+," "" patch "${version_string}")
+  STRING(REGEX REPLACE "\\)" "" patch "${patch}")
+  SET(RCPP_VERSION_STRING "${major}.${minor}.${patch}")
+
   SET (R_INCLUDE_DIRS ${R_INCLUDE_DIR} ${RINSIDE_INCLUDE_DIR} ${RCPP_INCLUDE_DIR})
   SET (R_LIBRARIES ${R_LIBRARY} ${RINSIDE_LIBRARY} ${RCPP_LIBRARY})
 
-  include(FindPackageHandleStandardArgs)
-  find_package_handle_standard_args(R DEFAULT_MSG
-    R_LIBRARIES
-    R_INCLUDE_DIRS
-  )
+  INCLUDE(FindPackageHandleStandardArgs)
+  find_package_handle_standard_args(R
+    REQUIRED_VARS R_LIBRARY
+                  RINSIDE_LIBRARY
+                  R_INCLUDE_DIR
+                  RCPP_INCLUDE_DIR
+                  RINSIDE_INCLUDE_DIR
+                  R_LIBRARIES
+                  R_INCLUDE_DIRS
+    VERSION_VAR RCPP_VERSION_STRING)
 
-  MARK_AS_ADVANCED(R_INCLUDE_DIRS R_LIBRARIES)
+  MARK_AS_ADVANCED(R_INCLUDE_DIRS R_LIBRARIES RINSIDE_LIBRARY)
 ENDIF()

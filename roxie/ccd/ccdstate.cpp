@@ -431,7 +431,7 @@ protected:
     virtual aindex_t getBaseCount() const = 0;
     virtual const CRoxiePackageNode *getBaseNode(aindex_t pos) const = 0;
 
-    virtual bool getSysFieldTranslationEnabled() const {return fieldTranslationEnabled;} //roxie configured value
+    virtual IRecordLayoutTranslator::Mode getSysFieldTranslationEnabled() const { return fieldTranslationEnabled; } //roxie configured value
 
     // Use local package file only to resolve subfile into physical file info
     IResolvedFile *resolveLFNusingPackage(const char *fileName) const
@@ -598,7 +598,7 @@ protected:
     void doPreload(unsigned channel, const IResolvedFile *resolved)
     {
         if (resolved->isKey())
-            keyArrays.append(*resolved->getKeyArray(NULL, NULL, false, channel, false));
+            keyArrays.append(*resolved->getKeyArray(NULL, NULL, false, channel, IRecordLayoutTranslator::NoTranslation));
         else
             fileArrays.append(*resolved->getIFileIOArray(false, channel));
     }
@@ -739,7 +739,7 @@ public:
     {
         return CPackageNode::queryEnv(varname);
     }
-    virtual bool getEnableFieldTranslation() const
+    virtual IRecordLayoutTranslator::Mode getEnableFieldTranslation() const override
     {
         return CPackageNode::getEnableFieldTranslation();
     }
@@ -2188,7 +2188,16 @@ private:
         case 'F':
             if (stricmp(queryName, "control:fieldTranslationEnabled")==0)
             {
-                fieldTranslationEnabled = control->getPropBool("@val", true);
+                const char *val = control->queryProp("@val");
+                if (val)
+                {
+                    if (strieq(val, "payload"))
+                        fieldTranslationEnabled = IRecordLayoutTranslator::TranslatePayload;
+                    else if (!val || strToBool(val))
+                        fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAll;
+                    else
+                        fieldTranslationEnabled = IRecordLayoutTranslator::NoTranslation;
+                }
                 topology->setPropInt("@fieldTranslationEnabled", fieldTranslationEnabled);
             }
             else if (stricmp(queryName, "control:flushJHtreeCacheOnOOM")==0)

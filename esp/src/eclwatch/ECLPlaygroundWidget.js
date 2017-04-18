@@ -285,7 +285,7 @@ define([
             var fetchedCount = 0;
             for (var i = 0; i < graphs.length; ++i) {
                 var context = this;
-                this.wu.fetchGraphXgmml(i, function (xgmml) {
+                this.wu.fetchGraphXgmml(i, null, function (xgmml) {
                     ++fetchedCount;
                     context.graphControl.loadXGMML(xgmml, fetchedCount > 1);
                     if (fetchedCount === graphs.length) {

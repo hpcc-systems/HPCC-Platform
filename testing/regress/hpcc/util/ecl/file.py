@@ -223,7 +223,7 @@ class ECLFile:
         return path
 
     def getResults(self):
-        return os.path.join(self.dir_r, self.xml_r)
+        return os.path.join(self.dir_r, self.getJobname() + '.xml')
 
     def getArchive(self):
         logging.debug("%3d. getArchive (isVersions:'%s')", self.taskId, self.isVersions )

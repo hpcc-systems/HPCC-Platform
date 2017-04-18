@@ -635,7 +635,7 @@ static BOOL GetLogicalAddress( PVOID addr, PTSTR szModule, DWORD len, DWORD& sec
     szModule[0] = 0;
     section = 0;
     offset = 0;
-    if ((unsigned)addr<0x10000)
+    if ((unsigned)(memsize_t)addr<0x10000)
         return FALSE;
     
     
@@ -644,7 +644,7 @@ static BOOL GetLogicalAddress( PVOID addr, PTSTR szModule, DWORD len, DWORD& sec
     if ( !VirtualQuery( addr, &mbi, sizeof(mbi) ) )
         return FALSE;
     
-    DWORD hMod = (DWORD)mbi.AllocationBase;
+    memsize_t hMod = (memsize_t)mbi.AllocationBase;
     
     if ( !GetModuleFileName( (HMODULE)hMod, szModule, len ) )
         return FALSE;
@@ -655,7 +655,7 @@ static BOOL GetLogicalAddress( PVOID addr, PTSTR szModule, DWORD len, DWORD& sec
     
     PIMAGE_SECTION_HEADER pSection = IMAGE_FIRST_SECTION( pNtHdr );
     
-    DWORD rva = (DWORD)addr - hMod; 
+    memsize_t rva = (memsize_t)addr - hMod;
     
     for (unsigned i = 0; i < pNtHdr->FileHeader.NumberOfSections; i++, pSection++ )
     {
