@@ -5800,7 +5800,7 @@ public:
                 IDistributedFile &f=subfiles.item(i);
                 IDistributedSuperFile *super = f.querySuperFile();
                 if (super)
-                    ret += super->numSubFiles();
+                    ret += super->numSubFiles(sub);
                 else
                     ret++;
             }
