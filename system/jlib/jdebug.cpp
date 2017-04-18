@@ -1057,7 +1057,7 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 # if defined(_SC_NPROCESSORS_CONF)
     int ncpus = sysconf(_SC_NPROCESSORS_CONF);
     if (ncpus > 0)
-        numCPUS = ncpus;
+        numCPUs = ncpus;
 # endif
 #else // linux
     // NOTE: Could have perhaps used sysconf(_SC_NPROCESSORS_CONF) for numCPUs
