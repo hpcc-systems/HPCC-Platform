@@ -94,15 +94,20 @@ start_slaves()
     ln -s -f $deploydir/thorslave_lcr ${slavename}
 
     # sync to current master slaves list
-    log "rsync -e ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no ${master}:${instancedir}/slaves ${instancedir}/slaves.tmp"
-    rsync -e "ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no" $master:$instancedir/slaves $instancedir/slaves.tmp
+    if [[ "$localthor" != "true" ]]; then
+        log "rsync -e ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no ${master}:${instancedir}/slaves ${instancedir}/slaves.tmp"
+        slavesfname="$instancedir/slaves.tmp"
+        rsync -e "ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no" $master:$instancedir/slaves $slavesfname
+    else
+        slavesfname="$instancedir/slaves"
+    fi
 
     # NB: Would simply use slavesPerNode to create N slaves, but for backward compatilibty reasons, need to cater for clusters
     # defined with arbitrary repeated IP's listed in their definitions.    
     fts=0
-    clusternodes=$(cat $instancedir/slaves.tmp | wc -l)
+    clusternodes=$(cat $slavesfname | wc -l)
     clusternode=1
-    for slaveip in $(cat $instancedir/slaves.tmp); do
+    for slaveip in $(cat $slavesfname); do
         if [[ ${slaveip} = ${ip} ]]; then
             for (( slave=0; slave<${slavespernode}; slave++ )); do
                 slavenum=$(( ${clusternode} + (${slave} * ${clusternodes}) ))
@@ -122,7 +127,9 @@ start_slaves()
         fi
         clusternode=$(( $clusternode + 1 ))
     done
-    rm -f $instancedir/slaves.tmp > /dev/null
+    if [[ "$localthor" != "true" ]]; then
+        rm -f $slavesfname > /dev/null
+    fi
     exit ${fts}
 }
 
