@@ -17,3 +17,25 @@
 DOCBOOK_TO_PDF( ${FO_XSL} HPCCSystemAdministratorsGuide.xml "HPCCSystemAdministratorsGuide" "SA-Mods")
 
 DOCBOOK_TO_PDF( ${FO_XSL} SecMgrInc.xml "HPCCSecurityManagerGuide" "SA-Mods")
+
+IF(MAKE_DOCS)
+  SET(HELP_DEPENDENCIES)
+  GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
+  FOREACH(T ${Current_Targets})
+    IF("${T}" MATCHES ".*SystemAdministratorsGuide.*")
+      LIST(APPEND HELP_DEPENDENCIES  ${T})
+     ENDIF()
+  ENDFOREACH()
+
+  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/HPCCSystemAdministratorsGuide.xml" ${PORTAL_HTML_DIR}/SystemAdministratorsGuide  "system_administration_guide_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+
+  SET(HELP_DEPENDENCIES)
+  GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
+  FOREACH(T ${Current_Targets})
+    IF("${T}" MATCHES ".*SecurityManagerGuide.*")
+      LIST(APPEND HELP_DEPENDENCIES  ${T})
+     ENDIF()
+  ENDFOREACH()
+
+  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/SecMgrInc.xml" ${PORTAL_HTML_DIR}/SecurityManagerGuide  "security_manager_guide_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+ENDIF(MAKE_DOCS)

@@ -40,15 +40,15 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -750,7 +750,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/dali.xsd.mod.xml"
-                        xpointer="da.t1"
+                        xpointer="xpointer(//*[@id='da.t1'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -773,7 +773,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/dali.xsd.mod.xml"
-                        xpointer="da.t2"
+                        xpointer="xpointer(//*[@id='da.t2'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -793,7 +793,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/dali.xsd.mod.xml"
-                        xpointer="da.t4"
+                        xpointer="xpointer(//*[@id='da.t4'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -864,7 +864,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/dafilesrv.xsd.mod.xml"
-                        xpointer="daFs.t"
+                        xpointer="xpointer(//*[@id='daFs.t'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -912,7 +912,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/dfuserver.xsd.mod.xml"
-                        xpointer="DF.t1"
+                        xpointer="xpointer(//*[@id='DF.t1'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -930,7 +930,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/dfuserver.xsd.mod.xml"
-                        xpointer="DF.t2"
+                        xpointer="xpointer(//*[@id='DF.t2'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1124,7 +1124,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/eclagent_config.xsd.mod.xml"
-                        xpointer="EA.t1"
+                        xpointer="xpointer(//*[@id='EA.t1'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1142,7 +1142,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/eclagent_config.xsd.mod.xml"
-                        xpointer="EA.t2"
+                        xpointer="xpointer(//*[@id='EA.t2'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1201,7 +1201,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/eclccserver.xsd.mod.xml"
-                        xpointer="cc.t2"
+                        xpointer="xpointer(//*[@id='cc.t2'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1271,7 +1271,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/eclscheduler.xsd.mod.xml"
-                        xpointer="ecl.sched"
+                        xpointer="xpointer(//*[@id='ecl.sched'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1329,7 +1329,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
-                        xpointer="ESP.t6"
+                        xpointer="xpointer(//*[@id='ESP.t6'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1354,7 +1354,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
-                        xpointer="ESP.t1"
+                        xpointer="xpointer(//*[@id='ESP.t1'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
@@ -1365,7 +1365,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
-                        xpointer="ESP.t2"
+                        xpointer="xpointer(//*[@id='ESP.t2'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
@@ -1373,7 +1373,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <!--MyESP-Include-ES.t3-XXX-15-->
 
             <!-- <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
-                        xpointer="ES.t3"
+                        xpointer="xpointer(//*[@id='ES.t3'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />  -->
           </para>
 
@@ -1396,7 +1396,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
-                        xpointer="ESP.t4"
+                        xpointer="xpointer(//*[@id='ESP.t4'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
@@ -1464,7 +1464,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/esp.xsd.mod.xml"
-                        xpointer="ESP.t5"
+                        xpointer="xpointer(//*[@id='ESP.t5'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1500,7 +1500,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/espsmcservice.xsd.mod.xml"
-                        xpointer="SMC-T01"
+                        xpointer="xpointer(//*[@id='SMC-T01'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
@@ -1510,7 +1510,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/espsmcservice.xsd.mod.xml"
-                        xpointer="SMC-T02"
+                        xpointer="xpointer(//*[@id='SMC-T02'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1531,7 +1531,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
-                        xpointer="MyWS2-T01"
+                        xpointer="xpointer(//*[@id='MyWS2-T01'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
@@ -1541,7 +1541,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
-                        xpointer="MyWS2-T02"
+                        xpointer="xpointer(//*[@id='MyWS2-T02'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
@@ -1551,7 +1551,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
-                        xpointer="MyWS2-T03"
+                        xpointer="xpointer(//*[@id='MyWS2-T03'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1615,7 +1615,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/ftslave_linux.xsd.mod.xml"
-                        xpointer="FTS.t1"
+                        xpointer="xpointer(//*[@id='FTS.t1'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1646,7 +1646,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <!--LdapServer-Include-fullDoc-XXX-19-->
 
         <xi:include href="XMLGeneration/xml/ldapserver.xsd.mod.xml"
-                    xpointer="ldapSrv"
+                    xpointer="xpointer(//*[@id='ldapSrv'])"
                     xmlns:xi="http://www.w3.org/2001/XInclude" />
 
         <sect3>
@@ -1725,7 +1725,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
-                        xpointer="sh.t1"
+                        xpointer="xpointer(//*[@id='sh.t1'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1746,7 +1746,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
-                        xpointer="sh.t2"
+                        xpointer="xpointer(//*[@id='sh.t2'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
@@ -1767,7 +1767,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
-                        xpointer="sh.t3"
+                        xpointer="xpointer(//*[@id='sh.t3'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1788,7 +1788,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
-                        xpointer="sh.t4"
+                        xpointer="xpointer(//*[@id='sh.t4'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1811,7 +1811,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
-                        xpointer="sh.t5"
+                        xpointer="xpointer(//*[@id='sh.t5'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1832,7 +1832,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
-                        xpointer="sh.t6"
+                        xpointer="xpointer(//*[@id='sh.t6'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -1853,7 +1853,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/sasha.xsd.mod.xml"
-                        xpointer="sh.t7"
+                        xpointer="xpointer(//*[@id='sh.t7'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -2096,7 +2096,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/thor.xsd.mod.xml"
-                        xpointer="Th.t1"
+                        xpointer="xpointer(//*[@id='Th.t1'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -2116,7 +2116,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/thor.xsd.mod.xml"
-                        xpointer="Th.t3"
+                        xpointer="xpointer(//*[@id='Th.t3'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
@@ -2142,7 +2142,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>
             <xi:include href="XMLGeneration/xml/thor.xsd.mod.xml"
-                        xpointer="Th.t4"
+                        xpointer="xpointer(//*[@id='Th.t4'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>

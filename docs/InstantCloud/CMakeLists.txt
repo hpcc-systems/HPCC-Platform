@@ -15,3 +15,15 @@
 ################################################################################
 
 DOCBOOK_TO_PDF( ${FO_XSL} InstantCloud.xml "InstantCloud_for_AWS")
+
+IF(MAKE_DOCS)
+  SET(HELP_DEPENDENCIES)
+  GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
+  FOREACH(T ${Current_Targets})
+    IF("${T}" MATCHES ".*InstantCloud_for_AWS.*")
+      LIST(APPEND HELP_DEPENDENCIES  ${T})
+     ENDIF()
+  ENDFOREACH()
+
+  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/InstantCloud.xml" ${PORTAL_HTML_DIR}/InstantCloud_for_AWS  "instantcloud_for_aws_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+ENDIF(MAKE_DOCS)

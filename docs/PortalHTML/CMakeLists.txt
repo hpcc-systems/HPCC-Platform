@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems(r).
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,17 +13,20 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-
-DOCBOOK_TO_PDF( ${FO_XSL} ECL_Plugin_for_Eclipse.xml "ECL_Plugin_for_EclipseIDE")
-
 IF(MAKE_DOCS)
   SET(HELP_DEPENDENCIES)
   GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
   FOREACH(T ${Current_Targets})
-    IF("${T}" MATCHES ".*ECL_Plugin_for_EclipseIDE.*")
+    IF("${T}" MATCHES ".*_html")
       LIST(APPEND HELP_DEPENDENCIES  ${T})
     ENDIF()
   ENDFOREACH()
+  SET(PORTAL_HTML_ZIP "portal_html_zip")
+  ADD_CUSTOM_TARGET(${PORTAL_HTML_ZIP} ALL
+           COMMAND zip -r "portal_html.zip" ${PORTAL_HTML_DIR}
+           WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/
+           DEPENDS ${HELP_DEPENDENCIES}
+           )
+  set_property(GLOBAL APPEND PROPERTY DOC_TARGETS ${PORTAL_HTML_ZIP})
 
-  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/ECL_Plugin_for_Eclipse.xml" ${PORTAL_HTML_DIR}/Eclipse_Plugin  "eclipse_plugin_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
 ENDIF(MAKE_DOCS)

@@ -40,15 +40,15 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -59,24 +59,24 @@
   </bookinfo>
 
   <xi:include href="HPCCClientTools/CT_Mods/CT_Overview_withoutIDE.xml"
-              xpointer="CT_Overview"
+              xpointer="xpointer(//*[@id='CT_Overview'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_ECL.xml"
-              xpointer="Command_Line_ECL"
+              xpointer="xpointer(//*[@id='Command_Line_ECL'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-  <xi:include href="HPCCClientTools/CT_Mods/CT_ECL_CLI.xml" xpointer="ECL_CLI"
+  <xi:include href="HPCCClientTools/CT_Mods/CT_ECL_CLI.xml" xpointer="xpointer(//*[@id='ECL_CLI'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-  <xi:include href="HPCCClientTools/CT_Mods/ECLCC.xml" xpointer="ECL_Compiler"
+  <xi:include href="HPCCClientTools/CT_Mods/ECLCC.xml" xpointer="xpointer(//*[@id='ECL_Compiler'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_DFU.xml"
-              xpointer="Command_Line_DFU"
+              xpointer="xpointer(//*[@id='Command_Line_DFU'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="HPCCClientTools/CT_Mods/CT_ESDL_CLI.xml"
-              xpointer="ESDL_CLI" xmlns:xi="http://www.w3.org/2001/XInclude" />
+              xpointer="xpointer(//*[@id='ESDL_CLI'])" xmlns:xi="http://www.w3.org/2001/XInclude" />
               
 </book>

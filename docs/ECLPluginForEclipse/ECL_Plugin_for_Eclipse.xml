@@ -40,12 +40,12 @@
       <para><emphasis role="redbold"> </emphasis></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--Release Info makes a running page footer:now an include from version.xml-->
 
-    <xi:include href="common/Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--The include statement pulls in the date_ver from version.xml-->
@@ -54,7 +54,7 @@
 
     <!--corpname never prints-->
 
-    <xi:include href="common/Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--Copyright tag now gets copyright from version.xml-->
