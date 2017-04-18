@@ -12,7 +12,7 @@
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>ESPservice MyService
+  <programlisting>ESPservice [auth_feature("AllowMyService")] MyService
 {
   ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
   ESPmethod MyMethod2(MyMethod2Request, MyMethod2Response);
