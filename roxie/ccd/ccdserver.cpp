@@ -3903,6 +3903,7 @@ private:
     bool allread;
     bool contextCached;
     bool preserveOrder;
+    bool eogSent = false;
 
     InterruptableSemaphore sentsome;
     Owned <IMessageCollator> mc;
@@ -4497,12 +4498,20 @@ public:
                 got = merger.next(matched, dummySmartStepExtra);
             }
             else if (mu)
+            {
                 got = getRow(mu);
+                if (!got && meta.isGrouped() && !eogSent)
+                {
+                    eogSent = true;
+                    return NULL;
+                }
+            }
             if (got)
             {
                 processRow(got);
                 return got;
             }
+            eogSent = false;
             if (!reload())
                 return NULL;
         }
@@ -21352,8 +21361,6 @@ public:
         {
             diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta.getClear()));
             isGrouped = true;
-            if (useRemote())
-                UNIMPLEMENTED;
         }
         diskSize.set(diskMeta);
         variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
