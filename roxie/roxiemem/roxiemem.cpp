@@ -2370,7 +2370,7 @@ public:
     {
         if (heap)
         {
-            heap->checkScans();
+            heap->checkScans(allocatorId);
             if (flags & RHFunique)
                 heap->noteOrphaned();
         }
@@ -2389,7 +2389,7 @@ public:
     virtual void clearRowManager()
     {
         if (heap)
-            heap->checkScans();
+            heap->checkScans(allocatorId);
         heap.clear();
         CRoxieFixedRowHeapBase::clearRowManager();
     }
@@ -2986,8 +2986,8 @@ public:
         flags |= RHForphaned;
     }
 
-    void checkScans();
-    virtual void reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats) = 0;
+    void checkScans(unsigned allocatorId);
+    virtual void reportScanProblem(unsigned allocatorId, unsigned __int64 numScans, const HeapletStats & mergedStats) = 0;
 
     void gatherStats(CRuntimeStatisticCollection & stats);
 
@@ -3000,6 +3000,7 @@ protected:
 protected:
     size32_t chunkSize;
     unsigned chunksPerPage;
+    unsigned __int64 totalAllocsLastScanCheck = 0;
 };
 
 class CFixedChunkedHeap : public CChunkedHeap
@@ -3020,7 +3021,7 @@ public:
                (searchFlags == flags);
     }
 
-    virtual void reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats) override;
+    virtual void reportScanProblem(unsigned allocatorId, unsigned __int64 numScans, const HeapletStats & mergedStats) override;
 
 protected:
     virtual ChunkedHeaplet * allocateHeaplet();
@@ -3047,7 +3048,7 @@ public:
                (allocatorId == searchActivity);
     }
 
-    virtual void reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats) override;
+    virtual void reportScanProblem(unsigned allocatorId, unsigned __int64 numScans, const HeapletStats & mergedStats) override;
 
 protected:
     virtual ChunkedHeaplet * allocateHeaplet();
@@ -5378,7 +5379,7 @@ void * CChunkedHeap::doAllocate(unsigned activityId, unsigned maxSpillCost)
     return doAllocateRow(activityId, maxSpillCost);
 }
 
-void CChunkedHeap::checkScans()
+void CChunkedHeap::checkScans(unsigned allocatorId)
 {
     HeapletStats merged(stats);
 
@@ -5396,11 +5397,17 @@ void CChunkedHeap::checkScans()
                     break;
             }
         }
+
+        //If nothing has changed since the last time this was called then don't report anything
+        //often happens if multiple allocators share the same heap
+        if (merged.totalAllocs == totalAllocsLastScanCheck)
+            return;
+        totalAllocsLastScanCheck = merged.totalAllocs;
     }
 
     unsigned __int64 numScans = merged.totalDistanceScanned / chunkSize;
     if (numScans && (numScans >= merged.totalAllocs * ScanReportThreshold))
-        reportScanProblem(numScans, merged);
+        reportScanProblem(allocatorId, numScans, merged);
 }
 
 //================================================================================
@@ -5427,10 +5434,11 @@ unsigned CFixedChunkedHeap::allocateBlock(unsigned activityId, unsigned maxRows,
 }
 
 
-void CFixedChunkedHeap::reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats)
+void CFixedChunkedHeap::reportScanProblem(unsigned allocatorId, unsigned __int64 numScans, const HeapletStats & mergedStats)
 {
-    logctx.CTXLOG("Excessive scans in heap manager (%.2f).  Size(%u) scans(%" I64F "u/%" I64F "u)",
-           (double)numScans / mergedStats.totalAllocs, chunkSize-FixedSizeHeaplet::chunkHeaderSize, numScans, mergedStats.totalAllocs);
+    unsigned activityId = getRealActivityId(allocatorId, allocatorCache);
+    logctx.CTXLOG("Excessive scans in shared heap{%x:%u} (%.2f).  Size(%u) scans(%" I64F "u/%" I64F "u)",
+           flags, activityId, (double)numScans / mergedStats.totalAllocs, chunkSize-FixedSizeHeaplet::chunkHeaderSize, numScans, mergedStats.totalAllocs);
 }
 
 ChunkedHeaplet * CPackedChunkingHeap::allocateHeaplet()
@@ -5455,11 +5463,11 @@ unsigned CPackedChunkingHeap::allocateBlock(unsigned activityId, unsigned maxRow
 }
 
 
-void CPackedChunkingHeap::reportScanProblem(unsigned __int64 numScans, const HeapletStats & mergedStats)
+void CPackedChunkingHeap::reportScanProblem(unsigned, unsigned __int64 numScans, const HeapletStats & mergedStats)
 {
     unsigned activityId = getRealActivityId(allocatorId, allocatorCache);
-    logctx.CTXLOG("Excessive scans in heap manager for activity %u (%.2f).  Size(%u) scans(%" I64F "u/%" I64F "u)",
-           activityId, (double)numScans / mergedStats.totalAllocs, chunkSize-PackedFixedSizeHeaplet::chunkHeaderSize, numScans, mergedStats.totalAllocs);
+    logctx.CTXLOG("Excessive scans in heap{%x} for activity %u (%.2f).  Size(%u) scans(%" I64F "u/%" I64F "u)",
+           flags, activityId, (double)numScans / mergedStats.totalAllocs, chunkSize-PackedFixedSizeHeaplet::chunkHeaderSize, numScans, mergedStats.totalAllocs);
 }
 
 //================================================================================
