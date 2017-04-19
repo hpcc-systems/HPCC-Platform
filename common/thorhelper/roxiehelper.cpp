@@ -1520,11 +1520,6 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                     left = len - (bytesRead - (payload - header));
                     if (len > left)
                         memcpy(buf, payload, len - left);
-                    if (pHttpHelper->isFormPost())
-                    {
-                        pHttpHelper->checkTarget();
-                        pHttpHelper->setFormContent(ret);
-                    }
                 }
                 else
                     left = len = 0;
@@ -1579,8 +1574,12 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         }
 
         if (left)
-        {
             sock->read(buf + (len - left), left, left, bytesRead, timeout);
+
+        if (len && pHttpHelper)
+        {
+            if (pHttpHelper->isFormPost())
+                pHttpHelper->checkSetFormPostContent(ret.str());
         }
 
         return len != 0;
