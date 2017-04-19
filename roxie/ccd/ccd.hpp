@@ -397,6 +397,9 @@ extern bool preloadOnceData;
 extern bool reloadRetriesFailed;
 extern bool selfTestMode;
 
+extern int backgroundCopyClass;
+extern int backgroundCopyPrio;
+
 extern unsigned roxiePort;     // If listening on multiple, this is the first. Used for lock cascading
 
 extern unsigned udpMulticastBufferSize;

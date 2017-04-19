@@ -39,6 +39,11 @@
 #include "ccdsnmp.hpp"
 #include "thorplugin.hpp"
 
+#if defined (__linux__)
+#include <sys/syscall.h>
+#include "ioprio.h"
+#endif
+
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
@@ -115,6 +120,9 @@ unsigned preabortIndexReadsThreshold = 100;
 bool preloadOnceData;
 bool reloadRetriesFailed;
 bool selfTestMode = false;
+
+int backgroundCopyClass = 0;
+int backgroundCopyPrio = 0;
 
 unsigned memoryStatsInterval = 0;
 memsize_t defaultMemoryLimit;
@@ -709,6 +717,31 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             logExcessiveSeeks = true;
         preloadOnceData = topology->getPropBool("@preloadOnceData", true);
         reloadRetriesFailed  = topology->getPropBool("@reloadRetriesSuspended", true);
+#if defined(__linux__) && defined(SYS_ioprio_set)
+        const char *backgroundCopyClassString = topology->queryProp("@backgroundCopyClass");
+        if (!isEmptyString(backgroundCopyClassString))
+        {
+            if (strieq(backgroundCopyClassString, "best-effort"))
+                backgroundCopyClass = IOPRIO_CLASS_BE;
+            else if (strieq(backgroundCopyClassString, "idle"))
+                backgroundCopyClass = IOPRIO_CLASS_IDLE;
+            else if (strieq(backgroundCopyClassString, "none"))
+                backgroundCopyClass = IOPRIO_CLASS_NONE;
+            else
+                DBGLOG("Invalid backgroundCopyClass %s specified - ignored", backgroundCopyClassString);
+        }
+        backgroundCopyPrio = topology->getPropInt("@backgroundCopyPrio", 0);
+        if (backgroundCopyPrio >= IOPRIO_BE_NR)
+        {
+            DBGLOG("Invalid backgroundCopyPrio %d specified - using %d", backgroundCopyPrio, (int) (IOPRIO_BE_NR-1));
+            backgroundCopyPrio = IOPRIO_BE_NR-1;
+        }
+        else if (backgroundCopyPrio < 0)
+        {
+            DBGLOG("Invalid backgroundCopyPrio %d specified - using 0", backgroundCopyPrio);
+            backgroundCopyPrio = 0;
+        }
+#endif
         linuxYield = topology->getPropBool("@linuxYield", false);
         traceSmartStepping = topology->getPropBool("@traceSmartStepping", false);
         useMemoryMappedIndexes = topology->getPropBool("@useMemoryMappedIndexes", false);
