@@ -1445,11 +1445,16 @@ protected:
             return;
         case type_string:
         case type_unicode:
-        case type_utf8:
         case type_varstring:
             line.append(irText);
             if (info.length != UNKNOWN_LENGTH)
                 line.append(info.length);
+            line.append("(").append(info.locale).append(")");
+            return;
+        case type_utf8:
+            line.append(irText);
+            if (info.length != UNKNOWN_LENGTH)
+                line.append("_").append(info.length);
             line.append("(").append(info.locale).append(")");
             return;
         }
