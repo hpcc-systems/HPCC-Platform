@@ -2145,12 +2145,6 @@ bool CMasterGraph::fireException(IException *e)
                 reportExceptionToWorkunit(job.queryWorkUnit(), e);
             break;
         }
-        case tea_abort:
-        {
-            EXCLOG(e, NULL);
-            abort(e);
-            // fall through
-        }
         default:
         {
             LOG(MCerror, thorJob, e);
