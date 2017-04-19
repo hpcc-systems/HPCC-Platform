@@ -1073,6 +1073,7 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 
     // NOTE: This provides current cpu freq, not max
 
+    numCPUs = 0;
     char line[1001];
     const char *bufptr;
     while ((bufptr = fgets(line, 1000, cpufp)) != NULL)
@@ -1084,6 +1085,8 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
     }
 
     fclose(cpufp);
+    if (numCPUs < 1)
+        numCPUs = 1;
 
     // max cpu freq (KHz) may be in:
     // /sys/devices/system/cpu/cpu[0-X]/cpufreq/cpuinfo_max_freq
