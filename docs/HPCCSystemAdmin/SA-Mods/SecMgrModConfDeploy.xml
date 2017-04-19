@@ -2,15 +2,15 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="configure-and-deploy-security-manager-plugin">
-  <title role="nbrk">Configure and Deploy the Security Manager Plug-in</title>
+  <title role="nbrk">Configure and Deploy the Security Manager Plugin</title>
 
   <para>The following sections detail the process of configuring your HPCC
-  system to use the Security Manager Plug-in.</para>
+  system to use the Security Manager Plugin.</para>
 
   <sect1 id="how-to-configure-an-existing-security-manager-plugin">
-    <title>How to Configure a Security Manager Plug-in</title>
+    <title>How to Configure a Security Manager Plugin</title>
 
-    <para>Once the plug-in has been installed, the plug-in can be configured
+    <para>Once the plugin has been installed, the plugin can be configured
     onto the HPCC platform using Configuration Manager.</para>
 
     <para><orderedlist>
@@ -51,7 +51,7 @@
         </listitem>
 
         <listitem>
-          <para>Create an instance of the Security Manager Plug-in:
+          <para>Create an instance of the Security Manager Plugin:
           <orderedlist numeration="loweralpha">
               <listitem>
                 <para>Right-click on Navigator Pane on the left side.</para>
@@ -64,7 +64,7 @@
 
               <listitem>
                 <para>Select the appropriate component
-                &lt;name_of_Security_Manager_plug-in&gt;</para>
+                &lt;name_of_Security_Manager_plugin&gt;</para>
               </listitem>
             </orderedlist></para>
         </listitem>
@@ -72,8 +72,8 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Configure the Security Manager Plug-in: (Example shown using
-          the Htpasswd plug-in*)<figure>
+          <para>Configure the Security Manager Plugin: (Example shown using
+          the Htpasswd plugin*)<figure>
               <title>Security Mgr Configuration page</title>
 
               <mediaobject>
@@ -108,7 +108,7 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Associate the Security Manager Plug-in with the ESP binding(s)
+          <para>Associate the Security Manager Plugin with the ESP binding(s)
           <orderedlist numeration="loweralpha">
               <listitem>
                 <para>Click on the target Esp in the Navigator Pane on the
@@ -139,7 +139,7 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Enable the use of the Security Manager Plug-in - Select the
+          <para>Enable the use of the Security Manager Plugin - Select the
           <emphasis role="bold">Authentication</emphasis> tab, in the method
           entry select <emphasis role="bold">secmgrPlugin</emphasis> <figure>
               <title>Security Mgr Configuration page</title>
@@ -170,7 +170,7 @@
       <title>A video tutorial</title>
 
       <para>Need further information? Check out the following video tutorial
-      demonstrating how to configure a security plug-in.</para>
+      demonstrating how to configure a security plugin.</para>
 
       <para><ulink
       url="https://www.youtube.com/watch?v=lNVwEOFkKgY&amp;feature=youtu.be">https://www.youtube.com/watch?v=lNVwEOFkKgY&amp;feature=youtu.be</ulink></para>

@@ -4,13 +4,13 @@
 <chapter id="security-manager-plugin-development">
   <title role="nbrk">Security Manager Development</title>
 
-  <para>The Security Manager Plug-in framework provides a mechanism for the
-  creation and deployment of custom security manager plug-ins.</para>
+  <para>The Security Manager Plugin framework provides a mechanism for the
+  creation and deployment of custom security manager plugins.</para>
 
   <sect1 id="how-to-create-a-security-manager-plugin">
-    <title>Plug-in Development</title>
+    <title>Plugin Development</title>
 
-    <para>A custom Security Manager Plug-in consists of a <emphasis
+    <para>A custom Security Manager Plugin consists of a <emphasis
     role="bold">library</emphasis> (.so or .dll) file which provides
     implementation(s) of the iSecManager interface, a <emphasis
     role="bold">configuration definition</emphasis> (articulated as an XSD
@@ -43,10 +43,10 @@
         </listitem>
       </itemizedlist></para>
 
-    <para><emphasis role="bold">Buildset definition</emphasis> - The plug-in
-    declares itself as an HPCC Security Manager Plug-in component, and
-    declares the location of the plug-in files and the configuration
-    definition schema.</para>
+    <para><emphasis role="bold">Buildset definition</emphasis> - The plugin
+    declares itself as an HPCC Security Manager Plugin component, and declares
+    the location of the plugin files and the configuration definition
+    schema.</para>
 
     <para><emphasis role="bold">EXAMPLE:</emphasis></para>
 
@@ -65,17 +65,16 @@
 &lt;/Environment&gt;</programlisting></para>
 
     <para><emphasis role="bold">Configuration Definition</emphasis> - The
-    plug-in must provide a definition of the configuration elements and the
+    plugin must provide a definition of the configuration elements and the
     structure it expects to receive at the time it is instantiated. The XSD
     file is consumed by the HPCC Configuration manager component and is
     rendered as a GUI form. The configuration definition is defined as an
     element of the component name (as declared in the buildset) followed by
     attributes and/or complex elements.</para>
 
-    <para>There are four attributes every plug-in is required to declare in
-    its configuration definition in addition to any custom configuration
-    defined by the plug-in: 'type', 'name', 'libName', and
-    'instanceFactoryName'</para>
+    <para>There are four attributes every plugin is required to declare in its
+    configuration definition in addition to any custom configuration defined
+    by the plugin: 'type', 'name', 'libName', and 'instanceFactoryName'</para>
 
     <itemizedlist spacing="compact">
       <listitem>
@@ -85,19 +84,19 @@
 
       <listitem>
         <para><emphasis role="bold">name</emphasis> - The name of the custom
-        Security Manager Plug-in instance</para>
+        Security Manager Plugin instance</para>
       </listitem>
 
       <listitem>
         <para><emphasis role="bold">libName</emphasis> - The name of the
-        library which provides instances of this Security Manager Plug-in
+        library which provides instances of this Security Manager Plugin
         type</para>
       </listitem>
 
       <listitem>
         <para><emphasis role="bold">instanceFactoryName</emphasis> - Name of
         the method provided by the library, which is responsible for creating
-        instances of the Security Manager Plug-in</para>
+        instances of the Security Manager Plugin</para>
       </listitem>
     </itemizedlist>
 
@@ -136,7 +135,7 @@
                    &lt;xs:attribute name="Option" type="xs:string" use="required"&gt;
                        &lt;xs:annotation&gt;&lt;xs:appinfo&gt;
                              &lt;tooltip&gt;This is an example compound option element 
-                             which Security Manager Plug-ins can define&lt;/tooltip&gt;
+                             which Security Manager Plugins can define&lt;/tooltip&gt;
                            &lt;/xs:appinfo&gt;&lt;/xs:annotation&gt;
                    &lt;/xs:attribute&gt;
                &lt;/xs:complexType&gt;
@@ -145,13 +144,13 @@
         &lt;xs:attribute name="optionalAttribute" type="xs:string" use="optional"&gt;
             &lt;xs:annotation&gt;&lt;xs:appinfo&gt;
                    &lt;tooltip&gt;This is an example optional attribute 
-                           which Security Manager Plug-ins can define&lt;/tooltip&gt;
+                           which Security Manager Plugins can define&lt;/tooltip&gt;
                 &lt;/xs:appinfo&gt;&lt;/xs:annotation&gt;
          &lt;/xs:attribute&gt;
          &lt;xs:attribute name="samplepasswordfile" type="xs:string" use="required"&gt;
             &lt;xs:annotation&gt;&lt;xs:appinfo&gt;
                   &lt;tooltip&gt;An attribute which defines a file name required 
-                          by this Security Manager Plug-in&lt;/tooltip&gt;
+                          by this Security Manager Plugin&lt;/tooltip&gt;
                &lt;/xs:appinfo&gt;&lt;/xs:annotation&gt;
          &lt;/xs:attribute&gt;
      &lt;/xs:complexType&gt;
@@ -161,7 +160,7 @@
     <?hard-pagebreak ?>
 
     <para><emphasis role="bold">genenvrules.conf</emphasis> - (optional) This
-    file allows the plug-in to add itself to the
+    file allows the plugin to add itself to the
     "do_not(automatically)_generate" list. While this is an optional file,
     more often than not it is actually needed.</para>
 
@@ -177,8 +176,8 @@
     <sect2 id="concrete-example">
       <title>Concrete Example</title>
 
-      <para>The HPCC Platform includes a security manager plug-in
-      implementation (HTPasswd) and can be used as a guidance for the plug-in
+      <para>The HPCC Platform includes a security manager plugin
+      implementation (HTPasswd) and can be used as a guidance for the plugin
       development process:</para>
 
       <para><ulink

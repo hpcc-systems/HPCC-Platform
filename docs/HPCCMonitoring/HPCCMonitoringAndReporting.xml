@@ -421,7 +421,7 @@
     <sect1 id="GangliaInECLWatch">
       <title>Ganglia in ECL Watch</title>
 
-      <para>With the Ganglia for HPCC Plug-in installed. You can view the
+      <para>With the Ganglia for HPCC Plugin installed. You can view the
       Ganglia statistics and graphs right through the ECL Watch interface. The
       out of the box monitoring displays several key statistics by default.
       You can customize and configure the views.</para>
@@ -436,8 +436,8 @@
         </mediaobject>
       </figure>
 
-      <para>The default Plug-ins page has a tab for Custom Monitoring where
-      you can easily add some custom monitoring components.</para>
+      <para>The default Plugins page has a tab for Custom Monitoring where you
+      can easily add some custom monitoring components.</para>
 
       <para>Select the Custom Monitoring tab, and press the Metrics button.
       Use the drop menus to display the various graphing utilities.</para>
@@ -466,7 +466,7 @@
             </listitem>
 
             <listitem>
-              <para>Click the plug-in icon at the top of the ECL Watch
+              <para>Click the plugin icon at the top of the ECL Watch
               page.</para>
 
               <para>The graphs display data.</para>
@@ -475,7 +475,7 @@
 
         <para>It is also possible for EclWatch/Esp to be on a separate,
         different node from the gmetad machine, as long as the rrd data
-        directories are exposed to the plug-in.</para>
+        directories are exposed to the plugin.</para>
       </sect2>
 
       <sect2 id="ConfiguringGangliaGraphsInECLWatch">
@@ -533,7 +533,7 @@
         </listitem>
       </itemizedlist></para>
 
-    <para>With additional available (3rd party) plug-ins, check utilities, and
+    <para>With additional available (3rd party) plugins, check utilities, and
     modification of the config file, Nagios can also monitor:</para>
 
     <para><itemizedlist>
@@ -575,9 +575,9 @@
       and easily integrate that data into Nagios.</para>
 
       <para>Administrators should note that different platforms may not
-      support all plug-ins. The <emphasis>hpcc-nagios-tools</emphasis> utility
-      can be used to simplify the addition of custom plug-ins. Many additional
-      Nagios plug-ins and utilities are available from 3rd parties.</para>
+      support all plugins. The <emphasis>hpcc-nagios-tools</emphasis> utility
+      can be used to simplify the addition of custom plugins. Many additional
+      Nagios plugins and utilities are available from 3rd parties.</para>
 
       <para>The Nagios package is not simply an "install and run" utility, it
       requires additional steps to configure and use properly. If you are not
@@ -755,7 +755,7 @@
         Systems portal.</para>
 
         <para>The HPCC Systems<superscript>®</superscript> web portal is where
-        you can find HPCC resources, downloads, plug-ins, as well as helpful
+        you can find HPCC resources, downloads, plugins, as well as helpful
         information.</para>
 
         <para><ulink

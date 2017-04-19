@@ -297,24 +297,24 @@
         </sect3>
 
         <sect3 id="HPCC_Plug-Ins" role="brk">
-          <title>Plug-Ins</title>
+          <title>Plugins</title>
 
-          <para>There are several optional plug-ins that you could choose to
+          <para>There are several optional plugins that you could choose to
           add to your installation.</para>
 
           <para>For RPM based systems, you could install using yum.</para>
 
-          <para><programlisting>sudo yum install &lt;hpccsystems plugin plug-in_name&gt;  </programlisting>Optionally,
-          you could also choose to add optional plug-ins using rpm:</para>
+          <para><programlisting>sudo yum install &lt;hpccsystems plugin plugin_name&gt;  </programlisting>Optionally,
+          you could also choose to add optional plugins using rpm:</para>
 
-          <programlisting>sudo rpm -Uvh &lt;hpccsystems plugin plug-in_name&gt; </programlisting>
+          <programlisting>sudo rpm -Uvh &lt;hpccsystems plugin plugin_name&gt; </programlisting>
 
           <para>To install the optional plug ins for a Ubuntu/Debian package,
           use:</para>
 
-          <programlisting>sudo dpkg -i &lt;hpccsystems plugin plug-in_name&gt;  </programlisting>
+          <programlisting>sudo dpkg -i &lt;hpccsystems plugin plugin_name&gt;  </programlisting>
 
-          <para>The optional plug-ins are:</para>
+          <para>The optional plugins are:</para>
 
           <para><informaltable>
               <tgroup cols="2">
@@ -364,8 +364,8 @@
               </tgroup>
             </informaltable></para>
 
-          <para>Although Cassandra support (cassandraembed) is a plug-in, it
-          is not optional and is installed with the platform.</para>
+          <para>Although Cassandra support (cassandraembed) is a plugin, it is
+          not optional and is installed with the platform.</para>
         </sect3>
       </sect2>
 
@@ -2919,28 +2919,27 @@ sudo /etc/init.d/hpcc-init -c esp start
       External language support is included with the platform installation
       package, however there are RPM-based HPCC Platform installation packages
       that explicitly state <emphasis role="bold">with
-      plug-ins</emphasis>.</para>
+      plugins</emphasis>.</para>
 
       <para><emphasis role="bold">RPM-based systems:</emphasis></para>
 
       <para>If you are interested in using external languages for RPM-based
       systems (CentOS/Red Hat), you need to download and install the
       appropriate platform installation distribution <emphasis
-      role="bold">with plug-ins</emphasis> option from the downloads
+      role="bold">with plugins</emphasis> option from the downloads
       site.</para>
 
       <para>For RPM based systems, there are two different installation
-      packages available. One package includes the optional plug-ins to
-      support embedded code from other languages. If you want support for
-      other languages, choose the package for your distro that begins
-      with:</para>
+      packages available. One package includes the optional plugins to support
+      embedded code from other languages. If you want support for other
+      languages, choose the package for your distro that begins with:</para>
 
       <programlisting>hpccsystems-platform_community-with-plugins- </programlisting>
 
       <para><emphasis role="bold">Debian-based systems:</emphasis></para>
 
-      <para>Optional plug-in downloads are NOT needed for the Debian-based
-      systems (Ubuntu) installation package, as the plug-ins are included in
+      <para>Optional plugin downloads are NOT needed for the Debian-based
+      systems (Ubuntu) installation package, as the plugins are included in
       all the Debian installation packages.</para>
 
       <para>The external languages currently supported include:</para>
@@ -2971,10 +2970,10 @@ sudo /etc/init.d/hpcc-init -c esp start
       languages in your HPCC platform.</para>
 
       <para>In addition to these languages, you can add support for additional
-      languages by creating your own plug-in. This is not very difficult to
-      do. For example the JavaScript plug-in is about 500 lines of C++ code.
-      You can use that as a template to write your own and, if desired, you
-      can contribute it back to the open source initiative.</para>
+      languages by creating your own plugin. This is not very difficult to do.
+      For example the JavaScript plugin is about 500 lines of C++ code. You
+      can use that as a template to write your own and, if desired, you can
+      contribute it back to the open source initiative.</para>
 
       <sect2 id="Add_On_Java" role="brk">
         <title>Java</title>
