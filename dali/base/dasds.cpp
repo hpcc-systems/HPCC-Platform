@@ -2484,7 +2484,7 @@ public:
 
         clear(); // NB: *should* already be cleared, when tree is removed via removeTree
     }
-    virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, CServerRemoteTree)); }
+    virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, CServerRemoteTree)); }
 
     PDState processData(CServerConnection &connection, IPropertyTree &changeTree, MemoryBuffer &newIds);
 
