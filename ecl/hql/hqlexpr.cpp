@@ -3142,7 +3142,7 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
     {
         return ensureExprType(expr, type->queryPromotedType(), castOp);
     }
-    else if (type->getSize() == UNKNOWN_LENGTH)
+    else if (type->getStringLen() == UNKNOWN_LENGTH)
     {
         if (exprType)
         {
