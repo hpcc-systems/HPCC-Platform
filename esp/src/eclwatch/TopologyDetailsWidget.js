@@ -44,6 +44,7 @@ define([
     "hpcc/ECLSourceWidget",
     "hpcc/LogWidget",
     "hpcc/WsTopology",
+    "hpcc/GetNumberOfFilesToCopyWidget",
 
     "dojo/text!../templates/TopologyDetailsWidget.html",
 
@@ -67,7 +68,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, dom, domConstruct, domForm, domAttr, iframe, domClass, query, Memory, Observable,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                _TabContainerWidget, ESPWorkunit, ESPRequest, TargetSelectWidget, ECLSourceWidget, LogWidget, WsTopology,
+                _TabContainerWidget, ESPWorkunit, ESPRequest, TargetSelectWidget, ECLSourceWidget, LogWidget, WsTopology, GetNumberOfFilesToCopyWidget,
                 template) {
     return declare("TopologyDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -79,7 +80,8 @@ define([
         configurationWidgetLoaded: false,
         logsWidget: null,
         logsWidgetLoaded: false,
-
+        getNumberOfFilesToCopyWidget: null,
+        getNumberOfFilesToCopyWidgetLoaded: false,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -88,6 +90,7 @@ define([
             this.logsWidget = registry.byId(this.id + "_Logs");
             this.requestInformationWidget = registry.byId(this.id + "_RequestInformation");
             this.preflightWidget = registry.byId(this.id + "_Preflight");
+            this.getNumberOfFilesToCopyWidget = registry.byId(this.id + "_GetNumberOfFilesToCopy");
         },
 
         startup: function (args) {
@@ -116,7 +119,9 @@ define([
             this.widget._Configuration.__hpcc_initalized = false;
             this.widget._Logs.__hpcc_initalized = false;
             this.widget._RequestInformation.__hpcc_initalized = false;
+            this.widget._GetNumberOfFilesToCopy.__hpcc_initalized = false;
             this.widget._RequestInformation.set("disabled", true);
+            this.widget._GetNumberOfFilesToCopy.set("disabled", true);
 
             this.inherited(arguments);
 
@@ -133,6 +138,14 @@ define([
             } else {
                 this.widget._Logs.set("disabled", true);
                 if (this.getSelectedChild().id === this.widget._Logs.id) {
+                    this.selectChild(this.widget._Summary.id);
+                }
+            }
+            if (this.params.__hpcc_treeItem.Type === "RoxieCluster" && this.params.__hpcc_treeItem.OS) {
+                 this.widget._GetNumberOfFilesToCopy.set("disabled", false);
+            } else {
+                this.widget._GetNumberOfFilesToCopy.set("disabled", true);
+                 if (this.getSelectedChild().id === this.widget._GetNumberOfFilesToCopy.id) {
                     this.selectChild(this.widget._Summary.id);
                 }
             }
@@ -203,6 +216,9 @@ define([
             } else if (currSel.id == this.widget._Logs.id && !this.widget._Logs.__hpcc_initalized) {
                 this.widget._Logs.__hpcc_initalized = true;
                 this.widget._Logs.init(this.params);
+            } else if (currSel.id == this.widget._GetNumberOfFilesToCopy.id && !this.widget._GetNumberOfFilesToCopy.__hpcc_initalized) {
+                this.widget._GetNumberOfFilesToCopy.__hpcc_initalized = true;
+                this.widget._GetNumberOfFilesToCopy.init(this.params);
             }
         },
 
