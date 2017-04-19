@@ -77,7 +77,7 @@ extern "C++"
       explicit SQSHPCC(const std::string& _queueName);
       ~SQSHPCC();
  
-      Response sendMessage(const char* message);
+      Response sendMessage(const char* message,const char* messagecount);
       Response createQueue();
       Response deleteQueue();
       Response deleteMessage(const std::string& message);
@@ -123,6 +123,7 @@ extern "C++"
 
     //---------------------------------------------------------------------
 
+   ECL_SQS_API bool ECL_SQS_CALL publishOrderedMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message, const char* messageCount);
     /** 
      *
      *

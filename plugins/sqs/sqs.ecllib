@@ -20,6 +20,7 @@
 SHARED sqs := SERVICE : plugin('sqs'), namespace('SQSHPCCPlugin')
 
     BOOLEAN PublishMessage(CONST VARSTRING region, CONST VARSTRING queueName, CONST VARSTRING message) : cpp,action,context,entrypoint='publishMessage';
+    BOOLEAN PublishOrderedMessage(CONST VARSTRING region, CONST VARSTRING queueName, CONST VARSTRING message,CONST VARSTRING messagecount) : cpp,action,context,entrypoint='publishOrderedMessage';
     BOOLEAN IsQueueExist(CONST VARSTRING region,CONST VARSTRING queueName):cpp,action,context,entrypoint='isQueueExist';
     BOOLEAN CreateQueue(CONST VARSTRING region,CONST VARSTRING queueName):cpp,action,context,entrypoint='createQueue';
 END;
@@ -35,6 +36,7 @@ EXPORT SQSPublisher(VARSTRING queue, VARSTRING region = 'eu_west_1') := MODULE
 
 
   EXPORT BOOLEAN PublishMessage(CONST VARSTRING message) := sqs.PublishMessage(region,queue,message);
+  EXPORT BOOLEAN PublishOrderedMessage(CONST VARSTRING message,CONST VARSTRING messagecount) := sqs.PublishOrderedMessage(region,queue,message,messagecount);
   EXPORT BOOLEAN IsQueueExist():= sqs.isQueueExist(region,queue);
   EXPORT BOOLEAN CreateQueue():= sqs.createQueue(region,queue);
 END;

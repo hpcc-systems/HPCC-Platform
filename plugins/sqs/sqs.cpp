@@ -1,19 +1,19 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
+  HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+  http://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-############################################################################## */ 
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  ############################################################################## */ 
 
 
 #include <aws/core/Aws.h>
@@ -109,10 +109,11 @@ SQSHPCCPlugin::SQSHPCC::~SQSHPCC()
  *
  **/
 
-SQSHPCCPlugin::Response  SQSHPCCPlugin::SQSHPCC::sendMessage(const char* message) 
+SQSHPCCPlugin::Response  SQSHPCCPlugin::SQSHPCC::sendMessage(const char* message,const char* messagecount) 
 {
 
   SQSHPCCPlugin::Response ref = {};
+  string concat;
 
   cout << "SendMessage is " << this->queueUrl << endl; 
 
@@ -120,6 +121,13 @@ SQSHPCCPlugin::Response  SQSHPCCPlugin::SQSHPCC::sendMessage(const char* message
     Aws::SQS::Model::SendMessageRequest sendMessageRequest;
     sendMessageRequest.SetQueueUrl(this->queueUrl);
     sendMessageRequest.SetMessageBody(message);
+    if(messagecount != NULL)
+      {
+	concat += "messageGroup";
+	concat += messagecount;
+	Aws::String msgGroupId(concat.c_str());
+	sendMessageRequest.SetMessageGroupId(msgGroupId);
+      }
  
     Aws::SQS::Model::SendMessageOutcome sendMessageOutcome = this->sqsClient->SendMessage(sendMessageRequest);
      
@@ -325,10 +333,17 @@ bool SQSHPCCPlugin::SQSHPCC::RegionExists(const string& region)
   return (
           strieq(reg,"US_EAST_1") ||
     	  strieq(reg,"US_WEST_1") ||
+          strieq(reg,"US_WEST_2") ||
+          strieq(reg,"US_EAST_2") ||
+          strieq(reg,"CA_CENTRAl_1") ||
+          strieq(reg,"EU_WEST_2") ||
+          strieq(reg,"AP_NORTHEAST_1") ||
+          strieq(reg,"AP_NORTHEAST_2") ||
     	  strieq(reg,"EU_WEST_1") ||
     	  strieq(reg,"EU_CENTRAL_1") ||
     	  strieq(reg,"AP_SOUTHEAST_1") ||
-     	  strieq(reg,"AP_SOUTHEAST_2")
+     	  strieq(reg,"AP_SOUTHEAST_2") ||
+  	  strieq(reg,"AP_SOUTH_1")
 	  ); 
 }
 
@@ -340,10 +355,17 @@ const char *const SQSHPCCPlugin::SQSHPCC::getRegion(const string& region)
     
   if(strieq(reg,"US_EAST_1"))  return Aws::Region::US_EAST_1;
   if(strieq(reg,"US_WEST_1")) return Aws::Region::US_WEST_1;
+  //if(strieq(reg,"US_EAST_2")) return Aws::Region::US_EAST_2;
+  if(strieq(reg,"US_WEST_2")) return Aws::Region::US_WEST_2;
   if(strieq(reg,"EU_WEST_1")) return Aws::Region::EU_WEST_1;
+  //if(strieq(reg,"EU_WEST_2")) return Aws::Region::EU_WEST_2;
   if(strieq(reg,"EU_CENTRAL_1")) return Aws::Region::EU_CENTRAL_1;
   if(strieq(reg,"AP_SOUTHEAST_1")) return Aws::Region::AP_SOUTHEAST_1;
   if(strieq(reg,"AP_SOUTHEAST_2"))  return Aws::Region::AP_SOUTHEAST_2;
+  if(strieq(reg,"AP_NORTHEAST_1")) return Aws::Region::AP_NORTHEAST_1;
+  if(strieq(reg,"AP_NORTHEAST_2")) return Aws::Region::AP_NORTHEAST_2;
+  if(strieq(reg,"AP_SOUTH_1")) return Aws::Region::AP_SOUTH_1;
+  //if(strieq(reg,"CA_CENTRAL_1")) return Aws::Region::CA_CENTRAL_1;
 
   throw string("Your region must be among these regions [ US_EAST_1, US_WEST_1, EU_WEST_1, EU_CENTRAL_1, AP_SOUTHEAST_1, AP_SOUTHEAST_2 ], please check your region");
 }
@@ -372,6 +394,8 @@ string SQSHPCCPlugin::SQSHPCC::convertAwsStringToCharPtr(Aws::String str)
   return res;
 }
 
+
+
 /**
  *  These function expose the contract for ECL  
  *
@@ -393,7 +417,7 @@ namespace SQSHPCCPlugin
 	SQSHPCCPlugin::SQSHPCC hpcc(queueName);
 	hpcc.setSQSConfiguration("HTTPS",region);
 	hpcc.setQueueUrlFromQueueName();
-	SQSHPCCPlugin::Response response = hpcc.sendMessage(message);
+	SQSHPCCPlugin::Response response = hpcc.sendMessage(message,NULL);
 	return true;
       }	
     catch(...)
@@ -403,6 +427,32 @@ namespace SQSHPCCPlugin
 	  
     return false;
   }
+
+
+  ECL_SQS_API bool ECL_SQS_CALL publishOrderedMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message, const char* messageCount)
+  {
+
+    if(strlen(queueName) == 0)
+      {
+        cout << "QueueName is Empty" << endl;
+        throw runtime_error("The queueName mustn't be empty!!!");
+      }
+    try
+      {
+        SQSHPCCPlugin::SQSHPCC hpcc(queueName);
+        hpcc.setSQSConfiguration("HTTPS",region);
+        hpcc.setQueueUrlFromQueueName();
+        SQSHPCCPlugin::Response response = hpcc.sendMessage(message,messageCount);
+        return true;
+      }
+    catch(...)
+      {
+        throw;
+      }
+
+    return false;
+  }
+
 
   ECL_SQS_API bool ECL_SQS_CALL QueueExists(ICodeContext* ctx,const char* region, const char* queueName)
   {
