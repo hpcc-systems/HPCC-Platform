@@ -4002,9 +4002,9 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
                 ((PTree *)tree)->setValue(new CPTValue(0, NULL, false, true, false), false);
 
             Owned<IAttributeIterator> attrs = clientTree->getAttributes();
-            IPropertyTree *t = createPTree();
             if (attrs->first())
             {
+                IPropertyTree *t = createPTree();
                 do
                 {
                     t->setProp(attrs->queryName(), clientTree->queryProp(attrs->queryName()));
