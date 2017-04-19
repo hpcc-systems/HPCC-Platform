@@ -513,6 +513,10 @@ public:
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_PORT, "", 0, 1, "", 1);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_REQARRAYTHREADS, "", 0, 1, "", 1);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, "aclName", "", 0, 1, "|'#$process/ACL'", 4);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, "protocol", "", 0, 1, "", 1);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, "passphrase", "", 0, 1, "", 1);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, "certificateFileName", "", 0, 1, "", 1);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, "privateKeyFileName", "", 0, 1, "", 1);
 
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_ONLY_SLAVE, TAG_NAME, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_ONLY_SLAVE, TAG_COMPUTER, "", 0, 1, "", 0);
@@ -540,6 +544,10 @@ public:
           m_colIndex.appendf("colIndex['numThreads%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['requestArrayThreads%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['aclName%s']=%d;", serverStr, index++);
+          m_colIndex.appendf("colIndex['protocol%s']=%d;", serverStr, index++);
+          m_colIndex.appendf("colIndex['passphrase%s']=%d;", serverStr, index++);
+          m_colIndex.appendf("colIndex['certificateFileName%s']=%d;", serverStr, index++);
+          m_colIndex.appendf("colIndex['privateKeyFileName%s']=%d;", serverStr, index++);
 
           index = 0;
           const char* agentStr = "Agents";

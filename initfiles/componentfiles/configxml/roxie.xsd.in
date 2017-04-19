@@ -77,6 +77,42 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
+             <xs:attribute name="protocol" type="xpathType" use="optional" default="native">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Protocol to use</tooltip>
+                  <title>Protocol</title>
+                  <xpath>$process/protocol</xpath>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="passphrase" type="xpathType" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Pass phrase for to cert</tooltip>
+                  <title>PassPhrase</title>
+                  <xpath>$process/passphrase</xpath>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="certificateFileName" type="xpathType" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Path to certificate filename</tooltip>
+                  <title>CertFile</title>
+                  <xpath>$process/certificateFileName</xpath>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="privateKeyFileName" type="xpathType" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Path to private key filename</tooltip>
+                  <title>CertFile</title>
+                  <xpath>$process/privateKeyFileName</xpath>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
           </xs:complexType>
         </xs:element>
 
