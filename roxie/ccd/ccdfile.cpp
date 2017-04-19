@@ -1150,25 +1150,35 @@ public:
                 if ((dfsSize != (offset_t) -1 && dfsSize != f->getSize()) ||
                     (!dfsDate.isNull() && !dfsDate.equals(*f->queryDateTime(), false)))
                 {
-                    StringBuffer modifiedDt;
-                    if (!dfsDate.isNull())
-                        dfsDate.getString(modifiedDt);
-                    StringBuffer fileDt;
-                    f->queryDateTime()->getString(fileDt);
-                    if (fileErrorList.find(lfn) == 0)
+                    if (fileType == ROXIE_KEY)
                     {
-                        switch (fileType)
-                        {
-                            case ROXIE_KEY:
-                                fileErrorList.setValue(lfn, "Key");
-                                break;
-
-                            case ROXIE_FILE:
-                                fileErrorList.setValue(lfn, "File");
-                                break;
-                        }
+                        // jhtree cache can keep files active and thus prevent us from loading a new version
+                        clearKeyStoreCacheEntry(f);  // Will release iff that is the only link
+                        f.clear(); // Note - needs to be done before calling getValue() again, hence the need to make it separate from the f.set below
+                        f.set(files.getValue(localLocation));
                     }
-                    throw MakeStringException(ROXIE_MISMATCH, "Different version of %s already loaded: sizes = %" I64F "d %" I64F "d  Date = %s  %s", lfn, dfsSize, f->getSize(), modifiedDt.str(), fileDt.str());
+                    if (f)  // May have been cleared above...
+                    {
+                        StringBuffer modifiedDt;
+                        if (!dfsDate.isNull())
+                            dfsDate.getString(modifiedDt);
+                        StringBuffer fileDt;
+                        f->queryDateTime()->getString(fileDt);
+                        if (fileErrorList.find(lfn) == 0)
+                        {
+                            switch (fileType)
+                            {
+                                case ROXIE_KEY:
+                                    fileErrorList.setValue(lfn, "Key");
+                                    break;
+
+                                case ROXIE_FILE:
+                                    fileErrorList.setValue(lfn, "File");
+                                    break;
+                            }
+                        }
+                        throw MakeStringException(ROXIE_MISMATCH, "Different version of %s already loaded: sizes = %" I64F "d %" I64F "d  Date = %s  %s", lfn, dfsSize, f->getSize(), modifiedDt.str(), fileDt.str());
+                    }
                 }
                 else
                     return f.getClear();

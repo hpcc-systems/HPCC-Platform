@@ -49,6 +49,7 @@ public:
     IKeyIndex *load(const char *fileName, unsigned crc, IReplicatedFile &part, bool isTLK, bool allowPreload);
     void clearCache(bool killAll);
     void clearCacheEntry(const char *name);
+    void clearCacheEntry(const IFileIO *io);
     unsigned setKeyCacheLimit(unsigned limit);
     StringBuffer &getMetrics(StringBuffer &xml);
     void resetMetrics();
@@ -135,6 +136,7 @@ public:
     CMemKeyIndex(int _iD, IMemoryMappedFile *_io, const char *_name, bool _isTLK);
 
     virtual const char *queryFileName() { return name.get(); }
+    virtual const IFileIO *queryFileIO() const override { return nullptr; }
 // INodeLoader impl.
     virtual CJHTreeNode *loadNode(offset_t offset);
 };
@@ -149,6 +151,7 @@ public:
     CDiskKeyIndex(int _iD, IFileIO *_io, const char *_name, bool _isTLK, bool _allowPreload);
 
     virtual const char *queryFileName() { return name.get(); }
+    virtual const IFileIO *queryFileIO() const override { return io; }
 // INodeLoader impl.
     virtual CJHTreeNode *loadNode(offset_t offset);
 };
