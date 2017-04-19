@@ -203,8 +203,17 @@ public:
         else if (!validateTarget(target))
             throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Target not found");
     }
-    inline void setFormContent(const char *content)
+
+    inline void checkSetFormPostContent(const char *content)
     {
+        while ((*content==' ') || (*content=='\t'))
+            content++;
+        if (*content=='<')
+        {
+            contentType.set("text/xml"); //backward compatible.  Some clients have a bug where XML is sent as "form-urlenncoded"
+            return;
+        }
+        checkTarget();
         if (!form)
             form.setown(createProperties(false));
         parseHttpParameterString(form, content);
