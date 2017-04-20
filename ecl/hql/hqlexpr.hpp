@@ -872,6 +872,7 @@ public:
     {
         expandCallsWhenBound = DEFAULT_EXPAND_CALL;
         ignoreUnknownImport = false;
+        ignoreSignatures = false;
         _clear(metaState);
         aborting = false;
     }
@@ -908,6 +909,7 @@ public:
     bool unsuppressImmediateSyntaxErrors = false;
     bool expandCallsWhenBound;
     bool ignoreUnknownImport;
+    bool ignoreSignatures;
     bool aborting;
     Linked<ICodegenContextCallback> codegenCtx;
 
