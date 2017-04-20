@@ -3373,7 +3373,7 @@ void formIPList(const char* ip, StringArray& formattedIpList)
           {
               //we should only enter this section IF we encounter a true ip range, not just a hostname with a dash
               IpAddress range;
-              if(range.ipsetrange(ip) >1 && !range.isHost())
+              if(range.ipsetrange(ip) > 1)
               {
                 StringArray rangeArr, commIPPart ;
                 StringBuffer comip;
