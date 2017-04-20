@@ -129,6 +129,17 @@ bool CLdapSecUser::setEmployeeID(const char * emplID)
     return true;
 }
 
+const char * CLdapSecUser::getDistinguishedName()
+{
+    return m_distinguishedName.get();
+}
+
+bool CLdapSecUser::setDistinguishedName(const char * dn)
+{
+    m_distinguishedName.set(dn);
+    return true;
+}
+
 const char * CLdapSecUser::getRealm()
 {
     return m_realm.get();
