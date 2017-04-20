@@ -1524,7 +1524,8 @@ public:
         {
             cancelReceiveMsg(queryJob().queryNodeComm(), RANK_ALL, mpTag);
             interChannelBarrierSem.interrupt(NULL);
-            broadcaster->cancel();
+            if (broadcaster)
+                broadcaster->cancel();
             if (rowProcessor)
                 rowProcessor->abort();
         }
