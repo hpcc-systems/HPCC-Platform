@@ -4878,9 +4878,9 @@ ECLRTL_API void rtlConcatUtf8(unsigned & tlen, char * * tgt, ...)
         unsigned len = va_arg(args, unsigned);
         if(len+1==0)
             break;
+        const char * str = va_arg(args, const char *);
         if (len)
         {
-            const char * str = va_arg(args, const char *);
             rtlUtf8ToUnicode(len, next.getustr(), len, str);
             idx = unorm_concatenate(result.getustr(), idx, next.getustr(), len, result.getustr(), totalLength, UNORM_NFC, 0, &err);
         }
