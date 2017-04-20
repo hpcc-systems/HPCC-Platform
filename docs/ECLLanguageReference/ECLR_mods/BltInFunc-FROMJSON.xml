@@ -8,8 +8,10 @@
       <primary>FROMJSON</primary>
     </indexterm><indexterm>
       <primary>FROMJSON function</primary>
-    </indexterm>(</emphasis><emphasis> record, jsonstring </emphasis><emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis><emphasis> record, jsonstring
+  </emphasis>,<emphasis
+  role="bold">[ONFAIL(</emphasis><emphasis>transform</emphasis> <emphasis
+  role="bold">)])</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -29,6 +31,20 @@
             <entry><emphasis>jsonstring</emphasis></entry>
 
             <entry>A string containing the JSON to convert.</entry>
+          </row>
+
+          <row>
+            <entry>ONFAIL</entry>
+
+            <entry>Optional. Specifies a transform to handle errors in the
+            JSON.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>A TRANSFORM structure matching the record structure of the
+            first parameter.</entry>
           </row>
 
           <row>
@@ -56,6 +72,23 @@ x := '{"FName": "George" , "LName": "Jetson", "EmpID": 42}';
 rec := FROMJSON(namesRec,x); 
 OUTPUT(rec);
 </programlisting>
+
+  <para>Example with Error handling and bad JSON:</para>
+
+  <programlisting>namesRec := RECORD  
+  UNSIGNED2 EmployeeID{xpath('EmpID')};  
+  STRING20 Firstname{xpath('FName')};  
+  STRING20 Lastname{xpath('LName')}; 
+END; 
+x := '{"FName": "malformedJSON""George" , "LName": "Jetson", "EmpID": 42}'; 
+
+namesRec createFailure() := 
+  TRANSFORM
+    SELF.FirstName := FAILMESSAGE;
+    SELF := [];
+  END;
+rec := FROMJSON(namesRec,x,ONFAIL(createFailure())); 	
+OUTPUT(rec);</programlisting>
 
   <para>See Also: <link linkend="ROW">ROW</link>, <link
   linkend="TOJSON">TOJSON</link></para>

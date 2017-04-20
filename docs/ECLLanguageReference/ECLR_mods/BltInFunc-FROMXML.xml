@@ -8,8 +8,9 @@
       <primary>FROMXML</primary>
     </indexterm><indexterm>
       <primary>FROMXML function</primary>
-    </indexterm>(</emphasis><emphasis> record, xmlstring </emphasis><emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis><emphasis> record, xmlstring </emphasis>,<emphasis
+  role="bold">[ONFAIL(</emphasis><emphasis>transform</emphasis> <emphasis
+  role="bold">)])</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -28,6 +29,20 @@
             <entry><emphasis>xmlstring</emphasis></entry>
 
             <entry>A string containing the XML to convert.</entry>
+          </row>
+
+          <row>
+            <entry>ONFAIL</entry>
+
+            <entry>Optional. Specifies a transform to handle errors in the
+            XML.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>A TRANSFORM structure matching the record structure of the
+            first parameter.</entry>
           </row>
 
           <row>
@@ -52,9 +67,27 @@
   STRING10  Lastname{xpath('LName')};
 END;
 x := '&lt;Row&gt;&lt;FName&gt;George&lt;/FName&gt;&lt;LName&gt;Jetson&lt;/LName&gt;&lt;EmpID&gt;42&lt;/EmpID&gt;&lt;/Row&gt;'; 
-
 rec := FROMXML(namesRec,x);
 OUTPUT(rec);</programlisting>
 
-  <para>See Also: <link linkend="ROW">ROW</link>, <link linkend="TOXML">TOXML</link></para>
+  <para>Example with Error handling and bad XML:</para>
+
+  <programlisting>namesRec := RECORD
+  UNSIGNED2 EmployeeID{xpath('EmpID')};
+  STRING20  Firstname{xpath('FName')};
+  STRING20  Lastname{xpath('LName')};
+END;
+x := '&lt;Row&gt;&lt;FName&gt;George&lt;/FName&gt;&lt;LName&gt;&lt;unmatchedtag&gt;Jetson&lt;/LName&gt;&lt;EmpID&gt;42&lt;/EmpID&gt;&lt;/Row&gt;'; 
+
+namesRec createFailure() := 
+  TRANSFORM
+    SELF.FirstName := FAILMESSAGE;
+    SELF := [];
+  END;
+rec := FROMXML(namesRec,x,ONFAIL(createFailure()));
+OUTPUT(rec);
+</programlisting>
+
+  <para>See Also: <link linkend="ROW">ROW</link>, <link
+  linkend="TOXML">TOXML</link></para>
 </sect1>
