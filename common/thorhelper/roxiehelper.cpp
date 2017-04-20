@@ -1573,10 +1573,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
             }
 
             if (pHttpHelper->isFormPost())
-            {
-                pHttpHelper->checkTarget();
-                pHttpHelper->setFormContent(ret);
-            }
+                pHttpHelper->checkSetFormPostContent(ret.str());
         }
         return len != 0;
     }
