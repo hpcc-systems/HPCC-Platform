@@ -77,7 +77,8 @@ target_link_libraries ( graph_lcr
     )
 
 if (USE_TBBMALLOC)
-   target_link_libraries ( graph_lcr ${TBBMALLOC_LIBRARIES})
+   add_dependencies ( graph_lcr tbb)
+   target_link_libraries ( graph_lcr libtbbmalloc_proxy libtbbmalloc)
 endif()
 
 

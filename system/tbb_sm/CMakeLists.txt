@@ -19,11 +19,74 @@
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for tbb, tbbmallo, tbbproxy
+#    Cmake Input File for tbb, tbbmalloc, tbbproxy
 #####################################################
 
 project( tbb )
 
-if (USE_TBB)
-    add_library(libtbb SHARED IMPORTED)
+if(USE_TBB OR USE_TBBMALLOC)
+    # tbb target
+    execute_process(
+        COMMAND /bin/bash -c "grep TBB_COMPATIBLE_INTERFACE_VERSION tbb_stddef.h | egrep -o [0-9.]+"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tbb/include/tbb
+        OUTPUT_VARIABLE SONAME_VER
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    
+    execute_process(
+        COMMAND /bin/bash -c "${CMAKE_MAKE_PROGRAM} info | awk 'BEGIN{FS=\"=\";} /^tbb_build_prefix/{print $2;}'"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tbb
+        OUTPUT_VARIABLE TBB_BUILD_NAME
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    set(TBB_BUILD_NAME "${TBB_BUILD_NAME}_release")
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so.${SONAME_VER}
+               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so
+               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so.${SONAME_VER}
+               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so
+               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so.${SONAME_VER}
+               ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so
+        COMMAND ${CMAKE_MAKE_PROGRAM} tbb_build_dir=${CMAKE_CURRENT_BINARY_DIR} cfg=release
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tbb
+        )
+    add_custom_target(tbb
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so.${SONAME_VER}
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so.${SONAME_VER}
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so.${SONAME_VER}
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so
+        )
+
+    add_library(libtbb SHARED IMPORTED GLOBAL)
+    add_library(libtbbmalloc SHARED IMPORTED GLOBAL)
+    add_library(libtbbmalloc_proxy SHARED IMPORTED GLOBAL)
+    set_property(
+        TARGET libtbb
+        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so)
+    set_property(
+        TARGET libtbbmalloc
+        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so)
+    set_property(
+        TARGET libtbbmalloc_proxy
+        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so)
+
+    install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/${TBB_BUILD_NAME}\")")
+    if(USE_TBB)
+        install(FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so.${SONAME_VER}
+            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so
+            DESTINATION lib)
+    endif()
+    if(USE_TBBMALLOC)
+        install(FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so.${SONAME_VER}
+            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so
+            DESTINATION lib)
+        install(FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so.${SONAME_VER}
+            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so
+            DESTINATION lib)
+    endif()
 endif()

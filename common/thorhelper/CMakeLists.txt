@@ -93,7 +93,7 @@ include_directories (
          ./../../rtl/include 
          ./../../roxie/roxiemem
          ./../../testing/unittests
-         ${TBB_INCLUDE_DIR}
+         ./../../system/tbb_sm/tbb/include
          ./../../system/security/shared
     )
 
@@ -114,8 +114,9 @@ if (USE_NUMA)
  target_link_libraries ( thorhelper numa )
 endif ()
 
-if (${USE_TBB} )
-   target_link_libraries ( thorhelper ${TBB_LIBRARIES})
+if (USE_TBB)
+   add_dependencies ( thorhelper tbb )
+   target_link_libraries ( thorhelper libtbb )
 endif()
 
 
