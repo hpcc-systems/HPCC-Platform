@@ -589,7 +589,7 @@ OUTPUT(People(Attr1=FALSE));
     role="bold">]</emphasis><emphasis> ,file
     </emphasis><emphasis>,</emphasis><emphasis role="bold"> CSV<indexterm>
         <primary>CSV</primary>
-      </indexterm>[ ,(</emphasis><emphasis>csvoptions</emphasis><emphasis
+      </indexterm>[ (</emphasis><emphasis>csvoptions</emphasis><emphasis
     role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
     role="bold">[, CLUSTER<indexterm>
         <primary>CLUSTER</primary>
