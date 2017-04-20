@@ -8215,8 +8215,8 @@ public:
     {
     }
 
-    void build(IHqlExpression * record, bool &hasMixedContent) const;
-    void build(IHqlExpression * record) const {bool mixed; build(record, mixed);}
+    void build(IHqlExpression * record, bool &hasMixedContent, unsigned keyedCount) const;
+    void build(IHqlExpression * record, unsigned keyedCount) const {bool mixed; build(record, mixed, keyedCount);}
 
 
 protected:
@@ -8229,7 +8229,7 @@ protected:
 
 
 
-void EclXmlSchemaBuilder::build(IHqlExpression * record, bool &hasMixedContent) const
+void EclXmlSchemaBuilder::build(IHqlExpression * record, bool &hasMixedContent, unsigned keyedCount) const
 {
     StringBuffer name, childName;
     ForEachChild(i, record)
@@ -8249,7 +8249,7 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record, bool &hasMixedContent) 
                         unsigned updateMixed=0;
                         builder.beginRecord(name, false, &updateMixed);
                         bool mixed = false;
-                        build(cur->queryRecord(), (name.length()) ? mixed : hasMixedContent);
+                        build(cur->queryRecord(), (name.length()) ? mixed : hasMixedContent, 0);
                         if (mixed)
                             builder.updateMixedRecord(updateMixed, true);
                         builder.endRecord(name);
@@ -8276,7 +8276,7 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record, bool &hasMixedContent) 
                             bool mixed = false;
                             if (builder.beginDataset(name, childName, false, &updateMixed))
                             {
-                                build(cur->queryRecord(), (name.length()) ? mixed : hasMixedContent);
+                                build(cur->queryRecord(), (name.length()) ? mixed : hasMixedContent, 0);
                                 if (mixed)
                                     builder.updateMixedRecord(updateMixed, true);
                             }
@@ -8290,7 +8290,7 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record, bool &hasMixedContent) 
                 default:
                     extractName(name.clear(), NULL, NULL, cur, NULL);
                     if (name.length())
-                        builder.addField(name, *type, false);
+                        builder.addField(name, *type, i < keyedCount);
                     else
                         hasMixedContent = true;
                     break;
@@ -8299,11 +8299,11 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record, bool &hasMixedContent) 
             }
         case no_ifblock:
             builder.beginIfBlock();
-            build(cur->queryChild(1), hasMixedContent);
+            build(cur->queryChild(1), hasMixedContent, 0);
             builder.endIfBlock();
             break;
         case no_record:
-            build(cur, hasMixedContent);
+            build(cur, hasMixedContent, 0);
             break;
         }
     }
@@ -8324,11 +8324,11 @@ void EclXmlSchemaBuilder::extractName(StringBuffer & name, StringBuffer * itemNa
 }
 
 
-void getRecordXmlSchema(StringBuffer & result, IHqlExpression * record, bool useXPath)
+void getRecordXmlSchema(StringBuffer & result, IHqlExpression * record, bool useXPath, unsigned keyedCount)
 {
     XmlSchemaBuilder xmlbuilder(false);
     EclXmlSchemaBuilder builder(xmlbuilder, useXPath);
-    builder.build(record);
+    builder.build(record, keyedCount);
     xmlbuilder.getXml(result);
 }
 
