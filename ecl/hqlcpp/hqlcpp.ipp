@@ -789,6 +789,7 @@ struct HqlCppOptions
     bool                optimizeCriticalFunctions;
     bool                addLikelihoodToGraph;
     bool                translateDFSlayouts;
+    bool                timeTransforms;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1102,7 +1103,6 @@ public:
 
     HqlCppOptions const & queryOptions() const { return options; }
     bool needToSerializeToSlave(IHqlExpression * expr) const;
-    ITimeReporter * queryTimeReporter() const { return timeReporter; }
     void noteFinishedTiming(const char * name, cycle_t startCycles)
     {
         timeReporter->addTiming(name, get_cycles_now()-startCycles);

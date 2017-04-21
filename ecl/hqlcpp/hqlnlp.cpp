@@ -145,7 +145,7 @@ void MatchReference::compileMatched(RegexIdAllocator & idAllocator, UnsignedArra
 
 //---------------------------------------------------------------------------
 
-NlpParseContext::NlpParseContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & options, ITimeReporter * _timeReporter) : timeReporter(_timeReporter)
+NlpParseContext::NlpParseContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & options)
 {
     workunit = _wu;
     expr.set(_expr);
@@ -689,7 +689,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     cycle_t startPrepareCycles = get_cycles_now();
     ITimeReporter * reporter = timeReporter;
     if (expr->hasAttribute(tomitaAtom))
-        nlpParse = createTomitaContext(expr, code->workunit, options, reporter);
+        nlpParse = createTomitaContext(expr, code->workunit, options);
     else
     {
         //In 64bit the engines have enough stack space to use the stack-based regex implementation
@@ -709,7 +709,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
         else if (matchesConstantString(algorithmHint, "heap", true))
             algorithm = NLPAregexHeap;
 
-        nlpParse = createRegexContext(expr, code->workunit, options, reporter, algorithm);
+        nlpParse = createRegexContext(expr, code->workunit, options, algorithm);
     }
 
     gatherExplicitMatched(expr);
@@ -717,7 +717,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     doBuildParseSearchText(instance->startctx, expr);
     doBuildParseValidators(instance->nestedctx, expr);
     doBuildParseExtra(instance->startctx, expr);
-    noteFinishedTiming("compile:generate PARSE:prepare", startPrepareCycles);
+    if (options.timeTransforms)
+        noteFinishedTiming("compile:PARSE:prepare", startPrepareCycles);
     
     MemoryBuffer buffer;
     cycle_t startCompileCycles = get_cycles_now();
@@ -727,7 +728,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
         WARNING1(CategoryEfficiency, HQLWRN_GrammarIsAmbiguous, instance->activityId);
 
     doBuildParseCompiled(instance->classctx, buffer);
-    noteFinishedTiming("compile:generate PARSE:compile", startCompileCycles);
+    if (options.timeTransforms)
+        noteFinishedTiming("compile:PARSE:compile", startCompileCycles);
 
     nlpParse->buildProductions(*this, instance->classctx, instance->startctx);
 
@@ -760,7 +762,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     nlpParse = NULL;
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
-    noteFinishedTiming("compile:generate PARSE", startCycles);
+    if (options.timeTransforms)
+        noteFinishedTiming("compile:PARSE", startCycles);
 
     return instance->getBoundActivity();
 }

@@ -65,30 +65,6 @@ public:
     virtual bool matches(const IStatisticsFilter * filter) const;
 };
 
-class WORKUNIT_API CLocalWULegacyTiming : implements IConstWUStatistic, public CInterface
-{
-    Owned<IPropertyTree> p;
-public:
-    IMPLEMENT_IINTERFACE;
-    CLocalWULegacyTiming(IPropertyTree *p);
-
-    virtual IStringVal & getCreator(IStringVal & str) const;
-    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const;
-    virtual IStringVal & getFormattedValue(IStringVal & str) const;
-    virtual IStringVal & getType(IStringVal & str) const;
-    virtual IStringVal & getScope(IStringVal & str) const;
-    virtual StatisticMeasure getMeasure() const;
-    virtual StatisticCreatorType getCreatorType() const;
-    virtual StatisticScopeType getScopeType() const;
-    virtual StatisticKind getKind() const;
-    virtual unsigned __int64 getValue() const;
-    virtual unsigned __int64 getCount() const;
-    virtual unsigned __int64 getMax() const;
-    virtual unsigned __int64 getTimestamp() const;
-
-    virtual bool matches(const IStatisticsFilter * filter) const;
-};
-
 //==========================================================================================
 
 template <typename T, typename IT> struct CachedTags
@@ -241,7 +217,6 @@ protected:
     mutable IArrayOf<IWUResult> variables;
     mutable CachedTags<CLocalWUAppValue,IConstWUAppValue> appvalues;
     mutable CachedTags<CLocalWUStatistic,IConstWUStatistic> statistics;
-    mutable CachedTags<CLocalWULegacyTiming,IConstWUStatistic> legacyTimings;
     mutable Owned<IUserDescriptor> userDesc;
     Mutex locked;
     Owned<ISecManager> secMgr;

@@ -103,7 +103,7 @@ public:
 class NlpParseContext : public CInterface
 {
 public:
-    NlpParseContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & options, ITimeReporter * _timeReporter);
+    NlpParseContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & options);
 
     void addAllMatched();
     virtual unsigned addMatchReference(IHqlExpression * expr);
@@ -144,7 +144,6 @@ protected:
     HqlExprArray validators;
     bool allMatched;
     IWorkUnit * workunit;
-    Linked<ITimeReporter> timeReporter;
 };
 
 void getCheckRange(IHqlExpression * range, unsigned & minLength, unsigned & maxLength, unsigned charLength);
@@ -152,7 +151,7 @@ void getCheckRange(IHqlExpression * range, unsigned & minLength, unsigned & maxL
 enum ValidateKind { ValidateIsString, ValidateIsUnicode, ValidateIsEither };
 ValidateKind getValidateKind(IHqlExpression * expr);
 
-NlpParseContext * createRegexContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * timeReporter, byte algorithm);
-NlpParseContext * createTomitaContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * timeReporter);
+NlpParseContext * createRegexContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options, byte algorithm);
+NlpParseContext * createTomitaContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options);
 
 #endif

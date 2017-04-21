@@ -5866,7 +5866,6 @@ void dumpActivityCounts()
 
 bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedLibraryName, const char * embeddedGraphName)
 {
-    cycle_t startCycles = get_cycles_now();
     WorkflowArray workflow;
     bool ok = prepareToGenerate(query, workflow, (embeddedLibraryName != NULL));
     if (ok)
@@ -5874,8 +5873,6 @@ bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedL
         //This is done late so that pickBestEngine has decided which engine we are definitely targeting.
         if (!embeddedLibraryName)
             updateClusterType();
-
-        noteFinishedTiming("compile:tree transform", startCycles);
 
         if (insideLibrary())
         {
@@ -5922,7 +5919,8 @@ bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedL
             StringBuffer complexityText;
             complexityText.append(getComplexity(workflow));
             wu()->setDebugValue("__Calculated__Complexity__", complexityText, true);
-            noteFinishedTiming("compile:calculate complexity", startCycles);
+            if (options.timeTransforms)
+                noteFinishedTiming("compile:complexity", startCycles);
         }
 
         buildRowAccessors();
@@ -6010,7 +6008,8 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         {
             cycle_t startCycles = get_cycles_now();
             peepholeOptimize(*code, *this);
-            noteFinishedTiming("compile:peephole optimize", startCycles);
+            if (options.timeTransforms)
+                noteFinishedTiming("compile:transform:peephole", startCycles);
         }
     }
     catch (IException * e)
@@ -9398,12 +9397,8 @@ Tricky getting this in the correct order, problems are:
 
 IHqlExpression * HqlCppTranslator::optimizeCompoundSource(IHqlExpression * expr, unsigned flags)
 {
-    cycle_t startCycles = get_cycles_now();
-
     CompoundSourceTransformer transformer(*this, flags);
-    OwnedHqlExpr ret = transformer.process(expr);
-    noteFinishedTiming("compile:tree transform: optimize disk read", startCycles);
-    return ret.getClear();
+    return transformer.process(expr);
 }
 
 IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags, bool projectBeforeSpill, bool insideChildQuery)
@@ -9418,9 +9413,7 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     //insert projects after compound created...
     if (options.optimizeResourcedProjects)
     {
-        cycle_t startCycles = get_cycles_now();
         OwnedHqlExpr optimized = insertImplicitProjects(*this, resourced.get(), projectBeforeSpill);
-        noteFinishedTiming("compile:implicit projects", startCycles);
         traceExpression("AfterResourcedImplicit", resourced);
         checkNormalized(optimized);
 
@@ -9431,11 +9424,9 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     //Now call the optimizer again - the main purpose is to move projects over limits and into compound index/disk reads
     if (options.optimizeGraph)
     {
-        cycle_t startCycles = get_cycles_now();
         traceExpression("BeforeOptimize2", resourced);
         resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags(insideChildQuery)|HOOcompoundproject));
         traceExpression("AfterOptimize2", resourced);
-        noteFinishedTiming("compile:optimize graph", startCycles);
     }
     resourced.setown(optimizeCompoundSource(resourced, csfFlags));
     return resourced.getClear();
@@ -9469,11 +9460,9 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     checkNormalized(resourced);
     if (options.optimizeGraph)
     {
-        cycle_t startCycles = get_cycles_now();
         resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, optFlags|HOOfiltersharedproject));
         //have the following on an "aggressive fold" option?  If no_selects extract constants it can be quite impressive (jholt22.hql)
         //resourced.setown(foldHqlExpression(resourced));
-        noteFinishedTiming("compile:optimize graph", startCycles);
     }
     traceExpression("AfterOptimize", resourced);
     checkNormalized(resourced);
@@ -9505,7 +9494,8 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     if (!resourced)
         return NULL;
 
-    noteFinishedTiming("compile:resource graph", startCycles);
+    if (options.timeTransforms)
+        noteFinishedTiming("compile:resource graph", startCycles);
     traceExpression("AfterResourcing", resourced);
 
     if (options.regressionTest)
@@ -9525,11 +9515,9 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     //Finally create a couple of special compound activities.
     //e.g., filtered fetch, limited keyed join
     {
-        cycle_t startCycles = get_cycles_now();
         CompoundActivityTransformer transformer(targetClusterType);
         resourced.setown(transformer.transformRoot(resourced));
         traceExpression("AfterCompoundActivity", resourced);
-        noteFinishedTiming("compile:tree transform: compound activity", startCycles);
     }
 
     resourced.setown(spotTableInvariant(resourced));
@@ -19040,14 +19028,9 @@ void HqlCppTranslator::optimizePersists(HqlExprArray & exprs)
 
 IHqlExpression * HqlCppTranslator::convertSetResultToExtract(IHqlExpression * expr)
 {
-    cycle_t startCycles = get_cycles_now();
-
     SetResultToExtractTransformer transformer;
 
-    IHqlExpression * ret = transformer.transformRoot(expr);
-    noteFinishedTiming("compile:tree transform: convert SetResult to Extract", startCycles);
-
-    return ret;
+    return transformer.transformRoot(expr);
 }
 
 
@@ -19142,9 +19125,7 @@ void HqlCppTranslator::spotGlobalCSE(WorkflowItem & curWorkflow)
 {
     if (!insideLibrary() && options.globalAutoHoist)
     {
-        cycle_t startCycles = get_cycles_now();
         spotGlobalCSE(curWorkflow.queryExprs());
-        noteFinishedTiming("compile:tree transform: spot global cse", startCycles);
     }
 }
 
@@ -19399,7 +19380,6 @@ void HqlCppTranslator::pickBestEngine(HqlExprArray & exprs)
 
     if (targetThor())
     {
-        cycle_t startCycles = get_cycles_now();
         ForEachItemIn(idx, exprs)
         {
             if (needsRealThor(&exprs.item(idx)))
@@ -19408,7 +19388,6 @@ void HqlCppTranslator::pickBestEngine(HqlExprArray & exprs)
         // if we got this far, thor not required
         setTargetClusterType(HThorCluster);
         DBGLOG("Thor query redirected to hthor instead");
-        noteFinishedTiming("compile:tree transform: pick engine", startCycles);
     }
 }
 
@@ -19417,7 +19396,6 @@ void HqlCppTranslator::pickBestEngine(WorkflowArray & workflow)
 {
     if (targetThor())
     {
-        cycle_t startCycles = get_cycles_now();
         ForEachItemIn(idx2, workflow)
         {
             HqlExprArray & exprs = workflow.item(idx2).queryExprs();
@@ -19430,7 +19408,6 @@ void HqlCppTranslator::pickBestEngine(WorkflowArray & workflow)
         }
         setTargetClusterType(HThorCluster);
         DBGLOG("Thor query redirected to hthor instead");
-        noteFinishedTiming("compile:tree transform: pick engine", startCycles);
     }
 }
 

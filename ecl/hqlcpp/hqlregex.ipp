@@ -305,7 +305,7 @@ class RegexContext : public NlpParseContext
     friend class HqlNamedRegex;
     friend class HqlRegexExpr;
 public:
-    RegexContext(IHqlExpression * _expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * _timeReporter, byte _algorithm);
+    RegexContext(IHqlExpression * _expr, IWorkUnit * wu, const HqlCppOptions & options, byte _algorithm);
     ~RegexContext();
 
     virtual void compileSearchPattern();
@@ -330,7 +330,6 @@ protected:
     void insertSeparators();
     void optimizePattern();
     void optimizeSpotDFA();
-    void noteFinishedTiming(const char * name, cycle_t startCycles);
     HqlNamedRegex * queryNamed(IHqlExpression * defn, IAtom * name, node_operator op, bool caseSensitive);
     HqlNamedRegex * createNamed(IHqlExpression * expr, IAtom * name, node_operator op, bool caseSensitive);
 

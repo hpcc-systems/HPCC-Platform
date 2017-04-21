@@ -5400,13 +5400,6 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
         // 'all' mode is used when setting up a dali WU from the embedded wu in a workunit dll
 
         // Merge timing info from both branches
-        pt = fromP->getBranch("Timings");
-        if (pt)
-        {
-            IPropertyTree *tgtTimings = ensurePTree(p, "Timings");
-            mergePTree(tgtTimings, pt);
-            pt->Release();
-        }
         pt = fromP->getBranch("Statistics");
         if (pt)
         {
@@ -5960,11 +5953,6 @@ void CLocalWorkUnit::_loadStatistics() const
 IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(const IStatisticsFilter * filter) const
 {
     CriticalBlock block(crit);
-    //This should be deleted in version 6.0 when support for 4.x is no longer required
-    legacyTimings.loadBranch(p,"Timings");
-    if (legacyTimings.ordinality())
-        return *new WorkUnitStatisticsIterator(legacyTimings, 0, (IConstWorkUnit *) this, filter);
-
     statistics.loadBranch(p,"Statistics");
     Owned<IConstWUStatisticIterator> localStats = new WorkUnitStatisticsIterator(statistics, 0, (IConstWorkUnit *) this, filter);
     if (!filter->recurseChildScopes(SSTgraph, nullptr))
@@ -8972,94 +8960,6 @@ bool CLocalWUStatistic::matches(const IStatisticsFilter * filter) const
     const char * creator = p->queryProp("@creator");
     const char * scope = p->queryProp("@scope");
     return filter->matches(getCreatorType(), creator, getScopeType(), scope, getMeasure(), getKind(), getValue());
-}
-
-//==========================================================================================
-
-CLocalWULegacyTiming::CLocalWULegacyTiming(IPropertyTree *props) : p(props)
-{
-}
-
-IStringVal & CLocalWULegacyTiming::getCreator(IStringVal & str) const
-{
-    str.clear();
-    return str;
-}
-
-
-IStringVal & CLocalWULegacyTiming::getDescription(IStringVal & str, bool createDefault) const
-{
-    str.set(p->queryProp("@name"));
-    return str;
-}
-
-IStringVal & CLocalWULegacyTiming::getType(IStringVal & str) const
-{
-    str.set(queryStatisticName(StTimeElapsed));
-    return str;
-}
-
-IStringVal & CLocalWULegacyTiming::getFormattedValue(IStringVal & str) const
-{
-    StringBuffer formatted;
-    formatStatistic(formatted, getValue(), getMeasure());
-    str.set(formatted);
-    return str;
-}
-
-StatisticCreatorType CLocalWULegacyTiming::getCreatorType() const
-{
-    return SCTunknown;
-}
-
-StatisticScopeType CLocalWULegacyTiming::getScopeType() const
-{
-    return SSTnone;
-}
-
-StatisticKind CLocalWULegacyTiming::getKind() const
-{
-    return StTimeElapsed;
-}
-
-IStringVal & CLocalWULegacyTiming::getScope(IStringVal & str) const
-{
-    str.clear();
-    return str;
-}
-
-StatisticMeasure CLocalWULegacyTiming::getMeasure() const
-{
-    return SMeasureTimeNs;
-}
-
-unsigned __int64 CLocalWULegacyTiming::getValue() const
-{
-    return p->getPropInt64("@duration", 0) * 1000000;
-}
-
-unsigned __int64 CLocalWULegacyTiming::getCount() const
-{
-    return p->getPropInt64("@count", 0);
-}
-
-unsigned __int64 CLocalWULegacyTiming::getMax() const
-{
-    return p->getPropInt64("@max", 0);
-}
-
-unsigned __int64 CLocalWULegacyTiming::getTimestamp() const
-{
-    return 0;
-}
-
-bool CLocalWULegacyTiming::matches(const IStatisticsFilter * filter) const
-{
-    if (!filter)
-        return true;
-    const char * creator = p->queryProp("@creator");
-    const char * scope = p->queryProp("@scope");
-    return filter->matches(SCTall, NULL, SSTall, NULL, getMeasure(), getKind(), getValue());
 }
 
 //==========================================================================================
