@@ -13,17 +13,16 @@
         <primary>File Scope</primary>
       </indexterm></title>
 
-    <para>The logical filenames used in
-    DATASET and INDEX attribute definitions and the OUTPUT and BUILD (or
-    BUILDINDEX) actions can optionally begin with a ~ meaning it is absolute,
-    otherwise it is relative (the platform configured scope prefix is
-    prepended). It may contain directories. The scope and directories are
+    <para>The logical filenames used in DATASET and INDEX attribute
+    definitions and the OUTPUT and BUILD (or BUILDINDEX) actions can
+    optionally begin with a ~ meaning it is absolute, otherwise it is relative
+    (the platform configured scope prefix is prepended). It may contain scopes
     delimited by double colons (::) with the final portion being the filename.
     It cannot have a trailing double colons (::). A cluster qualifier can be
     specified. For example, ~myfile@mythor2 points to one file where the file
-    is on multiple clusters in the same scope. Valid characters of a scope of
-    filename are ASCII &gt;32 &lt; 127 except * " / : &lt; &gt; ? and |.
-    </para>
+    is on multiple clusters in the same scope. Valid characters of a scope or
+    filename are ASCII &gt;32 &lt; 127 except * " / : &lt; &gt; ? and
+    |.</para>
 
     <para>To reference uppercase characters in physical file paths and
     filenames, use the caret character (^). For example,
