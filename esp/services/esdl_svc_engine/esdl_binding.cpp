@@ -1782,6 +1782,8 @@ int EsdlBindingImpl::onGet(CHttpRequest* request, CHttpResponse* response)
         IEspContext *context = request->queryContext();
         IProperties *parms = request->queryParameters();
 
+        parms->setProp("include_jsonreqs_", "1");
+
         const char *thepath = request->queryPath();
 
         StringBuffer root;
@@ -2076,6 +2078,7 @@ int EsdlBindingImpl::onGetXForm(IEspContext &context,
 
         xform->setParameter("includeRoxieTest", "1");
         xform->setParameter("includeJsonTest", "1");
+        xform->setParameter("includeJsonReqSample", "1");
 
         // set the prop noDefaultValue param
         IProperties* props = context.queryRequestParameters();
@@ -2754,11 +2757,6 @@ int EsdlBindingImpl::onGetReqSampleXml(IEspContext &ctx, CHttpRequest* request, 
 int EsdlBindingImpl::onGetRespSampleXml(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
     return onGetSampleXml(false, ctx, request, response, serv, method);
-}
-
-int EsdlBindingImpl::onGetRespSampleJson(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
-{
-    return 0;
 }
 
 int EsdlBindingImpl::onGetSampleXml(bool isRequest, IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)

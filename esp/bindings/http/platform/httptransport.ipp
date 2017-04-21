@@ -279,6 +279,7 @@ typedef enum sub_service_
     sub_serv_reqsamplexml,
     sub_serv_respsamplexml,
     sub_serv_respsamplejson,
+    sub_serv_reqsamplejson,
     sub_serv_file_upload,
 
     sub_serv_max
