@@ -70,12 +70,12 @@ void usage()
     char pBuildSetFile[BUFF_SIZE];
     char pBuildSetFileDir[BUFF_SIZE];
     char pTargetDocDir[BUFF_SIZE];
-    char pTargetDocExt[BUFF_SIZE];
     char pOverrideSchema[BUFF_SIZE];
     char pBasePath[BUFF_SIZE];
     char pEnvXMLPath[BUFF_SIZE];
     StringBuffer strJSONFile;
     StringBuffer strComponentKey;
+    StringBuffer pTargetDocExt(pDefaultDocExt);
 
     memset(pBuildSetFile, 0, sizeof(pBuildSetFile));
     memset(pBuildSetFileDir, 0, sizeof(pBuildSetFileDir));
@@ -83,8 +83,6 @@ void usage()
     memset(pOverrideSchema, 0, sizeof(pOverrideSchema));
     memset(pBasePath, 0, sizeof(pBasePath));
     memset(pEnvXMLPath, 0, sizeof(pEnvXMLPath));
-
-    strncpy(pTargetDocExt, pDefaultDocExt, sizeof(pTargetDocExt));
 
     bool bListXSDs      = false;
     bool bGenDocs       = false;
@@ -197,13 +195,13 @@ void usage()
             }
             if (argv[idx][0] != '.')
             {
-                strcat(pTargetDocExt, ".");
-                strcpy(&(pTargetDocExt[1]),argv[idx]);
+                pTargetDocExt.set(".");
             }
-            else if (*pTargetDocExt == 0)
-                strcat(pTargetDocExt, "");
             else
-                strcpy(pTargetDocExt,argv[idx]);
+            {
+                pTargetDocExt.clear();
+            }
+            pTargetDocExt.append(argv[idx]);
         }
         else if (stricmp(argv[idx], "--use") == 0 || stricmp(argv[idx], "-u") == 0)
         {

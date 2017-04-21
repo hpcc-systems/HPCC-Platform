@@ -147,13 +147,13 @@
 
               <listitem>
                 <para><emphasis>Linux workstation with the Eclipse IDE and the
-                ECL plug-in for Eclipse (available soon)</emphasis></para>
+                ECL plugin for Eclipse (available soon)</emphasis></para>
               </listitem>
 
               <listitem>
                 <para><emphasis>Mac<superscript>*</superscript> workstation
-                with the Eclipse IDE and the ECL plug-in for Eclipse
-                (available soon)</emphasis></para>
+                with the Eclipse IDE and the ECL plugin for Eclipse (available
+                soon)</emphasis></para>
               </listitem>
             </itemizedlist></para>
         </listitem>
@@ -3190,9 +3190,9 @@ s3cmd --configure
           </question>
 
           <answer>
-            <para>Yes, you can use the Eclipse IDE with the ECL plug-in
-            instead of the ECL IDE. Another option is to run the ECL IDE under
-            WINE. See the Client Tools Manual for details.</para>
+            <para>Yes, you can use the Eclipse IDE with the ECL plugin instead
+            of the ECL IDE. Another option is to run the ECL IDE under WINE.
+            See the Client Tools Manual for details.</para>
           </answer>
         </qandaentry>
 

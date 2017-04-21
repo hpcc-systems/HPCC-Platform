@@ -32,10 +32,11 @@ define([
     "hpcc/WsWorkunits",
     "hpcc/FileSpray",
     "hpcc/ws_access",
-    "hpcc/WsESDLConfig"
+    "hpcc/WsESDLConfig",
+    "hpcc/WsPackageMaps"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory, on,
     registry,
-    WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig) {
+    WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps) {
 
     return {
         i18n: nlsHPCC,
@@ -101,6 +102,10 @@ define([
                 this.loadLogs(params);
             } else if (params.DFUSprayQueues === true) {
                 this.loadSprayQueues();
+            } else if (params.GetPackageMapTargets === true) {
+                this.loadGetPackageMapTargets();
+            } else if (params.GetPackageMapProcesses === true) {
+                this.loadGetPackageMapProcesses();
             } else {
                 this.loadTargets();
             }
@@ -146,6 +151,46 @@ define([
             }
             this.set("value", this.defaultValue);
             this.loading = false;
+        },
+
+        loadGetPackageMapTargets: function () {
+            var context = this;
+            WsPackageMaps.GetPackageMapSelectOptions({
+                request: {
+                    includeTargets: true
+                }
+            }).then(function (response) {
+                if (lang.exists("GetPackageMapSelectOptionsResponse.Targets.TargetData", response)) {
+                    var targetData = response.GetPackageMapSelectOptionsResponse.Targets.TargetData;
+                    for (var i = 0; i < targetData.length; ++i) {
+                        context.options.push({
+                            label: targetData[i].Name,
+                            value: targetData[i].Name
+                        });
+                    }
+                    context._postLoad();
+                }
+            });
+        },
+
+        loadGetPackageMapProcesses: function () {
+            var context = this;
+            WsPackageMaps.GetPackageMapSelectOptions({
+                request: {
+                    IncludeProcesses: true
+                }
+            }).then(function (response) {
+                if (lang.exists("GetPackageMapSelectOptionsResponse.ProcessFilters.Item", response)) {
+                    var targetData = response.GetPackageMapSelectOptionsResponse.ProcessFilters.Item;
+                    for (var i = 0; i < targetData.length; ++i) {
+                        context.options.push({
+                            label: targetData[i],
+                            value: targetData[i]
+                        });
+                    }
+                    context._postLoad();
+                }
+            });
         },
 
         loadUserGroups: function () {

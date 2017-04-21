@@ -2726,11 +2726,27 @@ void FileSprayer::checkFilePath(RemoteFilename & filename)
 void FileSprayer::checkSourceTarget(IFileDescriptor * file)
 {
     unsigned numParts = file->numParts();
-    RemoteFilename filename;
     for (unsigned idx=0; idx < numParts; idx++)
     {
-        file->getFilename(idx, 0, filename);
-        checkFilePath(filename);
+        if (file->isMulti(idx))
+        {
+            // It expands wildcards and file list
+            RemoteMultiFilename multi;
+            file->getMultiFilename(idx, 0, multi);
+            multi.expandWild();
+
+            ForEachItemIn(i, multi)
+            {
+                RemoteFilename rfn2(multi.item(i));
+                checkFilePath(rfn2);
+            }
+        }
+        else
+        {
+            RemoteFilename filename;
+            file->getFilename(idx, 0, filename);
+            checkFilePath(filename);
+        }
     }
 }
 

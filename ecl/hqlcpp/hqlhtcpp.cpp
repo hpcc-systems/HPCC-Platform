@@ -5357,7 +5357,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
             OwnedHqlExpr record = LINK(::queryRecord(schemaType));
             if (originalExpr->hasAttribute(noXpathAtom))
                 record.setown(removeAttributeFromFields(record, xpathAtom));
-            result.setown(createDatasetResultSchema(seq, name, record, xmlnsAttrs, false, false));
+            result.setown(createDatasetResultSchema(seq, name, record, xmlnsAttrs, false, false, 0));
             if (result)
                 result->setResultTotalRowCount(1);
         }
@@ -7797,7 +7797,7 @@ void HqlCppTranslator::doBuildStmtSetResult(BuildCtx & ctx, IHqlExpression * exp
                 buildFunctionCall(subctx, setResultSetId, args);
                 HqlExprArray xmlnsAttrs;
                 gatherAttributes(xmlnsAttrs, xmlnsAtom, expr);
-                Owned<IWUResult> result = createDatasetResultSchema(seq, name, value->queryRecord(), xmlnsAttrs, true, false);
+                Owned<IWUResult> result = createDatasetResultSchema(seq, name, value->queryRecord(), xmlnsAttrs, true, false, 0);
                 break;
             }
         default:
@@ -10382,7 +10382,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     doBuildSequenceFunc(instance->classctx, querySequence(expr), false);
     HqlExprArray xmlnsAttrs;
     gatherAttributes(xmlnsAttrs, xmlnsAtom, expr);
-    Owned<IWUResult> result = createDatasetResultSchema(querySequence(expr), queryResultName(expr), dataset->queryRecord(), xmlnsAttrs, false, true);
+    Owned<IWUResult> result = createDatasetResultSchema(querySequence(expr), queryResultName(expr), dataset->queryRecord(), xmlnsAttrs, false, true, fields.ordinality());
 
     if (expr->hasAttribute(setAtom))
     {
@@ -10705,7 +10705,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         HqlExprArray xmlnsAttrs;
         gatherAttributes(xmlnsAttrs, xmlnsAtom, expr);
         bool createTransformer = (kind != TAKcsvwrite) && (kind != TAKxmlwrite) && (kind != TAKjsonwrite);
-        Owned<IWUResult> result = createDatasetResultSchema(seq, queryResultName(expr), outputRecord, xmlnsAttrs, createTransformer, true);
+        Owned<IWUResult> result = createDatasetResultSchema(seq, queryResultName(expr), outputRecord, xmlnsAttrs, createTransformer, true, 0);
         if (expr->hasAttribute(resultAtom))
             result->setResultRowLimit(-1);
 
@@ -10855,13 +10855,12 @@ void HqlCppTranslator::addSchemaFields(IHqlExpression * record, MemoryBuffer &sc
 }
 
 
-void HqlCppTranslator::addSchemaResource(int seq, const char * name, IHqlExpression * record)
+void HqlCppTranslator::addSchemaResource(int seq, const char * name, IHqlExpression * record, unsigned keyedCount)
 {
     StringBuffer xml;
-    getRecordXmlSchema(xml, record, true);
+    getRecordXmlSchema(xml, record, true, keyedCount);
     addSchemaResource(seq, name, xml.length()+1, xml.str());
 }
-
 
 void HqlCppTranslator::addSchemaResource(int seq, const char * name, unsigned len, const char * schemaXml)
 {
@@ -10876,7 +10875,7 @@ void HqlCppTranslator::finalizeResources()
 {
 }
 
-IWUResult * HqlCppTranslator::createDatasetResultSchema(IHqlExpression * sequenceExpr, IHqlExpression * name, IHqlExpression * record, HqlExprArray &xmlnsAttrs, bool createTransformer, bool isFile)
+IWUResult * HqlCppTranslator::createDatasetResultSchema(IHqlExpression * sequenceExpr, IHqlExpression * name, IHqlExpression * record, HqlExprArray &xmlnsAttrs, bool createTransformer, bool isFile, unsigned keyedCount)
 {
     //Some spills have no sequence attached
     if (!sequenceExpr)
@@ -10895,7 +10894,7 @@ IWUResult * HqlCppTranslator::createDatasetResultSchema(IHqlExpression * sequenc
 
     SCMStringBuffer resultName;
     result->getResultName(resultName);
-    addSchemaResource(sequence, resultName.str(), record);
+    addSchemaResource(sequence, resultName.str(), record, keyedCount);
 
     result->setResultSchemaRaw(schema.length(), schema.toByteArray());
     result->setResultScalar(false);
@@ -11324,7 +11323,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputWorkunit(BuildCtx & ctx,
         HqlExprArray xmlnsAttrs;
         gatherAttributes(xmlnsAttrs, xmlnsAtom, expr);
         IHqlExpression * outputRecord = instance->meta.queryRecord();
-        Owned<IWUResult> result = createDatasetResultSchema(seq, name, outputRecord, xmlnsAttrs, true, false);
+        Owned<IWUResult> result = createDatasetResultSchema(seq, name, outputRecord, xmlnsAttrs, true, false, 0);
         if (result)
         {
             result->setResultRowLimit(-1);
@@ -11381,7 +11380,7 @@ void HqlCppTranslator::doBuildStmtOutput(BuildCtx & ctx, IHqlExpression * expr)
 
     HqlExprArray xmlnsAttrs;
     gatherAttributes(xmlnsAttrs, xmlnsAtom, expr);
-    Owned<IWUResult> result = createDatasetResultSchema(seq, name, dataset->queryRecord(), xmlnsAttrs, true, false);
+    Owned<IWUResult> result = createDatasetResultSchema(seq, name, dataset->queryRecord(), xmlnsAttrs, true, false, 0);
 
     CHqlBoundExpr bound;
     buildDataset(ctx, dataset, bound, FormatNatural);

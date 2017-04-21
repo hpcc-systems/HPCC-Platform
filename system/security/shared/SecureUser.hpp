@@ -34,6 +34,7 @@ private:
     StringBuffer    m_firstname;
     StringBuffer    m_lastname;
     StringBuffer    m_employeeID;
+    StringBuffer    m_distinguishedName;
     unsigned        m_userID;
     StringBuffer    m_Fqdn;
     StringBuffer    m_Peer;
@@ -111,6 +112,17 @@ public:
     bool setEmployeeID(const char * emplID)
     {
         m_employeeID.set(emplID);
+        return true;
+    }
+
+    const char * getDistinguishedName()
+    {
+        return m_distinguishedName.str();
+    }
+
+    bool setDistinguishedName(const char * dn)
+    {
+        m_distinguishedName.set(dn);
         return true;
     }
 

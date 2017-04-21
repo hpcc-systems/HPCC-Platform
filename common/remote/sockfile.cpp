@@ -286,8 +286,8 @@ enum {
     RFCcreatedir,
     RFCgetdir,
     RFCstop,
-    RFCexec,
-    RFCkill,
+    RFCexec,                                        // legacy cmd removed
+    RFCdummy1,                                      // legacy placeholder
     RFCredeploy,                                    // 20
     RFCgetcrc,
     RFCmove,
@@ -340,7 +340,7 @@ const char *RFCStrings[] =
     RFCText(RFCgetdir),
     RFCText(RFCstop),
     RFCText(RFCexec),
-    RFCText(RFCkill),
+    RFCText(RFCdummy1),
     RFCText(RFCredeploy),
     RFCText(RFCgetcrc),
     RFCText(RFCmove),
@@ -2667,40 +2667,6 @@ extern unsigned stopRemoteServer(ISocket * socket)
     return errCode;
 }
 
-int remoteExec(ISocket * socket, const char *cmdline, const char *workdir,bool sync,
-                size32_t insize, void *inbuf, MemoryBuffer *outbuf)
-{
-    if (!socket)
-        return -1;
-    bool hasoutput = (outbuf!=NULL);
-    if (!inbuf)
-        insize = 0;
-    MemoryBuffer sendbuf;
-    initSendBuffer(sendbuf);
-    sendbuf.append((RemoteFileCommandType)RFCexec).append(cmdline).append(workdir).append(sync).
-               append(hasoutput).append(insize);
-    if (insize)
-        sendbuf.append(insize, inbuf);
-    MemoryBuffer replybuf;
-    try {
-        sendBuffer(socket, sendbuf);
-        receiveBuffer(socket, replybuf, LENGTHY_RETRIES); // we don't know how long program will take really - assume <1hr
-        int retcode;
-        unsigned phandle;
-        size32_t outsz;
-        replybuf.read(retcode).read(phandle).read(outsz);
-        if (outsz&&outbuf)
-            replybuf.read(outsz,outbuf->reserve(outsz));
-        return retcode;
-    }
-    catch (IException *e) {
-        EXCLOG(e);
-        ::Release(e);
-    }
-
-    return -1;
-}
-
 int setDafsTrace(ISocket * socket,byte flags)
 {
     if (!socket) {
@@ -4768,44 +4734,14 @@ public:
 
     bool cmdExec(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
     {
-        StringAttr cmdline;
-        StringAttr workdir;
-        bool sync;
-        bool hasoutput;
-        size32_t insize;
-        MemoryAttr inbuf;
-        msg.read(cmdline).read(workdir).read(sync).read(hasoutput).read(insize);
-        if (insize) 
-            msg.read(insize, inbuf.allocate(insize));
-        Owned<IPipeProcess> pipe = createPipeProcess();
-        int retcode=-1;
-        HANDLE phandle=(HANDLE)0;
-        MemoryBuffer outbuf;
-        if (pipe->run("EXEC",cmdline,workdir,insize!=0,hasoutput)) {
-            if (insize) {
-                pipe->write(insize, inbuf.get());
-                pipe->closeInput();
-            }
-            if (hasoutput) {
-                byte buf[4096];
-                for (;;) {
-                    size32_t read = pipe->read(sizeof(buf),buf);
-                    if (!read)
-                        break;
-                    outbuf.append(read,buf);
-                }
-            }
-            if (sync)
-                retcode = pipe->wait();
-            else {
-                phandle = pipe->getProcessHandle(); 
-                retcode = 0;
-            }
-        }
-        size32_t outsz = outbuf.length();
-        reply.append(retcode).append((unsigned)phandle).append(outsz);
-        if (outsz)
-            reply.append(outbuf);
+        StringAttr cmdLine;
+        msg.read(cmdLine);
+        // NB: legacy remoteExec used to simply pass error code and buffer back to caller.
+        VStringBuffer errMsg("Remote command execution no longer supported. Trying to execute cmdline=%s", cmdLine.get());
+        WARNLOG("%s", errMsg.str());
+        size32_t outSz = errMsg.length()+1; // reply with null terminated string
+        // reply with error code -1
+        reply.append((unsigned)-1).append((unsigned)0).append(outSz).append(outSz, errMsg.str());
         return true;
     }
 
@@ -4862,13 +4798,6 @@ public:
     bool cmdRedeploy(MemoryBuffer &msg, MemoryBuffer &reply)
     {
         return false; // TBD
-    }
-
-    bool cmdKill(MemoryBuffer & msg, MemoryBuffer & reply)
-    {
-        // TBD
-        appendErr2(reply, RFSERR_InvalidCommand, RFCkill);
-        return false;
     }
 
     bool cmdUnknown(MemoryBuffer & msg, MemoryBuffer & reply,RemoteFileCommandType cmd)
@@ -4977,7 +4906,6 @@ public:
             case RFCmonitordir:
             case RFCstop:
             case RFCextractblobelements:
-            case RFCkill:
             case RFCredeploy:
             case RFCmove:
             case RFCsetsize:
@@ -5030,7 +4958,6 @@ public:
                 MAPCOMMAND(RFCstop, cmdStop);
                 MAPCOMMANDCLIENT(RFCexec, cmdExec, *client);
                 MAPCOMMANDCLIENT(RFCextractblobelements, cmdExtractBlobElements, *client);
-                MAPCOMMAND(RFCkill, cmdKill);
                 MAPCOMMAND(RFCredeploy, cmdRedeploy); // only Windows
                 MAPCOMMANDCLIENT(RFCgetcrc, cmdGetCRC, *client);
                 MAPCOMMANDCLIENT(RFCmove, cmdMove, *client);

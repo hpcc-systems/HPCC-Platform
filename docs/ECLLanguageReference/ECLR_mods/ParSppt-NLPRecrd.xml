@@ -12,17 +12,20 @@
       <primary>PARSE function</primary>
     </indexterm>:</emphasis></para>
 
-  <para><emphasis role="bold">MATCHED(</emphasis><emphasis>
-  </emphasis><emphasis role="bold">[ </emphasis><emphasis>patternreference
-  </emphasis><emphasis role="bold">] )</emphasis></para>
+  <para><emphasis role="bold">MATCHED(<indexterm>
+      <primary>MATCHED</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">[
+  </emphasis><emphasis>patternreference </emphasis><emphasis role="bold">]
+  )</emphasis></para>
 
   <para><emphasis role="bold">MATCHED</emphasis> returns true or false as to
   whether the <emphasis>patternreference</emphasis> found a match. If the
   <emphasis>patternreference</emphasis> is omitted, it indicates whether the
   entire pattern matched or not (for use with the NOT MATCHED option).</para>
 
-  <para><emphasis role="bold">MATCHTEXT</emphasis><emphasis>
-  </emphasis><emphasis role="bold">[
+  <para><emphasis role="bold">MATCHTEXT</emphasis><emphasis><indexterm>
+      <primary>MATCHTEXT</primary>
+    </indexterm> </emphasis><emphasis role="bold">[
   (</emphasis><emphasis>patternreference</emphasis><emphasis role="bold">)
   ]</emphasis></para>
 
@@ -31,32 +34,36 @@
   If the <emphasis>patternreference</emphasis> is omitted, MATCHTEXT returns
   all matching text.</para>
 
-  <para><emphasis
-  role="bold">MATCHUNICODE(</emphasis><emphasis>patternreference</emphasis><emphasis
+  <para><emphasis role="bold">MATCHUNICODE(<indexterm>
+      <primary>MATCHUNICODE</primary>
+    </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
   role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">MATCHUNICODE</emphasis> returns the matching
   Unicode text the <emphasis>patternreference</emphasis> found, or blank if
   not found.</para>
 
-  <para><emphasis
-  role="bold">MATCHLENGTH(</emphasis><emphasis>patternreference</emphasis><emphasis
+  <para><emphasis role="bold">MATCHLENGTH(<indexterm>
+      <primary>MATCHLENGTH</primary>
+    </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
   role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">MATCHLENGTH</emphasis> returns the number of
   characters in the matching text the <emphasis>patternreference</emphasis>
   found, or 0 if not found.</para>
 
-  <para><emphasis
-  role="bold">MATCHPOSITION(</emphasis><emphasis>patternreference</emphasis><emphasis
+  <para><emphasis role="bold">MATCHPOSITION(<indexterm>
+      <primary>MATCHPOSITION</primary>
+    </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
   role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">MATCHPOSITION</emphasis> returns the position
   within the text of the first character in the matching text the
   <emphasis>patternreference</emphasis> found, or 0 if not found.</para>
 
-  <para><emphasis
-  role="bold">MATCHROW(</emphasis><emphasis>patternreference</emphasis><emphasis
+  <para><emphasis role="bold">MATCHROW(<indexterm>
+      <primary>MATCHROW</primary>
+    </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
   role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">MATCHROW</emphasis> returns the entire row of

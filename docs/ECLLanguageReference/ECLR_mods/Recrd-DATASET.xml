@@ -387,8 +387,8 @@
             <entry><emphasis role="bold">__COMPRESSED__</emphasis></entry>
 
             <entry>Optional. Specifies that the THOR <emphasis>file</emphasis>
-            on another supercomputer cluster is compressed because it is a
-            result of the PERSIST Workflow Service.</entry>
+            is compressed because it is a result of the PERSIST Workflow
+            Service or was OUTPUT with the COMPRESSED option.</entry>
           </row>
 
           <row>
@@ -529,7 +529,7 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
       </indexterm> ]) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
         <primary>ENCRYPT</primary>
       </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
-    ]);</emphasis></para>
+    ] [, __COMPRESSED__]);</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -674,6 +674,14 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
 
             <entry><para>A string constant containing the encryption key used
             to create the file.</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">__COMPRESSED__</emphasis></entry>
+
+            <entry>Optional. Specifies that the <emphasis>file</emphasis> is
+            compressed because it was OUTPUT with the COMPRESSED
+            option.</entry>
           </row>
         </tbody>
       </tgroup>

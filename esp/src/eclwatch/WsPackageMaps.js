@@ -54,6 +54,22 @@ define([
             });
         },
 
+        GetPackageMapByIdUpdated: function (params) {
+            return ESPRequest.send("WsPackageProcess", "GetPackageMapById", params);
+        },
+
+        RemovePartFromPackageMap: function (params) {
+            return ESPRequest.send("WsPackageProcess", "RemovePartFromPackageMap", params);
+        },
+
+        AddPartToPackageMap: function (params) {
+            return ESPRequest.send("WsPackageProcess", "AddPartToPackageMap", params);
+        },
+
+        GetPartFromPackageMap: function (params) {
+            return ESPRequest.send("WsPackageProcess", "GetPartFromPackageMap", params);
+        },
+
         GetPackageMapSelectOptions: function (params) {
             return ESPRequest.send("WsPackageProcess", "GetPackageMapSelectOptions", {
                 request: {

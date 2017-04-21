@@ -2485,7 +2485,7 @@ public:
 
         clear(); // NB: *should* already be cleared, when tree is removed via removeTree
     }
-    virtual bool isEquivalent(IPropertyTree *tree) { return (NULL != QUERYINTERFACE(tree, CServerRemoteTree)); }
+    virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, CServerRemoteTree)); }
 
     PDState processData(CServerConnection &connection, IPropertyTree &changeTree, MemoryBuffer &newIds);
 
@@ -4003,9 +4003,9 @@ bool checkOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *tree, Me
                 ((PTree *)tree)->setValue(new CPTValue(0, NULL, false, true, false), false);
 
             Owned<IAttributeIterator> attrs = clientTree->getAttributes();
-            IPropertyTree *t = createPTree();
             if (attrs->first())
             {
+                IPropertyTree *t = createPTree();
                 do
                 {
                     t->setProp(attrs->queryName(), clientTree->queryProp(attrs->queryName()));

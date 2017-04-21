@@ -27,11 +27,13 @@ import Std.File AS FileServices;
 //class=spray
 
 //version sprayFixed=true
-//version sprayFixed=false
+//version sprayFixed=false,sprayEmpty=false
+//version sprayFixed=false,sprayEmpty=true
 
 import ^ as root;
 
 boolean sprayFixed := #IFDEFINED(root.sprayFixed, true);
+boolean sprayEmpty := #IFDEFINED(root.sprayEmpty, false);
 
 unsigned VERBOSE := 0;
 
@@ -41,24 +43,34 @@ Layout_Person := RECORD
   BOOLEAN good;
 END;
 
-#if (sprayFixed)
-    sprayPrepFileName := '~REGRESS::spray_prep_fixed';
-    desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_fixed';
-    sprayOutFileName := '~REGRESS::spray_test_fixed';
-#else
-    sprayPrepFileName := '~REGRESS::spray_prep';
-    desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
-    sprayOutFileName := '~REGRESS::spray_test';
-
-#end
+empty := DATASET([], Layout_Person);
 
 allPeople := DATASET([ {'foo', 10, 1},
                        {'bar', 12, 0},
                        {'baz', 32, 1}]
             ,Layout_Person);
 
+#if (sprayFixed)
+    sprayPrepFileName := '~REGRESS::spray_prep_fixed';
+    desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_fixed';
+    sprayOutFileName := '~REGRESS::spray_test_fixed';
+    dsSetup := allPeople;
+#else
+    #if (sprayEmpty)
+        sprayPrepFileName := '~REGRESS::spray_prep_empty';
+        desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_empty';
+        sprayOutFileName := '~REGRESS::spray_test_empty';
+        dsSetup := empty;
+    #else
+        sprayPrepFileName := '~REGRESS::spray_prep';
+        desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
+        sprayOutFileName := '~REGRESS::spray_test';
+        dsSetup := allPeople;
+    #end
+#end
+
 //  Create a small logical file
-setup := output(allPeople, , sprayPrepFileName, CSV, OVERWRITE);
+setup := output(dsSetup, , sprayPrepFileName, CSV, OVERWRITE);
 
 rec := RECORD
   string result;
@@ -147,5 +159,5 @@ SEQUENTIAL(
   setup,
   desprayOut,
   sprayOut,
-  output(compareDatasets(allPeople,ds))
+  output(compareDatasets(dsSetup,ds))
 );

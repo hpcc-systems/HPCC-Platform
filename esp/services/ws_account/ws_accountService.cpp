@@ -175,6 +175,9 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
 
             if (version >= 1.02)
                 resp.setEmployeeID(user->getEmployeeID());
+
+            if (version >= 1.03)
+                resp.setDistinguishedName(user->getDistinguishedName());
         }
     }
     catch(IException* e)

@@ -36,8 +36,13 @@
 
 ### BEGIN INIT INFO
 # chkconfig: 235 30 80
-# Description: Starts the HPCC processes
+# Description: Starts the HPCC dafilesrv processes
+# Short-Description: Controls HPCC dafilesrv
 # Provides: dafilesrv
+# Required-Start:
+# Required-Stop:
+# Default-Start:
+# Default-Stop:
 ### END INIT INFO
 
 ##-----------------------------------------------------------------------------

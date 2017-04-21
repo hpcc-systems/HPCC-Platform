@@ -560,6 +560,7 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         case sub_serv_reqsamplexml:
         case sub_serv_respsamplexml:
         case sub_serv_respsamplejson:
+        case sub_serv_reqsamplejson:
             context.setClientVersion(atof(m_defaultSvcVersion));
 
         default:
@@ -609,6 +610,8 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             return onGetRespSampleXml(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_respsamplejson:
             return onGetRespSampleJson(context, request, response, serviceName.str(), methodName.str());
+        case sub_serv_reqsamplejson:
+            return onGetReqSampleJson(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_query:
             return onGetQuery(context, request, response, serviceName.str(), methodName.str());
         case sub_serv_file_upload:
@@ -1519,6 +1522,13 @@ int EspHttpBinding::onGetRespSampleXml(IEspContext &ctx, CHttpRequest* request, 
     return 0;
 }
 
+
+int EspHttpBinding::onGetReqSampleJson(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
+{
+    generateSampleJson(true, ctx, request, response, serv, method);
+    return 0;
+}
+
 int EspHttpBinding::onGetRespSampleJson(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
     generateSampleJson(false, ctx, request, response, serv, method);
@@ -1782,6 +1792,10 @@ int EspHttpBinding::onGetIndex(IEspContext &context, CHttpRequest* request,  CHt
         list = (CHtmlList *)page.appendContent(new CHtmlList);
         list->appendContent(new CHtmlLink("XML Requests", wsLink.set(urlParams).append("&reqxml_").str()));
         list->appendContent(new CHtmlLink("XML Responses", wsLink.set(urlParams).append("&respxml_").str()));
+        IProperties *parms = request->queryParameters();
+        if (parms->hasProp("include_jsonreqs_"))
+            list->appendContent(new CHtmlLink("JSON Requests", wsLink.set(urlParams).append("&reqjson_").str()));
+
         list->appendContent(new CHtmlLink("JSON Responses", wsLink.set(urlParams).append("&respjson_").str()));
 
         page.appendContent(new CHtmlText("The following operations are supported:<br/>"));

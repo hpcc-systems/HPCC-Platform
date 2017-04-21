@@ -20,6 +20,18 @@
         ;
     }
 
+    function parseXML (val) {
+        if (window.DOMParser) {
+            var parser = new DOMParser();
+            var xmlDoc = parser.parseFromString(val,"text/xml");
+        } else {
+            xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+            xmlDoc.async = false;
+            xmlDoc.loadXML(val);
+        }
+        return xmlDoc;
+    }
+
     function csvEncode(cell) {
         if (!isNaN(cell)) return cell;
         return '"' + String(cell).replace('"', '""') + '"';
@@ -333,6 +345,7 @@
         xmlEncode: xmlEncode,
         xmlEncode2: xmlEncode2,
         alphanumSort: alphanumSort,
-        downloadToCSV: downloadToCSV
+        downloadToCSV: downloadToCSV,
+        parseXML: parseXML
     }
 });

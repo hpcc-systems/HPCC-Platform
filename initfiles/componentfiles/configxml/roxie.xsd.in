@@ -456,6 +456,27 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="backgroundCopyClass" type="xs:string" use="optional" default="none">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Specify an IONICE class for the background copy thread.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="none"/>
+          <xs:enumeration value="best-effort"/>
+          <xs:enumeration value="idle"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="backgroundCopyPrio" type="xs:nonNegativeInteger" use="optional" default="0">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Specify an IONICE value for the background copy thread, if backgroundCopyClass set to best-effort.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="callbackRetries" type="xs:nonNegativeInteger" use="optional" default="3">
       <xs:annotation>
         <xs:appinfo>

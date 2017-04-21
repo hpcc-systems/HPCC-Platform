@@ -27,6 +27,7 @@ define([
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
     "hpcc/PackageSourceWidget",
+    "hpcc/PackageMapPartsWidget",
     "hpcc/WsPackageMaps",
 
     "dojo/text!../templates/PackageMapDetailsWidget.html",
@@ -38,7 +39,7 @@ define([
     "dijit/form/Button",
     "dijit/Toolbar"
 ], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, topic, registry,
-    _TabContainerWidget, DelayLoadWidget, PackageSourceWidget, WsPackageMaps, template) {
+    _TabContainerWidget, DelayLoadWidget, PackageSourceWidget, PackageMapPartsWidget, WsPackageMaps, template) {
     return declare("PackageMapDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapDetailsWidget",
@@ -49,6 +50,8 @@ define([
         validateWidgetLoaded: false,
         xmlWidget: null,
         xmlWidgetLoaded: false,
+        partsWidget: null,
+        partsWidgetLoaded: false,
 
         tabId: "",
         packageMap: "",
@@ -66,6 +69,7 @@ define([
             this.tabContainer = registry.byId(this.id + "TabContainer");
             this.validateWidget = registry.byId(this.id + "Validate");
             this.xmlWidget = registry.byId(this.id + "XML");
+            this.partsWidget = registry.byId(this.id + "Parts");
 
             var context = this;
             this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
@@ -79,6 +83,13 @@ define([
                 } else if (nval.id === context.id + "XML" && !context.xmlWidgetLoaded) {
                     context.xmlWidgetLoaded = true;
                     context.xmlWidget.init({
+                        target: context.target,
+                        process: context.process,
+                        packageMap: context.packageMap
+                    });
+                } else if (nval.id == context.id + "Parts" && !context.partsWidgetLoaded) {
+                    context.partsWidgetLoaded = true;
+                    context.partsWidget.init({
                         target: context.target,
                         process: context.process,
                         packageMap: context.packageMap

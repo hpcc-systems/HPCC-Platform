@@ -117,6 +117,8 @@ define([
                     }
                 } else if (lang.exists("ECL", params)) {
                     this.setText(params.ECL ? params.ECL : "");
+                } else if (lang.exists("Usergenerated", params)) {
+                    this.setText(params.Usergenerated);
                 } else if (lang.exists("sourceURL", params)) {
                     xhr(params.sourceURL, {
                         handleAs: "text"

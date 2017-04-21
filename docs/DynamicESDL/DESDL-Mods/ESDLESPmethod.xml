@@ -12,11 +12,11 @@
 
   <programlisting>
  ESPservice MyService
-
- {
+  {
    ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
    ESPmethod 
     [
+     auth_feature("AllowMyMethod2"),
      description("MyMethod Two"),
      help("This method does everything MyMethod1 does plus a few extra features"),
      min_ver("1.2")

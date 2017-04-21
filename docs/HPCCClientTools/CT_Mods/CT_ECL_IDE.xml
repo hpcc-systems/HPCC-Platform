@@ -69,7 +69,7 @@
         role="bold">ToUpperCase </emphasis> function which converts characters
         in a string to uppercase.</para>
 
-        <para>These are installed as plug-ins and are in the ecllib folder
+        <para>These are installed as plugins and are in the ecllib folder
         shown in the Repository window.</para>
 
         <!-- add screen shot***-->
@@ -923,7 +923,7 @@
 
           <para><graphic fileref="../../images/CT12.jpg" /></para>
 
-          <para>In addition to folders, plug-in service libraries are also
+          <para>In addition to folders, plugin service libraries are also
           displayed at the bottom of the repository. These special folders are
           pre-compiled libraries of functions that you can use in your ECL
           code. For example, the Standard Library (stringlib) contains common
@@ -931,9 +931,9 @@
           role="bold">ToUpperCase</emphasis> function which converts
           characters in a string to uppercase.</para>
 
-          <para>Plug-in service libraries are added to a system in one of
-          three ways. Several are provided as standard. Others are available
-          as optional addons. And, you can create your own and add them to a
+          <para>Plugin service libraries are added to a system in one of three
+          ways. Several are provided as standard. Others are available as
+          optional addons. And, you can create your own and add them to a
           system.</para>
 
           <para>A right-click on the folders in the Repository Toolbox gives

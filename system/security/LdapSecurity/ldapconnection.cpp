@@ -1493,7 +1493,7 @@ public:
                 filter.append("uid=");
             filter.append(username);
 
-            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", "employeeNumber", NULL};
+            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", "employeeNumber", "distinguishedName",NULL};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -1608,6 +1608,12 @@ public:
                     CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
                     if (vals.hasValues())
                         user.setEmployeeID(vals.queryCharValue(0));
+                }
+                else if(stricmp(attribute, "distinguishedName") == 0)
+                {
+                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
+                    if (vals.hasValues())
+                        user.setDistinguishedName(vals.queryCharValue(0));
                 }
             }
 

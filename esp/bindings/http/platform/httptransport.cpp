@@ -1458,6 +1458,8 @@ void CHttpRequest::parseEspPathInfo()
                     m_sstype=sub_serv_respsamplexml;
                 else if (m_queryparams && (m_queryparams->hasProp("respjson_")))
                     m_sstype=sub_serv_respsamplejson;
+                else if (m_queryparams && (m_queryparams->hasProp("reqjson_")))
+                    m_sstype=sub_serv_reqsamplejson;
                 else if (m_queryparams && (m_queryparams->hasProp("soap_builder_")))
                     m_sstype=sub_serv_soap_builder;
                 else if (m_queryparams && (m_queryparams->hasProp("roxie_builder_")))

@@ -605,6 +605,8 @@ void HqlLex::pushMacro(IHqlExpression *expr)
 
 void HqlLex::checkSignature(const attribute & dummyToken)
 {
+    if (yyParser->lookupCtx.queryParseContext().ignoreSignatures)
+        return;
     Owned<IPipeProcess> pipe = createPipeProcess();
     if (!pipe->run("gpg", "gpg --verify -", ".", true, false, true, 0, false))
     {

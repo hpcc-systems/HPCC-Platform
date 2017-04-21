@@ -297,24 +297,24 @@
         </sect3>
 
         <sect3 id="HPCC_Plug-Ins" role="brk">
-          <title>Plug-Ins</title>
+          <title>Plugins</title>
 
-          <para>There are several optional plug-ins that you could choose to
+          <para>There are several optional plugins that you could choose to
           add to your installation.</para>
 
           <para>For RPM based systems, you could install using yum.</para>
 
-          <para><programlisting>sudo yum install &lt;hpccsystems plugin plug-in_name&gt;  </programlisting>Optionally,
-          you could also choose to add optional plug-ins using rpm:</para>
+          <para><programlisting>sudo yum install &lt;hpccsystems plugin plugin_name&gt;  </programlisting>Optionally,
+          you could also choose to add optional plugins using rpm:</para>
 
-          <programlisting>sudo rpm -Uvh &lt;hpccsystems plugin plug-in_name&gt; </programlisting>
+          <programlisting>sudo rpm -Uvh &lt;hpccsystems plugin plugin_name&gt; </programlisting>
 
           <para>To install the optional plug ins for a Ubuntu/Debian package,
           use:</para>
 
-          <programlisting>sudo dpkg -i &lt;hpccsystems plugin plug-in_name&gt;  </programlisting>
+          <programlisting>sudo dpkg -i &lt;hpccsystems plugin plugin_name&gt;  </programlisting>
 
-          <para>The optional plug-ins are:</para>
+          <para>The optional plugins are:</para>
 
           <para><informaltable>
               <tgroup cols="2">
@@ -364,8 +364,8 @@
               </tgroup>
             </informaltable></para>
 
-          <para>Although Cassandra support (cassandraembed) is a plug-in, it
-          is not optional and is installed with the platform.</para>
+          <para>Although Cassandra support (cassandraembed) is a plugin, it is
+          not optional and is installed with the platform.</para>
         </sect3>
       </sect2>
 
@@ -2919,28 +2919,27 @@ sudo /etc/init.d/hpcc-init -c esp start
       External language support is included with the platform installation
       package, however there are RPM-based HPCC Platform installation packages
       that explicitly state <emphasis role="bold">with
-      plug-ins</emphasis>.</para>
+      plugins</emphasis>.</para>
 
       <para><emphasis role="bold">RPM-based systems:</emphasis></para>
 
       <para>If you are interested in using external languages for RPM-based
       systems (CentOS/Red Hat), you need to download and install the
       appropriate platform installation distribution <emphasis
-      role="bold">with plug-ins</emphasis> option from the downloads
+      role="bold">with plugins</emphasis> option from the downloads
       site.</para>
 
       <para>For RPM based systems, there are two different installation
-      packages available. One package includes the optional plug-ins to
-      support embedded code from other languages. If you want support for
-      other languages, choose the package for your distro that begins
-      with:</para>
+      packages available. One package includes the optional plugins to support
+      embedded code from other languages. If you want support for other
+      languages, choose the package for your distro that begins with:</para>
 
       <programlisting>hpccsystems-platform_community-with-plugins- </programlisting>
 
       <para><emphasis role="bold">Debian-based systems:</emphasis></para>
 
-      <para>Optional plug-in downloads are NOT needed for the Debian-based
-      systems (Ubuntu) installation package, as the plug-ins are included in
+      <para>Optional plugin downloads are NOT needed for the Debian-based
+      systems (Ubuntu) installation package, as the plugins are included in
       all the Debian installation packages.</para>
 
       <para>The external languages currently supported include:</para>
@@ -2971,10 +2970,10 @@ sudo /etc/init.d/hpcc-init -c esp start
       languages in your HPCC platform.</para>
 
       <para>In addition to these languages, you can add support for additional
-      languages by creating your own plug-in. This is not very difficult to
-      do. For example the JavaScript plug-in is about 500 lines of C++ code.
-      You can use that as a template to write your own and, if desired, you
-      can contribute it back to the open source initiative.</para>
+      languages by creating your own plugin. This is not very difficult to do.
+      For example the JavaScript plugin is about 500 lines of C++ code. You
+      can use that as a template to write your own and, if desired, you can
+      contribute it back to the open source initiative.</para>
 
       <sect2 id="Add_On_Java" role="brk">
         <title>Java</title>
@@ -3154,12 +3153,12 @@ add1(10);
         plugins for both Python2 and Python3, but only one may be safely
         enabled at a time as the Python libraries export the same symbols for
         both versions. Enabling both may lead to unpredictable results
-        including segmentation faults or undefined symbol errors. </para>
+        including segmentation faults or undefined symbol errors.</para>
 
         <para>By default the Python3 plugin will be present but disabled, and
         the Python2 plugin will be present and enabled. If you want to use
         Python3 modify the your environment.conf file according to the example
-        in the file. </para>
+        in the file.</para>
 
         <para>To enable Python support within the HPCC
         Systems<superscript>®</superscript> Platform:</para>
@@ -3215,118 +3214,83 @@ split_words('Once upon a time');
             url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/</ulink></para>
           </listitem>
         </orderedlist>
+
+        <sect3>
+          <title>Python Scope Options</title>
+
+          <para><emphasis role="bold">GLOBALSCOPE</emphasis> - This option
+          allows independent EMBED attributes to share globals with each other
+          if they specify the same name for the GLOBALSCOPE parameter.</para>
+
+          <para><emphasis role="bold">PERSIST</emphasis> - This option
+          controls how long such a shared global scope will persist and
+          exactly how far it will be shared.</para>
+
+          <para>The value passed to GLOBALSCOPE can be any string you like,
+          allowing you to share globals between related EMBED sections while
+          keeping them distinct from unrelated ones.</para>
+
+          <para>PERSIST can take one of the following values:</para>
+
+          <para><emphasis role="bold">global</emphasis> - The values persist
+          indefinitely (until the process terminates) and are shared with any
+          other embeds using the same GLOBALSCOPE value, even in other
+          workunits.</para>
+
+          <para><emphasis role="bold">query</emphasis> - The values persist
+          until the query is unloaded, and are shared with other instances of
+          the query that might be running at the same time in Roxie, but not
+          with other queries.</para>
+
+          <para><emphasis role="bold">workunit</emphasis> - The values persist
+          until the end of the current workunit or the current instance of a
+          Roxie deployed query, and are not shared with other
+          instances.</para>
+        </sect3>
       </sect2>
 
       <sect2 id="R" role="brk">
         <title>R</title>
 
-        <para>To enable R support within The HPCC
-        Systems<superscript>®</superscript> Platform:</para>
+        <para>The HPCC Platform supports embedded R code. To enable R support
+        within The HPCC Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>
-            <para>Install R-core distribution of your choice:</para>
+            <para>Download the <emphasis role="bold">R Embed</emphasis> plugin
+            available from the HPCC Systems portal.</para>
 
-            <para><emphasis role="bold">RPM-based systems:</emphasis></para>
+            <para><ulink
+            url="https://hpccsystems.com/download/hpcc-platform">https://hpccsystems.com/download/hpcc-platform</ulink></para>
 
-            <para>On an RPM-based system (CentOS/Red Hat) use <emphasis
-            role="bold">R-core</emphasis> and <emphasis
-            role="bold">R-core-devel</emphasis></para>
-
-            <para><emphasis role="bold">Debian-based
-            systems:</emphasis></para>
-
-            <para>For a Debian-based (Ubuntu) system use <emphasis
-            role="bold">r-base-core</emphasis>.</para>
+            <para>Choose the appropriate plugin for your distribution.</para>
           </listitem>
 
           <listitem>
-            <para>Install the <emphasis role="bold">Rcpp</emphasis> and the
-            <emphasis role="bold">RInside</emphasis> libraries.</para>
+            <para>Install the plugin.</para>
 
-            <para>You will need both Rcpp and RInside libraries in order for
-            the R-embedding to work properly. The library installation
-            packages are named with the version number appended so you should
-            search for Rcpp_ and RInside_ to obtain the latest version for
-            your system.</para>
+            <para><emphasis role="bold">RPM-based systems: </emphasis>Install
+            using <emphasis>yum install</emphasis>.</para>
 
-            <para><emphasis role="bold">For all distros except Ubuntu
-            14.04:</emphasis></para>
+            <para><emphasis role="bold">Debian-based systems:
+            </emphasis>Install using <emphasis>dkpg -i</emphasis> then
+            <emphasis>apt-get</emphasis> <emphasis>install
+            -f</emphasis></para>
 
-            <programlisting>wget http://cran.r-project.org/src/contrib/<emphasis
-                role="bold">Rcpp_0.10.4.</emphasis>tar.gz
-wget http://cran.r-project.org/src/contrib/<emphasis role="bold">RInside</emphasis><emphasis
-                role="bold">_0.2.10.tar.gz</emphasis>
-</programlisting>
-
-            <para>To Install:</para>
-
-            <programlisting>sudo R CMD INSTALL <emphasis role="bold">Rcpp_0.10.4.</emphasis>tar.gz
-sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</programlisting>
-
-            <para><emphasis role="bold">For Ubuntu 14.04:</emphasis></para>
-
-            <programlisting>wget http://cran.r-project.org/src/contrib/<emphasis
-                role="bold">Rcpp_0.11.0.</emphasis>tar.gz
-</programlisting>
-
-            <para>To Install:</para>
-
-            <programlisting>sudo R CMD INSTALL <emphasis role="bold">Rcpp_0.11.0.</emphasis>tar.gz
-</programlisting>
-
-            <para><variablelist>
-                <varlistentry>
-                  <term>Note:</term>
-
-                  <listitem>
-                    <para>The version of library files to install on your
-                    system must be 0.2.10 for all distros except Ubuntu 14.04.
-                    For Ubuntu 14.04, use 0.2.11.x.</para>
-                  </listitem>
-                </varlistentry>
-              </variablelist>These libraries are maintained by the R project
-            and can be found on the site <ulink
-            url="http://cran.r-project.org/src/contrib/">http://cran.r-project.org/src/contrib/</ulink>
-            along with more information. Use the version number appropriate
-            for your system. If a version number is unsupported, you must use
-            an earlier version.</para>
+            <para>If you use these methods to install the plugins, all the
+            required libraries and dependencies will also be installed.</para>
           </listitem>
         </orderedlist>
 
-        <?hard-pagebreak ?>
-
         <orderedlist continuation="continues">
-          <listitem>
-            <para>Install the <emphasis role="bold">RInside</emphasis>
-            library.</para>
-
-            <para>You will also need RInside library in order for the
-            R-embedding to work properly. The version must match the</para>
-
-            <para><emphasis role="bold">For all distros:</emphasis></para>
-
-            <programlisting>wget http://cran.r-project.org/src/contrib/Archive/RInside_0.2.10.tar.gz
-</programlisting>
-
-            <para>To Install:</para>
-
-            <programlisting>sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</programlisting>
-
-            <para>These libraries are maintained by the R project and can be
-            found on the site <ulink
-            url="http://cran.r-project.org/src/contrib/">http://cran.r-project.org/src/contrib/</ulink>
-            and <ulink
-            url="http://cran.r-project.org/src/contrib/archive">http://cran.r-project.org/src/contrib/archive/</ulink>
-            along with more information.</para>
-          </listitem>
-
           <listitem>
             <para>Test the R integration.</para>
 
-            <para>R is not multi-thread aware, so the plug-in has to wrap all
+            <para>R is not multi-thread aware, so the plugin has to wrap all
             calls to R for critical sections. Scripts are compiled with every
-            call to R.</para>
+            call to R. The default runs each embedded R call in a local
+            environment. This environment can persist between embedded R calls
+            in the same environment.</para>
 
             <para>You can now execute some R code either in your ECL IDE or
             the ECL Playground.</para>
@@ -3439,9 +3403,44 @@ SUM(NOFOLD(s1b + s2b), a);
             <para>Additional examples of HPCC code can be found at:</para>
 
             <para><ulink
-            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl</ulink></para>
+            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/regress/embedR.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/embedR.ecl</ulink></para>
           </listitem>
         </orderedlist>
+
+        <sect3>
+          <title>R Scope Options</title>
+
+          <para><emphasis role="bold">GLOBALSCOPE</emphasis> - This option
+          allows independent EMBED attributes to share globals with each other
+          if they specify the same name for the GLOBALSCOPE parameter.</para>
+
+          <para><emphasis role="bold">PERSIST</emphasis> - This option
+          controls how long such a shared global scope will persist and
+          exactly how far it will be shared.</para>
+
+          <para>The value passed to GLOBALSCOPE can be any string you like,
+          allowing you to share globals between related EMBED sections while
+          keeping them distinct from unrelated ones.</para>
+
+          <para>PERSIST can take one of the following values:</para>
+
+          <para><emphasis role="bold">global</emphasis> - The values persist
+          indefinitely (until the process terminates) and are shared with any
+          other embeds using the same GLOBALSCOPE value, even in other
+          workunits.</para>
+
+          <para><emphasis role="bold">query</emphasis> - The values persist
+          until the query is unloaded, and are shared with other instances of
+          the query that might be running at the same time in Roxie, but not
+          with other queries.</para>
+
+          <para><emphasis role="bold">workunit</emphasis> - The values persist
+          until the end of the current workunit or the current instance of a
+          Roxie deployed query, and are not shared with other
+          instances.</para>
+
+          <para></para>
+        </sect3>
       </sect2>
     </sect1>
   </chapter>

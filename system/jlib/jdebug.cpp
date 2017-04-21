@@ -1051,35 +1051,60 @@ memsize_t getVMInfo(const char *type)
 
 void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 {
-    int cpufd = open("/proc/cpuinfo",O_RDONLY);
-    if (cpufd==-1)
+    numCPUs = 1;
+    CPUSpeed = 0;
+#ifdef __APPLE__
+# if defined(_SC_NPROCESSORS_CONF)
+    int ncpus = sysconf(_SC_NPROCESSORS_CONF);
+    if (ncpus > 0)
+        numCPUs = ncpus;
+# endif
+#else // linux
+    // NOTE: Could have perhaps used sysconf(_SC_NPROCESSORS_CONF) for numCPUs
+
+    FILE *cpufp = fopen("/proc/cpuinfo", "r");
+    if (cpufp == NULL)
         return;
-    MemoryAttr ma;
-    char *buf = (char *)ma.allocate(0x10000);
-    size32_t l=0;
-    for (;;) {
-        size32_t rd = read(cpufd, buf+l, 0x10000-1-l);
-        if ((int)rd<=0) 
-            break;
-        l += rd;
-    }
-    buf[l] = 0;
-    const char *bufptr = buf;
+
     char * tail;
-    numCPUs = CPUSpeed = 0;
     // MORE: It is a shame that the info in this file (/proc/cpuinfo) are formatted (ie tabs .. etc)
     const char *cpuNumTag = "processor\t:";
     const char *cpuSpeedTag = "cpu MHz\t\t:";
-    while (bufptr) {
-        if (*bufptr =='\n') 
-            bufptr++;
+
+    // NOTE: This provides current cpu freq, not max
+
+    numCPUs = 0;
+    char line[1001];
+    const char *bufptr;
+    while ((bufptr = fgets(line, 1000, cpufp)) != NULL)
+    {
         if (strncmp(cpuNumTag, bufptr, strlen(cpuNumTag))==0) 
             numCPUs++;
         else if (strncmp(cpuSpeedTag, bufptr, strlen(cpuSpeedTag))==0) 
             CPUSpeed = (unsigned)strtol(bufptr+strlen(cpuSpeedTag), &tail, 10);
-        bufptr = strchr(bufptr, '\n');
     }
-    close(cpufd);
+
+    fclose(cpufp);
+    if (numCPUs < 1)
+        numCPUs = 1;
+
+    // max cpu freq (KHz) may be in:
+    // /sys/devices/system/cpu/cpu[0-X]/cpufreq/cpuinfo_max_freq
+
+    cpufp = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
+    if (cpufp != NULL)
+    {
+        unsigned CPUSpeedMax = 0;
+        int srtn = fscanf(cpufp, "%u", &CPUSpeedMax);
+        if (srtn == 1)
+        {
+            CPUSpeedMax /= 1000;
+            if (CPUSpeedMax > CPUSpeed)
+                CPUSpeed = CPUSpeedMax;
+        }
+        fclose(cpufp);
+    }
+#endif
 }
 
 static unsigned evalAffinityCpus()

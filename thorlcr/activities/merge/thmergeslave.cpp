@@ -127,9 +127,9 @@ public:
 
     class cProvider: public Thread
     {
-        mptag_t tag;
-        GlobalMergeSlaveActivity *parent;
-        bool stopped;
+        mptag_t tag = TAG_NULL;
+        GlobalMergeSlaveActivity *parent = nullptr;
+        bool stopped = true;
         Linked<IOutputRowSerializer> serializer;
     public:
         void init(GlobalMergeSlaveActivity *_parent, IOutputRowSerializer *_serializer,mptag_t _tag)

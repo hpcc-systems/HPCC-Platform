@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+//class=embedded
+//class=3rdparty
+
 // The following script uses embeded R code to train some models on data passed to R
 // from HPCC. The results are then returned to HPCC and output.
 

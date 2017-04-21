@@ -336,6 +336,7 @@ protected:
 
 private:
     EsdlBaseMap   m_child_map;
+    EsdlBaseMap   m_child_nocasemap;
 
 public:
     Esdl2Struct(Esdl2Transformer *xformer, IEsdlDefStruct *def, EsdlBasicElementType t=ESDLT_STRUCT);
