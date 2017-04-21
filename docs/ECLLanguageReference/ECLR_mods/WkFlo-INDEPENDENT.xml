@@ -5,9 +5,11 @@
   <title>INDEPENDENT</title>
 
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
-  </emphasis><emphasis role="bold">: INDEPENDENT<indexterm>
+  </emphasis><emphasis role="bold">: INDEPENDENT
+  [</emphasis><emphasis>(cluster)</emphasis><emphasis role="bold">]</emphasis>
+  <indexterm>
       <primary>INDEPENDENT</primary>
-    </indexterm></emphasis><indexterm>
+    </indexterm><indexterm>
       <primary>INDEPENDENT workflow service</primary>
     </indexterm>;</para>
 
@@ -28,6 +30,15 @@
             <entry><emphasis>expression</emphasis></entry>
 
             <entry>The definition of the attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>cluster</emphasis></entry>
+
+            <entry>Optional. A string constant specifying the name of the Thor
+            cluster on which execute. If omitted, the
+            <emphasis>attribute</emphasis> is run on the currently executing
+            cluster.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -69,7 +80,7 @@
                                      'mythor',DestPath+File2,
                                      -1,ESPportIP))
                            : INDEPENDENT;
-  SEQUENTIAL(DeleteOldFiles,SprayNewFiles);
+    SEQUENTIAL(DeleteOldFiles,SprayNewFiles);
 </programlisting>
 
   <para>See Also: <link linkend="GLOBAL">GLOBAL</link></para>
