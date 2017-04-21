@@ -2788,7 +2788,7 @@ ENDMACRO;
                 </row>
 
                 <row>
-                  <entry>Ctrl+Alt+Enter</entry>
+                  <entry>Ctrl+Shift+Enter</entry>
 
                   <entry>Submit Selected ECL</entry>
                 </row>
