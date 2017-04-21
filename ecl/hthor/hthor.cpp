@@ -236,8 +236,8 @@ void CHThorActivityBase::updateProgressForOther(IStatisticGatherer &progress, un
 {
     StatsEdgeScope scope(progress, otherActivity, whichOutput);
     progress.addStatistic(StNumRowsProcessed, numProcessed);
-    progress.addStatistic(StNumStarted, 1);  // wrong for an activity in a subquery
-    progress.addStatistic(StNumStopped, 1);
+    progress.addStatistic(StNumStarts, 1);  // wrong for an activity in a subquery
+    progress.addStatistic(StNumStops, 1);
     progress.addStatistic(StNumSlaves, 1);  // MORE: A bit pointless for an hthor graph
 }
 

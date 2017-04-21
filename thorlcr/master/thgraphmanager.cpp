@@ -825,7 +825,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     {
         Owned<IWorkUnit> wu = &workunit.lock();
         wu->setTracingValue("ThorBuild", BUILD_TAG);
-        addTimeStamp(wu, SSTgraph, graphName, StWhenGraphStarted);
+        addTimeStamp(wu, SSTgraph, graphName, StWhenStarted);
         updateWorkUnitLog(*wu);
     }
     Owned<IException> exception;
@@ -915,7 +915,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         updateWorkunitTimeStat(wu, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+graphTimeNs);
         wu->setStatistic(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+graphTimeNs, 1, 0, StatsMergeReplace);
 
-        addTimeStamp(wu, SSTgraph, graphName, StWhenGraphFinished);
+        addTimeStamp(wu, SSTgraph, graphName, StWhenFinished);
         
         removeJob(*job);
     }

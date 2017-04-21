@@ -565,7 +565,7 @@ public:
     }
     virtual StatisticKind getTimerType(unsigned idx __attribute__((unused)))
     {
-        return StTimeElapsed;
+        return StTimeTotalExecute;
     }
     virtual StatisticScopeType getScopeType(unsigned idx __attribute__((unused)))
     {

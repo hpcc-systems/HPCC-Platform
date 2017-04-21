@@ -860,7 +860,7 @@ void EclSubGraph::updateProgress(IStatisticGatherer &progress)
 {
     StatsSubgraphScope subgraph(progress, id);
     if (startGraphTime)
-        progress.addStatistic(StWhenGraphStarted, startGraphTime);
+        progress.addStatistic(StWhenStarted, startGraphTime);
     if (elapsedGraphCycles)
         progress.addStatistic(StTimeElapsed, cycle_to_nanosec(elapsedGraphCycles));
     ForEachItemIn(idx, elements)
@@ -1166,6 +1166,11 @@ void EclGraph::execute(const byte * parentExtract)
 {
     if (agent->queryRemoteWorkunit())
         wu->setGraphState(queryGraphName(), WUGraphRunning);
+
+    {
+        Owned<IWorkUnit> wu(agent->updateWorkUnit());
+        addTimeStamp(wu, SSTgraph, queryGraphName(), StWhenStarted);
+    }
 
     try
     {

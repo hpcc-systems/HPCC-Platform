@@ -2911,8 +2911,8 @@ void ProgressInfo::getStats(IStatisticGatherer & stats)
     CThorStats::getStats(stats, true);
     stats.addStatistic(kind, tot);
     stats.addStatistic(StNumSlaves, counts.ordinality());
-    stats.addStatistic(StNumStarted, startcount);
-    stats.addStatistic(StNumStopped, stopcount);
+    stats.addStatistic(StNumStarts, startcount);
+    stats.addStatistic(StNumStops, stopcount);
 }
 
 

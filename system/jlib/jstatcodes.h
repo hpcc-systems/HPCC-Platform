@@ -106,15 +106,15 @@ enum StatisticKind
 {
     StKindNone,
     StKindAll,
-    StWhenGraphStarted,                 // When a graph starts
-    StWhenGraphFinished,                // When a graph stopped
+  StWhenGraphStarted,                   // Deprecated use StWhenStarted
+  StWhenGraphFinished,                  // Deprecated use StWhenFinished
     StWhenFirstRow,                     // When the first row is processed by slave activity
-    StWhenQueryStarted,
-    StWhenQueryFinished,
+  StWhenQueryStarted,                   // Deprecated use StWhenStarted
+  StWhenQueryFinished,                  // Deprecated use StWhenFinished
     StWhenCreated,
     StWhenCompiled,
     StWhenWorkunitModified,             // Not sure this is very useful
-    StTimeElapsed,                      // Elapsed wall time between first row and last row
+    StTimeElapsed,                      // An elapsed time - should always have a corresponding StWhenStarted...
     StTimeLocalExecute,                 // Time spend processing just this activity
     StTimeTotalExecute,                 // Time executing this activity and all inputs
     StTimeRemaining,
@@ -123,8 +123,8 @@ enum StatisticKind
     StSizeMaxRowSize,
     StNumRowsProcessed,                 // on edge
     StNumSlaves,                        // on edge
-    StNumStarted,                       // on edge
-    StNumStopped,                       // on edge
+    StNumStarts,                        // on edge
+    StNumStops,                         // on edge
     StNumIndexSeeks,
     StNumIndexScans,
     StNumIndexWildSeeks,
@@ -191,6 +191,8 @@ enum StatisticKind
     StCycleTotalNestedCycles,
     StTimeGenerate,
     StCycleGenerateCycles,
+    StWhenStarted,                      // When a graph/query etc. starts
+    StWhenFinished,                     // When a graph stopped
 
     StMax,
 

@@ -349,7 +349,7 @@ protected:
 // General activity statistics
 
 static const StatisticsMapping actStatistics(StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
-                                              StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped, StNumStrands,
+                                              StNumRowsProcessed, StNumSlaves, StNumStarts, StNumStops, StNumStrands,
                                               StNumScansPerRow, StNumAllocations, StNumAllocationScans,
                                               StTimeFirstExecute, StCycleLocalExecuteCycles, StCycleTotalExecuteCycles, StKindNone);
 static const StatisticsMapping joinStatistics(&actStatistics, StNumAtmostTriggered, StKindNone);

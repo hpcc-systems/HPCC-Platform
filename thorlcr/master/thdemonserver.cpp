@@ -150,7 +150,7 @@ private:
             }
         }
     }
-    void reportGraph(CGraphBase *graph, bool finished, bool success, unsigned startTime)
+    void reportGraph(CGraphBase *graph, bool finished, bool success, unsigned startTime, unsigned __int64 startTimeStamp)
     {
         try
         {
@@ -162,6 +162,13 @@ private:
             }
 
             Owned<IWorkUnit> wu = &currentWU.lock();
+            if (startTimeStamp)
+            {
+                StringBuffer graphScope;
+                const char *graphname = graph->queryJob().queryGraphName();
+                formatGraphTimerScope(graphScope, graphname, 0, graph->queryGraphId());
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
+            }
             reportStatus(wu, *graph, startTime, finished, success);
 
             queryServerStatus().commitProperties();
@@ -230,7 +237,7 @@ public:
         activeGraphs.append(*LINK(graph));
         unsigned startTime = msTick();
         graphStarts.append(startTime);
-        reportGraph(graph, false, true, startTime);
+        reportGraph(graph, false, true, startTime, getTimeStampNowValue());
         const char *graphname = graph->queryJob().queryGraphName();
         if (memcmp(graphname,"graph",5)==0)
             graphname+=5;
@@ -247,7 +254,7 @@ public:
         if (NotFound != g)
         {
             unsigned startTime = graphStarts.item(g);
-            reportGraph(graph, true, success, startTime);
+            reportGraph(graph, true, success, startTime, 0);
             activeGraphs.remove(g);
             graphStarts.remove(g);
         }

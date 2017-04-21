@@ -1129,6 +1129,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     size32_t prevErrs = errorProcessor.errCount();
     cycle_t startCycles = get_cycles_now();
+    addTimeStamp(instance.wu, SSTcompilestage, "compile", StWhenStarted);
     const char * sourcePathname = queryContents ? str(queryContents->querySourcePath()) : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
 
@@ -1171,6 +1172,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         if (exportDependencies)
             parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
 
+        addTimeStamp(instance.wu, SSTcompilestage, "compile:parse", StWhenStarted);
         try
         {
             HqlLookupContext ctx(parseCtx, &errorProcessor);
@@ -1228,7 +1230,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             unsigned __int64 parseTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
             instance.stats.parseTime = (unsigned)nanoToMilli(parseTimeNs);
 
-            updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile:parseTime", StTimeElapsed, NULL, parseTimeNs);
+            updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile:parse", StTimeElapsed, NULL, parseTimeNs);
 
             if (exportDependencies)
             {
