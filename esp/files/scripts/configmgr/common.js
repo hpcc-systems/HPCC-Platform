@@ -300,7 +300,7 @@ function isValidNetworkAddress(addressList, theName, ignoredot, checkspecial)
     {
       if (match[1])
             errorString = errorString + theName + ": " + currentAddress + " contains a URL connection protocol.\n";
-      else if (match[2] == null)
+      else if (match[2] === null || match[2] === undefined)
           errorString = errorString + theName + ": " + currentAddress + " does not appear to contain a host.";
       else if (match[3] || match[4] || match[5] || match[6] || match[7] || match[8])
           errorString = errorString + theName + ": '" + currentAddress + "' should only contain a host name or ip/ip range.\n";
@@ -320,7 +320,15 @@ function isValidNetworkAddress(addressList, theName, ignoredot, checkspecial)
                 errorString = errorString + theName + ': ' + IPvalue + ' is a special IP address and cannot be used here.';
             }
 
-            if(ipRangeMatch[5] != null) //IP range format detected
+            for (var currIPIndex = 1; currIPIndex < 5; currIPIndex++)
+            {
+              if ( !isInteger(ipRangeMatch[currIPIndex]) || (parseInt(ipRangeMatch[currIPIndex]) > 255))
+              {
+                errorString = errorString + theName + ": " + currentAddress + " contains an invalid octet.";
+              }
+            }
+
+            if(ipRangeMatch[5]) //IP range format detected
             {
                 var invalidIPSubNet = isValidIPSubNetRange(ipRangeMatch[4], ipRangeMatch[5]);
                 if (invalidIPSubNet)
