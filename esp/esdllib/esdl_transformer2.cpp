@@ -893,12 +893,13 @@ void Esdl2Struct::buildDefaults(Esdl2Transformer *xformer, StringBuffer &path, I
 
 Esdl2Base* Esdl2Struct::queryChild(const char* name, bool nocase)
 {
-    ForEachItemIn(idx, m_children)
-    {
-        Esdl2Base *child = &m_children.item(idx);
-        if ((nocase && strieq(child->queryName(), name)) || streq(child->queryName(),name))
-            return child;
-    }
+    Esdl2Base** child = NULL;
+    if(nocase)
+        child = m_child_nocasemap.getValue(StringBuffer(name).toLowerCase().str());
+    else
+        child = m_child_map.getValue(name);
+    if(child && *child)
+        return *child;
 
     return NULL;
 }
@@ -1175,9 +1176,9 @@ void Esdl2Struct::processElement(Esdl2TransformerContext &ctx)
         {
             StartTag child_start;
             ctx.xppp->readStartTag(child_start);
-            Esdl2Base **child = m_child_map.getValue(child_start.getLocalName());
-            if (child && *child)
-                (*child)->process(ctx, NULL);
+            Esdl2Base* child = queryChild(child_start.getLocalName());
+            if (child)
+                child->process(ctx, NULL);
             else
                 ctx.xppp->skipSubTree();
             break;
@@ -1196,8 +1197,13 @@ void Esdl2Struct::addChildren(Esdl2Transformer *xformer, IEsdlDefObjectIterator 
         {
             m_children.append(*obj);
             m_child_map.setValue(obj->queryName(), obj);
-            if (obj->queryEclName())
-                m_child_map.setValue(obj->queryEclName(), obj);
+            m_child_nocasemap.setValue(StringBuffer(obj->queryName()).toLowerCase().str(), obj);
+            const char* ecl_name = obj->queryEclName();
+            if(ecl_name && *ecl_name)
+            {
+                m_child_map.setValue(ecl_name, obj);
+                m_child_nocasemap.setValue(StringBuffer(ecl_name).toLowerCase().str(), obj);
+            }
             if (might_skip_root && !stricmp(obj->queryName(), "response"))
                 obj->setMightSkipRoot(true);
         }
