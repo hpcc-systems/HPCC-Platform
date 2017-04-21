@@ -10385,13 +10385,7 @@ void HqlCppTranslator::assign(BuildCtx & ctx, const CHqlBoundTarget & target, CH
                     {
                         //I can't think of any situation where this isn't true....
                         assertex(hasLinkCountedModifier(rhs.expr));
-                        StringBuffer assignText;
-                        generateExprCpp(assignText, lhs).append(".set(");
-                        generateExprCpp(assignText, rhs.expr).append(");");
-                        ctx.addQuoted(assignText);
-                        //Could generate the following instead
-                        //ctx.addAssign(lhs, no_link(rhs.expr));
-                        //And post-optimize to the above.
+                        ctx.addAssignLink(lhs, rhs.expr);
                     }
                     else
                         ctx.addAssign(lhs, rhs.expr);
