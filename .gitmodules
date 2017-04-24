@@ -46,3 +46,6 @@
 [submodule "plugins/redis/hiredis"]
 	path = plugins/redis/hiredis
 	url = https://github.com/hpcc-systems/hiredis.git
+[submodule "plugins/sqs/aws"]
+       path = plugins/sqs/aws
+       url = https://github.com/aws/aws-sdk-cpp.git
