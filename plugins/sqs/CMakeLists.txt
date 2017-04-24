@@ -1,4 +1,4 @@
-# minimal CMakeLists.txt for the AWS SDK for C++
+#inimal CMakeLists.txt for the AWS SDK for C++
 cmake_minimum_required(VERSION 2.8)
 
 # "my-example" is just an example value.
@@ -8,6 +8,20 @@ project(sqs)
 if(SQS)
    ADD_PLUGIN(sqs)
    if(MAKE_SQS)
+     if(NOT EXISTS "${PROJECT_SOURCE_DIR}/aws/")
+            message(FATAL_ERROR
+          "The aws sdk submodule is not available.
+          This normally indicates that the git submodule has not been fetched.
+          Please run git submodule update --init --recursive")
+      endif()
+    
+     execute_process(COMMAND mkdir ${PROJECT_BINARY_DIR}/aws-sdk-cpp)
+     execute_process(COMMAND cmake ${PROJECT_SOURCE_DIR}/aws
+                     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/aws-sdk-cpp)
+     execute_process(COMMAND make 
+                     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/aws-sdk-cpp)
+
+     set(CMAKE_PREFIX_PATH "${PROJECT_BINARY_DIR}/aws-sdk-cpp")  
     # Locate the AWS SDK for C++ package.
     # Requires that you build with:
     # -Daws-sdk-cpp_DIR=/path/to/sdk_build
