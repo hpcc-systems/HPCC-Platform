@@ -138,7 +138,6 @@ extern jhtree_decl RelaxedAtomic<unsigned> preloadCacheAdds;
 extern jhtree_decl bool logExcessiveSeeks;
 extern jhtree_decl bool linuxYield;
 extern jhtree_decl bool traceSmartStepping;
-extern jhtree_decl bool traceJHtreeAllocations;
 extern jhtree_decl bool flushJHtreeCacheOnOOM;
 extern jhtree_decl bool useMemoryMappedIndexes;
 extern jhtree_decl void clearNodeStats();

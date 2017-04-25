@@ -68,7 +68,6 @@ bool useMemoryMappedIndexes = false;
 bool logExcessiveSeeks = false;
 bool linuxYield = false;
 bool traceSmartStepping = false;
-bool traceJHtreeAllocations = false;
 bool flushJHtreeCacheOnOOM = true;
 
 MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
