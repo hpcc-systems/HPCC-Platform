@@ -1191,6 +1191,17 @@ lock=/var/lock/HPCCSystems</programlisting>
               </listitem>
             </varlistentry>
           </variablelist></para>
+
+        <sect3>
+          <title>Dropzone Restricstions</title>
+
+          <para>By default the HPCC system is configured to enforce drop zone
+          restrictions. To disable the drop zone restriction, locate the
+          following setting in the environment.conf and set it to false.
+          </para>
+
+          <programlisting>useDropZoneRestriction=true</programlisting>
+        </sect3>
       </sect2>
 
       <sect2 id="ConfiguringRemoteAccessOverTLS">
