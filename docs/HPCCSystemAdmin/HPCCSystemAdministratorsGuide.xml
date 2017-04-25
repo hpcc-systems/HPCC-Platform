@@ -1187,18 +1187,18 @@ lock=/var/lock/HPCCSystems</programlisting>
 
                 <para>The default value of * assigns the interface to an open
                 ip address, in any order. Specifying an interface, such as
-                Eth0, will assign the specified node as the primary.<!--***Add More info... WHY DOES THIS MATTER?--></para>
+                Eth0, will assign the specified node as the primary.<!--***More info??***--></para>
               </listitem>
             </varlistentry>
           </variablelist></para>
 
-        <sect3>
-          <title>Dropzone Restricstions</title>
+        <sect3 id="DropZone_Restrictions">
+          <title>Dropzone Restrictions</title>
 
           <para>By default the HPCC system is configured to enforce drop zone
           restrictions. To disable the drop zone restriction, locate the
-          following setting in the environment.conf and set it to false.
-          </para>
+          following setting in the environment.conf and set it to
+          false.</para>
 
           <programlisting>useDropZoneRestriction=true</programlisting>
         </sect3>
