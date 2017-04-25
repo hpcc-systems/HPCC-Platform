@@ -380,7 +380,6 @@ public:
 private:
     int onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
     int onRoxieRequest(CHttpRequest* request, CHttpResponse* response, const char *  method);
-    bool getRoxieConfig(StringBuffer & queryName, StringBuffer & url, StringBuffer & username, StringBuffer & password, const char *method);
     void getSoapMessage(StringBuffer& out,StringBuffer& soapresp,const char * starttxt,const char * endtxt);
 
     bool reloadBindingFromDali(const char *binding, const char *process);
