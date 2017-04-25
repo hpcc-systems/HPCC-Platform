@@ -87,7 +87,15 @@ resultRec runAnalyses(DATASET(irisRec) ds) := EMBED(R)
     capture.output(summary(glmMdl))
   )
   fit<-data.frame(dsFit, stringsAsFactors = F)
-  
+
+  # This code generates different results after the 13th decimal digit
+  # on Ubuntu 16.04 and CentOS
+  # To be able to use environment independent key file to check the result of this test,
+  # we round the predicted values to 11 decimal digits.
+
+  dsPreds$lmPreds <- round(dsPreds$lmPreds, digits=11)
+  dsPreds$glmPreds <- round(dsPreds$glmPreds, digits=11)
+
   # Output to HPCC
   list(predictions=dsPreds, fit=fit)
 ENDEMBED;
