@@ -2911,7 +2911,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                         OwnedHqlExpr newBody = replaceChild(body, 0, newBodyCode);
                         OwnedHqlExpr newFuncdef = replaceChild(funcdef, 0, newBody);
                         unwindChildren(args, expr, 0);
-                        transformed.setown(createBoundFunction(NULL, newFuncdef, args, NULL, DEFAULT_EXPAND_CALL));
+                        transformed.setown(createBoundFunction(NULL, newFuncdef, args, NULL, false));
 
                         logChange("Auto project embed", expr, complexExtra->outputFields);
                         return transformed.getClear();
