@@ -3407,6 +3407,34 @@ SUM(NOFOLD(s1b + s2b), a);
           </listitem>
         </orderedlist>
 
+        <para> </para>
+
+        <sect3 id="R_DataTypes">
+          <title>Mapping Datatypes</title>
+
+          <para>Some additional considerations for mapping data types in R.
+          </para>
+
+          <para>In HPCC the ECL <emphasis role="bold">RECORD</emphasis> maps
+          to an R <emphasis>list</emphasis>. </para>
+
+          <para>An ECL <emphasis role="bold">DATASET</emphasis> including a
+          nested dataset is mapped to an R <emphasis>dataframe</emphasis>.
+          </para>
+
+          <para>An ECL <emphasis role="bold">SET</emphasis> is mapped to an R
+          <emphasis>vector</emphasis>. </para>
+
+          <para>These principals apply to passing data from HPCC to R or data
+          returning to HPCC from R. There are usage examples of these concepts
+          available at:</para>
+
+          <para><ulink
+          url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/regress/embedR2.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/embedR2.ecl</ulink></para>
+
+          <para> </para>
+        </sect3>
+
         <sect3>
           <title>R Scope Options</title>
 
@@ -3438,8 +3466,6 @@ SUM(NOFOLD(s1b + s2b), a);
           until the end of the current workunit or the current instance of a
           Roxie deployed query, and are not shared with other
           instances.</para>
-
-          <para></para>
         </sect3>
       </sect2>
     </sect1>
