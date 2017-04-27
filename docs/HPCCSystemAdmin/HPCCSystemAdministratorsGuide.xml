@@ -1677,6 +1677,28 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           slaves with less memory/cpu taking longer than the rest and dragging
           the whole performance of the cluster down as a result.</para>
         </sect3>
+
+        <sect3 id="Thor_TimesOut">
+          <title>Thor times out</title>
+
+          <para>There is a case where a system policy or practice could cause
+          an issue with Thor nodes. At startup if a Thor cluster hangs, and
+          then eventually times out. Then if your Thormaster log shows that
+          the master is fine, but indicates that it is waiting to connect the
+          slaves. Then you may have an issue with the SSH daemon
+          configuration. </para>
+
+          <para>There is a security feature called
+          <emphasis>"AllowUsers"</emphasis> that creates a white list in sshd
+          (the OpenSSH server process) that will disallow connections from
+          anyone not declared on that list. This is not default for sshd,
+          rather it is an option that must be enabled. If that option is
+          enabled that can cause the Thor nodes to hang in the manner
+          described. If that option is enabled, then you must unset the
+          option, or add the hpcc user to the AllowUsers list. </para>
+
+          <para> </para>
+        </sect3>
       </sect2>
 
       <sect2 id="virtual-thor-slaves">
