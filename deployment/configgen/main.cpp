@@ -493,17 +493,36 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
     ForEach(*dropZonesInsts)
     {
       IPropertyTree* pDropZone = &dropZonesInsts->query();
-      StringBuffer computerName(pDropZone->queryProp(XML_ATTR_COMPUTER));
-      xPath.clear().appendf("Hardware/Computer[@name=\"%s\"]", computerName.str());
-      IPropertyTree* pComputer = pEnv->queryPropTree(xPath.str());
-      if (pComputer)
+      const char * dropzonePath = pDropZone->queryProp(XML_ATTR_DIRECTORY);
+        
+      Owned<IPropertyTreeIterator> serverList = pDropZone->getElements("ServerList");
+      // Use new serverlist behaviour if present
+      if (serverList->first())
       {
-        const char* netAddr = pComputer->queryProp("@netAddress");
-
-        if (listdropzones)
-          out.appendf("%s,%s\n", netAddr, pDropZone->queryProp(XML_ATTR_DIRECTORY));
-        else if (matchDeployAddress(ipAddr, netAddr))
-          out.appendf("%s\n", pDropZone->queryProp(XML_ATTR_DIRECTORY)); 
+        ForEach(*serverList)
+        {
+          IPropertyTree* pServer = &serverList->query();
+          const char* netAddr = pServer->queryProp("@server");
+          if (listdropzones)
+            out.appendf("%s,%s\n", netAddr, dropzonePath);
+          else if (matchDeployAddress(ipAddr, netAddr))
+            out.appendf("%s\n", dropzonePath); 
+        }
+      }
+      // fallback to old dropzone with defined computer
+      else
+      {
+        StringBuffer computerName(pDropZone->queryProp(XML_ATTR_COMPUTER));
+        xPath.clear().appendf("Hardware/Computer[@name=\"%s\"]", computerName.str());
+        IPropertyTree* pComputer = pEnv->queryPropTree(xPath.str());
+        if (pComputer)
+        {
+          const char * netAddr = pComputer->queryProp("@netAddress");
+          if (listdropzones)
+            out.appendf("%s,%s\n", netAddr, dropzonePath);
+          else if (matchDeployAddress(ipAddr, netAddr))
+            out.appendf("%s\n", dropzonePath);
+        }
       }
     }
 
