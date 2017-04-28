@@ -40,15 +40,15 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -552,7 +552,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
   </chapter>
 
   <xi:include href="HPCCClientTools/CT_Mods/CT_ESDL_CLI.xml"
-              xpointer="ESDL_CLI" xmlns:xi="http://www.w3.org/2001/XInclude" />
+              xpointer="xpointer(//*[@id='ESDL_CLI'])" xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <chapter>
     <title>ESDL Language Reference</title>

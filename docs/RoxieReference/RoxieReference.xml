@@ -40,15 +40,15 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -872,7 +872,7 @@
 
 
      <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
-                xpointer="Capacity_Planning"
+                xpointer="xpointer(//*[@id='Capacity_Planning'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
  
 
@@ -893,7 +893,7 @@
     <emphasis>HPCC System Administrator's Guide</emphasis>.</para>
 
     <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
-                xpointer="Preflight_Roxie"
+                xpointer="xpointer(//*[@id='Preflight_Roxie'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="Roxie_Metrics">
@@ -1006,7 +1006,7 @@
     </sect1>
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchQueries.xml"
-                xpointer="Queries_Page"
+                xpointer="xpointer(//*[@id='Queries_Page'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 </book>

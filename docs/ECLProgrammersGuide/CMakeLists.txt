@@ -29,4 +29,14 @@ IF(MAKE_DOCS)
 	)
 
   ADD_CUSTOM_TARGET(ECL_Code_Files ALL DEPENDS  ${zip_out_dir}/ECL_Code_Files.zip)
+
+  SET(HELP_DEPENDENCIES)
+  GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
+  FOREACH(T ${Current_Targets})
+    IF("${T}" MATCHES ".*ECLProgrammersGuide.*")
+      LIST(APPEND HELP_DEPENDENCIES  ${T})
+     ENDIF()
+  ENDFOREACH()
+
+  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/PrGd-Includer.xml" ${PORTAL_HTML_DIR}/ProgrammersGuide  "programmers_guide_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
 ENDIF(MAKE_DOCS)

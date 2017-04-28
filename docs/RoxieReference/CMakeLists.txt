@@ -16,3 +16,14 @@
 
 DOCBOOK_TO_PDF( ${FO_XSL} RoxieReference.xml "RoxieReference" "RoxieRefMods" )
 
+IF(MAKE_DOCS)
+  SET(HELP_DEPENDENCIES)
+  GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
+  FOREACH(T ${Current_Targets})
+    IF("${T}" MATCHES ".*RoxieReference.*")
+      LIST(APPEND HELP_DEPENDENCIES  ${T})
+     ENDIF()
+  ENDFOREACH()
+
+  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/RoxieReference.xml" ${PORTAL_HTML_DIR}/RoxieReference  "roxie_reference_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+ENDIF(MAKE_DOCS)

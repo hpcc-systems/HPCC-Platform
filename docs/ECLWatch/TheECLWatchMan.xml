@@ -42,15 +42,15 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -565,7 +565,7 @@
     </sect1>
 
     <xi:include href="ECLScheduler/ECLSched-Mods/ECLSchedComp.xml"
-                xpointer="ECLSched_Interface"
+                xpointer="xpointer(//*[@id='ECLSched_Interface'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1>
@@ -672,11 +672,11 @@
     workunits there, but you can perform operations on workunits.</para>
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
-                xpointer="ECLWorkunits"
+                xpointer="xpointer(//*[@id='ECLWorkunits'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLPlayground/ECLPlay-Mods/ECL_Playground.xml"
-                xpointer="ECL_Playground"
+                xpointer="xpointer(//*[@id='ECL_Playground'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
@@ -695,15 +695,15 @@
     <!--  Might this be chapter for Xref?***-->
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
-                xpointer="ECLWatchLogicalFiles"
+                xpointer="xpointer(//*[@id='ECLWatchLogicalFiles'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
-                xpointer="DFUWorkunits"
+                xpointer="xpointer(//*[@id='DFUWorkunits'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
-                xpointer="Landing_Zones"
+                xpointer="xpointer(//*[@id='Landing_Zones'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="spray_and_despray">
@@ -742,42 +742,42 @@
       </sect2>
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                  xpointer="LZ_Spray"
+                  xpointer="xpointer(//*[@id='LZ_Spray'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                  xpointer="Spray_Fixed"
+                  xpointer="xpointer(//*[@id='Spray_Fixed'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                  xpointer="Spray_Delimited"
+                  xpointer="xpointer(//*[@id='Spray_Delimited'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                  xpointer="Spray_XML"
+                  xpointer="xpointer(//*[@id='Spray_XML'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                  xpointer="Spray_JSON"
+                  xpointer="xpointer(//*[@id='Spray_JSON'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                  xpointer="Spray_Variable"
+                  xpointer="xpointer(//*[@id='Spray_Variable'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                  xpointer="Spray_Blob"
+                  xpointer="xpointer(//*[@id='Spray_Blob'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                  xpointer="Desprays"
+                  xpointer="xpointer(//*[@id='Desprays'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml" xpointer="Copy"
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml" xpointer="xpointer(//*[@id='Copy'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                  xpointer="Remote_Copy"
+                  xpointer="xpointer(//*[@id='Remote_Copy'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
@@ -981,7 +981,7 @@
     </figure>
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchQueries.xml"
-                xpointer="Queries_Page"
+                xpointer="xpointer(//*[@id='Queries_Page'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
@@ -1322,11 +1322,11 @@
     </sect1>
 
     <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
-                xpointer="Preflight_system_servers"
+                xpointer="xpointer(//*[@id='Preflight_system_servers'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
-                xpointer="Preflight_Data_Refinery"
+                xpointer="xpointer(//*[@id='Preflight_Data_Refinery'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--
@@ -1341,7 +1341,7 @@
       from the ECL Watch interface.</para>
 
       <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
-                  xpointer="Sec_Adm_w_ECLWatch"
+                  xpointer="xpointer(//*[@id='Sec_Adm_w_ECLWatch'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1> 
  -->
@@ -1357,7 +1357,7 @@
       Watch.</para>
 
       <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
-                  xpointer="Sec_Adm_w_ECLWatch"
+                  xpointer="xpointer(//*[@id='Sec_Adm_w_ECLWatch'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
   </chapter>
@@ -1453,7 +1453,7 @@
     </sect1>
 
     <xi:include href="HPCCMonitoring/MonRep-Mods/NagiosInECLWa.xml"
-                xpointer="Nagios_in_ECLWatch"
+                xpointer="xpointer(//*[@id='Nagios_in_ECLWatch'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 

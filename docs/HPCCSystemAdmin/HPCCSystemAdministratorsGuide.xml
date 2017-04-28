@@ -42,15 +42,15 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -427,19 +427,19 @@
     your specific enterprise needs.</para>
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="HW-Switch"
+                xpointer="xpointer(//*[@id='HW-Switch'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="HW-LoadBalancer"
+                xpointer="xpointer(//*[@id='HW-LoadBalancer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
-                xpointer="System_sizings"
+                xpointer="xpointer(//*[@id='System_sizings'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
-                xpointer="Nodes-Software"
+                xpointer="xpointer(//*[@id='Nodes-Software'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
@@ -1001,7 +1001,7 @@
   </chapter>
 
   <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
-              xpointer="Cert_Prelight"
+              xpointer="xpointer(//*[@id='Cert_Prelight'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <chapter id="OnDemand_Maintenance">
@@ -1031,29 +1031,29 @@
     <!--/*Including special SysAdmin Config Module -paras- */-->
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
-                xpointer="cfgmgr_introP0"
+                xpointer="xpointer(//*[@id='cfgmgr_introP0'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
-                xpointer="cfgmgr_introP1"
+                xpointer="xpointer(//*[@id='cfgmgr_introP1'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
-                xpointer="cfgmgr_p1b"
+                xpointer="xpointer(//*[@id='cfgmgr_p1b'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
-                xpointer="cfgmgr_introP2"
+                xpointer="xpointer(//*[@id='cfgmgr_introP2'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
-                xpointer="cfgmgr_introP3"
+                xpointer="xpointer(//*[@id='cfgmgr_introP3'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--/*Including special SysAdmin Config Module -Sect1- */-->
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
-                xpointer="configuring-a-multi-node-system"
+                xpointer="xpointer(//*[@id='configuring-a-multi-node-system'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="SysAdm_Env.conf">
@@ -1227,7 +1227,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
-                xpointer="User_Security_Maint"
+                xpointer="xpointer(//*[@id='User_Security_Maint'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="SysAdm_WUs_ActiveDir">
@@ -1310,7 +1310,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
     </sect1>
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/CassandraWUServer.xml"
-                xpointer="CassandraWUStorage"
+                xpointer="xpointer(//*[@id='CassandraWUStorage'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="Redefining_Thor_Nodes">
@@ -1916,11 +1916,11 @@ heapUseTransparentHugePages</programlisting>
     </sect1>
 
     <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
-                xpointer="Capacity_Planning"
+                xpointer="xpointer(//*[@id='Capacity_Planning'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
-                xpointer="Sample_Sizings"
+                xpointer="xpointer(//*[@id='Sample_Sizings'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 

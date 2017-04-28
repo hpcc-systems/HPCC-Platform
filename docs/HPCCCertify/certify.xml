@@ -42,15 +42,15 @@ Date is used as the dateline/version number in the title page. The ID attribute 
 Copyright is used for the copyright line on title page. The ID attribute is CopyRight--></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -191,14 +191,14 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
   </chapter>
 
   <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
-              xpointer="Cert_Prelight"
+              xpointer="xpointer(//*[@id='Cert_Prelight'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="HPCCCertify/Cert-Mods/CertThorRox.xml"
-              xpointer="Generate_Certification_data_file"
+              xpointer="xpointer(//*[@id='Generate_Certification_data_file'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="HPCCCertify/Cert-Mods/CertSprayDespray.xml"
-              xpointer="Cert_Spray_Despray"
+              xpointer="xpointer(//*[@id='Cert_Spray_Despray'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 </book>

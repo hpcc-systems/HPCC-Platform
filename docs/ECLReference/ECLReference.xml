@@ -5,7 +5,13 @@
   <title>ECL Reference</title>
 
   <setinfo>
-    <corpauthor>HPCC Systems<superscript>®</superscript></corpauthor>
+    <corpauthor>HPCC Systems<superscript>®</superscript>
+      <para>
+        <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='CHMVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+      </para>
+    </corpauthor>
+
   </setinfo>
 
   <xi:include href="../ECLLanguageReference/ECLR-includer.xml"

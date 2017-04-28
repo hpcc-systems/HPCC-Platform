@@ -38,7 +38,7 @@
       "A"</link> (WHICH SEE).</para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <releaseinfo>© 2017 HPCC Systems<superscript>®</superscript>. All rights

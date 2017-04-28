@@ -31,6 +31,8 @@ set (FO_XSL ${CMAKE_CURRENT_BINARY_DIR}/BuildTools/fo.xsl)
 set (VERSION_DIR ${CMAKE_CURRENT_BINARY_DIR}/)
 set (ECLIPSE_HTML_XSL ${CMAKE_CURRENT_BINARY_DIR}/BuildTools/EclipseHelp.xsl)
 set (ECL_REFERENCE_XML ${CMAKE_CURRENT_BINARY_DIR}/ECLReference/ECLReference.xml)
+set (HTML_HELP_XSL ${CMAKE_CURRENT_BINARY_DIR}/resources/docbook-xsl/htmlhelp/htmlhelp.xsl)
+
 
 
 if ( "${HPCC_MATURITY}" STREQUAL "release" )
@@ -38,6 +40,8 @@ if ( "${HPCC_MATURITY}" STREQUAL "release" )
 else()
 	set (DOC_VERSION "${DOC_VERSION}-${HPCC_MATURITY}${HPCC_SEQUENCE}")
 endif()
+
+set (PORTAL_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/PortalHTML")
 
 # Build image file list to add to source watch.
 file(GLOB_RECURSE DOC_IMAGES_LIST images/*)
@@ -54,6 +58,7 @@ add_subdirectory(ECLProgrammersGuide)
 add_subdirectory(ECLStandardLibraryReference)
 add_subdirectory(ECLReference)
 add_subdirectory(EclipseHelp)
+add_subdirectory(HTMLHelp)
 add_subdirectory(HPCCClientTools)
 add_subdirectory(HPCCCertify)
 add_subdirectory(HPCCDataHandling)
@@ -70,6 +75,7 @@ add_subdirectory(ECLPluginForEclipse)
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
 
+
 # Docs automation
 if (DOCS_AUTO)
    add_subdirectory(XMLGeneration)
@@ -79,6 +85,8 @@ endif()
 
 #WIP -  Docs
 #add_subdirectory(RuningHPCCinAmazonWebServicesEC2)
+
+add_subdirectory(PortalHTML)
 
 GET_PROPERTY(_targets GLOBAL PROPERTY DOC_TARGETS)
 add_custom_target(docs ALL DEPENDS ${_targets})
