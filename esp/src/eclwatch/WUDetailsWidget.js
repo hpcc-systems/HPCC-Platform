@@ -559,7 +559,7 @@ define([
         refreshActionState: function () {
             var isArchived = this.wu.get("Archived");
             this.setDisabled(this.id + "AutoRefresh", isArchived || this.wu.isComplete(), "iconAutoRefresh", "iconAutoRefreshDisabled");
-            registry.byId(this.id + "Save").set("disabled", isArchived || !this.wu.isComplete() || this.wu.isDeleted());
+            registry.byId(this.id + "Save").set("disabled", isArchived || (!this.wu.isComplete() && !this.wu.isBlocked()) || this.wu.isDeleted());
             registry.byId(this.id + "Delete").set("disabled", isArchived || !this.wu.isComplete() || this.wu.isDeleted());
             registry.byId(this.id + "Restore").set("disabled", !isArchived);
             registry.byId(this.id + "SetToFailed").set("disabled", isArchived || this.wu.isComplete() || this.wu.isDeleted());
