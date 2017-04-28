@@ -79,20 +79,22 @@ if(USE_TBB OR USE_TBBMALLOC)
         PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so.${SONAME_VER})
 
     install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/${TBB_BUILD_NAME}\")")
-    if(USE_TBB)
-        install(FILES
-            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so.${SONAME_VER}
-            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so
-            DESTINATION lib)
-    endif()
-    if(USE_TBBMALLOC)
-        install(FILES
-            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so.${SONAME_VER}
-            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so
-            DESTINATION lib)
-        install(FILES
-            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so.${SONAME_VER}
-            ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so
-            DESTINATION lib)
+    if(NOT PLUGIN)
+        if(USE_TBB)
+            install(FILES
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so.${SONAME_VER}
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbb.so
+                DESTINATION lib)
+        endif()
+        if(USE_TBBMALLOC)
+            install(FILES
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so.${SONAME_VER}
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc.so
+                DESTINATION lib)
+            install(FILES
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so.${SONAME_VER}
+                ${CMAKE_CURRENT_BINARY_DIR}/${TBB_BUILD_NAME}/libtbbmalloc_proxy.so
+                DESTINATION lib)
+        endif()
     endif()
 endif()
