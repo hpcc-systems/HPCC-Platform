@@ -1170,7 +1170,7 @@
                   fileref="../../images/caution.png" /></entry>
 
                   <entry>If there are more than 100,000 logical files present
-                  you may see a warning message. </entry>
+                  you may see a warning message.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1633,10 +1633,11 @@
           </mediaobject>
         </figure></para>
 
-      <para>Click on the arrow next to a drop zone container to expand. The
-      files on the drop zone display. You can choose to upload, download, or
-      delete any files on the drop zone using the landing zone action buttons.
-      You can also spray files to a cluster from this page.</para>
+      <para>Click on the arrow next to a drop zone container, server, or
+      folder to expand. The files on the drop zone display. You can choose to
+      upload, download, or delete any files on the drop zone using the landing
+      zone action buttons. You can also spray files to a cluster from this
+      page.</para>
 
       <sect2 id="Upload_Files">
         <title>Upload files</title>
