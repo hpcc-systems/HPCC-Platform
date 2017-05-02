@@ -48,9 +48,14 @@ namespace cassandraembed {
 
 #define CASS_WU_QUERY_EXPIRES  (1000*60*5)
 #define CASS_WORKUNIT_POSTSORT_LIMIT 10000
-#define CASS_SEARCH_PREFIX_SIZE 2
-#define NUM_PARTITIONS 2
 
+#define DEFAULT_PREFIX_SIZE 2
+#define MIN_PREFIX_SIZE 2
+#define MAX_PREFIX_SIZE 8
+
+#define DEFAULT_PARTITIONS 2
+#define MIN_PARTITIONS 1
+#define MAX_PARTITIONS 10
 
 static const CassValue *getSingleResult(const CassResult *result)
 {
@@ -69,17 +74,37 @@ static StringBuffer &getCassString(StringBuffer &str, const CassValue *value)
     return str.append(length, output);
 }
 
+struct CassandraXmlMapping;
+
+interface ICassandraSession : public IInterface  // MORE - rename!
+{
+    virtual CassSession *querySession() const = 0;
+    virtual CassandraPrepared *prepareStatement(const char *query) const = 0;
+    virtual void executeAsync(CIArrayOf<CassandraStatement> &batch, const char *what) const = 0;
+
+    virtual unsigned queryTraceLevel() const = 0;
+
+    virtual const CassResult *fetchDataForWuid(const CassandraXmlMapping *mappings, const char *wuid, bool includeWuid) const = 0;
+    virtual const CassResult *fetchDataForWuidAndKey(const CassandraXmlMapping *mappings, const char *wuid, const char *key) const = 0;
+    virtual void deleteChildByWuid(const CassandraXmlMapping *mappings, const char *wuid, CassBatch *batch) const = 0;
+    virtual IPTree *cassandraToWorkunitXML(const char *wuid) const = 0;
+
+    virtual unsigned queryPrefixSize() const = 0;
+    virtual unsigned queryPartitions() const = 0;
+};
+
+
 struct CassandraColumnMapper
 {
     virtual ~CassandraColumnMapper() {}
     virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) = 0;
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) = 0;
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) = 0;
 };
 
 static class StringColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         rtlDataAttr str;
         unsigned chars;
@@ -88,7 +113,7 @@ public:
         row->setProp(name, s);
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         const char *value = row->queryProp(name);
         if (!value)
@@ -102,7 +127,7 @@ public:
 static class RequiredStringColumnMapper : public StringColumnMapper
 {
 public:
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         const char *value = row->queryProp(name);
         if (!value)
@@ -116,7 +141,7 @@ public:
 static class SuppliedStringColumnMapper : public StringColumnMapper
 {
 public:
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         if (statement)
             statement->bindString(idx, userVal);
@@ -127,7 +152,7 @@ public:
 static class BlobColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         rtlDataAttr str;
         unsigned chars;
@@ -135,7 +160,7 @@ public:
         row->setPropBin(name, chars, str.getbytes());
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         MemoryBuffer value;
         row->getPropBin(name, value);
@@ -153,7 +178,7 @@ public:
 static class compressTreeColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         rtlDataAttr str;
         unsigned chars;
@@ -168,7 +193,7 @@ public:
         }
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         IPTree *child = row->queryPropTree(name);
         if (child && child->hasChildren())
@@ -190,12 +215,12 @@ public:
 static class TimeStampColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         // never fetched (that may change?)
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         // never bound, but does need to be included in the ?
         return true;
@@ -205,15 +230,15 @@ public:
 static class HashRootNameColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         throwUnexpected(); // we never return the partition column
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         if (statement)
         {
-            int hash = rtlHash32VStr(row->queryName(), 0) % NUM_PARTITIONS;
+            int hash = rtlHash32VStr(row->queryName(), 0) % session->queryPartitions();
             statement->bindInt32(idx, hash);
         }
         return true;
@@ -223,7 +248,7 @@ public:
 static class RootNameColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         rtlDataAttr str;
         unsigned chars;
@@ -232,7 +257,7 @@ public:
         row->renameProp("/", s);
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         if (statement)
         {
@@ -249,11 +274,11 @@ public:
 static class WuidColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         throwUnexpected();
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         throwUnexpected();
     }
@@ -262,12 +287,12 @@ public:
 static class BoolColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         row->addPropBool(name, getBooleanResult(NULL, value));
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         if (row->hasProp(name))
         {
@@ -286,13 +311,13 @@ public:
 static class PrefixSearchColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
-        return _fromXML(statement, idx, row, userVal, CASS_SEARCH_PREFIX_SIZE, true);
+        return _fromXML(statement, idx, row, userVal, session->queryPrefixSize(), true);
     }
 protected:
     static bool _fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *xpath, unsigned prefixLength, bool uc)
@@ -320,7 +345,7 @@ protected:
 static class SearchColumnMapper : public PrefixSearchColumnMapper
 {
 public:
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         return _fromXML(statement, idx, row, userVal, 0, true);
     }
@@ -329,7 +354,7 @@ public:
 static class LCSearchColumnMapper : public PrefixSearchColumnMapper
 {
 public:
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         return _fromXML(statement, idx, row, userVal, 0, false);
     }
@@ -338,13 +363,13 @@ public:
 static class IntColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         if (name)
             row->addPropInt(name, getSignedResult(NULL, value));
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         if (row->hasProp(name))
         {
@@ -363,11 +388,11 @@ public:
 static class DefaultedIntColumnMapper : public IntColumnMapper
 {
 public:
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char * defaultValue)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         if (statement)
         {
-            int value = row->getPropInt(name, atoi(defaultValue));
+            int value = row->getPropInt(name, atoi(userVal));
             statement->bindInt32(idx, value);
         }
         return true;
@@ -377,12 +402,12 @@ public:
 static class BigIntColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         row->addPropInt64(name, getSignedResult(NULL, value));
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         if (row->hasProp(name))
         {
@@ -401,7 +426,7 @@ public:
 static class SimpleMapColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         Owned<IPTree> map = createPTree(name);
         CassandraIterator elems(cass_iterator_from_map(value));
@@ -416,7 +441,7 @@ public:
         row->addPropTree(name, map.getClear());
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         Owned<IPTree> child = row->getPropTree(name);
         if (child)
@@ -451,7 +476,7 @@ public:
 static class AttributeMapColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         CassandraIterator elems(cass_iterator_from_map(value));
         while (cass_iterator_next(elems))
@@ -465,7 +490,7 @@ public:
         }
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         // NOTE - name here provides a list of attributes that we should NOT be mapping
         Owned<IAttributeIterator> attrs = row->getAttributes();
@@ -505,7 +530,7 @@ public:
 static class ElementMapColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         CassandraIterator elems(cass_iterator_from_map(value));
         while (cass_iterator_next(elems))
@@ -518,7 +543,7 @@ public:
         }
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         // NOTE - name here provides a list of elements that we should NOT be mapping
         Owned<IPTreeIterator> elems = row->getElements("*");
@@ -569,7 +594,7 @@ public:
 static class SubtreeMapColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         CassandraIterator elems(cass_iterator_from_map(value));
         while (cass_iterator_next(elems))
@@ -589,7 +614,7 @@ public:
         }
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         // NOTE - name here provides a list of elements that we SHOULD be mapping
         Owned<IPTreeIterator> elems = row->getElements("*");
@@ -635,7 +660,7 @@ public:
 static class QueryTextColumnMapper : public StringColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         // Name is "Query/Text ...
         IPTree *query = row->queryPropTree("Query");
@@ -657,7 +682,7 @@ public:
     : elemName(_elemName), nameAttr(_nameAttr)
     {
     }
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         Owned<IPTree> map = createPTree(name);
         CassandraIterator elems(cass_iterator_from_map(value));
@@ -672,7 +697,7 @@ public:
         row->addPropTree(name, map.getClear());
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         Owned<IPTree> child = row->getPropTree(name);
         if (child)
@@ -713,7 +738,7 @@ private:
 static class WarningsMapColumnMapper : implements CassandraColumnMapper
 {
 public:
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         CassandraIterator elems(cass_iterator_from_map(value));
         while (cass_iterator_next(elems))
@@ -735,7 +760,7 @@ public:
         }
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         if (!row->hasProp("OnWarnings/OnWarning"))
             return false;
@@ -770,7 +795,7 @@ public:
     : elemName(_elemName), nameAttr(_nameAttr)
     {
     }
-    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value) override
     {
         Owned<IPTree> map = name ? createPTree(name) : LINK(row);
         CassandraIterator elems(cass_iterator_from_collection(value));
@@ -784,7 +809,7 @@ public:
             row->addPropTree(name, map.getClear());
         return row;
     }
-    virtual bool fromXML(CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal)
+    virtual bool fromXML(const ICassandraSession *session, CassandraStatement *statement, unsigned idx, IPTree *row, const char *name, const char *userVal) override
     {
         Owned<IPTree> child = row->getPropTree(name);
         if (child)
@@ -1212,25 +1237,11 @@ static const CassandraXmlMapping wuGraphRunningMappings [] =
     { NULL, "wuGraphRunning", "((partition), wuid)", stringColumnMapper}
 };
 
-interface ICassandraSession : public IInterface  // MORE - rename!
-{
-    virtual CassSession *querySession() const = 0;
-    virtual CassandraPrepared *prepareStatement(const char *query) const = 0;
-    virtual void executeAsync(CIArrayOf<CassandraStatement> &batch, const char *what) const = 0;
-
-    virtual unsigned queryTraceLevel() const = 0;
-
-    virtual const CassResult *fetchDataForWuid(const CassandraXmlMapping *mappings, const char *wuid, bool includeWuid) const = 0;
-    virtual const CassResult *fetchDataForWuidAndKey(const CassandraXmlMapping *mappings, const char *wuid, const char *key) const = 0;
-    virtual void deleteChildByWuid(const CassandraXmlMapping *mappings, const char *wuid, CassBatch *batch) const = 0;
-    virtual IPTree *cassandraToWorkunitXML(const char *wuid) const = 0;
-};
-
-void getBoundFieldNames(const CassandraXmlMapping *mappings, StringBuffer &names, StringBuffer &bindings, IPTree *inXML, const char *userVal, StringBuffer &tableName)
+void getBoundFieldNames(const ICassandraSession *session, const CassandraXmlMapping *mappings, StringBuffer &names, StringBuffer &bindings, IPTree *inXML, const char *userVal, StringBuffer &tableName)
 {
     while (mappings->columnName)
     {
-        if (!inXML || mappings->mapper.fromXML(NULL, 0, inXML, mappings->xpath, userVal))
+        if (!inXML || mappings->mapper.fromXML(session, NULL, 0, inXML, mappings->xpath, userVal))
         {
             names.appendf(",%s", mappings->columnName);
             if (strcmp(mappings->columnType, "timeuuid")==0)
@@ -1305,7 +1316,7 @@ void deleteSecondaryByKey(const char * xpath, const char *key, const char *wuid,
         VStringBuffer deleteQuery("DELETE from %s where xpath=? and fieldPrefix=? and fieldValue=? and wuid=?;", tableName.str());
         CassandraStatement &update = *new CassandraStatement(sessionCache->prepareStatement(deleteQuery));
         update.bindString(0, xpath);
-        update.bindString_n(1, ucKey, CASS_SEARCH_PREFIX_SIZE);
+        update.bindString_n(1, ucKey, sessionCache->queryPrefixSize());
         update.bindString(2, ucKey);
         update.bindString(3, wuid);
         batch.append(update);
@@ -1330,13 +1341,13 @@ extern void simpleXMLtoCassandra(const ICassandraSession *session, CassBatch *ba
     StringBuffer names;
     StringBuffer bindings;
     StringBuffer tableName;
-    getBoundFieldNames(mappings, names, bindings, inXML, userVal, tableName);
+    getBoundFieldNames(session, mappings, names, bindings, inXML, userVal, tableName);
     VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
     CassandraStatement update(session->prepareStatement(insertQuery));
     unsigned bindidx = 0;
     while (mappings->columnName)
     {
-        if (mappings->mapper.fromXML(&update, bindidx, inXML, mappings->xpath, userVal))
+        if (mappings->mapper.fromXML(session, &update, bindidx, inXML, mappings->xpath, userVal))
             bindidx++;
         mappings++;
     }
@@ -1348,13 +1359,13 @@ extern void simpleXMLtoCassandra(const ICassandraSession *session, CIArrayOf<Cas
     StringBuffer names;
     StringBuffer bindings;
     StringBuffer tableName;
-    getBoundFieldNames(mappings, names, bindings, inXML, userVal, tableName);
+    getBoundFieldNames(session, mappings, names, bindings, inXML, userVal, tableName);
     VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
     CassandraStatement &update = *new CassandraStatement(session->prepareStatement(insertQuery));
     unsigned bindidx = 0;
     while (mappings->columnName)
     {
-        if (mappings->mapper.fromXML(&update, bindidx, inXML, mappings->xpath, userVal))
+        if (mappings->mapper.fromXML(session, &update, bindidx, inXML, mappings->xpath, userVal))
             bindidx++;
         mappings++;
     }
@@ -1379,7 +1390,7 @@ extern void addFileSearch(const ICassandraSession *session, CIArrayOf<CassandraS
     StringBuffer bindings;
     StringBuffer names;
     StringBuffer tableName;
-    getBoundFieldNames(filesSearchMappings, names, bindings, NULL, NULL, tableName);
+    getBoundFieldNames(session, filesSearchMappings, names, bindings, NULL, NULL, tableName);
     VStringBuffer insertQuery("INSERT INTO %s (%s) values (%s)", tableName.str(), names.str()+1, bindings.str()+1);
     CassandraStatement &update = *new CassandraStatement(session->prepareStatement(insertQuery));
     update.bindString(0, name);
@@ -1393,13 +1404,13 @@ extern void addUniqueValue(const ICassandraSession *session, CIArrayOf<Cassandra
     StringBuffer bindings;
     StringBuffer names;
     StringBuffer tableName;
-    getBoundFieldNames(uniqueSearchMappings, names, bindings, NULL, NULL, tableName);
+    getBoundFieldNames(session, uniqueSearchMappings, names, bindings, NULL, NULL, tableName);
     VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
     CassandraStatement &update = *new CassandraStatement(session->prepareStatement(insertQuery));
     update.bindString(0, xpath);
     StringBuffer ucValue(value);
     ucValue.toUpperCase();
-    update.bindString_n(1, ucValue, CASS_SEARCH_PREFIX_SIZE);
+    update.bindString_n(1, ucValue, session->queryPrefixSize());
     update.bindString(2, ucValue);
     update.bindString(3, value);
     batch.append(update);
@@ -1413,15 +1424,15 @@ extern void childXMLRowtoCassandra(const ICassandraSession *session, CassBatch *
     // Note that we bind all fields, even where there is no value in the XML
     // This ensures that values are correctly deleted where necessary - it also has
     // the fortuitous benefit of reducing the number of variants of the query that we need to prepare and cache.
-    getBoundFieldNames(mappings, names, bindings, NULL, userVal, tableName);
+    getBoundFieldNames(session, mappings, names, bindings, NULL, userVal, tableName);
     VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
     CassandraStatement update(session->prepareStatement(insertQuery));
-    update.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+    update.bindInt32(0, rtlHash32VStr(wuid, 0) % session->queryPartitions());
     update.bindString(1, wuid);
     unsigned colidx = 2; // We already bound wuid and partition
     while (mappings[colidx].columnName)
     {
-        if (!mappings[colidx].mapper.fromXML(&update, colidx, &row, mappings[colidx].xpath, userVal))
+        if (!mappings[colidx].mapper.fromXML(session, &update, colidx, &row, mappings[colidx].xpath, userVal))
             update.bindNull(colidx);
         colidx++;
     }
@@ -1432,7 +1443,7 @@ extern unsigned childCount(const ICassandraSession *session, const CassandraXmlM
 {
     VStringBuffer countQuery("SELECT count(*) FROM %s WHERE partition=? AND wuid=?;", queryTableName(mappings));
     CassandraStatement count(session->prepareStatement(countQuery));
-    count.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+    count.bindInt32(0, rtlHash32VStr(wuid, 0) % session->queryPartitions());
     count.bindString(1, wuid);
     CassandraFuture future(cass_session_execute(session->querySession(), count));
     future.wait("select count(*)");
@@ -2228,7 +2239,7 @@ public:
         // If the partitioning of the main workunits table does not match the partitioning of the other tables, then would be better to
         // execute the deletes of the child tables and the main record as two separate batches.
         CassandraStatement update(sessionCache->prepareStatement("DELETE from workunits where partition=? and wuid=?;"));
-        update.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        update.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
         update.bindString(1, wuid);
         check(cass_batch_add_statement(main, update));
         executeBatch(main, "delete wu");
@@ -2545,7 +2556,7 @@ public:
     {
         CassandraStatement statement(sessionCache->prepareStatement("SELECT graphID, subgraphID FROM wuGraphRunning where partition=? and wuid=?;"));
         const char *wuid = queryWuid();
-        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
         statement.bindString(1, wuid);
         CassandraFuture future(cass_session_execute(sessionCache->querySession(), statement));
         future.wait("getRunningGraph");
@@ -2567,7 +2578,7 @@ public:
     {
         CassandraStatement statement(sessionCache->prepareStatement("SELECT subgraphID, creator, progress FROM wuGraphProgress where partition=? and wuid=? and graphID=?;"));
         const char *wuid = queryWuid();
-        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
         statement.bindString(1, wuid);
         statement.bindString(2, graphName);
         CassandraFuture future(cass_session_execute(sessionCache->querySession(), statement));
@@ -2600,7 +2611,7 @@ public:
     {
         CassandraStatement statement(sessionCache->prepareStatement("SELECT state FROM wuGraphState where partition=? and wuid=? and graphID=? and subgraphID=?;"));
         const char *wuid = queryWuid();
-        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
         statement.bindString(1, wuid);
         statement.bindString(2, graphName);
         statement.bindInt64(3, nodeId);
@@ -2620,7 +2631,7 @@ public:
     {
         CassandraStatement statement(sessionCache->prepareStatement("INSERT INTO wuGraphState (partition, wuid, graphID, subgraphID, state) values (?,?,?,?,?);"));
         const char *wuid = queryWuid();
-        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
         statement.bindString(1, wuid);
         statement.bindString(2, graphName);
         statement.bindInt64(3, nodeId);
@@ -2634,7 +2645,7 @@ public:
                 case WUGraphRunning:
                 {
                     CassandraStatement statement2(sessionCache->prepareStatement("INSERT INTO wuGraphRunning (partition, wuid, graphID, subgraphID) values (?,?,?,?);"));
-                    statement2.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+                    statement2.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
                     statement2.bindString(1, wuid);
                     statement2.bindString(2, graphName);
                     statement2.bindInt64(3, nodeId);
@@ -2645,7 +2656,7 @@ public:
                 case WUGraphComplete:
                 {
                     CassandraStatement statement3(sessionCache->prepareStatement("DELETE FROM wuGraphRunning where partition=? and wuid=?;"));
-                    statement3.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+                    statement3.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
                     statement3.bindString(1, wuid);
                     CassandraFuture future(cass_session_execute(sessionCache->querySession(), statement3));
                     future.wait("setNodeState remove running");
@@ -2775,7 +2786,7 @@ public:
     {
         const char *wuid=queryWuid();
         CassandraStatement statement(sessionCache->prepareStatement("INSERT INTO wuGraphProgress (partition, wuid, graphID, subgraphID, creator, progress) values (?,?,?,?,?,?);"));
-        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
         statement.bindString(1, wuid);
         statement.bindString(2, gid);
         statement.bindInt64(3, subid);
@@ -2794,7 +2805,7 @@ public:
     {
         CassandraStatement graphQuery(sessionCache->prepareStatement("SELECT graphId, subgraphID, creator, progress FROM wuGraphProgress where partition=? and wuid=?;"));
         const char *wuid = queryWuid();
-        graphQuery.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        graphQuery.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
         graphQuery.bindString(1, wuid);
         CassandraFuture future(cass_session_execute(sessionCache->querySession(), graphQuery));
         future.wait("getGraphProgress");
@@ -2822,7 +2833,7 @@ public:
         }
         // Now fill in the graph/node states
         CassandraStatement stateQuery(sessionCache->prepareStatement("SELECT graphId, subgraphId, state FROM wuGraphState where partition=? and wuid=?;"));
-        stateQuery.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        stateQuery.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
         stateQuery.bindString(1, wuid);
         CassandraFuture stateFuture(cass_session_execute(sessionCache->querySession(), stateQuery));
         stateFuture.wait("getGraphStateProgress");
@@ -3108,6 +3119,22 @@ public:
                     randomizeSuffix = atoi(val);
                 else if (strieq(opt, "traceLevel"))
                     traceLevel = atoi(val);
+                else if (strieq(opt, "partitions"))
+                {
+                    partitions = atoi(val);   // Note this value is only used when creating a new repo
+                    if (partitions < MIN_PARTITIONS)
+                        partitions = MIN_PARTITIONS;
+                    else if (partitions > MAX_PARTITIONS)
+                        partitions = MAX_PARTITIONS;
+                }
+                else if (strieq(opt, "prefixSize"))
+                {
+                    prefixSize = atoi(val);   // Note this value is only used when creating a new repo
+                    if (prefixSize < MIN_PREFIX_SIZE)
+                        prefixSize = MIN_PREFIX_SIZE;
+                    else if (prefixSize > MAX_PREFIX_SIZE)
+                        prefixSize = MAX_PREFIX_SIZE;
+                }
                 else
                 {
                     VStringBuffer optstr("%s=%s", opt, val);
@@ -3126,6 +3153,8 @@ public:
             {
                 int major = versionInfo->getPropInt("@major", 0);
                 int minor = versionInfo->getPropInt("@minor", 0);
+                partitions = versionInfo->getPropInt("@numPartitions", DEFAULT_PARTITIONS);
+                prefixSize = versionInfo->getPropInt("@searchPrefixSize", DEFAULT_PREFIX_SIZE);
                 if (major && minor)
                 {
                     // Note that if there is no version info at all, we have to assume that the repository is not yet created. We don't fail, otherwise no-one can call createRepository the first time...
@@ -3216,7 +3245,7 @@ public:
                 }
             }
             CassandraStatement statement(prepared.getLink());
-            statement.bindInt32(0, rtlHash32VStr(useWuid.str(), 0) % NUM_PARTITIONS);
+            statement.bindInt32(0, rtlHash32VStr(useWuid.str(), 0) % partitions);
             statement.bindString(1, useWuid.str());
             if (traceLevel >= 2)
                 DBGLOG("Try creating %s", useWuid.str());
@@ -3600,7 +3629,7 @@ public:
             else
             {
                 // If all we have is a wuid range (or nothing), search the wuid table and/or return everything
-                for (int i = 0; i < NUM_PARTITIONS; i++)
+                for (int i = 0; i < partitions; i++)
                 {
                     merger->addResult(*new CassandraResult(fetchDataByPartition(workunitInfoMappings, i, wuidFilters, sortorder, merger->hasPostFilters() ? 0 : pageSize+startOffset)));
                 }
@@ -3637,7 +3666,7 @@ public:
     {
         unsigned total = 0;
         CIArrayOf<CassandraFuture> futures;
-        for (int i = 0; i < NUM_PARTITIONS; i++)
+        for (int i = 0; i < partitions; i++)
         {
             CassandraStatement statement(prepareStatement("SELECT COUNT(*) FROM workunits where partition=?;"));
             statement.bindInt32(0, i);
@@ -3661,7 +3690,7 @@ public:
         Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuid, SubscribeOptionState);
         LocalIAbortHandler abortHandler(*waiter);
         CassandraStatement statement(prepareStatement("select state, agentSession from workunits where partition=? and wuid=?;"));
-        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % partitions);
         statement.bindString(1, wuid);
         SessionId agent = 0;
         bool agentSessionStopped = false;
@@ -3736,7 +3765,7 @@ public:
         Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuid, SubscribeOptionAction);
         LocalIAbortHandler abortHandler(*waiter);
         CassandraStatement statement(prepareStatement("select action from workunits where partition=? and wuid=?;"));
-        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % partitions);
         statement.bindString(1, wuid);
         WUAction ret = WUActionUnknown;
         for (;;)
@@ -3857,6 +3886,14 @@ public:
             cluster.executeAsync(batch, what);
         }
     }
+    virtual unsigned queryPartitions() const override
+    {
+        return partitions;
+    }
+    virtual unsigned queryPrefixSize() const override
+    {
+        return prefixSize;
+    }
 private:
     virtual void executeBatch(CassandraBatch &batch, const char *what) const
     {
@@ -3872,10 +3909,10 @@ private:
         Owned<IPTree> oldVersion = getVersionInfo();
         if (force || !oldVersion)
         {
-            VStringBuffer versionInfo("<Version major='%d' minor='%d'/>", majorVersion, minorVersion);
+            VStringBuffer versionInfo("<Version major='%d' minor='%d' numPartitions='%d' searchPrefixSize='%d'/>", majorVersion, minorVersion, partitions, prefixSize);
             CassandraBatch versionBatch(CASS_BATCH_TYPE_LOGGED);
             Owned<IPTree> pt = createPTreeFromXMLString(versionInfo);
-            for (int i = 0; i < NUM_PARTITIONS; i++)
+            for (int i = 0; i < DEFAULT_PARTITIONS; i++)   // NOTE - version table always has DEFAULT_PARTITIONS partitions
             {
                 pt->setPropInt("@partition", i);
                 simpleXMLtoCassandra(this, versionBatch, versionMappings, pt, NULL);
@@ -3892,7 +3929,7 @@ private:
             getFieldNames(versionMappings, names, tableName);
             VStringBuffer selectQuery("select %s from %s where partition=?;", names.str()+1, tableName.str());
             CassandraStatement select(prepareStatement(selectQuery));
-            select.bindInt32(0, rand_r(&randState) % NUM_PARTITIONS);
+            select.bindInt32(0, rand_r(&randState) % DEFAULT_PARTITIONS);  // NOTE - version table always has DEFAULT_PARTITIONS partitions
             CassandraFuture future(cass_session_execute(querySession(), select));
             future.wait("read version");
             CassandraResult result(cass_future_get_result(future));
@@ -3915,7 +3952,7 @@ private:
     bool checkWuExists(const char *wuid)
     {
         CassandraStatement statement(prepareStatement("SELECT COUNT(*) FROM workunits where partition=? and wuid=?;"));
-        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        statement.bindInt32(0, rtlHash32VStr(wuid, 0) % partitions);
         statement.bindString(1, wuid);
         CassandraFuture future(cass_session_execute(querySession(), statement));
         future.wait("select count(*)");
@@ -3946,7 +3983,7 @@ private:
         if (!key || !*key)
         {
             IArrayOf<IPostFilter> wuidFilters;
-            for (int i = 0; i < NUM_PARTITIONS; i++)
+            for (int i = 0; i < partitions; i++)
             {
                 merger->addResult(*new CassandraResult(fetchDataByPartition(workunitInfoMappings, i, wuidFilters)));
             }
@@ -3957,7 +3994,7 @@ private:
     }
     StringArray &_getUniqueValues(const char *xpath, const char *prefix, StringArray &result) const
     {
-        if (prefix && strlen(prefix) >= CASS_SEARCH_PREFIX_SIZE)
+        if (prefix && strlen(prefix) >= prefixSize)
         {
             CassandraResult r(fetchDataForWildSearch(xpath, prefix, uniqueSearchMappings));
             CassandraIterator rows(cass_iterator_from_result(r));
@@ -4148,7 +4185,7 @@ private:
         getFieldNames(mappings + (includeWuid ? 1 : 2), names, tableName);  // mappings+2 means we don't return the partition or wuid columns
         VStringBuffer selectQuery("select %s from %s where partition=? and wuid=?;", names.str()+1, tableName.str());
         CassandraStatement select(prepareStatement(selectQuery));
-        select.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        select.bindInt32(0, rtlHash32VStr(wuid, 0) % partitions);
         select.bindString(1, wuid);
         return executeQuery(querySession(), select);
     }
@@ -4161,7 +4198,7 @@ private:
         getFieldNames(mappings+2, names, tableName);  // mappings+2 means we don't return the partition or wuid columns. We do return the key.
         VStringBuffer selectQuery("select %s from %s where partition=? and wuid=? and %s=?;", names.str()+1, tableName.str(), mappings[2].columnName);
         CassandraStatement select(prepareStatement(selectQuery));
-        select.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        select.bindInt32(0, rtlHash32VStr(wuid, 0) % partitions);
         select.bindString(1, wuid);
         select.bindString(2, key);
         return executeQuery(querySession(), select);
@@ -4181,7 +4218,7 @@ private:
         selectQuery.append(" ORDER BY fieldValue ASC, WUID desc;");
         CassandraStatement select(prepareStatement(selectQuery));
         select.bindString(0, xpath);
-        select.bindString_n(1, ucKey, CASS_SEARCH_PREFIX_SIZE);
+        select.bindString_n(1, ucKey, prefixSize);
         select.bindString(2, ucKey);
         return executeQuery(querySession(), select);
     }
@@ -4219,7 +4256,7 @@ private:
             selectQuery.appendf(" LIMIT %u", limit);
         CassandraStatement select(prepareStatement(selectQuery));
         select.bindString(0, xpath);
-        select.bindString_n(1, ucKey, CASS_SEARCH_PREFIX_SIZE);
+        select.bindString_n(1, ucKey, prefixSize);
         select.bindString(2, ucKey);
         ForEachItemIn(idx2, wuidFilters)
         {
@@ -4246,7 +4283,7 @@ private:
         VStringBuffer selectQuery("select %s from %s where xpath=? and fieldPrefix=? and fieldValue>=? and fieldValue<?;", names.str()+1, tableName.str());
         CassandraStatement select(prepareStatement(selectQuery));
         select.bindString(0, xpath);
-        select.bindString_n(1, ucKey, CASS_SEARCH_PREFIX_SIZE);
+        select.bindString_n(1, ucKey, prefixSize);
         select.bindString(2, ucKey);
         select.bindString(3, ucKeyEnd);
         return executeQuery(querySession(), select);
@@ -4271,7 +4308,7 @@ private:
         selectQuery.append(';');
         CassandraStatement select(prepareStatement(selectQuery));
         select.bindString(0, "@totalThorTime");
-        select.bindString_n(1, "        ", CASS_SEARCH_PREFIX_SIZE);  // This would stop working if we ever set the search prefix to > 8 chars. So don't.
+        select.bindString_n(1, "        ", prefixSize);  // This would stop working if we ever set the search prefix to > 8 chars. So don't.
         if (threshold && *threshold)
             select.bindString(2, threshold);
         return executeQuery(querySession(), select);
@@ -4309,7 +4346,7 @@ private:
         selectQuery.append(';');
         CassandraStatement select(prepareStatement(selectQuery));
         select.bindString(0, "@totalThorTime");
-        select.bindString_n(1, threshold, CASS_SEARCH_PREFIX_SIZE);
+        select.bindString_n(1, threshold, prefixSize);
         select.bindString(2, threshold);
         if (wuid)
             select.bindString(3, wuid);
@@ -4353,7 +4390,7 @@ private:
         VStringBuffer selectQuery("select %s from %s where xpath=? and fieldPrefix=? and fieldValue =? and wuid=?;", names.str()+1, tableName.str());
         CassandraStatement select(prepareStatement(selectQuery));
         select.bindString(0, xpath);
-        select.bindString_n(1, ucKey, CASS_SEARCH_PREFIX_SIZE);
+        select.bindString_n(1, ucKey, prefixSize);
         select.bindString(2, ucKey);
         select.bindString(3, wuid);
         return executeQuery(querySession(), select);
@@ -4368,7 +4405,7 @@ private:
         getFieldNames(mappings, names, tableName);
         VStringBuffer insertQuery("DELETE from %s where partition=? and wuid=?;", tableName.str());
         CassandraStatement update(prepareStatement(insertQuery));
-        update.bindInt32(0, rtlHash32VStr(wuid, 0) % NUM_PARTITIONS);
+        update.bindInt32(0, rtlHash32VStr(wuid, 0) % partitions);
         update.bindString(1, wuid);
         check(cass_batch_add_statement(batch, update));
     }
@@ -4428,6 +4465,8 @@ private:
     unsigned randomizeSuffix;
     unsigned traceLevel;
     unsigned randState;
+    int partitions = DEFAULT_PARTITIONS;
+    int prefixSize = DEFAULT_PREFIX_SIZE;
     CassandraClusterSession cluster;
     mutable CriticalSection cacheCrit;
     mutable MapXToMyClass<__uint64, __uint64, CCassandraWuUQueryCacheEntry> cacheIdMap;
