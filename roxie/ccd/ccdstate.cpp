@@ -2754,11 +2754,6 @@ private:
                 traceServerSideCache = control->getPropBool("@val", true);
                 topology->setPropInt("@traceServerSideCache", traceServerSideCache);
             }
-            else if (stricmp(queryName, "control:traceJHtreeAllocations")==0)
-            {
-                traceJHtreeAllocations = control->getPropBool("@val", true);
-                topology->setPropInt("@traceJHtreeAllocations", traceJHtreeAllocations);
-            }
             else if (stricmp(queryName, "control:traceSmartStepping")==0)
             {
                 traceSmartStepping = control->getPropBool("@val", true);

@@ -183,12 +183,6 @@ protected:
     size32_t keyRecLen;
     char *keyBuf;
 
-    static SpinLock spin;
-    static unsigned __int64 totalAllocatedCurrent;
-    static unsigned __int64 totalAllocatedEver;
-    static unsigned countAllocationsCurrent;
-    static unsigned countAllocationsEver;
-
     void unpack(const void *node, bool needCopy);
     unsigned __int64 firstSequence;
     size32_t expandedSize;
