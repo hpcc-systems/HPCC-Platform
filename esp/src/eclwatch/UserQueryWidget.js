@@ -35,6 +35,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/ws_access",
+    "hpcc/ws_account",
     "hpcc/ESPBase",
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
@@ -66,7 +67,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, all,
                 registry, Menu, MenuItem, MenuSeparator, Select,
                 tree, selector,
-                _TabContainerWidget, WsAccess, ESPBase, ESPUtil, ESPRequest, UserDetailsWidget, GroupDetailsWidget, FilterDropDownWidget, TargetSelectWidget, ShowAccountPermissionsWidget, ShowIndividualPermissionsWidget,
+                _TabContainerWidget, WsAccess, WsAccount, ESPBase, ESPUtil, ESPRequest, UserDetailsWidget, GroupDetailsWidget, FilterDropDownWidget, TargetSelectWidget, ShowAccountPermissionsWidget, ShowIndividualPermissionsWidget,
                 template) {
     return declare("UserQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -94,6 +95,7 @@ define([
             this.showPermissionsGrid = registry.byId(this.id + "ShowPermissionsGrid");
             this.checkFileSubmit = registry.byId(this.id + "CheckFileSubmit");
             this.nameSelect = registry.byId(this.id + "NameSelect");
+            this.addGroupOwner = registry.byId(this.id + "AddGroupOwner");
         },
 
         //  Hitched actions  ---
@@ -490,6 +492,13 @@ define([
             });
             this.filter.on("apply", function (evt) {
                 context.refreshUsersGrid();
+            });
+
+            WsAccount.MyAccount({
+            }).then(function (response){
+                if (lang.exists("MyAccountResponse.distinguishedName", response)) {
+                    context.addGroupOwner.set("value", response.MyAccountResponse.distinguishedName);
+                }
             });
 
             this.refreshActionState();
