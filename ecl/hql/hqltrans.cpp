@@ -1784,6 +1784,13 @@ void NewHqlTransformer::transformRoot(const HqlExprArray & in, HqlExprArray & ou
     }
 }
 
+void NewHqlTransformer::transformRoot(HqlExprArray & exprs)
+{
+    HqlExprArray temp;
+    transformRoot(exprs, temp);
+    exprs.swapWith(temp);
+}
+
 
 IHqlExpression * NewHqlTransformer::doTransformRootExpr(IHqlExpression * expr)
 {

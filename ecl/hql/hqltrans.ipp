@@ -441,6 +441,7 @@ public:
     void analyseArray(const HqlExprArray & exprs, unsigned pass);
 
     void transformRoot(const HqlExprArray & in, HqlExprArray & out);
+    void transformRoot(HqlExprArray & out);
     IHqlExpression * transformRoot(IHqlExpression * expr) { return doTransformRootExpr(expr); }
 
 protected:
