@@ -427,7 +427,7 @@ public:
         ForEachItemInRev(idx, globalCachedConnections)
         {
             MySQLConnection &cached = globalCachedConnections.item(idx);
-            if (now - cached.created > maxAge)
+            if (!maxAge || (now - cached.created > maxAge))
             {
                 cached.globalCached = false;  // Make sure we don't re-add it!
                 globalCachedConnections.remove(idx);
@@ -488,6 +488,7 @@ MODULE_EXIT()
         connectionCloserThread->join();
         connectionCloserThread->Release();
     }
+    MySQLConnection::retireCache(0);
 }
 
 
