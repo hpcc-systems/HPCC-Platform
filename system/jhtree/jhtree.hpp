@@ -80,6 +80,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual offset_t queryMetadataHead() = 0;
     virtual IPropertyTree * getMetadata() = 0;
     virtual unsigned getNodeSize() = 0;
+    virtual const IFileIO *queryFileIO() const = 0;
 };
 
 interface IKeyArray : extends IInterface
@@ -103,6 +104,7 @@ interface IReplicatedFile;
 
 extern jhtree_decl void clearKeyStoreCache(bool killAll);
 extern jhtree_decl void clearKeyStoreCacheEntry(const char *name);
+extern jhtree_decl void clearKeyStoreCacheEntry(const IFileIO *io);
 extern jhtree_decl unsigned setKeyIndexCacheSize(unsigned limit);
 extern jhtree_decl void clearNodeCache();
 // these methods return previous values
