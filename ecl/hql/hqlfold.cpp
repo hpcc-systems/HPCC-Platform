@@ -6537,12 +6537,11 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
             break;
         }
 
-    //The following get the values purely from the assocated transform - if it contains constant entires
+    //The following get the values purely from the associated transform - if it contains constant entires
     case no_xmlproject:
     case no_combine:
     case no_combinegroup:
     case no_process:
-    case no_denormalize:
     case no_denormalizegroup:
     case no_fetch:
     case no_join:
@@ -6681,8 +6680,24 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_catch:
         //all bets are off.
         break;
-
-
+    case no_denormalize:
+        {
+            HqlConstantPercolator * leftMapping = gatherConstants(expr->queryChild(0));
+            IHqlExpression * transform = queryNewColumnProvider(expr);
+            exprMapping.setown(HqlConstantPercolator::extractConstantMapping(transform));
+            if (exprMapping)
+            {
+                if (leftMapping)
+                {
+                    exprMapping->intersectMapping(leftMapping);
+                    if (exprMapping->empty())
+                        exprMapping.clear();
+                }
+                else
+                    exprMapping.clear();
+            }
+            break;
+        }
     case no_selectnth:
         {
             //Careful - this can create a null row if it is out of range.
