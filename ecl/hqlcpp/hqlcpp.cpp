@@ -1589,6 +1589,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.defaultPersistExpiry, "defaultPersistExpiry", DEFAULT_PERSIST_EXPIRY_PERIOD),
         DebugOption(options.defaultExpiry, "defaultExpiry", DEFAULT_EXPIRY_PERIOD),
         DebugOption(options.searchDistanceThreshold, "searchDistanceThreshold", 1000000),
+        DebugOption(options.generateActivityThreshold, "generateActivityThreshold", 0),  // most users are not interested so disable by default
 
         DebugOption(options.checkAsserts,"checkAsserts", true),
         DebugOption(options.assertSortedDistributed,"assertSortedDistributed", false),
@@ -1896,6 +1897,8 @@ void HqlCppTranslator::postProcessOptions()
 
     if (options.resourceSequential)
         options.resourceConditionalActions = true;
+
+    options.generateActivityThresholdCycles = nanosec_to_cycle(options.generateActivityThreshold * I64C(1000000));
 
     //Probably best to ignore this warning. - possibly configure it based on some other option
     globalOnWarnings->addOnWarning(HQLWRN_FoldRemoveKeyed, ignoreAtom);

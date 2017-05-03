@@ -617,6 +617,8 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(Allocations) },
     { NUMSTAT(AllocationScans) },
     { NUMSTAT(DiskRetries) },
+    { TIMESTAT(Generate) },
+    { CYCLESTAT(Generate) },
 };
 
 

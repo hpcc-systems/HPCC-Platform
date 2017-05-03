@@ -582,6 +582,8 @@ struct HqlCppOptions
     unsigned            defaultPersistExpiry;
     unsigned            defaultExpiry;
     unsigned            searchDistanceThreshold;
+    unsigned            generateActivityThreshold;    // Record activities which take more than this value (in ms) to generate (0 disables)
+    cycle_t             generateActivityThresholdCycles;
     int                 defaultNumPersistInstances;
     unsigned            reportDFSinfo;
     CompilerType        targetCompiler;
