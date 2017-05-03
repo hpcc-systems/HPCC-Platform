@@ -415,7 +415,7 @@ startCmd() {
     local RCSTART=0
     local SENTINEL_CHECK=1
 
-    if [ ${compType} = "dafilesrv" ]; then
+    if [[ ${compType} = "dafilesrv" || ${compType} = "backupnode" ]]; then
       SENTINEL_CHECK=0
     fi
 
