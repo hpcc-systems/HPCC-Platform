@@ -928,6 +928,20 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
         cur += matchLen;
     }
 
+    numOfProcessedBytes += maxToRead;
+
+    if (isFirstRow)
+    {
+        // It seems there is only one row/record and it is terminated
+        // by EOF instead of TERMINATOR therefore the record structure definition
+        // generation doesn't finish yet.
+        isFirstRow = false;
+
+        // Process last field
+        storeFieldName((const char*)firstGood, lastGood-firstGood);
+        recordStructure.append("END;");
+    }
+
     if (processFullBuffer && (last != start))
     {
         return last - start;
@@ -936,7 +950,6 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
     if (!ateof)
         throwError(DFTERR_EndOfRecordNotFound);
 
-    numOfProcessedBytes += (unsigned)(end - start);
 
     LOG(MCdebugProgress, unknownJob, "CSV splitRecordSize(%d) at end of file", (unsigned) (end - start));
 
