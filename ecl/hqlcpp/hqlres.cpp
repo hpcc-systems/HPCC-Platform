@@ -485,6 +485,7 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
         }
         else
         {
+            fprintf(f, " .section .note.GNU-stack,\"\",@progbits\n");   // Prevent the stack from being marked as executable
             fprintf(f, " .section %s_%u,\"a\"\n", type, id);
             fprintf(f, " .global %s\n", label.str());
             fprintf(f, " .type %s,STT_OBJECT\n", label.str());
