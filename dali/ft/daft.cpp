@@ -80,7 +80,6 @@ void CDistributedFileSystem::exportFile(IDistributedFile * from, IFileDescriptor
     sprayer->setAbort(abort);
     sprayer->setPartFilter(filter);
     sprayer->setSource(from);
-    sprayer->checkSourceTarget(to);
     sprayer->setTarget(to);
     sprayer->spray();
 }
@@ -99,7 +98,6 @@ void CDistributedFileSystem::import(IFileDescriptor * from, IDistributedFile * t
     sprayer->setAbort(abort);
     sprayer->setPartFilter(filter);
     sprayer->setSource(from);
-    sprayer->checkSourceTarget(from);
     sprayer->setTarget(to);
     sprayer->spray();
 }
@@ -267,7 +265,7 @@ IFile *CDistributedFileSystem::getIFile(IDistributedFilePart * part, unsigned co
     return createIFile(part->getFilename(rfn,copy));
 }
 
-offset_t CDistributedFileSystem::getSize(IDistributedFilePart * part, bool forceget, bool dontsetattr)                      
+offset_t CDistributedFileSystem::getSize(IDistributedFilePart * part, bool forceget, bool dontsetattr)
 {
 
     offset_t size = (forceget&&!dontsetattr)?((offset_t)-1):part->getFileSize(dontsetattr,forceget); // do in one go if possible
