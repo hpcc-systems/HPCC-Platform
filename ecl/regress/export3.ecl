@@ -23,8 +23,8 @@ string20 last;
         end;
 r := RECORD
   unsigned integer4 dg_parentid;
-  string10 dg_firstname;
-  string dg_lastname;
+  string10 dg_firstname{hint(type('ssn'),age(12),date(9..12),case(upper))};
+  string dg_lastname{set(type('ssn'),age(12)),set(date(9..12)),set(case(upper))};
   unsigned integer1 dg_prange;
   IFBLOCK(SELF.dg_prange % 2 = 0)
    string20 extrafield;
@@ -38,6 +38,7 @@ ds := dataset('ds', r, thor);
 
 //Walk a record and do some processing on it.
 #DECLARE(out)
+#declare(age)
 #EXPORT(out, r);
 LOADXML(%'out'%, 'FileStructure');
 
@@ -50,7 +51,8 @@ output(%'@type'%
    #IF (%'@size'% <> '-15' AND %'@isRecord'%='' AND %'@isDataset'%='')
 + %'@size'%
    #end
- + ' ' + %'@label'% + ';');
+   #SET(age, REGEXFIND('age\\((.*?)\\)', %'@options'%, 1))
+ + ' ' + %'@label'% + ' ' + %'@options'% + ' age(' + %age% + ');');
   #END
  #END
 #END
