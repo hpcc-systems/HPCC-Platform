@@ -40,15 +40,18 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -1047,33 +1050,97 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       <sect2 id="Drop-Zone" role="brk">
         <title>Drop Zone</title>
 
+        <para>A Drop Zone (or landing zone) is a location where files can be
+        transferred to or from your HPCC system. You can configure multiple
+        drop zones, if necessary. You can also add folders to each drop zone
+        to help organize your data.  Multiple drop zones are also useful to
+        allow different permissions for users or groups.</para>
+
+        <para>To add another drop zone, right-click on the Navigator panel on
+        the left side, and choose <emphasis role="bold">New
+        Components</emphasis> then <emphasis role="bold">DropZone</emphasis>
+        from the ensuing dialog.</para>
+
         <sect3>
           <title>DropZone Attributes</title>
 
-          <orderedlist>
-            <listitem>
-              <para>Select Drop Zone in the Navigator panel on the left
-              side.</para>
-            </listitem>
+          <para>You can change the configuration of your drop zone using the
+          attributes tab. If you have multiple drop zones, select the drop
+          zone to configure from the Navigator panel on the left side. To
+          change one of the drop zone attributes, double-click on the value on
+          the right side of the attribute table.</para>
 
-            <listitem>
-              <para>Select the Attributes tab.</para>
-            </listitem>
+          <para>
+            <graphic fileref="images/CM-img06.jpg" vendor="configmgrSS" />
+          </para>
 
-            <listitem>
-              <para>In the Value column of the Computer row, choose a node
-              from the drop list as shown below:<graphic
-              fileref="images/CM-img06.jpg" vendor="configmgrSS" /></para>
-            </listitem>
+          <para>
+            <xi:include href="XMLGeneration/xml/dropzone.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='dz.t1'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
 
-            <listitem>
-              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-              disk icon to save</para>
-            </listitem>
-          </orderedlist>
+          <!-- /*Attribute table***replace with dynamically generated table*/
+          <informaltable>
+            <tgroup cols="2">
+              <tbody>
+                <row>
+                  <entry>description</entry>
+
+                  <entry>a description</entry>
+                </row>
+
+                <row>
+                  <entry>directory</entry>
+
+                  <entry>The directory for the drop zone</entry>
+                </row>
+
+                <row>
+                  <entry>name</entry>
+
+                  <entry>The name for the drop zone</entry>
+                </row>
+
+                <row>
+                  <entry>umask</entry>
+
+                  <entry>umask</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+
+-->
         </sect3>
 
-        <sect3>
+        <sect3 id="DropZoneServerList">
+          <title>DropZone Server List</title>
+
+          <para>This tab allows you to add any servers that you wish to
+          configure as drop zones. To add a server to the available drop
+          zones. <orderedlist>
+              <listitem>
+                <para>Select the <emphasis role="bold">Server List</emphasis>
+                tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>Double-click on the Server Address field.</para>
+              </listitem>
+
+              <listitem>
+                <para>Enter the IP address of the server.</para>
+              </listitem>
+
+              <listitem>
+                <para>Click the disk icon to save.</para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+
+        <sect3 id="DropZoneNotes">
           <title>DropZone Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
