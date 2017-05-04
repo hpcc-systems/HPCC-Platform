@@ -453,11 +453,16 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     // we do this by doing a dynamic load of the pyembed library
     // This also allows eclcc to be able to use the library for constant folding
 #ifdef _WIN32
-    ::GetModuleFileName((HINSTANCE)&__ImageBase, helperLibraryName, _MAX_PATH);
-    if (strstr(path, "py2embed"))
+    HINSTANCE me = GetModuleHandle("py2embed");
+    if (me)
     {
-        HINSTANCE h = LoadSharedObject(helperLibraryName, false, false);
-        DBGLOG("LoadSharedObject returned %p", h);
+        char helperLibraryName[_MAX_PATH];
+        ::GetModuleFileName(me, helperLibraryName, _MAX_PATH);
+        if (strstr(helperLibraryName, "py2embed"))
+        {
+            HINSTANCE h = LoadSharedObject(helperLibraryName, false, false);
+            DBGLOG("LoadSharedObject returned %p", h);
+        }
     }
 #else
     StringBuffer modname;
