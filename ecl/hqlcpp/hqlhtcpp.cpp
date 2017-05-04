@@ -9421,6 +9421,12 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     if (true)
         resourced.setown(optimizeCompoundSource(resourced, CSFpreload|csfFlags));
 
+    //Check to see if fields can be removed - this helps LOOP bodies, but also seems to help situations where hoisting
+    //expressions prevents child expressions from preventing fields from being removed.
+    //Perform before the optimizeHqlExpression() so decisions about reducing row sizes are accurate
+    traceExpression("BeforeImplicitProjectGraph", resourced);
+    resourced.setown(insertImplicitProjects(*this, resourced, false));
+
     // Call optimizer before resourcing so items get moved over conditions, and remove other items
     // which would otherwise cause extra spills.
     traceExpression("BeforeOptimize", resourced);
