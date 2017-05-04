@@ -269,22 +269,17 @@ class FunnelSlaveActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
-    IRowStream *current;
-    unsigned currentMarker;
-    bool grouped, *eog, eogNext, parallel;
-    rowcount_t readThisInput;
-    unsigned stopped;
+    IRowStream *current = nullptr;
+    unsigned currentMarker = 0;
+    bool *eog = nullptr, eogNext = false;
+    rowcount_t readThisInput = 0;
     Owned<IRowStream> parallelOutput;
+
+    bool grouped, parallel;
 
 public:
     FunnelSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-        eog = NULL;
-        current = NULL;
-        currentMarker = 0;
-        eogNext = false;
-        readThisInput = 0;
-        stopped = true;
         IHThorFunnelArg *helper = (IHThorFunnelArg *)queryHelper();
         parallel = !container.queryGrouped() && !helper->isOrdered() && getOptBool(THOROPT_PARALLEL_FUNNEL, true);
         grouped = container.queryGrouped();
@@ -307,7 +302,6 @@ public:
         else
         {
             eogNext = false;
-            stopped = 0;
             if (grouped)
             {
                 if (eog)
@@ -342,11 +336,11 @@ public:
         }
         else
         {
-            current = NULL;
-            unsigned i = stopped;
+            current = nullptr;
+            unsigned i = currentMarker;
             for (;i<inputs.ordinality(); i++)
                 stopInput(i);
-            stopped = 0;
+            currentMarker = 0;
         }
         dataLinkStop();
     }
@@ -373,7 +367,6 @@ public:
                 {
                     readThisInput = 0;
                     stopInput(currentMarker);
-                    ++stopped;
                     currentMarker++;
                     ActPrintLog("FUNNEL: changing to input %d", currentMarker);
                     current = queryInputStream(currentMarker);
@@ -427,7 +420,6 @@ public:
                 {
                     readThisInput = 0;
                     stopInput(currentMarker);
-                    ++stopped;
                     currentMarker++;
                     ActPrintLog("FUNNEL: changing to input %d", currentMarker);
                     current = queryInputStream(currentMarker);

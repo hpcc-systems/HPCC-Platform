@@ -29,25 +29,15 @@ class CLimitSlaveActivityBase : public CSlaveActivity
 
 protected:
     rowcount_t rowLimit;
-    bool eos, eogNext, stopped, resultSent, anyThisGroup;
+    bool eos, eogNext, resultSent, anyThisGroup;
     IHThorLimitArg *helper;
-
-    void stopInput(rowcount_t c)
-    {
-        if (!stopped)
-        {
-            stopped = true;
-            sendResult(c);
-            PARENT::stopInput(0);
-        }
-    }
 
 public:
     CLimitSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         helper = (IHThorLimitArg *)queryHelper();
         resultSent = true; // unless started suppress result send
-        eos = stopped = anyThisGroup = eogNext = false;
+        eos = anyThisGroup = eogNext = false;
         rowLimit = RCMAX;
         if (container.queryLocal())
             setRequireInitData(false);
@@ -63,7 +53,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
         resultSent = container.queryLocal(); // i.e. local, so don't send result to master
-        eos = stopped = anyThisGroup = eogNext = false;
+        eos = anyThisGroup = eogNext = false;
         rowLimit = (rowcount_t)helper->getRowLimit();
     }
     void sendResult(rowcount_t r)
@@ -76,7 +66,8 @@ public:
     }
     virtual void stop() override
     {
-        stopInput(getDataLinkCount());
+        if (hasStarted() && !inputStopped)
+            sendResult(getDataLinkCount());
         PARENT::stop();
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
@@ -212,7 +203,8 @@ class CSkipLimitSlaveActivity : public CLimitSlaveActivityBase
             //throw MakeActivityException(this, 0, "SkipLimit(%" ACTPF "d) exceeded activity buffering limit", container.queryId());
         }
         buf->flush();
-        stopInput(count);
+        sendResult(count);
+        stopInput(0);
         rowcount_t total = container.queryLocal() ? count : getResult();
         if (total > rowLimit)
         {

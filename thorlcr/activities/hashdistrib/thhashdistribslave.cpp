@@ -1948,7 +1948,6 @@ class HashDistributeSlaveBase : public CSlaveActivity, implements IStopInput
     typedef CSlaveActivity PARENT;
 
     IHashDistributor *distributor = nullptr;
-    bool inputstopped = true;
     CriticalSection stopsect;
     mptag_t mptag = TAG_NULL;
 protected:
@@ -1985,16 +1984,11 @@ public:
             distributor = createPullHashDistributor(this, queryJobChannel().queryJobComm(), mptag, false, this);
         else
             distributor = createHashDistributor(this, queryJobChannel().queryJobComm(), mptag, false, this);
-        inputstopped = true;
     }
     void stopInput()
     {
         CriticalBlock block(stopsect);  // can be called async by distribute
-        if (!inputstopped)
-        {
-            PARENT::stopInput(0);
-            inputstopped = true;
-        }
+        PARENT::stopInput(0);
     }
     void doDistSetup()
     {
@@ -2005,7 +1999,6 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
-        inputstopped = false;
         eofin = false;
         instrm.set(inputStream);
         if (setupDist)
@@ -2759,7 +2752,7 @@ protected:
     IRowStream *distInput = nullptr;
     IRowStream *initialInput = nullptr;
     Owned<IRowStream> currentInput;
-    bool inputstopped, eos, lastEog, extractKey, local, isVariable, grouped;
+    bool eos, lastEog, extractKey, local, isVariable, grouped;
     IHThorHashDedupArg *helper;
     IHash *iHash, *iKeyHash;
     ICompare *iCompare, *rowKeyCompare;
@@ -2767,7 +2760,7 @@ protected:
     IThorRowInterfaces *keyRowInterfaces;
     Owned<CBucketHandler> bucketHandler;
     IArrayOf<CBucketHandler> bucketHandlerStack;
-    SpinLock stopSpin;
+    CriticalSection stopsect;
     PointerArrayOf<CHashTableRowTable> _hashTables;
     CHashTableRowTable **hashTables;
     unsigned numHashTables, initialNumBuckets;
@@ -2811,7 +2804,7 @@ public:
     {
         helper = (IHThorHashDedupArg *)queryHelper();
         initialNumBuckets = 0;
-        inputstopped = eos = lastEog = extractKey = local = isVariable = grouped = false;
+        eos = lastEog = extractKey = local = isVariable = grouped = false;
         iHash = iKeyHash = NULL;
         iCompare = rowKeyCompare = NULL;
         keyRowInterfaces = NULL;
@@ -2869,7 +2862,6 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
-        inputstopped = false;
         eos = lastEog = false;
         ThorDataLinkMetaInfo info;
         queryInput(0)->getMetaInfo(info);
@@ -2888,18 +2880,9 @@ public:
         ensureNumHashTables(initialNumBuckets);
         bucketHandler->init(initialNumBuckets);
     }
-    void stopInput()
-    {
-        if (!inputstopped)
-        {
-            SpinBlock b(stopSpin);
-            PARENT::stopInput(0);
-            inputstopped = true;
-        }
-    }
     virtual void stop() override
     {
-        stopInput();
+        stopInput(0);
         PARENT::stop();
     }
     void kill()
@@ -2920,7 +2903,7 @@ public:
         {
             OwnedConstThorRow row;
             {
-                SpinBlock b(stopSpin);
+                CriticalBlock b(stopsect); // JCSMORE - because stopInput can be called async, by stopping distributor.
                 row.setown(grouped?distInput->nextRow():distInput->ungroupedNextRow());
             }
             if (row)
@@ -3455,7 +3438,6 @@ class GlobalHashDedupSlaveActivity : public HashDedupSlaveActivityBase, implemen
     typedef HashDedupSlaveActivityBase PARENT;
 
     mptag_t mptag;
-    CriticalSection stopsect;
     IHashDistributor *distributor;
     Owned<IRowStream> instrm;
 
@@ -3522,8 +3504,12 @@ public:
 // IStopInput
     virtual void stopInput() override
     {
-        CriticalBlock block(stopsect);  // can be called async by distribute
-        HashDedupSlaveActivityBase::stopInput();
+        /* JCSMORE - am not sure why distributor given a IStopInput to stop this activities input asynchronously
+         * It means nextRow has a CS around input->nextRow() as it stands.
+         * Would be better to flag stop and perhaps call stopInput on next nextRow() call
+         */
+        CriticalBlock block(stopsect);  // can be called async by distribute.
+        PARENT::stopInput(0);
     }
 };
 
@@ -3548,8 +3534,6 @@ class HashJoinSlaveActivity : public CSlaveActivity, implements IStopInput
     CriticalSection stopsect;
     rowcount_t lhsProgressCount;
     rowcount_t rhsProgressCount;
-    bool inputLstopped;
-    bool inputRstopped;
     bool leftdone;
     mptag_t mptag;
     mptag_t mptag2;
@@ -3581,15 +3565,11 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         startAllInputs();
-        inputLstopped = true;
-        inputRstopped = true;
         leftdone = false;
         eof = false;
         ActPrintLog("HASHJOIN: starting");
         inL = queryInput(0);
-        inputLstopped = false;
         inR = queryInput(1);
-        inputRstopped = false;
         IHash *ihashL = joinargs->queryHashLeft();
         IHash *ihashR = joinargs->queryHashRight();
         ICompare *icompareL = joinargs->queryCompareLeft();
@@ -3646,20 +3626,12 @@ public:
     void stopInputL()
     {
         CriticalBlock block(stopsect);  // can be called async by distribute
-        if (!inputLstopped)
-        {
-            PARENT::stopInput(0);
-            inputLstopped = true;
-        }
+        PARENT::stopInput(0);
     }
     void stopInputR()
     {
         CriticalBlock block(stopsect);  // can be called async by distribute
-        if (!inputRstopped)
-        {
-            PARENT::stopInput(1);
-            inputRstopped = true;
-        }
+        PARENT::stopInput(1);
     }
     virtual void stop()
     {
