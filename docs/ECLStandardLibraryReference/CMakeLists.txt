@@ -15,3 +15,16 @@
 ################################################################################
 
 DOCBOOK_TO_PDF( ${FO_XSL} SLR-includer.xml "ECLStandardLibraryReference" "SLR-Mods")
+
+
+IF(MAKE_DOCS)
+  SET(HELP_DEPENDENCIES)
+  GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
+  FOREACH(T ${Current_Targets})
+    IF("${T}" MATCHES ".*ECLStandardLibraryReference.*")
+      LIST(APPEND HELP_DEPENDENCIES  ${T})
+    ENDIF()
+  ENDFOREACH()
+
+  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/SLR-includer.xml" ${PORTAL_HTML_DIR}/SLR  "stdlib_ref_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+ENDIF(MAKE_DOCS)

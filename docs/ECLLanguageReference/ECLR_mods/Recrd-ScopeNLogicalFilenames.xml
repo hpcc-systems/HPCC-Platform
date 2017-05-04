@@ -13,16 +13,25 @@
         <primary>File Scope</primary>
       </indexterm></title>
 
-    <para><emphasis role="bold">The logical filenames used in DATASET and
-    INDEX attribute definitions and the OUTPUT and BUILD (or BUILDINDEX)
-    actions may begin with a scope name, indicated by a leading tilde (~), and
-    may contain directories. The scope and directories are delimited by double
-    colons (::). The presence of a scope in the filename allows you to
-    override the default scope name for the cluster.</emphasis></para>
+    <para>The logical filenames used in DATASET and INDEX attribute
+    definitions and the OUTPUT and BUILD (or BUILDINDEX) actions can
+    optionally begin with a ~ meaning it is absolute, otherwise it is relative
+    (the platform configured scope prefix is prepended). It may contain scopes
+    delimited by double colons (::) with the final portion being the filename.
+    It cannot have a trailing double colons (::). A cluster qualifier can be
+    specified. For example, ~myfile@mythor2 points to one file where the file
+    is on multiple clusters in the same scope. Valid characters of a scope or
+    filename are ASCII &gt;32 &lt; 127 except * " / : &lt; &gt; ? and
+    |.</para>
 
-    <para>For example, assuming you are operating on a cluster whose default
-    scope name is “Training” then the following two OUTPUT actions result in
-    the same scope:</para>
+    <para>To reference uppercase characters in physical file paths and
+    filenames, use the caret character (^). For example,
+    '~file::10.150.254.6::var::lib::^h^p^c^c^systems::mydropzone::^people.txt'.</para>
+
+    <para>The presence of a scope in the filename allows you to override the
+    default scope name for the cluster. For example, assuming you are
+    operating on a cluster whose default scope name is “Training” then the
+    following two OUTPUT actions result in the same scope:</para>
 
     <programlisting>OUTPUT(SomeFile,,'SomeDir::SomeFileOut1');
 OUTPUT(SomeFile,,'~Training::SomeDir::SomeFileOut2');</programlisting>

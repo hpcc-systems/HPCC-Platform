@@ -123,7 +123,8 @@ IF (USE_OPENSSL)
 ENDIF()
 
 IF (USE_TBBMALLOC)
-   target_link_libraries ( ccd ${TBBMALLOC_LIBRARIES})
+   add_dependencies ( ccd tbb )
+   target_link_libraries ( ccd libtbbmalloc_proxy libtbbmalloc)
 ENDIF()
 
 

@@ -37,7 +37,7 @@ esdl ecl esdl_example.esdl .
 ecl publish roxie RoxieEchoPersonInfo.ecl
 
 5. Publish the esdl defined service to dynamicESDL:
- esdl publish EsdlExample esdl_example.esdl --version 9 --overwrite
+ esdl publish esdl_example.esdl EsdlExample --version 9 --overwrite
 
 5. Bind both java and roxie implementations to DynamicESDL
 esdl bind-service myesp 8088 esdlexample.1 EsdlExample --config esdl_binding.xml --overwrite

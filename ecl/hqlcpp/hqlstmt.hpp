@@ -139,6 +139,7 @@ public:
     HqlExprAssociation *        queryAssociation(IHqlExpression * dataset, AssocKind kind, HqlExprCopyArray * selectors);
     HqlExprAssociation *        queryFirstAssociation(AssocKind kind);
     HqlExprAssociation *        queryFirstCommonAssociation(AssocKind kind);
+    void                        walkAssociations(AssocKind searchMask, IAssociationVisitor & visitor); // Function to walk associations filtered by kind
     HqlExprAssociation *        queryMatchExpr(IHqlExpression * expr);
     bool                        getMatchExpr(IHqlExpression * expr, CHqlBoundExpr & bound);
     IHqlExpression *            getTempDeclare(ITypeInfo * type, IHqlExpression * value);

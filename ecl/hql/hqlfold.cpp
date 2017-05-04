@@ -3233,7 +3233,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     //MORE: Not sure if this is a good idea because it loses commonality between attributes.
                     // (T1)((T2)(X:T3))
                     // Can remove the cast to T2 if T3->T2 doesn't lose any information, 
-                    // and if the convertion from T2->T1 produces same results as converting T3->T1
+                    // and if the conversion from T2->T1 produces same results as converting T3->T1
                     // (For the moment only assume this is true if target is numeric)
                     // could possibly remove if T3-T2 and T2->T1 lose information, but they might 
                     // lose different information
@@ -3248,9 +3248,9 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                         if (isNumericType(e_type))
                             sameResults = true;
                         else if (isStringOrUnicode(e_type) && isStringOrUnicode(c_type) && isStringOrUnicode(g_type))
-                            sameResults = true;         
+                            sameResults = true;
                         
-                        // Don't allow casts involving data and non-ascii datasets because it can cause ascii convertions to get lost
+                        // Don't allow casts involving data and non-ascii datasets because it can cause ascii conversions to get lost
                         if (castHidesConversion(e_type, c_type, g_type) ||
                             castHidesConversion(c_type, e_type, g_type) ||
                             castHidesConversion(g_type, c_type, e_type))
@@ -3260,7 +3260,20 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                         {
                             if (e_type == g_type)
                                 return LINK(grand);
-                            return createValue(op, LINK(e_type), LINK(grand));
+
+                            if (isUnknownSize(e_type))
+                            {
+                                //(string)(string200)string50  => (string200)string50
+                                if ((e_type->getTypeCode() == c_type->getTypeCode()) &&
+                                    (e_type->queryCharset() == c_type->queryCharset()))
+                                    return LINK(child);
+
+                                //(string)(ebcdic20)string50 => (string20)string50
+                                ITypeInfo * shrunkType = getStretchedType(c_type->getStringLen(), e_type);
+                                return createValue(op, shrunkType, LINK(grand));
+                            }
+                            else
+                                return createValue(op, LINK(e_type), LINK(grand));
                         }
                     }
                     break;
@@ -6548,12 +6561,11 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
             break;
         }
 
-    //The following get the values purely from the assocated transform - if it contains constant entires
+    //The following get the values purely from the associated transform - if it contains constant entires
     case no_xmlproject:
     case no_combine:
     case no_combinegroup:
     case no_process:
-    case no_denormalize:
     case no_denormalizegroup:
     case no_fetch:
     case no_join:
@@ -6692,8 +6704,24 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_catch:
         //all bets are off.
         break;
-
-
+    case no_denormalize:
+        {
+            HqlConstantPercolator * leftMapping = gatherConstants(expr->queryChild(0));
+            IHqlExpression * transform = queryNewColumnProvider(expr);
+            exprMapping.setown(HqlConstantPercolator::extractConstantMapping(transform));
+            if (exprMapping)
+            {
+                if (leftMapping)
+                {
+                    exprMapping->intersectMapping(leftMapping);
+                    if (exprMapping->empty())
+                        exprMapping.clear();
+                }
+                else
+                    exprMapping.clear();
+            }
+            break;
+        }
     case no_selectnth:
         {
             //Careful - this can create a null row if it is out of range.

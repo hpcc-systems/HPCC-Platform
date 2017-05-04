@@ -189,6 +189,8 @@ enum StatisticKind
     StCycleSoapcallCycles,
     StCycleFirstExecuteCycles,
     StCycleTotalNestedCycles,
+    StTimeGenerate,
+    StCycleGenerateCycles,
 
     StMax,
 

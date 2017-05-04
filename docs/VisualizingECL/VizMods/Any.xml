@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="VizBundleGeneralMethods">
+  <title><emphasis>General Visualization Methods</emphasis></title>
+
+  <para>This section covers methods that create generic visualizations
+  contained in the Any module. These visualizations are handy for testing and
+  examining your data source.</para>
+
+  <para></para>
+
+  <sect1 id="VizGrid">
+    <title>Grid</title>
+
+    <para><emphasis role="bold">Visualizer.Any.Grid(<indexterm>
+        <primary>Visualizer.Any.Grid</primary>
+      </indexterm><indexterm>
+        <primary>Any.Grid</primary>
+      </indexterm><indexterm>
+        <primary>Grid</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Unique identifier for the visualization</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Result set name (ignored for Logical Files)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Filter condition (also useful for widget
+            interactions)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Dermatology properties. See <link
+            linkend="VizDermProp">Dermatology Properties</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis></emphasis></entry>
+
+            <entry>A "meta" output describing the visualization.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>The <emphasis role="bold">Grid </emphasis>visualization method
+    creates a simple table or grid from any data.</para>
+
+    <para>Example:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;
+ds := DATASET([ {'English', 5},
+                {'History', 17},
+                {'Geography', 7},
+                {'Chemistry', 16},
+                {'Irish', 26},
+                {'Spanish', 67},
+                {'Bioligy', 66},
+                {'Physics', 46},
+                {'Math', 98}],
+                {STRING subject, INTEGER4 year});
+data_example := OUTPUT(ds, NAMED('Chart2D__test'));
+data_example;
+viz_Grid := Visualizer.Any.Grid('Grid',, 'Chart2D__test');
+viz_Grid;
+</programlisting>
+  </sect1>
+
+  <sect1 id="VizHandsonGrid">
+    <title>HandsonGrid</title>
+
+    <para><emphasis role="bold">Visualizer.Any.HandsonGrid(<indexterm>
+        <primary>Visualizer.Any.HandsonGrid</primary>
+      </indexterm><indexterm>
+        <primary>Any.HandsonGrid</primary>
+      </indexterm><indexterm>
+        <primary>HandsonGrid</primary>
+      </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
+    role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>mappings</emphasis><emphasis
+    role="bold">], [</emphasis><emphasis>properties</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <para></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>id</emphasis></entry>
+
+            <entry>Unique identifier for the visualization</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dataSource</emphasis></entry>
+
+            <entry>Location of the result set (WUID, Logical File, Roxie Query
+            result), defaults to the current WU</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outputName</emphasis></entry>
+
+            <entry>Result set name (ignored for Logical Files)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>mappings</emphasis></entry>
+
+            <entry>Maps Column Name &lt;--&gt; field ID</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filteredBy</emphasis></entry>
+
+            <entry>Filter condition (also useful for widget
+            interactions)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>properties</emphasis></entry>
+
+            <entry>Dermatology properties. See <link
+            linkend="VizDermProp">Dermatology Properties</link></entry>
+          </row>
+
+          <row>
+            <entry>Return:<emphasis></emphasis></entry>
+
+            <entry>A "meta" output describing the visualization.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>The <emphasis role="bold">HandsonGrid </emphasis>visualization
+    method creates a hands on table or grid from any data.</para>
+
+    <para>Example:</para>
+
+    <programlisting format="linespecific">IMPORT Visualizer;
+ds := DATASET([ {'English', 5},
+                {'History', 17},
+                {'Geography', 7},
+                {'Chemistry', 16},
+                {'Irish', 26},
+                {'Spanish', 67},
+                {'Bioligy', 66},
+                {'Physics', 46},
+                {'Math', 98}],
+                {STRING subject, INTEGER4 year});
+data_example := OUTPUT(ds, NAMED('Chart2D__test'));
+data_example;
+viz_HandsonGrid := Visualizer.Any.HandsonGrid('HandsonGrid',, 'Chart2D__test');
+viz_HandsonGrid;
+</programlisting>
+  </sect1>
+</chapter>

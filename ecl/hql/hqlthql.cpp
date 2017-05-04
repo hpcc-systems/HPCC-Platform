@@ -967,6 +967,34 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 break;
             }
         }
+        else if (expandProcessed && no == no_alias)
+        {
+            if (!isNamedSymbol)
+            {
+                if (!expr->queryTransformExtra())
+                {
+                    bool wasInsideNewTransform = insideNewTransform;
+                    insideNewTransform = false;
+
+                    StringBuffer temp;
+                    scope.append(NULL);
+                    temp.appendf("alias%p ", expr);
+                    temp.append(":= ");
+
+                    toECL(expr, temp, false, false, 0, true);
+                    temp.append(";").newline();
+                    addExport(temp);
+
+                    scope.pop();
+                    insideNewTransform = wasInsideNewTransform;
+                    expr->setTransformExtra(expr);
+                }
+                s.appendf("alias%p", expr);
+                if (paren)
+                    s.append(')');
+                return;
+            }
+        }
 
         if (expandProcessed && !isNamedSymbol && no == no_record)
         {
@@ -2079,6 +2107,12 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 defaultToECL(expr, s, inType);
             else
                 toECL(child0, s, false, inType);
+            break;
+        case no_clustersize:
+            if (expandProcessed)
+                defaultToECL(expr, s, inType);
+            else
+                s.append(getEclOpString(no));
             break;
         case no_map:
         {

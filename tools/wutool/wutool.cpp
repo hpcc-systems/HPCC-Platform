@@ -59,11 +59,13 @@ void usage()
            "   initialize          - Initialize new workunit repository\n"
            "\n"
            "If CASSANDRASERVER is specified, you can specify some connection options including:\n"
-           "   CASSANDRA_KEYSPACE  - default is hpcc\n"
+           "   CASSANDRA_KEYSPACE   - default is hpcc\n"
            "   CASSANDRA_USER\n"
            "   CASSANDRA_PASSWORD\n"
+           "   CASSANDRA_PARTITIONS - used if creating a new repository\n"
+           "   CASSANDRA_PREFIXSIZE - used if creating a new repository\n"
            "   TRACELEVEL\n"
-           "<workunits> can be specified on commandline, or can be specified using a filter owner=XXXX. If ommitted,\n"
+           "<workunits> can be specified on commandline, or can be specified using a filter owner=XXXX. If omitted,\n"
            "all workunits will be selected.\n"
             );
 }
@@ -162,7 +164,7 @@ int main(int argc, const char *argv[])
         if (globals->getProp("CASSANDRASERVER", cassandraServer))
         {
             // If they explicitly specify a cassandra server, use it even if the info in the environment in dali does not indicate there is a cassandra associated
-            // Conversely, if the explicitly specify "none" then don't use cassandra even if there is one specified in the dali environment...
+            // Conversely, if they explicitly specify "none" then don't use cassandra even if there is one specified in the dali environment...
             if (!strieq(cassandraServer, "none"))
             {
                 Owned<IPTree> pluginInfo = createPTreeFromXMLString(
@@ -170,6 +172,8 @@ int main(int argc, const char *argv[])
                         "<Option name='server' value='.'/>"
                         "<Option name='randomWuidSuffix' value='4'/>"
                         "<Option name='traceLevel' value='0'/>"
+                        "<Option name='partitions' value='0'/>"
+                        "<Option name='prefixSize' value='0'/>"
                         "<Option name='keyspace' value='hpcc'/>"
                         "<Option name='user' value=''/>"
                         "<Option name='password' value=''/>"
@@ -187,6 +191,16 @@ int main(int argc, const char *argv[])
                     pluginInfo->setProp("Option[@name='password']/@value", password.str());
                 else
                     pluginInfo->removeProp("Option[@name='password']");
+                int partitions = globals->getPropInt("CASSANDRA_PARTITIONS", -1);
+                if (partitions != -1)
+                    pluginInfo->setPropInt("Option[@name='partitions']/@value", partitions);
+                else
+                    pluginInfo->removeProp("Option[@name='partitions']");
+                int prefixSize = globals->getPropInt("CASSANDRA_PREFIXSIZE", -1);
+                if (prefixSize != -1)
+                    pluginInfo->setPropInt("Option[@name='prefixSize']/@value", prefixSize);
+                else
+                    pluginInfo->removeProp("Option[@name='prefixSize']");
                 setWorkUnitFactory((IWorkUnitFactory *) loadPlugin(pluginInfo));
                 serverSpecified = true;
             }

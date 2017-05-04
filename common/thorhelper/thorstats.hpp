@@ -38,10 +38,11 @@ public:
     virtual void noteSectionTime(unsigned __int64 startCycles);
 
 protected:
-    ThorSectionTimer(const char * _name, CRuntimeStatistic & _occurences, CRuntimeStatistic & _elapsed);
+    ThorSectionTimer(const char * _name, CRuntimeStatistic & _starts, CRuntimeStatistic & _stops, CRuntimeStatistic & _elapsed);
 
 private:
-    CRuntimeStatistic & occurences;
+    CRuntimeStatistic & starts;
+    CRuntimeStatistic & stops;
     CRuntimeStatistic & elapsed;
     StringAttr name;
 };

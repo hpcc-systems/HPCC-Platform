@@ -73,12 +73,15 @@ public:
         dataLinkIncrement();
         return out.finalizeRowClear(sz);
     }
-
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.canReduceNumRows = true;
         info.fastThrough = true;
+    }
+    virtual bool isGrouped() const override
+    {
+        return false;
     }
 };
 

@@ -4222,8 +4222,13 @@ void CHqlRealExpression::updateFlagsAfterOperands()
             break;
         }
     case no_clustersize:
-        //wrong, but improves the generated code
-        infoFlags |= (HEFnoduplicate|HEFcontextDependentException);
+        //pure is added with the wfid as a parameter which guarantees that it can be commoned up.
+        if (!hasAttribute(pureAtom))
+            infoFlags |= (HEFnoduplicate);
+
+        //Wrong, but improves the generated code (preventing it being serialized).
+        //Even better would be to evaluate once, but not serialize...
+        infoFlags |= (HEFcontextDependentException);
         break;
     case no_type:
         {
@@ -13816,6 +13821,24 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
             thisSize = exportRecord(f, record, flatten);
     }
     f->setPropInt("@size", thisSize);
+
+    StringBuffer userOptions;
+    ForEachChild(i, field)
+    {
+        IHqlExpression * attr = field->queryChild(i);
+        if (attr->isAttribute() && (attr->queryName() == setAtom))
+        {
+            ForEachChild(i2, attr)
+            {
+                if (userOptions.length())
+                    userOptions.append(",");
+                getExprECL(attr->queryChild(i2), userOptions);
+            }
+        }
+    }
+    if (userOptions.length())
+        f->setProp("@options", userOptions.str());
+
     return thisSize;
 }
 

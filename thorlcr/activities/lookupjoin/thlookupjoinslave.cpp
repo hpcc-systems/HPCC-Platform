@@ -945,7 +945,6 @@ protected:
     IArrayOf<IRowStream> gatheredRHSNodeStreams;
     bool rhsConstant = false;
 
-    rowidx_t nextRhsRow;
     unsigned keepLimit;
     unsigned joined;
     unsigned joinCounter;
@@ -1152,7 +1151,6 @@ protected:
     }
     inline void resetRhsNext()
     {
-        nextRhsRow = 0;
         joined = 0;
         leftMatch = false;
     }
@@ -1239,7 +1237,7 @@ protected:
                         {
                             resetRhsNext();
                             const void *failRow = NULL;
-                            // NB: currentHashEntry only used for Lookup,Many case
+                            // NB: currentHashEntry used for Lookup,Many or All cases
                             rhsNext = tableProxy->getFirstRHSMatch(leftRow, failRow, currentHashEntry); // also checks abortLimit/atMost
                             if (failRow)
                                 return failRow;
@@ -1287,7 +1285,7 @@ protected:
                                 }
                             }
                         }
-                        rhsNext = tableProxy->getNextRHS(currentHashEntry); // NB: currentHashEntry only used for Lookup,Many case
+                        rhsNext = tableProxy->getNextRHS(currentHashEntry); // NB: currentHashEntry used for Lookup,Many or All cases
                     }
                     if (!leftMatch && NULL == rhsNext && 0!=(flags & JFleftouter))
                     {
@@ -1311,7 +1309,6 @@ public:
     CInMemJoinBase(CGraphElementBase *_container) : CSlaveActivity(_container), HELPERBASE((HELPER *)queryHelper()), rhs(*this)
     {
         gotRHS = false;
-        nextRhsRow = 0;
         rhsNext = NULL;
         myNodeNum = queryJob().queryMyNodeRank()-1; // 0 based
         mySlaveNum = queryJobChannel().queryMyRank()-1; // 0 based
@@ -1464,7 +1461,6 @@ public:
     }
     virtual void start() override
     {
-        nextRhsRow = 0;
         joined = 0;
         joinCounter = 0;
         leftMatch = false;
@@ -3170,8 +3166,6 @@ public:
 class CAllTable : public CTableCommon
 {
     const void **rows;
-    rowidx_t nextRhsRow;
-
 public:
     CAllTable()
     {
@@ -3181,17 +3175,16 @@ public:
     {
         CTableCommon::reset();
         rows = NULL;
-        nextRhsRow = 0;
     }
-    inline const void *getNextRHS(HtEntry &currentHashEntry __attribute__((unused)))
+    inline const void *getNextRHS(HtEntry &currentEntry)
     {
-        if (++nextRhsRow<tableSize)
-            return rows[nextRhsRow];
+        if (++currentEntry.index<tableSize)
+            return rows[currentEntry.index];
         return NULL;
     }
-    inline const void *getFirstRHSMatch(const void *leftRow, const void *&failRow, HtEntry &currentHashEntry __attribute__((unused)))
+    inline const void *getFirstRHSMatch(const void *leftRow, const void *&failRow, HtEntry &currentEntry)
     {
-        nextRhsRow = 0;
+        currentEntry.index = 0;
         failRow = NULL;
         return rows[0]; // guaranteed to be at least one row
     }
@@ -3199,7 +3192,6 @@ public:
     {
         tableSize = _rows.ordinality();
         rows = _rows.getRowArray();
-        nextRhsRow = 0;
     }
 };
 

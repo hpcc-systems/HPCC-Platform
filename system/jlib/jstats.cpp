@@ -624,6 +624,9 @@ static const StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(Soapcall) },
     { CYCLESTAT(FirstExecute) },
     { CYCLESTAT(TotalNested) },
+    { TIMESTAT(Generate) },
+    { CYCLESTAT(Generate) },
+
 };
 
 

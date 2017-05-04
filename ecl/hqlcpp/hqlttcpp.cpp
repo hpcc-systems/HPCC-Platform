@@ -4816,8 +4816,8 @@ IHqlExpression * CompoundActivityTransformer::createTransformed(IHqlExpression *
 //------------------------------------------------------------------------
 
 static HqlTransformerInfo optimizeActivityTransformerInfo("OptimizeActivityTransformer");
-OptimizeActivityTransformer::OptimizeActivityTransformer(bool _optimizeCountCompare, bool _optimizeNonEmpty)
-: NewHqlTransformer(optimizeActivityTransformerInfo)
+OptimizeActivityTransformer::OptimizeActivityTransformer(unsigned _wfid, bool _optimizeCountCompare, bool _optimizeNonEmpty)
+: NewHqlTransformer(optimizeActivityTransformerInfo), wfid(_wfid)
 {
     optimizeCountCompare = _optimizeCountCompare; optimizeNonEmpty = _optimizeNonEmpty;
 }
@@ -5160,7 +5160,14 @@ IHqlExpression * OptimizeActivityTransformer::doCreateTransformed(IHqlExpression
             unwindChildren(args, expr, 2);
             return expr->clone(args);
         }
-
+    case no_clustersize:
+        if (wfid && !expr->hasAttribute(pureAtom))
+        {
+            OwnedHqlExpr attribute = createExprAttribute(pureAtom, getSizetConstant(wfid));
+            OwnedHqlExpr modified = appendOwnedOperand(expr, attribute.getClear());
+            return expr->cloneAllAnnotations(modified);
+        }
+        break;
     case no_eq:
     case no_ne:
     case no_le:
@@ -5186,21 +5193,11 @@ IHqlExpression * OptimizeActivityTransformer::doCreateTransformed(IHqlExpression
 }
 
 
-void optimizeActivities(HqlExprArray & exprs, bool optimizeCountCompare, bool optimizeNonEmpty)
+void optimizeActivities(unsigned wfid, HqlExprArray & exprs, bool optimizeCountCompare, bool optimizeNonEmpty)
 {
-    OptimizeActivityTransformer transformer(optimizeCountCompare, optimizeNonEmpty);
-    HqlExprArray results;
+    OptimizeActivityTransformer transformer(wfid, optimizeCountCompare, optimizeNonEmpty);
     transformer.analyseArray(exprs, 0);
-    transformer.transformRoot(exprs, results);
-    replaceArray(exprs, results);
-}
-
-IHqlExpression * optimizeActivities(IHqlExpression * expr, bool optimizeCountCompare, bool optimizeNonEmpty)
-{
-    OptimizeActivityTransformer transformer(optimizeCountCompare, optimizeNonEmpty);
-    HqlExprArray results;
-    transformer.analyse(expr, 0);
-    return transformer.transformRoot(expr);
+    transformer.transformRoot(exprs);
 }
 
 IHqlExpression * GlobalAttributeInfo::queryAlias(IHqlExpression * value)
@@ -7700,6 +7697,8 @@ bool ScalarGlobalTransformer::isComplex(IHqlExpression * expr, bool checkGlobal)
     case no_constant:
     case no_globalscope:
     case no_libraryinput:
+    case no_clustersize:
+    case no_nothor:
         return false;
     case no_cast:
     case no_implicitcast:
@@ -10779,6 +10778,7 @@ void LeftRightTransformer::process(HqlExprArray & exprs)
     transformRoot(exprs, transformed);
     replaceArray(exprs, transformed);
 }
+
 //---------------------------------------------------------------------------------------------------------------------
 
 /*
@@ -13354,9 +13354,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
     {
         cycle_t startCycles = get_cycles_now();
         HqlScopeTagger normalizer(translator.queryErrorProcessor(), translator.queryLocalOnWarningMapper());
-        HqlExprArray transformed;
-        normalizer.transformRoot(exprs, transformed);
-        replaceArray(exprs, transformed);
+        normalizer.transformRoot(exprs);
         translator.noteFinishedTiming("compile:tree transform: normalize.scope", startCycles);
     }
 
@@ -13729,7 +13727,7 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
     //sort(x)[n] -> topn(x, n)[]n, count(x)>n -> count(choosen(x,n+1)) > n and possibly others
     {
         cycle_t startCycles = get_cycles_now();
-        optimizeActivities(curWorkflow.queryExprs(), !targetThor(), options.optimizeNonEmpty);
+        optimizeActivities(curWorkflow.queryWfid(), curWorkflow.queryExprs(), !targetThor(), options.optimizeNonEmpty);
         noteFinishedTiming("compile:tree transform: optimize activities", startCycles);
     }
     checkNormalized(curWorkflow);

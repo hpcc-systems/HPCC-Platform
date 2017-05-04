@@ -1,6 +1,5 @@
 *               text=auto
 *.sh            eol=lf
-initfiles/*     eol=lf
 *.bat           eol=crlf
 *.jpg           -text
 *.gif           -text
@@ -11,4 +10,3 @@ initfiles/*     eol=lf
 *.psd           -text
 *.doc           -text
 *.mk            -text
-rtl/ecltpl/*    eol=lf

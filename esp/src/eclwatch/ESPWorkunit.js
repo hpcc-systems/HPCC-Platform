@@ -240,6 +240,9 @@ define([
         isDeleted: function () {
             return this.StateID === 999;
         },
+        isBlocked: function () {
+            return this.StateID === 8;
+        },
         monitor: function (callback) {
             if (callback) {
                 callback(this);

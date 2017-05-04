@@ -18,3 +18,26 @@ DOCBOOK_TO_PDF( ${FO_XSL} ClientTools.xml "HPCCClientTools" "CT_Mods")
 
 DOCBOOK_TO_PDF( ${FO_XSL} TheECLIDEandHPCCClientTools.xml "TheECLIDEandHPCCClientTools" "CT_Mods")
 
+IF(MAKE_DOCS)
+  SET(HELP_DEPENDENCIES)
+  GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
+  FOREACH(T ${Current_Targets})
+    IF("${T}" MATCHES ".*HPCCClientTools.*")
+      LIST(APPEND HELP_DEPENDENCIES  ${T})
+     ENDIF()
+  ENDFOREACH()
+
+  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/ClientTools.xml" ${PORTAL_HTML_DIR}/ClientTools  "clienttools_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+
+  SET(HELP_DEPENDENCIES)
+  GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
+  FOREACH(T ${Current_Targets})
+    IF("${T}" MATCHES ".*TheECLIDEandHPCCClientTools.*")
+      LIST(APPEND HELP_DEPENDENCIES  ${T})
+     ENDIF()
+  ENDFOREACH()
+
+  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/TheECLIDEandHPCCClientTools.xml" ${PORTAL_HTML_DIR}/ECLIDEandClientTools "eclide_clienttools_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+
+
+ENDIF(MAKE_DOCS)

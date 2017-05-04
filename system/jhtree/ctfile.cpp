@@ -478,17 +478,6 @@ CJHTreeNode::~CJHTreeNode()
 void CJHTreeNode::releaseMem(void *togo, size32_t len)
 {
     free(togo);
-    unsigned __int64 _totalAllocatedCurrent;
-    unsigned _countAllocationsCurrent;
-    {
-        SpinBlock b(spin);
-        totalAllocatedCurrent -= len;
-        countAllocationsCurrent--;
-        _totalAllocatedCurrent = totalAllocatedCurrent;
-        _countAllocationsCurrent = countAllocationsCurrent;
-    }
-    if (traceJHtreeAllocations)
-        DBGLOG("JHTREE memory usage: Released  %d - %" I64F "d currently allocated in %d allocations", len, _totalAllocatedCurrent, _countAllocationsCurrent);
 }
 
 void *CJHTreeNode::allocMem(size32_t len)
@@ -506,31 +495,8 @@ void *CJHTreeNode::allocMem(size32_t len)
         if (!ret)
             throw E.getClear();
     }
-    unsigned __int64 _totalAllocatedCurrent;
-    unsigned __int64 _totalAllocatedEver;
-    unsigned _countAllocationsCurrent;
-    unsigned _countAllocationsEver;
-    {
-        SpinBlock b(spin);
-        totalAllocatedCurrent += len;
-        totalAllocatedEver += len;
-        countAllocationsCurrent ++;
-        countAllocationsEver ++;
-        _totalAllocatedCurrent = totalAllocatedCurrent;
-        _totalAllocatedEver = totalAllocatedEver;
-        _countAllocationsCurrent = countAllocationsCurrent;
-        _countAllocationsEver = countAllocationsEver;
-    }
-    if (traceJHtreeAllocations)
-        DBGLOG("JHTREE memory usage: Allocated %d - %" I64F "d currently allocated in %d allocations", len, _totalAllocatedCurrent, _countAllocationsCurrent);
     return ret;
 }
-
-unsigned __int64 CJHTreeNode::totalAllocatedCurrent;
-unsigned __int64 CJHTreeNode::totalAllocatedEver;
-unsigned CJHTreeNode::countAllocationsCurrent;
-unsigned CJHTreeNode::countAllocationsEver;
-SpinLock CJHTreeNode::spin; // MORE: Could replace with atomic operations, but since 4 of them it may be less efficient when uncontested
 
 char *CJHTreeNode::expandKeys(void *src,unsigned keylength,size32_t &retsize, bool rowcompression)
 {

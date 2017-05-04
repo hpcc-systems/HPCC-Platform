@@ -119,6 +119,7 @@ define([
             this.fixedSprayReplicateCheckbox = registry.byId(this.id + "FixedSprayReplicate");
             this.delimitedSprayReplicateCheckbox = registry.byId(this.id + "DelimitedSprayReplicate");
             this.xmlSprayReplicateCheckbox = registry.byId(this.id + "XMLSprayReplicate");
+            this.sprayXMLButton = registry.byId(this.id + "SprayXMLButton");
             this.variableSprayReplicateCheckbox = registry.byId(this.id + "VariableSprayReplicate");
             this.blobSprayReplicateCheckbox = registry.byId(this.id + "BlobSprayReplicate");
             this.filter = registry.byId(this.id + "Filter");
@@ -719,7 +720,18 @@ define([
                         editorArgs: {
                             required: true,
                             placeholder: this.i18n.RequiredForXML,
-                            promptMessage: this.i18n.RequiredForXML
+                            promptMessage: this.i18n.RequiredForXML,
+                            validator: function(value, constraints) {
+                                var valid = true;
+                                if ((value != null ) && (value != "")) {
+                                    valid = true;
+                                    context.sprayXMLButton.set("disabled", false);
+                                } else {
+                                    context.sprayXMLButton.set("disabled", true);
+                                    valid = false;
+                                }
+                                return valid;
+                            }
                         }
                     })
                 }
@@ -800,7 +812,7 @@ define([
                     lang.mixin(item, lang.mixin({
                         targetName: item.displayName,
                         targetRecordLength: "",
-                        targetRowTag: "",
+                        targetRowTag: "Row",
                         targetRowPath: "/"
                     }, item));
                     data.push(item);

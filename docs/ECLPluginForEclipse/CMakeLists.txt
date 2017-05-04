@@ -16,3 +16,14 @@
 
 DOCBOOK_TO_PDF( ${FO_XSL} ECL_Plugin_for_Eclipse.xml "ECL_Plugin_for_EclipseIDE")
 
+IF(MAKE_DOCS)
+  SET(HELP_DEPENDENCIES)
+  GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
+  FOREACH(T ${Current_Targets})
+    IF("${T}" MATCHES ".*ECL_Plugin_for_EclipseIDE.*")
+      LIST(APPEND HELP_DEPENDENCIES  ${T})
+    ENDIF()
+  ENDFOREACH()
+
+  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/ECL_Plugin_for_Eclipse.xml" ${PORTAL_HTML_DIR}/Eclipse_Plugin  "eclipse_plugin_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+ENDIF(MAKE_DOCS)

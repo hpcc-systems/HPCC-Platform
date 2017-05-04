@@ -26,8 +26,8 @@ myoutrec := record
  string1 letR;
 end;
 
-d1 := dataset([{1234,'A'},{5678,'B'}],myrec);
-d2 := dataset([{1234,'A'},{5678,'B'},{9876,'C'}],myrec);
+d1 := dataset(1000, TRANSFORM(myrec, SELF.did := COUNTER; SELF.let := (string)COUNTER), DISTRIBUTED);
+d2 := dataset(1000, TRANSFORM(myrec, SELF.did := COUNTER+1; SELF.let := (string)COUNTER), DISTRIBUTED);
  
 myoutrec testLookup(d2 L, d1 r) := transform
  self.did := l.did;
@@ -35,10 +35,10 @@ myoutrec testLookup(d2 L, d1 r) := transform
  self.letR := r.let;
 end;
  
-j1 := join(d2,d1,left.did=right.did,testLookup(left, right),all);
-j2 := join(d2,d1,left.did=right.did,testLookup(left, right),all, LEFT OUTER);
-j3 := join(d2,d1,left.did=right.did,testLookup(left, right),all, LEFT ONLY);
+j1 := join(d1,d2,left.did/right.did>10,testLookup(left, right),all);
+j2 := join(d1,d2,left.did/right.did>10,testLookup(left, right),all, LEFT OUTER);
+j3 := join(d1,d2,left.did/right.did>10,testLookup(left, right),all, LEFT ONLY);
  
-output(j1);
-output(j2);
-output(j3);
+SUM(j1, did);
+SUM(j2, did);
+SUM(j3, did);

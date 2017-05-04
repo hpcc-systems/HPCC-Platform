@@ -29,10 +29,13 @@ GENERATE_BASH(processor ${bash-vars} "init_sasha.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "init_thorslave.in" outFiles)
 ADD_CUSTOM_TARGET(ProcessFiles-initfiles-bin ALL DEPENDS ${outFiles})
 
+configure_file(init_backupnode.in init_backupnode @ONLY)
+
 FOREACH( iFILES
     ${outFiles}
     ${CMAKE_CURRENT_SOURCE_DIR}/init_ftslave
     ${CMAKE_CURRENT_SOURCE_DIR}/init_roxie_cluster
+	${CMAKE_CURRENT_BINARY_DIR}/init_backupnode
 )
     install ( PROGRAMS ${iFILES} DESTINATION ${EXEC_DIR} COMPONENT Runtime )
 ENDFOREACH ( iFILES )

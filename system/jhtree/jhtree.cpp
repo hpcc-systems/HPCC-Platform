@@ -59,7 +59,7 @@
 #include "keybuild.hpp"
 #include "layouttrans.hpp"
 
-static CKeyStore *keyStore = NULL;
+static std::atomic<CKeyStore *> keyStore(nullptr);
 static unsigned defaultKeyIndexLimit = 200;
 static CNodeCache *nodeCache = NULL;
 static CriticalSection *initCrit = NULL;
@@ -68,7 +68,6 @@ bool useMemoryMappedIndexes = false;
 bool logExcessiveSeeks = false;
 bool linuxYield = false;
 bool traceSmartStepping = false;
-bool traceJHtreeAllocations = false;
 bool flushJHtreeCacheOnOOM = true;
 
 MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
@@ -80,7 +79,7 @@ MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
 MODULE_EXIT()
 {
     delete initCrit;
-    delete keyStore;
+    delete keyStore.load(std::memory_order_relaxed);
     ::Release((CInterface*)nodeCache);
 }
 
@@ -1108,9 +1107,10 @@ void clearNodeCache()
 
 inline CKeyStore *queryKeyStore()
 {
-    if (keyStore) return keyStore; // avoid crit
+    CKeyStore * value = keyStore.load(std::memory_order_acquire);
+    if (value) return value; // avoid crit
     CriticalBlock b(*initCrit);
-    if (!keyStore) keyStore = new CKeyStore;
+    if (!keyStore.load(std::memory_order_acquire)) keyStore = new CKeyStore;
     return keyStore;
 }
 
@@ -1283,6 +1283,7 @@ void CKeyStore::clearCacheEntry(const char *keyName)
     if (!keyName || !*keyName)
         return;  // nothing to do
 
+    synchronized block(mutex);
     Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
 
     StringArray goers;
@@ -1295,6 +1296,28 @@ void CKeyStore::clearCacheEntry(const char *keyName)
             const char *name = mapping.queryFindString();
             if (strstr(name, keyName) != 0)  // keyName doesn't have drive or part number associated with it
                 goers.append(name);
+        }
+    }
+    ForEachItemIn(idx, goers)
+    {
+        keyIndexCache.remove(goers.item(idx));
+    }
+}
+
+void CKeyStore::clearCacheEntry(const IFileIO *io)
+{
+    synchronized block(mutex);
+    Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
+
+    StringArray goers;
+    ForEach(*iter)
+    {
+        CKeyIndexMapping &mapping = iter->query();
+        IKeyIndex &index = mapping.query();
+        if (!index.IsShared())
+        {
+            if (index.queryFileIO()==io)
+                goers.append(mapping.queryFindString());
         }
     }
     ForEachItemIn(idx, goers)
@@ -2004,6 +2027,7 @@ public:
     virtual offset_t queryMetadataHead() { return checkOpen().queryMetadataHead(); }
     virtual IPropertyTree * getMetadata() { return checkOpen().getMetadata(); }
     virtual unsigned getNodeSize() { return checkOpen().getNodeSize(); }
+    virtual const IFileIO *queryFileIO() const override { return iFileIO->queryFileIO(); }
 };
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, bool isTLK, bool preloadAllowed)
@@ -2037,6 +2061,11 @@ extern jhtree_decl void clearKeyStoreCache(bool killAll)
 extern jhtree_decl void clearKeyStoreCacheEntry(const char *name)
 {
     queryKeyStore()->clearCacheEntry(name);
+}
+
+extern jhtree_decl void clearKeyStoreCacheEntry(const IFileIO *io)
+{
+    queryKeyStore()->clearCacheEntry(io);
 }
 
 extern jhtree_decl StringBuffer &getIndexMetrics(StringBuffer &ret)

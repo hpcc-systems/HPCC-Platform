@@ -42,15 +42,15 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems</corpname>
 
-    <xi:include href="common/Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -112,11 +112,11 @@
   </chapter>
 
   <xi:include href="ECLScheduler/ECLSched-Mods/ECLSchedComp.xml"
-              xpointer="ECLSched_comp"
+              xpointer="xpointer(//*[@id='ECLSched_comp'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="ECLScheduler/ECLSched-Mods/ECLSchedAdmin.xml"
-              xpointer="ECLSched-Admin"
+              xpointer="xpointer(//*[@id='ECLSched-Admin'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <chapter>
@@ -130,7 +130,7 @@
       <title>WHEN</title>
 
       <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WHEN.xml"
-                  xpointer="SchWhen"
+                  xpointer="xpointer(//*[@id='SchWhen'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
@@ -138,7 +138,7 @@
       <title>NOTIFY</title>
 
       <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOTIFY.xml"
-                  xpointer="SchNOTIFY"
+                  xpointer="xpointer(//*[@id='SchNOTIFY'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
@@ -146,7 +146,7 @@
       <title>EVENT</title>
 
       <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVENT.xml"
-                  xpointer="SchEvent"
+                  xpointer="xpointer(//*[@id='SchEvent'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
@@ -154,7 +154,7 @@
       <title>CRON</title>
 
       <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CRON.xml"
-                  xpointer="SchCRON"
+                  xpointer="xpointer(//*[@id='SchCRON'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
@@ -162,7 +162,7 @@
       <title>WAIT</title>
 
       <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WAIT.xml"
-                  xpointer="SchWAIT"
+                  xpointer="xpointer(//*[@id='SchWAIT'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
   </chapter>
@@ -174,11 +174,11 @@
     in the ECL Standard Library Reference.</para>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/MonitorFile.xml"
-                xpointer="MonitorFile"
+                xpointer="xpointer(//*[@id='MonitorFile'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/MonitorLogicalFileName.xml"
-                xpointer="MonitorLogicalFileName"
+                xpointer="xpointer(//*[@id='MonitorLogicalFileName'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 </book>

@@ -1590,6 +1590,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.defaultPersistExpiry, "defaultPersistExpiry", DEFAULT_PERSIST_EXPIRY_PERIOD),
         DebugOption(options.defaultExpiry, "defaultExpiry", DEFAULT_EXPIRY_PERIOD),
         DebugOption(options.searchDistanceThreshold, "searchDistanceThreshold", 1000000),
+        DebugOption(options.generateActivityThreshold, "generateActivityThreshold", 0),  // most users are not interested so disable by default
 
         DebugOption(options.checkAsserts,"checkAsserts", true),
         DebugOption(options.assertSortedDistributed,"assertSortedDistributed", false),
@@ -1898,6 +1899,8 @@ void HqlCppTranslator::postProcessOptions()
 
     if (options.resourceSequential)
         options.resourceConditionalActions = true;
+
+    options.generateActivityThresholdCycles = nanosec_to_cycle(options.generateActivityThreshold * I64C(1000000));
 
     //Probably best to ignore this warning. - possibly configure it based on some other option
     globalOnWarnings->addOnWarning(HQLWRN_FoldRemoveKeyed, ignoreAtom);
@@ -7423,6 +7426,12 @@ bool HqlCppTranslator::ifRequiresAssignment(BuildCtx & ctx, IHqlExpression * exp
 
 void HqlCppTranslator::doBuildAssignIf(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
+    CHqlBoundExpr bound;
+    if (expr->isPure() && ctx.getMatchExpr(expr, bound))
+    {
+        assign(ctx, target, bound);
+        return;
+    }
     if (!ifRequiresAssignment(ctx, expr))
     {
         doBuildExprAssign(ctx, target, expr);
@@ -10390,13 +10399,7 @@ void HqlCppTranslator::assign(BuildCtx & ctx, const CHqlBoundTarget & target, CH
                     {
                         //I can't think of any situation where this isn't true....
                         assertex(hasLinkCountedModifier(rhs.expr));
-                        StringBuffer assignText;
-                        generateExprCpp(assignText, lhs).append(".set(");
-                        generateExprCpp(assignText, rhs.expr).append(");");
-                        ctx.addQuoted(assignText);
-                        //Could generate the following instead
-                        //ctx.addAssign(lhs, no_link(rhs.expr));
-                        //And post-optimize to the above.
+                        ctx.addAssignLink(lhs, rhs.expr);
                     }
                     else
                         ctx.addAssign(lhs, rhs.expr);
