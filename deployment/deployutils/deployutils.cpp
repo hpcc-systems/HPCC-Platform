@@ -899,8 +899,9 @@ public:
             else if (strcmp(type, "esploggingagentType")==0)
             {
               nCtrlType = 4;//LVC_COMBO;
-              bAddBlank = true;
-              LoadComboBox("Software/ESPLoggingAgent", bAddBlank, m_pEnv, m_pEnv, strBuf);
+              bAddBlank = true;  
+              //LoadComboBox("Software/ESPLoggingAgent", bAddBlank, m_pEnv, m_pEnv, strBuf);
+              LoadComboBox("Software/*/[@type=\"DefaultLoggingAgent\"]", bAddBlank, m_pEnv, m_pEnv, strBuf);
               extraInfo = strBuf.str();
             }
             else if (strcmp(type, "loggingmanagerType")==0)
