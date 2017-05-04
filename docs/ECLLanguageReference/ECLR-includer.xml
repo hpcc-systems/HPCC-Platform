@@ -38,7 +38,8 @@
       "A"</link> (WHICH SEE).</para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <releaseinfo>© 2017 HPCC Systems<superscript>®</superscript>. All rights
@@ -305,9 +306,10 @@
     <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-LEFT-RIGHT.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-LIKELY.xml"
                 xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />                
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-ROWS--LEFT-RIGHT.xml"
                 xpointer="element(/1)"
