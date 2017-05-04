@@ -1107,9 +1107,10 @@ void clearNodeCache()
 
 inline CKeyStore *queryKeyStore()
 {
-    if (keyStore) return keyStore; // avoid crit
+    CKeyStore * value = keyStore.load(std::memory_order_acquire);
+    if (value) return value; // avoid crit
     CriticalBlock b(*initCrit);
-    if (!keyStore) keyStore = new CKeyStore;
+    if (!keyStore.load(std::memory_order_acquire)) keyStore = new CKeyStore;
     return keyStore;
 }
 
