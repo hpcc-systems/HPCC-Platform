@@ -294,6 +294,9 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/FindReplace.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/FindWord.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/FromHexPairs.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
