@@ -149,6 +149,7 @@ extern HQL_API IAtom * _dot_Atom;
 extern HQL_API IAtom * dynamicAtom;
 extern HQL_API IAtom * ebcdicAtom;
 extern HQL_API IAtom * eclrtlAtom;
+extern HQL_API IAtom * embedAtom;
 extern HQL_API IAtom * embeddedAtom;
 extern HQL_API IAtom * _empty_str_Atom;
 extern HQL_API IAtom * encodingAtom;

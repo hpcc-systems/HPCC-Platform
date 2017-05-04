@@ -37,7 +37,7 @@
 //#define DEBUG_TOKEN 
 
 #ifdef DEBUG_TOKEN
-#define TraceReturnToken(id) PrintLog("Returning " #id " %s", name->str())
+#define TraceReturnToken(id) PrintLog("Returning " #id " %s", str(name))
 #else 
 #define TraceReturnToken(id)
 #endif
@@ -1446,6 +1446,8 @@ FUNCTIONMACRO|MACRO {
                         int endpos = startpos;
                         bool isFunctionMacro = (CUR_TOKEN_LENGTH != 5);
                         lexer->macroGathering++;
+                        bool inEmbed = false;
+                        unsigned embedParens = 0;
                         while ((tok = lexer->yyLex(returnToken, false, activeState)) != ENDMACRO)
                         {
                             if (tok==EOF)
@@ -1459,6 +1461,22 @@ FUNCTIONMACRO|MACRO {
                                 complex = true;
                             else if (tok == '@')
                                 isFunctionMacro = true;
+                            else if (tok == UNKNOWN_ID && returnToken.queryId()->queryLower()==embedAtom)
+                                inEmbed = true;
+                            if (inEmbed)
+                            {
+                                if (tok=='(')
+                                    embedParens++;
+                                else if (tok==')')
+                                {
+                                    embedParens--;
+                                    if (!embedParens)
+                                    {
+                                        BEGIN(CPP);
+                                        inEmbed = false;
+                                    }
+                                }
+                            }
                             returnToken.release();
                         }
                         lexer->macroGathering--;
@@ -1475,6 +1493,9 @@ FUNCTIONMACRO|MACRO {
                         if (!isFunctionMacro)
                         {
                             macroContents.setown(createFileContentsFromText(len, lexer->yyBuffer+startpos, lexer->sourcePath, lexer->yyParser->inSignedModule, lexer->yyParser->gpgSignature));
+#if defined(TRACE_TOKEN)
+                            PrintLog("TOKEN>> macro body read: \"%.*s\"", len, lexer->yyBuffer+startpos);
+#endif
                         }
                         else
                         {
@@ -1489,12 +1510,12 @@ FUNCTIONMACRO|MACRO {
                             memcpy(macroBuf + lenPrefix, lexer->yyBuffer+startpos, len);
                             memcpy(macroBuf + lenPrefix + len, suffix, lenSuffix);
                             macroContents.setown(createFileContentsFromText(lenSuffix + len + lenPrefix, macroBuf, lexer->sourcePath,lexer->yyParser->inSignedModule, lexer->yyParser->gpgSignature));
+#if defined(TRACE_TOKEN)
+                            PrintLog("TOKEN>> macro body read: \"%.*s\"",len+lenPrefix+lenSuffix, macroBuf);
+#endif
                             free(macroBuf);
                         }
 
-#if defined(TRACE_TOKEN)
-                        PrintLog("TOKEN>> macro body read: \"%s\"",macroBuf);
-#endif
 
                         returnToken.setContents(macroContents.getClear());
                         returnToken.setPosition(startLocation);
@@ -2004,6 +2025,6 @@ FUNCTIONMACRO|MACRO {
 %%
 void HqlLex::doEnterEmbeddedMode(yyscan_t yyscanner)
 {
-   struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
-   BEGIN(CPP);
+    struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+    BEGIN(CPP);
 }
