@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="VizMethods">
+  <title><emphasis>Methods</emphasis></title>
+
+  <para>Methods are categorized by the shape of the data they support. The
+  categories are:</para>
+
+  <para><link linkend="VizTwoD">Two-Dimensional</link></para>
+
+  <para><link linkend="VizNDList">Multi-Dimensional</link></para>
+
+  <para><link linkend="VizGeoList">Geospatial</link></para>
+
+  <para><link linkend="VizGeneralList">General</link></para>
+
+  <para></para>
+
+  <sect1 id="Viz2dlistl">
+    <title>Two-Dimensional Visualization Methods</title>
+
+    <para>This MODULE contains a selection of visualizations for
+    two-dimensional data.</para>
+
+    <para><link linkend="VizBubble">Bubble</link></para>
+
+    <para><link linkend="VizPie">Pie</link></para>
+
+    <para><link linkend="VizSummary">Summary</link></para>
+
+    <para><link linkend="VizWordCloud">WordCloud</link></para>
+  </sect1>
+
+  <sect1 id="VizNDList">
+    <title>Multi-Dimensional Visualization Methods</title>
+
+    <para>This MODULE contains a selection of visualizations for
+    multi-dimensional data.</para>
+
+    <para><link linkend="VizMultiDArea">Area</link></para>
+
+    <para><link linkend="VizMultiDBar">Bar</link></para>
+
+    <para><link linkend="VizMultiDColumn">Column</link></para>
+
+    <para><link linkend="VizMultiDHexBin">HexBin</link></para>
+
+    <para><link linkend="VizMultiDLine">Line</link></para>
+
+    <para><link linkend="VizMultiDScatter">Scatter</link></para>
+
+    <para><link linkend="VizMultiDStep">Step</link></para>
+
+    <para></para>
+  </sect1>
+
+  <sect1 id="VizGeoList">
+    <title>Geospatial Visualization Methods</title>
+
+    <para><link linkend="VizUSStates">USStates</link></para>
+
+    <para><link linkend="VizUSCounties">USCounties</link></para>
+
+    <para><link linkend="VizEuro">Euro</link></para>
+
+    <para>EuroIE</para>
+
+    <para>EuroGB</para>
+
+    <para></para>
+
+    <para>Note: The EuroIE and EuroGB methods are provided as examples. To
+    create other country-specific methods, merely use the Euro method and
+    provide the two-character country code in the _region parameter.</para>
+  </sect1>
+
+  <sect1 id="VizGeneralList">
+    <title>General Visualization Methods</title>
+
+    <para><link linkend="VizGrid">Grid</link></para>
+
+    <para><link linkend="VizHandsonGrid">Handson Grid</link></para>
+
+    <para></para>
+
+    <para></para>
+  </sect1>
+</chapter>
