@@ -71,8 +71,8 @@
   <Component name="ecldirect" processName='EspService' schema='esp_service_ecldirect.xsd' deployable='no'>
     <File name="@temp/esp_service_ecldirect.xsl" method="esp_service_module"/>
   </Component>
-  <Component name="esp_wubilling" processName='EspService' schema='esp_service_wubilling.xsd' deployable='no'>
-    <File name="@temp/esp_service_wubilling.xsl" method="esp_service_module"/>
+  <Component name="esp_wubilling" processName='EspService' schema='wswubilling.xsd' deployable='no'>
+    <File name="@temp/esp_service_wswubilling.xsl" method="esp_service_module"/>
   </Component>
   <Component name="espadl" processName='EspService' schema='esp_service_wsadl.xsd' deployable='no'>
     <File name="@temp/esp_service_wsadl.xsl" method="esp_service_module"/>

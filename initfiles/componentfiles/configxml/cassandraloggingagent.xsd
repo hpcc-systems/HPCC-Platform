@@ -27,6 +27,14 @@
             <title>Cassandra Logging Agent</title>
         </xs:appinfo>
       </xs:annotation>
+      <!-- All SecurityManager Plugins must define the type="SecurityManager" attribute -->
+      <xs:attribute name="type" type="DefaultLoggingAgent" use="required" default="DefaultLoggingAgent">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="build" type="buildType" use="required">
         <xs:annotation>
           <xs:appinfo>

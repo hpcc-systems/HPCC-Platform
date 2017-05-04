@@ -15,6 +15,14 @@
             <title>ESP Logging Agent</title>
         </xs:appinfo>
       </xs:annotation>
+      <!-- All logging agent Plugins must define the type="DefaultLoggingAgent" attribute -->
+      <xs:attribute name="type" type="DefaultLoggingAgent" use="required" default="DefaultLoggingAgent">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="build" type="buildType" use="required">
         <xs:annotation>
           <xs:appinfo>
