@@ -17295,7 +17295,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
         return doBuildActivityCreateRow(ctx, row, true);
     }
 
-    if (values->isConstant())
+    if (values->isConstant() && !expr->hasAttribute(distributedAtom))
     {
         CHqlBoundExpr bound;
         if (doBuildConstantDatasetInlineTable(expr, bound, FormatNatural))
