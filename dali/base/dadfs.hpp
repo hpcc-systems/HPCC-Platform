@@ -788,7 +788,8 @@ extern da_decl bool removeClusterSpares(const char *clusterName, const char *typ
 // should poss. belong in lib workunit
 extern da_decl StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupName);
 extern da_decl StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, StringBuffer &groupName);
-extern da_decl IGroup *getClusterNodeGroup(const char *clusterName, const char *type, unsigned timems=INFINITE);
+extern da_decl IGroup *getClusterNodeGroup(const char *clusterName, const char *type, unsigned timems=INFINITE); // returns the raw cluster group (as defined in the Cluster topology)
+extern da_decl IGroup *getClusterProcessNodeGroup(const char *clusterName, const char *type, unsigned timems=INFINITE); // returns the group of all processes of cluster group (i.e. cluster group * slavesPerNode)
 
 extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user, ICodeContext *ctx=NULL);
 
