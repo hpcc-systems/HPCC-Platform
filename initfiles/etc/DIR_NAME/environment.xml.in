@@ -292,7 +292,10 @@
                    ldapServer=""
                    method="none"
                    checkViewPermissions="false"
-                   passwordExpirationWarningDays="10"/>
+                   passwordExpirationWarningDays="10"
+                   sessionsEnabled="true"
+                   sessionTimout="60"
+                   sessionTimeoutWarning="5"/>
    <EspBinding defaultForPort="true"
                defaultServiceVersion=""
                name="myespsmc"
