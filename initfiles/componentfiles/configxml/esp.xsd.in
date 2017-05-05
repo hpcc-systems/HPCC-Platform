@@ -347,6 +347,78 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+	        <xs:element name="AuthDomain"  maxOccurs="unbounded">
+	          <xs:annotation>
+	            <xs:appinfo>
+	              <title>AuthDomain</title>
+	            </xs:appinfo>
+	          </xs:annotation>
+	          <!--DOC-Autobuild-code-->
+	          <xs:annotation>
+	            <xs:appinfo>
+	              <docid>ESP.t7</docid>
+	            </xs:appinfo>
+	          </xs:annotation>
+	          <xs:complexType>
+	            <xs:attribute name="name" type="xs:string" use="optional">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>Unique string to identify an auth domain in case > 1 domains in an esp</tooltip>
+	                  <colIndex>1</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+	            <xs:attribute name="authType" use="optional" default="AuthTypeMixed">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>User session Authentication type</tooltip>
+	                  <colIndex>2</colIndex>
+	                  <required>true</required>
+	                </xs:appinfo>
+	              </xs:annotation>
+	              <xs:simpleType>
+	                <xs:restriction base="xs:string">
+	                  <xs:enumeration value="AuthTypeMixed"/>
+	                  <xs:enumeration value="AuthPerSessionOnly"/>
+	                  <xs:enumeration value="AuthPerRequestOnly"/>
+	                </xs:restriction>
+	              </xs:simpleType>
+	            </xs:attribute>
+	            <xs:attribute name="logonURL" type="xs:string" use="optional" default="/esp/files/userlogon.html">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>Logon URL</tooltip>
+	                  <colIndex>3</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+	            <xs:attribute name="logoutURL" type="xs:string" use="optional" default="/esp/files/userlogon.html">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>Logout URL</tooltip>
+	                  <colIndex>4</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+	            <xs:attribute name="sessionTimeoutMinutes" use="optional" default="60">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <tooltip>Inactive session duration, in minutes</tooltip>
+	                  <colIndex>5</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+	            <xs:attribute name="resourceURL" type="xs:string" use="optional" default="/favicon.ico,/esp/files/img/favicon.ico,/esp/files/eclwatch/img/Loginlogo.png,/esp/files/dojo/*,/esp/files/eclwatch/nls/*">
+	              <xs:annotation>
+	                <xs:appinfo>
+	                  <width>50</width>
+	                  <tooltip>Resource URL</tooltip>
+	                  <colIndex>6</colIndex>
+	                </xs:appinfo>
+	              </xs:annotation>
+	            </xs:attribute>
+	          </xs:complexType>
+	        </xs:element>
                 <xs:element name="HTTPS" minOccurs="0">
                     <xs:complexType>
                      <!--DOC-Autobuild-code-->
