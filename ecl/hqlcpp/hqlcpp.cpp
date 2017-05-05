@@ -1476,6 +1476,15 @@ void HqlCppTranslator::setTargetClusterType(ClusterType clusterType)
     targetClusterType = clusterType;
 }
 
+void HqlCppTranslator::ensureDiskAccessAllowed(IHqlExpression * expr)
+{
+    if (expr->hasAttribute(_spill_Atom)||expr->hasAttribute(_workflow_Atom)||expr->hasAttribute(jobTempAtom)||expr->hasAttribute(_workflowPersist_Atom) )
+        return;
+    bool isSigned = expr->hasAttribute(_signed_Atom);
+    if (!queryCallback()->allowAccess("datafile", isSigned))
+        reportErrorNoAbort(expr, HQLERR_DatafileRequiresSigned, "You do not have permission to directly access datafiles");
+}
+
 void HqlCppTranslator::checkAbort()
 {
     if (wu() && wu()->aborting())
@@ -2235,6 +2244,17 @@ void HqlCppTranslator::reportError(IHqlExpression * location, int code,const cha
     va_end(args);
 
     reportErrorDirect(location, code, errorMsg.str(), true);
+}
+
+void HqlCppTranslator::reportErrorNoAbort(IHqlExpression * location, int code,const char *format, ...)
+{
+    StringBuffer errorMsg;
+    va_list args;
+    va_start(args, format);
+    errorMsg.valist_appendf(format, args);
+    va_end(args);
+
+    reportErrorDirect(location, code, errorMsg.str(), false);
 }
 
 //---------------------------------------------------------------------------

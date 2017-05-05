@@ -2645,7 +2645,7 @@ class DiskReadBuilderBase : public SourceBuilder
 public:
     DiskReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : SourceBuilder(_translator, _tableExpr, _nameExpr), monitors(_tableExpr, _translator, 0, true)
-    { 
+    {
         fpos.setown(getFilepos(tableExpr, false));
         lfpos.setown(getFilepos(tableExpr, true));
         logicalFilenameMarker.setown(getFileLogicalName(tableExpr));
@@ -2934,6 +2934,7 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
 ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlExpression * expr)
 {
 //  assertex(!isGroupedActivity(expr));
+
     IHqlExpression *tableExpr = queryPhysicalRootTable(expr);
     if (!tableExpr)
         return buildCachedActivity(ctx, expr->queryChild(0));           // Somehow a null appeared.
@@ -2971,6 +2972,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
 
     if (isPiped)
         return info.buildActivity(ctx, expr, TAKpiperead, "PipeRead", NULL);
+    ensureDiskAccessAllowed(tableExpr);
     if (modeOp == no_csv)
         return info.buildActivity(ctx, expr, TAKcsvread, "CsvRead", NULL);
     return info.buildActivity(ctx, expr, TAKdiskread, "DiskRead", NULL);
@@ -3029,6 +3031,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskNormalize(BuildCtx & ctx, 
 {
     assertex(!isGroupedActivity(expr));
     IHqlExpression *tableExpr = queryPhysicalRootTable(expr);
+    ensureDiskAccessAllowed(tableExpr);
     HqlExprAttr mode = tableExpr->queryChild(2);
     assertex(mode->getOperator()!=no_pipe);
 
@@ -3186,6 +3189,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskAggregate(BuildCtx & ctx, 
 {
     assertex(!isGroupedActivity(expr));
     IHqlExpression *tableExpr = queryPhysicalRootTable(expr);
+    ensureDiskAccessAllowed(tableExpr);
+
     HqlExprAttr mode = tableExpr->queryChild(2);
     assertex(mode->getOperator()!=no_pipe);
 
@@ -3263,6 +3268,8 @@ void DiskGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
 ABoundActivity * HqlCppTranslator::doBuildActivityDiskGroupAggregate(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression *tableExpr = queryPhysicalRootTable(expr);
+    ensureDiskAccessAllowed(tableExpr);
+
     HqlExprAttr mode = tableExpr->queryChild(2);
     assertex(mode->getOperator()!=no_pipe);
 
@@ -6513,7 +6520,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexRead(BuildCtx & ctx, IHql
     //If the filter is false, then it may get reduced to a NULL operation!
     if (!tableExpr)
         return buildNullIndexActivity(*this, ctx, optimized);
-
+    ensureDiskAccessAllowed(tableExpr);
     if (optimized->getOperator() != no_compound_indexread)
         optimized.setown(createDataset(no_compound_indexread, LINK(optimized)));
 
@@ -6590,6 +6597,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexNormalize(BuildCtx & ctx,
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     if (!tableExpr)
         return buildNullIndexActivity(*this, ctx, optimized);
+    ensureDiskAccessAllowed(tableExpr);
 
     assertex(tableExpr->getOperator() == no_newkeyindex);
     IndexNormalizeBuilder info(*this, tableExpr, tableExpr->queryChild(3));
@@ -6757,6 +6765,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexAggregate(BuildCtx & ctx,
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     if (!tableExpr)
         return buildNullIndexActivity(*this, ctx, optimized);
+    ensureDiskAccessAllowed(tableExpr);
 
     assertex(tableExpr->getOperator() == no_newkeyindex);
     node_operator aggOp = querySimpleAggregate(expr, true, false);
@@ -6919,6 +6928,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexGroupAggregate(BuildCtx &
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     if (!tableExpr)
         return buildNullIndexActivity(*this, ctx, optimized);
+    ensureDiskAccessAllowed(tableExpr);
 
     IHqlExpression * aggregate = expr->queryChild(0);
     assertex(aggregate->getOperator() == no_newaggregate || aggregate->getOperator() == no_aggregate);
@@ -7094,6 +7104,7 @@ void HqlCppTranslator::buildCsvReadTransformer(IHqlExpression * dataset, StringB
 ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression * tableExpr = expr;
+    ensureDiskAccessAllowed(tableExpr);
     IHqlExpression * filename = tableExpr->queryChild(0);
     IHqlExpression * mode = tableExpr->queryChild(2);
     node_operator modeType = mode->getOperator();

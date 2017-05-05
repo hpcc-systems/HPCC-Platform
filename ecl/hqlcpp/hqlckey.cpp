@@ -309,6 +309,7 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
             translator.throwError(HQLERR_FullKeyedNeedsFile);
         expandedFile.setown(convertToPhysicalTable(rightTable, true));
         rawFile.set(queryPhysicalRootTable(expandedFile));
+        translator.ensureDiskAccessAllowed(rawFile);
         keyedMapper.setDataset(key);
     }
     else if (right->getOperator() == no_newkeyindex)
@@ -334,6 +335,7 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
         originalKey.set(key);
     expandedKey.setown(translator.convertToPhysicalIndex(key));
     rawKey.set(queryPhysicalRootTable(expandedKey));
+    _translator.ensureDiskAccessAllowed(rawKey);
     canOptimizeTransfer = _canOptimizeTransfer; 
     monitors = NULL;
     counter.set(queryAttributeChild(expr, _countProject_Atom, 0));
@@ -1330,6 +1332,7 @@ void HqlCppTranslator::buildKeyJoinFetchHelper(ActivityInstance & instance, IHql
 
 ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCtx & ctx, IHqlExpression * expr)
 {
+    ensureDiskAccessAllowed(expr);
     KeyedJoinInfo info(*this, expr, !targetHThor());
     IHqlExpression * cond = expr->queryChild(2);
     if (!info.processFilter() && !cond->isConstant())
@@ -1595,6 +1598,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
 
 ABoundActivity * HqlCppTranslator::doBuildActivityKeyDiff(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
+    ensureDiskAccessAllowed(expr);
+
     StringBuffer s;
     IHqlExpression * original = expr->queryChild(0);
     IHqlExpression * updated = expr->queryChild(1);
@@ -1642,6 +1647,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyDiff(BuildCtx & ctx, IHqlEx
 
 ABoundActivity * HqlCppTranslator::doBuildActivityKeyPatch(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
+    ensureDiskAccessAllowed(expr);
     StringBuffer s;
     IHqlExpression * original = expr->queryChild(0);
     IHqlExpression * patch = expr->queryChild(1);

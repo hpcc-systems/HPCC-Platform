@@ -478,6 +478,8 @@ public:
     void checkExportedModule(const attribute & errpos, IHqlExpression * scopeExpr);
     bool checkCompatibleSymbol(const attribute & errpos, IHqlExpression * prevValue, IHqlExpression * newValue);
     bool checkAllowed(const attribute & errpos, const char *category, const char *description);
+    void saveDiskAccessInformation(const attribute & errpos, HqlExprArray & options);
+    void saveDiskAccessInformation(const attribute & errpos, OwnedHqlExpr & options);
     IHqlExpression * createAveList(const attribute & errpos, IHqlExpression * list);
     IHqlExpression * createIff(attribute & condAttr, attribute & leftAttr, attribute & rightAttr);
     IHqlExpression * createListFromExpressionList(attribute & attr);
@@ -576,7 +578,7 @@ public:
     void beginDefineId(IIdAtom * name, ITypeInfo * type);
 
     IHqlExpression * processAlienType(const attribute & errpos);
-    IHqlExpression * processIndexBuild(attribute & indexAttr, attribute * recordAttr, attribute * payloadAttr, attribute & filenameAttr, attribute & flagsAttr);
+    IHqlExpression * processIndexBuild(const attribute &err, attribute & indexAttr, attribute * recordAttr, attribute * payloadAttr, attribute & filenameAttr, attribute & flagsAttr);
     IHqlExpression * processCompoundFunction(attribute & result, bool outOfLine);
     IHqlExpression * processEmbedBody(const attribute & errpos, IHqlExpression * embedText, IHqlExpression * language, IHqlExpression *attribs);
     IHqlExpression * getGpgSignature();
