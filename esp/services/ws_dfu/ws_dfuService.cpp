@@ -4988,6 +4988,25 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
     return true;
 }
 
+void storeHistoryTreeToArray(IPropertyTree *history, IArrayOf<IEspHistory>& arrHistory)
+{
+    Owned<IPropertyTreeIterator> historyIter = history->getElements("*");
+    ForEach(*historyIter)
+    {
+        Owned<IEspHistory> historyRecord = createHistory();
+
+        IPropertyTree & item = historyIter->query();
+        historyRecord->setIP(item.queryProp("@ip"));
+        historyRecord->setName(item.queryProp("@name"));
+        historyRecord->setOperation(item.queryProp("@operation"));
+        historyRecord->setOwner(item.queryProp("@owner"));
+        historyRecord->setPath(item.queryProp("@path"));
+        historyRecord->setTimestamp(item.queryProp("@timestamp"));
+        historyRecord->setWorkunit(item.queryProp("@workunit"));
+
+        arrHistory.append(*historyRecord.getClear());
+    }
+}
 
 bool CWsDfuEx::onListHistory(IEspContext &context, IEspListHistoryRequest &req, IEspListHistoryResponse &resp)
 {
@@ -5008,17 +5027,26 @@ bool CWsDfuEx::onListHistory(IEspContext &context, IEspListHistoryRequest &req, 
         PROGLOG("onListHistory: %s", req.getName());
 
         MemoryBuffer xmlmap;
+        IArrayOf<IEspHistory> arrHistory;
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get());
         if (file)
         {
             IPropertyTree *history = file->queryHistory();
             if (history)
-                history->serialize(xmlmap);
+            {
+                storeHistoryTreeToArray(history, arrHistory);
+                if (context.getClientVersion() < 1.36)
+                    history->serialize(xmlmap);
+            }
+
+            if (arrHistory.ordinality())
+                resp.setHistory(arrHistory);
         }
         else
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"CWsDfuEx::onListHistory: Could not find file '%s'.", req.getName());
 
-        resp.setXmlmap(xmlmap);
+        if (xmlmap.length())
+            resp.setXmlmap(xmlmap);
     }
     catch(IException* e)
     {
@@ -5046,21 +5074,27 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
         PROGLOG("onEraseHistory: %s", req.getName());
 
         MemoryBuffer xmlmap;
+        IArrayOf<IEspHistory> arrHistory;
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get());
         if (file)
         {
             IPropertyTree *history = file->queryHistory();
             if (history)
             {
-                history->serialize(xmlmap);
+                storeHistoryTreeToArray(history, arrHistory);
+                if (context.getClientVersion() < 1.36)
+                    history->serialize(xmlmap);
+
                 file->resetHistory();
             }
+            if (arrHistory.ordinality())
+                resp.setHistory(arrHistory);
         }
         else
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"CWsDfuEx::onEraseHistory: Could not find file '%s'.", req.getName());
 
-
-        resp.setXmlmap(xmlmap);
+        if (xmlmap.length())
+            resp.setXmlmap(xmlmap);
     }
     catch(IException* e)
     {

@@ -41,7 +41,7 @@ static class CSecuritySettings
 public:
     CSecuritySettings()
     {
-        querySecuritySettings(&useSSL, &daliServixPort, NULL, NULL);
+        querySecuritySettings(&useSSL, &daliServixPort, nullptr, nullptr);
     }
 
     unsigned short queryDaliServixPort() { return daliServixPort; }
@@ -99,7 +99,7 @@ public:
 
     }
 
-    bool ok() { return exc.get()==NULL; }
+    bool ok() { return exc.get()==nullptr; }
 
     unsigned idleTime() { return server.get()?server->idleTime():0; }
 
@@ -117,7 +117,7 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
     else
         progress("Started local Dali file server on %s\n", listenep.getUrlStr(eps).str());
     if (timeout==0) {
-        setDafsTrace(NULL,0); // disable client tracing
+        setDafsTrace(nullptr,0); // disable client tracing
         dafsthread.setown(thr.getClear());
     }
     else {
@@ -170,7 +170,7 @@ CDfuPlusHelper::CDfuPlusHelper(IProperties* _globals,   CDfuPlusMessagerIntercep
     sprayclient.setown(createFileSprayClient());
 
     const char* server = globals->queryProp("server");
-    if(server == NULL)
+    if(server == nullptr)
         throw MakeStringException(-1, "Server url not specified");
 
     StringBuffer url;
@@ -178,7 +178,7 @@ CDfuPlusHelper::CDfuPlusHelper(IProperties* _globals,   CDfuPlusMessagerIntercep
         url.append("http://");
     url.append(server);
 
-    if(strchr(url.str() + 7, ':') == NULL)
+    if(strchr(url.str() + 7, ':') == nullptr)
     url.append(":8010/");
 
     if(url.charAt(url.length() - 1) != '/')
@@ -204,8 +204,8 @@ CDfuPlusHelper::CDfuPlusHelper(IProperties* _globals,   CDfuPlusMessagerIntercep
         password = globals->queryProp("password");
     }
 
-    sprayclient->setUsernameToken(username, password, NULL);
-    dfuclient->setUsernameToken(username, password, NULL);
+    sprayclient->setUsernameToken(username, password, nullptr);
+    dfuclient->setUsernameToken(username, password, nullptr);
 
 }
 
@@ -226,7 +226,7 @@ CDfuPlusHelper::~CDfuPlusHelper()
 int CDfuPlusHelper::doit()
 {
     const char* action = globals->queryProp("action");
-    if(action == NULL || *action == '\0')
+    if(action == nullptr || *action == '\0')
         throw MakeStringException(-1, "action is missing");
     else if(stricmp(action, "spray") == 0)
         return spray();
@@ -300,7 +300,7 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
     }
 
     Owned<IClientSprayFixed> req = sprayclient->createSprayFixedRequest();
-    if(srcxml == NULL)
+    if(srcxml == nullptr)
     {
         req->setSourceIP(srcip);
         req->setSourcePath(srcfile);
@@ -311,7 +311,7 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
     if(recordsize != 0)
         req->setSourceRecordSize(recordsize);
 
-    if(dstcluster != NULL)
+    if(dstcluster != nullptr)
         req->setDestGroup(dstcluster);
     req->setDestLogicalName(dstname);
     req->setOverwrite(globals->getPropBool("overwrite", false));
@@ -350,7 +350,7 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
     if(globals->hasProp("failIfNoSourceFile"))
         req->setFailIfNoSourceFile(globals->getPropBool("failIfNoSourceFile",false));
 
-    if(srcxml == NULL)
+    if(srcxml == nullptr)
         info("\nFixed spraying from %s on %s to %s\n", srcfile, srcip, dstname);
     else
         info("\nSpraying to %s\n", dstname);
@@ -368,7 +368,7 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
 bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const char* srcfile,const MemoryBuffer &xmlbuf,const char* dstcluster,const char* dstname,const char *format,StringBuffer &retwuid, StringBuffer &except)
 {
     Owned<IClientSprayVariable> req = sprayclient->createSprayVariableRequest();
-    if(srcxml == NULL)
+    if(srcxml == nullptr)
     {
         req->setSourceIP(srcip);
         req->setSourcePath(srcfile);
@@ -379,7 +379,7 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
     }
 
     const char* mrsstr = globals->queryProp("maxRecordSize");
-    if(mrsstr != NULL)
+    if(mrsstr != nullptr)
         req->setSourceMaxRecordSize(atoi(mrsstr));
     else
         req->setSourceMaxRecordSize(8192);
@@ -401,21 +401,21 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
     }
     else if(stricmp(format, "xml") == 0)
     {
-        if(encoding == NULL)
+        if(encoding == nullptr)
             encoding = "utf8";
         else if(stricmp(encoding, "ascii") == 0)
             throw MakeStringException(-1, "xml format only accepts utf encodings");
-        if(rowtag == NULL || *rowtag == '\0')
+        if(rowtag == nullptr || *rowtag == '\0')
             throw MakeStringException(-1, "rowtag not specified.");
         if(rowpath && *rowpath)
             throw MakeStringException(-1, "You can't use rowpath option with xml format");
     }
     else if(stricmp(format, "csv") == 0)
     {
-        if(encoding == NULL)
+        if(encoding == nullptr)
             encoding = "ascii";
 
-        if(rowtag != NULL && *rowtag != '\0')
+        if(rowtag != nullptr && *rowtag != '\0')
             throw MakeStringException(-1, "You can't use rowtag option with csv/delimited format");
         if(rowpath && *rowpath)
             throw MakeStringException(-1, "You can't use rowpath option with csv/delimited format");
@@ -447,10 +447,10 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
         encoding = format; // may need extra later
 
     req->setSourceFormat(CDFUfileformat::decode(encoding));
-    if(rowtag != NULL)
+    if(rowtag != nullptr)
         req->setSourceRowTag(rowtag);
 
-    if(dstcluster != NULL)
+    if(dstcluster != nullptr)
         req->setDestGroup(dstcluster);
     req->setDestLogicalName(dstname);
     req->setOverwrite(globals->getPropBool("overwrite", false));
@@ -494,7 +494,7 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
     if(globals->hasProp("quotedTerminator"))
         req->setQuotedTerminator(globals->getPropBool("quotedTerminator",true));
 
-    if(srcxml == NULL)
+    if(srcxml == nullptr)
         info("\nVariable spraying from %s on %s to %s\n", srcfile, srcip, dstname);
     else
         info("\nSpraying to %s\n", dstname);
@@ -518,11 +518,11 @@ int CDfuPlusHelper::spray()
 
     MemoryBuffer xmlbuf;
 
-    if(srcxml == NULL)
+    if(srcxml == nullptr)
     {
-        if(srcfile == NULL)
+        if(srcfile == nullptr)
             throw MakeStringException(-1, "srcfile not specified");
-        if(srcip == NULL) {
+        if(srcip == nullptr) {
 #ifdef DAFILESRV_LOCAL
             progress("srcip not specified - assuming spray from local machine\n");
             srcip = ".";
@@ -533,7 +533,7 @@ int CDfuPlusHelper::spray()
     }
     else
     {
-        if(srcip != NULL || srcfile != NULL)
+        if(srcip != nullptr || srcfile != nullptr)
             throw MakeStringException(-1, "srcip/srcfile and srcxml can't be used at the same time");
         StringBuffer buf;
         buf.loadFile(srcxml);
@@ -542,13 +542,13 @@ int CDfuPlusHelper::spray()
     }
 
     const char* dstname = globals->queryProp("dstname");
-    if(dstname == NULL)
+    if(dstname == nullptr)
         throw MakeStringException(-1, "dstname not specified");
     const char* dstcluster = globals->queryProp("dstcluster");
-    if(dstcluster == NULL)
+    if(dstcluster == nullptr)
         throw MakeStringException(-1, "dstcluster not specified");
     const char* format = globals->queryProp("format");
-    if(format == NULL)
+    if(format == nullptr)
         format = "fixed";
     else if (stricmp(format, "delimited") == 0)
         format="csv";
@@ -588,7 +588,7 @@ int CDfuPlusHelper::spray()
 int CDfuPlusHelper::replicate()
 {
     const char* srcname = globals->queryProp("srcname");
-    if(srcname == NULL)
+    if(srcname == nullptr)
         throw MakeStringException(-1, "srcname not specified");
 
     bool nowait = globals->getPropBool("nowait", false);
@@ -613,7 +613,7 @@ int CDfuPlusHelper::replicate()
 
     Owned<IClientReplicateResponse> result = sprayclient->Replicate(req);
     const char* wuid = result->getWuid();
-    if(wuid == NULL || *wuid == '\0')
+    if(wuid == nullptr || *wuid == '\0')
         exc(result->getExceptions(),"replicating");
     else
     {
@@ -632,7 +632,7 @@ int CDfuPlusHelper::replicate()
 int CDfuPlusHelper::despray()
 {
     const char* srcname = globals->queryProp("srcname");
-    if(srcname == NULL)
+    if(srcname == nullptr)
         throw MakeStringException(-1, "srcname not specified");
 
     const char* dstxml = globals->queryProp("dstxml");
@@ -642,11 +642,11 @@ int CDfuPlusHelper::despray()
     bool nowait = globals->getPropBool("nowait", false);
 
     MemoryBuffer xmlbuf;
-    if(dstxml == NULL)
+    if(dstxml == nullptr)
     {
-        if(dstfile == NULL)
+        if(dstfile == nullptr)
             throw MakeStringException(-1, "dstfile not specified");
-        if(dstip == NULL) {
+        if(dstip == nullptr) {
 #ifdef DAFILESRV_LOCAL
             progress("dstip not specified - assuming spray from local machine\n");
             dstip = ".";
@@ -657,7 +657,7 @@ int CDfuPlusHelper::despray()
     }
     else
     {
-        if(dstip != NULL || dstfile != NULL)
+        if(dstip != nullptr || dstfile != nullptr)
             throw MakeStringException(-1, "dstip/dstfile and dstxml can't be used at the same time");
         StringBuffer buf;
         buf.loadFile(dstxml);
@@ -665,14 +665,14 @@ int CDfuPlusHelper::despray()
         xmlbuf.setBuffer(len, buf.detach(), true);
     }
 
-    if(dstxml == NULL)
+    if(dstxml == nullptr)
         info("\nDespraying %s to host %s file %s\n", srcname, dstip, dstfile);
     else
         info("\nDespraying %s\n", srcname);
 
     Owned<IClientDespray> req = sprayclient->createDesprayRequest();
     req->setSourceLogicalName(srcname);
-    if(dstxml == NULL)
+    if(dstxml == nullptr)
     {
         req->setDestIP(dstip);
         req->setDestPath(dstfile);
@@ -719,7 +719,7 @@ int CDfuPlusHelper::despray()
         dstip = localep.getUrlStr(localeps).str();
     Owned<IClientDesprayResponse> result = sprayclient->Despray(req);
     const char* wuid = result->getWuid();
-    if(wuid == NULL || *wuid == '\0')
+    if(wuid == nullptr || *wuid == '\0')
         exc(result->getExceptions(),"despraying");
     else
     {
@@ -738,10 +738,10 @@ int CDfuPlusHelper::despray()
 int CDfuPlusHelper::copy()
 {
     const char* srcname = globals->queryProp("srcname");
-    if(srcname == NULL)
+    if(srcname == nullptr)
         throw MakeStringException(-1, "srcname not specified");
     const char* dstname = globals->queryProp("dstname");
-    if(dstname == NULL)
+    if(dstname == nullptr)
         throw MakeStringException(-1, "dstname not specified");
     const char* dstcluster = globals->queryProp("dstcluster");
     const char* dstclusterroxie = globals->queryProp("dstclusterroxie");
@@ -758,15 +758,15 @@ int CDfuPlusHelper::copy()
     Owned<IClientCopy> req = sprayclient->createCopyRequest();
     req->setSourceLogicalName(srcname);
     req->setDestLogicalName(dstname);
-    if(dstcluster != NULL)
+    if(dstcluster != nullptr)
         req->setDestGroup(dstcluster);
     if(dstclusterroxie && !stricmp(dstclusterroxie, "Yes"))
         req->setDestGroupRoxie("Yes");
-    if(srcdali !=  NULL)
+    if(srcdali !=  nullptr)
         req->setSourceDali(srcdali);
-    if(diffkeysrc !=  NULL)
+    if(diffkeysrc !=  nullptr)
         req->setSourceDiffKeyName(diffkeysrc);
-    if(diffkeydst !=  NULL)
+    if(diffkeydst !=  nullptr)
         req->setDestDiffKeyName(diffkeydst);
     if(srcusername && *srcusername)
         req->setSrcusername(srcusername);
@@ -811,7 +811,7 @@ int CDfuPlusHelper::copy()
 
     Owned<IClientCopyResponse> result = sprayclient->Copy(req);
     const char* wuid = result->getResult();
-    if(wuid == NULL || *wuid == '\0')
+    if(wuid == nullptr || *wuid == '\0')
         exc(result->getExceptions(),"copying");
     else
     {
@@ -830,16 +830,16 @@ int CDfuPlusHelper::copy()
 int CDfuPlusHelper::copysuper()
 {
     const char* srcname = globals->queryProp("srcname");
-    if(srcname == NULL)
+    if(srcname == nullptr)
         throw MakeStringException(-1, "srcname not specified");
     const char* dstname = globals->queryProp("dstname");
-    if(dstname == NULL)
+    if(dstname == nullptr)
         throw MakeStringException(-1, "dstname not specified");
     const char* dstcluster = globals->queryProp("dstcluster");
-    if(dstcluster == NULL)
+    if(dstcluster == nullptr)
         throw MakeStringException(-1, "dstcluster not specified");
     const char* srcdali = globals->queryProp("srcdali");
-    if(srcdali == NULL)
+    if(srcdali == nullptr)
         throw MakeStringException(-1, "srcdali not specified");
     const char* dstclusterroxie = globals->queryProp("dstclusterroxie"); // not sure if this applicable
     const char* srcusername = globals->queryProp("srcusername");
@@ -894,7 +894,7 @@ int CDfuPlusHelper::copysuper()
 
     Owned<IClientCopyResponse> result = sprayclient->Copy(req);
     const char* ret = result->getResult();
-    if(ret == NULL || *ret == '\0')
+    if(ret == nullptr || *ret == '\0')
         exc(result->getExceptions(),"copying");
     else if (stricmp(ret,"OK")==0)
         info("Superfile copy completed\n");
@@ -911,7 +911,7 @@ int CDfuPlusHelper::monitor()
     const char* eps = globals->queryProp("ip");
     const char* filename = globals->queryProp("file");
     bool sub = globals->getPropBool("sub");
-    if ((lfn == NULL) && (filename == NULL))
+    if ((lfn == nullptr) && (filename == nullptr))
         throw MakeStringException(-1, "neither lfn nor filename specified");
     int shotlimit = globals->getPropInt("shotlimit");
     if (shotlimit == 0)
@@ -938,7 +938,7 @@ int CDfuPlusHelper::monitor()
     Owned<IClientDfuMonitorResponse> result = sprayclient->DfuMonitor(req);
 
     const char* wuid = result->getWuid();
-    if(wuid == NULL || *wuid == '\0')
+    if(wuid == nullptr || *wuid == '\0')
         exc(result->getExceptions(),"monitoring");
     else
     {
@@ -1030,7 +1030,7 @@ int CDfuPlusHelper::remove()
     Owned<IClientDFUArrayActionResponse> resp = dfuclient->DFUArrayAction(req);
 
     const IMultiException* excep = &resp->getExceptions();
-    if(excep != NULL && excep->ordinality() > 0)
+    if(excep != nullptr && excep->ordinality() > 0)
     {
         StringBuffer errmsg;
         excep->errorMessage(errmsg);
@@ -1052,7 +1052,7 @@ int CDfuPlusHelper::remove()
     else
     {
         const char* result = resp->getDFUArrayActionResult();
-        if(result != NULL && *result != '\0')
+        if(result != nullptr && *result != '\0')
         {
             if(*result != '<')
                 resultbuf.append(result);
@@ -1082,10 +1082,10 @@ int CDfuPlusHelper::remove()
 int CDfuPlusHelper::rename()
 {
     const char* srcname = globals->queryProp("srcname");
-    if(srcname == NULL)
+    if(srcname == nullptr)
         throw MakeStringException(-1, "srcname not specified");
     const char* dstname = globals->queryProp("dstname");
-    if(dstname == NULL)
+    if(dstname == nullptr)
         throw MakeStringException(-1, "dstname not specified");
 
     bool nowait = globals->getPropBool("nowait", false);
@@ -1098,7 +1098,7 @@ int CDfuPlusHelper::rename()
 
     Owned<IClientRenameResponse> result = sprayclient->Rename(req);
     const char* wuid = result->getWuid();
-    if(wuid == NULL || *wuid == '\0')
+    if(wuid == nullptr || *wuid == '\0')
         exc(result->getExceptions(),"copying");
     else
     {
@@ -1119,20 +1119,20 @@ int CDfuPlusHelper::list()
 {
     const char* name = globals->queryProp("name");
 
-    if(name != NULL)
+    if(name != nullptr)
         info("List %s\n", name);
     else
         info("List *\n");
 
     Owned<IClientDFUQueryRequest> req = dfuclient->createDFUQueryRequest();
-    if(name != NULL)
+    if(name != nullptr)
         req->setLogicalName(name);
 
     req->setPageSize(-1);
 
     Owned<IClientDFUQueryResponse> resp = dfuclient->DFUQuery(req);
     const IMultiException* excep = &resp->getExceptions();
-    if(excep != NULL &&  excep->ordinality() > 0)
+    if(excep != nullptr &&  excep->ordinality() > 0)
     {
         StringBuffer errmsg;
         excep->errorMessage(errmsg);
@@ -1142,7 +1142,7 @@ int CDfuPlusHelper::list()
 
     IArrayOf<IConstDFULogicalFile>& files = resp->getDFULogicalFiles();
 
-    FILE *f = NULL;
+    FILE *f = nullptr;
     const char* fileName = globals->queryProp("saveto");
     if (fileName && *fileName)
     {
@@ -1156,7 +1156,7 @@ int CDfuPlusHelper::list()
     for(unsigned i = 0; i < files.length(); i++)
     {
         IConstDFULogicalFile* onefile = &files.item(i);
-        if(onefile != NULL)
+        if(onefile != nullptr)
         {
             info("%s\n", onefile->getName());
             if (f)
@@ -1182,7 +1182,7 @@ int CDfuPlusHelper::recover()
 int CDfuPlusHelper::superfile(const char* action)
 {
     const char* superfile = globals->queryProp("superfile");
-    if(superfile == NULL || *superfile == '\0')
+    if(superfile == nullptr || *superfile == '\0')
         throw MakeStringException(-1, "superfile name is not specified");
 
     if(stricmp(action, "add") == 0 || stricmp(action, "remove") == 0)
@@ -1190,7 +1190,7 @@ int CDfuPlusHelper::superfile(const char* action)
         const char* before = globals->queryProp("before");
         StringArray subfiles;
         const char* sfprop = globals->queryProp("subfiles");
-        if(sfprop != NULL && *sfprop != '\0')
+        if(sfprop != nullptr && *sfprop != '\0')
         {
             const char* ptr = sfprop;
             while(*ptr != '\0')
@@ -1218,7 +1218,7 @@ int CDfuPlusHelper::superfile(const char* action)
         Owned<IClientSuperfileActionResponse> resp = dfuclient->SuperfileAction(req);
 
         const IMultiException* excep = &resp->getExceptions();
-        if(excep != NULL && excep->ordinality() > 0)
+        if(excep != nullptr && excep->ordinality() > 0)
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
@@ -1242,7 +1242,7 @@ int CDfuPlusHelper::superfile(const char* action)
         Owned<IClientSuperfileListResponse> resp = dfuclient->SuperfileList(req);
 
         const IMultiException* excep = &resp->getExceptions();
-        if(excep != NULL && excep->ordinality() > 0)
+        if(excep != nullptr && excep->ordinality() > 0)
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
@@ -1263,7 +1263,7 @@ int CDfuPlusHelper::superfile(const char* action)
 int CDfuPlusHelper::savexml()
 {
     const char* lfn = globals->queryProp("srcname");
-    if(lfn == NULL || *lfn == '\0')
+    if(lfn == nullptr || *lfn == '\0')
         throw MakeStringException(-1, "srcname not specified");
 
     Owned<IClientSavexmlRequest> req = dfuclient->createSavexmlRequest();
@@ -1272,7 +1272,7 @@ int CDfuPlusHelper::savexml()
     Owned<IClientSavexmlResponse> resp = dfuclient->Savexml(req);
 
     const IMultiException* excep = &resp->getExceptions();
-    if(excep != NULL && excep->ordinality() > 0)
+    if(excep != nullptr && excep->ordinality() > 0)
     {
         StringBuffer errmsg;
         excep->errorMessage(errmsg);
@@ -1282,7 +1282,7 @@ int CDfuPlusHelper::savexml()
 
     const char* dstxml = globals->queryProp("dstxml");
     int ofile = 1;
-    if(dstxml != NULL && *dstxml != '\0')
+    if(dstxml != nullptr && *dstxml != '\0')
     {
         ofile = open(dstxml, _O_WRONLY | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
         if(ofile == -1)
@@ -1302,7 +1302,7 @@ int CDfuPlusHelper::savexml()
 int CDfuPlusHelper::add()
 {
     const char* lfn = globals->queryProp("dstname");
-    if(lfn == NULL || *lfn == '\0')
+    if(lfn == nullptr || *lfn == '\0')
         throw MakeStringException(-1, "dstname not specified");
 
     bool isRemote = false;
@@ -1311,14 +1311,14 @@ int CDfuPlusHelper::add()
     const char* srcdali = globals->queryProp("srcdali");
     const char* srcusername = globals->queryProp("srcusername");
     const char* srcpassword = globals->queryProp("srcpassword");
-    if(xmlfname == NULL || *xmlfname == '\0')
+    if(xmlfname == nullptr || *xmlfname == '\0')
     {
-        if(srcname == NULL || *srcname == '\0')
+        if(srcname == nullptr || *srcname == '\0')
             throw MakeStringException(-1, "Please specify srcxml for adding from xml, or srcname for adding from remote dali");
         else
         {
             isRemote = true;
-            if(srcdali == NULL || *srcdali == '\0')
+            if(srcdali == nullptr || *srcdali == '\0')
                 throw MakeStringException(-1, "srcdali not specified for adding remote");
         }
     }
@@ -1338,7 +1338,7 @@ int CDfuPlusHelper::add()
         Owned<IClientAddResponse> resp = dfuclient->Add(req);
 
         const IMultiException* excep = &resp->getExceptions();
-        if(excep != NULL && excep->ordinality() > 0)
+        if(excep != nullptr && excep->ordinality() > 0)
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
@@ -1352,15 +1352,15 @@ int CDfuPlusHelper::add()
         req->setDstname(lfn);
         req->setSrcname(srcname);
         req->setSrcdali(srcdali);
-        if(srcusername != NULL)
+        if(srcusername != nullptr)
             req->setSrcusername(srcusername);
-        if(srcpassword != NULL)
+        if(srcpassword != nullptr)
             req->setSrcpassword(srcpassword);
 
         Owned<IClientAddRemoteResponse> resp = dfuclient->AddRemote(req);
 
         const IMultiException* excep = &resp->getExceptions();
-        if(excep != NULL && excep->ordinality() > 0)
+        if(excep != nullptr && excep->ordinality() > 0)
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
@@ -1385,7 +1385,7 @@ int CDfuPlusHelper::status()
 
     Owned<IClientGetDFUWorkunitResponse> resp = sprayclient->GetDFUWorkunit(req);
     const IMultiException* excep = &resp->getExceptions();
-    if(excep != NULL &&  excep->ordinality() > 0)
+    if(excep != nullptr &&  excep->ordinality() > 0)
     {
         StringBuffer errmsg;
         excep->errorMessage(errmsg);
@@ -1442,7 +1442,7 @@ int CDfuPlusHelper::abort()
     Owned<IClientAbortDFUWorkunitResponse> resp = sprayclient->AbortDFUWorkunit(req);
 
     const IMultiException* excep = &resp->getExceptions();
-    if(excep != NULL && excep->ordinality() > 0)
+    if(excep != nullptr && excep->ordinality() > 0)
     {
         StringBuffer errmsg;
         excep->errorMessage(errmsg);
@@ -1454,6 +1454,27 @@ int CDfuPlusHelper::abort()
     }
 
     return 0;
+}
+
+StringBuffer & historyToXml(const IArrayOf<IConstHistory>& arrHistory, StringBuffer & out)
+{
+    out.append("<History>\n");
+    for(unsigned i = 0; i < arrHistory.length(); i++)
+    {
+        IConstHistory* historyRecord = &arrHistory.item(i);
+        if(historyRecord != nullptr)
+        {
+            out.appendf("\t<Origin ip=\"%s\"\n", historyRecord->getIP());
+            out.appendf("\t\tname=\"%s\"\n", historyRecord->getName());
+            out.appendf("\t\toperation=\"%s\"\n", historyRecord->getOperation());
+            out.appendf("\t\towner=\"%s\"\n", historyRecord->getOwner());
+            out.appendf("\t\tpath=\"%s\"\n", historyRecord->getPath());
+            out.appendf("\t\ttimestamp=\"%s\"\n", historyRecord->getTimestamp());
+            out.appendf("\t\tworkunit=\"%s\"/>\n", historyRecord->getWorkunit());
+        }
+    }
+    out.append("</History>\n");
+    return out;
 }
 
 int CDfuPlusHelper::listhistory()
@@ -1503,112 +1524,135 @@ int CDfuPlusHelper::listhistory()
         return -1;
     }
 
-    // The generated getXmlmap() returns with const Memory buffer reference
-    const MemoryBuffer &respMsg = resp->getXmlmap();
-    if (0 == respMsg.length())
+    IArrayOf<IConstHistory>& arrHistory = resp->getHistory();
+    if (0 == arrHistory.length())
     {
         error("%s doesn't have stored history!\n", lfn);
         return -2;
     }
 
-    Owned<IPropertyTree> history;
-    // Based on the missing createPTree( const MemoryBuffer &)
-    // need to cast from const MemeoryBuffer & to MemoryBuffer & to create PTree
-    history.setown(createPTree((MemoryBuffer &)respMsg));
-    bool sorted = true;
-
     switch (format)
     {
-    case xml:
+        case xml:
         {
-            StringBuffer out;
-            toXML(history, out, true);
-            info("\n%s\n",out.trim().str());
+            StringBuffer xmlDump;
+            historyToXml(arrHistory, xmlDump);
+            info("\n%s\n",xmlDump.str());
         }
         break;
 
-    case ascii:
+        case ascii:
         {
             progress("\nHistory of %s:\n", lfn);
             unsigned index = 1;
             StringBuffer asciiDump;
-            Owned<IPropertyTreeIterator> historyIter = history->getElements("*");
-            ForEach(*historyIter)
+            for(unsigned i = 0; i < arrHistory.length(); i++)
             {
                 asciiDump.append(index++);
-                Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
-                ForEach(*attribIter)
+                IConstHistory* historyRecord = &arrHistory.item(i);
+                if(historyRecord != nullptr)
                 {
-                    asciiDump.append(", ");
-                    const char *propName = attribIter->queryName();
-                    propName++;
-                    const char *propVal =  attribIter->queryValue();
-                    asciiDump.append(propName).append("=").append(propVal);
+                    asciiDump.appendf(", ip=\"%s\"", historyRecord->getIP());
+                    asciiDump.appendf(", name=\"%s\"", historyRecord->getName());
+                    asciiDump.appendf(", operation=\"%s\"", historyRecord->getOperation());
+                    asciiDump.appendf(", owner=\"%s\"", historyRecord->getOwner());
+                    asciiDump.appendf(", path=\"%s\"", historyRecord->getPath());
+                    asciiDump.appendf(", timestamp=\"%s\"", historyRecord->getTimestamp());
+                    asciiDump.appendf(", workunit=\"%s\"/>\n", historyRecord->getWorkunit());
                 }
-                asciiDump.append("\n");
             }
             info("%s", asciiDump.str());
         }
         break;
 
-    case csv:
+        case csv:
         {
             // TODO We need more sophisticated method if the record structure change in the future
             bool showCsvHeader = globals->getPropBool("csvheader", true);
             StringBuffer csvDump("\n");
-            unsigned index = 1;
-            Owned<IPropertyTreeIterator> historyIter = history->getElements("*");
-            bool first = true;
+
             if (showCsvHeader)
             {
-                // Get header from the first record
-                if (historyIter->first())
-                {
-                    Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
-                    ForEach(*attribIter)
-                    {
-                        if (!first)
-                            csvDump.append(",");
-                        else
-                            first = false;
-
-                        const char *propName = attribIter->queryName();
-                        propName++;
-                        csvDump.append(propName);
-                    }
-                    csvDump.append("\n");
-                }
+                // header
+                csvDump.append("ip,name,operation,owner,path,timestamp,workunit\n");
             }
 
-            ForEach(*historyIter)
+            for(unsigned i = 0; i < arrHistory.length(); i++)
             {
-                first = true;
-                Owned<IAttributeIterator> attribIter = historyIter->query().getAttributes(sorted);
-                ForEach(*attribIter)
+                IConstHistory* historyRecord = &arrHistory.item(i);
+                if(historyRecord != nullptr)
                 {
-                    if (!first)
-                        csvDump.append(",");
-                    else
-                        first = false;
-
-                    const char *propVal =  attribIter->queryValue();
-                    csvDump.append(propVal);
+                    csvDump.appendf("%s,", historyRecord->getIP());
+                    csvDump.appendf("%s,", historyRecord->getName());
+                    csvDump.appendf("%s,", historyRecord->getOperation());
+                    csvDump.appendf("%s,", historyRecord->getOwner());
+                    csvDump.appendf("%s,", historyRecord->getPath());
+                    csvDump.appendf("%s,", historyRecord->getTimestamp());
+                    csvDump.appendf("%s\n",  historyRecord->getWorkunit());
                 }
-                csvDump.append("\n");
             }
             info("%s", csvDump.str());
         }
         break;
 
-    case json:
+        case json:
         {
-            StringBuffer out;
-            toJSON(history, out, 3);
-            info("\n%s\n",out.trim().str());
+            StringBuffer jsonDump;
+            const char * level1 = "    ";        // 4 space 'tab'
+            const char * level2 = "        ";
+            const char * level3 = "            ";
+            //                     123456789012
+
+            unsigned index = 1;
+
+            jsonDump.append("{\n");       // Level 0: Start History object
+
+            jsonDump.appendf("%s\"%s\": [", level1, "History");   // Begin History object's array of historical records
+
+            for(unsigned i = 0; i < arrHistory.length(); i++)
+            {
+                if (index++ != 1)
+                    jsonDump.append(",");
+
+                jsonDump.appendf("\n%s{\n", level2);    // Historical record object begin
+
+                bool first = true;
+                IConstHistory* historyRecord = &arrHistory.item(i);
+                if(historyRecord != nullptr)
+                {
+                    // Historical record item object
+                    jsonDump.append(level3);
+                    appendJSONValue(jsonDump, "ip", historyRecord->getIP());
+                    jsonDump.appendf(",\n%s",level3);
+
+                    appendJSONValue(jsonDump, "name",historyRecord->getName());
+                    jsonDump.appendf(",\n%s",level3);
+
+                    appendJSONValue(jsonDump, "operation", historyRecord->getOperation());
+                    jsonDump.appendf(",\n%s",level3);
+
+                    appendJSONValue(jsonDump, "owner", historyRecord->getOwner());
+                    jsonDump.appendf(",\n%s",level3);
+
+                    appendJSONValue(jsonDump, "path", historyRecord->getPath());
+                    jsonDump.appendf(",\n%s",level3);
+
+                    appendJSONValue(jsonDump, "timestamp", historyRecord->getTimestamp());
+                    jsonDump.appendf(",\n%s",level3);
+
+                    appendJSONValue(jsonDump, "workunit", historyRecord->getWorkunit());
+                    jsonDump.append("\n");
+                }
+                jsonDump.appendf("\n%s}", level2);   // Historical record object end
+            }
+            jsonDump.appendf("\n%s]\n", level1);   // History object array end
+
+            jsonDump.appendf("}\n");       // Level 0 : History object end
+
+            info("\n%s\n",jsonDump.str());
         }
         break;
     }
-
     return 0;
 }
 
@@ -1631,7 +1675,7 @@ int CDfuPlusHelper::erasehistory()
     Owned<IClientEraseHistoryResponse> resp = dfuclient->EraseHistory(req);
 
     const IMultiException* excep = &resp->getExceptions();
-    if (excep != NULL && excep->ordinality() > 0)
+    if (excep != nullptr && excep->ordinality() > 0)
     {
         StringBuffer errmsg;
         excep->errorMessage(errmsg);
@@ -1641,20 +1685,31 @@ int CDfuPlusHelper::erasehistory()
 
     if (backup)
     {
-        // The generated getXmlmap() return with a const Memory buffer reference
-        const MemoryBuffer &respMsg = resp->getXmlmap();
-        if (0 == respMsg.length())
+        IArrayOf<IConstHistory>& arrHistory = resp->getHistory();
+        if (0 == arrHistory.length())
         {
             error("%s doesn't have stored history!\n", lfn);
             return -2;
         }
 
-        Owned<IPropertyTree> history;
-        // Based on the missing createPTree( const MemoryBuffer &)
-        // need to cast from const MemeoryBuffer & to MemoryBuffer & to create PTree
-        history.setown(createPTree((MemoryBuffer &)respMsg));
+        StringBuffer xmlDump;
+        historyToXml(arrHistory, xmlDump);
 
-        saveXML(dstxml, history, 3);
+        info("\n%s\n",xmlDump.str());
+
+        int ofile = open(dstxml, _O_WRONLY | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
+        if(ofile == -1)
+            throw MakeStringException(-1, "can't open file %s\n", dstxml);
+
+        ssize_t written = write(ofile, xmlDump.str(), xmlDump.length());
+        if (written < 0)
+            throw MakeStringException(-1, "can't write to file %s\n", dstxml);
+
+        if (written != xmlDump.length())
+            throw MakeStringException(-1, "truncated write to file %s\n", dstxml);
+
+        close(ofile);
+
         info("History written into %s.\n",dstxml);
     }
 
@@ -1673,7 +1728,7 @@ int CDfuPlusHelper::resubmit()
     Owned<IClientSubmitDFUWorkunitResponse> resp = sprayclient->SubmitDFUWorkunit(req);
 
     const IMultiException* excep = &resp->getExceptions();
-    if(excep != NULL &&  excep->ordinality() > 0)
+    if(excep != nullptr &&  excep->ordinality() > 0)
     {
         StringBuffer errmsg;
         excep->errorMessage(errmsg);
@@ -1689,7 +1744,7 @@ int CDfuPlusHelper::resubmit()
 
 int CDfuPlusHelper::waitToFinish(const char* wuid)
 {
-    if(wuid == NULL || *wuid == '\0')
+    if(wuid == nullptr || *wuid == '\0')
         return 0;
 
     Owned<IClientGetDFUWorkunit> req = sprayclient->createGetDFUWorkunitRequest();
@@ -1700,7 +1755,7 @@ int CDfuPlusHelper::waitToFinish(const char* wuid)
     {
         Owned<IClientGetDFUWorkunitResponse> resp = sprayclient->GetDFUWorkunit(req);
         const IMultiException* excep = &resp->getExceptions();
-        if(excep != NULL &&  excep->ordinality() > 0)
+        if(excep != nullptr &&  excep->ordinality() > 0)
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
@@ -1771,7 +1826,7 @@ int CDfuPlusHelper::updatejobname(const char* wuid, const char* jobname)
 
     Owned<IClientGetDFUWorkunitResponse> resp = sprayclient->GetDFUWorkunit(req);
     const IMultiException* excep = &resp->getExceptions();
-    if(excep != NULL &&  excep->ordinality() > 0)
+    if(excep != nullptr &&  excep->ordinality() > 0)
     {
         StringBuffer errmsg;
         excep->errorMessage(errmsg);
