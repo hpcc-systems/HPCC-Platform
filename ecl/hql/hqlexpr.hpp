@@ -1258,7 +1258,7 @@ extern HQL_API IHqlExpression *createDatasetF(node_operator op, ...);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, IHqlExpression *initializer, IHqlExpression *recordDef);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, IHqlExpression *dictionary);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms);
-extern HQL_API IHqlExpression *createNewDataset(IHqlExpression *name, IHqlExpression *recorddef, IHqlExpression *mode, IHqlExpression *parent, IHqlExpression *joinCondition, IHqlExpression * signature, IHqlExpression * options);
+extern HQL_API IHqlExpression *createNewDataset(IHqlExpression *name, IHqlExpression *recorddef, IHqlExpression *mode, IHqlExpression *parent, IHqlExpression *joinCondition, IHqlExpression * options);
 extern HQL_API IHqlExpression *createRow(node_operator op, IHqlExpression *Dataset, IHqlExpression *element = NULL);
 extern HQL_API IHqlExpression *createRow(node_operator op, HqlExprArray & args);
 extern HQL_API IHqlExpression *createRowF(node_operator op, ...);
