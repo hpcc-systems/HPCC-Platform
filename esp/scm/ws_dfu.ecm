@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "xslprocessor.hpp" 
+#include "xslprocessor.hpp"
 //  ===========================================================================
 
 ESPenum DFUArrayActions : string
@@ -38,7 +38,7 @@ ESPStruct SpaceItem
 
 ESPStruct DFULogicalFile
 {
-    string Prefix;      
+    string Prefix;
     [depr_ver("1.26")] string ClusterName;
     [min_ver("1.26")] string NodeGroup;
     string Directory;
@@ -196,7 +196,7 @@ ESPrequest [nil_remove] DFUQueryRequest
     [min_ver("1.30")] bool IncludeSuperOwner;
 };
 
-ESPresponse 
+ESPresponse
 [
    exceptions_inline
 ]
@@ -236,7 +236,7 @@ DFUQueryResponse
     [min_ver("1.30")] string Warning;
 };
 
-ESPrequest 
+ESPrequest
 [
 ]
 DFUSearchRequest
@@ -244,7 +244,7 @@ DFUSearchRequest
     string ShowExample;
 };
 
-ESPresponse 
+ESPresponse
 [
    exceptions_inline
 ]
@@ -268,11 +268,11 @@ DFUArrayActionRequest
     bool removeRecursively(false);
 };
 
-ESPresponse 
+ESPresponse
 [
     exceptions_inline,
     encode(0)
-] 
+]
 DFUArrayActionResponse
 {
     [min_ver("1.04")] string BackToPage;
@@ -281,7 +281,7 @@ DFUArrayActionResponse
     [min_ver("1.27")] ESParray<ESPstruct DFUActionInfo> ActionResults;
 };
 
-ESPrequest 
+ESPrequest
 [
 ]
 DFUInfoRequest
@@ -294,7 +294,7 @@ DFUInfoRequest
     string FileDesc;
 };
 
-ESPresponse 
+ESPresponse
 [
     exceptions_inline
 ]
@@ -310,7 +310,7 @@ DFUDefFileRequest
     string Format;
 };
 
-ESPresponse 
+ESPresponse
 [
     exceptions_inline
 ]
@@ -408,7 +408,7 @@ ESPresponse [exceptions_inline, nil_remove] AddRemoteResponse
 {
 };
 
-ESPrequest 
+ESPrequest
 [
 ]
 DFUSpaceRequest
@@ -421,7 +421,7 @@ DFUSpaceRequest
     string EndDate;
 };
 
-ESPresponse 
+ESPresponse
 [
    exceptions_inline
 ]
@@ -707,25 +707,37 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
     int64 TotalResultRows;
 };
 
-
 ESPrequest ListHistoryRequest
 {
-    string name;
+    string Name;
+};
+
+ESPStruct History
+{
+    string Name;
+    string Operation;
+    string Timestamp;
+    string IP;
+    string Path;
+    string Owner;
+    string Workunit;
 };
 
 ESPresponse [exceptions_inline, nil_remove] ListHistoryResponse
 {
-    binary xmlmap;
+    [depr_ver("1.36")] binary xmlmap;
+    ESParray<ESPStruct History, Origin> History;
 };
 
 ESPrequest EraseHistoryRequest
 {
-    string name;
+    string Name;
 };
 
 ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
 {
-    binary xmlmap;
+    [depr_ver("1.36")] binary xmlmap;
+    ESParray<ESPStruct History, Origin> History;
 };
 
 
@@ -733,8 +745,8 @@ ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.35"),
-    noforms, 
+    version("1.36"),
+    noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
     ESPuses ESPStruct DFULogicalFile;
