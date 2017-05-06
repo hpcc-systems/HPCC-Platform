@@ -647,6 +647,153 @@ private:
     bool optPreloadAll;
 };
 
+class EclCmdPackageMapCopy : public EclCmdCommon
+{
+public:
+    EclCmdPackageMapCopy()
+    {
+    }
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter) override
+    {
+        if (iter.done())
+            return EclCmdOptionNoMatch;
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optSrcPath.isEmpty())
+                    optSrcPath.set(arg);
+                else if (optTarget.isEmpty())
+                    optTarget.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return EclCmdOptionNoMatch;
+                }
+                continue;
+            }
+            if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
+                continue;
+            if (iter.matchOption(optPMID, ECLOPT_PMID))
+                continue;
+            if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
+                continue;
+            if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
+                continue;
+            if (iter.matchFlag(optReplacePackagemap, ECLOPT_REPLACE))
+                continue;
+            if (iter.matchFlag(optUpdateSuperfiles, ECLOPT_UPDATE_SUPER_FILES))
+                continue;
+            if (iter.matchFlag(optUpdateCloneFrom, ECLOPT_UPDATE_CLONE_FROM))
+                continue;
+            if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
+                continue;
+            if (iter.matchFlag(optPreloadAll, ECLOPT_PRELOAD_ALL_PACKAGES))
+                continue;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
+        }
+        return EclCmdOptionMatch;
+    }
+    virtual bool finalizeOptions(IProperties *globals) override
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+        {
+            usage();
+            return false;
+        }
+        StringBuffer err;
+        if (optSrcPath.isEmpty())
+            err.append("\n ... Missing path to source packagemap\n");
+        else if (optTarget.isEmpty())
+            err.append("\n ... Specify a target cluster\n");
+
+        if (err.length())
+        {
+            fputs(err.str(), stderr);
+            return false;
+        }
+
+        return true;
+    }
+    virtual int processCMD() override
+    {
+        Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
+
+        fprintf(stdout, "\n ... copy package map %s to %s\n\n", optSrcPath.str(), optTarget.str());
+
+        Owned<IClientCopyPackageMapRequest> request = packageProcessClient->createCopyPackageMapRequest();
+        request->setSourcePath(optSrcPath);
+        request->setTarget(optTarget);
+        request->setProcess("*");
+        request->setPMID(optPMID);
+        request->setActivate(optActivate);
+        request->setDaliIp(optDaliIP);
+        request->setSourceProcess(optSourceProcess);
+        request->setPreloadAllPackages(optPreloadAll);
+        request->setReplacePackageMap(optReplacePackagemap);
+        request->setUpdateSuperFiles(optUpdateSuperfiles);
+        request->setUpdateCloneFrom(optUpdateCloneFrom);
+        request->setAppendCluster(!optDontAppendCluster);
+
+        Owned<IClientCopyPackageMapResponse> resp = packageProcessClient->CopyPackageMap(request);
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+
+        StringArray &notFound = resp->getFilesNotFound();
+        if (notFound.length())
+        {
+            fputs("\nFiles defined in package but not found in DFS:\n", stderr);
+            ForEachItemIn(i, notFound)
+                fprintf(stderr, "  %s\n", notFound.item(i));
+            fputs("\n", stderr);
+        }
+
+        return ret;
+    }
+
+    virtual void usage() override
+    {
+        fputs("\nUsage:\n"
+                    "\n"
+                    "The 'copy' command will copy a package map from one target to another \n"
+                    "\n"
+                    "ecl packagemap copy <path> <target>\n"
+                    "   <path>                 Path to the source packagemap to copy\n"
+                    "                          The following formats are supported:\n"
+                    "                            remote PackageMap - //IP:PORT/Target/PackageMapId\n"
+                    "                            local PackageMap - target/PackageMapId\n"
+                    "   <target>               Name of target to copy the packagemap to\n"
+                    " Options:\n"
+                    "   -A, --activate         Activate the package information\n"
+                    "   --daliip=<ip>          IP of the remote dali to use for logical file lookups\n"
+                    "   --pmid                 Identifier of package map - defaults to source PMID\n"
+                    "   --source-process       Process cluster to copy files from\n"
+                    "   --preload-all          Set preload files option for all packages\n"
+                    "   --replace              Replace existing packagmap\n"
+                    "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
+                    "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
+                    "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n",
+                    stdout);
+
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optSrcPath;
+    StringAttr optTarget;
+    StringAttr optPMID;
+    StringAttr optDaliIP;
+    StringAttr optSourceProcess;
+    bool optActivate = false;
+    bool optReplacePackagemap = false;
+    bool optUpdateSuperfiles = false;
+    bool optUpdateCloneFrom = false;
+    bool optDontAppendCluster = false; //Undesirable but here temporarily because DALI may have locking issues
+    bool optPreloadAll = false;
+};
+
 class EclCmdPackageValidate : public EclCmdCommon
 {
 public:
@@ -1373,6 +1520,8 @@ IEclCommand *createPackageSubCommand(const char *cmdname)
         return NULL;
     if (strieq(cmdname, "add"))
         return new EclCmdPackageAdd();
+    if (strieq(cmdname, "copy"))
+        return new EclCmdPackageMapCopy();
     if (strieq(cmdname, "delete"))
         return new EclCmdPackageDelete();
     if (strieq(cmdname, "activate"))
@@ -1412,6 +1561,7 @@ public:
             "ecl packagemap <command> [command options]\n\n"
             "   packagemap Commands:\n"
             "      add          Add a package map to the environment\n"
+            "      copy         Copy a package map from one target to another\n"
             "      delete       Delete a package map\n"
             "      activate     Activate a package map\n"
             "      deactivate   Deactivate a package map (package map will not get loaded)\n"
