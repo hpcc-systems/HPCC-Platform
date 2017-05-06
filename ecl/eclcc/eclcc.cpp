@@ -489,6 +489,10 @@ int main(int argc, const char *argv[])
     InitModuleObjects();
     queryStderrLogMsgHandler()->setMessageFields(0);
 
+    StringBuffer prompt("continue: ");
+    StringBuffer pw;
+    passwordInput(prompt, pw);
+
     // Turn logging down (we turn it back up if -v option seen)
     Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error);
     queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
