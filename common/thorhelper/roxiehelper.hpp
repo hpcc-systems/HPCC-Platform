@@ -300,6 +300,7 @@ interface SafeSocket : extends IInterface
     virtual void sendSoapException(IException *E, const char *queryName) = 0;
     virtual void sendJsonException(IException *E, const char *queryName) = 0;
     virtual void setHttpMode(const char *queryName, bool arrayMode, HttpHelper &httphelper) = 0;
+    virtual void setHttpMode(bool mode) = 0;
     virtual void setHeartBeat() = 0;
     virtual bool sendHeartBeat(const IContextLogger &logctx) = 0;
     virtual void flush() = 0;
@@ -341,6 +342,7 @@ public:
     bool readBlock(MemoryBuffer &ret, unsigned maxBlockSize, unsigned timeout = (unsigned) WAIT_FOREVER);
     bool readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &, bool &, unsigned maxBlockSize);
     void setHttpMode(const char *queryName, bool arrayMode, HttpHelper &httphelper);
+    void setHttpMode(bool mode) override {httpMode = mode;}
     void setAdaptiveRoot(bool adaptive){adaptiveRoot=adaptive;}
     bool getAdaptiveRoot(){return adaptiveRoot;}
     void checkSendHttpException(HttpHelper &httphelper, IException *E, const char *queryName);
