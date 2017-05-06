@@ -82,6 +82,7 @@ define([
 
         filter: null,
         dropZoneTarget2Select: null,
+        serverFilterSelect: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -107,6 +108,7 @@ define([
             this.uploader = registry.byId(this.id + "Upload");
             this.uploadFileList = registry.byId(this.id + "UploadFileList");
             this.dropZoneTargetSelect = registry.byId(this.id + "DropZoneTargetSelect");
+            this.dropZoneMachineSelect = registry.byId(this.id + "DropZoneMachineSelect");
             this.dropZoneFolderSelect = registry.byId(this.id + "DropZoneFolderSelect");
             this.dfuSprayFixedQueues = registry.byId(this.id + "SprayFixedDFUSprayQueues");
             this.dfuSprayDelimitedQueues = registry.byId(this.id + "SprayDelimitedDFUQueues");
@@ -124,6 +126,7 @@ define([
             this.blobSprayReplicateCheckbox = registry.byId(this.id + "BlobSprayReplicate");
             this.filter = registry.byId(this.id + "Filter");
             this.dropZoneTarget2Select = registry.byId(this.id + "DropZoneName2");
+            this.serverFilterSelect = registry.byId(this.id + "ServerFilter");
 
             var context = this;
             this.connect(this.uploader, "onComplete", function (response) {
@@ -146,6 +149,12 @@ define([
                         Exceptions: [{ Message: this.i18n.ErrorUploadingFile }]
                     });
                     this.uploader.reset();
+                }
+            });
+
+            this.dropZoneTarget2Select.on("change", function (evt) {
+                if (evt) {
+                    context.serverFilterSelect.loadDropZoneMachines(evt);
                 }
             });
         },
@@ -178,19 +187,35 @@ define([
 
         _onUpload: function (event) {
             var context = this;
+            var targetRow;
             if (!this.dropZoneTargetSelect.initalized) {
                 this.dropZoneTargetSelect.init({
                     DropZones: true,
                     callback: function (value, row) {
-                        if (context.dropZoneFolderSelect) {
-                            context.dropZoneFolderSelect.reset();
-                            context.dropZoneFolderSelect._dropZoneTarget = row;
-                            context.dropZoneFolderSelect.defaultValue = context.dropZoneFolderSelect.get("value");
-                            context.dropZoneFolderSelect.loadDropZoneFolders();
+                        if (context.dropZoneMachineSelect) {
+                            context.dropZoneMachineSelect.defaultValue = context.dropZoneMachineSelect.get("value");
+                            context.dropZoneMachineSelect.loadDropZoneMachines(value);
+                            targetRow = row;
                         }
                     }
                 });
             }
+
+            if (!this.dropZoneMachineSelect.initalized) {
+                this.dropZoneMachineSelect.init({
+                    DropZoneMachines: true,
+                    callback: function (value, row) {
+                        targetRow.machine.Name = value
+                        targetRow.machine.Netaddress = value
+                        if (context.dropZoneFolderSelect) {
+                            context.dropZoneFolderSelect._dropZoneTarget = targetRow;
+                            context.dropZoneFolderSelect.defaultValue = "/"
+                            context.dropZoneFolderSelect.loadDropZoneFolders();
+                        }
+                    }
+                 });
+            }
+
             var fileList = registry.byId(this.id + "Upload").getFileList();
             var totalFileSize = 0;
 
@@ -283,7 +308,7 @@ define([
             arrayUtil.forEach(this.landingZonesGrid.getSelected(), function (item, idx) {
                 var downloadIframeName = "downloadIframe_" + item.calculatedID;
                 var frame = iframe.create(downloadIframeName);
-                var url = ESPRequest.getBaseURL("FileSpray") + "/DownloadFile?Name=" + encodeURIComponent(item.name) + "&NetAddress=" + item.DropZone.NetAddress + "&Path=" + encodeURIComponent(item.fullFolderPath) + "&OS=" + item.DropZone.OS;
+                var url = ESPRequest.getBaseURL("FileSpray") + "/DownloadFile?Name=" + encodeURIComponent(item.name) + "&NetAddress=" + item.NetAddress + "&Path=" + encodeURIComponent(item.fullFolderPath) + "&OS=" + item.OS;
                 iframe.setSrc(frame, url, true);
             });
         },
@@ -296,10 +321,10 @@ define([
                 arrayUtil.forEach(selection, function (item, idx) {
                     FileSpray.DeleteDropZoneFile({
                         request:{
-                            NetAddress: item.DropZone.NetAddress,
-                            Path: item.DropZone.Path,
-                            OS: item.DropZone.OS,
-                            Names: item.partialPath
+                            NetAddress: item.NetAddress,
+                            Path: item.fullFolderPath,
+                            OS: item.OS,
+                            Names: item.displayName
                         },
                         load: function (response) {
                             context.refreshGrid(true);
@@ -333,7 +358,7 @@ define([
                 arrayUtil.forEach(selections, function (item, idx) {
                     var request = domForm.toObject(context.id + formID);
                     lang.mixin(request, {
-                        sourceIP: item.DropZone.NetAddress,
+                        sourceIP: item.NetAddress,
                         sourcePath: item.fullPath,
                         destLogicalName: request.namePrefix + (request.namePrefix && !context.endsWith(request.namePrefix, "::") && item.targetName && !context.startsWith(item.targetName, "::") ? "::" : "") + item.targetName
                     });
@@ -475,8 +500,12 @@ define([
             var dropZoneInfo = arrayUtil.filter(this.dropZoneTarget2Select.options, function (option) {
                 return option.selected === true;
             });
-            if (dropZoneInfo.length) {
+            var dropZoneMachineInfo = arrayUtil.filter(this.serverFilterSelect.options, function (option) {
+                return option.selected === true;
+            });
+            if (dropZoneInfo.length && dropZoneMachineInfo.length) {
                 retVal.__dropZone = dropZoneInfo[0];
+                retVal.__dropZoneMachine = dropZoneMachineInfo[0];
             }
             return retVal;
         },
@@ -487,11 +516,14 @@ define([
             var context = this;
 
             this.initLandingZonesGrid();
+            this.serverFilterSelect.init({
+                DropZoneMachines: true,
+                includeBlank: true
+            });
             this.dropZoneTarget2Select.init({
                 DropZones: true,
                 includeBlank: true
             });
-
             this.filter.on("clear", function (evt) {
                 context.refreshGrid();
             });
@@ -616,6 +648,7 @@ define([
                                 switch (item.type) {
                                     case "dropzone":
                                     case "folder":
+                                    case "machine":
                                         return true;
                                 }
                             }
@@ -631,7 +664,9 @@ define([
                             var name = _name;
                             if (row.isDir === undefined) {
                                 img = dojoConfig.getImageHTML("server.png");
-                                name += " [//" + row.NetAddress + row.Path + "]";
+                                name += " [" + row.Path + "]";
+                            } else if (row.isMachine) {
+                                 img = dojoConfig.getImageHTML("machine.png");
                             } else if (row.isDir) {
                                 img = dojoConfig.getImageHTML("folder.png");
                             } else {
