@@ -100,13 +100,13 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
         {
             bool multiSlaves = false;
             getMachineList(eqThorMasterProcess,path.str(),"", ClusterDirectory, MachineList);
-            getMachineList(clientVersion, ClusterName, eqThorSlaveProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
+            getThorSlaveMachineList(clientVersion, ClusterName, ClusterDirectory, MachineList);
             unsigned count = MachineList.length();
-            getMachineList(clientVersion, ClusterName, eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
+            getThorSpareMachineList(clientVersion, ClusterName, ClusterDirectory, MachineList);
 
-            //The multiSlaves is for legacy multiSlaves environment.
+            //The checkMultiSlavesFlag is for legacy multiSlaves environment, not for new environments.
             //count < MachineList.length(): There is some node for eqThorSpareProcess being added to the MachineList.
-            if (!multiSlaves &&(count < MachineList.length()))
+            if (!checkMultiSlavesFlag(ClusterName) &&(count < MachineList.length()))
                 hasThorSpareProcess = true;
         }
         else if (strcmp(eqHOLEMACHINES,ClusterType) == 0)
@@ -136,14 +136,12 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
         }
         else if (strcmp("STANDBYNNODE",ClusterType) == 0)
         {
-            bool multiSlaves = false;
-            getMachineList(clientVersion, ClusterName,eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
+            getThorSpareMachineList(clientVersion, ClusterName, ClusterDirectory, MachineList);
             getMachineList(eqHoleStandbyProcess,path.str(),"", ClusterDirectory, MachineList);
         }
         else if (strcmp("THORSPARENODES",ClusterType) == 0)
         {
-            bool multiSlaves = false;
-            getMachineList(clientVersion, ClusterName, eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
+            getThorSpareMachineList(clientVersion, ClusterName, ClusterDirectory, MachineList);
         }
         else if (strcmp("HOLESTANDBYNODES",ClusterType) == 0)
       {
@@ -1446,14 +1444,93 @@ void CTpWrapper::getMachineInfo(IEspTpMachine& machineInfo,IPropertyTree& machin
     machineInfo.setPath(tmpPath.str());
 }
 
-void CTpWrapper::getMachineList(double clientVersion,
-                                const char* clusterName,
-                                const char* MachineType,
-                                const char* ParentPath,
-                                const char* Status,
-                                const char* Directory,
-                                bool& multiSlaves,
-                                IArrayOf<IEspTpMachine> &MachineList)
+bool CTpWrapper::checkMultiSlavesFlag(const char* clusterName)
+{
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+    Owned<IPropertyTree> root = &constEnv->getPTree();
+    if (!root)
+        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
+
+    VStringBuffer path("Software/ThorCluster[@name=\"%s\"]", clusterName);
+    Owned<IPropertyTree> cluster= root->getPropTree(path.str());
+    if (!cluster)
+        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
+
+    //set this flag for legacy multi slave clusters because SwapNode made little sense in the old scheme
+    //This is no longer an option in new environments, but is kept for backward compatibility with old
+    //multi slave environments that used to list multiple slaves per node manually.
+    return cluster->getPropBool("@multiSlaves");
+}
+
+void CTpWrapper::appendMachineList(double clientVersion, IConstEnvironment* constEnv, INode& node, const char* clusterName,
+    const char* machineType, unsigned& processNumber, const char* directory, IArrayOf<IEspTpMachine>& machineList)
+{
+    StringBuffer netAddress;
+    node.endpoint().getIpText(netAddress);
+    if (netAddress.length() == 0)
+    {
+        WARNLOG("Net address not found for a node of %s", clusterName);
+        return;
+    }
+
+    processNumber++;
+
+    Owned<IEspTpMachine> machineInfo = createTpMachine("","");
+    machineInfo->setType(machineType);
+    machineInfo->setNetaddress(netAddress.str());
+    if (!isEmptyString(directory))
+        machineInfo->setDirectory(directory);
+
+    Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachineByAddress(netAddress.str());
+    if (pMachineInfo.get())
+    {
+        setTpMachine(pMachineInfo, *machineInfo);
+        if (clientVersion > 1.17)
+        {
+            machineInfo->setProcessNumber(processNumber);
+        }
+    }
+    else
+    {
+        machineInfo->setName("external");
+        machineInfo->setOS(MachineOsUnknown);
+    }
+
+    machineList.append(*machineInfo.getLink());
+}
+
+void CTpWrapper::getThorSlaveMachineList(double clientVersion, const char* clusterName, const char* directory, IArrayOf<IEspTpMachine>& machineList)
+{
+    try
+    {
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+        Owned<IGroup> nodeGroup = getClusterProcessNodeGroup(clusterName, "ThorCluster");
+        if (!nodeGroup || (nodeGroup->ordinality() == 0))
+            return;
+
+        unsigned processNumber = 0;
+        Owned<INodeIterator> gi = nodeGroup->getIterator();
+        ForEach(*gi)
+            appendMachineList(clientVersion, constEnv, gi->query(), clusterName, eqThorSlaveProcess, processNumber, directory, machineList);
+    }
+    catch(IException* e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        WARNLOG("%s", msg.str());
+        e->Release();
+    }
+    catch(...)
+    {
+        WARNLOG("Unknown Exception caught within CTpWrapper::getMachineList");
+    }
+
+    return;
+}
+
+void CTpWrapper::getThorSpareMachineList(double clientVersion, const char* clusterName, const char* directory, IArrayOf<IEspTpMachine>& machineList)
 {
     try
     {
@@ -1463,21 +1540,13 @@ void CTpWrapper::getMachineList(double clientVersion,
         if (!root)
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
-        StringBuffer path;
-        path.appendf("Software/ThorCluster[@name=\"%s\"]", clusterName);
+        VStringBuffer path("Software/ThorCluster[@name=\"%s\"]", clusterName);
         Owned<IPropertyTree> cluster= root->getPropTree(path.str());
         if (!cluster)
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
-        //set this flag for legacy multi slave clusters because SwapNode made little sense in the old scheme
-        multiSlaves = cluster->getPropBool("@multiSlaves");
-
         StringBuffer groupName;
-        if (strieq(MachineType, eqThorSlaveProcess))
-            getClusterGroupName(*cluster, groupName);
-        else if (strieq(MachineType, eqThorSpareProcess))
-            getClusterSpareGroupName(*cluster, groupName);
-
+        getClusterSpareGroupName(*cluster, groupName);
         if (groupName.length() < 1)
             return;
 
@@ -1488,49 +1557,17 @@ void CTpWrapper::getMachineList(double clientVersion,
         unsigned processNumber = 0;
         Owned<INodeIterator> gi = nodeGroup->getIterator();
         ForEach(*gi)
-        {
-            StringBuffer netAddress;
-            gi->query().endpoint().getIpText(netAddress);
-            if (netAddress.length() == 0)
-            {
-                WARNLOG("Net address not found for a node in node group %s", groupName.str());
-                continue;
-            }
-
-            processNumber++;
-
-            IEspTpMachine & machineInfo = *(createTpMachine("",""));
-            machineInfo.setType(MachineType);
-            machineInfo.setNetaddress(netAddress.str());
-            if (Directory && *Directory)
-                machineInfo.setDirectory(Directory);
-
-            Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachineByAddress(netAddress.str());
-            if (pMachineInfo.get())
-            {
-                setTpMachine(pMachineInfo, machineInfo);
-
-                if (clientVersion > 1.17)
-                {
-                    machineInfo.setProcessNumber(processNumber);
-                }
-            }
-            else
-            {
-                machineInfo.setName("external");
-                machineInfo.setOS(MachineOsUnknown);
-            }
-
-            MachineList.append(machineInfo);
-        }
+            appendMachineList(clientVersion, constEnv, gi->query(), clusterName, eqThorSlaveProcess, processNumber, directory, machineList);
     }
-    catch(IException* e){
+    catch(IException* e)
+    {
         StringBuffer msg;
         e->errorMessage(msg);
         WARNLOG("%s", msg.str());
         e->Release();
     }
-    catch(...){
+    catch(...)
+    {
         WARNLOG("Unknown Exception caught within CTpWrapper::getMachineList");
     }
 
