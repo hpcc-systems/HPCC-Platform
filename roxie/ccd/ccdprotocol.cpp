@@ -1520,6 +1520,7 @@ private:
 
         try
         {
+            client.setHttpMode(false); //For historical reasons HTTP mode really means SOAP/JSON, we want raw HTTP here.  Should be made more clear
             client.write(message.str(), message.length());
         }
         catch (IException *E)
