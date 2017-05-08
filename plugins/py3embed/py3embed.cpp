@@ -16,7 +16,16 @@
 ############################################################################## */
 
 #include "platform.h"
+
+#ifdef _WIN32
+// There's an issue with Python redefining ssize_t resulting in errors - hide their definition
+#define ssize_t python_ssize_t
 #include "Python.h"
+#undef ssize_t
+#else
+#include "Python.h"
+#endif
+
 #include "frameobject.h"
 #include "jexcept.hpp"
 #include "jutil.hpp"
