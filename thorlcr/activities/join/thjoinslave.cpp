@@ -65,8 +65,6 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
     Owned<IJoinHelper> joinhelper;
     rowcount_t lhsProgressCount = 0, rhsProgressCount = 0;
     CriticalSection joinHelperCrit;
-    bool leftInputStopped = true;
-    bool rightInputStopped = true;
     CRuntimeStatisticCollection spillStats;
     IHThorJoinBaseArg *helper;
     IHThorJoinArg *helperjn;
@@ -263,13 +261,10 @@ public:
         Linked<IThorRowInterfaces> primaryRowIf, secondaryRowIf;
 
         StringAttr primaryInputStr, secondaryInputStr;
-        bool *secondaryInputStopped, *primaryInputStopped;
         if (rightpartition)
         {
             primaryInput.set(queryInput(1));
             secondaryInput.set(queryInput(0));
-            secondaryInputStopped = &leftInputStopped;
-            primaryInputStopped = &rightInputStopped;
             primaryInputStr.set("R");
             secondaryInputStr.set("L");
         }
@@ -277,20 +272,16 @@ public:
         {
             primaryInput.set(queryInput(0));
             secondaryInput.set(queryInput(1));
-            secondaryInputStopped = &rightInputStopped;
-            primaryInputStopped = &leftInputStopped;
             primaryInputStr.set("L");
             secondaryInputStr.set("R");
         }
         ActPrintLog("JOIN partition: %s", primaryInputStr.get());
         ActPrintLog("JOIN: Starting %s then %s", secondaryInputStr.get(), primaryInputStr.get());
 
-        *secondaryInputStopped = false;
         CAsyncCallStart asyncSecondaryStart(std::bind(&JoinSlaveActivity::startSecondaryInput, this));
         try
         {
             startInput(primaryInputIndex);
-            *primaryInputStopped = false;
         }
         catch (IException *e)
         {
@@ -337,19 +328,11 @@ public:
     }
     void stopLeftInput()
     {
-        if (!leftInputStopped)
-        {
-            stopInput(0, "(L)");
-            leftInputStopped = true;
-        }
+        stopInput(0, "(L)");
     }
     void stopRightInput()
     {
-        if (!rightInputStopped)
-        {
-            stopInput(1, "(R)");
-            rightInputStopped = true;
-        }
+        stopInput(1, "(R)");
     }
     void stopPartitionInput()
     {

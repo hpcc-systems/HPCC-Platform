@@ -532,7 +532,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     IRowStreamSetInput *resultDistStream;
     CPartDescriptorArray indexParts, dataParts;
     Owned<IKeyIndexSet> tlkKeySet, partKeySet;
-    bool preserveGroups, preserveOrder, eos, inputStopped, needsDiskRead, atMostProvided, remoteDataFiles;
+    bool preserveGroups, preserveOrder, eos, needsDiskRead, atMostProvided, remoteDataFiles;
     unsigned joinFlags, abortLimit, parallelLookups, freeQSize, filePartTotal;
     size32_t fixedRecordSize;
     CJoinGroupPool *pool;
@@ -1161,7 +1161,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
         IKeyManager *partManager;
         IKeyIndex *currentPart;
-        bool inputStopped;
         unsigned nextPart;
         unsigned candidateCount;
         __int64 lastSeeks, lastScans;
@@ -1188,7 +1187,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             currentJG = NULL;
             currentTlk = NULL;
             lastSeeks = lastScans = 0;
-            inputStopped = false;
             nextPart = 0; // only used for superkeys of single part keys
             currentPart = NULL;
             candidateCount = 0;
@@ -1579,7 +1577,6 @@ public:
         partKeySet.setown(createKeyIndexSet());
         pool = NULL;
         currentMatchIdx = currentJoinGroupSize = currentAdded = currentMatched = 0;
-        inputStopped = true;
         portbase = 0;
         pendingGroups = 0;
         superWidth = 0;
@@ -1746,11 +1743,7 @@ public:
     virtual void stopInput()
     {
         CriticalBlock b(stopInputCrit);
-        if (!inputStopped)
-        {
-            inputStopped = true;
-            PARENT::stopInput(0);
-        }
+        PARENT::stopInput(0);
     }
     void doAbortLimit(CJoinGroup *jg)
     {
@@ -2050,7 +2043,6 @@ public:
 
         eos = false;
         inputHelper = LINK(input->queryFromActivity()->queryContainer().queryHelper());
-        inputStopped = false;
         preserveOrder = ((joinFlags & JFreorderable) == 0);
         preserveGroups = input->isGrouped();
         ActPrintLog("KJ: parallelLookups=%d, freeQSize=%d, preserveGroups=%s, preserveOrder=%s", parallelLookups, freeQSize, preserveGroups?"true":"false", preserveOrder?"true":"false");

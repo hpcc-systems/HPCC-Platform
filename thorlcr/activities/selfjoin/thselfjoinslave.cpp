@@ -41,7 +41,6 @@ private:
     unsigned portbase;
     bool isLocal;
     bool isLightweight;
-    bool inputStopped;
     Owned<IRowStream> strm;     
     ICompare * compare;
     ISortKeySerializer * keyserializer;
@@ -103,7 +102,6 @@ public:
         portbase = 0;
         compare = NULL;
         keyserializer = NULL;
-        inputStopped = false;
         mpTagRPC = TAG_NULL;
         if (isLocal)
             setRequireInitData(false);
