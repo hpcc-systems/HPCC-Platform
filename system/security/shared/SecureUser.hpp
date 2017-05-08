@@ -212,10 +212,16 @@ public:
         return m_pw.str();
     }
 
-    bool addToken(unsigned type, void * data, unsigned length)
+    bool addToken(MemoryBuffer * token)
     {
         return false;  //not supported yet
     }
+
+    bool getToken(MemoryBuffer * token)
+    {
+        return false; //not supported yet
+    }
+
     virtual unsigned getUserID()
     {
         return m_userID;
@@ -254,7 +260,6 @@ public:
         }
 
 
-        //addToken is not currently implemented....
 //      DBGLOG("Copied name %s to %s",getName(),destination.getName());
     }
 
