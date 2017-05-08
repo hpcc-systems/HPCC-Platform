@@ -1705,18 +1705,12 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
       </sect2>
 
       <sect2>
-        <title>Multiple Roxies</title>
+        <title>Multiple Roxie Clusters</title>
 
-        <para>You can configure multiple Roxies. When you have multiple Roxies
-        as mentioned earlier in this document, it is actually better to use a
-        load balancer to behind those Roxies. </para>
-
-        <para>To add your Roxie to the VIPS tab in the configuration manager.
-        In the HPCC Configuration Manager interface (see Using ConfigMgr
-        documentation for how to use the Configuration Manager) select your
-        ESP service the default is the myws_ecl. Select the <emphasis
-        role="bold">VIPS</emphasis> tab. As depicted in the image below.
-        <figure>
+        <para>You can configure multiple Roxie clusters. When you have
+        multiple Roxie clusters, it is better to use a load balancer behind
+        those Roxies. To configure multiple Roxie clusters start with adding
+        your Roxie to the VIPS tab in the Configuration Manager. <figure>
             <title>Configure VIP</title>
 
             <mediaobject>
@@ -1726,14 +1720,34 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
             </mediaobject>
           </figure></para>
 
-        <para>Right-click on the table on the VIPS tab. Select
-        <emphasis>Add</emphasis>. Click the field under the roxie column and
-        select your Roxie from the list. </para>
+        <para>Open up the HPCC Configuration Manager and proceed to the
+        Advanced View option. For more information about using ConfigMgr see
+        Using Configuration Manager. <orderedlist>
+            <listitem>
+              <para>Select your ESP Service (the default is the <emphasis
+              role="bold">myws_ecl</emphasis>) from the Navigator panel on the
+              left side. </para>
+            </listitem>
 
-        <para>For the <emphasis role="bold">Send Target To Roxie</emphasis>
-        field, set to False. In the esp xml this setting is
-        <emphasis>includeTargetInURL</emphasis> and it must be false if
-        running multiple Roxies. </para>
+            <listitem>
+              <para>Select the <emphasis role="bold">VIPS</emphasis>
+              tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Right-click on the table, Select <emphasis>Add</emphasis>.
+              (see above image) </para>
+            </listitem>
+
+            <listitem>
+              <para>Find the <emphasis role="bold">Send Target To
+              Roxie</emphasis> field, and set the value to
+              <emphasis>False</emphasis>. </para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>This setting (the <emphasis>includeTargetInURL</emphasis>
+        setting) must be false if running multiple Roxie clusters. </para>
       </sect2>
 
       <sect2 id="virtual-thor-slaves">
