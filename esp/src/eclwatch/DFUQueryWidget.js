@@ -106,7 +106,8 @@ define([
             this.addToSuperfileGrid = registry.byId(this.id + "AddToSuperfileGrid");
             this.desprayForm = registry.byId(this.id + "DesprayForm");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
-            this.desprayTooltiopDialog = registry.byId(this.id + "DesprayTooltipDialog");
+            this.desprayIPSelect = registry.byId(this.id + "DesprayTargetIPAddress");
+            this.desprayTooltipDialog = registry.byId(this.id + "DesprayTooltipDialog");
             this.addToSuperfileTargetName = registry.byId(this.id + "AddToSuperfileTargetName")
             this.createNewSuperRadio = registry.byId(this.id + "CreateNewSuperRadio");
             this.addToSuperfileTargetAppendRadio = registry.byId(this.id + "AddToSuperfileTargetAppend");
@@ -115,23 +116,38 @@ define([
             this.downListForm = registry.byId(this.id + "DownListForm");
             this.fileName = registry.byId(this.id + "FileName");
             var context = this;
-            var origOnOpen = this.desprayTooltiopDialog.onOpen;
-            this.desprayTooltiopDialog.onOpen = function () {
+            var origOnOpen = this.desprayTooltipDialog.onOpen;
+            this.desprayTooltipDialog.onOpen = function () {
+                var targetRow;
                 if (!context.desprayTargetSelect.initalized) {
                     context.desprayTargetSelect.init({
                         DropZones: true,
                         callback: function (value, item) {
-                            registry.byId(context.id + "DesprayTargetIPAddress").set("value", item.machine.Netaddress);
+                             if (context.desprayIPSelect) {
+                                context.desprayIPSelect.defaultValue = context.desprayIPSelect.get("value");
+                                context.desprayIPSelect.loadDropZoneMachines(value);
+                                targetRow = item;
+                            }
+                        }
+                    });
+                }
+                origOnOpen.apply(context.desprayTooltipDialog, arguments);
+
+                if (!context.desprayIPSelect.initalized) {
+                    context.desprayIPSelect.init({
+                        DropZoneMachines: true,
+                        callback: function (value, row) {
+                            targetRow.machine.Name = value
+                            targetRow.machine.Netaddress = value
                             if (context.desprayTargetPath) {
-                                context.desprayTargetPath.reset();
-                                context.desprayTargetPath._dropZoneTarget = item;
-                                context.desprayTargetPath.defaultValue = context.desprayTargetPath.get("value");
+                                context.desprayTargetPath._dropZoneTarget = targetRow;
+                                context.desprayTargetPath.defaultValue = "/"
                                 context.desprayTargetPath.loadDropZoneFolders();
                             }
                         }
                     });
                 }
-                origOnOpen.apply(context.desprayTooltiopDialog, arguments);
+                origOnOpen.apply(context.desprayTooltipDialog, arguments);
             }
             this.desprayTargetPath = registry.byId(this.id + "DesprayTargetPath");
             this.desprayGrid = registry.byId(this.id + "DesprayGrid");

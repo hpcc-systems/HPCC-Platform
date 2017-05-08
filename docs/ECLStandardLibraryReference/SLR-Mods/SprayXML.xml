@@ -26,8 +26,12 @@
   <emphasis>maxConnections</emphasis> <emphasis role="bold">]</emphasis>
   <emphasis role="bold"> [</emphasis> <emphasis>allowoverwrite</emphasis>
   <emphasis role="bold">] [</emphasis> <emphasis>replicate</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis> compress </emphasis>
-  <emphasis role="bold">])</emphasis></para>
+  <emphasis role="bold">] [</emphasis> <emphasis> compress
+  </emphasis><emphasis role="bold">] </emphasis>, <emphasis
+  role="bold">[</emphasis><emphasis>failIfNoSourceFile</emphasis><emphasis
+  role="bold">]</emphasis>, <emphasis
+  role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
+  role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayXML<indexterm>
@@ -51,7 +55,12 @@
   <emphasis>maxConnections</emphasis> <emphasis role="bold">] , [</emphasis>
   <emphasis>allowoverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
   <emphasis>replicate</emphasis> <emphasis role="bold">] , [</emphasis>
-  <emphasis> compress </emphasis> <emphasis role="bold">]);</emphasis></para>
+  <emphasis> compress </emphasis> <emphasis role="bold">] </emphasis>,
+  <emphasis
+  role="bold">[</emphasis><emphasis>failIfNoSourceFile</emphasis><emphasis
+  role="bold">]</emphasis>, <emphasis
+  role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
+  role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -85,7 +94,7 @@
           <entry><emphasis>srcRowTag</emphasis></entry>
 
           <entry>A null-terminated string containing the row delimiting XML
-          tag. Required. </entry>
+          tag. Required.</entry>
         </row>
 
         <row>
@@ -106,7 +115,7 @@
           <entry><emphasis>destinationlogicalname</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
-          file.</entry>
+          file. </entry>
         </row>
 
         <row>
@@ -155,6 +164,22 @@
 
           <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
           compress the new file. If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>failIfNoSourceFile</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether a
+          missing file triggers a failure. If omitted, the default is
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>expireDays</emphasis></entry>
+
+          <entry>Optional. A integer value indicating the number of days
+          before automatically removing the file. If omitted, the default is
+          -1 (never expires).</entry>
         </row>
 
         <row>

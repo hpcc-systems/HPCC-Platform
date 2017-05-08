@@ -438,6 +438,89 @@ class CDFUengine: public CInterface, implements IDFUengine
     }
 
 
+    // DropZone check
+    void checkFilePath(RemoteFilename & filename)
+    {
+        StringBuffer filePath;
+        filename.getLocalPath(filePath);
+        const char * pfilePath = filePath.str();
+
+        if (filename.queryIP().isLoopBack())
+            throwError1(DFTERR_LocalhostAddressUsed, pfilePath);
+
+    #ifdef _DEBUG
+        LOG(MCdebugInfo, unknownJob, "File path is '%s'", filePath.str());
+    #endif
+
+        const char pathSep = filename.getPathSeparator();
+        const char dotString[]    = {pathSep, '.', pathSep, '\0'};
+        const char dotDotString[] = {pathSep, '.', '.', pathSep, '\0'};
+
+        const char * isDotString = strstr(pfilePath, dotString);
+        const char * isDotDotString = strstr(pfilePath, dotDotString);
+        if ((isDotDotString != nullptr) || (isDotString != nullptr))
+            throwError3(DFTERR_InvalidFilePath, pfilePath, dotDotString, dotString);
+
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        if (factory)
+        {
+            Owned<IConstEnvironment> env = factory->openEnvironment();
+            if (env)
+            {
+                StringBuffer netaddress;
+                filename.queryIP().getIpText(netaddress);
+
+                Owned<IConstDropZoneInfo> dropZone = env->getDropZoneByAddressPath(netaddress.str(), pfilePath);
+                if (!dropZone)
+                {
+                    if (env->isDropZoneRestrictionEnabled())
+                        throwError1(DFTERR_NoMatchingDropzonePath, pfilePath);
+                    else
+                        LOG(MCdebugInfo, unknownJob, "No matching drop zone path to file path: '%s'", pfilePath);
+                }
+#ifdef _DEBUG
+                else
+                {
+                    SCMStringBuffer dropZoneName;
+                    dropZone->getName(dropZoneName);
+
+                    LOG(MCdebugInfo, unknownJob, "Drop zone path '%s' is %svisible in ECLWatch."
+                            , dropZoneName.str()
+                            , (dropZone->isECLWatchVisible() ? "" : "not ")
+                            );
+                }
+#endif
+            }
+        }
+    }
+
+    // Prepare DropZone check for file(s)
+    void checkSourceTarget(IFileDescriptor * file)
+    {
+        unsigned numParts = file->numParts();
+        for (unsigned idx=0; idx < numParts; idx++)
+        {
+            if (file->isMulti(idx))
+            {
+                // It expands wildcards and file list
+                RemoteMultiFilename multi;
+                file->getMultiFilename(idx, 0, multi);
+                multi.expandWild();
+
+                ForEachItemIn(i, multi)
+                {
+                    RemoteFilename rfn2(multi.item(i));
+                    checkFilePath(rfn2);
+                }
+            }
+            else
+            {
+                RemoteFilename filename;
+                file->getFilename(idx, 0, filename);
+                checkFilePath(filename);
+            }
+        }
+    }
 
     Owned<IScheduleEventPusher> eventpusher;
     IArrayOf<cDFUlistener> listeners;
@@ -1504,6 +1587,7 @@ public:
                         runningconn.setown(setRunning(runningpath.str()));
                         Owned<IFileDescriptor> fdesc = source->getFileDescriptor();
                         checkPhysicalFilePermissions(fdesc,userdesc,false);
+                        checkSourceTarget(fdesc);
                         bool needrep = options->getReplicate();
                         ClusterPartDiskMapSpec mspec;
                         if (destination) {
@@ -1538,6 +1622,7 @@ public:
                     runningconn.setown(setRunning(runningpath.str()));
                     Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey);
                     checkPhysicalFilePermissions(fdesc,userdesc,true);
+                    checkSourceTarget(fdesc);
                     fsys.exportFile(srcFile, fdesc, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
                     if (!abortnotify.abortRequested()) {
                         Audit("EXPORT",userdesc,srcFile?srcFile->queryLogicalName():NULL,NULL);
@@ -1650,8 +1735,6 @@ public:
         wu.clear();
         return finalstate;
     }
-
-
 };
 
 

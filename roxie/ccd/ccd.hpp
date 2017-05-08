@@ -558,6 +558,7 @@ class ContextLogger : implements IRoxieContextLogger, public CInterface
 {
 protected:
     mutable CriticalSection crit;
+    mutable CriticalSection statsCrit;
     unsigned start;
     unsigned ctxTraceLevel;
     mutable CRuntimeStatisticCollection stats;
@@ -648,6 +649,7 @@ public:
 
     StringBuffer &getStats(StringBuffer &s) const
     {
+        CriticalBlock block(statsCrit);
         return stats.toStr(s);
     }
 
@@ -665,11 +667,12 @@ public:
     {
         if (aborted)
             throw MakeStringException(ROXIE_ABORT_ERROR, "Roxie server requested abort for running activity");
-        stats.addStatistic(kind, value);
+        stats.addStatisticAtomic(kind, value);
     }
 
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
+        CriticalBlock block(statsCrit);
         stats.merge(from);
     }
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override

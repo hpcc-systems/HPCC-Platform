@@ -150,7 +150,6 @@ public:
     virtual void setTarget(IGroup * target) = 0;
     virtual void setTarget(INode * target) = 0;
     virtual void spray() = 0;
-    virtual void checkSourceTarget(IFileDescriptor * file) = 0;
     virtual void setOperation(dfu_operation op) = 0;
     virtual dfu_operation getOperation() const = 0;
     virtual const char * getOperationTypeString() const = 0;

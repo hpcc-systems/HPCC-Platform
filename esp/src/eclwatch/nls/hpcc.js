@@ -564,6 +564,7 @@ define({root:
     SelectPackageFile: "Select Package File",
     Separators: "Separators",
     Services: "Services",
+    Server: "Server",
     SetBanner: "Set Banner",
     SetTextError: "Failed to display text (too large?).  Use &lsquo;helpers&rsquo; to download.",
     SetToFailed: "Set To Failed",

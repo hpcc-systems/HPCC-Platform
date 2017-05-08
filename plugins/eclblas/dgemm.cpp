@@ -28,6 +28,7 @@ ECLBLAS_CALL void dgemm(bool & __isAllResult, size32_t & __lenResult,
                         double alpha, bool isAllA, size32_t lenA, const void* A,
                         bool isAllB, size32_t lenB, const void* B, double beta,
                         bool isAllC, size32_t lenC, const void* C) {
+  typedef double __attribute__((aligned(1))) misaligned_double; // prevent gcc from assuming the data is correctly aligned.
   unsigned int lda = transposeA==0 ? m  : k;
   unsigned int ldb = transposeB==0 ? k  : n;
   unsigned int ldc = m;
@@ -35,7 +36,7 @@ ECLBLAS_CALL void dgemm(bool & __isAllResult, size32_t & __lenResult,
   __lenResult = m * n * sizeof(double);
   double *result = (double*) rtlMalloc(__lenResult);
   // populate if provided
-  for(uint32_t i=0; i<m*n; i++) result[i] = (__lenResult==lenC) ?((double*)C)[i] :0.0;
+  for(uint32_t i=0; i<m*n; i++) result[i] = (__lenResult==lenC) ?((misaligned_double*)C)[i] :0.0;
   cblas_dgemm(CblasColMajor,
               transposeA ? CblasTrans : CblasNoTrans,
               transposeB ? CblasTrans : CblasNoTrans,

@@ -357,6 +357,12 @@
                   </row>
 
                   <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue. </entry>
+                  </row>
+
+                  <row>
                     <entry><emphasis role="bold">Target
                     Scope</emphasis></entry>
 
@@ -485,6 +491,12 @@
 
                     <entry>Select the name of cluster to spray to. You can
                     only select a cluster in your environment.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue.</entry>
                   </row>
 
                   <row>
@@ -679,6 +691,12 @@
                   </row>
 
                   <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue.</entry>
+                  </row>
+
+                  <row>
                     <entry><emphasis role="bold">Target
                     Scope</emphasis></entry>
 
@@ -697,8 +715,8 @@
                   <row>
                     <entry><emphasis role="bold">Row Tag </emphasis></entry>
 
-                    <entry>The tag name of the row delimiter. Required.
-                    </entry>
+                    <entry>The tag name of the row delimiter.
+                    Required.</entry>
                   </row>
 
                   <row>
@@ -819,6 +837,12 @@
 
                     <entry>Select the name of cluster to spray to. You can
                     only select a cluster in your environment.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue.</entry>
                   </row>
 
                   <row>
@@ -967,6 +991,12 @@
                   </row>
 
                   <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue.</entry>
+                  </row>
+
+                  <row>
                     <entry><emphasis role="bold">Target
                     Scope</emphasis></entry>
 
@@ -1096,6 +1126,12 @@
 
                     <entry>Select the name of cluster to spray to. You can
                     only select a cluster in your environment.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue.</entry>
                   </row>
 
                   <row>

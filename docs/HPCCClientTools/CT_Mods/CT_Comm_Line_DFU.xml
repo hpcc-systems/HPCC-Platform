@@ -418,6 +418,14 @@ replicate=1</programlisting>
                   </row>
 
                   <row>
+                    <entry><emphasis>expireDays</emphasis></entry>
+
+                    <entry>Optional. A integer value indicating the number of
+                    days before automatically removing the file. If omitted,
+                    the default is -1 (never expires).</entry>
+                  </row>
+
+                  <row>
                     <entry><emphasis>format</emphasis></entry>
 
                     <entry>Optional. One of the following values: <emphasis
@@ -803,7 +811,7 @@ dfuplus action=dspray srcname=le::imagedb
           <title>Remove Operations:</title>
 
           <para>The <emphasis role="bold">remove</emphasis> operation deletes
-          a logical file from the system data store, optionally leavingthe
+          a logical file from the system data store, optionally leaving the
           physical files in place.</para>
 
           <para>These <emphasis>options </emphasis>are used by the <emphasis

@@ -106,6 +106,11 @@ define([
                 this.loadGetPackageMapTargets();
             } else if (params.GetPackageMapProcesses === true) {
                 this.loadGetPackageMapProcesses();
+            } else if (params.DropZoneMachines === true) {
+                this.defaultValue = "";
+                this.set("value", "");
+                this.set("placeholder", "");
+                this.loadDropZoneMachines();
             } else {
                 this.loadTargets();
             }
@@ -271,10 +276,10 @@ define([
 
         loadDropZones: function () {
             var context = this;
-            WsTopology.TpServiceQuery({
+            WsTopology.TpDropZoneQuery({
                 load: function (response) {
-                    if (lang.exists("TpServiceQueryResponse.ServiceList.TpDropZones.TpDropZone", response)) {
-                        var targetData = response.TpServiceQueryResponse.ServiceList.TpDropZones.TpDropZone;
+                    if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
+                        var targetData = response.TpDropZoneQueryResponse.TpDropZones.TpDropZone;
                         for (var i = 0; i < targetData.length; ++i) {
                             context.options.push({
                                 label: targetData[i].Name,
@@ -286,6 +291,31 @@ define([
                     }
                 }
             });
+        },
+
+        loadDropZoneMachines: function (Name) {
+            var context = this;
+            if (Name) {
+                WsTopology.TpDropZoneQuery({
+                    request: {
+                        Name: Name
+                    }
+                }).then(function (response) {
+                    if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
+                        context.set("options", []);
+                        arrayUtil.forEach(response.TpDropZoneQueryResponse.TpDropZones.TpDropZone, function(item, idx) {
+                            var targetData = item.TpMachines.TpMachine;
+                            for (var i = 0; i < targetData.length; ++i) {
+                                context.options.push({
+                                    label: targetData[i].Netaddress,
+                                    value: targetData[i].Netaddress
+                                });
+                            }
+                        });
+                    }
+                    context._postLoad();
+                });
+            }
         },
 
         _loadDropZoneFolders: function (Netaddr, Path, OS, depth) {
