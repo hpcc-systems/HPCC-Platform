@@ -42,15 +42,18 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -1686,7 +1689,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           then eventually times out. Then if your Thormaster log shows that
           the master is fine, but indicates that it is waiting to connect the
           slaves. Then you may have an issue with the SSH daemon
-          configuration. </para>
+          configuration.</para>
 
           <para>There is a security feature called
           <emphasis>"AllowUsers"</emphasis> that creates a white list in sshd
@@ -1695,10 +1698,42 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           rather it is an option that must be enabled. If that option is
           enabled that can cause the Thor nodes to hang in the manner
           described. If that option is enabled, then you must unset the
-          option, or add the hpcc user to the AllowUsers list. </para>
+          option, or add the hpcc user to the AllowUsers list.</para>
 
-          <para> </para>
+          <para></para>
         </sect3>
+      </sect2>
+
+      <sect2>
+        <title>Multiple Roxies</title>
+
+        <para>You can configure multiple Roxies. When you have multiple Roxies
+        as mentioned earlier in this document, it is actually better to use a
+        load balancer to behind those Roxies. </para>
+
+        <para>To add your Roxie to the VIPS tab in the configuration manager.
+        In the HPCC Configuration Manager interface (see Using ConfigMgr
+        documentation for how to use the Configuration Manager) select your
+        ESP service the default is the myws_ecl. Select the <emphasis
+        role="bold">VIPS</emphasis> tab. As depicted in the image below.
+        <figure>
+            <title>Configure VIP</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/SA011.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Right-click on the table on the VIPS tab. Select
+        <emphasis>Add</emphasis>. Click the field under the roxie column and
+        select your Roxie from the list. </para>
+
+        <para>For the <emphasis role="bold">Send Target To Roxie</emphasis>
+        field, set to False. In the esp xml this setting is
+        <emphasis>includeTargetInURL</emphasis> and it must be false if
+        running multiple Roxies. </para>
       </sect2>
 
       <sect2 id="virtual-thor-slaves">
