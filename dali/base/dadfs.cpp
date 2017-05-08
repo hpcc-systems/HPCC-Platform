@@ -9708,7 +9708,7 @@ bool removeClusterSpares(const char *clusterName, const char *type, SocketEndpoi
     return init.removeSpares(clusterName, type, eps, response);
 }
 
-IGroup *getClusterNodeGroup(const char *clusterName, const char *type, unsigned timems)
+static IGroup *getClusterNodeGroup(const char *clusterName, const char *type, bool processGroup, unsigned timems)
 {
     VStringBuffer clusterPath("/Environment/Software/%s[@name=\"%s\"]", type, clusterName);
     Owned<IRemoteConnection> conn = querySDS().connect(clusterPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
@@ -9734,9 +9734,23 @@ IGroup *getClusterNodeGroup(const char *clusterName, const char *type, unsigned 
         throwStringExceptionV(0, "DFS cluster topology for '%s', does not match existing DFS group layout for group '%s'", clusterName, nodeGroupName.str());
     Owned<IGroup> clusterGroup = init.getGroupFromCluster(type, cluster, false);
     ICopyArrayOf<INode> nodes;
-    for (unsigned n=0; n<clusterGroup->ordinality(); n++)
-        nodes.append(nodeGroup->queryNode(n));
+    unsigned l=processGroup?cluster.getPropInt("@slavesPerNode", 1):1; // if process group requested, repeat clusterGroup slavesPerNode times.
+    for (unsigned t=0; t<l; t++)
+    {
+        for (unsigned n=0; n<clusterGroup->ordinality(); n++)
+            nodes.append(nodeGroup->queryNode(n));
+    }
     return createIGroup(nodes.ordinality(), nodes.getArray());
+}
+
+IGroup *getClusterNodeGroup(const char *clusterName, const char *type, unsigned timems)
+{
+    return getClusterNodeGroup(clusterName, type, false, timems);
+}
+
+IGroup *getClusterProcessNodeGroup(const char *clusterName, const char *type, unsigned timems)
+{
+    return getClusterNodeGroup(clusterName, type, true, timems);
 }
 
 
