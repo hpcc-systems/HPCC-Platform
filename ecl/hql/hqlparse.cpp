@@ -2505,8 +2505,13 @@ unsigned HqlLex::getTypeSize(unsigned lengthTypeName)
 
 void HqlLex::enterEmbeddedMode()
 {
-    doEnterEmbeddedMode(scanner);
-    inCpp = true;
+    if (inmacro)
+        inmacro->enterEmbeddedMode();
+    else
+    {
+        doEnterEmbeddedMode(scanner);
+        inCpp = true;
+    }
 }
 
 int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)

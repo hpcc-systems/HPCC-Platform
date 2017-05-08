@@ -2257,6 +2257,25 @@ bool isSingleValuedType(ITypeInfo * type)
     return false;
 }
 
+bool isStandardSizeInt(ITypeInfo * type)
+{
+    switch (type->getTypeCode())
+    {
+    case type_int:
+    case type_swapint:
+        switch (type->getSize())
+        {
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+            return true;
+        }
+        break;
+    }
+    return false;
+}
+
 
 //============================================================================
 

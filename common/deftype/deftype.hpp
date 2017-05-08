@@ -246,6 +246,7 @@ extern DEFTYPE_API bool isUnicodeType(ITypeInfo * type);
 extern DEFTYPE_API bool isLittleEndian(ITypeInfo * type);
 extern DEFTYPE_API bool isDatasetType(ITypeInfo * type);
 extern DEFTYPE_API bool isSingleValuedType(ITypeInfo * type);
+extern DEFTYPE_API bool isStandardSizeInt(ITypeInfo * type); // Is this an int type that can be represented by a c++ int?
 inline bool isFixedSize(ITypeInfo * type) { return type && (type->getSize() != UNKNOWN_LENGTH); }
 inline bool isUnknownSize(ITypeInfo * type) { return type && (type->getSize() == UNKNOWN_LENGTH); }
 inline bool isAnyType(ITypeInfo * type) { return type && (type->getTypeCode() == type_any); }
