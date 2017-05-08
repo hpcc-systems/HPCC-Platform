@@ -17187,7 +17187,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
 
             if (normalized->getOperator() == no_alias)
             {
-                buildExpr(funcctx, normalized, bound);
+                buildExpr(func.ctx, normalized, bound);
                 rowsExpr.setown(createValue(no_countlist, makeIntType(8, false), LINK(normalized)));
             }
             else
