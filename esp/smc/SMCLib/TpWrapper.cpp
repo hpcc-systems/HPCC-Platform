@@ -104,7 +104,7 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
             unsigned count = MachineList.length();
             getThorSpareMachineList(clientVersion, ClusterName, ClusterDirectory, MachineList);
 
-            //The multiSlaves is for legacy multiSlaves environment.
+            //The checkMultiSlavesFlag is for legacy multiSlaves environment, not for new environments.
             //count < MachineList.length(): There is some node for eqThorSpareProcess being added to the MachineList.
             if (!checkMultiSlavesFlag(ClusterName) &&(count < MachineList.length()))
                 hasThorSpareProcess = true;
@@ -1458,6 +1458,8 @@ bool CTpWrapper::checkMultiSlavesFlag(const char* clusterName)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
     //set this flag for legacy multi slave clusters because SwapNode made little sense in the old scheme
+    //This is no longer an option in new environments, but is kept for backward compatibility with old
+    //multi slave environments that used to list multiple slaves per node manually.
     return cluster->getPropBool("@multiSlaves");
 }
 
