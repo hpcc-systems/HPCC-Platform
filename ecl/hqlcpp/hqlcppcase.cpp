@@ -37,6 +37,7 @@
 #define MAX_NUM_NOBREAK_CASE                        80      // maximum number of case: without a break - compiler workaround
 #define INLINE_COMPARE_THRESHOLD                    2       // above this, a loop is generated
 #define SWITCH_TABLE_DENSITY_THRESHOLD              3       // % used before use array index.
+#define RANGE_DENSITY_THRESHOLD                     30      // % used before to use array index with range checking
 #define MAX_NESTED_CASES                            8       // to stop C++ compiler running out of scopes.
 
 //===========================================================================
@@ -115,9 +116,14 @@ IHqlExpression * createNotFoundValue()
 
 //===========================================================================
 
+static int compareValues(IHqlExpression * lexpr, IHqlExpression * rexpr)
+{
+    return lexpr->queryValue()->compare(rexpr->queryValue());
+}
+
 static int comparePair(IHqlExpression * lexpr, IHqlExpression * rexpr)
 {
-    return lexpr->queryChild(0)->queryValue()->compare(rexpr->queryChild(0)->queryValue());
+    return compareValues(lexpr->queryChild(0), rexpr->queryChild(0));
 }
 
 static int comparePair(IInterface * const * left, IInterface * const * right)
@@ -137,22 +143,39 @@ HqlCppCaseInfo::HqlCppCaseInfo(HqlCppTranslator & _translator) : translator(_tra
 
 void HqlCppCaseInfo::addPair(IHqlExpression * expr)
 {
+    IHqlExpression * compareExpr = expr->queryChild(0);
+    IHqlExpression * resultExpr = expr->queryChild(1);
+    if (allResultsMatch && pairs.ordinality())
+    {
+        if (pairs.tos().queryChild(1) != resultExpr)
+            allResultsMatch = false;
+    }
+
     pairs.append(*LINK(expr));
     
-    IHqlExpression * compareValue = expr->queryChild(0);
-    if (!compareValue->queryValue())
+    if (!compareExpr->queryValue())
+    {
         constantCases = false;
+    }
+    else if (constantCases)
+    {
+        if (!lowestCompareExpr || compareValues(compareExpr, lowestCompareExpr) < 0)
+            lowestCompareExpr.set(compareExpr);
+        if (!highestCompareExpr || compareValues(compareExpr, highestCompareExpr) > 0)
+            highestCompareExpr.set(compareExpr);
+    }
+
     if (!expr->queryChild(1)->queryValue())
         constantValues = false;
 
     if (cond && !complexCompare)
     {
-        ITypeInfo * valueType = compareValue->queryType();
+        ITypeInfo * valueType = compareExpr->queryType();
         if (valueType != cond->queryType())
-            complexCompare = isCompare3Valued(compareValue->queryType());
+            complexCompare = isCompare3Valued(compareExpr->queryType());
     }
 
-    updateResultType(expr->queryChild(1));
+    updateResultType(resultExpr);
 
 }
 
@@ -161,6 +184,19 @@ void HqlCppCaseInfo::addPairs(HqlExprArray & _pairs)
     pairs.ensure(_pairs.ordinality());
     ForEachItemIn(idx, _pairs)
         addPair(&_pairs.item(idx));
+}
+
+bool HqlCppCaseInfo::canBuildStaticList(ITypeInfo * type)
+{
+    switch (type->getTypeCode())
+    {
+    case type_int:
+        return isStandardSizeInt(type);
+    case type_swapint:
+        return false;
+    default:
+        return isFixedSize(type);
+    }
 }
 
 bool HqlCppCaseInfo::buildAssign(BuildCtx & ctx, const CHqlBoundTarget & target)
@@ -362,80 +398,121 @@ void HqlCppCaseInfo::buildChop2Map(BuildCtx & ctx, const CHqlBoundTarget & targe
     }
 }
 
-IHqlExpression * HqlCppCaseInfo::buildIndexedMap(BuildCtx & ctx, IHqlExpression * test, unsigned lower, unsigned upper)
+IHqlExpression * HqlCppCaseInfo::buildIndexedMap(BuildCtx & ctx, const CHqlBoundExpr & test)
 {
-    ITypeInfo * compareType = test->queryType()->queryPromotedType();
+    ITypeInfo * compareType = test.queryType()->queryPromotedType();
     type_t compareTypeCode = compareType->getTypeCode();
 
     HqlExprArray values;
     IHqlExpression * dft = queryActiveTableSelector();  // value doesn't matter as long as it will not occur
-    unsigned num = (upper-lower+1);
-    values.ensure(num);
-    unsigned idx;
-    for (idx = 0; idx < num; idx++)
-        values.append(*LINK(dft));
+    __int64 lower = getIntValue(lowerTableBound, 0);
+    unsigned num = (getIntValue(upperTableBound, 0)-lower)+1;
 
-    ForEachItemIn(idx2, pairs)
-    {
-        IHqlExpression & cur = pairs.item(idx2);
-        IValue * value = cur.queryChild(0)->queryValue();
-        unsigned replaceIndex;
-        switch (compareTypeCode)
-        {
-        case type_int:
-            replaceIndex = (int)value->getIntValue()-lower;
-            break;
-        case type_string:
-            {
-                StringBuffer temp;
-                value->getStringValue(temp);
-                replaceIndex = (int)(unsigned char)temp.charAt(0)-lower;
-                break;
-            }
-        default:
-            throwUnexpectedType(compareType);
-        }
-
-        IHqlExpression * mapTo = cur.queryChild(1);
-        if (mapTo->getOperator() != no_constant)
-            throwUnexpected();
-        if (replaceIndex >= num)
-            translator.reportWarning(CategoryIgnored, HQLWRN_CaseCanNeverMatch, "CASE entry %d can never match the test condition", replaceIndex);
-        else
-            values.replace(*LINK(mapTo),replaceIndex);
-    }
-
-    //Now replace the placeholders with the default values.
-    for (idx = 0; idx < num; idx++)
-    {
-        if (&values.item(idx) == dft)
-            values.replace(*defaultValue.getLink(),idx);
-    }
-
-    // use a var string type to get better C++ generated...
-    ITypeInfo * storeType = getArrayElementType(resultType);
-    ITypeInfo * listType = makeArrayType(storeType, values.ordinality());
-    OwnedHqlExpr lvalues = createValue(no_list, listType, values);
-
-    CHqlBoundExpr boundTable;
-    translator.buildExpr(ctx, lvalues, boundTable);
-    IHqlExpression * tableIndex;
+    CHqlBoundExpr indexExpr;
     switch (compareTypeCode)
     {
         case type_int:
-            tableIndex = LINK(test);
+            indexExpr.set(test);
             break;
         case type_string:
-            tableIndex = createValue(no_index, makeCharType(), LINK(test), getZero());
-            tableIndex = createValue(no_cast, makeIntType(1, false), tableIndex);
+            indexExpr.expr.setown(createValue(no_index, makeCharType(), LINK(test.expr), getZero()));
+            indexExpr.expr.setown(createValue(no_cast, makeIntType(1, false), LINK(indexExpr.expr)));
             break;
         default:
             throwUnexpectedType(compareType);
     }
 
+    if (useRangeIndex && (num != 1))
+        translator.ensureSimpleExpr(ctx, indexExpr);
+
+    OwnedHqlExpr mapped;
     ITypeInfo * retType = resultType;
-    IHqlExpression * ret = createValue(no_index, LINK(retType), LINK(boundTable.expr), tableIndex);
-    return createTranslatedOwned(ret);
+    //if num == pairs.ordinality() and all results are identical, avoid the table lookup.
+    if (allResultsMatch && (num == pairs.ordinality()))
+    {
+        mapped.set(pairs.item(0).queryChild(1));
+    }
+    else
+    {
+        values.ensure(num);
+        unsigned idx;
+        for (idx = 0; idx < num; idx++)
+            values.append(*LINK(dft));
+
+        ForEachItemIn(idx2, pairs)
+        {
+            IHqlExpression & cur = pairs.item(idx2);
+            IValue * value = cur.queryChild(0)->queryValue();
+            unsigned replaceIndex;
+            switch (compareTypeCode)
+            {
+            case type_int:
+                replaceIndex = (unsigned)(value->getIntValue()-lower);
+                break;
+            case type_string:
+                {
+                    StringBuffer temp;
+                    value->getStringValue(temp);
+                    replaceIndex = (unsigned)((unsigned char)temp.charAt(0)-lower);
+                    break;
+                }
+            default:
+                throwUnexpectedType(compareType);
+            }
+
+            IHqlExpression * mapTo = cur.queryChild(1);
+            if (mapTo->getOperator() != no_constant)
+                throwUnexpected();
+            if (replaceIndex >= num)
+                translator.reportWarning(CategoryIgnored, HQLWRN_CaseCanNeverMatch, "CASE entry %d can never match the test condition", replaceIndex);
+            else
+                values.replace(*LINK(mapTo),replaceIndex);
+        }
+
+        //Now replace the placeholders with the default values.
+        for (idx = 0; idx < num; idx++)
+        {
+            if (&values.item(idx) == dft)
+                values.replace(*defaultValue.getLink(),idx);
+        }
+
+        // use a var string type to get better C++ generated...
+        ITypeInfo * storeType = getArrayElementType(resultType);
+        ITypeInfo * listType = makeArrayType(storeType, values.ordinality());
+        OwnedHqlExpr lvalues = createValue(no_list, listType, values);
+
+        CHqlBoundExpr boundTable;
+        translator.buildExpr(ctx, lvalues, boundTable);
+
+        LinkedHqlExpr tableIndex = indexExpr.expr;
+        if (getIntValue(lowerTableBound, 0))
+            tableIndex.setown(createValue(no_sub, tableIndex->getType(), LINK(tableIndex), LINK(lowerTableBound)));
+
+        IHqlExpression * ret = createValue(no_index, LINK(retType), LINK(boundTable.expr), LINK(tableIndex));
+        mapped.setown(createTranslatedOwned(ret));
+    }
+
+    if (useRangeIndex)
+    {
+        if (num != 1)
+        {
+            OwnedHqlExpr testValue = indexExpr.getTranslatedExpr();
+            OwnedHqlExpr aboveLower = createCompare(no_ge, testValue, lowestCompareExpr);
+            OwnedHqlExpr belowUpper = createCompare(no_le, testValue, highestCompareExpr);
+            OwnedHqlExpr inRange = createValue(no_and, makeBoolType(), aboveLower.getClear(), belowUpper.getClear());
+            mapped.setown(createValue(no_if, LINK(retType), inRange.getClear(), LINK(mapped), LINK(defaultValue)));
+        }
+        else
+        {
+            assertex(allResultsMatch);
+            OwnedHqlExpr testValue = indexExpr.getTranslatedExpr();
+            OwnedHqlExpr inRange = createCompare(no_eq, testValue, lowestCompareExpr);
+            mapped.setown(createValue(no_if, LINK(retType), inRange.getClear(), LINK(mapped), LINK(defaultValue)));
+        }
+    }
+
+    return mapped.getClear();
+
 }
 
 void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test)
@@ -1038,20 +1115,40 @@ void HqlCppCaseInfo::promoteTypes()
 
 bool HqlCppCaseInfo::canBuildArrayLookup(const CHqlBoundExpr & test)
 {
+    if (!constantValues)
+        return false;
+
     ITypeInfo * condType = test.queryType()->queryPromotedType();
 
     //MORE: Also support this for high density tables that don't start at 0... - checking upper and lower bounds
     unsigned bitSize = condType->getBitSize();
-    if (constantValues && (bitSize && (bitSize <= 8) && !condType->isSigned()))
+    if ((bitSize && (bitSize <= 8) && !condType->isSigned()))
     {
         unsigned limit = (1 << bitSize);
         //use case if enough items, or above a certain density...
         if (pairs.ordinality() * 100 >= limit * SWITCH_TABLE_DENSITY_THRESHOLD)
         {
             if ((condType->getTypeCode() == type_int) || (condType->getTypeCode() == type_string))
+            {
+                lowerTableBound.setown(getSizetConstant(0));
+                upperTableBound.setown(getSizetConstant(limit-1));
                 return true;
+            }
         }
     }
+
+    if (condType->isInteger())
+    {
+        unsigned __int64 range = getIntValue(highestCompareExpr, 0) - getIntValue(lowestCompareExpr, 0) + 1;
+        if (pairs.ordinality() * 100 >= range  * RANGE_DENSITY_THRESHOLD)
+        {
+            useRangeIndex = true;
+            lowerTableBound.set(lowestCompareExpr);
+            upperTableBound.set(highestCompareExpr);
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -1059,13 +1156,8 @@ bool HqlCppCaseInfo::queryBuildArrayLookup(BuildCtx & ctx, const CHqlBoundTarget
 {
     if (canBuildArrayLookup(test) && canBuildStaticList(resultType) && defaultValue->isConstant())
     {
-        //MORE: Also support this for high density tables that don't start at 0... - checking upper and lower bounds
-        ITypeInfo * condType = test.queryType()->queryPromotedType();
-        unsigned bitSize = condType->getBitSize();
-        unsigned limit = (1 << bitSize);
-
         BuildCtx subctx(ctx);
-        OwnedHqlExpr ret = buildIndexedMap(subctx, test.expr, 0, limit-1);
+        OwnedHqlExpr ret = buildIndexedMap(subctx, test);
         translator.buildExprAssign(ctx, target, ret);
         return true;
     }

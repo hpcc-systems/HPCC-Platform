@@ -367,12 +367,12 @@ public:
     void setDefault(IHqlExpression * expr);
 
 protected:
-    bool canBuildStaticList(ITypeInfo * type) { return isFixedSize(type); }
+    bool canBuildStaticList(ITypeInfo * type);
 
     void buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test, IHqlExpression * temp, unsigned start, unsigned end);
     void buildChop3Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test);
     void buildChop2Map(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test, unsigned start, unsigned end);
-    IHqlExpression * buildIndexedMap(BuildCtx & ctx, IHqlExpression * test, unsigned lower, unsigned upper);
+    IHqlExpression * buildIndexedMap(BuildCtx & ctx, const CHqlBoundExpr & test);
     void buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & test);
     void buildIntegerSearchMap(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * est);
     void buildSwitchCondition(BuildCtx & ctx, CHqlBoundExpr & bound);
@@ -405,9 +405,15 @@ protected:
     HqlExprAttr             defaultValue;
     HqlExprArray            pairs;
     HqlExprArray            originalPairs;
+    OwnedHqlExpr lowestCompareExpr;
+    OwnedHqlExpr highestCompareExpr;
+    OwnedHqlExpr lowerTableBound;
+    OwnedHqlExpr upperTableBound;
     bool complexCompare;
     bool constantCases;
     bool constantValues;
+    bool useRangeIndex = false;
+    bool allResultsMatch = true;
     OwnedITypeInfo resultType;
     OwnedITypeInfo indexType;
     OwnedITypeInfo promotedElementType;
