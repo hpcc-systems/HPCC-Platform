@@ -875,10 +875,10 @@ public:
 
 /* Usage example
 
+    static void *sobj = NULL;
+    static CSingletonLock slock;
     void *get()
     {
-        static void *sobj = NULL;
-        static CSingletonLock slock;
         if (slock.lock()) {
             if (!sobj)          // required
                 sobj = createSObj();
@@ -887,5 +887,54 @@ public:
         return sobj;
     }
 */
+
+/*
+ * A template function for implementing a singleton object.  Using the same example as above would require:
+
+    static std::atomic<void *> sobj;
+    static CCriticalSection slock;
+    void *get()
+    {
+        return querySingleton(sobj, slock, []{ return createSObj; });
+    }
+
+ */
+
+template <typename X, typename FUNC>
+inline X * querySingleton(std::atomic<X *> & singleton, CriticalSection & cs, FUNC factory)
+{
+    X * value = singleton.load(std::memory_order_acquire);
+    if (value)
+        return value; // avoid crit
+
+    CriticalBlock block(cs);
+    value = singleton.load(std::memory_order_acquire);  // reload in case another thread got here first
+    if (!value)
+    {
+        value = factory();
+        singleton.store(value, std::memory_order_release);
+    }
+    return value;
+}
+
+/*
+ * A template class for implementing a singleton object.  Using the same example as above would require:
+
+    static Singleton<void> sobj;
+    void *get()
+    {
+        return sobj.query([]{ return createSObj; });
+    }
+
+ */
+template <typename X>
+class Singleton
+{
+public:
+    template <typename FUNC> X * query(FUNC factory) { return querySingleton(singleton, cs, factory); }
+private:
+    std::atomic<X *> singleton{nullptr};
+    CriticalSection cs;
+};
 
 #endif
