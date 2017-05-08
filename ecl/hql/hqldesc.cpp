@@ -89,7 +89,7 @@ static void expandRecordSymbolsMeta(IPropertyTree * metaTree, IHqlExpression * r
         case no_field:
             {
                 IPropertyTree * field = metaTree->addPropTree("Field", createPTree("Field"));
-                field->setProp("@name", str(cur->queryName()));
+                field->setProp("@name", str(cur->queryId()));
                 StringBuffer ecltype;
                 cur->queryType()->getECLType(ecltype);
                 field->setProp("@type", ecltype);
@@ -134,7 +134,7 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr)
         if (javadoc)
             def->addPropTree("Documentation", javadoc.getClear());
         IHqlNamedAnnotation * symbol = queryNameAnnotation(expr);
-        def->setProp("@name", str(expr->queryName()));
+        def->setProp("@name", str(expr->queryId()));
         def->setPropInt("@line", expr->getStartLine());
         if (expr->isExported())
             def->setPropBool("@exported", true);
