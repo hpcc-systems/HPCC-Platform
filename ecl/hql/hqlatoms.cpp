@@ -145,6 +145,7 @@ IAtom * _dot_Atom;
 IAtom * dynamicAtom;
 IAtom * ebcdicAtom;
 IAtom * eclrtlAtom;
+IAtom * embedAtom;
 IAtom * embeddedAtom;
 IAtom * _empty_str_Atom;
 IAtom * encodingAtom;
@@ -599,6 +600,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(dynamic);
     MAKEATOM(ebcdic);
     MAKEATOM(eclrtl);
+    MAKEATOM(embed);
     MAKEATOM(embedded);
     _empty_str_Atom = createAtom("");
     MAKEATOM(encoding);
