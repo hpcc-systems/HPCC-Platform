@@ -45,6 +45,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/remote
          ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

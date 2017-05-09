@@ -27,6 +27,7 @@
 #include "packageprocess_errors.h"
 #include "referencedfilelist.hpp"
 #include "package.h"
+#include "eclwatch_errorlist.hpp"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
@@ -182,11 +183,10 @@ void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const c
         psEntryNew->setPropBool("@active", activate);
 }
 
-void fixPackageMapFileIds(IPropertyTree *pm, bool preloadAll)
+void fixPackageMapFileIds(IPropertyTreeIterator *iter, bool preloadAll)
 {
-    if (!pm)
+    if (!iter)
         return;
-    Owned<IPropertyTreeIterator> iter = pm->getElements("Package");
     ForEach(*iter)
     {
         IPropertyTree &item = iter->query();
@@ -215,6 +215,17 @@ void fixPackageMapFileIds(IPropertyTree *pm, bool preloadAll)
             }
         }
     }
+}
+
+void fixPackageMapFileIds(IPropertyTree *pm, bool preloadAll)
+{
+    if (!pm)
+        return;
+    Owned<IPropertyTreeIterator> iter = pm->getElements("Package");
+    fixPackageMapFileIds(iter, preloadAll);
+
+    iter.setown(pm->getElements("Part/Package"));
+    fixPackageMapFileIds(iter, preloadAll);
 }
 
 //////////////////////////////////////////////////////////
@@ -287,13 +298,17 @@ public:
         process.set(name);
         buildPkgSetId(pkgSetId, process);
     }
-    void setUser(const char *user, const char *password)
+    void setUser(const char *user, const char *password, IEspContext *context)
     {
-        if (user && *user && *password && *password)
+        if (user && *user && password && *password)
         {
             userdesc.setown(createUserDescriptor());
             userdesc->set(user, password);
+            return;
         }
+        if (!context)
+            return;
+        setUser(context->queryUserId(), context->queryPassword(), nullptr);
     }
     void setDerivedDfsLocation(const char *dfsLocation, const char *srcProcess)
     {
@@ -328,14 +343,14 @@ public:
         if (pmExisting && !pmExisting->getPropBool("@multipart", false))
             convertExisting();
     }
-    void createPart(const char *partname, const char *xml)
+    void createPart(const char *partname, IPropertyTree *pTree)
     {
         if (!partname || !*partname)
             throw MakeStringExceptionDirect(PKG_INFO_NOT_DEFINED, "No PackageMap Part name provided");
-        if (!xml || !*xml)
+        if (!pTree)
             throw MakeStringExceptionDirect(PKG_INFO_NOT_DEFINED, "No PackageMap content provided");
 
-        pmPart.setown(createPTreeFromXMLString(xml));
+        pmPart.set(pTree);
         if (!pmPart)
             throw MakeStringExceptionDirect(PKG_INFO_NOT_DEFINED, "Invalid PackageMap content");
         pmPart->addProp("@id", partname);
@@ -345,29 +360,47 @@ public:
 
         fixPackageMapFileIds(pmPart, checkFlag(PKGADD_PRELOAD_ALL));
     }
+    void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound, IPropertyTree *pt)
+    {
+        cloneFileInfoToDali(updateFlags, filesNotFound, pt, daliIP, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
+    }
     void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound)
     {
-        cloneFileInfoToDali(updateFlags, filesNotFound, pmPart, daliIP, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
+        cloneDfsInfo(updateFlags, filesNotFound, pmPart);
     }
-    void doCreate(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
+    void doCreate(const char *partname, IPropertyTree *pTree, unsigned updateFlags, StringArray &filesNotFound)
     {
-        createPart(partname, xml);
-
+        if (!pTree)
+            throw MakeStringExceptionDirect(PKG_INFO_NOT_DEFINED, "No PackageMap content provided");
+        Linked<IPropertyTree> pmTree = pTree;
         if (pmExisting)
         {
             if (!checkFlag(PKGADD_MAP_REPLACE))
                 throw MakeStringException(PKG_NAME_EXISTS, "PackageMap %s already exists, either delete it or specify overwrite", pmid.str());
         }
 
-        cloneDfsInfo(updateFlags, filesNotFound);
+        if (pmTree->hasProp("Part"))
+        {
+            fixPackageMapFileIds(pmTree, checkFlag(PKGADD_PRELOAD_ALL));
+            cloneDfsInfo(updateFlags, filesNotFound, pmTree);
+        }
+        else
+        {
+            createPart(partname, pmTree.getClear()); //this is a part, not a whole packagemap
+            cloneDfsInfo(updateFlags, filesNotFound, pmPart);
+        }
 
         if (pmExisting)
             packageMaps->removeTree(pmExisting);
 
-        Owned<IPropertyTree> pmTree = createPTree("PackageMap", ipt_ordered);
+        if (!pmTree)
+        {
+            //wrap part in full PackageMap
+            pmTree.setown(createPTree("PackageMap", ipt_ordered));
+            pmTree->setPropBool("@multipart", true);
+            pmTree->addPropTree("Part", pmPart.getClear());
+        }
         pmTree->setProp("@id", pmid);
-        pmTree->setPropBool("@multipart", true);
-        pmTree->addPropTree("Part", pmPart.getClear());
         packageMaps->addPropTree("PackageMap", pmTree.getClear());
 
         VStringBuffer xpath("PackageMap[@id='%s'][@querySet='%s']", pmid.str(), target.get());
@@ -382,10 +415,48 @@ public:
         }
         makePackageActive(pkgSet, psEntry, target, checkFlag(PKGADD_MAP_ACTIVATE));
     }
+    void doCreate(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
+    {
+        Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml, ipt_ordered);
+        doCreate(partname, pTree, updateFlags, filesNotFound);
+    }
     void create(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
     {
         init();
         doCreate(partname, xml, updateFlags, filesNotFound);
+    }
+    void copy(IPropertyTree *pm, const char *name, unsigned updateFlags, StringArray &filesNotFound)
+    {
+        init();
+        doCreate(name, pm, updateFlags, filesNotFound);
+    }
+    void copy(const char *srcAddress, const char *srcTarget, const char *name, unsigned updateFlags, StringArray &filesNotFound)
+    {
+        VStringBuffer url("http://%s/WsPackageProcess", (srcAddress && *srcAddress) ? srcAddress : ".:8010");
+        Owned<IClientWsPackageProcess> client = createWsPackageProcessClient();
+        StringBuffer user, pw;
+        if (userdesc)
+            client->setUsernameToken(userdesc->getUserName(user), userdesc->getPassword(pw), nullptr);
+        client->addServiceUrl(url);
+
+        StringBuffer scopedPMID;
+        if (srcTarget && *srcTarget)
+            scopedPMID.append(srcTarget).append("::");
+        scopedPMID.append(name);
+        Owned<IClientGetPackageMapByIdRequest> req = client->createGetPackageMapByIdRequest();
+        req->rpc().setConnectTimeOutMs(HTTP_CLIENT_DEFAULT_CONNECT_TIMEOUT); //could make configurable, and consider changing read timeout,
+                                                                             //but do so across all copy type methods under a stand alone JIRA
+
+        req->setPackageMapId(scopedPMID);
+        Owned<IClientGetPackageMapByIdResponse> resp = client->GetPackageMapById(req);
+        if (resp->getExceptions().ordinality())
+        {
+            Owned<IMultiException> mE = makeMultiException("ESP");
+            mE->append(const_cast<IMultiException&>(resp->getExceptions()));
+            throw mE.getClear();
+        }
+        init();
+        doCreate(name, resp->getInfo(), updateFlags, filesNotFound);
     }
     void addPart(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
     {
@@ -397,7 +468,8 @@ public:
             return;
         }
 
-        createPart(partname, xml);
+        Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml, ipt_ordered);
+        createPart(partname, pTree.getClear());
 
         VStringBuffer xpath("Part[@id='%s']", partname);
         IPropertyTree *existingPart = pmExisting->queryPropTree(xpath);
@@ -681,10 +753,14 @@ bool CWsPackageProcessEx::readPackageMapString(const char *packageMapString, Str
     return true;
 }
 
-void CWsPackageProcessEx::getPkgInfoById(const char *packageMapId, IPropertyTree* tree)
+void CWsPackageProcessEx::getPkgInfoById(const char *target, const char *packageMapId, IPropertyTree* tree)
 {
     if (!packageMapId || !*packageMapId)
         return;
+
+    StringBuffer scopedPMID;
+    if (target && *target)
+        packageMapId = scopedPMID.append(target).append("::").append(packageMapId).str();
 
     Owned<IPropertyTree> packageMaps = packageMapAndSet.getPackageMaps();
     if (!packageMaps)
@@ -700,6 +776,11 @@ void CWsPackageProcessEx::getPkgInfoById(const char *packageMapId, IPropertyTree
         mergePTree(tree, mapTree);
 }
 
+void CWsPackageProcessEx::getPkgInfoById(const char *packageMapId, IPropertyTree* tree)
+{
+    getPkgInfoById(nullptr, packageMapId, tree);
+}
+
 bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageRequest &req, IEspAddPackageResponse &resp)
 {
     PackageMapUpdater updater;
@@ -711,7 +792,7 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
 
     updater.setPMID(req.getTarget(), req.getPackageMap(), req.getGlobalScope());
     updater.setProcess(req.getProcess());
-    updater.setUser(context.queryUserId(), context.queryPassword());
+    updater.setUser(context.queryUserId(), context.queryPassword(), nullptr);
     updater.setDerivedDfsLocation(req.getDaliIp(), req.getSourceProcess());
 
     unsigned updateFlags = 0;
@@ -732,6 +813,88 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
 
     resp.updateStatus().setCode(0);
     resp.updateStatus().setDescription(StringBuffer("Successfully loaded ").append(req.getPackageMap()));
+    return true;
+}
+
+#define PACKAGEMAP_PATH_SEP_CHAR '/'
+
+bool nextPmPathNode(const char *&path, StringBuffer &node)
+{
+    if (*path==PACKAGEMAP_PATH_SEP_CHAR)
+        path++;
+    while (*path && *path!=PACKAGEMAP_PATH_SEP_CHAR)
+        node.append(*path++);
+    return (*path && *++path);
+}
+
+bool splitPMPath(const char *path, StringBuffer &netAddress, StringBuffer &target, StringBuffer *pmid)
+{
+    if (!path || !*path)
+        return false;
+    if (*path==PACKAGEMAP_PATH_SEP_CHAR && path[1]==PACKAGEMAP_PATH_SEP_CHAR)
+    {
+        path+=2;
+        if (!nextPmPathNode(path, netAddress))
+            return false;
+    }
+    if (!nextPmPathNode(path, target))
+        return (pmid==NULL);
+    if (!pmid)
+        return false;
+    if (nextPmPathNode(path, *pmid))
+        return false; //query path too deep
+    return true;
+}
+
+
+bool CWsPackageProcessEx::onCopyPackageMap(IEspContext &context, IEspCopyPackageMapRequest &req, IEspCopyPackageMapResponse &resp)
+{
+    PackageMapUpdater updater;
+    updater.setFlag(PKGADD_MAP_CREATE);
+    updater.setFlag(PKGADD_MAP_ACTIVATE, req.getActivate());
+    updater.setFlag(PKGADD_MAP_REPLACE, req.getReplacePackageMap());
+    updater.setFlag(PKGADD_PRELOAD_ALL, req.getPreloadAllPackages());
+    updater.setFlag(PKGADD_ALLOW_FOREIGN, true);
+
+    updater.setProcess(req.getProcess());
+    updater.setUser(context.queryUserId(), context.queryPassword(), &context);
+    updater.setDerivedDfsLocation(req.getDaliIp(), req.getSourceProcess());
+
+    unsigned updateFlags = 0;
+    if (req.getReplacePackageMap())
+        updateFlags |= DALI_UPDATEF_PACKAGEMAP;
+    if (req.getUpdateCloneFrom())
+        updateFlags |= DALI_UPDATEF_CLONE_FROM;
+    if (req.getUpdateSuperFiles())
+        updateFlags |= DALI_UPDATEF_SUPERFILES;
+    if (req.getAppendCluster())
+        updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
+
+    StringBuffer srcAddress, srcTarget, srcPMID;
+    if (!splitPMPath(req.getSourcePath(), srcAddress, srcTarget, &srcPMID))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid source PackageMap path");
+
+    const char *requestedPMID = req.getPMID();
+    if (requestedPMID && *requestedPMID)
+        updater.setPMID(req.getTarget(), requestedPMID, false);
+    else
+        updater.setPMID(req.getTarget(), srcPMID, false);
+
+    StringArray filesNotFound;
+    if (srcAddress && *srcAddress)
+        updater.copy(srcAddress, srcTarget, srcPMID, updateFlags, filesNotFound);
+    else
+    {
+        Owned<IPropertyTree> tree = createPTree("PackageMaps");
+        getPkgInfoById(srcTarget, srcPMID, tree);
+        if (!tree->hasChildren())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source PackageMap not found");
+        updater.copy(tree, srcPMID, updateFlags, filesNotFound);
+    }
+    resp.setFilesNotFound(filesNotFound);
+
+    resp.updateStatus().setCode(0);
+    resp.updateStatus().setDescription(StringBuffer("Successfully loaded ").append(srcPMID.str()));
     return true;
 }
 
@@ -1187,7 +1350,7 @@ bool CWsPackageProcessEx::onAddPartToPackageMap(IEspContext &context, IEspAddPar
 
     updater.setPMID(req.getTarget(), req.getPackageMap(), req.getGlobalScope());
     updater.setProcess(req.getProcess());
-    updater.setUser(context.queryUserId(), context.queryPassword());
+    updater.setUser(context.queryUserId(), context.queryPassword(), nullptr);
     updater.setDerivedDfsLocation(req.getDaliIp(), req.getSourceProcess());
 
     unsigned updateFlags = 0;

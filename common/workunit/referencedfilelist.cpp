@@ -616,6 +616,9 @@ void ReferencedFileList::addFilesFromPackageMap(IPropertyTree *pm)
     Owned<IPropertyTreeIterator> packages = pm->getElements("Package");
     ForEach(*packages)
         addFilesFromPackage(packages->query(), ip, cluster, prefix);
+    packages.setown(pm->getElements("Part/Package"));
+    ForEach(*packages)
+        addFilesFromPackage(packages->query(), ip, cluster, prefix);
 }
 
 bool ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)
