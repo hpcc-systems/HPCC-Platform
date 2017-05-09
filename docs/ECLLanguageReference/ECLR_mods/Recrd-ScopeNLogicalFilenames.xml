@@ -82,8 +82,9 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
 
           <listitem>
             <para>If LDAP authentication is enabled on the foreign Dali, the
-            user's credentials and permissions are verified before processing
-            the file access request.</para>
+            user's credentials are verified before processing the file access
+            request. If LDAP file scope security is enabled on the foreign
+            Dali, the user's file access permissions are also verified.</para>
           </listitem>
         </varlistentry>
       </variablelist></para>
