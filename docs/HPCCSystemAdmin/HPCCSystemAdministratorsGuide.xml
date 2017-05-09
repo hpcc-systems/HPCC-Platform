@@ -1708,7 +1708,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         <title>Multiple Roxie Clusters</title>
 
         <para>You can configure multiple Roxie clusters. When you have
-        multiple Roxie clusters, it is better to use a load balancer behind
+        multiple Roxie clusters, it is better to use a load balancer with
         those Roxies. To configure multiple Roxie clusters start with adding
         your Roxie to the VIPS tab in the Configuration Manager. <figure>
             <title>Configure VIP</title>
@@ -1726,7 +1726,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
             <listitem>
               <para>Select your ESP Service (the default is the <emphasis
               role="bold">myws_ecl</emphasis>) from the Navigator panel on the
-              left side. </para>
+              left side.</para>
             </listitem>
 
             <listitem>
@@ -1736,18 +1736,17 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
 
             <listitem>
               <para>Right-click on the table, Select <emphasis>Add</emphasis>.
-              (see above image) </para>
+              (see above image)</para>
             </listitem>
 
             <listitem>
-              <para>Find the <emphasis role="bold">Send Target To
-              Roxie</emphasis> field, and set the value to
-              <emphasis>False</emphasis>. </para>
+              <para>Set the <emphasis role="bold">Send Target To
+              Roxie</emphasis> value to <emphasis>False</emphasis>.</para>
             </listitem>
           </orderedlist></para>
 
         <para>This setting (the <emphasis>includeTargetInURL</emphasis>
-        setting) must be false if running multiple Roxie clusters. </para>
+        setting) must be false if running multiple Roxie clusters.</para>
       </sect2>
 
       <sect2 id="virtual-thor-slaves">
