@@ -58,6 +58,7 @@
 #include <openssl/conf.h>
 #include <openssl/x509v3.h>
 
+#include "jsmartsock.ipp"
 #include "securesocket.hpp"
 
 Owned<ISecureSocketContext> server_securesocket_context;
@@ -1640,4 +1641,40 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
     return 0;
 }
 
+}
+
+class CSecureSmartSocketFactory : public CSmartSocketFactory
+{
+public:
+    Owned<ISecureSocketContext> secureContext;
+
+    CSecureSmartSocketFactory(const char *_socklist, bool _retry, unsigned _retryInterval, unsigned _dnsInterval) : CSmartSocketFactory(_socklist, _retry, _retryInterval, _dnsInterval)
+    {
+        secureContext.setown(createSecureSocketContext(ClientSocket));
+    }
+
+    virtual ISmartSocket *connect_timeout(unsigned timeoutms) override
+    {
+        SocketEndpoint ep;
+        SmartSocketEndpoint *ss = nullptr;
+        Owned<ISecureSocket> ssock;
+        Owned<ISocket> sock = connect_sock(timeoutms, ss, ep);
+        try
+        {
+            ssock.setown(secureContext->createSecureSocket(sock.getClear()));
+            // secure_connect may also DBGLOG() errors ...
+            ssock->secure_connect();
+        }
+        catch (IException *e)
+        {
+            ss->status = false;
+            throw;
+        }
+        return new CSmartSocket(ssock.getClear(), ep, this);
+    }
+};
+
+ISmartSocketFactory *createSecureSmartSocketFactory(const char *_socklist, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
+{
+    return new CSecureSmartSocketFactory(_socklist, _retry, _retryInterval, _dnsInterval);
 }

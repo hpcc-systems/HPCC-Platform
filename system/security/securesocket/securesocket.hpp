@@ -30,6 +30,7 @@
 
 #include "jsocket.hpp"
 #include "jptree.hpp"
+#include "jsmartsock.hpp"
 
 #define SSLIB "securesocket"
 
@@ -88,6 +89,8 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(IPropertyTre
 SECURESOCKET_API ICertificate *createCertificate();
 SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate, const char* ca_privkey, const char* ca_passphrase, int days, StringBuffer& certificate);
 };
+
+SECURESOCKET_API ISmartSocketFactory *createSecureSmartSocketFactory(const char *_socklist, bool _retry = false, unsigned _retryInterval = 60, unsigned _dnsInterval = (unsigned) -1);
 
 #endif
 
