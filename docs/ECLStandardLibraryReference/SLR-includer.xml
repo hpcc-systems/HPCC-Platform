@@ -249,12 +249,18 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CountWords.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/DecodeBase64.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/EditDistance.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/EditDistanceWithinRadius.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-
+    
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/EncodeBase64.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/EndsWith.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
