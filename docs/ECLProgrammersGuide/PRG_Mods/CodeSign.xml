@@ -48,19 +48,19 @@
 
           <tbody>
             <row>
-              <entry><emphasis>-allow</emphasis></entry>
+              <entry><emphasis>--allow</emphasis></entry>
 
               <entry>Allow the option specified.</entry>
             </row>
 
             <row>
-              <entry><emphasis>-deny</emphasis></entry>
+              <entry><emphasis>--deny</emphasis></entry>
 
               <entry>Deny the option specified.</entry>
             </row>
 
             <row>
-              <entry><emphasis>-allowsigned</emphasis></entry>
+              <entry><emphasis>--allowsigned</emphasis></entry>
 
               <entry>Allow the option specified if the code has been signed
               and the key is present.</entry>
