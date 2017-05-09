@@ -970,7 +970,15 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
       const char* pszAttrName = pSetting->queryProp("@attrName");
       const char* rowIndex = pSetting->queryProp("@rowIndex");
       const char* pszOldValue = pSetting->queryProp("@oldValue");
-      const char* pszNewValue = pSetting->queryProp("@newValue");
+      
+      StringBuffer newValue(pSetting->queryProp("@newValue"));
+      if (streq(pszAttrName, "wuQueueName") && !newValue.isEmpty())
+      {
+        newValue.trimRight();
+        pSetting->setProp("@newValue", newValue.str());
+      }
+
+      const char* pszNewValue = newValue.str();
       const char* pszOnChange = pSetting->queryProp("@onChange");
       const char* pszViewType = pSetting->queryProp("@viewType");
 
