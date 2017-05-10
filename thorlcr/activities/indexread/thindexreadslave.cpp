@@ -645,7 +645,8 @@ class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, implements
 
     IHThorIndexGroupAggregateArg *helper;
     bool gathered, merging;
-    Owned<RowAggregator> localAggTable;
+    Owned<IAggregateTable> localAggTable;
+    Owned<IRowStream> aggregateStream;
     memsize_t maxMem;
     Owned<IHashDistributor> distributor;
     bool done = false;
@@ -676,8 +677,8 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
-        localAggTable.setown(new RowAggregator(*helper, *helper));
-        localAggTable->start(queryRowAllocator());
+        localAggTable.setown(createRowAggregator(*this, *helper, *helper));
+        localAggTable->init(queryRowAllocator());
         gathered = false;
         done = false;
     }
@@ -708,10 +709,12 @@ public:
                 ActPrintLog("INDEXGROUPAGGREGATE: Local aggregate table contains %d entries", localAggTable->elementCount());
                 if (!container.queryLocal() && container.queryJob().querySlaves()>1)
                 {
+                    Owned<IRowStream> localAggStream = localAggTable->getRowStream(true);
                     BooleanOnOff tf(merging);
-                    bool ordered = 0 != (TDRorderedmerge & helper->getFlags());
-                    localAggTable.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggTable, mpTag, ordered));
+                    aggregateStream.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggStream, mpTag));
                 }
+                else
+                    aggregateStream.setown(localAggTable->getRowStream(false));
             }
             catch (IException *e)
             {
@@ -720,11 +723,11 @@ public:
                 throw checkAndCreateOOMContextException(this, e, "aggregating using hash table", localAggTable->elementCount(), helper->queryDiskRecordSize(), NULL);
             }
         }
-        Owned<AggregateRowBuilder> next = localAggTable->nextResult();
+        const void *next = aggregateStream->nextRow();
         if (next)
         {
             dataLinkIncrement();
-            return next->finalizeRowClear();
+            return next;
         }
         done = true;
         return NULL;
