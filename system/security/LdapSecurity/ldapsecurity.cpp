@@ -202,9 +202,19 @@ bool CLdapSecUser::setEncodedPassword(SecPasswordEncoding enc, void * pw, unsign
     return FALSE;  //not supported yet
 }
 
-bool CLdapSecUser::addToken(unsigned type, void * data, unsigned length)
+bool CLdapSecUser::addToken(MemoryBuffer * token)
 {
-    return FALSE;  //not supported yet
+    m_mbToken.clear().append(*token);
+    return true;
+}
+
+bool CLdapSecUser::getToken(MemoryBuffer * token)
+{
+    if (m_mbToken.length() == 0)
+        return false;
+    if(token)
+        token->append(m_mbToken);
+    return true;
 }
 
 void CLdapSecUser::copyTo(ISecUser& destination)
@@ -228,6 +238,7 @@ void CLdapSecUser::copyTo(ISecUser& destination)
     dest->setUserID(m_userid);
     dest->setPasswordExpiration(m_passwordExpiration);
     dest->setDistinguishedName(m_distinguishedName);
+    dest->credentials().addToken(&m_mbToken);
 }
 
 ISecUser * CLdapSecUser::clone()
@@ -645,13 +656,20 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         return true;
     }
 
+    if (user->credentials().getToken(nullptr))//Token exist?
+    {
+        user->setAuthenticateStatus(AS_AUTHENTICATED);
+        if(m_permissionsCache->isCacheEnabled() && !m_usercache_off)
+            m_permissionsCache->add(*user);
+        return true;
+    }
+
     bool ok = m_ldap_client->authenticate(*user);
     if(ok)
     {
+        user->setAuthenticateStatus(AS_AUTHENTICATED);
         if(m_permissionsCache->isCacheEnabled() && !m_usercache_off)
             m_permissionsCache->add(*user);
-
-        user->setAuthenticateStatus(AS_AUTHENTICATED);
     }
 
     return ok;

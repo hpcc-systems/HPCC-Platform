@@ -142,7 +142,8 @@ interface ISecCredentials : extends IInterface
 {
     virtual bool setPassword(const char * pw) = 0;
     virtual const char * getPassword() = 0;
-    virtual bool addToken(unsigned type, void * data, unsigned length) = 0;
+    virtual bool addToken(MemoryBuffer * token) = 0;
+    virtual bool getToken(MemoryBuffer * token) = 0;
     virtual bool setPasswordExpiration(CDateTime & expirationDate) = 0;
     virtual CDateTime & getPasswordExpiration(CDateTime & expirationDate) = 0;
     virtual int getPasswordDaysRemaining() = 0;

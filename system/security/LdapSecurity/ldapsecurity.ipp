@@ -67,6 +67,7 @@ private:
     StringAttr   m_sudoHost;
     StringAttr   m_sudoCommand;
     StringAttr   m_sudoOption;
+    MemoryBuffer m_mbToken;
 
 public:
     IMPLEMENT_IINTERFACE
@@ -153,7 +154,8 @@ public:
     bool setPassword(const char * pw);
     const char* getPassword();
     bool setEncodedPassword(SecPasswordEncoding enc, void * pw, unsigned length, void * salt, unsigned saltlen);
-    bool addToken(unsigned type, void * data, unsigned length);
+    bool addToken(MemoryBuffer * token);
+    bool getToken(MemoryBuffer * token);
 
 // Posix specific fields
     virtual void setGidnumber(const char* gidnumber)
