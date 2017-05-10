@@ -886,13 +886,31 @@ public:
 
         switch (state)
         {
-        case WUStateRunning:
-            fprintf(stderr, "Timed out waiting for %s to complete, workunit is still running.\n", wuid.str()); //server side waiting timed out
-            break;
         case WUStateCompleted:
             break;
+        case WUStateCompiled:
+        case WUStateSubmitted:
+        case WUStateCompiling:
+        case WUStateUploadingFiles:
+        case WUStateScheduled:
+        case WUStateWait:
+        case WUStateDebugPaused:
+        case WUStateDebugRunning:
+        case WUStatePaused:
+        case WUStateBlocked:
+        case WUStateRunning:
+            fprintf(stderr, "%s %s\n", respwuid.str(), resp->getState());
+            fprintf(stderr, "Timed out waiting for %s to complete, workunit may still be running.\n", wuid.str()); //server side waiting timed out
+            ret = 2;
+            break;
+        case WUStateUnknown:
+        case WUStateFailed:
+        case WUStateArchived:
+        case WUStateAborting:
+        case WUStateAborted:
         default:
             fprintf(stderr, "%s %s\n", respwuid.str(), resp->getState());
+            ret = 4;
         }
 
         if (resp->getResults())
