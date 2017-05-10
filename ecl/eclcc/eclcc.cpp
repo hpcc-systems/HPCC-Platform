@@ -2420,7 +2420,10 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
 
     // Option post processing follows:
     if (optArchive || optWorkUnit || optGenerateMeta || optGenerateDepend || optShowPaths)
+    {
         optNoCompile = true;
+        optIgnoreSignatures = true;
+    }
 
     optReleaseAllMemory = optDebugMemLeak || optLeakCheck;
     loadManifestOptions();
