@@ -315,6 +315,7 @@ public:
     bool active;
     bool compulsory;
     StringArray wildMatches, wildIds;
+    StringArray parts;
 public:
     IMPLEMENT_IINTERFACE;
     CPackageMapOf(const char *_packageId, const char *_querySet, bool _active)
@@ -389,10 +390,18 @@ public:
     }
     void loadPart(IPropertyTree &part)
     {
+        const char *id = part.queryProp("@id");
+        if (id && *id)
+            parts.append(id);
         Owned<IPropertyTreeIterator> partPackages = part.getElements("Package");
         ForEach(*partPackages)
             loadPackage(partPackages->query());
     }
+    const StringArray &getPartIds() const override
+    {
+        return parts;
+    }
+
     void load(IPropertyTree *xml)
     {
         if (!xml)

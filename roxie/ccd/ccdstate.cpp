@@ -813,6 +813,10 @@ public:
     {
         return BASE::isActive();
     }
+    virtual const StringArray &getPartIds() const
+    {
+        return BASE::getPartIds();
+    }
     virtual bool validate(StringArray &queryids, StringArray &wrn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const
     {
         return BASE::validate(queryids, wrn, err, unmatchedQueries, unusedPackages, unmatchedFiles);
@@ -1321,7 +1325,17 @@ public:
 
     void getInfo(StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
-        reply.appendf(" <PackageSet id=\"%s\" querySet=\"%s\"/>\n", queryPackageId(), querySet.get());
+        reply.appendf(" <PackageSet id=\"%s\" querySet=\"%s\"", queryPackageId(), querySet.get());
+        if (!packages || !packages->getPartIds().ordinality())
+        {
+            reply.append("/>\n");
+            return;
+        }
+        reply.append(">\n");
+        const StringArray &parts = packages->getPartIds();
+        ForEachItemIn(i, parts)
+            reply.appendf("  <Part id='%s'/>\n", parts.item(i));
+        reply.append(" </PackageSet>\n");
     }
 
     bool resetStats(const char *queryId, const IRoxieContextLogger &logctx)
