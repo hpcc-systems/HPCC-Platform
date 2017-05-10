@@ -22,16 +22,14 @@
           <row>
             <entry><emphasis>attrname</emphasis></entry>
 
-            <entry>Optional. The action name, which turns the action into an
-            attribute definition, therefore not executed until the
-            <emphasis>attrname</emphasis> is used as an action.</entry>
+            <entry>Optional. The name for the expression. </entry>
           </row>
 
           <row>
             <entry><emphasis>baserecset</emphasis></entry>
 
-            <entry>The set of data records for which the TRACE is defined.
-            </entry>
+            <entry>The set of data records for which the TRACE is
+            defined.</entry>
           </row>
 
           <row>
@@ -43,9 +41,15 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">TRACE </emphasis>action defines tracing to
-  log files (Thor slave logs, hThor logs, or Roxie logs). Tracing is written
-  to log files, in the form:</para>
+  <para>The <emphasis role="bold">TRACE </emphasis>expression defines tracing
+  to log files (Thor slave logs, hThor logs, or Roxie logs). </para>
+
+  <para>You can add TRACE to your code at interesting junctures without any
+  impact on performance. Later, if you need to investigate behavior, you can
+  enable them without modifying the code by setting an option or stored
+  BOOLEAN.</para>
+
+  <para>Tracing is written to log files, in the form:</para>
 
   <para><programlisting>TRACE: &lt;name&gt;&lt;fieldname&gt;value&lt;/fieldname&gt;...&lt;/name&gt; </programlisting></para>
 
@@ -53,7 +57,7 @@
   tracing is only output when the workunit debug value traceEnabled is set or
   if the default platform settings are changed to always output tracing. In
   Roxie you can also request tracing on a deployed query by specifying
-  traceEnabled=1 in the query XML. </para>
+  traceEnabled=1 in the query XML.</para>
 
   <para>It is therefore possible to leave TRACE statements in the ECL without
   any detectable overhead until tracing is enabled. To enable tracing:</para>
@@ -63,7 +67,7 @@
       </indexterm>, 1) // trace statements enabled </programlisting></para>
 
   <para>It is also possible to override the default value for KEEP at a
-  global, per-workunit, or per-query level. </para>
+  global, per-workunit, or per-query level.</para>
 
   <para><programlisting>#OPTION ('traceLimit'<indexterm>
         <primary>traceLimit</primary>
@@ -75,7 +79,7 @@
   <sect2 id="TRACE_Options" role="brk">
     <title>TRACE Options</title>
 
-    <para>The following options are available for the TRACE action:</para>
+    <para>The following options are available for TRACE:</para>
 
     <para><emphasis
     role="bold">[</emphasis><emphasis>filterExpression,</emphasis><emphasis
@@ -103,7 +107,7 @@
             <row>
               <entry><emphasis role="bold">KEEP(n)</emphasis></entry>
 
-              <entry>Optional. Specifies the number of rows to trace. </entry>
+              <entry>Optional. Specifies the number of rows to trace.</entry>
             </row>
 
             <row>
@@ -140,7 +144,7 @@ ds := DATASET([ {'Jim' , 1, 1.00039},
                 {'John', 4, 3.87114},
                 {'Jean', 5, 5.12417},
                 {'Gene', 6, 6.20283} ], myRec);
-myds := TRACE(ds,x&gt; filterValue,NAMED('person')); //trace only if x &gt; filterValue
+myds := TRACE(ds,x&gt;filterValue,NAMED('person')); //trace only if x &gt; filterValue
 myds;</programlisting></para>
   </sect2>
 </sect1>
