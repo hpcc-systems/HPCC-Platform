@@ -16,7 +16,16 @@
 ############################################################################## */
 
 #include "platform.h"
+
+#ifdef _WIN32
+// There's an issue with Python redefining ssize_t resulting in errors - hide their definition
+#define ssize_t python_ssize_t
 #include "Python.h"
+#undef ssize_t
+#else
+#include "Python.h"
+#endif
+
 #include "frameobject.h"
 #include "jexcept.hpp"
 #include "jutil.hpp"
@@ -447,11 +456,16 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     // Make sure we are never unloaded (as Python may crash if we are)
     // we do this by doing a dynamic load of the pyembed library
 #ifdef _WIN32
-    ::GetModuleFileName((HINSTANCE)&__ImageBase, helperLibraryName, _MAX_PATH);
-    if (strstr(path, "py3embed"))
+    HINSTANCE me = GetModuleHandle("py3embed");
+    if (me)
     {
-        HINSTANCE h = LoadSharedObject(helperLibraryName, false, false);
-        DBGLOG("LoadSharedObject returned %p", h);
+        char helperLibraryName[_MAX_PATH];
+        ::GetModuleFileName(me, helperLibraryName, _MAX_PATH);
+        if (strstr(helperLibraryName, "py3embed"))
+        {
+            HINSTANCE h = LoadSharedObject(helperLibraryName, false, false);
+            DBGLOG("LoadSharedObject returned %p", h);
+        }
     }
 #else
     FILE *diskfp = fopen("/proc/self/maps", "r");
