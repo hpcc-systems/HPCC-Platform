@@ -27,6 +27,27 @@
 
 #include "eclcmd_common.hpp"
 
+StringBuffer eclccpath;
+
+const char *queryEclccPath(bool optVerbose)
+{
+    if (!eclccpath.length())
+    {
+        const char *envpath = getenv("ECLCC_PATH");
+        if (envpath)
+            eclccpath.append(envpath);
+        else
+        {
+            splitDirTail(queryCurrentProcessPath(), eclccpath);
+            eclccpath.append("eclcc");
+        }
+        if (optVerbose)
+            printf("Using eclcc path %s\n", eclccpath.str());
+    }
+    return eclccpath.str();
+}
+
+
 int outputMultiExceptionsEx(const IMultiException &me)
 {
     if (!me.ordinality())
@@ -429,7 +450,8 @@ public:
 
     void buildCmd(StringBuffer &cmdLine)
     {
-        cmdLine.set("eclcc -E");
+        cmdLine.set(queryEclccPath(cmd.optVerbose));
+        cmdLine.append(" -E");
         if (cmd.optLegacy)
             cmdLine.append(" -legacy");
         if (cmd.optDebug)
@@ -492,8 +514,11 @@ public:
 
         Owned<IPipeProcess> pipe = createPipeProcess();
         bool hasInput = streq(cmd.optObj.value.str(), "stdin");
-        pipe->run(cmd.optVerbose ? "EXEC" : NULL, cmdLine.str(), NULL, hasInput, true, true);
-
+        if (!pipe->run(cmd.optVerbose ? "EXEC" : NULL, cmdLine.str(), NULL, hasInput, true, true))
+        {
+            fprintf(stderr, "Failed to run eclcc command %s\n", cmdLine.str());
+            return false;
+        }
         StringBuffer errors;
         Owned<EclCmdErrorReader> errorReader = new EclCmdErrorReader(pipe, errors);
         errorReader->start();
