@@ -379,7 +379,8 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
             Owned<AbortWaiter> abortWaiter = new AbortWaiter(pipe, workunit);
             eclccCmd.insert(0, eclccProgName);
-            pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0, true);
+            if (!pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0, true))
+                throw makeStringExceptionV(999, "Failed to run eclcc command %s", eclccCmd.str());
             errorReader->start();
             abortWaiter->start();
             try
@@ -584,13 +585,18 @@ static void generatePrecompiledHeader()
     {
         Owned<IPipeProcess> pipe = createPipeProcess();
         Owned<ErrorReader> errorReader = new ErrorReader(pipe, NULL);
-        pipe->run("eclcc", "eclcc -pch", ".", false, false, true, 0);
-        errorReader->start();
-        unsigned retcode = pipe->wait();
-        errorReader->join();
-        if (retcode != 0 || errorReader->errCount() != 0)
-            throw MakeStringException(0, "eclcc -pch failed");
-        DBGLOG("Created precompiled header");
+        StringBuffer cmd;
+        splitDirTail(queryCurrentProcessPath(), cmd);
+        cmd.append("eclcc -pch");
+        if (pipe->run("eclcc", cmd, ".", false, false, true, 0))
+        {
+            errorReader->start();
+            unsigned retcode = pipe->wait();
+            errorReader->join();
+            if (retcode != 0 || errorReader->errCount() != 0)
+                throw MakeStringException(0, "eclcc -pch failed");
+            DBGLOG("Created precompiled header");
+        }
     }
     catch (IException * e)
     {

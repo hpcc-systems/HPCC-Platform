@@ -125,24 +125,6 @@ unsigned doPipeCommand(StringBuffer &output, const char *cmd, const char *args, 
     return ret;
 }
 
-static const char *queryEclccPath()
-{
-    if (!eclccpath.length())
-    {
-        const char *envpath = getenv("ECLCC_PATH");
-        if (envpath)
-            eclccpath.append(envpath);
-        else
-        {
-            splitDirTail(queryCurrentProcessPath(), eclccpath);
-            eclccpath.append("eclcc");
-        }
-        if (optVerbose)
-            printf("Using eclcc path %s\n", eclccpath.str());
-    }
-    return eclccpath.str();
-}
-
 static bool platformVersionDone = false;
 static StringBuffer platformVersion;
 
@@ -151,7 +133,7 @@ static const char *queryPlatformVersion()
     if (!platformVersionDone)
     {
         StringBuffer output;
-        doPipeCommand(output, queryEclccPath(), "--nologfile --version", NULL);
+        doPipeCommand(output, queryEclccPath(optVerbose), "--nologfile --version", NULL);
         RegExpr re("_[0-9]+[.][0-9]+[.][0-9]+");
         const char *found = re.find(output);
         if (!found)
@@ -414,7 +396,7 @@ public:
                                     " [ (UTF8) COUNT(b.authors) ] + B.authors + "
                                     " [ (UTF8) COUNT(B.dependsOn) ] + B.dependsOn + "
                                     " [ (UTF8) #IFDEFINED(B.platformVersion, '')]", bundleName.str());
-            if (doPipeCommand(output, queryEclccPath(), eclOpts.str(), bundleCmd) > 0)
+            if (doPipeCommand(output, queryEclccPath(optVerbose), eclOpts.str(), bundleCmd) > 0)
             {
                 if (optVerbose)
                     printf("eclcc reported:\n%s", output.str());
@@ -549,7 +531,7 @@ public:
                                 "#END\n"
                 , cleanName.str());
         StringBuffer output;
-        if (doPipeCommand(output, queryEclccPath(), eclOpts.str(), bundleCmd) > 0)
+        if (doPipeCommand(output, queryEclccPath(optVerbose), eclOpts.str(), bundleCmd) > 0)
         {
             printf("%s\n", output.str());
             printf("%s selftests cannot be compiled\n", cleanName.str());
@@ -1044,7 +1026,7 @@ protected:
     void getCompilerPaths()
     {
         StringBuffer output;
-        unsigned retCode = doPipeCommand(output, queryEclccPath(), "--nologfile -showpaths", NULL);
+        unsigned retCode = doPipeCommand(output, queryEclccPath(optVerbose), "--nologfile -showpaths", NULL);
         if (retCode == START_FAILURE)
             throw makeStringExceptionV(0, "FATAL: Could not locate eclcc command");
         extractValueFromEnvOutput(bundlePath, output, ECLCC_ECLBUNDLE_PATH);
