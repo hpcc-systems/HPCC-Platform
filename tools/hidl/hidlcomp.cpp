@@ -4606,7 +4606,7 @@ void EspMessageInfo::write_esp()
                     outf("\t\t%s n = src.get%s();\n", esp_xlat(pi)->access_type, uname);
                     outf("\t\tif (n)\n");
                     const char* tag = pi->getXmlTag();
-                    outf("\t\t\tbuffer.appendf(\"<%s>%%\"I64F\"d</%s>\", n);\n", tag, tag);
+                    outf("\t\t\tbuffer.appendf(\"<%s>%%\" I64F \"d</%s>\", n);\n", tag, tag);
                     outf("\t}\n");
                     break;
                 }
