@@ -9945,7 +9945,19 @@ public:
         ForEachItemIn(m, matchingFiles)
         {
             CFileMatch &fileMatch = matchingFiles.item(m);
-            CDFAttributeIterator::serializeFileAttributes(mb, fileMatch.queryFileTree(), fileMatch.queryName(), fileMatch.queryIsSuper(), iterateFileFilterContainer->getSerializeFileAttrOptions());
+            unsigned pos = mb.length();
+            try
+            {
+                CDFAttributeIterator::serializeFileAttributes(mb, fileMatch.queryFileTree(), fileMatch.queryName(), fileMatch.queryIsSuper(), iterateFileFilterContainer->getSerializeFileAttrOptions());
+            }
+            catch (IException *e)
+            {
+                StringBuffer errMsg("Failed to serialize properties for file: ");
+                LOG(MCuserWarning, e, errMsg.append(fileMatch.queryName()));
+                e->Release();
+                mb.setLength(pos);
+                --count;
+            }
         }
         tookMs = msTick()-start;
         if (tookMs>100)
