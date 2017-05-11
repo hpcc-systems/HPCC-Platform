@@ -5059,6 +5059,9 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
 {
     try
     {
+        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Full, false))
+            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to Erase History. Permission denied (requires Full).");
+
         StringBuffer username;
         context.getUserID(username);
         Owned<IUserDescriptor> userdesc;
