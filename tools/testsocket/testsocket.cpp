@@ -53,10 +53,10 @@ unsigned runningQueries;
 unsigned multiThreadMax;
 unsigned maxLineSize = 10000000;
 
-ISocket *persistSocket = nullptr;
+Owned<ISocket> persistSocket;
 bool persistConnections = false;
-ISecureSocketContext *persistSecureContext = nullptr;
-ISecureSocket *persistSSock = nullptr;
+Owned<ISecureSocketContext> persistSecureContext;
+Owned<ISecureSocket> persistSSock;
 
 int repeats = 0;
 StringBuffer queryPrefix;
@@ -374,9 +374,8 @@ int ReceiveThread::run()
 
 int doSendQuery(const char * ip, unsigned port, const char * base)
 {
-    ISocket * socket;
-    ISecureSocketContext *secureContext = nullptr;
-    ISecureSocket *ssock = nullptr;
+    Owned<ISocket> socket;
+    Owned<ISecureSocketContext> secureContext;
     __int64 starttime, endtime;
     StringBuffer ipstr;
     try
@@ -413,38 +412,17 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
             if (!persistSocket)
             {
                 SocketEndpoint ep(ip,port);
-                persistSocket = ISocket::connect_timeout(ep, 1000);
+                persistSocket.setown(ISocket::connect_timeout(ep, 1000));
                 if (useSSL)
                 {
 #ifdef _USE_OPENSSL
-                    try
-                    {
-                        if (!persistSecureContext)
-                            persistSecureContext = createSecureSocketContext(ClientSocket);
-                        persistSSock = persistSecureContext->createSecureSocket(persistSocket);
-                    }
-                    catch (IException *e)
-                    {
-                        persistSocket->Release();
-                        throw e;
-                    }
-                    catch (...)
-                    {
-                        persistSocket->Release();
-                        throw MakeStringException(1, "SSL connect fail");
-                    }
-                    int status = persistSSock->secure_connect();
-                    if (status < 0)
-                    {
-                        // secure_connect may also DBGLOG() errors ...
-                        persistSSock->Release();
-                        persistSocket->Release();
-                        throw MakeStringException(1, "SSL connect fail");
-                    }
-                    persistSocket = persistSSock;
+                    if (!persistSecureContext)
+                        persistSecureContext.setown(createSecureSocketContext(ClientSocket));
+                    persistSSock.setown(persistSecureContext->createSecureSocket(persistSocket.getClear()));
+                    persistSSock->secure_connect();
+                    persistSocket.setown(persistSSock.getClear());
 #else
-                    persistSocket->Release();
-                    throw MakeStringException(1, "OpenSSL disabled in build");
+                    throw MakeStringException(-1, "OpenSSL disabled in build");
 #endif
                 }
             }
@@ -453,37 +431,15 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
         else
         {
             SocketEndpoint ep(ip,port);
-            socket = ISocket::connect_timeout(ep, 1000);
+            socket.setown(ISocket::connect_timeout(ep, 1000));
             if (useSSL)
             {
 #ifdef _USE_OPENSSL
-                try
-                {
-                    secureContext = createSecureSocketContext(ClientSocket);
-                    ssock = secureContext->createSecureSocket(socket);
-                }
-                catch (IException *e)
-                {
-                    socket->Release();
-                    throw e;
-                }
-                catch (...)
-                {
-                    socket->Release();
-                    throw MakeStringException(1, "SSL connect fail");
-                }
-                int status = ssock->secure_connect();
-                if (status < 0)
-                {
-                    // secure_connect may also DBGLOG() errors ...
-                    ssock->Release();
-                    secureContext->Release();
-                    socket->Release();
-                    throw MakeStringException(1, "SSL connect fail");
-                }
-                socket = ssock;
+                secureContext.setown(createSecureSocketContext(ClientSocket));
+                Owned<ISecureSocket> ssock = secureContext->createSecureSocket(socket.getClear());
+                ssock->secure_connect();
+                socket.setown(ssock.getClear());
 #else
-                socket->Release();
                 throw MakeStringException(1, "OpenSSL disabled in build");
 #endif
             }
@@ -635,10 +591,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
 
     if (!persistConnections)
     {
-        if (secureContext)
-            secureContext->Release();
         socket->close();
-        socket->Release();
     }
     return 0;
 }
@@ -1028,7 +981,6 @@ int main(int argc, char **argv)
         int sendlen=0;
         persistSocket->write(&sendlen, sizeof(sendlen));
         persistSocket->close();
-        persistSocket->Release();
     }
 
     endtime = get_cycles_now();

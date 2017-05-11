@@ -1043,8 +1043,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (!localSlave)
             openMulticastSocket();
 
-        StringBuffer certFileBuf;
-        StringBuffer keyFileBuf;
+        StringBuffer certFileName;
+        StringBuffer keyFileName;
         setDaliServixSocketCaching(true);  // enable daliservix caching
         loadPlugins();
         createDelayedReleaser();
@@ -1140,38 +1140,26 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 #ifdef _USE_OPENSSL
                         certFile = roxieFarm.queryProp("@certificateFileName");
                         if (!certFile)
-                        {
-                            WARNLOG("Skipping Roxie SSL Farm Listener on port %d due to missing certificateFileName tag", port);
-                            continue;
-                        }
+                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFileName tag", port);
                         if (isAbsolutePath(certFile))
-                            certFileBuf.append(certFile);
+                            certFileName.append(certFile);
                         else
-                            certFileBuf.append(codeDirectory.str()).append(certFile);
-                        if (!checkFileExists(certFileBuf.str()))
-                        {
-                            WARNLOG("Skipping Roxie SSL Farm Listener on port %d due to missing certificateFile (%s)", port, certFileBuf.str());
-                            continue;
-                        }
+                            certFileName.append(codeDirectory.str()).append(certFile);
+                        if (!checkFileExists(certFileName.str()))
+                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFile (%s)", port, certFileName.str());
 
                         keyFile =  roxieFarm.queryProp("@privateKeyFileName");
                         if (!keyFile)
-                        {
-                            WARNLOG("Skipping Roxie SSL Farm Listener on port %d due to missing privateKeyFileName tag", port);
-                            continue;
-                        }
+                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFileName tag", port);
                         if (isAbsolutePath(keyFile))
-                            keyFileBuf.append(keyFile);
+                            keyFileName.append(keyFile);
                         else
-                            keyFileBuf.append(codeDirectory.str()).append(keyFile);
-                        if (!checkFileExists(keyFileBuf.str()))
-                        {
-                            WARNLOG("Skipping Roxie SSL Farm Listener on port %d due to missing privateKeyFile (%s)", port, keyFileBuf.str());
-                            continue;
-                        }
+                            keyFileName.append(codeDirectory.str()).append(keyFile);
+                        if (!checkFileExists(keyFileName.str()))
+                            throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFile (%s)", port, keyFileName.str());
 
                         passPhrase = roxieFarm.queryProp("@passphrase");
-                        if (passPhrase && (int)strlen(passPhrase) == 0)
+                        if (isEmptyString(passPhrase))
                             passPhrase = nullptr;
 #else
                         WARNLOG("Skipping Roxie SSL Farm Listener on port %d : OpenSSL disabled in build", port);
@@ -1181,7 +1169,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                     const char *soname =  roxieFarm.queryProp("@so");
                     const char *config  = roxieFarm.queryProp("@config");
                     Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
-                    roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileBuf.str(), keyFileBuf.str(), passPhrase));
+                    roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhrase));
                 }
                 else
                     roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));

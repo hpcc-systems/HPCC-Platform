@@ -279,8 +279,8 @@ public:
         started.signal();
         while (running)
         {
-            ISocket *client = socket->accept(true);
-            ISecureSocket *ssock = nullptr;
+            Owned<ISocket> client = socket->accept(true);
+            Owned<ISecureSocket> ssock;
             if (client)
             {
                 if (protocol && streq(protocol, "ssl"))
@@ -290,11 +290,17 @@ public:
                     {
                         if (!secureContext)
                             secureContext.setown(createSecureSocketContextEx(certFile, keyFile, passPhrase, ServerSocket));
-                        ssock = secureContext->createSecureSocket(client);
+                        ssock.setown(secureContext->createSecureSocket(client.getClear()));
+                        int status = ssock->secure_accept();
+                        if (status < 0)
+                        {
+                            // secure_accept may also DBGLOG() errors ...
+                            WARNLOG("ProtocolSocketListener failure to establish secure connection");
+                            continue;
+                        }
                     }
                     catch (IException *E)
                     {
-                        client->Release();
                         StringBuffer s;
                         E->errorMessage(s);
                         WARNLOG("%s", s.str());
@@ -303,28 +309,18 @@ public:
                     }
                     catch (...)
                     {
-                        client->Release();
+                        StringBuffer s;
                         WARNLOG("ProtocolSocketListener failure to establish secure connection");
                         continue;
                     }
-                    int status = ssock->secure_accept();
-                    if (status < 0)
-                    {
-                        ssock->Release();
-                        client->Release();
-                        // secure_accept may also DBGLOG() errors ...
-                        WARNLOG("ProtocolSocketListener failure to establish secure connection");
-                        continue;
-                    }
-                    client = ssock;
+                    client.setown(ssock.getClear());
 #else
-                    client->Release();
                     WARNLOG("ProtocolSocketListener failure to establish secure connection: OpenSSL disabled in build");
                     continue;
 #endif
                 }
                 client->set_linger(-1);
-                pool->start(client);
+                pool->start(client.getClear());
             }
         }
         DBGLOG("ProtocolSocketListener closed query socket");
