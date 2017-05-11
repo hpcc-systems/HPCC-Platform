@@ -1512,7 +1512,7 @@ void ChildGraphBuilder::generateGraph(BuildCtx & ctx)
     //Remove this line once all engines use the new child queries exclusively
     if (numResults == 0) numResults++;
 
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(graphctx, childQuery, numResults, no_none, false);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(graphctx, childQuery, numResults, no_childquery, false);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(graphctx, PETchild, represents, resourced, true);
     if (!translator.queryOptions().serializeRowsetInExtract)
@@ -1560,7 +1560,7 @@ void ChildGraphBuilder::generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * re
     BuildCtx aliasctx(ctx);
     aliasctx.addGroup();
 
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_none, false);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_hqlproject, false);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETchild, represents, resourced, false);
     createBuilderAlias(aliasctx, extractBuilder);
@@ -1818,11 +1818,12 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         noteFinishedTiming("workunit;tree transform: optimize disk read", startCycles);
     }
 
+    bool isInsideChildQuery = (graphKind == no_childquery) || insideChildQuery(ctx);
     if (options.optimizeGraph)
     {
         cycle_t startCycles = get_cycles_now();
         traceExpression("BeforeOptimizeSub", resourced);
-        resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags()|HOOcompoundproject));
+        resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags(isInsideChildQuery)|HOOcompoundproject));
         traceExpression("AfterOptimizeSub", resourced);
         noteFinishedTiming("workunit;optimize graph", startCycles);
     }
@@ -1835,7 +1836,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     if (graphKind == no_loop)
     {
         bool insideChild = insideChildQuery(ctx);
-        resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults, insideChild, unlimitedResources));
+        resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults, isInsideChildQuery, unlimitedResources));
     }
     else
         resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
@@ -1844,11 +1845,11 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     checkNormalized(ctx, resourced);
     traceExpression("AfterResourcing Child", resourced);
     
-    resourced.setown(optimizeGraphPostResource(resourced, csfFlags, false));
+    resourced.setown(optimizeGraphPostResource(resourced, csfFlags, false, isInsideChildQuery));
     if (options.optimizeSpillProject)
     {
         resourced.setown(convertSpillsToActivities(resourced, true));
-        resourced.setown(optimizeGraphPostResource(resourced, csfFlags, false));
+        resourced.setown(optimizeGraphPostResource(resourced, csfFlags, false, isInsideChildQuery));
     }
 
     if (options.paranoidCheckNormalized || options.paranoidCheckDependencies)

@@ -2250,6 +2250,53 @@ unsigned getFlatFieldCount(IHqlExpression * expr)
     }
 }
 
+//This function gathers information about the number of fields etc. in a record.
+//MORE: Should this calculate numFields, numExpandedFields, numDatasetFields all in a single function and
+//then cache it as a property of a no_record?   Only if it becomes a significant bottleneck.
+void gatherRecordStats(HqlRecordStats & stats, IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_record:
+        {
+            ForEachChild(i, expr)
+                gatherRecordStats(stats, expr->queryChild(i));
+            break;
+        }
+    case no_ifblock:
+        return gatherRecordStats(stats, expr->queryChild(1));
+    case no_field:
+        {
+            ITypeInfo * type = expr->queryType();
+            switch (type->getTypeCode())
+            {
+            case type_table:
+            case type_groupedtable:
+                stats.fields++;
+                stats.unknownSizeFields++;
+                break;
+            case type_dictionary:
+                stats.fields++;
+                stats.unknownSizeFields++;
+                break;
+            case type_row:
+                gatherRecordStats(stats, expr->queryRecord());
+                break;
+            default:
+                stats.fields++;
+                //HPCC-17606 add: if (type->getSize() == UNKNOWN_LENGTH) stats.unknownSizeFields++;
+                break;
+            }
+            break;
+        }
+    case no_attr:
+    case no_attr_link:
+    case no_attr_expr:
+        break;
+    default:
+        UNIMPLEMENTED;
+    }
+}
 
 unsigned isEmptyRecord(IHqlExpression * record)
 {

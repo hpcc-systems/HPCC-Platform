@@ -33,6 +33,7 @@ enum
     HOOalwayslocal              = 0x0100,
     HOOexpensive                = 0x0200,   // include potentially expensive optimizations
     HOOexpandselectcreaterow    = 0x0400,
+    HOOminimizeNetworkAndMemory = 0x0800,
 };
 
 extern HQL_API IHqlExpression * optimizeHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * expr, unsigned options);

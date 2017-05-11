@@ -94,6 +94,13 @@ extern HQL_API unsigned isEmptyRecord(IHqlExpression * record);
 extern HQL_API unsigned isSimpleRecord(IHqlExpression * record);
 extern HQL_API void getSimpleFields(HqlExprArray &out, IHqlExpression *record);
 
+struct HqlRecordStats
+{
+    unsigned fields = 0;
+    unsigned unknownSizeFields = 0;
+};
+extern HQL_API void gatherRecordStats(HqlRecordStats & stats, IHqlExpression * expr);
+
 extern HQL_API bool isTrivialSelectN(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int64 topNlimit);

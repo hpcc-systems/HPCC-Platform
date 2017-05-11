@@ -57,7 +57,7 @@ MODULE_EXIT()
 // getCachedEclCRC(), cacheTablesUsed(), isIndependentOfScope()
 // logic inside createDataset
 
-//Originally the idea was to have a class instance for each kind of opcode, and to call opcode[op]->evalautePropXXXXXX(this);
+//Originally the idea was to have a class instance for each kind of opcode, and to call opcode[op]->evaluatePropXXXXXX(this);
 //to evaluate the property.  However because there are so many opcodes I'm not convinced this is the best way.
 //Better may be to model it more on the way queryRecordCount() is implemented.
 
@@ -1239,7 +1239,7 @@ static IHqlExpression * evaluateRecordAttrSize(IHqlExpression * expr)
 }
 
 
-static IHqlExpression * evalautePropSize(IHqlExpression * expr)
+static IHqlExpression * evaluatePropSize(IHqlExpression * expr)
 {
     switch (expr->getOperator())
     {
@@ -1434,7 +1434,7 @@ IHqlExpression * HqlUnadornedNormalizer::createTransformed(IHqlExpression * expr
     return HqlCachedPropertyTransformer::createTransformed(expr);
 }
 
-static IHqlExpression * evalautePropUnadorned(IHqlExpression * expr)
+static IHqlExpression * evaluatePropUnadorned(IHqlExpression * expr)
 {
     HqlUnadornedNormalizer normalizer;
     //NB: Also has the side-effect of adding any missing attributes
@@ -1581,7 +1581,7 @@ static bool optimizeFieldOrder(HqlExprArray & out, const HqlExprCopyArray & in)
     return true;
 }
 
-static IHqlExpression * evalautePropAligned(IHqlExpression * expr)
+static IHqlExpression * evaluatePropAligned(IHqlExpression * expr)
 {
     bool same = true;
     HqlExprArray result;
@@ -2046,35 +2046,56 @@ static unsigned estimateRowSize(IHqlExpression * record)
 }
 
 
-bool reducesRowSize(IHqlExpression * expr)
+//compare the expected size converting from oldRecord to newRecord
+static bool increasesRowSize(IHqlExpression * newRecord, IHqlExpression * oldRecord, bool assumeIncrease)
 {
-    //More: This should be improved...., but slightly tricky without doing lots more processing.
-    IHqlExpression * transform = queryNewColumnProvider(expr);
-    IHqlExpression * prevRecord = expr->queryChild(0)->queryRecord();
-    unsigned newRowSize = estimateRowSize(transform->queryRecord());
-    unsigned prevRowSize = estimateRowSize(prevRecord);
-    if ((newRowSize != UNKNOWN_LENGTH) && (prevRowSize != UNKNOWN_LENGTH))
-        return newRowSize < prevRowSize;
+    unsigned newRowSize = estimateRowSize(newRecord);
+    unsigned oldRowSize = estimateRowSize(oldRecord);
+    //Fixed size records
+    if ((newRowSize != UNKNOWN_LENGTH) && (oldRowSize != UNKNOWN_LENGTH))
+        return newRowSize > oldRowSize;
 
-    IHqlExpression * record = expr->queryRecord();
-    if (getFlatFieldCount(record) < getFlatFieldCount(prevRecord))
+    //Fixed size record compared with the minimum size of a variable size record.
+    size32_t oldMinSize = getMinRecordSize(oldRecord);
+    size32_t newMinSize = getMinRecordSize(newRecord);
+    if (isFixedSizeRecord(newRecord) && newRowSize <= oldMinSize)
+        return false;
+    if (isFixedSizeRecord(oldRecord) && oldRowSize <= newMinSize)
         return true;
-    return false;
+
+    HqlRecordStats oldStats;
+    HqlRecordStats newStats;
+    gatherRecordStats(oldStats, oldRecord);
+    gatherRecordStats(newStats, newRecord);
+
+    if (newStats.unknownSizeFields != oldStats.unknownSizeFields)
+    {
+        //Assume that unknown size fields are larger - the rows are sometimes smaller, but almost definitely more painful.
+        return (newStats.unknownSizeFields > oldStats.unknownSizeFields);
+    }
+
+    //Check the minimum size - essentially the size of the fixed size fields.
+    if (newMinSize != oldMinSize)
+        return newMinSize > oldMinSize;
+    if (newStats.fields > oldStats.fields)
+        return true;
+    return assumeIncrease;
 }
 
+// Does this operation decrease the size of the row?  False negatives preferred.
+bool reducesRowSize(IHqlExpression * expr)
+{
+    OwnedHqlExpr newRecord = getSerializedForm(expr->queryRecord(), diskAtom);
+    OwnedHqlExpr oldRecord = getSerializedForm(expr->queryChild(0)->queryRecord(), diskAtom);
+    return increasesRowSize(oldRecord, newRecord, false);
+}
+
+// Does this operation increase the size of the row?  False negatives preferred.
 bool increasesRowSize(IHqlExpression * expr)
 {
-    IHqlExpression * transform = queryNewColumnProvider(expr);
-    IHqlExpression * prevRecord = expr->queryChild(0)->queryRecord();
-    unsigned newRowSize = estimateRowSize(transform);
-    unsigned prevRowSize = estimateRowSize(prevRecord);
-    if ((newRowSize != UNKNOWN_LENGTH) && (prevRowSize != UNKNOWN_LENGTH))
-        return newRowSize > prevRowSize;
-
-    IHqlExpression * record = expr->queryRecord();
-    if (getFlatFieldCount(record) > getFlatFieldCount(prevRecord))
-        return true;
-    return false;
+    OwnedHqlExpr newRecord = getSerializedForm(expr->queryRecord(), diskAtom);
+    OwnedHqlExpr oldRecord = getSerializedForm(expr->queryChild(0)->queryRecord(), diskAtom);
+    return increasesRowSize(newRecord, oldRecord, false);
 }
 
 bool isLimitedDataset(IHqlExpression * expr, bool onFailOnly)
@@ -3068,7 +3089,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     return info.createRecordCountAttr();
 }
 
-static IHqlExpression * evalautePropRecordCount(IHqlExpression * expr)
+static IHqlExpression * evaluatePropRecordCount(IHqlExpression * expr)
 {
     OwnedHqlExpr info = calcRowInformation(expr);
     meta.addProperty(expr, EPrecordCount, info);
@@ -3598,7 +3619,7 @@ IHqlExpression * HqlLocationIndependentNormalizer::createTransformed(IHqlExpress
     return transformed.getClear();
 }
 
-IHqlExpression * evalautePropLocationIndependent(IHqlExpression * expr)
+IHqlExpression * evaluatePropLocationIndependent(IHqlExpression * expr)
 {
     if (isAlwaysLocationIndependent(expr))
         return expr->queryBody();
@@ -3993,19 +4014,19 @@ IHqlExpression * CHqlRealExpression::queryProperty(ExprPropKind kind)
     switch (kind)
     {
     case EPrecordCount:
-        return evalautePropRecordCount(this);
+        return evaluatePropRecordCount(this);
     case EPdiskserializedForm:
         return evaluatePropSerializedForm(this, kind, diskAtom);
     case EPinternalserializedForm:
         return evaluatePropSerializedForm(this, kind, internalAtom);
     case EPsize:
-        return evalautePropSize(this);
+        return evaluatePropSize(this);
     case EPaligned:
-        return evalautePropAligned(this);
+        return evaluatePropAligned(this);
     case EPunadorned:
-        return evalautePropUnadorned(this);
+        return evaluatePropUnadorned(this);
     case EPlocationIndependent:
-        return evalautePropLocationIndependent(this);
+        return evaluatePropLocationIndependent(this);
     case EPlikelihood:
         return evaluateLikelihood(this);
     }
