@@ -1290,6 +1290,14 @@
               </row>
 
               <row>
+                <entry></entry>
+
+                <entry>Erase file history metadata </entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
                 <entry>DfuExceptions</entry>
 
                 <entry>Access to DFU Exceptions</entry>
