@@ -578,18 +578,26 @@ albumIndex3 := INDEX(albumTable((Tracks>=8)AND(Tracks<12)),{ Artist, Title, file
 albumIndex4 := INDEX(albumTable((Tracks>=12)AND(Tracks<20)),{ Artist, Title, filepos }, '~REGRESS::albums4.key');
 albumIndex5 := INDEX(albumTable(Tracks>=20),{ Artist, Title, filepos }, '~REGRESS::albums5.key');
 albumIndex  := INDEX(albumTable,{ Artist, Title, filepos }, '~REGRESS::superalbums.key');
+albumIndexFew1 := INDEX(albumTable(Tracks<=10), { Artist, Title, filepos }, '~REGRESS::albums-few1.key', SORTED);
+albumIndexFew2 := INDEX(albumTable(Tracks>10), { Artist, Title, filepos }, '~REGRESS::albums-few2.key', SORTED);
+albumIndexSuperFew1  := INDEX(albumTable, { Artist, Title, filepos }, '~REGRESS::superalbums-few1.key', SORTED);
+albumIndexSuperFew2  := INDEX(albumTable, { Artist, Title, filepos }, '~REGRESS::superalbums-few2.key');
 
 SEQUENTIAL(
   OUTPUT(ds,,'~REGRESS::albums.d00',OVERWRITE),
   FileServices.DeleteSuperFile('~REGRESS::superalbums.key'),
   FileServices.DeleteSuperFile('~REGRESS::superalbums-sub.key'),
   FileServices.DeleteSuperFile('~REGRESS::superalbums-sub-sub.key'),
-  FileServices.DeleteSuperFile('~REGRESS::superalbums'),
+  FileServices.DeleteSuperFile('~REGRESS::superalbums-few1.key'),
+  FileServices.DeleteSuperFile('~REGRESS::superalbums-few2.key'),
   BUILDINDEX(albumIndex3,OVERWRITE),
   BUILDINDEX(albumIndex1,OVERWRITE,DISTRIBUTE(albumIndex3)),
   BUILDINDEX(albumIndex2,OVERWRITE,DISTRIBUTE(albumIndex3)),
   BUILDINDEX(albumIndex4,OVERWRITE,DISTRIBUTE(albumIndex3)),
   BUILDINDEX(albumIndex5,OVERWRITE,DISTRIBUTE(albumIndex3)),
+  BUILDINDEX(albumIndexFew1,OVERWRITE,FEW),
+  BUILDINDEX(albumIndexFew2,OVERWRITE,FEW),
+
   FileServices.CreateSuperFile('~REGRESS::superalbums.key'),
   FileServices.StartSuperFileTransaction(),
   FileServices.AddSuperFile('~REGRESS::superalbums.key','~REGRESS::albums1.key'),
@@ -620,5 +628,20 @@ SEQUENTIAL(
   FileServices.AddSuperFile('~REGRESS::superalbums.key', '~REGRESS::superalbums-sub.key');
 
   OUTPUT(SORT(albumIndex(Artist='Pixies'), Artist, Title, filepos));
+
+  FileServices.CreateSuperFile('~REGRESS::superalbums-few1.key'),
+  FileServices.StartSuperFileTransaction(),
+  FileServices.AddSuperFile('~REGRESS::superalbums-few1.key','~REGRESS::albums-few1.key'),
+  FileServices.FinishSuperFileTransaction(),
+
+  OUTPUT(SORT(albumIndexSuperFew1(Artist='Pixies'), Artist, Title, filepos));
+
+  FileServices.CreateSuperFile('~REGRESS::superalbums-few2.key'),
+  FileServices.StartSuperFileTransaction(),
+  FileServices.AddSuperFile('~REGRESS::superalbums-few2.key','~REGRESS::albums-few1.key'),
+  FileServices.AddSuperFile('~REGRESS::superalbums-few2.key','~REGRESS::albums-few2.key'),
+  FileServices.FinishSuperFileTransaction(),
+
+  OUTPUT(SORT(albumIndexSuperFew2(Artist='Pixies'), Artist, Title, filepos));
 );
 
