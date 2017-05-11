@@ -52,7 +52,8 @@
 
                 <entry>One of the following actions: spray, despray, copy,
                 remove, rename, list, add, addsuper, removesuper, listsuper,
-                savexml, status, abort, resubmit, monitor</entry>
+                savexml, status, abort, resubmit, monitor, listhistory, and
+                erasehistory</entry>
               </row>
 
               <row>
@@ -1427,6 +1428,126 @@ dfuplus action=monitor event=MyEvent ip=10.150.10.75
             file=c:\dz\* shotlimit=-1 sub=1
 dfuplus action=monitor event=MyEvent file=//10.15.13.21/dz/*.txt
 dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_ListHistory">
+          <title> Listhistory Operations:</title>
+
+          <para>The listhistory operation returns the history metadata in a
+          logical file.</para>
+
+          <para>History metadata is created from a copy or remote copy
+          operation. </para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="122.40pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis>lfn</emphasis></entry>
+
+                  <entry>The logical file name of the source file</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>outformat</emphasis></entry>
+
+                  <entry>Optional. The format of the result. Valid options
+                  are: csv, xml, json, or ascii. The default is xml.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>csvheader</emphasis></entry>
+
+                  <entry>Optional. A boolean flag (0 | 1) indicating whether
+                  to include header information in the first row whan
+                  outputting in csv format.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Example:</para>
+
+          <programlisting>dfuplus action=listhistory lfn=progguide::exampledata::accounts 
+  // this results in the following XML file:
+  &lt;History&gt;
+    &lt;Origin ip="127.0.0.1"
+            name="accounts"
+            operation="DFUcopy"
+            owner="EmilyKate"
+            path="/var/lib/HPCCSystems/hpcc-data/thor/progguide/exampledata/"
+            timestamp="2017-05-11T16:47:32"
+            workunit="W20170503-143100"/&gt;
+   &lt;/History&gt;
+
+</programlisting>
+        </sect3>
+
+        <sect3 id="CLI_DFU_EraseHistory">
+          <title>Erasehistory Operations:</title>
+
+          <para>The erasehistory operation removes the history metadata from a
+          logical file.</para>
+
+          <para>History metadata is created from a copy or remote copy
+          operation.</para>
+
+          <para>Note: If LDAP authentication is enabled on the system, you
+          must have FULL permission for DFUAccess in order to erase history.
+          See the HPCC Systems Administrator's Guide for details. </para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="122.40pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis>lfn</emphasis></entry>
+
+                  <entry>The logical file name of the source file</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>backup</emphasis></entry>
+
+                  <entry>Optional. A boolean flag (0 | 1) indicating whether
+                  to write the history to a file before erasing it. Default is
+                  1 (enable).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis><emphasis>dstxml</emphasis>
+                  </emphasis></entry>
+
+                  <entry>The logical name of the destination XML file.
+                  Required if backup is set to 1,</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Example:</para>
+
+          <programlisting>dfuplus action=erasehistory lfn=progguide::exampledata::accounts_copy dstxml=c:\temp\jim.xml
+
+  // this removes the hostory metadata from the file and writes an XML file containing the following:
+  &lt;History&gt;
+    &lt;Origin ip="127.0.0.1"
+            name="accounts"
+            operation="DFUcopy"
+            owner="EmilyKate"
+            path="/var/lib/HPCCSystems/hpcc-data/thor/progguide/exampledata/"
+            timestamp="2017-05-11T16:47:32"
+            workunit="W20170503-143100"/&gt;
+   &lt;/History&gt;
+
+</programlisting>
         </sect3>
       </sect2>
     </sect1>
