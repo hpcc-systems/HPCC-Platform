@@ -892,7 +892,7 @@ public:
  * A template function for implementing a singleton object.  Using the same example as above would require:
 
     static std::atomic<void *> sobj;
-    static CCriticalSection slock;
+    static CriticalSection slock;
     void *get()
     {
         return querySingleton(sobj, slock, []{ return createSObj; });
