@@ -88,7 +88,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     unsigned stoppedOutputs = 0;
     Owned<IBitSet> connectedOutputSet;
     unsigned activeOutputCount = 0;
-    unsigned connectedOutputCount = 0;
+    unsigned connectedOutputCount = (unsigned)-1; // uninitialized
     rowcount_t recsReady = 0;
     Owned<IException> writeAheadException;
     Owned<ISharedSmartBuffer> smartBuf;
@@ -159,6 +159,7 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         // NB: init() is called post connect, some inputs may not have connected streams, e.g. if UPDATE has suppressed them.
+        connectedOutputCount = 0;
         unsigned cur = 0;
         while (true)
         {
@@ -193,6 +194,7 @@ public:
         if (!inputPrepared)
         {
             inputPrepared = true;
+            assertex(((unsigned)-1) != connectedOutputCount);
             activeOutputCount = connectedOutputCount;
             PARENT::start();
             ForEachItemIn(o, outputs)
@@ -315,19 +317,27 @@ public:
     void inputStopped(unsigned outIdx)
     {
         CriticalBlock block(prepareInputLock);
-        if (smartBuf)
+        if ((unsigned)-1 == connectedOutputCount) // implies conditional(s) downstream meant this activity was never used, but still need to chain stop()
         {
-            /* If no output has started reading (nextRow()), then it will not have been prepared
-             * If only 1 output is left, it will bypass the smart buffer when it starts.
-             */
-            smartBuf->queryOutput(outIdx)->stop();
+            if (0 == stoppedOutputs++)
+                PARENT::stop();
         }
-        ++stoppedOutputs;
-        if (stoppedOutputs == connectedOutputCount)
+        else
         {
-            writer.stop();
-            PARENT::stop();
-            inputPrepared = false;
+            if (smartBuf)
+            {
+                /* If no output has started reading (nextRow()), then it will not have been prepared
+                 * If only 1 output is left, it will bypass the smart buffer when it starts.
+                 */
+                smartBuf->queryOutput(outIdx)->stop();
+            }
+            ++stoppedOutputs;
+            if (stoppedOutputs == connectedOutputCount)
+            {
+                writer.stop();
+                PARENT::stop();
+                inputPrepared = false;
+            }
         }
     }
     void abort()

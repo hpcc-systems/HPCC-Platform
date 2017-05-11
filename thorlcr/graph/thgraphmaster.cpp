@@ -2287,7 +2287,7 @@ void CMasterGraph::sendActivityInitData()
     unsigned pos = msg.length();
     unsigned w=0;
     unsigned sentTo = 0;
-    Owned<IThorActivityIterator> iter = getConnectedIterator(!isLoopSubGraph()); // if loop graph, need to initialize all activities (not just 1st time conditional path)
+    Owned<IThorActivityIterator> iter = getConnectedIterator();
     for (; w<queryJob().querySlaves(); w++)
     {
         unsigned needActInit = 0;
