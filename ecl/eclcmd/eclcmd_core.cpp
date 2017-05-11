@@ -807,6 +807,9 @@ public:
     {
         switch (state)
         {
+        case WUStateUnknown:
+        case WUStateArchived:
+        case WUStateAborting:
         case WUStateCompleted:
         case WUStateFailed:
         case WUStateAborted:
@@ -878,11 +881,13 @@ public:
         int ret = outputMultiExceptionsEx(resp->getExceptions());
 
         StringBuffer respwuid(resp->getWuid());
+        if (!respwuid.length()) //everything below requires workunit
+            return ret;
         if (optVerbose && respwuid.length() && !streq(wuid.str(), respwuid.str()))
             fprintf(stdout, "As %s\n", respwuid.str());
         WUState state = getWorkUnitState(resp->getState());
         if (optPoll && !isFinalState(state))
-            return pollForResults(client, wuid);
+            return pollForResults(client, respwuid);
 
         switch (state)
         {
