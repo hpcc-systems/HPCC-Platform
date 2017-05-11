@@ -2046,54 +2046,56 @@ static unsigned estimateRowSize(IHqlExpression * record)
 }
 
 
-static bool increasesRowSize(IHqlExpression * newRecord, IHqlExpression * oldRecord)
+//compare the expected size converting from oldRecord to newRecord
+static bool increasesRowSize(IHqlExpression * newRecord, IHqlExpression * oldRecord, bool assumeIncrease)
 {
     unsigned newRowSize = estimateRowSize(newRecord);
     unsigned oldRowSize = estimateRowSize(oldRecord);
+    //Fixed size records
     if ((newRowSize != UNKNOWN_LENGTH) && (oldRowSize != UNKNOWN_LENGTH))
         return newRowSize > oldRowSize;
 
-    if (isFixedSizeRecord(newRecord) && newRowSize < getMinRecordSize(oldRecord))
+    //Fixed size record compared with the minimum size of a variable size record.
+    size32_t oldMinSize = getMinRecordSize(oldRecord);
+    size32_t newMinSize = getMinRecordSize(newRecord);
+    if (isFixedSizeRecord(newRecord) && newRowSize <= oldMinSize)
         return false;
-    if (isFixedSizeRecord(oldRecord) && oldRowSize < getMinRecordSize(newRecord))
+    if (isFixedSizeRecord(oldRecord) && oldRowSize <= newMinSize)
         return true;
 
     HqlRecordStats oldStats;
     HqlRecordStats newStats;
     gatherRecordStats(oldStats, oldRecord);
     gatherRecordStats(newStats, newRecord);
+
+    if (newStats.unknownSizeFields != oldStats.unknownSizeFields)
+    {
+        //Assume that unknown size fields are larger - the rows are sometimes smaller, but almost definitely more painful.
+        return (newStats.unknownSizeFields > oldStats.unknownSizeFields);
+    }
+
+    //Check the minimum size - essentially the size of the fixed size fields.
+    if (newMinSize != oldMinSize)
+        return newMinSize > oldMinSize;
     if (newStats.fields > oldStats.fields)
         return true;
-    if (newStats.datasetFields > oldStats.datasetFields)
-        return true;
-    if (newStats.dictionaryFields > oldStats.dictionaryFields)
-        return true;
-
-    return false;
+    return assumeIncrease;
 }
 
+// Does this operation decrease the size of the row?  False negatives preferred.
 bool reducesRowSize(IHqlExpression * expr)
 {
-    //More: This should be improved...., but slightly tricky without doing lots more processing.
-    IHqlExpression * newRecord = expr->queryRecord();
-    IHqlExpression * oldRecord = expr->queryChild(0)->queryRecord();
-
-    unsigned newRowSize = estimateRowSize(newRecord);
-    unsigned oldRowSize = estimateRowSize(oldRecord);
-    if ((newRowSize != UNKNOWN_LENGTH) && (oldRowSize != UNKNOWN_LENGTH))
-        return newRowSize < oldRowSize;
-
-    IHqlExpression * record = expr->queryRecord();
-    if (getFlatFieldCount(record) < getFlatFieldCount(oldRecord))
-        return true;
-    return false;
+    OwnedHqlExpr newRecord = getSerializedForm(expr->queryRecord(), diskAtom);
+    OwnedHqlExpr oldRecord = getSerializedForm(expr->queryChild(0)->queryRecord(), diskAtom);
+    return increasesRowSize(oldRecord, newRecord, false);
 }
 
+// Does this operation increase the size of the row?  False negatives preferred.
 bool increasesRowSize(IHqlExpression * expr)
 {
     OwnedHqlExpr newRecord = getSerializedForm(expr->queryRecord(), diskAtom);
     OwnedHqlExpr oldRecord = getSerializedForm(expr->queryChild(0)->queryRecord(), diskAtom);
-    return increasesRowSize(newRecord, oldRecord);
+    return increasesRowSize(newRecord, oldRecord, false);
 }
 
 bool isLimitedDataset(IHqlExpression * expr, bool onFailOnly)

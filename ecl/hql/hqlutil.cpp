@@ -2267,22 +2267,24 @@ void gatherRecordStats(HqlRecordStats & stats, IHqlExpression * expr)
         return gatherRecordStats(stats, expr->queryChild(1));
     case no_field:
         {
-            switch (expr->queryType()->getTypeCode())
+            ITypeInfo * type = expr->queryType();
+            switch (type->getTypeCode())
             {
             case type_table:
             case type_groupedtable:
                 stats.fields++;
-                stats.datasetFields++;
+                stats.unknownSizeFields++;
                 break;
             case type_dictionary:
                 stats.fields++;
-                stats.dictionaryFields++;
+                stats.unknownSizeFields++;
                 break;
             case type_row:
                 gatherRecordStats(stats, expr->queryRecord());
                 break;
             default:
                 stats.fields++;
+                //HPCC-17606 add: if (type->getSize() == UNKNOWN_LENGTH) stats.unknownSizeFields++;
                 break;
             }
             break;

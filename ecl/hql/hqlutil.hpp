@@ -97,8 +97,7 @@ extern HQL_API void getSimpleFields(HqlExprArray &out, IHqlExpression *record);
 struct HqlRecordStats
 {
     unsigned fields = 0;
-    unsigned datasetFields = 0;
-    unsigned dictionaryFields = 0;
+    unsigned unknownSizeFields = 0;
 };
 extern HQL_API void gatherRecordStats(HqlRecordStats & stats, IHqlExpression * expr);
 
