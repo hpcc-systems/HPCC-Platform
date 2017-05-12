@@ -1463,7 +1463,7 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting>
                   <entry><emphasis>csvheader</emphasis></entry>
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
-                  to include header information in the first row whan
+                  to include header information in the first row when
                   outputting in csv format.</entry>
                 </row>
               </tbody>
@@ -1536,7 +1536,7 @@ dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting>
 
           <programlisting>dfuplus action=erasehistory lfn=progguide::exampledata::accounts_copy dstxml=c:\temp\jim.xml
 
-  // this removes the hostory metadata from the file and writes an XML file containing the following:
+  // this removes the history metadata from the file and writes an XML file containing the following:
   &lt;History&gt;
     &lt;Origin ip="127.0.0.1"
             name="accounts"
