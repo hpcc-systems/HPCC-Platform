@@ -60,7 +60,7 @@ int EclCMDShell::callExternal(ArgvIterator &iter)
     if (_spawnvp(_P_WAIT, local.str(), const_cast<char **>(argv))==-1)
         return 0;
     // If not found, try the path
-    if (errno!=ENOENT || _spawnvp(cmdstr.str(), const_cast<char **>(argv))==-1)
+    if (errno!=ENOENT || _spawnvp(_P_WAIT, cmdstr.str(), const_cast<char **>(argv))==-1)
 #else
     if (execvp(local.str(), const_cast<char **>(argv))!=-1)
         return 0;
