@@ -87,7 +87,7 @@ SEQUENTIAL(
              output(GROUP(SORT(DG_ParentRecs, DG_FirstName),DG_Firstname),,Files.DG_FileOut+'GROUPED',__GROUPED__,overwrite),
              output(DG_ParentRecs(EvensFilter),,Files.DG_FileOut+'FLAT_EVENS',overwrite)),
     PARALLEL(buildindex(Files.DG_NormalIndexFile,overwrite),
-             buildindex(Files.DG_NormalIndexFileEvens,overwrite),
+             buildindex(Files.DG_NormalIndexFileEvens,overwrite,SET('_nodeSize', 512)),
              buildindex(Files.DG_TransIndexFile,overwrite),
              buildindex(Files.DG_TransIndexFileEvens,overwrite),
              buildindex(Files.DG_KeyedIndexFile,overwrite))
@@ -119,7 +119,7 @@ LocalFiles := $.Files(createMultiPart, TRUE);
 IF (createMultiPart,
     PARALLEL(
         buildindex(LocalFiles.DG_NormalIndexFile,overwrite,NOROOT),
-        buildindex(LocalFiles.DG_NormalIndexFileEvens,overwrite,NOROOT),
+        buildindex(LocalFiles.DG_NormalIndexFileEvens,overwrite,NOROOT,SET('_nodeSize', 512)),
         buildindex(LocalFiles.DG_TransIndexFile,overwrite,NOROOT),
         buildindex(LocalFiles.DG_TransIndexFileEvens,overwrite,NOROOT),
         buildindex(LocalFiles.DG_NormalVarIndex, overwrite,NOROOT);
