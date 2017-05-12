@@ -1057,7 +1057,7 @@ inline int getWindowBits(ZlibCompressionType zltype)
 void zlib_deflate(MemoryBuffer &mb, const char* inputBuffer, unsigned int inputSize, int compressionLevel, ZlibCompressionType zltype)
 {
     if (inputBuffer == NULL || inputSize == 0)
-        throw MakeStringException(500, "%s failed: input buffer is empty!", gzip ? "gzip" : "zlib_deflate");
+        throw MakeStringException(500, "%s failed: input buffer is empty!", getZlibHeaderTypeName(zltype));
 
     /* Before we can begin compressing (aka "deflating") data using the zlib
      functions, we must initialize zlib. Normally this is done by calling the
