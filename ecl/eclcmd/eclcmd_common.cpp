@@ -743,9 +743,9 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
         exit(1); //not really a usage error
     }
 
-    if ((optObj.type==eclObjSource || optObj.type==eclObjArchive) && optTargetCluster.isEmpty())
+    if ((optObj.type==eclObjSource || optObj.type==eclObjArchive || optObj.type==eclObjQuery) && optTargetCluster.isEmpty())
     {
-        fprintf(stderr, "\nTarget must be specified when source is ECL Source or Archive\n");
+        fprintf(stderr, "\nTarget and source must be specified for ECL file, Query, or Archive\n");
         return false;
     }
 

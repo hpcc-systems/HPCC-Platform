@@ -782,7 +782,7 @@ void setEnum(IPropertyTree *p, const char *propname, int value, const mapEnums *
 
 static int getEnum(const char *v, const mapEnums *map)
 {
-    if (v)
+    if (v && *v)
     {
         while (map->str)
         {
