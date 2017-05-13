@@ -46,5 +46,5 @@ d := dataset([
         {1},{1},{2},{3},{4},{8},{9}
         ], { unsigned r; }, DISTRIBUTED);
 p2 := TABLE(NOFOLD(d), { COUNT(group) }, LOCAL);
-copies = IF(__PLATFORM__='roxie',1,CLUSTERSIZE);
+copies := IF(__PLATFORM__='roxie',1,CLUSTERSIZE);
 output(count(p2) = copies);
