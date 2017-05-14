@@ -326,7 +326,7 @@ class PtreeThreadingTest : public CppUnit::TestFixture
             {
                 for (unsigned i = 0; i < iterations; i++)
                 {
-                    Owned<IPropertyTree> p = mode >= 3 ? nullptr : createPTreeFromXMLString(
+                    Owned<IPropertyTree> p = mode >= 3 ? nullptr : createPTreeFromXMLString(false ? "<helloxx there='1'/>" :
                             "<W_LOCAL buildVersion='community_6.0.0-trunk0Debug[heads/cass-wu-part3-0-g10b954-dirty]'"
                             "         cloneable='1'"
                             "         clusterName=''"
@@ -539,10 +539,10 @@ class PtreeThreadingTest : public CppUnit::TestFixture
           csome("control some",flags,3,200),
           cmin("control min",flags,4,200),
           seq("single",flags,0,1000);
-        max.For(8,8);
-        some.For(8,8,csome.For(8,8));
-        min.For(8,8,cmin.For(8,8));
-        seq.For(8,1);
+          max.For(8,8);
+          some.For(8,8,csome.For(8,8));
+          min.For(8,8,cmin.For(8,8));
+          seq.For(8,1);
     }
 };
 
