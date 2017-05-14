@@ -2889,8 +2889,8 @@ LocalPTree::~LocalPTree()
     AttrValue *a = attrs+numAttrs;
     while (a--!=attrs)
     {
-        AttrStrC::destroy((AttrStrC *)a->key);
-        AttrStrC::destroy((AttrStrC *)a->value);
+        AttrStr::destroy(a->key);
+        AttrStr::destroy(a->value);
     }
     free(attrs);
 }
@@ -2931,8 +2931,8 @@ bool LocalPTree::removeAttribute(const char *key)
         return false;
     numAttrs--;
     unsigned pos = del-attrs;
-    AttrStrC::destroy((AttrStrC *)del->key);
-    AttrStrC::destroy((AttrStrC *)del->value);
+    AttrStr::destroy(del->key);
+    AttrStr::destroy(del->value);
     memmove(attrs+pos, attrs+pos+1, (numAttrs-pos)*sizeof(AttrValue));
     return true;
 }
@@ -2950,17 +2950,14 @@ void LocalPTree::setAttribute(const char *key, const char *val)
     {
         if (streq(v->value->get(), val))
             return;
-        AttrStrC::destroy((AttrStrC *)v->value);
-        v->value = AttrStrC::create(val);
+        AttrStr::destroy(v->value);
+        v->value = AttrStr::create(val);
     }
     else
     {
         attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
-        if (isnocase())
-            attrs[numAttrs].key = AttrStrNC::create(key);
-        else
-            attrs[numAttrs].key = AttrStrC::create(key);
-        attrs[numAttrs].value = AttrStrC::create(val);
+        attrs[numAttrs].key = isnocase() ? AttrStr::createNC(key) : AttrStr::create(key);
+        attrs[numAttrs].value = AttrStr::create(val);
         numAttrs++;
     }
 }
@@ -2968,6 +2965,11 @@ void LocalPTree::setAttribute(const char *key, const char *val)
 #ifdef TRACE_ATTRSTR_SIZE
 std::atomic<__int64> AttrStr::totsize { 0 };
 std::atomic<__int64> AttrStr::maxsize { 0 };
+#endif
+
+#ifdef TRACE_ATTRATOM_SIZE
+std::atomic<__int64> AttrStrAtom::totsize { 0 };
+std::atomic<__int64> AttrStrAtom::maxsize { 0 };
 #endif
 
 #ifdef TRACE_NAME_SIZE
