@@ -223,12 +223,10 @@ private:
 // (see class AttrStrAtom below).
 // This requires some care - in particular must use the right method to destroy the objects, and must not add any virtual methods to either class
 
-//#define TRACE_ATTRSTR_SIZE
-//#define TRACE_ATTRATOM_SIZE
-//#define TRACE_NAME_SIZE
-//#define TRACE_ALL_ATTRATOM
-//#define TRACE_ALL_ATTRSTR
-//#define TRACE_ALL_NAME
+//#define TRACE_STRING_SIZE
+//#define TRACE_ATOM_SIZE
+//#define TRACE_ALL_STRING
+//#define TRACE_ALL_ATOM
 
 struct AttrStr
 {
@@ -241,15 +239,15 @@ struct AttrStr
     static AttrStr *create(const char *k)
     {
         size32_t kl = k ? strlen(k) : 0;
-#ifdef TRACE_ALL_ATTRSTR
-        DBGLOG("AttrStr::Create %s", k);
+#ifdef TRACE_ALL_STRING
+        DBGLOG("TRACE_ALL_STRING: %s", k);
 #endif
-#ifdef TRACE_ATTRSTR_SIZE
+#ifdef TRACE_STRING_SIZE
         totsize += kl+1;
         if (totsize > maxsize)
         {
             maxsize.store(totsize);
-            DBGLOG("AttrStr total size now %" I64F "d", maxsize.load());
+            DBGLOG("TRACE_STRING_SIZE: total size now %" I64F "d", maxsize.load());
         }
 #endif
         AttrStr *ret = (AttrStr *) malloc(kl+1);
@@ -265,64 +263,115 @@ struct AttrStr
 
     static void destroy(AttrStr *a)
     {
-#ifdef TRACE_ATTRSTR_SIZE
+#ifdef TRACE_STRING_SIZE
         totsize -= strlen(a->str_DO_NOT_USE_DIRECTLY)+1;
 #endif
         free(a);
     }
 
-#ifdef TRACE_ATTRSTR_SIZE
+#ifdef TRACE_STRING_SIZE
     static std::atomic<__int64> totsize;
     static std::atomic<__int64> maxsize;
 #endif
 };
 
-struct AttrStrUnion
+// NOTE - hairy code alert!
+// To save on storage (and contention) we store short string values in same slot as the pointer to longer
+// ones would occupy. This relies on the assumption that the pointers you want to store are always AT LEAST
+// 2-byte aligned. This should be the case on anything coming from malloc on any modern architecture.
+
+#define USE_STRUNION
+
+template<class PTR>
+struct PtrStrUnion
 {
+#ifdef USE_STRUNION
     union
     {
-        AttrStr *attrStr;
-        char chars[sizeof(AttrStr *)];
+        PTR *ptr = nullptr;
+        struct
+        {
+#ifdef LITTLE_ENDIAN
+            char flag;
+            char chars[sizeof(PTR *)-1];
+#else
+            char chars[sizeof(PTR *)-1];
+            char flag;
+#endif
+        };
     };
-    inline bool isPtr()
+    inline bool isPtr() const
     {
-        return (chars[0]&1) == 0;
+        return (flag&1) == 0;
     }
-    inline const char *get()
+    inline const char *get() const
     {
         if (!isPtr())
-            return &chars[1];
-        else if (attrStr)
-            return attrStr->get();
+            return chars;
+        else if (ptr)
+            return ptr->get();
         else
             return nullptr;
     }
     inline void destroy()
     {
-        if (isPtr() && attrStr)
-            AttrStr::destroy(attrStr);
+        if (isPtr() && ptr)
+            PTR::destroy(ptr);
     }
     bool set(const char *key)
     {
         if (key)
         {
             size32_t l = strlen(key);
-            if (l <= sizeof(AttrStr *)-2)
+            if (l <= sizeof(PTR *)-2)
             {
-                chars[0] = 1;
-                strcpy(&chars[1], key);
+                flag=1;
+                memmove(chars, key, l);  // Technically, they could overlap
+                chars[l]=0;
                 return true;
             }
         }
         return false;
     }
-    inline void set(AttrStr *a) { attrStr = a; }
-    inline AttrStr *getAttrStr()
+    inline void setPtr(PTR *a)
     {
+        ptr = a;
         assert(isPtr());
-        return attrStr;
+    }
+#else
+    PTR *ptr = nullptr;
+    inline bool isPtr()
+    {
+        return true;
+    }
+    inline const char *get()
+    {
+        if (ptr)
+            return ptr->get();
+        else
+            return nullptr;
+    }
+    inline void destroy()
+    {
+        if (ptr)
+            PTR::destroy(ptr);
+    }
+    bool set(const char *key)
+    {
+        return false;
+    }
+    inline void setPtr(PTR *a)
+    {
+        ptr = a;
+    }
+#endif
+    inline PTR *getPtr() const
+    {
+        return isPtr() ? ptr : nullptr;
     }
 };
+
+typedef PtrStrUnion<AttrStr> AttrStrUnion;
 
 struct AttrValue
 {
@@ -479,15 +528,15 @@ struct AttrStrAtom
 
     static AttrStrAtom *create(const char *k, size32_t kl, hashfunc _hash)
     {
-#ifdef TRACE_ALL_ATTRATOM
-        DBGLOG("AttrStr::Create %s", k);
+#ifdef TRACE_ALL_ATOM
+        DBGLOG("TRACE_ALL_ATOM: %s", k);
 #endif
-#ifdef TRACE_ATTRATOM_SIZE
+#ifdef TRACE_ATOM_SIZE
         totsize += sizeof(AttrStrAtom)+kl+1;
         if (totsize > maxsize)
         {
             maxsize.store(totsize);
-            DBGLOG("AttrStrAtom total size now %" I64F "d", maxsize.load());
+            DBGLOG("TRACE_ATOM_SIZE: total size now %" I64F "d", maxsize.load());
         }
 #endif
         AttrStrAtom *ret = (AttrStrAtom *) malloc(offsetof(AttrStrAtom, str_DO_NOT_USE_DIRECTLY)+kl+1);
@@ -499,7 +548,7 @@ struct AttrStrAtom
     }
     static void destroy(AttrStrAtom *a)
     {
-#ifdef TRACE_ATTRATOM_SIZE
+#ifdef TRACE_ATOM_SIZE
         totsize -= sizeof(AttrStrAtom)+strlen(a->str_DO_NOT_USE_DIRECTLY)+1;
 #endif
         free(a);
@@ -513,7 +562,7 @@ struct AttrStrAtom
     {
         return (AttrStrAtom *)(&a->str_DO_NOT_USE_DIRECTLY - offsetof(AttrStrAtom, str_DO_NOT_USE_DIRECTLY));
     }
-#ifdef TRACE_ATTRATOM_SIZE
+#ifdef TRACE_ATOM_SIZE
     static std::atomic<__int64> totsize;
     static std::atomic<__int64> maxsize;
 #endif
@@ -603,17 +652,9 @@ public:
 
 class jlib_decl CAtomPTree : public PTree
 {
-#ifdef TRACE_NAME_SIZE
-    static std::atomic<__int64> totsize;
-    static std::atomic<__int64> maxsize;
-#endif
     AttrValue *newAttrArray(unsigned n);
     void freeAttrArray(AttrValue *a, unsigned n);
-    union
-    {
-        HashKeyElement *name_ptr = nullptr;
-        char nameval[sizeof(const char *)];
-    };
+    PtrStrUnion<HashKeyElement> name;
 protected:
     virtual void setAttribute(const char *attr, const char *val) override;
     virtual bool removeAttribute(const char *k) override;
@@ -642,17 +683,9 @@ jlib_decl IPropertyTree *createPropBranch(IPropertyTree *tree, const char *xpath
 class jlib_decl LocalPTree : public PTree
 {
 protected:
-#ifdef TRACE_NAME_SIZE
-    static std::atomic<__int64> totsize;
-    static std::atomic<__int64> maxsize;
-#endif
     virtual void setAttribute(const char *attr, const char *val) override;
     virtual bool removeAttribute(const char *k) override;
-    union
-    {
-        const char *name_ptr = nullptr;
-        char nameval[sizeof(const char *)];
-    };
+    AttrStrUnion name;
 public:
     LocalPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~LocalPTree();
