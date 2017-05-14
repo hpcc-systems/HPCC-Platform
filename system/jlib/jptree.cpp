@@ -2878,14 +2878,19 @@ LocalPTree::LocalPTree(const char *_name, byte _flags, IPTArrayValue *_value, Ch
 LocalPTree::~LocalPTree()
 {
     if (name)
+    {
+#ifdef TRACE_NAME_SIZE
+        totsize -= sizeof(*name)+strlen(name->get())+1;
+#endif
         free(name);
+    }
     if (!attrs)
         return;
     AttrValue *a = attrs+numAttrs;
     while (a--!=attrs)
     {
-        free(a->key);
-        free(a->value);
+        AttrStrC::destroy((AttrStrC *)a->key);
+        AttrStrC::destroy((AttrStrC *)a->value);
     }
     free(attrs);
 }
@@ -2896,9 +2901,27 @@ void LocalPTree::setName(const char *_name)
     if (!_name)
         name = nullptr;
     else
+    {
+#ifdef TRACE_ALL_NAME
+        DBGLOG("LocalPTree::setName %s", _name);
+#endif
+#ifdef TRACE_NAME_SIZE
+        totsize += sizeof(HashKeyElement)+strlen(_name)+1;
+        if (totsize > maxsize)
+        {
+            maxsize.store(totsize);
+            DBGLOG("Name total size now %" I64F "d", maxsize.load());
+        }
+#endif
         name = AtomRefTable::createKeyElement(_name, isnocase());
+    }
     if (oname)
+    {
+#ifdef TRACE_NAME_SIZE
+        totsize -= sizeof(HashKeyElement)+strlen(oname->get())+1;
+#endif
         free(oname);
+    }
 }
 
 bool LocalPTree::removeAttribute(const char *key)
@@ -2908,8 +2931,8 @@ bool LocalPTree::removeAttribute(const char *key)
         return false;
     numAttrs--;
     unsigned pos = del-attrs;
-    free(del->key);
-    free(del->value);
+    AttrStrC::destroy((AttrStrC *)del->key);
+    AttrStrC::destroy((AttrStrC *)del->value);
     memmove(attrs+pos, attrs+pos+1, (numAttrs-pos)*sizeof(AttrValue));
     return true;
 }
@@ -2942,6 +2965,17 @@ void LocalPTree::setAttribute(const char *key, const char *val)
     }
 }
 
+#ifdef TRACE_ATTRSTR_SIZE
+std::atomic<__int64> AttrStr::totsize { 0 };
+std::atomic<__int64> AttrStr::maxsize { 0 };
+#endif
+
+#ifdef TRACE_NAME_SIZE
+std::atomic<__int64> CAtomPTree::totsize { 0 };
+std::atomic<__int64> CAtomPTree::maxsize { 0 };
+std::atomic<__int64> LocalPTree::totsize { 0 };
+std::atomic<__int64> LocalPTree::maxsize { 0 };
+#endif
 
 ///////////////////
 
@@ -2957,6 +2991,10 @@ CAtomPTree::~CAtomPTree()
     if (name)
     {
         AtomRefTable *kT = nc?keyTableNC:keyTable;
+#ifdef TRACE_NAME_SIZE
+        if (name->queryReferences()==1)  // Not strictly accurate but good enough
+            totsize -= sizeof(HashKeyElement)+strlen(name->get())+1;
+#endif
         kT->releaseKey(name);
     }
     if (!attrs)
@@ -2984,9 +3022,29 @@ void CAtomPTree::setName(const char *_name)
         if (!validateXMLTag(_name))
             throw MakeIPTException(PTreeExcpt_InvalidTagName, ": %s", _name);
         name = kT->queryCreate(_name);
+#ifdef TRACE_ALL_NAME
+        DBGLOG("CAtomPTree::setName %s", _name);
+#endif
+#ifdef TRACE_NAME_SIZE
+        if (name->queryReferences()==1)  // Not strictly accurate but good enough
+        {
+            totsize += sizeof(HashKeyElement)+strlen(_name)+1;
+            if (totsize > maxsize)
+            {
+                maxsize.store(totsize);
+                DBGLOG("AtomName total size now %" I64F "d", maxsize.load());
+            }
+        }
+#endif
     }
     if (oname)
+    {
+#ifdef TRACE_NAME_SIZE
+        if (oname->queryReferences()==1)  // Not strictly accurate but good enough
+            totsize -= sizeof(HashKeyElement)+strlen(oname->get())+1;
+#endif
         kT->releaseKey(oname);
+    }
 }
 
 AttrValue *CAtomPTree::newAttrArray(unsigned n)
