@@ -223,10 +223,12 @@ private:
 // (see class AttrStrAtom below).
 // This requires some care - in particular must use the right method to destroy the objects, and must not add any virtual methods to either class
 
+#ifdef _DEBUG
 //#define TRACE_STRING_SIZE
 //#define TRACE_ATOM_SIZE
 //#define TRACE_ALL_STRING
 //#define TRACE_ALL_ATOM
+#endif
 
 struct AttrStr
 {
@@ -663,27 +665,45 @@ protected: // data
     AttrValue *attrs = nullptr;
 };
 
+static const unsigned NUMTABLES = 20;
 
 class CAttrValHashTable
 {
-    CMinHashTable<AttrStrC>  htc;
-    CMinHashTable<AttrStrNC> htnc;
-    CMinHashTable<AttrStrC>  htv;
+    CMinHashTable<AttrStrC>  htc[NUMTABLES];
+    CMinHashTable<AttrStrNC> htnc[NUMTABLES];
+    CMinHashTable<AttrStrC>  htv[NUMTABLES];
+    mutable CriticalSection critv[NUMTABLES];
+    mutable CriticalSection critk[NUMTABLES];
 public:
     inline AttrStr *addkey(const char *v,bool nc)
     {
         AttrStrAtom * ret;
         if (nc)
-            ret = htnc.find(v,true);
+        {
+            unsigned hash = AttrStrNC::getHash(v);
+            unsigned table = hash % NUMTABLES;
+            CriticalBlock b(critk[table]);
+            ret = htnc[table].findh(v,hash,true);
+            if (ret->linkcount!=(unsigned short)-1)
+                ret->linkcount++;
+        }
         else
-            ret = htc.find(v,true);
-        if (ret->linkcount!=(unsigned short)-1)
-            ret->linkcount++;
+        {
+            unsigned hash = AttrStrC::getHash(v);
+            unsigned table = hash % NUMTABLES;
+            CriticalBlock b(critk[table]);
+            ret = htc[table].findh(v,hash,true);
+            if (ret->linkcount!=(unsigned short)-1)
+                ret->linkcount++;
+        }
         return ret->toAttrStr();
     }
     inline AttrStr *addval(const char *v)
     {
-        AttrStrAtom * ret = htv.find(v,true);
+        unsigned hash = AttrStrC::getHash(v);
+        unsigned table = hash % NUMTABLES;
+        CriticalBlock b(critv[table]);
+        AttrStrAtom * ret = htv[table].findh(v,hash,true);
         if (ret->linkcount!=(unsigned short)-1)
             ret->linkcount++;
         return ret->toAttrStr();
@@ -693,12 +713,14 @@ public:
         AttrStrAtom *a = AttrStrAtom::toAtom(_a);
         if (a->linkcount!=(unsigned short)-1)
         {
+            unsigned table = a->hash % NUMTABLES;
+            CriticalBlock b(critk[table]);
             if (--(a->linkcount)==0)
             {
                 if (nc)
-                    htnc.remove((AttrStrNC *)a);
+                    htnc[table].remove((AttrStrNC *)a);
                 else
-                    htc.remove((AttrStrC *)a);
+                    htc[table].remove((AttrStrC *)a);
             }
         }
     }
@@ -706,8 +728,12 @@ public:
     {
         AttrStrAtom *a = AttrStrAtom::toAtom(_a);
         if (a->linkcount!=(unsigned short)-1)
+        {
+            unsigned table = a->hash % NUMTABLES;
+            CriticalBlock b(critv[table]);
             if (--(a->linkcount)==0)
-                htv.remove((AttrStrC *)a);
+                htv[table].remove((AttrStrC *)a);
+        }
     }
 };
 
