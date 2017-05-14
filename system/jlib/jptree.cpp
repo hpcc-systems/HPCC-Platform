@@ -3438,9 +3438,9 @@ IPropertyTreeIterator *PTStackIterator::popFromStack(StringAttr &path)
 
 // factory methods
 
-IPropertyTree *createPTree(MemoryBuffer &src)
+IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 {
-    IPropertyTree *tree = new DEFAULT_PTREE_TYPE();
+    IPropertyTree *tree = createPTree(nullptr, flags);
     tree->deserialize(src);
     return tree;
 }
@@ -6070,8 +6070,8 @@ jlib_decl void testJdocCompare()
 
 #endif
 
-
-class COrderedPTree : public DEFAULT_PTREE_TYPE
+template <class BASE_PTREE>
+class COrderedPTree : public BASE_PTREE
 {
     template <class BASECHILDMAP>
     class jlib_decl COrderedChildMap : public BASECHILDMAP
@@ -6137,43 +6137,54 @@ class COrderedPTree : public DEFAULT_PTREE_TYPE
         }
     };
 public:
-    COrderedPTree(const char *name=NULL, byte flags=ipt_none, IPTArrayValue *value=NULL, ChildMap *children=NULL)
-        : DEFAULT_PTREE_TYPE(name, flags|ipt_ordered, value, children) { }
+    typedef COrderedPTree<BASE_PTREE> SELF;
+    COrderedPTree<BASE_PTREE>(const char *name=NULL, byte flags=ipt_none, IPTArrayValue *value=NULL, ChildMap *children=NULL)
+        : BASE_PTREE(name, flags|ipt_ordered, value, children) { }
 
-    virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, COrderedPTree)); }
+    virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, COrderedPTree<BASE_PTREE>)); }
     virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override
     {
-        return new COrderedPTree(name, flags, value, children);
+        return new COrderedPTree<BASE_PTREE>(name, SELF::flags, value, children);
     }
     virtual IPropertyTree *create(MemoryBuffer &mb) override
     {
-        IPropertyTree *tree = new COrderedPTree();
+        IPropertyTree *tree = new COrderedPTree<BASE_PTREE>();
         tree->deserialize(mb);
         return tree;
     }
     virtual void createChildMap() override
     {
-        if (isnocase())
-            children = new COrderedChildMap<ChildMapNC>();
+        if (SELF::isnocase())
+            SELF::children = new COrderedChildMap<ChildMapNC>();
         else
-            children = new COrderedChildMap<ChildMap>();
+            SELF::children = new COrderedChildMap<ChildMap>();
     }
 };
 
 IPropertyTree *createPTree(byte flags)
 {
-    if (flags & ipt_ordered)
-        return new COrderedPTree(NULL, flags);
-    else
-        return new DEFAULT_PTREE_TYPE(NULL, flags);
+    return createPTree(NULL, flags);
 }
 
 IPropertyTree *createPTree(const char *name, byte flags)
 {
-    if (flags & ipt_ordered)
-        return new COrderedPTree(name, flags);
-    else
+    switch (flags & (ipt_ordered|ipt_fast|ipt_lowmem))
+    {
+    case ipt_ordered|ipt_fast:
+        return new COrderedPTree<LocalPTree>(name, flags);
+    case ipt_ordered|ipt_lowmem:
+        return new COrderedPTree<CAtomPTree>(name, flags);
+    case ipt_ordered:
+        return new COrderedPTree<DEFAULT_PTREE_TYPE>(name, flags);
+    case ipt_fast:
+        return new LocalPTree(name, flags);
+    case ipt_lowmem:
+        return new CAtomPTree(name, flags);
+    case 0:
         return new DEFAULT_PTREE_TYPE(name, flags);
+    default:
+        throwUnexpectedX("Invalid flags - ipt_fast and ipt_lowmem should not be specified together");
+    }
 }
 
 typedef enum _ptElementType

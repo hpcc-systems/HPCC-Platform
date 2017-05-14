@@ -170,9 +170,19 @@ interface IPTreeNodeCreator : extends IInterface
     virtual IPropertyTree *create(const char *tag) = 0;
 };
 
-// NB ipt_ext4 - used by SDS
-// NB ipt_ext5 - used by SDS
-enum ipt_flags { ipt_none=0x00, ipt_caseInsensitive=0x01, ipt_binary=0x02, ipt_ordered=0x04, ipt_ext1=0x08, ipt_ext2=16, ipt_ext3=32, ipt_ext4=64, ipt_ext5=128 };
+enum ipt_flags
+{
+    ipt_none=0x00,
+    ipt_caseInsensitive=0x01,
+    ipt_binary  = 0x02,
+    ipt_ordered = 0x04,   // Preserve element ordering
+    ipt_fast    = 0x08,   // Prioritize speed over low memory usage
+    ipt_lowmem  = 0x10,   // Prioritize low memory usage over speed
+    ipt_ext3    = 0x20,   // Unused
+    ipt_ext4    = 0x40,   // Used internally in Dali
+    ipt_ext5    = 0x80    // Used internally in Dali
+};
+
 jlib_decl IPTreeMaker *createPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
 jlib_decl IPTreeMaker *createRootLessPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
 jlib_decl IPTreeReader *createXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions=ptr_ignoreWhiteSpace, size32_t bufSize=0);
@@ -194,7 +204,7 @@ jlib_decl void synchronizePTree(IPropertyTree *target, IPropertyTree *source);
 jlib_decl IPropertyTree *ensurePTree(IPropertyTree *root, const char *xpath);
 jlib_decl bool areMatchingPTrees(IPropertyTree * left, IPropertyTree * right);
 
-jlib_decl IPropertyTree *createPTree(MemoryBuffer &src);
+jlib_decl IPropertyTree *createPTree(MemoryBuffer &src, byte flags=ipt_none);
 
 jlib_decl IPropertyTree *createPTree(byte flags=ipt_none);
 jlib_decl IPropertyTree *createPTree(const char *name, byte flags=ipt_none);
