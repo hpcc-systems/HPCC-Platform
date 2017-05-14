@@ -28,6 +28,7 @@
 
 #include "jptree.hpp"
 #include "jbuff.hpp"
+#include "jlog.hpp"
 
 #define ANE_APPEND -1
 #define ANE_SET -2
@@ -205,7 +206,7 @@ public:
     virtual const void *queryValueRaw() const override { return get(); }
     virtual size32_t queryValueRawSize() const override { return (size32_t)length(); }
 
-// serilizable
+// serializable
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
 
@@ -217,12 +218,24 @@ private:
 #define IptFlagSet(fs, f) (fs |= (f))
 #define IptFlagClr(fs, f) (fs &= (~f))
 
+#ifdef _DEBUG
+  //#define TRACE_ATTRSTR_SIZE
+  //#define TRACE_NAME_SIZE
+  //#define TRACE_ALL_ATTRSTR
+  //#define TRACE_ALL_NAME
+#endif
+
 struct AttrStr
 {
     unsigned hash;
     unsigned short linkcount;
     char str[1];
     const char *get() const { return str; }
+
+#ifdef TRACE_ATTRSTR_SIZE
+    static std::atomic<__int64> totsize;
+    static std::atomic<__int64> maxsize;
+#endif
 };
 
 struct AttrValue
@@ -384,6 +397,17 @@ struct AttrStrC : public AttrStr
     static AttrStrC *create(const char *k)
     {
         size32_t kl = (k?strlen(k):0);
+#ifdef TRACE_ALL_ATTRSTR
+        DBGLOG("AttrStr::Create %s", k);
+#endif
+#ifdef TRACE_ATTRSTR_SIZE
+        totsize += sizeof(AttrStrC)+kl+1;
+        if (totsize > maxsize)
+        {
+            maxsize.store(totsize);
+            DBGLOG("AttrStr total size now %" I64F "d", maxsize.load());
+        }
+#endif
         AttrStrC *ret = (AttrStrC *)malloc(sizeof(AttrStrC)+kl);
         memcpy(ret->str, k, kl);
         ret->str[kl] = 0;
@@ -393,6 +417,9 @@ struct AttrStrC : public AttrStr
     }
     static void destroy(AttrStrC *a)
     {
+#ifdef TRACE_ATTRSTR_SIZE
+        if (a) totsize -= sizeof(AttrStrC)+strlen(a->str)+1;
+#endif
         free(a);
     }
 };
@@ -410,6 +437,17 @@ struct AttrStrNC : public AttrStr
     static AttrStrNC *create(const char *k)
     {
         size32_t kl = (k?strlen(k):0);
+#ifdef TRACE_ALL_ATTRSTR
+        DBGLOG("AttrStr::Create %s", k);
+#endif
+#ifdef TRACE_ATTRSTR_SIZE
+        totsize += sizeof(AttrStrNC)+kl+1;
+        if (totsize > maxsize)
+        {
+            maxsize.store(totsize);
+            DBGLOG("AttrStr total size now %" I64F "d", maxsize.load());
+        }
+#endif
         AttrStrNC *ret = (AttrStrNC *)malloc(sizeof(AttrStrNC)+kl);
         memcpy(ret->str,k,kl);
         ret->str[kl] = 0;
@@ -419,6 +457,9 @@ struct AttrStrNC : public AttrStr
     }
     static void destroy(AttrStrNC *a)
     {
+#ifdef TRACE_ATTRSTR_SIZE
+        if (a) totsize -= sizeof(AttrStrC)+strlen(a->str)+1;
+#endif
         free(a);
     }
 };
@@ -471,6 +512,10 @@ public:
 
 class jlib_decl CAtomPTree : public PTree
 {
+#ifdef TRACE_NAME_SIZE
+    static std::atomic<__int64> totsize;
+    static std::atomic<__int64> maxsize;
+#endif
     AttrValue *newAttrArray(unsigned n);
     void freeAttrArray(AttrValue *a, unsigned n);
 
@@ -500,6 +545,10 @@ jlib_decl IPropertyTree *createPropBranch(IPropertyTree *tree, const char *xpath
 class jlib_decl LocalPTree : public PTree
 {
 protected:
+#ifdef TRACE_NAME_SIZE
+    static std::atomic<__int64> totsize;
+    static std::atomic<__int64> maxsize;
+#endif
     virtual void setAttribute(const char *attr, const char *val) override;
     virtual bool removeAttribute(const char *k) override;
 public:
