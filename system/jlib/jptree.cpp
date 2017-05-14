@@ -2981,10 +2981,12 @@ CAtomPTree::~CAtomPTree()
     {
         AtomRefTable *kT = nc?keyTableNC:keyTable;
 #ifdef TRACE_ATOM_SIZE
-        if (name_ptr->queryReferences()==1)  // Not strictly accurate but good enough
-            AttrStrAtom::totsize -= sizeof(HashKeyElement)+strlen(name_ptr->get())+1;
-#endif
+        size_t gosize = sizeof(HashKeyElement)+strlen(name_ptr->get())+1;
+        if (kT->releaseKey(name_ptr))
+            AttrStrAtom::totsize -= gosize;
+#else
         kT->releaseKey(name_ptr);
+#endif
     }
     if (!attrs)
         return;
@@ -3013,12 +3015,13 @@ void CAtomPTree::setName(const char *_name)
             throw MakeIPTException(PTreeExcpt_InvalidTagName, ": %s", _name);
         if (!name.set(_name))
         {
-            name.setPtr(kT->queryCreate(_name));
 #ifdef TRACE_ALL_ATOM
             DBGLOG("TRACE_ALL_ATOM: %s", _name);
 #endif
 #ifdef TRACE_ATOM_SIZE
-            if (name.getPtr()->queryReferences()==1)  // Not strictly accurate but good enough
+            bool didCreate;
+            name.setPtr(kT->queryCreate(_name, didCreate));
+            if (didCreate)
             {
                 AttrStrAtom::totsize += sizeof(HashKeyElement)+strlen(_name)+1;
                 if (AttrStrAtom::totsize > AttrStrAtom::maxsize)
@@ -3027,16 +3030,20 @@ void CAtomPTree::setName(const char *_name)
                     DBGLOG("TRACE_ATOM_SIZE: total size now %" I64F "d", AttrStrAtom::maxsize.load());
                 }
             }
+#else
+            name.setPtr(kT->queryCreate(_name));
 #endif
         }
     }
     if (oname)
     {
 #ifdef TRACE_ATOM_SIZE
-        if (oname->queryReferences()==1)  // Not strictly accurate but good enough
-            AttrStrAtom::totsize -= sizeof(HashKeyElement)+strlen(oname->get())+1;
-#endif
+        size_t gosize = sizeof(HashKeyElement)+strlen(oname->get())+1;
+        if (kT->releaseKey(oname))
+            AttrStrAtom::totsize -= gosize;
+#else
         kT->releaseKey(oname);
+#endif
     }
 }
 
