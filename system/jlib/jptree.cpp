@@ -1735,11 +1735,11 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
         virtual bool isValid() override { return cur ? true : false; }
         virtual const char *queryName() const override
         {
-            return cur->key->get();
+            return cur->key.get();
         }
         virtual const char *queryValue() const override
         {
-            return cur->value->get();
+            return cur->value.get();
         }
         virtual StringBuffer &getValue(StringBuffer &out) override
         {
@@ -1761,7 +1761,7 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
 
         static int compareAttrs(AttrValue * const *ll, AttrValue * const *rr)
         {
-            return stricmp((*ll)->key->get(), (*rr)->key->get());
+            return stricmp((*ll)->key.get(), (*rr)->key.get());
         };
 
         CSortedAttributeIterator(const PTree *_parent) : cur(NULL), iter(NULL), parent(_parent)
@@ -1804,12 +1804,12 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
         virtual const char *queryName() const override
         {
             assertex(cur);
-            return cur->key->get();
+            return cur->key.get();
         }
         virtual const char *queryValue() const override
         {
             assertex(cur);
-            return cur->value->get();
+            return cur->value.get();
         }
         virtual StringBuffer &getValue(StringBuffer &out) override
         {
@@ -2822,7 +2822,7 @@ AttrValue *PTree::findAttribute(const char *key) const
     {
         while (a-- != attrs)
         {
-            if (strieq(a->key->get(), key))
+            if (strieq(a->key.get(), key))
                 return a;
         }
     }
@@ -2830,7 +2830,7 @@ AttrValue *PTree::findAttribute(const char *key) const
     {
         while (a-- != attrs)
         {
-            if (streq(a->key->get(), key))
+            if (streq(a->key.get(), key))
                 return a;
         }
     }
@@ -2841,7 +2841,7 @@ const char *PTree::getAttributeValue(const char *key) const
 {
     AttrValue *e = findAttribute(key);
     if (e)
-        return e->value->get();
+        return e->value.get();
     return nullptr;
 }
 
@@ -2877,7 +2877,7 @@ LocalPTree::LocalPTree(const char *_name, byte _flags, IPTArrayValue *_value, Ch
 
 LocalPTree::~LocalPTree()
 {
-    if (name_ptr)
+    if ((nameval[0] & 1) == 0 && name_ptr != nullptr)
     {
 #ifdef TRACE_NAME_SIZE
         totsize -= strlen(name_ptr)+1;
@@ -2889,39 +2889,52 @@ LocalPTree::~LocalPTree()
     AttrValue *a = attrs+numAttrs;
     while (a--!=attrs)
     {
-        AttrStr::destroy(a->key);
-        AttrStr::destroy(a->value);
+        a->key.destroy();
+        a->value.destroy();
     }
     free(attrs);
 }
 
 const char *LocalPTree::queryName() const
 {
-    return name_ptr;
+    if ((nameval[0] & 1) == 0)
+        return name_ptr;
+    else
+        return &nameval[1];
 }
 
 void LocalPTree::setName(const char *name)
 {
-    if (name==name_ptr)
+    if (name==name_ptr || name==&nameval[1])
         return;
-    const char *oname = name_ptr;
+    const char *oname = (nameval[0] & 1) == 0 ? name_ptr : nullptr;
     // Don't free until after we copy - they could overlap
     if (!name)
         name_ptr = nullptr;
     else
     {
+        size_t len = strlen(name);
+        if (len <= sizeof(nameval) - 2)
+        {
+            nameval[0]=1;
+            memmove(&nameval[1], name, len);  // Technically, they could overlap
+            nameval[len+1]=0;
+        }
+        else
+        {
 #ifdef TRACE_ALL_NAME
-        DBGLOG("LocalPTree::setName %s", name);
+            DBGLOG("LocalPTree::setName %s", name);
 #endif
 #ifdef TRACE_NAME_SIZE
-        totsize += strlen(name)+1;
-        if (totsize > maxsize)
-        {
-            maxsize.store(totsize);
-            DBGLOG("Name total size now %" I64F "d", maxsize.load());
-        }
+            totsize += len+1;
+            if (totsize > maxsize)
+            {
+                maxsize.store(totsize);
+                DBGLOG("Name total size now %" I64F "d", maxsize.load());
+            }
 #endif
-        name_ptr = strdup(name);
+            name_ptr = strdup(name);
+        }
     }
     if (oname)
     {
@@ -2939,8 +2952,8 @@ bool LocalPTree::removeAttribute(const char *key)
         return false;
     numAttrs--;
     unsigned pos = del-attrs;
-    AttrStr::destroy(del->key);
-    AttrStr::destroy(del->value);
+    del->key.destroy();
+    del->value.destroy();
     memmove(attrs+pos, attrs+pos+1, (numAttrs-pos)*sizeof(AttrValue));
     return true;
 }
@@ -2956,18 +2969,19 @@ void LocalPTree::setAttribute(const char *key, const char *val)
     AttrValue *v = findAttribute(key);
     if (v)
     {
-        if (streq(v->value->get(), val))
+        if (streq(v->value.get(), val))
             return;
-        AttrStr::destroy(v->value);
-        v->value = AttrStr::create(val);
+        v->value.destroy();
     }
     else
     {
         attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
-        attrs[numAttrs].key = isnocase() ? AttrStr::createNC(key) : AttrStr::create(key);
-        attrs[numAttrs].value = AttrStr::create(val);
-        numAttrs++;
+        v = &attrs[numAttrs++];
+        if (!v->key.set(key))
+            v->key.set(isnocase() ? AttrStr::createNC(key) : AttrStr::create(key));
     }
+    if (!v->value.set(val))
+        v->value.set(AttrStr::create(val));
 }
 
 #ifdef TRACE_ATTRSTR_SIZE
@@ -2998,7 +3012,7 @@ CAtomPTree::CAtomPTree(const char *_name, byte _flags, IPTArrayValue *_value, Ch
 CAtomPTree::~CAtomPTree()
 {
     bool nc = isnocase();
-    if (name_ptr)
+    if ((nameval[0] & 1) == 0 && name_ptr != nullptr)
     {
         AtomRefTable *kT = nc?keyTableNC:keyTable;
 #ifdef TRACE_NAME_SIZE
@@ -3014,8 +3028,10 @@ CAtomPTree::~CAtomPTree()
         CriticalBlock block(hashcrit);
         while (a--!=attrs)
         {
-            attrHT->removekey(a->key, nc);
-            attrHT->removeval(a->value);
+            if (a->key.isPtr())
+                attrHT->removekey(a->key.getAttrStr(), nc);
+            if (a->value.isPtr())
+                attrHT->removeval(a->value.getAttrStr());
         }
         freeAttrArray(attrs, numAttrs);
     }
@@ -3024,28 +3040,38 @@ CAtomPTree::~CAtomPTree()
 void CAtomPTree::setName(const char *_name)
 {
     AtomRefTable *kT = isnocase()?keyTableNC:keyTable;
-    HashKeyElement *oname = name_ptr;
+    HashKeyElement *oname = (nameval[0] & 1) == 0 ? name_ptr : nullptr; // NOTE - don't release yet as could overlap source name
     if (!_name)
         name_ptr = nullptr;
     else
     {
         if (!validateXMLTag(_name))
             throw MakeIPTException(PTreeExcpt_InvalidTagName, ": %s", _name);
-        name_ptr = kT->queryCreate(_name);
+        size_t len = strlen(_name);
+        if (len <= sizeof(const char *) - 2)
+        {
+            nameval[0]=1;
+            memmove(&nameval[1], _name, len);  // technicaly could overlap
+            nameval[len+1] = 0;
+        }
+        else
+        {
+            name_ptr = kT->queryCreate(_name);
 #ifdef TRACE_ALL_NAME
-        DBGLOG("CAtomPTree::setName %s", _name);
+            DBGLOG("CAtomPTree::setName %s", _name);
 #endif
 #ifdef TRACE_NAME_SIZE
-        if (name_ptr->queryReferences()==1)  // Not strictly accurate but good enough
-        {
-            totsize += sizeof(HashKeyElement)+strlen(_name)+1;
-            if (totsize > maxsize)
+            if (name_ptr->queryReferences()==1)  // Not strictly accurate but good enough
             {
-                maxsize.store(totsize);
-                DBGLOG("AtomName total size now %" I64F "d", maxsize.load());
+                totsize += sizeof(HashKeyElement)+len+1;
+                if (totsize > maxsize)
+                {
+                    maxsize.store(totsize);
+                    DBGLOG("AtomName total size now %" I64F "d", maxsize.load());
+                }
             }
-        }
 #endif
+        }
     }
     if (oname)
     {
@@ -3061,14 +3087,25 @@ const char *CAtomPTree::queryName() const
 {
     if (!name_ptr)
         return nullptr;
-    else
+    else if ((nameval[0] & 1) == 0)
         return name_ptr->get();
+    else
+        return &nameval[1];
 }
 
 unsigned CAtomPTree::queryHash() const
 {
-    assertex(name_ptr);
-    return name_ptr->queryHash();
+    if ((nameval[0] & 1) == 0)
+    {
+        assertex(name_ptr);
+        return name_ptr->queryHash();
+    }
+    else
+    {
+        const char *name = &nameval[1];
+        size32_t nl = strlen(name);
+        return isnocase() ? hashnc((const byte *)name, nl, 0): hashc((const byte *)name, nl, 0);
+    }
 }
 
 AttrValue *CAtomPTree::newAttrArray(unsigned n)
@@ -3113,19 +3150,24 @@ void CAtomPTree::setAttribute(const char *key, const char *val)
     AttrValue *v = findAttribute(key);
     if (v)
     {
-        if (streq(v->value->get(), val))
+        if (streq(v->value.get(), val))
             return;
         CriticalBlock block(hashcrit);
-        attrHT->removeval(v->value);
-        v->value = attrHT->addval(val);
+        if (v->value.isPtr())
+            attrHT->removeval(v->value.getAttrStr());
+        if (!v->value.set(val))
+            v->value.set(attrHT->addval(val));
     }
     else
     {
         CriticalBlock block(hashcrit);
         AttrValue *newattrs = newAttrArray(numAttrs+1);
         memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
-        newattrs[numAttrs].key = attrHT->addkey(key, isnocase());
-        newattrs[numAttrs].value = attrHT->addval(val);
+        v = &newattrs[numAttrs];
+        if (!v->key.set(key))
+            v->key.set(attrHT->addkey(key, isnocase()));
+        if (!v->value.set(val))
+            v->value.set(attrHT->addval(val));
         freeAttrArray(attrs, numAttrs);
         numAttrs++;
         attrs = newattrs;
@@ -3139,8 +3181,10 @@ bool CAtomPTree::removeAttribute(const char *key)
         return false;
     numAttrs--;
     CriticalBlock block(hashcrit);
-    attrHT->removekey(del->key, isnocase());
-    attrHT->removeval(del->value);
+    if (del->key.isPtr())
+        attrHT->removekey(del->key.getAttrStr(), isnocase());
+    if (del->value.isPtr())
+        attrHT->removeval(del->value.getAttrStr());
     AttrValue *newattrs = newAttrArray(numAttrs);
     if (newattrs)
     {

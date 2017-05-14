@@ -277,10 +277,57 @@ struct AttrStr
 #endif
 };
 
+struct AttrStrUnion
+{
+    union
+    {
+        AttrStr *attrStr;
+        char chars[sizeof(AttrStr *)];
+    };
+    inline bool isPtr()
+    {
+        return (chars[0]&1) == 0;
+    }
+    inline const char *get()
+    {
+        if (!isPtr())
+            return &chars[1];
+        else if (attrStr)
+            return attrStr->get();
+        else
+            return nullptr;
+    }
+    inline void destroy()
+    {
+        if (isPtr() && attrStr)
+            AttrStr::destroy(attrStr);
+    }
+    bool set(const char *key)
+    {
+        if (key)
+        {
+            size32_t l = strlen(key);
+            if (l <= sizeof(AttrStr *)-2)
+            {
+                chars[0] = 1;
+                strcpy(&chars[1], key);
+                return true;
+            }
+        }
+        return false;
+    }
+    inline void set(AttrStr *a) { attrStr = a; }
+    inline AttrStr *getAttrStr()
+    {
+        assert(isPtr());
+        return attrStr;
+    }
+};
+
 struct AttrValue
 {
-    AttrStr *key;
-    AttrStr *value;
+    AttrStrUnion key;
+    AttrStrUnion value;
 };
 
 
@@ -562,8 +609,11 @@ class jlib_decl CAtomPTree : public PTree
 #endif
     AttrValue *newAttrArray(unsigned n);
     void freeAttrArray(AttrValue *a, unsigned n);
-
-    HashKeyElement *name_ptr = nullptr;
+    union
+    {
+        HashKeyElement *name_ptr = nullptr;
+        char nameval[sizeof(const char *)];
+    };
 protected:
     virtual void setAttribute(const char *attr, const char *val) override;
     virtual bool removeAttribute(const char *k) override;
@@ -598,7 +648,11 @@ protected:
 #endif
     virtual void setAttribute(const char *attr, const char *val) override;
     virtual bool removeAttribute(const char *k) override;
-    const char *name_ptr = nullptr;
+    union
+    {
+        const char *name_ptr = nullptr;
+        char nameval[sizeof(const char *)];
+    };
 public:
     LocalPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~LocalPTree();
