@@ -296,11 +296,7 @@ public:
     ~PTree();
     virtual void beforeDispose() override { }
 
-    const char *queryName() const
-    {
-        return name?name->get():nullptr;
-    }
-    HashKeyElement *queryKey() const { return name; }
+    virtual unsigned queryHash() const = 0;
     IPropertyTree *queryParent() { return parent; }
     IPropertyTree *queryChild(unsigned index);
     ChildMap *queryChildren() { return children; }
@@ -418,7 +414,6 @@ protected: // data
     IPropertyTree *parent = nullptr; // ! currently only used if tree embedded into array, used to locate position.
     ChildMap *children;   // set by constructor
     IPTArrayValue *value; // set by constructor
-    HashKeyElement *name = nullptr;
     AttrValue *attrs = nullptr;
 };
 
@@ -568,12 +563,15 @@ class jlib_decl CAtomPTree : public PTree
     AttrValue *newAttrArray(unsigned n);
     void freeAttrArray(AttrValue *a, unsigned n);
 
+    HashKeyElement *name_ptr = nullptr;
 protected:
     virtual void setAttribute(const char *attr, const char *val) override;
     virtual bool removeAttribute(const char *k) override;
 public:
     CAtomPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~CAtomPTree();
+    const char *queryName() const override;
+    virtual unsigned queryHash() const override;
     virtual void setName(const char *_name) override;
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (nullptr != QUERYINTERFACE(tree, CAtomPTree)); }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) override
@@ -600,10 +598,19 @@ protected:
 #endif
     virtual void setAttribute(const char *attr, const char *val) override;
     virtual bool removeAttribute(const char *k) override;
+    const char *name_ptr = nullptr;
 public:
     LocalPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~LocalPTree();
 
+    const char *queryName() const override;
+    virtual unsigned queryHash() const override
+    {
+        const char *name = queryName();
+        assert(name);
+        size32_t nl = strlen(name);
+        return isnocase() ? hashnc((const byte *)name, nl, 0): hashc((const byte *)name, nl, 0);
+    }
     virtual void setName(const char *_name) override;
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (nullptr != QUERYINTERFACE(tree, LocalPTree)); }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) override
