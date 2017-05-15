@@ -347,6 +347,7 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+
 	        <xs:element name="AuthDomain"  maxOccurs="unbounded">
 	          <xs:annotation>
 	            <xs:appinfo>
@@ -360,7 +361,7 @@
 	            </xs:appinfo>
 	          </xs:annotation>
 	          <xs:complexType>
-	            <xs:attribute name="name" type="xs:string" use="optional">
+	            <xs:attribute name="domainName" type="xs:string" use="optional" default="">
 	              <xs:annotation>
 	                <xs:appinfo>
 	                  <tooltip>Unique string to identify an auth domain in case > 1 domains in an esp</tooltip>
@@ -392,7 +393,7 @@
 	                </xs:appinfo>
 	              </xs:annotation>
 	            </xs:attribute>
-	            <xs:attribute name="logoutURL" type="xs:string" use="optional" default="/esp/files/userlogon.html">
+	            <xs:attribute name="logoutURL" type="xs:string" use="optional" default="">
 	              <xs:annotation>
 	                <xs:appinfo>
 	                  <tooltip>Logout URL</tooltip>
@@ -403,7 +404,7 @@
 	            <xs:attribute name="sessionTimeoutMinutes" use="optional" default="60">
 	              <xs:annotation>
 	                <xs:appinfo>
-	                  <tooltip>Inactive session duration, in minutes</tooltip>
+	                  <tooltip>Inactive session duration, in minutes. Specify 0 for default timeout, -1 for never time out.</tooltip>
 	                  <colIndex>5</colIndex>
 	                </xs:appinfo>
 	              </xs:annotation>
@@ -419,6 +420,7 @@
 	            </xs:attribute>
 	          </xs:complexType>
 	        </xs:element>
+
                 <xs:element name="HTTPS" minOccurs="0">
                     <xs:complexType>
                      <!--DOC-Autobuild-code-->

@@ -85,25 +85,27 @@
 
             <xsl:call-template name="addEnvironmentInfo"/>
 
+          <xsl:if test="./Authentication/@method='ldap' or ./Authentication/@method='ldaps'">
             <xsl:value-of disable-output-escaping="yes" select="$break" />
             <xsl:value-of disable-output-escaping="yes" select="$indent" />
             <xsl:value-of disable-output-escaping="yes" select="$indent" />
             <xsl:value-of disable-output-escaping="yes" select="$indent" />
             <AuthDomains>
-                <xsl:for-each select="AuthDomain">
-                    <xsl:value-of disable-output-escaping="yes" select="$break" />
-                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                    <xsl:copy-of select="."/>
-                </xsl:for-each>
+              <xsl:for-each select="AuthDomain">
                 <xsl:value-of disable-output-escaping="yes" select="$break" />
                 <xsl:value-of disable-output-escaping="yes" select="$indent" />
                 <xsl:value-of disable-output-escaping="yes" select="$indent" />
                 <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                <xsl:copy-of select="."/>
+              </xsl:for-each>
+              <xsl:value-of disable-output-escaping="yes" select="$break" />
+              <xsl:value-of disable-output-escaping="yes" select="$indent" />
+              <xsl:value-of disable-output-escaping="yes" select="$indent" />
+              <xsl:value-of disable-output-escaping="yes" select="$indent" />
             </AuthDomains>
             <xsl:value-of disable-output-escaping="yes" select="$break" />
+          </xsl:if>
 
             <xsl:for-each select="Authentication">
                 <xsl:if test="@method='ldap' or @method='ldaps'">
