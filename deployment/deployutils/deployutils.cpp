@@ -1654,6 +1654,26 @@ public:
             }
           }
         }
+        else if(!strcmp(type,"serverListType"))
+        {
+          if(m_wizard)
+          {
+            StringBuffer buildSetName, ipAddr;
+            tempPath.clear().appendf("./Programs/Build/BuildSet[%s=\"%s\"]",XML_ATTR_PROCESS_NAME,m_compName.str());
+            IPropertyTree* pCompTree = m_pEnv->queryPropTree(tempPath.str());
+            if(pCompTree)
+            {
+              buildSetName.append(pCompTree->queryProp(XML_ATTR_NAME));
+              CInstDetails* pInst  = m_wizard->getServerIPMap(compName, buildSetName,m_pEnv);
+              if( pInst )
+              {
+                StringArray& ipArray = pInst->getIpAssigned();
+                if(ipArray.length())
+                  wizDefVal.clear().append(ipArray.item(0));
+              }
+            }
+          }
+        }
         else if(!strcmp(type,"xs:string"))
         {
           StringBuffer nameOfComp;
