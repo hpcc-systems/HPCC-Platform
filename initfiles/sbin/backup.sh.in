@@ -48,16 +48,9 @@ cfg.section.${target}
 
 # determine if this is a valid target for backupnode
 
-if [[ "${localthor}" == "true" ]]; then
-    log "${header} Not a multi node system.  Skipping as backup target"
-    exit 0
-fi
 nodegroup=${thorprimary}
 if [[ -z "$thorprimary" ]]; then
     nodegroup=${thorname}
-elif [[ "${nodegroup}" != "${target}" ]]; then
-    log "${header} This target is not the primary in the nodeGroup ${nodegroup}.  Skipping as backup target"
-    exit 0
 fi
 
 log "${header} Backup will occur every ${interval} hours"
