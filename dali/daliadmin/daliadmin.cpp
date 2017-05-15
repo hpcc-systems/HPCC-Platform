@@ -102,7 +102,7 @@ void usage(const char *exe)
   printf("  dfscompratio <logicalname>      -- returns compression ratio of file\n");
   printf("  dfsscopes <mask>                -- lists logical scopes (mask = * for all)\n");
   printf("  cleanscopes                     -- remove empty scopes\n");
-  printf("  dfsreplication <clustermask> <logicalnamemask> <redundancy-count> -- set redundancy for files matching mask, on specified clusters only\n");
+  printf("  dfsreplication <clustermask> <logicalnamemask> <redundancy-count> [dryrun] -- set redundancy for files matching mask, on specified clusters only\n");
   printf("  holdlock <logicalfile> <read|write> -- hold a lock to the logical-file until a key is pressed");
   printf("\n");
   printf("Workunit commands:\n");
@@ -1830,6 +1830,7 @@ static void dfsreplication(const char *clusterMask, const char *lfnMask, unsigne
 
     const char *basePath = "/Files";
     const char *propToSet = "@redundancy";
+    const char *defVal = "1"; // default reduncancy value, attribute not set/stored if equal to default.
     StringBuffer value;
     value.append(redundancy);
 
@@ -1847,7 +1848,7 @@ static void dfsreplication(const char *clusterMask, const char *lfnMask, unsigne
         {
             IPropertyTree &cluster = clusterIter->query();
             const char *oldValue = cluster.queryProp(propToSet);
-            if (!oldValue || !streq(value, oldValue))
+            if ((!oldValue && !streq(value, defVal)) || (oldValue && !streq(value, oldValue)))
             {
                 const char *fileName = file.queryProp("OrigName");
                 const char *clusterName = cluster.queryProp("@name");
@@ -1856,7 +1857,12 @@ static void dfsreplication(const char *clusterMask, const char *lfnMask, unsigne
                     msg.appendf(" [old value = %s]", oldValue);
                 PROGLOG("%s", msg.str());
                 if (!dryRun)
-                    cluster.setProp(propToSet, value);
+                {
+                    if (!streq(value, defVal))
+                        cluster.setProp(propToSet, value);
+                    else
+                        cluster.removeProp(propToSet);
+                }
             }
         }
     }
