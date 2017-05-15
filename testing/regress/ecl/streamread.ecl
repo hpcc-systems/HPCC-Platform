@@ -17,7 +17,7 @@
 
 //class=embedded
 
-copies = IF(__PLATFORM__='roxie',1,CLUSTERSIZE);
+copies := IF(__PLATFORM__='roxie',1,CLUSTERSIZE);
 
 outRecord := RECORD
     STRING10 name;
