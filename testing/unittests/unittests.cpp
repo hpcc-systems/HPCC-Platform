@@ -295,6 +295,7 @@ class PtreeThreadingTest : public CppUnit::TestFixture
     }
     void _testContention(byte flags)
     {
+        enum ContentionMode { max_contention, some_contention, min_contention, some_control, min_control };
         class casyncfor: public CAsyncFor
         {
             volatile int v;
@@ -303,12 +304,12 @@ class PtreeThreadingTest : public CppUnit::TestFixture
                 v++;
             }
             byte flags = ipt_none;
-            int mode = 0;
+            ContentionMode mode = max_contention;
             int iterations = 0;
             const char *desc = nullptr;
 
         public:
-            casyncfor(const char *_desc, byte _flags, int _mode, int _iter)
+            casyncfor(const char *_desc, byte _flags, ContentionMode _mode, int _iter)
             : flags(_flags), mode(_mode), iterations(_iter), desc(_desc)
             {
             };
@@ -319,14 +320,14 @@ class PtreeThreadingTest : public CppUnit::TestFixture
                 unsigned elapsed = msTick()-start;
                 double looptime = (elapsed * 1.0) / (iterations*num);
                 if (mode < 3)
-                    DBGLOG("%s (%s) test completed in %d ms (%f ms/iter)", desc, flags & ipt_fast ? "fast" : "lowmem", elapsed, looptime-overhead);
+                    DBGLOG("%s (%s) test completed in %u ms (%f ms/iter)", desc, flags & ipt_fast ? "fast" : "lowmem", elapsed, looptime-overhead);
                 return looptime;
             }
             void Do(unsigned i)
             {
                 for (unsigned i = 0; i < iterations; i++)
                 {
-                    Owned<IPropertyTree> p = mode >= 3 ? nullptr : createPTreeFromXMLString(false ? "<helloxx there='1'/>" :
+                    Owned<IPropertyTree> p = mode >= some_control ? nullptr : createPTreeFromXMLString(
                             "<W_LOCAL buildVersion='community_6.0.0-trunk0Debug[heads/cass-wu-part3-0-g10b954-dirty]'"
                             "         cloneable='1'"
                             "         clusterName=''"
@@ -528,21 +529,21 @@ class PtreeThreadingTest : public CppUnit::TestFixture
                     , flags);
                     switch(mode)
                     {
-                    case 1: case 3: for (int j = 0; j < 100000; j++) donothing(); break;
-                    case 2: case 4: for (int j = 0; j < 1000000; j++) donothing(); break;
+                    case some_contention: case some_control: for (int j = 0; j < 100000; j++) donothing(); break;
+                    case min_contention: case min_control: for (int j = 0; j < 1000000; j++) donothing(); break;
                     }
                 }
             }
-        } max("maxContention",flags,0,1000),
-          some("someContention",flags,1,200),
-          min("minContention",flags,2,200),
-          csome("control some",flags,3,200),
-          cmin("control min",flags,4,200),
-          seq("single",flags,0,1000);
-          max.For(8,8);
-          some.For(8,8,csome.For(8,8));
-          min.For(8,8,cmin.For(8,8));
-          seq.For(8,1);
+        } max("maxContention",flags,max_contention,1000),
+          some("someContention",flags,some_contention,200),
+          min("minContention",flags,min_contention,200),
+          csome("control some",flags,some_control,200),
+          cmin("control min",flags,min_control,200),
+          seq("single",flags,max_contention,1000);
+        max.For(8,8);
+        some.For(8,8,csome.For(8,8));
+        min.For(8,8,cmin.For(8,8));
+        seq.For(8,1);
     }
 };
 

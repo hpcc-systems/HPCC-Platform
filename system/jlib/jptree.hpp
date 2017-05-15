@@ -61,6 +61,10 @@ typedef unsigned IPTIteratorCodes;
 #define iptiter_remote 0x02
 #define iptiter_remoteget 0x06
 #define iptiter_remotegetbranch 0x0e
+
+extern jlib_decl unsigned queryNumLocalTrees();
+extern jlib_decl unsigned queryNumAtomTrees();
+
 interface jlib_decl IPropertyTree : extends serializable
 {
     virtual bool hasProp(const char *xpath) const = 0;
@@ -97,6 +101,9 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual IPropertyTree *queryPropTree(const char *xpath) const = 0;
     virtual IPropertyTree *setPropTree(const char *xpath, IPropertyTree *val) = 0;
     virtual IPropertyTree *addPropTree(const char *xpath, IPropertyTree *val) = 0;
+
+    virtual IPropertyTree *setPropTree(const char *xpath) = 0;
+    virtual IPropertyTree *addPropTree(const char *xpath) = 0;
 
     virtual bool removeProp(const char *xpath) = 0;
     virtual bool removeTree(IPropertyTree *child) = 0;
@@ -215,7 +222,6 @@ jlib_decl IPropertyTree *createPTreeFromXMLString(const char *xml, byte flags=ip
 jlib_decl IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromXMLFile(const char *filename, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromIPT(const IPropertyTree *srcTree, ipt_flags flags=ipt_none);
-
 jlib_decl IPropertyTree *createPTreeFromJSONString(const char *json, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromJSONString(unsigned len, const char *json, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 

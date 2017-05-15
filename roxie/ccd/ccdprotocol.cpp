@@ -816,7 +816,7 @@ public:
             return;
         if (fmt==MarkupFmt_JSON)
         {
-            Owned<IPropertyTree> convertPT = createPTreeFromXMLString(content);
+            Owned<IPropertyTree> convertPT = createPTreeFromXMLString(content, ipt_fast);
             if (name && *name)
                 appendXMLOpenTag(xml, name);
             toXML(convertPT, xml, 0, 0);
@@ -1068,7 +1068,7 @@ public:
         StringBuffer json;
         if (mlFmt==MarkupFmt_XML)
         {
-            Owned<IPropertyTree> convertPT = createPTreeFromXMLString(StringBuffer("<Control>").append(content).append("</Control>"));
+            Owned<IPropertyTree> convertPT = createPTreeFromXMLString(StringBuffer("<Control>").append(content).append("</Control>"), ipt_fast);
             toJSON(convertPT, json, 0, 0);
             content = json.str();
         }
@@ -1179,7 +1179,7 @@ public:
         StringBuffer xml;
         if (mlFmt==MarkupFmt_JSON)
         {
-            Owned<IPropertyTree> convertPT = createPTreeFromJSONString(content);
+            Owned<IPropertyTree> convertPT = createPTreeFromJSONString(content, ipt_fast);
             toXML(convertPT, xml, 0, 0);
             content = xml.str();
         }
@@ -1723,7 +1723,7 @@ readAnother:
                     client->setHttpMode(queryName, false, httpHelper);
 
                 bool aclupdate = strieq(queryName, "aclupdate"); //ugly
-                byte iptFlags = aclupdate ? ipt_caseInsensitive : 0;
+                byte iptFlags = aclupdate ? ipt_caseInsensitive|ipt_fast : ipt_fast;
 
                 createQueryPTree(queryPT, httpHelper, rawText, iptFlags, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces), queryName);
 
@@ -1768,7 +1768,7 @@ readAnother:
                 readFlags |= (whitespace == WhiteSpaceHandling::Strip ? ptr_ignoreWhiteSpace : ptr_none);
                 try
                 {
-                    createQueryPTree(queryPT, httpHelper, rawText.str(), ipt_caseInsensitive, (PTreeReaderOptions)readFlags, queryName);
+                    createQueryPTree(queryPT, httpHelper, rawText.str(), ipt_caseInsensitive|ipt_fast, (PTreeReaderOptions)readFlags, queryName);
                 }
                 catch (IException *E)
                 {
@@ -1840,7 +1840,7 @@ readAnother:
                             Owned<IPropertyTreeIterator> reqIter = queryPT->getElements(reqIterString.str());
                             ForEach(*reqIter)
                             {
-                                IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
+                                IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive|ipt_fast);
                                 Owned<IPropertyTreeIterator> iter = reqIter->query().getElements("*");
                                 ForEach(*iter)
                                 {
@@ -1851,7 +1851,7 @@ readAnother:
                         }
                         else
                         {
-                            IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive);
+                            IPropertyTree *fixedreq = createPTree(queryName, ipt_caseInsensitive|ipt_fast);
                             Owned<IPropertyTreeIterator> iter = queryPT->getElements("*");
                             ForEach(*iter)
                             {

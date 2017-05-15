@@ -384,7 +384,6 @@ struct PtrStrUnion
         {
 #ifdef LITTLE_ENDIAN
             char flag;
-#endif
             union
             {
                 char chars[sizeof(PTR *)-1];
@@ -392,10 +391,18 @@ struct PtrStrUnion
                 {
                     int8_t idx1;
                     int16_t idx2;
-                    int32_t idx4;
                 };
             };
-#ifndef LITTLE_ENDIAN
+#else
+            union
+            {
+                char chars[sizeof(PTR *)-1];
+                struct
+                {
+                    int16_t idx2;
+                    int8_t idx1;
+                };
+            };
             char flag;
 #endif
         };
@@ -426,7 +433,7 @@ struct PtrStrUnion
     {
         if (key)
         {
-            size32_t l = strlen(key);
+            size32_t l = strnlen(key, sizeof(PTR *));  // technically sizeof(PTR)-1 would do, but I suspect 8 bytes is actually more optimal to search than 7
             if (l <= sizeof(PTR *)-2)
             {
                 flag=1;
@@ -487,7 +494,7 @@ struct AttrStrUnionWithTable : public AttrStrUnion
     inline const char *get() const
     {
         if (!isPtr() && flag==3)
-            return roNameTable->getIndex(idx4)->str_DO_NOT_USE_DIRECTLY;  // Should probably rename this back now!
+            return roNameTable->getIndex(idx2)->str_DO_NOT_USE_DIRECTLY;  // Should probably rename this back now!
         return AttrStrUnion::get();
     }
     bool set(const char *key)
@@ -499,8 +506,9 @@ struct AttrStrUnionWithTable : public AttrStrUnion
             unsigned idx = roNameTable->findIndex(key, AttrStrC::getHash(key));
             if (idx != (unsigned) -1)
             {
+                assert(idx <= 0xffff);
                 flag = 3;
-                idx4 = idx;
+                idx2 = idx;
                 return true;
             }
         }
@@ -597,6 +605,8 @@ public:
     virtual IPropertyTree *queryBranch(const char *xpath) const override { return queryPropTree(xpath); }
     virtual IPropertyTree *setPropTree(const char *xpath, IPropertyTree *val) override;
     virtual IPropertyTree *addPropTree(const char *xpath, IPropertyTree *val) override;
+    virtual IPropertyTree *setPropTree(const char *xpath) override { return setPropTree(xpath, create()); }
+    virtual IPropertyTree *addPropTree(const char *xpath) override { return addPropTree(xpath, create()); }
     virtual bool removeTree(IPropertyTree *child) override;
     virtual bool removeProp(const char *xpath) override;
     virtual aindex_t queryChildIndex(IPropertyTree *child) override;
@@ -745,10 +755,10 @@ public:
     const char *queryName() const override;
     virtual unsigned queryHash() const override
     {
-        const char *name = queryName();
-        assert(name);
-        size32_t nl = strlen(name);
-        return isnocase() ? hashnc((const byte *)name, nl, 0): hashc((const byte *)name, nl, 0);
+        const char *myname = queryName();
+        assert(myname);
+        size32_t nl = strlen(myname);
+        return isnocase() ? hashnc((const byte *)myname, nl, 0): hashc((const byte *)myname, nl, 0);
     }
     virtual void setName(const char *_name) override;
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (nullptr != QUERYINTERFACE(tree, LocalPTree)); }

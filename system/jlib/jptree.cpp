@@ -120,22 +120,24 @@ MODULE_INIT(INIT_PRIORITY_JPTREE)
     AttrStrUnionWithTable::roNameTable = new RONameTable;
     initializeRoTable();
 #endif
-	keyTable = new AtomRefTable;
-	keyTableNC = new AtomRefTable(true);
-	attrHT = new CAttrValHashTable;
+    keyTable = new AtomRefTable;
+    keyTableNC = new AtomRefTable(true);
+    attrHT = new CAttrValHashTable;
     return true;
 }
 
 MODULE_EXIT()
 {
     nullPTreeIterator->Release();
-	delete attrHT;
-	keyTable->Release();
-	keyTableNC->Release();
-	free(freelist);
-	freelist = NULL;
+    delete attrHT;
+    keyTable->Release();
+    keyTableNC->Release();
+#ifdef USE_READONLY_ATOMTABLE
+    delete AttrStrUnionWithTable::roNameTable;
+#endif
+    free(freelist);
+    freelist = NULL;
 }
-
 
 static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
 {
@@ -2908,14 +2910,22 @@ AttrValue *PTree::getNextAttribute(AttrValue *cur) const
 
 // LocalPTree
 
-LocalPTree::LocalPTree(const char *_name, byte _flags, IPTArrayValue *_value, ChildMap *_children) : PTree(_flags, _value, _children)
+static RelaxedAtomic<unsigned> numLocalTrees;
+unsigned queryNumLocalTrees()
+{
+    return numLocalTrees;
+}
+
+LocalPTree::LocalPTree(const char *_name, byte _flags, IPTArrayValue *_value, ChildMap *_children) : PTree(_flags|ipt_fast, _value, _children)
 {
     if (_name)
         setName(_name);
+    numLocalTrees++;
 }
 
 LocalPTree::~LocalPTree()
 {
+    numLocalTrees--;
     name.destroy();
     if (!attrs)
         return;
@@ -2998,14 +3008,22 @@ std::atomic<__int64> AttrStrAtom::maxsize { 0 };
 
 ///////////////////
 
-CAtomPTree::CAtomPTree(const char *_name, byte _flags, IPTArrayValue *_value, ChildMap *_children) : PTree(_flags, _value, _children)
+static RelaxedAtomic<unsigned> numAtomTrees;
+unsigned queryNumAtomTrees()
 {
+    return numAtomTrees;
+}
+
+CAtomPTree::CAtomPTree(const char *_name, byte _flags, IPTArrayValue *_value, ChildMap *_children) : PTree(_flags|ipt_lowmem, _value, _children)
+{
+    numAtomTrees++;
     if (_name)
         setName(_name);
 }
 
 CAtomPTree::~CAtomPTree()
 {
+    numAtomTrees--;
     bool nc = isnocase();
     HashKeyElement *name_ptr = name.getPtr();
     if (name_ptr)
@@ -3143,11 +3161,19 @@ void CAtomPTree::setAttribute(const char *key, const char *val)
     {
         if (streq(v->value.get(), val))
             return;
-        CriticalBlock block(hashcrit);
-        if (v->value.isPtr())
-            attrHT->removeval(v->value.getPtr());
+        AttrStr * goer = v->value.getPtr();
         if (!v->value.set(val))
+        {
+            CriticalBlock block(hashcrit);
+            if (goer)
+                attrHT->removeval(goer);
             v->value.setPtr(attrHT->addval(val));
+        }
+        else if (goer)
+        {
+            CriticalBlock block(hashcrit);
+            attrHT->removeval(goer);
+        }
     }
     else
     {

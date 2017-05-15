@@ -450,7 +450,7 @@ public:
                 Owned<ISimpleSuperFileEnquiry> ssfe = pkg->resolveSuperFile(rf.getLogicalName());
                 if (ssfe && ssfe->numSubFiles()>0)
                 {
-                    IPropertyTree *superInfo = fileInfo->addPropTree("SuperFile", createPTree());
+                    IPropertyTree *superInfo = fileInfo->addPropTree("SuperFile");
                     superInfo->setProp("@name", rf.getLogicalName());
                     unsigned count = ssfe->numSubFiles();
                     while (count--)
@@ -495,7 +495,7 @@ public:
                     referencedPackages.setValue(baseId, true);
             }
         }
-        Owned<IPropertyTree> tempQuerySet=createPTree();
+        Owned<IPropertyTree> tempQuerySet=createPTree(ipt_fast);
         Owned<IPropertyTreeIterator> queries;
         if (queriesToCheck.length())
         {

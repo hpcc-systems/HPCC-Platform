@@ -1795,7 +1795,7 @@ public:
                     addFile(sub.queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
                 }
                 // We have to clone the properties since we don't want to keep the superfile locked
-                properties.setown(createPTreeFromIPT(&dFile->queryAttributes()));
+                properties.setown(createPTreeFromIPT(&dFile->queryAttributes(), ipt_lowmem));
                 if (!isDynamic && !lockSuperFiles)
                 {
                     notifier.setown(daliHelper->getSuperFileSubscription(lfn, this));
@@ -2205,7 +2205,7 @@ public:
         assertex(file->exists());
         offset_t size = file->size();
         Owned<IFileDescriptor> fdesc = createFileDescriptor();
-        Owned<IPropertyTree> pp = createPTree("Part");
+        Owned<IPropertyTree> pp = createPTree("Part", ipt_lowmem);
         pp->setPropInt64("@size",size);
         pp->setPropBool("@local", true);
         fdesc->setPart(0, queryMyNode(), localFileName, pp);
@@ -2372,7 +2372,7 @@ public:
                 bool propertiesPresent;
                 serverData.read(propertiesPresent);
                 if (propertiesPresent)
-                    properties.setown(createPTree(serverData));
+                    properties.setown(createPTree(serverData, ipt_lowmem));
             }
             else
                 throw MakeStringException(ROXIE_CALLBACK_ERROR, "Failed to get response from server for dynamic file callback");

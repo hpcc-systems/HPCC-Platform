@@ -1374,13 +1374,13 @@ public:
             {
                 StringBuffer freply;
                 serverManager->getStats(queryId, graphName, freply, logctx);
-                Owned<IPropertyTree> stats = createPTreeFromXMLString(freply.str());
+                Owned<IPropertyTree> stats = createPTreeFromXMLString(freply.str(), ipt_fast);
                 for (unsigned channel = 0; channel < numChannels; channel++)
                     if (slaveManagers->item(channel))
                     {
                         StringBuffer sreply;
                         slaveManagers->item(channel)->getStats(queryId, graphName, sreply, logctx);
-                        Owned<IPropertyTree> cstats = createPTreeFromXMLString(sreply.str());
+                        Owned<IPropertyTree> cstats = createPTreeFromXMLString(sreply.str(), ipt_fast);
                         mergeStats(stats, cstats, 1);
                     }
                 toXML(stats, reply);
@@ -1523,7 +1523,7 @@ public:
     virtual void load(bool forceReload)
     {
         hash64_t newHash = numChannels;
-        Owned<IPropertyTree> newQuerySet = createPTree("QuerySet");
+        Owned<IPropertyTree> newQuerySet = createPTree("QuerySet", ipt_lowmem);
         newQuerySet->setProp("@name", "_standalone");
         newQuerySet->addPropTree("Query", standaloneDll.getLink());
         Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels, querySet);
@@ -1559,7 +1559,7 @@ public:
     : stateHash(0), daliHelper(_daliHelper)
     {
         Owned<IPropertyTree> standAloneDllTree;
-        standAloneDllTree.setown(createPTree("Query"));
+        standAloneDllTree.setown(createPTree("Query", ipt_lowmem));
         standAloneDllTree->setProp("@id", "roxie");
         standAloneDllTree->setProp("@dll", standAloneDll->queryDll()->queryName());
         Owned<CRoxieQueryPackageManager> qpm = new CStandaloneQueryPackageManager(numChannels, querySet, LINK(&queryEmptyRoxiePackageMap()), standAloneDllTree.getClear());
