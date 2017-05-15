@@ -290,7 +290,7 @@ struct PtrStrUnion
 #ifdef USE_STRUNION
     union
     {
-        PTR *ptr = nullptr;
+        PTR *ptr;
         struct
         {
 #ifdef LITTLE_ENDIAN
@@ -302,6 +302,7 @@ struct PtrStrUnion
 #endif
         };
     };
+    inline PtrStrUnion<PTR>() : ptr(nullptr) {}
     inline bool isPtr() const
     {
         return (flag&1) == 0;
