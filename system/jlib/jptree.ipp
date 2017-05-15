@@ -275,6 +275,97 @@ struct AttrStr
 #endif
 };
 
+
+// In order to keep code common between atom and local versions of ptree, we store the atom-specific information BEFORE the this pointer of AttrStr
+// This requires some care - in particular must use the right method to destroy the objects, and must not add any virtual methods to either class
+// Note that memory usage is significant as we create literally millions of these objects
+
+typedef unsigned hashfunc( const unsigned char *k, unsigned length, unsigned initval);
+
+struct AttrStrAtom
+{
+    unsigned hash;
+    unsigned short linkcount;
+    char str_DO_NOT_USE_DIRECTLY[1];  // Actually N
+
+    static AttrStrAtom *create(const char *k, size32_t kl, hashfunc _hash)
+    {
+#ifdef TRACE_ALL_ATOM
+        DBGLOG("TRACE_ALL_ATOM: %s", k);
+#endif
+#ifdef TRACE_ATOM_SIZE
+        totsize += sizeof(AttrStrAtom)+kl+1;
+        if (totsize > maxsize)
+        {
+            maxsize.store(totsize);
+            DBGLOG("TRACE_ATOM_SIZE: total size now %" I64F "d", maxsize.load());
+        }
+#endif
+        AttrStrAtom *ret = (AttrStrAtom *) malloc(offsetof(AttrStrAtom, str_DO_NOT_USE_DIRECTLY)+kl+1);
+        memcpy(ret->str_DO_NOT_USE_DIRECTLY, k, kl);
+        ret->str_DO_NOT_USE_DIRECTLY[kl] = 0;
+        ret->hash = _hash((const unsigned char *) k, kl, 17);
+        ret->linkcount = 0;
+        return ret;
+    }
+    static void destroy(AttrStrAtom *a)
+    {
+#ifdef TRACE_ATOM_SIZE
+        totsize -= sizeof(AttrStrAtom)+strlen(a->str_DO_NOT_USE_DIRECTLY)+1;
+#endif
+        free(a);
+    }
+
+    AttrStr *toAttrStr()
+    {
+        return (AttrStr *) &str_DO_NOT_USE_DIRECTLY;
+    }
+    static AttrStrAtom *toAtom(AttrStr *a)
+    {
+        return (AttrStrAtom *)(&a->str_DO_NOT_USE_DIRECTLY - offsetof(AttrStrAtom, str_DO_NOT_USE_DIRECTLY));
+    }
+#ifdef TRACE_ATOM_SIZE
+    static std::atomic<__int64> totsize;
+    static std::atomic<__int64> maxsize;
+#endif
+ };
+
+struct AttrStrC : public AttrStrAtom
+{
+    static inline unsigned getHash(const char *k)
+    {
+        return hashc((const byte *)k, strlen(k), 17);
+    }
+    inline bool eq(const char *k)
+    {
+        return streq(k,str_DO_NOT_USE_DIRECTLY);
+    }
+    static AttrStrC *create(const char *k)
+    {
+        size32_t kl = k ? strlen(k) : 0;
+        return (AttrStrC *) AttrStrAtom::create(k, kl, hashc);
+    }
+};
+
+struct AttrStrNC : public AttrStrAtom
+{
+    static inline unsigned getHash(const char *k)
+    {
+        return hashnc((const byte *)k, strlen(k), 17);
+    }
+    inline bool eq(const char *k)
+    {
+        return strieq(k,str_DO_NOT_USE_DIRECTLY);
+    }
+    static AttrStrNC *create(const char *k)
+    {
+        size32_t kl = k ? strlen(k) : 0;
+        return (AttrStrNC *) AttrStrAtom::create(k, kl, hashnc);
+    }
+};
+
+typedef CMinHashTable<AttrStrC> RONameTable;
+
 // NOTE - hairy code alert!
 // To save on storage (and contention) we store short string values in same slot as the pointer to longer
 // ones would occupy. This relies on the assumption that the pointers you want to store are always AT LEAST
@@ -293,9 +384,18 @@ struct PtrStrUnion
         {
 #ifdef LITTLE_ENDIAN
             char flag;
-            char chars[sizeof(PTR *)-1];
-#else
-            char chars[sizeof(PTR *)-1];
+#endif
+            union
+            {
+                char chars[sizeof(PTR *)-1];
+                struct
+                {
+                    int8_t idx1;
+                    int16_t idx2;
+                    int32_t idx4;
+                };
+            };
+#ifndef LITTLE_ENDIAN
             char flag;
 #endif
         };
@@ -308,7 +408,10 @@ struct PtrStrUnion
     inline const char *get() const
     {
         if (!isPtr())
+        {
+            assert(flag==1);
             return chars;
+        }
         else if (ptr)
             return ptr->get();
         else
@@ -372,11 +475,47 @@ struct PtrStrUnion
     }
 };
 
+#ifdef USE_STRUNION
+#define USE_READONLY_ATOMTABLE
+#endif
+
 typedef PtrStrUnion<AttrStr> AttrStrUnion;
+
+#ifdef USE_READONLY_ATOMTABLE
+struct AttrStrUnionWithTable : public AttrStrUnion
+{
+    inline const char *get() const
+    {
+        if (!isPtr() && flag==3)
+            return roNameTable->getIndex(idx4)->str_DO_NOT_USE_DIRECTLY;  // Should probably rename this back now!
+        return AttrStrUnion::get();
+    }
+    bool set(const char *key)
+    {
+        if (AttrStrUnion::set(key))
+            return true;
+        if (key && key[0]=='@')
+        {
+            unsigned idx = roNameTable->findIndex(key, AttrStrC::getHash(key));
+            if (idx != (unsigned) -1)
+            {
+                flag = 3;
+                idx4 = idx;
+                return true;
+            }
+        }
+        return false;
+    }
+    static RONameTable *roNameTable;
+};
+#else
+typedef AttrStrUnion AttrStrUnionWithTable;
+
+#endif
 
 struct AttrValue
 {
-    AttrStrUnion key;
+    AttrStrUnionWithTable key;
     AttrStrUnion value;
 };
 
@@ -514,94 +653,6 @@ protected: // data
     AttrValue *attrs = nullptr;
 };
 
-
-// In order to keep code common between atom and local versions of ptree, we store the atom-specific information BEFORE the this pointer of AttrStr
-// This requires some care - in particular must use the right method to destroy the objects, and must not add any virtual methods to either class
-// Note that memory usage is significant as we create literally millions of these objects
-
-typedef unsigned hashfunc( const unsigned char *k, unsigned length, unsigned initval);
-
-struct AttrStrAtom
-{
-    unsigned hash;
-    unsigned short linkcount;
-    char str_DO_NOT_USE_DIRECTLY[1];  // Actually N
-
-    static AttrStrAtom *create(const char *k, size32_t kl, hashfunc _hash)
-    {
-#ifdef TRACE_ALL_ATOM
-        DBGLOG("TRACE_ALL_ATOM: %s", k);
-#endif
-#ifdef TRACE_ATOM_SIZE
-        totsize += sizeof(AttrStrAtom)+kl+1;
-        if (totsize > maxsize)
-        {
-            maxsize.store(totsize);
-            DBGLOG("TRACE_ATOM_SIZE: total size now %" I64F "d", maxsize.load());
-        }
-#endif
-        AttrStrAtom *ret = (AttrStrAtom *) malloc(offsetof(AttrStrAtom, str_DO_NOT_USE_DIRECTLY)+kl+1);
-        memcpy(ret->str_DO_NOT_USE_DIRECTLY, k, kl);
-        ret->str_DO_NOT_USE_DIRECTLY[kl] = 0;
-        ret->hash = _hash((const unsigned char *) k, kl, 17);
-        ret->linkcount = 0;
-        return ret;
-    }
-    static void destroy(AttrStrAtom *a)
-    {
-#ifdef TRACE_ATOM_SIZE
-        totsize -= sizeof(AttrStrAtom)+strlen(a->str_DO_NOT_USE_DIRECTLY)+1;
-#endif
-        free(a);
-    }
-
-    AttrStr *toAttrStr()
-    {
-        return (AttrStr *) &str_DO_NOT_USE_DIRECTLY;
-    }
-    static AttrStrAtom *toAtom(AttrStr *a)
-    {
-        return (AttrStrAtom *)(&a->str_DO_NOT_USE_DIRECTLY - offsetof(AttrStrAtom, str_DO_NOT_USE_DIRECTLY));
-    }
-#ifdef TRACE_ATOM_SIZE
-    static std::atomic<__int64> totsize;
-    static std::atomic<__int64> maxsize;
-#endif
- };
-
-struct AttrStrC : public AttrStrAtom
-{
-    static inline unsigned getHash(const char *k)
-    {
-        return hashc((const byte *)k, strlen(k), 17);
-    }
-    inline bool eq(const char *k)
-    {
-        return streq(k,str_DO_NOT_USE_DIRECTLY);
-    }
-    static AttrStrC *create(const char *k)
-    {
-        size32_t kl = k ? strlen(k) : 0;
-        return (AttrStrC *) AttrStrAtom::create(k, kl, hashc);
-    }
-};
-
-struct AttrStrNC : public AttrStrAtom
-{
-    static inline unsigned getHash(const char *k)
-    {
-        return hashnc((const byte *)k, strlen(k), 17);
-    }
-    inline bool eq(const char *k)
-    {
-        return strieq(k,str_DO_NOT_USE_DIRECTLY);
-    }
-    static AttrStrNC *create(const char *k)
-    {
-        size32_t kl = k ? strlen(k) : 0;
-        return (AttrStrNC *) AttrStrAtom::create(k, kl, hashnc);
-    }
-};
 
 class CAttrValHashTable
 {

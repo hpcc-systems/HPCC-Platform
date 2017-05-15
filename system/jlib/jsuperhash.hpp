@@ -72,11 +72,12 @@ protected:
     bool             removeExact(void * et);
     inline void      setCache(unsigned v) const { cache = v; }
 
+    inline unsigned  doFind(const void * findParam) const
+      { return doFind(getHashFromFindParam(findParam), findParam); }
+
 private:
     bool             doAdd(void *, bool);
     void             doDeleteElement(unsigned);
-    inline unsigned  doFind(const void * findParam) const
-      { return doFind(getHashFromFindParam(findParam), findParam); }
     unsigned         doFind(unsigned, const void *) const;
     unsigned         doFindElement(unsigned, const void *) const;
     unsigned         doFindNew(unsigned) const;

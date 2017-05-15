@@ -70,17 +70,56 @@ IPropertyTreeIterator *createNullPTreeIterator() { return LINK(nullPTreeIterator
 
 //===================================================================
 
+#ifdef USE_READONLY_ATOMTABLE
+RONameTable *AttrStrUnionWithTable::roNameTable = nullptr;
+#endif
 static AtomRefTable *keyTable = nullptr;
 static AtomRefTable *keyTableNC = nullptr;
+
 static CriticalSection hashcrit;
 static CAttrValHashTable *attrHT = nullptr;
 static AttrValue **freelist = nullptr;
 static unsigned freelistmax = 0;
 static CLargeMemoryAllocator freeallocator((memsize_t)-1, 0x1000*sizeof(AttrValue), true);
 
+#ifdef USE_READONLY_ATOMTABLE
+static const char * roAttributes[] =
+{
+#include "jptree-attrs.hpp"    // potentially auto-generated
+    nullptr
+};
+
+void initializeRoTable()
+{
+    for (const char **attr = roAttributes; *attr; attr++)
+    {
+        AttrStrUnionWithTable::roNameTable->find(*attr, true);
+    }
+#ifdef TRACE_ATOM_SIZE
+    // If you are wanting an idea of the savings from use of the RO hash table, it may be useful to reset
+    // the counts here. But it's more correct to actually leave them in place.
+    //AttrStrAtom::totsize = 0;
+    //AttrStrAtom::maxsize = 0;
+#endif
+#ifdef _DEBUG
+    for (const char **a = roAttributes; *a; a++)
+    {
+        // sanity check
+        unsigned idx = AttrStrUnionWithTable::roNameTable->findIndex(*a,AttrStrC::getHash(*a));
+        AttrStrC *val = AttrStrUnionWithTable::roNameTable->getIndex(idx);
+        assert(val && val->eq(*a));
+    }
+#endif
+}
+#endif
+
 MODULE_INIT(INIT_PRIORITY_JPTREE)
 {
     nullPTreeIterator = new NullPTreeIterator;
+#ifdef USE_READONLY_ATOMTABLE
+    AttrStrUnionWithTable::roNameTable = new RONameTable;
+    initializeRoTable();
+#endif
 	keyTable = new AtomRefTable;
 	keyTableNC = new AtomRefTable(true);
 	attrHT = new CAttrValHashTable;
