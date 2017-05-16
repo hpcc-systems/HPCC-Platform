@@ -1052,18 +1052,33 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
         <para>A Drop Zone (or landing zone) is a location where files can be
         transferred to or from your HPCC system. The drop zone is a logical
-        combination of a path and one or more servers. Multiple drop zones
-        allow you to configure different top level folders for one or more
-        servers. Multiple servers for a single drop zone provides a logical
-        grouping of distinct locations.</para>
+        combination of a path and one or more servers. </para>
 
-        <para>Multiple drop zones are useful to allow different permissions
-        for users or groups.</para>
+        <para>Multiple drop zones allow you to configure different top level
+        folders for one or more servers. Multiple servers for a single drop
+        zone provides a logical grouping of distinct locations. Multiple drop
+        zones are useful to allow different permissions for users or
+        groups.</para>
 
-        <para>To add another drop zone, right-click on the Navigator panel on
-        the left side, and choose <emphasis role="bold">New
-        Components</emphasis> then <emphasis role="bold">Drop Zone</emphasis>
-        from the ensuing dialog.</para>
+        <para>To add a drop zone:</para>
+
+        <para>
+          <orderedlist>
+            <listitem>
+              <para>Right-click on the Navigator panel on the left side</para>
+            </listitem>
+
+            <listitem>
+              <para>choose <emphasis role="bold">New Components</emphasis>
+              </para>
+            </listitem>
+
+            <listitem>
+              <para>choose <emphasis role="bold">Drop Zone</emphasis> from the
+              ensuing dialog</para>
+            </listitem>
+          </orderedlist>
+        </para>
 
         <sect3>
           <title>DropZone Attributes</title>
@@ -1123,8 +1138,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <title>DropZone Server List</title>
 
           <para>This tab allows you to add any servers that you wish to
-          configure as a part of the selected drop zone. To add a server to
-          the current drop zone. <orderedlist>
+          configure as a part of the selected drop zone. </para>
+
+          <para>To add a server to the current drop zone: <orderedlist>
               <listitem>
                 <para>Select the <emphasis role="bold">Drop Zone</emphasis> to
                 configure from the Navigator panel on the left side.</para>
