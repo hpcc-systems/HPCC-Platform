@@ -44,6 +44,7 @@
 #include "thorxmlwrite.hpp"
 #include "fvdatasource.hpp"
 #include "fvresultset.ipp"
+#include "ws_wudetails.hpp"
 
 #include "package.h"
 
@@ -3946,6 +3947,31 @@ bool CWsWorkunitsEx::onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& r
                 readGraph(context, req.getSubGraphId(), id, running, graph, graphs);
         }
         resp.setGraphs(graphs);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUDetails(IEspContext &context, IEspWUDetailsRequest &req, IEspWUDetailsResponse &resp)
+{
+    try
+    {
+        StringBuffer wuid = req.getWUID();
+        WsWuHelpers::checkAndTrimWorkunit("WUDetails", wuid);
+
+        PROGLOG("WUDetails: %s", wuid.str());
+
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
+        if(!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
+        ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
+
+        CWUDetails wuDetails(cw.getClear(), wuid.str(), req);
+        wuDetails.process(resp);
     }
     catch(IException* e)
     {

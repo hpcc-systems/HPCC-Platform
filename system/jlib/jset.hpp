@@ -138,6 +138,7 @@ interface jlib_decl IBitSet : public IInterface
     virtual void excl(unsigned lo, unsigned hi)     = 0;
     virtual void reset() = 0;
     virtual void serialize(MemoryBuffer &buffer) const = 0;
+    virtual bool operator==(const IBitSet& rhs) const = 0;
 };
 
 // type of underlying bit storage, exposed so thread-unsafe version can know boundaries
@@ -155,7 +156,8 @@ extern jlib_decl IBitSet *deserializeThreadSafeBitSet(MemoryBuffer &mb);
  * IOW, e.g. bits 0-sizeof(bits_t) must be set from only 1 thread at a time.
  */
 extern jlib_decl IBitSet *createBitSet(size32_t memSize, const void *mem, bool reset=true);
-// This form allows the size of the bit set to be dynamic. No guarantees about threading.
+// These forms allows the size of the bit set to be dynamic. No guarantees about threading.
+extern jlib_decl IBitSet *createBitSet(unsigned maxBits, bool reset);
 extern jlib_decl IBitSet *createBitSet();
 extern jlib_decl IBitSet *deserializeBitSet(MemoryBuffer &mb);
 // returns number of bytes required to represent numBits in memory
