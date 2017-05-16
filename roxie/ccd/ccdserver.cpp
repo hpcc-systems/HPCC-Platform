@@ -7247,6 +7247,7 @@ public:
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
+        assertex(numToKeep == 1);
         first = true;
         kept = nullptr;
         CRoxieServerDedupActivity::start(parentExtractSize, parentExtract, paused);
