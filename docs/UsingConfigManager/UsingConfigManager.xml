@@ -1051,14 +1051,16 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>Drop Zone</title>
 
         <para>A Drop Zone (or landing zone) is a location where files can be
-        transferred to or from your HPCC system. You can configure multiple
-        drop zones, if necessary. You can also add folders to each drop zone
-        to help organize your data.  Multiple drop zones are also useful to
-        allow different permissions for users or groups.</para>
+        transferred to or from your HPCC system. A drop zone is comprised of
+        one or more server nodes, and you should specify at least one server
+        in the server list. You can configure multiple drop zones, if
+        necessary. You can also add folders to each drop zone to help organize
+        your data. Multiple drop zones are also useful to allow different
+        permissions for users or groups.</para>
 
         <para>To add another drop zone, right-click on the Navigator panel on
         the left side, and choose <emphasis role="bold">New
-        Components</emphasis> then <emphasis role="bold">DropZone</emphasis>
+        Components</emphasis> then <emphasis role="bold">Drop Zone</emphasis>
         from the ensuing dialog.</para>
 
         <sect3>
@@ -1119,19 +1121,35 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <title>DropZone Server List</title>
 
           <para>This tab allows you to add any servers that you wish to
-          configure as drop zones. To add a server to the available drop
-          zones. <orderedlist>
+          configure as a part of this drop zone. To add a server to the
+          current drop zone. <orderedlist>
+              <listitem>
+                <para>Select the <emphasis role="bold">Drop Zone</emphasis> to
+                configure from the Navigator panel on the left side.</para>
+              </listitem>
+
               <listitem>
                 <para>Select the <emphasis role="bold">Server List</emphasis>
                 tab.</para>
               </listitem>
 
               <listitem>
-                <para>Double-click on the Server Address field.</para>
+                <para>RIght-click on the Server Address field and choose
+                <emphasis role="bold">Add</emphasis>. </para>
               </listitem>
 
               <listitem>
-                <para>Enter the IP address of the server.</para>
+                <para>Enter the hostname or IP address of the server. </para>
+              </listitem>
+
+              <listitem>
+                <para>Optionally, you can select the <emphasis
+                role="bold">Attributes</emphasis> tab, and modify some
+                attributes for this drop zone. </para>
+
+                <para>For example, select the name attribute, double click on
+                the value column and provide the drop zone with a more
+                meaningful name. </para>
               </listitem>
 
               <listitem>
