@@ -85,28 +85,33 @@
 
             <xsl:call-template name="addEnvironmentInfo"/>
 
-            <xsl:value-of disable-output-escaping="yes" select="$break" />
-            <xsl:value-of disable-output-escaping="yes" select="$indent" />
-            <xsl:value-of disable-output-escaping="yes" select="$indent" />
-            <xsl:value-of disable-output-escaping="yes" select="$indent" />
-            <AuthDomains>
+            <xsl:if test="./Authentication/@method='ldap' or ./Authentication/@method='ldaps'">
+              <xsl:value-of disable-output-escaping="yes" select="$break" />
+              <xsl:value-of disable-output-escaping="yes" select="$indent" />
+              <xsl:value-of disable-output-escaping="yes" select="$indent" />
+              <xsl:value-of disable-output-escaping="yes" select="$indent" />
+              <AuthDomains>
                 <xsl:for-each select="AuthDomain">
-                    <xsl:value-of disable-output-escaping="yes" select="$break" />
-                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                    <xsl:copy-of select="."/>
+                  <xsl:value-of disable-output-escaping="yes" select="$break" />
+                  <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                  <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                  <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                  <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                  <xsl:copy-of select="."/>
                 </xsl:for-each>
                 <xsl:value-of disable-output-escaping="yes" select="$break" />
                 <xsl:value-of disable-output-escaping="yes" select="$indent" />
                 <xsl:value-of disable-output-escaping="yes" select="$indent" />
                 <xsl:value-of disable-output-escaping="yes" select="$indent" />
-            </AuthDomains>
-            <xsl:value-of disable-output-escaping="yes" select="$break" />
+              </AuthDomains>
+            </xsl:if>
 
             <xsl:for-each select="Authentication">
                 <xsl:if test="@method='ldap' or @method='ldaps'">
+                    <xsl:value-of disable-output-escaping="yes" select="$break" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
                     <xsl:call-template name="doLdapSecurity">
                         <xsl:with-param name="method" select="@method"/>
                         <xsl:with-param name="ldapServer" select="@ldapServer"/>
