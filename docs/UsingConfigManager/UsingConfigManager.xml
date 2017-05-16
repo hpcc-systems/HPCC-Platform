@@ -1051,12 +1051,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>Drop Zone</title>
 
         <para>A Drop Zone (or landing zone) is a location where files can be
-        transferred to or from your HPCC system. A drop zone is comprised of
-        one or more server nodes, and you should specify at least one server
-        in the server list. You can configure multiple drop zones, if
-        necessary. You can also add folders to each drop zone to help organize
-        your data. Multiple drop zones are also useful to allow different
-        permissions for users or groups.</para>
+        transferred to or from your HPCC system. The drop zone is a logical
+        combination of a path and one or more servers. Multiple drop zones
+        allow you to configure different top level folders for one or more
+        servers. Multiple servers for a single drop zone provides a logical
+        grouping of distinct locations.</para>
+
+        <para>Multiple drop zones are useful to allow different permissions
+        for users or groups.</para>
 
         <para>To add another drop zone, right-click on the Navigator panel on
         the left side, and choose <emphasis role="bold">New
@@ -1121,8 +1123,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <title>DropZone Server List</title>
 
           <para>This tab allows you to add any servers that you wish to
-          configure as a part of this drop zone. To add a server to the
-          current drop zone. <orderedlist>
+          configure as a part of the selected drop zone. To add a server to
+          the current drop zone. <orderedlist>
               <listitem>
                 <para>Select the <emphasis role="bold">Drop Zone</emphasis> to
                 configure from the Navigator panel on the left side.</para>
@@ -1147,9 +1149,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 role="bold">Attributes</emphasis> tab, and modify some
                 attributes for this drop zone. </para>
 
-                <para>For example, select the name attribute, double click on
-                the value column and provide the drop zone with a more
-                meaningful name. </para>
+                <para>For example, select the <emphasis
+                role="bold">name</emphasis> attribute, double click on the
+                <emphasis role="bold">value</emphasis> column and provide the
+                drop zone with a more meaningful name. </para>
               </listitem>
 
               <listitem>
