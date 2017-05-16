@@ -759,7 +759,7 @@ function initItemForRoxiePorts(item) {
   item.passphrase_ctrlType = 0;
   item.certificateFileName = "";
   item.certificateFileName_extra = "";
-  item.certificateFileName_ctrlType = "";
+  item.certificateFileName_ctrlType = 0;
   item.privateKeyFileName = "";
   item.privateKeyFileName_extra = "";
   item.privateKeyFileName_ctrlType = 0;

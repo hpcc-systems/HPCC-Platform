@@ -160,7 +160,7 @@
             @XSL_PLUGIN_DEFINITION@
             <xsl:for-each select="RoxieFarmProcess">
                 <xsl:element name="RoxieFarmProcess">
-                    <xsl:copy-of select="@*[name()!='name' and name()!='level']"/>
+                    <xsl:copy-of select="@*[name()!='level']"/>
                 </xsl:element>
             </xsl:for-each>
             <xsl:for-each select="RoxieServerProcess">
