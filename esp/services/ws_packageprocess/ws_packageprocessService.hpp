@@ -136,6 +136,7 @@ public:
 class CWsPackageProcessEx : public CWsPackageProcess
 {
     bool readPackageMapString(const char *packageMapString, StringBuffer &target, StringBuffer &process, StringBuffer &packageMap);
+    void getPkgInfoById(const char *target, const char *packageMapId, IPropertyTree* tree);
     void getPkgInfoById(const char *packageMapId, IPropertyTree* tree);
     void deletePackage(const char *packageMap, const char *target, const char *process, bool globalScope, StringBuffer &returnMsg, int &returnCode);
 public:
@@ -149,6 +150,7 @@ public:
 
     virtual bool onEcho(IEspContext &context, IEspEchoRequest &req, IEspEchoResponse &resp);
     virtual bool onAddPackage(IEspContext &context, IEspAddPackageRequest &req, IEspAddPackageResponse &resp);
+    virtual bool onCopyPackageMap(IEspContext &context, IEspCopyPackageMapRequest &req, IEspCopyPackageMapResponse &resp);
     virtual bool onDeletePackage(IEspContext &context, IEspDeletePackageRequest &req, IEspDeletePackageResponse &resp);
     virtual bool onActivatePackage(IEspContext &context, IEspActivatePackageRequest &req, IEspActivatePackageResponse &resp);
     virtual bool onDeActivatePackage(IEspContext &context, IEspDeActivatePackageRequest &req, IEspDeActivatePackageResponse &resp);

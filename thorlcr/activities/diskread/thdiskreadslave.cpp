@@ -963,7 +963,8 @@ class CDiskGroupAggregateSlave
 
     IHThorDiskGroupAggregateArg *helper;
     bool gathered, eoi;
-    Owned<RowAggregator> localAggTable;
+    Owned<IAggregateTable> localAggTable;
+    Owned<IRowStream> aggregateStream;
     Owned<IEngineRowAllocator> allocator;
     bool merging;
     Owned<IHashDistributor> distributor;
@@ -1004,8 +1005,8 @@ public:
         ActivityTimer s(totalCycles, timeActivities);
         CDiskReadSlaveActivityRecord::start();
         gathered = eoi = false;
-        localAggTable.setown(new RowAggregator(*helper, *helper));
-        localAggTable->start(queryRowAllocator());
+        localAggTable.setown(createRowAggregator(*this, *helper, *helper));
+        localAggTable->init(queryRowAllocator());
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
@@ -1048,10 +1049,12 @@ public:
 
                 if (!container.queryLocalOrGrouped() && container.queryJob().querySlaves()>1)
                 {
+                    Owned<IRowStream> localAggStream = localAggTable->getRowStream(true);
                     BooleanOnOff onOff(merging);
-                    bool ordered = 0 != (TDRorderedmerge & helper->getFlags());
-                    localAggTable.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggTable, mpTag, ordered));
+                    aggregateStream.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggStream, mpTag));
                 }
+                else
+                    aggregateStream.setown(localAggTable->getRowStream(false));
             }
             catch (IException *e)
             {
@@ -1060,11 +1063,11 @@ public:
                 throw checkAndCreateOOMContextException(this, e, "aggregating using hash table", localAggTable->elementCount(), queryDiskRowInterfaces()->queryRowMetaData(), NULL);
             }
         }
-        Owned<AggregateRowBuilder> next = localAggTable->nextResult();
+        const void *next = aggregateStream->nextRow();
         if (next)
         {
             dataLinkIncrement();
-            return next->finalizeRowClear();
+            return next;
         }
         eoi = true;
         return NULL;

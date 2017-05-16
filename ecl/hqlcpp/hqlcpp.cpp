@@ -1912,7 +1912,7 @@ void HqlCppTranslator::postProcessOptions()
         wu()->setCloneable(true);
 }
 
-unsigned HqlCppTranslator::getOptimizeFlags() const
+unsigned HqlCppTranslator::getOptimizeFlags(bool insideChildQuery) const
 {
     unsigned optFlags = HOOfold;
     switch (targetClusterType)
@@ -1936,6 +1936,12 @@ unsigned HqlCppTranslator::getOptimizeFlags() const
         optFlags |= HOOexpensive;
     if (options.expandSelectCreateRow)
         optFlags  |= HOOexpandselectcreaterow;
+
+    //The following flag should possibly be dependent on this condition:
+    //if (targetThor() && !insideChildQuery)
+    //However it may be better to err on the side of caution - see HPCC-10144 since moving a project over a barrier may
+    //cause it in some circumstances to be evaluated many more times.  See HPCC-17439 to revisit later.
+    optFlags |= HOOminimizeNetworkAndMemory;
     return optFlags;
 }
 

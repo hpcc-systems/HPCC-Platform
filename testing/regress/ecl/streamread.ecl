@@ -17,6 +17,8 @@
 
 //class=embedded
 
+copies := IF(__PLATFORM__='roxie',1,CLUSTERSIZE);
+
 outRecord := RECORD
     STRING10 name;
     unsigned1  id;
@@ -64,7 +66,7 @@ ENDEMBED;
 
 ds := doRead('C:\\temp\\simple');
 
-count(ds) = CLUSTERSIZE * 4;
+count(ds) = copies * 4;
 
 
 linkcounted dataset(outRecord) doReadRows(const varstring name) := EMBED(C++ : distributed,time)
@@ -84,7 +86,7 @@ ENDEMBED;
 
 dsRows := doReadRows('C:\\temp\\simple');
 
-count(dsRows) = CLUSTERSIZE * 4;
+count(dsRows) = copies * 4;
 
 dataset(outRecord) doReadBlock(const varstring name) := EMBED(C++ : distributed,time)
 
@@ -99,4 +101,4 @@ ENDEMBED;
 
 dsBlock := doReadBlock('C:\\temp\\simple');
 
-count(dsBlock) = CLUSTERSIZE * 4;
+count(dsBlock) = copies * 4;

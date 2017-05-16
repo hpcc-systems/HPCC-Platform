@@ -2721,7 +2721,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         if (!isEmptyString(fileNameMask))
         {
             const char* ext = pathExtension(sPath.str());
-            if (!strieq(ext, "cfg") && !strieq(ext, "log"))
+            if (ext && !strieq(ext, "cfg") && !strieq(ext, "log"))
                 throw MakeStringException(ECLWATCH_ACCESS_TO_FILE_DENIED, "Only cfg or log file allowed.");
         }
 

@@ -154,8 +154,11 @@ public:
                                 const char* Directory,
                         IArrayOf<IEspTpMachine> &MachineList, 
                         set<string>* pMachineNames=NULL);
-    void getMachineList(double clientVersion, const char* clusterName, const char* MachineType, const char* ParentPath, const char* Status,
-                                const char* Directory, bool& multiSlaves, IArrayOf<IEspTpMachine> &MachineList);
+    void getThorSpareMachineList(double clientVersion, const char* clusterName, const char* directory, IArrayOf<IEspTpMachine>& machineList);
+    void getThorSlaveMachineList(double clientVersion, const char* clusterName, const char* directory, IArrayOf<IEspTpMachine>& machineList);
+    void appendMachineList(double clientVersion, IConstEnvironment* constEnv, INode& node, const char* clusterName,
+         const char* machineType, unsigned& processNumber, const char* directory, IArrayOf<IEspTpMachine>& machineList);
+    bool checkMultiSlavesFlag(const char* clusterName);
     void getDropZoneMachineList(double clientVersion, bool ECLWatchVisibleOnly, IArrayOf<IEspTpMachine> &MachineList);
     void setMachineInfo(const char* name,const char* type,IEspTpMachine& machine);
     void resolveGroupInfo(const char* groupName,StringBuffer& Cluster, StringBuffer& ClusterPrefix);

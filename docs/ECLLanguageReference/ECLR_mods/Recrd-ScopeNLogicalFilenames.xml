@@ -76,6 +76,19 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
     read-only reference to remote files (both logical files and
     superfiles).</para>
 
+    <para><variablelist>
+        <varlistentry>
+          <term>NOTE:</term>
+
+          <listitem>
+            <para>If LDAP authentication is enabled on the foreign Dali, the
+            user's credentials are verified before processing the file access
+            request. If LDAP file scope security is enabled on the foreign
+            Dali, the user's file access permissions are also verified.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+
     <para>The syntax looks like this:</para>
 
     <para><emphasis

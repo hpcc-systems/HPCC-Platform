@@ -3475,7 +3475,7 @@ EclResourcer::EclResourcer(IErrorReceiver & _errors, IConstWorkUnit * _wu, const
         break;
     }
 
-    if (_translatorOptions.unlimitedResources)
+    if (_translatorOptions.unlimitedResources || options.unlimitedResources)
     {
         resourceLimit->set(RESheavy, 0xffffffff).set(REShashdist, 0xffffffff);
         resourceLimit->set(RESmastersocket, 0xffffffff).set(RESslavememory,0xffffffff);
@@ -6548,7 +6548,7 @@ IHqlExpression * resourceThorGraph(HqlCppTranslator & translator, IHqlExpression
 
 static IHqlExpression * doResourceGraph(HqlCppTranslator & translator, HqlExprCopyArray * activeRows, IHqlExpression * _expr,
                                         ClusterType targetClusterType, unsigned clusterSize,
-                                        IHqlExpression * graphIdExpr, unsigned numResults, bool isChild, bool useGraphResults)
+                                        IHqlExpression * graphIdExpr, unsigned numResults, bool isChild, bool useGraphResults, bool unlimitedResources)
 {
     LinkedHqlExpr expr = _expr;
     HqlExprArray transformed;
@@ -6556,6 +6556,8 @@ static IHqlExpression * doResourceGraph(HqlCppTranslator & translator, HqlExprCo
     CResourceOptions options(targetClusterType, clusterSize, translator.queryOptions(), translator.querySpillSequence());
     if (isChild)
         options.setChildQuery(true);
+    if (unlimitedResources)
+        options.unlimitedResources = true;
     options.setNewChildQuery(graphIdExpr, numResults);
     options.setUseGraphResults(useGraphResults);
 
@@ -6588,18 +6590,18 @@ static IHqlExpression * doResourceGraph(HqlCppTranslator & translator, HqlExprCo
 
 IHqlExpression * resourceLibraryGraph(HqlCppTranslator & translator, IHqlExpression * expr, ClusterType targetClusterType, unsigned clusterSize, IHqlExpression * graphIdExpr, unsigned numResults)
 {
-    return doResourceGraph(translator, NULL, expr, targetClusterType, clusterSize, graphIdExpr, numResults, false, true);       //?? what value for isChild (e.g., thor library call).  Need to gen twice?
+    return doResourceGraph(translator, NULL, expr, targetClusterType, clusterSize, graphIdExpr, numResults, false, true, false);       //?? what value for isChild (e.g., thor library call).  Need to gen twice?
 }
 
 
 IHqlExpression * resourceNewChildGraph(HqlCppTranslator & translator, HqlExprCopyArray & activeRows, IHqlExpression * expr, ClusterType targetClusterType, IHqlExpression * graphIdExpr, unsigned numResults)
 {
-    return doResourceGraph(translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, true, true);
+    return doResourceGraph(translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, true, true, false);
 }
 
-IHqlExpression * resourceLoopGraph(HqlCppTranslator & translator, HqlExprCopyArray & activeRows, IHqlExpression * expr, ClusterType targetClusterType, IHqlExpression * graphIdExpr, unsigned numResults, bool insideChildQuery)
+IHqlExpression * resourceLoopGraph(HqlCppTranslator & translator, HqlExprCopyArray & activeRows, IHqlExpression * expr, ClusterType targetClusterType, IHqlExpression * graphIdExpr, unsigned numResults, bool insideChildQuery, bool unlimitedResources)
 {
-    return doResourceGraph(translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, insideChildQuery, true);
+    return doResourceGraph(translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, insideChildQuery, true, unlimitedResources);
 }
 
 IHqlExpression * resourceRemoteGraph(HqlCppTranslator & translator, IHqlExpression * _expr, ClusterType targetClusterType, unsigned clusterSize)

@@ -173,6 +173,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_VERBOSE "--verbose"
 #define ECLOPT_VERBOSE_S "-v"
 
+const char *queryEclccPath(bool optVerbose);
+
 bool isValidMemoryValue(const char *value);
 bool isValidPriorityValue(const char *value);
 

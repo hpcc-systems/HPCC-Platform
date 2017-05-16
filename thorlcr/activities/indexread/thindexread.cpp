@@ -32,7 +32,8 @@ protected:
     rowcount_t limit;
     IHThorIndexReadBaseArg *indexBaseHelper;
     Owned<CSlavePartMapping> mapping;
-    bool nofilter;
+    bool nofilter = false;
+    bool localKey = false;
     ProgressInfoArray progressInfoArr;
     UnsignedArray progressKinds;
     Owned<ProgressInfo> inputProgress;
@@ -68,7 +69,7 @@ protected:
         unsigned nparts = f->numParts(); // includes tlks if any, but unused in array
         performPartLookup.ensure(nparts);
 
-        bool checkTLKConsistency = NULL != super && 0 != (TIRsorted & indexBaseHelper->getFlags());
+        bool checkTLKConsistency = (nullptr != super) && !localKey && (0 != (TIRsorted & indexBaseHelper->getFlags()));
         if (nofilter)
         {
             while (nparts--) performPartLookup.append(true);
@@ -86,7 +87,9 @@ protected:
             verifyex(iter->first());
             f = &iter->query();
         }
-        unsigned width = f->numParts()-1;
+        unsigned width = f->numParts();
+        if (!localKey)
+            --width;
         assertex(width);
         unsigned tlkCrc = 0;
         bool first = true;
@@ -156,7 +159,7 @@ protected:
                 }
                 if (!keyIndex)
                     throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", index->queryLogicalName());
-            
+
                 unsigned fixedSize = indexBaseHelper->queryDiskRecordSize()->querySerializedDiskMeta()->getFixedSize(); // used only if fixed
                 Owned <IKeyManager> tlk = createKeyManager(keyIndex, fixedSize, NULL);
                 indexBaseHelper->createSegmentMonitors(tlk);
@@ -194,7 +197,6 @@ public:
     virtual void init() override
     {
         CMasterActivity::init();
-        nofilter = false;
         OwnedRoxieString helperFileName = indexBaseHelper->getFileName();
         StringBuffer expandedFileName;
         queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName);
@@ -202,13 +204,13 @@ public:
         Owned<IDistributedFile> index = queryThorFileManager().lookup(container.queryJob(), helperFileName, false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true);
         if (index)
         {
-            bool localKey = index->queryAttributes().getPropBool("@local");
+            localKey = index->queryAttributes().getPropBool("@local");
 
             if (container.queryLocalData() && !localKey)
                 throw MakeActivityException(this, 0, "Index Read cannot be LOCAL unless supplied index is local");
 
             nofilter = 0 != (TIRnofilter & indexBaseHelper->getFlags());
-            if (index->queryAttributes().getPropBool("@local"))
+            if (localKey)
                 nofilter = true;
             else
             {
@@ -216,7 +218,7 @@ public:
                 IDistributedFile *sub = super ? &super->querySubFile(0,true) : index.get();
                 if (sub && 1 == sub->numParts())
                     nofilter = true;
-            }   
+            }
             checkFormatCrc(this, index, indexBaseHelper->getFormatCrc(), true);
             if ((container.queryLocalOrGrouped() || indexBaseHelper->canMatchAny()) && index->numParts())
             {

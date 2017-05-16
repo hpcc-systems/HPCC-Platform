@@ -506,7 +506,8 @@ protected:
     unsigned                  ensureWorkflowAction(IHqlExpression * expr);
     void                      ensureWorkflowAction(UnsignedArray & dependencies, IHqlExpression * expr);
     WorkflowItem *            createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp);
-    void percolateScheduledIds(WorkflowArray & workflow);
+    void percolateScheduledIds();
+    void percolateScheduledIds(UnsignedArray & visited, const UnsignedArray & dependencies, unsigned rootWfid);
 
     void                      cacheWorkflowDependencies(unsigned wfid, UnsignedArray & extra);
 
@@ -533,11 +534,13 @@ protected:
     void                      transformSequential(HqlExprArray & transformed);
 
     void analyseExpr(IHqlExpression * expr);
+    void addWorkflowItem(WorkflowItem & item);
 
 protected:
     IWorkUnit *               wu;
     HqlCppTranslator &        translator;
-    WorkflowArray *           workflowOut;
+    WorkflowArray             workflow;
+    WorkflowArray             functions;
     unsigned                  wfidCount;
     HqlExprArray              alreadyProcessed;
     HqlExprArray              alreadyProcessedExpr;

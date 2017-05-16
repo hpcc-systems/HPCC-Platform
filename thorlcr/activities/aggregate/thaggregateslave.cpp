@@ -33,20 +33,12 @@ class AggregateSlaveBase : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 protected:
-    bool hadElement, inputStopped;
+    bool hadElement = false;
 
-    void doStopInput()
-    {
-        if (inputStopped)
-            return;
-        inputStopped = true;
-        stopInput(0);
-    }
     virtual void start() override
     {
         PARENT::start();
         hadElement = false;
-        inputStopped = false;
         if (input->isGrouped())
             ActPrintLog("Grouped mismatch");
     }
@@ -117,7 +109,6 @@ protected:
 public:
     AggregateSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
-        hadElement = inputStopped = false;
         appendOutputLinked(this);
         if (container.queryLocal())
             setRequireInitData(false);
@@ -158,7 +149,7 @@ public:
     }
     virtual void stop() override
     {
-        doStopInput();
+        stopInput(0);
         PARENT::stop();
     }
     CATCH_NEXTROW()
@@ -186,7 +177,7 @@ public:
                 }
             }
         }
-        doStopInput();
+        stopInput(0);
         if (!firstNode())
         {
             OwnedConstThorRow result(resultcr.finalizeRowClear(sz));
@@ -222,18 +213,6 @@ class ThroughAggregateSlaveActivity : public AggregateSlaveBase
     size32_t partResultSize;
     Owned<IThorRowInterfaces> aggrowif;
 
-    void doStopInput()
-    {
-        OwnedConstThorRow partrow = partResult.finalizeRowClear(partResultSize);
-        if (!firstNode())
-            sendResult(partrow.get(), aggrowif->queryRowSerializer(), 1);
-        else
-        {
-            OwnedConstThorRow ret = getResult(partrow.getClear());
-            sendResult(ret, aggrowif->queryRowSerializer(), 0); // send to master
-        }
-        PARENT::doStopInput();
-    }
     void readRest()
     {
         for (;;)
@@ -272,14 +251,22 @@ public:
         if (inputStopped) 
             return;
         readRest();
-        doStopInput();
+        OwnedConstThorRow partrow = partResult.finalizeRowClear(partResultSize);
+        if (!firstNode())
+            sendResult(partrow.get(), aggrowif->queryRowSerializer(), 1);
+        else
+        {
+            OwnedConstThorRow ret = getResult(partrow.getClear());
+            sendResult(ret, aggrowif->queryRowSerializer(), 0); // send to master
+        }
+        stopInput(0);
         //GH: Shouldn't there be something like the following - in all activities with a member, otherwise the allocator may have gone??
         partResult.clear();
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (inputStopped)
+        if (inputStopped) // JCSMORE - this should not be necessary, nextRow() should never be called after stop()
             return NULL;
         OwnedConstThorRow row = inputStream->ungroupedNextRow();
         if (!row)

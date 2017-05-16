@@ -777,6 +777,15 @@ class EsdlDefStruct : public EsdlDefObject, implements IEsdlDefStruct
 private:
     EsdlDefObjectArray children;
     EsdlDefTypeId type;
+    MapStringTo<IEsdlDefObject*>   m_child_map;
+    MapStringTo<IEsdlDefObject*>   m_child_nocasemap;
+
+    void addChild(IEsdlDefObject* obj)
+    {
+        children.append(*obj);
+        m_child_map.setValue(obj->queryName(), obj);
+        m_child_nocasemap.setValue(StringBuffer(obj->queryName()).toLowerCase().str(), obj);
+    }
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -799,12 +808,14 @@ public:
     virtual IEsdlDefObjectIterator *getChildren(){return new EsdlDefObjectArrayIterator(children);}
     virtual IEsdlDefObject *queryChild(const char *name, bool nocase)
     {
-        ForEachItemIn(x, children)
-        {
-            IEsdlDefObject &obj = children.item(x);
-            if ((nocase && strieq(obj.queryName(), name)) || streq(obj.queryName(), name))
-                return &obj;
-        }
+        IEsdlDefObject** child = NULL;
+        if(nocase)
+            child = m_child_nocasemap.getValue(StringBuffer(name).toLowerCase().str());
+        else
+            child = m_child_map.getValue(name);
+        if(child && *child)
+            return *child;
+
         return NULL;
     }
 
@@ -817,28 +828,28 @@ public:
     {
         //DBGLOG("   Loading Element %s", method_tag.getValue("name"));
         EsdlDefElement *et = new EsdlDefElement(tag, esdl);
-        children.append(*dynamic_cast<IEsdlDefObject*>(et));
+        addChild(static_cast<IEsdlDefObject*>(et));
         et->load(xpp, tag);
     }
 
     void loadArray(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &tag, const bool isEsdlList)
     {
         EsdlDefArray *art = new EsdlDefArray(tag, esdl, isEsdlList);
-        children.append(*dynamic_cast<IEsdlDefObject*>(art));
+        addChild(static_cast<IEsdlDefObject*>(art));
         art->load(xpp, tag);
     }
 
     void loadAttribute(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &tag)
     {
         EsdlDefAttribute *at = new EsdlDefAttribute(tag, esdl);
-        children.append(*dynamic_cast<IEsdlDefObject*>(at));
+        addChild(static_cast<IEsdlDefObject*>(at));
         at->load(xpp, tag);
     }
 
     void loadEnumRef(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &tag)
     {
         EsdlDefEnumRef *er = new EsdlDefEnumRef(tag, esdl);
-        children.append(*dynamic_cast<IEsdlDefObject*>(er));
+        addChild(static_cast<IEsdlDefObject*>(er));
         er->load(xpp,tag);
     }
 

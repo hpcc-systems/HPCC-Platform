@@ -41,7 +41,17 @@ IHashDistributor *createHashDistributor(
     bool dedup,
     IStopInput *istop, const char *id=NULL); // id optional, used for tracing to identify which distributor if >1 in activity
 
-RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, RowAggregator *localAggTable, mptag_t mptag, bool ordered);
+// IAggregateTable allows rows to be added and aggregated and retrieved via a IRowStream
+interface IAggregateTable : extends IInterface
+{
+    virtual void init(IEngineRowAllocator *_rowAllocator) = 0;
+    virtual void reset() = 0;
+    virtual void addRow(const void *row) = 0;
+    virtual unsigned elementCount() const = 0;
+    virtual IRowStream *getRowStream(bool sorted) = 0;
+};
+IAggregateTable *createRowAggregator(CActivityBase &activity, IHThorHashAggregateExtra &extra, IHThorRowAggregator &helper);
+IRowStream *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, IRowStream *localAggTable, mptag_t mptag);
 
 activityslaves_decl CActivityBase *createHashDistributeSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createHashDistributeMergeSlave(CGraphElementBase *container);

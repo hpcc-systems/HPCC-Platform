@@ -11,6 +11,10 @@
 <Dataset name='Result 6'>
 </Dataset>
 <Dataset name='Result 7'>
+</Dataset>
+<Dataset name='Result 8'>
+</Dataset>
+<Dataset name='Result 9'>
  <Row><artist>Aa. Vv.                                                         </artist><title>Everything Is Ending Here                                                       </title><filepos>54144</filepos></Row>
  <Row><artist>Adorable                                                        </artist><title>Against Perfection                                                              </title><filepos>16128</filepos></Row>
  <Row><artist>Alabama 3                                                       </artist><title>Exile On Coldharbour Lane                                                       </title><filepos>32832</filepos></Row>
@@ -536,7 +540,7 @@
  <Row><artist>queens of the stoneage                                          </artist><title>misc                                                                            </title><filepos>26496</filepos></Row>
  <Row><artist>various                                                         </artist><title>Country Music                                                                   </title><filepos>69504</filepos></Row>
 </Dataset>
-<Dataset name='Result 8'>
+<Dataset name='Result 10'>
  <Row><id>419</id><title>22 Miles Of Hard Road                                                           </title><artist>Eels                                                            </artist><tracks>4</tracks><mins>15</mins><secs>56</secs><player>0</player><position>398</position><filepos>60672</filepos></Row>
  <Row><id>135</id><title>Anthology 2 (Disc 1)                                                            </title><artist>The Beatles                                                     </artist><tracks>25</tracks><mins>63</mins><secs>37</secs><player>0</player><position>135</position><filepos>34176</filepos></Row>
  <Row><id>157</id><title>Anthology 3 (Disc 2)                                                            </title><artist>The Beatles                                                     </artist><tracks>23</tracks><mins>71</mins><secs>30</secs><player>0</player><position>157</position><filepos>33984</filepos></Row>
@@ -583,7 +587,20 @@
  <Row><id>132</id><title>death to the pixies                                                             </title><artist>Pixies                                                          </artist><tracks>21</tracks><mins>55</mins><secs>37</secs><player>0</player><position>132</position><filepos>10560</filepos></Row>
  <Row><id>276</id><title>live from the Bataclan                                                          </title><artist>Jeff Buckley                                                    </artist><tracks>4</tracks><mins>34</mins><secs>47</secs><player>0</player><position>277</position><filepos>5376</filepos></Row>
 </Dataset>
-<Dataset name='Result 9'>
+<Dataset name='Result 11'>
+ <Row><artist>Pixies                                                          </artist><title>At the BBC                                                                      </title><filepos>98496</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Bossanova                                                                       </title><filepos>28800</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Complete `B` Sides                                                              </title><filepos>14208</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Doolittle                                                                       </title><filepos>11520</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Pixies                                                                          </title><filepos>82560</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Surfer Rosa &amp; Come on Pilgrim                                                   </title><filepos>90624</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>Trompe Le Monde                                                                 </title><filepos>93888</filepos></Row>
+ <Row><artist>Pixies                                                          </artist><title>death to the pixies                                                             </title><filepos>10560</filepos></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><artist>Pixies                                                          </artist><title>Pixies                                                                          </title><filepos>82560</filepos></Row>
+</Dataset>
+<Dataset name='Result 13'>
  <Row><artist>Pixies                                                          </artist><title>At the BBC                                                                      </title><filepos>98496</filepos></Row>
  <Row><artist>Pixies                                                          </artist><title>Bossanova                                                                       </title><filepos>28800</filepos></Row>
  <Row><artist>Pixies                                                          </artist><title>Complete `B` Sides                                                              </title><filepos>14208</filepos></Row>

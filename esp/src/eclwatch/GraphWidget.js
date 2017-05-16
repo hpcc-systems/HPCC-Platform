@@ -72,9 +72,10 @@ define([
         },
 
         query: function (query, options) {
+            var retVal = this.inherited(arguments);
             var sortSet = options && options.sort;
             if (sortSet) {
-                this.data.sort(typeof sortSet === "function" ? sortSet : function (a, b) {
+                retVal.sort(typeof sortSet === "function" ? sortSet : function (a, b) {
                     for (var sort, i = 0; sort = sortSet[i]; i++) {
                         var aValue = a[sort.attribute];
                         var bValue = b[sort.attribute];
@@ -87,9 +88,8 @@ define([
                     }
                     return 0;
                 });
-                return QueryResults(this.data);
             }
-            return this.inherited(arguments);
+            return retVal;
         },
 
         //  Helpers  ---

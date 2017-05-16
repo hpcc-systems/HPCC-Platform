@@ -152,4 +152,102 @@ MyReal1 := 10.0;   // value of MyReal1 is the REAL value 10.0
 MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
 </programlisting>
   </sect2>
+
+  <sect2 id="CompileTimeConstants" role="brk">
+    <title>Compile Time Constants</title>
+
+    <para>The following system constants <indexterm>
+        <primary>constants</primary>
+      </indexterm><indexterm>
+        <primary>system constants</primary>
+      </indexterm>are available at compile time. These can be useful in
+    creating conditional code.</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="150pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>__ECL_VERSION__<indexterm>
+                  <primary>__ECL_VERSION__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A STRING containing the value of the platform version.
+              For example, '6.4.0'</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>__ECL_VERSION_MAJOR__ <indexterm>
+                  <primary>__ECL_VERSION_MAJOR__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>An INTEGER containing the value of the major portion of
+              the platform version. For example, '6'</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>__ECL_VERSION_MINOR__<indexterm>
+                  <primary>__ECL_VERSION_MINOR__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>An INTEGER containing the value of the minor portion of
+              the platform version. For example, '4'</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>__ECL_LEGACY_MODE__<indexterm>
+                  <primary>__ECL_LEGACY_MODE__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A BOOLEAN value indicating if it is being compiled with
+              legacy IMPORT semantics.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>__OS__<indexterm>
+                  <primary>__OS__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A STRING indicating the operating system to which it is
+              being compiled. (Available values are: 'windows' or
+              'linux')</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>__STAND_ALONE__<indexterm>
+                  <primary>__STAND_ALONE__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A BOOLEAN value indicating if it is being compiled to a
+              stand-alone executable.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>Example:</para>
+
+    <para><programlisting>IMPORT STD;
+  STRING14 fGetDateTimeString() :=
+  #IF(__ECL_VERSION_MAJOR__ &gt; 5) or ((__ECL_VERSION_MAJOR__ = 5) AND (__ECL_VERSION_MINOR__ &gt;= 2))
+    STD.Date.SecondsToString(STD.Date.CurrentSeconds(true), '%Y%m%d%H%M%S');
+  #ELSE
+    FUNCTION
+      string14 fGetDimeTime():= // 14 characters returned
+      BEGINC++
+      #option action
+      struct tm localt;         // localtime in "tm" structure
+      time_t timeinsecs;        // variable to store time in secs
+      time(&amp;timeinsecs);  
+      localtime_r(&amp;timeinsecs,&amp;localt);
+      char temp[15];
+      strftime(temp , 15, "%Y%m%d%H%M%S", &amp;amp;localt); // Formats the localtime to YYYYMMDDhhmmss 
+      strncpy(__result, temp, 14);
+      ENDC++;
+      RETURN fGetDimeTime();
+    END;
+  #END;
+</programlisting></para>
+  </sect2>
 </sect1>

@@ -2287,10 +2287,10 @@ void CMasterGraph::sendActivityInitData()
     unsigned pos = msg.length();
     unsigned w=0;
     unsigned sentTo = 0;
+    Owned<IThorActivityIterator> iter = getConnectedIterator();
     for (; w<queryJob().querySlaves(); w++)
     {
         unsigned needActInit = 0;
-        Owned<IThorActivityIterator> iter = getConnectedIterator();
         ForEach(*iter)
         {
             CGraphElementBase &element = iter->query();
@@ -2305,7 +2305,6 @@ void CMasterGraph::sendActivityInitData()
             try
             {
                 msg.rewrite(pos);
-                Owned<IThorActivityIterator> iter = getConnectedIterator();
                 serializeActivityInitData(w, msg, *iter);
             }
             catch (IException *e)

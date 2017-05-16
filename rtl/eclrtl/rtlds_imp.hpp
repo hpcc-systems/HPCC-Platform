@@ -267,6 +267,7 @@ public:
     }
     inline size32_t getMaxLength() const { return maxLength; }
     inline void * getUnfinalizedClear() { void * ret = self; self = NULL; return ret; }
+    inline void * getUnfinalized() { return self; }
 
     inline void clear() { if (self) { rowAllocator->releaseRow(self); self = NULL; } }
     inline RtlDynamicRowBuilder & setAllocator(IEngineRowAllocator * _rowAllocator) { rowAllocator = _rowAllocator; return *this; }

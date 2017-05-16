@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TRACE">
+  <title>TRACE</title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  :=<emphasis role="bold"> ] TRACE<indexterm>
+      <primary>TRACE</primary>
+    </indexterm>(</emphasis><emphasis>baserecset</emphasis><emphasis
+  role="bold">, [</emphasis><emphasis role="bold">
+  </emphasis><emphasis>options </emphasis><emphasis role="bold">]
+  );</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attrname</emphasis></entry>
+
+            <entry>Optional. The name for the expression. </entry>
+          </row>
+
+          <row>
+            <entry><emphasis>baserecset</emphasis></entry>
+
+            <entry>The set of data records for which the TRACE is
+            defined.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>options</emphasis></entry>
+
+            <entry>Optional. One or more of the options listed below.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">TRACE </emphasis>expression defines tracing
+  to log files (Thor slave logs, hThor logs, or Roxie logs). </para>
+
+  <para>You can add TRACE to your code at interesting junctures without any
+  impact on performance. Later, if you need to investigate behavior, you can
+  enable them without modifying the code by setting an option or stored
+  BOOLEAN.</para>
+
+  <para>Tracing is written to log files, in the form:</para>
+
+  <para><programlisting>TRACE: &lt;name&gt;&lt;fieldname&gt;value&lt;/fieldname&gt;...&lt;/name&gt; </programlisting></para>
+
+  <para>Tracing is not output by default even if TRACE statements are present;
+  tracing is only output when the workunit debug value traceEnabled is set or
+  if the default platform settings are changed to always output tracing. In
+  Roxie you can also request tracing on a deployed query by specifying
+  traceEnabled=1 in the query XML.</para>
+
+  <para>It is therefore possible to leave TRACE statements in the ECL without
+  any detectable overhead until tracing is enabled. To enable tracing:</para>
+
+  <para><programlisting>#OPTION ('traceEnabled'<indexterm>
+        <primary>traceEnabled</primary>
+      </indexterm>, 1) // trace statements enabled </programlisting></para>
+
+  <para>It is also possible to override the default value for KEEP at a
+  global, per-workunit, or per-query level.</para>
+
+  <para><programlisting>#OPTION ('traceLimit'<indexterm>
+        <primary>traceLimit</primary>
+      </indexterm>, 100) // overrides the default KEEP value (10) </programlisting></para>
+
+  <para>You can use a stored BOOLEAN as the filter expression for a trace
+  activity to allow you to turn individual trace activities on and off.</para>
+
+  <sect2 id="TRACE_Options" role="brk">
+    <title>TRACE Options</title>
+
+    <para>The following options are available for TRACE:</para>
+
+    <para><emphasis
+    role="bold">[</emphasis><emphasis>filterExpression,</emphasis><emphasis
+    role="bold">] [KEEP(</emphasis><emphasis>n</emphasis>),<emphasis
+    role="bold">] [SKIP(</emphasis><emphasis>n</emphasis><emphasis
+    role="bold">),] [SAMPLE(</emphasis><emphasis>n</emphasis><emphasis
+    role="bold">),][NAMED(</emphasis><emphasis>string</emphasis><emphasis
+    role="bold">)]</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="125pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>filterExpression</emphasis></entry>
+
+              <entry>Optional. A valid expression which acts as a filter. Only
+              rows matching the filter condition are included in the
+              tracing.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">KEEP(n)</emphasis></entry>
+
+              <entry>Optional. Specifies the number of rows to trace.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SKIP(n)</emphasis></entry>
+
+              <entry>Optional. Specifies the number of rows to skip before
+              trace begins.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SAMPLE(n)</emphasis></entry>
+
+              <entry>Optional. Specifies that only every nth row is traced.
+              .</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">NAMED(string)</emphasis></entry>
+
+              <entry>Optional. Specifies the name for rows in tracing.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Example:</para>
+
+    <para><programlisting>#OPTION ('traceEnabled', TRUE); //TRACE writes to log only if TRUE
+FilterValue := 4;
+myRec := { STRING Name, REAL x, REAL y };
+ds := DATASET([ {'Jim' , 1, 1.00039},
+                {'Jane', 2, 2.07702},
+                {'Emil', 3, 2.86158},
+                {'John', 4, 3.87114},
+                {'Jean', 5, 5.12417},
+                {'Gene', 6, 6.20283} ], myRec);
+myds := TRACE(ds,x&gt;filterValue,NAMED('person')); //trace only if x &gt; filterValue
+myds;</programlisting></para>
+  </sect2>
+</sect1>

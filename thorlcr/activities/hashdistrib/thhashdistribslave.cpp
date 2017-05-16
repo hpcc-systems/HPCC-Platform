@@ -1975,7 +1975,6 @@ class HashDistributeSlaveBase : public CSlaveActivity, implements IStopInput
     typedef CSlaveActivity PARENT;
 
     IHashDistributor *distributor = nullptr;
-    bool inputstopped = true;
     CriticalSection stopsect;
     mptag_t mptag = TAG_NULL;
 protected:
@@ -2012,27 +2011,21 @@ public:
             distributor = createPullHashDistributor(this, queryJobChannel().queryJobComm(), mptag, false, this);
         else
             distributor = createHashDistributor(this, queryJobChannel().queryJobComm(), mptag, false, this);
-        inputstopped = true;
     }
     void stopInput()
     {
         CriticalBlock block(stopsect);  // can be called async by distribute
-        if (!inputstopped)
-        {
-            PARENT::stopInput(0);
-            inputstopped = true;
-        }
+        PARENT::stopInput(0);
     }
     void doDistSetup()
     {
         Owned<IThorRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
-        out.setown(distributor->connect(myRowIf, instrm, ihash, mergecmp, NULL));
+        out.setown(distributor->connect(myRowIf, instrm, ihash, mergecmp, nullptr));
     }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
-        inputstopped = false;
         eofin = false;
         instrm.set(inputStream);
         if (setupDist)
@@ -2884,7 +2877,7 @@ protected:
     IRowStream *distInput = nullptr;
     IRowStream *initialInput = nullptr;
     Owned<IRowStream> currentInput;
-    bool inputstopped, eos, lastEog, extractKey, local, isVariable, grouped;
+    bool eos, lastEog, extractKey, local, isVariable, grouped;
     IHThorHashDedupArg *helper;
     IHash *iHash, *iKeyHash;
     ICompare *iCompare, *rowKeyCompare;
@@ -2892,7 +2885,7 @@ protected:
     IThorRowInterfaces *keyRowInterfaces;
     Owned<CBucketHandler> bucketHandler;
     IArrayOf<CBucketHandler> bucketHandlerStack;
-    SpinLock stopSpin;
+    CriticalSection stopsect;
     PointerArrayOf<CHashTableRowTable> _hashTables;
     CHashTableRowTable **hashTables;
     unsigned numHashTables, initialNumBuckets;
@@ -2940,7 +2933,7 @@ public:
     {
         helper = (IHThorHashDedupArg *)queryHelper();
         initialNumBuckets = 0;
-        inputstopped = eos = lastEog = extractKey = local = isVariable = grouped = false;
+        eos = lastEog = extractKey = local = isVariable = grouped = false;
         iHash = iKeyHash = NULL;
         iCompare = rowKeyCompare = NULL;
         keyRowInterfaces = NULL;
@@ -3003,7 +2996,6 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
-        inputstopped = false;
         eos = lastEog = false;
         ThorDataLinkMetaInfo info;
         queryInput(0)->getMetaInfo(info);
@@ -3022,18 +3014,9 @@ public:
         ensureNumHashTables(initialNumBuckets);
         bucketHandler->init(initialNumBuckets);
     }
-    void stopInput()
-    {
-        if (!inputstopped)
-        {
-            SpinBlock b(stopSpin);
-            PARENT::stopInput(0);
-            inputstopped = true;
-        }
-    }
     virtual void stop() override
     {
-        stopInput();
+        stopInput(0);
         PARENT::stop();
     }
     void kill()
@@ -3066,7 +3049,7 @@ public:
             }
             else
             {
-                SpinBlock b(stopSpin);
+                CriticalBlock b(stopsect); // JCSMORE - because stopInput can be called async, by stopping distributor.
                 row.setown(grouped?distInput->nextRow():distInput->ungroupedNextRow());
             }
             if (row)
@@ -3650,7 +3633,6 @@ class GlobalHashDedupSlaveActivity : public HashDedupSlaveActivityBase, implemen
     typedef HashDedupSlaveActivityBase PARENT;
 
     mptag_t mptag;
-    CriticalSection stopsect;
     IHashDistributor *distributor;
     Owned<IRowStream> instrm;
 
@@ -3717,8 +3699,12 @@ public:
 // IStopInput
     virtual void stopInput() override
     {
-        CriticalBlock block(stopsect);  // can be called async by distribute
-        HashDedupSlaveActivityBase::stopInput();
+        /* JCSMORE - am not sure why distributor given a IStopInput to stop this activities input asynchronously
+         * It means nextRow has a CS around input->nextRow() as it stands.
+         * Would be better to flag stop and perhaps call stopInput on next nextRow() call
+         */
+        CriticalBlock block(stopsect);  // can be called async by distribute.
+        PARENT::stopInput(0);
     }
 };
 
@@ -3743,8 +3729,6 @@ class HashJoinSlaveActivity : public CSlaveActivity, implements IStopInput
     CriticalSection stopsect;
     rowcount_t lhsProgressCount;
     rowcount_t rhsProgressCount;
-    bool inputLstopped;
-    bool inputRstopped;
     bool leftdone;
     mptag_t mptag;
     mptag_t mptag2;
@@ -3776,15 +3760,11 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         startAllInputs();
-        inputLstopped = true;
-        inputRstopped = true;
         leftdone = false;
         eof = false;
         ActPrintLog("HASHJOIN: starting");
         inL = queryInput(0);
-        inputLstopped = false;
         inR = queryInput(1);
-        inputRstopped = false;
         IHash *ihashL = joinargs->queryHashLeft();
         IHash *ihashR = joinargs->queryHashRight();
         ICompare *icompareL = joinargs->queryCompareLeft();
@@ -3841,20 +3821,12 @@ public:
     void stopInputL()
     {
         CriticalBlock block(stopsect);  // can be called async by distribute
-        if (!inputLstopped)
-        {
-            PARENT::stopInput(0);
-            inputLstopped = true;
-        }
+        PARENT::stopInput(0);
     }
     void stopInputR()
     {
         CriticalBlock block(stopsect);  // can be called async by distribute
-        if (!inputRstopped)
-        {
-            PARENT::stopInput(1);
-            inputRstopped = true;
-        }
+        PARENT::stopInput(1);
     }
     virtual void stop()
     {
@@ -3932,119 +3904,342 @@ public:
 
 //===========================================================================
 
-RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, RowAggregator *localAggTable, mptag_t mptag, bool ordered)
+/*
+ * Implements a IAggregateTable, as a hash table.
+ * Create a HT (in roxiemem) that holds {row, hash, size} entries.
+ * Rows being added that match existing elements will be merged via the supplied IHThorRowAggregator methods.
+ * The resulting aggregated rows can be retrieved as an unsorted IRowStream or
+ * as a sorted IRowStream, in which case the implementation will re-purpose the HT memory as a linear row
+ * array and sort in place and return a IRowStream based on sorted rows.
+ */
+class CAggregateHT : public CSimpleInterfaceOf<IAggregateTable>, implements IRowStream
+{
+    struct HTEntry
+    {
+        void *row;
+        unsigned hash;
+        size32_t size;
+    };
+    CActivityBase &activity;
+    IEngineRowAllocator *rowAllocator = nullptr;
+    IHash * hasher = nullptr;
+    IHash * elementHasher = nullptr;
+    ICompare * comparer = nullptr;
+    ICompare * elementComparer = nullptr;
+    IHThorRowAggregator & helper;
+
+    unsigned htn = 0;
+    unsigned n = 0;
+    unsigned iPos = 0;
+    HTEntry *table = nullptr;
+
+    void expand()
+    {
+        HTEntry *t = table;
+        HTEntry *endT = table+htn;
+        htn += htn;
+        HTEntry *newTable = (HTEntry *)activity.queryRowManager()->allocate(((memsize_t)htn)*sizeof(HTEntry), activity.queryContainer().queryId());
+        // could check capacity and see if higher pow2
+        memset(newTable, 0, sizeof(HTEntry)*htn);
+        while (t != endT)
+        {
+            if (t->row)
+            {
+                unsigned i = t->hash & (htn - 1);
+                while (newTable[i].row)
+                {
+                    i++;
+                    if (i==htn)
+                        i = 0;
+                }
+                newTable[i] = *t;
+            }
+            ++t;
+        }
+        ReleaseThorRow(table);
+        table = newTable;
+    }
+    inline unsigned find(const void *row, unsigned h, ICompare *cmp)
+    {
+        unsigned i = h & (htn - 1);
+        while (true)
+        {
+            HTEntry &ht = table[i];
+            if (nullptr == ht.row)
+                return i;
+            if ((table[i].hash==h) && (0 == cmp->docompare(row, ht.row)))
+                return i;
+            if (++i==htn)
+                i = 0;
+        }
+    }
+    inline void addNew(unsigned i, unsigned h, void *row, size32_t sz)
+    {
+        HTEntry *ht;
+        if (n >= ((htn * 3) / 4)) // if over 75% full
+        {
+            expand();
+            // re-find empty slot
+            i = h & (htn - 1);
+            while (true)
+            {
+                ht = &table[i];
+                if (nullptr == ht->row)
+                    break;
+                if (++i==htn)
+                    i = 0;
+            }
+        }
+        else
+            ht = &table[i];
+        ht->row = row;
+        ht->hash = h;
+        ht->size = sz;
+        n++;
+    }
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IAggregateTable>);
+
+    CAggregateHT(CActivityBase &_activity, IHThorHashAggregateExtra &_extra, IHThorRowAggregator & _helper) : activity(_activity), helper(_helper)
+    {
+        hasher = _extra.queryHash();
+        elementHasher = _extra.queryHashElement();
+        comparer = _extra.queryCompareRowElement();
+        elementComparer = _extra.queryCompareElements();
+        htn = 8;
+        n = 0;
+        table = (HTEntry *)activity.queryRowManager()->allocate(((memsize_t)htn)*sizeof(HTEntry), activity.queryContainer().queryId());
+        // could check capacity and see if higher pow2
+        memset(table, 0, sizeof(HTEntry)*htn);
+    }
+    ~CAggregateHT()
+    {
+        reset();
+        ReleaseThorRow(table);
+    }
+    virtual void reset() override
+    {
+        n = 0;
+        iPos = 0;
+        if (table)
+        {
+            HTEntry *t = table;
+            HTEntry *endT = table+htn;
+            while (t != endT)
+            {
+                if (t->row)
+                {
+                    ReleaseRoxieRow(t->row);
+                    t->row = nullptr;
+                }
+                ++t;
+            }
+        }
+        else
+        {
+            htn = 8;
+            table = (HTEntry *)activity.queryRowManager()->allocate(((memsize_t)htn)*sizeof(HTEntry), activity.queryContainer().queryId());
+            // could check capacity and see if higher pow2
+            memset(table, 0, sizeof(HTEntry)*htn);
+        }
+    }
+    virtual void init(IEngineRowAllocator *_rowAllocator) override
+    {
+        rowAllocator = _rowAllocator;
+    }
+    // Creates or merges new rows into HT entry as unfinalized rows
+    virtual void addRow(const void *row) override
+    {
+        unsigned h = hasher->hash(row);
+        unsigned i = find(row, h, comparer);
+        HTEntry *ht = &table[i];
+        if (ht->row)
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator, ht->size, ht->row);
+            ht->size = helper.processNext(rowBuilder, row);
+            ht->row = rowBuilder.getUnfinalizedClear();
+        }
+        else
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            helper.clearAggregate(rowBuilder);
+            size32_t sz = helper.processFirst(rowBuilder, row);
+            addNew(i, h, rowBuilder.getUnfinalizedClear(), sz);
+        }
+    }
+    virtual unsigned elementCount() const override
+    {
+        return n;
+    }
+    /* Returns a row stream of the HT rows.
+     * If sorted=true:
+     *  1) Uses the existing HT memory to avoid reallocating new memory
+     *  2) Compacts HT row pointers to front of HT memory space (re-purposed as a row array)
+     *  3) Sorts row array by aggregate key field(s)
+     *  4) Clears CAggregateHT's hash table members and passes ownership of row array memory
+     *     to a IRowStream implementation.
+     */
+    IRowStream *getRowStream(bool sorted) override
+    {
+        if (sorted)
+        {
+            unsigned iPos = 0;
+            void **rowTable = (void **)table;
+            // re-purposing table memory as row ptr table
+            // 1st compact rows in table to the front.
+            while (iPos != htn)
+            {
+                HTEntry &ht = table[iPos];
+                if (ht.row)
+                {
+                    *rowTable = rowAllocator->finalizeRow(ht.size, ht.row, ht.size);
+                    ++rowTable;
+                }
+                ++iPos;
+            }
+            size32_t remainingSz = ((byte *)&table[htn]) - ((byte *)rowTable);
+            memset(rowTable, 0, remainingSz);
+
+            // sort elements
+            unsigned elems = ((byte *)rowTable-(byte *)table)/sizeof(void *);
+            rowTable = (void **)table;
+            parqsortvec(rowTable, elems, *elementComparer, 0);
+
+            // Implements a IRowStream to walk sorted rows that were previously in HT.
+            class CSortedLocalAggregateStream : public CSimpleInterfaceOf<IRowStream>
+            {
+                const void **rows;
+                const void **rowsPtr;
+                const void **endRows;
+                unsigned numRows;
+            public:
+                CSortedLocalAggregateStream(const void **_rows, unsigned _numRows) : rows(_rows), numRows(_numRows)
+                {
+                    rowsPtr = rows;
+                    endRows = rowsPtr+numRows;
+                }
+                ~CSortedLocalAggregateStream()
+                {
+                    roxiemem::ReleaseRoxieRowArray(numRows, rows);
+                    ::ReleaseRoxieRow(rows);
+                }
+                // IRowStream
+                virtual const void *nextRow() override
+                {
+                    if (rowsPtr == endRows)
+                        return nullptr;
+                    const void *row = *rowsPtr;
+                    *rowsPtr++ = nullptr;
+                    return row;
+                }
+                virtual void stop() override { }
+            };
+            // NB: CSortedLocalAggregateStream takes ownership of rowTable
+            table = nullptr;
+            n = 0;
+            htn = 0;
+            return new CSortedLocalAggregateStream((const void **)rowTable, elems);
+        }
+        else
+            return LINK(this);
+    }
+    // IRowStream
+    virtual const void *nextRow() override
+    {
+        while (iPos != htn)
+        {
+            HTEntry &ht = table[iPos++];
+            if (ht.row)
+            {
+                const void * row = rowAllocator->finalizeRow(ht.size, ht.row, ht.size);
+                ht.row = nullptr;
+                return row;
+            }
+        }
+        return nullptr;
+    }
+    virtual void stop() override { iPos = 0; }
+};
+
+IAggregateTable *createRowAggregator(CActivityBase &activity, IHThorHashAggregateExtra &extra, IHThorRowAggregator &helper)
+{
+    return new CAggregateHT(activity, extra, helper);
+}
+
+IRowStream *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, IRowStream *localAggStream, mptag_t mptag)
 {
     Owned<IRowStream> strm;
-    Owned<RowAggregator> globalAggTable = new RowAggregator(helperExtra, helper);
-    globalAggTable->start(activity.queryRowAllocator());
-    __int64 readCount = 0;
-    if (ordered)
-    {
-        class CRowAggregatedStream : implements IRowStream, public CInterface
-        {
-            CActivityBase &activity;
-            IThorRowInterfaces *rowIf;
-            Linked<RowAggregator> localAggregated;
-            RtlDynamicRowBuilder outBuilder;
-            size32_t node;
-        public:
-            IMPLEMENT_IINTERFACE;
-            CRowAggregatedStream(CActivityBase &_activity, IThorRowInterfaces *_rowIf, RowAggregator *_localAggregated) : activity(_activity), rowIf(_rowIf), localAggregated(_localAggregated), outBuilder(_rowIf->queryRowAllocator())
-            {
-                node = activity.queryContainer().queryJobChannel().queryMyRank();
-            }
-            // IRowStream impl.
-            virtual const void *nextRow()
-            {
-                Owned<AggregateRowBuilder> next = localAggregated->nextResult();
-                if (!next) return NULL;
-                byte *outPtr = outBuilder.getSelf();
-                memcpy(outPtr, &node, sizeof(node));
-                const void *nextRow = next->finalizeRowClear();
-                memcpy(outPtr+sizeof(node), &nextRow, sizeof(const void *));
-                return outBuilder.finalizeRowClear(sizeof(node)+sizeof(const void *));
-            }
-            virtual void stop() { }
-        };
-        Owned<IOutputMetaData> nodeRowMeta = createOutputMetaDataWithChildRow(activity.queryRowAllocator(), sizeof(size32_t));
-        Owned<IThorRowInterfaces> nodeRowMetaRowIf = activity.createRowInterfaces(nodeRowMeta);
-        Owned<IRowStream> localAggregatedStream = new CRowAggregatedStream(activity, nodeRowMetaRowIf, localAggTable);
-        class CNodeCompare : implements ICompare, implements IHash
-        {
-            IHash *baseHash;
-        public:
-            CNodeCompare(IHash *_baseHash) : baseHash(_baseHash) { }
-            virtual int docompare(const void *l,const void *r) const
-            {
-                size32_t lNode, rNode;
-                memcpy(&lNode, l, sizeof(size32_t));
-                memcpy(&rNode, r, sizeof(size32_t));
-                return (int)lNode-(int)rNode;
-            }
-            virtual unsigned hash(const void *rowMeta)
-            {
-                const void *row;
-                memcpy(&row, ((const byte *)rowMeta)+sizeof(size32_t), sizeof(const void *));
-                return baseHash->hash(row);
-            }
-        } nodeCompare(helperExtra.queryHashElement());
-        if (!distributor)
-            distributor.setown(createPullHashDistributor(&activity, activity.queryContainer().queryJobChannel().queryJobComm(), mptag, false, NULL, "MERGEAGGS"));
-        strm.setown(distributor->connect(nodeRowMetaRowIf, localAggregatedStream, &nodeCompare, &nodeCompare, NULL));
-        for (;;)
-        {
-            OwnedConstThorRow rowMeta = strm->nextRow();
-            if (!rowMeta)
-                break;
-            readCount++;
-            const void *row;
-            memcpy(&row, ((const byte *)rowMeta.get())+sizeof(size32_t), sizeof(const void *));
-            globalAggTable->mergeElement(row);
-        }
-    }
-    else
-    {
-        class CRowAggregatedStream : implements IRowStream, public CInterface
-        {
-            Linked<RowAggregator> localAggregated;
-        public:
-            IMPLEMENT_IINTERFACE;
-            CRowAggregatedStream(RowAggregator *_localAggregated) : localAggregated(_localAggregated)
-            {
-            }
-            // IRowStream impl.
-            virtual const void *nextRow()
-            {
-                Owned<AggregateRowBuilder> next = localAggregated->nextResult();
-                if (!next) return NULL;
-                return next->finalizeRowClear();
-            }
-            virtual void stop() { }
-        };
-        Owned<IRowStream> localAggregatedStream = new CRowAggregatedStream(localAggTable);
-        if (!distributor)
-            distributor.setown(createHashDistributor(&activity, activity.queryContainer().queryJobChannel().queryJobComm(), mptag, false, NULL, "MERGEAGGS"));
-        Owned<IThorRowInterfaces> rowIf = activity.getRowInterfaces(); // create new rowIF / avoid using activities IRowInterface, otherwise suffer from circular link
-        strm.setown(distributor->connect(rowIf, localAggregatedStream, helperExtra.queryHashElement(), NULL, NULL));
-        for (;;)
-        {
-            OwnedConstThorRow row = strm->nextRow();
-            if (!row)
-                break;
-            readCount++;
-            globalAggTable->mergeElement(row);
-        }
-    }
+    ICompare *elementComparer = helperExtra.queryCompareElements();
+    if (!distributor)
+        distributor.setown(createPullHashDistributor(&activity, activity.queryContainer().queryJobChannel().queryJobComm(), mptag, false, NULL, "MERGEAGGS"));
+    Owned<IThorRowInterfaces> rowIf = activity.getRowInterfaces(); // create new rowIF / avoid using activities IRowInterface, otherwise suffer from circular link
+    IHash *hasher = helperExtra.queryHashElement();
+    strm.setown(distributor->connect(rowIf, localAggStream, hasher, elementComparer, nullptr));
+    IEngineRowAllocator *rowAllocator = activity.queryRowAllocator();
 
-    strm->stop();
-    strm.clear();
-    distributor->disconnect(true);
-    distributor->join();
-
-    activity.ActPrintLog("HASHAGGREGATE: Read %" RCPF "d records to build hash table", readCount);
-    StringBuffer str("HASHAGGREGATE: After distribution merge contains ");
-    activity.ActPrintLog("%s", str.append(globalAggTable->elementCount()).append("entries").str());
-    return globalAggTable.getClear();
+    class CAggregatingStream : public CSimpleInterfaceOf<IRowStream>
+    {
+        size32_t sz = 0;
+        IEngineRowAllocator &rowAllocator;
+        RtlDynamicRowBuilder rowBuilder;
+        Owned<IRowStream> input;
+        ICompare &cmp;
+        IHThorRowAggregator &helper;
+        IHashDistributor &distributor;
+    public:
+        CAggregatingStream(IHThorRowAggregator &_helper, IEngineRowAllocator &_rowAllocator, ICompare &_cmp, IHashDistributor &_distributor)
+            : helper(_helper), rowAllocator(_rowAllocator), cmp(_cmp), distributor(_distributor), rowBuilder(_rowAllocator)
+        {
+        }
+        void start(IRowStream *_input)
+        {
+            input.setown(_input);
+        }
+        // IRowStream
+        virtual const void *nextRow() override
+        {
+            for (;;)
+            {
+                OwnedConstThorRow row = input->nextRow();
+                if (!row)
+                {
+                    if (sz)
+                    {
+                        const void *row = rowBuilder.finalizeRowClear(sz);
+                        sz = 0;
+                        return row;
+                    }
+                    return nullptr;
+                }
+                else if (sz)
+                {
+                    if (0 == cmp.docompare(row, rowBuilder.getUnfinalized()))
+                        sz = helper.mergeAggregate(rowBuilder, row);
+                    else
+                    {
+                        const void *ret = rowBuilder.finalizeRowClear(sz);
+                        sz = cloneRow(rowBuilder, row, rowAllocator.queryOutputMeta());
+                        return ret;
+                    }
+                }
+                else
+                    sz = cloneRow(rowBuilder, row, rowAllocator.queryOutputMeta());
+            }
+            return nullptr;
+        }
+        virtual void stop() override
+        {
+            sz = 0;
+            rowBuilder.clear();
+            input->stop();
+            input.clear();
+            distributor.disconnect(true);
+            distributor.join();
+        }
+    };
+    CAggregatingStream *mergeStrm = new CAggregatingStream(helper, *rowAllocator, *elementComparer, *distributor.get());
+    mergeStrm->start(strm.getClear());
+    return mergeStrm;
 }
 
 #ifdef _MSC_VER
@@ -4057,15 +4252,15 @@ class CHashAggregateSlave : public CSlaveActivity, implements IHThorRowAggregato
 
     IHThorHashAggregateArg *helper;
     mptag_t mptag;
-    Owned<RowAggregator> localAggTable;
+    Owned<IAggregateTable> localAggTable;
     bool eos;
     Owned<IHashDistributor> distributor;
+    Owned<IRowStream> aggregateStream;
 
     bool doNextGroup()
     {
         try
         {
-            localAggTable->start(queryRowAllocator());
             while (!abortSoon)
             {
                 OwnedConstThorRow row = inputStream->nextRow();
@@ -4101,16 +4296,17 @@ public:
             setRequireInitData(false);
         appendOutputLinked(this);
     }
-    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
     {
         if (!container.queryLocalOrGrouped())
         {
             mptag = container.queryJobChannel().deserializeMPTag(data);
             ActPrintLog("HASHAGGREGATE: init tags %d",(int)mptag);
         }
-        localAggTable.setown(new RowAggregator(*helper, *helper));
+        localAggTable.setown(createRowAggregator(*this, *helper, *helper));
+        localAggTable->init(queryRowAllocator());
     }
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
@@ -4119,20 +4315,22 @@ public:
             ActPrintLog("Table before distribution contains %d entries", localAggTable->elementCount());
         if (!container.queryLocalOrGrouped() && container.queryJob().querySlaves()>1)
         {
-            bool ordered = 0 != (TAForderedmerge & helper->getAggregateFlags());
-            localAggTable.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggTable, mptag, ordered));
-            ActPrintLog("Table after distribution contains %d entries", localAggTable->elementCount());
+            Owned<IRowStream> localAggStream = localAggTable->getRowStream(true);
+            aggregateStream.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggStream, mptag));
         }
+        else
+            aggregateStream.setown(localAggTable->getRowStream(false));
         eos = false;
     }
-    virtual void stop()
+    virtual void stop() override
     {
         ActPrintLog("HASHAGGREGATE: stopping");
         if (localAggTable)
             localAggTable->reset();
+        aggregateStream.clear();
         PARENT::stop();
     }
-    virtual void abort()
+    virtual void abort() override
     {
         CSlaveActivity::abort();
         if (distributor)
@@ -4141,35 +4339,35 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        if (eos) return NULL;
-        Owned<AggregateRowBuilder> next = localAggTable->nextResult();
+        if (eos) return nullptr;
+        const void *next = aggregateStream->nextRow();
         if (next)
         {
             dataLinkIncrement();
-            return next->finalizeRowClear();
+            return next;
         }
         if (container.queryGrouped())
         {
-            localAggTable->reset();
+            localAggTable->reset(); // NB: aggregateStream is stream of rows from localAggTable
             if (!doNextGroup())
                 eos = true;
         }
         else
             eos = true;
-        return NULL;
+        return nullptr;
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
         info.canStall = true;
         // maybe more?
     }
 // IHThorRowAggregator impl. - JCSMORE more until aggregator allows selectInterface to return.
-    virtual size32_t clearAggregate(ARowBuilder & rowBuilder) { return helper->clearAggregate(rowBuilder); }
-    virtual size32_t processFirst(ARowBuilder & rowBuilder, const void * src) { return helper->processFirst(rowBuilder, src); }
-    virtual size32_t processNext(ARowBuilder & rowBuilder, const void * src) { return helper->processNext(rowBuilder, src); }
-    virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) { return helper->mergeAggregate(rowBuilder, src); }
+    virtual size32_t clearAggregate(ARowBuilder & rowBuilder) override { return helper->clearAggregate(rowBuilder); }
+    virtual size32_t processFirst(ARowBuilder & rowBuilder, const void * src) override { return helper->processFirst(rowBuilder, src); }
+    virtual size32_t processNext(ARowBuilder & rowBuilder, const void * src) override { return helper->processNext(rowBuilder, src); }
+    virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) override { return helper->mergeAggregate(rowBuilder, src); }
 };
 #ifdef _MSC_VER
 #pragma warning(pop)

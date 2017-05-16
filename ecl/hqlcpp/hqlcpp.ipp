@@ -995,7 +995,7 @@ public:
     inline bool hasDynamicFilename(IHqlExpression * expr) const { return options.allFilenamesDynamic || hasDynamic(expr); }
     inline bool canGenerateStringInline(unsigned len)       { return ((options.inlineStringThreshold == 0) || (len <= options.inlineStringThreshold)); }
 
-    unsigned getOptimizeFlags() const;
+    unsigned getOptimizeFlags(bool insideChildQuery) const;
     unsigned getSourceAggregateOptimizeFlags() const;
     void addGlobalOnWarning(IHqlExpression * setMetaExpr);
 
@@ -1325,7 +1325,7 @@ public:
     void buildReturnOrder(BuildCtx & ctx, IHqlExpression *sortList, const DatasetReference & dataset);
 
     IHqlExpression * createLoopSubquery(IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * filter, IHqlExpression * again, IHqlExpression * counter, bool multiInstance, unsigned & loopAgainResult);
-    unique_id_t buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, bool multiInstance);
+    unique_id_t buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, bool multiInstance, bool unlimitedResources);
     unique_id_t buildRemoteSubgraph(BuildCtx & ctx, IHqlExpression * dataset);
         
     void doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, IHqlExpression * expr, CHqlBoundExpr * result);
@@ -1935,9 +1935,9 @@ protected:
     double getComplexity(IHqlExpression * expr, ClusterType cluster);
     bool prepareToGenerate(HqlQueryContext & query, WorkflowArray & exprs, bool isEmbeddedLibrary);
     IHqlExpression * getResourcedGraph(IHqlExpression * expr, IHqlExpression * graphIdExpr);
-    IHqlExpression * getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * childQuery, unsigned numResults, node_operator graphKind);
+    IHqlExpression * getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * childQuery, unsigned numResults, node_operator graphKind, bool unlimitedResources);
     IHqlExpression * optimizeCompoundSource(IHqlExpression * expr, unsigned flags);
-    IHqlExpression * optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags, bool projectBeforeSpill);
+    IHqlExpression * optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags, bool projectBeforeSpill, bool insideChildQuery);
     bool isInlineOk();
     GraphLocalisation getGraphLocalisation(IHqlExpression * expr, bool isInsideChildQuery);
     bool isAlwaysCoLocal();

@@ -111,7 +111,7 @@ public:
     }
     IRowStream *getNextSortGroup(IRowStream *input)
     {
-        if (inputStopped) return NULL;
+        if (inputStopped) return NULL; // JCSMORE - should not be possible. getNextSortGroup() is called from nextRow() and should never be called after stop()
         sortedRows.clearRows(); // NB: In a child query, this will mean the rows ptr will remain at high-water mark
         for (;;)
         {

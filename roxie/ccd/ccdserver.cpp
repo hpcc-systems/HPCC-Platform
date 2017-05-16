@@ -7250,6 +7250,8 @@ public:
         first = true;
         kept = nullptr;
         CRoxieServerDedupActivity::start(parentExtractSize, parentExtract, paused);
+        if (numToKeep>1)
+            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "DEDUP with RIGHT and NumToKeep>1 not supported");
     }
 
     virtual void reset()
@@ -7271,19 +7273,10 @@ public:
         {
             next = inputStream->nextRow();
             if (!kept || !next || !helper.matches(kept,next))
-            {
-                numKept = 0;
                 break;
-            }
 
             if (compareBest && compareBest->docompare(kept,next) <= 0)
                 continue;
-
-            if (numKept < numToKeep - 1)
-            {
-                numKept++;
-                break;
-            }
 
             ReleaseRoxieRow(kept);
             kept = next;
