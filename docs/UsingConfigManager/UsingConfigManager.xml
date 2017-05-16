@@ -1081,13 +1081,42 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </para>
 
         <sect3>
-          <title>DropZone Attributes</title>
+          <title>Drop Zone Attributes</title>
 
           <para>You can change the configuration of your drop zone using the
           attributes tab. If you have multiple drop zones, select the drop
-          zone to configure from the Navigator panel on the left side. To
-          change one of the drop zone attributes, double-click on the value on
-          the right side of the attribute table.</para>
+          zone to configure from the Navigator panel on the left side. </para>
+
+          <para>To change the drop zone attributes: </para>
+
+          <para>
+            <orderedlist>
+              <listitem>
+                <para>Select the <emphasis role="bold">Attributes</emphasis>
+                tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the Attribute to modify.</para>
+              </listitem>
+
+              <listitem>
+                <para>Double-click on the value on the right side of the
+                attribute table.</para>
+              </listitem>
+
+              <listitem>
+                <para>Modify the attribute. For example, select the <emphasis
+                role="bold">name</emphasis> attribute, double click on the
+                <emphasis role="bold">value</emphasis> column and provide the
+                drop zone with a more meaningful name.</para>
+              </listitem>
+
+              <listitem>
+                <para>Click the disk icon to save.</para>
+              </listitem>
+            </orderedlist>
+          </para>
 
           <para>
             <graphic fileref="images/CM-img06.jpg" vendor="configmgrSS" />
@@ -1135,7 +1164,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 id="DropZoneServerList">
-          <title>DropZone Server List</title>
+          <title>Drop Zone Server List</title>
 
           <para>This tab allows you to add any servers that you wish to
           configure as a part of the selected drop zone. </para>
@@ -1152,23 +1181,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </listitem>
 
               <listitem>
-                <para>RIght-click on the Server Address field and choose
+                <para>Right-click on the Server Address field and choose
                 <emphasis role="bold">Add</emphasis>. </para>
               </listitem>
 
               <listitem>
                 <para>Enter the hostname or IP address of the server. </para>
-              </listitem>
-
-              <listitem>
-                <para>Optionally, you can select the <emphasis
-                role="bold">Attributes</emphasis> tab, and modify some
-                attributes for this drop zone. </para>
-
-                <para>For example, select the <emphasis
-                role="bold">name</emphasis> attribute, double click on the
-                <emphasis role="bold">value</emphasis> column and provide the
-                drop zone with a more meaningful name. </para>
               </listitem>
 
               <listitem>
@@ -1178,7 +1196,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 id="DropZoneNotes">
-          <title>DropZone Notes</title>
+          <title>Drop Zone Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of
