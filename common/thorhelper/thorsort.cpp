@@ -18,6 +18,8 @@
 #include "platform.h"
 #include "thorsort.hpp"
 #include "jset.hpp"
+#include "errorlist.h"
+#include <exception>
 
 #ifdef _USE_TBB
 #include "tbb/task.h"
@@ -70,32 +72,46 @@ public:
 
 void tbbqsortvec(void **a, size_t n, const ICompare & compare)
 {
+    try
+    {
 #ifdef _USE_TBB
-    TbbCompareWrapper tbbcompare(compare);
-    tbb::parallel_sort(a, a+n, tbbcompare);
+        TbbCompareWrapper tbbcompare(compare);
+        tbb::parallel_sort(a, a + n, tbbcompare);
 #else
-    throwUnexpectedX("TBB quicksort not available");
+        throwUnexpectedX("TBB quicksort not available");
 #endif
+    }
+    catch (const std::exception & e)
+    {
+        throw makeStringExceptionV(ERRORID_UNKNOWN, "TBB exception: %s", e.what());
+    }
 }
 
 void tbbqsortstable(void ** rows, size_t n, const ICompare & compare, void ** temp)
 {
+    try
+    {
 #ifdef _USE_TBB
-    void * * * rowsAsIndex = (void * * *)rows;
-    memcpy(temp, rows, n * sizeof(void*));
+        void * * * rowsAsIndex = (void * * *)rows;
+        memcpy(temp, rows, n * sizeof(void*));
 
-    for(unsigned i=0; i<n; ++i)
-        rowsAsIndex[i] = temp+i;
+        for(unsigned i=0; i<n; ++i)
+            rowsAsIndex[i] = temp+i;
 
-    TbbCompareIndirectWrapper tbbcompare(compare);
-    tbb::parallel_sort(rowsAsIndex, rowsAsIndex+n, tbbcompare);
+        TbbCompareIndirectWrapper tbbcompare(compare);
+        tbb::parallel_sort(rowsAsIndex, rowsAsIndex+n, tbbcompare);
 
-    //I'm sure this violates the aliasing rules...
-    for(unsigned i=0; i<n; ++i)
-        rows[i] = *rowsAsIndex[i];
+        //I'm sure this violates the aliasing rules...
+        for(unsigned i=0; i<n; ++i)
+            rows[i] = *rowsAsIndex[i];
 #else
-    throwUnexpectedX("TBB quicksort not available");
+        throwUnexpectedX("TBB quicksort not available");
 #endif
+    }
+    catch (const std::exception & e)
+    {
+        throw makeStringExceptionV(ERRORID_UNKNOWN, "TBB exception: %s", e.what());
+    }
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------
@@ -702,8 +718,15 @@ void parmsortvecstableinplace(void ** rows, size_t n, const ICompare & compare, 
         return;
     }
 
-    TbbParallelMergeSorter sorter(rows, compare);
-    sorter.sortRoot(rows, n, temp);
+    try
+    {
+        TbbParallelMergeSorter sorter(rows, compare);
+        sorter.sortRoot(rows, n, temp);
+    }
+    catch (const std::exception & e)
+    {
+        throw makeStringExceptionV(ERRORID_UNKNOWN, "TBB exception: %s", e.what());
+    }
 }
 #else
 void parmsortvecstableinplace(void ** rows, size_t n, const ICompare & compare, void ** temp, unsigned ncpus)
