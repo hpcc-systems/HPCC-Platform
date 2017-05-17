@@ -342,7 +342,7 @@ public:
         //This test should get constant folded to avoid the decrement when not checked.
         if (CHECKER::extraSize)
             newCapacity -= CHECKER::extraSize;
-        allocatedSize = newCapacity;
+        allocatedSize = (size32_t)newCapacity;
         return row;
     }
 
@@ -353,7 +353,7 @@ public:
         void * newrow = heap->resizeRow(row, oldsize, newSize+CHECKER::extraSize, newCapacity);
         if (CHECKER::extraSize)
             newCapacity -= CHECKER::extraSize;
-        size = newCapacity;
+        size = (size32_t)newCapacity;
         return newrow;
     }
 

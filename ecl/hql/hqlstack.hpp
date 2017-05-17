@@ -30,11 +30,19 @@
 #define MAXARGS          32
 
 #if defined (_ARCH_X86_64_)
- #define ALIGNMENT 8
- #define REGSIZE 8
- #define MAXFPREGS 8
- #define REGPARAMS 6
- #define EVEN_STACK_ALIGNMENT
+ #if defined(_WIN32)
+  #define ALIGNMENT 8
+  #define REGSIZE 8
+  #define MAXFPREGS 0       // Not yet implemented - fix if someone complains
+  #define REGPARAMS 4
+  #define EVEN_STACK_ALIGNMENT
+#else
+  #define ALIGNMENT 8
+  #define REGSIZE 8
+  #define MAXFPREGS 8
+  #define REGPARAMS 6
+  #define EVEN_STACK_ALIGNMENT
+#endif
 #elif defined (_ARCH_X86_)
  #define ALIGNMENT 4
  #define REGSIZE 4
@@ -72,6 +80,7 @@
  #endif
 #endif
 
+#define NUMFPREGS (MAXFPREGS ? MAXFPREGS : 1)
 class FuncCallStack {
 private:
     unsigned   tos;
@@ -86,8 +95,8 @@ private:
     union {
         double d;
         float f;
-    } fpRegs[MAXFPREGS];
-    unsigned fpSizes[MAXFPREGS];
+    } fpRegs[NUMFPREGS];
+    unsigned fpSizes[NUMFPREGS];
  #endif
     unsigned    numFpRegs;
 #endif
