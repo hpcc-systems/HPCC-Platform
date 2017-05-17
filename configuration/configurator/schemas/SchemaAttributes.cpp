@@ -105,6 +105,10 @@ void CAttribute::getDocumentation(StringBuffer &strDoc) const
             return; // HIDDEN
         else
             pToolTip = pAppInfo->getToolTip();
+
+        const char* pReq = pAppInfo->getRequired();
+        if (pReq != nullptr && stricmp("True", pReq) == 0)
+            pRequired = TAG_REQUIRED;
     }
 
     strDoc.appendf("<%s>\n", DM_TABLE_ROW);

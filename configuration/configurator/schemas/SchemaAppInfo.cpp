@@ -56,6 +56,8 @@ CAppInfo* CAppInfo::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchema
     strXPathDocID.append("/").append(TAG_DOC_ID);
     StringBuffer strXPathDocLineBreak(xpath);
     strXPathDocLineBreak.append("/").append(TAG_DOC_USE_LINE_BREAK);
+    StringBuffer strXPathRequired(xpath);
+    strXPathRequired.append("/").append(TAG_REQUIRED);
 
     StringBuffer strViewType;
     StringBuffer strColIndex;
@@ -68,6 +70,7 @@ CAppInfo* CAppInfo::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchema
     StringBuffer strViewChildNodes;
     StringBuffer strXPath;
     StringBuffer strDocTableID;
+    StringBuffer strRequired;
     bool bDocLineBreak = false;
 
     if (pSchemaRoot->queryPropTree(strXPathViewType.str()) != NULL)
@@ -94,8 +97,10 @@ CAppInfo* CAppInfo::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchema
         strDocTableID.append(pSchemaRoot->queryPropTree(strXPathDocID.str())->queryProp(""));
     if (pSchemaRoot->queryPropTree(strXPathDocLineBreak.str()) != NULL)
         bDocLineBreak = true;
+    if (pSchemaRoot->queryPropTree(strXPathRequired.str()) != NULL)
+        strRequired.append(pSchemaRoot->queryPropTree(strXPathRequired.str())->queryProp(""));
 
-    CAppInfo *pAppInfo = new CAppInfo(pParentNode, strViewType.str(),  strColIndex.str(), strToolTip.str(), strTitle.str(), strWidth.str(), strAutoGenForWizard.str(), strAutoGenDefaultValue.str(), NULL, strViewChildNodes.str(), strXPath.str(), strDocTableID.str(), bDocLineBreak);
+    CAppInfo *pAppInfo = new CAppInfo(pParentNode, strViewType.str(),  strColIndex.str(), strToolTip.str(), strTitle.str(), strWidth.str(), strAutoGenForWizard.str(), strAutoGenDefaultValue.str(), NULL, strViewChildNodes.str(), strXPath.str(), strDocTableID.str(), bDocLineBreak, strRequired.str());
     pAppInfo->setXSDXPath(xpath);
 
     return pAppInfo;
@@ -118,6 +123,7 @@ void CAppInfo::dump(::std::ostream &cout, unsigned int offset) const
     QUICK_OUT(cout, ViewChildNodes, offset);
     QUICK_OUT(cout, XPath, offset);
     QUICK_OUT(cout, XSDXPath, offset);
+    QUICK_OUT(cout, Required, offset);
 
     quickOutFooter(cout, XSD_APP_INFO_STR, offset);
 }

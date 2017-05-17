@@ -248,6 +248,7 @@ static const char* TAG_AUTOGENDEFAULTVALUEFORMULTINODE("autogendefaultformultino
 static const char* TAG_XPATH("xpath");
 static const char* TAG_DOC_ID("docid");
 static const char* TAG_DOC_USE_LINE_BREAK("docuselinebreak");
+static const char* TAG_REQUIRED("required");
 static const char* TAG_UNBOUNDED("unbounded");
 
 #define TAG_OPTIONAL                   "optional"
