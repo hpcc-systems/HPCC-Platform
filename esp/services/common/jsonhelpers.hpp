@@ -173,17 +173,56 @@ namespace JsonHelpers
 
     static JSONField_Category xsdTypeToJSONFieldCategory(const char *xsdtype)
     {
-        //map XML Schema types used in ECL generated schemas to basic JSON formatting types
-        if (streq(xsdtype, "integer") || streq(xsdtype, "nonNegativeInteger"))
-            return JSONField_Integer;
-        if (streq(xsdtype, "boolean"))
-            return JSONField_Boolean;
-        if (streq(xsdtype, "double"))
-            return JSONField_Real;
-        if (!strncmp(xsdtype, "decimal", 7)) //ecl creates derived types of the form decimal#_#
-            return JSONField_Real;
-        if (streq(xsdtype, "none")) //maps to an eml schema element with no type.  set to true or don't add
-            return JSONField_Present;
+        if (!xsdtype || !*xsdtype)
+            return JSONField_String;
+        switch (*xsdtype)
+        {
+        case 'b':
+            if (streq(xsdtype, "boolean"))
+                return JSONField_Boolean;
+            if (streq(xsdtype, "byte"))
+                return JSONField_Integer;
+            break;
+        case 'd':
+            if (!strncmp(xsdtype, "decimal", 7)) //ecl creates derived types of the form decimal#_#
+                return JSONField_Real;
+            if (streq(xsdtype, "double"))
+                return JSONField_Real;
+            break;
+        case 'f':
+            if (streq(xsdtype, "float"))
+                return JSONField_Real;
+            break;
+        case 'i':
+            if (streq(xsdtype, "int") || streq(xsdtype, "integer"))
+                return JSONField_Integer;
+            break;
+        case 'l':
+            if (streq(xsdtype, "long"))
+                return JSONField_Integer;
+            break;
+        case 'n':
+            if (streq(xsdtype, "negativeInteger") || streq(xsdtype, "nonNegativeInteger") || streq(xsdtype, "nonPositiveInteger"))
+                return JSONField_Integer;
+            if (streq(xsdtype, "none")) //maps to an xml schema element with no type.  set to true or don't add
+                return JSONField_Present;
+            break;
+        case 'p':
+            if (streq(xsdtype, "positiveInteger"))
+                return JSONField_Integer;
+            break;
+        case 's':
+            if (streq(xsdtype, "short"))
+                return JSONField_Integer;
+            break;
+        case 'u':
+            if (strncmp(xsdtype, "unsigned", 8))
+                break;
+            xsdtype+=8;
+            if (streq(xsdtype, "Byte") || streq(xsdtype, "Int") || streq(xsdtype, "Long") || streq(xsdtype, "Short"))
+                return JSONField_Integer;
+            break;
+        }
         return JSONField_String;
     }
 
