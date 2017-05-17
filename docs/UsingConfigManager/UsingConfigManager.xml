@@ -1052,7 +1052,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
         <para>A Drop Zone (or landing zone) is a location where files can be
         transferred to or from your HPCC system. The drop zone is a logical
-        combination of a path and one or more servers. </para>
+        combination of a path and one or more servers.</para>
 
         <para>Multiple drop zones allow you to configure different top level
         folders for one or more servers. Multiple servers for a single drop
@@ -1065,17 +1065,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <para>
           <orderedlist>
             <listitem>
-              <para>Right-click on the Navigator panel on the left side</para>
+              <para>Right-click on the Navigator panel on the left side and
+              choose <emphasis role="bold">New Components</emphasis></para>
             </listitem>
 
             <listitem>
-              <para>choose <emphasis role="bold">New Components</emphasis>
-              </para>
-            </listitem>
-
-            <listitem>
-              <para>choose <emphasis role="bold">Drop Zone</emphasis> from the
-              ensuing dialog</para>
+              <para>Select <emphasis role="bold">Drop Zone</emphasis> </para>
             </listitem>
           </orderedlist>
         </para>
@@ -1085,28 +1080,22 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>You can change the configuration of your drop zone using the
           attributes tab. If you have multiple drop zones, select the drop
-          zone to configure from the Navigator panel on the left side. </para>
+          zone to configure from the Navigator panel on the left side.</para>
 
-          <para>To change the drop zone attributes: </para>
+          <para>To change the drop zone attributes:</para>
 
           <para>
             <orderedlist>
               <listitem>
-                <para>Select the <emphasis role="bold">Attributes</emphasis>
-                tab.</para>
-              </listitem>
-
-              <listitem>
-                <para>Select the Attribute to modify.</para>
+                <para>On the <emphasis role="bold">Attributes</emphasis> tab,
+                select the Attribute to modify.</para>
               </listitem>
 
               <listitem>
                 <para>Double-click on the value on the right side of the
-                attribute table.</para>
-              </listitem>
+                attribute table for the value you wish to modify. </para>
 
-              <listitem>
-                <para>Modify the attribute. For example, select the <emphasis
+                <para>For example, select the <emphasis
                 role="bold">name</emphasis> attribute, double click on the
                 <emphasis role="bold">value</emphasis> column and provide the
                 drop zone with a more meaningful name.</para>
@@ -1167,7 +1156,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <title>Drop Zone Server List</title>
 
           <para>This tab allows you to add any servers that you wish to
-          configure as a part of the selected drop zone. </para>
+          configure as a part of the selected drop zone.</para>
 
           <para>To add a server to the current drop zone: <orderedlist>
               <listitem>
@@ -1177,16 +1166,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
               <listitem>
                 <para>Select the <emphasis role="bold">Server List</emphasis>
-                tab.</para>
+                tab, right-click on the Server Address field and choose
+                <emphasis role="bold">Add</emphasis>.</para>
               </listitem>
 
               <listitem>
-                <para>Right-click on the Server Address field and choose
-                <emphasis role="bold">Add</emphasis>. </para>
-              </listitem>
-
-              <listitem>
-                <para>Enter the hostname or IP address of the server. </para>
+                <para>Enter the hostname or IP address of the server.</para>
               </listitem>
 
               <listitem>
