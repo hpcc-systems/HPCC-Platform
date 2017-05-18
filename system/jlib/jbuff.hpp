@@ -262,7 +262,7 @@ public:
     inline void write()
     {
         size32_t sz = size();
-        mb.writeDirect(pos, sizeof(sz), &sz);
+        mb.writeEndianDirect(pos, sizeof(sz), &sz);
     }
     inline size32_t size() const
     {
