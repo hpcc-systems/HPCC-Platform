@@ -32,7 +32,10 @@ mpTraceLevel=0
 #dfsUseSSL=false
 #dfsSSLCertFile=/certfilepath/certfile
 #dfsSSLPrivateKeyFile=/keyfilepath/keyfile
+
 jvmoptions=-XX:-UsePerfData
+#Options to enable remote debugging of Java service or application
+#jvmoptions=-XX:-UsePerfData -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=2000
 #JNI_PATH=/absolute/path/to/alternative/libjvm.so
 
 # Although HPCC platform includes plugins for both Python2 and Python3, only one may be safely enabled at a time

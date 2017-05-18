@@ -52,3 +52,9 @@ soapplus -url http://.:8088/EsdlExample -i roxierequest.xml
 
 http://<DynamicEsdlIP>:8088
 
+9. To debug the java service:
+Uncomment the jvmoptions line in environment.conf:
+jvmoptions=-XX:-UsePerfData -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=2000
+And comment out the original jvmoptions line:
+#jvmoptions=-XX:-UsePerfData
+From eclipse for java, create a new debug configuration for remote java application, under connect tab, select your esdl java service project, select standard socket attach connection type, fill in the host and port. The port should match what you've specified in the jvmoptions inside environment.conf, which is 2000 in our example above. Click the Debug button and off you go.
