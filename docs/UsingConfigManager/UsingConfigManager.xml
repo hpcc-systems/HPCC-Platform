@@ -40,15 +40,18 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -1459,6 +1462,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>
             <graphic fileref="images/CM-img08-4.jpg" vendor="configmgrSS" />
           </para>
+
+          <para>The <emphasis role="bold">cipherList</emphasis> attribute
+          allows you to set the ordered list of available ciphers for use by
+          openssl. See the documentation at openssl.org for more information
+          about ciphers.</para>
 
           <!--MyESP-HTTPS.t5-XXX-17-->
 
