@@ -171,6 +171,14 @@ define([
             return ESPRequest.send("WsDfu", "DFUSpace", params);
         },
 
+        ListHistory: function (params) {
+            return ESPRequest.send("WsDfu", "ListHistory", params);
+        },
+
+        EraseHistory: function (params) {
+            return ESPRequest.send("WsDfu", "EraseHistory", params);
+        },
+
         DFUInfo: function (params) {
             return ESPRequest.send("WsDfu", "DFUInfo", params).then(function (response) {
                 if (lang.exists("Exceptions.Exception", response)) {
@@ -220,4 +228,3 @@ define([
 
     return self;
 });
-
