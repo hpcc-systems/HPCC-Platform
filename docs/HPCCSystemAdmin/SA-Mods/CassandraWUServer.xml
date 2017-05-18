@@ -270,13 +270,18 @@
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>Add the following options on the Options tab.<graphic
+                <para>Add options on the Options tab.<graphic
                 fileref="../../images/Cass3.jpg"
                 vendor="configmgrSS" /></para>
 
-                <para><variablelist>
+                <xi:include href="../../UsingConfigManager/UsingConfigManager.xml"
+                            xpointer="xpointer(//*[@id='daliplugoptionstable'])"
+                            xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+                <para>
+                  <variablelist>
                     <varlistentry>
-                      <term>Note: </term>
+                      <term>Note:</term>
 
                       <listitem>
                         <para>User and password are only needed if your
@@ -284,7 +289,8 @@
                         credentials.</para>
                       </listitem>
                     </varlistentry>
-                  </variablelist></para>
+                  </variablelist>
+                </para>
               </listitem>
 
               <listitem>
