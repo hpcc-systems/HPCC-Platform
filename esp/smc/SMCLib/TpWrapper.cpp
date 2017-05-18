@@ -1751,6 +1751,7 @@ void CTpWrapper::appendTpDropZone(double clientVersion, IConstEnvironment* const
             ipAddr.ipset(server.str());
             ipAddr.getIpText(networkAddress);
             machine->setNetaddress(networkAddress.str());
+            machine->setConfigNetaddress(server.str());
         }
         if (directory.length() > 0)
         {
