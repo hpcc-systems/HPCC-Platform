@@ -1232,6 +1232,8 @@ public:
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid);
+        if (!externalWU)
+            throw MakeStringException(TE_FailedToRetrieveWorkunitValue, "workunit %s not found, retrieving value %s", wuid, name);
         externalWU->remoteCheckAccess(userDesc, false);
         return getWorkUnitResult(externalWU, name, sequence);
     }
