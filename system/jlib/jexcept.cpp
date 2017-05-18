@@ -666,7 +666,7 @@ static BOOL GetLogicalAddress( PVOID addr, PTSTR szModule, DWORD len, DWORD& sec
         if ( (rva >= sectionStart) && (rva <= sectionEnd) )
         {
             section = i+1;
-            offset = rva - sectionStart;
+            offset = (DWORD)(rva - sectionStart);
             return TRUE;
         }
     }
@@ -848,7 +848,11 @@ static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
 #ifdef _ARCH_X86_64_
     PrintLog("RAX:%016" I64F "X  RBX:%016" I64F "X  RCX:%016" I64F "X  RDX:%016" I64F "X  RSI:%016" I64F "X  RDI:%016" I64F "X",
         pCtx->Rax, pCtx->Rbx, pCtx->Rcx, pCtx->Rdx, pCtx->Rsi, pCtx->Rdi );
-    
+    PrintLog("R8: %016" I64F "X  R9: %016" I64F "X  R10:%016" I64F "X  R11:%016" I64F "X  R12:%016" I64F "X  R13:%016" I64F "X",
+        pCtx->R8, pCtx->R9, pCtx->R10, pCtx->R11, pCtx->R12, pCtx->R13);
+    PrintLog("R14:%016" I64F "X  R15:%016" I64F "X",
+        pCtx->R14, pCtx->R15);
+
     PrintLog( "CS:RIP:%04X:%016" I64F "X", pCtx->SegCs, pCtx->Rip );
     PrintLog( "SS:PSP:%04X:%016" I64F "X  PBP:%016" I64F "X",
         pCtx->SegSs, pCtx->Rsp, pCtx->Rbp );
