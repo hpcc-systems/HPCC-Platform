@@ -26,6 +26,7 @@ project( testsocket )
 include_directories (            
          ./../../system/jlib
          ./../../system/include 
+         ./../../system/security/securesocket
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -35,6 +36,13 @@ HPCC_ADD_EXECUTABLE ( testsocket ${SRCS} )
 target_link_libraries ( testsocket
          jlib
          )
+
+IF (USE_OPENSSL)
+    target_link_libraries ( testsocket
+         securesocket
+         )
+ENDIF()
+
 install ( TARGETS testsocket RUNTIME DESTINATION ${EXEC_DIR} )
 
 if ( PLATFORM )

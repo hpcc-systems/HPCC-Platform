@@ -25,9 +25,11 @@
 #include "jdebug.hpp"
 #include "jthread.hpp"
 #include "jfile.hpp"
+#include "securesocket.hpp"
 
 bool abortEarly = false;
 bool forceHTTP = false;
+bool useSSL = false;
 bool abortAfterFirst = false;
 bool echoResults = false;
 bool saveResults = true;
@@ -51,8 +53,10 @@ unsigned runningQueries;
 unsigned multiThreadMax;
 unsigned maxLineSize = 10000000;
 
-ISocket *persistSocket;
-bool persistConnections;
+Owned<ISocket> persistSocket;
+bool persistConnections = false;
+Owned<ISecureSocketContext> persistSecureContext;
+Owned<ISecureSocket> persistSSock;
 
 int repeats = 0;
 StringBuffer queryPrefix;
@@ -370,7 +374,8 @@ int ReceiveThread::run()
 
 int doSendQuery(const char * ip, unsigned port, const char * base)
 {
-    ISocket * socket;
+    Owned<ISocket> socket;
+    Owned<ISecureSocketContext> secureContext;
     __int64 starttime, endtime;
     StringBuffer ipstr;
     try
@@ -404,15 +409,40 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
         starttime= get_cycles_now();
         if (persistConnections)
         {
-            if (!persistSocket) {
+            if (!persistSocket)
+            {
                 SocketEndpoint ep(ip,port);
-                persistSocket = ISocket::connect_timeout(ep, 1000);
+                persistSocket.setown(ISocket::connect_timeout(ep, 1000));
+                if (useSSL)
+                {
+#ifdef _USE_OPENSSL
+                    if (!persistSecureContext)
+                        persistSecureContext.setown(createSecureSocketContext(ClientSocket));
+                    persistSSock.setown(persistSecureContext->createSecureSocket(persistSocket.getClear()));
+                    persistSSock->secure_connect();
+                    persistSocket.setown(persistSSock.getClear());
+#else
+                    throw MakeStringException(-1, "OpenSSL disabled in build");
+#endif
+                }
             }
             socket = persistSocket;
         }
-        else {
+        else
+        {
             SocketEndpoint ep(ip,port);
-            socket = ISocket::connect_timeout(ep,1000);
+            socket.setown(ISocket::connect_timeout(ep, 1000));
+            if (useSSL)
+            {
+#ifdef _USE_OPENSSL
+                secureContext.setown(createSecureSocketContext(ClientSocket));
+                Owned<ISecureSocket> ssock = secureContext->createSecureSocket(socket.getClear());
+                ssock->secure_connect();
+                socket.setown(ssock.getClear());
+#else
+                throw MakeStringException(1, "OpenSSL disabled in build");
+#endif
+            }
         }
     }
     catch(IException * e)
@@ -562,7 +592,6 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
     if (!persistConnections)
     {
         socket->close();
-        socket->Release();
     }
     return 0;
 }
@@ -622,6 +651,7 @@ void usage(int exitCode)
     printf("  -rl       roxie logfile mode\n");
     printf("  -s        add stars to indicate transfer packets\n");
     printf("  -ss       suppress XML Status messages to screen (always suppressed from tracefile)\n");
+    printf("  -ssl      use ssl\n");
     printf("  -td       add debug timing statistics to trace\n");
     printf("  -tf       add full timing statistics to trace\n");
     printf("  -time     add timing to trace\n");
@@ -682,6 +712,11 @@ int main(int argc, char **argv)
         else if (stricmp(argv[arg], "-http") == 0)
         {
             forceHTTP = true;
+            ++arg;
+        }
+        else if (stricmp(argv[arg], "-ssl") == 0)
+        {
+            useSSL = true;
             ++arg;
         }
         else if (stricmp(argv[arg], "-") == 0)
@@ -946,7 +981,6 @@ int main(int argc, char **argv)
         int sendlen=0;
         persistSocket->write(&sendlen, sizeof(sendlen));
         persistSocket->close();
-        persistSocket->Release();
     }
 
     endtime = get_cycles_now();
