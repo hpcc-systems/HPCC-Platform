@@ -29,11 +29,17 @@ set (    SRCS
          roxiepipe.cpp 
     )
 
-include_directories ( 
+include_directories (
          ./../../system/include 
          ./../../system/jlib 
          ./../../roxie/roxie
     )
+
+IF (USE_OPENSSL)
+    include_directories (
+         ./../../system/security/securesocket
+    )
+ENDIF()
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
@@ -42,4 +48,10 @@ install ( TARGETS roxiepipe RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( roxiepipe
          jlib
     )
+
+IF (USE_OPENSSL)
+    target_link_libraries ( roxiepipe
+         securesocket
+    )
+ENDIF()
 

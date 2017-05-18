@@ -21,7 +21,6 @@
 
 #include "jsocket.hpp"
 
-
 interface jlib_decl ISmartSocket : extends IInterface
 {
     // unique to ISmartSocket
@@ -69,6 +68,7 @@ interface jlib_thrown_decl ISmartSocketException : extends IException
 
 jlib_decl ISmartSocketFactory *createSmartSocketFactory(const char *_socklist, bool _retry = false, unsigned _retryInterval = 60, unsigned _dnsInterval = (unsigned) -1);
 
+jlib_decl ISmartSocketException *createSmartSocketException(int errorCode, const char *msg);
 
 #endif
 
