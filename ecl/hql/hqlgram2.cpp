@@ -2270,16 +2270,22 @@ void HqlGram::checkAllAssigned(IHqlExpression * originalRecord, IHqlExpression *
 
 void HqlGram::checkFoldConstant(attribute & attr)
 {
-    Owned<IHqlExpression> expr = attr.getExpr();
-    attr.setExpr(foldHqlExpression(expr), attr);
-
-    checkConstant(attr);
+    if (attr.queryExpr()->isConstant())
+    {
+        Owned<IHqlExpression> expr = attr.getExpr();
+        attr.setExpr(foldHqlExpression(expr), attr);
+    }
+    else
+        checkConstant(attr);
 }
 
 IHqlExpression * HqlGram::checkConstant(const attribute & errpos, IHqlExpression * expr)
 {
     if (expr->isConstant() || (expr->getOperator() == no_assertconstant))
         return LINK(expr);
+
+    if (expr->getOperator() == no_compound)
+        reportError(ERR_ASSOCIATED_SIDEEFFECT, errpos, "Constant expression has an implicitly associated side effect");
 
     return createValue(no_assertconstant, expr->getType(), LINK(expr), createLocationAttr(errpos));
 }
