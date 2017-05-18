@@ -77,6 +77,38 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="protocol" type="xs:string" use="optional" default="native">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Protocol to use</tooltip>
+                  <title>Protocol</title>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="passphrase" type="xs:string" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Pass phrase for cert</tooltip>
+                  <title>PassPhrase</title>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="certificateFileName" type="xs:string" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Path to certificate filename</tooltip>
+                  <title>CertFile</title>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="privateKeyFileName" type="xs:string" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Path to private key filename</tooltip>
+                  <title>CertFile</title>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
           </xs:complexType>
         </xs:element>
 
