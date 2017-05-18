@@ -474,9 +474,9 @@ class CDFUengine: public CInterface, implements IDFUengine
                 if (!dropZone)
                 {
                     if (env->isDropZoneRestrictionEnabled())
-                        throwError1(DFTERR_NoMatchingDropzonePath, pfilePath);
+                        throwError2(DFTERR_NoMatchingDropzonePath, netaddress.str(), pfilePath);
                     else
-                        LOG(MCdebugInfo, unknownJob, "No matching drop zone path to file path: '%s'", pfilePath);
+                        LOG(MCdebugInfo, unknownJob, "No matching drop zone path on '%s' to file path: '%s'", netaddress.str(), pfilePath);
                 }
 #ifdef _DEBUG
                 else

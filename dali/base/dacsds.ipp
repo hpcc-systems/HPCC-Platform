@@ -298,7 +298,7 @@ public:
     CClientRemoteTree(const char *name, IPTArrayValue *value, ChildMap *children, CRemoteConnection &conn, CPState _state=CPS_Unchanged);
     void beforeDispose();
     void resetState(unsigned state, bool sub=false);
-    inline bool queryStateChanges() const { return connection.queryStateChanges(); }
+    inline bool queryStateChanges() const { return serverId && connection.queryStateChanges(); }
     inline unsigned queryState() { return state; }
     void mergeState(unsigned _state) { setState(state | _state); }
     void clearState(unsigned _state) { setState(state & ~_state); }

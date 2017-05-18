@@ -26,6 +26,15 @@
 
 project( hql ) 
 
+set(extrasources)
+if (WIN32)
+  if (ARCH64BIT)
+    # 64bit windows builds do not support inline assembler - so the folding function needs to be defined in an asm file
+    enable_language(ASM_MASM)
+    set(extrasources hqlfoldasm.asm)
+  endif()
+endif()
+
 set (   SRCS 
         hqlatoms.cpp
         hqlattr.cpp
@@ -57,6 +66,8 @@ set (   SRCS
         hqlwuerr.cpp
         hqlxmldb.cpp
         reservedwords.cpp
+
+        ${extrasources}
 
         hqlgram.y
         hqllex.l

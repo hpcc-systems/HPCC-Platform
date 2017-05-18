@@ -711,6 +711,10 @@ void *loadExternalEntryPoint(IHqlExpression* expr, unsigned foldOptions, ITempla
     return fh;
 }
 
+#if defined(_WIN32) && defined(_ARCH_X86_64_)
+extern __int64 foldExternalCallStub(void * fh, double * doubleresult, size_t len, void * params);
+#endif
+
 IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateContext *templateContext, const char *library, const char *entrypoint, void *fh)
 {
     // NOTE - on OSX there are compiler bugs that prevent exceptions thrown from within this function from properly unwinding.
@@ -871,7 +875,9 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
 #ifdef _WIN32
  // Note - we assume X86/X86_64 Procedure Call Standard
  #if defined (_ARCH_X86_64_)
-        UNIMPLEMENTED;
+
+        int64result = foldExternalCallStub(fh, &doubleresult, len, strbuf);
+        intresult = (int)int64result;
  #elif defined (_ARCH_X86_)
         _asm{
         ;save registers that will be used
@@ -1279,7 +1285,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
 #else
             tgt = (char *)intresult;
 #endif
-            tlen = retUCharStar ? rtlUnicodeStrlen((UChar *)tgt) : strlen(tgt);
+            tlen = retUCharStar ? rtlUnicodeStrlen((UChar *)tgt) : (size32_t)strlen(tgt);
         }
         
         Linked<ITypeInfo> resultType = retType;
@@ -1557,7 +1563,7 @@ IHqlExpression *deserializeConstantSet(ITypeInfo *type, bool isAll, size32_t len
             case type_varstring:
                 values.append(*createConstant(data));
                 if (size==UNKNOWN_LENGTH)
-                    size = strlen(data)+1;
+                    size = (size32_t)(strlen(data)+1);
                 break;
             case type_string:
                 if (size==UNKNOWN_LENGTH)

@@ -71,7 +71,7 @@ public:
 
     virtual void onRemove(void *e)
     {
-        if (owner.queryConnection().queryStateChanges())
+        if (owner.queryStateChanges())
         {
             CClientRemoteTree *child = (CClientRemoteTree *)((IPropertyTree *)e);
             assertex(child);
@@ -752,7 +752,9 @@ IPropertyTree *CClientRemoteTree::ownPTree(IPropertyTree *tree)
     // if taking ownership of an orphaned clientremote tree need to reset it's attributes.
     if ((connection.queryStateChanges()) && isEquivalent(tree) && (!QUERYINTERFACE(tree, CClientRemoteTree)->IsShared()))
     {
-        ((CClientRemoteTree *)tree)->resetState(CPS_Changed, true);
+        CClientRemoteTree *_tree = QUERYINTERFACE(tree, CClientRemoteTree);
+        if (_tree->queryServerId())
+            ((CClientRemoteTree *)tree)->resetState(CPS_Changed, true);
         return tree;
     }
     else
@@ -767,8 +769,6 @@ IPropertyTree *CClientRemoteTree::create(const char *name, IPTArrayValue *value,
         newTree->setServerId(queryServerId());
         setServerId(0);
     }
-    else
-        newTree->mergeState(CPS_Changed); // flag new element as changed.
     return newTree;
 }
 
@@ -1122,14 +1122,7 @@ IPropertyTree *CClientRemoteTree::collateData()
 
     if (0 == serverId)
     {
-        if (ct.queryTree())
-        {
-            ct.queryTree()->removeProp(ATTRDELETE_TAG);
-            ct.queryTree()->removeProp(ATTRCHANGE_TAG);
-            ct.queryTree()->removeProp(DELETE_TAG);
-        }
-        else
-            ct.createTree();
+        ct.createTree();
         Owned<IAttributeIterator> iter = getAttributes();
         if (iter->count())
         {
