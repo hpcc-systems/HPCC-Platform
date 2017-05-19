@@ -810,6 +810,120 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
       </sect2>
 
+      <sect2 id="DaliServerPlugin" role="brk">
+        <title>DaliServerPlugin</title>
+
+        <para>DaliServerPlugin allows you to add plugin functionality to a
+        Dail server.</para>
+
+        <sect3>
+          <title>DaliServerPlugin attributes</title>
+
+          <para>This section describes the DaliServerPlugin attributes.</para>
+
+          <para>
+            <graphic fileref="images/Cass2.jpg" vendor="configmgrSS" />
+          </para>
+
+          <!--configMgr-daplugin-Include-->
+
+          <para>
+            <xi:include href="XMLGeneration/xml/daliplugin.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='daplug.t'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
+        </sect3>
+
+        <sect3>
+          <title>DaliServerPlugin Options</title>
+
+          <para>This section describes the DaliServerPlugin options</para>
+
+          <para>These options are available for the DaliServerplugin when
+          configuring a Casandra server. See the System Administrator's Guide
+          for more details about configuring a Cassandra server as a system
+          datastore.</para>
+
+          <para>
+            <informaltable colsep="1" frame="all" id="daliplugoptionstable"
+                           rowsep="1">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="125.55pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry>randomWuidSuffix</entry>
+
+                    <entry>An integer value indicating how many randomized
+                    digits to append to workunits. Set this if you need to
+                    create workunits at a high rate to reduce the risk of
+                    collisions (which would slow down the process of creating
+                    a new unique workunit id).</entry>
+                  </row>
+
+                  <row>
+                    <entry>traceLevel</entry>
+
+                    <entry>An integer value indicating how much tracing to
+                    output from Cassandra workunit operations. Set to zero or
+                    do not set in normal usage.</entry>
+                  </row>
+
+                  <row>
+                    <entry>partitions</entry>
+
+                    <entry>An integer value indicating how many ways to
+                    partition the data on a Cassandra cluster. The default is
+                    2. The value only takes effect when a new Cassandra
+                    workunit repository is created. Larger values permit
+                    scaling to a more distributed store but at the expense of
+                    some overhead on smaller stores where the scaling is not
+                    needed.</entry>
+                  </row>
+
+                  <row>
+                    <entry>prefixsize</entry>
+
+                    <entry>
+                      <para>An integer value specifying the minimum number of
+                      characters that must be provided when wildcard searching
+                      in the repository. Larger values will be more efficient
+                      but also more restrictive on users. The default is 2. As
+                      with partitions, this value only takes effect when a new
+                      Cassandra workunit repository is created.</para>
+                    </entry>
+                  </row>
+
+                  <row>
+                    <entry>keyspace</entry>
+
+                    <entry>The name of the Cassandra keyspace to use for the
+                    HPCC data store. The default is
+                    <emphasis>hpcc</emphasis>.</entry>
+                  </row>
+
+                  <row>
+                    <entry>user</entry>
+
+                    <entry>The username to use if the Cassandra server is
+                    configured to require credentials.</entry>
+                  </row>
+
+                  <row>
+                    <entry>password</entry>
+
+                    <entry>The password to use if the Cassandra server is
+                    configured to require credentials.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>
+          </para>
+        </sect3>
+      </sect2>
+
       <sect2 id="Dafilesrv-Process" role="brk">
         <title>Dafilesrv Process</title>
 
