@@ -814,13 +814,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>DaliServerPlugin</title>
 
         <para>DaliServerPlugin allows you to add plugin functionality to a
-        Dail server. </para>
+        Dail server.</para>
 
         <sect3>
           <title>DaliServerPlugin attributes</title>
 
-          <para>This section describes the DaliServerPlugin attributes.
-          </para>
+          <para>This section describes the DaliServerPlugin attributes.</para>
 
           <para>
             <graphic fileref="images/Cass2.jpg" vendor="configmgrSS" />
@@ -861,7 +860,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     digits to append to workunits. Set this if you need to
                     create workunits at a high rate to reduce the risk of
                     collisions (which would slow down the process of creating
-                    a new unique workunit id). </entry>
+                    a new unique workunit id).</entry>
                   </row>
 
                   <row>
@@ -869,7 +868,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                     <entry>An integer value indicating how much tracing to
                     output from Cassandra workunit operations. Set to zero or
-                    do not set in normal usage. </entry>
+                    do not set in normal usage.</entry>
                   </row>
 
                   <row>
@@ -881,7 +880,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     workunit repository is created. Larger values permit
                     scaling to a more distributed store but at the expense of
                     some overhead on smaller stores where the scaling is not
-                    needed. </entry>
+                    needed.</entry>
                   </row>
 
                   <row>
@@ -901,14 +900,15 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <entry>keyspace</entry>
 
                     <entry>The name of the Cassandra keyspace to use for the
-                    HPCC data store.</entry>
+                    HPCC data store. The default is
+                    <emphasis>hpcc</emphasis>.</entry>
                   </row>
 
                   <row>
                     <entry>user</entry>
 
                     <entry>The username to use if the Cassandra server is
-                    configured to require credentials. </entry>
+                    configured to require credentials.</entry>
                   </row>
 
                   <row>
