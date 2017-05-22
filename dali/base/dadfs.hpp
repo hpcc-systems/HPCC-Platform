@@ -725,6 +725,7 @@ interface INamedGroupStore: implements IGroupResolver
 extern da_decl INamedGroupStore  &queryNamedGroupStore();
 
 extern da_decl bool decodeChildGroupName(const char *gname,StringBuffer &parentname, StringBuffer &range);
+extern da_decl StringBuffer &encodeChildGroupRange(UnsignedArray &positions, StringBuffer &rangeText);
 
 
 // ==MISC========================================================================================================
