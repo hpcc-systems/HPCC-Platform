@@ -319,7 +319,7 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
         case childdataset_dataset:
         case childdataset_datasetleft:
         case childdataset_top_left_right:
-            if (expr->queryChild(0)->queryBody() == selector)
+            if (expr->queryChild(0)->queryNormalizedSelector() == selector)
                 return 1;
             break;
         }
