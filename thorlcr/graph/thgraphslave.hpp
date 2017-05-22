@@ -483,9 +483,14 @@ public:
     }
 };
 
+interface IActivityReplicatedFile : extends IReplicatedFile
+{
+    virtual IFile *open(CActivityBase &activity) = 0;
+};
+
 interface IPartDescriptor;
 extern graphslave_decl bool ensurePrimary(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIFile & ifile, unsigned &location, StringBuffer &path);
-extern graphslave_decl IReplicatedFile *createEnsurePrimaryPartFile(CActivityBase &activity, const char *logicalFilename, IPartDescriptor *partDesc);
+extern graphslave_decl IActivityReplicatedFile *createEnsurePrimaryPartFile(const char *logicalFilename, IPartDescriptor *partDesc);
 extern graphslave_decl IThorFileCache *createFileCache(unsigned limit);
 
 #endif

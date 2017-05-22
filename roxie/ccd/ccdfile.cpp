@@ -389,22 +389,22 @@ public:
     virtual const char *queryFilename() { return logical->queryFilename(); }
     virtual bool isAlive() const { return CInterface::isAlive(); }
 
-    virtual IMemoryMappedFile *queryMappedFile()
+    virtual IMemoryMappedFile *getMappedFile() override
     {
         CriticalBlock b(crit);
         if (mmapped)
-            return mmapped;
+            return mmapped.getLink();
         if (!remote)
         {
             mmapped.setown(logical->openMemoryMapped());
-            return mmapped;
+            return mmapped.getLink();
         }
-        return NULL;
+        return nullptr;
     }
 
-    virtual IFileIO *queryFileIO()
+    virtual IFileIO *getFileIO() override
     {
-        return this;
+        return LINK(this);
     }
 
 
