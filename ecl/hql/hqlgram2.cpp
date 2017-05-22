@@ -6336,28 +6336,13 @@ IHqlExpression *HqlGram::bindParameters(const attribute & errpos, IHqlExpression
             {
                 if (requireLateBind(function, actuals))
                 {
-                    IHqlExpression * ret = NULL;
+                    //A function with virtual dataset parameters - must be expanded now
                     const bool expandCallsWhenBound = true;
-                    if (!expandCallsWhenBound)
-                    {
-                        HqlExprArray args;
-                        args.append(*LINK(body));
-                        unwindChildren(args, function, 1);
-                        OwnedHqlExpr newFunction = createFunctionDefinition(function->queryId(), args);
-                        OwnedHqlExpr boundExpr = createBoundFunction(this, newFunction, actuals, lookupCtx.functionCache, expandCallsWhenBound);
+                    OwnedHqlExpr boundExpr = createBoundFunction(this, function, actuals, lookupCtx.functionCache, expandCallsWhenBound);
                         
-                        // get rid of the wrapper
-                        //assertex(boundExpr->getOperator()==no_template_context);
-                        ret = LINK(boundExpr);//->queryChild(0));
-                    }
-                    else
-                    {
-                        OwnedHqlExpr boundExpr = createBoundFunction(this, function, actuals, lookupCtx.functionCache, expandCallsWhenBound);
-                        
-                        // get rid of the wrapper
-                        assertex(boundExpr->getOperator()==no_template_context);
-                        ret = LINK(boundExpr->queryChild(0));
-                    }
+                    // get rid of the wrapper
+                    assertex(boundExpr->getOperator()==no_template_context);
+                    IHqlExpression * ret = LINK(boundExpr->queryChild(0));
 
                     IHqlExpression * formals = function->queryChild(1);
                     // bind fields
@@ -6609,7 +6594,6 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
             formalType = formalType->queryChildType();
         if (!formalType->assignableFrom(actualType->queryPromotedType()))
         {
-
             if (errpos)
             {
                 StringBuffer s,tp1,tp2;
