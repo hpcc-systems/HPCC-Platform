@@ -573,13 +573,20 @@ depending on where they wind up.-->
         </sect3>
       </sect2>
 
-      <sect2 id="Package_Maps">
+      <sect2 id="Package_Maps" role="brk">
         <title>Package Maps</title>
 
-        <para>From the Queries icon link, you can access the package maps
-        page. Press the <emphasis role="bold">Package Maps</emphasis> button
-        on the navigation sub-menu bar, to access to the Package Maps on your
-        cluster. <figure>
+        <para>A packagemap provides a reference to the contents of a superkey
+        used in queries that overrides the original definition. You can
+        organize your packagemap file mappings into a collection of files that
+        define the files for some subset of queries. These subsets are called
+        <emphasis role="bold">parts</emphasis> and can be used to organize by
+        various groupings such as function, files, or developer, etc. For more
+        information about Packagemaps see the <emphasis>Roxie
+        Reference</emphasis> guide.From the Queries icon link, you can access
+        the package maps page. Press the <emphasis role="bold">Package
+        Maps</emphasis> button on the navigation sub-menu bar, to access the
+        Package Maps on your cluster. <figure>
             <title>Package Maps</title>
 
             <mediaobject>
@@ -592,23 +599,14 @@ depending on where they wind up.-->
         <para>The package maps page, displays all the package maps loaded on
         your cluster. You can Add, Activate, Deactivate, Delete, or Open a
         package map. To examine a package map, select a package map from the
-        list. </para>
+        list.</para>
 
         <sect3>
           <title id="Packagemap_Actions">Packagemap Actions</title>
 
-          <para>A packagemap provides a reference to the contents of a
-          superkey used in queries that overrides the original definition. You
-          can organize your packagemap file mappings into a collection of
-          files that define the files for some subset of queries. These
-          subsets are called <emphasis role="bold">parts</emphasis> and can be
-          used to organize by various groupings such as function, files, or
-          developer, etc. For more information about Packagemaps see the
-          <emphasis>Roxie Reference</emphasis> guide. </para>
-
-          <para>To update the mappings, you would edit the packagemap file (or
-          a copy) add and activate the new one, and then delete the old one.
-          You can do this through the interface in ECLWatch.</para>
+          <para>To update package mappings, you would edit the packagemap file
+          (or a copy) add and activate the new one, and then delete the old
+          one. You can do this through the interface in ECLWatch.</para>
 
           <para><emphasis role="bold">Package Map Add </emphasis></para>
 
@@ -626,7 +624,7 @@ depending on where they wind up.-->
           <orderedlist>
             <listitem>
               <para>Select the packagemap to add by checking the box next to
-              it. </para>
+              it.</para>
             </listitem>
 
             <listitem>
@@ -636,8 +634,8 @@ depending on where they wind up.-->
 
             <listitem>
               <para>Press the <emphasis role="bold">Select Package
-              File</emphasis> button and select the package files to add.
-              </para>
+              File</emphasis> button and select the package files to
+              add.</para>
             </listitem>
 
             <listitem>
@@ -652,12 +650,12 @@ depending on where they wind up.-->
             <listitem>
               <para>Enter the IP address or hostname of the remote Dali to use
               for logical file lookups for the <emphasis role="bold">Remote
-              Dali IP Address</emphasis> field. </para>
+              Dali IP Address</emphasis> field.</para>
             </listitem>
 
             <listitem>
-              <para>Check the boxes to Activate or Overwrite as desired.
-              </para>
+              <para>Check the boxes to Activate or Overwrite as
+              desired.</para>
             </listitem>
           </orderedlist>
 
@@ -669,7 +667,7 @@ depending on where they wind up.-->
           <para><emphasis role="bold">Deactivate Package Map</emphasis></para>
 
           <para>The deactivate button will deactivate the currently active
-          packagemap. </para>
+          packagemap.</para>
 
           <para><emphasis role="bold">Package Map Delete </emphasis></para>
 
@@ -715,7 +713,7 @@ depending on where they wind up.-->
           <para>Press the <emphasis role="bold">Validate</emphasis> button to
           validate the package map. The result is shown on the <emphasis
           role="bold">Validate Active Package Map</emphasis> tab. You can also
-          Validate the package content, on the V<emphasis role="bold">alidate
+          Validate the package content, on the <emphasis role="bold">Validate
           Package Content</emphasis> tab.</para>
         </sect3>
       </sect2>
