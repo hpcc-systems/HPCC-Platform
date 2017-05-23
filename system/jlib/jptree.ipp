@@ -28,6 +28,7 @@
 
 #include "jptree.hpp"
 #include "jbuff.hpp"
+#include "jlog.hpp"
 
 #define ANE_APPEND -1
 #define ANE_SET -2
@@ -205,7 +206,7 @@ public:
     virtual const void *queryValueRaw() const override { return get(); }
     virtual size32_t queryValueRawSize() const override { return (size32_t)length(); }
 
-// serilizable
+// serializable
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
 
@@ -217,18 +218,307 @@ private:
 #define IptFlagSet(fs, f) (fs |= (f))
 #define IptFlagClr(fs, f) (fs &= (~f))
 
+// NOTE - hairy code alert!
+// In order to keep code common between atom and local versions of ptree, we store the atom-specific information BEFORE the this pointer of AttrStr
+// (see class AttrStrAtom below).
+// This requires some care - in particular must use the right method to destroy the objects, and must not add any virtual methods to either class
+
+#ifdef _DEBUG
+//#define TRACE_STRING_SIZE
+//#define TRACE_ATOM_SIZE
+//#define TRACE_ALL_STRING
+//#define TRACE_ALL_ATOM
+#endif
+
 struct AttrStr
+{
+    const char *get() const
+    {
+        return str_DO_NOT_USE_DIRECTLY;
+    }
+    char str_DO_NOT_USE_DIRECTLY[1];  // Actually [n] - null terminated
+
+    static AttrStr *create(const char *k)
+    {
+        size32_t kl = k ? strlen(k) : 0;
+#ifdef TRACE_ALL_STRING
+        DBGLOG("TRACE_ALL_STRING: %s", k);
+#endif
+#ifdef TRACE_STRING_SIZE
+        totsize += kl+1;
+        if (totsize > maxsize)
+        {
+            maxsize.store(totsize);
+            DBGLOG("TRACE_STRING_SIZE: total size now %" I64F "d", maxsize.load());
+        }
+#endif
+        AttrStr *ret = (AttrStr *) malloc(kl+1);
+        memcpy(ret->str_DO_NOT_USE_DIRECTLY, k, kl);
+        ret->str_DO_NOT_USE_DIRECTLY[kl] = 0;
+        return ret;
+    }
+    static inline AttrStr *createNC(const char *k)
+    {
+        // If we started to use a static hash table for common values, we would probably want to use a different one here for case-insensitive matches
+        return create(k);
+    }
+
+    static void destroy(AttrStr *a)
+    {
+#ifdef TRACE_STRING_SIZE
+        totsize -= strlen(a->str_DO_NOT_USE_DIRECTLY)+1;
+#endif
+        free(a);
+    }
+
+#ifdef TRACE_STRING_SIZE
+    static std::atomic<__int64> totsize;
+    static std::atomic<__int64> maxsize;
+#endif
+};
+
+
+// In order to keep code common between atom and local versions of ptree, we store the atom-specific information BEFORE the this pointer of AttrStr
+// This requires some care - in particular must use the right method to destroy the objects, and must not add any virtual methods to either class
+// Note that memory usage is significant as we create literally millions of these objects
+
+typedef unsigned hashfunc( const unsigned char *k, unsigned length, unsigned initval);
+
+struct AttrStrAtom
 {
     unsigned hash;
     unsigned short linkcount;
-    char str[1];
-    const char *get() const { return str; }
+    char str_DO_NOT_USE_DIRECTLY[1];  // Actually N
+
+    static AttrStrAtom *create(const char *k, size32_t kl, hashfunc _hash)
+    {
+#ifdef TRACE_ALL_ATOM
+        DBGLOG("TRACE_ALL_ATOM: %s", k);
+#endif
+#ifdef TRACE_ATOM_SIZE
+        totsize += sizeof(AttrStrAtom)+kl+1;
+        if (totsize > maxsize)
+        {
+            maxsize.store(totsize);
+            DBGLOG("TRACE_ATOM_SIZE: total size now %" I64F "d", maxsize.load());
+        }
+#endif
+        AttrStrAtom *ret = (AttrStrAtom *) malloc(offsetof(AttrStrAtom, str_DO_NOT_USE_DIRECTLY)+kl+1);
+        memcpy(ret->str_DO_NOT_USE_DIRECTLY, k, kl);
+        ret->str_DO_NOT_USE_DIRECTLY[kl] = 0;
+        ret->hash = _hash((const unsigned char *) k, kl, 17);
+        ret->linkcount = 0;
+        return ret;
+    }
+    static void destroy(AttrStrAtom *a)
+    {
+#ifdef TRACE_ATOM_SIZE
+        totsize -= sizeof(AttrStrAtom)+strlen(a->str_DO_NOT_USE_DIRECTLY)+1;
+#endif
+        free(a);
+    }
+
+    AttrStr *toAttrStr()
+    {
+        return (AttrStr *) &str_DO_NOT_USE_DIRECTLY;
+    }
+    static AttrStrAtom *toAtom(AttrStr *a)
+    {
+        return (AttrStrAtom *)(&a->str_DO_NOT_USE_DIRECTLY - offsetof(AttrStrAtom, str_DO_NOT_USE_DIRECTLY));
+    }
+#ifdef TRACE_ATOM_SIZE
+    static std::atomic<__int64> totsize;
+    static std::atomic<__int64> maxsize;
+#endif
+ };
+
+struct AttrStrC : public AttrStrAtom
+{
+    static inline unsigned getHash(const char *k)
+    {
+        return hashc((const byte *)k, strlen(k), 17);
+    }
+    inline bool eq(const char *k)
+    {
+        return streq(k,str_DO_NOT_USE_DIRECTLY);
+    }
+    static AttrStrC *create(const char *k)
+    {
+        size32_t kl = k ? strlen(k) : 0;
+        return (AttrStrC *) AttrStrAtom::create(k, kl, hashc);
+    }
 };
+
+struct AttrStrNC : public AttrStrAtom
+{
+    static inline unsigned getHash(const char *k)
+    {
+        return hashnc((const byte *)k, strlen(k), 17);
+    }
+    inline bool eq(const char *k)
+    {
+        return strieq(k,str_DO_NOT_USE_DIRECTLY);
+    }
+    static AttrStrNC *create(const char *k)
+    {
+        size32_t kl = k ? strlen(k) : 0;
+        return (AttrStrNC *) AttrStrAtom::create(k, kl, hashnc);
+    }
+};
+
+typedef CMinHashTable<AttrStrC> RONameTable;
+
+// NOTE - hairy code alert!
+// To save on storage (and contention) we store short string values in same slot as the pointer to longer
+// ones would occupy. This relies on the assumption that the pointers you want to store are always AT LEAST
+// 2-byte aligned. This should be the case on anything coming from malloc on any modern architecture.
+
+#define USE_STRUNION
+
+template<class PTR>
+struct PtrStrUnion
+{
+#ifdef USE_STRUNION
+    union
+    {
+        PTR *ptr;
+        struct
+        {
+#ifdef LITTLE_ENDIAN
+            char flag;
+#endif
+            union
+            {
+                char chars[sizeof(PTR *)-1];
+                struct
+                {
+                    int8_t idx1;
+                    int16_t idx2;
+                    int32_t idx4;
+                };
+            };
+#ifndef LITTLE_ENDIAN
+            char flag;
+#endif
+        };
+    };
+    inline PtrStrUnion<PTR>() : ptr(nullptr) {}
+    inline bool isPtr() const
+    {
+        return (flag&1) == 0;
+    }
+    inline const char *get() const
+    {
+        if (!isPtr())
+        {
+            assert(flag==1);
+            return chars;
+        }
+        else if (ptr)
+            return ptr->get();
+        else
+            return nullptr;
+    }
+    inline void destroy()
+    {
+        if (isPtr() && ptr)
+            PTR::destroy(ptr);
+    }
+    bool set(const char *key)
+    {
+        if (key)
+        {
+            size32_t l = strnlen(key, sizeof(PTR *));  // technically sizeof(PTR)-1 would do, but I suspect 8 bytes is actually more optimal to search than 7
+            if (l <= sizeof(PTR *)-2)
+            {
+                flag=1;
+                memmove(chars, key, l);  // Technically, they could overlap
+                chars[l]=0;
+                return true;
+            }
+        }
+        return false;
+    }
+    inline void setPtr(PTR *a)
+    {
+        ptr = a;
+        assert(isPtr());
+    }
+#else
+    PTR *ptr = nullptr;
+    inline bool isPtr()
+    {
+        return true;
+    }
+    inline const char *get()
+    {
+        if (ptr)
+            return ptr->get();
+        else
+            return nullptr;
+    }
+    inline void destroy()
+    {
+        if (ptr)
+            PTR::destroy(ptr);
+    }
+    bool set(const char *key)
+    {
+        return false;
+    }
+    inline void setPtr(PTR *a)
+    {
+        ptr = a;
+    }
+#endif
+    inline PTR *getPtr() const
+    {
+        return isPtr() ? ptr : nullptr;
+    }
+};
+
+#ifdef USE_STRUNION
+#define USE_READONLY_ATOMTABLE
+#endif
+
+typedef PtrStrUnion<AttrStr> AttrStrUnion;
+
+#ifdef USE_READONLY_ATOMTABLE
+struct AttrStrUnionWithTable : public AttrStrUnion
+{
+    inline const char *get() const
+    {
+        if (!isPtr() && flag==3)
+            return roNameTable->getIndex(idx4)->str_DO_NOT_USE_DIRECTLY;  // Should probably rename this back now!
+        return AttrStrUnion::get();
+    }
+    bool set(const char *key)
+    {
+        if (AttrStrUnion::set(key))
+            return true;
+        if (key && key[0]=='@')
+        {
+            unsigned idx = roNameTable->findIndex(key, AttrStrC::getHash(key));
+            if (idx != (unsigned) -1)
+            {
+                flag = 3;
+                idx4 = idx;
+                return true;
+            }
+        }
+        return false;
+    }
+    static RONameTable *roNameTable;
+};
+#else
+typedef AttrStrUnion AttrStrUnionWithTable;
+
+#endif
 
 struct AttrValue
 {
-    AttrStr *key;
-    AttrStr *value;
+    AttrStrUnionWithTable key;
+    AttrStrUnion value;
 };
 
 
@@ -244,11 +534,7 @@ public:
     ~PTree();
     virtual void beforeDispose() override { }
 
-    const char *queryName() const
-    {
-        return name?name->get():nullptr;
-    }
-    HashKeyElement *queryKey() const { return name; }
+    virtual unsigned queryHash() const = 0;
     IPropertyTree *queryParent() { return parent; }
     IPropertyTree *queryChild(unsigned index);
     ChildMap *queryChildren() { return children; }
@@ -366,105 +652,78 @@ protected: // data
     IPropertyTree *parent = nullptr; // ! currently only used if tree embedded into array, used to locate position.
     ChildMap *children;   // set by constructor
     IPTArrayValue *value; // set by constructor
-    HashKeyElement *name = nullptr;
     AttrValue *attrs = nullptr;
 };
 
 
-struct AttrStrC : public AttrStr
-{
-    static inline unsigned getHash(const char *k)
-    {
-        return hashc((const byte *)k, strlen(k), 17);
-    }
-    inline bool eq(const char *k)
-    {
-        return streq(k,str);
-    }
-    static AttrStrC *create(const char *k)
-    {
-        size32_t kl = (k?strlen(k):0);
-        AttrStrC *ret = (AttrStrC *)malloc(sizeof(AttrStrC)+kl);
-        memcpy(ret->str, k, kl);
-        ret->str[kl] = 0;
-        ret->hash = hashc((const byte *)k, kl, 17);
-        ret->linkcount = 0;
-        return ret;
-    }
-    static void destroy(AttrStrC *a)
-    {
-        free(a);
-    }
-};
-
-struct AttrStrNC : public AttrStr
-{
-    static inline unsigned getHash(const char *k)
-    {
-        return hashnc((const byte *)k, strlen(k), 17);
-    }
-    inline bool eq(const char *k)
-    {
-        return strieq(k,str);
-    }
-    static AttrStrNC *create(const char *k)
-    {
-        size32_t kl = (k?strlen(k):0);
-        AttrStrNC *ret = (AttrStrNC *)malloc(sizeof(AttrStrNC)+kl);
-        memcpy(ret->str,k,kl);
-        ret->str[kl] = 0;
-        ret->hash = hashnc((const byte *)k, kl, 17);
-        ret->linkcount = 0;
-        return ret;
-    }
-    static void destroy(AttrStrNC *a)
-    {
-        free(a);
-    }
-};
-
+static const unsigned NUMTABLES = 20;
 class CAttrValHashTable
 {
-    CMinHashTable<AttrStrC>  htc;
-    CMinHashTable<AttrStrNC> htnc;
-    CMinHashTable<AttrStrC>  htv;
+    CMinHashTable<AttrStrC>  htc[NUMTABLES];
+    CMinHashTable<AttrStrNC> htnc[NUMTABLES];
+    CMinHashTable<AttrStrC>  htv[NUMTABLES];
+    mutable CriticalSection critv[NUMTABLES];
+    mutable CriticalSection critk[NUMTABLES];
 public:
     inline AttrStr *addkey(const char *v,bool nc)
     {
-        AttrStr * ret;
+        AttrStrAtom * ret;
         if (nc)
-            ret = htnc.find(v,true);
+        {
+            unsigned hash = AttrStrNC::getHash(v);
+            unsigned table = hash % NUMTABLES;
+            CriticalBlock b(critk[table]);
+            ret = htnc[table].findh(v,hash,true);
+            if (ret->linkcount!=(unsigned short)-1)
+                ret->linkcount++;
+        }
         else
-            ret = htc.find(v,true);
-        if (ret->linkcount!=(unsigned short)-1)
-            ret->linkcount++;
-        return ret;
+        {
+            unsigned hash = AttrStrC::getHash(v);
+            unsigned table = hash % NUMTABLES;
+            CriticalBlock b(critk[table]);
+            ret = htc[table].findh(v,hash,true);
+            if (ret->linkcount!=(unsigned short)-1)
+                ret->linkcount++;
+        }
+        return ret->toAttrStr();
     }
     inline AttrStr *addval(const char *v)
     {
-        AttrStr * ret = htv.find(v,true);
+        unsigned hash = AttrStrC::getHash(v);
+        unsigned table = hash % NUMTABLES;
+        CriticalBlock b(critv[table]);
+        AttrStrAtom * ret = htv[table].findh(v,hash,true);
         if (ret->linkcount!=(unsigned short)-1)
             ret->linkcount++;
-        return ret;
+        return ret->toAttrStr();
     }
-    inline void removekey(AttrStr *a,bool nc)
+    inline void removekey(AttrStr *_a,bool nc)
     {
+        AttrStrAtom *a = AttrStrAtom::toAtom(_a);
         if (a->linkcount!=(unsigned short)-1)
         {
+            unsigned table = a->hash % NUMTABLES;
+            CriticalBlock b(critk[table]);
             if (--(a->linkcount)==0)
             {
                 if (nc)
-                    htnc.remove((AttrStrNC *)a);
+                    htnc[table].remove((AttrStrNC *)a);
                 else
-                    htc.remove((AttrStrC *)a);
+                    htc[table].remove((AttrStrC *)a);
             }
         }
     }
-    inline void removeval(AttrStr *a)
+    inline void removeval(AttrStr *_a)
     {
+        AttrStrAtom *a = AttrStrAtom::toAtom(_a);
         if (a->linkcount!=(unsigned short)-1)
+        {
+            unsigned table = a->hash % NUMTABLES;
+            CriticalBlock b(critv[table]);
             if (--(a->linkcount)==0)
-                htv.remove((AttrStrC *)a);
+                htv[table].remove((AttrStrC *)a);
+        }
     }
 };
 
@@ -473,13 +732,15 @@ class jlib_decl CAtomPTree : public PTree
 {
     AttrValue *newAttrArray(unsigned n);
     void freeAttrArray(AttrValue *a, unsigned n);
-
+    PtrStrUnion<HashKeyElement> name;
 protected:
     virtual void setAttribute(const char *attr, const char *val) override;
     virtual bool removeAttribute(const char *k) override;
 public:
     CAtomPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~CAtomPTree();
+    const char *queryName() const override;
+    virtual unsigned queryHash() const override;
     virtual void setName(const char *_name) override;
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (nullptr != QUERYINTERFACE(tree, CAtomPTree)); }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) override
@@ -502,10 +763,19 @@ class jlib_decl LocalPTree : public PTree
 protected:
     virtual void setAttribute(const char *attr, const char *val) override;
     virtual bool removeAttribute(const char *k) override;
+    AttrStrUnion name;
 public:
     LocalPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~LocalPTree();
 
+    const char *queryName() const override;
+    virtual unsigned queryHash() const override
+    {
+        const char *name = queryName();
+        assert(name);
+        size32_t nl = strlen(name);
+        return isnocase() ? hashnc((const byte *)name, nl, 0): hashc((const byte *)name, nl, 0);
+    }
     virtual void setName(const char *_name) override;
     virtual bool isEquivalent(IPropertyTree *tree) const override { return (nullptr != QUERYINTERFACE(tree, LocalPTree)); }
     virtual IPropertyTree *create(const char *name=nullptr, IPTArrayValue *value=nullptr, ChildMap *children=nullptr, bool existing=false) override

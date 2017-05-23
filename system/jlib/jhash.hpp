@@ -486,7 +486,7 @@ public:
         n++;
     }
 
-    C *findh(const char *key,unsigned h) 
+    C *findh(const char *key,unsigned h,bool add)
     {
         unsigned i=h%htn;
         while (table[i]) {
@@ -495,7 +495,14 @@ public:
             if (++i==htn)
                 i = 0;
         }
-        return NULL;
+        if (!add)
+            return NULL;
+        C *c = C::create(key);
+        table[i] = c;
+        n++;
+        if (n*4>htn*3)
+            expand();
+        return c;
     }
 
     C *find(const char *key,bool add) 
@@ -518,6 +525,23 @@ public:
         return c;
     }
 
+    unsigned findIndex(const char *key, unsigned h)
+    {
+        unsigned i=h%htn;
+        while (table[i]) {
+            if ((table[i]->hash==h)&&table[i]->eq(key))
+                return i;
+            if (++i==htn)
+                i = 0;
+        }
+        return (unsigned) -1;
+    }
+
+    C *getIndex(unsigned v) const
+    {
+        assert(v != (unsigned)-1 && v < htn);
+        return table[v];
+    }
 
     void remove(C *c)
     {
