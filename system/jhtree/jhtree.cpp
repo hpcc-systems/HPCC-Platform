@@ -647,6 +647,11 @@ public:
         }
     }
 
+    virtual void setChooseNLimit(unsigned __int64 _rowLimit) override
+    {
+        // TODO ?
+    }
+
     virtual void reset(bool crappyHack)
     {
         if (keyCursor)
