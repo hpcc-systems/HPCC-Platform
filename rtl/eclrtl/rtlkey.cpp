@@ -213,9 +213,9 @@ public:
     {
         lastCompareResult = false;
         hasCompareResult = false;
-        lastCompareValue = NULL;
         set.setown(deserializeStringSet(mb));
         mb.read(optional);
+        lastCompareValue = new char[size];
     }
     ~CSetKeySegmentMonitor();
 
