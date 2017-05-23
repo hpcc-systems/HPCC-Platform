@@ -167,6 +167,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     endforeach()
     #"cmake -DEXAMPLEPLUGIN=ON <path-to/HPCC-Platform/>" will configure the plugin makefiles to be built with "make".
 
+  set(LIBMEMCACHED_MINVERSION "1.0.10")
+
   if (SIGN_MODULES)
       message(STATUS "GPG signing check")
       execute_process(COMMAND bash "-c" "gpg --version | awk 'NR==1{print $3}'"

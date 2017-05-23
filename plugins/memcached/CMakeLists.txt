@@ -25,9 +25,6 @@
 project( memcachedplugin )
 
 if (MEMCACHED)
-    if(NOT DEFINED LIBMEMCACHED_MINVERSION)
-        set(LIBMEMCACHED_MINVERSION "1.0.10")
-    endif()
     ADD_PLUGIN(memcached PACKAGES LIBMEMCACHED MINVERSION ${LIBMEMCACHED_MINVERSION})
     if(MAKE_MEMCACHED)
 
@@ -57,11 +54,6 @@ if (MEMCACHED)
             set_target_properties(memcachedplugin PROPERTIES NO_SONAME 1)
         endif()
 
-        #if we are using generated libmemcached, target appropriate dependencies
-        if(MEMCACHED_USE_EXTERNAL_LIBRARY)
-            add_dependencies(memcachedplugin libmemcached libmemcachedutil)
-            install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libmemcached-${LIBMEMCACHED_VERSION}/libmemcached/.libs\")")
-        endif()
         target_link_libraries(
             memcachedplugin
             eclrtl
@@ -71,6 +63,12 @@ if (MEMCACHED)
         install(
             TARGETS memcachedplugin
             DESTINATION plugins)
+
+        if(MEMCACHED_USE_EXTERNAL_LIBRARY)
+            target_link_libraries(memcachedplugin libmemcached libmemcachedutil)
+            add_dependencies(memcachedplugin generate-libmemcached)
+            install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs\")")
+        endif()
     endif()
 endif()
 
