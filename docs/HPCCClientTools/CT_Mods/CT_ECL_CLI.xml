@@ -220,6 +220,7 @@ ECL_USER_NAME
 ECL_PASSWORD
 ECL_WAIT_TIMEOUT
 ECL_RESULT_LIMIT
+ECLCC_PATH
 </programlisting>
 
           <para></para>
@@ -2954,7 +2955,7 @@ ecl packagemap validate roxie --active</programlisting>
         <para><emphasis role="bold">ecl packagemap copy &lt;path&gt;
         &lt;target&gt; </emphasis></para>
 
-        <para>Copies a packagemap from one target to another. </para>
+        <para>Copies a packagemap from one target to another.</para>
 
         <para>Examples:</para>
 
@@ -2982,8 +2983,8 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>copy</entry>
 
-                  <entry>Copies a packagemap from one target to another
-                  </entry>
+                  <entry>Copies a packagemap from one target to
+                  another</entry>
                 </row>
 
                 <row>
@@ -2993,7 +2994,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>path</entry>
 
-                  <entry>Path to the source packagemap to copy. </entry>
+                  <entry>Path to the source packagemap to copy.</entry>
                 </row>
 
                 <row>
@@ -3027,39 +3028,39 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--source-process </entry>
+                  <entry>--source-process</entry>
 
                   <entry>Process cluster to copy files from</entry>
                 </row>
 
                 <row>
-                  <entry>--preload-all </entry>
+                  <entry>--preload-all</entry>
 
                   <entry>Set preload files option for all packages</entry>
                 </row>
 
                 <row>
-                  <entry>--replace </entry>
+                  <entry>--replace</entry>
 
-                  <entry>Replace existing packagmap </entry>
+                  <entry>Replace existing packagmap</entry>
                 </row>
 
                 <row>
-                  <entry>--update-super-files </entry>
+                  <entry>--update-super-files</entry>
 
                   <entry>Update local DFS superfiles if remote Dali has
                   changed</entry>
                 </row>
 
                 <row>
-                  <entry>--update-clone-from </entry>
+                  <entry>--update-clone-from</entry>
 
                   <entry>Update local clone from location if remote Dali has
                   changed</entry>
                 </row>
 
                 <row>
-                  <entry>--dont-append-cluster </entry>
+                  <entry>--dont-append-cluster</entry>
 
                   <entry>Only use to avoid locking issues due to adding
                   cluster to file</entry>
@@ -3110,11 +3111,11 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
         <itemizedlist>
           <listitem>
-            <para>remote packagemap: //IP:PORT/Target/PackageMapId </para>
+            <para>remote packagemap: //IP:PORT/Target/PackageMapId</para>
           </listitem>
 
           <listitem>
-            <para>local packagemap: target/PackageMapId </para>
+            <para>local packagemap: target/PackageMapId</para>
           </listitem>
         </itemizedlist>
       </sect2>
