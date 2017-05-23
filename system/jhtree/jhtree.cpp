@@ -260,6 +260,18 @@ void SegMonitorList::recalculateCache()
     cachedLRS = _lastRealSeg();
 }
 
+void SegMonitorList::reset()
+{
+    segMonitors.kill();
+    modified = true; mergeBarrier = 0;
+}
+
+void SegMonitorList::swapWith(SegMonitorList &other)
+{
+    reset();
+    other.segMonitors.swapWith(segMonitors);
+}
+
 void SegMonitorList::deserialize(MemoryBuffer &mb)
 {
     unsigned num;
@@ -948,6 +960,11 @@ public:
     virtual void setMergeBarrier(unsigned offset)
     {
         activitySegs->setMergeBarrier(offset); 
+    }
+
+    virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override
+    {
+        segs.swapWith(segmentMonitors);
     }
 
     virtual void deserializeSegmentMonitors(MemoryBuffer &mb) override
