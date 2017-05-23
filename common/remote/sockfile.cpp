@@ -1609,7 +1609,6 @@ void CEndpointCS::beforeDispose()
     table.removeExact(this);
 }
 
-
 class CRemoteFile : public CRemoteBase, implements IFile
 {
     StringAttr remotefilename;
@@ -3160,6 +3159,14 @@ public:
     }
 };
 
+struct OpenFileInfo
+{
+    OpenFileInfo(int _handle, IFileIO *_fileIO, StringAttrItem *_filename) : handle(_handle), fileIO(_fileIO), filename(_filename) { }
+    Linked<IFileIO> fileIO;
+    Linked<StringAttrItem> filename; // for debug
+    int handle;
+};
+
 class CRemoteFileServer : implements IRemoteFileServer, public CInterface
 {
     class CThrottler;
@@ -3173,10 +3180,8 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         MemoryBuffer msg;
         bool selecthandled;
         size32_t left;
-        IArrayOf<IFileIO>   openfiles;      // kept in sync with handles
+        StructArrayOf<OpenFileInfo> openFiles;
         Owned<IDirectoryIterator> opendir;
-        StringAttrArray     opennames;      // for debug
-        IntArray            handles;
         unsigned            lasttick, lastInactiveTick;
         atomic_t            &globallasttick;
         unsigned            previdx;        // for debug
@@ -3333,8 +3338,11 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
 
         void logPrevHandle()
         {
-            if (previdx<opennames.ordinality())
-                PROGLOG("Previous handle(%d): %s",handles.item(previdx),opennames.item(previdx).text.get());
+            if (previdx<openFiles.ordinality())
+            {
+                const OpenFileInfo &fileInfo = openFiles.item(previdx);
+                PROGLOG("Previous handle(%d): %s", fileInfo.handle, fileInfo.filename->text.get());
+            }
         }
 
         bool throttleCommand(MemoryBuffer &msg)
@@ -3481,9 +3489,11 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
                 ok = false;
             unsigned ms = msTick();
             str.appendf("): last touch %d ms ago (%d, %d)",ms-lasttick,lasttick,ms);
-            ForEachItemIn(i,handles) {
-                str.appendf("\n  %d: ",handles.item(i));
-                str.append(opennames.item(i).text);
+            ForEachItemIn(i, openFiles)
+            {
+                const OpenFileInfo &fileInfo = openFiles.item(i);
+                str.appendf("\n  %d: ", fileInfo.handle);
+                str.append(fileInfo.filename->text.get());
             }
             return ok;
         }
@@ -3819,8 +3829,10 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         handleidx = (unsigned)-1;
         ForEachItemIn(i,clients) {
             CRemoteClientHandler &client = clients.item(i);
-            ForEachItemIn(j,client.handles) {
-                if (client.handles.item(j)==handle) {
+            ForEachItemIn(j, client.openFiles)
+            {
+                if (client.openFiles.item(j).handle==handle)
+                {
                     handleidx = j;
                     clientidx = i;
                     return true;
@@ -3973,32 +3985,40 @@ public:
 
     //MORE: The file handles should timeout after a while, and accessing an old (invalid handle)
     // should throw a different exception
-    bool checkFileIOHandle(MemoryBuffer &reply, int handle, IFileIO *&fileio, bool del=false)
+    bool checkFileIOHandle(int handle, IFileIO *&fileio, bool del=false)
     {
         CriticalBlock block(sect);
         fileio = NULL;
-        if (handle<=0) {
-            appendErr(reply, RFSERR_NullFileIOHandle);
+        if (handle<=0)
             return false;
-        }
         unsigned clientidx;
         unsigned handleidx;
-        if (findHandle(handle,clientidx,handleidx)) {
+        if (findHandle(handle,clientidx,handleidx))
+        {
             CRemoteClientHandler &client = clients.item(clientidx);
-            if (del) {
-                client.handles.remove(handleidx);
-                client.openfiles.remove(handleidx);
-                client.opennames.remove(handleidx);
+            if (del)
+            {
+                client.openFiles.remove(handleidx);
                 client.previdx = (unsigned)-1;
             }
-            else {
-               fileio = &client.openfiles.item(handleidx);
+            else
+            {
+               fileio = client.openFiles.item(handleidx).fileIO;
                client.previdx = handleidx;
             }
             return true;
         }
-        appendErr(reply, RFSERR_InvalidFileIOHandle);
         return false;
+    }
+
+    bool checkFileIOHandle(MemoryBuffer &reply, int handle, IFileIO *&fileio, bool del=false)
+    {
+        if (!checkFileIOHandle(handle, fileio, del))
+        {
+            appendErr(reply, RFSERR_InvalidFileIOHandle);
+            return false;
+        }
+        return true;
     }
 
     void onCloseSocket(CRemoteClientHandler *client, int which) 
@@ -4086,15 +4106,13 @@ public:
         }
         if (TF_TRACE_PRE_IO)
             PROGLOG("before open file '%s',  (%d,%d,%d,%d,0%o)",name->text.get(),(int)mode,(int)share,extraFlags,sMode,cFlags);
-        IFileIO *fileio = file->open((IFOmode)mode,extraFlags);
+        Owned<IFileIO> fileio = file->open((IFOmode)mode,extraFlags);
         int handle;
         if (fileio) {
             CriticalBlock block(sect);
             handle = getNextHandle();
-            client.previdx = client.opennames.ordinality();
-            client.handles.append(handle);
-            client.openfiles.append(*fileio);
-            client.opennames.append(*name.getLink());
+            client.previdx = client.openFiles.ordinality();
+            client.openFiles.append(OpenFileInfo(handle, fileio, name));
         }
         else
             handle = 0;
@@ -5295,29 +5313,35 @@ public:
 
     void checkTimeout()
     {
-        if (msTick()-clientcounttick>1000*60*60) {
+        if (msTick()-clientcounttick>1000*60*60)
+        {
             CriticalBlock block(ClientCountSect);
             if (TF_TRACE_CLIENT_STATS && (ClientCount || MaxClientCount))
                 PROGLOG("Client count = %d, max = %d", ClientCount, MaxClientCount);
             clientcounttick = msTick();
             MaxClientCount = ClientCount;
-            if (closedclients) {
+            if (closedclients)
+            {
                 if (TF_TRACE_CLIENT_STATS)
                     PROGLOG("Closed client count = %d",closedclients);
                 closedclients = 0;
             }
         }
         CriticalBlock block(sect);
-        ForEachItemInRev(i,clients) {
+        ForEachItemInRev(i,clients)
+        {
             CRemoteClientHandler &client = clients.item(i);
-            if (client.timedOut()) {
+            if (client.timedOut())
+            {
                 StringBuffer s;
                 bool ok = client.getInfo(s);    // will spot duff sockets
-                if (ok&&(client.handles.ordinality()!=0))  {
+                if (ok&&(client.openFiles.ordinality()!=0))
+                {
                     if (TF_TRACE_CLIENT_CONN && client.inactiveTimedOut())
                         WARNLOG("Inactive %s",s.str());
                 }
-                else {
+                else
+                {
 #ifndef _DEBUG
                     if (TF_TRACE_CLIENT_CONN)
 #endif
