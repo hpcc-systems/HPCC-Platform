@@ -576,14 +576,14 @@ depending on where they wind up.-->
       <sect2 id="Package_Maps" role="brk">
         <title>Package Maps</title>
 
-        <para>A packagemap provides a reference to the contents of a superkey
+        <para>A package map provides a reference to the contents of a superkey
         used in queries that overrides the original definition. You can
-        organize your packagemap file mappings into a collection of files that
-        define the files for some subset of queries. These subsets are called
-        <emphasis role="bold">parts</emphasis> and can be used to organize by
-        various groupings such as function, files, or developer, etc. For more
-        information about Packagemaps see the <emphasis>Roxie
-        Reference</emphasis> guide.From the Queries icon link, you can access
+        organize your package map file mappings into a collection of files
+        that define the files for some subset of queries. These subsets are
+        called <emphasis role="bold">parts</emphasis> and can be used to
+        organize by various groupings such as function, files, or developer,
+        etc. For more information about Package maps see the <emphasis>Roxie
+        Reference</emphasis> guide. From the Queries icon link, you can access
         the package maps page. Press the <emphasis role="bold">Package
         Maps</emphasis> button on the navigation sub-menu bar, to access the
         Package Maps on your cluster. <figure>
@@ -623,12 +623,12 @@ depending on where they wind up.-->
 
           <orderedlist>
             <listitem>
-              <para>Select the packagemap to add by checking the box next to
+              <para>Select the package map to add by checking the box next to
               it.</para>
             </listitem>
 
             <listitem>
-              <para>Press the <emphasis role="bold">Add</emphasis> sub-menu
+              <para>Press the <emphasis role="bold">Add</emphasis> action
               button and open the Add Package Map dialog.</para>
             </listitem>
 
@@ -640,11 +640,12 @@ depending on where they wind up.-->
 
             <listitem>
               <para>Choose the <emphasis role="bold">Target </emphasis>to
-              associate the packagemap with.</para>
+              associate the package map with.</para>
             </listitem>
 
             <listitem>
-              <para>Choose a Process FIlter /*no command line equiv?*/</para>
+              <para>Choose a Process FIlter /*what is command line
+              equiv?*/</para>
             </listitem>
 
             <listitem>
@@ -661,26 +662,26 @@ depending on where they wind up.-->
 
           <para><emphasis role="bold">Activate Package Map</emphasis></para>
 
-          <para>Pressing the Activate button will deactivate the currently
-          active packagemap and make the selected packagemap active.</para>
+          <para>Press the Activate button to deactivate the currently active
+          package map and make the selected package map active.</para>
 
           <para><emphasis role="bold">Deactivate Package Map</emphasis></para>
 
-          <para>The deactivate button will deactivate the currently active
-          packagemap.</para>
+          <para>Press the deactivate button to deactivate the currently active
+          package map.</para>
 
           <para><emphasis role="bold">Package Map Delete </emphasis></para>
 
-          <para>To delete a packagemap:</para>
+          <para>To delete a package map:</para>
 
           <orderedlist>
             <listitem>
-              <para>Select the packagemap to delete by checking the box next
+              <para>Select the package map to delete by checking the box next
               to it.</para>
             </listitem>
 
             <listitem>
-              <para>Press the <emphasis role="bold">delete</emphasis> sub-menu
+              <para>Press the <emphasis role="bold">Delete</emphasis> action
               button.</para>
             </listitem>
 
@@ -691,10 +692,9 @@ depending on where they wind up.-->
         </sect3>
 
         <sect3>
-          <title id="Packagemap_Validation">Packagemap Validation</title>
+          <title id="Packagemap_Validation">Package map Validation</title>
 
-          <para>You can select the <emphasis role="bold">Validate Package
-          Map</emphasis> tab to validate a package map.</para>
+          <para>To validate your package map:</para>
 
           <para><figure>
               <title>Validate Package Maps</title>
@@ -706,15 +706,30 @@ depending on where they wind up.-->
               </mediaobject>
             </figure></para>
 
-          <para>Choose the <emphasis role="bold">Target</emphasis> and
-          <emphasis role="bold">Process</emphasis> from the drop lists on the
-          Validate Package Map tab.</para>
+          <orderedlist>
+            <listitem>
+              <para>Select the <emphasis role="bold">Validate Package
+              Map</emphasis> tab </para>
+            </listitem>
 
-          <para>Press the <emphasis role="bold">Validate</emphasis> button to
-          validate the package map. The result is shown on the <emphasis
-          role="bold">Validate Active Package Map</emphasis> tab. You can also
-          Validate the package content, on the <emphasis role="bold">Validate
-          Package Content</emphasis> tab.</para>
+            <listitem>
+              <para>Choose the <emphasis role="bold">Target</emphasis> and
+              <emphasis role="bold">Process</emphasis> from the drop lists on
+              the <emphasis role="bold">Validate Package Map</emphasis>
+              tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Validate</emphasis> button
+              to validate the package map. </para>
+            </listitem>
+          </orderedlist>
+
+          <para>The result is shown on the <emphasis role="bold">Validate
+          Active Package Map</emphasis> tab. </para>
+
+          <para>You can also Validate the package content on the <emphasis
+          role="bold">Validate Package Content</emphasis> tab.</para>
         </sect3>
       </sect2>
     </sect1>
