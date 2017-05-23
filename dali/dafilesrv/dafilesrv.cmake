@@ -31,7 +31,9 @@ include_directories (
          ./../../system/hrpc 
          ./../../common/remote 
          ./../../system/include 
+         ./../../system/jhtree
          ./../../system/jlib 
+         ./../../rtl/eclrtl
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
          ./../../system/security/shared
