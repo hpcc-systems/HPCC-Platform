@@ -241,7 +241,7 @@ public:
             Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, logicalFilename, part);
             Owned<IKeyManager> klManager;
 
-            bool remoteKey = !localKey && !seekGEOffset && !rfn.isLocal();
+            bool remoteKey = !localKey && !seekGEOffset && (!rfn.isLocal() || getOptBool("forceDafilesrv"));
             if (remoteKey)
                 klManager.setown(createRemoteKeyManager(filePath.str(), fixedDiskRecordSize, lfile));
             else
