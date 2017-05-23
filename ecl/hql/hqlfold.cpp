@@ -3756,6 +3756,12 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             OwnedHqlExpr folded = expandOutOfLineFunctionCall(expr);
             if ((folded != expr) && folded->isConstant())
                 return folded.getClear();
+            if (foldOptions & HFOforcefold)
+            {
+                OwnedHqlExpr transformed = expandDelayedFunctionCalls(nullptr, expr);
+                if (expr != transformed)
+                    return transformed.getClear();
+            }
             break;
         }
     case no_trim:

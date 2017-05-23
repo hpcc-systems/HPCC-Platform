@@ -1060,6 +1060,7 @@ QuickExpressionReplacer::QuickExpressionReplacer()
 
 void QuickExpressionReplacer::setMapping(IHqlExpression * oldValue, IHqlExpression * newValue)
 {
+    assertex(oldValue);
     for (;;)
     {
         oldValue->setTransformExtra(newValue);
@@ -1970,7 +1971,7 @@ IHqlExpression * NewHqlTransformer::transformCall(IHqlExpression * expr)
     bool same = transformChildren(body, args);
     if (same && (oldFuncdef == newFuncdef))
         return LINK(expr);
-    OwnedHqlExpr newCall = createBoundFunction(NULL, newFuncdef, args, NULL, DEFAULT_EXPAND_CALL);
+    OwnedHqlExpr newCall = createBoundFunction(NULL, newFuncdef, args, NULL, false);
     return expr->cloneAllAnnotations(newCall);
 }
 

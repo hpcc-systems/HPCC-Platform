@@ -23,6 +23,7 @@
 #include "hqlutil.hpp"
 #include "hqlmeta.hpp"
 #include "workunit.hpp"
+#include "hqlerrors.hpp"
 
 //The following constants can be uncommented to increase the level of detail which is added to the processed graphs
 //E.g. generated when -fl used in hqltest
@@ -448,7 +449,16 @@ StringBuffer &HqltHql::callEclFunction(StringBuffer &s, IHqlExpression * expr, b
 {
     assertex(expr->isNamedSymbol());
     IHqlExpression * funcdef = expr->queryFunctionDefinition();
-    assertex(funcdef->getOperator() == no_funcdef || funcdef->getOperator() == no_internalselect);
+    switch (funcdef->getOperator())
+    {
+    case no_funcdef:
+    case no_internalselect:
+    case no_delayedselect:
+        break;
+    default:
+        throw makeStringExceptionV(ERR_INTERNALEXCEPTION, "Internal: Unexpected function definition %s", getOpString(funcdef->getOperator()));
+    }
+
     IHqlExpression * formals = queryFunctionParameters(funcdef);
 
     s.append('(');

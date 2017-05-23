@@ -397,6 +397,7 @@ protected:
     bool optGenerateHeader = false;
     bool optShowPaths = false;
     bool optNoSourcePath = false;
+    bool optFastSyntax = false;
     mutable bool daliConnected = false;
     mutable bool disconnectReported = false;
     int argc;
@@ -1139,6 +1140,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
         HqlParseContext parseCtx(instance.dataServer, this, instance.archive);
+        if (optFastSyntax)
+            parseCtx.setFastSyntax();
         if (optMaxErrors > 0)
             parseCtx.maxErrors = optMaxErrors;
         parseCtx.unsuppressImmediateSyntaxErrors = optUnsuppressImmediateSyntaxErrors;
@@ -2182,6 +2185,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(tempArg, "-f"))
         {
             debugOptions.append(tempArg);
+        }
+        else if (iter.matchFlag(optFastSyntax, "--fastsyntax"))
+        {
         }
         else if (iter.matchFlag(tempBool, "-g") || iter.matchFlag(tempBool, "--debug"))
         {
