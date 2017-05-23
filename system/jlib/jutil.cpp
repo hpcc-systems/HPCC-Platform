@@ -2378,7 +2378,7 @@ IPropertyTree *getHPCCEnvironment()
         {
             Owned<IFileIO> fileio = file->open(IFOread);
             if (fileio)
-                return createPTree(*fileio);
+                return createPTree(*fileio, ipt_lowmem);
         }
     }
     return NULL;

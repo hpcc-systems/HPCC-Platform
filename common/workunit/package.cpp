@@ -39,7 +39,7 @@ CPackageNode::CPackageNode(IPropertyTree *p)
     if (p)
         node.set(p);
     else
-        node.setown(createPTree("HpccPackages"));
+        node.setown(createPTree("HpccPackages", ipt_lowmem));
     StringBuffer xml;
     toXML(node, xml, 0, XML_SortTags);
     hash = rtlHash64Data(xml.length(), xml.str(), 9994410);
@@ -158,7 +158,7 @@ IHpccPackageMap *createPackageMapFromPtree(IPropertyTree *t, const char *queryse
 
 IHpccPackageMap *createPackageMapFromXml(const char *xml, const char *queryset, const char *id)
 {
-    Owned<IPropertyTree> t = createPTreeFromXMLString(xml);
+    Owned<IPropertyTree> t = createPTreeFromXMLString(xml, ipt_lowmem);
     return createPackageMapFromPtree(t, queryset, id);
 }
 

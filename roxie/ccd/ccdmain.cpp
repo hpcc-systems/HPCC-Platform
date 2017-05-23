@@ -282,9 +282,7 @@ void getAccessList(const char *aclName, const IPropertyTree *topology, IProperty
     xpath.append("ACL[@name='").append(aclName).append("']");
     if (aclInfo->queryPropTree(xpath))
         throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - recursive ACL definition of %s", aclName);
-    Owned<IPropertyTree> X = createPTree("ACL");
-    X->setProp("@name", aclName);
-    aclInfo->addPropTree("ACL", X.getClear());
+    aclInfo->addPropTree("ACL")->setProp("@name", aclName);
 
     Owned<IPropertyTree> acl = topology->getPropTree(xpath.str());
     if (!acl)
@@ -314,10 +312,9 @@ void addSlaveChannel(unsigned channel, unsigned level)
     xpath.appendf("RoxieSlaveProcess[@channel=\"%d\"]", channel);
     if (ccdChannels->hasProp(xpath.str()))
         throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channel %d repeated", channel);
-    IPropertyTree *ci = createPTree("RoxieSlaveProcess");
+    IPropertyTree *ci = ccdChannels->addPropTree("RoxieSlaveProcess");
     ci->setPropInt("@channel", channel);
     ci->setPropInt("@subChannel", numSlaves[channel]);
-    ccdChannels->addPropTree("RoxieSlaveProcess", ci);
 }
 
 void addChannel(unsigned nodeNumber, unsigned channel, unsigned level)
@@ -499,7 +496,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)
 #endif
     srand( (unsigned)time( NULL ) );
-    ccdChannels = createPTree("Channels");
+    ccdChannels = createPTree("Channels", ipt_lowmem);
 
     char currentDirectory[_MAX_DIR];
     if (!getcwd(currentDirectory, sizeof(currentDirectory)))
@@ -524,7 +521,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (checkFileExists(topologyFile.str()))
         {
             DBGLOG("Loading topology file %s", topologyFile.str());
-            topology = createPTreeFromXMLFile(topologyFile.str());
+            topology = createPTreeFromXMLFile(topologyFile.str(), ipt_lowmem);
             saveTopology();
         }
         else
@@ -539,6 +536,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 " <RoxieFarmProcess/>"
                 " <RoxieServerProcess netAddress='.'/>"
                 "</RoxieTopology>"
+                , ipt_lowmem
                 );
             int port = globals->getPropInt("--port", 9876);
             topology->setPropInt("RoxieFarmProcess/@port", port);
@@ -1178,7 +1176,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 const char *aclName = roxieFarm.queryProp("@aclName");
                 if (aclName && *aclName)
                 {
-                    Owned<IPropertyTree> aclInfo = createPTree("AccessInfo");
+                    Owned<IPropertyTree> aclInfo = createPTree("AccessInfo", ipt_lowmem);
                     getAccessList(aclName, topology, aclInfo);
                     Owned<IPropertyTreeIterator> accesses = aclInfo->getElements("Access");
                     ForEach(*accesses)
@@ -1203,7 +1201,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 roxieServer->start();
             }
             writeSentinelFile(sentinelFile);
-            DBGLOG("Waiting for queries");
+            DBGLOG("Waiting for queries LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
             if (pingInterval)
                 startPingTimer();
             LocalIAbortHandler abortHandler(waiter);

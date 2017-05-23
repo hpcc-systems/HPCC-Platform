@@ -70,33 +70,74 @@ IPropertyTreeIterator *createNullPTreeIterator() { return LINK(nullPTreeIterator
 
 //===================================================================
 
+#ifdef USE_READONLY_ATOMTABLE
+RONameTable *AttrStrUnionWithTable::roNameTable = nullptr;
+#endif
 static AtomRefTable *keyTable = nullptr;
 static AtomRefTable *keyTableNC = nullptr;
+
 static CriticalSection hashcrit;
 static CAttrValHashTable *attrHT = nullptr;
 static AttrValue **freelist = nullptr;
 static unsigned freelistmax = 0;
 static CLargeMemoryAllocator freeallocator((memsize_t)-1, 0x1000*sizeof(AttrValue), true);
 
+#ifdef USE_READONLY_ATOMTABLE
+static const char * roAttributes[] =
+{
+#include "jptree-attrs.hpp"    // potentially auto-generated
+    nullptr
+};
+
+void initializeRoTable()
+{
+    for (const char **attr = roAttributes; *attr; attr++)
+    {
+        AttrStrUnionWithTable::roNameTable->find(*attr, true);
+    }
+#ifdef TRACE_ATOM_SIZE
+    // If you are wanting an idea of the savings from use of the RO hash table, it may be useful to reset
+    // the counts here. But it's more correct to actually leave them in place.
+    //AttrStrAtom::totsize = 0;
+    //AttrStrAtom::maxsize = 0;
+#endif
+#ifdef _DEBUG
+    for (const char **a = roAttributes; *a; a++)
+    {
+        // sanity check
+        unsigned idx = AttrStrUnionWithTable::roNameTable->findIndex(*a,AttrStrC::getHash(*a));
+        AttrStrC *val = AttrStrUnionWithTable::roNameTable->getIndex(idx);
+        assert(val && val->eq(*a));
+    }
+#endif
+}
+#endif
+
 MODULE_INIT(INIT_PRIORITY_JPTREE)
 {
     nullPTreeIterator = new NullPTreeIterator;
-	keyTable = new AtomRefTable;
-	keyTableNC = new AtomRefTable(true);
-	attrHT = new CAttrValHashTable;
+#ifdef USE_READONLY_ATOMTABLE
+    AttrStrUnionWithTable::roNameTable = new RONameTable;
+    initializeRoTable();
+#endif
+    keyTable = new AtomRefTable;
+    keyTableNC = new AtomRefTable(true);
+    attrHT = new CAttrValHashTable;
     return true;
 }
 
 MODULE_EXIT()
 {
     nullPTreeIterator->Release();
-	delete attrHT;
-	keyTable->Release();
-	keyTableNC->Release();
-	free(freelist);
-	freelist = NULL;
+    delete attrHT;
+    keyTable->Release();
+    keyTableNC->Release();
+#ifdef USE_READONLY_ATOMTABLE
+    delete AttrStrUnionWithTable::roNameTable;
+#endif
+    free(freelist);
+    freelist = NULL;
 }
-
 
 static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
 {
@@ -110,7 +151,7 @@ static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
 unsigned ChildMap::getHashFromElement(const void *e) const
 {
     PTree &elem = (PTree &) (*(IPropertyTree *)e);
-    return elem.queryKey()->queryHash();
+    return elem.queryHash();
 }
 
 unsigned ChildMap::numChildren()
@@ -1735,11 +1776,11 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
         virtual bool isValid() override { return cur ? true : false; }
         virtual const char *queryName() const override
         {
-            return cur->key->get();
+            return cur->key.get();
         }
         virtual const char *queryValue() const override
         {
-            return cur->value->get();
+            return cur->value.get();
         }
         virtual StringBuffer &getValue(StringBuffer &out) override
         {
@@ -1761,7 +1802,7 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
 
         static int compareAttrs(AttrValue * const *ll, AttrValue * const *rr)
         {
-            return stricmp((*ll)->key->get(), (*rr)->key->get());
+            return stricmp((*ll)->key.get(), (*rr)->key.get());
         };
 
         CSortedAttributeIterator(const PTree *_parent) : cur(NULL), iter(NULL), parent(_parent)
@@ -1804,12 +1845,12 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
         virtual const char *queryName() const override
         {
             assertex(cur);
-            return cur->key->get();
+            return cur->key.get();
         }
         virtual const char *queryValue() const override
         {
             assertex(cur);
-            return cur->value->get();
+            return cur->value.get();
         }
         virtual StringBuffer &getValue(StringBuffer &out) override
         {
@@ -2822,7 +2863,7 @@ AttrValue *PTree::findAttribute(const char *key) const
     {
         while (a-- != attrs)
         {
-            if (strieq(a->key->get(), key))
+            if (strieq(a->key.get(), key))
                 return a;
         }
     }
@@ -2830,7 +2871,7 @@ AttrValue *PTree::findAttribute(const char *key) const
     {
         while (a-- != attrs)
         {
-            if (streq(a->key->get(), key))
+            if (streq(a->key.get(), key))
                 return a;
         }
     }
@@ -2841,7 +2882,7 @@ const char *PTree::getAttributeValue(const char *key) const
 {
     AttrValue *e = findAttribute(key);
     if (e)
-        return e->value->get();
+        return e->value.get();
     return nullptr;
 }
 
@@ -2869,36 +2910,48 @@ AttrValue *PTree::getNextAttribute(AttrValue *cur) const
 
 // LocalPTree
 
-LocalPTree::LocalPTree(const char *_name, byte _flags, IPTArrayValue *_value, ChildMap *_children) : PTree(_flags, _value, _children)
+static RelaxedAtomic<unsigned> numLocalTrees;
+unsigned queryNumLocalTrees()
+{
+    return numLocalTrees;
+}
+
+LocalPTree::LocalPTree(const char *_name, byte _flags, IPTArrayValue *_value, ChildMap *_children) : PTree(_flags|ipt_fast, _value, _children)
 {
     if (_name)
         setName(_name);
+    numLocalTrees++;
 }
 
 LocalPTree::~LocalPTree()
 {
-    if (name)
-        free(name);
+    numLocalTrees--;
+    name.destroy();
     if (!attrs)
         return;
     AttrValue *a = attrs+numAttrs;
     while (a--!=attrs)
     {
-        free(a->key);
-        free(a->value);
+        a->key.destroy();
+        a->value.destroy();
     }
     free(attrs);
 }
 
+const char *LocalPTree::queryName() const
+{
+    return name.get();
+}
+
 void LocalPTree::setName(const char *_name)
 {
-    HashKeyElement *oname = name;
-    if (!_name)
-        name = nullptr;
-    else
-        name = AtomRefTable::createKeyElement(_name, isnocase());
+    if (_name==name.get())
+        return;
+    AttrStr *oname = name.getPtr();  // Don't free until after we copy - they could overlap
+    if (!name.set(_name))
+        name.setPtr(AttrStr::create(_name));
     if (oname)
-        free(oname);
+        AttrStr::destroy(oname);
 }
 
 bool LocalPTree::removeAttribute(const char *key)
@@ -2908,8 +2961,8 @@ bool LocalPTree::removeAttribute(const char *key)
         return false;
     numAttrs--;
     unsigned pos = del-attrs;
-    free(del->key);
-    free(del->value);
+    del->key.destroy();
+    del->value.destroy();
     memmove(attrs+pos, attrs+pos+1, (numAttrs-pos)*sizeof(AttrValue));
     return true;
 }
@@ -2923,41 +2976,66 @@ void LocalPTree::setAttribute(const char *key, const char *val)
     if (!val)
         val = "";  // cannot have NULL value
     AttrValue *v = findAttribute(key);
+    AttrStr *goer = nullptr;
     if (v)
     {
-        if (streq(v->value->get(), val))
+        if (streq(v->value.get(), val))
             return;
-        AttrStrC::destroy((AttrStrC *)v->value);
-        v->value = AttrStrC::create(val);
+        goer = v->value.getPtr();
     }
     else
     {
         attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
-        if (isnocase())
-            attrs[numAttrs].key = AttrStrNC::create(key);
-        else
-            attrs[numAttrs].key = AttrStrC::create(key);
-        attrs[numAttrs].value = AttrStrC::create(val);
-        numAttrs++;
+        v = &attrs[numAttrs++];
+        if (!v->key.set(key))
+            v->key.setPtr(isnocase() ? AttrStr::createNC(key) : AttrStr::create(key));
     }
+    if (!v->value.set(val))
+        v->value.setPtr(AttrStr::create(val));
+    if (goer)
+        AttrStr::destroy(goer);
 }
 
+#ifdef TRACE_STRING_SIZE
+std::atomic<__int64> AttrStr::totsize { 0 };
+std::atomic<__int64> AttrStr::maxsize { 0 };
+#endif
+
+#ifdef TRACE_ATOM_SIZE
+std::atomic<__int64> AttrStrAtom::totsize { 0 };
+std::atomic<__int64> AttrStrAtom::maxsize { 0 };
+#endif
 
 ///////////////////
 
-CAtomPTree::CAtomPTree(const char *_name, byte _flags, IPTArrayValue *_value, ChildMap *_children) : PTree(_flags, _value, _children)
+static RelaxedAtomic<unsigned> numAtomTrees;
+unsigned queryNumAtomTrees()
 {
+    return numAtomTrees;
+}
+
+CAtomPTree::CAtomPTree(const char *_name, byte _flags, IPTArrayValue *_value, ChildMap *_children) : PTree(_flags|ipt_lowmem, _value, _children)
+{
+    numAtomTrees++;
     if (_name)
         setName(_name);
 }
 
 CAtomPTree::~CAtomPTree()
 {
+    numAtomTrees--;
     bool nc = isnocase();
-    if (name)
+    HashKeyElement *name_ptr = name.getPtr();
+    if (name_ptr)
     {
         AtomRefTable *kT = nc?keyTableNC:keyTable;
-        kT->releaseKey(name);
+#ifdef TRACE_ATOM_SIZE
+        size_t gosize = sizeof(HashKeyElement)+strlen(name_ptr->get())+1;
+        if (kT->releaseKey(name_ptr))
+            AttrStrAtom::totsize -= gosize;
+#else
+        kT->releaseKey(name_ptr);
+#endif
     }
     if (!attrs)
         return;
@@ -2966,8 +3044,10 @@ CAtomPTree::~CAtomPTree()
         CriticalBlock block(hashcrit);
         while (a--!=attrs)
         {
-            attrHT->removekey(a->key, nc);
-            attrHT->removeval(a->value);
+            if (a->key.isPtr())
+                attrHT->removekey(a->key.getPtr(), nc);
+            if (a->value.isPtr())
+                attrHT->removeval(a->value.getPtr());
         }
         freeAttrArray(attrs, numAttrs);
     }
@@ -2976,17 +3056,65 @@ CAtomPTree::~CAtomPTree()
 void CAtomPTree::setName(const char *_name)
 {
     AtomRefTable *kT = isnocase()?keyTableNC:keyTable;
-    HashKeyElement *oname = name;
+    HashKeyElement *oname = name.getPtr(); // NOTE - don't release yet as could overlap source name
     if (!_name)
-        name = nullptr;
+        name.setPtr(nullptr);
     else
     {
         if (!validateXMLTag(_name))
             throw MakeIPTException(PTreeExcpt_InvalidTagName, ": %s", _name);
-        name = kT->queryCreate(_name);
+        if (!name.set(_name))
+        {
+#ifdef TRACE_ALL_ATOM
+            DBGLOG("TRACE_ALL_ATOM: %s", _name);
+#endif
+#ifdef TRACE_ATOM_SIZE
+            bool didCreate;
+            name.setPtr(kT->queryCreate(_name, didCreate));
+            if (didCreate)
+            {
+                AttrStrAtom::totsize += sizeof(HashKeyElement)+strlen(_name)+1;
+                if (AttrStrAtom::totsize > AttrStrAtom::maxsize)
+                {
+                    AttrStrAtom::maxsize.store(AttrStrAtom::totsize);
+                    DBGLOG("TRACE_ATOM_SIZE: total size now %" I64F "d", AttrStrAtom::maxsize.load());
+                }
+            }
+#else
+            name.setPtr(kT->queryCreate(_name));
+#endif
+        }
     }
     if (oname)
+    {
+#ifdef TRACE_ATOM_SIZE
+        size_t gosize = sizeof(HashKeyElement)+strlen(oname->get())+1;
+        if (kT->releaseKey(oname))
+            AttrStrAtom::totsize -= gosize;
+#else
         kT->releaseKey(oname);
+#endif
+    }
+}
+
+const char *CAtomPTree::queryName() const
+{
+    return name.get();
+}
+
+unsigned CAtomPTree::queryHash() const
+{
+    if (name.isPtr())
+    {
+        assert(name.getPtr());
+        return name.getPtr()->queryHash();
+    }
+    else
+    {
+        const char *_name = name.get();
+        size32_t nl = strlen(_name);
+        return isnocase() ? hashnc((const byte *) _name, nl, 0): hashc((const byte *) _name, nl, 0);
+    }
 }
 
 AttrValue *CAtomPTree::newAttrArray(unsigned n)
@@ -3031,19 +3159,32 @@ void CAtomPTree::setAttribute(const char *key, const char *val)
     AttrValue *v = findAttribute(key);
     if (v)
     {
-        if (streq(v->value->get(), val))
+        if (streq(v->value.get(), val))
             return;
-        CriticalBlock block(hashcrit);
-        attrHT->removeval(v->value);
-        v->value = attrHT->addval(val);
+        AttrStr * goer = v->value.getPtr();
+        if (!v->value.set(val))
+        {
+            CriticalBlock block(hashcrit);
+            if (goer)
+                attrHT->removeval(goer);
+            v->value.setPtr(attrHT->addval(val));
+        }
+        else if (goer)
+        {
+            CriticalBlock block(hashcrit);
+            attrHT->removeval(goer);
+        }
     }
     else
     {
         CriticalBlock block(hashcrit);
         AttrValue *newattrs = newAttrArray(numAttrs+1);
         memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
-        newattrs[numAttrs].key = attrHT->addkey(key, isnocase());
-        newattrs[numAttrs].value = attrHT->addval(val);
+        v = &newattrs[numAttrs];
+        if (!v->key.set(key))
+            v->key.setPtr(attrHT->addkey(key, isnocase()));
+        if (!v->value.set(val))
+            v->value.setPtr(attrHT->addval(val));
         freeAttrArray(attrs, numAttrs);
         numAttrs++;
         attrs = newattrs;
@@ -3057,8 +3198,10 @@ bool CAtomPTree::removeAttribute(const char *key)
         return false;
     numAttrs--;
     CriticalBlock block(hashcrit);
-    attrHT->removekey(del->key, isnocase());
-    attrHT->removeval(del->value);
+    if (del->key.isPtr())
+        attrHT->removekey(del->key.getPtr(), isnocase());
+    if (del->value.isPtr())
+        attrHT->removeval(del->value.getPtr());
     AttrValue *newattrs = newAttrArray(numAttrs);
     if (newattrs)
     {
@@ -3438,9 +3581,9 @@ IPropertyTreeIterator *PTStackIterator::popFromStack(StringAttr &path)
 
 // factory methods
 
-IPropertyTree *createPTree(MemoryBuffer &src)
+IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 {
-    IPropertyTree *tree = new DEFAULT_PTREE_TYPE();
+    IPropertyTree *tree = createPTree(nullptr, flags);
     tree->deserialize(src);
     return tree;
 }
@@ -6070,8 +6213,8 @@ jlib_decl void testJdocCompare()
 
 #endif
 
-
-class COrderedPTree : public DEFAULT_PTREE_TYPE
+template <class BASE_PTREE>
+class COrderedPTree : public BASE_PTREE
 {
     template <class BASECHILDMAP>
     class jlib_decl COrderedChildMap : public BASECHILDMAP
@@ -6137,43 +6280,54 @@ class COrderedPTree : public DEFAULT_PTREE_TYPE
         }
     };
 public:
-    COrderedPTree(const char *name=NULL, byte flags=ipt_none, IPTArrayValue *value=NULL, ChildMap *children=NULL)
-        : DEFAULT_PTREE_TYPE(name, flags|ipt_ordered, value, children) { }
+    typedef COrderedPTree<BASE_PTREE> SELF;
+    COrderedPTree<BASE_PTREE>(const char *name=NULL, byte flags=ipt_none, IPTArrayValue *value=NULL, ChildMap *children=NULL)
+        : BASE_PTREE(name, flags|ipt_ordered, value, children) { }
 
-    virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, COrderedPTree)); }
+    virtual bool isEquivalent(IPropertyTree *tree) const override { return (NULL != QUERYINTERFACE(tree, COrderedPTree<BASE_PTREE>)); }
     virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override
     {
-        return new COrderedPTree(name, flags, value, children);
+        return new COrderedPTree<BASE_PTREE>(name, SELF::flags, value, children);
     }
     virtual IPropertyTree *create(MemoryBuffer &mb) override
     {
-        IPropertyTree *tree = new COrderedPTree();
+        IPropertyTree *tree = new COrderedPTree<BASE_PTREE>();
         tree->deserialize(mb);
         return tree;
     }
     virtual void createChildMap() override
     {
-        if (isnocase())
-            children = new COrderedChildMap<ChildMapNC>();
+        if (SELF::isnocase())
+            SELF::children = new COrderedChildMap<ChildMapNC>();
         else
-            children = new COrderedChildMap<ChildMap>();
+            SELF::children = new COrderedChildMap<ChildMap>();
     }
 };
 
 IPropertyTree *createPTree(byte flags)
 {
-    if (flags & ipt_ordered)
-        return new COrderedPTree(NULL, flags);
-    else
-        return new DEFAULT_PTREE_TYPE(NULL, flags);
+    return createPTree(NULL, flags);
 }
 
 IPropertyTree *createPTree(const char *name, byte flags)
 {
-    if (flags & ipt_ordered)
-        return new COrderedPTree(name, flags);
-    else
+    switch (flags & (ipt_ordered|ipt_fast|ipt_lowmem))
+    {
+    case ipt_ordered|ipt_fast:
+        return new COrderedPTree<LocalPTree>(name, flags);
+    case ipt_ordered|ipt_lowmem:
+        return new COrderedPTree<CAtomPTree>(name, flags);
+    case ipt_ordered:
+        return new COrderedPTree<DEFAULT_PTREE_TYPE>(name, flags);
+    case ipt_fast:
+        return new LocalPTree(name, flags);
+    case ipt_lowmem:
+        return new CAtomPTree(name, flags);
+    case 0:
         return new DEFAULT_PTREE_TYPE(name, flags);
+    default:
+        throwUnexpectedX("Invalid flags - ipt_fast and ipt_lowmem should not be specified together");
+    }
 }
 
 typedef enum _ptElementType

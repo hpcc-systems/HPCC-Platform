@@ -953,7 +953,7 @@ public:
     }
     static IPropertyTree *getAllQueryStats(bool includeQueries, time_t from, time_t to)
     {
-        Owned<IPTree> result = createPTree("QueryStats");
+        Owned<IPTree> result = createPTree("QueryStats", ipt_fast);
         if (includeQueries)
         {
             SpinBlock b(queryStatsCrit);
@@ -994,7 +994,7 @@ public:
     {
         time_t timeNow;
         time(&timeNow);
-        Owned<IPropertyTree> result = createPTree("Query");
+        Owned<IPropertyTree> result = createPTree("Query", ipt_fast);
         result->setProp("@id", queryName);
         if (expirySeconds && difftime(timeNow, from) <= expirySeconds)
         {

@@ -113,13 +113,6 @@ public:
         item->setProp("@enqueuedt",dts.str());
     }
 
-    IPropertyTree *createBranch(CJobQueueItem)
-    {
-        IPropertyTree *item = createPTree("Item");
-        assignBranch(item,this);
-        return item;
-    }
-
     const char *queryWUID()
     {
         return wu.get();
@@ -893,7 +886,7 @@ public:
                             StringBuffer cpath;
                             cpath.appendf("Queue[@name=\"%s\"]",qd->qname.get());
                             if (!proot->hasProp(cpath.str())) {
-                                IPropertyTree *pt = proot->addPropTree("Queue",createPTree("Queue"));
+                                IPropertyTree *pt = proot->addPropTree("Queue");
                                 pt->setProp("@name",qd->qname.get());
                                 pt->setProp("@state","active");
                                 pt->setPropInt("@count", 0);
@@ -1087,8 +1080,7 @@ public:
         IPropertyTree *ret = qd.root->queryPropTree(path.str());
         if (!ret)
         {
-            ret = createPTree("Client");
-            ret = qd.root->addPropTree("Client",ret);
+            ret = qd.root->addPropTree("Client");
             ret->setPropInt64("@session",sessionid);
             StringBuffer eps;
             ret->setProp("@node",queryMyNode()->endpoint().getUrlStr(eps).str());

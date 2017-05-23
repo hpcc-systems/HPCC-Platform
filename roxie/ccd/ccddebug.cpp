@@ -410,7 +410,7 @@ public:
                                 IPropertyTree *att = edge.queryPropTree("att[@name=\"_roxieStarted\"]");
                                 if (!att)
                                 {
-                                    att = edge.addPropTree("att", createPTree());
+                                    att = edge.addPropTree("att");
                                     att->setProp("@name", "_roxieStarted");
                                 }
                                 else
@@ -440,7 +440,7 @@ public:
                                     IPropertyTree *att = edge.queryPropTree("att[@name=\"_roxieStarted\"]");
                                     if (!att)
                                     {
-                                        att = edge.addPropTree("att", createPTree());
+                                        att = edge.addPropTree("att");
                                         att->setProp("@name", "_roxieStarted");
                                     }
                                     else
@@ -1586,7 +1586,7 @@ public:
                 DebugRequestLookupActivityByEdgeId request(proxyId, edgeId);
                 CommonXmlWriter reply(0);
                 sendProxyRequest(&reply, request);
-                Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str());
+                Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str(), ipt_fast);
                 if (response)
                 {
                     memsize_t proxyId = (memsize_t) response->getPropInt64("@proxyId", 0);
@@ -1679,7 +1679,7 @@ public:
         reply.outputBeginNested("Counts", true);
         sendProxyRequest(&reply, request);
         reply.outputEndNested("Counts"); // strange way to do it...
-        Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str());
+        Owned<IPropertyTree> response = createPTreeFromXMLString(reply.str(), ipt_fast);
         if (response)
         {
             Owned<IPropertyTreeIterator> edges = response->getElements("edge");

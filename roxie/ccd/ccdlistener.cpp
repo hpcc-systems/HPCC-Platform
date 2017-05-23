@@ -173,7 +173,7 @@ public:
         StringBuffer lockQuery;
         lockQuery.appendf("<control:childlock thisEndpoint='%d' parent='%d'/>", activeIdxes.item(idx), myEndpoint);
         doChildQuery(idx, lockQuery.str(), lockReply);
-        Owned<IPropertyTree> lockResult = createPTreeFromXMLString(lockReply.str(), ipt_caseInsensitive);
+        Owned<IPropertyTree> lockResult = createPTreeFromXMLString(lockReply.str(), ipt_caseInsensitive|ipt_fast);
         int lockCount = lockResult->getPropInt("Lock", 0);
         if (lockCount)
         {
@@ -340,7 +340,7 @@ public:
 
     void doLockChild(const char *queryText, StringBuffer &reply)
     {
-        Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText);
+        Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText,ipt_fast);
         doLockChild(xml, queryText, reply);
     }
 
@@ -395,7 +395,7 @@ public:
 
     void doControlQuery(SocketEndpoint &ep, const char *queryText, StringBuffer &reply)
     {
-        Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText); // control queries are case sensitive
+        Owned<IPropertyTree> xml = createPTreeFromXMLString(queryText,ipt_fast); // control queries are case sensitive
         doControlQuery(ep, xml, queryText, reply);
     }
 
@@ -413,7 +413,7 @@ public:
             mergeType=CascadeMergeQueries;
         Owned<IPropertyTree> mergedReply;
         if (mergeType!=CascadeMergeNone)
-            mergedReply.setown(createPTree("Endpoint"));
+            mergedReply.setown(createPTree("Endpoint",ipt_fast));
 
         class casyncfor: public CAsyncFor
         {
@@ -444,7 +444,7 @@ public:
                 {
                     StringBuffer childReply;
                     parent->doChildQuery(i, queryText, childReply);
-                    Owned<IPropertyTree> replyXML = createPTreeFromXMLString(childReply);
+                    Owned<IPropertyTree> replyXML = createPTreeFromXMLString(childReply,ipt_fast);
                     if (!replyXML)
                     {
                         StringBuffer err;
@@ -490,7 +490,7 @@ public:
                 CriticalBlock cb(crit);
                 if (mergedReply)
                 {
-                    Owned<IPropertyTree> replyXML = createPTreeFromXMLString(myReply);
+                    Owned<IPropertyTree> replyXML = createPTreeFromXMLString(myReply,ipt_fast);
                     if (mergeType == CascadeMergeStats)
                         mergeStats(mergedReply, replyXML);
                     else if (mergeType == CascadeMergeQueries)

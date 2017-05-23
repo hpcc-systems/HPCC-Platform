@@ -126,7 +126,7 @@ public:
     CWorkflowItem(IPropertyTree & _tree) { tree.setown(&_tree); }
     CWorkflowItem(IPropertyTree * ptree, unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor)
     {
-        tree.setown(LINK(ptree->addPropTree("Item", createPTree())));
+        tree.setown(LINK(ptree->addPropTree("Item")));
         tree->setPropInt("@wfid", wfid);
         setEnum(tree, "@type", type, wftypes);
         setEnum(tree, "@mode", mode, wfmodes);
@@ -136,7 +136,7 @@ public:
         {
             tree->setPropInt("@recovery", recovery);
             tree->setPropInt("@retriesAllowed", retriesAllowed);
-            tree->addPropTree("Dependency", createPTree())->setPropInt("@wfid", recovery);
+            tree->addPropTree("Dependency")->setPropInt("@wfid", recovery);
         }
         if(contingencyFor) tree->setPropInt("@contingencyFor", contingencyFor);
         reset();
@@ -165,11 +165,11 @@ public:
     virtual bool         queryPersistRefresh() const { return tree->getPropBool("@persistRefresh", true); }
     virtual IStringVal & getCriticalName(IStringVal & val) const { val.set(tree->queryProp("@criticalName")); return val; }
     virtual IStringVal & queryCluster(IStringVal & val) const { val.set(tree->queryProp("@cluster")); return val; }
-    virtual void         setScheduledNow() { tree->setPropTree("Schedule", createPTree()); setEnum(tree, "@state", WFStateReqd, wfstates); }
-    virtual void         setScheduledOn(char const * name, char const * text) { IPropertyTree * stree = createPTree(); stree->setProp("@name", name); stree->setProp("@text", text); tree->setPropTree("Schedule", createPTree())->setPropTree("Event", stree); setEnum(tree, "@state", WFStateWait, wfstates); }
+    virtual void         setScheduledNow() { tree->setPropTree("Schedule"); setEnum(tree, "@state", WFStateReqd, wfstates); }
+    virtual void         setScheduledOn(char const * name, char const * text) { IPropertyTree * stree =  tree->setPropTree("Schedule")->setPropTree("Event"); stree->setProp("@name", name); stree->setProp("@text", text);; setEnum(tree, "@state", WFStateWait, wfstates); }
     virtual void         setSchedulePriority(unsigned priority) { assertex(tree->hasProp("Schedule")); tree->setPropInt("Schedule/@priority", priority); }
     virtual void         setScheduleCount(unsigned count) { assertex(tree->hasProp("Schedule")); tree->setPropInt("Schedule/@count", count); tree->setPropInt("Schedule/@countRemaining", count); }
-    virtual void         addDependency(unsigned wfid) { tree->addPropTree("Dependency", createPTree())->setPropInt("@wfid", wfid); }
+    virtual void         addDependency(unsigned wfid) { tree->addPropTree("Dependency")->setPropInt("@wfid", wfid); }
     virtual void         setPersistInfo(char const * name, unsigned wfid, int numPersistInstances, bool refresh)
     {
         tree->setProp("@persistName", name);
