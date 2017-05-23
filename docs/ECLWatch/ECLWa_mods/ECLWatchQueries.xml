@@ -282,7 +282,7 @@ depending on where they wind up.-->
                   </listitem>
                 </itemizedlist>
 
-                <para>The Filter also also supports wild cards. </para>
+                <para>The Filter also also supports wild cards.</para>
               </listitem>
             </varlistentry>
 
@@ -592,30 +592,132 @@ depending on where they wind up.-->
         <para>The package maps page, displays all the package maps loaded on
         your cluster. You can Add, Activate, Deactivate, Delete, or Open a
         package map. To examine a package map, select a package map from the
-        list.</para>
+        list. </para>
 
-        <para>You can select the <emphasis role="bold">Validate Package
-        Map</emphasis> tab to validate a package map.</para>
+        <sect3>
+          <title id="Packagemap_Actions">Packagemap Actions</title>
 
-        <para><figure>
-            <title>Validate Package Maps</title>
+          <para>A packagemap provides a reference to the contents of a
+          superkey used in queries that overrides the original definition. You
+          can organize your packagemap file mappings into a collection of
+          files that define the files for some subset of queries. These
+          subsets are called <emphasis role="bold">parts</emphasis> and can be
+          used to organize by various groupings such as function, files, or
+          developer, etc. For more information about Packagemaps see the
+          <emphasis>Roxie Reference</emphasis> guide. </para>
 
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="../../images/ECLWaPkMgr.jpg" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
+          <para>To update the mappings, you would edit the packagemap file (or
+          a copy) add and activate the new one, and then delete the old one.
+          You can do this through the interface in ECLWatch.</para>
 
-        <para>Choose the <emphasis role="bold">Target</emphasis> and <emphasis
-        role="bold">Process</emphasis> from the drop lists on the Validate
-        Package Map tab.</para>
+          <para><emphasis role="bold">Package Map Add </emphasis></para>
 
-        <para>Press the <emphasis role="bold">Validate</emphasis> button to
-        validate the package map. The result is shown on the <emphasis
-        role="bold">Validate Active Package Map</emphasis> tab. You can also
-        Validate the package content, on the V<emphasis role="bold">alidate
-        Package Content</emphasis> tab.</para>
+          <para><figure>
+              <title>Add Package Maps</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA470A.jpg"
+                             vendor="ECLWatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure>To Add a packagemap to the target cluster:</para>
+
+          <orderedlist>
+            <listitem>
+              <para>Select the packagemap to add by checking the box next to
+              it. </para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Add</emphasis> sub-menu
+              button and open the Add Package Map dialog.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Select Package
+              File</emphasis> button and select the package files to add.
+              </para>
+            </listitem>
+
+            <listitem>
+              <para>Choose the <emphasis role="bold">Target </emphasis>to
+              associate the packagemap with.</para>
+            </listitem>
+
+            <listitem>
+              <para>Choose a Process FIlter /*no command line equiv?*/</para>
+            </listitem>
+
+            <listitem>
+              <para>Enter the IP address or hostname of the remote Dali to use
+              for logical file lookups for the <emphasis role="bold">Remote
+              Dali IP Address</emphasis> field. </para>
+            </listitem>
+
+            <listitem>
+              <para>Check the boxes to Activate or Overwrite as desired.
+              </para>
+            </listitem>
+          </orderedlist>
+
+          <para><emphasis role="bold">Activate Package Map</emphasis></para>
+
+          <para>Pressing the Activate button will deactivate the currently
+          active packagemap and make the selected packagemap active.</para>
+
+          <para><emphasis role="bold">Deactivate Package Map</emphasis></para>
+
+          <para>The deactivate button will deactivate the currently active
+          packagemap. </para>
+
+          <para><emphasis role="bold">Package Map Delete </emphasis></para>
+
+          <para>To delete a packagemap:</para>
+
+          <orderedlist>
+            <listitem>
+              <para>Select the packagemap to delete by checking the box next
+              to it.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">delete</emphasis> sub-menu
+              button.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press OK when prompted to confirm.</para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+
+        <sect3>
+          <title id="Packagemap_Validation">Packagemap Validation</title>
+
+          <para>You can select the <emphasis role="bold">Validate Package
+          Map</emphasis> tab to validate a package map.</para>
+
+          <para><figure>
+              <title>Validate Package Maps</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWaPkMgr.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Choose the <emphasis role="bold">Target</emphasis> and
+          <emphasis role="bold">Process</emphasis> from the drop lists on the
+          Validate Package Map tab.</para>
+
+          <para>Press the <emphasis role="bold">Validate</emphasis> button to
+          validate the package map. The result is shown on the <emphasis
+          role="bold">Validate Active Package Map</emphasis> tab. You can also
+          Validate the package content, on the V<emphasis role="bold">alidate
+          Package Content</emphasis> tab.</para>
+        </sect3>
       </sect2>
     </sect1>
   </chapter>
