@@ -216,7 +216,7 @@ define([
             var list = this.arrayToList(selection, "Name");
             if (confirm(this.i18n.DeleteSelectedFiles + "\n" + list)) {
                 var context = this;
-                WsDfu.DFUArrayAction(selection, this.i18n.Delete).then(function (response) {
+                WsDfu.DFUArrayAction(selection, "Delete").then(function (response) {
                     context.refreshGrid(true);
                 });
             }
