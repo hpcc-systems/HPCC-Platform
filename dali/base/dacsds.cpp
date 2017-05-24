@@ -749,16 +749,19 @@ ChildMap *CClientRemoteTree::_checkChildren()
 
 IPropertyTree *CClientRemoteTree::ownPTree(IPropertyTree *tree)
 {
-    // if taking ownership of an orphaned clientremote tree need to reset it's attributes.
-    if ((connection.queryStateChanges()) && isEquivalent(tree) && (!QUERYINTERFACE(tree, CClientRemoteTree)->IsShared()))
+    // if taking ownership of an orphaned clientremote tree need to reset its attributes.
+    if ((connection.queryStateChanges()) && isEquivalent(tree))
     {
-        CClientRemoteTree *_tree = QUERYINTERFACE(tree, CClientRemoteTree);
-        if (_tree->queryServerId())
-            ((CClientRemoteTree *)tree)->resetState(CPS_Changed, true);
-        return tree;
+        CClientRemoteTree * remoteTree = static_cast<CClientRemoteTree *>(tree);
+        if (!remoteTree->IsShared())
+        {
+            if (remoteTree->queryServerId())
+                remoteTree->resetState(CPS_Changed, true);
+            return tree;
+        }
     }
-    else
-        return PARENT::ownPTree(tree);
+
+    return PARENT::ownPTree(tree);
 }
 
 IPropertyTree *CClientRemoteTree::create(const char *name, IPTArrayValue *value, ChildMap *children, bool existing)
