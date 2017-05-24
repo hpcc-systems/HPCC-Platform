@@ -534,11 +534,11 @@ protected:
     CConnectionHashTable connections;
 };
 
-class CPTArrayIterator : public CArrayIteratorOf<IPropertyTree, IPropertyTreeIterator>
+class DaliPTArrayIterator : public CArrayIteratorOf<IPropertyTree, IPropertyTreeIterator>
 {
     DECL_NAMEDCOUNT;
 public:
-    CPTArrayIterator() : CArrayIteratorOf<IPropertyTree, IPropertyTreeIterator>(array) { INIT_NAMEDCOUNT; }
+    DaliPTArrayIterator() : CArrayIteratorOf<IPropertyTree, IPropertyTreeIterator>(array) { INIT_NAMEDCOUNT; }
     IArrayOf<IPropertyTree> array;
 };
 

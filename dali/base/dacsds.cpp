@@ -1546,7 +1546,7 @@ IPropertyTreeIterator *CClientSDSManager::getElements(CRemoteConnection &connect
             unsigned count;
             mb.read(count);
             CDisableFetchChangeBlock block(connection);
-            Owned<CPTArrayIterator> iter = new CPTArrayIterator();
+            Owned<DaliPTArrayIterator> iter = new DaliPTArrayIterator();
             while (count--)
             {
                 CClientRemoteTree *tree = new CClientRemoteTree(connection);
@@ -2073,7 +2073,7 @@ IPropertyTreeIterator *CClientSDSManager::getElementsRaw(const char *xpath, INod
     {
         case DAMP_SDSREPLY_OK:
         {
-            Owned<CPTArrayIterator> resultIterator = new CPTArrayIterator;
+            Owned<DaliPTArrayIterator> resultIterator = new DaliPTArrayIterator;
             unsigned count, c;
             mb.read(count);
             for (c=0; c<count; c++)
