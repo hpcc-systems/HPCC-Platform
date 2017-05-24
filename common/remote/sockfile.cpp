@@ -2605,7 +2605,7 @@ class CRemoteKeyManager : public CSimpleInterfaceOf<IKeyManager>
     MemoryBuffer rowDataBuffer;
     size32_t keyCursorSz = 0;        // used for continuation
     const void *keyCursor = nullptr; // used for continuation
-    unsigned totalGot = 0;
+    unsigned __int64 totalGot = 0;
     size32_t maxRecsPerRequest = 100; // arbritary # recs per request, perhaps should be based on recsize
     size32_t keySize = 0;
     size32_t currentSize = 0;
@@ -2653,7 +2653,7 @@ public:
         keyCursorSz = 0;
         keyCursor = nullptr;
     }
-    virtual void releaseSegmentMonitors() override { segs.segMonitors.kill(); }
+    virtual void releaseSegmentMonitors() override { segs.reset(); }
     virtual const byte *queryKeyBuffer(offset_t & fpos) override
     {
         fpos = currentFpos;
@@ -2683,14 +2683,11 @@ public:
             {
                 if (!first && (nullptr == keyCursor)) // No keyCursor implies there is nothing more to fetch
                     return false;
-                size32_t maxRecs = maxRecsPerRequest;
+                unsigned maxRecs = maxRecsPerRequest;
                 if (maxRecs && chooseNLimit)
                 {
-                    if (totalGot >= chooseNLimit)
-                        break;
-                    maxRecs = chooseNLimit - totalGot;
-                    if (maxRecs > maxRecsPerRequest)
-                        maxRecs = maxRecsPerRequest; // limit to
+                    if (totalGot + maxRecs > chooseNLimit)
+                        maxRecs = chooseNLimit - totalGot;
                 }
                 if (0 == maxRecs)
                     break;
@@ -2754,16 +2751,16 @@ public:
     virtual void resetCounts() override { UNIMPLEMENTED; }
 
     virtual void setLayoutTranslator(IRecordLayoutTranslator * trans) override { UNIMPLEMENTED; }
-    virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override { UNIMPLEMENTED; }
-    virtual void deserializeSegmentMonitors(MemoryBuffer &mb) override { UNIMPLEMENTED; }
+    virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override { segs.swapWith(segmentMonitors); }
+    virtual void deserializeSegmentMonitors(MemoryBuffer &mb) override { segs.deserialize(mb); }
     virtual void finishSegmentMonitors() override { }
     virtual bool lookupSkip(const void *seek, size32_t seekGEOffset, size32_t seeklen) override { UNIMPLEMENTED; }
     virtual void append(IKeySegmentMonitor *segment) override
     {
         segs.append(segment);
     }
-    virtual unsigned ordinality() const override { UNIMPLEMENTED; }
-    virtual IKeySegmentMonitor *item(unsigned idx) const override { UNIMPLEMENTED; }
+    virtual unsigned ordinality() const override { return segs.ordinality(); }
+    virtual IKeySegmentMonitor *item(unsigned idx) const override { return segs.item(idx); }
     virtual void setMergeBarrier(unsigned offset) override { UNIMPLEMENTED; }
 };
 
