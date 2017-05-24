@@ -14,7 +14,10 @@
       <primary>ALL</primary>
     </indexterm>[, HASH<indexterm>
       <primary>HASH</primary>
-    </indexterm>]] [, KEEP<indexterm>
+    </indexterm>]] [,BEST (<indexterm>
+      <primary>BEST</primary>
+    </indexterm></emphasis><emphasis>sort-list</emphasis><emphasis
+  role="bold">)[[, KEEP<indexterm>
       <primary>KEEP</primary>
     </indexterm> </emphasis><emphasis>n </emphasis><emphasis role="bold">]
   [</emphasis>,<emphasis> keeper </emphasis><emphasis role="bold">] ]
@@ -76,6 +79,23 @@
 
             <entry>Optional. Specifies the ALL operation is performed using
             hash tables.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">BEST</emphasis></entry>
+
+            <entry>Optional. Provides additional control over which records
+            are retained from a set of “duplicate” records. The first in the
+            &lt;sort-list&gt; order of records are retained. BEST cannot be
+            used with a KEEP parameter greater than 1.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sort-list</emphasis></entry>
+
+            <entry>A comma delimited list of fields defining the duplicate
+            records to keep.. The fields may be prefixed with a minus sign to
+            require a reverse sort on that field.</entry>
           </row>
 
           <row>
@@ -220,6 +240,55 @@
   the right is kept. In both cases, the next comparison involves the de-dupe
   survivor; in this way, many duplicate records can collapse into one.</para>
 
+  <para>The <emphasis role="bold">BEST</emphasis> option provides additional
+  control over which records are retained from a set of “duplicate” records.
+  The first in the <emphasis>sort-list</emphasis> order of records are
+  retained. The <emphasis>sort-list</emphasis> is comma delimited list of
+  fields. The fields may be prefixed with a minus sign to require a reverse
+  sort on that field. </para>
+
+  <para>DEDUP(recordset, field1, BEST(field2) ) means that from set of
+  duplicate records, the first record from the set duplicates sorted by field2
+  is retained. DEDUP(recordset, field1, BEST(-field2) ) produces the last
+  record sorted by field2 from the set of duplicates. </para>
+
+  <para>The BEST option cannot be used with a KEEP parameter greater than
+  1.</para>
+
+  <para>Example:</para>
+
+  <programlisting>SomeFile := DATASET([{'001','KC','G'}, 
+                     {'002','KC','Z'}, 
+                     {'003','KC','Z'}, 
+                     {'004','KC','C'}, 
+                     {'005','KA','X'}, 
+                     {'006','KB','A'}, 
+                     {'007','KB','G'}, 
+                     {'008','KA','B'}],{STRING3 Id, String2 Value1, String1 Value2});
+
+SomeFile1 := SORT(SomeFile, Value1);
+
+DEDUP(SomeFile1, Value1, BEST(Value2));
+// Output: 
+// id value1 value2
+// 008 KA B
+// 006 KB A
+// 004 KC C
+
+DEDUP(SomeFile1, Value1, BEST(-Value2));
+// Output:
+// id value1 value2
+// 005 KA X
+// 007 KB G
+// 002 KC Z
+
+DEDUP(SomeFile1, Value1, HASH, BEST(Value2));
+// Output: 
+// id value1 value2
+// 008 KA B
+// 006 KB A
+// 004 KC C</programlisting>
+
   <sect2 id="Complex_Record_Set_Conditions">
     <title>Complex Record Set Conditions</title>
 
@@ -272,7 +341,8 @@ DedupedInqs := DEDUP(inquiry, LEFT.inq_ind_code='BB' AND
            RIGHT.inq_drpt_day,3),
         ALL );
 InqCount := COUNT(Inquiry) - COUNT(DedupedInqs);
-OUTPUT(person(InqCount &gt;0),{InqCount});  </programlisting>
+OUTPUT(person(InqCount &gt;0),{InqCount});  
+</programlisting>
 
     <para>See Also: <link linkend="SORT">SORT</link>, <link
     linkend="ROLLUP">ROLLUP</link>, <link linkend="TABLE">TABLE</link>, <link
