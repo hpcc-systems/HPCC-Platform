@@ -3352,12 +3352,15 @@ public:
     }
 };
 
+enum OpenFileFlag { of_null=0x0, of_key=0x01 };
 struct OpenFileInfo
 {
+    OpenFileInfo() { }
     OpenFileInfo(int _handle, IFileIO *_fileIO, StringAttrItem *_filename) : handle(_handle), fileIO(_fileIO), filename(_filename) { }
     Linked<IFileIO> fileIO;
     Linked<StringAttrItem> filename; // for debug
-    int handle;
+    int handle = 0;
+    unsigned flags = 0;
 };
 
 class CRemoteFileServer : implements IRemoteFileServer, public CInterface
@@ -4055,10 +4058,18 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
 
     IKeyManager *prepKey(int handle, const char *keyname, unsigned keySize, SegMonitorList &segs)
     {
-        IFileIO *fileio;
-        if (!checkFileIOHandle(handle, fileio))
-            throw createDafsException(RFSERR_InvalidFileIOHandle, "PrepKey");
-        Owned<IKeyIndex> index = createKeyIndex(keyname, 0, *fileio, false, false);
+        OpenFileInfo fileInfo;
+        if (!lookupFileIOHandle(handle, fileInfo, of_key))
+        {
+            VStringBuffer errStr("Error opening key file : %s", keyname);
+            throw createDafsException(RFSERR_InvalidFileIOHandle, errStr.str());
+        }
+        Owned<IKeyIndex> index = createKeyIndex(keyname, 0, *fileInfo.fileIO, false, false);
+        if (!index)
+        {
+            VStringBuffer errStr("Error opening key file : %s", keyname);
+            throw createDafsException(RFSERR_KeyIndexFailed, errStr.str());
+        }
         Owned<IKeyManager> keyManager = createKeyManager(index, keySize, nullptr);
         keyManager->setSegmentMonitors(segs);
         keyManager->finishSegmentMonitors();
@@ -4206,6 +4217,22 @@ public:
         PROGLOG("Exited CRemoteFileServer");
 #endif
     }
+    bool lookupFileIOHandle(int handle, OpenFileInfo &fileInfo, unsigned newFlags=0)
+    {
+        CriticalBlock block(sect);
+        if (handle<=0)
+            return false;
+        unsigned clientidx;
+        unsigned handleidx;
+        if (!findHandle(handle,clientidx,handleidx))
+            return false;
+        CRemoteClientHandler &client = clients.item(clientidx);
+        OpenFileInfo &_fileInfo = client.openFiles.element(handleidx); // NB: links members
+        _fileInfo.flags |= newFlags;
+        fileInfo = _fileInfo;
+        client.previdx = handleidx;
+        return true;
+    }
 
     //MORE: The file handles should timeout after a while, and accessing an old (invalid handle)
     // should throw a different exception
@@ -4220,8 +4247,11 @@ public:
         if (findHandle(handle,clientidx,handleidx))
         {
             CRemoteClientHandler &client = clients.item(clientidx);
+            const OpenFileInfo &fileInfo = client.openFiles.item(handleidx);
             if (del)
             {
+                if (fileInfo.flags & of_key)
+                    clearKeyStoreCacheEntry(fileInfo.fileIO);
                 client.openFiles.remove(handleidx);
                 client.previdx = (unsigned)-1;
             }
