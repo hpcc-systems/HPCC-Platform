@@ -203,8 +203,9 @@ define([
                 arrayUtil.forEach(parent.TpMachines.TpMachine, function (item, idx) {
                     children.push({
                          calculatedID: item.Netaddress,
-                         displayName: item.Netaddress,
+                         displayName: item.ConfigNetaddress !== item.Netaddress ? item.ConfigNetaddress + " [" + item.Netaddress + "]" : item.ConfigNetaddress,
                          NetAddress: item.Netaddress,
+                         ConfigNetaddress: item.ConfigNetaddress,
                          type: "machine",
                          isMachine: true,
                          isDir: false,
