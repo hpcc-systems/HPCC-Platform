@@ -30,8 +30,8 @@
 
 interface jhtree_decl IDelayedFile : public IInterface
 {
-    virtual IMemoryMappedFile *queryMappedFile() = 0;
-    virtual IFileIO *queryFileIO() = 0;
+    virtual IMemoryMappedFile *getMappedFile() = 0;
+    virtual IFileIO *getFileIO() = 0;
 };
 
 interface jhtree_decl IKeyCursor : public IInterface

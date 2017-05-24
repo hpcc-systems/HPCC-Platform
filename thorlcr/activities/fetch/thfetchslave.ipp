@@ -34,7 +34,7 @@ interface IFetchStream : extends IInterface
 {
     virtual void start(IRowStream *input) = 0;
     virtual IRowStream *queryOutput() = 0;
-    virtual IFileIO *queryPartIO(unsigned part) = 0;
+    virtual IFileIO *getPartIO(unsigned part) = 0;
     virtual StringBuffer &getPartName(unsigned part, StringBuffer &out) = 0;
     virtual void abort() = 0;
 };
