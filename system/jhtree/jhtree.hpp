@@ -162,9 +162,11 @@ class jhtree_decl SegMonitorList : implements IInterface, implements IIndexReadC
     bool modified;
 public:
     IMPLEMENT_IINTERFACE;
-    inline SegMonitorList() { modified = true; mergeBarrier = 0; }
+    inline SegMonitorList() { reset(); }
     IArrayOf<IKeySegmentMonitor> segMonitors;
 
+    void reset();
+    void swapWith(SegMonitorList &other);
     void setLow(unsigned segno, void *keyBuffer) const;
     unsigned setLowAfter(size32_t offset, void *keyBuffer) const;
     bool incrementKey(unsigned segno, void *keyBuffer) const;
@@ -203,6 +205,7 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount) = 0;
     virtual bool nextRange(unsigned groupSegCount) = 0;
     virtual void setKey(IKeyIndexBase * _key) = 0;
+    virtual void setChooseNLimit(unsigned __int64 _rowLimit) = 0; // for choosen type functionality
     virtual unsigned __int64 checkCount(unsigned __int64 limit) = 0;
     virtual void serializeCursorPos(MemoryBuffer &mb) = 0;
     virtual void deserializeCursorPos(MemoryBuffer &mb) = 0;
@@ -215,6 +218,7 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual void resetCounts() = 0;
 
     virtual void setLayoutTranslator(IRecordLayoutTranslator * trans) = 0;
+    virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) = 0;
     virtual void deserializeSegmentMonitors(MemoryBuffer &mb) = 0;
     virtual void finishSegmentMonitors() = 0;
 

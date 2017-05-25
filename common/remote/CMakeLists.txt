@@ -55,6 +55,8 @@ include_directories (
          ./../../system/mp 
          ./../../system/include 
          ./../../system/jlib 
+         ./../../system/jhtree
+         ./../../rtl/eclrtl
          ./../../system/security/securesocket
          ./../../testing/unittests
     )
@@ -65,7 +67,8 @@ HPCC_ADD_LIBRARY( remote SHARED ${SRCS}  )
 install ( TARGETS remote RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 
 target_link_libraries ( remote 
-    jlib 
+    jlib
+    jhtree 
     mp
     ${URIPARSER_LIBRARIES}
     ${CPPUNIT_LIBRARIES}

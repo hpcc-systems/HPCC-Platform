@@ -47,6 +47,7 @@
 #include "rtlread_imp.hpp"
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
+#include "rmtfile.hpp"
 
 namespace thormisc {  // Make sure we can't clash with generated versions or version check mechanism fails.
  #include "eclhelper_base.hpp" 
@@ -980,7 +981,15 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
         {
             rfn.getPath(locationName.clear());
             assertex(locationName.length());
-            Owned<IFile> file = createIFile(locationName.str());
+
+            Owned<IFile> file;
+            if (activity->getOptBool("forceDafilesrv"))
+            {
+                PROGLOG("Using dafilesrv for: %s", locationName.str());
+                file.setown(createDaliServixFile(rfn));
+            }
+            else
+                file.setown(createIFile(locationName.str()));
             try
             {
                 if (file->exists())
