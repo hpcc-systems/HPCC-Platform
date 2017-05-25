@@ -29,6 +29,8 @@
 
 #include "jhtree.hpp"
 
+#include "sockfile.hpp"
+
 #include "thorxmlwrite.hpp"
 
 #include "thorport.hpp"
@@ -531,7 +533,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     IHThorArg *inputHelper;
     IRowStreamSetInput *resultDistStream;
     CPartDescriptorArray indexParts, dataParts;
-    Owned<IKeyIndexSet> tlkKeySet, partKeySet;
+    Owned<IKeyIndexSet> tlkKeySet;
     bool preserveGroups, preserveOrder, eos, needsDiskRead, atMostProvided, remoteDataFiles;
     unsigned joinFlags, abortLimit, parallelLookups, freeQSize, filePartTotal;
     size32_t fixedRecordSize;
@@ -1153,14 +1155,14 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         CKeyedJoinSlave &owner;
         Linked<IRowStream> in;
         unsigned nextTlk;
-        IKeyManager *tlkManager;
+        Owned<IKeyManager> tlkManager;
         bool eos, eog;
         IKeyIndex *currentTlk;
         CJoinGroup *currentJG;
         RtlDynamicRowBuilder indexReadFieldsRow;
+        IArrayOf<IKeyManager> partKeyManagers;
 
-        IKeyManager *partManager;
-        IKeyIndex *currentPart;
+        IKeyManager *currentPartKeyManager = nullptr;
         unsigned nextPart;
         unsigned candidateCount;
         __int64 lastSeeks, lastScans;
@@ -1188,7 +1190,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             currentTlk = NULL;
             lastSeeks = lastScans = 0;
             nextPart = 0; // only used for superkeys of single part keys
-            currentPart = NULL;
+            currentPartKeyManager = nullptr;
             candidateCount = 0;
         }
     public:
@@ -1196,19 +1198,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
         CKeyLocalLookup(CKeyedJoinSlave &_owner) : owner(_owner), indexReadFieldsRow(_owner.indexInputAllocator)
         {
-            tlkManager = owner.keyHasTlk ? createLocalKeyManager(NULL, owner.fixedRecordSize, NULL) : NULL;
-            if (owner.localKey && owner.partKeySet->numParts() > 1)
-                partManager = createKeyMerger(owner.partKeySet, owner.fixedRecordSize, 0, NULL);
-            else
-                partManager = createLocalKeyManager(NULL, owner.fixedRecordSize, NULL);
+            tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(nullptr, owner.fixedRecordSize, nullptr) : nullptr);
+
+            if (owner.getKeyManagers(partKeyManagers)) // true signifies that dealing with a local mergable set of index parts
+                currentPartKeyManager = &partKeyManagers.item(0);
             reset();
         }
         ~CKeyLocalLookup()
         {
             in.clear();
-            ::Release(tlkManager);
-
-            partManager->Release();
         }
 
         CJoinGroup *extractIndexFields(ARowBuilder & lhs)
@@ -1256,6 +1254,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 jg->noteEnd(0); // will queue on doneGroups, may be used if excl.
                                 if (!owner.preserveGroups) // if preserving groups, JG won't be complete until lhs eog hit
                                     return NULL;
+                                break;
                             }
                             default: // don't bother creating join group, will not be used, loop around and get another candidate.
                                 break;
@@ -1282,16 +1281,16 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             {
                 for (;;)
                 {
-                    if (currentPart)
+                    if (currentPartKeyManager)
                     {
-                        while (partManager->lookup(true))
+                        while (currentPartKeyManager->lookup(true))
                         {
                             ++candidateCount;
                             if (candidateCount > owner.atMost)
                                 break;
-                            KLBlobProviderAdapter adapter(partManager);
+                            KLBlobProviderAdapter adapter(currentPartKeyManager);
                             offset_t fpos;
-                            byte const * keyRow = partManager->queryKeyBuffer(fpos);
+                            byte const * keyRow = currentPartKeyManager->queryKeyBuffer(fpos);
                             if (owner.helper->indexReadMatch(indexReadFieldsRow.getSelf(), keyRow, fpos, &adapter))
                             {
                                 if (currentJG->rowsSeen() >= owner.keepLimit)
@@ -1317,7 +1316,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 #ifdef TRACE_JOINGROUPS
                                 ::ActPrintLog(&owner, "CJoinGroup [result] %x from %d", currentJG, __LINE__);
 #endif
-                                noteStats(partManager->querySeeks(), partManager->queryScans());
+                                noteStats(currentPartKeyManager->querySeeks(), currentPartKeyManager->queryScans());
                                 size32_t lorsz = owner.keyLookupAllocator->queryOutputMeta()->getRecordSize(lookupRow.getSelf());
                                 // must be easier way
                                 return lookupRow.finalizeRowClear(lorsz);
@@ -1328,20 +1327,20 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 owner.statsArr[AS_PostFiltered]++;
                             }
                         }
-                        partManager->releaseSegmentMonitors();
-                        currentPart = NULL;
+                        currentPartKeyManager->releaseSegmentMonitors();
+                        noteStats(currentPartKeyManager->querySeeks(), currentPartKeyManager->queryScans());
+                        currentPartKeyManager = nullptr;
                         if (owner.localKey)
                         { // merger done
                         }
                         else if (!owner.keyHasTlk)
                         {
-                            if (nextPart < owner.partKeySet->numParts())
+                            if (nextPart < partKeyManagers.ordinality())
                             {
-                                currentPart = owner.partKeySet->queryPart(nextPart++);
-                                partManager->setKey(currentPart);
-                                owner.helper->createSegmentMonitors(partManager, indexReadFieldsRow.getSelf());
-                                partManager->finishSegmentMonitors();
-                                partManager->reset();
+                                currentPartKeyManager = &partKeyManagers.item(nextPart++);
+                                owner.helper->createSegmentMonitors(currentPartKeyManager, indexReadFieldsRow.getSelf());
+                                currentPartKeyManager->finishSegmentMonitors();
+                                currentPartKeyManager->reset();
                             }
                         }
                     }
@@ -1355,15 +1354,14 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 unsigned partNo = (unsigned)tlkManager->queryFpos();
                                 partNo = owner.superWidth ? owner.superWidth*nextTlk+(partNo-1) : partNo-1;
 
-                                currentPart = owner.partKeySet->queryPart(partNo);
-                                partManager->setKey(currentPart);
-                                owner.helper->createSegmentMonitors(partManager, indexReadFieldsRow.getSelf());
-                                partManager->finishSegmentMonitors();
-                                partManager->reset();
+                                currentPartKeyManager = &partKeyManagers.item(partNo);
+                                owner.helper->createSegmentMonitors(currentPartKeyManager, indexReadFieldsRow.getSelf());
+                                currentPartKeyManager->finishSegmentMonitors();
+                                currentPartKeyManager->reset();
                                 break;
                             }
                         }
-                        if (!currentPart)
+                        if (!currentPartKeyManager)
                         {
                             if (++nextTlk < owner.tlkKeySet->numParts())
                             {
@@ -1404,7 +1402,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 #ifdef TRACE_JOINGROUPS
                             ::ActPrintLog(&owner, "CJoinGroup [end marker returned] %x from %d", currentJG, __LINE__);
 #endif
-                            noteStats(partManager->querySeeks(), partManager->queryScans());
+                            if (currentPartKeyManager)
+                                noteStats(currentPartKeyManager->querySeeks(), currentPartKeyManager->queryScans());
                             currentJG = NULL;
                             size32_t lorsz = owner.keyLookupAllocator->queryOutputMeta()->getRecordSize(lookupRow.getSelf());
                             // must be easier way
@@ -1419,21 +1418,18 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                         currentJG->notePendingEndCandidate();
 
                         candidateCount = 0;
-                        if (0 == owner.partKeySet->numParts()) // if empty key
+                        if (0 == partKeyManagers.ordinality()) // if empty key
                         {
                             // will terminate row/group next cycle
                         }
                         else if (!owner.keyHasTlk)
                         {
-                            currentPart = owner.partKeySet->queryPart(0);
-                            if (!owner.localKey || 1 == owner.partKeySet->numParts())
-                            {
+                            currentPartKeyManager = &partKeyManagers.item(0);
+                            if (!owner.localKey || 1 == partKeyManagers.ordinality())
                                 nextPart = 1;
-                                partManager->setKey(currentPart);
-                            }
-                            owner.helper->createSegmentMonitors(partManager, indexReadFieldsRow.getSelf());
-                            partManager->finishSegmentMonitors();
-                            partManager->reset();
+                            owner.helper->createSegmentMonitors(currentPartKeyManager, indexReadFieldsRow.getSelf());
+                            currentPartKeyManager->finishSegmentMonitors();
+                            currentPartKeyManager->reset();
                         }
                         else
                         {
@@ -1452,7 +1448,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 ::ActPrintLog(&owner, e);
                 throw;
             }
-            noteStats(partManager->querySeeks(), partManager->queryScans());
+            if (currentPartKeyManager)
+                noteStats(currentPartKeyManager->querySeeks(), currentPartKeyManager->queryScans());
             return NULL;
         }
 
@@ -1561,6 +1558,49 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         virtual void setInput(IRowStream *_in) { in.set(_in); }
     friend class CKeyLookupPoolMember;
     };
+
+    bool getKeyManagers(IArrayOf<IKeyManager> &keyManagers)
+    {
+        unsigned numIndexParts = indexParts.ordinality();
+        bool localMergedKey = localKey && (numIndexParts > 1);
+        Owned<IKeyIndexSet> partKeySet;
+        for (unsigned ip=0; ip<numIndexParts; ip++)
+        {
+            IPartDescriptor &filePart = indexParts.item(ip);
+            unsigned crc=0;
+            filePart.getCrc(crc);
+            RemoteFilename rfn;
+            filePart.getFilename(0, rfn);
+            StringBuffer filename;
+            rfn.getPath(filename);
+
+            Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, indexName, filePart);
+
+            Owned<IKeyManager> klManager;
+            if (localMergedKey)
+            {
+                Owned<IKeyIndex> partIndex = createKeyIndex(filename.str(), crc, *lfile, false, false);
+                if (!partKeySet)
+                    partKeySet.setown(createKeyIndexSet());
+                partKeySet->addIndex(partIndex.getClear());
+            }
+            else
+            {
+                bool allowRemote = getOptBool("remoteKeyFilteringEnabled");
+                bool forceRemote = allowRemote ? getOptBool("forceDafilesrv") : false; // can only force remote, if forceDafilesrv and remoteKeyFilteringEnabled are enabled.
+                klManager.setown(createKeyManager(filename, fixedRecordSize, crc, lfile, allowRemote, forceRemote));
+                keyManagers.append(*klManager.getClear());
+            }
+        }
+        if (localMergedKey)
+        {
+            dbgassertex(0 == keyManagers.ordinality());
+            keyManagers.append(*createKeyMerger(partKeySet, fixedRecordSize, 0, nullptr));
+            return true;
+        }
+        else
+            return false;
+    }
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
@@ -1574,7 +1614,6 @@ public:
         eos = true; // keep as true until started.
         resultDistStream = NULL;
         tlkKeySet.setown(createKeyIndexSet());
-        partKeySet.setown(createKeyIndexSet());
         pool = NULL;
         currentMatchIdx = currentJoinGroupSize = currentAdded = currentMatched = 0;
         portbase = 0;
@@ -1837,7 +1876,6 @@ public:
         indexParts.kill();
         dataParts.kill();
         tlkKeySet.setown(createKeyIndexSet());
-        partKeySet.setown(createKeyIndexSet());
         unsigned numIndexParts;
         data.read(numIndexParts);
         if (numIndexParts)
@@ -1863,22 +1901,7 @@ public:
             else
                 deserializePartFileDescriptors(data, indexParts);
 
-
             localKey = indexParts.item(0).queryOwner().queryProperties().getPropBool("@local", false);
-            unsigned ip=0;
-            do
-            {
-                IPartDescriptor &filePart = indexParts.item(ip++);
-                unsigned crc=0;
-                filePart.getCrc(crc);
-                RemoteFilename rfn;
-                filePart.getFilename(0, rfn);
-                StringBuffer filename;
-                rfn.getPath(filename);
-                Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, indexName, filePart);
-                partKeySet->addIndex(createKeyIndex(filename.str(), crc, *lfile, false, false));
-            }
-            while (ip<numIndexParts);
 
             data.read(keyHasTlk);
             if (keyHasTlk)
