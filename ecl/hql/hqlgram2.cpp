@@ -2616,6 +2616,9 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
             fieldType.set(defaultIntegralType);
         }
         break;
+    case type_enumerated:
+        fieldType.set(fieldType->queryChildType());
+        break;
     case type_decimal:
         if (fieldType->getSize() == UNKNOWN_LENGTH)
         {
@@ -3520,9 +3523,10 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
         if (dotScope) 
         {
             IHqlExpression *ret = NULL;
-            if (dotScope->getOperator() == no_enum)
+            IHqlScope * scope = dotScope->queryScope();
+            if (scope)
             {
-                ret = dotScope->queryScope()->lookupSymbol(searchName, LSFrequired, lookupCtx);
+                ret = scope->lookupSymbol(searchName, LSFrequired, lookupCtx);
             }
             else
             {
@@ -6244,7 +6248,13 @@ void HqlGram::checkFormals(IIdAtom * name, HqlExprArray& parms, HqlExprArray& de
         // check default value
         if (isMacro)
         {
-            IHqlExpression* def = &defaults.item(idx);
+            LinkedHqlExpr def = &defaults.item(idx);
+            if (!def->isConstant() && !lookupCtx.queryParseContext().expandCallsWhenBound)
+            {
+                OwnedHqlExpr expanded = expandDelayedFunctionCalls(nullptr, def);
+                defaults.replace(*LINK(expanded), idx);
+                def.set(expanded);
+            }
             
             if ((def->getOperator() != no_omitted) && !def->isConstant()) 
             {
@@ -6326,27 +6336,13 @@ IHqlExpression *HqlGram::bindParameters(const attribute & errpos, IHqlExpression
             {
                 if (requireLateBind(function, actuals))
                 {
-                    IHqlExpression * ret = NULL;
-                    if (!expandCallsWhenBound)
-                    {
-                        HqlExprArray args;
-                        args.append(*LINK(body));
-                        unwindChildren(args, function, 1);
-                        OwnedHqlExpr newFunction = createFunctionDefinition(function->queryId(), args);
-                        OwnedHqlExpr boundExpr = createBoundFunction(this, newFunction, actuals, lookupCtx.functionCache, expandCallsWhenBound);
+                    //A function with virtual dataset parameters - must be expanded now
+                    const bool expandCallsWhenBound = true;
+                    OwnedHqlExpr boundExpr = createBoundFunction(this, function, actuals, lookupCtx.functionCache, expandCallsWhenBound);
                         
-                        // get rid of the wrapper
-                        //assertex(boundExpr->getOperator()==no_template_context);
-                        ret = LINK(boundExpr);//->queryChild(0));
-                    }
-                    else
-                    {
-                        OwnedHqlExpr boundExpr = createBoundFunction(this, function, actuals, lookupCtx.functionCache, expandCallsWhenBound);
-                        
-                        // get rid of the wrapper
-                        assertex(boundExpr->getOperator()==no_template_context);
-                        ret = LINK(boundExpr->queryChild(0));
-                    }
+                    // get rid of the wrapper
+                    assertex(boundExpr->getOperator()==no_template_context);
+                    IHqlExpression * ret = LINK(boundExpr->queryChild(0));
 
                     IHqlExpression * formals = function->queryChild(1);
                     // bind fields
@@ -7194,8 +7190,8 @@ void HqlGram::checkOutputRecord(attribute & errpos, bool outerLevel)
     OwnedHqlExpr record = errpos.getExpr();
     bool allConstant = true;
     errpos.setExpr(checkOutputRecord(record, errpos, allConstant, outerLevel));
-    if (allConstant && (record->getOperator() != no_null) && (record->numChildren() != 0))
-        reportWarning(CategoryUnusual, WRN_OUTPUT_ALL_CONSTANT,errpos.pos,"All values for OUTPUT are constant - is this the intention?");
+    if (allConstant && (record->getOperator() != no_null) && (record->numChildren() != 0) && record->isFullyBound())
+        reportWarning(CategoryUnusual, WRN_OUTPUT_ALL_CONSTANT, errpos.pos, "All values for OUTPUT are constant - is this the intention?");
 }
 
 void HqlGram::checkSoapRecord(attribute & errpos)
@@ -8834,7 +8830,7 @@ void HqlGram::ensureMapToRecordsMatch(OwnedHqlExpr & defaultExpr, HqlExprArray &
         }
     }
 
-    if (groupingDiffers)
+    if (lookupCtx.queryParseContext().expandCallsWhenBound && groupingDiffers)
         reportError(ERR_GROUPING_MISMATCH, errpos, "Branches of the condition have different grouping");
 }
 
@@ -8951,7 +8947,7 @@ void HqlGram::checkMergeInputSorted(attribute &atr, bool isLocal)
     
     if (isGrouped(expr) && appearsToBeSorted(expr, false, false))
         reportWarning(CategoryUnexpected, WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE is only sorted with the group");
-    else
+    else if (expr->isFullyBound())
         reportWarning(CategoryUnexpected, WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE doesn't appear to be sorted");
 }
 
@@ -9145,7 +9141,7 @@ IHqlExpression * HqlGram::processIfProduction(attribute & condAttr, attribute & 
     if (left->queryRecord() && falseAttr)
         right.setown(checkEnsureRecordsMatch(left, right, falseAttr->pos, false));
 
-    if (isGrouped(left) != isGrouped(right))
+    if (lookupCtx.queryParseContext().expandCallsWhenBound && (isGrouped(left) != isGrouped(right)))
         reportError(ERR_GROUPING_MISMATCH, trueAttr, "Branches of the condition have different grouping");
 
     if (cond->isConstant())

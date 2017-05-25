@@ -332,6 +332,14 @@ void addItem(StringBuffer& jsStrBuf,
              const char* extra, 
              short ctrlType)
 {
+  // Control types:
+  // 1 - text entry
+  // 2 - ?
+  // 3 - true/false radio buttons
+  // 4 - drop menu
+  // 5 - password entry
+  // 6 - multiline text
+  // 7-? ?
   StringBuffer sbAttr("Attributes");
 
   jsStrBuf.appendf("var attr%s%s = {};", attrName, tabName);
@@ -513,6 +521,10 @@ public:
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_PORT, "", 0, 1, "", 1);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_REQARRAYTHREADS, "", 0, 1, "", 1);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, "aclName", "", 0, 1, "|'#$process/ACL'", 4);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, "protocol", "", 0, 1, "|new Array('ssl','native')", 4);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, "passphrase", "", 0, 1, "", 5);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, "certificateFileName", "", 0, 1, "", 1);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, "privateKeyFileName", "", 0, 1, "", 1);
 
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_ONLY_SLAVE, TAG_NAME, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_ONLY_SLAVE, TAG_COMPUTER, "", 0, 1, "", 0);
@@ -540,6 +552,10 @@ public:
           m_colIndex.appendf("colIndex['numThreads%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['requestArrayThreads%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['aclName%s']=%d;", serverStr, index++);
+          m_colIndex.appendf("colIndex['protocol%s']=%d;", serverStr, index++);
+          m_colIndex.appendf("colIndex['passphrase%s']=%d;", serverStr, index++);
+          m_colIndex.appendf("colIndex['certificateFileName%s']=%d;", serverStr, index++);
+          m_colIndex.appendf("colIndex['privateKeyFileName%s']=%d;", serverStr, index++);
 
           index = 0;
           const char* agentStr = "Agents";
@@ -1650,6 +1666,26 @@ public:
                      wizDefVal.clear().append(pHard->queryProp(tempPath.str()));
                    }
                 }
+              }
+            }
+          }
+        }
+        else if(!strcmp(type,"serverListType"))
+        {
+          if(m_wizard)
+          {
+            StringBuffer buildSetName, ipAddr;
+            tempPath.clear().appendf("./Programs/Build/BuildSet[%s=\"%s\"]",XML_ATTR_PROCESS_NAME,m_compName.str());
+            IPropertyTree* pCompTree = m_pEnv->queryPropTree(tempPath.str());
+            if(pCompTree)
+            {
+              buildSetName.append(pCompTree->queryProp(XML_ATTR_NAME));
+              CInstDetails* pInst  = m_wizard->getServerIPMap(compName, buildSetName,m_pEnv);
+              if( pInst )
+              {
+                StringArray& ipArray = pInst->getIpAssigned();
+                if(ipArray.length())
+                  wizDefVal.clear().append(ipArray.item(0));
               }
             }
           }

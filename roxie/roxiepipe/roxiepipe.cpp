@@ -25,6 +25,9 @@
 #include "jmisc.hpp"
 #include "jqueue.tpp"
 #include "roxie.hpp"
+#ifdef _USE_OPENSSL
+# include "securesocket.hpp"
+#endif
 
 static int in_width = 0;
 static int out_width = 1;
@@ -40,11 +43,12 @@ static int readTimeout = 300;
 static Mutex readMutex;
 static Mutex writeMutex;
 static StringBuffer hosts;
-static ISmartSocketFactory *smartSocketFactory;
+static ISmartSocketFactory *smartSocketFactory = nullptr;
 static bool Aborting = false;
 static StringBuffer fatalError;
 static CriticalSection fatalErrorSect;
 
+static bool useSSL = false;
 
 interface IReceivedRoxieException : extends IException
 {
@@ -67,7 +71,6 @@ private:
     int errcode;
     StringAttr msg;
 };
-
 
 
 class RoxieThread : public Thread
@@ -445,6 +448,15 @@ public:
     }
 };
 
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+
+MODULE_EXIT()
+{
+    ::Release(smartSocketFactory);
+}
 
 int main(int argc, char *argv[])
 {
@@ -571,6 +583,15 @@ int main(int argc, char *argv[])
             DebugBreak();
         }
 #endif
+        else if (stricmp(argv[i], "-ssl") == 0)
+        {
+#ifdef _USE_OPENSSL
+            useSSL = true;
+#else
+            fatalError.append("-ssl argument not supported : OpenSSL disabled in build");
+            break;
+#endif
+        }
         else
         {
             fatalError.appendf("Unknown/unexpected parameter %s", argv[i]);
@@ -622,7 +643,12 @@ int main(int argc, char *argv[])
 
             try
             {
-                smartSocketFactory = createSmartSocketFactory(hosts.str(), retryMode);
+#ifdef _USE_OPENSSL
+                if (useSSL)
+                    smartSocketFactory = createSecureSmartSocketFactory(hosts.str(), retryMode);
+                else
+#endif
+                    smartSocketFactory = createSmartSocketFactory(hosts.str(), retryMode);
             }
             catch (ISmartSocketException *e)
             {

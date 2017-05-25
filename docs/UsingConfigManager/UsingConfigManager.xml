@@ -810,6 +810,120 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
       </sect2>
 
+      <sect2 id="DaliServerPlugin" role="brk">
+        <title>DaliServerPlugin</title>
+
+        <para>DaliServerPlugin allows you to add plugin functionality to a
+        Dail server.</para>
+
+        <sect3>
+          <title>DaliServerPlugin attributes</title>
+
+          <para>This section describes the DaliServerPlugin attributes.</para>
+
+          <para>
+            <graphic fileref="images/Cass2.jpg" vendor="configmgrSS" />
+          </para>
+
+          <!--configMgr-daplugin-Include-->
+
+          <para>
+            <xi:include href="XMLGeneration/xml/daliplugin.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='daplug.t'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
+        </sect3>
+
+        <sect3>
+          <title>DaliServerPlugin Options</title>
+
+          <para>This section describes the DaliServerPlugin options</para>
+
+          <para>These options are available for the DaliServerplugin when
+          configuring a Casandra server. See the System Administrator's Guide
+          for more details about configuring a Cassandra server as a system
+          datastore.</para>
+
+          <para>
+            <informaltable colsep="1" frame="all" id="daliplugoptionstable"
+                           rowsep="1">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="125.55pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry>randomWuidSuffix</entry>
+
+                    <entry>An integer value indicating how many randomized
+                    digits to append to workunits. Set this if you need to
+                    create workunits at a high rate to reduce the risk of
+                    collisions (which would slow down the process of creating
+                    a new unique workunit id).</entry>
+                  </row>
+
+                  <row>
+                    <entry>traceLevel</entry>
+
+                    <entry>An integer value indicating how much tracing to
+                    output from Cassandra workunit operations. Set to zero or
+                    do not set in normal usage.</entry>
+                  </row>
+
+                  <row>
+                    <entry>partitions</entry>
+
+                    <entry>An integer value indicating how many ways to
+                    partition the data on a Cassandra cluster. The default is
+                    2. The value only takes effect when a new Cassandra
+                    workunit repository is created. Larger values permit
+                    scaling to a more distributed store but at the expense of
+                    some overhead on smaller stores where the scaling is not
+                    needed.</entry>
+                  </row>
+
+                  <row>
+                    <entry>prefixsize</entry>
+
+                    <entry>
+                      <para>An integer value specifying the minimum number of
+                      characters that must be provided when wildcard searching
+                      in the repository. Larger values will be more efficient
+                      but also more restrictive on users. The default is 2. As
+                      with partitions, this value only takes effect when a new
+                      Cassandra workunit repository is created.</para>
+                    </entry>
+                  </row>
+
+                  <row>
+                    <entry>keyspace</entry>
+
+                    <entry>The name of the Cassandra keyspace to use for the
+                    HPCC data store. The default is
+                    <emphasis>hpcc</emphasis>.</entry>
+                  </row>
+
+                  <row>
+                    <entry>user</entry>
+
+                    <entry>The username to use if the Cassandra server is
+                    configured to require credentials.</entry>
+                  </row>
+
+                  <row>
+                    <entry>password</entry>
+
+                    <entry>The password to use if the Cassandra server is
+                    configured to require credentials.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>
+          </para>
+        </sect3>
+      </sect2>
+
       <sect2 id="Dafilesrv-Process" role="brk">
         <title>Dafilesrv Process</title>
 
@@ -1050,34 +1164,138 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       <sect2 id="Drop-Zone" role="brk">
         <title>Drop Zone</title>
 
-        <sect3>
-          <title>DropZone Attributes</title>
+        <para>A Drop Zone (or landing zone) is a location where files can be
+        transferred to or from your HPCC system. The drop zone is a logical
+        combination of a path and one or more servers.</para>
 
+        <para>Multiple drop zones allow you to configure different top level
+        folders for one or more servers. Multiple servers for a single drop
+        zone provides a logical grouping of distinct locations. Multiple drop
+        zones are useful to allow different permissions for users or
+        groups.</para>
+
+        <para>To add a drop zone:</para>
+
+        <para>
           <orderedlist>
             <listitem>
-              <para>Select Drop Zone in the Navigator panel on the left
-              side.</para>
+              <para>Right-click on the Navigator panel on the left side and
+              choose <emphasis role="bold">New Components</emphasis></para>
             </listitem>
 
             <listitem>
-              <para>Select the Attributes tab.</para>
-            </listitem>
-
-            <listitem>
-              <para>In the Value column of the Computer row, choose a node
-              from the drop list as shown below:<graphic
-              fileref="images/CM-img06.jpg" vendor="configmgrSS" /></para>
-            </listitem>
-
-            <listitem>
-              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-              disk icon to save</para>
+              <para>Select <emphasis role="bold">Drop Zone</emphasis> </para>
             </listitem>
           </orderedlist>
-        </sect3>
+        </para>
 
         <sect3>
-          <title>DropZone Notes</title>
+          <title>Drop Zone Attributes</title>
+
+          <para>You can change the configuration of your drop zone using the
+          attributes tab. If you have multiple drop zones, select the drop
+          zone to configure from the Navigator panel on the left side.</para>
+
+          <para>To change the drop zone attributes:</para>
+
+          <para>
+            <orderedlist>
+              <listitem>
+                <para>On the <emphasis role="bold">Attributes</emphasis> tab,
+                select the Attribute to modify.</para>
+              </listitem>
+
+              <listitem>
+                <para>Double-click on the value on the right side of the
+                attribute table for the value you wish to modify. </para>
+
+                <para>For example, select the <emphasis
+                role="bold">name</emphasis> attribute, double click on the
+                <emphasis role="bold">value</emphasis> column and provide the
+                drop zone with a more meaningful name.</para>
+              </listitem>
+
+              <listitem>
+                <para>Click the disk icon to save.</para>
+              </listitem>
+            </orderedlist>
+          </para>
+
+          <para>
+            <graphic fileref="images/CM-img06.jpg" vendor="configmgrSS" />
+          </para>
+
+          <para>
+            <xi:include href="XMLGeneration/xml/dropzone.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='dz.t1'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
+
+          <!-- /*Attribute table***replace with dynamically generated table*/
+          <informaltable>
+            <tgroup cols="2">
+              <tbody>
+                <row>
+                  <entry>description</entry>
+
+                  <entry>a description</entry>
+                </row>
+
+                <row>
+                  <entry>directory</entry>
+
+                  <entry>The directory for the drop zone</entry>
+                </row>
+
+                <row>
+                  <entry>name</entry>
+
+                  <entry>The name for the drop zone</entry>
+                </row>
+
+                <row>
+                  <entry>umask</entry>
+
+                  <entry>umask</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+
+-->
+        </sect3>
+
+        <sect3 id="DropZoneServerList">
+          <title>Drop Zone Server List</title>
+
+          <para>This tab allows you to add any servers that you wish to
+          configure as a part of the selected drop zone.</para>
+
+          <para>To add a server to the current drop zone: <orderedlist>
+              <listitem>
+                <para>Select the <emphasis role="bold">Drop Zone</emphasis> to
+                configure from the Navigator panel on the left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the <emphasis role="bold">Server List</emphasis>
+                tab, right-click on the Server Address field and choose
+                <emphasis role="bold">Add</emphasis>.</para>
+              </listitem>
+
+              <listitem>
+                <para>Enter the hostname or IP address of the server.</para>
+              </listitem>
+
+              <listitem>
+                <para>Click the disk icon to save.</para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+
+        <sect3 id="DropZoneNotes">
+          <title>Drop Zone Notes</title>
 
           <para>This tab allows you to add any notes pertinent to the
           component's configuration. This can be useful to keep a record of

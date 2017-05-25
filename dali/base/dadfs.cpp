@@ -11235,6 +11235,37 @@ bool decodeChildGroupName(const char *gname,StringBuffer &parentname, StringBuff
     return true;
 }
 
+/* given a list of group offsets (positions), create a compact representation of the range
+ * compatible with the group range syntax, e.g. mygroup[1-5,8-10] or mygroup[1,5,10]
+ */
+StringBuffer &encodeChildGroupRange(UnsignedArray &positions, StringBuffer &rangeText)
+{
+    unsigned items = positions.ordinality();
+    if (0 == items)
+        return rangeText;
+    unsigned start = positions.item(0);
+    unsigned last = start;
+    rangeText.append('[');
+    unsigned p=1;
+    while (true)
+    {
+        unsigned pos = p==items ? NotFound : positions.item(p++);
+        if ((pos != last+1))
+        {
+            if (last-start>0)
+                rangeText.append(start).append('-').append(last);
+            else
+                rangeText.append(last);
+            if (NotFound == pos)
+                break;
+            rangeText.append(',');
+            start = pos;
+        }
+        last = pos;
+    }
+    return rangeText.append(']');
+}
+
 class CLightWeightSuperFileConn: implements ISimpleSuperFileEnquiry, public CInterface
 {
     CFileLock lock;

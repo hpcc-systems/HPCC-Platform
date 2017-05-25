@@ -1763,7 +1763,7 @@ void CBaseServerDebugContext::debugPrint(IXmlWriter *output, const char *edgeId,
 #if 1
     CommonXmlWriter dummyOutput(0, 0);
     activityCtx->printEdge(&dummyOutput, startRow, numRows); // MORE - need to suppress the <Edge> if we want backward compatibility!
-    Owned<IPropertyTree> result = createPTreeFromXMLString(dummyOutput.str());
+    Owned<IPropertyTree> result = createPTreeFromXMLString(dummyOutput.str(),ipt_fast);
     if (result)
     {
         Owned<IAttributeIterator> attributes = result->getAttributes();

@@ -48,7 +48,7 @@ interface ILazyFileIO : extends IFileIO
     virtual void close() = 0;
     virtual void setCopying(bool copying) = 0;
     virtual bool isCopying() const = 0;
-    virtual IMemoryMappedFile *queryMappedFile() = 0;
+    virtual IMemoryMappedFile *getMappedFile() = 0;
 
     virtual void setCache(const IRoxieFileCache *) = 0;
     virtual void removeCache(const IRoxieFileCache *) = 0;

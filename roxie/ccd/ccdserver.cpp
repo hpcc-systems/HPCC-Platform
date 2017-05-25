@@ -3198,7 +3198,7 @@ void throwRemoteException(IMessageUnpackCursor *extra)
     {
         char *xml = (char *) extra->getNext(*rowlen);
         ReleaseRoxieRow(rowlen);
-        Owned<IPropertyTree> p = createPTreeFromXMLString(xml);
+        Owned<IPropertyTree> p = createPTreeFromXMLString(xml, ipt_fast);
         ReleaseRoxieRow(xml);
         unsigned code = p->getPropInt("Code", 0);
         const char *msg = p->queryProp("Message");
@@ -12022,7 +12022,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
                 throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
             }
             if(!metadata)
-                metadata.setown(createPTree("metadata"));
+                metadata.setown(createPTree("metadata", ipt_fast));
             metadata->setProp(name.str(), value.str());
         }
     }
@@ -12030,7 +12030,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
     void buildLayoutMetadata(Owned<IPropertyTree> & metadata)
     {
         if(!metadata)
-            metadata.setown(createPTree("metadata"));
+            metadata.setown(createPTree("metadata", ipt_fast));
         metadata->setProp("_record_ECL", helper.queryRecordECL());
 
         void * layoutMetaBuff;
@@ -12183,7 +12183,7 @@ public:
         //properties of the first file part.
         Owned<IPropertyTree> attrs;
         if(clusterHandler)
-            attrs.setown(createPTree("Part"));  // clusterHandler is going to set attributes
+            attrs.setown(createPTree("Part", ipt_fast));  // clusterHandler is going to set attributes
         else
         {
             // add cluster
@@ -15652,7 +15652,7 @@ public:
     {
         if (numUses > 1)
         {
-            Owned<IPropertyTree> splitterNode = createPTree();
+            Owned<IPropertyTree> splitterNode = createPTree(ipt_fast);
             factory.setown(createRoxieServerThroughSpillActivityFactory(sourceAct->queryFactory()->queryQueryFactory(), createGraphOutputSplitter, numUses, *splitterNode));
             IRoxieServerActivity *splitter = factory->createActivity(ctx, NULL);
             splitter->onCreate(NULL);
@@ -21705,6 +21705,7 @@ public:
 
     virtual const void *nextRow()
     {
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())
@@ -21917,6 +21918,7 @@ public:
 
     virtual const void *nextRow()
     {
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())
@@ -22026,6 +22028,7 @@ public:
 
     virtual const void *nextRow()
     {
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())
@@ -22133,6 +22136,7 @@ public:
 
     virtual const void *nextRow()
     {
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())

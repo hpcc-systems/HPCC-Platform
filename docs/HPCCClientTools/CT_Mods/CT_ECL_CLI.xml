@@ -78,6 +78,13 @@
               </row>
 
               <row>
+                <entry>results</entry>
+
+                <entry>returns the full results of a given WUID in XML
+                format.</entry>
+              </row>
+
+              <row>
                 <entry>activate</entry>
 
                 <entry>Activate a published query</entry>
@@ -220,6 +227,7 @@ ECL_USER_NAME
 ECL_PASSWORD
 ECL_WAIT_TIMEOUT
 ECL_RESULT_LIMIT
+ECLCC_PATH
 </programlisting>
 
           <para></para>
@@ -1047,6 +1055,109 @@ ecl run thor findperson.ecl -I C:\MyECL\
                   <entry>--manifest</entry>
 
                   <entry>Specify path to manifest file</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLResult" role="brk">
+        <title>ecl results </title>
+
+        <para><emphasis role="bold">ecl results &lt;wuid&gt; [--noroot]
+        [--exception-level=<emphasis>&lt;value&gt;</emphasis>]
+        </emphasis></para>
+
+        <para><emphasis role="bold">Examples</emphasis>:</para>
+
+        <programlisting>ecl results W20170519-142920 
+ecl results W20170519-142920 --noroot --exception-level=error
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl results</entry>
+
+                  <entry>returns the full results of a given WUID in XML
+                  format.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>wuid</entry>
+
+                  <entry>The workunit from which to return results.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--noroot</entry>
+
+                  <entry>Suppresses the &lt;Result&gt; root tag in the XML
+                  returned.</entry>
+                </row>
+
+                <row>
+                  <entry>--exception-level</entry>
+
+                  <entry>Sets the minimum severity for reporting exceptions.
+                  Possible severity levels are <emphasis
+                  role="bold">info</emphasis>, <emphasis
+                  role="bold">warning</emphasis>, or <emphasis
+                  role="bold">error</emphasis>. The default is info which
+                  returns all exceptions.</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2954,7 +3065,7 @@ ecl packagemap validate roxie --active</programlisting>
         <para><emphasis role="bold">ecl packagemap copy &lt;path&gt;
         &lt;target&gt; </emphasis></para>
 
-        <para>Copies a packagemap from one target to another. </para>
+        <para>Copies a packagemap from one target to another.</para>
 
         <para>Examples:</para>
 
@@ -2982,8 +3093,8 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>copy</entry>
 
-                  <entry>Copies a packagemap from one target to another
-                  </entry>
+                  <entry>Copies a packagemap from one target to
+                  another</entry>
                 </row>
 
                 <row>
@@ -2993,7 +3104,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>path</entry>
 
-                  <entry>Path to the source packagemap to copy. </entry>
+                  <entry>Path to the source packagemap to copy.</entry>
                 </row>
 
                 <row>
@@ -3027,39 +3138,39 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--source-process </entry>
+                  <entry>--source-process</entry>
 
                   <entry>Process cluster to copy files from</entry>
                 </row>
 
                 <row>
-                  <entry>--preload-all </entry>
+                  <entry>--preload-all</entry>
 
                   <entry>Set preload files option for all packages</entry>
                 </row>
 
                 <row>
-                  <entry>--replace </entry>
+                  <entry>--replace</entry>
 
-                  <entry>Replace existing packagmap </entry>
+                  <entry>Replace existing packagmap</entry>
                 </row>
 
                 <row>
-                  <entry>--update-super-files </entry>
+                  <entry>--update-super-files</entry>
 
                   <entry>Update local DFS superfiles if remote Dali has
                   changed</entry>
                 </row>
 
                 <row>
-                  <entry>--update-clone-from </entry>
+                  <entry>--update-clone-from</entry>
 
                   <entry>Update local clone from location if remote Dali has
                   changed</entry>
                 </row>
 
                 <row>
-                  <entry>--dont-append-cluster </entry>
+                  <entry>--dont-append-cluster</entry>
 
                   <entry>Only use to avoid locking issues due to adding
                   cluster to file</entry>
@@ -3110,11 +3221,11 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
         <itemizedlist>
           <listitem>
-            <para>remote packagemap: //IP:PORT/Target/PackageMapId </para>
+            <para>remote packagemap: //IP:PORT/Target/PackageMapId</para>
           </listitem>
 
           <listitem>
-            <para>local packagemap: target/PackageMapId </para>
+            <para>local packagemap: target/PackageMapId</para>
           </listitem>
         </itemizedlist>
       </sect2>

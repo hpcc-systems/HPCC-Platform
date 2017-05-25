@@ -4256,14 +4256,18 @@ recordDef
     | RECORDOF '(' goodObject ')'
                         {
                             OwnedHqlExpr ds = $3.getExpr();
-                            IHqlExpression * record = queryOriginalRecord(ds);
+                            LinkedHqlExpr record = queryOriginalRecord(ds);
                             if (!record)
                             {
                                 parser->reportError(ERR_EXPECTED, $3, "The argument does not have a associated record");
-                                record = queryNullRecord();
+                                record.set(queryNullRecord());
                             }
                             else if (ds->isFunction() && !record->isFullyBound())
-                                parser->reportError(ERR_EXPECTED, $1, "RECORDOF(function-definition), result record depends on the function parameters");
+                            {
+                                record.setown(getUnadornedRecordOrField(record));
+                                if (!record->isFullyBound())
+                                    parser->reportError(ERR_EXPECTED, $1, "RECORDOF(function-definition), result record depends on the function parameters");
+                            }
 
                             $$.setExpr(LINK(record));
                             $$.setPosition($1);
@@ -9282,7 +9286,7 @@ simpleDataSet
                                 {
                                     if (compareDs)
                                     {
-                                        if (isGrouped(cur) != isGrouped(compareDs))
+                                        if (parser->lookupCtx.queryParseContext().expandCallsWhenBound && (isGrouped(cur) != isGrouped(compareDs)))
                                             parser->reportError(ERR_GROUPING_MISMATCH, $1, "Branches of the condition have different grouping");
                                         OwnedHqlExpr mapped = parser->checkEnsureRecordsMatch(compareDs, cur, $5.pos, false);
                                         if (mapped != cur)

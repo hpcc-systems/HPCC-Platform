@@ -241,11 +241,11 @@ private:
 
     static void initCache()
     {
-        IPropertyTree *tree = createPTree("Roxie");
-        tree->addPropTree("QuerySets", createPTree("QuerySets"));
-        tree->addPropTree("PackageSets", createPTree("PackageSets"));
-        tree->addPropTree("PackageMaps", createPTree("PackageMaps"));
-        tree->addPropTree("Files", createPTree("Files"));
+        IPropertyTree *tree = createPTree("Roxie", ipt_lowmem);
+        tree->addPropTree("QuerySets");
+        tree->addPropTree("PackageSets");
+        tree->addPropTree("PackageMaps");
+        tree->addPropTree("Files");
         cache.setown(tree);
     }
 
@@ -256,7 +256,7 @@ private:
             StringBuffer cacheFileName(queryDirectory);
             cacheFileName.append(roxieStateName);
             if (checkFileExists(cacheFileName))
-                cache.setown(createPTreeFromXMLFile(cacheFileName));
+                cache.setown(createPTreeFromXMLFile(cacheFileName, ipt_lowmem));
             else
                 initCache();
         }
@@ -293,7 +293,7 @@ private:
                 if (conn)
                 {
                     Owned <IPropertyTree> daliTree = conn->getRoot();
-                    localTree.setown(createPTreeFromIPT(daliTree));
+                    localTree.setown(createPTreeFromIPT(daliTree, ipt_lowmem));
                 }
                 writeCache(xpath, path, localTree);
                 return localTree.getClear();
@@ -442,7 +442,7 @@ public:
         Owned<IPropertyTree> ret = loadDaliTree("QuerySets/QuerySet", id);
         if (!ret)
         {
-            ret.setown(createPTree("QuerySet"));
+            ret.setown(createPTree("QuerySet", ipt_lowmem));
             ret->setProp("@id", id);
         }
         return ret.getClear();
@@ -453,7 +453,7 @@ public:
         Owned<IPropertyTree> ret = loadDaliTree("PackageSets", NULL);
         if (!ret)
         {
-            ret.setown(createPTree("PackageSets"));
+            ret.setown(createPTree("PackageSets", ipt_lowmem));
         }
         return ret.getClear();
     }
@@ -476,7 +476,7 @@ public:
         Owned<IPropertyTree> ret = loadDaliTree("PackageMaps/PackageMap", id);
         if (!ret)
         {
-            ret.setown(createPTree("PackageMap"));
+            ret.setown(createPTree("PackageMap", ipt_lowmem));
             ret->setProp("@id", id);
         }
         return ret.getClear();

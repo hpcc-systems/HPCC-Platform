@@ -47,6 +47,7 @@ define([
     "hpcc/ESPDFUWorkunit",
     "hpcc/FileBelongsToWidget",
     "hpcc/FileSpray",
+    "hpcc/FileHistoryWidget",
 
     "dojo/text!../templates/LFDetailsWidget.html",
 
@@ -60,7 +61,7 @@ define([
 
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query,
                 BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
-                _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget, FileSpray,
+                _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget, FileSpray, FileHistoryWidget,
                 template) {
     exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -83,6 +84,7 @@ define([
         workunitWidget: null,
         dfuWorkunitWidget: null,
         fileBelongsTo: null,
+        fileHistoryWidget: null,
 
         logicalFile: null,
         prevState: "",
@@ -102,6 +104,7 @@ define([
             this.queriesWidget = registry.byId(this.id + "_Queries");
             this.workunitWidget = registry.byId(this.id + "_Workunit");
             this.dfuWorkunitWidget = registry.byId(this.id + "_DFUWorkunit");
+            this.fileHistoryWidget = registry.byId(this.id + "_FileHistory");
             this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
             this.desprayTooltiopDialog = registry.byId(this.id + "DesprayTooltipDialog");
@@ -297,6 +300,10 @@ define([
                 } else if (currSel.id === this.fileBelongsToWidget.id) {
                     this.fileBelongsToWidget.init({
                         NodeGroup: this.logicalFile.NodeGroup,
+                        Name: this.logicalFile.Name
+                    });
+                 } else if (currSel.id == this.fileHistoryWidget.id) {
+                    this.fileHistoryWidget.init({
                         Name: this.logicalFile.Name
                     });
                  } else {

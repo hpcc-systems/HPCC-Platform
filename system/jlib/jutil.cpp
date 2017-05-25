@@ -1490,6 +1490,18 @@ void StringArray::appendListUniq(const char *list, const char *delim)
     DelimToStringArray(list, *this, delim, true);
 }
 
+StringBuffer &StringArray::getString(StringBuffer &ret, const char *delim)
+{
+    ForEachItemIn(i, *this)
+    {
+        const char *v = item(i);
+        ret.append(v);
+        if (i+1 != ordinality())
+            ret.append(delim);
+    }
+    return ret;
+}
+
 void StringArray::sortAscii(bool nocase)
 {
     PARENT::sort(nocase ? CCmp::compareNC : CCmp::compare);
@@ -2366,7 +2378,7 @@ IPropertyTree *getHPCCEnvironment()
         {
             Owned<IFileIO> fileio = file->open(IFOread);
             if (fileio)
-                return createPTree(*fileio);
+                return createPTree(*fileio, ipt_lowmem);
         }
     }
     return NULL;

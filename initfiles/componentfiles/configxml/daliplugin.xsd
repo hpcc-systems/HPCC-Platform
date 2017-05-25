@@ -24,6 +24,13 @@
             <xs:documentation>Describes a Dali Server Plugin</xs:documentation>
         </xs:annotation>
         <xs:complexType>
+        <!--Doc Id code-->
+          <xs:annotation>
+				    <xs:appinfo>
+				      <docid>daplug.t</docid>
+				    </xs:appinfo>
+          </xs:annotation>
+        <!--End Doc Id code-->
             <xs:attribute name="build" type="buildType" use="required">
               <xs:annotation>
                 <xs:appinfo>

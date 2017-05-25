@@ -249,31 +249,48 @@ private:
     
 };
 
-// Utility class, to back patch a size into current position
-class jlib_decl DelayedSizeMarker
+// Utility class, to back patch a scalar into current position
+template <class CLASS>
+class jlib_decl DelayedMarker
 {
+protected:
     MemoryBuffer &mb;
     size32_t pos;
 public:
-    DelayedSizeMarker(MemoryBuffer &_mb) : mb(_mb)
+    DelayedMarker(MemoryBuffer &_mb) : mb(_mb)
     {
         restart();
+    }
+    inline void write(CLASS a)
+    {
+        mb.writeEndianDirect(pos, sizeof(a), &a);
+    }
+    // resets position marker and writes CLASS # bytes to be filled subsequently by write()
+    inline void restart()
+    {
+        pos = mb.length();
+        mb.appendBytes(0, sizeof(CLASS));
+    }
+};
+
+// Utility class, to back patch a size into current position
+class jlib_decl DelayedSizeMarker : private DelayedMarker<size32_t>
+{
+    typedef DelayedMarker<size32_t> PARENT;
+public:
+    DelayedSizeMarker(MemoryBuffer &mb) : PARENT(mb)
+    {
     }
     inline void write()
     {
         size32_t sz = size();
-        mb.writeDirect(pos, sizeof(sz), &sz);
+        PARENT::write(sz);
     }
     inline size32_t size() const
     {
         return (size32_t)(mb.length() - (pos + sizeof(size32_t)));
     }
-    // resets position marker and writes another size to be filled subsequently by write()
-    inline void restart()
-    {
-        pos = mb.length();
-        mb.append((size32_t)0);
-    }
+    inline void restart() { PARENT::restart(); }
 };
 
 interface jlib_decl serializable : extends IInterface

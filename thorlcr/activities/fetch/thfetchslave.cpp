@@ -172,17 +172,17 @@ public:
     }
 
     // IFetchStream
-    virtual void start(IRowStream *_keyIn)
+    virtual void start(IRowStream *_keyIn) override
     {
         fposHash = new CFPosHandler(*iFetchHandler, offsetCount, offsetTable);
         keyIn.set(_keyIn);
         distributor = createHashDistributor(&owner, owner.queryContainer().queryJobChannel().queryJobComm(), tag, false, this, "FetchStream");
         keyOutStream.setown(distributor->connect(keyRowIf, keyIn, fposHash, NULL, NULL));
     }
-    virtual IRowStream *queryOutput() { return this; }
-    virtual IFileIO *queryPartIO(unsigned part) { assertex(part<files); return fPosMultiPartTable[part].file->queryFileIO(); }
-    virtual StringBuffer &getPartName(unsigned part, StringBuffer &out) { return getPartFilename(parts.item(part), fPosMultiPartTable[part].location, out, true); }
-    virtual void abort()
+    virtual IRowStream *queryOutput() override { return this; }
+    virtual IFileIO *getPartIO(unsigned part) override { assertex(part<files); return fPosMultiPartTable[part].file->getFileIO(); }
+    virtual StringBuffer &getPartName(unsigned part, StringBuffer &out) override { return getPartFilename(parts.item(part), fPosMultiPartTable[part].location, out, true); }
+    virtual void abort() override
     {
         if (distributor)
             distributor->abort();
@@ -520,7 +520,8 @@ public:
     CFetchSlaveActivity(CGraphElementBase *container) : CFetchSlaveBase(container) { }
     virtual size32_t fetch(ARowBuilder & rowBuilder, const void *keyRow, unsigned filePartIndex, unsigned __int64 localFpos, unsigned __int64 fpos)
     {
-        Owned<ISerialStream> stream = createFileSerialStream(fetchStream->queryPartIO(filePartIndex), localFpos);
+        Owned<IFileIO> partIO = fetchStream->getPartIO(filePartIndex);
+        Owned<ISerialStream> stream = createFileSerialStream(partIO, localFpos);
         CThorStreamDeserializerSource ds(stream);
         RtlDynamicRowBuilder fetchedRowBuilder(fetchDiskRowIf->queryRowAllocator());
         size32_t fetchedLen = fetchDiskRowIf->queryRowDeserializer()->deserialize(fetchedRowBuilder, ds);
@@ -557,7 +558,8 @@ public:
     }
     virtual size32_t fetch(ARowBuilder & rowBuilder, const void *keyRow, unsigned filePartIndex, unsigned __int64 localFpos, unsigned __int64 fpos)
     {
-        Owned<ISerialStream> inputStream = createFileSerialStream(fetchStream->queryPartIO(filePartIndex), localFpos);
+        Owned<IFileIO> partIO = fetchStream->getPartIO(filePartIndex);
+        Owned<ISerialStream> inputStream = createFileSerialStream(partIO, localFpos);
         if (inputStream->eos())
             return 0;
         size32_t minRequired = 4096; // MORE - make configurable
@@ -630,7 +632,8 @@ public:
         lastMatches = new Owned<IColumnProvider>[files];
         for (f=0; f<files; f++)
         {
-            streams[f].setown(createBufferedIOStream(fetchStream->queryPartIO(f)));
+            Owned<IFileIO> partIO = fetchStream->getPartIO(f);
+            streams[f].setown(createBufferedIOStream(partIO));
             // NB: the index is based on path iteration matches, so on lookup the elements start at positioned stream
             // i.e. getXmlIteratorPath not used (or supplied) here.
             if (container.getKind()==TAKjsonfetch)

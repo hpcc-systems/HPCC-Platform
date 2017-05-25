@@ -109,7 +109,7 @@ class ChangeInfo : public CInterfaceOf<IInterface>
 {
     DECL_NAMEDCOUNT;
 public:
-    ChangeInfo(IPropertyTree &_owner) : owner(&_owner) { INIT_NAMEDCOUNT; tree.setown(createPTree(RESERVED_CHANGE_NODE)); }
+    ChangeInfo(IPropertyTree &_owner) : owner(&_owner) { INIT_NAMEDCOUNT; tree.setown(createPTree(RESERVED_CHANGE_NODE, ipt_fast)); }
     const IPropertyTree *queryOwner() const { return owner; }
     const void *queryFindParam() const { return &owner; }
 public: // data
@@ -276,26 +276,25 @@ public:
     void registerRenamed(IPropertyTree &owner, const char *newName, const char *oldName, unsigned pos, __int64 id)
     {
         ChangeInfo *changes = queryCreateChangeInfo(owner);
-        IPropertyTree *t = createPTree();
+        IPropertyTree *t = changes->tree->addPropTree(RENAME_TAG);
         t->setProp("@from", oldName);
         t->setProp("@to", newName);
         t->setPropInt64("@id", id);
 #ifdef SIBLING_MOVEMENT_CHECK
         t->setProp("@pos", pos);
 #endif
-        changes->tree->addPropTree(RENAME_TAG, t);
+
     }
 
     void registerDeleted(IPropertyTree &owner, const char *name, unsigned pos, __int64 id)
     {
         ChangeInfo *changes = queryCreateChangeInfo(owner);
-        IPropertyTree *t = createPTree();
+        IPropertyTree *t = changes->tree->addPropTree(DELETE_TAG);
         t->setProp("@name", name);
         t->setPropInt64("@id", id);
 #ifdef SIBLING_MOVEMENT_CHECK
         t->setPropInt("@pos", pos+1);
 #endif
-        changes->tree->addPropTree(DELETE_TAG, t);
     }
 
     virtual void registerAttrChange(IPropertyTree &owner, const char *attr)
@@ -305,7 +304,7 @@ public:
         if (t) t->removeProp(attr);
         t = changes->tree->queryPropTree("AC");
         if (!t)
-            t = changes->tree->addPropTree("AC", createPTree());
+            t = changes->tree->addPropTree("AC");
         t->setProp(attr, "");
     }
 
@@ -316,7 +315,7 @@ public:
         if (t) t->removeProp(attr);
         t = changes->tree->queryPropTree("AD");
         if (!t)
-            t = changes->tree->addPropTree("AD", createPTree());
+            t = changes->tree->addPropTree("AD");
         t->addProp(attr, "");
     }
 
@@ -325,7 +324,7 @@ public:
         ChangeInfo *changes = queryCreateChangeInfo(owner);
         IPropertyTree *t = changes->tree->queryPropTree(APPEND_TAG);
         if (!t)
-            t = changes->tree->setPropTree(APPEND_TAG, createPTree());
+            t = changes->tree->setPropTree(APPEND_TAG);
         t->setPropInt(NULL, l);
     }
 
@@ -535,11 +534,11 @@ protected:
     CConnectionHashTable connections;
 };
 
-class CPTArrayIterator : public CArrayIteratorOf<IPropertyTree, IPropertyTreeIterator>
+class DaliPTArrayIterator : public CArrayIteratorOf<IPropertyTree, IPropertyTreeIterator>
 {
     DECL_NAMEDCOUNT;
 public:
-    CPTArrayIterator() : CArrayIteratorOf<IPropertyTree, IPropertyTreeIterator>(array) { INIT_NAMEDCOUNT; }
+    DaliPTArrayIterator() : CArrayIteratorOf<IPropertyTree, IPropertyTreeIterator>(array) { INIT_NAMEDCOUNT; }
     IArrayOf<IPropertyTree> array;
 };
 

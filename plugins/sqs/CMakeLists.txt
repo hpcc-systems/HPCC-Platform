@@ -6,62 +6,67 @@ project(sqs)
 
 
 if(SQS)
-   ADD_PLUGIN(sqs)
-   if(MAKE_SQS)
-    # Locate the AWS SDK for C++ package.
-    # Requires that you build with:
-    # -Daws-sdk-cpp_DIR=/path/to/sdk_build
-    # or export/set:
-    # CMAKE_PREFIX_PATH=/path/to/sdk_build
-    find_package(aws-sdk-cpp)
-    if(!aws-sdk-cpp_FOUND) 
-         message(FATAL_ERROR
-          "AWS SDK not found and required that you build with: 
-		-Daws-sdk-cpp_DIR=/path/to/sdk_build 
-           or export/set:
-		CMAKE_PREFIX_PATH=/path/to/sdk_buid")
-    endif()	
+    ADD_PLUGIN(sqs)
+    set(AWS_SDK_CPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/aws-sdk-cpp)
+    include(ExternalProject)
+    ExternalProject_Add(
+        aws-sdk-cpp
+        SOURCE_DIR ${AWS_SDK_CPP_SOURCE_DIR}
+        BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp
+        BUILD_COMMAND $(MAKE) LDFLAGS=-Wl,-rpath-link,${LIB_PATH} aws-cpp-sdk-sqs
+        INSTALL_COMMAND "")
+    add_library(aws-cpp-sdk-core SHARED IMPORTED)
+    add_library(aws-cpp-sdk-sqs SHARED IMPORTED)
+    set_property(TARGET aws-cpp-sdk-core
+        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so)
+    set_property(TARGET aws-cpp-sdk-sqs
+        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs.so)
+    add_dependencies(aws-cpp-sdk-core aws-sdk-cpp)
+    add_dependencies(aws-cpp-sdk-sqs aws-sdk-cpp)
 
-    # Link to the SDK shared libraries.
     add_definitions(-DUSE_IMPORT_EXPORT)
-#    add_subdirectory(doc)
-    include_directories (BEFORE ${INCLUDE_DIR})
-    set(
-            SRCS
-            sqs.h
-            sqs.cpp)
 
-   include_directories(
-            ./../../system/include
-            ./../../rtl/eclrtl
-            ./../../rtl/include
-            ./../../common/deftype
-            ./../../system/jlib
-            ${PROJECT_BINARY_DIR}/include
-            ${CMAKE_BINARY_DIR} )
+    set(SRCS
+        sqs.h
+        sqs.cpp)
 
-       add_definitions(-D_USRDLL -DECL_SQS_EXPORTS)
-        HPCC_ADD_LIBRARY(sqs SHARED ${SRCS})
+    include_directories(
+        ./../../system/include
+        ./../../rtl/eclrtl
+        ./../../rtl/include
+        ./../../common/deftype
+        ./../../system/jlib
+        ${AWS_SDK_CPP_SOURCE_DIR}/aws-cpp-sdk-core/include
+        ${AWS_SDK_CPP_SOURCE_DIR}/aws-cpp-sdk-sqs/include
+        ${CMAKE_BINARY_DIR})
 
-        if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
-            message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-        elseif(NOT APPLE)
-            set_target_properties(sqs PROPERTIES NO_SONAME 1)
-        endif()
+    add_definitions(-D_USRDLL -DECL_SQS_EXPORTS)
+    HPCC_ADD_LIBRARY(sqs SHARED ${SRCS})
 
-        install(
-            TARGETS sqs
-            DESTINATION plugins)
+    if(NOT APPLE)
+        set_target_properties(sqs PROPERTIES NO_SONAME 1)
+    endif()
 
+    install(
+        TARGETS sqs
+        DESTINATION plugins)
 
-        target_link_libraries(
-            sqs 
-            aws-cpp-sdk-sqs
-            eclrtl
-            jlib
-            ${ZLIB_LIBRARIES})
+    install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs\")")
+    install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/aws-sdk-cpp/LICENSE.txt
+        DESTINATION "."
+        RENAME aws-sdk-cpp-LICENSE.txt)
+    install(PROGRAMS
+        ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so
+        ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs.so
+        DESTINATION lib)
 
-   endif()
+    target_link_libraries(
+        sqs
+        aws-cpp-sdk-sqs
+        eclrtl
+        jlib
+        ${ZLIB_LIBRARIES})
 endif()
 
 if(PLATFORM OR CLIENTTOOLS_ONLY)

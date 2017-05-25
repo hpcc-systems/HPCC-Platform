@@ -749,16 +749,19 @@ ChildMap *CClientRemoteTree::_checkChildren()
 
 IPropertyTree *CClientRemoteTree::ownPTree(IPropertyTree *tree)
 {
-    // if taking ownership of an orphaned clientremote tree need to reset it's attributes.
-    if ((connection.queryStateChanges()) && isEquivalent(tree) && (!QUERYINTERFACE(tree, CClientRemoteTree)->IsShared()))
+    // if taking ownership of an orphaned clientremote tree need to reset its attributes.
+    if ((connection.queryStateChanges()) && isEquivalent(tree))
     {
-        CClientRemoteTree *_tree = QUERYINTERFACE(tree, CClientRemoteTree);
-        if (_tree->queryServerId())
-            ((CClientRemoteTree *)tree)->resetState(CPS_Changed, true);
-        return tree;
+        CClientRemoteTree * remoteTree = static_cast<CClientRemoteTree *>(tree);
+        if (!remoteTree->IsShared())
+        {
+            if (remoteTree->queryServerId())
+                remoteTree->resetState(CPS_Changed, true);
+            return tree;
+        }
     }
-    else
-        return PARENT::ownPTree(tree);
+
+    return PARENT::ownPTree(tree);
 }
 
 IPropertyTree *CClientRemoteTree::create(const char *name, IPTArrayValue *value, ChildMap *children, bool existing)
@@ -1105,13 +1108,13 @@ IPropertyTree *CClientRemoteTree::collateData()
     {
         ChangeTree(IPropertyTree *donor=NULL) { ptree = LINK(donor); }
         ~ChangeTree() { ::Release(ptree); }
-        inline void createTree() { assertex(!ptree); ptree = createPTree(RESERVED_CHANGE_NODE); }
+        inline void createTree() { assertex(!ptree); ptree = createPTree(RESERVED_CHANGE_NODE, ipt_fast); }
         inline IPropertyTree *queryTree() { return ptree; }
         inline IPropertyTree *getTree() { return LINK(ptree); }
         inline IPropertyTree *queryCreateTree()
         {
             if (!ptree)
-                ptree = createPTree(RESERVED_CHANGE_NODE);
+                ptree = createPTree(RESERVED_CHANGE_NODE, ipt_fast);
             return ptree;
         }
     private:
@@ -1126,10 +1129,10 @@ IPropertyTree *CClientRemoteTree::collateData()
         Owned<IAttributeIterator> iter = getAttributes();
         if (iter->count())
         {
-            IPropertyTree *t = createPTree();
+            IPropertyTree *t = ct.queryTree()->addPropTree(ATTRCHANGE_TAG);
             ForEach(*iter)
                 t->setProp(iter->queryName(), queryProp(iter->queryName()));
-            ct.queryTree()->addPropTree(ATTRCHANGE_TAG, t);
+
         }
         ct.queryTree()->setPropBool("@new", true);
     }
@@ -1142,10 +1145,9 @@ IPropertyTree *CClientRemoteTree::collateData()
             {
                 ct.queryTree()->removeTree(ac);
                 Owned<IAttributeIterator> iter = ac->getAttributes();
-                IPropertyTree *t = createPTree();
+                IPropertyTree *t = ct.queryTree()->addPropTree(ATTRCHANGE_TAG);
                 ForEach(*iter)
                     t->setProp(iter->queryName(), queryProp(iter->queryName()));
-                ct.queryTree()->addPropTree(ATTRCHANGE_TAG, t);
             }
         }
     }
@@ -1544,7 +1546,7 @@ IPropertyTreeIterator *CClientSDSManager::getElements(CRemoteConnection &connect
             unsigned count;
             mb.read(count);
             CDisableFetchChangeBlock block(connection);
-            Owned<CPTArrayIterator> iter = new CPTArrayIterator();
+            Owned<DaliPTArrayIterator> iter = new DaliPTArrayIterator();
             while (count--)
             {
                 CClientRemoteTree *tree = new CClientRemoteTree(connection);
@@ -1945,9 +1947,9 @@ IPropertyTree &CClientSDSManager::queryProperties() const
         default:
             assertex(false);
     }
-    properties = createPTree(mb);
+    properties = createPTree(mb, ipt_lowmem);
     if (!properties->hasProp("Client"))
-        properties->setPropTree("Client", createPTree());
+        properties->setPropTree("Client");
     return *properties;
 }
 
@@ -1968,7 +1970,7 @@ IPropertyTree *CClientSDSManager::getXPaths(__int64 serverId, const char *xpath,
     switch (replyMsg)
     {
         case DAMP_SDSREPLY_OK:
-            return createPTree(mb);
+            return createPTree(mb, ipt_lowmem);
         case DAMP_SDSREPLY_EMPTY:
             return NULL;
         case DAMP_SDSREPLY_ERROR:
@@ -2007,7 +2009,7 @@ IPropertyTreeIterator *CClientSDSManager::getXPathsSortLimit(const char *baseXPa
         default:
             throwUnexpected();
     }
-    Owned<IPropertyTree> matchTree = createPTree(mb);
+    Owned<IPropertyTree> matchTree = createPTree(mb, ipt_lowmem);
     Owned<CRemoteConnection> conn = (CRemoteConnection *)connect(baseXPath, myProcessSession(), RTM_LOCK_READ, INFINITE);
     if (!conn)
         return createNullPTreeIterator();
@@ -2071,12 +2073,12 @@ IPropertyTreeIterator *CClientSDSManager::getElementsRaw(const char *xpath, INod
     {
         case DAMP_SDSREPLY_OK:
         {
-            Owned<CPTArrayIterator> resultIterator = new CPTArrayIterator;
+            Owned<DaliPTArrayIterator> resultIterator = new DaliPTArrayIterator;
             unsigned count, c;
             mb.read(count);
             for (c=0; c<count; c++)
             {
-                Owned<IPropertyTree> item = createPTree(mb);
+                Owned<IPropertyTree> item = createPTree(mb, ipt_lowmem);
                 resultIterator->array.append(*LINK(item));
             }
             return LINK(resultIterator);

@@ -2021,7 +2021,7 @@ protected:
             {
                 CriticalBlock b(contextCrit);
                 if (!persists)
-                    persists = createPTree();
+                    persists = createPTree(ipt_fast);
                 return *persists;
             }
         case ResultSequenceOnce:
@@ -2034,14 +2034,14 @@ protected:
             {
                 CriticalBlock b(contextCrit);
                 if (!temporaries)
-                    temporaries = createPTree();
+                    temporaries = createPTree(ipt_fast);
                 return *temporaries;
             }
         default:
             {
                 CriticalBlock b(contextCrit);
                 if (!rereadResults)
-                    rereadResults = createPTree();
+                    rereadResults = createPTree(ipt_fast);
                 return *rereadResults;
             }
         }
@@ -2690,8 +2690,8 @@ protected:
         if (workUnit->getXmlParams(wuParams, false).length())
         {
             // Merge in params from WU. Ones on command line take precedence though...
-            Owned<IPropertyTree> wuParamTree = createPTreeFromXMLString(wuParams.str(), ipt_caseInsensitive);
-            Owned<IPropertyTreeIterator> params = wuParamTree ->getElements("*");
+            Owned<IPropertyTree> wuParamTree = createPTreeFromXMLString(wuParams.str(), ipt_caseInsensitive|ipt_fast);
+            Owned<IPropertyTreeIterator> params = wuParamTree->getElements("*");
             ForEach(*params)
             {
                 IPropertyTree &param = params->query();
@@ -2738,7 +2738,7 @@ public:
         init();
         rowManager->setMemoryLimit(options.memoryLimit);
         workflow.setown(_factory->createWorkflowMachine(workUnit, true, logctx));
-        context.setown(createPTree(ipt_caseInsensitive));
+        context.setown(createPTree(ipt_caseInsensitive|ipt_fast));
     }
 
     CRoxieServerContext(IConstWorkUnit *_workUnit, const IQueryFactory *_factory, const ContextLogger &_logctx)
@@ -2748,7 +2748,7 @@ public:
         workUnit.set(_workUnit);
         rowManager->setMemoryLimit(options.memoryLimit);
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
-        context.setown(createPTree(ipt_caseInsensitive));
+        context.setown(createPTree(ipt_caseInsensitive|ipt_fast));
 
         //MORE: Use various debug settings to override settings:
         rowManager->setActivityTracking(workUnit->getDebugValueBool("traceRoxiePeakMemory", false));
@@ -3207,7 +3207,7 @@ public:
         else
         {
             if (!val)
-                val = ctx.addPropTree(name, createPTree());
+                val = ctx.addPropTree(name, createPTree(ipt_fast));
             val->setProp("@format", "deserialized");
             val->setPropInt("@id", resultStore.addResult(count, data, meta));
         }
@@ -3318,7 +3318,7 @@ public:
     virtual void setResultXml(const char *name, unsigned sequence, const char *xml)
     {
         CriticalBlock b(contextCrit);
-        useContext(sequence).setPropTree(name, createPTreeFromXMLString(xml, ipt_caseInsensitive));
+        useContext(sequence).setPropTree(name, createPTreeFromXMLString(xml, ipt_caseInsensitive|ipt_fast));
     }
 
     virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val)

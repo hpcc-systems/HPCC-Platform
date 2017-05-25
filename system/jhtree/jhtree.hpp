@@ -30,8 +30,8 @@
 
 interface jhtree_decl IDelayedFile : public IInterface
 {
-    virtual IMemoryMappedFile *queryMappedFile() = 0;
-    virtual IFileIO *queryFileIO() = 0;
+    virtual IMemoryMappedFile *getMappedFile() = 0;
+    virtual IFileIO *getFileIO() = 0;
 };
 
 interface jhtree_decl IKeyCursor : public IInterface
@@ -178,6 +178,8 @@ public:
     void checkSize(size32_t keyedSize, char const * keyname);
     void recalculateCache();
     void finish();
+    void deserialize(MemoryBuffer &mb);
+    void serialize(MemoryBuffer &mb) const;
 
     // interface IIndexReadContext
     virtual void append(IKeySegmentMonitor *segment);
@@ -213,6 +215,7 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual void resetCounts() = 0;
 
     virtual void setLayoutTranslator(IRecordLayoutTranslator * trans) = 0;
+    virtual void deserializeSegmentMonitors(MemoryBuffer &mb) = 0;
     virtual void finishSegmentMonitors() = 0;
 
     virtual bool lookupSkip(const void *seek, size32_t seekGEOffset, size32_t seeklen) = 0;

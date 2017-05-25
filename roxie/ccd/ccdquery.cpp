@@ -170,9 +170,9 @@ IPropertyTree * addXrefInfo(IPropertyTree &reply, const char *section, const cha
     VStringBuffer xpath("%s[@name='%s']", section, name);
     if (!reply.hasProp(xpath))
     {
-        IPropertyTree *info = createPTree(section, 0);
+        IPropertyTree *info = reply.addPropTree(section);
         info->setProp("@name", name);
-        return reply.addPropTree(section, info);
+        return info;
     }
     return NULL;
 }
@@ -236,7 +236,7 @@ public:
         CriticalBlock b(onceCrit);
         if (!onceContext)
         {
-            onceContext.setown(createPTree());
+            onceContext.setown(createPTree(ipt_lowmem));
             onceResultStore.setown(createDeserializedResultStore());
             Owned <IRoxieServerContext> ctx = createOnceServerContext(factory, logctx);
             onceManager.set(&ctx->queryRowManager());
@@ -1297,7 +1297,7 @@ public:
 
     void getGraphStats(StringBuffer &reply, const IPropertyTree &thisGraph) const
     {
-        Owned<IPropertyTree> graph = createPTreeFromIPT(&thisGraph);
+        Owned<IPropertyTree> graph = createPTreeFromIPT(&thisGraph, ipt_lowmem);
         Owned<IPropertyTreeIterator> edges = graph->getElements(".//edge");
         ForEach(*edges)
         {
@@ -1325,7 +1325,7 @@ public:
     virtual IPropertyTree* cloneQueryXGMML() const
     {
         assertex(dll && dll->queryWorkUnit());
-        Owned<IPropertyTree> tree = createPTree("Query");
+        Owned<IPropertyTree> tree = createPTree("Query", ipt_lowmem);
         Owned<IConstWUGraphIterator> graphs = &dll->queryWorkUnit()->getGraphs(GraphTypeActivities);
         SCMStringBuffer graphNameStr;
         ForEach(*graphs)
@@ -1333,12 +1333,9 @@ public:
             graphs->query().getName(graphNameStr);
             const char *graphName = graphNameStr.s.str();
             Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
-            IPropertyTree *newGraph = createPTree();
+            IPropertyTree *newGraph = tree->addPropTree("Graph");
             newGraph->setProp("@id", graphName);
-            IPropertyTree *newXGMML = createPTree();
-            newXGMML->addPropTree("graph", graphXgmml.getLink());
-            newGraph->addPropTree("xgmml", newXGMML);
-            tree->addPropTree("Graph", newGraph);
+            newGraph->addPropTree("xgmml")->addPropTree("graph", graphXgmml.getLink());
         }
         return tree.getClear();
     }
@@ -1383,7 +1380,7 @@ public:
     }
     virtual void getQueryInfo(StringBuffer &reply, bool full, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const
     {
-        Owned<IPropertyTree> xref = createPTree("Query", 0);
+        Owned<IPropertyTree> xref = createPTree("Query", ipt_fast);
         xref->setProp("@id", id);
         if (suspended())
         {

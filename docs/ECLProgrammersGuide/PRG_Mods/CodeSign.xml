@@ -75,7 +75,8 @@
 
     <para><emphasis role="bold">Cluster</emphasis></para>
 
-    <para>Specify the cluster for which this rule applies.</para>
+    <para>Specify the cluster for which this rule applies. If cluster is left
+    blank, the restriction applies to all clusters in the environment.</para>
 
     <para><emphasis role="bold">Value</emphasis></para>
 
@@ -105,6 +106,14 @@
             <entry><emphasis>extern</emphasis></entry>
 
             <entry>Allow/Deny an external function (SERVICE)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>datafile</emphasis></entry>
+
+            <entry>(Valid only for --allowedsigned). This specifies that
+            access to data is only allowed if the code has been signed and the
+            key is present. </entry>
           </row>
         </tbody>
       </tgroup>

@@ -33,14 +33,6 @@
 //It nearly works - but there are still some examples which have problems - primarily libraries, old parameter syntax, enums and other issues.
 //There may also problems with queryRecord() which needs to really be replaced with recordof(x), especially if "templates" are delayed expanded.
 //To work properly it may require many of the transformations in hqlgram2.cpp to be moved to after the expansion.  (E.g., BUILD)
-//#define DELAY_CALL_EXPANSION
-
-#ifdef DELAY_CALL_EXPANSION
-#define DEFAULT_EXPAND_CALL false
-#else
-#define DEFAULT_EXPAND_CALL true
-#endif
-
 
 #define GATHER_HIDDEN_SELECTORS
 
@@ -345,7 +337,7 @@ enum node_operator : unsigned short {
         no_datasetfromdictionary,
         no_delayedscope,
         no_assertconcrete,
-        no_unboundselect,
+        no_unboundselect,               // A symbol selected from a module derived from a parameter
         no_id,
         no_orderedactionlist,
         no_dataset_from_transform,
@@ -870,7 +862,7 @@ public:
     HqlParseContext(IEclRepository * _eclRepository, ICodegenContextCallback *_codegenCtx, IPropertyTree * _archive)
     : archive(_archive), eclRepository(_eclRepository), codegenCtx(_codegenCtx)
     {
-        expandCallsWhenBound = DEFAULT_EXPAND_CALL;
+        expandCallsWhenBound = true;
         ignoreUnknownImport = false;
         ignoreSignatures = false;
         _clear(metaState);
@@ -895,6 +887,7 @@ public:
     inline IEclRepository * queryRepository() const { return eclRepository; }
     inline bool isAborting() const { return aborting; }
     inline void setAborting() { aborting = true; }
+    inline void setFastSyntax() { expandCallsWhenBound = false; }
 
 public:
     Linked<IPropertyTree> archive;
@@ -1285,6 +1278,7 @@ extern HQL_API IHqlExpression * createTypeTransfer(IHqlExpression * expr, ITypeI
 extern HQL_API IHqlExpression * cloneFieldMangleName(IHqlExpression * expr);
 extern HQL_API IHqlExpression * expandOutOfLineFunctionCall(IHqlExpression * expr);
 extern HQL_API void expandDelayedFunctionCalls(IErrorReceiver * errors, HqlExprArray & exprs);
+extern HQL_API IHqlExpression * expandDelayedFunctionCalls(IErrorReceiver * errors, IHqlExpression * expr);
 
 extern HQL_API IHqlExpression *createQuoted(const char * name, ITypeInfo *type);
 extern HQL_API IHqlExpression *createVariable(const char * name, ITypeInfo *type);

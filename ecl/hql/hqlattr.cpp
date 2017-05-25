@@ -2085,9 +2085,9 @@ static bool increasesRowSize(IHqlExpression * newRecord, IHqlExpression * oldRec
 // Does this operation decrease the size of the row?  False negatives preferred.
 bool reducesRowSize(IHqlExpression * expr)
 {
-    OwnedHqlExpr newRecord = getSerializedForm(expr->queryRecord(), diskAtom);
-    OwnedHqlExpr oldRecord = getSerializedForm(expr->queryChild(0)->queryRecord(), diskAtom);
-    return increasesRowSize(oldRecord, newRecord, false);
+    OwnedHqlExpr projectedRecord = getSerializedForm(expr->queryRecord(), diskAtom);
+    OwnedHqlExpr previousRecord = getSerializedForm(expr->queryChild(0)->queryRecord(), diskAtom);
+    return increasesRowSize(previousRecord, projectedRecord, false);
 }
 
 // Does this operation increase the size of the row?  False negatives preferred.

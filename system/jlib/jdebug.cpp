@@ -2612,6 +2612,8 @@ public:
         if(!mode) return;
         unsigned memused=0;
         unsigned memtot=0;
+        str.appendf("LPT=%u ", queryNumLocalTrees());
+        str.appendf("APT=%u ", queryNumAtomTrees());
         if(mode & PerfMonProcMem)
         {
             if (!outofhandles)

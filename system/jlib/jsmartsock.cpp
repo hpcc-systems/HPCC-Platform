@@ -95,33 +95,7 @@ private:
 };
 
 
-class jlib_decl CSmartSocket: implements ISmartSocket, public CInterface
-{
-    ISocket *sock;
-    SocketEndpoint ep;
-    CSmartSocketFactory *factory;
-
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CSmartSocket(ISocket *_sock, SocketEndpoint &_ep, CSmartSocketFactory *_factory);
-    ~CSmartSocket();
-
-    // ISmartSocket
-    ISocket *querySocket() { return (sock); }
-
-    // subset of ISocket
-    void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
-                        unsigned timeout = WAIT_FOREVER);
-    void read(void* buf, size32_t size);
-
-    size32_t write(void const* buf, size32_t size);
-
-    void close();
-};
-
-
-CSmartSocket::CSmartSocket(ISocket *_sock, SocketEndpoint &_ep, CSmartSocketFactory *_factory) : sock(_sock), ep(_ep), factory(_factory)
+CSmartSocket::CSmartSocket(ISocket *_sock, SocketEndpoint &_ep, ISmartSocketFactory *_factory) : sock(_sock), ep(_ep), factory(_factory)
 {
 };
 
@@ -305,14 +279,13 @@ SocketEndpoint& CSmartSocketFactory::nextEndpoint()
     return (ss->ep);
 }
 
-ISmartSocket *CSmartSocketFactory::connect_timeout( unsigned timeoutms)
+ISocket *CSmartSocketFactory::connect_sock(unsigned timeoutms, SmartSocketEndpoint *&ss, SocketEndpoint &ep)
 {
-    SmartSocketEndpoint *ss = nextSmartEndpoint();
+    ss = nextSmartEndpoint();
     if (!ss)
         throw createSmartSocketException(0, "smartsocket failed to get nextEndpoint");
 
-    ISocket *sock = NULL;
-    SocketEndpoint ep;
+    ISocket *sock = nullptr;
     try 
     {
         {
@@ -324,12 +297,10 @@ ISmartSocket *CSmartSocketFactory::connect_timeout( unsigned timeoutms)
             sock = ISocket::connect_timeout(ep, timeoutms);
         else
             sock = ISocket::connect(ep);
-
-        return new CSmartSocket(sock, ep, this);
     }
     catch (IException *e)
     {
-        StringBuffer s("CSmartSocketFactory::connect ");
+        StringBuffer s("CSmartSocketFactory::connect_sock ");
         ep.getUrlStr(s);
         EXCLOG(e,s.str());
         ss->status=false;
@@ -337,6 +308,15 @@ ISmartSocket *CSmartSocketFactory::connect_timeout( unsigned timeoutms)
             sock->Release();
         throw;
     }
+    return sock;
+}
+
+ISmartSocket *CSmartSocketFactory::connect_timeout(unsigned timeoutms)
+{
+    SocketEndpoint ep;
+    SmartSocketEndpoint *ss = nullptr;
+    Owned<ISocket> sock = connect_sock(timeoutms, ss, ep);
+    return new CSmartSocket(sock.getClear(), ep, this);
 }
 
 ISmartSocket *CSmartSocketFactory::connect()

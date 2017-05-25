@@ -84,7 +84,8 @@ public:
 
     ISmartSocket *connect();
 
-    ISmartSocket *connect_timeout( unsigned timeoutms = 0);
+    ISocket *connect_sock(unsigned timeoutms, SmartSocketEndpoint *&ss, SocketEndpoint &ep);
+    virtual ISmartSocket *connect_timeout(unsigned timeoutms = 0);
 
     ISmartSocket *connectNextAvailableSocket();
 
@@ -115,6 +116,29 @@ public:
 private:
     int errcode;
     StringAttr msg;
+};
+
+class jlib_decl CSmartSocket: public CSimpleInterfaceOf<ISmartSocket>
+{
+public:
+    ISocket *sock;
+    SocketEndpoint ep;
+    ISmartSocketFactory *factory;
+
+    CSmartSocket(ISocket *_sock, SocketEndpoint &_ep, ISmartSocketFactory *_factory);
+    virtual ~CSmartSocket();
+
+    // ISmartSocket
+    virtual ISocket *querySocket() override { return sock; }
+
+    // subset of ISocket
+    virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
+                        unsigned timeout = WAIT_FOREVER) override;
+    virtual void read(void* buf, size32_t size) override;
+
+    virtual size32_t write(void const* buf, size32_t size) override;
+
+    virtual void close() override;
 };
 
 #endif

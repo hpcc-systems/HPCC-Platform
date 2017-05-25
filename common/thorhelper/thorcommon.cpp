@@ -1869,7 +1869,7 @@ void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char
 
     numa_bitmask_free(available_nodes);
 
-    DBGLOG("Affinity: Max cpus(%u) nodes(%u) actual nodes(%u)", maxcpus, numa_max_node()+1, numNumaNodes);
+    DBGLOG("Affinity: Max cpus(%u) nodes(%u) actual nodes(%u), processes(%u)", maxcpus, numa_max_node()+1, numNumaNodes, processPerMachine);
 #else
     //On very old versions of numa assume that all nodes are present
     for (unsigned i=0; i<=numa_max_node(); i++)
@@ -1881,25 +1881,52 @@ void setAutoAffinity(unsigned curProcess, unsigned processPerMachine, const char
     if (numNumaNodes <= 1)
         return;
 
-    //MORE: If processPerMachine < numNumaNodes we may want to associate with > 1 node.
-    unsigned curNode = curProcess % numNumaNodes;
+    unsigned firstNode = 0;
+    unsigned numNodes = 1;
+    if (processPerMachine >= numNumaNodes)
+    {
+        firstNode = curProcess % numNumaNodes;
+    }
+    else
+    {
+        firstNode = (curProcess * numNumaNodes) / processPerMachine;
+        unsigned nextNode = ((curProcess+1) *  numNumaNodes) / processPerMachine;
+        numNodes = nextNode - firstNode;
+    }
+
+    if ((processPerMachine % numNumaNodes) != 0)
+        DBGLOG("Affinity: %u processes will not be evenly balanced over %u numa nodes", processPerMachine, numNumaNodes);
 
 #if defined(LIBNUMA_API_VERSION) && (LIBNUMA_API_VERSION>=2)
+    //This code assumes the nodes are sensibly ordered (e.g., nodes on the same socket are next to each other), and
+    //only works well when number of processes is a multiple of the number of numa nodes.  A full solution would look
+    //at distances.
     struct bitmask * cpus = numa_allocate_cpumask();
-    numa_node_to_cpus(numaMap[curNode], cpus);
+    struct bitmask * nodeMask = numa_allocate_cpumask();
+    for (unsigned node=0; node < numNodes; node++)
+    {
+        numa_node_to_cpus(numaMap[firstNode+node], nodeMask);
+        //Shame there is no inbuilt union operation.
+        for (unsigned cpu=0; cpu < maxcpus; cpu++)
+        {
+            if (numa_bitmask_isbitset(nodeMask, cpu))
+                numa_bitmask_setbit(cpus, cpu);
+        }
+    }
     bool ok = (numa_sched_setaffinity(0, cpus) == 0);
+    numa_bitmask_free(nodeMask);
     numa_bitmask_free(cpus);
 #else
     cpu_set_t cpus;
     CPU_ZERO(&cpus);
-    numa_node_to_cpus(numaMap[curNode], (unsigned long *) &cpus, sizeof (cpus));
+    numa_node_to_cpus(numaMap[firstNode], (unsigned long *) &cpus, sizeof (cpus));
     bool ok = sched_setaffinity (0, sizeof(cpus), &cpus) != 0;
 #endif
 
     if (!ok)
-        throw makeStringExceptionV(1, "Failed to set affinity to numa node %u (id:%u)", curNode, numaMap[curNode]);
+        throw makeStringExceptionV(1, "Failed to set affinity to numa node %u (id:%u)", firstNode, numaMap[firstNode]);
 
-    DBGLOG("Process bound to numa node %u (id:%u) of %u", curNode, numaMap[curNode], numNumaNodes);
+    DBGLOG("Process bound to numa node %u..%u (id:%u) of %u", firstNode, firstNode + numNodes - 1, numaMap[firstNode], numNumaNodes);
 #endif
     clearAffinityCache();
 }

@@ -485,6 +485,7 @@ class WuTool : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(WuTool);
         CPPUNIT_TEST(testInit);
         CPPUNIT_TEST(testCreate);
+        CPPUNIT_TEST(testGlobal);
         CPPUNIT_TEST(testValidate);
         CPPUNIT_TEST(testList);
         CPPUNIT_TEST(testList2);
@@ -501,7 +502,6 @@ class WuTool : public CppUnit::TestFixture
         CPPUNIT_TEST(testQuery);
         CPPUNIT_TEST(testGraph);
         CPPUNIT_TEST(testGraphProgress);
-        CPPUNIT_TEST(testGlobal);
     CPPUNIT_TEST_SUITE_END();
 protected:
     static StringArray wuids;
@@ -1472,8 +1472,7 @@ protected:
             numIterated++;
         }
         DBGLOG("%d ranged workunits listed the hard way in %d ms", numIterated, msTick()-start);
-        ASSERT(numIterated == testSize);
-
+        ASSERT_EQUAL(before-(isDali?1:0), numIterated); // Dali includes the global workunit in the count, cassandra does not. This filter will not include the global wu
 
         // Check ascending wuids
         WUSortField filterByCluster[] = { WUSFcluster, WUSFterm };
@@ -1539,7 +1538,7 @@ protected:
             numIterated++;
         }
         DBGLOG("%d workunits ascending thortime in %d ms", numIterated, msTick()-start);
-        ASSERT(numIterated == before);
+        ASSERT_EQUAL(before, numIterated);
 
         // Test use of cache/page mechanism - on something needing a postsort
         start = msTick();
@@ -1641,7 +1640,7 @@ protected:
             startRow++;
         }
         DBGLOG("%d workunits descending thortime, page by page in %d ms", numIterated, msTick()-start);
-        ASSERT(numIterated == before);
+        ASSERT_EQUAL(before, numIterated);
     }
 
     void testListByAppValue()
@@ -1762,6 +1761,7 @@ protected:
         Owned<IWUResult> result = global->updateGlobalByName("Result 1");
         result->setResultScalar(true);
         result->setResultInt(53);
+        global->commit();
         result.clear();
         global.clear();
 

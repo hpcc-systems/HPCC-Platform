@@ -1728,20 +1728,19 @@ bool ensurePrimary(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIFil
     return false;
 }
 
-class CEnsurePrimaryPartFile : public CInterface, implements IReplicatedFile
+class CEnsurePrimaryPartFile : public CInterface, implements IActivityReplicatedFile
 {
-    CActivityBase &activity;
     Linked<IPartDescriptor> partDesc;
     StringAttr logicalFilename;
     Owned<IReplicatedFile> part;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CEnsurePrimaryPartFile(CActivityBase &_activity, const char *_logicalFilename, IPartDescriptor *_partDesc) 
-        : activity(_activity), logicalFilename(_logicalFilename), partDesc(_partDesc)
+    CEnsurePrimaryPartFile(const char *_logicalFilename, IPartDescriptor *_partDesc)
+        : logicalFilename(_logicalFilename), partDesc(_partDesc)
     {
     }
-    virtual IFile *open()
+    virtual IFile *open(CActivityBase &activity) override
     {
         unsigned location;
         OwnedIFile iFile;
@@ -1756,7 +1755,7 @@ public:
             throw e;
         }
     }
-
+    virtual IFile *open() override { throwUnexpected(); }
     RemoteFilenameArray &queryCopies() 
     { 
         if(!part.get()) 
@@ -1765,18 +1764,18 @@ public:
     }
 };
 
-IReplicatedFile *createEnsurePrimaryPartFile(CActivityBase &activity, const char *logicalFilename, IPartDescriptor *partDesc)
+IActivityReplicatedFile *createEnsurePrimaryPartFile(const char *logicalFilename, IPartDescriptor *partDesc)
 {
-    return new CEnsurePrimaryPartFile(activity, logicalFilename, partDesc);
+    return new CEnsurePrimaryPartFile(logicalFilename, partDesc);
 }
 
 ///////////////
 
 class CFileCache;
-class CLazyFileIO : public CInterface, implements IFileIO, implements IDelayedFile
+class CLazyFileIO : public CInterface
 {
     CFileCache &cache;
-    Owned<IReplicatedFile> repFile;
+    Owned<IActivityReplicatedFile> repFile;
     Linked<IExpander> expander;
     bool compressed;
     StringAttr filename;
@@ -1784,69 +1783,35 @@ class CLazyFileIO : public CInterface, implements IFileIO, implements IDelayedFi
     CriticalSection crit;
     Owned<IFileIO> iFileIO; // real IFileIO
 
-    void checkOpen(); // references CFileCache method
-
+    IFileIO *getFileIO()
+    {
+        CriticalBlock b(crit);
+        return iFileIO.getLink();
+    }
+    IFileIO *getClearFileIO()
+    {
+        CriticalBlock b(crit);
+        return iFileIO.getClear();
+    }
 public:
     IMPLEMENT_IINTERFACE;
-    CLazyFileIO(CFileCache &_cache, const char *_filename, IReplicatedFile *_repFile, bool _compressed, IExpander *_expander)
-    : cache(_cache), filename(_filename), repFile(_repFile), compressed(_compressed), expander(_expander), fileStats(diskLocalStatistics)
-    {
-    }
-    ~CLazyFileIO()
-    {
-        iFileIO.clear();
-    }
 
+    CLazyFileIO(CFileCache &_cache, const char *_filename, IActivityReplicatedFile *_repFile, bool _compressed, IExpander *_expander)
+        : cache(_cache), filename(_filename), repFile(_repFile), compressed(_compressed), expander(_expander), fileStats(diskLocalStatistics)
+    {
+    }
+    IFileIO *getOpenFileIO(CActivityBase &activity);
     const char *queryFindString() const { return filename.get(); } // for string HT
-
-// IFileIO impl.
-    virtual size32_t read(offset_t pos, size32_t len, void * data)
+    void close()
     {
-        CriticalBlock b(crit);
-        checkOpen();
-        return iFileIO->read(pos, len, data);
-    }
-    virtual offset_t size()
-    {
-        CriticalBlock b(crit);
-        checkOpen();
-        return iFileIO->size();
-    }
-    virtual size32_t write(offset_t pos, size32_t len, const void * data)
-    {
-        CriticalBlock b(crit);
-        checkOpen();
-        return iFileIO->write(pos, len, data);
-    }
-    virtual void flush()
-    {
-        CriticalBlock b(crit);
-        if (iFileIO)
-            iFileIO->flush();
-    }
-    virtual void close()
-    {
-        CriticalBlock b(crit);
-        if (iFileIO)
+        Owned<IFileIO> openiFileIO = getClearFileIO();
+        if (openiFileIO)
         {
-            mergeStats(fileStats, iFileIO);
-            iFileIO->close();
+            openiFileIO->close();
+            mergeStats(fileStats, openiFileIO);
         }
-        iFileIO.clear();
     }
-    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1)
-    {
-        CriticalBlock b(crit);
-        checkOpen();
-        return iFileIO->appendFile(file, pos, len);
-    }
-    virtual void setSize(offset_t size)
-    {
-        CriticalBlock b(crit);
-        checkOpen();
-        iFileIO->setSize(size);
-    }
-    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    unsigned __int64 getStatistic(StatisticKind kind)
     {
         switch (kind)
         {
@@ -1856,13 +1821,10 @@ public:
             return cycle_to_nanosec(getStatistic(StCycleDiskWriteIOCycles));
         }
 
-        CriticalBlock b(crit);
-        unsigned __int64 openValue = iFileIO ? iFileIO->getStatistic(kind) : 0;
+        Owned<IFileIO> openiFileIO = getFileIO();
+        unsigned __int64 openValue = openiFileIO ? openiFileIO->getStatistic(kind) : 0;
         return openValue + fileStats.getStatisticValue(kind);
     }
-// IDelayedFile impl.
-    virtual IMemoryMappedFile *queryMappedFile() { return NULL; }
-    virtual IFileIO *queryFileIO() { return this; }
 };
 
 class CFileCache : public CInterface, implements IThorFileCache
@@ -1872,22 +1834,70 @@ class CFileCache : public CInterface, implements IThorFileCache
     unsigned limit, purgeN;
     CriticalSection crit;
 
-    class CDelayedFileWapper : public CInterface, implements IDelayedFile
+    class CDelayedFileWapper : public CSimpleInterfaceOf<IDelayedFile>, implements IFileIO
     {
-        CFileCache &cache;
-        Linked<CLazyFileIO> lFile;
-    public:
-        IMPLEMENT_IINTERFACE;
+        typedef CSimpleInterfaceOf<IDelayedFile> PARENT;
 
-        CDelayedFileWapper(CFileCache &_cache, CLazyFileIO &_lFile) : cache(_cache), lFile(&_lFile) { }
+        CFileCache &cache;
+        CActivityBase &activity;
+        Linked<CLazyFileIO> lFile;
+        CriticalSection crit;
+
+    public:
+        IMPLEMENT_IINTERFACE_USING(PARENT);
+
+        CDelayedFileWapper(CFileCache &_cache, CActivityBase &_activity, CLazyFileIO &_lFile) : cache(_cache), activity(_activity), lFile(&_lFile) { }
 
         ~CDelayedFileWapper()
         {
-            cache.remove(*lFile);
+            cache.remove(lFile->queryFindString());
         }
         // IDelayedFile impl.
-        virtual IMemoryMappedFile *queryMappedFile() { return lFile->queryMappedFile(); }
-        virtual IFileIO *queryFileIO() { return lFile->queryFileIO(); }
+        virtual IMemoryMappedFile *getMappedFile() override { return nullptr; }
+        virtual IFileIO *getFileIO() override
+        {
+            // NB: lFile needs an activity to open fileIO
+            return lFile->getOpenFileIO(activity);
+        }
+        // IFileIO impl.
+        virtual size32_t read(offset_t pos, size32_t len, void * data) override
+        {
+            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
+            return iFileIO->read(pos, len, data);
+        }
+        virtual offset_t size() override
+        {
+            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
+            return iFileIO->size();
+        }
+        virtual size32_t write(offset_t pos, size32_t len, const void * data) override
+        {
+            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
+            return iFileIO->write(pos, len, data);
+        }
+        virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override
+        {
+            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
+            return iFileIO->appendFile(file, pos, len);
+        }
+        virtual void setSize(offset_t size) override
+        {
+            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
+            iFileIO->setSize(size);
+        }
+        virtual void flush() override
+        {
+            Owned<IFileIO> iFileIO = lFile->getOpenFileIO(activity);
+            iFileIO->flush();
+        }
+        virtual void close() override
+        {
+            lFile->close();
+        }
+        virtual unsigned __int64 getStatistic(StatisticKind kind) override
+        {
+            return lFile->getStatistic(kind);
+        }
     };
 
     void purgeOldest()
@@ -1909,11 +1919,12 @@ class CFileCache : public CInterface, implements IThorFileCache
             openFiles.zap(lFile);
         }
     }
-    bool _remove(CLazyFileIO &lFile)
+    bool _remove(const char *filename)
     {
-        bool ret = files.removeExact(&lFile);
+        Linked<CLazyFileIO> lFile = files.find(filename);
+        bool ret = files.removeExact(lFile);
         if (!ret) return false;
-        openFiles.zap(lFile);
+        openFiles.zap(*lFile.get());
         return true;
     }
 public:
@@ -1940,12 +1951,10 @@ public:
     }
 
 // IThorFileCache impl.
-    virtual bool remove(IDelayedFile &dFile)
+    virtual bool remove(const char *filename)
     {
-        CLazyFileIO *lFile = QUERYINTERFACE(&dFile, CLazyFileIO);
-        assertex(lFile);
         CriticalBlock b(crit);
-        return _remove(*lFile);
+        return _remove(filename);
     }
     virtual IDelayedFile *lookup(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, IExpander *expander)
     {
@@ -1957,30 +1966,32 @@ public:
         Linked<CLazyFileIO> file = files.find(filename.str());
         if (!file)
         {
-            Owned<IReplicatedFile> repFile = createEnsurePrimaryPartFile(activity, logicalFilename, &partDesc);
+            Owned<IActivityReplicatedFile> repFile = createEnsurePrimaryPartFile(logicalFilename, &partDesc);
             bool compressed = partDesc.queryOwner().isCompressed();
             file.setown(new CLazyFileIO(*this, filename.str(), repFile.getClear(), compressed, expander));
         }
         files.replace(*LINK(file));
-        return new CDelayedFileWapper(*this, *file); // to avoid circular dependency and allow destruction to remove from cache
+        return new CDelayedFileWapper(*this, activity, *file); // to avoid circular dependency and allow destruction to remove from cache
     }
 };
 ////
-void CLazyFileIO::checkOpen()
+IFileIO *CLazyFileIO::getOpenFileIO(CActivityBase &activity)
 {
     CriticalBlock b(crit);
-    if (iFileIO)
-        return;
-    cache.opening(*this);
-    Owned<IFile> iFile = repFile->open();
-    if (NULL != expander.get())
-        iFileIO.setown(createCompressedFileReader(iFile, expander));
-    else if (compressed)
-        iFileIO.setown(createCompressedFileReader(iFile));
-    else
-        iFileIO.setown(iFile->open(IFOread));
-    if (!iFileIO.get())
-        throw MakeThorException(0, "CLazyFileIO: failed to open: %s", filename.get());
+    if (!iFileIO)
+    {
+        cache.opening(*this);
+        Owned<IFile> iFile = repFile->open(activity);
+        if (NULL != expander.get())
+            iFileIO.setown(createCompressedFileReader(iFile, expander));
+        else if (compressed)
+            iFileIO.setown(createCompressedFileReader(iFile));
+        else
+            iFileIO.setown(iFile->open(IFOread));
+        if (!iFileIO.get())
+            throw MakeThorException(0, "CLazyFileIO: failed to open: %s", filename.get());
+    }
+    return iFileIO.getLink();
 }
 
 IThorFileCache *createFileCache(unsigned limit)

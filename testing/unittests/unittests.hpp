@@ -25,6 +25,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #define ASSERT(a) { if (!(a)) CPPUNIT_ASSERT(a); }
+#define ASSERT_EQUAL(a, b) { CPPUNIT_ASSERT_EQUAL(a, b); }
 
 /*
  * Helper class to unload libraries at the end

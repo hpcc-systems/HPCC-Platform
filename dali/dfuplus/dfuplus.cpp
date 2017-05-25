@@ -1675,22 +1675,24 @@ int CDfuPlusHelper::erasehistory()
 
     progress("\nErase history of '%s' with%s backup.\n", lfn, (backup ? "" : "out"));
 
-    Owned<IClientEraseHistoryRequest> req = dfuclient->createEraseHistoryRequest();
-    req->setName(lfn);
-
-    Owned<IClientEraseHistoryResponse> resp = dfuclient->EraseHistory(req);
-
-    const IMultiException* excep = &resp->getExceptions();
-    if (excep != nullptr && excep->ordinality() > 0)
-    {
-        StringBuffer errmsg;
-        excep->errorMessage(errmsg);
-        error("%s\n", errmsg.str());
-        return -1;
-    }
-
     if (backup)
     {
+        // Get and backup file history before erased.
+        // If any problem happens during the backup the history remain intact.
+        Owned<IClientListHistoryRequest> req = dfuclient->createListHistoryRequest();
+        req->setName(lfn);
+
+        Owned<IClientListHistoryResponse> resp = dfuclient->ListHistory(req);
+
+        const IMultiException* excep = &resp->getExceptions();
+        if (excep != nullptr && excep->ordinality() > 0)
+        {
+            StringBuffer errmsg;
+            excep->errorMessage(errmsg);
+            error("%s\n", errmsg.str());
+            return -1;
+        }
+
         IArrayOf<IConstHistory>& arrHistory = resp->getHistory();
         if (0 == arrHistory.length())
         {
@@ -1705,19 +1707,35 @@ int CDfuPlusHelper::erasehistory()
 
         int ofile = open(dstxml, _O_WRONLY | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
         if(ofile == -1)
-            throw MakeStringException(-1, "can't open file %s\n", dstxml);
+            throw MakeStringException(-1, "can't open file %s, erase history cancelled.\n", dstxml);
 
         ssize_t written = write(ofile, xmlDump.str(), xmlDump.length());
         if (written < 0)
-            throw MakeStringException(-1, "can't write to file %s\n", dstxml);
+            throw MakeStringException(-1, "can't write to file %s, erase history cancelled.\n", dstxml);
 
         if (written != xmlDump.length())
-            throw MakeStringException(-1, "truncated write to file %s\n", dstxml);
+            throw MakeStringException(-1, "truncated write to file %s, erase history cancelled.\n", dstxml);
 
         close(ofile);
 
         info("History written into %s.\n",dstxml);
     }
+
+    Owned<IClientEraseHistoryRequest> req = dfuclient->createEraseHistoryRequest();
+    req->setName(lfn);
+
+    Owned<IClientEraseHistoryResponse> resp = dfuclient->EraseHistory(req);
+
+    const IMultiException* excep = &resp->getExceptions();
+    if (excep != nullptr && excep->ordinality() > 0)
+    {
+        StringBuffer errmsg;
+        excep->errorMessage(errmsg);
+        error("%s\n", errmsg.str());
+        return -1;
+    }
+
+    info("History erased.\n");
 
     return 0;
 }

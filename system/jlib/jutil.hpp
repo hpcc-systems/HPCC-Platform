@@ -220,6 +220,7 @@ public:
     void appendList(const char *list, const char *delim);
     // Appends a list in a string delimited by 'delim' without duplicates
     void appendListUniq(const char *list, const char *delim);
+    StringBuffer &getString(StringBuffer &ret, const char *delim); // get CSV string of array contents
     void sortAscii(bool nocase=false);
     void sortAsciiReverse(bool nocase=false);
     void sortCompare(int (*compare)(const char * const * l, const char * const * r));

@@ -3479,10 +3479,30 @@ void EspMessageInfo::write_esp()
     indentOuts(-1,"}\n");
         
     indentOuts("if (flags & 0x01) {\n");
-    if (espm_type_==espm_struct)
+    bool isEmptyComplexType = true; //a complex type with no children, no attribute and no parent
+    if (isExtSimpleType || getParentName() || hasNonAttributeChild() || (espm_type_==espm_response && getMetaInt("exceptions_inline", 0)))
+        isEmptyComplexType = false;
+    else
+    {
+        for (pi=getParams();pi!=NULL;pi=pi->next)
+        {
+            if (!pi->getMetaInt("attribute", 0) && !pi->getMetaInt("hidden", 0) && !pi->getMetaInt("hidden_soap", 0))
+                isEmptyComplexType = false;
+        }
+    }
+
+    if (isEmptyComplexType)
+    {
+        if (espm_type_==espm_struct)
+            indentOuts(1,"schema.appendf(\"<xsd:complexType name=\\\"%s\\\"><xsd:all/></xsd:complexType>\\n\", msgTypeName);\n");
+        else
+            indentOuts(1,"schema.appendf(\"<xsd:element name=\\\"%s\\\"><xsd:complexType><xsd:all/></xsd:complexType></xsd:element>\\n\", msgTypeName);\n");
+    }
+    else if (espm_type_==espm_struct)
         indentOuts(1,"schema.appendf(\"<xsd:complexType name=\\\"%s\\\">\\n\", msgTypeName);\n");
     else
         indentOuts(1,"schema.appendf(\"<xsd:element name=\\\"%s\\\"><xsd:complexType>\\n\", msgTypeName);\n");  
+
     if (isExtSimpleType)
         indentOuts("schema.append(\"<xsd:simpleContent><xsd:extension base=\\\"xsd:string\\\">\\n\");\n");
     indentOuts(-1, "}\n");
@@ -3495,7 +3515,7 @@ void EspMessageInfo::write_esp()
     EspStructArrays structArrays; 
 
     //no element children for extended simple type
-    if (!isExtSimpleType)
+    if (!isEmptyComplexType && !isExtSimpleType)
     {
         const char *xsdGroupType = getXsdGroupType();
 
@@ -3780,27 +3800,30 @@ void EspMessageInfo::write_esp()
                 indentOutf1(1,"schema.append(\"</xsd:%s>\\n\");\n", xsdGroupType);
         }
     
-    } //!isExtSimpleType
+    } //!isEmptyComplexType && !isExtSimpleType
 
-    //attributes last
-    for (pi=getParams();pi!=NULL;pi=pi->next)
+    if (!isEmptyComplexType)
     {
-        if (pi->getMetaInt("attribute")!=0 && !pi->getMetaInt("hidden"))
+        //attributes last
+        for (pi=getParams();pi!=NULL;pi=pi->next)
         {
-            StrBuffer tmp;
-            const char* tagName = pi->getMetaStringValue(tmp,"xml_tag") ? tmp.str() : pi->name;
-            indentOutf("schema.append(\"<xsd:attribute name=\\\"%s\\\" type=\\\"xsd:%s\\\"/>\");\n", tagName, pi->getXsdType());
+            if (pi->getMetaInt("attribute")!=0 && !pi->getMetaInt("hidden"))
+            {
+                StrBuffer tmp;
+                const char* tagName = pi->getMetaStringValue(tmp,"xml_tag") ? tmp.str() : pi->name;
+                indentOutf("schema.append(\"<xsd:attribute name=\\\"%s\\\" type=\\\"xsd:%s\\\"/>\");\n", tagName, pi->getXsdType());
+            }
         }
+
+        indentOuts("if (flags & 0x01) {\n");
+        if (isExtSimpleType)
+            indentOuts1(1,"schema.append(\"</xsd:extension></xsd:simpleContent>\\n\");\n");
+        if (espm_type_==espm_struct)
+            indentOuts1(1,"schema.append(\"</xsd:complexType>\\n\");\n");
+        else
+            indentOuts1(1,"schema.append(\"</xsd:complexType></xsd:element>\\n\");\n");
+        indentOuts("}\n");
     }
-    
-    indentOuts("if (flags & 0x01) {\n");
-    if (isExtSimpleType)
-        indentOuts1(1,"schema.append(\"</xsd:extension></xsd:simpleContent>\\n\");\n");
-    if (espm_type_==espm_struct)
-        indentOuts1(1,"schema.append(\"</xsd:complexType>\\n\");\n");
-    else
-        indentOuts1(1,"schema.append(\"</xsd:complexType></xsd:element>\\n\");\n");
-    indentOuts("}\n");
 
     indentOuts(-1,"}\n"); // if (flags & 0x100)
     //-------------------------------------------------------------------------

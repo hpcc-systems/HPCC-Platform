@@ -9095,7 +9095,7 @@ IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * modul
     else
         ret.setown(createValue(op, attr->getType(), args));
 
-    if (attr->isScope())
+    if (attr->isScope() || attr->getOperator() == no_enum)
     {
         if (attr->getOperator() != no_funcdef)
             ret.setown(createDelayedScope(ret.getClear()));
@@ -9298,6 +9298,26 @@ no_purevirtual - a member that has no associated definition.
 
 */
 
+bool definesMacro(IHqlExpression * expr)
+{
+    IHqlScope * scope = expr->queryScope();
+    HqlExprArray syms;
+    scope->getSymbols(syms);
+    ForEachItemIn(i, syms)
+    {
+        //HACK - needs more work
+        IHqlExpression & symbol = syms.item(i);
+        if (symbol.isMacro())
+            return true;
+        if (symbol.isScope())
+        {
+            //MORE: Need to ensure that this symbol is defined, and walk the children
+        }
+
+    }
+    return false;
+}
+
 bool canBeDelayed(IHqlExpression * expr)
 {
     switch (expr->getOperator())
@@ -9309,7 +9329,18 @@ bool canBeDelayed(IHqlExpression * expr)
     case no_record:             // LEFT has problems because queryRecord() is the unbound funcdef
     case no_keyindex:           // BUILD() and other functions a reliant on this being expanded out
     case no_newkeyindex:
+    case no_forwardscope:
+    case no_type:
         return false;
+    case no_remotescope:
+    case no_scope:
+    case no_privatescope:
+    case no_virtualscope:
+    {
+        if (definesMacro(expr))
+            return false;
+        return true;
+    }
     case no_funcdef:
         return canBeDelayed(expr->queryChild(0));
     }
@@ -10045,13 +10076,21 @@ CHqlDelayedScope::CHqlDelayedScope(HqlExprArray &_ownedOperands)
  : CHqlExpressionWithTables(no_delayedscope), type(nullptr)
 {
     setOperands(_ownedOperands); // after type is initialized
-    type = queryChild(0)->queryType();
+    IHqlExpression * arg0 = queryChild(0);
+    if (arg0->getOperator() == no_delayedselect)
+        arg0 = arg0->queryChild(2);
+    type = arg0->queryType();
 
     ITypeInfo * scopeType = type;
     if (scopeType->getTypeCode() == type_function)
         scopeType = scopeType->queryChildType();
 
     typeScope = ::queryScope(scopeType);
+    if (!typeScope)
+    {
+        typeScope = arg0->queryScope();
+        type = typeScope->queryExpression()->queryType();
+    }
     assertex(typeScope);
 
     if (!hasAttribute(_virtualSeq_Atom))
@@ -10598,6 +10637,9 @@ IHqlExpression * CHqlDelayedScopeCall::lookupSymbol(IIdAtom * searchName, unsign
     if (!match)
         return NULL;
     if (lookupFlags & LSFignoreBase)
+        return match.getClear();
+
+    if (!canBeVirtual(match) && match->isFullyBound())
         return match.getClear();
 
     return createDelayedReference(no_delayedselect, this, match, lookupFlags, ctx);
@@ -12208,6 +12250,16 @@ void expandDelayedFunctionCalls(IErrorReceiver * errors, HqlExprArray & exprs)
     replaceArray(exprs, target);
 }
 
+IHqlExpression * expandDelayedFunctionCalls(IErrorReceiver * errors, IHqlExpression * expr)
+{
+    HqlExprArray functionCache;
+    CallExpansionContext ctx;
+    ctx.functionCache = &functionCache;
+    ctx.errors = errors;
+    CallExpandTransformer binder(ctx);
+
+    return binder.transform(expr);
+}
 
 extern IHqlExpression * createReboundFunction(IHqlExpression *func, HqlExprArray &actuals)
 {

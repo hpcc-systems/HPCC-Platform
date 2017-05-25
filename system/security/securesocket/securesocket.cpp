@@ -58,6 +58,7 @@
 #include <openssl/conf.h>
 #include <openssl/x509v3.h>
 
+#include "jsmartsock.ipp"
 #include "securesocket.hpp"
 
 Owned<ISecureSocketContext> server_securesocket_context;
@@ -164,12 +165,15 @@ public:
     virtual void   read(void* buf, size32_t size)
     {
         size32_t size_read;
-        readTimeout(buf, size, size, size_read, 0, false);
+        // MCK - this was:
+        // readTimeout(buf, size, size, size_read, 0, false);
+        // but that is essentially a non-blocking read() and we want a blocking read() ...
+        readTimeout(buf, 0, size, size_read, WAIT_FOREVER, false);
     }
 
     virtual size32_t get_max_send_size()
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::get_max_send_size: not implemented");
     }
 
     //
@@ -177,7 +181,7 @@ public:
     //
     virtual ISocket* accept(bool allowcancel=false) // not needed for UDP
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::accept: not implemented");
     }
 
     //
@@ -185,7 +189,7 @@ public:
     // 
     virtual int wait_write(unsigned timeout)
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::wait_write: not implemented");
     }
 
     //
@@ -194,14 +198,14 @@ public:
     //
     virtual bool set_nonblock(bool on) // returns old state
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::set_nonblock: not implemented");
     }
 
     // enable 'nagling' - small packet coalescing (implies delayed transmission)
     //
     virtual bool set_nagle(bool on) // returns old state
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::set_nagle: not implemented");
     }
 
 
@@ -209,7 +213,7 @@ public:
     //
     virtual void set_linger(int lingersecs)  
     {
-        throw MakeStringException(-1, "not implemented");
+        m_socket->set_linger(lingersecs);
     }
 
 
@@ -218,7 +222,7 @@ public:
     //
     virtual void  cancel_accept() // not needed for UDP
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::cancel_accept: not implemented");
     }
 
     //
@@ -258,12 +262,12 @@ public:
     //
     virtual bool connectionless() // true if accept need not be called (i.e. UDP)
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::connectionless: not implemented");
     }
 
     virtual void set_return_addr(int port,const char *name) // used for UDP servers only
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::set_return_addr: not implemented");
     }
 
     // Block functions 
@@ -274,7 +278,7 @@ public:
                             unsigned timeout=0 // timeout in msecs (0 for no timeout)
                   ) 
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::set_block_mode: not implemented");
     }
 
 
@@ -284,12 +288,12 @@ public:
                             size32_t sz          // size to send (0 for eof)
                   )
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::send_block: not implemented");
     }
 
     virtual size32_t receive_block_size ()     // get size of next block (always must call receive_block after) 
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::receive_block_size: not implemented");
     }
 
     virtual size32_t receive_block(
@@ -298,7 +302,7 @@ public:
                                                // if less than block size truncates block
                   )
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::receive_block: not implemented");
     }
 
     virtual void  close()
@@ -321,59 +325,59 @@ public:
 
     virtual size32_t write_multiple(unsigned num,const void **buf, size32_t *size)
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::write_multiple: not implemented");
     }
 
     virtual size32_t get_send_buffer_size() // get OS send buffer
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::get_send_buffer_size: not implemented");
     }
 
     void set_send_buffer_size(size32_t sz)  // set OS send buffer size
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::set_send_buffer_size: not implemented");
     }
 
     bool join_multicast_group(SocketEndpoint &ep)   // for udp multicast
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::join_multicast_group: not implemented");
         return false;
     }
 
     bool leave_multicast_group(SocketEndpoint &ep)  // for udp multicast
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::leave_multicast_group: not implemented");
         return false;
     }
 
     void set_ttl(unsigned _ttl)   // set ttl
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::set_ttl: not implemented");
     }
 
     size32_t get_receive_buffer_size()  // get OS send buffer
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::get_receive_buffer_size: not implemented");
     }
 
     void set_receive_buffer_size(size32_t sz)   // set OS send buffer size
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::set_receive_buffer_size: not implemented");
     }
 
     virtual void set_keep_alive(bool set) // set option SO_KEEPALIVE
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::set_keep_alive: not implemented");
     }
 
     virtual size32_t udp_write_to(const SocketEndpoint &ep, void const* buf, size32_t size)
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::udp_write_to: not implemented");
     }
 
     virtual bool check_connection()
     {
-        throw MakeStringException(-1, "not implemented");
+        throw MakeStringException(-1, "CSecureSocket::check_connection: not implemented");
     }
 
     virtual bool isSecure() const override
@@ -1640,4 +1644,40 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
     return 0;
 }
 
+}
+
+class CSecureSmartSocketFactory : public CSmartSocketFactory
+{
+public:
+    Owned<ISecureSocketContext> secureContext;
+
+    CSecureSmartSocketFactory(const char *_socklist, bool _retry, unsigned _retryInterval, unsigned _dnsInterval) : CSmartSocketFactory(_socklist, _retry, _retryInterval, _dnsInterval)
+    {
+        secureContext.setown(createSecureSocketContext(ClientSocket));
+    }
+
+    virtual ISmartSocket *connect_timeout(unsigned timeoutms) override
+    {
+        SocketEndpoint ep;
+        SmartSocketEndpoint *ss = nullptr;
+        Owned<ISecureSocket> ssock;
+        Owned<ISocket> sock = connect_sock(timeoutms, ss, ep);
+        try
+        {
+            ssock.setown(secureContext->createSecureSocket(sock.getClear()));
+            // secure_connect may also DBGLOG() errors ...
+            ssock->secure_connect();
+        }
+        catch (IException *e)
+        {
+            ss->status = false;
+            throw;
+        }
+        return new CSmartSocket(ssock.getClear(), ep, this);
+    }
+};
+
+ISmartSocketFactory *createSecureSmartSocketFactory(const char *_socklist, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
+{
+    return new CSecureSmartSocketFactory(_socklist, _retry, _retryInterval, _dnsInterval);
 }

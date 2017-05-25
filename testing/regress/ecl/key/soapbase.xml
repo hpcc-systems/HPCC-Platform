@@ -1,0 +1,5 @@
+<Dataset name='Result 1'>
+ <Row><r>1</r><pic>0102</pic><name>RICHARD        </name><ids><Row><id>1</id></Row></ids></Row>
+ <Row><r>2</r><pic>0102030405</pic><name>LORRAINE       </name><ids><Row><id>8</id></Row><Row><id>7</id></Row><Row><id>6</id></Row></ids></Row>
+ <Row><r>3</r><pic>5432</pic><name>Unknown        </name><ids></ids></Row>
+</Dataset>

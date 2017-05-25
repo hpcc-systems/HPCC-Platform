@@ -463,14 +463,14 @@ public:
 
     virtual IEnvironment * loadLocalEnvironmentFile(const char * filename)
     {
-        Owned<IPropertyTree> ptree = createPTreeFromXMLFile(filename);
+        Owned<IPropertyTree> ptree = createPTreeFromXMLFile(filename, ipt_lowmem);
         Owned<CLocalEnvironment> pLocalEnv = new CLocalEnvironment(nullptr, ptree);
         return new CLockedEnvironment(pLocalEnv);
     }
 
     virtual IEnvironment * loadLocalEnvironment(const char * xml)
     {
-        Owned<IPropertyTree> ptree = createPTreeFromXMLString(xml);
+        Owned<IPropertyTree> ptree = createPTreeFromXMLString(xml, ipt_lowmem);
         Owned<CLocalEnvironment> pLocalEnv = new CLocalEnvironment(nullptr, ptree);
         return new CLockedEnvironment(pLocalEnv);
     }
@@ -1400,7 +1400,7 @@ void CLocalEnvironment::preload()
 
 void CLocalEnvironment::setXML(const char *xml)
 {
-    Owned<IPropertyTree> newRoot = createPTreeFromXMLString(xml);
+    Owned<IPropertyTree> newRoot = createPTreeFromXMLString(xml, ipt_lowmem);
     synchronized procedure(safeCache);
     Owned<IPropertyTreeIterator> it = p->getElements("*");
     ForEach(*it)
@@ -1709,7 +1709,7 @@ CConstDropZoneServerInfoIterator::CConstDropZoneServerInfoIterator(const IConstD
     if (0 != dropZoneMachineName.length())
     {
         // Create a ServerList for legacy element.
-        Owned<IPropertyTree> legacyServerList = createPTree();
+        Owned<IPropertyTree> legacyServerList = createPTree(ipt_lowmem);
 
         Owned<IConstMachineInfo> machineInfo = constEnv->getMachine(dropZoneMachineName.str());
         if (machineInfo)
@@ -1719,10 +1719,9 @@ CConstDropZoneServerInfoIterator::CConstDropZoneServerInfoIterator(const IConstD
 
             // Create a single ServerList record related to @computer
             //<ServerList name="ServerList" server="<IP_of_@computer>"/>
-            Owned<IPropertyTree> newRecord = createPTree();
+            IPropertyTree *newRecord = legacyServerList->addPropTree("ServerList");
             newRecord->setProp("@name", "ServerList");
             newRecord->setProp("@server", dropZoneMachineNetAddress.str());
-            legacyServerList->addPropTree("ServerList",newRecord.getClear());
 
             maxIndex = 1;
         }

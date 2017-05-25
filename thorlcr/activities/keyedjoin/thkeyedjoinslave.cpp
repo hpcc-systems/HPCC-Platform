@@ -821,8 +821,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 memcpy(fetchOutPtr, row.get(), FETCHKEY_HEADER_SIZE);
                                 fetchOutPtr += FETCHKEY_HEADER_SIZE;
 
-                                IFileIO &iFileIO = owner.queryFilePartIO(filePartIndex);
-                                Owned<ISerialStream> stream = createFileSerialStream(&iFileIO, localFpos);
+                                Owned<IFileIO> iFileIO = owner.getFilePartIO(filePartIndex);
+                                Owned<ISerialStream> stream = createFileSerialStream(iFileIO, localFpos);
                                 CThorStreamDeserializerSource ds(stream);
 
                                 RtlDynamicRowBuilder fetchedRowBuilder(fetchDiskRowIf->queryRowAllocator());
@@ -1633,10 +1633,10 @@ public:
     }
 #endif
 
-    IFileIO &queryFilePartIO(unsigned partNum)
+    IFileIO *getFilePartIO(unsigned partNum)
     {
         assertex(partNum<dataParts.ordinality());
-        return *fetchFiles.item(partNum).queryFileIO();
+        return fetchFiles.item(partNum).getFileIO();
     }
     inline void noteStats(unsigned seeks, unsigned scans)
     {

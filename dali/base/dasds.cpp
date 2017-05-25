@@ -7042,7 +7042,7 @@ IPropertyTreeIterator *CCovenSDSManager::getElements(CRemoteConnection &connecti
     Owned<CLCReadLockBlock> lockBlock = new CLCReadLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__);
     CDisableFetchChangeBlock block(connection);
     Owned<CServerRemoteTree> serverConnRoot = (CServerRemoteTree *)getRegisteredTree(((CClientRemoteTree *)connection.queryRoot())->queryServerId());
-    Owned<CPTArrayIterator> elements = new CPTArrayIterator();
+    Owned<DaliPTArrayIterator> elements = new DaliPTArrayIterator();
     Owned<IPropertyTreeIterator> iter = serverConnRoot->getElements(xpath);
     ForEach (*iter)
     {

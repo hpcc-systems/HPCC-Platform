@@ -564,7 +564,7 @@ void XmlSetColumnProvider::readUtf8X(size32_t & len, char * & target, const char
 IDataVal & CXmlToRawTransformer::transform(IDataVal & result, size32_t len, const void * text, bool isDataSet)
 {
     // MORE - should redo using a pull parser sometime
-    Owned<IPropertyTree> root = createPTreeFromXMLString(len, (const char *)text, ipt_none, xmlReadFlags);
+    Owned<IPropertyTree> root = createPTreeFromXMLString(len, (const char *)text, ipt_fast, xmlReadFlags);
     return transformTree(result, *root, isDataSet);
 }
 
@@ -595,7 +595,7 @@ IDataVal & CXmlToRawTransformer::transformTree(IDataVal & result, IPropertyTree 
                     try
                     {
                         decodedXML.append("<root>").append(body).append("</root>");
-                        decodedTree.setown(createPTreeFromXMLString(decodedXML.str(), ipt_caseInsensitive));
+                        decodedTree.setown(createPTreeFromXMLString(decodedXML.str(), ipt_caseInsensitive|ipt_fast));
                         rows.setown(decodedTree->getElements("Row"));
                     }
                     catch (IException *E)
@@ -645,7 +645,7 @@ IDataVal & CXmlToRawTransformer::transformTree(IDataVal & result, IPropertyTree 
 
 size32_t createRowFromXml(ARowBuilder & rowBuilder, size32_t size, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
 {
-    Owned<IPropertyTree> root = createPTreeFromXMLString(size, utf8, ipt_none, stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none);
+    Owned<IPropertyTree> root = createPTreeFromXMLString(size, utf8, ipt_fast, stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none);
     if (!root)
     {
         throwError(THORCERR_InvalidXmlFromXml);
@@ -666,7 +666,7 @@ const void * createRowFromXml(IEngineRowAllocator * rowAllocator, size32_t len, 
 
 size32_t createRowFromJson(ARowBuilder & rowBuilder, size32_t size, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
 {
-    Owned<IPropertyTree> root = createPTreeFromJSONString(size, utf8, ipt_none, stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none);
+    Owned<IPropertyTree> root = createPTreeFromJSONString(size, utf8, ipt_fast, stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none);
     if (!root)
     {
         throwError(THORCERR_InvalidJsonFromJson);

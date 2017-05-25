@@ -260,6 +260,21 @@ void SegMonitorList::recalculateCache()
     cachedLRS = _lastRealSeg();
 }
 
+void SegMonitorList::deserialize(MemoryBuffer &mb)
+{
+    unsigned num;
+    mb.read(num);
+    while (num--)
+        append(deserializeKeySegmentMonitor(mb));
+}
+
+void SegMonitorList::serialize(MemoryBuffer &mb) const
+{
+    mb.append((unsigned) ordinality());
+    ForEachItemIn(idx, segMonitors)
+        segMonitors.item(idx).serialize(mb);
+}
+
 // interface IIndexReadContext
 void SegMonitorList::append(IKeySegmentMonitor *segment)
 {
@@ -933,6 +948,11 @@ public:
     virtual void setMergeBarrier(unsigned offset)
     {
         activitySegs->setMergeBarrier(offset); 
+    }
+
+    virtual void deserializeSegmentMonitors(MemoryBuffer &mb) override
+    {
+        segs.deserialize(mb);
     }
 
     virtual void finishSegmentMonitors()
@@ -1975,7 +1995,8 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
 {
     StringAttr keyfile;
     unsigned crc; 
-    Linked<IDelayedFile> iFileIO;
+    Linked<IDelayedFile> delayedFile;
+    Owned<IFileIO> iFileIO;
     Owned<IKeyIndex> realKey;
     CriticalSection c;
     bool isTLK;
@@ -1986,11 +2007,14 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
         CriticalBlock b(c);
         if (!realKey)
         {
-            IMemoryMappedFile *mapped = useMemoryMappedIndexes ? iFileIO->queryMappedFile() : 0;
+            Owned<IMemoryMappedFile> mapped = useMemoryMappedIndexes ? delayedFile->getMappedFile() : nullptr;
             if (mapped)
                 realKey.setown(queryKeyStore()->load(keyfile, crc, mapped, isTLK, preloadAllowed));
             else
-                realKey.setown(queryKeyStore()->load(keyfile, crc, iFileIO->queryFileIO(), isTLK, preloadAllowed));
+            {
+                iFileIO.setown(delayedFile->getFileIO());
+                realKey.setown(queryKeyStore()->load(keyfile, crc, iFileIO, isTLK, preloadAllowed));
+            }
             if (!realKey)
             {
                 DBGLOG("Lazy key file %s could not be opened", keyfile.get());
@@ -2002,8 +2026,8 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
 
 public:
     IMPLEMENT_IINTERFACE;
-    CLazyKeyIndex(const char *_keyfile, unsigned _crc, IDelayedFile *_iFileIO, bool _isTLK, bool _preloadAllowed)
-        : keyfile(_keyfile), crc(_crc), iFileIO(_iFileIO), isTLK(_isTLK), preloadAllowed(_preloadAllowed)
+    CLazyKeyIndex(const char *_keyfile, unsigned _crc, IDelayedFile *_delayedFile, bool _isTLK, bool _preloadAllowed)
+        : keyfile(_keyfile), crc(_crc), delayedFile(_delayedFile), isTLK(_isTLK), preloadAllowed(_preloadAllowed)
     {}
 
     virtual bool IsShared() const { return CInterface::IsShared(); }
@@ -2027,7 +2051,7 @@ public:
     virtual offset_t queryMetadataHead() { return checkOpen().queryMetadataHead(); }
     virtual IPropertyTree * getMetadata() { return checkOpen().getMetadata(); }
     virtual unsigned getNodeSize() { return checkOpen().getNodeSize(); }
-    virtual const IFileIO *queryFileIO() const override { return iFileIO->queryFileIO(); }
+    virtual const IFileIO *queryFileIO() const override { return iFileIO; } // NB: if not yet opened, will be null
 };
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, bool isTLK, bool preloadAllowed)

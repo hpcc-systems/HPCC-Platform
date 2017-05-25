@@ -11595,6 +11595,15 @@ void HqlTreeNormalizer::analyseExpr(IHqlExpression * expr)
             analyseChildren(body);
             break;
         }
+    case no_if:
+        if (expr->isDataset())
+        {
+            IHqlExpression * left = expr->queryChild(1);
+            IHqlExpression * right = expr->queryChild(2);
+            if (right && (isGrouped(left) != isGrouped(right)))
+                translator.reportError(expr, ERR_GROUPING_MISMATCH, "Branches of the condition have different grouping");
+            break;
+        }
     }
 
     Parent::analyseExpr(body);
