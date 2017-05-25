@@ -60,6 +60,8 @@ public:
     void setEdgeId(unsigned _id, unsigned _output);
     void setFunctionId(const char * _name);
     void setSubgraphId(unsigned _id);
+    void setWorkflowId(unsigned _id);
+    void setChildGraphId(unsigned _id);
 
     bool operator == (const StatsScopeId & other) const { return matches(other); }
 
