@@ -5877,7 +5877,7 @@ protected:
 
 void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction)
 {
-    if (!scope || !*scope) scope = GLOBAL_SCOPE;
+    if (!scope) scope = GLOBAL_SCOPE;
 
     const char * kindName = queryStatisticName(kind);
     StatisticMeasure measure = queryMeasure(kind);
@@ -5941,7 +5941,7 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         else
             statTree->removeProp("@max");
     }
-    if (creatorType==SCTsummary && kind==StTimeElapsed && strsame(scope, GLOBAL_SCOPE))
+    if (creatorType==SCTsummary && kind==StTimeElapsed && isGlobalScope(scope))
     {
         StringBuffer t;
         formatTimeCollatable(t, value, false);
@@ -8844,7 +8844,7 @@ IStringVal & CLocalWUStatistic::getDescription(IStringVal & str, bool createDefa
 
         //Clean up the format of the scope when converting it to a description
         StringBuffer descriptionText;
-        if (streq(scope, GLOBAL_SCOPE))
+        if (isGlobalScope(scope))
         {
             const char * creator = p->queryProp("@creator");
             descriptionText.append(creator).append(":");
@@ -10759,7 +10759,16 @@ extern WORKUNIT_API void getWorkunitTotalTime(IConstWorkUnit* workunit, const ch
 {
     StatisticsFilter summaryTimeFilter(SCTsummary, creator, SSTglobal, GLOBAL_SCOPE, SMeasureTimeNs, StTimeElapsed);
     Owned<IConstWUStatistic> totalThorTime = getStatistic(workunit, summaryTimeFilter);
+    if (!totalThorTime)
+    {
+        StatisticsFilter legacySummaryTimeFilter(SCTsummary, creator, SSTglobal, LEGACY_GLOBAL_SCOPE, SMeasureTimeNs, StTimeElapsed);
+        totalThorTime.setown(getStatistic(workunit, legacySummaryTimeFilter));
+    }
+
     Owned<IConstWUStatistic> totalThisThorTime = workunit->getStatistic(queryStatisticsComponentName(), GLOBAL_SCOPE, StTimeElapsed);
+    if (!totalThisThorTime)
+        totalThisThorTime.setown(workunit->getStatistic(queryStatisticsComponentName(), LEGACY_GLOBAL_SCOPE, StTimeElapsed));
+
     if (totalThorTime)
         totalTimeNs = totalThorTime->getValue();
     else

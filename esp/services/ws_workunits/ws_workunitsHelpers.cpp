@@ -392,7 +392,7 @@ void WsWuInfo::doGetTimers(IArrayOf<IEspECLTimer>& timers)
             cur.getScope(scope);
 
             bool isThorTiming = false;//Should it be renamed as isClusterTiming?
-            if ((cur.getCreatorType() == SCTsummary) && (cur.getKind() == StTimeElapsed) && streq(scope.str(), GLOBAL_SCOPE))
+            if ((cur.getCreatorType() == SCTsummary) && (cur.getKind() == StTimeElapsed) && isGlobalScope(scope.str()))
             {
                 SCMStringBuffer creator;
                 cur.getCreator(creator);
@@ -915,11 +915,11 @@ void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
     }
 }
 
-unsigned WsWuInfo::getTotalThorTime()
+unsigned WsWuInfo::getTotalThorTime(const char * scope)
 {
     StatisticsFilter filter;
     filter.setCreatorType(SCTsummary);
-    filter.setScope(GLOBAL_SCOPE);
+    filter.setScope(scope);
     filter.setKind(StTimeElapsed);
 
     //Should only be a single value
@@ -931,6 +931,11 @@ unsigned WsWuInfo::getTotalThorTime()
     }
 
     return totalThorTimeMS;
+}
+
+unsigned WsWuInfo::getTotalThorTime()
+{
+    return getTotalThorTime(GLOBAL_SCOPE) + getTotalThorTime(LEGACY_GLOBAL_SCOPE);
 }
 
 unsigned WsWuInfo::getLegacyTotalThorTime()

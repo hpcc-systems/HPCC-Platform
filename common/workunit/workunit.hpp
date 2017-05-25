@@ -36,7 +36,8 @@
 #include "jutil.hpp"
 #include "jprop.hpp"
 
-#define GLOBAL_SCOPE "workunit"
+#define LEGACY_GLOBAL_SCOPE "workunit"
+#define GLOBAL_SCOPE ""
 
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
@@ -1516,5 +1517,8 @@ extern WORKUNIT_API WUAction getWorkunitAction(const char * actionStr);
 
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind);
 extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool readonly);
+
+inline bool isGlobalScope(const char * scope) { return scope && (streq(scope, GLOBAL_SCOPE) || streq(scope, LEGACY_GLOBAL_SCOPE)); }
+
 
 #endif
