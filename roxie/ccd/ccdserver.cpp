@@ -21595,6 +21595,7 @@ public:
 
     virtual const void *nextRow()
     {
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())
@@ -21807,6 +21808,7 @@ public:
 
     virtual const void *nextRow()
     {
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())
@@ -21916,6 +21918,7 @@ public:
 
     virtual const void *nextRow()
     {
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())
@@ -22023,6 +22026,7 @@ public:
 
     virtual const void *nextRow()
     {
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())
