@@ -1472,7 +1472,7 @@ protected:
             numIterated++;
         }
         DBGLOG("%d ranged workunits listed the hard way in %d ms", numIterated, msTick()-start);
-        ASSERT_EQUAL(before-1, numIterated); // iterate all except the global workunit
+        ASSERT_EQUAL(before-(isDali?1:0), numIterated); // Dali includes the global workunit in the count, cassandra does not. This filter will not include the global wu
 
         // Check ascending wuids
         WUSortField filterByCluster[] = { WUSFcluster, WUSFterm };
@@ -1761,6 +1761,7 @@ protected:
         Owned<IWUResult> result = global->updateGlobalByName("Result 1");
         result->setResultScalar(true);
         result->setResultInt(53);
+        global->commit();
         result.clear();
         global.clear();
 
