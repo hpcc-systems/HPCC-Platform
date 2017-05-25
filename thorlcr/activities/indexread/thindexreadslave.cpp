@@ -19,6 +19,7 @@
 #include "jfile.hpp"
 #include "jtime.hpp"
 #include "jsort.hpp"
+#include "sockfile.hpp"
 
 #include "rtlkey.hpp"
 #include "jhtree.hpp"
@@ -48,6 +49,7 @@ protected:
     Owned<IOutputRowDeserializer> deserializer;
     Owned<IOutputRowSerializer> serializer;
     bool localKey = false;
+    size32_t seekGEOffset = 0;
     __int64 lastSeeks = 0, lastScans = 0;
     UInt64Array _statsArr;
     SpinLock statLock;  // MORE: Can this be avoided by passing in the delta?
@@ -99,7 +101,7 @@ protected:
     } callback;
 
     virtual bool keyed() { return false; }
-    void setManager(IKeyManager *manager)
+    virtual void setManager(IKeyManager *manager)
     {
         clearManager();
         currentManager = manager;
@@ -129,17 +131,6 @@ protected:
         if (sz)
             return row.finalizeRowClear(sz);
         return NULL;
-    }
-    IKeyIndex *openKeyPart(IPartDescriptor &partDesc)
-    {
-        RemoteFilename rfn;
-        partDesc.getFilename(0, rfn);
-        StringBuffer filePath;
-        rfn.getPath(filePath);
-        unsigned crc=0;
-        partDesc.getCrc(crc);
-        Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, logicalFilename, partDesc);
-        return createKeyIndex(filePath.str(), crc, *lfile, false, false);
     }
     const void *nextKey()
     {
@@ -241,10 +232,27 @@ public:
         keyIndexSet.setown(createKeyIndexSet());
         ForEachItemIn(p, partDescs)
         {
-            Owned<IKeyIndex> keyIndex = openKeyPart(partDescs.item(p));
-            Owned<IKeyManager> klManager = createKeyManager(keyIndex, fixedDiskRecordSize, NULL);
+            IPartDescriptor &part = partDescs.item(p);
+            RemoteFilename rfn;
+            part.getFilename(0, rfn);
+            StringBuffer filePath;
+            rfn.getPath(filePath);
+
+            Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, logicalFilename, part);
+            Owned<IKeyManager> klManager;
+
+            bool remoteKey = !localKey && !seekGEOffset && (!rfn.isLocal() || getOptBool("forceDafilesrv"));
+            if (remoteKey && getOptBool("remoteKeyFilteringEnabled"))
+                klManager.setown(createRemoteKeyManager(filePath.str(), fixedDiskRecordSize, lfile));
+            else
+            {
+                unsigned crc=0;
+                part.getCrc(crc);
+                Owned<IKeyIndex> keyIndex = createKeyIndex(filePath.str(), crc, *lfile, false, false);
+                klManager.setown(createKeyManager(keyIndex, fixedDiskRecordSize, NULL));
+                keyIndexSet->addIndex(keyIndex.getClear());
+            }
             keyManagers.append(*klManager.getClear());
-            keyIndexSet->addIndex(keyIndex.getClear());
         }
     }
     // IThorDataLink
@@ -296,7 +304,6 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
     IHThorSteppedSourceExtra *steppedExtra;
     CSteppingMeta steppingMeta;
     UnsignedArray seekSizes;
-    size32_t seekGEOffset = 0;
 
     const void *getNextRow()
     {
@@ -323,6 +330,12 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
             }
         }
         return nullptr;
+    }
+    virtual void setManager(IKeyManager *manager) override
+    {
+        PARENT::setManager(manager);
+        if (stopAfter && !helper->transformMayFilter())
+            manager->setChooseNLimit(stopAfter);
     }
     const void *nextKeyGE(const void *seek, unsigned numFields)
     {
@@ -493,9 +506,10 @@ public:
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        stopAfter = (rowcount_t)helper->getChooseNLimit();
+
         PARENT::start();
 
-        stopAfter = (rowcount_t)helper->getChooseNLimit();
         needTransform = helper->needTransform();
         helperKeyedLimit = (rowcount_t)helper->getKeyedLimit();
         rowLimit = (rowcount_t)helper->getRowLimit(); // MORE - if no filtering going on could keyspan to get count
@@ -762,6 +776,12 @@ public:
         helper = static_cast <IHThorIndexCountArg *> (container.queryHelper());
         appendOutputLinked(this);
     }
+    virtual void setManager(IKeyManager *manager) override
+    {
+        PARENT::setManager(manager);
+        if (choosenLimit && !helper->hasFilter())
+            manager->setChooseNLimit(choosenLimit);
+    }
 
 // IThorDataLink
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
@@ -774,8 +794,8 @@ public:
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
-        PARENT::start();
         choosenLimit = (rowcount_t)helper->getChooseNLimit();
+        PARENT::start();
         if (!helper->canMatchAny())
         {
             totalCountKnown = true;
@@ -924,12 +944,12 @@ public:
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
+        stopAfter = (rowcount_t)helper->getChooseNLimit();
         PARENT::start();
         keyedLimit = (rowcount_t)helper->getKeyedLimit();
         rowLimit = (rowcount_t)helper->getRowLimit();
         if (helper->getFlags() & TIRlimitskips)
             rowLimit = RCMAX;
-        stopAfter = (rowcount_t)helper->getChooseNLimit();
         expanding = false;
         keyedProcessed = 0;
         keyedLimitCount = RCMAX;
