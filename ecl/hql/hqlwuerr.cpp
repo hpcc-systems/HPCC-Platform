@@ -76,6 +76,8 @@ void WorkUnitErrorReceiver::report(IError* eclError)
                     eclError->getFilename(), eclError->getLine(), eclError->getColumn(), eclError->getPosition());
     if (eclError->getActivity())
         exception->setActivityId(eclError->getActivity());
+    if (eclError->queryScope())
+        exception->setScope(eclError->queryScope());
 }
 
 size32_t WorkUnitErrorReceiver::errCount()

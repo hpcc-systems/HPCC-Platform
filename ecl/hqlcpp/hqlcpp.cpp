@@ -2107,14 +2107,26 @@ void HqlCppTranslator::doReportWarning(WarnErrorCategory category, ErrorSeverity
     if (!location)
         location = queryActiveActivityLocation();
     unsigned activity = 0;
+    const char * scope = nullptr;
+    StringBuffer scopeText;
     if (activeActivities.ordinality())
-        activity = activeActivities.tos().queryActivityId();
+    {
+        ABoundActivity & top = activeActivities.tos();
+        activity = top.queryActivityId();
+        ActivityInstance * active = top.queryActive();
+        dbgassertex(active);
+        if (active)
+        {
+            active->getScope(scopeText);
+            scope = scopeText;
+        }
+    }
 
     ErrorSeverity severity = (explicitSeverity == SeverityUnknown) ? queryDefaultSeverity(category) : explicitSeverity;
     if (location)
-        warnError.setown(createError(category, severity, id, msg, str(location->querySourcePath()), location->getStartLine(), location->getStartColumn(), 0, activity));
+        warnError.setown(createError(category, severity, id, msg, str(location->querySourcePath()), location->getStartLine(), location->getStartColumn(), 0, activity, scope));
     else
-        warnError.setown(createError(category, severity, id, msg, activity));
+        warnError.setown(createError(category, severity, id, msg, activity, scope));
 
     errorProcessor->report(warnError);
 }

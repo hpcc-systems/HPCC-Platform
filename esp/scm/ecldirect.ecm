@@ -25,6 +25,8 @@ ESPStruct [nil_remove] ECLDirectException
     int LineNo;
     int Column;
     int Activity;
+    [min_version("1.01")] string Scope;
+    [min_version("1.01")] int Priority;
 };
 
 ESPrequest RunEclRequest
@@ -73,7 +75,10 @@ ESPresponse [nil_remove] RunEclExResponse
 };
 
 
-ESPservice [auth_feature("DEFERRED")]EclDirect
+ESPservice [
+    auth_feature("DEFERRED"),
+    version("1.01"), default_client_version("1.01")
+    ] EclDirect
 {
     ESPmethod RunEcl(RunEclRequest, RunEclResponse);
     ESPmethod RunEclEx(RunEclExRequest, RunEclExResponse);

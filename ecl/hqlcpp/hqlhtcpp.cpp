@@ -1824,10 +1824,12 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     }
 
     table = new ThorBoundActivity(dataset, boundName, activityId, containerId, translator.curSubGraphId(ctx), kind);
+    table->setActive(this);
 }
 
 ActivityInstance::~ActivityInstance()
 {
+    table->setActive(nullptr);
     table->Release();
 }
 

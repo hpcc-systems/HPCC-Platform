@@ -159,6 +159,9 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
         e->setColumn(cur.getExceptionColumn());
         if (cur.getActivityId())
             e->setActivity(cur.getActivityId());
+        if (cur.getPriority())
+            e->setPriority(cur.getPriority());
+        e->setScope(cur.queryScope());
 
         const char * label = "";
         switch (cur.getSeverity())
