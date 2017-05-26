@@ -1196,11 +1196,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
         CKeyLocalLookup(CKeyedJoinSlave &_owner) : owner(_owner), indexReadFieldsRow(_owner.indexInputAllocator)
         {
-            tlkManager = owner.keyHasTlk ? createKeyManager(NULL, owner.fixedRecordSize, NULL) : NULL;
+            tlkManager = owner.keyHasTlk ? createLocalKeyManager(NULL, owner.fixedRecordSize, NULL) : NULL;
             if (owner.localKey && owner.partKeySet->numParts() > 1)
                 partManager = createKeyMerger(owner.partKeySet, owner.fixedRecordSize, 0, NULL);
             else
-                partManager = createKeyManager(NULL, owner.fixedRecordSize, NULL);
+                partManager = createLocalKeyManager(NULL, owner.fixedRecordSize, NULL);
             reset();
         }
         ~CKeyLocalLookup()

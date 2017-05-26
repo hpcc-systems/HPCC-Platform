@@ -2980,7 +2980,7 @@ extern jhtree_decl IKeyIndexSet *createKeyIndexSet()
     return new CKeyIndexSet;
 }
 
-extern jhtree_decl IKeyManager *createKeyManager(IKeyIndex *key, unsigned _rawSize, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createLocalKeyManager(IKeyIndex *key, unsigned _rawSize, IContextLogger *_ctx)
 {
     return new CKeyLevelManager(key, _rawSize, _ctx);
 }
@@ -3224,14 +3224,14 @@ protected:
         {
             unsigned maxSize = (variable && blobby) ? 18 : 10;
             Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, false);
-            Owned <IKeyManager> tlk1 = createKeyManager(index1, maxSize, NULL);
+            Owned <IKeyManager> tlk1 = createLocalKeyManager(index1, maxSize, NULL);
             Owned<IStringSet> sset1 = createStringSet(10);
             sset1->addRange("0000000001", "0000000100");
             tlk1->append(createKeySegmentMonitor(false, sset1.getClear(), 0, 10));
             tlk1->finishSegmentMonitors();
             tlk1->reset();
 
-            Owned <IKeyManager> tlk1a = createKeyManager(index1, maxSize, NULL);
+            Owned <IKeyManager> tlk1a = createLocalKeyManager(index1, maxSize, NULL);
             Owned<IStringSet> sset1a = createStringSet(8);
             sset1a->addRange("00000000", "00000001");
             tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 0, 8));
@@ -3264,7 +3264,7 @@ protected:
 
 
             Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, false);
-            Owned <IKeyManager> tlk2 = createKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2 = createLocalKeyManager(index2, maxSize, NULL);
             Owned<IStringSet> sset2 = createStringSet(10);
             sset2->addRange("0000000001", "0000000100");
             ASSERT(sset2->numValues() == 65536);
@@ -3287,7 +3287,7 @@ protected:
                 tlk3->reset();
             }
 
-            Owned <IKeyManager> tlk2a = createKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2a = createLocalKeyManager(index2, maxSize, NULL);
             Owned<IStringSet> sset2a = createStringSet(10);
             sset2a->addRange("0000000048", "0000000048");
             ASSERT(sset2a->numValues() == 1);
@@ -3295,7 +3295,7 @@ protected:
             tlk2a->finishSegmentMonitors();
             tlk2a->reset();
 
-            Owned <IKeyManager> tlk2b = createKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2b = createLocalKeyManager(index2, maxSize, NULL);
             Owned<IStringSet> sset2b = createStringSet(10);
             sset2b->addRange("0000000047", "0000000049");
             ASSERT(sset2b->numValues() == 3);
@@ -3303,7 +3303,7 @@ protected:
             tlk2b->finishSegmentMonitors();
             tlk2b->reset();
 
-            Owned <IKeyManager> tlk2c = createKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2c = createLocalKeyManager(index2, maxSize, NULL);
             Owned<IStringSet> sset2c = createStringSet(10);
             sset2c->addRange("0000000047", "0000000047");
             tlk2c->append(createKeySegmentMonitor(false, sset2c.getClear(), 0, 10));

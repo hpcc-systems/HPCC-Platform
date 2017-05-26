@@ -43,6 +43,8 @@
 
 #define SOCKET_CACHE_MAX 500
 
+#define MIN_KEYFILTSUPPORT_VERSION 20
+
 #ifdef _DEBUG
 //#define SIMULATE_PACKETLOSS 1
 #endif
@@ -1072,7 +1074,7 @@ protected: friend class CRemoteFileIO;
     SocketEndpoint      ep;
 
 
-    void sendRemoteCommand(MemoryBuffer & src, MemoryBuffer & reply, bool retry=true, bool lengthy=false)
+    void sendRemoteCommand(MemoryBuffer & src, MemoryBuffer & reply, bool retry=true, bool lengthy=false, bool handleErrCode=true)
     {
         CriticalBlock block(crit);  // serialize commands on same file
         SocketEndpoint tep(ep);
@@ -1154,6 +1156,8 @@ protected: friend class CRemoteFileIO;
             }
         }
 
+        if (!handleErrCode)
+            return;
         unsigned errCode;
         reply.read(errCode);
         if (errCode) {
@@ -2482,9 +2486,9 @@ public:
 
     void setDisconnectOnExit(bool set) { disconnectonexit = set; }
 
-    void sendRemoteCommand(MemoryBuffer & sendBuffer, MemoryBuffer & replyBuffer, bool retry=true, bool lengthy=false)
+    void sendRemoteCommand(MemoryBuffer & sendBuffer, MemoryBuffer & replyBuffer, bool retry=true, bool lengthy=false, bool handleErrCode=true)
     {
-        parent->sendRemoteCommand(sendBuffer, replyBuffer, retry, lengthy);
+        parent->sendRemoteCommand(sendBuffer, replyBuffer, retry, lengthy, handleErrCode);
     }
 };
 
@@ -2598,204 +2602,43 @@ void CRemoteFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *pr
 
 /////////////////////////
 
-class CRemoteKeyManager : public CSimpleInterfaceOf<IKeyManager>
+unsigned getRemoteVersion(CRemoteFileIO &remoteFileIO, StringBuffer &ver)
 {
-    StringAttr filename;
-    Linked<IDelayedFile> delayedFile;
-    SegMonitorList segs;
-    size32_t rowDataRemaining = 0;
-    MemoryBuffer rowDataBuffer;
-    size32_t keyCursorSz = 0;        // used for continuation
-    const void *keyCursor = nullptr; // used for continuation
-    unsigned __int64 totalGot = 0;
-    size32_t maxRecsPerRequest = 100; // arbritary # recs per request, perhaps should be based on recsize
-    size32_t keySize = 0;
-    size32_t currentSize = 0;
-    offset_t currentFpos = 0;
-    const byte *currentRow = nullptr;
-    bool first = true;
-    unsigned __int64 chooseNLimit = 0;
-    ConstPointerArray activeBlobs;
+    unsigned ret;
+    MemoryBuffer sendBuffer;
+    initSendBuffer(sendBuffer);
+    sendBuffer.append((RemoteFileCommandType)RFCgetver);
+    sendBuffer.append((unsigned)RFCgetver);
+    MemoryBuffer replyBuffer;
+    try
+    {
+        remoteFileIO.sendRemoteCommand(sendBuffer, replyBuffer, true, false, false);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        ::Release(e);
+        return 0;
+    }
+    unsigned errCode;
+    replyBuffer.read(errCode);
+    if (errCode==RFSERR_InvalidCommand)
+    {
+        ver.append("DS V1.0");
+        return 10;
+    }
+    else if (errCode==0)
+        ret = 11;
+    else if (errCode<0x10000)
+        return 0;
+    else
+        ret = errCode-0x10000;
 
-    CRemoteFileIO *prepKeySend(MemoryBuffer &sendBuffer, RemoteFileCommandType cmd, bool segmentMonitors)
-    {
-        Owned<IFileIO> iFileIO = delayedFile->getFileIO();
-        if (!iFileIO)
-            throw MakeStringException(0, "CRemoteKeyManager: Failed to open key file: %s", filename.get());
-        Linked<CRemoteFileIO> remoteIO = QUERYINTERFACE(iFileIO.get(), CRemoteFileIO);
-        assertex(remoteIO);
-        initSendBuffer(sendBuffer);
-        sendBuffer.append(cmd).append(remoteIO->getHandle()).append(filename).append(keySize);
-        if (segmentMonitors)
-            segs.serialize(sendBuffer);
-        return remoteIO.getClear();
-    }
-    unsigned __int64 _checkCount(unsigned __int64 limit)
-    {
-        MemoryBuffer sendBuffer;
-        Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindexcount, true);
-        sendBuffer.append(limit);
-        MemoryBuffer replyBuffer;
-        remoteIO->sendRemoteCommand(sendBuffer, replyBuffer);
-        unsigned __int64 count;
-        replyBuffer.read(count);
-        return count;
-    }
-public:
-    CRemoteKeyManager(const char *_filename, unsigned _keySize, IDelayedFile *_delayedFile) : filename(_filename), keySize(_keySize), delayedFile(_delayedFile)
-    {
-    }
-    ~CRemoteKeyManager()
-    {
-        releaseBlobs();
-    }
-    virtual void reset(bool crappyHack = false) override
-    {
-        rowDataBuffer.clear();
-        rowDataRemaining = 0;
-        currentSize = 0;
-        currentFpos = 0;
-        currentRow = nullptr;
-        first = true;
-        maxRecsPerRequest = 100;
-        totalGot = 0;
-        keyCursorSz = 0;
-        keyCursor = nullptr;
-    }
-    virtual void releaseSegmentMonitors() override { segs.reset(); }
-    virtual const byte *queryKeyBuffer(offset_t & fpos) override
-    {
-        fpos = currentFpos;
-        return currentRow;
-    }
-    virtual offset_t queryFpos() override
-    {
-        return currentFpos;
-    }
-    virtual unsigned queryRecordSize() override
-    {
-        return currentSize;
-    }
-    virtual bool lookup(bool exact) override
-    {
-        while (true)
-        {
-            if (rowDataRemaining)
-            {
-                rowDataBuffer.read(currentFpos);
-                rowDataBuffer.read(currentSize);
-                currentRow = rowDataBuffer.readDirect(currentSize);
-                rowDataRemaining -= sizeof(currentFpos) + sizeof(currentSize) + currentSize;
-                return true;
-            }
-            else
-            {
-                if (!first && (nullptr == keyCursor)) // No keyCursor implies there is nothing more to fetch
-                    return false;
-                unsigned maxRecs = maxRecsPerRequest;
-                if (maxRecs && chooseNLimit)
-                {
-                    if (totalGot + maxRecs > chooseNLimit)
-                        maxRecs = (unsigned)(chooseNLimit - totalGot);
-                }
-                if (0 == maxRecs)
-                    break;
-                MemoryBuffer sendBuffer;
-                Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindex, true);
-                sendBuffer.append(first).append(maxRecs);
-                if (first)
-                    first = false;
-                else
-                {
-                    dbgassertex(keyCursor);
-                    sendBuffer.append(keyCursorSz, keyCursor);
-                }
-                rowDataBuffer.clear();
-                remoteIO->sendRemoteCommand(sendBuffer, rowDataBuffer);
-                unsigned recsGot;
-                rowDataBuffer.read(recsGot);
-                if (0 == recsGot)
-                {
-                    maxRecsPerRequest = 0;
-                    break; // end
-                }
-                totalGot += recsGot;
-                rowDataBuffer.read(rowDataRemaining);
-                unsigned pos = rowDataBuffer.getPos(); // start of row data
-                const void *rowData = rowDataBuffer.readDirect(rowDataRemaining);
-                rowDataBuffer.read(keyCursorSz);
-                if (keyCursorSz)
-                    keyCursor = rowDataBuffer.readDirect(keyCursorSz);
-                else
-                    keyCursor = nullptr;
-                rowDataBuffer.reset(pos); // reposition to start of row data
-            }
-        }
-        return false;
-    }
-    virtual unsigned __int64 getCount() override
-    {
-        return _checkCount((unsigned __int64)-1);
-    }
-    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount) override { UNIMPLEMENTED; }
-    virtual bool nextRange(unsigned groupSegCount) override { UNIMPLEMENTED; }
-    virtual void setKey(IKeyIndexBase * _key) override { UNIMPLEMENTED; }
-    virtual void setChooseNLimit(unsigned __int64 _chooseNLimit) override
-    {
-        chooseNLimit = _chooseNLimit;
-    }
-    virtual unsigned __int64 checkCount(unsigned __int64 limit) override
-    {
-        return _checkCount(limit);
-    }
-    virtual void serializeCursorPos(MemoryBuffer &mb) override { UNIMPLEMENTED; }
-    virtual void deserializeCursorPos(MemoryBuffer &mb) override { UNIMPLEMENTED; }
-    virtual unsigned querySeeks() const override { return 0; }
-    virtual unsigned queryScans() const override { return 0; }
-    virtual unsigned querySkips() const override { return 0; }
-    virtual unsigned queryNullSkips() const override { return 0; }
-    virtual const byte *loadBlob(unsigned __int64 blobId, size32_t &blobSize) override
-    {
-        MemoryBuffer sendBuffer;
-        Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindexblob, false);
-        sendBuffer.append(blobId);
-        MemoryBuffer replyBuffer;
-        remoteIO->sendRemoteCommand(sendBuffer, replyBuffer);
-        replyBuffer.read(blobSize);
-        const byte *blobData = replyBuffer.readDirect(blobSize);
-        activeBlobs.append(replyBuffer.detach()); // NB: don't need to retain size, but keep sz+data to avoid copy
-        return blobData;
-    }
-    virtual void releaseBlobs() override
-    {
-        ForEachItemIn(idx, activeBlobs)
-        {
-            free((void *) activeBlobs.item(idx));
-        }
-        activeBlobs.kill();
-    }
-    virtual void resetCounts() override { UNIMPLEMENTED; }
-
-    virtual void setLayoutTranslator(IRecordLayoutTranslator * trans) override { UNIMPLEMENTED; }
-    virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override { segs.swapWith(segmentMonitors); }
-    virtual void deserializeSegmentMonitors(MemoryBuffer &mb) override { segs.deserialize(mb); }
-    virtual void finishSegmentMonitors() override { }
-    virtual bool lookupSkip(const void *seek, size32_t seekGEOffset, size32_t seeklen) override { UNIMPLEMENTED; }
-    virtual void append(IKeySegmentMonitor *segment) override
-    {
-        segs.append(segment);
-    }
-    virtual unsigned ordinality() const override { return segs.ordinality(); }
-    virtual IKeySegmentMonitor *item(unsigned idx) const override { return segs.item(idx); }
-    virtual void setMergeBarrier(unsigned offset) override { UNIMPLEMENTED; }
-};
-
-IKeyManager * createRemoteKeyManager(const char *filename, unsigned keySize, IDelayedFile *delayedFile)
-{
-    return new CRemoteKeyManager(filename, keySize, delayedFile);
+    StringAttr vers;
+    replyBuffer.read(vers);
+    ver.append(vers);
+    return ret;
 }
-
-//////////////
 
 unsigned getRemoteVersion(ISocket * socket, StringBuffer &ver)
 {
@@ -2851,6 +2694,408 @@ unsigned getRemoteVersion(ISocket * socket, StringBuffer &ver)
     return ret;
 }
 
+/////////////////////////
+
+class CRemoteKeyManager : public CSimpleInterfaceOf<IKeyManager>
+{
+    StringAttr filename;
+    Linked<IDelayedFile> delayedFile;
+    SegMonitorList segs;
+    size32_t rowDataRemaining = 0;
+    MemoryBuffer rowDataBuffer;
+    MemoryBuffer keyCursorMb;        // used for continuation
+    unsigned __int64 totalGot = 0;
+    size32_t keySize = 0;
+    size32_t currentSize = 0;
+    offset_t currentFpos = 0;
+    const byte *currentRow = nullptr;
+    bool first = true;
+    unsigned __int64 chooseNLimit = 0;
+    ConstPointerArray activeBlobs;
+    unsigned crc = 0;
+    mutable bool hasRemoteSupport = false; // must check 1st
+    mutable Owned<IKeyManager> directKM; // failover manager if remote key support is unavailable
+
+    CRemoteFileIO *prepKeySend(MemoryBuffer &sendBuffer, RemoteFileCommandType cmd, bool segmentMonitors)
+    {
+        Owned<IFileIO> iFileIO = delayedFile->getFileIO();
+        if (!iFileIO)
+            throw MakeStringException(0, "CRemoteKeyManager: Failed to open key file: %s", filename.get());
+        Linked<CRemoteFileIO> remoteIO = QUERYINTERFACE(iFileIO.get(), CRemoteFileIO);
+        assertex(remoteIO);
+        initSendBuffer(sendBuffer);
+        sendBuffer.append(cmd).append(remoteIO->getHandle()).append(filename).append(keySize);
+        if (segmentMonitors)
+            segs.serialize(sendBuffer);
+        return remoteIO.getClear();
+    }
+    bool remoteSupport() const
+    {
+        if (hasRemoteSupport)
+            return true;
+        else if (directKM)
+            return false;
+        Owned<IFileIO> iFileIO = delayedFile->getFileIO();
+        if (!iFileIO)
+            throw MakeStringException(0, "CRemoteKeyManager: Failed to open key file: %s", filename.get());
+        Linked<CRemoteFileIO> remoteIO = QUERYINTERFACE(iFileIO.get(), CRemoteFileIO);
+        bool useRemote = nullptr != remoteIO.get();
+        if (useRemote)
+        {
+            StringBuffer verString;
+            unsigned ver = getRemoteVersion(*remoteIO, verString);
+            if (ver < MIN_KEYFILTSUPPORT_VERSION)
+                useRemote = false;
+        }
+        if (useRemote)
+        {
+            PROGLOG("Using remote key manager for file: %s", filename.get());
+            hasRemoteSupport = true;
+        }
+        else
+        {
+            Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, false, false);
+            directKM.setown(createLocalKeyManager(keyIndex, keySize, nullptr));
+            return false;
+        }
+        return true;
+    }
+    unsigned __int64 _checkCount(unsigned __int64 limit)
+    {
+        MemoryBuffer sendBuffer;
+        Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindexcount, true);
+        sendBuffer.append(limit);
+        MemoryBuffer replyBuffer;
+        remoteIO->sendRemoteCommand(sendBuffer, replyBuffer);
+        unsigned __int64 count;
+        replyBuffer.read(count);
+        return count;
+    }
+public:
+    CRemoteKeyManager(const char *_filename, unsigned _keySize, unsigned _crc, IDelayedFile *_delayedFile) : filename(_filename), keySize(_keySize), crc(_crc), delayedFile(_delayedFile)
+    {
+    }
+    ~CRemoteKeyManager()
+    {
+        releaseBlobs();
+    }
+// IKeyManager impl.
+    virtual void reset(bool crappyHack = false) override
+    {
+        if (!remoteSupport())
+        {
+            directKM->reset(crappyHack);
+            return;
+        }
+        rowDataBuffer.clear();
+        rowDataRemaining = 0;
+        keyCursorMb.clear();
+        currentSize = 0;
+        currentFpos = 0;
+        currentRow = nullptr;
+        first = true;
+        totalGot = 0;
+    }
+    virtual void releaseSegmentMonitors() override
+    {
+        if (!remoteSupport())
+        {
+            directKM->releaseSegmentMonitors();
+            return;
+        }
+        segs.reset();
+    }
+    virtual const byte *queryKeyBuffer(offset_t & fpos) override
+    {
+        if (!remoteSupport())
+            return directKM->queryKeyBuffer(fpos);;
+        fpos = currentFpos;
+        return currentRow;
+    }
+    virtual offset_t queryFpos() override
+    {
+        if (!remoteSupport())
+            return directKM->queryFpos();
+        return currentFpos;
+    }
+    virtual unsigned queryRecordSize() override
+    {
+        if (!remoteSupport())
+            return directKM->queryRecordSize();
+        return currentSize;
+    }
+    virtual bool lookup(bool exact) override
+    {
+        if (!remoteSupport())
+            return directKM->lookup(exact);
+        while (true)
+        {
+            if (rowDataRemaining)
+            {
+                rowDataBuffer.read(currentFpos);
+                rowDataBuffer.read(currentSize);
+                currentRow = rowDataBuffer.readDirect(currentSize);
+                rowDataRemaining -= sizeof(currentFpos) + sizeof(currentSize) + currentSize;
+                return true;
+            }
+            else
+            {
+                if (!first && (0 == keyCursorMb.length())) // No keyCursor implies there is nothing more to fetch
+                    return false;
+                unsigned maxRecs = 0;
+                if (chooseNLimit)
+                {
+                    if (totalGot == chooseNLimit)
+                        break;
+                    unsigned __int64 max = chooseNLimit-totalGot;
+                    if (max > UINT_MAX)
+                        maxRecs = UINT_MAX;
+                    else
+                        maxRecs = (unsigned)max;
+                }
+                MemoryBuffer sendBuffer;
+                Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindex, true);
+                sendBuffer.append(first).append(maxRecs);
+                if (first)
+                    first = false;
+                else
+                {
+                    dbgassertex(keyCursorMb.length());
+                    sendBuffer.append(keyCursorMb);
+                }
+                rowDataBuffer.clear();
+                remoteIO->sendRemoteCommand(sendBuffer, rowDataBuffer);
+                unsigned recsGot;
+                rowDataBuffer.read(recsGot);
+                if (0 == recsGot)
+                {
+                    keyCursorMb.clear(); // signals no more data if called again.
+                    break; // end
+                }
+                totalGot += recsGot;
+                rowDataBuffer.read(rowDataRemaining);
+                unsigned pos = rowDataBuffer.getPos(); // start of row data
+                const void *rowData = rowDataBuffer.readDirect(rowDataRemaining);
+                size32_t keyCursorSz;
+                rowDataBuffer.read(keyCursorSz);
+                keyCursorMb.clear();
+                if (keyCursorSz)
+                    keyCursorMb.append(keyCursorSz, rowDataBuffer.readDirect(keyCursorSz));
+                rowDataBuffer.reset(pos); // reposition to start of row data
+            }
+        }
+        return false;
+    }
+    virtual unsigned __int64 getCount() override
+    {
+        if (!remoteSupport())
+            return directKM->getCount();
+        return _checkCount((unsigned __int64)-1);
+    }
+    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount) override
+    {
+        if (!remoteSupport())
+            return directKM->getCurrentRangeCount(groupSegCount);
+        UNIMPLEMENTED;
+    }
+    virtual bool nextRange(unsigned groupSegCount) override
+    {
+        if (!remoteSupport())
+            return directKM->nextRange(groupSegCount);
+        UNIMPLEMENTED;
+    }
+    virtual void setKey(IKeyIndexBase * _key) override
+    {
+        if (!remoteSupport())
+        {
+            directKM->setKey(_key);
+            return;
+        }
+        UNIMPLEMENTED;
+    }
+    virtual void setChooseNLimit(unsigned __int64 _chooseNLimit) override
+    {
+        if (!remoteSupport())
+        {
+            directKM->setChooseNLimit(_chooseNLimit);
+            return;
+        }
+        chooseNLimit = _chooseNLimit;
+    }
+    virtual unsigned __int64 checkCount(unsigned __int64 limit) override
+    {
+        if (!remoteSupport())
+            directKM->checkCount(limit);
+        return _checkCount(limit);
+    }
+    virtual void serializeCursorPos(MemoryBuffer &mb) override
+    {
+        if (!remoteSupport())
+        {
+            directKM->serializeCursorPos(mb);
+            return;
+        }
+        UNIMPLEMENTED;
+    }
+    virtual void deserializeCursorPos(MemoryBuffer &mb) override
+    {
+        if (!remoteSupport())
+        {
+            directKM->deserializeCursorPos(mb);
+            return;
+        }
+        UNIMPLEMENTED;
+    }
+    virtual unsigned querySeeks() const override
+    {
+        if (!remoteSupport())
+            return directKM->querySeeks();
+        return 0;
+    }
+    virtual unsigned queryScans() const override
+    {
+        if (!remoteSupport())
+            return directKM->queryScans();
+        return 0;
+    }
+    virtual unsigned querySkips() const override
+    {
+        if (!remoteSupport())
+            return directKM->querySkips();
+        return 0;
+    }
+    virtual unsigned queryNullSkips() const override
+    {
+        if (!remoteSupport())
+            return directKM->queryNullSkips();
+        return 0;
+    }
+    virtual const byte *loadBlob(unsigned __int64 blobId, size32_t &blobSize) override
+    {
+        if (!remoteSupport())
+            return directKM->loadBlob(blobId, blobSize);
+        MemoryBuffer sendBuffer;
+        Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindexblob, false);
+        sendBuffer.append(blobId);
+        MemoryBuffer replyBuffer;
+        remoteIO->sendRemoteCommand(sendBuffer, replyBuffer);
+        replyBuffer.read(blobSize);
+        const byte *blobData = replyBuffer.readDirect(blobSize);
+        activeBlobs.append(replyBuffer.detach()); // NB: don't need to retain size, but keep sz+data to avoid copy
+        return blobData;
+    }
+    virtual void releaseBlobs() override
+    {
+        if (!remoteSupport())
+            return directKM->releaseBlobs();
+        ForEachItemIn(idx, activeBlobs)
+        {
+            free((void *) activeBlobs.item(idx));
+        }
+        activeBlobs.kill();
+    }
+    virtual void resetCounts() override
+    {
+        if (!remoteSupport())
+        {
+            directKM->resetCounts();
+            return;
+        }
+        UNIMPLEMENTED;
+    }
+
+    virtual void setLayoutTranslator(IRecordLayoutTranslator * trans) override
+    {
+        if (!remoteSupport())
+        {
+            directKM->setLayoutTranslator(trans);
+            return;
+        }
+        UNIMPLEMENTED;
+    }
+    virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override
+    {
+        if (!remoteSupport())
+        {
+            directKM->setSegmentMonitors(segmentMonitors);
+            return;
+        }
+        segs.swapWith(segmentMonitors);
+    }
+    virtual void deserializeSegmentMonitors(MemoryBuffer &mb) override
+    {
+        if (!remoteSupport())
+        {
+            directKM->deserializeSegmentMonitors(mb);
+            return;
+        }
+        segs.deserialize(mb);
+    }
+    virtual void finishSegmentMonitors() override
+    {
+        if (!remoteSupport())
+        {
+            directKM->finishSegmentMonitors();
+            return;
+        }
+    }
+    virtual bool lookupSkip(const void *seek, size32_t seekGEOffset, size32_t seeklen) override
+    {
+        if (!remoteSupport())
+            return directKM->lookupSkip(seek, seekGEOffset, seeklen);
+        UNIMPLEMENTED;
+    }
+    virtual void append(IKeySegmentMonitor *segment) override
+    {
+        if (!remoteSupport())
+        {
+            directKM->append(segment);
+            return;
+        }
+        segs.append(segment);
+    }
+    virtual unsigned ordinality() const override
+    {
+        if (!remoteSupport())
+            return directKM->ordinality();
+        return segs.ordinality();
+    }
+    virtual IKeySegmentMonitor *item(unsigned idx) const override
+    {
+        if (!remoteSupport())
+            return directKM->item(idx);
+        return segs.item(idx);
+    }
+    virtual void setMergeBarrier(unsigned offset) override
+    {
+        if (!remoteSupport())
+        {
+            directKM->setMergeBarrier(offset);
+            return;
+        }
+        UNIMPLEMENTED;
+    }
+};
+
+IKeyManager *createRemoteKeyManager(const char *filename, unsigned keySize, unsigned crc, IDelayedFile *delayedFile)
+{
+    return new CRemoteKeyManager(filename, keySize, crc, delayedFile);
+}
+
+IKeyManager *createKeyManager(const char *filename, unsigned keySize, unsigned crc, IDelayedFile *delayedFile, bool allowRemote, bool forceRemote)
+{
+    RemoteFilename rfn;
+    rfn.setRemotePath(filename);
+    if (forceRemote || (allowRemote && !rfn.isLocal()))
+        return createRemoteKeyManager(filename, keySize, crc, delayedFile);
+    else
+    {
+        Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, false, false);
+        return createLocalKeyManager(keyIndex, keySize, nullptr);
+    }
+}
+
+//////////////
 
 extern unsigned stopRemoteServer(ISocket * socket)
 {
@@ -3385,6 +3630,8 @@ struct OpenFileInfo
     int handle = 0;
     unsigned flags = 0;
 };
+
+#define MAX_KEYDATA_SZ 0x10000
 
 class CRemoteFileServer : implements IRemoteFileServer, public CInterface
 {
@@ -4061,11 +4308,13 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         return false;
     }
 
-    unsigned readKeyData(IKeyManager *keyManager, unsigned maxRecs, MemoryBuffer &reply)
+    unsigned readKeyData(IKeyManager *keyManager, unsigned maxRecs, MemoryBuffer &reply, bool &maxHit)
     {
         DelayedSizeMarker keyDataSzReturned(reply);
         unsigned numRecs = 0;
-        while (maxRecs-- && keyManager->lookup(true))
+        maxHit = false;
+        unsigned pos = reply.length();
+        while (keyManager->lookup(true))
         {
             unsigned size = keyManager->queryRecordSize();
             offset_t fpos;
@@ -4074,6 +4323,16 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             reply.append(size);
             reply.append(size, result);
             ++numRecs;
+            if (maxRecs && (0 == --maxRecs))
+            {
+                maxHit = true;
+                break;
+            }
+            if (reply.length()-pos >= MAX_KEYDATA_SZ)
+            {
+                maxHit = true;
+                break;
+            }
         }
         keyDataSzReturned.write();
         return numRecs;
@@ -4093,7 +4352,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             VStringBuffer errStr("Error opening key file : %s", keyname);
             throw createDafsException(RFSERR_KeyIndexFailed, errStr.str());
         }
-        Owned<IKeyManager> keyManager = createKeyManager(index, keySize, nullptr);
+        Owned<IKeyManager> keyManager = createLocalKeyManager(index, keySize, nullptr);
         if (segs)
         {
             keyManager->setSegmentMonitors(*segs);
@@ -4480,20 +4739,21 @@ public:
     {
         Owned<IKeyManager> keyManager = prepKey(msg, true);
         bool first;
-        size32_t maxRecs;
+        unsigned maxRecs;
         msg.read(first).read(maxRecs);
         if (!first)
             keyManager->deserializeCursorPos(msg);
 
         reply.append((unsigned)RFEnoerror);
         DelayedMarker<unsigned> numReturned(reply);
-        unsigned numRecs = readKeyData(keyManager, maxRecs, reply);
+        bool maxHit;
+        unsigned numRecs = readKeyData(keyManager, maxRecs, reply, maxHit);
         numReturned.write(numRecs);
 
-        DelayedSizeMarker keyCursorSz(reply);
-        if (numRecs >= maxRecs) // no point in cursor if no more recs to return
+        DelayedSizeMarker keyCursorSzMarker(reply);
+        if (maxHit) // if maximum hit, either supplied maxRecs limit, or buffer limit, return cursor
             keyManager->serializeCursorPos(reply);
-        keyCursorSz.write();
+        keyCursorSzMarker.write();
         return true;
     }
 

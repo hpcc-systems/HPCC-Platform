@@ -3186,7 +3186,7 @@ protected:
             IKeyIndex *k = kib->queryPart(lastPartNo.fileNo);
             if (filechanged)
             {
-                tlk.setown(createKeyManager(k, 0, &logctx));
+                tlk.setown(createLocalKeyManager(k, 0, &logctx));
                 createSegmentMonitorsPending = true;
             }
             else
