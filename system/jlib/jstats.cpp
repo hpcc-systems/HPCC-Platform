@@ -2248,7 +2248,7 @@ bool ScopedItemFilter::recurseChildScopes(const char * curScope) const
 
 void ScopedItemFilter::set(const char * _value)
 {
-    if (_value && *_value && !streq(_value, "*") )
+    if (_value && !streq(_value, "*") )
     {
         value.set(_value);
         minDepth = queryStatisticsDepth(_value);
