@@ -67,7 +67,7 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 // Textual forms of the different enumerations, first items are for none and all.
 static const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", NULL };
 static const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
-static const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", NULL };
+static const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", nullptr };
 
 static unsigned matchString(const char * const * names, const char * search)
 {
@@ -997,6 +997,10 @@ StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
         return out.append(EdgeScopePrefix).append(id).append("_").append(extra);
     case SSTfunction:
         return out.append(FunctionScopePrefix).append(name);
+    case SSTworkflow:
+        return out.append(WorkflowScopePrefix).append(id);
+    case SSTchildgraph:
+        return out.append(ChildGraphScopePrefix).append(id);
     default:
 #ifdef _DEBUG
         throwUnexpected();
@@ -1043,6 +1047,8 @@ void StatsScopeId::deserialize(MemoryBuffer & in, unsigned version)
     case SSTgraph:
     case SSTsubgraph:
     case SSTactivity:
+    case SSTworkflow:
+    case SSTchildgraph:
         in.read(id);
         break;
     case SSTedge:
@@ -1066,6 +1072,8 @@ void StatsScopeId::serialize(MemoryBuffer & out) const
     case SSTgraph:
     case SSTsubgraph:
     case SSTactivity:
+    case SSTworkflow:
+    case SSTchildgraph:
         out.append(id);
         break;
     case SSTedge:
@@ -1105,6 +1113,10 @@ bool StatsScopeId::setScopeText(const char * text)
     }
     else if (MATCHES_CONST_PREFIX(text, FunctionScopePrefix))
         setFunctionId(text+CONST_STRLEN(FunctionScopePrefix));
+    else if (MATCHES_CONST_PREFIX(text, WorkflowScopePrefix))
+        setWorkflowId(atoi(text+CONST_STRLEN(WorkflowScopePrefix)));
+    else if (MATCHES_CONST_PREFIX(text, ChildGraphScopePrefix))
+        setChildGraphId(atoi(text+CONST_STRLEN(ChildGraphScopePrefix)));
     else
         return false;
 
@@ -1127,6 +1139,14 @@ void StatsScopeId::setFunctionId(const char * _name)
 {
     scopeType = SSTfunction;
     name.set(_name);
+}
+void StatsScopeId::setWorkflowId(unsigned _id)
+{
+    setId(SSTworkflow, _id);
+}
+void StatsScopeId::setChildGraphId(unsigned _id)
+{
+    setId(SSTchildgraph, _id);
 }
 
 //--------------------------------------------------------------------------------------------------------------------
