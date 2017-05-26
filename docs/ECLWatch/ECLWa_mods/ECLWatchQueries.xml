@@ -577,12 +577,13 @@ depending on where they wind up.-->
         <title>Package Maps</title>
 
         <para>A package map provides a reference to the contents of a superkey
-        used in queries that overrides the original definition. You can
-        organize your package map file mappings into a collection of files
-        that define the files for some subset of queries. These subsets are
-        called <emphasis role="bold">parts</emphasis> and can be used to
-        organize by various groupings such as function, files, or developer,
-        etc. For more information about Package maps see the <emphasis>Roxie
+        used in queries that overrides the original definition. Package map
+        file mappings can be organized into a collection of files defining
+        some subsets of queries or to organize by various groupings such as
+        functions, files, developers, etc. These subsets are called <emphasis
+        role="bold">parts</emphasis>. </para>
+
+        <para>For more information about Package maps see the <emphasis>Roxie
         Reference</emphasis> guide. From the Queries icon link, you can access
         the package maps page. Press the <emphasis role="bold">Package
         Maps</emphasis> button on the navigation sub-menu bar, to access the
@@ -604,9 +605,9 @@ depending on where they wind up.-->
         <sect3>
           <title id="Packagemap_Actions">Packagemap Actions</title>
 
-          <para>To update package mappings, you would edit the packagemap file
-          (or a copy) add and activate the new one, and then delete the old
-          one. You can do this through the interface in ECLWatch.</para>
+          <para>To update package mappings, you would edit the package map
+          file (or a copy) add and activate the new one, and then delete the
+          old one. You can do this through the interface in ECLWatch.</para>
 
           <para><emphasis role="bold">Package Map Add </emphasis></para>
 
@@ -709,7 +710,7 @@ depending on where they wind up.-->
           <orderedlist>
             <listitem>
               <para>Select the <emphasis role="bold">Validate Package
-              Map</emphasis> tab </para>
+              Map</emphasis> tab</para>
             </listitem>
 
             <listitem>
@@ -721,12 +722,12 @@ depending on where they wind up.-->
 
             <listitem>
               <para>Press the <emphasis role="bold">Validate</emphasis> button
-              to validate the package map. </para>
+              to validate the package map.</para>
             </listitem>
           </orderedlist>
 
           <para>The result is shown on the <emphasis role="bold">Validate
-          Active Package Map</emphasis> tab. </para>
+          Active Package Map</emphasis> tab.</para>
 
           <para>You can also Validate the package content on the <emphasis
           role="bold">Validate Package Content</emphasis> tab.</para>
