@@ -8,6 +8,8 @@
       <primary>STD.Date.AdjustCalendar</primary>
     </indexterm><indexterm>
       <primary>Date.AdjustCalendar</primary>
+    </indexterm><indexterm>
+      <primary>AdjustCalendar</primary>
     </indexterm>(</emphasis> <emphasis>date</emphasis> ,
   [<emphasis>year_delta</emphasis>],[<emphasis>month_delta</emphasis>]
   ,[<emphasis>day_delta</emphasis>] <emphasis role="bold">)</emphasis></para>
@@ -58,7 +60,7 @@
 
   <para>The AdjustCalendar function adjusts a date by incrementing or
   decrementing months and/or years. The date must be in the Gregorian calendar
-  after the year 1600. </para>
+  after the year 1600.</para>
 
   <para>This uses the rule outlined in McGinn v. State, 46 Neb. 427, 65 N.W.
   46 (1895):</para>
@@ -68,11 +70,11 @@
     and not appearing to have been used in a different sense, denotes a period
     terminating with the day of the succeeding month numerically corresponding
     to the day of its beginning, less one. If there be no corresponding day of
-    the succeeding month, it terminates with the last day thereof." </para>
+    the succeeding month, it terminates with the last day thereof."</para>
   </blockquote>
 
   <para>Note that day adjustments are performed after year and month
-  adjustments using the preceding rules. </para>
+  adjustments using the preceding rules.</para>
 
   <para>As an example, Jan. 31, 2014 + 1 month results in Feb. 28, 2014; Jan.
   31, 2014 + 1 month + 1 day results in Mar. 1, 2014.</para>

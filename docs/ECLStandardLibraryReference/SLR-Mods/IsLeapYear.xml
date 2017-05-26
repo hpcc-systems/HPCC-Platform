@@ -8,6 +8,8 @@
       <primary>STD.Date.IsLeapYear</primary>
     </indexterm><indexterm>
       <primary>Date.IsLeapYear</primary>
+    </indexterm><indexterm>
+      <primary>IsLeapYear</primary>
     </indexterm>(</emphasis> <emphasis>year</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
@@ -33,8 +35,9 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">IsLeapYear</emphasis> function returns TRUE if the <emphasis>year</emphasis> is 
-  a leap year in the Gregorian (or proleptic Gregorian) calendar.</para>
+  <para>The <emphasis role="bold">IsLeapYear</emphasis> function returns TRUE
+  if the <emphasis>year</emphasis> is a leap year in the Gregorian (or
+  proleptic Gregorian) calendar.</para>
 
   <para>Example:</para>
 

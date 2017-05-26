@@ -8,6 +8,8 @@
       <primary>STD.Str.SplitWords</primary>
     </indexterm><indexterm>
       <primary>Str.SplitWords</primary>
+    </indexterm><indexterm>
+      <primary>SplitWords</primary>
     </indexterm>(</emphasis> <emphasis>source, separator </emphasis><emphasis
   role="bold">[ </emphasis><emphasis>, allowblank</emphasis><emphasis
   role="bold"> ] )</emphasis></para>
@@ -34,8 +36,8 @@
         <row>
           <entry><emphasis>allowblank</emphasis></entry>
 
-          <entry>Optional. If TRUE, specifies allowing blank items in the result. 
-          If omitted, the default is FALSE.</entry>
+          <entry>Optional. If TRUE, specifies allowing blank items in the
+          result. If omitted, the default is FALSE.</entry>
         </row>
 
         <row>

@@ -8,6 +8,8 @@
       <primary>STD.Date.FromGregorianYMD</primary>
     </indexterm><indexterm>
       <primary>Date.FromGregorianYMD</primary>
+    </indexterm><indexterm>
+      <primary>FromGregorianYMD</primary>
     </indexterm>(</emphasis> <emphasis>year, month, day</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
