@@ -456,6 +456,9 @@ void CHttpMessage::addParameter(const char* paramname, const char *value)
 
     m_queryparams->setProp(paramname, value);
     m_paramCount++;
+#ifdef USE_LIBMEMCACHED
+    allParameterString.append("&").append(paramname).append("=").append(value);
+#endif
 }
 
 StringBuffer& CHttpMessage::getParameter(const char* paramname, StringBuffer& paramval)
@@ -1564,7 +1567,22 @@ StringBuffer& CHttpRequest::getPeer(StringBuffer& Peer)
     }
     return Peer;
 }
-
+#ifdef USE_LIBMEMCACHED
+unsigned CHttpRequest::createUniqueRequestHash(bool cacheGlobal, const char* msgType)
+{
+    StringBuffer idStr;
+    if (!cacheGlobal)
+    {
+        const char* userID = m_context->queryUserId();
+        if (!isEmptyString(userID))
+            idStr.append(userID).append("_");
+    }
+    if (!isEmptyString(msgType))
+        idStr.append(msgType).append("_");
+    idStr.appendf("%s_%s_%s", m_espServiceName.get(), m_espMethodName.get(), allParameterString.str());
+    return hashc((unsigned char *)idStr.str(), idStr.length(), 0);
+}
+#endif
 void CHttpRequest::getBasicAuthorization(StringBuffer& userid, StringBuffer& password,StringBuffer& realm)
 {
     StringBuffer authheader;

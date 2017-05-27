@@ -37,7 +37,6 @@
 
 #include "xslprocessor.hpp"
 
-
 #define POST_METHOD "POST"
 #define GET_METHOD "GET"
 #define HEAD_METHOD "HEAD"
@@ -77,6 +76,9 @@ protected:
     Owned<IProperties> m_queryparams;
     MapStrToBuf  m_attachments;
     StringArray  m_headers;
+#ifdef USE_LIBMEMCACHED
+    StringBuffer allParameterString;
+#endif
 
     Owned<IEspContext> m_context;
     IArrayOf<CEspCookie> m_cookies;
@@ -336,6 +338,9 @@ public:
     virtual int receive(IMultiException *me);
 
     void updateContext();
+#ifdef USE_LIBMEMCACHED
+    unsigned createUniqueRequestHash(bool cacheGlobal, const char* msgType);
+#endif
 
     virtual void setMaxRequestEntityLength(int len) {m_MaxRequestEntityLength = len;}
     virtual int getMaxRequestEntityLength() { return m_MaxRequestEntityLength; }
@@ -415,5 +420,224 @@ inline bool skipXslt(IEspContext &context)
 {
     return (context.getResponseFormat()!=ESPSerializationANY);  //for now
 }
+
+#ifdef USE_LIBMEMCACHED
+#include <libmemcached/memcached.hpp>
+#include <libmemcached/util.h>
+
+class ESPMemCached : public CInterface
+{
+    memcached_st* connection = nullptr;
+    memcached_pool_st* pool = nullptr;
+    StringAttr options;
+    bool initialized = false;
+
+public :
+    ESPMemCached()
+    {
+#if (LIBMEMCACHED_VERSION_HEX < 0x01000010)
+        VStringBuffer msg("Memcached Plugin: libmemcached version '%s' incompatible with min version>=1.0.10", LIBMEMCACHED_VERSION_STRING);
+        ESPLOG(LogNormal, "%s", msg.str());
+#endif
+    }
+
+    ~ESPMemCached()
+    {
+        if (pool)
+        {
+            memcached_pool_release(pool, connection);
+            connection = nullptr;//For safety (from changing this destructor) as not implicit in either the above or below.
+            memcached_st *memc = memcached_pool_destroy(pool);
+            if (memc)
+                memcached_free(memc);
+        }
+        else if (connection)//This should never be needed but just in case.
+        {
+            memcached_free(connection);
+        }
+    };
+
+    bool init(const char * _options)
+    {
+        if (initialized)
+            return initialized;
+
+        options.set(_options);
+        pool = memcached_pool(_options, strlen(_options));
+        assertPool();
+
+        setPoolSettings();
+        connect();
+        if (connection)
+            initialized = checkServersUp();
+        return initialized;
+    }
+
+    void setPoolSettings()
+    {
+        assertPool();
+        const char * msg = "memcached_pool_behavior_set failed - ";
+        assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_KETAMA, 1), msg);//NOTE: alias of MEMCACHED_DISTRIBUTION_CONSISTENT_KETAMA amongst others.
+        memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_USE_UDP, 0);  // Note that this fails on early versions of libmemcached, so ignore result
+        assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_NO_BLOCK, 0), msg);
+        assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT, 1000), msg);//units of ms.
+        assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_SND_TIMEOUT, 1000000), msg);//units of mu-s.
+        assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_RCV_TIMEOUT, 1000000), msg);//units of mu-s.
+        assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_BUFFER_REQUESTS, 0), msg);
+        assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1), "memcached_pool_behavior_set failed - ");
+    }
+
+    void connect()
+    {
+        assertPool();
+        if (connection)
+#if (LIBMEMCACHED_VERSION_HEX<0x53000)
+            memcached_pool_push(pool, connection);
+        memcached_return_t rc;
+        connection = memcached_pool_pop(pool, (struct timespec *)0 , &rc);
+#else
+            memcached_pool_release(pool, connection);
+        memcached_return_t rc;
+        connection = memcached_pool_fetch(pool, (struct timespec *)0 , &rc);
+#endif
+        assertOnError(rc, "memcached_pool_pop failed - ");
+    }
+
+    bool checkServersUp()
+    {
+        memcached_return_t rc;
+        char* args = nullptr;
+        OwnedMalloc<memcached_stat_st> stats;
+        stats.setown(memcached_stat(connection, args, &rc));
+
+        unsigned int numberOfServers = memcached_server_count(connection);
+        if (numberOfServers < 1)
+        {
+            ESPLOG(LogMin,"Memcached: no server connected.");
+            return false;
+        }
+
+        unsigned int numberOfServersDown = 0;
+        for (unsigned i = 0; i < numberOfServers; ++i)
+        {
+            if (stats[i].pid == -1)//perhaps not the best test?
+            {
+                numberOfServersDown++;
+                VStringBuffer msg("Memcached: Failed connecting to entry %u\nwithin the server list: %s", i+1, options.str());
+                ESPLOG(LogMin, "%s", msg.str());
+            }
+        }
+        if (numberOfServersDown == numberOfServers)
+        {
+            ESPLOG(LogMin,"Memcached: Failed connecting to ALL servers. Check memcached on all servers and \"memcached -B ascii\" not used.");
+            return false;
+        }
+
+        //check memcached version homogeneity
+        for (unsigned i = 0; i < numberOfServers-1; ++i)
+        {
+            if (!streq(stats[i].version, stats[i+1].version))
+                DBGLOG("Memcached: Inhomogeneous versions of memcached across servers.");
+        }
+        return true;
+    };
+
+    bool exists(const char* partitionKey, const char* key)
+    {
+#if (LIBMEMCACHED_VERSION_HEX<0x53000)
+        throw makeStringException(0, "memcached_exist not supported in this version of libmemcached");
+#else
+        memcached_return_t rc;
+        size_t partitionKeyLength = strlen(partitionKey);
+        if (partitionKeyLength)
+            rc = memcached_exist_by_key(connection, partitionKey, partitionKeyLength, key, strlen(key));
+        else
+            rc = memcached_exist(connection, key, strlen(key));
+
+        if (rc == MEMCACHED_NOTFOUND)
+            return false;
+        else
+        {
+            assertOnError(rc, "'Exists' request failed - ");
+            return true;
+        }
+#endif
+    };
+
+    const char* get(const char* partitionKey, const char* key, StringBuffer& out)
+    {
+        uint32_t flag = 0;
+        size_t returnLength;
+        memcached_return_t rc;
+
+        OwnedMalloc<char> value;
+        size_t partitionKeyLength = strlen(partitionKey);
+        if (partitionKeyLength)
+            value.setown(memcached_get_by_key(connection, partitionKey, partitionKeyLength, key, strlen(key), &returnLength, &flag, &rc));
+        else
+            value.setown(memcached_get(connection, key, strlen(key), &returnLength, &flag, &rc));
+
+        if (value)
+            out.set(value);
+
+        StringBuffer keyMsg = "'Get' request failed - ";
+        assertOnError(rc, appendIfKeyNotFoundMsg(rc, key, keyMsg));
+        return out.str();
+    };
+
+    void set(const char* partitionKey, const char* key, const char* value, unsigned __int64 expireSec)
+    {
+        size_t partitionKeyLength = strlen(partitionKey);
+        const char * msg = "'Set' request failed - ";
+        if (partitionKeyLength)
+            assertOnError(memcached_set_by_key(connection, partitionKey, partitionKeyLength, key, strlen(key), value, strlen(value), (time_t)expireSec, 0), msg);
+        else
+            assertOnError(memcached_set(connection, key, strlen(key), value, strlen(value), (time_t)expireSec, 0), msg);
+    };
+
+    void deleteKey(const char* partitionKey, const char* key)
+    {
+        memcached_return_t rc;
+        size_t partitionKeyLength = strlen(partitionKey);
+        if (partitionKeyLength)
+            rc = memcached_delete_by_key(connection, partitionKey, partitionKeyLength, key, strlen(key), (time_t)0);
+        else
+            rc = memcached_delete(connection, key, strlen(key), (time_t)0);
+        assertOnError(rc, "'Delete' request failed - ");
+    };
+
+    void clear(unsigned when)
+    {
+        //NOTE: memcached_flush is the actual cache flush/clear/delete and not an io buffer flush.
+        assertOnError(memcached_flush(connection, (time_t)(when)), "'Clear' request failed - ");
+    };
+
+    void assertOnError(memcached_return_t rc, const char * _msg)
+    {
+        if (rc != MEMCACHED_SUCCESS)
+        {
+            VStringBuffer msg("Memcached: %s%s", _msg, memcached_strerror(connection, rc));
+            ESPLOG(LogNormal, "%s", msg.str());
+        }
+    };
+
+    const char * appendIfKeyNotFoundMsg(memcached_return_t rc, const char * key, StringBuffer & target) const
+    {
+        if (rc == MEMCACHED_NOTFOUND)
+            target.append("(key: '").append(key).append("') ");
+        return target.str();
+    };
+
+    void assertPool()
+    {
+        if (!pool)
+        {
+            StringBuffer msg = "Memcached: Failed to instantiate server pool with:";
+            msg.newline().append(options);
+            ESPLOG(LogNormal, "%s", msg.str());
+        }
+    }
+};
+#endif //USE_LIBMEMCACHED
 
 #endif

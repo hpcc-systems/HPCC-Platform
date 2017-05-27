@@ -453,12 +453,12 @@ int CEspHttpServer::processRequest()
             {
                 if(stricmp(method.str(), POST_METHOD)==0)
                     thebinding->handleHttpPost(m_request.get(), m_response.get());
-                else if(!stricmp(method.str(), GET_METHOD)) 
+                else if(!stricmp(method.str(), GET_METHOD))
                 {
                     if (stype==sub_serv_index_redirect)
                     {
                         StringBuffer url;
-                        if (isSubService) 
+                        if (isSubService)
                         {
                             StringBuffer qSvcName;
                             thebinding->qualifySubServiceName(*ctx,serviceName,NULL, qSvcName, NULL);
