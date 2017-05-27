@@ -1823,28 +1823,28 @@ ESPservice [
     version("1.69"), default_client_version("1.69"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
-    ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
-    ESPmethod [min_ver("1.57")] WULightWeightQuery(WULightWeightQueryRequest, WULightWeightQueryResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUInfo(WUInfoRequest, WUInfoResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/wuiddetails.xslt")]     WUInfoDetails(WUInfoRequest, WUInfoResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/wuid.xslt")]     WUGraphTiming(WUGraphTimingRequest, WUGraphTimingResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/graph.xslt")]         WUGraphInfo(WUGraphInfoRequest, WUGraphInfoResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/graph_gvc.xslt")]     WUGVCGraphInfo(WUGVCGraphInfoRequest, WUGVCGraphInfoResponse);
+    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
+    ESPmethod [cache_seconds(60), min_ver("1.57")] WULightWeightQuery(WULightWeightQueryRequest, WULightWeightQueryResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/wuid.xslt")]     WUInfo(WUInfoRequest, WUInfoResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/wuiddetails.xslt")]     WUInfoDetails(WUInfoRequest, WUInfoResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/wuid.xslt")]     WUGraphTiming(WUGraphTimingRequest, WUGraphTimingResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/graph.xslt")]         WUGraphInfo(WUGraphInfoRequest, WUGraphInfoResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/graph_gvc.xslt")]     WUGVCGraphInfo(WUGVCGraphInfoRequest, WUGVCGraphInfoResponse);
     ESPmethod [description("Stub for Ajax GVC Graph."), help(""), resp_xsl_default("/esp/xslt/GvcGraph.xslt")] GVCAjaxGraph(GVCAjaxGraphRequest, GVCAjaxGraphResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/result.xslt")]        WUResult(WUResultRequest, WUResultResponse);
-    ESPmethod WUFullResult(WUFullResultRequest, WUFullResultResponse);
-    ESPmethod WUResultView(WUResultViewRequest, WUResultViewResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/wuid_jobs.xslt")]     WUJobList(WUJobListRequest, WUJobListResponse);
+    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/result.xslt")]        WUResult(WUResultRequest, WUResultResponse);
+    ESPmethod [cache_seconds(30)] WUFullResult(WUFullResultRequest, WUFullResultResponse);
+    ESPmethod [cache_seconds(30)] WUResultView(WUResultViewRequest, WUResultViewResponse);
+    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/wuid_jobs.xslt")]     WUJobList(WUJobListRequest, WUJobListResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/wuaction_results.xslt")] WUAction(WUActionRequest, WUActionResponse); 
-    ESPmethod [resp_xsl_default("/esp/xslt/scheduledwus.xslt")] WUShowScheduled(WUShowScheduledRequest, WUShowScheduledResponse); 
+    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/scheduledwus.xslt")] WUShowScheduled(WUShowScheduledRequest, WUShowScheduledResponse);
 
-    ESPmethod WUResultSummary(WUResultSummaryRequest, WUResultSummaryResponse);
+    ESPmethod [cache_seconds(30)] WUResultSummary(WUResultSummaryRequest, WUResultSummaryResponse);
 
-    ESPmethod WUResultBin(WUResultBinRequest, WUResultBinResponse);
-    ESPmethod WUClusterJobQueueXLS(WUClusterJobQueueXLSRequest, WUClusterJobQueueXLSResponse);
+    ESPmethod [cache_seconds(30)] WUResultBin(WUResultBinRequest, WUResultBinResponse);
+    ESPmethod [cache_seconds(60)] WUClusterJobQueueXLS(WUClusterJobQueueXLSRequest, WUClusterJobQueueXLSResponse);
     ESPmethod WUClusterJobQueueLOG(WUClusterJobQueueLOGRequest, WUClusterJobQueueLOGResponse);
-    ESPmethod WUClusterJobXLS(WUClusterJobXLSRequest, WUClusterJobXLSResponse);
-    ESPmethod WUClusterJobSummaryXLS(WUClusterJobSummaryXLSRequest, WUClusterJobSummaryXLSResponse);
+    ESPmethod [cache_seconds(60)] WUClusterJobXLS(WUClusterJobXLSRequest, WUClusterJobXLSResponse);
+    ESPmethod [cache_seconds(60)] WUClusterJobSummaryXLS(WUClusterJobSummaryXLSRequest, WUClusterJobSummaryXLSResponse);
     ESPmethod [auth_feature("OwnWorkunitsAccess:WRITE")] WUCreate(WUCreateRequest, WUCreateResponse);
     ESPmethod [auth_feature("OwnWorkunitsAccess:WRITE")] WUCreateAndUpdate(WUUpdateRequest, WUUpdateResponse);
     ESPmethod WUUpdate(WUUpdateRequest, WUUpdateResponse);
@@ -1866,39 +1866,39 @@ ESPservice [
     ESPmethod WUCompileECL(WUCompileECLRequest, WUCompileECLResponse);
     
     //ESPmethod WUAction(WUActionRequest, WUActionResponse); 
-    ESPmethod WUFile(WULogFileRequest, WULogFileResponse);
+    ESPmethod [cache_seconds(60)]WUFile(WULogFileRequest, WULogFileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] WUProcessGraph(WUProcessGraphRequest, WUProcessGraphResponse); 
-    ESPmethod [min_ver("1.57")] WUGetGraphNameAndTypes(WUGetGraphNameAndTypesRequest, WUGetGraphNameAndTypesResponse);
-    ESPmethod WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
-    ESPmethod WUQueryGetGraph(WUQueryGetGraphRequest, WUQueryGetGraphResponse);
-    ESPmethod WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);
+    ESPmethod [cache_seconds(30), min_ver("1.57")] WUGetGraphNameAndTypes(WUGetGraphNameAndTypesRequest, WUGetGraphNameAndTypesResponse);
+    ESPmethod [cache_seconds(30)] WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
+    ESPmethod [cache_seconds(30)] WUQueryGetGraph(WUQueryGetGraphRequest, WUQueryGetGraphResponse);
+    ESPmethod [cache_seconds(30)] WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);
 
-    ESPmethod WUListLocalFileRequired(WUListLocalFileRequiredRequest, WUListLocalFileRequiredResponse);
+    ESPmethod [cache_seconds(60)] WUListLocalFileRequired(WUListLocalFileRequiredRequest, WUListLocalFileRequiredResponse);
     ESPmethod WUAddLocalFileToWorkunit(WUAddLocalFileToWorkunitRequest, WUAddLocalFileToWorkunitResponse);
     ESPmethod WUCDebug(WUDebugRequest, WUDebugResponse);
     
     ESPmethod [resp_xsl_default("/esp/xslt/WUPublishWorkunit.xslt")] WUPublishWorkunit(WUPublishWorkunitRequest, WUPublishWorkunitResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/WUQueryDetails.xslt")] WUQueryDetails(WUQueryDetailsRequest, WUQueryDetailsResponse);
-    ESPmethod WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
+    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
+    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
+    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/WUQueryDetails.xslt")] WUQueryDetails(WUQueryDetailsRequest, WUQueryDetailsResponse);
+    ESPmethod [cache_seconds(60)] WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
     ESPmethod WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
     ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
     ESPmethod WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
     ESPmethod WUCopyQuerySet(WUCopyQuerySetRequest, WUCopyQuerySetResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
-    ESPmethod WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
+    ESPmethod [cache_seconds(60)] WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
     ESPmethod [min_ver("1.59")] WUUpdateQueryEntry(WUUpdateQueryEntryRequest, WUUpdateQueryEntryResponse);
-    ESPmethod WUQueryFiles(WUQueryFilesRequest, WUQueryFilesResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/QueriesUsingFile.xslt")] WUListQueriesUsingFile(WUListQueriesUsingFileRequest, WUListQueriesUsingFileResponse);
+    ESPmethod [cache_seconds(60)]WUQueryFiles(WUQueryFilesRequest, WUQueryFilesResponse);
+    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/QueriesUsingFile.xslt")] WUListQueriesUsingFile(WUListQueriesUsingFileRequest, WUListQueriesUsingFileResponse);
     ESPmethod WUCreateZAPInfo(WUCreateZAPInfoRequest, WUCreateZAPInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
     ESPmethod WUCheckFeatures(WUCheckFeaturesRequest, WUCheckFeaturesResponse);
-    ESPmethod WUGetStats(WUGetStatsRequest, WUGetStatsResponse);
-    ESPmethod [min_ver("1.57")] WUListArchiveFiles(WUListArchiveFilesRequest, WUListArchiveFilesResponse);
-    ESPmethod [min_ver("1.57")] WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
-    ESPmethod [min_ver("1.61")] WUGetNumFileToCopy(WUGetNumFileToCopyRequest, WUGetNumFileToCopyResponse);
+    ESPmethod [cache_seconds(30)] WUGetStats(WUGetStatsRequest, WUGetStatsResponse);
+    ESPmethod [cache_seconds(60), min_ver("1.57")] WUListArchiveFiles(WUListArchiveFilesRequest, WUListArchiveFilesResponse);
+    ESPmethod [cache_seconds(60), min_ver("1.57")] WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
+    ESPmethod [cache_seconds(60), min_ver("1.61")] WUGetNumFileToCopy(WUGetNumFileToCopyRequest, WUGetNumFileToCopyResponse);
 };
 
 
