@@ -581,13 +581,13 @@ depending on where they wind up.-->
         file mappings can be organized into a collection of files defining
         some subsets of queries or to organize by various groupings such as
         functions, files, developers, etc. These subsets are called <emphasis
-        role="bold">parts</emphasis>. </para>
+        role="bold">parts</emphasis>. For more information about Package maps
+        see the <emphasis>Roxie Reference</emphasis> guide. </para>
 
-        <para>For more information about Package maps see the <emphasis>Roxie
-        Reference</emphasis> guide. From the Queries icon link, you can access
-        the package maps page. Press the <emphasis role="bold">Package
-        Maps</emphasis> button on the navigation sub-menu bar, to access the
-        Package Maps on your cluster. <figure>
+        <para>From the Queries icon link, you can access the package maps
+        page. Press the <emphasis role="bold">Package Maps</emphasis> button
+        on the navigation sub-menu bar, to access the Package Maps on your
+        cluster. <figure>
             <title>Package Maps</title>
 
             <mediaobject>
