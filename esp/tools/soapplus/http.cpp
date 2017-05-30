@@ -430,7 +430,7 @@ void Http::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserNa
 
 HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname, 
                        const char* outdir, const char* outfilename, bool writeToFiles,
-                       bool doValidation, const char* xsdpath, bool isEspLogFile)
+                       int doValidation, const char* xsdpath, bool isEspLogFile)
 {
     m_globals = globals;
     if(url && *url)
@@ -1101,11 +1101,64 @@ public:
         return 0;
     }
 
+    ssize_t readn(int fd, void *vptr, size_t n)
+    {
+        size_t  nleft;
+        ssize_t nread;
+        char   *ptr;
+
+        ptr = (char *)vptr;
+        nleft = n;
+        while (nleft > 0)
+        {
+            if ( (nread = read(fd, ptr, nleft)) < 0)
+            {
+                if (errno == EINTR)
+                    nread = 0;      /* and call read() again */
+                else
+                    return (-1);
+            }
+            else if (nread == 0)
+                break;              /* EOF */
+
+            nleft -= nread;
+            ptr += nread;
+        }
+        return (n - nleft);         /* return >= 0 */
+    }
+
+    ssize_t writen(int fd, const void *vptr, size_t n)
+    {
+        size_t nleft;
+        ssize_t nwritten;
+        const char *ptr;
+
+        ptr = (char *)vptr;
+        nleft = n;
+        while (nleft > 0)
+        {
+            if ( (nwritten = write(fd, ptr, nleft)) <= 0)
+            {
+                if (nwritten < 0 && errno == EINTR)
+                    nwritten = 0;   /* and call write() again */
+                else
+                    return (-1);    /* error */
+            }
+
+            nleft -= nwritten;
+            ptr += nwritten;
+        }
+        return (n);
+    }
+
     int send(StringBuffer& data)
     {
         int sent = 0;
         if(!m_isSSL)
-            sent = ::send(m_sockfd, data.str(), data.length(), 0);
+        {
+            // sent = ::send(m_sockfd, data.str(), data.length(), 0);
+            sent = writen(m_sockfd, data.str(), data.length());
+        }
         else
             sent = m_securesocket->write(data.str(), data.length());
         
@@ -1116,7 +1169,10 @@ public:
     {
         unsigned int len = 0;
         if(!m_isSSL)
-            len = ::recv(m_sockfd, buf, buflen, 0);
+        {
+            // len = ::recv(m_sockfd, buf, buflen, 0);
+            len = readn(m_sockfd, buf, buflen);
+        }
         else
             m_securesocket->read(buf, 0, buflen, len, WAIT_FOREVER);
 
@@ -1131,7 +1187,10 @@ public:
             m_sockfd = -1;
         }
     }
+
 };
+
+#define MAX_RLEN 20480
 
 int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat)
 {
@@ -1159,19 +1218,33 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat)
     if(sent >= 0)
     {
         int len = 1;
-        char recvbuf[2048];
+        int idx = 0;
+        char recvbuf[MAX_RLEN+1];
+        recvbuf[idx] = 0;
         while(1)
         {
-            len = sock->receive(recvbuf, 2047);
+            len = sock->receive(&recvbuf[idx], MAX_RLEN);
             if(len > 0)
             {
+                idx += len;
+                if (idx > MAX_RLEN)
+                {
+                    recvbuf[MAX_RLEN] = 0;
+                    fprintf(m_logfile, "Error, recv buffer overflow\n");
+                    break;
+                }
                 total_len += len;
-                recvbuf[len] = 0;
+                recvbuf[idx] = 0;
                 if(http_tracelevel >= 10)
                     fprintf(m_logfile, "%s", recvbuf);
             }
             else
                 break;
+        }
+        if(m_doValidation)
+        {
+            StringBuffer xml(recvbuf);
+            validate(xml);
         }
     }
     sock->close();
@@ -1340,6 +1413,31 @@ int HttpClient::validate(StringBuffer& xml)
             ensptr++;
         
         targetns.append(ensptr - nsptr,nsptr);
+    }
+
+    char *newxml = strndup(bptr, len);
+    newxml[len] = '\0';
+
+    if(m_doValidation > 1)
+    {
+        fflush(m_logfile);
+        int srtn = 0;
+        try
+        {
+            Owned<IPropertyTree> testTree = createPTreeFromXMLString(newxml, ipt_caseInsensitive);
+            fprintf(m_logfile, "Successfully parsed XML\n");
+        }
+        catch(IException *e)
+        {
+            StringBuffer emsg;
+            fprintf(m_logfile, "Error parsng XML %s\n", e->errorMessage(emsg).str());
+            fprintf(m_logfile, "result xml:\n%s\n\n", newxml);
+            e->Release();
+            srtn = -1;
+        }
+        fflush(m_logfile);
+        free(newxml);
+        return srtn;
     }
 
     Owned<IXmlDomParser> p = getXmlDomParser();

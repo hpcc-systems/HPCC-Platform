@@ -86,7 +86,7 @@ enum SoapPlusAction
     SPA_SOCKS = 5
 };
 
-bool doValidation = false;
+int doValidation = 0;
 const char* xsdpath = NULL;
 
 void doTestSchemaParser(IProperties* globals, const char* url, const char* in_fname)
@@ -513,7 +513,12 @@ int main(int argc, char** argv)
         else if (stricmp(argv[i], "-v")==0)
         {
             i++;
-            doValidation = true;
+            doValidation = 1;
+        }
+        else if (stricmp(argv[i], "-v2")==0)
+        {
+            i++;
+            doValidation = 2;
         }
         else if (stricmp(argv[i], "-xsd") == 0)
         {

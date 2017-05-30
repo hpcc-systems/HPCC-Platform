@@ -160,7 +160,7 @@ private:
 
     bool         m_writeToFiles;
 
-    bool         m_doValidation;
+    int          m_doValidation;
     bool         m_isEspLogFile;
     StringBuffer m_xsdpath;
     StringBuffer m_xsd;
@@ -183,7 +183,7 @@ public:
 
     HttpClient( IProperties* globals, const char* url, const char* inname = NULL, 
                 const char* outdir = NULL, const char* outfilename = NULL, bool writeToFiles = false, 
-                bool doValidation = false, const char* xsdpath = NULL,
+                int doValidation = 0, const char* xsdpath = NULL,
                 bool isEspLogFile=false);
     void start();
 
