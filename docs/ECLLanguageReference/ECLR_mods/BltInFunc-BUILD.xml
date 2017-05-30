@@ -134,7 +134,7 @@
   <para>The first four forms of the <emphasis role="bold">BUILD
   </emphasis>action create index files. Indexes are automatically compressed,
   minimizing overhead associated with using indexed record access. The keyword
-  BUILDINDEX may be used in place of BUILD in these forms. </para>
+  BUILDINDEX may be used in place of BUILD in these forms.</para>
 
   <para>The fifth form creates an external query library<indexterm>
       <primary>query library</primary>
@@ -204,7 +204,13 @@
     ] ] <emphasis role="bold">[, MAXLENGTH<indexterm>
         <primary>MAXLENGTH</primary>
       </indexterm>[(</emphasis><emphasis>value</emphasis><emphasis
-    role="bold">)] ] ]</emphasis></emphasis></emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis></para>
+    role="bold">)] ] ]</emphasis></emphasis></emphasis><emphasis
+    role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+    </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+    (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ]
+    [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">)
+    ][, SET (</emphasis> <emphasis>option, value </emphasis><emphasis
+    role="bold">) ]</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
@@ -480,51 +486,100 @@
               structure. Variable-length records that do not specify MAXLENGTH
               may be slightly inefficient</entry>
             </row>
-          <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the output record order is not significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <row>
+              <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Specifies the significance of the output record order.</entry>
-          </row>
-          <row>
-            <entry><emphasis>bool</emphasis></entry>
+              <entry>Optional. Specifies the output record order is not
+              significant.</entry>
+            </row>
 
-            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <row>
+              <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+              <entry>Specifies the significance of the output record
+              order.</entry>
+            </row>
 
-            <entry>Optional. Specifies the input record order is not significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <row>
+              <entry><emphasis>bool</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity in parallel.</entry>
-          </row>
-          <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+              <entry>When False, specifies the output record order is not
+              significant. When True, specifies the default output record
+              order.</entry>
+            </row>
 
-            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <row>
+              <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Override the algorithm used for this activity.</entry>
-          </row>
-          <row>
-            <entry><emphasis>name</emphasis></entry>
+              <entry>Optional. Specifies the input record order is
+              significant.</entry>
+            </row>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
-          </row>
+            <row>
+              <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+              <entry>Optional. Specifies the input record order is not
+              significant.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+              <entry>Optional. Try to evaluate this activity in
+              parallel.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>numthreads</emphasis></entry>
+
+              <entry>Optional. Try to evaluate this activity using
+              <emphasis>numthreads</emphasis> threads.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+              <entry>Optional. Override the algorithm used for this
+              activity.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>name</emphasis></entry>
+
+              <entry>The algorithm to use for this activity. Must be from the
+              list of supported algorithms for the SORT function's STABLE and
+              UNSTABLE options.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SET</emphasis></entry>
+
+              <entry>Optional. SET is used to set a value to a named metadata
+              option. This allows you to set user metadata whose use and
+              purpose is up to the developer. Currently
+              <emphasis>_nodeSize</emphasis> is the only system-defined
+              metadata, though other names starting with an underscore (_)
+              should be considered reserved for system use. You may want to
+              use SET(‘_nodeSize’, ‘32768’) if your hardware and usage pattern
+              work better with larger page sizes. The default (8192) may not
+              be optimal for all scenarios on modern hardware. We recommend
+              using a power of 2 and not smaller than 8k.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>option</emphasis></entry>
+
+              <entry>A case sensitive string constant containing the name of
+              the option to set.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>value</emphasis></entry>
+
+              <entry>The value to set the option to. This may be any type of
+              value, dependent on what the option expects to be.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
