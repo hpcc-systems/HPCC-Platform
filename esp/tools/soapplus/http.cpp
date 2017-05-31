@@ -546,7 +546,7 @@ void HttpClient::start()
             di.setown(infile->directoryFiles());
     }
 
-    if(m_doValidation)
+    if(m_doValidation == 1)
     {
         if(m_xsdpath.length() == 0)
         {
@@ -753,7 +753,7 @@ void HttpClient::start()
                 StringBuffer inbuf;
                 inbuf.loadFile(infile->queryFilename(), true);
                 int ret = validate(inbuf);
-                if(http_tracelevel > 0)
+                if(http_tracelevel > 0 && m_doValidation == 1)
                 {
                     if(ret == 0)
                     {
@@ -1111,7 +1111,7 @@ public:
         nleft = n;
         while (nleft > 0)
         {
-            if ( (nread = read(fd, ptr, nleft)) < 0)
+            if ( (nread = ::recv(fd, ptr, nleft, 0)) < 0)
             {
                 if (errno == EINTR)
                     nread = 0;      /* and call read() again */
@@ -1137,7 +1137,7 @@ public:
         nleft = n;
         while (nleft > 0)
         {
-            if ( (nwritten = write(fd, ptr, nleft)) <= 0)
+            if ( (nwritten = ::send(fd, ptr, nleft, 0)) <= 0)
             {
                 if (nwritten < 0 && errno == EINTR)
                     nwritten = 0;   /* and call write() again */
@@ -1226,7 +1226,7 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat)
                 total_len += len;
                 recvbuf[len] = 0;
                 if (m_doValidation)
-                    xml.append(recvbuf);
+                    xml.append(len, recvbuf);
                 if(http_tracelevel >= 10)
                     fprintf(m_logfile, "%s", recvbuf);
             }
