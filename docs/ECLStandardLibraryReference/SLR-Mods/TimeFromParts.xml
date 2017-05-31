@@ -8,6 +8,8 @@
       <primary>STD.Date.TimeFromParts</primary>
     </indexterm><indexterm>
       <primary>Date.TimeFromParts</primary>
+    </indexterm><indexterm>
+      <primary>TimeFromParts</primary>
     </indexterm>(</emphasis> <emphasis>hour, minute, second</emphasis>
   <emphasis role="bold">)</emphasis></para>
 

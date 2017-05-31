@@ -8,12 +8,16 @@
       <primary>STD.Date.Time_rec</primary>
     </indexterm><indexterm>
       <primary>Date.Time_rec</primary>
+    </indexterm><indexterm>
+      <primary>Time_rec</primary>
     </indexterm></emphasis></para>
 
   <para><emphasis role="bold">STD.Date.Time_t<indexterm>
       <primary>STD.Date.Time_t</primary>
     </indexterm><indexterm>
       <primary>Date.Time_t</primary>
+    </indexterm><indexterm>
+      <primary>Time_t</primary>
     </indexterm></emphasis></para>
 
   <para><emphasis role="bold">STD.DateTime_rec <indexterm>
@@ -54,7 +58,7 @@
 
           <entry>An INTEGER8 holding holding a number of seconds. Can be used
           to represent either a duration or the number of seconds since epoch
-          (Jan 1, 1970). </entry>
+          (Jan 1, 1970).</entry>
         </row>
 
         <row>

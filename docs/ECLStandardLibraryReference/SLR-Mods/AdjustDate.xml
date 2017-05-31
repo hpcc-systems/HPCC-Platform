@@ -8,6 +8,8 @@
       <primary>STD.Date.AdjustDate</primary>
     </indexterm><indexterm>
       <primary>Date.AdjustDate</primary>
+    </indexterm><indexterm>
+      <primary>AdjustDate</primary>
     </indexterm>(</emphasis> <emphasis>date</emphasis> ,
   [<emphasis>year_delta</emphasis>],[<emphasis>month_delta</emphasis>]
   ,[<emphasis>day_delta</emphasis>] <emphasis role="bold">)</emphasis></para>
@@ -58,7 +60,7 @@
 
   <para>The <emphasis role="bold">AdjustDate</emphasis> function adjusts a
   date by incrementing or decrementing year, month, and/or day values. The
-  date must be in the Gregorian calendar after the year 1600. </para>
+  date must be in the Gregorian calendar after the year 1600.</para>
 
   <para>If the new calculated date is invalid then it is normalized according
   to mktime() rules. For example, 20140130 plus 1 month would be

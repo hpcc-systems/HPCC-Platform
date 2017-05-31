@@ -8,6 +8,8 @@
       <primary>STD.Date.IsValidGregorianDate</primary>
     </indexterm><indexterm>
       <primary>Date.IsValidGregorianDate</primary>
+    </indexterm><indexterm>
+      <primary>IsValidGregorianDate</primary>
     </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
   role="bold">)</emphasis></para>
 

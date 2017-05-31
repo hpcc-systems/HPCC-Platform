@@ -8,6 +8,8 @@
       <primary>STD.Date.IsDateLeapYear</primary>
     </indexterm><indexterm>
       <primary>Date.IsDateLeapYear</primary>
+    </indexterm><indexterm>
+      <primary>IsDateLeapYear</primary>
     </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
