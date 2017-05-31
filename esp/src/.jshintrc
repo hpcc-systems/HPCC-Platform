@@ -1,11 +1,18 @@
 {
-    "predef": [ "debugConfig", "define", "require", "dojo", "dijit" ],
-
+    "predef": [
+        "debugConfig",
+        "define",
+        "require",
+        "dojo",
+        "dijit",
+        "ActiveXObject",
+        "CodeMirror",
+        "d3",
+        "crossfilter"
+    ],
     // JSHint Default Configuration File (as on JSHint website)
     // See http://jshint.com/docs/ for more details
-
     "maxerr": 50, // {int} Maximum error before stopping
-
     // Enforcing
     "bitwise": false, // true: Prohibit bitwise operators (&, |, ^, etc.)
     "camelcase": false, // true: Identifiers must be in camelCase
@@ -26,7 +33,7 @@
     //   true     : ensure whatever is used is consistent
     //   "single" : require single quotes
     //   "double" : require double quotes
-    "undef": false, // true: Require all non-global variables to be declared (prevents global leaks)
+    "undef": true, // true: Require all non-global variables to be declared (prevents global leaks)
     "unused": false, // Unused variables:
     //   true     : all variables, last function parameter
     //   "vars"   : all variables only
@@ -37,8 +44,7 @@
     "maxstatements": false, // {int} Max number statements per function
     "maxcomplexity": false, // {int} Max cyclomatic complexity per function
     "maxlen": false, // {int} Max number of characters per line
-    "varstmt"       : false,    // true: Disallow any var statements. Only `let` and `const` are allowed.
-
+    "varstmt": false, // true: Disallow any var statements. Only `let` and `const` are allowed.
     // Relaxing
     "asi": true, // true: Tolerate Automatic Semicolon Insertion (no semicolons)
     "boss": true, // true: Tolerate assignments where comparisons would be expected
@@ -51,7 +57,7 @@
     "evil": true, // true: Tolerate use of `eval` and `new Function()`
     "expr": true, // true: Tolerate `ExpressionStatement` as Programs
     "funcscope": false, // true: Tolerate defining variables inside control statements
-    "globalstrict"  : true,     // true: Allow global "use strict" (also enables 'strict')
+    "globalstrict": true, // true: Allow global "use strict" (also enables 'strict')
     "iterator": false, // true: Tolerate using the `__iterator__` property
     "lastsemic": false, // true: Tolerate omitting a semicolon for the last statement of a 1-line block
     "laxbreak": true, // true: Tolerate possibly unsafe line breakings
@@ -66,7 +72,6 @@
     "sub": true, // true: Tolerate using `[]` notation when it can still be expressed in dot notation
     "supernew": true, // true: Tolerate `new function () { ... };` and `new Object;`
     "validthis": true, // true: Tolerate using this in a non-constructor function
-
     // Environments
     "browser": true, // Web Browser (window, document, etc)
     "browserify": false, // Browserify (node.js code in the browser)
@@ -88,12 +93,10 @@
     "worker": false, // Web Workers
     "wsh": false, // Windows Scripting Host
     "yui": false, // Yahoo User Interface
-
     // Custom Globals
     "globals": {
         "dojoConfig": true
     }, // additional predefined global variables
-
     //  HPCC  ---
     "nomen": false
 }

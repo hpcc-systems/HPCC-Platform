@@ -758,7 +758,7 @@ define([
                             promptMessage: this.i18n.RequiredForXML,
                             validator: function(value, constraints) {
                                 var valid = true;
-                                if ((value != null ) && (value != "")) {
+                                if (value !== null && value !== undefined && value !== "") {
                                     valid = true;
                                     context.sprayXMLButton.set("disabled", false);
                                 } else {

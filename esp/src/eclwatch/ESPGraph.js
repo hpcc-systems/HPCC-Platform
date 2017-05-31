@@ -413,7 +413,7 @@ define([
                 edge.setSource(inVertices[0]);
             }, this);
             arrayUtil.forEach(this.subgraphs, function (subgraph) {
-                subgraph.removeVertex(item);
+                subgraph.removeVertex(subgraph);
             }, this);
             this.__hpcc_graph.removeItem(this);
         },

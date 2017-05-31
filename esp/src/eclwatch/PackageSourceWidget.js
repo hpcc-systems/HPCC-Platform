@@ -122,7 +122,7 @@ define([
             addArrayToText: function (arrayTitle, arrayItems, text) {
                 if ((arrayItems.Item !== undefined) && (arrayItems.Item.length > 0)) {
                     text += arrayTitle + ":\n";
-                    for (i=0;i<arrayItems.Item.length;i++)
+                    for (var i=0;i<arrayItems.Item.length;i++)
                         text += "  " + arrayItems.Item[i] + "\n";
                     text += "\n";
                 }

@@ -182,7 +182,7 @@ define([
                 context.refresh();
                 if (action === "ResetQueryStats")
                     context.showResetQueryStatsResponse(responses);
-                return response;
+                return responses;
             });
         },
         setSuspended: function (suspended) {

@@ -566,8 +566,8 @@ define([
         },
 
         getGridQuery: function(){
-            optionsForm = registry.byId(this.id + "OptionsForm");
-            optionsValues = optionsForm.getValues();
+            var optionsForm = registry.byId(this.id + "OptionsForm");
+            var optionsValues = optionsForm.getValues();
             return lang.mixin(this.filter.toObject(), optionsValues);
         },
 

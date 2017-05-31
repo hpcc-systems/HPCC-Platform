@@ -907,7 +907,7 @@ define([
         },
 
         Create: function (params) {
-            retVal = new Workunit(params);
+            var retVal = new Workunit(params);
             retVal.create();
             return retVal;
         },

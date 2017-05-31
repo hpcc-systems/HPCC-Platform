@@ -36,7 +36,7 @@ define([
     "dijit/form/Select",
     "dijit/form/Button"
 ], function (declare, lang, i18n, nlsHPCC, dom, query, topic, registry,
-    __TabContainerWidget, DelayLoadWidget, EclSourceWidget, WsPackageMaps, template) {
+    _TabContainerWidget, DelayLoadWidget, EclSourceWidget, WsPackageMaps, template) {
     return declare("PackageMapValidateContentWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapValidateContentWidget",
@@ -240,7 +240,7 @@ define([
         addArrayToText: function (arrayTitle, arrayItems, text) {
             if ((arrayItems.Item !== undefined) && (arrayItems.Item.length > 0)) {
                 text += arrayTitle + ":\n";
-                for (i=0;i<arrayItems.Item.length;i++)
+                for (var i=0;i<arrayItems.Item.length;i++)
                     text += "  " + arrayItems.Item[i] + "\n";
                 text += "\n";
             }

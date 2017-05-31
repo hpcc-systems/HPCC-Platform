@@ -752,7 +752,7 @@ define([
                 require(
                   ["hpcc/viz"],
                   function (viz) {
-                      callback(Viz(context.dot, "svg"));
+                      callback(viz(context.dot, "svg"));
                   }
                 );
             },
@@ -947,7 +947,7 @@ define([
                 var deferred = new Deferred();
                 var context = this;
                 var doCheck = function () {
-                    domNode = dom.byId(context.pluginID);
+                    var domNode = dom.byId(context.pluginID);
                     if (domNode && domNode.version) {
                         return {
                             version: domNode.version,

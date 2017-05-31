@@ -352,7 +352,7 @@ define([
     });
 
     var globalQueueStore = null;
-    GetGlobalQueueStore = function () {
+    var GetGlobalQueueStore = function () {
         if (!globalQueueStore) {
             globalQueueStore = new Store();
         }

@@ -320,7 +320,7 @@ define([
             var selection = this.usersGrid.getSelected();
             var list = this.arrayToList(selection, "username");
             if (confirm(this.i18n.DeleteSelectedUsers + "\n" + list)) {
-                request = {
+                var request = {
                     ActionType: "delete"
                 };
                 arrayUtil.forEach(selection, function (item, idx) {
