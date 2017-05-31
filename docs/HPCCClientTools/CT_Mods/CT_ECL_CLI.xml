@@ -1839,8 +1839,6 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
-
               <tbody>
                 <row>
                   <entry>ecl packagemap add</entry>
@@ -1973,8 +1971,6 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
-              <colspec colwidth="384.85pt" />
-
               <tbody>
                 <row>
                   <entry>ecl packagemap delete</entry>
@@ -2053,8 +2049,6 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
-
-              <colspec colwidth="384.85pt" />
 
               <tbody>
                 <row>
@@ -2144,8 +2138,6 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
-              <colspec colwidth="384.85pt" />
-
               <tbody>
                 <row>
                   <entry>ecl packagemap deactivate</entry>
@@ -2233,8 +2225,6 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
-
-              <colspec colwidth="384.85pt" />
 
               <tbody>
                 <row>
@@ -2325,8 +2315,6 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
-
-              <colspec colwidth="384.85pt" />
 
               <tbody>
                 <row>
@@ -2419,8 +2407,6 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
-
-              <colspec colwidth="384.85pt" />
 
               <tbody>
                 <row>
@@ -2592,8 +2578,6 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
-              <colspec colwidth="384.85pt" />
-
               <tbody>
                 <row>
                   <entry>ecl packagemap get-part</entry>
@@ -2707,8 +2691,6 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
             <colspec align="left" colwidth="175.55pt" />
-
-            <colspec colwidth="384.85pt" />
 
             <tbody>
               <row>
@@ -2845,8 +2827,6 @@ ecl packagemap validate roxie --active</programlisting>
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
-              <colspec colwidth="384.85pt" />
-
               <tbody>
                 <row>
                   <entry>ecl packagemap validate</entry>
@@ -2965,8 +2945,6 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
-
-              <colspec colwidth="384.85pt" />
 
               <tbody>
                 <row>
@@ -3135,8 +3113,6 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
-
-              <colspec colwidth="384.85pt" />
 
               <tbody>
                 <row>
