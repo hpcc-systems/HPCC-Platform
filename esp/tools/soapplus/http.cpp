@@ -1190,8 +1190,6 @@ public:
 
 };
 
-#define MAX_RLEN 20480
-
 int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat)
 {
     if(request.length() == 0)
@@ -1218,34 +1216,25 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat)
     if(sent >= 0)
     {
         int len = 1;
-        int idx = 0;
-        char recvbuf[MAX_RLEN+1];
-        recvbuf[idx] = 0;
+        char recvbuf[2048];
+        StringBuffer xml;
         while(1)
         {
-            len = sock->receive(&recvbuf[idx], MAX_RLEN);
+            len = sock->receive(recvbuf, 2047);
             if(len > 0)
             {
-                idx += len;
-                if (idx > MAX_RLEN)
-                {
-                    recvbuf[MAX_RLEN] = 0;
-                    fprintf(m_logfile, "Error, recv buffer overflow\n");
-                    break;
-                }
                 total_len += len;
-                recvbuf[idx] = 0;
+                recvbuf[len] = 0;
+                if (m_doValidation)
+                    xml.append(recvbuf);
                 if(http_tracelevel >= 10)
                     fprintf(m_logfile, "%s", recvbuf);
             }
             else
                 break;
         }
-        if(m_doValidation)
-        {
-            StringBuffer xml(recvbuf);
+        if (m_doValidation && total_len > 0)
             validate(xml);
-        }
     }
     sock->close();
     unsigned end = msTick();
@@ -1415,28 +1404,28 @@ int HttpClient::validate(StringBuffer& xml)
         targetns.append(ensptr - nsptr,nsptr);
     }
 
-    char *newxml = strndup(bptr, len);
-    newxml[len] = '\0';
-
     if(m_doValidation > 1)
     {
         fflush(m_logfile);
         int srtn = 0;
         try
         {
-            Owned<IPropertyTree> testTree = createPTreeFromXMLString(newxml, ipt_caseInsensitive);
+            Owned<IPropertyTree> testTree = createPTreeFromXMLString(len, bptr, ipt_caseInsensitive);
             fprintf(m_logfile, "Successfully parsed XML\n");
         }
         catch(IException *e)
         {
             StringBuffer emsg;
             fprintf(m_logfile, "Error parsng XML %s\n", e->errorMessage(emsg).str());
+            // is it ok to say bptr[len] = '\0' ?
+            char *newxml = strndup(bptr, len);
+            newxml[len] = '\0';
             fprintf(m_logfile, "result xml:\n%s\n\n", newxml);
+            free(newxml);
             e->Release();
             srtn = -1;
         }
         fflush(m_logfile);
-        free(newxml);
         return srtn;
     }
 
@@ -1650,7 +1639,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
     if(m_doValidation)
     {
         int ret = validate(*bufptr);
-        if(http_tracelevel > 0)
+        if(http_tracelevel > 0 && m_doValidation == 1)
         {
             if(ret == 0)
             {
@@ -1658,7 +1647,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
             }
             else
             {
-                fprintf(m_logfile, "Error: Validation agains the xsd failed.\n");
+                fprintf(m_logfile, "Error: Validation against the xsd failed.\n");
             }
         }
     }
