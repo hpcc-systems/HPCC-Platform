@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter>
-  <title>Packages and Packagemaps</title>
+  <title>Packages and Package Maps</title>
 
   <para>A Roxie query has one or more data files associated with it. At times,
   you may want to update data without changing the query.</para>
@@ -20,7 +20,7 @@
   development without the risk of a query being deployed to production before
   it is ready while still allowing data to be updated.</para>
 
-  <para>A packagemap provides a reference to the contents of a superkey used
+  <para>A package map provides a reference to the contents of a superkey used
   in queries that overrides the original definition . This affords greater
   flexibility and control over the data used by a query or a collection of
   queries.</para>
@@ -42,7 +42,7 @@
   <para>- Revise the query to use a different key file, compile it, and
   republish it.</para>
 
-  <para>A packagemap file can contain one or more packages. The file is used
+  <para>A package map file can contain one or more packages. The file is used
   to transfer the information to the Dali server. Once it is sent, the file is
   no longer used. It is a good idea to keep a copy as a backup, but it serves
   no other purpose.</para>
@@ -75,7 +75,7 @@
       </listitem>
     </itemizedlist>
 
-    <para>If we wanted to add a third subfile, we can use a packagemap to
+    <para>If we wanted to add a third subfile, we can use a package map to
     redefine the MyDataKey superkey definition so it contains three
     files:</para>
 
@@ -156,19 +156,19 @@
 
     <itemizedlist mark="bullet">
       <listitem>
-        <para>Create a packagemap containing a package redefining the contents
-        of the superkey</para>
+        <para>Create a package map containing a package redefining the
+        contents of the superkey</para>
       </listitem>
 
       <listitem>
-        <para>Add the packagemap(s) by associating the package information
+        <para>Add the package map(s) by associating the package information
         with a QuerySet.</para>
 
         <!--You should always validate or run the reporting step on the packages (NYI)-->
       </listitem>
 
       <listitem>
-        <para>Activate the packagemap(s) with the pertinent package
+        <para>Activate the package map(s) with the pertinent package
         information targeting a QuerySet.</para>
 
         <para>Use the command:</para>
@@ -210,7 +210,7 @@
 
     <itemizedlist mark="bullet">
       <listitem>
-        <para>Add the packagemap redefining the contents of the
+        <para>Add the package map redefining the contents of the
         superkey.</para>
 
         <para>Use the command:</para>
@@ -283,7 +283,7 @@
     following; however, this order is not required.</para>
 
     <para>You can specify daliIP(s) and/or sourcecluster(s) to use to resolve
-    files to be specified in the packagemap. This can be specified at
+    files to be specified in the package map. This can be specified at
     different levels to affect files within a given scope.</para>
 
     <para>For example:</para>
@@ -303,9 +303,9 @@
   </sect1>
 
   <sect1>
-    <title>Multi-Part Packagemaps</title>
+    <title>Multi-Part package maps</title>
 
-    <para>In version 6.0.0 or later, you can organize your packagemap file
+    <para>In version 6.0.0 or later, you can organize your package map file
     mappings into a collection of files that define the files for some subset
     of queries. These subsets are called parts and can be used to organize by
     various groupings such as function, files, or developer, etc.</para>
@@ -337,7 +337,7 @@
 
     <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg –activate</programlisting></para>
 
-    <para>To update the mappings, you would edit the packagemap file (or a
+    <para>To update the mappings, you would edit the package map file (or a
     copy) add and activate the new one, and then delete the old one.</para>
 
     <para>Using <emphasis role="bold">parts</emphasis>, package management can
@@ -381,19 +381,19 @@
 ecl packagemap add-part &lt;target&gt; target_pmid persons.pkg
 </programlisting>
 
-    <para>And then activate the entire packagemap (which consists of all parts
-    added to the given target_pmid):</para>
+    <para>And then activate the entire package map (which consists of all
+    parts added to the given target_pmid):</para>
 
     <programlisting>ecl packagemap activate &lt;target&gt; target_pmid</programlisting>
 
-    <para>You can then change individual parts, and update them in the
-    packagemap:</para>
+    <para>You can then change individual parts, and update them in the package
+    map:</para>
 
     <programlisting>ecl packagemap add-part &lt;target&gt; &lt;target_pmid&gt; persons.pkg --delete-previous</programlisting>
 
     <para>Notice that target_pmid is the identifier for the collection of all
     the packagmap parts. That identifier can be used to activate or delete the
-    entire collection (packagemap).</para>
+    entire collection (package map).</para>
 
     <para>You can use "get-part" to see what the named part looks like in Dali
     for the given identifier:</para>
@@ -403,10 +403,10 @@ ecl packagemap add-part &lt;target&gt; target_pmid persons.pkg
     <para>You could potentially retrieve the part that way, edit it, and
     replace it as shown above. You can use <emphasis
     role="bold">remove-part</emphasis> to remove a part explicitly from a
-    packagemap.</para>
+    package map.</para>
 
-    <para>You can still treat the entire packagemap as a single file, although
-    its organization has changed a bit to reflect its parts:</para>
+    <para>You can still treat the entire package map as a single file,
+    although its organization has changed a bit to reflect its parts:</para>
 
     <para><emphasis role="bold">multipart.pkg</emphasis></para>
 
@@ -441,7 +441,7 @@ ecl packagemap add-part &lt;target&gt; target_pmid persons.pkg
     you can still use</para>
 
     <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg</programlisting>on
-    that multipart packagemap and then continue by managing its individual
+    that multipart package map and then continue by managing its individual
     parts. In this case:</para>
 
     <programlisting>ecl packagemap add &lt;target&gt; multipart.pkg
@@ -449,8 +449,8 @@ ecl packagemap add-part &lt;target&gt; multipart.pkg addresses.pkg
 ecl packagemap activate &lt;target&gt; multipart.pkg
 </programlisting>
 
-    <para>This would be useful, for example, when copying an entire packagemap
-    from one target to another.</para>
+    <para>This would be useful, for example, when copying an entire package
+    map from one target to another.</para>
   </sect1>
 
   <sect1>
@@ -524,7 +524,7 @@ ecl packagemap activate &lt;target&gt; multipart.pkg
         </listitem>
 
         <listitem>
-          <para>Before you delete a packagemap, make sure you have a backup
+          <para>Before you delete a package map, make sure you have a backup
           copy.</para>
 
           <!--You should always validate or run the reporting step on the packages (NYI)-->

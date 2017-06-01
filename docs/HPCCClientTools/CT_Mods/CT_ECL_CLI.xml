@@ -1062,7 +1062,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
       </sect2>
 
       <sect2 id="CT_CLI_SyntaxECLResult" role="brk">
-        <title>ecl results </title>
+        <title>ecl results</title>
 
         <para><emphasis role="bold">ecl results &lt;wuid&gt; [--noroot]
         [--exception-level=<emphasis>&lt;value&gt;</emphasis>]
@@ -1966,7 +1966,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>add</entry>
 
-                  <entry>Adds a packagemap to the target cluster</entry>
+                  <entry>Adds a package map to the target cluster</entry>
                 </row>
 
                 <row>
@@ -1976,13 +1976,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target to associate the packagemap with</entry>
+                  <entry>The target to associate the package map with</entry>
                 </row>
 
                 <row>
                   <entry>filename</entry>
 
-                  <entry>The name of the file containing packagemap
+                  <entry>The name of the file containing package map
                   information.</entry>
                 </row>
 
@@ -2007,15 +2007,15 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-A, --activate</entry>
 
-                  <entry>Activates packagemap</entry>
+                  <entry>Activates package map</entry>
                 </row>
 
                 <row>
                   <entry>--allow-foreign</entry>
 
                   <entry>Specifies to allow the use of foreign files. If a
-                  packagemap references foreign files and this is not enabled,
-                  packagemap add will fail.</entry>
+                  package map references foreign files and this is not
+                  enabled, package map add will fail.</entry>
                 </row>
 
                 <row>
@@ -2100,7 +2100,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>delete</entry>
 
-                  <entry>Deletes a packagemap</entry>
+                  <entry>Deletes a package map</entry>
                 </row>
 
                 <row>
@@ -2172,7 +2172,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>ecl packagemap activate</entry>
 
                   <entry>The activate command will deactivate the currently
-                  active packagemap and make the specified packagemap
+                  active package map and make the specified package map
                   active.</entry>
                 </row>
 
@@ -2183,14 +2183,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target containing the packagemap to
+                  <entry>The target containing the package map to
                   activate</entry>
                 </row>
 
                 <row>
                   <entry>packagemap</entry>
 
-                  <entry>name of packagemap to update</entry>
+                  <entry>name of package map to update</entry>
                 </row>
 
                 <row>
@@ -2262,7 +2262,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>ecl packagemap deactivate</entry>
 
                   <entry>The deactivate command will deactivate the currently
-                  active packagemap.</entry>
+                  active package map.</entry>
                 </row>
 
                 <row>
@@ -2272,14 +2272,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target containing the packagemap to
+                  <entry>The target containing the package map to
                   deactivate</entry>
                 </row>
 
                 <row>
                   <entry>packagemap</entry>
 
-                  <entry>Name of packagemap to deactivate</entry>
+                  <entry>Name of package map to deactivate</entry>
                 </row>
 
                 <row>
@@ -2361,7 +2361,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>list</entry>
 
-                  <entry>Lists loaded packagemap names</entry>
+                  <entry>Lists loaded package map names</entry>
                 </row>
 
                 <row>
@@ -2371,7 +2371,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target containing the packagemap to list</entry>
+                  <entry>The target containing the package map to list</entry>
                 </row>
 
                 <row>
@@ -2453,7 +2453,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>info</entry>
 
-                  <entry>returns packagemap info</entry>
+                  <entry>returns package map info</entry>
                 </row>
 
                 <row>
@@ -2463,7 +2463,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target containing the packagemap to
+                  <entry>The target containing the package map to
                   retrieve</entry>
                 </row>
 
@@ -2524,8 +2524,8 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <programlisting>ecl packagemap add-part roxie multipart.pkg addresses.pkg 
 </programlisting>
 
-        <para>The packagemap add-part command adds additional packagemap
-        content to an existing packagemap</para>
+        <para>The packagemap add-part command adds additional package map
+        content to an existing package map</para>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -2547,8 +2547,8 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>add-part</entry>
 
-                  <entry><para>Adds additional packagemap content to an
-                  existing packagemap</para></entry>
+                  <entry><para>Adds additional package map content to an
+                  existing package map</para></entry>
                 </row>
 
                 <row>
@@ -2558,14 +2558,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>target</entry>
 
-                  <entry>Name of target to use when adding packagemap
+                  <entry>Name of target to use when adding package map
                   part</entry>
                 </row>
 
                 <row>
                   <entry>pmid</entry>
 
-                  <entry>Identifier of packagemap to add the part to</entry>
+                  <entry>Identifier of package map to add the part to</entry>
                 </row>
 
                 <row>
@@ -2601,7 +2601,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>--global-scope</entry>
 
-                  <entry>The specified packagemap is shared across multiple
+                  <entry>The specified package map is shared across multiple
                   targets</entry>
                 </row>
 
@@ -2614,8 +2614,8 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>--allow-foreign</entry>
 
-                  <entry>Do not fail if foreign files are used in
-                  packagemap</entry>
+                  <entry>Do not fail if foreign files are used in package
+                  map</entry>
                 </row>
 
                 <row>
@@ -2699,7 +2699,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 </programlisting>
 
         <para>The get-part command fetches the given part from the given
-        packagemap <informaltable colsep="1" frame="all" rowsep="1">
+        package map <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
@@ -2719,8 +2719,8 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>get-part</entry>
 
-                  <entry><para>Fetches the given part from the given
-                  packagemap </para></entry>
+                  <entry><para>Fetches the given part from the given package
+                  map </para></entry>
                 </row>
 
                 <row>
@@ -2730,14 +2730,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>target</entry>
 
-                  <entry>Name of target to use when adding packagemap
+                  <entry>Name of target to use when adding package map
                   part</entry>
                 </row>
 
                 <row>
                   <entry>packagemap</entry>
 
-                  <entry>Name of the packagemap containing the part</entry>
+                  <entry>Name of the package map containing the part</entry>
                 </row>
 
                 <row>
@@ -2753,7 +2753,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>--global-scope</entry>
 
-                  <entry>The specified packagemap is sharable across multiple
+                  <entry>The specified package map is sharable across multiple
                   targets</entry>
                 </row>
 
@@ -2811,7 +2811,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 </programlisting>
 
         <para>The remove-part command will remove the given part from the
-        given packagemap</para>
+        given package map</para>
 
         <para></para>
 
@@ -2835,8 +2835,8 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
               <row>
                 <entry>remove-part</entry>
 
-                <entry><para>Removes the given part from the given
-                packagemap</para></entry>
+                <entry><para>Removes the given part from the given package
+                map</para></entry>
               </row>
 
               <row>
@@ -2852,7 +2852,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
               <row>
                 <entry>packagemap</entry>
 
-                <entry>Name of the packagemap containing the part</entry>
+                <entry>Name of the package map containing the part</entry>
               </row>
 
               <row>
@@ -2868,7 +2868,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
               <row>
                 <entry>--global-scope</entry>
 
-                <entry>The specified packagemap is sharable across multiple
+                <entry>The specified package map is sharable across multiple
                 targets</entry>
               </row>
 
@@ -2943,11 +2943,11 @@ ecl packagemap validate roxie --active</programlisting>
         </itemizedlist>
 
         <para>The result will also list any files that are used by queries but
-        not mapped in the packagemap.</para>
+        not mapped in the package map.</para>
 
         <para>Filename, --active, and --pmid are mutually exclusive. The
-        --active or --pmid options validate a packagemap that has already been
-        added instead of a local file.</para>
+        --active or --pmid options validate a package map that has already
+        been added instead of a local file.</para>
 
         <para>The --queryid option checks the files in a query instead of all
         the queries in the target queryset. This is quicker when you only need
@@ -2972,7 +2972,7 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>validate</entry>
 
-                  <entry>Validates packagemap info</entry>
+                  <entry>Validates package map info</entry>
                 </row>
 
                 <row>
@@ -2982,14 +2982,14 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>filename</entry>
 
-                  <entry>The filename containing the packagemap info to
+                  <entry>The filename containing the package map info to
                   validate</entry>
                 </row>
 
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target containing the packagemap to
+                  <entry>The target containing the package map to
                   validate</entry>
                 </row>
 
@@ -3013,21 +3013,21 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>--active</entry>
 
-                  <entry>Validates the packagemap that is active for the given
-                  target</entry>
+                  <entry>Validates the package map that is active for the
+                  given target</entry>
                 </row>
 
                 <row>
                   <entry>--pmid=&lt;packagemapid&gt;</entry>
 
-                  <entry>Validates the given packagemap</entry>
+                  <entry>Validates the given package map</entry>
                 </row>
 
                 <row>
                   <entry>--queryid</entry>
 
                   <entry>Validate the files for the given queryid if they are
-                  mapped in the packagemap</entry>
+                  mapped in the package map</entry>
                 </row>
 
                 <row>
@@ -3065,7 +3065,7 @@ ecl packagemap validate roxie --active</programlisting>
         <para><emphasis role="bold">ecl packagemap copy &lt;path&gt;
         &lt;target&gt; </emphasis></para>
 
-        <para>Copies a packagemap from one target to another.</para>
+        <para>Copies a package map from one target to another.</para>
 
         <para>Examples:</para>
 
@@ -3093,7 +3093,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>copy</entry>
 
-                  <entry>Copies a packagemap from one target to
+                  <entry>Copies a package map from one target to
                   another</entry>
                 </row>
 
@@ -3104,13 +3104,13 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>path</entry>
 
-                  <entry>Path to the source packagemap to copy.</entry>
+                  <entry>Path to the source package map to copy.</entry>
                 </row>
 
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target to copy the packagemap to</entry>
+                  <entry>The target to copy the package map to</entry>
                 </row>
 
                 <row>
@@ -3120,7 +3120,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>-A, --activate</entry>
 
-                  <entry>Activates packagemap</entry>
+                  <entry>Activates package map</entry>
                 </row>
 
                 <row>
@@ -3933,8 +3933,8 @@ ecl bundle list myb*
                 <row>
                   <entry>--check-packagemaps</entry>
 
-                  <entry>Exclude files referenced in active
-                  packagemaps</entry>
+                  <entry>Exclude files referenced in active package
+                  maps</entry>
                 </row>
 
                 <row>
