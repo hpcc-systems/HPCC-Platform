@@ -581,6 +581,18 @@ void CWsDfuXRefEx::addXRefNode(const char* name, IPropertyTree* pXRefNodeTree)
     }
 }
 
+bool CWsDfuXRefEx::addUniqueXRefNode(const char* processName, BoolHash& uniqueProcesses, IPropertyTree* pXRefNodeTree)
+{
+    if (isEmptyString(processName))
+        return false;
+    bool* found = uniqueProcesses.getValue(processName);
+    if (found && *found)
+        return false;
+    uniqueProcesses.setValue(processName, true);
+    addXRefNode(processName, pXRefNodeTree);
+    return true;
+}
+
 bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &req, IEspDFUXRefListResponse &resp)
 {
     try
@@ -599,17 +611,19 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
         ForEachItemIn(c, clusters)
         {
             IConstWUClusterInfo &cluster = clusters.item(c);
-            const StringArray &primaryThorProcesses = cluster.getPrimaryThorProcesses();
-            ForEachItemIn(i,primaryThorProcesses)
+            switch (cluster.getPlatform())
             {
-                const char *thorProcess = primaryThorProcesses.item(i);
-                if (!thorProcess || !*thorProcess)
-                    continue;
-                bool* found = uniqueProcesses.getValue(thorProcess);
-                if (found && *found)
-                    continue;
-                uniqueProcesses.setValue(thorProcess, true);
-                addXRefNode(thorProcess, pXRefNodeTree);
+            case ThorLCRCluster:
+                {
+                    const StringArray &primaryThorProcesses = cluster.getPrimaryThorProcesses();
+                    ForEachItemIn(i, primaryThorProcesses)
+                        addUniqueXRefNode(primaryThorProcesses.item(i), uniqueProcesses, pXRefNodeTree);
+                }
+                break;
+            case RoxieCluster:
+                SCMStringBuffer roxieProcess;
+                addUniqueXRefNode(cluster.getRoxieProcess(roxieProcess).str(), uniqueProcesses, pXRefNodeTree);
+                break;
             }
         }
         addXRefNode("SuperFiles", pXRefNodeTree);
