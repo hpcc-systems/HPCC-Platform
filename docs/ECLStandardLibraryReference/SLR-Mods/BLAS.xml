@@ -283,9 +283,9 @@ STD.BLAS.dasum(9, test_data, 1); //sums the absolute values of the matrix, and r
     <para><emphasis role="bold">STD.BLAS.daxpy<indexterm>
         <primary>STD.BLAS.daxpy</primary>
       </indexterm><indexterm>
-        <primary>BLAS.dasum</primary>
+        <primary>BLAS.daxpy</primary>
       </indexterm><indexterm>
-        <primary>dasum</primary>
+        <primary>daxpy</primary>
       </indexterm>(</emphasis> <emphasis>N, alpha, X, incX, Y, incY,
     x_skipped,y_skipped);</emphasis> <emphasis></emphasis></para>
 

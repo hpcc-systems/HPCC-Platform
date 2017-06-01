@@ -2985,7 +2985,7 @@ static void migrateFiles(const char *srcGroup, const char *tgtGroup, const char 
                                 if (NotFound == groupOffset)
                                     groupOffset = srcRelPos;
                                 unsigned dstRelPos = srcRelPos % tgtClusterSize;
-                                dstPositions.append(dstRelPos);
+                                dstPositions.append(dstRelPos+1);
                             }
                             StringBuffer rangeText;
                             encodeChildGroupRange(dstPositions, rangeText);

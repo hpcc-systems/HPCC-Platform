@@ -8,22 +8,18 @@
       <primary>STD.Str.GetNthWord</primary>
     </indexterm><indexterm>
       <primary>Str.GetNthWord</primary>
+    </indexterm><indexterm>
+      <primary>GetNthWord</primary>
     </indexterm>(</emphasis> <emphasis>source, instance </emphasis><emphasis
   role="bold">)</emphasis></para>
 
-  <para>
-  <emphasis role="bold">STD.Uni.GetNthWord
-    <indexterm>
+  <para><emphasis role="bold">STD.Uni.GetNthWord <indexterm>
       <primary>STD.Uni.GetNthWord</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>Uni.GetNthWord</primary>
-    </indexterm>
-    (</emphasis> 
-    <emphasis>source, instance </emphasis>
-    <emphasis role="bold">[</emphasis>
-    <emphasis>, locale</emphasis><emphasis role="bold"> ] )</emphasis>
-  </para>
+    </indexterm> (</emphasis> <emphasis>source, instance </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, locale</emphasis><emphasis role="bold">
+  ] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -47,8 +43,9 @@
         <row>
           <entry><emphasis>locale</emphasis></entry>
 
-          <entry>A null-terminated string containing the language and country code to use to
-determine correct sort order and other operations.</entry>
+          <entry>A null-terminated string containing the language and country
+          code to use to determine correct sort order and other
+          operations.</entry>
         </row>
 
         <row>
@@ -61,7 +58,8 @@ determine correct sort order and other operations.</entry>
   </informaltable>
 
   <para>The <emphasis role="bold">GetNthWord </emphasis>function returns the
-  word in the <emphasis>instance</emphasis> position in the <emphasis>source</emphasis>string.</para>
+  word in the <emphasis>instance</emphasis> position in the
+  <emphasis>source</emphasis>string.</para>
 
   <para>Example:</para>
 
@@ -71,5 +69,4 @@ str1 := 'a word a day keeps the doctor away';
 
 STD.STr.GetNthWord(str1,2);    //returns "word"
 </programlisting>
-
 </sect1>

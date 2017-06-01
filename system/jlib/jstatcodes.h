@@ -24,6 +24,8 @@
 #define SubGraphScopePrefix "sg"
 #define GraphScopePrefix "graph"
 #define FunctionScopePrefix "f"
+#define WorkflowScopePrefix "w"
+#define ChildGraphScopePrefix "c"
 
 #define CONST_STRLEN(x) (sizeof(x)-1)       // sizeof(const-string) = strlen(const-string) + 1 byte for the \0 terminator
 #define MATCHES_CONST_PREFIX(search, prefix) (strncmp(search, prefix, CONST_STRLEN(prefix)) == 0)
@@ -66,6 +68,8 @@ enum StatisticScopeType
     SSTdfuworkunit,                     // a reference to an executing dfu workunit
     SSTedge,
     SSTfunction,                        // a function call
+    SSTworkflow,
+    SSTchildgraph,
     SSTmax
 };
 

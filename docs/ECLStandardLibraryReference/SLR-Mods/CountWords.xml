@@ -8,6 +8,8 @@
       <primary>STD.Str.CountWords</primary>
     </indexterm><indexterm>
       <primary>Str.CountWords</primary>
+    </indexterm><indexterm>
+      <primary>CountWords</primary>
     </indexterm>(</emphasis> <emphasis>source, separator </emphasis><emphasis
   role="bold">)</emphasis></para>
 

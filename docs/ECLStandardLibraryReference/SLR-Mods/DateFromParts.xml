@@ -8,6 +8,8 @@
       <primary>STD.Date.DateFromParts</primary>
     </indexterm><indexterm>
       <primary>Date.DateFromParts</primary>
+    </indexterm><indexterm>
+      <primary>DateFromParts</primary>
     </indexterm>(</emphasis> <emphasis>year, month, day</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
@@ -45,7 +47,9 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">DateFromParts</emphasis> function returns a Date_t value from the <emphasis>year</emphasis>, <emphasis>month</emphasis>, and <emphasis>day</emphasis> parameters.</para>
+  <para>The <emphasis role="bold">DateFromParts</emphasis> function returns a
+  Date_t value from the <emphasis>year</emphasis>, <emphasis>month</emphasis>,
+  and <emphasis>day</emphasis> parameters.</para>
 
   <para>Example:</para>
 

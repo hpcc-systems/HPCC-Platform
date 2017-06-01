@@ -4,10 +4,18 @@
 <sect1 id="WorkunitExists">
   <title>WorkunitExists</title>
 
-  <para><emphasis role="bold">STD.System.Workunit.WorkunitExists(</emphasis>
-  <emphasis> wuid </emphasis> <emphasis role="bold">[</emphasis> <emphasis>,
-  online </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>, archived
-  </emphasis> <emphasis role="bold">] )</emphasis></para>
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitExists(<indexterm>
+      <primary>STD.System.Workunit.WorkunitExists</primary>
+    </indexterm><indexterm>
+      <primary>System.Workunit.WorkunitExists</primary>
+    </indexterm><indexterm>
+      <primary>Workunit.WorkunitExists</primary>
+    </indexterm><indexterm>
+      <primary>WorkunitExists</primary>
+    </indexterm></emphasis> <emphasis> wuid </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, online </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, archived </emphasis> <emphasis
+  role="bold">] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">

@@ -452,6 +452,7 @@
                             <xs:annotation>
                                 <xs:appinfo>
                                     <viewType>password</viewType>
+                                    <tooltip>The passphrase used to generate the private key.</tooltip>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>

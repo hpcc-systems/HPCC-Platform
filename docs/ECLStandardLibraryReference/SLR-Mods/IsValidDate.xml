@@ -8,6 +8,8 @@
       <primary>STD.Date.IsValidDate</primary>
     </indexterm><indexterm>
       <primary>Date.IsValidDate</primary>
+    </indexterm><indexterm>
+      <primary>IsValidDate</primary>
     </indexterm>(</emphasis> <emphasis>date</emphasis> ,
   [<emphasis>yearLowerBound</emphasis>],[<emphasis>yearUpperBound</emphasis>]
   <emphasis role="bold">)</emphasis></para>

@@ -8,18 +8,24 @@
       <primary>STD.Date.Date_rec</primary>
     </indexterm><indexterm>
       <primary>Date.Date_rec</primary>
+    </indexterm><indexterm>
+      <primary>Date_rec</primary>
     </indexterm></emphasis></para>
 
   <para><emphasis role="bold">STD.Date.Date_t<indexterm>
       <primary>STD.Date.Date_t</primary>
     </indexterm><indexterm>
       <primary>Date.Date_t</primary>
+    </indexterm><indexterm>
+      <primary>Date_t</primary>
     </indexterm></emphasis></para>
 
   <para><emphasis role="bold">STD.Date.Days_t<indexterm>
       <primary>STD.Date.Days_t</primary>
     </indexterm><indexterm>
       <primary>Date.Days_t</primary>
+    </indexterm><indexterm>
+      <primary>Days_t</primary>
     </indexterm></emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
