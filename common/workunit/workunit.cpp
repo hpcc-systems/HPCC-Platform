@@ -1828,25 +1828,29 @@ public:
     IMPLEMENT_IINTERFACE;
     CLocalWUException(IPropertyTree *p);
 
-    virtual IStringVal& getExceptionSource(IStringVal &str) const;
-    virtual IStringVal& getExceptionMessage(IStringVal &str) const;
-    virtual unsigned    getExceptionCode() const;
-    virtual ErrorSeverity getSeverity() const;
-    virtual IStringVal & getTimeStamp(IStringVal & dt) const;
-    virtual IStringVal & getExceptionFileName(IStringVal & str) const;
-    virtual unsigned    getExceptionLineNo() const;
-    virtual unsigned    getExceptionColumn() const;
-    virtual unsigned    getActivityId() const;
-    virtual unsigned    getSequence() const;
-    virtual void        setExceptionSource(const char *str);
-    virtual void        setExceptionMessage(const char *str);
-    virtual void        setExceptionCode(unsigned code);
-    virtual void        setSeverity(ErrorSeverity level);
-    virtual void        setTimeStamp(const char * dt);
-    virtual void        setExceptionFileName(const char *str);
-    virtual void        setExceptionLineNo(unsigned r);
-    virtual void        setExceptionColumn(unsigned c);
-    virtual void        setActivityId(unsigned _id);
+    virtual IStringVal& getExceptionSource(IStringVal &str) const override;
+    virtual IStringVal& getExceptionMessage(IStringVal &str) const override;
+    virtual unsigned    getExceptionCode() const override;
+    virtual ErrorSeverity getSeverity() const override;
+    virtual IStringVal & getTimeStamp(IStringVal & dt) const override;
+    virtual IStringVal & getExceptionFileName(IStringVal & str) const override;
+    virtual unsigned    getExceptionLineNo() const override;
+    virtual unsigned    getExceptionColumn() const override;
+    virtual unsigned    getActivityId() const override;
+    virtual unsigned    getSequence() const override;
+    virtual const char * queryScope() const override;
+    virtual unsigned    getPriority() const override;
+    virtual void        setExceptionSource(const char *str) override;
+    virtual void        setExceptionMessage(const char *str) override;
+    virtual void        setExceptionCode(unsigned code) override;
+    virtual void        setSeverity(ErrorSeverity level) override;
+    virtual void        setTimeStamp(const char * dt) override;
+    virtual void        setExceptionFileName(const char *str) override;
+    virtual void        setExceptionLineNo(unsigned r) override;
+    virtual void        setExceptionColumn(unsigned c) override;
+    virtual void        setActivityId(unsigned _id) override;
+    virtual void        setScope(const char * _scope) override;
+    virtual void        setPriority(unsigned _priority) override;
 };
 
 //==========================================================================================
@@ -8729,12 +8733,29 @@ unsigned CLocalWUException::getExceptionColumn() const
 
 unsigned CLocalWUException::getActivityId() const
 {
+    const char * scope = queryScope();
+    if (scope)
+    {
+        const char * colon = strrchr(scope, ':');
+        if (colon && hasPrefix(colon+1, ActivityScopePrefix, true))
+            return atoi(colon+1+strlen(ActivityScopePrefix));
+    }
     return p->getPropInt("@activity", 0);
 }
 
 unsigned CLocalWUException::getSequence() const
 {
     return p->getPropInt("@sequence", 0);
+}
+
+const char * CLocalWUException::queryScope() const
+{
+    return p->queryProp("@scope");
+}
+
+unsigned CLocalWUException::getPriority() const
+{
+    return p->getPropInt("@prio", 0);
 }
 
 void CLocalWUException::setExceptionSource(const char *str)
@@ -8780,6 +8801,16 @@ void CLocalWUException::setExceptionColumn(unsigned c)
 void CLocalWUException::setActivityId(unsigned _id)
 {
     p->setPropInt("@activity", _id);
+}
+
+void CLocalWUException::setScope(const char * _scope)
+{
+    p->setProp("@scope", _scope);
+}
+
+void CLocalWUException::setPriority(unsigned _priority)
+{
+    p->setPropInt("@prio", _priority);
 }
 
 //==========================================================================================

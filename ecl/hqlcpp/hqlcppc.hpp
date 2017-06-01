@@ -57,6 +57,7 @@ public:
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state) = 0;
 };
 
+class ActivityInstance;
 class HQLCPP_API ABoundActivity : public IInterface, public CInterface
 {
 public:
@@ -75,6 +76,8 @@ public:
     inline unsigned queryContainerId() const { return containerId; }
     inline unsigned queryGraphId() const { return graphId; }
     inline unsigned nextOutputCount() { return outputCount++; }
+    inline void setActive(ActivityInstance * _active) { active = _active; }
+    inline ActivityInstance * queryActive() const { return active; }
     IHqlDelayedCodeGenerator * createOutputCountCallback();
 
     void updateActivityKind(ThorActivityKind newKind) { kind = newKind; }
@@ -83,6 +86,7 @@ private:
     ThorActivityKind        kind;
     HqlExprAttr             represents;
     HqlExprAttr             bound;
+    ActivityInstance *      active = nullptr; // points at the active instance while the activity is being generated
     unsigned                activityId;
     unsigned                containerId;
     unsigned                graphId;

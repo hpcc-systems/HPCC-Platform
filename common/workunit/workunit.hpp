@@ -507,6 +507,8 @@ interface IConstWUException : extends IInterface
     virtual unsigned getExceptionColumn() const = 0;
     virtual unsigned getSequence() const = 0;
     virtual unsigned getActivityId() const = 0;
+    virtual const char * queryScope() const = 0;
+    virtual unsigned getPriority() const = 0;  // For ordering within a severity - e.g. warnings about inefficiency
 };
 
 
@@ -521,6 +523,8 @@ interface IWUException : extends IConstWUException
     virtual void setExceptionLineNo(unsigned r) = 0;
     virtual void setExceptionColumn(unsigned c) = 0;
     virtual void setActivityId(unsigned _id) = 0;
+    virtual void setScope(const char * _scope) = 0;
+    virtual void setPriority(unsigned _priority) = 0;
 };
 
 

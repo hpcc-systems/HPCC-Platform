@@ -49,6 +49,9 @@ EclDirectWUExceptions::EclDirectWUExceptions(IConstWorkUnit& cw)
         e->setLineNo(item.getExceptionLineNo());
         e->setColumn(item.getExceptionColumn());
         e->setActivity(item.getActivityId());
+        if (item.getPriority())
+            e->setPriority(item.getPriority());
+        e->setScope(item.queryScope());
 
         switch (it->query().getSeverity())
         {

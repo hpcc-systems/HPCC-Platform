@@ -46,6 +46,8 @@ ESPStruct [nil_remove] ECLException
     int LineNo;
     int Column;
     [min_ver("1.63")] int Activity;
+    [min_ver("1.69")] string Scope;
+    [min_ver("1.69")] int Priority;
 };
 //  ===========================================================================
 ESPStruct [nil_remove] ECLSchemaItem
@@ -1818,7 +1820,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
 
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.68"), default_client_version("1.68"),
+    version("1.69"), default_client_version("1.69"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
