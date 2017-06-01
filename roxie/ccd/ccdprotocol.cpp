@@ -283,7 +283,7 @@ public:
             Owned<ISecureSocket> ssock;
             if (client)
             {
-                if (protocol.get() && streq(protocol.get(), "ssl"))
+                if (streq(protocol.str(), "ssl"))
                 {
 #ifdef _USE_OPENSSL
                     try
