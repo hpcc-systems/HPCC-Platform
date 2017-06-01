@@ -1291,7 +1291,6 @@ public:
     virtual void checkHeap() const = 0;
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const = 0;
     virtual bool isFull() const = 0;
-    virtual void mergeStats(HeapletStats & stats) const {}
 #ifdef _WIN32
 #ifdef new
 #define __new_was_defined
@@ -1334,7 +1333,6 @@ protected:
     const unsigned heapFlags;
     unsigned sharedAllocatorId;
     unsigned nextMatchOffset = 0;
-    HeapletStats stats;
 
     inline char *data() const
     {
@@ -1362,12 +1360,6 @@ public:
         unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
         size32_t bytesFree = dataAreaSize() - curFreeBase;
         return (bytesFree >= chunkSize);
-    }
-
-    virtual void mergeStats(HeapletStats & merged) const override
-    {
-        merged.totalAllocs += stats.totalAllocs;
-        merged.totalDistanceScanned += stats.totalDistanceScanned;
     }
 
     virtual bool isFull() const override;
@@ -2779,7 +2771,6 @@ public:
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%" I64F "u rowMgr=%p",
                     finger, finger->sizeInPages(), (unsigned __int64) finger->_capacity(), this);
 
-        finger->mergeStats(stats);
         removeHeaplet(finger);
         if (finger == activeHeaplet)
             activeHeaplet = NULL;
@@ -2925,6 +2916,16 @@ public:
     }
 
     void noteEmptyPage() { possibleEmptyPages.store(true, std::memory_order_release); }
+
+    inline void updateNumAllocs(unsigned __int64 allocs)
+    {
+        stats.totalAllocs += allocs;
+    }
+
+    inline void updateDistanceScanned(unsigned __int64 distance)
+    {
+        stats.totalDistanceScanned += distance;
+    }
 
 protected:
     virtual void reportHeapUsage(IActivityMemoryUsageMap * usageMap, unsigned numPages, memsize_t numAllocs) const = 0;
@@ -3227,14 +3228,14 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter)
                 if (offset == startOffset)
                 {
                     //Should never occur...
-                    stats.totalDistanceScanned += curFreeBase;
+                    heap->updateDistanceScanned(curFreeBase);
                     return nullptr;
                 }
             }
 
             // either (offset - startOffset) or (curFreeBase - startOffset) + offset.  Simplified to...
             unsigned thisDistance = ((offset > startOffset) ? 0 : curFreeBase) + (offset - startOffset) - size;
-            stats.totalDistanceScanned += thisDistance;
+            heap->updateDistanceScanned(thisDistance);
             nextMatchOffset = offset;
             //save offset
         }
@@ -3290,7 +3291,7 @@ done:
     if (incCounter)
         count.fetch_add(1, std::memory_order_relaxed);
 
-    stats.totalAllocs++;
+    heap->updateNumAllocs(1);
     return ret;
 }
 
@@ -5206,20 +5207,11 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
 
 void CChunkedHeap::gatherStats(CRuntimeStatisticCollection & result)
 {
-    HeapletStats merged(stats);
-
-    NonReentrantSpinBlock b(heapletLock);
-    Heaplet * start = heaplets;
-    if (start)
+    HeapletStats merged;
     {
-        Heaplet * finger = start;
-        for (;;)
-        {
-            finger->mergeStats(merged);
-            finger = getNext(finger);
-            if (finger == start)
-                break;
-        }
+        //Copy the stats when a lock is held to ensure num and distance are consistent.
+        NonReentrantSpinBlock b(heapletLock);
+        merged = stats;
     }
 
     if (merged.totalAllocs)
@@ -5471,29 +5463,17 @@ void * CChunkedHeap::doAllocate(unsigned activityId, unsigned maxSpillCost)
 
 void CChunkedHeap::checkScans(unsigned allocatorId)
 {
-    HeapletStats merged(stats);
+    if (stats.totalAllocs == totalAllocsLastScanCheck)
+        return;
 
+    HeapletStats merged;
     {
+        //Copy the stats when a lock is held to ensure num and distance are consistent.
         NonReentrantSpinBlock b(heapletLock);
-        Heaplet * start = heaplets;
-        if (start)
-        {
-            Heaplet * finger = start;
-            for (;;)
-            {
-                finger->mergeStats(merged);
-                finger = getNext(finger);
-                if (finger == start)
-                    break;
-            }
-        }
-
-        //If nothing has changed since the last time this was called then don't report anything
-        //often happens if multiple allocators share the same heap
-        if (merged.totalAllocs == totalAllocsLastScanCheck)
-            return;
-        totalAllocsLastScanCheck = merged.totalAllocs;
+        merged = stats;
     }
+
+    totalAllocsLastScanCheck = merged.totalAllocs;
 
     unsigned __int64 numScans = merged.totalDistanceScanned / chunkSize;
     if (numScans && (numScans >= merged.totalAllocs * ScanReportThreshold))
