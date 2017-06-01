@@ -1138,10 +1138,8 @@ public:
         Owned<IXmlWriter> xmlwriter = createIXmlWriterExt(XWFnoindent, 1, content, WTJSON);
         return xmlwriter.getClear();
     }
-    virtual void outputContent()
+    void outputContent()
     {
-        CriticalBlock b1(client->queryCrit());
-
         bool needDelimiter = false;
         ForEachItemIn(seq, contentsMap)
         {
@@ -1177,6 +1175,7 @@ public:
         }
 
         CriticalBlock b(contentsCrit);
+        CriticalBlock b1(client->queryCrit());
 
         StringBuffer responseHead, responseTail;
         if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
@@ -1255,10 +1254,8 @@ public:
         Owned<IXmlWriter> xmlwriter = createIXmlWriterExt(0, 1, content, WTStandard);
         return xmlwriter.getClear();
     }
-    virtual void outputContent()
+    void outputContent()
     {
-        CriticalBlock b1(client->queryCrit());
-
         bool needDelimiter = false;
         ForEachItemIn(seq, contentsMap)
         {
@@ -1287,6 +1284,7 @@ public:
             return;
         }
         CriticalBlock b(contentsCrit);
+        CriticalBlock b1(client->queryCrit());
 
         StringBuffer responseHead, responseTail;
         if (!resultFilter.ordinality() && !(protocolFlags & HPCC_PROTOCOL_CONTROL))
