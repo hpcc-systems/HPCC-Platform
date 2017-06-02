@@ -46,8 +46,8 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">addWorkunitWarning </emphasis>function
-  writes the <emphasis>text</emphasis> string to the eclagent.log file for the
+  <para>The <emphasis role="bold">addWorkunitWarning </emphasis>action writes
+  the <emphasis>text</emphasis> string to the eclagent.log file for the
   workunit, and also displays the <emphasis>code</emphasis> and
   <emphasis>text</emphasis> in the Syntax Errors toolbox along with the
   Warnings section of the ECL Watch page for the workunit.</para>
