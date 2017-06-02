@@ -46,7 +46,7 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">addWorkunitInformation </emphasis>function
+  <para>The <emphasis role="bold">addWorkunitInformation </emphasis>action
   writes the <emphasis>text</emphasis> string to the eclagent.log file for the
   workunit, and also displays the <emphasis>code</emphasis> and
   <emphasis>text</emphasis> in the Info section of the ECL Watch page for the
