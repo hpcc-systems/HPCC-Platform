@@ -3289,9 +3289,11 @@ done:
     }
 
     if (incCounter)
+    {
         count.fetch_add(1, std::memory_order_relaxed);
+        heap->updateNumAllocs(1);
+    }
 
-    heap->updateNumAllocs(1);
     return ret;
 }
 
@@ -3317,6 +3319,7 @@ unsigned ChunkedHeaplet::allocateMultiChunk(unsigned max, char * * rows)
         rows[allocated++] = ret;
     } while (allocated < max);
 
+    heap->updateNumAllocs(allocated);
     count.fetch_add(allocated, std::memory_order_relaxed);
     return allocated;
 }
@@ -5232,12 +5235,12 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
     {
         {
             NonReentrantSpinBlock b(heapletLock);
-            if (activeHeaplet)
+            if (likely(activeHeaplet))
             {
                 //This cast is safe because we are within a member of CChunkedHeap
                 donorHeaplet = static_cast<ChunkedHeaplet *>(activeHeaplet);
                 chunk = donorHeaplet->allocateChunk();
-                if (chunk)
+                if (likely(chunk))
                 {
                     //The code at the end of this function needs to be executed outside of the spinblock.
                     //Just occasionally gotos are the best way of expressing something
@@ -5300,15 +5303,33 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
         NonReentrantSpinBlock b(heapletLock);
         insertHeaplet(donorHeaplet);
 
-        //While this thread was allocating a block, another thread also did the same.  Ensure that other block is
-        //placed on the list of those with potentially free space.
+        //While this thread was allocating a block, another thread may have also done the same.
+        chunk = nullptr;
         if (activeHeaplet)
-            addToSpaceList(activeHeaplet);
-        activeHeaplet = donorHeaplet;
+        {
+            ChunkedHeaplet * active = static_cast<ChunkedHeaplet *>(activeHeaplet);
 
-        //If no protecting spinblock there would be a race e.g., if another thread allocates all the rows!
-        chunk = donorHeaplet->allocateChunk();
-        dbgassertex(chunk);
+            //check if we can allocate from the block the other thread allocated
+            chunk = active->allocateChunk();
+            if (chunk)
+            {
+                //yes => add the block we allocated to the freespace list.
+                addToSpaceList(donorHeaplet);
+                donorHeaplet = active;
+            }
+            else
+            {
+                addToSpaceList(active);
+                activeHeaplet = donorHeaplet;
+            }
+
+        }
+        else
+            activeHeaplet = donorHeaplet;
+
+        //If no protecting lock there would be a race e.g., if another thread allocates all the rows!
+        if (!chunk)
+            chunk = donorHeaplet->allocateChunk();
     }
     
 gotChunk:
