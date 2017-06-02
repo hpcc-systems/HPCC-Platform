@@ -4779,7 +4779,6 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
       resp.setCompName(sName.str());
     }
     resp.setStatus("true");
-
   }
   else if (!strcmp(operation, "NewRange"))
   {
@@ -4811,6 +4810,25 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
 
     resp.setStatus("true");
   }
+  else if (!strcmp(operation, "NewComputerType"))
+  {
+      StringBuffer sbTemp;
+      IPropertyTree* pCompTree = createPTree(XML_TAG_HARDWARE);
+      generateHardwareHeaders(pEnvRoot, sbTemp, false, pCompTree, true);
+
+      StringBuffer sbNewName(type);
+      xpath.clear().appendf("%s", type);
+
+      getUniqueName(pEnvRoot, sbNewName, xpath.str(), XML_TAG_HARDWARE);
+      xpath.clear().append(type).append("/").append(XML_ATTR_NAME);
+      pCompTree->setProp(xpath.str(), sbNewName);
+
+      pEnvRoot->queryPropTree(XML_TAG_HARDWARE)->addPropTree(type, pCompTree->queryPropTree(type));
+
+      resp.setCompName(sbNewName.str());
+      resp.setStatus("true");
+  }
+
   else if (!strcmp(operation, "Delete"))
   {
       StringBuffer refs;
