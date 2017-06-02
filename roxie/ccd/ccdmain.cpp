@@ -25,6 +25,7 @@
 #include <jlog.hpp>
 #include <jprop.hpp>
 #include <jfile.hpp>
+#include <jencrypt.hpp>
 #include "jutil.hpp"
 #include <build-config.h>
 
@@ -1041,8 +1042,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (!localSlave)
             openMulticastSocket();
 
-        StringBuffer certFileName;
-        StringBuffer keyFileName;
         setDaliServixSocketCaching(true);  // enable daliservix caching
         loadPlugins();
         createDelayedReleaser();
@@ -1130,13 +1129,13 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 if (port)
                 {
                     const char *protocol = roxieFarm.queryProp("@protocol");
-                    const char *passPhrase = nullptr;
-                    const char *certFile = nullptr;
-                    const char *keyFile = nullptr;
+                    StringBuffer certFileName;
+                    StringBuffer keyFileName;
+                    StringBuffer passPhraseStr;
                     if (protocol && streq(protocol, "ssl"))
                     {
 #ifdef _USE_OPENSSL
-                        certFile = roxieFarm.queryProp("@certificateFileName");
+                        const char *certFile = roxieFarm.queryProp("@certificateFileName");
                         if (!certFile)
                             throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFileName tag", port);
                         if (isAbsolutePath(certFile))
@@ -1146,7 +1145,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                         if (!checkFileExists(certFileName.str()))
                             throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFile (%s)", port, certFileName.str());
 
-                        keyFile =  roxieFarm.queryProp("@privateKeyFileName");
+                        const char *keyFile = roxieFarm.queryProp("@privateKeyFileName");
                         if (!keyFile)
                             throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFileName tag", port);
                         if (isAbsolutePath(keyFile))
@@ -1156,9 +1155,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                         if (!checkFileExists(keyFileName.str()))
                             throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFile (%s)", port, keyFileName.str());
 
-                        passPhrase = roxieFarm.queryProp("@passphrase");
-                        if (isEmptyString(passPhrase))
-                            passPhrase = nullptr;
+                        const char *passPhrase = roxieFarm.queryProp("@passphrase");
+                        if (!isEmptyString(passPhrase))
+                            decrypt(passPhraseStr, passPhrase);
 #else
                         WARNLOG("Skipping Roxie SSL Farm Listener on port %d : OpenSSL disabled in build", port);
                         continue;
@@ -1167,7 +1166,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                     const char *soname =  roxieFarm.queryProp("@so");
                     const char *config  = roxieFarm.queryProp("@config");
                     Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
-                    roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhrase));
+                    roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhraseStr.str()));
                 }
                 else
                     roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
