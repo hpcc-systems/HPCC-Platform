@@ -10337,6 +10337,8 @@ void HqlCppTranslator::buildSerializedLayoutMember(BuildCtx & ctx, IHqlExpressio
 
 ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
+    ensureDiskAccessAllowed(expr);
+
     IHqlExpression * dataset  = expr->queryChild(0);
     IHqlExpression * filename = queryRealChild(expr, 1);
     IHqlExpression * record = dataset->queryRecord();

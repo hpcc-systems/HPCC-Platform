@@ -12336,7 +12336,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     return ret;
 }
 
-extern IHqlExpression *createNewDataset(IHqlExpression *name, IHqlExpression *recorddef, IHqlExpression *mode, IHqlExpression *parent, IHqlExpression *joinCondition, IHqlExpression * signature, IHqlExpression * options)
+extern IHqlExpression *createNewDataset(IHqlExpression *name, IHqlExpression *recorddef, IHqlExpression *mode, IHqlExpression *parent, IHqlExpression *joinCondition, IHqlExpression * options)
 {
     HqlExprArray args;
     args.append(*name);
@@ -12353,8 +12353,6 @@ extern IHqlExpression *createNewDataset(IHqlExpression *name, IHqlExpression *re
         options->unwindList(args, no_comma);
         options->Release();
     }
-    if (signature)
-        args.append(*signature);
     return createDataset(no_table, args);
 }
 
