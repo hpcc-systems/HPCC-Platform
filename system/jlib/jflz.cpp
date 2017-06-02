@@ -703,16 +703,17 @@ public:
 void fastLZCompressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
 {
     size32_t outbase = out.length();
-    size32_t *sz = (size32_t *)out.reserve(len+fastlzSlack(len)+sizeof(size32_t)*2);
-    *sz = len;
-    sz++;
-    *sz = (len>16)?fastlz_compress(src, (int)len, sz+1):16;
-    if (*sz>=len)
+    out.append(len);
+    DelayedMarker<size32_t> cmpSzMarker(out);
+    void *cmpData = out.reserve(len+fastlzSlack(len));
+    size32_t sz = (len>16)?fastlz_compress(src, (int)len, cmpData):16;
+    if (sz>=len)
     {
-        *sz = len;
-        memcpy(sz+1,src,len);
+        sz = len;
+        memcpy(cmpData, src, len);
     }
-    out.setLength(outbase+*sz+sizeof(size32_t)*2);
+    cmpSzMarker.write(sz);
+    out.setLength(outbase+sz+sizeof(size32_t)*2);
 }
 
 void fastLZDecompressToBuffer(MemoryBuffer & out, const void * src)

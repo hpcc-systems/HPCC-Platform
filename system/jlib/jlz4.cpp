@@ -147,24 +147,21 @@ public:
 void LZ4CompressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
 {
     size32_t outbase = out.length();
-    size32_t *sz = (size32_t *)out.reserve(LZ4_COMPRESSBOUND(len)+sizeof(size32_t)*2);
-    *sz = len;
-    sz++;
+    out.append(len);
+    DelayedMarker<size32_t> cmpSzMarker(out);
+    void *cmpData = out.reserve(LZ4_COMPRESSBOUND(len));
     if (len < 64)
-    {
-        *sz = len;
-        memcpy(sz+1,src,len);
-    }
+        memcpy(cmpData, src, len);
     else
     {
-        *sz = LZ4_compress_default((const char *)src, (char *)(sz+1), len, LZ4_COMPRESSBOUND(len));
-        if (!*sz)
-        {
-            *sz = len;
-            memcpy(sz+1,src,len);
-        }
+        size32_t cmpSz = LZ4_compress_default((const char *)src, (char *)cmpData, len, LZ4_COMPRESSBOUND(len));
+        if (!cmpSz)
+            memcpy(cmpData, src, len);
+        else
+            len = cmpSz;
     }
-    out.setLength(outbase+*sz+sizeof(size32_t)*2);
+    cmpSzMarker.write(len);
+    out.setLength(outbase+len+sizeof(size32_t)*2);
 }
 
 void LZ4DecompressToBuffer(MemoryBuffer & out, const void * src)
