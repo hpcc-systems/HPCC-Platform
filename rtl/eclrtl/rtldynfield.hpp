@@ -103,7 +103,7 @@ interface IRtlFieldTypeDeserializer : public IInterface
 
 };
 
-enum class RecordTranslationMode { None = 0, All = 1, Payload = 2, AlwaysDisk = 3, AlwaysECL = 4 };  // Latter 2 are for testing purposes only
+enum class RecordTranslationMode:byte { None = 0, All = 1, Payload = 2, AlwaysDisk = 3, AlwaysECL = 4 };  // Latter 2 are for testing purposes only
 
 extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *modeStr);
 extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val);

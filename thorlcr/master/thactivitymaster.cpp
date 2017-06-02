@@ -441,51 +441,31 @@ void CSlavePartMapping::serializeNullOffsetMap(MemoryBuffer &mb)
     mb.append((unsigned)0);
 }
 
-void CSlavePartMapping::serializeMap(unsigned i, MemoryBuffer &mb, IGetSlaveData *extra)
+void CSlavePartMapping::serializeMap(unsigned i, MemoryBuffer &mb, bool countPrefix)
 {
     if (local)
         i = 0;
-    if (i >= maps.ordinality())
+    if (i >= maps.ordinality() || (0 == maps.item(i).ordinality()))
     {
-        mb.append((unsigned)0);
+        if (countPrefix)
+            mb.append((unsigned)0);
         return;
     }
 
     CSlaveMap &map = maps.item(i);
     unsigned nPos = mb.length();
     unsigned n=0;
-    mb.append(n);
+    if (countPrefix)
+        mb.append(n);
     UnsignedArray parts;
     ForEachItemIn(m, map)
         parts.append(map.item(m).queryPartIndex());
-    MemoryBuffer extraMb;
-    if (extra)
+    if (countPrefix)
     {
-        ForEachItemIn(m2, map)
-        {
-            unsigned xtraLen = 0;
-            unsigned xtraPos = extraMb.length();
-            extraMb.append(xtraLen);
-            IPartDescriptor &partDesc = map.item(m2);
-            if (!extra->getData(m2, partDesc.queryPartIndex(), extraMb))
-            {
-                parts.zap(partDesc.queryPartIndex());
-                extraMb.rewrite(xtraPos);
-            }
-            else
-            {
-                xtraLen = (extraMb.length()-xtraPos)-sizeof(xtraLen);
-                extraMb.writeDirect(xtraPos, sizeof(xtraLen), &xtraLen);
-            }
-        }
+        n = parts.ordinality();
+        mb.writeDirect(nPos, sizeof(n), &n);
     }
-    n = parts.ordinality();
-    mb.writeDirect(nPos, sizeof(n), &n);
-    if (n)
-    {
-        fileDesc->serializeParts(mb, parts);
-        mb.append(extraMb);
-    }
+    fileDesc->serializeParts(mb, parts);
 }
 
 CSlavePartMapping::CSlavePartMapping(const char *_logicalName, IFileDescriptor &_fileDesc, IUserDescriptor *_userDesc, IGroup &localGroup, bool _local, bool index, IHash *hash, IDistributedSuperFile *super)

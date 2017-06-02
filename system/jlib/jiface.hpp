@@ -102,7 +102,7 @@ template class CSimpleInterfaceOf<CEmptyClass>;
 class jlib_decl CSimpleInterface : public CSimpleInterfaceOf<CEmptyClass>
 {
 public:
-    bool Release() const;   // Prevent Release() being inlined everwhere it is called
+    bool Release() const;   // Prevent Release() being inlined everywhere it is called
 };
 #ifdef _WIN32
 #pragma warning(pop)

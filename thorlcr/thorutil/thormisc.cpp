@@ -65,6 +65,7 @@ static ICommunicator *nodeComm;
 
 
 mptag_t masterSlaveMpTag;
+mptag_t kjServiceMpTag;
 IPropertyTree *globals;
 static IMPtagAllocator *ClusterMPAllocator = NULL;
 

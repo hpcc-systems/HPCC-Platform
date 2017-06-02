@@ -810,6 +810,17 @@ void CThorExpandingRowArray::transferRows(rowidx_t & outNumRows, const void * * 
     stableTable = NULL;
 }
 
+void CThorExpandingRowArray::transferRows(rowidx_t start, rowidx_t num, CThorExpandingRowArray &tgt)
+{
+    if (start >= numRows)
+        return;
+    rowidx_t remaining = numRows-start;
+    rowidx_t max = remaining>num ? num : remaining;
+    tgt.appendRows(rows+start, max, true);
+    memmove(rows+start, rows+start+max, (remaining-max) * sizeof(void *));
+    numRows -= max;
+}
+
 void CThorExpandingRowArray::transferRowsCopy(const void **outRows, bool takeOwnership)
 {
     if (0 == numRows)
@@ -858,6 +869,32 @@ void CThorExpandingRowArray::removeRows(rowidx_t start, rowidx_t n)
         memmove(from, from+n, (numRows-end) * sizeof(void *));
         numRows -= n;
     }
+}
+
+bool CThorExpandingRowArray::appendRows(const void **inRows, rowidx_t num, bool takeOwnership)
+{
+    if (0 == num)
+        return true;
+    if (numRows+num >= maxRows)
+    {
+        if (!resize(numRows + num))
+            return false;
+    }
+    const void **newRows = rows+numRows;
+    memcpy(newRows, inRows, num*sizeof(void **));
+    numRows += num;
+    if (!takeOwnership)
+    {
+        const void **lastNewRow = newRows+numRows-1;
+        for (;;)
+        {
+            LinkThorRow(*newRows);
+            if (newRows == lastNewRow)
+                break;
+            newRows++;
+        }
+    }
+    return true;
 }
 
 bool CThorExpandingRowArray::appendRows(CThorExpandingRowArray &inRows, bool takeOwnership)
@@ -2536,7 +2573,7 @@ public:
     { 
          // ignoring xml'ing extra
         //GH: I think this is what it should do
-        childMeta->toXML(*(const byte **)(self+extraSz), out); 
+        childMeta->toXML(*(const byte **)(self+extraSz), out);
     }
     virtual unsigned getVersion() const { return OUTPUTMETACHILDROW_VERSION; }
 

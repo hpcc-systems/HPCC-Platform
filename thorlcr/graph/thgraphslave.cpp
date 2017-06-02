@@ -1482,7 +1482,7 @@ public:
 };
 
 #define SLAVEGRAPHPOOLLIMIT 10
-CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, const char *graphName, ILoadedDllEntry *_querySo, mptag_t _mpJobTag, mptag_t _slavemptag) : CJobBase(_querySo, graphName), watchdog(_watchdog)
+CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, const char *graphName, ILoadedDllEntry *_querySo, mptag_t _slavemptag) : CJobBase(_querySo, graphName), watchdog(_watchdog)
 {
     workUnitInfo.set(_workUnitInfo);
     workUnitInfo->getProp("token", token);
@@ -1513,7 +1513,6 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     }
 
     oldNodeCacheMem = 0;
-    mpJobTag = _mpJobTag;
     slavemptag = _slavemptag;
 
     IPropertyTree *plugins = workUnitInfo->queryPropTree("plugins");
@@ -1574,6 +1573,13 @@ void CJobSlave::startJob()
             throw MakeThorException(TE_NotEnoughFreeSpace, "Node %s has %u MB(s) of available disk space, specified minimum for this job: %u MB(s)", ep.getUrlStr(s).str(), (unsigned) freeSpace / 0x100000, minFreeSpace);
         }
     }
+    queryThor().queryKeyedJoinService().setCurrentJob(*this);
+}
+
+void CJobSlave::endJob()
+{
+    queryThor().queryKeyedJoinService().reset();
+    PARENT::endJob();
 }
 
 void CJobSlave::reportGraphEnd(graph_id gid)

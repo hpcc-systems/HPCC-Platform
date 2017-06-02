@@ -355,6 +355,38 @@ public:
     inline ~CriticalUnblock()                                   { crit.enter(); }
 };
 
+class CLeavableCriticalBlock
+{
+    CriticalSection &crit;
+    bool locked = false;
+public:
+    inline CLeavableCriticalBlock(CriticalSection &_crit) : crit(_crit)
+    {
+        enter();
+    }
+    inline ~CLeavableCriticalBlock()
+    {
+        if (locked)
+            crit.leave();
+    }
+    inline void enter()
+    {
+        if (locked)
+            return;
+        crit.enter();
+        locked = true;
+    }
+    inline void leave()
+    {
+        if (locked)
+        {
+            locked = false;
+            crit.leave();
+        }
+    }
+};
+
+
 #ifdef SPINLOCK_USE_MUTEX // for testing
 
 class  SpinLock
