@@ -166,7 +166,7 @@ const char * cppSystemText[]  = {
     "   integer4 searchStringTable(unsigned4 num, unsigned4 elemlen, const string entries, const string search) : eclrtl,pure,library='eclrtl',include='eclrtl.hpp',entrypoint='rtlNewSearchStringTable';",
     "   integer4 searchVStringTable(unsigned4 num, const varstring entries, const varstring search) : eclrtl,pure,library='eclrtl',include='eclrtl.hpp',entrypoint='rtlSearchTableVStringN';",
     "   integer4 searchUnicodeTable(unsigned4 num, unsigned4 elemlen, const unicode entries, const unicode search) : eclrtl,pure,library='eclrtl',include='eclrtl.hpp',entrypoint='rtlNewSearchUnicodeTable';",
-    "   integer4 searchUtf8Table(unsigned4 num, unsigned4 elemlen, const utf8 entries, const utf8 search) : eclrtl,pure,library='eclrtl',include='eclrtl.hpp',entrypoint='rtlNewSearchUtf8Table';",
+    "   integer4 searchUtf8Table(unsigned4 num, const utf8 entries, const utf8 search) : eclrtl,pure,library='eclrtl',include='eclrtl.hpp',entrypoint='rtlNewSearchUtf8Table';",
     "   integer4 searchVUnicodeTable(unsigned4 num, const varunicode entries, const varunicode search) : eclrtl,pure,library='eclrtl',include='eclrtl.hpp',entrypoint='rtlNewSearchVUnicodeTable';",
 
     "   integer4 searchTableInteger4(set of integer4 values, integer4 search) : eclrtl,pure,library='eclrtl',include,entrypoint='rtlSearchTableInteger4',oldSetFormat;",

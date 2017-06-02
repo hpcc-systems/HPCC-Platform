@@ -4959,16 +4959,18 @@ unsigned rtlCrcUtf8(unsigned length, const char * k, unsigned initval)
     return rtlCrcData(rtlUtf8Size(length, k), k, initval);
 }
 
-int rtlNewSearchUtf8Table(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search, const char * locale)
+int rtlNewSearchUtf8Table(unsigned count, char * * table, const char * search, const char * locale)
 {
     //MORE: Hopelessly inefficient....  Should rethink - possibly introducing a class for doing string searching, and the Utf8 variety pre-converting the
     //search strings into unicode.
     int left = 0;
     int right = count;
-
+    unsigned width = rtlUtf8Length(strlen(search), search);
     do
     {
         int mid = (left + right) >> 1;
+        const char *midString = table[mid];
+        unsigned elemlen = rtlUtf8Length(strlen(midString), midString);
         int cmp = rtlCompareUtf8Utf8(width, search, elemlen, table[mid], locale);
         if (cmp < 0)
             right = mid;

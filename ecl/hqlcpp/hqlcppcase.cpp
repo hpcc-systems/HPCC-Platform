@@ -571,10 +571,10 @@ void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & ta
             throwUnexpectedType(compareType);
         }
         args.append(*getSizetConstant(values->numChildren()));
-        if ((ctc != type_varstring) && (ctc != type_varunicode))
+        if ((ctc != type_varstring) && (ctc != type_varunicode) && (ctc != type_utf8))
             args.append(*getSizetConstant(values->queryChild(0)->queryType()->getStringLen()));
         args.append(*createValue(no_address, tableType, createValue(no_index, LINK(tableEntryType), LINK(boundTable.expr), getZero())));
-        if ((ctc != type_varstring) && (ctc != type_varunicode))
+        if ((ctc != type_varstring) && (ctc != type_varunicode) && (ctc != type_utf8))
             args.append(*translator.getBoundLength(test));
         args.append(*ensureIndexable(test.expr));
         if ((ctc==type_unicode) || (ctc == type_varunicode) || (ctc == type_utf8))
