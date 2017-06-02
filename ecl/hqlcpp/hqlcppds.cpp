@@ -1818,7 +1818,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         CompoundSourceTransformer transformer(*this, CSFpreload|csfFlags);
         resourced.setown(transformer.process(resourced));
         checkNormalized(ctx, resourced);
-        noteFinishedTiming("workunit;tree transform: optimize disk read", startCycles);
+        noteFinishedTiming("workunit:tree transform: optimize disk read", startCycles);
     }
 
     bool isInsideChildQuery = (graphKind == no_childquery) || insideChildQuery(ctx);
@@ -1828,7 +1828,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         traceExpression("BeforeOptimizeSub", resourced);
         resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags(isInsideChildQuery)|HOOcompoundproject));
         traceExpression("AfterOptimizeSub", resourced);
-        noteFinishedTiming("workunit;optimize graph", startCycles);
+        noteFinishedTiming("workunit:optimize graph", startCycles);
     }
 
     traceExpression("BeforeResourcing Child", resourced);
@@ -1844,7 +1844,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     else
         resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
 
-    noteFinishedTiming("workunit;resource graph", startCycles);
+    noteFinishedTiming("workunit:resource graph", startCycles);
     checkNormalized(ctx, resourced);
     traceExpression("AfterResourcing Child", resourced);
     
