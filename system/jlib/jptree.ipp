@@ -383,7 +383,7 @@ struct PtrStrUnion
         struct
         {
 #ifdef LITTLE_ENDIAN
-            char flag;
+            char flag = 0;
             union
             {
                 char chars[sizeof(PTR *)-1];
@@ -403,11 +403,16 @@ struct PtrStrUnion
                     int8_t idx1;
                 };
             };
-            char flag;
+            char flag = 0;
 #endif
         };
     };
     inline PtrStrUnion<PTR>() : ptr(nullptr) {}
+    inline void init()
+    {
+        ptr=nullptr;
+        flag=0;
+    }
     inline bool isPtr() const
     {
         return (flag&1) == 0;
@@ -451,6 +456,7 @@ struct PtrStrUnion
     }
 #else
     PTR *ptr = nullptr;
+    inline void init(){}
     inline bool isPtr()
     {
         return true;
@@ -525,6 +531,11 @@ struct AttrValue
 {
     AttrStrUnionWithTable key;
     AttrStrUnion value;
+    inline void init()
+    {
+        key.init();
+        value.init();
+    }
 };
 
 
