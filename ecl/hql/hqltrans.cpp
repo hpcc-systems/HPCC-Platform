@@ -241,7 +241,7 @@ void HqlTransformerInfo::gatherTransformStats(IStatisticTarget & target) const
     {
         StringBuffer scope;
         scope.append("compile:transform:").append(name);
-        target.addStatistic(SSTcompilestage, scope, StNumStarted, nullptr, numInstances, 1, 0, StatsMergeSum);
+        target.addStatistic(SSTcompilestage, scope, StNumStarts, nullptr, numInstances, 1, 0, StatsMergeSum);
         stats.gatherTransformStats(target, scope);
     }
 #endif

@@ -1143,6 +1143,7 @@ protected:
     unsigned lastWuAbortCheck;
     unsigned startTime;
     unsigned totSlavesReplyLen;
+    CCycleTimer elapsedTimer;
 
     QueryOptions options;
     Owned<IConstWorkUnit> workUnit;
@@ -1437,7 +1438,7 @@ public:
             graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), 0));
     }
 
-    virtual void endGraph(cycle_t startCycles, bool aborting)
+    virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting)
     {
         if (graph)
         {
@@ -1460,6 +1461,7 @@ public:
                     StringBuffer graphDesc;
                     formatGraphTimerLabel(graphDesc, graphName);
                     WorkunitUpdate progressWorkUnit(&workUnit->lock());
+                    progressWorkUnit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphName, StWhenStarted, NULL, startTimeStamp, 1, 0, StatsMergeAppend);
                     updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphName, StTimeElapsed, graphDesc, elapsedTime);
                     updateWorkunitTimeStat(progressWorkUnit, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedTime);
                     progressWorkUnit->setStatistic(SCTsummary, "roxie", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedTime, 1, 0, StatsMergeReplace);
@@ -1515,6 +1517,7 @@ public:
         {
             bool created = false;
             cycle_t startCycles = get_cycles_now();
+            unsigned __int64 startTimeStamp = getTimeStampNowValue();
             try
             {
                 beginGraph(name);
@@ -1531,7 +1534,7 @@ public:
                     CTXLOG("Exception thrown in query - cleaning up: %d: %s", e->errorCode(), e->errorMessage(s).str());
                 }
                 if (created)  // Partially-created graphs are liable to crash if you call abort() on them...
-                    endGraph(startCycles, true);
+                    endGraph(startTimeStamp, startCycles, true);
                 else
                 {
                     // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
@@ -1544,7 +1547,7 @@ public:
             {
                 CTXLOG("Exception thrown in query - cleaning up");
                 if (created)
-                    endGraph(startCycles, true);
+                    endGraph(startTimeStamp, startCycles, true);
                 else
                 {
                     // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
@@ -1553,7 +1556,7 @@ public:
                 CTXLOG("Done cleaning up");
                 throw;
             }
-            endGraph(startCycles, false);
+            endGraph(startTimeStamp, startCycles, false);
         }
     }
 
@@ -2682,7 +2685,7 @@ protected:
     {
         WorkunitUpdate wu(&workUnit->lock());
         wu->subscribe(SubscribeOptionAbort);
-        addTimeStamp(wu, SSTglobal, NULL, StWhenQueryStarted);
+        addTimeStamp(wu, SSTglobal, NULL, StWhenStarted);
         if (!context->getPropBool("@outputToSocket", false))
             protocol = NULL;
         updateSuppliedXmlParams(wu);
@@ -2815,8 +2818,8 @@ public:
                 if (_strands)
                     builder.addStatistic(StNumStrands, _strands);
                 builder.addStatistic(StNumRowsProcessed, _processed);
-                builder.addStatistic(StNumStarted, 1);
-                builder.addStatistic(StNumStopped, 1);
+                builder.addStatistic(StNumStarts, 1);
+                builder.addStatistic(StNumStops, 1);
                 builder.addStatistic(StNumSlaves, 1);  // Arguable
             }
             logctx.noteStatistic(StNumRowsProcessed, _processed);
@@ -3011,12 +3014,13 @@ public:
             }
             while (clusterNames.ordinality())
                 restoreCluster();
-            addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
+            addTimeStamp(w, SSTglobal, NULL, StWhenFinished);
             updateWorkunitTimings(w, myTimer);
             Owned<IStatisticGatherer> gatherer = createGlobalStatisticGatherer(w);
             CRuntimeStatisticCollection merged(allStatistics);
             logctx.gatherStats(merged);
             merged.recordStatistics(*gatherer);
+            gatherer->addStatistic(StTimeElapsed, elapsedTimer.elapsedNs());
 
             WuStatisticTarget statsTarget(w, "roxie");
             rowManager->reportPeakStatistics(statsTarget, 0);
@@ -3583,10 +3587,10 @@ public:
         return factory->queryPackage().createFileName(filename, overwrite, extend, clusters, workUnit);
     }
 
-    virtual void endGraph(cycle_t startCycles, bool aborting)
+    virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting) override
     {
         fileCache.kill();
-        CRoxieContextBase::endGraph(startCycles, aborting);
+        CRoxieContextBase::endGraph(startTimeStamp, startCycles, aborting);
     }
 
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)

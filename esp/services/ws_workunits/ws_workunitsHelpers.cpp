@@ -760,8 +760,13 @@ void WsWuInfo::doGetGraphs(IArrayOf<IEspECLGraph>& graphs)
         if (version >= 1.53)
         {
             SCMStringBuffer s;
-            Owned<IConstWUStatistic> whenGraphStarted = cw->getStatistic(NULL, name.str(), StWhenGraphStarted);
-            Owned<IConstWUStatistic> whenGraphFinished = cw->getStatistic(NULL, name.str(), StWhenGraphFinished);
+            Owned<IConstWUStatistic> whenGraphStarted = cw->getStatistic(NULL, name.str(), StWhenStarted);
+            if (!whenGraphStarted) // 6.x backward compatibility
+                whenGraphStarted.setown(cw->getStatistic(NULL, name.str(), StWhenGraphStarted));
+            Owned<IConstWUStatistic> whenGraphFinished = cw->getStatistic(NULL, name.str(), StWhenFinished);
+            if (!whenGraphFinished) // 6.x backward compatibility
+                whenGraphFinished.setown(cw->getStatistic(NULL, name.str(), StWhenGraphFinished));
+
             if (whenGraphStarted)
                 g->setWhenStarted(whenGraphStarted->getFormattedValue(s).str());
             if (whenGraphFinished)

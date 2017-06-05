@@ -541,11 +541,11 @@ public:
 static const StatisticMeta statsMetaData[StMax] = {
     { StKindNone, SMeasureNone, StKindNone, StKindNone, { "none" }, { "@none" } },
     { StKindAll, SMeasureAll, StKindAll, StKindAll, { "all" }, { "@all" } },
-    { WHENSTAT(GraphStarted) },
-    { WHENSTAT(GraphFinished) },
+    { WHENSTAT(GraphStarted) }, // Deprecated - use WhenStart
+    { WHENSTAT(GraphFinished) }, // Deprecated - use WhenFinished
     { WHENSTAT(FirstRow) },
-    { WHENSTAT(QueryStarted) },
-    { WHENSTAT(QueryFinished) },
+    { WHENSTAT(QueryStarted) }, // Deprecated - use WhenStart
+    { WHENSTAT(QueryFinished) }, // Deprecated - use WhenFinished
     { WHENSTAT(Created) },
     { WHENSTAT(Compiled) },
     { WHENSTAT(WorkunitModified) },
@@ -558,8 +558,8 @@ static const StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(MaxRowSize) },
     { NUMSTAT(RowsProcessed) },
     { NUMSTAT(Slaves) },
-    { NUMSTAT(Started) },
-    { NUMSTAT(Stopped) },
+    { NUMSTAT(Starts) },
+    { NUMSTAT(Stops) },
     { NUMSTAT(IndexSeeks) },
     { NUMSTAT(IndexScans) },
     { NUMSTAT(IndexWildSeeks) },
@@ -626,7 +626,8 @@ static const StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(TotalNested) },
     { TIMESTAT(Generate) },
     { CYCLESTAT(Generate) },
-
+    { WHENSTAT(Started) },
+    { WHENSTAT(Finished) },
 };
 
 

@@ -1824,6 +1824,7 @@ void EclAgent::doProcess()
     PrintLog ("Entering doProcess ()");
 #endif
     bool failed = true;
+    CCycleTimer elapsedTimer;
     try
     {
         LOG(MCrunlock, unknownJob, "Waiting for workunit lock");
@@ -1845,7 +1846,7 @@ void EclAgent::doProcess()
             if(noRetry && (w->getState() == WUStateFailed))
                 throw MakeStringException(0, "Ecl agent started in 'no retry' mode for failed workunit, so failing");
             w->setState(WUStateRunning);
-            addTimeStamp(w, SSTglobal, NULL, StWhenQueryStarted);
+            addTimeStamp(w, SSTglobal, NULL, StWhenStarted);
             if (isRemoteWorkunit)
             {
                 w->setAgentSession(myProcessSession());
@@ -1915,7 +1916,8 @@ void EclAgent::doProcess()
 
         WorkunitUpdate w = updateWorkUnit();
 
-        addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
+        addTimeStamp(w, SSTglobal, NULL, StWhenFinished);
+        updateWorkunitTimeStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedTimer.elapsedNs());
         addTimings();
 
         switch (w->getState())

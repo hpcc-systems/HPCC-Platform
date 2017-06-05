@@ -6040,7 +6040,7 @@ public:
     virtual void report(const char * scope, const char * description, const __int64 totaltime, const __int64 maxtime, const unsigned count)
     {
         StatisticScopeType scopeType = SSTcompilestage;
-        StatisticKind kind = StTimeElapsed;
+        StatisticKind kind = StTimeTotalExecute;
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, totaltime, count, maxtime, StatsMergeReplace);
     }
 

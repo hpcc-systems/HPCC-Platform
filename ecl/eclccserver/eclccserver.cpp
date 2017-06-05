@@ -208,7 +208,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 unsigned __int64 cnt = atoi64(count);
                 const char * scope = section.str();
                 StatisticScopeType scopeType = SSTcompilestage;
-                StatisticKind kind = StTimeElapsed;
+                StatisticKind kind = StTimeTotalExecute;
                 workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, nval, cnt, nmax, StatsMergeReplace);
             }
             else
