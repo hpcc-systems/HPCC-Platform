@@ -253,6 +253,7 @@ jlib_decl void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned in
 #define JSON_Format   0x02
 #define JSON_Sanitize 0x08
 #define JSON_SanitizeAttributeValues 0x10
+#define JSON_IncludeRoot 0x20
 
 jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, unsigned indent = 0, byte flags=JSON_Format);
 jlib_decl void toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent = 0, byte flags=JSON_Format);

@@ -5722,7 +5722,7 @@ jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, uns
         virtual size32_t write(size32_t len, const void * data) override { out.append(len, (const char *)data); return len; }
     } adapter(ret);
     bool delimit = false;
-    _toJSON(tree->queryBranch(NULL), adapter, indent, flags, delimit, true);
+    _toJSON(tree->queryBranch(NULL), adapter, indent, flags, delimit, (flags & JSON_IncludeRoot) == 0);
     return ret;
 }
 

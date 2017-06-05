@@ -1470,6 +1470,7 @@ public:
     virtual IError * cloneSetSeverity(ErrorSeverity _severity) const override;
     virtual unsigned getActivity() const override { return activity; }
     virtual const char * queryScope() const override { return scope; }
+    virtual IPropertyTree * toTree() const override;
 
 protected:
     ErrorSeverity severity;
@@ -1506,6 +1507,26 @@ StringBuffer& CError::toString(StringBuffer& buf) const
     return buf;
 }
 
+IPropertyTree * CError::toTree() const
+{
+    Owned<IPropertyTree> xml = createPTree("exception", ipt_fast);
+    xml->setPropInt("@severity", severity);
+    xml->setPropInt("@category", category);
+    xml->setPropInt("@code", no);
+    xml->setProp("@msg", msg);
+    xml->setProp("@filename", filename);
+    xml->setProp("@scope", scope);
+    if (lineno)
+        xml->setPropInt("@line", lineno);
+    if (column)
+        xml->setPropInt("@column", column);
+    if (position)
+        xml->setPropInt("@pos", position);
+    if (activity)
+        xml->setPropInt("@activity", activity);
+    return xml.getClear();
+}
+
 IError * CError::cloneSetSeverity(ErrorSeverity newSeverity) const
 {
     return new CError(category, newSeverity,
@@ -1521,4 +1542,18 @@ IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errN
 IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, unsigned activity, const char * scope)
 {
     return new CError(category,severity,errNo,msg,nullptr, 0, 0, 0, activity, scope);
+}
+
+IError *createError(IPropertyTree * tree)
+{
+    return new CError((WarnErrorCategory)tree->getPropInt("@category"),
+                      (ErrorSeverity)tree->getPropInt("@severity"),
+                      tree->getPropInt("@code"),
+                      tree->queryProp("@msg"),
+                      tree->queryProp("@filename"),
+                      tree->getPropInt("@line"),
+                      tree->getPropInt("@column"),
+                      tree->getPropInt("@pos"),
+                      tree->getPropInt("@activity"),
+                      tree->queryProp("@scope"));
 }

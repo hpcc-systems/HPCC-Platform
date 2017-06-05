@@ -134,6 +134,7 @@ void HQL_API reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation
 void HQL_API reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...) __attribute__((format(printf, 4, 5)));
 
 extern HQL_API IErrorReceiver * createFileErrorReceiver(FILE *f);
+extern HQL_API IErrorReceiver * createXmlFileErrorReceiver(FILE *f);
 extern HQL_API IErrorReceiver * createNullErrorReceiver();
 extern HQL_API IErrorReceiver * createThrowingErrorReceiver();
 extern HQL_API IErrorReceiver * createAbortingErrorReceiver(IErrorReceiver & prev);

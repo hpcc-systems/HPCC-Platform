@@ -178,7 +178,16 @@ public:
         f = _f;
     }
 
-    virtual void report(IError* error)
+protected:
+    FILE *f;
+};
+
+class HQL_API StandardFileErrorReceiver : public FileErrorReceiver
+{
+public:
+    StandardFileErrorReceiver(FILE *_f) : FileErrorReceiver(_f) {}
+
+    virtual void report(IError* error) override
     {
         ErrorReceiverSink::report(error);
 
@@ -213,14 +222,33 @@ public:
         if (!filename) filename = isError(severity) ? "" : unknownAtom->queryStr();
         fprintf(f, "%s(%d,%d): %s C%04d: %s\n", filename, line, column, severityText, code, msg.str());
     }
+};
 
-protected:
-    FILE *f;
+class HQL_API XmlFileErrorReceiver : public FileErrorReceiver
+{
+public:
+    XmlFileErrorReceiver(FILE *_f) : FileErrorReceiver(_f) {}
+
+    virtual void report(IError* error) override
+    {
+        ErrorReceiverSink::report(error);
+        OwnedPTree tree = error->toTree();
+
+        StringBuffer msg;
+        //toJSON(tree, msg, 0, JSON_IncludeRoot);
+        toXML(tree, msg, 0, XML_Embed);
+        fprintf(f, "%s\n", msg.str());
+    }
 };
 
 extern HQL_API IErrorReceiver *createFileErrorReceiver(FILE *f)
 {
-    return new FileErrorReceiver(f);
+    return new StandardFileErrorReceiver(f);
+}
+
+extern HQL_API IErrorReceiver *createXmlFileErrorReceiver(FILE *f)
+{
+    return new XmlFileErrorReceiver(f);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

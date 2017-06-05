@@ -5955,7 +5955,7 @@ IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(const IStatisticsFilter
     CriticalBlock block(crit);
     statistics.loadBranch(p,"Statistics");
     Owned<IConstWUStatisticIterator> localStats = new WorkUnitStatisticsIterator(statistics, 0, (IConstWorkUnit *) this, filter);
-    if (!filter->recurseChildScopes(SSTgraph, nullptr))
+    if (filter && !filter->recurseChildScopes(SSTgraph, nullptr))
         return *localStats.getClear();
 
     const char * wuid = p->queryName();
@@ -10797,4 +10797,44 @@ extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool r
         return conn->getRoot();
     else
         return NULL;
+}
+
+void addWorkunitException(IWorkUnit * wu, IError * error, bool removeTimeStamp)
+{
+    ErrorSeverity wuSeverity = SeverityInformation;
+    ErrorSeverity severity = error->getSeverity();
+
+    switch (severity)
+    {
+    case SeverityIgnore:
+        return;
+    case SeverityInformation:
+        break;
+    case SeverityWarning:
+        wuSeverity = SeverityWarning;
+        break;
+    case SeverityError:
+    case SeverityFatal:
+        wuSeverity = SeverityError;
+        break;
+    }
+
+    Owned<IWUException> exception = wu->createException();
+    exception->setSeverity(wuSeverity);
+
+    StringBuffer msg;
+    exception->setExceptionCode(error->errorCode());
+    exception->setExceptionMessage(error->errorMessage(msg).str());
+    exception->setExceptionSource(queryStatisticsComponentName());
+
+    exception->setExceptionFileName(error->getFilename());
+    exception->setExceptionLineNo(error->getLine());
+    exception->setExceptionColumn(error->getColumn());
+    if (removeTimeStamp)
+        exception->setTimeStamp(nullptr);
+
+    if (error->getActivity())
+        exception->setActivityId(error->getActivity());
+    if (error->queryScope())
+        exception->setScope(error->queryScope());
 }

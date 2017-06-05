@@ -23,7 +23,7 @@
 class HQL_API WorkUnitErrorReceiver : implements IErrorReceiver, public CInterface
 {
 public:
-    WorkUnitErrorReceiver(IWorkUnit * _wu, const char * _component) { wu.set(_wu); component.set(_component); }
+    WorkUnitErrorReceiver(IWorkUnit * _wu, const char * _component, bool _removeTimeStamp) { wu.set(_wu); component.set(_component); removeTimeStamp = _removeTimeStamp; }
     IMPLEMENT_IINTERFACE;
 
     virtual IError * mapError(IError * error);
@@ -32,12 +32,10 @@ public:
     virtual size32_t errCount();
     virtual size32_t warnCount();
 
-protected:
-    void initializeError(IWUException * exception, int errNo, const char *msg, const char * filename, int lineno, int column, int pos);
-
 private:
     Owned<IWorkUnit> wu;
     StringAttr component;
+    bool removeTimeStamp;
 };
 
 

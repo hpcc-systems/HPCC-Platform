@@ -26,10 +26,10 @@
 #include <dasess.hpp>
 #include <danqs.hpp>
 #include <dalienv.hpp>
-#include <workunit.hpp>
-#include <wujobq.hpp>
-#include <dllserver.hpp>
-#include <thorplugin.hpp>
+#include "workunit.hpp"
+#include "wujobq.hpp"
+#include "dllserver.hpp"
+#include "thorplugin.hpp"
 
 static StringAttr dllPath;
 Owned<IPropertyTree> globals;
@@ -189,62 +189,34 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         // A typical error looks like this: stdin:(385,29): warning C1041: Record doesn't have an explicit maximum record size
         // we will also see (and want to skip) nn error(s), nn warning(s)
         RegExpr errCount, errParse, timings;
-        timings.init("Timing: {.+} total={[0-9]+}ms max={[0-9]+}us count={[0-9]+} ave={[0-9]+}us");
-        errCount.init("[0-9]+ errors?, [0-9]+ warnings?.*");
-        errParse.init("^{.+}\\({[0-9]+},{[0-9]+}\\): {[a-z]+} [A-Za-z]*{[0-9]+}:{.*$}");
-        if (!errCount.find(errStr))
+        timings.init("^<stat");
+        errParse.init("^<exception");
+        if (timings.find(errStr))
         {
-            if (timings.find(errStr))
+            OwnedPTree timing = createPTreeFromXMLString(errStr, ipt_fast);
+            if (timing)
             {
-                StringBuffer section, total, max, count, ave;
-                timings.findstr(section, 1);
-                timings.findstr(total, 2);
-                timings.findstr(max, 3);
-                timings.findstr(count, 4);
-                timings.findstr(ave, 5);
-
-                unsigned __int64 nval = atoi64(total) * 1000000; // in milliseconds
-                unsigned __int64 nmax = atoi64(max) * 1000; // in microseconds
-                unsigned __int64 cnt = atoi64(count);
-                const char * scope = section.str();
-                StatisticScopeType scopeType = SSTcompilestage;
-                StatisticKind kind = StTimeTotalExecute;
+                unsigned __int64 nval = timing->getPropInt64("@value");
+                unsigned __int64 nmax = timing->getPropInt64("@max");
+                unsigned __int64 cnt = timing->getPropInt64("@count");
+                const char * scope = timing->queryProp("@scope");
+                StatisticScopeType scopeType = (StatisticScopeType)timing->getPropInt("@scopeType");
+                StatisticKind kind = queryStatisticKind(timing->queryProp("@kind"));
                 workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, nval, cnt, nmax, StatsMergeReplace);
             }
             else
+                DBGLOG("Unrecognised timing: %s", errStr);
+        }
+        else if (errParse.find(errStr))
+        {
+            OwnedPTree exception = createPTreeFromXMLString(errStr, ipt_fast);
+            if (exception)
             {
-                Owned<IWUException> err = workunit->createException();
-                err->setExceptionSource("eclcc");
-                if (errParse.find(errStr))
-                {
-                    StringBuffer file, line, col, errClass, errCode, errText;
-                    errParse.findstr(file, 1);
-                    errParse.findstr(line, 2);
-                    errParse.findstr(col, 3);
-                    errParse.findstr(errClass, 4);
-                    errParse.findstr(errCode, 5);
-                    errParse.findstr(errText, 6);
-                    err->setExceptionFileName(file);
-                    err->setExceptionLineNo(atoi(line));
-                    err->setExceptionColumn(atoi(col));
-                    if (stricmp(errClass, "info")==0)
-                        err->setSeverity(SeverityInformation);
-                    else if (stricmp(errClass, "warning")==0)
-                        err->setSeverity(SeverityWarning);
-                    else
-                        err->setSeverity(SeverityError);
-                    err->setExceptionCode(atoi(errCode));
-                    err->setExceptionMessage(errText);
-                    err->setExceptionFileName(file); // any point if it just says stdin?
-                    //MORE: How can we pass the activity id?  Should errors be output in a modified format?
-                }
-                else
-                {
-                    err->setSeverity(retcode ? SeverityError : SeverityWarning);
-                    err->setExceptionMessage(errStr);
-                    DBGLOG("%s", errStr);
-                }
+                Owned<IError> error = createError(exception);
+                addWorkunitException(workunit, error, false);
             }
+            else
+                DBGLOG("Unrecognised error: %s", errStr);
         }
     }
 
@@ -330,7 +302,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             eclccCmd.append(" -");
         if (mainDefinition.length())
             eclccCmd.append(" -main ").append(mainDefinition);
-        eclccCmd.append(" --timings");
+        eclccCmd.append(" --timings --xml");
         if (globals->getPropBool("@enableEclccDali", true))
         {
             const char *daliServers = globals->queryProp("@daliServers");
