@@ -380,33 +380,33 @@ struct PtrStrUnion
     union
     {
         PTR *ptr;
+#if __BYTE_ORDER == __LITTLE_ENDIAN
         struct
         {
-#ifdef LITTLE_ENDIAN
             char flag;
-            union
-            {
-                char chars[sizeof(PTR *)-1];
-                struct
-                {
-                    int8_t idx1;
-                    int16_t idx2;
-                };
-            };
-#else
-            union
-            {
-                char chars[sizeof(PTR *)-1];
-                struct
-                {
-                    int16_t idx2;
-                    int8_t idx1;
-                };
-            };
-            char flag;
-#endif
+            char chars[sizeof(PTR *)-1];
         };
+        struct
+        {
+            char flagx;
+            int8_t idx1;
+            int16_t idx2;
+        };
+#else
+        struct
+        {
+            char chars[sizeof(PTR *)-1];
+            char flag;
+        };
+        struct
+        {
+            int16_t idx2;
+            int8_t idx1;
+            char flagx;
+        };
+#endif
     };
+
     inline PtrStrUnion<PTR>() : ptr(nullptr) {}
     inline bool isPtr() const
     {
@@ -487,6 +487,7 @@ struct PtrStrUnion
 #endif
 
 typedef PtrStrUnion<AttrStr> AttrStrUnion;
+static_assert(sizeof(AttrStrUnion) == sizeof(AttrStr *), "AttrStrUnion size mismatch");  // Sanity check!
 
 #ifdef USE_READONLY_ATOMTABLE
 struct AttrStrUnionWithTable : public AttrStrUnion

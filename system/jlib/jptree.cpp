@@ -27,12 +27,6 @@
 
 #include <algorithm>
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
-
 #define MAKE_LSTRING(name,src,length) \
     const char *name = (const char *) alloca((length)+1); \
     memcpy((char *) name, (src), (length)); \
@@ -2986,7 +2980,7 @@ void LocalPTree::setAttribute(const char *key, const char *val)
     else
     {
         attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
-        v = &attrs[numAttrs++];
+        v = new(&attrs[numAttrs++]) AttrValue;  // Initialize new AttrValue
         if (!v->key.set(key))
             v->key.setPtr(isnocase() ? AttrStr::createNC(key) : AttrStr::create(key));
     }
