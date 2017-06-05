@@ -13,7 +13,7 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-############################################################################## */ 
+############################################################################## */
 
 
 #include <aws/core/Aws.h>
@@ -68,7 +68,7 @@ extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
   else
     {
       return false;
-    }	
+    }
 }
 
 
@@ -78,7 +78,7 @@ extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
  *
  */
 
-SQSHPCCPlugin::SQSHPCC::SQSHPCC(const string& _queuename) 
+SQSHPCCPlugin::SQSHPCC::SQSHPCC(const string& _queuename)
 {
 
   if(_queuename.empty())
@@ -87,12 +87,12 @@ SQSHPCCPlugin::SQSHPCC::SQSHPCC(const string& _queuename)
     }
   this->queueName=_queuename;
   cout << "The queue is " << this->queueName << endl;
-  
+
 }
 
 
 /**
- * Destructor  
+ * Destructor
  * Release the SQS connection
  */
 SQSHPCCPlugin::SQSHPCC::~SQSHPCC()
@@ -104,37 +104,37 @@ SQSHPCCPlugin::SQSHPCC::~SQSHPCC()
 }
 
 /**
- *  
+ *
  *
  *
  **/
 
-SQSHPCCPlugin::Response  SQSHPCCPlugin::SQSHPCC::sendMessage(const char* message) 
+SQSHPCCPlugin::Response  SQSHPCCPlugin::SQSHPCC::sendMessage(const char* message)
 {
 
   SQSHPCCPlugin::Response ref = {};
 
-  cout << "SendMessage is " << this->queueUrl << endl; 
+  cout << "SendMessage is " << this->queueUrl << endl;
 
   try {
     Aws::SQS::Model::SendMessageRequest sendMessageRequest;
     sendMessageRequest.SetQueueUrl(this->queueUrl);
     sendMessageRequest.SetMessageBody(message);
- 
+
     Aws::SQS::Model::SendMessageOutcome sendMessageOutcome = this->sqsClient->SendMessage(sendMessageRequest);
-     
+
     if(!sendMessageOutcome.IsSuccess() || sendMessageOutcome.GetResult().GetMessageId().length() == 0 )
       {
-	cout << "Error occurred during the sending " << endl;
-	ref.code=-1;
-	ref.body="Error occurred during message sending";
+        cout << "Error occurred during the sending " << endl;
+        ref.code=-1;
+        ref.body="Error occurred during message sending";
       }
-    else 
+    else
       {
-	ref.code=3;
-	ref.body=convertAwsStringToCharPtr(sendMessageOutcome.GetResult().GetMessageId());
-      }	
-     
+        ref.code=3;
+        ref.body=sendMessageOutcome.GetResult().GetMessageId().c_str();
+      }
+
   } catch (const char* message) {
     cout<< "Error occurred during sending message [ " << message << " ]" << endl;
   }
@@ -149,9 +149,9 @@ SQSHPCCPlugin::Response  SQSHPCCPlugin::SQSHPCC::sendMessage(const char* message
  *
  **/
 
-bool SQSHPCCPlugin::SQSHPCC::disconnect() 
+bool SQSHPCCPlugin::SQSHPCC::disconnect()
 {
-  try 
+  try
     {
       Aws::ShutdownAPI(this->options);
       return true;
@@ -159,7 +159,7 @@ bool SQSHPCCPlugin::SQSHPCC::disconnect()
   catch(...)
     {
       return false;
-    }	
+    }
 }
 
 
@@ -167,7 +167,7 @@ bool SQSHPCCPlugin::SQSHPCC::disconnect()
  *
  *
  */
-bool SQSHPCCPlugin::SQSHPCC::QueueExists() 
+bool SQSHPCCPlugin::SQSHPCC::QueueExists()
 {
   Aws::SQS::Model::GetQueueUrlRequest gqu_req;
   gqu_req.SetQueueName(this->queueName.c_str());
@@ -175,13 +175,13 @@ bool SQSHPCCPlugin::SQSHPCC::QueueExists()
   try
     {
       Aws::SQS::Model::GetQueueUrlOutcome gqu_out = this->sqsClient->GetQueueUrl(gqu_req);
-      exists =gqu_out.IsSuccess(); 
+      exists =gqu_out.IsSuccess();
     }
-  catch(const char* message) 
+  catch(const char* message)
     {
       cout << "Error: " << message << endl;
     }
-   
+
   return exists;
 }
 
@@ -194,14 +194,14 @@ SQSHPCCPlugin::Response SQSHPCCPlugin::SQSHPCC::createQueue()
   cq_req.SetQueueName(this->queueName.c_str());
 
   Aws::SQS::Model::CreateQueueOutcome  cq_out = this->sqsClient->CreateQueue(cq_req);
-  if (cq_out.IsSuccess()) 
+  if (cq_out.IsSuccess())
     {
       cout << "Successfully created queue " << this->queueName << std::endl;
     }
-  else 
+  else
     {
       cout << "Error creating queue " << this->queueName << ": " <<
-	cq_out.GetError().GetMessage() << std::endl;
+        cq_out.GetError().GetMessage() << std::endl;
     }
 
   return ref;
@@ -217,21 +217,21 @@ SQSHPCCPlugin::Response SQSHPCCPlugin::SQSHPCC::deleteQueue()
   cq_req.SetQueueUrl(this->queueUrl);
 
   auto  cq_out = this->sqsClient->DeleteQueue(cq_req);
-  if (cq_out.IsSuccess()) 
+  if (cq_out.IsSuccess())
     {
       cout << "Successfully deleted queue " << this->queueName << std::endl;
-    } 
-  else 
+    }
+  else
     {
       cout << "Error deleting queue " << this->queueName << ": " <<
-	cq_out.GetError().GetMessage() << std::endl;
+        cq_out.GetError().GetMessage() << std::endl;
     }
 
   return ref;
 }
 
 
-SQSHPCCPlugin::Response SQSHPCCPlugin::SQSHPCC::receiveMessage() 
+SQSHPCCPlugin::Response SQSHPCCPlugin::SQSHPCC::receiveMessage()
 {
 
   SQSHPCCPlugin::Response ref = {};
@@ -244,42 +244,42 @@ SQSHPCCPlugin::Response SQSHPCCPlugin::SQSHPCC::receiveMessage()
 
       Aws::SQS::Model::ReceiveMessageOutcome receiveMessageOutcome = this->sqsClient->ReceiveMessage(receiveMessageRequest);
       if(!receiveMessageOutcome.IsSuccess() || receiveMessageOutcome.GetResult().GetMessages().size() == 0)
-	{
-	  std::cout << "Error on receive: " << receiveMessageOutcome.GetError().GetMessage() << std::endl;
-	  ref.code=2;
-	  return ref;
-	}
- 
+        {
+          std::cout << "Error on receive: " << receiveMessageOutcome.GetError().GetMessage() << std::endl;
+          ref.code=2;
+          return ref;
+        }
+
       Aws::SQS::Model::Message msg = receiveMessageOutcome.GetResult().GetMessages()[0];
       cout << msg.GetBody() << endl;
-    } 
-  catch(const char* message) 
-    {
-      cout << "Error: " << message << endl; 
     }
-   
+  catch(const char* message)
+    {
+      cout << "Error: " << message << endl;
+    }
+
   return ref;
 }
 
 
-void SQSHPCCPlugin::SQSHPCC::setQueueUrlFromQueueName() 
+void SQSHPCCPlugin::SQSHPCC::setQueueUrlFromQueueName()
 {
 
   Aws::SQS::Model::GetQueueUrlRequest gqu_req;
   gqu_req.SetQueueName(this->queueName.c_str());
 
-  try 
+  try
     {
       Aws::SQS::Model::GetQueueUrlOutcome gqu_out = this->sqsClient->GetQueueUrl(gqu_req);
-      if(gqu_out.IsSuccess()) 
-	{
-	  std::cout << "Queue " << this->queueName.c_str() << " has url " << std::endl;
-	  this->queueUrl=gqu_out.GetResult().GetQueueUrl();
-        } 
+      if(gqu_out.IsSuccess())
+        {
+          std::cout << "Queue " << this->queueName.c_str() << " has url " << std::endl;
+          this->queueUrl=gqu_out.GetResult().GetQueueUrl();
+        }
       else
-	{
-	  std::cout << "Error getting url for queue " << this->queueName.c_str() << ": " << std::endl;
-	  throw runtime_error(gqu_out.GetError().GetMessage().c_str()) ;
+        {
+          std::cout << "Error getting url for queue " << this->queueName.c_str() << ": " << std::endl;
+          throw runtime_error(gqu_out.GetError().GetMessage().c_str()) ;
         }
 
     } catch(const char* message) {
@@ -293,14 +293,14 @@ void SQSHPCCPlugin::SQSHPCC::setSQSConfiguration(const string& protocol, const s
 
   Aws::InitAPI(this->options);
   Aws::Client::ClientConfiguration config;
-  
+
   if(!protocol.empty())
     {
       config.scheme = Aws::Http::Scheme::HTTPS;
     }
 
   if(region.empty()) throw string("Region mustn't be empty");
-  
+
   if(RegionExists(region))
     {
       config.region = getRegion(region);
@@ -314,30 +314,29 @@ void SQSHPCCPlugin::SQSHPCC::setSQSConfiguration(const string& protocol, const s
 
 bool SQSHPCCPlugin::SQSHPCC::RegionExists(const string& region)
 {
-  
   if(region.empty())
     {
       return false;
     }
 
-  char *reg = convertStringToChar(region); 
-  
+  const char *reg = region.c_str();
+
   return (
           strieq(reg,"US_EAST_1") ||
-    	  strieq(reg,"US_WEST_1") ||
-    	  strieq(reg,"EU_WEST_1") ||
-    	  strieq(reg,"EU_CENTRAL_1") ||
-    	  strieq(reg,"AP_SOUTHEAST_1") ||
-     	  strieq(reg,"AP_SOUTHEAST_2")
-	  ); 
+              strieq(reg,"US_WEST_1") ||
+              strieq(reg,"EU_WEST_1") ||
+              strieq(reg,"EU_CENTRAL_1") ||
+              strieq(reg,"AP_SOUTHEAST_1") ||
+               strieq(reg,"AP_SOUTHEAST_2")
+          );
 }
 
 
-const char *const SQSHPCCPlugin::SQSHPCC::getRegion(const string& region) 
+const char *const SQSHPCCPlugin::SQSHPCC::getRegion(const string& region)
 {
 
-  char *reg = convertStringToChar(region); 
-    
+  const char *reg = region.c_str();
+
   if(strieq(reg,"US_EAST_1"))  return Aws::Region::US_EAST_1;
   if(strieq(reg,"US_WEST_1")) return Aws::Region::US_WEST_1;
   if(strieq(reg,"EU_WEST_1")) return Aws::Region::EU_WEST_1;
@@ -348,32 +347,8 @@ const char *const SQSHPCCPlugin::SQSHPCC::getRegion(const string& region)
   throw string("Your region must be among these regions [ US_EAST_1, US_WEST_1, EU_WEST_1, EU_CENTRAL_1, AP_SOUTHEAST_1, AP_SOUTHEAST_2 ], please check your region");
 }
 
-
-void SQSHPCCPlugin::SQSHPCC::upstr(char *s)
-{
-  char  *p;
-
-  for (p = s; *p != '\0'; p++) 
-    *p = (char) toupper(*p);
-}
-
-
-
-char*  SQSHPCCPlugin::SQSHPCC::convertStringToChar(const string& str) 
-{
-  char *reg = new char[str.length() +1];
-  strcpy(reg,str.c_str());
-  return reg;
-}
-
-string SQSHPCCPlugin::SQSHPCC::convertAwsStringToCharPtr(Aws::String str)
-{
-  string res(str.c_str());
-  return res;
-}
-
 /**
- *  These function expose the contract for ECL  
+ *  These function expose the contract for ECL
  *
  */
 
@@ -383,24 +358,24 @@ namespace SQSHPCCPlugin
   ECL_SQS_API bool ECL_SQS_CALL publishMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message)
   {
 
-    if(strlen(queueName) == 0) 
+    if(strlen(queueName) == 0)
       {
-	cout << "QueueName is Empty" << endl;
-	throw runtime_error("The queueName mustn't be empty!!!");
+        cout << "QueueName is Empty" << endl;
+        throw runtime_error("The queueName mustn't be empty!!!");
       }
-    try 
-      { 
-	SQSHPCCPlugin::SQSHPCC hpcc(queueName);
-	hpcc.setSQSConfiguration("HTTPS",region);
-	hpcc.setQueueUrlFromQueueName();
-	SQSHPCCPlugin::Response response = hpcc.sendMessage(message);
-	return true;
-      }	
+    try
+      {
+        SQSHPCCPlugin::SQSHPCC hpcc(queueName);
+        hpcc.setSQSConfiguration("HTTPS",region);
+        hpcc.setQueueUrlFromQueueName();
+        SQSHPCCPlugin::Response response = hpcc.sendMessage(message);
+        return true;
+      }
     catch(...)
       {
-	throw;
+        throw;
       }
-	  
+
     return false;
   }
 
@@ -420,14 +395,14 @@ namespace SQSHPCCPlugin
     hpcc.setSQSConfiguration("HTTPS",region);
     try
       {
-	SQSHPCCPlugin::Response response = hpcc.createQueue();
-	return true;
+        SQSHPCCPlugin::Response response = hpcc.createQueue();
+        return true;
       }
     catch(...)
       {
-	return false;
-      }	
-	    
+        return false;
+      }
+
   }
 
   ECL_SQS_API bool ECL_SQS_CALL deleteQueue(ICodeContext * ctx,const char* region, const char* queueName)
@@ -438,12 +413,12 @@ namespace SQSHPCCPlugin
     hpcc.setQueueUrlFromQueueName();
     try
       {
-	hpcc.deleteQueue();
-	return true;
+        hpcc.deleteQueue();
+        return true;
       }
     catch(...)
       {
-	return false;
+        return false;
       }
   }
 }

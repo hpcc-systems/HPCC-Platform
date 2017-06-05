@@ -49,14 +49,14 @@
 
 #ifdef ECL_SQS_EXPORTS
 
-extern  "C" 
+extern  "C"
 {
   ECL_SQS_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
   ECL_SQS_API void setPluginContext(IPluginContext * _ctx);
 }
 #endif
 
-extern "C++" 
+extern "C++"
 {
   namespace SQSHPCCPlugin
   {
@@ -69,14 +69,14 @@ extern "C++"
 
 
 
-  
+
     class SQSHPCC
     {
 
     public:
       explicit SQSHPCC(const std::string& _queueName);
       ~SQSHPCC();
- 
+
       Response sendMessage(const char* message);
       Response createQueue();
       Response deleteQueue();
@@ -84,9 +84,9 @@ extern "C++"
       Response receiveMessage();
 
       void setSQSConfiguration(const std::string& protocol,
-			       const std::string& region); 
-      void setAwsCredentials(const char* accessKeyId, 
-			     const char* secretKey); 
+        		       const std::string& region);
+      void setAwsCredentials(const char* accessKeyId,
+        		     const char* secretKey);
       bool disconnect();
       bool QueueExists();
 
@@ -99,12 +99,9 @@ extern "C++"
       Aws::String queueUrl;
       Aws::SQS::SQSClient* sqsClient;
       Aws::SDKOptions options;
-      Aws::Auth::AWSCredentials* credentials;
+      Aws::Auth::AWSCredentials* credentials = nullptr;
       bool RegionExists(const std::string& region);
       const char *const getRegion(const std::string& region);
-      void upstr(char* s);
-      std::string convertAwsStringToCharPtr(Aws::String str);
-      char*  convertStringToChar(const string& str);
     };
 
 
@@ -112,27 +109,27 @@ extern "C++"
 
     /**
      * Queues the message for publishing to aws queue
-     * 
-     * @param   Reqion          
+     *
+     * @param   Reqion
      * @param   QueueName
      * @param   message            The message to send
      *
      * @return  true if the message was cached successfully
      */
-    ECL_SQS_API bool ECL_SQS_CALL publishMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message); 
+    ECL_SQS_API bool ECL_SQS_CALL publishMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message);
 
     //---------------------------------------------------------------------
 
-    /** 
+    /**
      *
      *
      */
     ECL_SQS_API bool ECL_SQS_CALL createQueue(ICodeContext * ctx,const char* region, const char* queueName);
 
     ECL_SQS_API bool ECL_SQS_CALL QueueExists(ICodeContext* ctx,const char* region, const char* queueName);
-     
-    ECL_SQS_API bool ECL_SQS_CALL deleteQueue(ICodeContext * ctx,const char* region, const char* queueName);      
-	
+
+    ECL_SQS_API bool ECL_SQS_CALL deleteQueue(ICodeContext * ctx,const char* region, const char* queueName);
+
   }
 }
 #endif
