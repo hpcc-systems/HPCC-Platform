@@ -1036,7 +1036,9 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     excsignal = signum;
     s.appendf("SIG: %s(%d), accessing " I64X ", IP=" I64X, strsignal(signum),signum, (__int64)info->si_addr, ip);
     
+    StringBuffer networkIp;
     PROGLOG("================================================");
+    PROGLOG("Program:   %s:%s", queryHostIP().getIpText(networkIp).str(),queryCurrentProcessPath());
     PROGLOG("Signal:    %d %s",signum,strsignal(signum));
     PROGLOG("Fault IP:  " I64X "", ip);
     PROGLOG("Accessing: " I64X "", (unsigned __int64) info->si_addr);
@@ -1045,17 +1047,30 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
 #endif
 
     PROGLOG("Registers:" );
-    PROGLOG("EAX:" I64X "  EBX:" I64X "  ECX:" I64X "  EDX:" I64X "  ESI:" I64X "  EDI:" I64X "",
 #ifdef __APPLE__
+    PROGLOG("EAX:" I64X "  EBX:" I64X "  ECX:" I64X "  EDX:" I64X "  ESI:" I64X "  EDI:" I64X "",
         (unsigned __int64) uc->uc_mcontext->__ss.__rax, (unsigned __int64)uc->uc_mcontext->__ss.__rbx, 
         (unsigned __int64) uc->uc_mcontext->__ss.__rcx, (unsigned __int64)uc->uc_mcontext->__ss.__rdx, 
         (unsigned __int64) uc->uc_mcontext->__ss.__rsi, (unsigned __int64)uc->uc_mcontext->__ss.__rdi);
+    PROGLOG("R8 :" I64X "  R9 :" I64X "  R10:" I64X "  R11:" I64X "",
+        (unsigned __int64) uc->uc_mcontext->__ss.__r8, (unsigned __int64)uc->uc_mcontext->__ss.__r9,
+        (unsigned __int64) uc->uc_mcontext->__ss.__r10, (unsigned __int64) uc->uc_mcontext->__ss.__r11 );
+    PROGLOG("R12:" I64X "  R13:" I64X "  R14:" I64X "  R15:" I64X "",
+        (unsigned __int64) uc->uc_mcontext->__ss.__r12, (unsigned __int64)uc->uc_mcontext->__ss.__r13,
+        (unsigned __int64) uc->uc_mcontext->__ss.__r14, (unsigned __int64) uc->uc_mcontext->__ss.__r15 );
     PROGLOG( "CS:EIP:%04X:" I64X "", ((unsigned) uc->uc_mcontext->__ss.__cs)&0xffff, ip );
     PROGLOG( "   ESP:" I64X "  EBP:" I64X "", sp, (unsigned __int64) uc->uc_mcontext->__ss.__rbp );
 #else
+    PROGLOG("EAX:" I64X "  EBX:" I64X "  ECX:" I64X "  EDX:" I64X "  ESI:" I64X "  EDI:" I64X "",
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RAX], (unsigned __int64)uc->uc_mcontext.gregs[REG_RBX], 
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RCX], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDX], 
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RSI], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDI] );
+    PROGLOG("R8 :" I64X "  R9 :" I64X "  R10:" I64X "  R11:" I64X "",
+        (unsigned __int64) uc->uc_mcontext.gregs[REG_R8], (unsigned __int64)uc->uc_mcontext.gregs[REG_R9],
+        (unsigned __int64) uc->uc_mcontext.gregs[REG_R10], (unsigned __int64) uc->uc_mcontext.gregs[REG_R11] );
+    PROGLOG("R12:" I64X "  R13:" I64X "  R14:" I64X "  R15:" I64X "",
+        (unsigned __int64) uc->uc_mcontext.gregs[REG_R12], (unsigned __int64)uc->uc_mcontext.gregs[REG_R13],
+        (unsigned __int64) uc->uc_mcontext.gregs[REG_R14], (unsigned __int64) uc->uc_mcontext.gregs[REG_R15] );
     PROGLOG( "CS:EIP:%04X:" I64X "", ((unsigned) uc->uc_mcontext.gregs[REG_CSGSFS])&0xffff, ip );
     PROGLOG( "   ESP:" I64X "  EBP:" I64X "", sp, (unsigned __int64) uc->uc_mcontext.gregs[REG_RBP] );
 #endif
@@ -1079,7 +1094,9 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     excsignal = signum;
     s.appendf("SIG: %s(%d), accessing %p, IP=%x", strsignal(signum),signum, info->si_addr, ip);
     
+    StringBuffer networkIp;
     PROGLOG("================================================");
+    PROGLOG("Program:   %s:%s", queryHostIP().getIpText(networkIp).str(),queryCurrentProcessPath());
     PROGLOG("Signal:    %d %s",signum,strsignal(signum));
     PROGLOG("Fault IP:  %08X", ip);
     PROGLOG("Accessing: %08X", (unsigned) info->si_addr);
