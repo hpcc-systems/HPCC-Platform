@@ -4728,7 +4728,7 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
 
   Owned<IPropertyTree> pEnvRoot = getEnvTree(context, &req.getReqInfo());
 
-  if (!strcmp(operation, "New"))
+  if (!strcmp(operation, "NewComputer"))
   {
     const char* prefix = pParams->queryProp("@prefix");
     const char* domain = pParams->queryProp(XML_ATTR_DOMAIN);
@@ -4810,17 +4810,15 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
 
     resp.setStatus("true");
   }
-  else if (!strcmp(operation, "NewComputerType"))
+  else if (!strcmp(operation, "NewComputerElement"))
   {
       StringBuffer sbTemp;
       IPropertyTree* pCompTree = createPTree(XML_TAG_HARDWARE);
       generateHardwareHeaders(pEnvRoot, sbTemp, false, pCompTree, true);
 
       StringBuffer sbNewName(type);
-      xpath.clear().appendf("%s", type);
-
-      getUniqueName(pEnvRoot, sbNewName, xpath.str(), XML_TAG_HARDWARE);
       xpath.clear().append(type).append("/").append(XML_ATTR_NAME);
+      getUniqueName(pEnvRoot, sbNewName, type, XML_TAG_HARDWARE);
       pCompTree->setProp(xpath.str(), sbNewName);
 
       pEnvRoot->queryPropTree(XML_TAG_HARDWARE)->addPropTree(type, pCompTree->queryPropTree(type));

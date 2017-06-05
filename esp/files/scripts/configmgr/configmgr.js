@@ -3316,13 +3316,15 @@ function onMenuItemClickHandleComputer(p_sType, p_aArgs, p_oValue) {
   {
     if (parentName === "Computers")
     {
-      for (i = 0; i < recSet.getLength(); i++) {
+      for (i = 0; i < recSet.getLength(); i++)
+      {
         var arr = recSet.getRecord(i).getData('domain_extra');
         if (YAHOO.lang.isArray(arr))
           break;
       }
 
-      if (i >= recSet.length) {
+      if (i >= recSet.length)
+      {
         alert("get domain from backend");
         return;
       }
@@ -3335,8 +3337,8 @@ function onMenuItemClickHandleComputer(p_sType, p_aArgs, p_oValue) {
         top.document.navDT.promptNewRange([], [], type);
       return;
     }
-    else if (parentName ==="Computer Types")
-      oper = "NewComputerType";
+    else
+      oper = "NewComputerElement";
   }
 
   var xmlArgs = "<XmlArgs type = '" + type + "'>";
