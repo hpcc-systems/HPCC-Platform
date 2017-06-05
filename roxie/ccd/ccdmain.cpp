@@ -1201,7 +1201,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 roxieServer->start();
             }
             writeSentinelFile(sentinelFile);
-            DBGLOG("Waiting for queries LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
+            DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
+            DBGLOG("Waiting for queries");
             if (pingInterval)
                 startPingTimer();
             LocalIAbortHandler abortHandler(waiter);
