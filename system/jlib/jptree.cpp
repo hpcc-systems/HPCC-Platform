@@ -2987,6 +2987,7 @@ void LocalPTree::setAttribute(const char *key, const char *val)
     {
         attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
         v = &attrs[numAttrs++];
+        v->init();
         if (!v->key.set(key))
             v->key.setPtr(isnocase() ? AttrStr::createNC(key) : AttrStr::create(key));
     }
