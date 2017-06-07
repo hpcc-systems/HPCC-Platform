@@ -22684,7 +22684,7 @@ public:
                                     if ((indexHelper.getFlags() & TIRcountkeyedlimit) != 0)
                                     {
                                         Owned<IKeyManager> countKey;
-                                        countKey.setown(createKeyManager(thisKey, 0, this));
+                                        countKey.setown(createLocalKeyManager(thisKey, 0, this));
                                         countKey->setLayoutTranslator(translators->item(fileNo));
                                         createSegmentMonitors(countKey);
                                         unsigned __int64 count = countKey->checkCount(keyedLimit);
@@ -22703,7 +22703,7 @@ public:
                             }
                             else
                             {
-                                tlk.setown(createKeyManager(thisKey, 0, this));
+                                tlk.setown(createLocalKeyManager(thisKey, 0, this));
                                 tlk->setLayoutTranslator(translators->item(fileNo));
                             }
                             createSegmentMonitors(tlk);
@@ -22957,7 +22957,7 @@ public:
             if (owner.seekGEOffset)
                 tlk.setown(createKeyMerger(keySet, 0, owner.seekGEOffset, &owner));
             else
-                tlk.setown(createKeyManager(keySet->queryPart(0), 0, &owner));
+                tlk.setown(createLocalKeyManager(keySet->queryPart(0), 0, &owner));
             tlk->setLayoutTranslator(trans);
             owner.indexHelper.createSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
@@ -23371,7 +23371,7 @@ public:
         unsigned __int64 result = 0;
         for (unsigned i = 0; i < numParts; i++)
         {
-            Owned<IKeyManager> countTlk = createKeyManager(keyIndexSet->queryPart(i), 0, this);
+            Owned<IKeyManager> countTlk = createLocalKeyManager(keyIndexSet->queryPart(i), 0, this);
             countTlk->setLayoutTranslator(translators->item(i));
             indexHelper.createSegmentMonitors(countTlk);
             countTlk->finishSegmentMonitors();
@@ -23408,7 +23408,7 @@ public:
             }
             else
             {
-                tlk.setown(createKeyManager(keyIndexSet->queryPart(0), 0, this));
+                tlk.setown(createLocalKeyManager(keyIndexSet->queryPart(0), 0, this));
                 tlk->setLayoutTranslator(translators->item(0));
             }
             indexHelper.createSegmentMonitors(tlk);
@@ -25171,7 +25171,7 @@ public:
     CRoxieServerFullKeyedJoinHead(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, TranslatorArray *_translators, IOutputMetaData *_indexReadMeta, IJoinProcessor *_joinHandler, bool _isLocal)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorKeyedJoinArg &)basehelper), 
-          tlk(createKeyManager(NULL, 0, this)),
+          tlk(createLocalKeyManager(NULL, 0, this)),
           translators(_translators),
           keySet(_keySet),
           remote(_ctx, this, _remoteId, 0, helper, *this, true, true),
@@ -26046,7 +26046,7 @@ public:
         IOutputMetaData *_indexReadMeta, unsigned _joinFlags, bool _isSimple, bool _isLocal)
         : CRoxieServerKeyedJoinBase(_ctx, _factory, _probeManager, _remoteId, _joinFlags, false, _isSimple, _isLocal),
           indexReadMeta(_indexReadMeta),
-          tlk(createKeyManager(NULL, 0, this)),
+          tlk(createLocalKeyManager(NULL, 0, this)),
           keySet(_keySet),
           translators(_translators)
     {

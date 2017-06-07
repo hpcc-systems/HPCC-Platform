@@ -229,7 +229,6 @@ public:
         _statsArr.append(0);
         statsArr = _statsArr.getArray();
         lastSeeks = lastScans = 0;
-        keyIndexSet.setown(createKeyIndexSet());
         ForEachItemIn(p, partDescs)
         {
             IPartDescriptor &part = partDescs.item(p);
@@ -241,16 +240,22 @@ public:
             Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, logicalFilename, part);
             Owned<IKeyManager> klManager;
 
-            bool remoteKey = !localKey && !seekGEOffset && (!rfn.isLocal() || getOptBool("forceDafilesrv"));
-            if (remoteKey && getOptBool("remoteKeyFilteringEnabled"))
-                klManager.setown(createRemoteKeyManager(filePath.str(), fixedDiskRecordSize, lfile));
+            unsigned crc=0;
+            part.getCrc(crc);
+
+            if ((localKey && partDescs.ordinality()>1) || seekGEOffset) // for now at least, no remote key support if stepping or merging
+            {
+                Owned<IKeyIndex> keyIndex = createKeyIndex(filePath, crc, *lfile, false, false);
+                klManager.setown(createLocalKeyManager(keyIndex, fixedDiskRecordSize, nullptr));
+                if (!keyIndexSet)
+                    keyIndexSet.setown(createKeyIndexSet());
+                keyIndexSet->addIndex(keyIndex.getClear());
+            }
             else
             {
-                unsigned crc=0;
-                part.getCrc(crc);
-                Owned<IKeyIndex> keyIndex = createKeyIndex(filePath.str(), crc, *lfile, false, false);
-                klManager.setown(createKeyManager(keyIndex, fixedDiskRecordSize, NULL));
-                keyIndexSet->addIndex(keyIndex.getClear());
+                bool allowRemote = getOptBool("remoteKeyFilteringEnabled");
+                bool forceRemote = allowRemote ? getOptBool("forceDafilesrv") : false; // can only force remote, if forceDafilesrv and remoteKeyFilteringEnabled are enabled.
+                klManager.setown(createKeyManager(filePath, fixedDiskRecordSize, crc, lfile, allowRemote, forceRemote));
             }
             keyManagers.append(*klManager.getClear());
         }
@@ -498,7 +503,7 @@ public:
             else
                 steppingMeta.init(rawMeta, hasPostFilter);
         }
-        if ((seekGEOffset || localKey))
+        if (keyIndexSet)
             keyMergerManager.setown(createKeyMerger(keyIndexSet, fixedDiskRecordSize, seekGEOffset, NULL));
     }
 
