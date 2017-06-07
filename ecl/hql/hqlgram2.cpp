@@ -1076,7 +1076,7 @@ IHqlExpression * HqlGram::processUserAggregate(const attribute & mainPos, attrib
     return ret.getClear();
 }
 
-IHqlExpression * HqlGram::processIndexBuild(attribute & indexAttr, attribute * recordAttr, attribute * payloadAttr, attribute & filenameAttr, attribute & flagsAttr)
+IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & indexAttr, attribute * recordAttr, attribute * payloadAttr, attribute & filenameAttr, attribute & flagsAttr)
 {
     if (!recordAttr)
         warnIfRecordPacked(indexAttr);
@@ -1124,10 +1124,7 @@ IHqlExpression * HqlGram::processIndexBuild(attribute & indexAttr, attribute * r
     args.append(*filenameAttr.getExpr());
     if (flags)
         flags->unwindList(args, no_comma);
-    IHqlExpression * sig = getGpgSignature();
-    if (sig)
-        args.append(*sig);
-
+    saveDiskAccessInformation(err, args);
     checkDistributer(flagsAttr.pos, args);
     return createValue(no_buildindex, makeVoidType(), args);
 }
@@ -7042,10 +7039,7 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
     if (distribution)
         args.append(*distribution.getClear());
 
-    IHqlExpression * sig = getGpgSignature();
-    if (sig)
-        args.append(*sig);
-
+    saveDiskAccessInformation(indexAttr, args);
     checkDistributer(flagsAttr.pos, args);
     return createValue(no_buildindex, makeVoidType(), args);
 }
@@ -9280,6 +9274,20 @@ bool HqlGram::checkAllowed(const attribute & errpos, const char *category, const
         return false;
     }
     return true;
+}
+
+void HqlGram::saveDiskAccessInformation(const attribute & errpos, HqlExprArray & options)
+{
+    IHqlExpression * sig = getGpgSignature();
+    if (sig)
+        options.append(*sig);
+}
+
+void HqlGram::saveDiskAccessInformation(const attribute & errpos, OwnedHqlExpr & options)
+{
+    IHqlExpression * sig = getGpgSignature();
+    if (sig)
+        options.setown(createComma(options.getClear(), sig));
 }
 
 bool HqlGram::checkDFSfields(IHqlExpression *dfsRecord, IHqlExpression *defaultRecord, const attribute& errpos)

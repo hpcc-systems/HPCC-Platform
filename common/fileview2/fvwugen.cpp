@@ -112,7 +112,7 @@ IHqlExpression * buildDiskFileViewerEcl(const char * logicalName, IHqlExpression
     OwnedHqlExpr newRecord = createRecord(fields);
     newRecord.setown(createSymbol(createIdAtom("_SourceRecord_"), newRecord.getLink(), ob_private));
 
-    OwnedHqlExpr dataset = createNewDataset(createConstant(logicalName), newRecord.getLink(), createValue(no_thor), NULL, NULL, NULL, NULL);
+    OwnedHqlExpr dataset = createNewDataset(createConstant(logicalName), newRecord.getLink(), createValue(no_thor), NULL, NULL, NULL);
     OwnedHqlExpr filtered = addFilter(dataset, filepos);
     OwnedHqlExpr projected = addSimplifyProject(filtered);
     OwnedHqlExpr output = addOutput(projected);
@@ -123,7 +123,7 @@ IHqlExpression * buildDiskFileViewerEcl(const char * logicalName, IHqlExpression
 
 IHqlExpression * buildDiskOutputEcl(const char * logicalName, IHqlExpression * record)
 {
-    OwnedHqlExpr dataset = createNewDataset(createConstant(logicalName), LINK(record), createValue(no_thor), NULL, NULL, NULL, NULL);
+    OwnedHqlExpr dataset = createNewDataset(createConstant(logicalName), LINK(record), createValue(no_thor), NULL, NULL, NULL);
     return addOutput(dataset);
 }
 
