@@ -38,8 +38,9 @@
         <row>
           <entry><emphasis>mask </emphasis></entry>
 
-          <entry>An integer specifying the ordinal position of the data item
-          within the <emphasis>source</emphasis> to return.</entry>
+          <entry>A bitmask specifying the ordinal position of the data item
+          within the <emphasis>source</emphasis> to return where bit 0 is item
+          1, bit 1 is item 2, etc.. </entry>
         </row>
 
         <row>
