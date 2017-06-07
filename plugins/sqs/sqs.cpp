@@ -153,11 +153,6 @@ SQSHPCCPlugin::Response SQSHPCCPlugin::SQSHPCC::sendMessage(const char* message,
       }
     else 
       {
-        if(this->handlelog)
-	  {
-	    this->handlelog << sendMessageOutcome.GetError().GetMessage().c_str()<< endl;
-	  }
-
 	ref.code=3;
 	ref.body=convertAwsStringToCharPtr(sendMessageOutcome.GetResult().GetMessageId());
       }	
