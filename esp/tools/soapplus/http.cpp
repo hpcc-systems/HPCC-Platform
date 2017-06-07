@@ -1411,17 +1411,16 @@ int HttpClient::validate(StringBuffer& xml)
         try
         {
             Owned<IPropertyTree> testTree = createPTreeFromXMLString(len, bptr, ipt_caseInsensitive);
-            fprintf(m_logfile, "Successfully parsed XML\n");
+            if ( (!m_doStress) || (m_doStress && http_tracelevel >= 5) )
+                fprintf(m_logfile, "Successfully parsed XML\n");
         }
         catch(IException *e)
         {
             StringBuffer emsg;
             fprintf(m_logfile, "Error parsng XML %s\n", e->errorMessage(emsg).str());
             // is it ok to say bptr[len] = '\0' ?
-            char *newxml = strndup(bptr, len);
-            newxml[len] = '\0';
-            fprintf(m_logfile, "result xml:\n%s\n\n", newxml);
-            free(newxml);
+            StringBuffer newxml(len, bptr);
+            fprintf(m_logfile, "result xml:\n%s\n\n", newxml.str());
             e->Release();
             srtn = -1;
         }
