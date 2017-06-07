@@ -973,14 +973,27 @@ public:
 
         xform->setParameter("diffmode", "'Monitor'");
         xform->setParameter("diffaction", "'Create'");
+
+        xform->setParameter("platform", "'roxie'");
         xform->transform(ecl);
-        filename.setf("Monitor_create_%s.ecl", optMethod.str());
+        filename.setf("MonitorRoxie_create_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
-        xform->setParameter("diffmode", "'Monitor'");
-        xform->setParameter("diffaction", "'Run'");
+        xform->setParameter("platform", "'esp'");
         xform->transform(ecl.clear());
-        filename.setf("Monitor_run_%s.ecl", optMethod.str());
+        filename.setf("MonitorESP_create_%s.ecl", optMethod.str());
+        saveAsFile(".", filename, ecl);
+
+        xform->setParameter("diffaction", "'Run'");
+
+        xform->setParameter("platform", "'roxie'");
+        xform->transform(ecl.clear());
+        filename.setf("MonitorRoxie_run_%s.ecl", optMethod.str());
+        saveAsFile(".", filename, ecl);
+
+        xform->setParameter("platform", "'esp'");
+        xform->transform(ecl.clear());
+        filename.setf("MonitorESP_run_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
         xform->setParameter("diffmode", "'Compare'");
