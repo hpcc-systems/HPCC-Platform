@@ -4557,6 +4557,11 @@ class CSocketEpollThread: public CSocketBaseThread
         if (!dummysockopen)
         {
             sidummy = new SelectItem;
+            sidummy->sock = nullptr;
+            sidummy->nfy = nullptr;
+            sidummy->del = true;  // so its not added to tonotify ...
+            sidummy->add_epoll = false;
+            sidummy->mode = 0;
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
             if(pipe(dummysock))
             {
@@ -4701,6 +4706,7 @@ public:
             SelectItem *si = items.element(i);
             if (si->del)
             {
+                epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
                 si->nfy->Release();
                 try
                 {
@@ -4726,10 +4732,9 @@ public:
                 if (si->add_epoll)
                 {
                     si->add_epoll = false;
-                    int ep_mode;
                     if (si->mode != 0)
                     {
-                        ep_mode = 0;
+                        unsigned int ep_mode = 0;
                         if (si->mode & SELECTMODE_READ)
                             ep_mode |= EPOLLIN;
                         if (si->mode & SELECTMODE_WRITE)
@@ -4793,6 +4798,12 @@ public:
 
     bool add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
+        if ( !sock || !nfy )
+        {
+            WARNLOG("EPOLL: adding fd but sock or nfy is NULL");
+            dbgassertex(false);
+            return false;
+        }
         // maybe check once to prevent 1st delay? TBD
         CriticalBlock block(sect);
         ForEachItemIn(i,items)
@@ -4916,7 +4927,7 @@ public:
                             if (epsi)
                                 tfd = epsi->handle;
 # ifdef EPOLLTRACE
-                            DBGLOG("EPOLL: epevents[%d].data.fd = %d, emask = %d", j, tfd, epevents[j].events);
+                            DBGLOG("EPOLL: epevents[%d].data.fd = %d, emask = %u", j, tfd, epevents[j].events);
 # endif
                             if (tfd >= 0)
                             {
@@ -4929,25 +4940,32 @@ public:
 # endif
                                 if (!epsi->del)
                                 {
-                                    unsigned int ep_mode = 0;
-                                    if (epevents[j].events & (EPOLLIN | EPOLLHUP | EPOLLERR))
-                                        ep_mode |= SELECTMODE_READ;
-                                    if (epevents[j].events & EPOLLOUT)
-                                        ep_mode |= SELECTMODE_WRITE;
-                                    if (epevents[j].events & EPOLLPRI)
-                                        ep_mode |= SELECTMODE_EXCEPT;
-                                    if (ep_mode != 0)
+                                    if (!epsi->sock || !epsi->nfy)
                                     {
-                                        tonotify.append(*epsi);
+                                        WARNLOG("EPOLL: epevents[%d].data.fd = %d, emask = %u, del = false but sock or nfy is NULL", j, tfd, epevents[j].events);
+                                    }
+                                    else
+                                    {
+                                        unsigned int ep_mode = 0;
+                                        if (epevents[j].events & (EPOLLIN | EPOLLHUP | EPOLLERR))
+                                            ep_mode |= SELECTMODE_READ;
+                                        if (epevents[j].events & EPOLLOUT)
+                                            ep_mode |= SELECTMODE_WRITE;
+                                        if (epevents[j].events & EPOLLPRI)
+                                            ep_mode |= SELECTMODE_EXCEPT;
+                                        if (ep_mode != 0)
+                                        {
+                                            tonotify.append(*epsi);
 #ifdef _TRACELINKCLOSED
-                                        // temporary, to help diagnose spurious socket closes (hpcc-15043)
-                                        // currently no implementation of notifySelected() uses the mode
-                                        // argument so we can pass in the epoll events mask and log that
-                                        // if there is no data and the socket gets closed
-                                        tonotify.element(tonotify.length()-1).mode = epevents[j].events;
+                                            // temporary, to help diagnose spurious socket closes (hpcc-15043)
+                                            // currently no implementation of notifySelected() uses the mode
+                                            // argument so we can pass in the epoll events mask and log that
+                                            // if there is no data and the socket gets closed
+                                            tonotify.element(tonotify.length()-1).mode = epevents[j].events;
 #else
-                                        tonotify.element(tonotify.length()-1).mode = ep_mode;
+                                            tonotify.element(tonotify.length()-1).mode = ep_mode;
 #endif
+                                        }
                                     }
                                 }
                             }
