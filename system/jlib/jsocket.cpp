@@ -4798,6 +4798,12 @@ public:
 
     bool add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
+        if ( !sock || !nfy )
+        {
+            WARNLOG("EPOLL: adding fd but sock or nfy is NULL");
+            dbgassertex(false);
+            return false;
+        }
         // maybe check once to prevent 1st delay? TBD
         CriticalBlock block(sect);
         ForEachItemIn(i,items)
@@ -4805,13 +4811,6 @@ public:
             SelectItem *si = items.element(i);
             if ( !si->del && (si->sock==sock) )
                 si->del = true;
-        }
-        if ( !sock || !nfy )
-        {
-            WARNLOG("EPOLL: adding fd but sock or nfy is NULL");
-            selectvarschange = true;
-            triggerselect();
-            return true;
         }
         SelectItem *sn = new SelectItem;
         sn->nfy = LINK(nfy);
