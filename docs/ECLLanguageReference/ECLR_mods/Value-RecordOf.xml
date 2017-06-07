@@ -8,8 +8,8 @@
       <primary>RECORDOF</primary>
     </indexterm><indexterm>
       <primary>RECORDOF datatype</primary>
-    </indexterm>(</emphasis><emphasis> recordset </emphasis><emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis><emphasis> recordset , </emphasis><emphasis
+  role="bold">[LOOKUP])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,7 +22,17 @@
           <entry><emphasis>recordset</emphasis></entry>
 
           <entry>The set of data records whose RECORD structure to use. This
-          may be a DATASET or any derived recordset.</entry>
+          may be a DATASET or any derived recordset. If the LOOKUP attribute
+          is used, this may be a filename. </entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">LOOKUP</emphasis></entry>
+
+          <entry>Optional. Specifies that the file layout should be looked up
+          at compile time. See <emphasis>File Layout Resolution at Compile
+          Time</emphasis> in the <emphasis>Programmer's Guide</emphasis> for
+          more details.</entry>
         </row>
       </tbody>
     </tgroup>

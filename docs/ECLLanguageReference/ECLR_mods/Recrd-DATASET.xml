@@ -8,11 +8,11 @@
 
   <para><emphasis>attr</emphasis><emphasis role="bold"> :=
   DATASET(</emphasis><emphasis> file, struct, filetype </emphasis><emphasis
-  role="bold">);</emphasis></para>
+  role="bold">[,LOOKUP]);</emphasis></para>
 
   <para><emphasis>attr</emphasis><emphasis role="bold"> :=
   DATASET(</emphasis><emphasis> dataset, file, filetype </emphasis><emphasis
-  role="bold">);</emphasis></para>
+  role="bold">[,LOOKUP]);</emphasis></para>
 
   <para><emphasis>attr</emphasis><emphasis role="bold"> :=
   DATASET(</emphasis><emphasis> </emphasis><emphasis
@@ -106,6 +106,15 @@
           <entry>A previously-defined DATASET or recordset from which the
           record layout is derived. This form is primarily used by the BUILD
           action and is equivalent to: <programlisting>      ds := DATASET('filename',RECORDOF(anotherdataset), ... )</programlisting></entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">LOOKUP</emphasis></entry>
+
+          <entry>Optional. Specifies that the file layout should be looked up
+          at compile time. See <emphasis>File Layout Resolution at Compile
+          Time</emphasis> in the <emphasis>Programmer's Guide</emphasis> for
+          more details.</entry>
         </row>
 
         <row>
