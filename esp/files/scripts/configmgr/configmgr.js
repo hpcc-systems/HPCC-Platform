@@ -3304,6 +3304,7 @@ function onMenuItemClickHandleComputer(p_sType, p_aArgs, p_oValue) {
   var menuItemName = this.cfg.getProperty("text");
   var record = recSet.getRecord(selRows[0]);
   var menuid = this.parent.id.split("Menu");
+  var parentName;
   if (menuid.length > 1)
     parentName = menuid[0];
 
@@ -3312,27 +3313,32 @@ function onMenuItemClickHandleComputer(p_sType, p_aArgs, p_oValue) {
   var menuItemName = this.cfg.getProperty("text");
   var oper = "Delete";
   if (menuItemName === "New" || menuItemName === "New Range...")
-    oper = "New";
+  {
+    if (parentName === "Computers")
+    {
+      for (i = 0; i < recSet.getLength(); i++)
+      {
+        var arr = recSet.getRecord(i).getData('domain_extra');
+        if (YAHOO.lang.isArray(arr))
+          break;
+      }
 
-  if (parentName === "Computers" && ( menuItemName === "New Range..." || menuItemName === "New")) {
-    for (i = 0; i < recSet.getLength(); i++) {
-      var arr = recSet.getRecord(i).getData('domain_extra');
-      if (YAHOO.lang.isArray(arr))
-        break;
-    }
+      if (i >= recSet.length)
+      {
+        alert("get domain from backend");
+        return;
+      }
 
-    if (i >= recSet.length) {
-      alert("get domain from backend");
+      var type =( menuItemName === "New Range..." ) ? 0 : 3;
+
+      if (recSet.getRecord(i) != null)
+        top.document.navDT.promptNewRange(recSet.getRecord(i).getData('domain_extra'), recSet.getRecord(i).getData('computerType_extra'), type);
+      else
+        top.document.navDT.promptNewRange([], [], type);
       return;
     }
-    
-    var type =( menuItemName === "New Range..." ) ? 0 : 3;
-
-    if (recSet.getRecord(i) != null)
-      top.document.navDT.promptNewRange(recSet.getRecord(i).getData('domain_extra'), recSet.getRecord(i).getData('computerType_extra'), type);
     else
-      top.document.navDT.promptNewRange([], [], type);
-    return;
+      oper = "NewComputerElement";
   }
 
   var xmlArgs = "<XmlArgs type = '" + type + "'>";
