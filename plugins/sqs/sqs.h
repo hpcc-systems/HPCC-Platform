@@ -41,11 +41,12 @@
 #include <aws/core/Aws.h>
 #include <aws/sqs/SQSClient.h>
 #include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include <string>
 #include <unistd.h>
 #include <libgen.h>
-
+#include <atomic>
 
 #ifdef ECL_SQS_EXPORTS
 
@@ -61,13 +62,30 @@ extern "C++"
   namespace SQSHPCCPlugin
   {
     using namespace std;
-    typedef struct {
+    typedef struct 
+    {
       int code;
       std::string body;
       bool success;
     } Response;
 
+    struct AtomicCounter 
+    {
+      std::atomic<int> counter;
+	
+      void increment() {
+	++counter;
+      } 
+      
+      void decrement() {
+        --counter;
+      }
 
+      int get() {
+        return counter.load();
+      } 
+
+    };
 
   
     class SQSHPCC
@@ -83,20 +101,20 @@ extern "C++"
       Response deleteMessage(const std::string& message);
       Response receiveMessage();
 
-      void setSQSConfiguration(const std::string& protocol,
-			       const std::string& region); 
+      void setSQSConfiguration(const std::string& protocol,const std::string& region,const bool useProxy, const std::string& proxyHost,const unsigned proxyPort, const std::string& proxyUsername, const std::string& proxyPassword);
       void setAwsCredentials(const char* accessKeyId, 
 			     const char* secretKey); 
       bool disconnect();
       bool QueueExists();
 
       void setQueueUrlFromQueueName();
-
     protected:
 
     private:
       std::string queueName;
       Aws::String queueUrl;
+      std::ofstream handlelog;
+      AtomicCounter counter;
       Aws::SQS::SQSClient* sqsClient;
       Aws::SDKOptions options;
       Aws::Auth::AWSCredentials* credentials;
@@ -119,11 +137,11 @@ extern "C++"
      *
      * @return  true if the message was cached successfully
      */
-    ECL_SQS_API bool ECL_SQS_CALL publishMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message); 
+    ECL_SQS_API bool ECL_SQS_CALL publishMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message, bool useProxy, const char* proxyHost, __int32 proxyPort, const char* proxyUsername, const char* proxyPassword);
 
     //---------------------------------------------------------------------
 
-   ECL_SQS_API bool ECL_SQS_CALL publishOrderedMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message, const char* messageCount);
+    ECL_SQS_API bool ECL_SQS_CALL publishOrderedMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message, const char* messageCount,const bool useProxy, const char* proxyHost, __int32 proxyPort, const char* proxyUsername, const char* proxyPassword);
     /** 
      *
      *
