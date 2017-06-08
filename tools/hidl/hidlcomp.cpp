@@ -5670,6 +5670,14 @@ void EspServInfo::write_esp_binding()
             StrBuffer tmp; 
             outf("\taddMethodHelp(\"%s\", \"%s\");\n", mthi->getName(), printfEncode(val.str(), tmp).str());
         }
+        int cacheSeconds = mthi->getMetaInt("cache_seconds", -1);
+        if (cacheSeconds > -1) {
+            outf("\taddMemCachedSeconds(\"%s\", %d);\n", mthi->getName(), cacheSeconds);
+        }
+        int cacheGlobel = mthi->getMetaInt("cache_globel", 0);
+        if (cacheGlobel > 0) {
+            outf("\taddMemCachedGlobal(\"%s\", 1);\n", mthi->getName());
+        }
     }
     outs("}\n");
     

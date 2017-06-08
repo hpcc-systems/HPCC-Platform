@@ -141,8 +141,24 @@ private:
 
     StringAttrMapping desc_map;
     StringAttrMapping help_map;
+#ifdef USE_LIBMEMCACHED
+    Owned<ESPMemCached> memCachedClient;
+    CriticalSection memCachedCrit;
+    StringAttr memCachedInitString;
+    unsigned memCachedMethods = 0;
+    MapStringTo<int> memCachedSecondsMap;
+    MapStringTo<bool> memCachedGlobalMap;
+#endif
 
     void getXMLMessageTag(IEspContext& ctx, bool isRequest, const char *method, StringBuffer& tag);
+#ifdef USE_LIBMEMCACHED
+    void ensureMemCachedClient();
+    int queryMemCacheSeconds(const char *method);
+    bool queryMemCacheGlobal(const char *method);
+    const char* createMemCachedID(CHttpRequest* request, StringBuffer& memCachedID);
+    void addToMemCached(CHttpRequest* request, CHttpResponse* response, const char* memCachedID);
+    bool sendFromMemCached(CHttpRequest* request, CHttpResponse* response, const char* memCachedID);
+#endif
 protected:
     MethodInfoArray m_methods;
     bool                    m_includeSoapTest;
@@ -196,6 +212,19 @@ public:
         StringBuffer key(method);
         help_map.setValue(key.toUpperCase().str(), help);
     }
+#ifdef USE_LIBMEMCACHED
+    void addMemCachedSeconds(const char *method, int cacheSeconds)
+    {
+        StringBuffer key(method);
+        memCachedSecondsMap.setValue(key.toUpperCase().str(), cacheSeconds);
+        memCachedMethods++;
+    }
+    void addMemCachedGlobal(const char *method, bool cacheGlobal)
+    {
+        StringBuffer key(method);
+        memCachedGlobalMap.setValue(key.toUpperCase().str(), cacheGlobal);
+    }
+#endif
 
     int onGetConfig(IEspContext &context, CHttpRequest* request, CHttpResponse* response);
 
