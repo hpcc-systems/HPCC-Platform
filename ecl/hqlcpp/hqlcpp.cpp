@@ -2140,7 +2140,7 @@ void HqlCppTranslator::reportWarning(WarnErrorCategory category, unsigned id, co
 void HqlCppTranslator::addWorkunitException(ErrorSeverity severity, unsigned code, const char * text, IHqlExpression * location)
 {
     Owned<IWUException> msg = wu()->createException();
-    msg->setExceptionSource("Code Generator");
+    msg->setExceptionSource("eclcc");
     if (code)
         msg->setExceptionCode(code);
     msg->setExceptionMessage(text);
