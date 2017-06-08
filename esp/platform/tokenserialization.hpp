@@ -189,7 +189,7 @@ private:
         switch (*ptr)
         {
         case 't': case 'T':
-            if (memicmp(ptr + 1, "rue", 3) == 0)
+            if (strnicmp(ptr + 1, "rue", 3) == 0)
             {
                 result = Deserialization_SUCCESS;
                 tmp = true;
@@ -197,7 +197,7 @@ private:
             }
             break;
         case 'f': case 'F':
-            if (memicmp(ptr + 1, "alse", 4) == 0)
+            if (strnicmp(ptr + 1, "alse", 4) == 0)
             {
                 result = Deserialization_SUCCESS;
                 ptr += 5;
@@ -205,7 +205,7 @@ private:
             break;
 
         case 'y': case 'Y':
-            if (memicmp(ptr + 1, "es", 2) == 0)
+            if (strnicmp(ptr + 1, "es", 2) == 0)
             {
                 result = Deserialization_SUCCESS;
                 tmp = true;

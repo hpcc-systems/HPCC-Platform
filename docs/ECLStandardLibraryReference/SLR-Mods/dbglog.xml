@@ -37,7 +37,7 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">dbglog </emphasis>function writes the
+  <para>The <emphasis role="bold">dbglog </emphasis>action writes the
   <emphasis>text</emphasis> string to the eclagent.log file for the
   workunit.</para>
 

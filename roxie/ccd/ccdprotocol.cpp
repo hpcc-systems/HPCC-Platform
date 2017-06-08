@@ -219,10 +219,10 @@ class ProtocolSocketListener : public ProtocolListener
     unsigned listenQueue;
     Owned<ISocket> socket;
     SocketEndpoint ep;
-    const char *protocol;
-    const char *certFile;
-    const char *keyFile;
-    const char *passPhrase;
+    StringAttr protocol;
+    StringAttr certFile;
+    StringAttr keyFile;
+    StringAttr passPhrase;
     Owned<ISecureSocketContext> secureContext;
 
 public:
@@ -232,10 +232,10 @@ public:
         port = _port;
         listenQueue = _listenQueue;
         ep.set(port, queryHostIP());
-        protocol = _protocol;
-        certFile = _certFile;
-        keyFile = _keyFile;
-        passPhrase = _passPhrase;
+        protocol.set(_protocol);
+        certFile.set(_certFile);
+        keyFile.set(_keyFile);
+        passPhrase.set(_passPhrase);
     }
 
     IHpccProtocolMsgSink *queryMsgSink()
@@ -283,13 +283,13 @@ public:
             Owned<ISecureSocket> ssock;
             if (client)
             {
-                if (protocol && streq(protocol, "ssl"))
+                if (streq(protocol.str(), "ssl"))
                 {
 #ifdef _USE_OPENSSL
                     try
                     {
                         if (!secureContext)
-                            secureContext.setown(createSecureSocketContextEx(certFile, keyFile, passPhrase, ServerSocket));
+                            secureContext.setown(createSecureSocketContextEx(certFile.get(), keyFile.get(), passPhrase.get(), ServerSocket));
                         ssock.setown(secureContext->createSecureSocket(client.getClear()));
                         int status = ssock->secure_accept();
                         if (status < 0)

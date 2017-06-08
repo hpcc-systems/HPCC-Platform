@@ -606,6 +606,17 @@
                   <primary>processor affinity</primary>
                 </indexterm></entry>
             </row>
+
+            <row>
+              <entry><emphasis>translateDFSlayouts</emphasis></entry>
+
+              <entry>Default = 0</entry>
+
+              <entry>Specifies that file layouts should be looked up at
+              compile time. See <emphasis>File Layout Resolution at Compile
+              Time</emphasis> in the <emphasis>Programmer's Guide</emphasis>
+              for more details.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>

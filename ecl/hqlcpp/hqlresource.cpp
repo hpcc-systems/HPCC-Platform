@@ -2651,6 +2651,7 @@ IHqlExpression * SpillerInfo::createSpilledRead(IHqlExpression * spillReason)
         args.append(*createValue(no_thor));
         addSpillFlags(args, true);
         args.append(*createUniqueId());
+        args.append(*createExprAttribute(_signed_Atom, createConstant("hpcc")));
         if (options->isChildQuery && options->targetRoxie())
         {
             args.append(*createAttribute(_colocal_Atom));

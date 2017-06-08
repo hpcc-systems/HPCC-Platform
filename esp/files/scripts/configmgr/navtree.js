@@ -2644,18 +2644,17 @@ function promptNewRange(domains, computerTypes, type) {
             var endIP = document.getElementById('cfgAddComputersStopIP');
             var hostname = document.getElementById('cfgAddComputersHostname');
             var isRange = document.getElementById('isRange');
+
             if (!isRange.checked)
             {
-              op = 'New';
+              op = 'NewComputer';
             }
-            else
+
+            if (prefix.value === "")
             {
-              if (prefix.value === "")
-              {
-                alert("Prefix cannot be empty when adding a range.");
-                prefix.focus();
-                return;
-              }
+              alert("Prefix cannot be empty.");
+              prefix.focus();
+              return;
             }
 
             document.forms['treeForm'].computerRangeEnd.value = endIP.value;

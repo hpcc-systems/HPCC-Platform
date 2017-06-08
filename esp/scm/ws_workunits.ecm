@@ -1811,11 +1811,19 @@ ESPresponse [exceptions_inline, nil_remove] WUGetArchiveFileResponse
 ESPrequest [nil_remove] WUGetNumFileToCopyRequest
 {
     string ClusterName;
+    [min_ver("1.69")] int64 PageSize(0);
+    [min_ver("1.69")] int64 PageStartFrom(0);
+    [min_ver("1.69")] string Sortby;
+    [min_ver("1.69")] bool Descending(false);
+    [min_ver("1.69")] int64 CacheHint;
+    
 };
 
 ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
 {
     ESParray<ESPstruct ClusterEndpoint, Endpoint> Endpoints;
+    [min_ver("1.69")] int64 CacheHint;
+    [min_ver("1.69")] int64 Total;
 };
 
 ESPservice [

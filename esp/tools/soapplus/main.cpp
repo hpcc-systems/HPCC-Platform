@@ -55,6 +55,7 @@ void usage()
     puts("   -p : port to listen on.");
     puts("   -d <trace-level> : 0 no tracing, >=1 a little tracing, >=5 some tracing, >=10 all tracing. If -w is specified, default tracelevel is 5, if -stress is specified, it's 1, otherwise it's 10.");
     puts("   -v : validate the response. If -xsd is not specified, url?xsd will be used to retrieve the xsd.");
+    puts("   -vx : validate the response xml");
     puts("   -xsd <path-or-url> : the path or url to the xsd file to be used for validation.");
     puts("   -wsdl <path-or-url> : the path or url to the wsdl file to be used to generate requests.");
     puts("   -r : the xsd/or wsdl is in roxie response format.");
@@ -86,7 +87,7 @@ enum SoapPlusAction
     SPA_SOCKS = 5
 };
 
-bool doValidation = false;
+int doValidation = 0;
 const char* xsdpath = NULL;
 
 void doTestSchemaParser(IProperties* globals, const char* url, const char* in_fname)
@@ -513,7 +514,12 @@ int main(int argc, char** argv)
         else if (stricmp(argv[i], "-v")==0)
         {
             i++;
-            doValidation = true;
+            doValidation = 1;
+        }
+        else if (stricmp(argv[i], "-vx")==0)
+        {
+            i++;
+            doValidation = 2;
         }
         else if (stricmp(argv[i], "-xsd") == 0)
         {

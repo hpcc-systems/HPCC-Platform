@@ -1265,7 +1265,15 @@ void ReleaseRoxieRowArray(size_t count, const void * * rows)
 #ifdef PARALLEL_SYNC_RELEASE
     if (count >= parallelSyncReleaseThreshold)
     {
-        ParallelReleaseRoxieRowArray(count, rows);
+        try
+        {
+            ParallelReleaseRoxieRowArray(count, rows);
+        }
+        catch (const std::exception & e)
+        {
+            //Catch and report the exception, but continue anyway...
+            DBGLOG("TBB exception: %s in ReleaseRoxieRows", e.what());
+        }
         return;
     }
 #endif
@@ -1279,7 +1287,15 @@ void roxiemem_decl ReleaseRoxieRowRange(const void * * rows, size_t from, size_t
 #ifdef PARALLEL_SYNC_RELEASE
     if ((from < to) && ((to - from) >= parallelSyncReleaseThreshold))
     {
-        ParallelReleaseRoxieRowArray(to-from, rows+from);
+        try
+        {
+            ParallelReleaseRoxieRowArray(to-from, rows+from);
+        }
+        catch (const std::exception & e)
+        {
+            //Catch and report the exception, but continue anyway...
+            DBGLOG("TBB exception: %s in ReleaseRoxieRowRange", e.what());
+        }
         return;
     }
 #endif
@@ -1336,7 +1352,6 @@ public:
     virtual void checkHeap() const = 0;
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const = 0;
     virtual bool isFull() const = 0;
-    virtual void mergeStats(HeapletStats & stats) const {}
 #ifdef _WIN32
 #ifdef new
 #define __new_was_defined
@@ -1383,7 +1398,6 @@ protected:
     const unsigned heapFlags;
     unsigned sharedAllocatorId;
     unsigned nextMatchOffset = 0;
-    HeapletStats stats;
 public:
     bool compacting = false;
     bool moveRows = false; // only valid if compacting
@@ -1415,12 +1429,6 @@ public:
         unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
         size32_t bytesFree = dataAreaSize() - curFreeBase;
         return (bytesFree >= chunkSize);
-    }
-
-    virtual void mergeStats(HeapletStats & merged) const override
-    {
-        merged.totalAllocs += stats.totalAllocs;
-        merged.totalDistanceScanned += stats.totalDistanceScanned;
     }
 
     virtual bool isFull() const override;
@@ -2894,7 +2902,6 @@ public:
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%" I64F "u rowMgr=%p",
                     finger, finger->sizeInPages(), (unsigned __int64) finger->_capacity(), this);
 
-        finger->mergeStats(stats);
         removeHeaplet(finger);
         if (finger == activeHeaplet)
             activeHeaplet = NULL;
@@ -3040,6 +3047,16 @@ public:
     }
 
     void noteEmptyPage() { possibleEmptyPages.store(true, std::memory_order_release); }
+
+    inline void updateNumAllocs(unsigned __int64 allocs)
+    {
+        stats.totalAllocs += allocs;
+    }
+
+    inline void updateDistanceScanned(unsigned __int64 distance)
+    {
+        stats.totalDistanceScanned += distance;
+    }
 
 protected:
     virtual void reportHeapUsage(IActivityMemoryUsageMap * usageMap, unsigned numPages, memsize_t numAllocs) const = 0;
@@ -3420,14 +3437,14 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsig
                 if (offset == startOffset)
                 {
                     assertex(heapFlags & RHFdelayrelease);
-                    stats.totalDistanceScanned += curFreeBase;
+                    heap->updateDistanceScanned(curFreeBase);
                     return nullptr;
                 }
             }
 
             // either (offset - startOffset) or (curFreeBase - startOffset) + offset.  Simplified to...
             unsigned thisDistance = ((offset > startOffset) ? 0 : curFreeBase) + (offset - startOffset) - size;
-            stats.totalDistanceScanned += thisDistance;
+            heap->updateDistanceScanned(thisDistance);
             nextMatchOffset = offset;
             //save offset
         }
@@ -3482,9 +3499,11 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsig
 
 done:
     if (incCounter && !alreadyIncremented)
+    {
         count.fetch_add(1, std::memory_order_relaxed);
+        heap->updateNumAllocs(1);
+    }
 
-    stats.totalAllocs++;
     return ret;
 }
 
@@ -3514,7 +3533,10 @@ unsigned ChunkedHeaplet::allocateMultiChunk(unsigned max, char * * rows)
     } while (allocated < max);
 
     if (allocated != alreadyIncremented)
+    {
+        heap->updateNumAllocs(allocated-alreadyIncremented);
         count.fetch_add(allocated-alreadyIncremented, std::memory_order_relaxed);
+    }
     return allocated;
 }
 
@@ -5657,20 +5679,11 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
 
 void CChunkedHeap::gatherStats(CRuntimeStatisticCollection & result)
 {
-    HeapletStats merged(stats);
-
-    NonReentrantSpinBlock b(heapletLock);
-    Heaplet * start = heaplets;
-    if (start)
+    HeapletStats merged;
     {
-        Heaplet * finger = start;
-        for (;;)
-        {
-            finger->mergeStats(merged);
-            finger = getNext(finger);
-            if (finger == start)
-                break;
-        }
+        //Copy the stats when a lock is held to ensure num and distance are consistent.
+        NonReentrantSpinBlock b(heapletLock);
+        merged = stats;
     }
 
     if (merged.totalAllocs)
@@ -5691,12 +5704,12 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
     {
         {
             NonReentrantSpinBlock b(heapletLock);
-            if (activeHeaplet)
+            if (likely(activeHeaplet))
             {
                 //This cast is safe because we are within a member of CChunkedHeap
                 donorHeaplet = static_cast<ChunkedHeaplet *>(activeHeaplet);
                 chunk = donorHeaplet->allocateChunk();
-                if (chunk)
+                if (likely(chunk))
                 {
                     //The code at the end of this function needs to be executed outside of the spinblock.
                     //Just occasionally gotos are the best way of expressing something
@@ -5759,15 +5772,33 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
         NonReentrantSpinBlock b(heapletLock);
         insertHeaplet(donorHeaplet);
 
-        //While this thread was allocating a block, another thread also did the same.  Ensure that other block is
-        //placed on the list of those with potentially free space.
+        //While this thread was allocating a block, another thread may have also done the same.
+        chunk = nullptr;
         if (activeHeaplet)
-            addToSpaceList(activeHeaplet);
-        activeHeaplet = donorHeaplet;
+        {
+            ChunkedHeaplet * active = static_cast<ChunkedHeaplet *>(activeHeaplet);
 
-        //If no protecting spinblock there would be a race e.g., if another thread allocates all the rows!
-        chunk = donorHeaplet->allocateChunk();
-        dbgassertex(chunk);
+            //check if we can allocate from the block the other thread allocated
+            chunk = active->allocateChunk();
+            if (chunk)
+            {
+                //yes => add the block we allocated to the freespace list.
+                addToSpaceList(donorHeaplet);
+                donorHeaplet = active;
+            }
+            else
+            {
+                addToSpaceList(active);
+                activeHeaplet = donorHeaplet;
+            }
+
+        }
+        else
+            activeHeaplet = donorHeaplet;
+
+        //If no protecting lock there would be a race e.g., if another thread allocates all the rows!
+        if (!chunk)
+            chunk = donorHeaplet->allocateChunk();
     }
     
 gotChunk:
@@ -5939,29 +5970,17 @@ void * CChunkedHeap::doAllocate(unsigned activityId, unsigned maxSpillCost)
 
 void CChunkedHeap::checkScans(unsigned allocatorId)
 {
-    HeapletStats merged(stats);
+    if (stats.totalAllocs == totalAllocsLastScanCheck)
+        return;
 
+    HeapletStats merged;
     {
+        //Copy the stats when a lock is held to ensure num and distance are consistent.
         NonReentrantSpinBlock b(heapletLock);
-        Heaplet * start = heaplets;
-        if (start)
-        {
-            Heaplet * finger = start;
-            for (;;)
-            {
-                finger->mergeStats(merged);
-                finger = getNext(finger);
-                if (finger == start)
-                    break;
-            }
-        }
-
-        //If nothing has changed since the last time this was called then don't report anything
-        //often happens if multiple allocators share the same heap
-        if (merged.totalAllocs == totalAllocsLastScanCheck)
-            return;
-        totalAllocsLastScanCheck = merged.totalAllocs;
+        merged = stats;
     }
+
+    totalAllocsLastScanCheck = merged.totalAllocs;
 
     unsigned __int64 numScans = merged.totalDistanceScanned / chunkSize;
     if (numScans && (numScans >= merged.totalAllocs * ScanReportThreshold))

@@ -50,34 +50,44 @@ int main(int argc, char **argv)
     {
         if (argv[i][0]!='-')
         {
-            filesSeen++;
-            if (doWorkunit || !doManifestInfo)
+            try
             {
-                StringBuffer xml;
-                if (getWorkunitXMLFromFile(argv[i], xml))
+                filesSeen++;
+                if (doWorkunit || !doManifestInfo)
                 {
-                    Owned<ILocalWorkUnit> wu = createLocalWorkUnit(xml);
-                    exportWorkUnitToXML(wu, xml.clear(), true, false, true);
-                    printf("%s\n", xml.str());
+                    StringBuffer xml;
+                    if (getWorkunitXMLFromFile(argv[i], xml))
+                    {
+                        Owned<ILocalWorkUnit> wu = createLocalWorkUnit(xml);
+                        exportWorkUnitToXML(wu, xml.clear(), true, false, true);
+                        printf("%s\n", xml.str());
+                    }
+                    else
+                    {
+                        fprintf(stderr, "Could not load workunit from %s\n", argv[i]);
+                        errors++;
+                    }
                 }
-                else
+                if (doManifestInfo)
                 {
-                    fprintf(stderr, "Could not load workunit from %s\n", argv[i]);
-                    errors++;
+                    StringBuffer xml;
+                    if (getManifestXMLFromFile(argv[i], xml))
+                    {
+                        printf("%s\n", xml.str());
+                    }
+                    else
+                    {
+                        fprintf(stderr, "Could not load manifest from %s\n", argv[i]);
+                        errors++;
+                    }
                 }
             }
-            if (doManifestInfo)
+            catch (IException *E)
             {
-                StringBuffer xml;
-                if (getManifestXMLFromFile(argv[i], xml))
-                {
-                    printf("%s\n", xml.str());
-                }
-                else
-                {
-                    fprintf(stderr, "Could not load manifest from %s\n", argv[i]);
-                    errors++;
-                }
+                StringBuffer msg;
+                fprintf(stderr, "Exception %d: %s processing argument %s\n", E->errorCode(), E->errorMessage(msg).str(), argv[i]);
+                errors++;
+                E->Release();
             }
         }
     }

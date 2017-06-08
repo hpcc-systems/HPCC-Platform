@@ -21,6 +21,7 @@
     <xsl:param name="sourceFileName" select="'UNKNOWN'"/>
     <xsl:param name="responseType" select="''"/>
     <xsl:param name="requestType" select="''"/>
+    <xsl:param name="platform" select="'roxie'"/>
     <xsl:param name="diffmode" select="'Monitor'"/>
     <xsl:param name="diffaction" select="'Run'"/>
     <xsl:variable name="docname" select="/esxdl/@name"/>
@@ -203,24 +204,39 @@ END;
     string100 Message {xpath('Message')};
   END;
 
-  soapoutRec := record
+  soapoutRec := record <xsl:choose><xsl:when test="$platform='esp'">(the_responseLayout)
+    </xsl:when>
+    <xsl:otherwise>
     dataset (the_responseLayout) ds {xpath('Dataset/Row')};
+    </xsl:otherwise>
+  </xsl:choose>
     exceptionRec Exception {xpath('Exception')};
   end;
 
 MonSoapcall(DATASET(the_requestLayout) req) := FUNCTION
 
-  // Wrap it so that request would look like:
-  // <AssetReportRequest><Row><User>...</User><Options>..</Options><SearchBy>...</SearchBy></Row></AssetReportRequest>
+  <xsl:choose>
+    <xsl:when test="$platform='esp'">
+  //ESP uses the request layout as is
+  ds_request := req;
+
+    </xsl:when>
+    <xsl:otherwise>
+  // When calling roxie the actual request parameters are placed inside a dataset that is named the same as the request
+  // so it looks like:
+  //   <MyRequest><MyRequest><Row><User>...</User><Options>..</Options><SearchBy>...</SearchBy></Row></MyRequest></MyRequest>
+
   in_rec := record
     DATASET (the_requestLayout) <xsl:value-of select="$requestType"/> {xpath('<xsl:value-of select="$requestType"/>/Row'), maxcount(1)};
   end;
-
   in_rec Format () := transform
     Self.<xsl:value-of select="$requestType"/> := req;
   end;
 
   ds_request := DATASET ([Format()]);
+    </xsl:otherwise>
+  </xsl:choose>
+
 
   // execute soapcall
   ar_results := SOAPCALL (ds_request,
@@ -228,7 +244,7 @@ MonSoapcall(DATASET(the_requestLayout) req) := FUNCTION
                           serviceName,
                           {ds_request},
                           DATASET (soapoutRec),
-                          TIMEOUT(6), RETRY(1), LITERAL, XPATH('*/Results/Result'));
+                          TIMEOUT(6), RETRY(1), LITERAL, XPATH('*<xsl:if test="$platform!='esp'">/Results/Result</xsl:if>'));
   RETURN ar_results;
 END;
 
@@ -263,7 +279,15 @@ CreateMonitor (string userid, dataset(the_requestLayout) req) := MODULE
   DATA16 monitorHash := HASHMD5(userId, requestXml, TimeLib.CurrentTimestamp(false));
   SHARED string monitorId := STD.Str.ToHexPairs(monitorHash);
   SHARED soapOut := MonSoapCall(req)[1];
+  <xsl:choose>
+    <xsl:when test="$platform='esp'">
+  SHARED responseRow := soapOut;
+    </xsl:when>
+    <xsl:otherwise>
   SHARED responseRow := soapOut.ds[1];
+    </xsl:otherwise>
+  </xsl:choose>
+
   SHARED responseXML := '&lt;Row&gt;' + TOXML(responseRow) + '&lt;/Row&gt;';
 
   SHARED MonitorResultRec BuildMonitor() :=TRANSFORM
@@ -282,7 +306,14 @@ RunMonitor (string id, dataset(the_requestLayout) req) := MODULE
   SHARED monitorId := id;
   SHARED monitorStore := getStoredMonitor(id);
   SHARED soapOut := MonSoapCall(req)[1];
+  <xsl:choose>
+    <xsl:when test="$platform='esp'">
+  SHARED responseRow := soapOut;
+    </xsl:when>
+    <xsl:otherwise>
   SHARED responseRow := soapOut.ds[1];
+    </xsl:otherwise>
+  </xsl:choose>
   SHARED responseXML := '&lt;Row&gt;' + TOXML(responseRow) + '&lt;/Row&gt;';
 
   SHARED oldResponse := FROMXML (the_responseLayout, monitorStore.result);

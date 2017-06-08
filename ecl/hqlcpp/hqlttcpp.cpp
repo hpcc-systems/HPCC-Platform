@@ -5479,6 +5479,7 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
             args.append(*LINK(record));
             args.append(*createValue(no_thor));
             args.append(*createAttribute(_noVirtual_Atom));         // don't interpret virtual fields in spilled output
+            args.append(*createExprAttribute(_signed_Atom, createConstant("hpcc")));
 
             if (persistOp == no_persist)
                 args.append(*createAttribute(_workflowPersist_Atom));

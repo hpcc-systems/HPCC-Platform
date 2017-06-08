@@ -700,7 +700,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
         }
 
         if (!methodstree || methodstree->getCount("Method") <= 0)
-            throw MakeStringException(-1, "Could not find any method configuration entries.");
+            ESPLOG(LogMin, "Publishing ESDL Binding with no METHODS configured!");
 
         if (espProcName.length() == 0)
             throw MakeStringException(-1, "Must provide ESP Process name");
