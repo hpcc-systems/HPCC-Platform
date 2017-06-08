@@ -3532,11 +3532,10 @@ unsigned ChunkedHeaplet::allocateMultiChunk(unsigned max, char * * rows)
         rows[allocated++] = ret;
     } while (allocated < max);
 
+    heap->updateNumAllocs(allocated);
     if (allocated != alreadyIncremented)
-    {
-        heap->updateNumAllocs(allocated-alreadyIncremented);
         count.fetch_add(allocated-alreadyIncremented, std::memory_order_relaxed);
-    }
+
     return allocated;
 }
 
