@@ -1220,7 +1220,15 @@ void ReleaseRoxieRowArray(size_t count, const void * * rows)
 #ifdef PARALLEL_SYNC_RELEASE
     if (count >= parallelSyncReleaseThreshold)
     {
-        ParallelReleaseRoxieRowArray(count, rows);
+        try
+        {
+            ParallelReleaseRoxieRowArray(count, rows);
+        }
+        catch (const std::exception & e)
+        {
+            //Catch and report the exception, but continue anyway...
+            DBGLOG("TBB exception: %s in ReleaseRoxieRows", e.what());
+        }
         return;
     }
 #endif
@@ -1234,7 +1242,15 @@ void roxiemem_decl ReleaseRoxieRowRange(const void * * rows, size_t from, size_t
 #ifdef PARALLEL_SYNC_RELEASE
     if ((from < to) && ((to - from) >= parallelSyncReleaseThreshold))
     {
-        ParallelReleaseRoxieRowArray(to-from, rows+from);
+        try
+        {
+            ParallelReleaseRoxieRowArray(to-from, rows+from);
+        }
+        catch (const std::exception & e)
+        {
+            //Catch and report the exception, but continue anyway...
+            DBGLOG("TBB exception: %s in ReleaseRoxieRowRange", e.what());
+        }
         return;
     }
 #endif
