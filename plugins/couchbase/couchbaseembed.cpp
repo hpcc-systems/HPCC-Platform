@@ -772,7 +772,7 @@ namespace couchbaseembed
     {
         const char * value = nextField(field);
 
-        if (!value && !*value)
+        if (!value || !*value)
         {
             NullFieldProcessor p(field);
             return p.boolResult;
