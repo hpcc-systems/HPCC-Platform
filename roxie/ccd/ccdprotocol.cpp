@@ -291,7 +291,10 @@ public:
                         if (!secureContext)
                             secureContext.setown(createSecureSocketContextEx(certFile.get(), keyFile.get(), passPhrase.get(), ServerSocket));
                         ssock.setown(secureContext->createSecureSocket(client.getClear()));
-                        int status = ssock->secure_accept();
+                        int loglevel = 0;
+                        if (traceLevel > 1)
+                            loglevel = traceLevel;
+                        int status = ssock->secure_accept(loglevel);
                         if (status < 0)
                         {
                             // secure_accept may also DBGLOG() errors ...
