@@ -6086,6 +6086,8 @@ void CLocalWorkUnit::clearExceptions()
         e.getExceptionSource(s);
         if (strieq(s.s, "eclcc") || strieq(s.s, "eclccserver") || strieq(s.s, "eclserver") )
             break;
+        VStringBuffer xpath("Exceptions/Exception[@sequence='%d']", e.getSequence());
+        p->removeProp(xpath);
         exceptions.remove(idx);
     }
 }
