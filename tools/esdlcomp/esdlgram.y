@@ -32,7 +32,6 @@ void AddApi();
 void AddEspMessage();
 void AddEspMethod();
 void AddEspProperty();
-
 extern int yylex(void);
 void yyerror(const char *s);
 
@@ -1537,10 +1536,26 @@ void AddEspMessage()
    }
 }
 
+void CheckEspProperty()
+{
+    if(!CurParam)
+        return;
+    StringBuffer errmsg;
+    bool hasDup = CurParam->checkDup(errmsg, CurEspMessage->getParams());
+    if(hasDup)
+    {
+        errnum = 11;
+        yyerror(errmsg.str());
+
+        throw MakeStringException(-1, "%s contains duplicate properties: %s", CurEspMessage->getName(), errmsg.str());
+    }
+}
+
 void AddEspProperty()
 {
     if (CurParam)
     {
+        CheckEspProperty();
         if (LastParam)
             LastParam->next = CurParam;
         else
