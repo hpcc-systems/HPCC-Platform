@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#option ('warnOnImplicitReadLimit', true);
+#onwarning (4522, ignore);
 d := dataset(DYNAMIC('regress::no::such::file'), {string10 f}, FLAT, OPT);
 output(d);
 count(d);

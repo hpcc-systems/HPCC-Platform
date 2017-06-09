@@ -18,10 +18,13 @@
 '''
 
 import logging
+import os
 
 from ...common.shell import Shell
 from ...common.error import Error
 from ...util.util import queryWuid
+
+import xml.etree.ElementTree as ET
 
 class ECLcmd(Shell):
     def __init__(self):
@@ -107,6 +110,17 @@ class ECLcmd(Shell):
                 if "aborted" in i:
                     state = "aborted"
                 if cnt > 4:
+                    if i.startswith('<Warning>'):
+                        # Remove absolute path from filename to 
+                        # enable to compare it with same part of keyfile
+                        xml = ET.fromstring(i)
+                        path = xml.find('.//Filename').text
+                        logging.debug("%3d. path:'%s'", eclfile.getTaskId(),  path )
+                        filename = os.path.basename(path)
+                        xml.find('.//Filename').text = filename
+                        i = ET.tostring(xml)
+                        logging.debug("%3d. ret:'%s'", eclfile.getTaskId(),  i )
+                        pass
                     result += i + "\n"
                 cnt += 1
             data = '\n'.join(line for line in

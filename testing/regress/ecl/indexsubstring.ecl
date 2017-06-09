@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#option ('warnOnImplicitReadLimit', true);
+
 //version multiPart=false
 
 import ^ as root;
