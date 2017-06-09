@@ -19,6 +19,8 @@
 
 import logging
 import os
+import sys
+import inspect
 
 from ...common.shell import Shell
 from ...common.error import Error
@@ -114,11 +116,15 @@ class ECLcmd(Shell):
                         # Remove absolute path from filename to 
                         # enable to compare it with same part of keyfile
                         xml = ET.fromstring(i)
-                        path = xml.find('.//Filename').text
-                        logging.debug("%3d. path:'%s'", eclfile.getTaskId(),  path )
-                        filename = os.path.basename(path)
-                        xml.find('.//Filename').text = filename
-                        i = ET.tostring(xml)
+                        try:
+                            path = xml.find('.//Filename').text
+                            logging.debug("%3d. path:'%s'", eclfile.getTaskId(),  path )
+                            filename = os.path.basename(path)
+                            xml.find('.//Filename').text = filename
+                        except:
+                            logging.debug("%3d. Unexpected error: %s (line: %s) ", eclfile.getTaskId(), str(sys.exc_info()[0]), str(inspect.stack()[0][2]))
+                        finally:
+                            i = ET.tostring(xml)
                         logging.debug("%3d. ret:'%s'", eclfile.getTaskId(),  i )
                         pass
                     result += i + "\n"
