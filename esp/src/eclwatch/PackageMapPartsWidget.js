@@ -91,11 +91,15 @@ define([
              this.addPartsDropDown.on("apply", function (evt) {
                 if (context.addPartsDropDown.filterForm.validate()){
                     var addPartInput = context.getFilter();
+                    var packageMapSearch = context.params.packageMap.search("::");
+                    var packageMapClean;
+
+                    packageMapSearch > -1 ? packageMapClean = context.params.packageMap.split('::')[1] : packageMapClean = context.params.packageMap;
+
                     WsPackageMaps.AddPartToPackageMap({
                         request: {
-                            Target: addPartInput.AddPartsTarget,
-                            Process: addPartInput.Process,
-                            PackageMap: addPartInput.PackageMap,
+                            Target: context.params.target,
+                            PackageMap: packageMapClean,
                             PartName: addPartInput.PartName,
                             Content: addPartInput.Content,
                             DaliIp: addPartInput.DaliIp,
@@ -119,9 +123,6 @@ define([
             this.addPartsDropDown.placeAt(this.openButton.domNode, "after");
             this.addPartsDropDown.filterForm.set("style", "width:600px;");
             this.addPartsDropDown.filterDropDown.set("label", context.i18n.Add);
-            this.addPartsTargetSelect = this.createLabelAndElement("AddPartsTarget", this.i18n.Target, "TargetSelect", this.i18n.Target, "", "GetPackageMapTargets");
-            this.addPartsProcessesSelect = this.createLabelAndElement("Process", this.i18n.Processes, "TargetSelect", this.i18n.Processes, "", "GetPackageMapProcesses");
-            this.addPartsPackagemap = this.createLabelAndElement("PackageMap", this.i18n.PackageMap, "ValidationTextBox", this.i18n.PackageMap);
             this.addPartsPartName = this.createLabelAndElement("PartName", this.i18n.PartName, "ValidationTextBox", this.i18n.PartName);
             this.addPartsContent = this.createLabelAndElement("Content", this.i18n.Content, "Textarea", this.i18n.Content);
             this.addPartsDaliIp = this.createLabelAndElement("DaliIp", this.i18n.DaliIP, "TextBox", this.i18n.DaliIP);
@@ -166,7 +167,6 @@ define([
             }, domID);
 
             retVal.on(".dgrid-row:dblclick", function (evt) {
-                event.preventDefault();
                 if (context._onRowDblClick) {
                     var item = retVal.row(evt).data;
                     WsPackageMaps.GetPartFromPackageMap({
@@ -230,7 +230,7 @@ define([
             return this.addPartsDropDown.toObject();
         },
 
-        createLabelAndElement: function (id, label, element, placeholder, value, targetType) {
+        createLabelAndElement: function (id, label, element, placeholder, value) {
             var context = this;
             var control = null;
             switch (element) {
@@ -268,22 +268,6 @@ define([
                         style: "width: 40%",
                         value: value
                     });
-                break;
-                case "TargetSelect":
-                    control = new TargetSelectWidget ({
-                        id: id,
-                        name: id,
-                        style: "width: 40%"
-                    });
-                    if (targetType === "GetPackageMapTargets" ) {
-                        control.init({
-                            GetPackageMapTargets: true
-                        });
-                    } else {
-                        control.init({
-                            GetPackageMapProcesses: true
-                        });
-                    }
                 break;
             }
 
