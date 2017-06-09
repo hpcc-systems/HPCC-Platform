@@ -2022,9 +2022,9 @@ public:
                     maxParts = numParts;
             }
 
-            IDefRecordMeta *thisDiskMeta = diskMeta.item(subFile);
             if (translators)
             {
+                IDefRecordMeta *thisDiskMeta = diskMeta.isItem(subFile) ? diskMeta.item(subFile) : nullptr;
                 if (fdesc && thisDiskMeta && activityMeta && !thisDiskMeta->equals(activityMeta))
                     if (allowFieldTranslation != IRecordLayoutTranslator::NoTranslation)
                         translators->append(createRecordLayoutTranslator(lfn, thisDiskMeta, activityMeta, allowFieldTranslation));
