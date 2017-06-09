@@ -591,7 +591,8 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
             break;
         case TAKif:
             {
-                Owned<IHThorArg> helper = createHelper(agent, NULL);
+                assertex(!subgraph->owner);
+                Owned<IHThorArg> helper = createHelper(agent, subgraph->owner);
                 try
                 {
                     helper->onStart(NULL, NULL);
@@ -641,7 +642,8 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
         //However that is far from trivial, so for the moment conditional statements won't be supported by hthor.
         case TAKifaction:
             {
-                Owned<IHThorArg> helper = createHelper(agent, NULL);
+                assertex(!subgraph->owner);
+                Owned<IHThorArg> helper = createHelper(agent, subgraph->owner);
                 //Problem if this is done in a child query...
                 try
                 {
@@ -658,7 +660,7 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
         case TAKsequential:
         case TAKparallel:
             {
-                Owned<IHThorArg> helper = createHelper(agent, NULL);
+                Owned<IHThorArg> helper = createHelper(agent, subgraph->owner);
                 unsigned numBranches = (kind == TAKsequential) ? 
                                         ((IHThorSequentialArg *)helper.get())->numBranches() : 
                                         ((IHThorParallelArg *)helper.get())->numBranches();
@@ -669,7 +671,8 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
 #endif
         case TAKcase:
             {
-                Owned<IHThorArg> helper = createHelper(agent, NULL);
+                assertex(!subgraph->owner);
+                Owned<IHThorArg> helper = createHelper(agent, subgraph->owner);
                 try
                 {
                     helper->onStart(NULL, NULL);
