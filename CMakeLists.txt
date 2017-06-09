@@ -181,7 +181,9 @@ elseif ( NOT MAKE_DOCS_ONLY OR MAKE_CONFIGURATOR )
         HPCC_ADD_SUBDIRECTORY (thorlcr "PLATFORM")
         HPCC_ADD_SUBDIRECTORY (testing)
 
-        if ( NOT WIN32 )
+        if ( WIN32 )
+            HPCC_ADD_SUBDIRECTORY (clienttools/IDEPlugins "CLIENTTOOLS_ONLY")
+        else()
             HPCC_ADD_SUBDIRECTORY (clienttools "CLIENTTOOLS_ONLY")
         endif()
 
