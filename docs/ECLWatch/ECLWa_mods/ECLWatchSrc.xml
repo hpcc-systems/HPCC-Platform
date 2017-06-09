@@ -1525,6 +1525,12 @@
               workunit tab shows you the same information that you would see
               if you selected it through the workunit link.</para>
             </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">History</emphasis> tab to
+              display a list of DFU Actions taken such as copy, remote copy,
+              spray, etc. for the file. </para>
+            </listitem>
           </itemizedlist>On the File Details Summary tab, you can perform some
         actions on the selected file.</para>
 
