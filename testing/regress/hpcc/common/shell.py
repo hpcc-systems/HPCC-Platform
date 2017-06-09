@@ -51,11 +51,12 @@ class Shell:
         logging.debug("            stdout:'%s'",  stdout)
         logging.debug("            stderr:'%s'",  stderr)
 
-        if retCode or ((len(stderr) > 0) and ('Error' in stderr)):
-            exception = CalledProcessError(
-                process.returncode, repr(args))
-            err_msg = "retCode: "+str(retCode)+"\n'"+str(''.join(filter(None, [stderr])))+"'"
-            exception.output = err_msg
+        if retCode or ((len(stderr) > 0) and ('Error' in stderr)) or ((retCode == 4) and ('<Exception>' in stdout)):
+            exception = CalledProcessError(process.returncode, repr(args))
+            err_msg = "retCode: "+str(retCode)+"\n'"+str(''.join(filter(None, [stderr])))
+            if (retCode == 4) and ('<Exception>' in stdout):
+                err_msg += str(''.join(filter(None, [stdout])))
+            exception.output = err_msg +"'"
             logging.debug("exception.output:'%s'",  err_msg)
             raise Error('1001', err=str(err_msg))
         return stdout, stderr
