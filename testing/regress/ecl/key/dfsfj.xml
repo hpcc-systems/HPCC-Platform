@@ -1,3 +1,4 @@
+<Warning><Code>3147</Code><Filename>dfsfj.ecl</Filename><Line>54</Line><Source>eclcc</Source><Message> Field dg_lastname type mismatch: DFS reports string10 but ECL declared string3</Message></Warning>
 <Dataset name='Result 1'>
  <Row><Result_1>Full-keyed joins, RHS translated, LHS not</Result_1></Row>
 </Dataset>
