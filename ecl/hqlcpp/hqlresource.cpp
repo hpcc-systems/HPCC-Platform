@@ -1054,7 +1054,7 @@ void ActivityInvariantHoister::gatherChildSplitPoints(IHqlExpression * expr, Act
         alwaysOnce = true;
         break;
     case no_loop:
-        if ((options.targetClusterType == ThorLCRCluster) && !options.isChildQuery)
+        if ((options.targetClusterType != RoxieCluster) && !options.isChildQuery)
         {
             //This is ugly!  The body is executed in parallel, so don't force that as a work unit result
             //It means some child query expressions within loops don't get forced into work unit writes
