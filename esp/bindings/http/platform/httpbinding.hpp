@@ -212,19 +212,21 @@ public:
         StringBuffer key(method);
         help_map.setValue(key.toUpperCase().str(), help);
     }
-#ifdef USE_LIBMEMCACHED
     void addMemCachedSeconds(const char *method, int cacheSeconds)
     {
+#ifdef USE_LIBMEMCACHED
         StringBuffer key(method);
         memCachedSecondsMap.setValue(key.toUpperCase().str(), cacheSeconds);
         memCachedMethods++;
+#endif
     }
     void addMemCachedGlobal(const char *method, bool cacheGlobal)
     {
+#ifdef USE_LIBMEMCACHED
         StringBuffer key(method);
         memCachedGlobalMap.setValue(key.toUpperCase().str(), cacheGlobal);
-    }
 #endif
+    }
 
     int onGetConfig(IEspContext &context, CHttpRequest* request, CHttpResponse* response);
 
