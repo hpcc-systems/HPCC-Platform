@@ -430,7 +430,7 @@ void Http::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserNa
 
 HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname, 
                        const char* outdir, const char* outfilename, bool writeToFiles,
-                       int doValidation, const char* xsdpath, bool isEspLogFile)
+                       int doValidation, const char* xsdpath, bool isEspLogFile) : m_stopstress(false)
 {
     m_globals = globals;
     if(url && *url)
