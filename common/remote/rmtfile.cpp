@@ -39,7 +39,7 @@ static class CSecuritySettings
 public:
     CSecuritySettings()
     {
-        querySecuritySettings(NULL, &daliServixPort, NULL, NULL);
+        querySecuritySettings(nullptr, &daliServixPort, nullptr, nullptr, nullptr);
     }
 
     unsigned short queryDaliServixPort() { return daliServixPort; }
@@ -315,7 +315,7 @@ bool testDaliServixPresent(const SocketEndpoint &_ep)
     if (ep.isNull())
         return false;
     try {
-        Owned<ISocket> socket = ISocket::connect_timeout(ep,10000);
+        Owned<ISocket> socket = connectDafs(ep, 10000);
         return true;
     }
     catch (IException *e)
@@ -339,7 +339,7 @@ unsigned getDaliServixVersion(const SocketEndpoint &_ep,StringBuffer &ver)
         return 0;
     try
     {
-        Owned<ISocket> socket = ISocket::connect_timeout(ep,10000);
+        Owned<ISocket> socket = connectDafs(ep, 10000);
         return getRemoteVersion(socket,ver);
     }
     catch (IException *e)
@@ -475,7 +475,7 @@ extern REMOTE_API int setDafileSvrTraceFlags(const SocketEndpoint &_ep,byte flag
     if (ep.isNull())
         return -3;
     try {
-        Owned<ISocket> socket = ISocket::connect_wait(ep,5000);
+        Owned<ISocket> socket = connectDafs(ep, 5000);
         return setDafsTrace(socket, flags);
     }
     catch (IException *e)
@@ -493,7 +493,7 @@ extern REMOTE_API int setDafileSvrThrottleLimit(const SocketEndpoint &_ep, Throt
     if (ep.isNull())
         return -3;
     try {
-        Owned<ISocket> socket = ISocket::connect_wait(ep,5000);
+        Owned<ISocket> socket = connectDafs(ep, 5000);
         return setDafsThrottleLimit(socket, throttleClass, throttleLimit, throttleDelayMs, throttleCPULimit, queueLimit, errMsg);
     }
     catch (IException *e)
@@ -511,7 +511,7 @@ extern REMOTE_API int getDafileSvrInfo(const SocketEndpoint &_ep, unsigned level
     if (ep.isNull())
         return false;
     try {
-        Owned<ISocket> socket = ISocket::connect_wait(ep,5000);
+        Owned<ISocket> socket = connectDafs(ep, 5000);
         return getDafsInfo(socket, level, retstr);
     }
     catch (IException *e)

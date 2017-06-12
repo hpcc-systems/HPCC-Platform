@@ -37,19 +37,21 @@
 void usage()
 {
     printf("dafilesrv usage:\n");
-    printf("    dafilesrv -T<n> <port> <-NOSSL> [<send-buff-size-kb> <recv-buff-size-kb>]\n");
+    printf("    dafilesrv [-T<n>] [...] [<port>] [<send-buff-size-kb> <recv-buff-size-kb>]\n");
     printf("                                                  -- run test local\n");
     printf("    dafilesrv -D [ -L <log-dir> ] [ -LOCAL ]      -- run as linux daemon\n");
     printf("    dafilesrv -R                                  -- run remote (linux daemon, windows standalone)\n");
     printf("    dafilesrv -install                            -- install windows service\n");
     printf("    dafilesrv -remove                             -- remove windows service\n\n");
-    
-    printf("add -A to enable authentication to the above \n\n");
-    printf("add -I <instance name>  to specify an instance name\n\n");
-    printf("add -NOSSL to disable SSL sockets, even when specified in configuration\n\n");
-    printf("Standard port is %d\n",DAFILESRV_PORT);
-    printf("Standard SSL port is %d (certificate specs required in environment.conf)\n",SECURE_DAFILESRV_PORT);
-    printf("Version:  %s\n\n",remoteServerVersionString());
+    printf("    add -A to enable authentication to the above\n");
+    printf("    add -I <instance name> to specify an instance name\n");
+    printf("    add -NOSSL to disable SSL sockets, even when specified in configuration\n\n");
+    printf("    additional optional args:\n");
+    printf("        [-p <port>] [-sslp <ssl-port>] [-sbsize <send-buff-size-kb>] [-rbsize <recv-buff-size-kb>]\n");
+    printf("        [-addr <ip>:<port>]\n\n");
+    printf("    Standard port is %d\n",DAFILESRV_PORT);
+    printf("    Standard SSL port is %d (certificate and key required in environment.conf)\n",SECURE_DAFILESRV_PORT);
+    printf("    Version:  %s\n\n",remoteServerVersionString());
 }
 
 static Owned<IRemoteFileServer> server;
@@ -349,11 +351,13 @@ int main(int argc,char **argv)
     StringBuffer logDir;
     StringBuffer instanceName;
 
-   //Get SSL Settings
+    // Get SSL Settings
+    SSLCfg          useSSL;
+    unsigned short  port;
+    unsigned short  sslport;
     const char *    sslCertFile;
-    bool            useSSL;
-    unsigned short  dafsPort;//DAFILESRV_PORT or SECURE_DAFILESRV_PORT
-    querySecuritySettings(&useSSL, &dafsPort, &sslCertFile, NULL);
+    const char *    sslKeyFile;
+    queryDafsSecSettings(&useSSL, &port, &sslport, &sslCertFile, &sslKeyFile, nullptr);
 
     unsigned maxThreads = DEFAULT_THREADLIMIT;
     unsigned maxThreadsDelayMs = DEFAULT_THREADLIMITDELAYMS;
@@ -417,6 +421,9 @@ int main(int argc,char **argv)
         }
     }
 
+    // these should really be in env, but currently they are not ...
+    listenep.port = port;
+
     while (argc>i) {
         if (stricmp(argv[i],"-D")==0) {
             i++;
@@ -448,26 +455,53 @@ int main(int argc,char **argv)
             i++;
             instanceName.clear().append(argv[i++]);
         }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-p")==0)) {
+            i++;
+            listenep.port = atoi(argv[i++]);
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-addr")==0)) {
+            i++;
+            if (strchr(argv[i],'.')||!isdigit(argv[i][0]))
+                listenep.set(argv[i], listenep.port);
+            else
+                listenep.port = atoi(argv[i]);
+            i++;
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-sslp")==0)) {
+            i++;
+            sslport = atoi(argv[i++]);
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-sbsize")==0)) {
+            i++;
+            sendbufsize = atoi(argv[i++]);
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-rbsize")==0)) {
+            i++;
+            recvbufsize = atoi(argv[i++]);
+        }
+        else if (stricmp(argv[i],"-h")==0) {
+            usage();
+            exit(0);
+        }
         else if (stricmp(argv[i],"-LOCAL")==0) { 
             i++;
             locallisten = true;
         }
-        else if (stricmp(argv[i],"-NOSSL")==0) {//overrides config setting
+        else if (stricmp(argv[i],"-NOSSL")==0) { // overrides config setting
             i++;
             if (useSSL)
             {
                 PROGLOG("DaFileSrv SSL specified in config but overridden by -NOSSL in command line");
-                useSSL = false;
-                dafsPort = DAFILESRV_PORT;
+                useSSL = SSLNone;
             }
         }
         else
             break;
     }
 
-    if (useSSL && !sslCertFile)
+    if ( ((useSSL == SSLOnly) || (useSSL == SSLFirst)) && (!sslCertFile || !sslKeyFile) )
     {
-        ERRLOG("DaFileSrv SSL specified but certificate file information missing from environment.conf");
+        ERRLOG("DaFileSrv SSL specified but certificate and/or key file information missing from environment.conf");
         exit(-1);
     }
 
@@ -499,28 +533,42 @@ int main(int argc,char **argv)
         return 1;
     }
 #endif
-    if (argc == i)
-        listenep.port = dafsPort;
-    else {
+    if (argc > i) {
         if (strchr(argv[i],'.')||!isdigit(argv[i][0]))
-            listenep.set(argv[i], dafsPort);
+            listenep.set(argv[i], listenep.port);
         else
             listenep.port = atoi(argv[i]);
-        if (listenep.port==0) {
-            usage();
-            exit(-1);
-        }
         sendbufsize = (argc>i+1)?(atoi(argv[i+1])*1024):0;
         recvbufsize = (argc>i+2)?(atoi(argv[i+2])*1024):0;
     }
+
+    if ( (useSSL == SSLNone) && (listenep.port == 0) )
+    {
+        printf("\nError, port must not be 0\n");
+        usage();
+        exit(-1);
+    }
+    else if ( (useSSL == SSLOnly) && (sslport == 0) )
+    {
+        printf("\nError, secure port must not be 0\n");
+        usage();
+        exit(-1);
+    }
+    else if ( ((useSSL == SSLFirst) || (useSSL == UnsecureFirst)) && ((listenep.port == 0) || (sslport == 0)) )
+    {
+        printf("\nError, both port and secure port must not be 0\n");
+        usage();
+        exit(-1);
+    }
+
     if (isdaemon) {
 #ifdef _WIN32
         class cserv: public CService
         {
             bool stopped;
             bool started;
+            SSLCfg useSSL;
             SocketEndpoint listenep;
-            bool useSSL;
             bool requireauthenticate;
             unsigned maxThreads;
             unsigned maxThreadsDelayMs;
@@ -534,7 +582,6 @@ int main(int argc,char **argv)
 
             
             class cpollthread: public Thread
-                
             {
                 cserv *parent;
             public:
@@ -553,11 +600,11 @@ int main(int argc,char **argv)
 
         public:
 
-            cserv(SocketEndpoint _listenep, bool _useSSL,
+            cserv(SSLCfg _useSSL, SocketEndpoint _listenep,
                         unsigned _maxThreads, unsigned _maxThreadsDelayMs, unsigned _maxAsyncCopy,
                         unsigned _parallelRequestLimit, unsigned _throttleDelayMs, unsigned _throttleCPULimit,
                         unsigned _parallelSlowRequestLimit, unsigned _throttleSlowDelayMs, unsigned _throttleSlowCPULimit)
-            : listenep(_listenep),useSSL(_useSSL),pollthread(this),
+            : useSSL(_useSSL), listenep(_listenep), pollthread(this),
                   maxThreads(_maxThreads), maxThreadsDelayMs(_maxThreadsDelayMs), maxAsyncCopy(_maxAsyncCopy),
                   parallelRequestLimit(_parallelRequestLimit), throttleDelayMs(_throttleDelayMs), throttleCPULimit(_throttleCPULimit),
                   parallelSlowRequestLimit(_parallelSlowRequestLimit), throttleSlowDelayMs(_throttleSlowDelayMs), throttleSlowCPULimit(_throttleSlowCPULimit)
@@ -615,13 +662,40 @@ int main(int argc,char **argv)
                                     &dwSize);
                     RegCloseKey(hkey);
                 }
+
+                enableDafsAuthentication(requireauthenticate!=0);
+
                 StringBuffer eps;
                 if (listenep.isNull())
                     eps.append(listenep.port);
                 else
                     listenep.getUrlStr(eps);
-                enableDafsAuthentication(requireauthenticate!=0);
-                PROGLOG("Opening " DAFS_SERVICE_DISPLAY_NAME " on %s%s", useSSL?"SECURE ":"",eps.str());
+
+                if (useSSL != SSLOnly)
+                    PROGLOG("Opening " DAFS_SERVICE_DISPLAY_NAME " on %s", eps.str());
+                if (useSSL)
+                {
+                    SocketEndpoint sslep(listenep);
+                    sslep.port = sslport;
+                    eps.kill();
+                    if (sslep.isNull())
+                        eps.append(sslep.port);
+                    else
+                        sslep.getUrlStr(eps);
+                    PROGLOG("Opening " DAFS_SERVICE_DISPLAY_NAME " on SECURE %s", eps.str());
+                }
+
+                StringBuffer secMethod;
+                if (useSSL == SSLNone)
+                    secMethod.append("SSLNone");
+                else if (useSSL == SSLOnly)
+                    secMethod.append("SSLOnly");
+                else if (useSSL == SSLFirst)
+                    secMethod.append("SSLFirst");
+                else if (useSSL == UnsecureFirst)
+                    secMethod.append("UnsecureFirst");
+                PROGLOG("Dali File Server socket security model: %s", secMethod.str());
+
                 const char * verstring = remoteServerVersionString();
                 PROGLOG("Version: %s", verstring);
                 PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
@@ -630,7 +704,7 @@ int main(int argc,char **argv)
                 server->setThrottle(ThrottleStd, parallelRequestLimit, throttleDelayMs, throttleCPULimit);
                 server->setThrottle(ThrottleSlow, parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit);
                 try {
-                    server->run(listenep, useSSL);
+                    server->run(useSSL, listenep, sslport);
                 }
                 catch (IException *e) {
                     EXCLOG(e,DAFS_SERVICE_NAME);
@@ -639,7 +713,7 @@ int main(int argc,char **argv)
                 PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Stopped");
                 stopped = true;
             }
-        } service(listenep, useSSL,
+        } service(useSSL, listenep,
                 maxThreads, maxThreadsDelayMs, maxAsyncCopy,
                 parallelRequestLimit, throttleDelayMs, throttleCPULimit,
                 parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit);
@@ -662,13 +736,39 @@ int main(int argc,char **argv)
     PROGLOG("Parallel request limit = %d, throttleDelayMs = %d, throttleCPULimit = %d", parallelRequestLimit, throttleDelayMs, throttleCPULimit);
 
     const char * verstring = remoteServerVersionString();
+
+    enableDafsAuthentication(requireauthenticate);
+
     StringBuffer eps;
     if (listenep.isNull())
         eps.append(listenep.port);
     else
         listenep.getUrlStr(eps);
-    enableDafsAuthentication(requireauthenticate);
-    PROGLOG("Opening Dali File Server on %s%s", useSSL?"SECURE ":"",eps.str());
+    if (useSSL != SSLOnly)
+        PROGLOG("Opening Dali File Server on %s", eps.str());
+    if (useSSL)
+    {
+        SocketEndpoint sslep(listenep);
+        sslep.port = sslport;
+        eps.kill();
+        if (sslep.isNull())
+            eps.append(sslep.port);
+        else
+            sslep.getUrlStr(eps);
+        PROGLOG("Opening Dali File Server on SECURE %s", eps.str());
+    }
+
+    StringBuffer secMethod;
+    if (useSSL == SSLNone)
+        secMethod.append("SSLNone");
+    else if (useSSL == SSLOnly)
+        secMethod.append("SSLOnly");
+    else if (useSSL == SSLFirst)
+        secMethod.append("SSLFirst");
+    else if (useSSL == UnsecureFirst)
+        secMethod.append("UnsecureFirst");
+    PROGLOG("Dali File Server socket security model: %s", secMethod.str());
+
     PROGLOG("Version: %s", verstring);
     PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
     server.setown(createRemoteFileServer(maxThreads, maxThreadsDelayMs, maxAsyncCopy));
@@ -693,7 +793,7 @@ int main(int argc,char **argv)
     writeSentinelFile(sentinelFile);
     try
     {
-        server->run(listenep, useSSL);
+        server->run(useSSL, listenep, sslport);
     }
     catch (IException *e)
     {

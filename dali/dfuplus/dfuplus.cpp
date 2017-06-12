@@ -36,15 +36,18 @@
 
 static class CSecuritySettings
 {
-    bool useSSL;
+    SSLCfg useSSL;
     unsigned short daliServixPort;
+    unsigned short daliServixSSLPort;
 public:
     CSecuritySettings()
     {
-        querySecuritySettings(&useSSL, &daliServixPort, nullptr, nullptr);
+        queryDafsSecSettings(&useSSL, &daliServixPort, &daliServixSSLPort, nullptr, nullptr, nullptr);
     }
 
+    SSLCfg querySSLCfg() { return useSSL; }
     unsigned short queryDaliServixPort() { return daliServixPort; }
+    unsigned short queryDaliServixSSLPort() { return daliServixSSLPort; }
 } securitySettings;
 
 class CDafsThread: public Thread
@@ -59,11 +62,13 @@ public:
     {
         if (listenep.port==0)
             listenep.port = securitySettings.queryDaliServixPort();
+#if 0
         StringBuffer eps;
         if (listenep.isNull())
             eps.append(listenep.port);
         else
             listenep.getUrlStr(eps);
+#endif
         enableDafsAuthentication(requireauthenticate);
         server.setown(createRemoteFileServer());
         server->setThrottle(ThrottleStd, 0); // disable throttling
@@ -73,7 +78,7 @@ public:
     int run()
     {
         try {
-            server->run(listenep);
+            server->run(securitySettings.querySSLCfg(), listenep);
         }
         catch (IException *e) {
             EXCLOG(e,"dfuplus(dafilesrv)");
@@ -110,12 +115,51 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
     Owned<CDafsThread> thr = new CDafsThread(listenep,requireauthenticate);
     if (!thr->ok())
         return false;
-    thr->start();
-    StringBuffer eps;
-    if (listenep.isNull())
-        progress("Started local Dali file server on port %d\n", listenep.port?listenep.port:securitySettings.queryDaliServixPort());
+
+    unsigned port = listenep.port;
+    if (!port)
+        port = securitySettings.queryDaliServixPort();
+
+    unsigned sslport = securitySettings.queryDaliServixSSLPort();
+
+    SSLCfg useSSL = securitySettings.querySSLCfg();
+
+    StringBuffer addlPort;
+    SocketEndpoint printep(listenep);
+    if (printep.isNull())
+    {
+        if (useSSL == SSLNone)
+            addlPort.appendf("%u", port);
+        else if (useSSL == SSLOnly)
+            addlPort.appendf("%u", sslport);
+        else if (useSSL == SSLFirst)
+            addlPort.appendf("%u:%u", sslport, port);
+        else
+            addlPort.appendf("%u:%u", port, sslport);
+        progress("Started local Dali file server on port %s\n", addlPort.str());
+    }
     else
-        progress("Started local Dali file server on %s\n", listenep.getUrlStr(eps).str());
+    {
+        if (useSSL == SSLNone)
+            printep.port = port;
+        else if (useSSL == SSLOnly)
+            printep.port = sslport;
+        else if (useSSL == SSLFirst)
+        {
+            printep.port = sslport;
+            addlPort.appendf(":%u", port);
+        }
+        else
+        {
+            printep.port = port;
+            addlPort.appendf(":%u", sslport);
+        }
+        StringBuffer eps;
+        progress("Started local Dali file server on %s%s\n", printep.getUrlStr(eps).str(), addlPort.str());
+    }
+
+    thr->start();
+
     if (timeout==0) {
         setDafsTrace(nullptr,0); // disable client tracing
         dafsthread.setown(thr.getClear());
