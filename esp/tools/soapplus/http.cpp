@@ -430,7 +430,7 @@ void Http::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserNa
 
 HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname, 
                        const char* outdir, const char* outfilename, bool writeToFiles,
-                       int doValidation, const char* xsdpath, bool isEspLogFile)
+                       int doValidation, const char* xsdpath, bool isEspLogFile) : m_stopstress(false)
 {
     m_globals = globals;
     if(url && *url)
@@ -489,12 +489,8 @@ HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname
 
     if(globals && globals->hasProp("stressduration"))
     {
-        const char* numstr = globals->queryProp("stressthreads");
-        if(numstr && *numstr)
-            m_stressthreads = atoi(numstr);
-        numstr = globals->queryProp("stressduration");
-        if(numstr && *numstr)
-            m_stressduration = atoi(numstr);
+        m_stressthreads = globals->getPropInt("stressthreads", 0);
+        m_stressduration = globals->getPropInt("stressduration", 0);
     }
     else
     {
