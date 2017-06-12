@@ -58,7 +58,7 @@ esdl publish %newinput% --server %server%  --port %port% --version 1.0 --usernam
 goto end
 
 :genecl
-esdl ecl %newinput% %TMP% --includes --rollup -cde "C:\Program Files (x86)\HPCCSystems\6.2.0\clienttools\componentfiles" 2>%5 >>%TMP%\log.txt
+esdl ecl %newinput% %TMP% --includes --rollup -cde "@ORIG_PREFIX@\@DIR_NAME@\@version@\clienttools\componentfiles" 2>%5 >>%TMP%\log.txt
 goto end
 
 :end
