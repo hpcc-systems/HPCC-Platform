@@ -25,5 +25,5 @@
  <Row><result>Pass</result></Row>
 </Dataset>
 <Dataset name='Result 10'>
- <Row><result>Fail</result></Row>
+ <Row><result>Pass</result></Row>
 </Dataset>
