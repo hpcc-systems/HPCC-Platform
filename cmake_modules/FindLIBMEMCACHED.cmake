@@ -108,7 +108,8 @@ else()
 endif()
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(libmemcached DEFAULT_MSG
+find_package_handle_standard_args(
+    LIBMEMCACHED DEFAULT_MSG
     LIBMEMCACHEDCORE_LIBRARY
     LIBMEMCACHEDUTIL_LIBRARY
     LIBMEMCACHED_INCLUDE_DIR

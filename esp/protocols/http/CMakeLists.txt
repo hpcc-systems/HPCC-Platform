@@ -24,12 +24,6 @@
 
 project(esphttp)
 
-find_package(LIBMEMCACHED ${LIBMEMCACHED_MINVERSION})
-if(LIBMEMCACHED_FOUND)
-    add_definitions(-DUSE_LIBMEMCACHED)
-    include_directories(${LIBMEMCACHED_INCLUDE_DIR})
-endif()
-
 set(SRCS
     ../../bindings/bindutil.cpp
     ../../bindings/http/client/httpclient.cpp
