@@ -3020,7 +3020,9 @@ public:
             CRuntimeStatisticCollection merged(allStatistics);
             logctx.gatherStats(merged);
             merged.recordStatistics(*gatherer);
-            gatherer->addStatistic(StTimeElapsed, elapsedTimer.elapsedNs());
+
+            //MORE: If executed more than once (e.g., scheduled), then TimeElapsed isn't particularly correct.
+            gatherer->updateStatistic(StTimeElapsed, elapsedTimer.elapsedNs(), StatsMergeReplace);
 
             WuStatisticTarget statsTarget(w, "roxie");
             rowManager->reportPeakStatistics(statsTarget, 0);
