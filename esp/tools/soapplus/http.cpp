@@ -489,12 +489,8 @@ HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname
 
     if(globals && globals->hasProp("stressduration"))
     {
-        const char* numstr = globals->queryProp("stressthreads");
-        if(numstr && *numstr)
-            m_stressthreads = atoi(numstr);
-        numstr = globals->queryProp("stressduration");
-        if(numstr && *numstr)
-            m_stressduration = atoi(numstr);
+        m_stressthreads = globals->getPropInt("stressthreads", 0);
+        m_stressduration = globals->getPropInt("stressduration", 0);
     }
     else
     {
