@@ -329,6 +329,7 @@ public:
 };
 
 extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind);
+extern da_decl DfsXmlBranchKind queryDfsXmlBranchType(const char *typeStr);
 extern da_decl unsigned getFileGroups(IPropertyTree *pt,StringArray &groups,bool checkclusters=false);
 extern da_decl unsigned getFileGroups(const char *grplist,StringArray &groups); // actually returns labels not groups
 extern da_decl bool isAnonCluster(const char *grp);
