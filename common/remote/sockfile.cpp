@@ -2636,15 +2636,10 @@ void CRemoteFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *pr
 
 /////////////////////////
 
-void checkSocketSecure(ISocket *socket)
+ISocket *checkSocketSecure(ISocket *socket)
 {
-    if (!socket)
-        return;
-
     if (securitySettings.useSSL == SSLNone)
-        return;
-
-    Owned<ISecureSocket> ssock;
+        return LINK(socket);
 
     char pname[256];
     pname[0] = 0;
@@ -2652,16 +2647,19 @@ void checkSocketSecure(ISocket *socket)
 
     if ( (pport == securitySettings.daFileSrvSSLPort) && (!socket->isSecure()) )
     {
+        Owned<ISecureSocket> ssock;
 #ifdef _USE_OPENSSL
         ssock.setown(createSecureSocket(LINK(socket), ClientSocket));
         int status = ssock->secure_connect();
         if (status < 0)
             throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
-        socket = ssock;
+        return ssock.getClear();
 #else
         throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
 #endif
     }
+
+    return LINK(socket);
 }
 
 ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms)
@@ -2694,6 +2692,7 @@ ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms)
                 ep.port = securitySettings.daFileSrvSSLPort;
             WARNLOG("Connect failed on port %d, retrying on port %d", prevPort, ep.port);
             tryAgain = true;
+            e->Release();
         }
         else
             throw e;
@@ -2702,9 +2701,10 @@ ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms)
     if (tryAgain)
         socket.setown(ISocket::connect_timeout(ep, timeoutms));
 
-    checkSocketSecure(socket);
-
-    return socket.getClear();
+    if (socket)
+        return checkSocketSecure(socket);
+    else
+        return nullptr;
 }
 
 unsigned getRemoteVersion(CRemoteFileIO &remoteFileIO, StringBuffer &ver)
@@ -2745,33 +2745,13 @@ unsigned getRemoteVersion(CRemoteFileIO &remoteFileIO, StringBuffer &ver)
     return ret;
 }
 
-unsigned getRemoteVersion(ISocket * socket, StringBuffer &ver)
+unsigned getRemoteVersion(ISocket *origSock, StringBuffer &ver)
 {
     // used to have a global critical section here
-    if (!socket)
+    if (!origSock)
         return 0;
 
-    Owned<ISecureSocket> ssock;
-
-    if ( (securitySettings.useSSL == SSLOnly) || (securitySettings.useSSL == SSLFirst) )
-    {
-        char pname[256];
-        pname[0] = 0;
-        int pport = socket->peer_name(pname, sizeof(pname)-1);
-
-        if ( (pport == securitySettings.daFileSrvSSLPort) && (!socket->isSecure()) )
-        {
-#ifdef _USE_OPENSSL
-            ssock.setown(createSecureSocket(LINK(socket), ClientSocket));
-            int status = ssock->secure_connect();
-            if (status < 0)
-                throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
-            socket = ssock;
-#else
-            throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
-#endif
-        }
-    }
+    Owned<ISocket> socket = checkSocketSecure(origSock);
 
     unsigned ret;
     MemoryBuffer sendbuf;
@@ -5915,14 +5895,13 @@ public:
                         e->Release();
                         break;
                     }
-
-                    if (sockavail)
-                        runClient(sock.getClear());
-
-                    if (securesockavail)
-                        runClient(sockSSL.getClear());
-
                 }
+
+                if (sockavail)
+                    runClient(sock.getClear());
+
+                if (securesockavail)
+                    runClient(sockSSL.getClear());
             }
             else
                 checkTimeout();
