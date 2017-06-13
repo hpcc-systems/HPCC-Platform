@@ -4,8 +4,10 @@
 <sect2 id="ESDL_Attributes_ecl_keep">
   <title>ecl_keep</title>
 
-  <para>The <emphasis>ecl_keep</emphasis> attribute keeps the field in the
-  generated ECL even though this field would have been hidden without this
+  <para><indexterm>
+      <primary>ecl_keep</primary>
+    </indexterm>The <emphasis>ecl_keep</emphasis> attribute keeps the field in
+  the generated ECL even though this field would have been hidden without this
   attribute.</para>
 
   <para></para>

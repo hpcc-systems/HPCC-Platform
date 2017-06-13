@@ -4,9 +4,11 @@
 <sect2 id="ESPmethod">
   <title><emphasis role="bold">ESPmethod</emphasis></title>
 
-  <para>This defines a method definition you can reference in an ESPservice
-  structure. The method definition should contain references to a previously
-  defined ESPrequest and ESPresponse.</para>
+  <para><indexterm>
+      <primary>ESPmethod</primary>
+    </indexterm>This defines a method definition you can reference in an
+  ESPservice structure. The method definition should contain references to a
+  previously defined ESPrequest and ESPresponse.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 

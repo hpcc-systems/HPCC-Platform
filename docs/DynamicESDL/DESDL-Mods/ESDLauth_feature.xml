@@ -4,9 +4,11 @@
 <sect2 id="ESDL_Attributes_auth_feature">
   <title><emphasis role="bold">auth_feature</emphasis></title>
 
-  <para>The auth_feature attribute (valid only for an ESPService or ESPMethod)
-  allows you to specify a means to verify a user's permission to execute a
-  method.</para>
+  <para><indexterm>
+      <primary>auth_feature</primary>
+    </indexterm>The auth_feature attribute (valid only for an ESPService or
+  ESPMethod) allows you to specify a means to verify a user's permission to
+  execute a method.</para>
 
   <para>In order to enable this feature, your system must be configured to use
   a form of security that supports feature level authentication, such as LDAP

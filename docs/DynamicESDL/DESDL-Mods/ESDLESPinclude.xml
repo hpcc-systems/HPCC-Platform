@@ -4,8 +4,10 @@
 <sect2 id="ESPinclude">
   <title><emphasis role="bold">ESPinclude</emphasis></title>
 
-  <para>ESPinclude allows you to include an external ESDL file. This is
-  similar to the #include statement.</para>
+  <para>ESPinclude <indexterm>
+      <primary>ESPinclude</primary>
+    </indexterm>allows you to include an external ESDL file. This is similar
+  to the #include statement.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 

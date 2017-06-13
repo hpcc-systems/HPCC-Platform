@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-   
+<sect2 id="ESPrequest">
+  <title><emphasis role="bold">ESPrequest</emphasis></title>
 
-    <sect2 id="ESPrequest">
-      <title><emphasis role="bold">ESPrequest</emphasis></title>
+  <para><indexterm>
+      <primary>ESPrequest</primary>
+    </indexterm>The request structure for a method.</para>
 
-      <para>The request structure for a method.</para>
+  <para><emphasis role="bold">Example:</emphasis></para>
 
-      <para><emphasis role="bold">Example:</emphasis></para>
-
-      <programlisting>
+  <programlisting>
 ESPrequest  MyQueryRequest
 
 {
@@ -22,4 +22,4 @@ ESPrequest  MyQueryRequest
     bool Descending(false);
 };
    </programlisting>
-    </sect2>
+</sect2>

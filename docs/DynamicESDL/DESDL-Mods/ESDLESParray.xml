@@ -4,8 +4,10 @@
 <sect2 id="ESParray">
   <title><emphasis role="bold">ESParray</emphasis></title>
 
-  <para>A structure for unbounded arrays. Arrays support inheritance and can
-  be nested.</para>
+  <para><indexterm>
+      <primary>ESParray</primary>
+    </indexterm>A structure for unbounded arrays. Arrays support inheritance
+  and can be nested.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 

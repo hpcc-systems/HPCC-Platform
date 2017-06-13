@@ -4,7 +4,9 @@
 <sect2 id="ESPenum">
   <title>ESPenum</title>
 
-  <para>A structure containing an enumerated value. </para>
+  <para><indexterm>
+      <primary>ESPenum</primary>
+    </indexterm>A structure containing an enumerated value.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
