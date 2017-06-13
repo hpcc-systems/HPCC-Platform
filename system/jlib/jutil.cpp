@@ -2397,12 +2397,12 @@ jlib_decl const IProperties &queryEnvironmentConf()
 }
 
 static CriticalSection securitySettingsCrit;
-static SSLCfg useSSL = SSLNone;
+static DAFSConnectCfg connectMethod = SSLNone;
 static StringAttr certificate;
 static StringAttr privateKey;
 static StringAttr passPhrase;
 static bool retrieved = false;
-jlib_decl bool querySecuritySettings(SSLCfg *        _useSSL,
+jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
                                      unsigned short *_port,
                                      const char * *  _certificate,
                                      const char * *  _privateKey,
@@ -2426,15 +2426,15 @@ jlib_decl bool querySecuritySettings(SSLCfg *        _useSSL,
                 {
                     // checking for true | false for backward compatibility
                     if ( strieq(sslMethod.str(), "SSLOnly") || strieq(sslMethod.str(), "true") )
-                        useSSL = SSLOnly;
+                        connectMethod = SSLOnly;
                     else if ( strieq(sslMethod.str(), "SSLFirst") )
-                        useSSL = SSLFirst;
+                        connectMethod = SSLFirst;
                     else if ( strieq(sslMethod.str(), "UnsecureFirst") )
-                        useSSL = UnsecureFirst;
+                        connectMethod = UnsecureFirst;
                     else // SSLNone or false or ...
-                        useSSL = SSLNone;
+                        connectMethod = SSLNone;
                 }
-                if (useSSL)
+                if (connectMethod == SSLOnly || connectMethod == SSLFirst || connectMethod == UnsecureFirst)
                 {
                     certificate.set(conf->queryProp("dfsSSLCertFile"));
                     privateKey.set(conf->queryProp("dfsSSLPrivateKeyFile"));
@@ -2457,12 +2457,12 @@ jlib_decl bool querySecuritySettings(SSLCfg *        _useSSL,
     }
     if (retrieved)
     {
-        if (_useSSL)
-            *_useSSL = useSSL;
+        if (_connectMethod)
+            *_connectMethod = connectMethod;
         if (_port)
         {
             // port to try first (or only) ...
-            if ( (useSSL == SSLNone) || (useSSL == UnsecureFirst) )
+            if ( (connectMethod == SSLNone) || (connectMethod == UnsecureFirst) )
                 *_port = DAFILESRV_PORT;
             else
                 *_port = SECURE_DAFILESRV_PORT;
@@ -2476,22 +2476,22 @@ jlib_decl bool querySecuritySettings(SSLCfg *        _useSSL,
     }
     else
     {
-        if (_useSSL)
-            *_useSSL = SSLNone;
+        if (_connectMethod)
+            *_connectMethod = SSLNone;
         if (_port)
             *_port = DAFILESRV_PORT;
     }
     return retrieved;
 }
 
-jlib_decl bool queryDafsSecSettings(SSLCfg *        _useSSL,
+jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
                                     unsigned short *_port,
                                     unsigned short *_sslport,
                                     const char * *  _certificate,
                                     const char * *  _privateKey,
                                     const char * *  _passPhrase)
 {
-    bool ret = querySecuritySettings(_useSSL, nullptr, _certificate, _privateKey, _passPhrase);
+    bool ret = querySecuritySettings(_connectMethod, nullptr, _certificate, _privateKey, _passPhrase);
     // these should really be in env, but currently they are not ...
     if (_port)
         *_port = DAFILESRV_PORT;

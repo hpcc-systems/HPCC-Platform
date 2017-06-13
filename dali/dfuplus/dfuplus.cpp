@@ -36,16 +36,16 @@
 
 static class CSecuritySettings
 {
-    SSLCfg useSSL;
+    DAFSConnectCfg connectMethod;
     unsigned short daliServixPort;
     unsigned short daliServixSSLPort;
 public:
     CSecuritySettings()
     {
-        queryDafsSecSettings(&useSSL, &daliServixPort, &daliServixSSLPort, nullptr, nullptr, nullptr);
+        queryDafsSecSettings(&connectMethod, &daliServixPort, &daliServixSSLPort, nullptr, nullptr, nullptr);
     }
 
-    SSLCfg querySSLCfg() { return useSSL; }
+    DAFSConnectCfg queryDAFSConnectCfg() { return connectMethod; }
     unsigned short queryDaliServixPort() { return daliServixPort; }
     unsigned short queryDaliServixSSLPort() { return daliServixSSLPort; }
 } securitySettings;
@@ -78,7 +78,7 @@ public:
     int run()
     {
         try {
-            server->run(securitySettings.querySSLCfg(), listenep);
+            server->run(securitySettings.queryDAFSConnectCfg(), listenep);
         }
         catch (IException *e) {
             EXCLOG(e,"dfuplus(dafilesrv)");
@@ -122,17 +122,17 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
 
     unsigned sslport = securitySettings.queryDaliServixSSLPort();
 
-    SSLCfg useSSL = securitySettings.querySSLCfg();
+    DAFSConnectCfg connectMethod = securitySettings.queryDAFSConnectCfg();
 
     StringBuffer addlPort;
     SocketEndpoint printep(listenep);
     if (printep.isNull())
     {
-        if (useSSL == SSLNone)
+        if (connectMethod == SSLNone)
             addlPort.appendf("%u", port);
-        else if (useSSL == SSLOnly)
+        else if (connectMethod == SSLOnly)
             addlPort.appendf("%u", sslport);
-        else if (useSSL == SSLFirst)
+        else if (connectMethod == SSLFirst)
             addlPort.appendf("%u:%u", sslport, port);
         else
             addlPort.appendf("%u:%u", port, sslport);
@@ -140,11 +140,11 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
     }
     else
     {
-        if (useSSL == SSLNone)
+        if (connectMethod == SSLNone)
             printep.port = port;
-        else if (useSSL == SSLOnly)
+        else if (connectMethod == SSLOnly)
             printep.port = sslport;
-        else if (useSSL == SSLFirst)
+        else if (connectMethod == SSLFirst)
         {
             printep.port = sslport;
             addlPort.appendf(":%u", port);
