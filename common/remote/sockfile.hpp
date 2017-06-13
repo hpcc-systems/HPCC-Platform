@@ -79,7 +79,7 @@ extern int getDafsInfo(ISocket * socket, unsigned level, StringBuffer &retstr);
 extern void setDafsEndpointPort(SocketEndpoint &ep);
 extern void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mountdir);
 extern REMOTE_API ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms);
-extern REMOTE_API void checkSocketSecure(ISocket *socket);
+extern REMOTE_API ISocket *checkSocketSecure(ISocket *socket);
 
 // client only
 extern void clientSetDaliServixSocketCaching(bool set);

@@ -499,10 +499,23 @@ int main(int argc,char **argv)
             break;
     }
 
-    if ( ((useSSL == SSLOnly) || (useSSL == SSLFirst)) && (!sslCertFile || !sslKeyFile) )
+    if ( (useSSL == SSLOnly) || (useSSL == SSLFirst) )
     {
-        ERRLOG("DaFileSrv SSL specified but certificate and/or key file information missing from environment.conf");
-        exit(-1);
+        if ( !sslCertFile || !sslKeyFile )
+        {
+            ERRLOG("DaFileSrv SSL specified but certificate and/or key file information missing from environment.conf");
+            exit(-1);
+        }
+        if ( !checkFileExists(sslCertFile) )
+        {
+            ERRLOG("DaFileSrv SSL specified but certificate file (%s) not found", sslCertFile);
+            exit(-1);
+        }
+        if ( !checkFileExists(sslKeyFile) )
+        {
+            ERRLOG("DaFileSrv SSL specified but key file (%s) not found", sslKeyFile);
+            exit(-1);
+        }
     }
 
     if (0 == logDir.length())
