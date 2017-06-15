@@ -605,9 +605,8 @@ bool CWsWorkunitsEx::onWUCreateAndUpdate(IEspContext &context, IEspWUUpdateReque
         if (!wuid || !*wuid)
         {
             NewWsWorkunit wu(context);
-            wuid = wu->queryWuid();
+            req.setWuid(wu->queryWuid());
         }
-        req.setWuid(wuid);
     }
     catch(IException* e)
     {
