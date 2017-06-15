@@ -2432,11 +2432,19 @@ void ActivityInstance::getScope(StringBuffer & scope) const
         containerActivity->getScope(scope);
         scope.append(":");
     }
-    else if (translator.activeGraph)
-        scope.append(translator.activeGraph->name).append(":");
+    else
+    {
+        scope.append(WorkflowScopePrefix).append(translator.curWfid).append(":");
+        if (translator.activeGraph)
+            scope.append(translator.activeGraph->name).append(":");
+    }
 
     if (subgraph)
+    {
+        if (subgraph->graphId)
+            scope.append(ChildGraphScopePrefix).append(subgraph->graphId).append(":");
         scope.append(SubGraphScopePrefix).append(subgraph->id).append(":");
+    }
     scope.append(ActivityScopePrefix).append(activityId);
 }
 
