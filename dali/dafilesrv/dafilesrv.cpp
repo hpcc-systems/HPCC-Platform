@@ -592,7 +592,7 @@ int main(int argc,char **argv)
             unsigned parallelSlowRequestLimit;
             unsigned throttleSlowDelayMs;
             unsigned throttleSlowCPULimit;
-
+            unsigned sslport;
             
             class cpollthread: public Thread
             {
@@ -616,11 +616,13 @@ int main(int argc,char **argv)
             cserv(SSLCfg _useSSL, SocketEndpoint _listenep,
                         unsigned _maxThreads, unsigned _maxThreadsDelayMs, unsigned _maxAsyncCopy,
                         unsigned _parallelRequestLimit, unsigned _throttleDelayMs, unsigned _throttleCPULimit,
-                        unsigned _parallelSlowRequestLimit, unsigned _throttleSlowDelayMs, unsigned _throttleSlowCPULimit)
+                        unsigned _parallelSlowRequestLimit, unsigned _throttleSlowDelayMs, unsigned _throttleSlowCPULimit,
+                        unsigned _sslport)
             : useSSL(_useSSL), listenep(_listenep), pollthread(this),
                   maxThreads(_maxThreads), maxThreadsDelayMs(_maxThreadsDelayMs), maxAsyncCopy(_maxAsyncCopy),
                   parallelRequestLimit(_parallelRequestLimit), throttleDelayMs(_throttleDelayMs), throttleCPULimit(_throttleCPULimit),
-                  parallelSlowRequestLimit(_parallelSlowRequestLimit), throttleSlowDelayMs(_throttleSlowDelayMs), throttleSlowCPULimit(_throttleSlowCPULimit)
+                  parallelSlowRequestLimit(_parallelSlowRequestLimit), throttleSlowDelayMs(_throttleSlowDelayMs), throttleSlowCPULimit(_throttleSlowCPULimit),
+                  sslport(_sslport)
             {
                 stopped = false;
                 started = false;
@@ -729,7 +731,7 @@ int main(int argc,char **argv)
         } service(useSSL, listenep,
                 maxThreads, maxThreadsDelayMs, maxAsyncCopy,
                 parallelRequestLimit, throttleDelayMs, throttleCPULimit,
-                parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit);
+                parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit, sslport);
         service.start();
         return 0;
 #else
