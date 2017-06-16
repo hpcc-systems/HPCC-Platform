@@ -53,7 +53,7 @@ enum ThrottleClass
 
 interface IRemoteFileServer : extends IInterface
 {
-    virtual void run(SSLCfg useSSL, SocketEndpoint &listenep, unsigned sslPort=0) = 0;
+    virtual void run(DAFSConnectCfg connectMethod, SocketEndpoint &listenep, unsigned sslPort=0) = 0;
     virtual void stop() = 0;
     virtual unsigned idleTime() = 0; // in ms
     virtual void setThrottle(ThrottleClass throttleClass, unsigned limit, unsigned delayMs=DEFAULT_STDCMD_THROTTLEDELAYMS, unsigned cpuThreshold=DEFAULT_STDCMD_THROTTLECPULIMIT, unsigned queueLimit=DEFAULT_STDCMD_THROTTLEQUEUELIMIT) = 0;

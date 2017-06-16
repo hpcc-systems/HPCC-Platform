@@ -94,7 +94,9 @@ interface REMOTE_API IDAFS_Exception: extends IException
 enum DAFS_ERROR_CODES {
     DAFSERR_connection_failed               = -1,   
     DAFSERR_authenticate_failed             = -2,
-    DAFSERR_protocol_failure                = -3
+    DAFSERR_protocol_failure                = -3,
+    DAFSERR_serveraccept_failed             = -4,
+    DAFSERR_serverinit_failed               = -5
 };
 
 
