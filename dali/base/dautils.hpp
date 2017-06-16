@@ -179,10 +179,11 @@ public:
 };
 
 extern da_decl const bool &queryTransactionLogging();
+extern da_decl cycle_t querySlowTransactionThreshold();
 struct da_decl TransactionLog
 {
     CTransactionLogTracker &owner;
-    unsigned startMs, extraStartMs;
+    cycle_t startCycles, extraStartCycles;
     StringBuffer msg;
     unsigned cmd;
     const SocketEndpoint &ep;
@@ -192,36 +193,49 @@ struct da_decl TransactionLog
         {
             if (cmd > owner.getMax())
                 cmd = owner.getMax(); // unknown
-            extraStartMs = 0;
             owner.startTransaction(cmd);
             owner.getCmdText(cmd, msg);
             msg.append(", endpoint=");
             ep.getUrlStr(msg);
-            startMs = msTick();
+            startCycles = get_cycles_now();
         }
         else
-            startMs = 0;
+            startCycles = 0;
+        extraStartCycles = 0;
     }
     inline ~TransactionLog()
     {
-        if (startMs)
+        if (startCycles)
         {
-            unsigned now = msTick();
-            unsigned transCount = owner.getTransactionCount(cmd);
             owner.endTransaction(cmd);
-            if (extraStartMs)
-                PROGLOG("<<<[%d] (Timing: total=%d, from mark=%d) %s", transCount, now-startMs, extraStartMs-startMs, msg.str());
+            cycle_t slowTransactionThreshold = querySlowTransactionThreshold();
+            cycle_t cyclesNow = get_cycles_now();
+            if (slowTransactionThreshold)
+            {
+                cycle_t elapsedCycles = cyclesNow - startCycles;
+                if (elapsedCycles < slowTransactionThreshold)
+                    return;
+            }
+            unsigned transCount = owner.getTransactionCount(cmd)+1; // +1 = this one
+            unsigned elapsedSinceStartMs = static_cast<unsigned>(cycle_to_millisec(cyclesNow - startCycles));
+            if (extraStartCycles)
+            {
+                unsigned elapsedSinceExtraMs = static_cast<unsigned>(cycle_to_millisec(extraStartCycles - startCycles));
+                PROGLOG("<<<[%d] (Timing: total=%u, from mark=%u) %s", transCount, elapsedSinceStartMs, elapsedSinceExtraMs, msg.str());
+            }
             else
-                PROGLOG("<<<[%d] (Timing: total=%d) %s", transCount, now-startMs, msg.str());
+                PROGLOG("<<<[%d] (Timing: total=%u) %s", transCount, elapsedSinceStartMs, msg.str());
         }
     }
     inline void log()
     {
+        if (querySlowTransactionThreshold()) return; // suppress if only logging exit of slow transactions
         unsigned transCount = owner.getTransactionCount(cmd);
         PROGLOG(">>>[%d] %s", transCount, msg.str());
     }
     inline void log(const char *formatMsg, ...) __attribute__((format(printf, 2, 3)))
     {
+        if (querySlowTransactionThreshold()) return; // suppress if only logging exit of slow transactions
         va_list args;
         va_start(args, formatMsg);
         msg.append(" ");
@@ -231,8 +245,8 @@ struct da_decl TransactionLog
     }
     inline void markExtra()
     {
-        if (!extraStartMs)
-            extraStartMs = msTick();
+        if (!extraStartCycles)
+            extraStartCycles = get_cycles_now();
     }
     inline void extra(const char *formatMsg, ...) __attribute__((format(printf, 2, 3)))
     {

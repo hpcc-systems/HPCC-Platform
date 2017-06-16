@@ -3181,12 +3181,44 @@ ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDes
 }
 
 static bool transactionLoggingOn=false;
+static cycle_t slowTransactionThreshold=0;
 const bool &queryTransactionLogging() { return transactionLoggingOn; }
-bool traceAllTransactions(bool on)
+cycle_t querySlowTransactionThreshold() { return slowTransactionThreshold; }
+bool traceAllTransactions()
 {
-    bool ret = transactionLoggingOn;
-    transactionLoggingOn = on;
-    return ret;
+    if (transactionLoggingOn)
+        return false; // no change
+    transactionLoggingOn = true;
+    return true;
+}
+
+bool clearAllTransactions()
+{
+    if (!transactionLoggingOn)
+        return false; // no change
+    transactionLoggingOn = false;
+    slowTransactionThreshold = 0;
+    return true;
+}
+
+bool traceSlowTransactions(unsigned thresholdMs)
+{
+    if (thresholdMs)
+    {
+        cycle_t newSlowTransactionThreshold = nanosec_to_cycle(((unsigned __int64)thresholdMs)*1000000);
+        bool changed = !transactionLoggingOn || (slowTransactionThreshold != newSlowTransactionThreshold);
+        slowTransactionThreshold = newSlowTransactionThreshold;
+        transactionLoggingOn = true;
+        return changed;
+    }
+    else if (transactionLoggingOn) // was on, turning off
+    {
+        transactionLoggingOn = false;
+        slowTransactionThreshold = 0;
+        return true; // changed
+    }
+    else // was already off
+        return false;
 }
 
 class CLockInfo : public CSimpleInterfaceOf<ILockInfo>
