@@ -1671,7 +1671,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           master on the same node. Try to keep Dali and ESP on separate nodes.
           Even if you don't have the luxury of very many nodes, you want the
           Thor master and the Dali (at minimum) to be on separate nodes. The
-          best practice is to keep as many components as possible their own
+          best practice is to keep as many components as possible on their own
           nodes.</para>
 
           <para>Another consideration for a multiple node system is to avoid
