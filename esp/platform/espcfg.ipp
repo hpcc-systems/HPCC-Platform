@@ -41,6 +41,7 @@ using namespace std;
 //ESP
 #include "esp.hpp"
 #include "espplugin.hpp"
+#include "espcache.hpp"
 
 struct binding_cfg
 {
@@ -180,9 +181,13 @@ public:
         DBGLOG("loadServices");
         loadServices();
         loadProtocols();
-        loadBindings();      
+        loadBindings();
+
+        if (m_cfg->getPropBool("@ensureESPCache", false) && !checkESPCache())
+            throw MakeStringException(-1, "Failed in checking ESP cache service using %s", m_cfg->queryProp("@espCacheInitString"));
     }
 
+    bool checkESPCache();
     IEspPlugin* getPlugin(const char* name);
 
     void loadBuiltIns();

@@ -28,6 +28,7 @@ set(SRCS
     ../../../platform/espcontext.cpp
     ../../../platform/espprotocol.cpp
     ../../../platform/espthread.cpp
+    ../../../platform/espcache.cpp
     ../../../platform/sechandler.cpp
     ../../../platform/txsummary.cpp
     ../../../protocols/http/mapinfo.cpp
