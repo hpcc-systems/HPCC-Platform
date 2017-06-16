@@ -626,8 +626,12 @@ define([
                                 break;
                             case "edge":
                                 var edge = this.walkDocument(childNode, childNode.getAttribute("id"));
-                                if (edge.NumRowsProcessed) {
+                                if (edge.NumRowsProcessed !== undefined) {
                                     edge._eclwatchCount = edge.NumRowsProcessed.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                                } else if (edge.Count !== undefined) {
+                                    edge._eclwatchCount = edge.Count.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                                } else if (edge.count !== undefined) {
+                                    edge._eclwatchCount = edge.count.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                                 }
                                 if (edge.inputProgress) {
                                     edge._eclwatchInputProgress = "[" + edge.inputProgress.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "]";
