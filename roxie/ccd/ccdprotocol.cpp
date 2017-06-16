@@ -271,6 +271,28 @@ public:
 
     virtual void runOnce(const char *query);
 
+    virtual void cleanupSocket(ISocket *sock)
+    {
+        if (!sock)
+            return;
+        try
+        {
+            sock->shutdown();
+        }
+        catch (IException *e)
+        {
+            e->Release();
+        }
+        try
+        {
+            sock->close();
+        }
+        catch (IException *e)
+        {
+            e->Release();
+        }
+    }
+
     virtual int run()
     {
         DBGLOG("ProtocolSocketListener (%d threads) listening to socket on port %d", sink->getPoolSize(), port);
@@ -298,7 +320,7 @@ public:
                         if (status < 0)
                         {
                             // secure_accept may also DBGLOG() errors ...
-                            WARNLOG("ProtocolSocketListener failure to establish secure connection");
+                            cleanupSocket(ssock);
                             continue;
                         }
                     }
@@ -308,12 +330,19 @@ public:
                         E->errorMessage(s);
                         WARNLOG("%s", s.str());
                         E->Release();
+                        cleanupSocket(ssock);
+                        ssock.clear();
+                        cleanupSocket(client);
+                        client.clear();
                         continue;
                     }
                     catch (...)
                     {
-                        StringBuffer s;
                         WARNLOG("ProtocolSocketListener failure to establish secure connection");
+                        cleanupSocket(ssock);
+                        ssock.clear();
+                        cleanupSocket(client);
+                        client.clear();
                         continue;
                     }
                     client.setown(ssock.getClear());
