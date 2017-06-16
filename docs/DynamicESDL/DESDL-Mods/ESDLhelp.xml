@@ -4,9 +4,11 @@
 <sect2 id="ESDL_Attributes_help">
   <title><emphasis role="bold">help</emphasis></title>
 
-  <para>The help attribute (valid only for an ESPMethod) allows you to specify
-  some additional text to display on the form that is automatically generated
-  to execute a method. </para>
+  <para><indexterm>
+      <primary>help</primary>
+    </indexterm>The help attribute (valid only for an ESPMethod) allows you to
+  specify some additional text to display on the form that is automatically
+  generated to execute a method.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 

@@ -2,7 +2,9 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect2 id="ESDL_Attributes_ecl_hide">
-  <title><emphasis role="bold">ecl_hide</emphasis></title>
+  <title><emphasis role="bold">e<indexterm>
+      <primary>ecl_hide</primary>
+    </indexterm>cl_hide</emphasis></title>
 
   <para>The <emphasis>ecl_hide</emphasis> attribute hides the field from ECL
   (that is, the field is removed when generating the ECL code). This is used
