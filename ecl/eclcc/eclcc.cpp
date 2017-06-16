@@ -1491,6 +1491,8 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
 
 void EclCC::processFile(EclCompileInstance & instance)
 {
+    clearTransformStats();
+
     const char * curFilename = instance.inputFile->queryFilename();
     assertex(curFilename);
 
@@ -1594,10 +1596,15 @@ void EclCC::processFile(EclCompileInstance & instance)
         processSingleQuery(instance, queryText, attributePath.str());
     }
 
-    if (instance.reportErrorSummary() && !instance.archive && !(optGenerateMeta && instance.generatedMeta))
-        return;
+    if (!instance.reportErrorSummary() || instance.archive || (optGenerateMeta && instance.generatedMeta))
+        generateOutput(instance);
 
-    generateOutput(instance);
+    //Transform stats are gathered in static global variables.  Revisit if the code generator is multi threaded.
+    if (instance.wu->getDebugValueBool("timeTransforms", false))
+    {
+        WuStatisticTarget statsTarget(instance.wu, "eclcc");
+        gatherTransformStats(statsTarget);
+    }
 }
 
 
@@ -2516,7 +2523,6 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
 
                 resetUniqueId();
                 resetLexerUniqueNames();
-                clearTransformStats();
             }
 
             Owned<IErrorReceiver> localErrs = createFileErrorReceiver(logFile);
@@ -2525,8 +2531,6 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             if (info.wu &&
                 (info.wu->getDebugValueBool("generatePartialOutputOnError", false) || info.queryErrorProcessor().errCount() == 0))
             {
-                WuStatisticTarget statsTarget(info.wu, "eclcc");
-                gatherTransformStats(statsTarget);
                 exportWorkUnitToXMLFile(info.wu, xmlFilename, XML_NoBinaryEncode64, true, false, false, true);
                 Owned<IFile> xml = createIFile(xmlFilename);
                 info.stats.xmlSize = xml->size();

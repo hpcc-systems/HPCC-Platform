@@ -413,7 +413,7 @@ class TomitaContext : public NlpParseContext, public IResolveContext
 {
     friend class TomProduction;
 public:
-    TomitaContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & _options, ITimeReporter * _timeReporter);
+    TomitaContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & _options);
     ~TomitaContext();
 
     virtual void compileSearchPattern();

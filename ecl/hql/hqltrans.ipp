@@ -35,8 +35,8 @@ typedef MapOwnedToOwned<IHqlExpression, IHqlExpression> MapOwnedHqlToOwnedHql;
 
 //NOTE: eclcc needs to be run with the --leakcheck option for the summary to be output to stdout with TRANSFORM_STATS_ONEXIT option
 
-//#define TRANSFORM_STATS
-//#define TRANSFORM_STATS_TIME
+#define TRANSFORM_STATS
+#define TRANSFORM_STATS_TIME
 //#define TRANSFORM_STATS_DETAILS
 //#define TRANSFORM_STATS_ONEXIT
 //#define TRANSFORM_STATS_OPS

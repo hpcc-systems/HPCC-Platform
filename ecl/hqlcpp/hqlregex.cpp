@@ -2349,7 +2349,7 @@ with some clever code to walk through and retain lists of which ones are active.
 
 //---------------------------------------------------------------------------
 
-RegexContext::RegexContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & _options, ITimeReporter * _timeReporter, byte _algorithm) : NlpParseContext(_expr, _wu, _options, _timeReporter), parser(NULL, _algorithm)
+RegexContext::RegexContext(IHqlExpression * _expr, IWorkUnit * _wu, const HqlCppOptions & _options, byte _algorithm) : NlpParseContext(_expr, _wu, _options), parser(NULL, _algorithm)
 {
     info.addedSeparators = false;
     switch (info.type)
@@ -2561,7 +2561,6 @@ HqlRegexExpr * RegexContext::createStructure(IHqlExpression * expr, bool caseSen
 
 void RegexContext::buildStructure()
 {
-    cycle_t startCycles = get_cycles_now();
     IHqlExpression * grammar = expr->queryChild(2);
     assertex(grammar->getOperator() == no_pat_instance);
     OwnedHqlExpr structure = LINK(grammar);//createValue(no_pat_instance, makeRuleType(NULL), LINK(grammar), LINK(grammar->queryChild(1)));
@@ -2570,8 +2569,6 @@ void RegexContext::buildStructure()
     root.setown(new HqlNamedRegex(structure, internalAtom, structure, no_parse, isCaseSensitive(), false));
     root->setRegexOwn(rootRegex);
     named.append(*LINK(root));
-
-    noteFinishedTiming("compile:generate PARSE:create structure", startCycles);
 }
 
 void RegexContext::expandRecursion()
@@ -2624,7 +2621,6 @@ void RegexContext::optimizeSpotDFA()
 
 void RegexContext::optimizePattern()
 {
-    cycle_t startCycles = get_cycles_now();
     ForEachItemIn(idx1, named)
         named.item(idx1).mergeCreateSets();
     root->expandNamedSymbols();
@@ -2638,7 +2634,6 @@ void RegexContext::optimizePattern()
         }
     }
     optimizeSpotDFA();
-    noteFinishedTiming("compile:generate PARSE:optimize", startCycles);
 }
 
 
@@ -2659,8 +2654,6 @@ HqlNamedRegex * RegexContext::queryDefine(IHqlExpression * defineName, bool case
 
 void RegexContext::analysePattern()
 {
-    cycle_t startCycles = get_cycles_now();
-
     //This conversion is based around the description in the Dragon book:
     //3.9 From a regular expression to a DFA
     //even though we don't always convert it, the steps form a useful algorithm
@@ -2675,15 +2668,11 @@ void RegexContext::analysePattern()
 
     ForEachItemIn(idx3, named)
         named.item(idx3).generateDFAs();
-
-    noteFinishedTiming("compile:generate PARSE:analyse", startCycles);
 }
 
 
 void RegexContext::generateRegex()
 {
-    cycle_t startCycles = get_cycles_now();
-
     parser.addedSeparators = info.addedSeparators;
     setParserOptions(parser);
 
@@ -2696,8 +2685,6 @@ void RegexContext::generateRegex()
 
     parser.grammar.set(root->queryRootPattern());
     parser.minPatternLength = root->getMinLength();
-
-    noteFinishedTiming("compile:generate PARSE:generate", startCycles);
 }
 
 
@@ -2726,9 +2713,9 @@ void RegexContext::getDebugText(StringBuffer & s, unsigned detail)
     regexToXml(s, parser.grammar, detail);
 }
 
-NlpParseContext * createRegexContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options, ITimeReporter * timeReporter, byte algorithm)
+NlpParseContext * createRegexContext(IHqlExpression * expr, IWorkUnit * wu, const HqlCppOptions & options, byte algorithm)
 {
-    return new RegexContext(expr, wu, options, timeReporter, algorithm);
+    return new RegexContext(expr, wu, options, algorithm);
 }
 
 //-- Lexer creation
@@ -2776,12 +2763,6 @@ void RegexContext::generateLexer(IDfaPattern * builder)
     //MORE: Need to call some elements of optimizePattern() to expand limited repeats.
     analysePattern();
     lexerRoot->generateDFA(builder);
-}
-
-void RegexContext::noteFinishedTiming(const char * name, cycle_t startCycles)
-{
-    if (timeReporter)
-        timeReporter->addTiming(name, get_cycles_now() - startCycles);
 }
 
 /*

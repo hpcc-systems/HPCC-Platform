@@ -1804,6 +1804,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.addLikelihoodToGraph,"addLikelihoodToGraph", true),
         DebugOption(options.varFieldAccessorThreshold,"varFieldAccessorThreshold",3),   // Generate accessor classes for rows with #variable width fields >= threshold
         DebugOption(options.translateDFSlayouts,"translateDFSlayouts", false),
+        DebugOption(options.timeTransforms,"timeTransforms", false),
         DebugOption(options.reportDFSinfo,"reportDFSinfo", 0),
     };
 

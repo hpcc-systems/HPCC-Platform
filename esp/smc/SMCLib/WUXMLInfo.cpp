@@ -294,45 +294,6 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
     return true;
 }
 
-/*
-//GH: MORE - this whole class looks as if it is unused, and should be deleted.  If that is not true the
-//following function needs to be rewritten to take into account the statistics
-bool CWUXMLInfo::buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
-{
-    try{
-
-        IPropertyTree* timingTree = XMLStructure.addPropTree("Timings", createPTree(ipt_caseInsensitive));
-        Owned<IConstWUStatisticIterator> stats = &wu.getStatistics(NULL, NULL, "Time*");
-        ForEach(*stats)
-        {
-            IConstWUStatistic & cur = stats->query();
-            SCMStringBuffer description;
-            cur.getDescription(description);
-            SCMStringBuffer value;
-            unsigned count = cur.getCount();
-            unsigned __int64 duration = cur.getValue();
-            StringBuffer fd;
-            formatDuration(fd, nanoToMilli(duration));
-
-            IPropertyTree* Timer = timingTree->addPropTree("Timer", createPTree(ipt_caseInsensitive));
-            Timer->setProp("Name",description.str());
-            Timer->setProp("Value",fd.str());
-            Timer->setPropInt("Count",count);
-        }
-    }
-    catch(IException* e){   
-      StringBuffer msg;
-      e->errorMessage(msg);
-        WARNLOG("%s", msg.str());
-        e->Release();
-    }
-    catch(...){
-        WARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlTimimgList");
-    }
-
-    return true;
-}
-*/
 
 bool CWUXMLInfo::buildXmlLogList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
 {
