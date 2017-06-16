@@ -3721,6 +3721,10 @@ ecl bundle install mybundle --keepprior</programlisting>
         file that can be retrieved. In either case, it is fetched to a
         temporary local location, processed as a local file/directory and then
         removed.</para>
+
+        <para>To use the "ecl bundle install &lt;git url&gt;" command, you
+        must have git installed and configured on your system. Git must be
+        accessible to the user (in the path).</para>
       </sect2>
 
       <sect2 id="CT_CLI_SyntaxECLBundleUninstall" role="brk">
