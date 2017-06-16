@@ -652,6 +652,8 @@ define(
     title_DFUQuery: "Archivos Lógicos",
     title_DFUWUDetails: "Unidad de trabajo DFU",
     title_DirectoriesFor: "Directorios para",
+    title_Definitions: "Definiciónes",
+    title_DefinitionExplorer: "Explorador de Definiciónes",
     title_DiskUsage: "Utilización del disco",
     title_ECLPlayground: "ECL Playground",
     title_ErrorsWarnings: "Errores/Advertencias de",
