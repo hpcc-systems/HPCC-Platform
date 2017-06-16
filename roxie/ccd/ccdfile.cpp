@@ -1168,13 +1168,11 @@ public:
                 if ((dfsSize != (offset_t) -1 && dfsSize != f->getSize()) ||
                     (!dfsDate.isNull() && !dfsDate.equals(*f->queryDateTime(), false)))
                 {
-                    if (fileType == ROXIE_KEY)
-                    {
-                        // jhtree cache can keep files active and thus prevent us from loading a new version
+                    releaseSlaveDynamicFileCache();  // Slave dynamic file cache or...
+                    if (fileType == ROXIE_KEY)       // ...jhtree cache can keep files active and thus prevent us from loading a new version
                         clearKeyStoreCacheEntry(f);  // Will release iff that is the only link
-                        f.clear(); // Note - needs to be done before calling getValue() again, hence the need to make it separate from the f.set below
-                        f.set(files.getValue(localLocation));
-                    }
+                    f.clear(); // Note - needs to be done before calling getValue() again, hence the need to make it separate from the f.set below
+                    f.set(files.getValue(localLocation));
                     if (f)  // May have been cleared above...
                     {
                         StringBuffer modifiedDt;
@@ -1766,6 +1764,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
+
     CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* _daliHelper, bool isDynamic, bool cacheIt, bool writeAccess, bool _isSuperFile)
     : daliHelper(_daliHelper), lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType), isSuper(_isSuperFile)
     {
@@ -2022,9 +2021,9 @@ public:
                     maxParts = numParts;
             }
 
-            IDefRecordMeta *thisDiskMeta = diskMeta.item(subFile);
             if (translators)
             {
+                IDefRecordMeta *thisDiskMeta = diskMeta.isItem(subFile) ? diskMeta.item(subFile) : nullptr;
                 if (fdesc && thisDiskMeta && activityMeta && !thisDiskMeta->equals(activityMeta))
                     if (allowFieldTranslation != IRecordLayoutTranslator::NoTranslation)
                         translators->append(createRecordLayoutTranslator(lfn, thisDiskMeta, activityMeta, allowFieldTranslation));
@@ -2423,7 +2422,7 @@ public:
     IMPLEMENT_IINTERFACE;
     CSlaveDynamicFileCache(unsigned _limit) : tableSize(_limit) {}
 
-    virtual IResolvedFile *lookupDynamicFile(const IRoxieContextLogger &logctx, const char *lfn, CDateTime &cacheDate, unsigned checksum, RoxiePacketHeader *header, bool isOpt, bool isLocal)
+    virtual IResolvedFile *lookupDynamicFile(const IRoxieContextLogger &logctx, const char *lfn, CDateTime &cacheDate, unsigned checksum, RoxiePacketHeader *header, bool isOpt, bool isLocal) override
     {
         if (logctx.queryTraceLevel() > 5)
         {
@@ -2467,6 +2466,11 @@ public:
         files.add(*ret.getLink(), 0);
         return ret.getClear();
     }
+
+    virtual void releaseAll() override
+    {
+        files.kill();
+    }
 };
 
 static CriticalSection slaveDynamicFileCacheCrit;
@@ -2486,7 +2490,8 @@ extern ISlaveDynamicFileCache *querySlaveDynamicFileCache()
 extern void releaseSlaveDynamicFileCache()
 {
     CriticalBlock b(slaveDynamicFileCacheCrit);
-    slaveDynamicFileCache.clear();
+    if (slaveDynamicFileCache)
+        slaveDynamicFileCache->releaseAll();
 }
 
 

@@ -162,7 +162,7 @@ struct dummyReadWrite
 // backward compatible modes
 typedef enum { compatIFSHnone, compatIFSHread, compatIFSHwrite, compatIFSHexec, compatIFSHall} compatIFSHmode;
 
-static const char *VERSTRING= "DS V2.0"       // dont forget FILESRV_VERSION in header
+static const char *VERSTRING= "DS V2.1"       // dont forget FILESRV_VERSION in header
 #ifdef _WIN32
 "Windows ";
 #else
@@ -179,14 +179,16 @@ static unsigned maxReceiveTime = 0;
 static class _securitySettings
 {
 public:
-    bool            useSSL;
+    SSLCfg          useSSL;
     unsigned short  daFileSrvPort;
+    unsigned short  daFileSrvSSLPort;
     const char *    certificate;
     const char *    privateKey;
+    const char *    passPhrase;
 
     _securitySettings()
     {
-        querySecuritySettings(&useSSL, &daFileSrvPort, &certificate, &privateKey);
+        queryDafsSecSettings(&useSSL, &daFileSrvPort, &daFileSrvSSLPort, &certificate, &privateKey, &passPhrase);
     }
 } securitySettings;
 
@@ -202,7 +204,7 @@ static ISecureSocket *createSecureSocket(ISocket *sock,SecureSocketType type)
         if (!secureContext)
         {
             if (securitySettings.certificate)
-                secureContext.setown(createSecureSocketContextEx(securitySettings.certificate,securitySettings.privateKey, NULL, type));
+                secureContext.setown(createSecureSocketContextEx(securitySettings.certificate, securitySettings.privateKey, securitySettings.passPhrase, type));
             else
                 secureContext.setown(createSecureSocketContext(type));
         }
@@ -547,7 +549,10 @@ void setDafsEndpointPort(SocketEndpoint &ep)
     }
     if (ep.port==0)
     {
-        ep.port = securitySettings.daFileSrvPort;
+        if ( (securitySettings.useSSL == SSLNone) || (securitySettings.useSSL == UnsecureFirst) )
+            ep.port = securitySettings.daFileSrvPort;
+        else
+            ep.port = securitySettings.daFileSrvSSLPort;
     }
 }
 
@@ -950,19 +955,32 @@ static Semaphore                 treeCopySem;
 
 class CRemoteBase: public CInterface
 {
-
     Owned<ISocket>          socket;
     static  SocketEndpoint  lastfailep;
     static unsigned         lastfailtime;
-    bool                    useSSL;
-    void connectSocket(SocketEndpoint &ep)
+    SSLCfg                  useSSL;
+
+    void connectSocket(SocketEndpoint &ep, unsigned localConnectTime=0, unsigned localRetries=0)
     {
-        sRFTM tm(maxConnectTime);
-        // called in CConnectionTable::crit
         unsigned retries = 3;
+
+        if (localConnectTime)
+        {
+            if (localRetries)
+                retries = localRetries;
+            if (localConnectTime > maxConnectTime)
+                localConnectTime = maxConnectTime;
+        }
+        else
+            localConnectTime = maxConnectTime;
+
+        sRFTM tm(localConnectTime);
+
+        // called in CConnectionTable::crit
+
         if (ep.equals(lastfailep)) {
             if (msTick()-lastfailtime<DAFS_CONNECT_FAIL_RETRY_TIME) {
-                StringBuffer msg("Failed to connect to dafilesrv/daliservix on ");
+                StringBuffer msg("Failed to connect (host marked down) to dafilesrv/daliservix on ");
                 ep.getUrlStr(msg);
                 throw createDafsException(DAFSERR_connection_failed,msg.str());
             }
@@ -974,7 +992,10 @@ class CRemoteBase: public CInterface
             StringBuffer eps;
             if (TF_TRACE_CLIENT_CONN) {
                 ep.getUrlStr(eps);
-                PROGLOG("Connecting %sto %s",useSSL?"SECURE ":"",eps.str());
+                if (ep.port == securitySettings.daFileSrvSSLPort)
+                    PROGLOG("Connecting SECURE to %s", eps.str());
+                else
+                    PROGLOG("Connecting to %s", eps.str());
                 //PrintStackReport();
             }
             bool ok = true;
@@ -986,7 +1007,7 @@ class CRemoteBase: public CInterface
                 }
                 else
                     socket.setown(ISocket::connect(ep));
-                if (useSSL)
+                if (ep.port == securitySettings.daFileSrvSSLPort)
                 {
 #ifdef _USE_OPENSSL
                     Owned<ISecureSocket> ssock = createSecureSocket(socket.getClear(), ClientSocket);
@@ -1006,7 +1027,7 @@ class CRemoteBase: public CInterface
                         lastfailep.set(ep);
                         lastfailtime = msTick();
                         e->Release();
-                        StringBuffer msg("Failed to connect to dafilesrv/daliservix on ");
+                        StringBuffer msg("Failed to connect (setting host down) to dafilesrv/daliservix on ");
                         ep.getUrlStr(msg);
                         throw createDafsException(DAFSERR_connection_failed,msg.str());
                     }
@@ -1044,7 +1065,10 @@ class CRemoteBase: public CInterface
                     sleeptime = remaining/2;
             }
             Sleep(sleeptime);       // prevent multiple retries beating
-            PROGLOG("Retrying %sconnect",useSSL?"SECURE ":"");
+            if (ep.port == securitySettings.daFileSrvSSLPort)
+                PROGLOG("Retrying SECURE connect");
+            else
+                PROGLOG("Retrying connect");
         }
         if (ConnectionTable)
             ConnectionTable->addLink(ep,socket);
@@ -1131,27 +1155,37 @@ protected: friend class CRemoteFileIO;
                         killSocket(tep);
                 }
             }
-            if (!socket) {
-                bool tryNonSecure = true;
-                if (useSSL) {
-                    try {
-                        connectSocket(tep);//first try secure connect
-                        tryNonSecure = false;
+
+            if (!socket)
+            {
+                bool doConnect = true;
+                if (useSSL == SSLFirst || useSSL == UnsecureFirst)
+                {
+                    // MCK - could maintain a list of 100 or so previous endpoints and if connection failed
+                    // then mark port down for a delay (like 15 min above) to avoid having to try every time ...
+                    try
+                    {
+                        connectSocket(tep, 5000, 1);
+                        doConnect = false;
                     }
-                    catch (IException *e) {
-
-                        StringBuffer s;
-                        e->errorMessage(s);
-                        e->Release();
-                        WARNLOG("Secure connect failed, retrying on legacy port (%s)",s.str());
-
-                        useSSL = false;
-                        tep.port = DAFILESRV_PORT;//retry on nonsecure port
-                        tryNonSecure = true;
+                    catch (IDAFS_Exception *e)
+                    {
+                        if (e->errorCode() == DAFSERR_connection_failed)
+                        {
+                            unsigned prevPort = tep.port;
+                            if (prevPort == securitySettings.daFileSrvSSLPort)
+                                tep.port = securitySettings.daFileSrvPort;
+                            else
+                                tep.port = securitySettings.daFileSrvSSLPort;
+                            WARNLOG("Connect failed on port %d, retrying on port %d", prevPort, tep.port);
+                            doConnect = true;
+                            e->Release();
+                        }
+                        else
+                            throw e;
                     }
                 }
-
-                if (tryNonSecure)
+                if (doConnect)
                     connectSocket(tep);
             }
         }
@@ -2602,6 +2636,77 @@ void CRemoteFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *pr
 
 /////////////////////////
 
+ISocket *checkSocketSecure(ISocket *socket)
+{
+    if (securitySettings.useSSL == SSLNone)
+        return LINK(socket);
+
+    char pname[256];
+    pname[0] = 0;
+    int pport = socket->peer_name(pname, sizeof(pname)-1);
+
+    if ( (pport == securitySettings.daFileSrvSSLPort) && (!socket->isSecure()) )
+    {
+        Owned<ISecureSocket> ssock;
+#ifdef _USE_OPENSSL
+        ssock.setown(createSecureSocket(LINK(socket), ClientSocket));
+        int status = ssock->secure_connect();
+        if (status < 0)
+            throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
+        return ssock.getClear();
+#else
+        throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
+#endif
+    }
+
+    return LINK(socket);
+}
+
+ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms)
+{
+    Owned<ISocket> socket;
+
+    if ( (securitySettings.useSSL == SSLNone) || (securitySettings.useSSL == SSLOnly) )
+    {
+        socket.setown(ISocket::connect_timeout(ep, timeoutms));
+        return socket.getClear();
+    }
+
+    unsigned newtimeout = timeoutms;
+    if (newtimeout > 5000)
+        newtimeout = 5000;
+
+    bool tryAgain = false;
+    try
+    {
+        socket.setown(ISocket::connect_timeout(ep, newtimeout));
+    }
+    catch (IJSOCK_Exception *e)
+    {
+        if (e->errorCode() == JSOCKERR_connection_failed)
+        {
+            unsigned prevPort = ep.port;
+            if (prevPort == securitySettings.daFileSrvSSLPort)
+                ep.port = securitySettings.daFileSrvPort;
+            else
+                ep.port = securitySettings.daFileSrvSSLPort;
+            WARNLOG("Connect failed on port %d, retrying on port %d", prevPort, ep.port);
+            tryAgain = true;
+            e->Release();
+        }
+        else
+            throw e;
+    }
+
+    if (tryAgain)
+        socket.setown(ISocket::connect_timeout(ep, timeoutms));
+
+    if (socket)
+        return checkSocketSecure(socket);
+    else
+        return nullptr;
+}
+
 unsigned getRemoteVersion(CRemoteFileIO &remoteFileIO, StringBuffer &ver)
 {
     unsigned ret;
@@ -2640,26 +2745,13 @@ unsigned getRemoteVersion(CRemoteFileIO &remoteFileIO, StringBuffer &ver)
     return ret;
 }
 
-unsigned getRemoteVersion(ISocket * socket, StringBuffer &ver)
+unsigned getRemoteVersion(ISocket *origSock, StringBuffer &ver)
 {
     // used to have a global critical section here
-    if (!socket)
+    if (!origSock)
         return 0;
 
-    Owned<ISecureSocket> ssock;
-
-    if (securitySettings.useSSL && !socket->isSecure())
-    {
-#ifdef _USE_OPENSSL
-        ssock.setown(createSecureSocket(LINK(socket), ClientSocket));
-        int status = ssock->secure_connect();
-        if (status < 0)
-            throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
-        socket = ssock;
-#else
-        throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
-#endif
-    }
+    Owned<ISocket> socket = checkSocketSecure(origSock);
 
     unsigned ret;
     MemoryBuffer sendbuf;
@@ -4261,7 +4353,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     int                 lasthandle;
     CriticalSection     sect;
     Owned<ISocket>      acceptsock;
-    Owned<ISocket>      rejectsock;//used to immediately reject nonsecure connection requests when in secure mode
+    Owned<ISocket>      securesock;
     Owned<ISocketSelectHandler> selecthandler;
     Owned<IThreadPool>  threads;    // for commands
     bool stopping;
@@ -5354,8 +5446,8 @@ public:
         stopping = true;
         if (acceptsock) 
             acceptsock->cancel_accept();
-        if (rejectsock)
-            rejectsock->cancel_accept();
+        if (securesock)
+            securesock->cancel_accept();
         reply.append((unsigned)RFEnoerror);
         return false;
     }
@@ -5629,144 +5721,187 @@ public:
         return new cCommandProcessor();
     }
 
-    void run(SocketEndpoint &listenep, bool useSSL)
+    void run(SSLCfg _useSSL, SocketEndpoint &listenep, unsigned sslPort)
     {
-        Owned<ISocket> acceptSocket, secureRejectSocket;
-        if (listenep.isNull())
-            acceptSocket.setown(ISocket::create(listenep.port));
+        SocketEndpoint sslep(listenep);
+        if (sslPort)
+            sslep.port = sslPort;
         else
+            sslep.port = securitySettings.daFileSrvSSLPort;
+        Owned<ISocket> acceptSocket, acceptSSLSocket;
+
+        if (_useSSL != SSLOnly)
         {
-            StringBuffer ips;
-            listenep.getIpText(ips);
-            acceptSocket.setown(ISocket::create_ip(listenep.port,ips.str()));
-        }
-        if (useSSL)
-        {
-            if (!securitySettings.certificate)
-                throw createDafsException(DAFSERR_connection_failed,"SSL Certificate information not found in environment.conf");
-            if (listenep.port <= 0)
-            {
-                assertex(FALSE);//should never get here
-                listenep.port = securitySettings.daFileSrvPort;
-            }
-            //Create unsecure socket to reject non-ssl client requests
+            if (listenep.port == 0)
+                throw createDafsException(DAFSERR_connection_failed, "dafilesrv port not specified");
+
             if (listenep.isNull())
-                secureRejectSocket.setown(ISocket::create(DAFILESRV_PORT));
+                acceptSocket.setown(ISocket::create(listenep.port));
             else
             {
                 StringBuffer ips;
                 listenep.getIpText(ips);
-                secureRejectSocket.setown(ISocket::create_ip(DAFILESRV_PORT,ips.str()));
+                acceptSocket.setown(ISocket::create_ip(listenep.port,ips.str()));
             }
         }
-        run(acceptSocket.getClear(), secureRejectSocket.getClear());
-    }
-    void run(ISocket *socket, ISocket *secureRejectSocket)
-    {
-        acceptsock.setown(socket);
-        rejectsock.setown(secureRejectSocket);
-        bool useSSL = secureRejectSocket ? true : false;
-#ifdef _DEBUG
-        SocketEndpoint listenep;
-        socket->getPeerEndpoint(listenep);
-        StringBuffer sb;
-        listenep.getUrlStr(sb);
-        DBGLOG("Server accepting %sfrom %s", useSSL?"SECURE ":"", sb.str());
-#endif
-        selecthandler->start();
 
-        UnsignedArray readSocks;
-        if (useSSL)
+        if (_useSSL)
         {
-            readSocks.append(acceptsock->OShandle());
-            readSocks.append(rejectsock->OShandle());
+            if (sslep.port == 0)
+                throw createDafsException(DAFSERR_connection_failed, "Secure dafilesrv port not specified");
+
+            if ( (_useSSL != UnsecureFirst) && (!securitySettings.certificate || !securitySettings.privateKey) )
+                throw createDafsException(DAFSERR_connection_failed, "SSL Certificate and/or Key file information not found in environment.conf");
+
+            if (sslep.isNull())
+                acceptSSLSocket.setown(ISocket::create(sslep.port));
+            else
+            {
+                StringBuffer ips;
+                sslep.getIpText(ips);
+                acceptSSLSocket.setown(ISocket::create_ip(sslep.port,ips.str()));
+            }
         }
+
+        run(_useSSL, acceptSocket.getClear(), acceptSSLSocket.getClear());
+    }
+
+    void run(SSLCfg _useSSL, ISocket *regSocket, ISocket *secureSocket)
+    {
+        if (_useSSL != SSLOnly)
+        {
+            if (regSocket)
+                acceptsock.setown(regSocket);
+            else
+                throw createDafsException(DAFSERR_connection_failed, "Invalid non-secure socket");
+        }
+
+        if (_useSSL)
+        {
+            if (secureSocket)
+                securesock.setown(secureSocket);
+            else
+                throw createDafsException(DAFSERR_connection_failed, "Invalid secure socket");
+        }
+
+        selecthandler->start();
 
         for (;;)
         {
             Owned<ISocket> sock;
+            Owned<ISocket> sockSSL;
             bool sockavail = false;
-            try
+            bool securesockavail = false;
+            if (_useSSL == SSLNone)
+                sockavail = acceptsock->wait_read(1000*60*1)!=0;
+            else if (_useSSL == SSLOnly)
+                securesockavail = securesock->wait_read(1000*60*1)!=0;
+            else
             {
-                if (!useSSL)
-                    sockavail = acceptsock->wait_read(1000*60*1)!=0;
-                else
+                UnsignedArray readSocks;
+                UnsignedArray waitingSocks;
+                readSocks.append(acceptsock->OShandle());
+                readSocks.append(securesock->OShandle());
+                int numReady = wait_read_multiple(readSocks, 1000*60*1, waitingSocks);
+                if (numReady > 0)
                 {
-                    UnsignedArray waitingSocks;
-                    //SSL Enabled. Listen for non SSL connection on DAFILESRV_PORT and reject them
-                    int numReady = wait_read_multiple(readSocks, 1000*60*1, waitingSocks);
-                    if (numReady)
+                    for (int idx = 0; idx < numReady; idx++)
                     {
-                        for (int idx = 0; idx < numReady; idx++)
-                        {
-                            if (waitingSocks.item(idx) == rejectsock->OShandle())
-                            {
-                                //Unsecure connection attemped, reject !
-                                Owned<ISocket> s;
-                                s.setown(rejectsock->accept(true));
-                                IpAddress ip;
-                                StringBuffer sb;
-                                s->getPeerAddress(ip);
-                                ip.getIpText(sb);
-                                DBGLOG("Rejecting nonsecure connect from %s",sb.str());
-                                s->close();
-                            }
-                            else
-                            {
-                                sockavail = true;
-                            }
-                        }
+                        if (waitingSocks.item(idx) == acceptsock->OShandle())
+                            sockavail = true;
+                        else if (waitingSocks.item(idx) == securesock->OShandle())
+                            securesockavail = true;
                     }
                 }
+            }
 #if 0
-                if (!sockavail)
-                {
-                    JSocketStatistics stats;
-                    getSocketStatistics(stats);
-                    StringBuffer s;
-                    getSocketStatisticsString(stats,s);
-                    PROGLOG( "Socket statistics : \n%s\n",s.str());
-                }
-#endif
-            }
-            catch (IException *e)
+            if (!sockavail && !securesockavail)
             {
-                EXCLOG(e,"CRemoteFileServer(1)");
-                e->Release();
-                // not sure what to do so just accept
-                sockavail = true;
+                JSocketStatistics stats;
+                getSocketStatistics(stats);
+                StringBuffer s;
+                getSocketStatisticsString(stats,s);
+                PROGLOG( "Socket statistics : \n%s\n",s.str());
             }
+#endif
+
             if (stopping)
                 break;
-            if (sockavail)
+
+            if (sockavail || securesockavail)
             {
-                try
+                if (sockavail)
                 {
-                    sock.setown(acceptsock->accept(true));
-                    if (useSSL)
+                    try
                     {
-#ifdef _USE_OPENSSL
-                        Owned<ISecureSocket> ssock = createSecureSocket(sock.getClear(), ServerSocket);
-                        int status = ssock->secure_accept();
-                        if (status < 0)
-                            throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
-                        sock.setown(ssock.getLink());
-#else
-                        throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
+                        sock.setown(acceptsock->accept(true));
+                        if (!sock||stopping)
+                            break;
+#ifdef _DEBUG
+                        SocketEndpoint eps;
+                        sock->getPeerEndpoint(eps);
+                        StringBuffer sb;
+                        eps.getUrlStr(sb);
+                        PROGLOG("Server accepting from %s", sb.str());
 #endif
                     }
-                    if (!sock||stopping)
+                    catch (IException *e)
+                    {
+                        EXCLOG(e,"CRemoteFileServer");
+                        e->Release();
                         break;
-                    runClient(sock.getClear());
+                    }
                 }
-                catch (IException *e)
+
+                if (securesockavail)
                 {
-                    EXCLOG(e,"CRemoteFileServer");
-                    e->Release();
-                    sock.clear();
-                    if (!QUERYINTERFACE(e, IJSOCK_Exception))
+                    try
+                    {
+                        sockSSL.setown(securesock->accept(true));
+                        if (!sockSSL||stopping)
+                            break;
+
+                        if ( (_useSSL == UnsecureFirst) && (!securitySettings.certificate || !securitySettings.privateKey) )
+                        {
+                            // for client secure_connect() to fail quickly ...
+                            sockSSL->shutdown();
+                            sockSSL->close();
+                            sockSSL.clear();
+                            securesockavail = false;
+                        }
+                        else
+                        {
+#ifdef _USE_OPENSSL
+                            Owned<ISecureSocket> ssock = createSecureSocket(sockSSL.getClear(), ServerSocket);
+                            int status = ssock->secure_accept();
+                            if (status < 0)
+                                throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
+                            sockSSL.setown(ssock.getLink());
+#else
+                            throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
+#endif
+#ifdef _DEBUG
+                            SocketEndpoint eps;
+                            sockSSL->getPeerEndpoint(eps);
+                            StringBuffer sb;
+                            eps.getUrlStr(sb);
+                            PROGLOG("Server accepting SECURE from %s", sb.str());
+#endif
+                        }
+                    }
+                    catch (IException *e)
+                    {
+                        EXCLOG(e,"CRemoteFileServer (secure)");
+                        e->Release();
                         break;
+                    }
                 }
+
+                if (sockavail)
+                    runClient(sock.getClear());
+
+                if (securesockavail)
+                    runClient(sockSSL.getClear());
             }
             else
                 checkTimeout();
@@ -5890,8 +6025,8 @@ public:
             PROGLOG("CRemoteFileServer::stop");
         if (acceptsock)
             acceptsock->cancel_accept();
-        if (rejectsock)
-            rejectsock->cancel_accept();
+        if (securesock)
+            securesock->cancel_accept();
         threads->stopAll();
         threads->joinAll(true,60*1000);
     }
@@ -6135,7 +6270,8 @@ protected:
         // IThreaded
             virtual void main()
             {
-                server->run(socket, nullptr);
+                SSLCfg sslCfg = SSLNone;
+                server->run(sslCfg, socket, nullptr);
             }
         };
         enableDafsAuthentication(false);

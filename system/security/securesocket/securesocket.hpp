@@ -48,8 +48,8 @@ enum SecureSocketType
 // One instance per connection
 interface ISecureSocket : implements ISocket
 {
-    virtual int secure_accept() = 0;
-    virtual int secure_connect() = 0;
+    virtual int secure_accept(int logLevel=1) = 0;
+    virtual int secure_connect(int logLevel=1) = 0;
 };
 
 // One instance per program running

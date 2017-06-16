@@ -3138,7 +3138,7 @@ void EclAgent::fatalAbort(bool userabort,const char *excepttext)
         if (userabort) 
             w->setState(WUStateAborted);
         if (excepttext&&*excepttext)
-            addException(SeverityError, "ECLAGENT", 1000, excepttext, NULL, 0, 0, true, false);
+            addException(SeverityError, "eclagent", 1000, excepttext, NULL, 0, 0, true, false);
         w->deleteTempFiles(NULL, false, true);
         wuRead.clear(); 
         w->commit();        // needed because we can't unlock the workunit in this thread

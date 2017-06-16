@@ -1,0 +1,83 @@
+rem ---   ESDL.BAT   ---
+rem %1 = Action:  CalcIncludes, SyntaxCheck, Save, Commit, Submit, Generate, Custom1, Custom2, Custom3, Custom4
+rem %2 = Module Label
+rem %3 = Attribute Label
+rem %4 = Input file path
+rem %5 = Output file path
+rem %6 = Error file path
+rem %7 = User Info
+rem %8 = Ecl Folders
+rem %9 = Server
+rem %10 = Password
+
+set "action=%1%"
+shift
+echo Action:  %action% > %TMP%\log.txt
+echo Module Label:  %1 >> %TMP%\log.txt
+echo Attribute Label:  %2 >> %TMP%\log.txt
+echo Input file path:  %3 >> %TMP%\log.txt
+echo Output file path:  %4 >> %TMP%\log.txt
+echo Error file path:  %5 >> %TMP%\log.txt
+echo User Info:  %6 >> %TMP%\log.txt
+echo Ecl Folders:  %7 >> %TMP%\log.txt
+echo Server:  %8 >> %TMP%\log.txt
+echo Password:  %9 >> %TMP%\log.txt
+
+rem =====================================
+rem  CREATE NEW FILE NAMES
+rem =====================================
+set "newinput=%TMP%\%2%.esdl"
+set "newoutput=%TMP%\%2%.ecl"
+echo New Input file:  %newinput% >> %TMP%\log.txt
+echo New Ouput file:  %newoutput% >> %TMP%\log.txt
+copy /Y %3 %newinput%
+
+:begin
+if %action%==CalcIncludes goto eof
+if %action%==SyntaxCheck goto eof
+if %action%==Save goto genecl
+if %action%==Commit goto genecl
+if %action%==Submit goto publish
+if %action%==Generate goto genecl
+if %action%==Custom1 goto publish
+if %action%==Custom2 goto genecl
+if %action%==Custom3 goto eof
+if %action%==Custom4 goto eof
+
+:publish
+rem =====================================
+rem  PARSE INTO SERVER AND PORT
+rem =====================================
+if [%9] == [] goto passparse
+for /f "tokens=1,2,3 delims=/:" %%a in ("%8") do set http=%%a&set server=%%b&set port=%%c
+echo.server: %server% >> %TMP%\log.txt
+echo.port  : %port% >> %TMP%\log.txt
+
+:publish
+esdl publish %newinput% --server %server%  --port %port% --version 1.0 --username %6 --password %9 -v 2>%5 >>%TMP%\log.txt
+goto end
+
+:genecl
+esdl ecl %newinput% %TMP% --includes --rollup -cde "@ORIG_PREFIX@\@DIR_NAME@\@version@\clienttools\componentfiles" 2>%5 >>%TMP%\log.txt
+goto end
+
+:end
+
+rem =====================================
+rem  MAKE FILE INTO MOD FILE FORMAT
+rem =====================================
+set "newoutputUnique=%2Gen"
+echo //IMPORT:%1.%newoutputUnique% >> %TMP%\modfile.tmp
+type %newoutput% >> %TMP%\modfile.tmp
+del %newoutput%
+copy /Y %TMP%\modfile.tmp %newoutput%
+del %TMP%\modfile.tmp
+
+copy /Y %3 %TMP%\in.txt
+copy /Y %newoutput% %TMP%\%newoutputUnique%.ecl
+copy /Y %TMP%\%newoutputUnique%.ecl %4
+copy /Y %4 %TMP%\out.txt
+del %newoutput%
+copy /Y %5 %TMP%\err.txt
+
+:eof

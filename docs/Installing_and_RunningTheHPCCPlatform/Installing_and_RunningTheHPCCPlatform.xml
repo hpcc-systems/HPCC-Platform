@@ -1349,9 +1349,14 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
+    <!-- <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
                 xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude" />   -->
+                
+  <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml" xpointer="xpointer(//*[@id='ssl4esp'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />  
+  <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml" xpointer="xpointer(//*[@id='ssl4Roxie'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />  
   </chapter>
 
   <chapter id="Installing_MoreECLExamples">

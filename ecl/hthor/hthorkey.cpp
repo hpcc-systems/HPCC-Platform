@@ -440,6 +440,7 @@ bool CHThorIndexReadActivityBase::doPreopenLimit(unsigned __int64 limit)
     if(superIterator)
     {
         superIterator->first();
+        superIndex = 0;
         do
         {
             df.set(&superIterator->query());

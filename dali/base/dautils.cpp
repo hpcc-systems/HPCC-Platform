@@ -59,6 +59,23 @@ extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind)
     return "UNKNOWN";
 }
 
+extern da_decl DfsXmlBranchKind queryDfsXmlBranchType(const char *typeStr)
+{
+    if (isEmptyString(typeStr))
+        throw makeStringException(0, "Blank DFS xml branch type");
+    if (strieq(typeStr, "File"))
+        return DXB_File;
+    else if (strieq(typeStr, "SuperFile"))
+        return DXB_SuperFile;
+    else if (strieq(typeStr, "Collection"))
+        return DXB_Collection;
+    else if (strieq(typeStr, "Scope"))
+        return DXB_Scope;
+    else if (strieq(typeStr, "HpccInternal"))
+        return DXB_Internal;
+    else
+        throw makeStringExceptionV(0, "Unknown DFS xml Branch type: %s", typeStr);
+}
 
 
 static const char *toLower(const char *s,StringBuffer &str)

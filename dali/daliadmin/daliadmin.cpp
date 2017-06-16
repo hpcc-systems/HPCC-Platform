@@ -130,6 +130,7 @@ void usage(const char *exe)
   printf("  wuiddecompress <wildcard> <type> --  scan workunits that match <wildcard> and decompress resources of <type>\n");
   printf("  xmlsize <filename> [<percentage>] --  analyse size usage in xml file, display individual items above 'percentage' \n");
   printf("  migratefiles <src-group> <target-group> [<filemask>] [dryrun] [createmaps] [listonly] [verbose]\n");
+  printf("  translatetoxpath logicalfile [File|SuperFile|Scope]\n");
   printf("\n");
   printf("Common options\n");
   printf("  server=<dali-server-ip>         -- server ip\n");
@@ -2428,6 +2429,14 @@ static void xmlSize(const char *filename, double pc)
     }
 }
 
+static void translateToXpath(const char *logicalfile, DfsXmlBranchKind tailType=DXB_File)
+{
+    CDfsLogicalFileName lfn;
+    lfn.set(logicalfile);
+    StringBuffer str;
+    OUTLOG("%s", lfn.makeFullnameQuery(str, tailType).str());
+}
+
 //=============================================================================
 
 static bool begins(const char *&ln,const char *pat)
@@ -3168,7 +3177,7 @@ int main(int argc, char* argv[])
         else if ((i==1)&&(isdigit(*param)||(*param=='.'))&&ep.set(((*param=='.')&&param[1])?(param+1):param,DALI_SERVER_PORT))
             props->setProp("server",ep.getUrlStr(tmps.clear()).str());
         else {
-            if ((0==stricmp(param,"help")) || (0 ==stricmp(param,"-help")) || (0 ==stricmp(param,"--help"))) {
+            if ((strieq(param,"help")) || (strieq(param,"-help")) || (strieq(param,"--help"))) {
                 usage(argv[0]);
                 return -1;
             }
@@ -3211,15 +3220,39 @@ int main(int argc, char* argv[])
         if (!props->getProp("server",daliserv.clear()))
         {
             // external commands
-
-            if (stricmp(cmd,"xmlsize")==0)
+            try
             {
-                CHECKPARAMS(1,2);
-                xmlSize(params.item(1), np>1?atof(params.item(2)):1.0);
+                if (strieq(cmd,"xmlsize"))
+                {
+                    CHECKPARAMS(1,2);
+                    xmlSize(params.item(1), np>1?atof(params.item(2)):1.0);
+                }
+                else if (strieq(cmd,"translatetoxpath"))
+                {
+                    CHECKPARAMS(1,2);
+                    DfsXmlBranchKind branchType;
+                    if (np>1)
+                    {
+                        const char *typeStr = params.item(2);
+                        branchType = queryDfsXmlBranchType(typeStr);
+                    }
+                    else
+                        branchType = DXB_File;
+                    translateToXpath(params.item(1), branchType);
+                }
+                else
+                {
+                    ERRLOG("Unknown command %s",cmd);
+                    ret = 255;
+                }
             }
-            else
-                ERRLOG("Unknown command %s",cmd);
-            return 0;
+            catch (IException *e)
+            {
+                EXCLOG(e,"daliadmin");
+                e->Release();
+                ret = 255;
+            }
+            return ret;
         }
         else
         {
@@ -3248,245 +3281,245 @@ int main(int argc, char* argv[])
                         queryDistributedFileDirectory().setDefaultUser(userDesc);
                     }
                     daliConnectTimeoutMs = 1000 * props->getPropInt("timeout", DEFAULT_DALICONNECT_TIMEOUT);
-                    if (stricmp(cmd,"export")==0) {
+                    if (strieq(cmd,"export")) {
                         CHECKPARAMS(2,2);
                         _export_(params.item(1),params.item(2));
                     }
-                    else if (stricmp(cmd,"import")==0) {
+                    else if (strieq(cmd,"import")) {
                         CHECKPARAMS(2,2);
                         import(params.item(1),params.item(2),false);
                     }
-                    else if (stricmp(cmd,"importadd")==0) {
+                    else if (strieq(cmd,"importadd")) {
                         CHECKPARAMS(2,2);
                         import(params.item(1),params.item(2),true);
                     }
-                    else if (stricmp(cmd,"delete")==0) {
+                    else if (strieq(cmd,"delete")) {
                         CHECKPARAMS(1,1);
                         _delete_(params.item(1),true);
                     }
-                    else if (stricmp(cmd,"set")==0) {
+                    else if (strieq(cmd,"set")) {
                         CHECKPARAMS(2,2);
                         set(params.item(1),params.item(2));
                     }
-                    else if (stricmp(cmd,"get")==0) {
+                    else if (strieq(cmd,"get")) {
                         CHECKPARAMS(1,1);
                         get(params.item(1));
                     }
-                    else if (stricmp(cmd,"bget")==0) {
+                    else if (strieq(cmd,"bget")) {
                         CHECKPARAMS(2,2);
                         bget(params.item(1),params.item(2));
                     }
-                    else if (stricmp(cmd,"wget")==0) {
+                    else if (strieq(cmd,"wget")) {
                         CHECKPARAMS(1,1);
                         wget(params.item(1));
                     }
-                    else if (stricmp(cmd,"xget")==0) {
+                    else if (strieq(cmd,"xget")) {
                         CHECKPARAMS(1,1);
                         wget(params.item(1));
                     }
-                    else if (stricmp(cmd,"add")==0) {
+                    else if (strieq(cmd,"add")) {
                         CHECKPARAMS(1,2);
                         add(params.item(1), (np>1) ? params.item(2) : nullptr);
                     }
-                    else if (stricmp(cmd,"delv")==0) {
+                    else if (strieq(cmd,"delv")) {
                         CHECKPARAMS(1,1);
                         delv(params.item(1));
                     }
-                    else if (stricmp(cmd,"count")==0) {
+                    else if (strieq(cmd,"count")) {
                         CHECKPARAMS(1,1);
                         count(params.item(1));
                     }
-                    else if (stricmp(cmd,"dfsfile")==0) {
+                    else if (strieq(cmd,"dfsfile")) {
                         CHECKPARAMS(1,1);
                         dfsfile(params.item(1),userDesc);
                     }
-                    else if (stricmp(cmd,"dfspart")==0) {
+                    else if (strieq(cmd,"dfspart")) {
                         CHECKPARAMS(2,2);
                         dfspart(params.item(1),userDesc,atoi(params.item(2)));
                     }
-                    else if (stricmp(cmd,"dfscheck")==0) {
+                    else if (strieq(cmd,"dfscheck")) {
                         CHECKPARAMS(0,0);
                         dfsCheck();
                     }
-                    else if (stricmp(cmd,"dfscsv")==0) {
+                    else if (strieq(cmd,"dfscsv")) {
                         CHECKPARAMS(1,1);
                         dfscsv(params.item(1),userDesc);
                     }
-                    else if (stricmp(cmd,"dfsgroup")==0) {
+                    else if (strieq(cmd,"dfsgroup")) {
                         CHECKPARAMS(1,2);
                         dfsGroup(params.item(1),(np>1)?params.item(2):NULL);
                     }
-                    else if (stricmp(cmd,"clusternodes")==0) {
+                    else if (strieq(cmd,"clusternodes")) {
                         CHECKPARAMS(1,2);
                         ret = clusterGroup(params.item(1),(np>1)?params.item(2):NULL);
                     }
-                    else if (stricmp(cmd,"dfsls")==0) {
+                    else if (strieq(cmd,"dfsls")) {
                         CHECKPARAMS(0,2);
                         dfsLs((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL);
                     }
-                    else if (stricmp(cmd,"dfsmap")==0) {
+                    else if (strieq(cmd,"dfsmap")) {
                         CHECKPARAMS(1,1);
                         dfsmap(params.item(1), userDesc);
                     }
-                    else if (stricmp(cmd,"dfsexist")==0) {
+                    else if (strieq(cmd,"dfsexist")) {
                         CHECKPARAMS(1,1);
                         ret = dfsexists(params.item(1),userDesc);
                     }
-                    else if (stricmp(cmd,"dfsparents")==0) {
+                    else if (strieq(cmd,"dfsparents")) {
                         CHECKPARAMS(1,1);
                         dfsparents(params.item(1),userDesc);
                     }
-                    else if (stricmp(cmd,"dfsunlink")==0) {
+                    else if (strieq(cmd,"dfsunlink")) {
                         CHECKPARAMS(1,1);
                         dfsunlink(params.item(1),userDesc);
                     }
-                    else if (stricmp(cmd,"dfsverify")==0) {
+                    else if (strieq(cmd,"dfsverify")) {
                         CHECKPARAMS(1,1);
                         ret = dfsverify(params.item(1),NULL,userDesc);
                     }
-                    else if (stricmp(cmd,"setprotect")==0) {
+                    else if (strieq(cmd,"setprotect")) {
                         CHECKPARAMS(2,2);
                         setprotect(params.item(1),params.item(2),userDesc);
                     }
-                    else if (stricmp(cmd,"unprotect")==0) {
+                    else if (strieq(cmd,"unprotect")) {
                         CHECKPARAMS(2,2);
                         unprotect(params.item(1),params.item(2),userDesc);
                     }
-                    else if (stricmp(cmd,"listprotect")==0) {
+                    else if (strieq(cmd,"listprotect")) {
                         CHECKPARAMS(0,2);
                         listprotect((np>1)?params.item(1):"*",(np>2)?params.item(2):"*");
 
                     }
-                    else if (stricmp(cmd,"checksuperfile")==0) {
+                    else if (strieq(cmd,"checksuperfile")) {
                         CHECKPARAMS(1,1);
                         bool fix = props->getPropBool("fix");
                         checksuperfile(params.item(1),fix);
                     }
-                    else if (stricmp(cmd,"checksubfile")==0) {
+                    else if (strieq(cmd,"checksubfile")) {
                         CHECKPARAMS(1,1);
                         checksubfile(params.item(1));
                     }
-                    else if (stricmp(cmd,"listexpires")==0) {
+                    else if (strieq(cmd,"listexpires")) {
                         CHECKPARAMS(0,1);
                         listexpires((np>1)?params.item(1):"*",userDesc);
                     }
-                    else if (stricmp(cmd,"listrelationships")==0) {
+                    else if (strieq(cmd,"listrelationships")) {
                         CHECKPARAMS(2,2);
                         listrelationships(params.item(1),params.item(2));
                     }
-                    else if (stricmp(cmd,"dfsperm")==0) {
+                    else if (strieq(cmd,"dfsperm")) {
                         if (!userDesc.get())
                             throw MakeStringException(-1,"dfsperm requires username to be set (user=)");
                         CHECKPARAMS(1,1);
                         ret = dfsperm(params.item(1),userDesc);
                     }
-                    else if (stricmp(cmd,"dfscompratio")==0) {
+                    else if (strieq(cmd,"dfscompratio")) {
                         CHECKPARAMS(1,1);
                         dfscompratio(params.item(1),userDesc);
                     }
-                    else if (stricmp(cmd,"dfsscopes")==0) {
+                    else if (strieq(cmd,"dfsscopes")) {
                         CHECKPARAMS(0,1);
                         dfsscopes((np>1)?params.item(1):"*",userDesc);
                     }
-                    else if (stricmp(cmd,"cleanscopes")==0) {
+                    else if (strieq(cmd,"cleanscopes")) {
                         CHECKPARAMS(0,0);
                         cleanscopes(userDesc);
                     }
-                    else if (stricmp(cmd,"listworkunits")==0) {
+                    else if (strieq(cmd,"listworkunits")) {
                         CHECKPARAMS(0,3);
                         listworkunits((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
                     }
-                    else if (stricmp(cmd,"listmatches")==0) {
+                    else if (strieq(cmd,"listmatches")) {
                         CHECKPARAMS(0,3);
                         listmatches((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
                     }
-                    else if (stricmp(cmd,"workunittimings")==0) {
+                    else if (strieq(cmd,"workunittimings")) {
                         CHECKPARAMS(1,1);
                         workunittimings(params.item(1));
                     }
-                    else if (stricmp(cmd,"serverlist")==0) {
+                    else if (strieq(cmd,"serverlist")) {
                         CHECKPARAMS(1,1);
                         serverlist(params.item(1));
                     }
-                    else if (stricmp(cmd,"clusterlist")==0) {
+                    else if (strieq(cmd,"clusterlist")) {
                         CHECKPARAMS(1,1);
                         clusterlist(params.item(1));
                     }
-                    else if (stricmp(cmd,"auditlog")==0) {
+                    else if (strieq(cmd,"auditlog")) {
                         CHECKPARAMS(2,3);
                         auditlog(params.item(1),params.item(2),(np>2)?params.item(3):NULL);
                     }
-                    else if (stricmp(cmd,"coalesce")==0) {
+                    else if (strieq(cmd,"coalesce")) {
                         CHECKPARAMS(0,0);
                         coalesce();
                     }
-                    else if (stricmp(cmd,"mpping")==0) {
+                    else if (strieq(cmd,"mpping")) {
                         CHECKPARAMS(1,1);
                         mpping(params.item(1));
                     }
-                    else if (stricmp(cmd,"daliping")==0) {
+                    else if (strieq(cmd,"daliping")) {
                         CHECKPARAMS(0,1);
                         daliping(daliserv.str(),daliconnectelapsed,(np>0)?atoi(params.item(1)):1);
                     }
-                    else if (stricmp(cmd,"getxref")==0) {
+                    else if (strieq(cmd,"getxref")) {
                         CHECKPARAMS(1,1);
                         getxref(params.item(1));
                     }
-                    else if (stricmp(cmd,"dalilocks")==0) {
+                    else if (strieq(cmd,"dalilocks")) {
                         CHECKPARAMS(0,2);
                         bool filesonly = false;
-                        if (np&&(stricmp(params.item(np),"files")==0)) {
+                        if (np&&(strieq(params.item(np),"files"))) {
                             filesonly = true;
                             np--;
                         }
                         dalilocks(np>0?params.item(1):NULL,filesonly);
                     }
-                    else if (stricmp(cmd,"unlock")==0) {
+                    else if (strieq(cmd,"unlock")) {
                         CHECKPARAMS(2,2);
                         const char *fileOrPath = params.item(2);
-                        if (0 == stricmp("file", fileOrPath))
+                        if (strieq("file", fileOrPath))
                             unlock(params.item(1), true);
-                        else if (0 == stricmp("path", fileOrPath))
+                        else if (strieq("path", fileOrPath))
                             unlock(params.item(1), false);
                         else
                             throw MakeStringException(0, "unknown type [ %s ], must be 'file' or 'path'", fileOrPath);
                     }
-                    else if (stricmp(cmd,"validateStore")==0) {
+                    else if (strieq(cmd,"validateStore")) {
                         CHECKPARAMS(0,2);
                         bool fix = props->getPropBool("fix");
                         bool verbose = props->getPropBool("verbose");
                         bool deleteFiles = props->getPropBool("deletefiles");
                         validateStore(fix, deleteFiles, verbose);
                     }
-                    else if (stricmp(cmd, "workunit") == 0) {
+                    else if (strieq(cmd, "workunit")) {
                         CHECKPARAMS(1,2);
                         bool includeProgress=false;
                         if (np>1)
                             includeProgress = strToBool(params.item(2));
                         dumpWorkunit(params.item(1), includeProgress);
                     }
-                    else if (stricmp(cmd,"wuidCompress")==0) {
+                    else if (strieq(cmd,"wuidCompress")) {
                         CHECKPARAMS(2,2);
                         wuidCompress(params.item(1), params.item(2), true);
                     }
-                    else if (stricmp(cmd,"wuidDecompress")==0) {
+                    else if (strieq(cmd,"wuidDecompress")) {
                         CHECKPARAMS(2,2);
                         wuidCompress(params.item(1), params.item(2), false);
                     }
-                    else if (stricmp(cmd,"dfsreplication")==0) {
+                    else if (strieq(cmd,"dfsreplication")) {
                         CHECKPARAMS(3,4);
                         bool dryRun = np>3 && strieq("dryrun", params.item(4));
                         dfsreplication(params.item(1), params.item(2), atoi(params.item(3)), dryRun);
                     }
-                    else if (stricmp(cmd,"holdlock")==0) {
+                    else if (strieq(cmd,"holdlock")) {
                         CHECKPARAMS(2,2);
                         holdlock(params.item(1), params.item(2), userDesc);
                     }
-                    else if (stricmp(cmd, "progress") == 0) {
+                    else if (strieq(cmd, "progress")) {
                         CHECKPARAMS(2,2);
                         dumpProgress(params.item(1), params.item(2));
                     }
-                    else if (stricmp(cmd, "stats") == 0) {
+                    else if (strieq(cmd, "stats")) {
                         CHECKPARAMS(1, 7);
                         if ((params.ordinality() >= 3) && (strchr(params.item(2), '[')))
                         {
@@ -3501,7 +3534,7 @@ int main(int argc, char* argv[])
                             dumpStats(params.item(1), params.item(2), params.item(3), params.item(4), params.item(5), params.item(6), nullptr, csv);
                         }
                     }
-                    else if (stricmp(cmd, "migratefiles") == 0)
+                    else if (strieq(cmd, "migratefiles"))
                     {
                         CHECKPARAMS(2, 7);
                         const char *srcGroup = params.item(1);
@@ -3522,9 +3555,11 @@ int main(int argc, char* argv[])
                     else
                         ERRLOG("Unknown command %s",cmd);
                 }
-                catch (IException *e) {
+                catch (IException *e)
+                {
                     EXCLOG(e,"daliadmin");
                     e->Release();
+                    ret = 255;
                 }
                 closedownClientProcess();
             }

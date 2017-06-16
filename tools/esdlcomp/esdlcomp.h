@@ -621,6 +621,45 @@ public:
         out.append("/>\n");
     };
 
+    bool checkDup(StringBuffer& msg, ParamInfo* attrlist)
+    {
+        if(!attrlist)
+            return false;
+        StringBuffer myeclnamebuf;
+        bool hasMyEclName = getMetaStringValue(myeclnamebuf, "ecl_name");
+        ParamInfo* attr = attrlist;
+        while(attr)
+        {
+            if(stricmp(name, attr->name) == 0)
+            {
+                msg.appendf("\"%s\" conflicts with \"%s\"", name, attr->name);
+                return true;
+            }
+            else if(hasMyEclName && stricmp(myeclnamebuf.str(), attr->name) == 0)
+            {
+                msg.appendf("ecl_name \"%s\" conflicts with \"%s\"", myeclnamebuf.str(), attr->name);
+                return true;
+            }
+            StringBuffer eclnamebuf;
+            bool hasEclName = attr->getMetaStringValue(eclnamebuf, "ecl_name");
+            if(hasEclName)
+            {
+                if(stricmp(name, eclnamebuf.str()) == 0)
+                {
+                    msg.appendf("\"%s\" conflicts with ecl_name \"%s\"", name, eclnamebuf.str());
+                    return true;
+                }
+                else if(hasMyEclName && stricmp(myeclnamebuf.str(), eclnamebuf.str()) == 0)
+                {
+                    msg.appendf("ecl_name \"%s\" conflicts with ecl_name \"%s\"", myeclnamebuf.str(), eclnamebuf.str());
+                    return true;
+                }
+            }
+            attr = attr->next;
+        }
+        return false;
+    }
+
     type_kind kind;
     char      *name;
     char      *templ;

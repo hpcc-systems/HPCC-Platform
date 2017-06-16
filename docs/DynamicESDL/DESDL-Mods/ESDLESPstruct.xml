@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-   
-   <sect2 id="ESP_Struct">
-      <title>ESP<emphasis role="bold">struct</emphasis></title>
+<sect2 id="ESP_Struct">
+  <title>ESP<emphasis role="bold">struct</emphasis></title>
 
-      <para>ESPstruct is a set of elements grouped together under one name.
-      These elements, known as <emphasis>members</emphasis>, can have
-      different types and different lengths. Structures can be nested and
-      support inheritance.</para>
+  <para>ESPstruct <indexterm>
+      <primary>ESPstruct</primary>
+    </indexterm>is a set of elements grouped together under one name. These
+  elements, known as <emphasis>members</emphasis>, can have different types
+  and different lengths. Structures can be nested and support
+  inheritance.</para>
 
-      <para><emphasis role="bold">Example:</emphasis></para>
+  <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>
+  <programlisting>
 ESPstruct NameBlock
 
 {
@@ -22,4 +23,4 @@ ESPstruct NameBlock
     int Age;
 };
    </programlisting>
-    </sect2>
+</sect2>

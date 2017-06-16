@@ -6070,9 +6070,18 @@ void CLocalWorkUnit::clearExceptions()
 {
     CriticalBlock block(crit);
     // For this to be legally called, we must have the write-able interface. So we are already locked for write.
-    exceptions.kill();
-    exceptionsCached = true;
-    p->removeProp("Exceptions");
+    loadExceptions();
+    ForEachItemInRev(idx, exceptions)
+    {
+        IWUException &e = exceptions.item(idx);
+        SCMStringBuffer s;
+        e.getExceptionSource(s);
+        if (strieq(s.s, "eclcc") || strieq(s.s, "eclccserver") || strieq(s.s, "eclserver") )
+            break;
+        VStringBuffer xpath("Exceptions/Exception[@sequence='%d']", e.getSequence());
+        p->removeProp(xpath);
+        exceptions.remove(idx);
+    }
 }
 
 

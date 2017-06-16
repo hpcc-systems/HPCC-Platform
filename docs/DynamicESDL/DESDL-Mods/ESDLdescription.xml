@@ -4,9 +4,11 @@
 <sect2 id="ESDL_Attributes_description">
   <title><emphasis role="bold">description</emphasis></title>
 
-  <para>The description attribute (valid only for an ESPMethod) allows you to
-  specify some additional text to display on the form that is automatically
-  generated to execute a method.</para>
+  <para><indexterm>
+      <primary>description</primary>
+    </indexterm>The description attribute (valid only for an ESPMethod) allows
+  you to specify some additional text to display on the form that is
+  automatically generated to execute a method.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 

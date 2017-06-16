@@ -279,6 +279,9 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Extract.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExtractMultiple.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Filter.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 

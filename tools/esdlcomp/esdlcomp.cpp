@@ -1228,16 +1228,24 @@ void ESDLcompiler::Process()
     CriticalBlock block(m_critSect);
 
     yyInitESDLGlobals(this);
+    Owned<IException> parseException;
     yyrestart (yyin);
-    yyparse();
-
+    try
+    {
+        yyparse();
+    }
+    catch(IException* e)
+    {
+        parseException.setown(e);
+    }
     if (nCommentStartLine > -1)
     {
         char tempBuf[256];
         sprintf(tempBuf, "The comment that started at line %d is not ended yet", nCommentStartLine);
         yyerror(tempBuf);
     }
-    write_esxdl();
+    if(!parseException)
+        write_esxdl();
 
     fclose(yyin);
     if (gOutfile > 0)
@@ -1245,6 +1253,9 @@ void ESDLcompiler::Process()
 
     yyCleanupESDLGlobals();
     yylex_destroy();
+
+    if(parseException)
+        throw parseException.getLink();
 }
 
 void ESDLcompiler::write_esxdl()

@@ -1871,6 +1871,11 @@ IHqlExpression * SortListSimplifier::simplify(IHqlExpression * sortlist)
                 }
             }
         }
+        else if (isCast(cur) && castPreservesValueAndOrder(cur))
+        {
+            expand = true;
+            appendComponent(invert, cur->queryChild(0));
+        }
         else
         {
 #if 0

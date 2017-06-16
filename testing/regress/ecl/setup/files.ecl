@@ -184,5 +184,6 @@ EXPORT NameWordIndex() := '~REGRESS::' + indexPrefix + '::wordIndex' + IF(useLoc
 EXPORT NameSearchIndex      := '~REGRESS::' + indexPrefix + '::searchIndex';
 EXPORT getWordIndex() := INDEX(TS.textSearchIndex, NameWordIndex());
 EXPORT getSearchIndex() := INDEX(TS.textSearchIndex, NameSearchIndex);
+EXPORT getSearchSuperIndex() := INDEX(TS.textSearchIndex, '{' + NameSearchIndex + ',' + NameWordIndex() + '}');
 
 END;

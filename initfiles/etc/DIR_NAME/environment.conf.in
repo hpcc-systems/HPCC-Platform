@@ -28,8 +28,10 @@ mpStart=7101
 mpEnd=7500
 mpSoMaxConn=128
 mpTraceLevel=0
-#enable SSL for dafilesrv remote file access
-#dfsUseSSL=false
+# enable SSL for dafilesrv remote file access (SSLNone/false | SSLOnly/true | SSLFirst | UnsecureFirst)
+#dfsUseSSL=SSLNone
+# note: if passphrase specified it must be encrypted
+#dfsSSLPassPhrase=
 #dfsSSLCertFile=/certfilepath/certfile
 #dfsSSLPrivateKeyFile=/keyfilepath/keyfile
 

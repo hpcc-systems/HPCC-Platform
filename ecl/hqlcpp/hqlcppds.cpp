@@ -4465,7 +4465,8 @@ void HqlCppTranslator::doBuildRowAssignProject(BuildCtx & ctx, IReferenceSelecto
     OwnedHqlExpr activeDataset = ensureActiveRow(dataset->queryNormalizedSelector());
 
     // queryChild(1) should be changed to queryTransformExpr()...
-    OwnedHqlExpr transform = queryNewReplaceSelector(queryNewColumnProvider(expr), leftSelect, activeDataset);
+    IHqlExpression * originalTransform = queryNewColumnProvider(expr);
+    OwnedHqlExpr transform = queryNewReplaceSelector(originalTransform, leftSelect, activeDataset);
     Owned<BoundRow> selfCursor;
     if (!transform)
     {
@@ -4473,7 +4474,7 @@ void HqlCppTranslator::doBuildRowAssignProject(BuildCtx & ctx, IReferenceSelecto
         selfCursor.set(bindSelectorAsSelf(subctx, target, expr));
         //Mapping may potentially be ambiguous, so do things correctly (see hqlsource for details)
         BoundRow * prevCursor = resolveSelectorDataset(subctx, dataset->queryNormalizedSelector());
-        transform.set(expr->queryChild(1));
+        transform.set(originalTransform);
 
         bindTableCursor(subctx, dataset, prevCursor->queryBound(), no_left, selSeq);
     }

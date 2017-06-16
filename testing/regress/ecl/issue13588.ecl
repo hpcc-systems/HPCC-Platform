@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#option ('warnOnImplicitReadLimit', true);
 
 xRec := RECORD
     integer x;

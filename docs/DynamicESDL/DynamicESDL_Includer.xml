@@ -40,15 +40,18 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -91,10 +94,10 @@
     the service directly using SOAP, XML, or JSON.</para>
   </chapter>
 
-  <chapter>
+  <chapter id="DESDLWorkflowTutorial">
     <title>Workflow Tutorial</title>
 
-    <sect1 role="nobrk">
+    <sect1 id="DESDLWorkflowOverview" role="nobrk">
       <title>Overview</title>
 
       <para>In this section, we will:</para>
@@ -160,7 +163,7 @@
       <para></para>
     </sect1>
 
-    <sect1>
+    <sect1 id="DESDLConfigureAndBind">
       <title>Configure and Bind a Dynamic ESDL service</title>
 
       <para>This step adds an ESP service and a service binding that reserves
@@ -370,7 +373,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
       </orderedlist>
     </sect1>
 
-    <sect1>
+    <sect1 id="DESDLWriteDef">
       <title>Write the ESDL Service Definition</title>
 
       <para>In this section, we will write a the Service Definitions. The
@@ -406,7 +409,7 @@ ESPresponse AddThisResponse
       </orderedlist>
     </sect1>
 
-    <sect1>
+    <sect1 id="DESDLGenerateDefs">
       <title>Generate ECL definitions from the ESDL Service Definition</title>
 
       <para>In this section, we will generate ECL from this ESDL Service
@@ -477,7 +480,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
         </orderedlist></para>
     </sect1>
 
-    <sect1>
+    <sect1 id="DESDLPublishandBind">
       <title>Publish the ESDL Service Definitions and Bind the ESDL
       Service</title>
 
@@ -552,12 +555,13 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
   </chapter>
 
   <xi:include href="HPCCClientTools/CT_Mods/CT_ESDL_CLI.xml"
-              xpointer="xpointer(//*[@id='ESDL_CLI'])" xmlns:xi="http://www.w3.org/2001/XInclude" />
+              xpointer="xpointer(//*[@id='ESDL_CLI'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-  <chapter>
+  <chapter id="ESDLLanguageReferenceChapter">
     <title>ESDL Language Reference</title>
 
-    <sect1 role="nobrk">
+    <sect1 id="ESDLStructures" role="nobrk">
       <title>ESDL Structures</title>
 
       <para></para>
@@ -631,7 +635,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
-    <sect1>
+    <sect1 id="ESDLAttributes">
       <title>ESDL Attributes</title>
 
       <para>You can use ESDL attributes to extend and override the default
@@ -702,9 +706,10 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
       <xi:include href="DynamicESDL/DESDL-Mods/ESDLdescription.xml"
                   xpointer="element(/1)"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
+
       <xi:include href="DynamicESDL/DESDL-Mods/ESDLauth_feature.xml"
                   xpointer="element(/1)"
-                  xmlns:xi="http://www.w3.org/2001/XInclude" />                  
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
   </chapter>
 </book>

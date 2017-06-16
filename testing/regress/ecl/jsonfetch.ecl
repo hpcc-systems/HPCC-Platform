@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#option ('warnOnImplicitReadLimit', true);
+
 phoneRecord :=
             RECORD
 string5         areaCode{xpath('@areaCode')};

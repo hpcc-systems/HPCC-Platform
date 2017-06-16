@@ -204,6 +204,8 @@ public:
     inline bool zap(TYPE * x)                   { return PointerArray::zap(x); }
 };
 
+enum SSLCfg { SSLNone = 0, SSLOnly, SSLFirst, UnsecureFirst };
+
 #include "jstring.hpp"
 #include "jarray.hpp"
 #include "jhash.hpp"

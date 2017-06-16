@@ -53,14 +53,14 @@ enum ThrottleClass
 
 interface IRemoteFileServer : extends IInterface
 {
-    virtual void run(SocketEndpoint &listenep, bool useSSL = false) = 0;
+    virtual void run(SSLCfg useSSL, SocketEndpoint &listenep, unsigned sslPort=0) = 0;
     virtual void stop() = 0;
     virtual unsigned idleTime() = 0; // in ms
     virtual void setThrottle(ThrottleClass throttleClass, unsigned limit, unsigned delayMs=DEFAULT_STDCMD_THROTTLEDELAYMS, unsigned cpuThreshold=DEFAULT_STDCMD_THROTTLECPULIMIT, unsigned queueLimit=DEFAULT_STDCMD_THROTTLEQUEUELIMIT) = 0;
     virtual StringBuffer &getStats(StringBuffer &stats, bool reset) = 0;
 };
 
-#define FILESRV_VERSION 20 // don't forget VERSTRING in sockfile.cpp
+#define FILESRV_VERSION 21 // don't forget VERSTRING in sockfile.cpp
 
 interface IKeyManager;
 interface IDelayedFile;
@@ -78,6 +78,8 @@ extern void remoteExtractBlobElements(const SocketEndpoint &ep, const char * pre
 extern int getDafsInfo(ISocket * socket, unsigned level, StringBuffer &retstr);
 extern void setDafsEndpointPort(SocketEndpoint &ep);
 extern void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mountdir);
+extern REMOTE_API ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms);
+extern REMOTE_API ISocket *checkSocketSecure(ISocket *socket);
 
 // client only
 extern void clientSetDaliServixSocketCaching(bool set);
