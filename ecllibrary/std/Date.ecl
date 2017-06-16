@@ -621,7 +621,7 @@ Common date formats
     American    '%m/%d/%Y'  mm/dd/yyyy
     Euro        '%d/%m/%Y'  dd/mm/yyyy
     Iso format  '%Y-%m-%d'  yyyy-mm-dd
-    Iso basic   'Y%m%d'     yyyymmdd
+    Iso basic   '%Y%m%d'    yyyymmdd
                 '%d-%b-%Y'  dd-mon-yyyy    e.g., '21-Mar-1954'
  */
 
