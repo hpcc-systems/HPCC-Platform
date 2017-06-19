@@ -328,6 +328,7 @@
 #define HQLERR_ReadSpillBeforeWriteFix          4838
 #define HQLERR_AccessUnavailableGraph           4839
 #define HQLERR_NoMappingForField                4840
+#define HQLERR_InvalidMatchedPatternInJoin      4841
 //#define HQLERR_Max                            4999
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
@@ -359,6 +360,7 @@
 #define HQLERR_IndexTypeNotSupported_Text       "Index is not supported for type %s yet"
 #define HQLERR_RankOnNull_Text                  "RANK has no meaning on an empty list"
 #define HQLERR_MatchedUsedOutsideParse_Text     "%s can only be used in a record supplied to a PARSE() command"
+#define HQLERR_InvalidMatchedPatternInJoin_Text "MATCHED parameter in JOIN/DENORMALIZE must refer to current LEFT or RIGHT"
 #define HQLERR_BadMatchedPath_Text              "The parameter to MATCHED(%s) is not found in the pattern"
 #define HQLERR_RoxieExpectedConstantFilename_Text "Roxie requires constant filenames - expression %s cannot be computed at deployment time"
 #define HQLERR_MatchTextNotUnicode_Text         "MATCHTEXT found where MATCHUNICODE was expected"

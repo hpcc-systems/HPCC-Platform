@@ -85,6 +85,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_quoted:                 // codegen only
     case no_getresult:
     case no_matched:
+    case no_matched_injoin:
     case no_matchtext:
     case no_matchlength:
     case no_matchposition:

@@ -1330,8 +1330,8 @@ private:
     const void *nextRightInGroup();
     //bool getMatchingRecords();
     //bool queryAdvanceCursors();
-    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter);
-    const void * groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows);
+    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter, unsigned flags);
+    const void * groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows, unsigned flags);
     const void * joinException(const void * curLeft, IException * except);
     void failLimit();
     void createDefaultLeft();   
@@ -1397,7 +1397,7 @@ class CHThorSelfJoinActivity : public CHThorActivityBase
     IRowStream *dualCacheInput;
 private:
     bool fillGroup();
-    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter, IException * except);
+    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter, unsigned flags, IException * except);
     void failLimit(const void * next);
 
 public:
@@ -1476,8 +1476,8 @@ private:
 
 private:
     void loadRight();
-    const void * groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows);
-    const void * joinRecords(const void * left, const void * right, unsigned counter);
+    const void * groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows, unsigned flags);
+    const void * joinRecords(const void * left, const void * right, unsigned counter, unsigned flags);
     const void * joinException(const void * left, IException * except);
     const void * getRightFirst() { if(hasGroupLimit) return fillRightGroup(); else return table->find(left); }
     const void * getRightNext() { if(hasGroupLimit) return readRightGroup(); else return table->findNext(left); }
@@ -1540,8 +1540,8 @@ private:
 
 private:
     void loadRight();
-    const void * joinRecords(const void * left, const void * right, unsigned counter);
-    const void * groupDenormalizeRecords(const void * left, ConstPointerArray & rows);
+    const void * joinRecords(const void * left, const void * right, unsigned counter, unsigned flags);
+    const void * groupDenormalizeRecords(const void * left, ConstPointerArray & rows, unsigned flags);
     void createDefaultRight();  
 public:
     CHThorAllJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorAllJoinArg &_arg, ThorActivityKind _kind);

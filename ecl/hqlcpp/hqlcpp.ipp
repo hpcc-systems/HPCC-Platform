@@ -1379,6 +1379,7 @@ public:
     void doBuildExprList(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprConstList(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprDynList(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
+    void doBuildExprMatchedInJoin(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprNegate(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprNot(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprOffsetOf(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
@@ -1646,6 +1647,7 @@ public:
 
     void doBuildParseTransform(BuildCtx & classctx, IHqlExpression * expr);
     void doBuildParseValidators(BuildCtx & classctx, IHqlExpression * expr);
+
     void doBuildMatched(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * expr, CHqlBoundExpr * bound);
     void doBuildMatchAttr(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * expr, CHqlBoundExpr * bound);
     void doBuildParseSearchText(BuildCtx & classctx, IHqlExpression * dataset, IHqlExpression * search, type_t searchType, ITypeInfo * transferType);
@@ -1720,6 +1722,8 @@ public:
     void doCompareLeftRight(BuildCtx & ctx, const char * funcname, const DatasetReference & datasetLeft, const DatasetReference & datasetRight, const HqlExprArray & left, const HqlExprArray & right);
     void buildSlidingMatchFunction(BuildCtx & ctx, const HqlExprArray & leftEq, const HqlExprArray & rightEq, const HqlExprArray & slidingMatches, const char * funcname, unsigned childIndex, const DatasetReference & datasetL, const DatasetReference & datasetR);
     void doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpression * record, SharedHqlExpr & rawRecord, bool hasFileposition, IHqlExpression * maxlength);
+
+    void associateLocalJoinTransformFlags(BuildCtx & ctx, const char * name, IHqlExpression *ds, node_operator side, IHqlExpression *selSeq);
 
     void buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpression * expr, KeyedJoinInfo * joinKey);
     void buildKeyJoinIndexReadHelper(ActivityInstance & instance, IHqlExpression * expr, KeyedJoinInfo * joinKey);

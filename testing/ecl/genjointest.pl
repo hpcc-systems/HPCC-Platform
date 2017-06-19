@@ -1,19 +1,19 @@
-/*##############################################################################
-
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems(R).
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-############################################################################## */
+##############################################################################
+#
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems(R).
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+##############################################################################
 
 use strict;
 use warnings;
@@ -105,9 +105,12 @@ foreach my $test (@tests)
     }
 }
 
+#giving output files more generic names all tests now seem to work on all platforms
+#we can reorganize this script to reflect that in future
+
 genfile('genjoin.ecl', \@decs, \@outs, []);
-genfile('genjoin_nothor.ecl', \@nothor_decs, \@nothor_outs, ['nothor']);
-genfile('genjoin_justroxie.ecl', \@justroxie_decs, \@justroxie_outs, ['nothor', 'nohthor']);
+genfile('genjoin2.ecl', \@nothor_decs, \@nothor_outs, []);
+genfile('genjoin3.ecl', \@justroxie_decs, \@justroxie_outs, []);
 
 my $posscount = @tests;
 my $deccount = @decs + @nothor_decs + @justroxie_decs;
@@ -134,6 +137,9 @@ jrec := RECORD,MAXLENGTH(100)
     STRING3 rstr;
     UNSIGNED1 c;
     STRING label;
+    BOOLEAN ml := false;
+    BOOLEAN mr := false;
+    INTEGER1 vr := 0;
 END;
 
 lhs := SORTED(DATASET([{3, 'aaa', '', 0, ''}, {4, 'bbb', '', 0, ''}, {5, 'ccc', '', 0, ''}, {6, 'ddd', '', 0, ''}, {7, 'eee', '', 0, ''}], jrec), i);
@@ -154,6 +160,9 @@ jrec xfm(jrec l, jrec r, STRING lab) := TRANSFORM
     SELF.rstr := r.rstr;
     SELF.c := l.c+1;
     SELF.label := lab;
+    SELF.ml := MATCHED(l);
+    SELF.mr := MATCHED(r);
+    SELF.vr := IF (MATCHED(r), -1, 1);
 END;
 
 // skipping transform for joins and non-group denormalizes
@@ -164,6 +173,9 @@ jrec xfmskip(jrec l, jrec r, STRING lab) := TRANSFORM
     SELF.rstr := IF(r.rstr >= 'x', SKIP, r.rstr);
     SELF.c := l.c+1;
     SELF.label := lab;
+    SELF.ml := MATCHED(l);
+    SELF.mr := MATCHED(r);
+    SELF.vr := IF (MATCHED(r), -1, 1);
 END;
 
 // transform for group denormalizes, to be used with match or allmatch
@@ -174,6 +186,9 @@ jrec xfmgrp(jrec l, DATASET(jrec) r, STRING lab) := TRANSFORM
     SELF.rstr := r[c].rstr;
     SELF.c := c;
     SELF.label := lab;
+    SELF.ml := MATCHED(l);
+    SELF.mr := MATCHED(r);
+    SELF.vr := IF (MATCHED(r), -1, 1);
 END;
 
 // skipping transform for group denormalizes, to be used with match or allmatch
@@ -186,4 +201,7 @@ jrec xfmgrpskip(jrec l, DATASET(jrec) r, STRING lab) := TRANSFORM
     SELF.rstr := IF(skp > 0, SKIP, r[c].rstr);
     SELF.c := c;
     SELF.label := lab;
+    SELF.ml := MATCHED(l);
+    SELF.mr := MATCHED(r);
+    SELF.vr := IF (MATCHED(r), -1, 1);
 END;

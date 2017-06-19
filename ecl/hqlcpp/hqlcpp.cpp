@@ -3031,6 +3031,9 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
             buildExpr(ctx, null, tgt); 
             return;
         }
+    case no_matched_injoin:
+        doBuildExprMatchedInJoin(ctx, expr, tgt);
+        return;
     case no_matched:
     case no_matchtext:
     case no_matchlength:
@@ -9607,6 +9610,29 @@ void HqlCppTranslator::doBuildExprFailCode(BuildCtx & ctx, IHqlExpression * expr
     }
 }
 
+void HqlCppTranslator::doBuildExprMatchedInJoin(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
+{
+    IHqlExpression *selExpr = expr->queryChild(0);
+    assertex(selExpr);
+
+    node_operator op = selExpr->getOperator();
+    if (op==no_rows) //denormalize group
+    {
+        selExpr = selExpr->queryChild(0);
+        assertex(selExpr);
+        op = selExpr->getOperator();
+        if (op!=no_right)
+            throwError(HQLERR_InvalidMatchedPatternInJoin);
+    }
+
+    OwnedHqlExpr markerExpr = createValue(no_matched_injoin, makeBoolType(), LINK(selExpr));
+    if (!ctx.getMatchExpr(markerExpr, tgt))
+    {
+        if (!buildExprInCorrectContext(ctx, expr, tgt, false))
+            throwError(HQLERR_InvalidMatchedPatternInJoin); //to get this far they must be matching on a dataset that is not the current left or right
+        return;
+    }
+}
 
 void HqlCppTranslator::doBuildAssignFailMessage(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {

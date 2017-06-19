@@ -6495,6 +6495,14 @@ primexpr1
                         {
                             $$.setExpr(createValue(no_matched, makeBoolType(), $3.getExpr())); //, parser->createUniqueId()));
                         }
+    | MATCHED '(' dataRow ')'
+                        {
+                            $$.setExpr(createValue(no_matched_injoin, makeBoolType(), $3.getExpr()), $1);
+                        }
+    | MATCHED '(' dataSet ')'
+                        {
+                            $$.setExpr(createValue(no_matched_injoin, makeBoolType(), $3.getExpr()), $1);
+                        }
     | MATCHTEXT '(' patternReference ')'
                         {
                             $$.setExpr(createValue(no_matchtext, makeStringType(UNKNOWN_LENGTH, NULL, NULL), $3.getExpr())); //, parser->createUniqueId()));
