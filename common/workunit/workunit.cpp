@@ -1386,8 +1386,8 @@ public:
             { c->requestAbort(); }
     virtual unsigned calculateHash(unsigned prevHash)
             { return queryExtendedWU(c)->calculateHash(prevHash); }
-    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all)
-            { queryExtendedWU(c)->copyWorkUnit(cached, all); }
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool all)
+            { queryExtendedWU(c)->copyWorkUnit(cached, copyStats, all); }
     virtual IPropertyTree *queryPTree() const
             { return queryExtendedWU(c)->queryPTree(); }
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const
@@ -5341,7 +5341,7 @@ IPropertyTree *CLocalWorkUnit::queryPTree() const
     return p;
 }
 
-void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
+void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool all)
 {
     CLocalWorkUnit *from = QUERYINTERFACE(cached, CLocalWorkUnit);
     if (!from)
@@ -5395,10 +5395,8 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     copyTree(p, fromP, "Graphs");
     copyTree(p, fromP, "Workflow");
     copyTree(p, fromP, "WebServicesInfo");
-    if (all)
+    if (copyStats)
     {
-        // 'all' mode is used when setting up a dali WU from the embedded wu in a workunit dll
-
         // Merge timing info from both branches
         pt = fromP->getBranch("Statistics");
         if (pt)

@@ -235,7 +235,6 @@ public:
         OwnedPTree tree = error->toTree();
 
         StringBuffer msg;
-        //toJSON(tree, msg, 0, JSON_IncludeRoot);
         toXML(tree, msg, 0, XML_Embed);
         fprintf(f, "%s\n", msg.str());
     }

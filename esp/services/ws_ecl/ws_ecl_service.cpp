@@ -1840,7 +1840,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     Owned <IWorkUnit> workunit = factory->createWorkUnit("wsecl", context.queryUserId(), context.querySecManager(), context.queryUser());
 
     IExtendedWUInterface *ext = queryExtendedWU(workunit);
-    ext->copyWorkUnit(sourceWorkUnit, false);
+    ext->copyWorkUnit(sourceWorkUnit, false, false);
 
     workunit->clearExceptions();
     workunit->resetWorkflow();

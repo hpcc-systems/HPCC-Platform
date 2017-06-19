@@ -2498,7 +2498,7 @@ public:
         noteDirty(xpath, wuExceptionsMappings);
         return result;
     }
-    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all)
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool all)
     {
         // Make sure that any required updates to the secondary files happen
         IPropertyTree *fromP = queryExtendedWU(cached)->queryPTree();
@@ -2506,7 +2506,7 @@ public:
             trackSecondaryChange(fromP->queryProp(*search), *search);
         for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             checkChildLoaded(**table);
-        CPersistedWorkUnit::copyWorkUnit(cached, all);
+        CPersistedWorkUnit::copyWorkUnit(cached, copyStats, all);
         memset(childLoaded, 1, sizeof(childLoaded));
         allDirty = true;
         actionChanged = true;

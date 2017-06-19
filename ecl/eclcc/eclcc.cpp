@@ -2573,7 +2573,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             if (info.generatedMeta)
                 saveXML(metaFilename, info.generatedMeta, 0, XML_Embed|XML_LineBreak);
 
-            info.logStats();
+            info.logStats(logTimings);
         }
     }
     catch (IException * e)

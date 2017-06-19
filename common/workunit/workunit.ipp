@@ -324,7 +324,7 @@ public:
     virtual IWorkUnit& lock();
     virtual void requestAbort();
     virtual unsigned calculateHash(unsigned prevHash);
-    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all);
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool all);
     virtual IPropertyTree *queryPTree() const;
     virtual unsigned queryFileUsage(const char *filename) const;
     virtual IConstWUFileUsageIterator * getFieldUsage() const;

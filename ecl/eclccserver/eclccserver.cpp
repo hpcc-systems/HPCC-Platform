@@ -15,17 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
-#include <jlib.hpp>
-#include <jmisc.hpp>
-#include <jisem.hpp>
-#include <jfile.hpp>
-#include <jencrypt.hpp>
-#include <jregexp.hpp>
-#include <mpbase.hpp>
-#include <daclient.hpp>
-#include <dasess.hpp>
-#include <danqs.hpp>
-#include <dalienv.hpp>
+#include "jlib.hpp"
+#include "jmisc.hpp"
+#include "jisem.hpp"
+#include "jfile.hpp"
+#include "jencrypt.hpp"
+#include "jregexp.hpp"
+#include "mpbase.hpp"
+#include "daclient.hpp"
+#include "dasess.hpp"
+#include "danqs.hpp"
+#include "dalienv.hpp"
 #include "workunit.hpp"
 #include "wujobq.hpp"
 #include "dllserver.hpp"
@@ -381,7 +381,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                     throw makeStringException(999, "Failed to extract workunit from query dll");
 
                 Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(wuXML);
-                queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, true);
+                queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, false, true);
                 workunit->setIsClone(false);
                 const char *jobname = embeddedWU->queryJobName();
                 if (jobname && *jobname) //let ECL win naming job during initial compile
