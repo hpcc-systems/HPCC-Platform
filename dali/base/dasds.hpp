@@ -272,7 +272,9 @@ enum
 };
 extern da_decl IStoreHelper *createStoreHelper(const char *storeName, const char *location, const char *remoteBackupLocation, unsigned configFlags, unsigned keepStores=0, unsigned delay=5000, const bool *abort=NULL);
 extern da_decl bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError=false);
-extern da_decl bool traceAllTransactions(bool on); // server only 
+extern da_decl bool traceAllTransactions(); // server only
+extern da_decl bool traceSlowTransactions(unsigned thresholdMs); // server only
+extern da_decl bool clearAllTransactions(); // server only
 
 extern da_decl void LogRemoteConn(IRemoteConnection *conn); // logs info about a connection
 

@@ -64,6 +64,7 @@ void usage(const char *exe)
     printf("-unlock <connection_id> [close] -- forcibly disconnect an sds lock\n"); 
     printf("                                   (use id's given by '-locks'\n");
     printf("-settracetransactions    -- trace dali transactions\n");
+    printf("-settraceslowtransactions <millisecond-threshold> -- trace slow dali transactions\n");
     printf("-cleartracetransactions  -- stop tracing dali transactions\n");
     printf("-setldapflags <val>      -- set LDAP flags\n");
     printf("-getldapflags            -- get LDAP flags\n");
@@ -692,6 +693,17 @@ int main(int _argc, char* argv[])
                 if (0 == stricmp(arg, "sdssubscribers")) {
                     querySDS().getSubscribers(buf);
                     printf("\n%s:\n%s",arg,buf.str());
+                    break;
+                }
+                if ((stricmp(arg,"settraceslowtransactions")==0)) {
+                    MemoryBuffer mb;
+                    mb.append("settraceslowtransactions");
+                    unsigned slowThresholdMs = atoi(argv[++i]);
+                    mb.append(slowThresholdMs);
+                    getDaliDiagnosticValue(mb);
+                    StringAttr response;
+                    mb.read(response);
+                    printf("\nsettraceslowtransactions:\n%s", response.get());
                     break;
                 }
                 else {
