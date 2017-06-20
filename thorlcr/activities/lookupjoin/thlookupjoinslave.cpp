@@ -774,14 +774,12 @@ class CThorRowArrayWithFlushMarker : public CThorSpillableRowArray
 public:
     CThorRowArrayWithFlushMarker(CActivityBase &activity) : CThorSpillableRowArray(activity)
     {
-        flushMarker = 0;
     }
-    CThorRowArrayWithFlushMarker(CActivityBase &activity, IThorRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep)
-        : CThorSpillableRowArray(activity, rowIf, allowNulls, stableSort, initialSize, commitDelta)
+    CThorRowArrayWithFlushMarker(CActivityBase &activity, IThorRowInterfaces *rowIf, EmptyRowSemantics emptyRowSemantics=ers_forbidden, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep)
+        : CThorSpillableRowArray(activity, rowIf, emptyRowSemantics, stableSort, initialSize, commitDelta)
     {
-        flushMarker = 0;
     }
-    rowidx_t flushMarker;
+    rowidx_t flushMarker = 0;
 };
 
 
@@ -1436,7 +1434,7 @@ public:
             rhs.setup(sharedRightRowInterfaces);
             // NB: use sharedRightRowInterfaces, so that expanding ptr array is using shared allocator
             for (unsigned s=0; s<container.queryJob().querySlaves(); s++)
-                rhsSlaveRows.item(s)->setup(sharedRightRowInterfaces, false, stableSort_none, true);
+                rhsSlaveRows.item(s)->setup(sharedRightRowInterfaces, ers_forbidden, stableSort_none, true);
         }
     }
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
@@ -2025,7 +2023,7 @@ protected:
             if (!hasFailedOverToLocal())
             {
                 if (stable && !globallySorted)
-                    rhs.setup(sharedRightRowInterfaces, false, stableSort_earlyAlloc);
+                    rhs.setup(sharedRightRowInterfaces, ers_forbidden, stableSort_earlyAlloc);
                 bool success=false;
                 try
                 {
@@ -2079,7 +2077,7 @@ protected:
                     if (stable && !globallySorted)
                     {
                         ActPrintLog("Clearing rhs stable ptr table");
-                        rhs.setup(sharedRightRowInterfaces, false, stableSort_none); // don't need stable ptr table anymore
+                        rhs.setup(sharedRightRowInterfaces, ers_forbidden, stableSort_none); // don't need stable ptr table anymore
                     }
                 }
             }
@@ -2681,7 +2679,7 @@ public:
             if (isGlobal())
             {
                 for (unsigned s=0; s<container.queryJob().querySlaves(); s++)
-                    rhsSlaveRows.item(s)->setup(sharedRightRowInterfaces, false, stableSort_none, false);
+                    rhsSlaveRows.item(s)->setup(sharedRightRowInterfaces, ers_forbidden, stableSort_none, false);
             }
         }
     }

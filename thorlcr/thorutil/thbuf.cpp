@@ -631,10 +631,10 @@ class COverflowableBuffer : public CSimpleInterface, implements IRowWriterMultiR
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    COverflowableBuffer(CActivityBase &_activity, IThorRowInterfaces *_rowIf, bool grouped, bool _shared, unsigned spillPriority)
+    COverflowableBuffer(CActivityBase &_activity, IThorRowInterfaces *_rowIf, EmptyRowSemantics emptyRowSemantics, bool _shared, unsigned spillPriority)
         : activity(_activity), rowIf(_rowIf), shared(_shared)
     {
-        collector.setown(createThorRowCollector(activity, rowIf, NULL, stableSort_none, rc_mixed, spillPriority, grouped));
+        collector.setown(createThorRowCollector(activity, rowIf, NULL, stableSort_none, rc_mixed, spillPriority, emptyRowSemantics));
         writer.setown(collector->getWriter());
         eoi = false;
     }
@@ -662,9 +662,9 @@ public:
     }
 };
 
-IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IThorRowInterfaces *rowIf, bool grouped, bool shared, unsigned spillPriority)
+IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IThorRowInterfaces *rowIf, EmptyRowSemantics emptyRowSemantics, bool shared, unsigned spillPriority)
 {
-    return new COverflowableBuffer(activity, rowIf, grouped, shared, spillPriority);
+    return new COverflowableBuffer(activity, rowIf, emptyRowSemantics, shared, spillPriority);
 }
 
 
@@ -1169,7 +1169,7 @@ friend class CRowSet;
 };
 
 CRowSet::CRowSet(CSharedWriteAheadBase &_sharedWriteAhead, unsigned _chunk, unsigned maxRows)
-    : sharedWriteAhead(_sharedWriteAhead), rows(*_sharedWriteAhead.activity, _sharedWriteAhead.activity, true, stableSort_none, true, maxRows), chunk(_chunk)
+    : sharedWriteAhead(_sharedWriteAhead), rows(*_sharedWriteAhead.activity, _sharedWriteAhead.activity, ers_eogonly, stableSort_none, true, maxRows), chunk(_chunk)
 {
 }
 
@@ -1745,7 +1745,7 @@ public:
         eos = eow = readerBlocked = false;
         rowPos = rowsToRead = 0;
         writersComplete = writersBlocked = 0;
-        rows.setup(rowIf, false, stableSort_none, true); // turning on throwOnOom;
+        rows.setup(rowIf, ers_forbidden, stableSort_none, true); // turning on throwOnOom;
     }
     ~CRowMultiWriterReader()
     {

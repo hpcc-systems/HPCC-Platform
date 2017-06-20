@@ -263,7 +263,6 @@ class graph_decl CThorExpandingRowArray : public CSimpleInterface
         virtual void unlock() const {  }
     } dummyLock;
 
-    void initCommon();
     bool resizeRowTable(void **&_rows, rowidx_t requiredRows, bool copy, unsigned maxSpillCost, memsize_t &newCapacity, const char *errMsg);
     bool _resize(rowidx_t requiredRows, unsigned maxSpillCost);
     const void **_allocateRowTable(rowidx_t num, unsigned maxSpillCost);
@@ -273,18 +272,18 @@ class graph_decl CThorExpandingRowArray : public CSimpleInterface
 
 protected:
     CActivityBase &activity;
-    IThorRowInterfaces *rowIf;
-    IEngineRowAllocator *allocator;
-    IOutputRowSerializer *serializer;
-    IOutputRowDeserializer *deserializer;
-    roxiemem::IRowManager *rowManager;
-    const void **rows;
-    void **stableTable;
-    bool throwOnOom; // tested during array expansion (resize())
-    bool allowNulls;
-    StableSortFlag stableSort;
-    rowidx_t maxRows;  // Number of rows that can fit in the allocated memory.
-    rowidx_t numRows;  // High water mark of rows added
+    IThorRowInterfaces *rowIf = nullptr;
+    IEngineRowAllocator *allocator = nullptr;
+    IOutputRowSerializer *serializer = nullptr;
+    IOutputRowDeserializer *deserializer = nullptr;
+    roxiemem::IRowManager *rowManager = nullptr;
+    const void **rows = nullptr;
+    void **stableTable = nullptr;
+    bool throwOnOom = true; // tested during array expansion (resize())
+    EmptyRowSemantics emptyRowSemantics = ers_forbidden;
+    StableSortFlag stableSort = stableSort_none;
+    rowidx_t maxRows = 0;  // Number of rows that can fit in the allocated memory.
+    rowidx_t numRows = 0;  // High water mark of rows added
     unsigned defaultMaxSpillCost = roxiemem::SpillAllCost;
 
     const void **allocateRowTable(rowidx_t num);
@@ -295,12 +294,12 @@ protected:
     inline rowidx_t getRowsCapacity() const { return rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0; }
 public:
     CThorExpandingRowArray(CActivityBase &activity);
-    CThorExpandingRowArray(CActivityBase &activity, IThorRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true, rowidx_t initialSize=InitialSortElements);
+    CThorExpandingRowArray(CActivityBase &activity, IThorRowInterfaces *rowIf, EmptyRowSemantics emptyRowSemantics=ers_forbidden, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true, rowidx_t initialSize=InitialSortElements);
     ~CThorExpandingRowArray();
     CActivityBase &queryActivity() { return activity; }
     // NB: throws error on OOM by default
-    void setup(IThorRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true);
-    inline void setAllowNulls(bool b) { allowNulls = b; }
+    void setup(IThorRowInterfaces *rowIf, EmptyRowSemantics emptyRowSemantics=ers_forbidden, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true);
+    inline void setEmptyRowSemantics(EmptyRowSemantics _emptyRowSemantics) { emptyRowSemantics = _emptyRowSemantics; }
     inline void setDefaultMaxSpillCost(unsigned _defaultMaxSpillCost) { defaultMaxSpillCost = _defaultMaxSpillCost; }
     inline unsigned queryDefaultMaxSpillCost() const { return defaultMaxSpillCost; }
     void clearRows();
@@ -320,7 +319,7 @@ public:
     }
     inline bool append(const void *row) // NB: takes ownership on success
     {
-        assertex(row || allowNulls);
+        assertex(row || (emptyRowSemantics != ers_forbidden));
         if (numRows >= maxRows)
         {
             if (!resize(numRows+1))
@@ -404,14 +403,13 @@ interface IWritePosCallback : extends IInterface
 
 class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray, implements IThorArrayLock
 {
-    size32_t commitDelta;  // How many rows need to be written before they are added to the committed region?
-    rowidx_t firstRow; // Only rows firstRow..numRows are considered initialized.  Only read/write within cs.
-    rowidx_t commitRows;  // can only be updated by writing thread within a critical section
+    size32_t commitDelta = CommitStep;  // How many rows need to be written before they are added to the committed region?
+    rowidx_t firstRow = 0; // Only rows firstRow..numRows are considered initialized.  Only read/write within cs.
+    rowidx_t commitRows = 0;  // can only be updated by writing thread within a critical section
     mutable CriticalSection cs;
     ICopyArrayOf<IWritePosCallback> writeCallbacks;
     size32_t compBlkSz = 0; // means use default
 
-    void initCommon();
     bool _flush(bool force);
     void doFlush();
     inline bool needToMoveRows(bool force) { return (firstRow != 0 && (force || (firstRow >= commitRows/2))); }
@@ -419,18 +417,18 @@ class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray, implem
 public:
 
     CThorSpillableRowArray(CActivityBase &activity);
-    CThorSpillableRowArray(CActivityBase &activity, IThorRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
+    CThorSpillableRowArray(CActivityBase &activity, IThorRowInterfaces *rowIf, EmptyRowSemantics emptyRowSemantics=ers_forbidden, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
     ~CThorSpillableRowArray();
     // NB: default throwOnOom to false
-    void setup(IThorRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=false)
+    void setup(IThorRowInterfaces *rowIf, EmptyRowSemantics emptyRowSemantics=ers_forbidden, StableSortFlag stableSort=stableSort_none, bool throwOnOom=false)
     {
-        CThorExpandingRowArray::setup(rowIf, allowNulls, stableSort, throwOnOom);
+        CThorExpandingRowArray::setup(rowIf, emptyRowSemantics, stableSort, throwOnOom);
     }
     void registerWriteCallback(IWritePosCallback &cb);
     void unregisterWriteCallback(IWritePosCallback &cb);
     void safeRegisterWriteCallback(IWritePosCallback &cb);
     void safeUnregisterWriteCallback(IWritePosCallback &cb);
-    inline void setAllowNulls(bool b) { CThorExpandingRowArray::setAllowNulls(b); }
+    inline void setEmptyRowSemantics(EmptyRowSemantics _emptyRowSemantics) { CThorExpandingRowArray::setEmptyRowSemantics(_emptyRowSemantics); }
     inline void setDefaultMaxSpillCost(unsigned defaultMaxSpillCost) { CThorExpandingRowArray::setDefaultMaxSpillCost(defaultMaxSpillCost); }
     inline void setCompBlockSize(size32_t sz) { compBlkSz = sz; }
     inline unsigned queryDefaultMaxSpillCost() const { return CThorExpandingRowArray::queryDefaultMaxSpillCost(); }
@@ -444,7 +442,7 @@ public:
     inline bool append(const void *row) __attribute__((warn_unused_result))
     {
         //GH->JCS Should this really be inline?
-        assertex(row || allowNulls);
+        assertex(row || (emptyRowSemantics != ers_forbidden));
         if (numRows >= maxRows)
         {
             if (!resize(numRows+1))
@@ -553,7 +551,7 @@ interface IThorRowLoader : extends IThorRowCollectorCommon
 
 interface IThorRowCollector : extends IThorRowCollectorCommon
 {
-    virtual void setPreserveGrouping(bool tf) = 0;
+    virtual void setEmptyRowSemantics(EmptyRowSemantics emptyRowSemantics) = 0;
     virtual IRowWriter *getWriter() = 0;
     virtual void reset() = 0;
     virtual IRowStream *getStream(bool shared=false, CThorExpandingRowArray *allMemRows=NULL) = 0;
@@ -564,7 +562,7 @@ interface IThorRowCollector : extends IThorRowCollectorCommon
 
 extern graph_decl IThorRowLoader *createThorRowLoader(CActivityBase &activity, IThorRowInterfaces *rowIf, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT);
 extern graph_decl IThorRowLoader *createThorRowLoader(CActivityBase &activity, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT);
-extern graph_decl IThorRowCollector *createThorRowCollector(CActivityBase &activity, IThorRowInterfaces *rowIf, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT, bool preserveGrouping=false);
+extern graph_decl IThorRowCollector *createThorRowCollector(CActivityBase &activity, IThorRowInterfaces *rowIf, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT, EmptyRowSemantics emptyRowSemantics=ers_forbidden);
 
 
 

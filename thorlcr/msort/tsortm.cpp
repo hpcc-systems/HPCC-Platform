@@ -186,7 +186,7 @@ struct PartitionInfo
     size32_t guard;
     Linked<IThorRowInterfaces> prowif;
     PartitionInfo(CActivityBase *_activity, IThorRowInterfaces *rowif)
-        : splitkeys(*_activity, rowif, true), prowif(rowif)
+        : splitkeys(*_activity, rowif, ers_allow), prowif(rowif)
     {
         nodes = NULL;
         mpports = NULL;
@@ -221,42 +221,6 @@ struct PartitionInfo
     {
         // should be more defensive here
         return (numnodes!=0)&&(splitkeys.ordinality()!=0);
-    }
-
-    void serialize(MemoryBuffer &mb)
-    {
-        mb.append(numnodes);
-        unsigned i;
-        for (i=0;i<numnodes;i++)
-            nodes[i].serialize(mb);
-        for (i=0;i<numnodes;i++)
-            mb.append((unsigned short)mpports[i]);
-        mb.append((unsigned)mpTagRPC);
-        mb.append(guard);
-        splitkeys.serialize(mb);
-    }   
-    void deserialize(size32_t len,void *src)
-    {
-        kill();
-        MemoryBuffer mb(len,src);
-        mb.read(numnodes);
-        nodes = (SocketEndpoint *)malloc(numnodes*sizeof(SocketEndpoint));
-        unsigned i;
-        for (i=0;i<numnodes;i++)
-            nodes[i].deserialize(mb);
-        mpports = (unsigned short *)malloc(numnodes*sizeof(unsigned short));
-        for (i=0;i<numnodes;i++) 
-            mb.read(mpports[i]);
-        unsigned t;
-        mb.read(t);
-        mpTagRPC = (mptag_t)t;
-        size32_t left = mb.remaining();
-        size32_t dsguard;
-        mb.read(dsguard);
-        if (guard!=dsguard)
-            throw MakeStringException(-1,"SORT: PartitionInfo meta info mismatch(%d,%d)",guard,dsguard);
-        splitkeys.kill();
-        splitkeys.deserialize(left, mb.readDirect(left));
     }
 };
 
@@ -595,7 +559,7 @@ public:
         unsigned averagesamples = OVERSAMPLE*numnodes;  
         rowcount_t averagerecspernode = (rowcount_t)(total/numnodes);
         CriticalSection asect;
-        CThorExpandingRowArray sample(*activity, keyIf, true);
+        CThorExpandingRowArray sample(*activity, keyIf, ers_allow);
         class casyncfor1: public CAsyncFor
         {
             CSortMaster &owner;
@@ -651,7 +615,7 @@ public:
         offset_t ts=sample.serializedSize();
         estrecsize = numsamples?((size32_t)(ts/numsamples)):100;
         sample.sort(*icompare, activity->queryMaxCores());
-        CThorExpandingRowArray mid(*activity, keyIf, true);
+        CThorExpandingRowArray mid(*activity, keyIf, ers_allow);
         if (numsamples) // could shuffle up empty nodes here
         {
             for (unsigned i=0;i<numsplits;i++)
@@ -757,12 +721,12 @@ public:
             return splitmap.getClear();
         }
         unsigned numsplits=numnodes-1;
-        CThorExpandingRowArray emin(*activity, keyIf, true);
-        CThorExpandingRowArray emax(*activity, keyIf, true);
-        CThorExpandingRowArray totmid(*activity, keyIf, true);
+        CThorExpandingRowArray emin(*activity, keyIf, ers_allow);
+        CThorExpandingRowArray emax(*activity, keyIf, ers_allow);
+        CThorExpandingRowArray totmid(*activity, keyIf, ers_allow);
         ECFarray = &totmid;
         ECFcompare = icompare;
-        CThorExpandingRowArray mid(*activity, keyIf, true);
+        CThorExpandingRowArray mid(*activity, keyIf, ers_allow);
         unsigned i;
         unsigned j;
         for(i=0;i<numsplits;i++)
@@ -925,8 +889,8 @@ public:
                     }
                 }
 
-                CThorExpandingRowArray newmin(*activity, keyIf, true);
-                CThorExpandingRowArray newmax(*activity, keyIf, true);
+                CThorExpandingRowArray newmin(*activity, keyIf, ers_allow);
+                CThorExpandingRowArray newmax(*activity, keyIf, ers_allow);
                 unsigned __int64 maxerror=0;
                 unsigned __int64 nodewanted = (stotal/numnodes); // Note scaled total
                 unsigned __int64 variancelimit = estrecsize?maxdeviance/estrecsize:0;
@@ -1088,7 +1052,7 @@ public:
         // I think this dependent on row being same format as meta
 
         unsigned numsplits=numnodes-1;
-        CThorExpandingRowArray splits(*activity, keyIf, true);
+        CThorExpandingRowArray splits(*activity, keyIf, ers_allow);
         char *s=cosortfilenames;
         unsigned i;
         for(i=0;i<numnodes;i++)
@@ -1122,7 +1086,7 @@ public:
     {
         ActPrintLog(activity, "Previous partition");
         unsigned numsplits=numnodes-1;
-        CThorExpandingRowArray splits(*activity, keyIf, true);
+        CThorExpandingRowArray splits(*activity, keyIf, ers_allow);
         unsigned i;
         for(i=1;i<numnodes;i++)
         {

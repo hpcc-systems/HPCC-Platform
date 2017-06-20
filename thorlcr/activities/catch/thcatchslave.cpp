@@ -155,7 +155,7 @@ class CSkipCatchSlaveActivity : public CCatchSlaveActivityBase
         try
         {
             gathered = true;
-            Owned<IRowWriterMultiReader> overflowBuf = createOverflowableBuffer(*this, queryRowInterfaces(input), true);
+            Owned<IRowWriterMultiReader> overflowBuf = createOverflowableBuffer(*this, queryRowInterfaces(input), ers_eogonly);
             running = true;
             while (running)
             {

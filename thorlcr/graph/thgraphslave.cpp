@@ -1277,7 +1277,7 @@ IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IThorRowInter
     if (!queryJobChannel().queryJobComm().send(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
         throwUnexpected();
 
-    Owned<IThorResult> result = ::createResult(activity, rowIf, false);
+    Owned<IThorResult> result = ::createResult(activity, rowIf, thorgraphresult_nul);
     Owned<IRowWriter> resultWriter = result->getWriter();
 
     MemoryBuffer mb;
