@@ -1438,9 +1438,9 @@ bool HqlGram::checkAlreadyAssigned(const attribute & errpos, IHqlExpression * se
     }
     else
     {
-        reportWarning(CategorySyntax, ERR_VALUEDEFINED, errpos.pos, "A value for \"%s\" has already been specified", s.str());
-        // MORE: Report this as an error in 7.0
-        //reportWarning(CategorySyntax, SeverityError, ERR_VALUEDEFINED, errpos.pos, "A value for \"%s\" has already been specified", s.str());
+        StringBuffer selectText;
+        getFldName(select,selectText);
+        reportError(ERR_VALUEDEFINED, errpos.pos, "A value for \"%s\" is already specified by the assignment to \"%s\"", selectText.str(), s.str());
     }
 
     return true;
