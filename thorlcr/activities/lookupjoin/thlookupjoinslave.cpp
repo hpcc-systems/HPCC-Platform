@@ -2518,6 +2518,7 @@ protected:
             if (rightStream)
             {
                 ActPrintLog("Performing STANDARD JOIN");
+                setFailoverToStandard(true);
                 setupStandardJoin(rightStream); // NB: rightStream is sorted
             }
             else
