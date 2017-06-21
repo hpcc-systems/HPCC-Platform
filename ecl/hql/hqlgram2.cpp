@@ -12045,12 +12045,13 @@ IHqlExpression * PseudoPatternScope::lookupSymbol(IIdAtom * name, unsigned looku
 
 //---------------------------------------------------------------------------------------------------------------------
 
-extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, IProperties * macroParams, bool loadImplicit)
+extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, IProperties * macroParams, bool loadImplicit, bool isRoot)
 {
     assertex(scope);
     try
     {
-        ctx.noteBeginQuery(scope, contents);
+        if (isRoot)
+            ctx.noteBeginQuery(scope, contents);
 
         HqlGram parser(scope, scope, contents, ctx, xmlScope, false, loadImplicit);
         parser.setQuery(true);
@@ -12058,7 +12059,8 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
         parser.getLexer()->set_yyColumn(1);
         parser.getLexer()->setMacroParams(macroParams);
         OwnedHqlExpr ret = parser.yyParse(false, true);
-        ctx.noteEndQuery();
+        if (isRoot)
+            ctx.noteEndQuery();
         return parser.clearFieldMap(ret.getClear());
     }
     catch (IException *E)
@@ -12125,7 +12127,7 @@ extern HQL_API IHqlExpression * parseQuery(const char * text, IErrorReceiver * e
     Owned<IHqlScope> scope = createScope();
     HqlDummyLookupContext ctx(errs);
     Owned<IFileContents> contents = createFileContentsFromText(text, NULL, false, NULL);
-    return parseQuery(scope, contents, ctx, NULL, NULL, true);
+    return parseQuery(scope, contents, ctx, NULL, NULL, true, true);
 }
 
 
