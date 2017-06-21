@@ -12610,7 +12610,7 @@ public:
             matchedRight.append(false);
     }
 
-    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter)
+    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter, unsigned flags)
     {
         if (cloneLeft)
         {
@@ -12620,7 +12620,7 @@ public:
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            size32_t thisSize = helper.transform(rowBuilder, curLeft, curRight, counter);
+            size32_t thisSize = helper.transform(rowBuilder, curLeft, curRight, counter, flags);
             if (thisSize)
                 return rowBuilder.finalizeRowClear(thisSize);
             else
@@ -12632,14 +12632,16 @@ public:
         }
     }
 
-    const void * denormalizeRecords(const void * curLeft, ConstPointerArray & rows)
+    const void * denormalizeRecords(const void * curLeft, ConstPointerArray & rows, unsigned flags)
     {
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
             unsigned numRows = rows.ordinality();
             const void * right = numRows ? rows.item(0) : defaultRight.get();
-            size32_t thisSize = helper.transform(rowBuilder, curLeft, right, numRows, (const void * *)rows.getArray());
+            if (numRows>0)
+                flags |= JTFmatchedright;
+            size32_t thisSize = helper.transform(rowBuilder, curLeft, right, numRows, (const void * *)rows.getArray(), flags);
             if (thisSize)
                 return rowBuilder.finalizeRowClear(thisSize);
             else
@@ -12654,7 +12656,7 @@ public:
     const void * joinException(const void * curLeft, IException * except)
     {
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
-        size32_t thisSize = helper.onFailTransform(rowBuilder, curLeft, defaultRight, except);
+        size32_t thisSize = helper.onFailTransform(rowBuilder, curLeft, defaultRight, except, JTFmatchedleft);
         return rowBuilder.finalizeRowClear(thisSize);
     }
 
@@ -12759,7 +12761,7 @@ public:
                                 if (!matchedRight.item(rightIndex))
                                 {
                                     const void * rhs = right.item(rightIndex++);
-                                    const void *ret = joinRecords(defaultLeft, rhs, 0);
+                                    const void *ret = joinRecords(defaultLeft, rhs, 0, JTFmatchedright);
                                     if (ret)
                                     {
                                         processed++;
@@ -12786,7 +12788,7 @@ public:
                                     try
                                     {
                                         RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                                        unsigned thisSize = helper.transform(rowBuilder, newLeft, rhs, ++leftCount);
+                                        unsigned thisSize = helper.transform(rowBuilder, newLeft, rhs, ++leftCount, JTFmatchedright);
                                         if (thisSize)
                                         {
                                             rowSize = thisSize;
@@ -12820,7 +12822,7 @@ public:
                             state = JSfillright;
                             if (filteredRight.ordinality())
                             {
-                                const void * ret = denormalizeRecords(defaultLeft, filteredRight);
+                                const void * ret = denormalizeRecords(defaultLeft, filteredRight, 0);
                                 filteredRight.kill();
 
                                 if (ret)
@@ -12844,7 +12846,7 @@ public:
                     switch (activityKind)
                     {
                     case TAKjoin:
-                        ret = joinRecords(left, defaultRight, 0);
+                        ret = joinRecords(left, defaultRight, 0, JTFmatchedleft);
                         break;
                     case TAKdenormalize:
                         ret = left;
@@ -12852,7 +12854,7 @@ public:
                         break;
                     case TAKdenormalizegroup:
                         filteredRight.kill();
-                        ret = denormalizeRecords(left, filteredRight);
+                        ret = denormalizeRecords(left, filteredRight, JTFmatchedleft);
                         break;
                     }
                 }
@@ -12883,7 +12885,7 @@ public:
                                     matchedLeft = true;
                                     if (!exclude)
                                     {
-                                        const void *ret = joinRecords(left, rhs, ++joinCounter);
+                                        const void *ret = joinRecords(left, rhs, ++joinCounter, JTFmatchedleft|JTFmatchedright);
                                         if (ret)
                                         {
                                             processed++;
@@ -12913,7 +12915,7 @@ public:
                                         if (!exclude)
                                         {
                                             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                                            unsigned thisSize = helper.transform(rowBuilder, newLeft, rhs, ++leftCount);
+                                            unsigned thisSize = helper.transform(rowBuilder, newLeft, rhs, ++leftCount, JTFmatchedleft|JTFmatchedright);
                                             if (thisSize)
                                             {
                                                 rowSize = thisSize;
@@ -12957,7 +12959,7 @@ public:
 
                             if (!exclude && filteredRight.ordinality())
                             {
-                                const void * ret = denormalizeRecords(left, filteredRight);
+                                const void * ret = denormalizeRecords(left, filteredRight, JTFmatchedleft);
                                 filteredRight.kill();
 
                                 if (ret)
@@ -17866,7 +17868,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
 
     virtual bool needsAllocator() const { return true; }
 
-    const void *joinRecords(const void * curLeft, const void * curRight, unsigned counter, IException * except)
+    const void *joinRecords(const void * curLeft, const void * curRight, unsigned counter, IException * except, unsigned flags)
     {
         try
         {
@@ -17876,7 +17878,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
                 return curLeft;
             }
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            size32_t outsize = except ? helper.onFailTransform(rowBuilder, curLeft, curRight, except) : helper.transform(rowBuilder, curLeft, curRight, counter);
+            size32_t outsize = except ? helper.onFailTransform(rowBuilder, curLeft, curRight, except, flags) : helper.transform(rowBuilder, curLeft, curRight, counter, flags);
             if (outsize)
                 return rowBuilder.finalizeRowClear(outsize);
             else
@@ -18034,7 +18036,7 @@ public:
                     const void * rhs = group.item(rightIndex++);
                     if(helper.match(lhs, rhs))
                     {
-                        const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL);
+                        const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL, JTFmatchedleft|JTFmatchedright);
                         if(ret)
                         {
                             processed++;
@@ -18057,7 +18059,7 @@ public:
                 if(failingOuterAtmost)
                     while(group.isItem(leftIndex))
                     {
-                        const void * ret = joinRecords(group.item(leftIndex++), defaultRight, 0, NULL);
+                        const void * ret = joinRecords(group.item(leftIndex++), defaultRight, 0, NULL, JTFmatchedleft);
                         if(ret)
                         {
                             processed++;
@@ -18068,7 +18070,7 @@ public:
                 {
                     if(leftOuterJoin && !matchedLeft && !failingLimit)
                     {
-                        const void * ret = joinRecords(group.item(leftIndex), defaultRight, 0, NULL);
+                        const void * ret = joinRecords(group.item(leftIndex), defaultRight, 0, NULL, JTFmatchedleft);
                         if(ret)
                         {
                             matchedLeft = true;
@@ -18089,7 +18091,7 @@ public:
                         const void * lhs;
                         while((lhs = groupedInput->nextRow()) != NULL)  // dualCache never active here
                         {
-                            const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
+                            const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit, JTFmatchedleft);
                             ReleaseRoxieRow(lhs);
                             if(ret)
                             {
@@ -18103,7 +18105,7 @@ public:
                         while(group.isItem(rightOuterIndex))
                             if(!matchedRight.item(rightOuterIndex++))
                             {
-                                const void * ret = joinRecords(defaultLeft, group.item(rightOuterIndex-1), 0, NULL);
+                                const void * ret = joinRecords(defaultLeft, group.item(rightOuterIndex-1), 0, NULL, JTFmatchedright);
                                 if(ret)
                                 {
                                     processed++;
@@ -18118,7 +18120,7 @@ public:
                 if(failingLimit)
                 {
                     leftIndex++;
-                    const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
+                    const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit, JTFmatchedleft);
                     if(ret)
                     {
                         processed++;
@@ -18134,7 +18136,7 @@ public:
                         matchedRight.replace(true, rightIndex-1);
                         if(!exclude)
                         {
-                            const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL);
+                            const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL, JTFmatchedleft|JTFmatchedright);
                             if(ret)
                             {
                                 processed++;
@@ -18679,7 +18681,7 @@ private:
                         gotMatch = true;
                         if(exclude)
                             break;
-                        ret = joinRecords(left, right, ++joinCounter);
+                        ret = joinRecords(left, right, ++joinCounter, JTFmatchedleft|JTFmatchedright);
                         if(ret)
                         {
                             processed++;
@@ -18691,7 +18693,7 @@ private:
                 }
                 if(leftOuterJoin && !gotMatch)
                 {
-                    ret = joinRecords(left, defaultRight, 0);
+                    ret = joinRecords(left, defaultRight, 0, JTFmatchedleft);
                     gotMatch = true;
                 }
             }
@@ -18750,7 +18752,7 @@ private:
                                 break;
 
                             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                            unsigned thisSize = helper.transform(rowBuilder, newLeft, right, ++leftCount);
+                            unsigned thisSize = helper.transform(rowBuilder, newLeft, right, ++leftCount, JTFmatchedleft|JTFmatchedright);
                             if (thisSize)
                             {
                                 rowSize = thisSize;
@@ -18793,7 +18795,7 @@ private:
                 }
 
                 if((filteredRight.ordinality() > 0) || (leftOuterJoin && !gotMatch))
-                    ret = denormalizeRecords(left, filteredRight);
+                    ret = denormalizeRecords(left, filteredRight, JTFmatchedleft);
                 filteredRight.kill();
             }
             ReleaseRoxieRow(left);
@@ -18808,7 +18810,7 @@ private:
         }
     }
 
-    const void * joinRecords(const void * left, const void * right, unsigned counter)
+    const void * joinRecords(const void * left, const void * right, unsigned counter, unsigned flags)
     {
         if (cloneLeft)
         {
@@ -18818,7 +18820,7 @@ private:
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            unsigned outSize = helper.transform(rowBuilder, left, right, counter);
+            unsigned outSize = helper.transform(rowBuilder, left, right, counter, flags);
             if (outSize)
                 return rowBuilder.finalizeRowClear(outSize);
             else
@@ -18835,7 +18837,7 @@ private:
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            unsigned outSize = helper.onFailTransform(rowBuilder, left, defaultRight, except);
+            unsigned outSize = helper.onFailTransform(rowBuilder, left, defaultRight, except, JTFmatchedleft);
             if (outSize)
                 return rowBuilder.finalizeRowClear(outSize);
             else
@@ -18847,14 +18849,16 @@ private:
         }
     }
 
-    const void * denormalizeRecords(const void * left, ConstPointerArray & rows)
+    const void * denormalizeRecords(const void * left, ConstPointerArray & rows, unsigned flags)
     {
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
             unsigned numRows = rows.ordinality();
             const void * right = numRows ? rows.item(0) : defaultRight.get();
-            unsigned outSize = helper.transform(rowBuilder, left, right, numRows, (const void * *)rows.getArray());
+            if (numRows>0)
+                flags |= JTFmatchedright;
+            unsigned outSize = helper.transform(rowBuilder, left, right, numRows, (const void * *)rows.getArray(), flags);
             if (outSize)
                 return rowBuilder.finalizeRowClear(outSize);
             else
@@ -19100,7 +19104,7 @@ public:
         CRoxieServerTwoInputActivity::setInput(idx, _sourceIdx, _in);
     }
 
-    const void * joinRecords(const void * left, const void * right, unsigned counter)
+    const void * joinRecords(const void * left, const void * right, unsigned counter, unsigned flags)
     {
         // MORE - could share some code with lookup join
         if (cloneLeft)
@@ -19111,7 +19115,7 @@ public:
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            unsigned outSize = helper.transform(rowBuilder, left, right, counter);
+            unsigned outSize = helper.transform(rowBuilder, left, right, counter, flags);
             if (outSize)
                 return rowBuilder.finalizeRowClear(outSize);
             else
@@ -19123,14 +19127,16 @@ public:
         }
     }
 
-    const void * denormalizeRecords(const void * curLeft, ConstPointerArray & rows)
+    const void * denormalizeRecords(const void * curLeft, ConstPointerArray & rows, unsigned flags)
     {
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
             unsigned numRows = rows.ordinality();
             const void * right = numRows ? rows.item(0) : defaultRight.get();
-            unsigned outSize = helper.transform(rowBuilder, curLeft, right, numRows, rows.getArray());
+            if (numRows>0)
+                flags |= JTFmatchedright;
+            unsigned outSize = helper.transform(rowBuilder, curLeft, right, numRows, rows.getArray(), flags);
             if (outSize)
                 return rowBuilder.finalizeRowClear(outSize);
             else
@@ -19176,7 +19182,7 @@ public:
                     switch(activityKind)
                     {
                     case TAKalljoin:
-                        ret = joinRecords(left, defaultRight, 0);
+                        ret = joinRecords(left, defaultRight, 0, JTFmatchedleft);
                         break;
                     case TAKalldenormalize:
                         ret = left;
@@ -19184,7 +19190,7 @@ public:
                         break;
                     case TAKalldenormalizegroup:
                         filteredRight.kill();
-                        ret = denormalizeRecords(left, filteredRight);
+                        ret = denormalizeRecords(left, filteredRight, JTFmatchedleft);
                         break;
                     default:
                         throwUnexpected();
@@ -19239,7 +19245,7 @@ public:
                         matchedLeft = true;
                         matchedRight.replace(true, rightIndex);
                         if(!exclude)
-                            ret = joinRecords(left, right, ++joinCounter);
+                            ret = joinRecords(left, right, ++joinCounter, JTFmatchedleft|JTFmatchedright);
                     }
                     rightIndex++;
                     if(ret)
@@ -19269,7 +19275,7 @@ public:
                                 try
                                 {
                                     RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                                    unsigned thisSize = helper.transform(rowBuilder, newLeft, right, ++leftCount);
+                                    unsigned thisSize = helper.transform(rowBuilder, newLeft, right, ++leftCount, JTFmatchedleft|JTFmatchedright);
                                     if(thisSize)
                                     {
                                         rowSize = thisSize;
@@ -19308,7 +19314,7 @@ public:
                 }
                 if(!exclude && filteredRight.ordinality())
                 {
-                    ret = denormalizeRecords(left, filteredRight);
+                    ret = denormalizeRecords(left, filteredRight, JTFmatchedleft);
                     filteredRight.kill();
                     if(ret)
                     {

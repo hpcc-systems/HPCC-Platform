@@ -726,6 +726,7 @@ enum node_operator : unsigned short {
         no_getenv,
         no_fromjson,
         no_tojson,
+        no_matched_injoin,
         no_last_op,
 
 //These never get created as IHqlExpressions....

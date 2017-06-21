@@ -1816,11 +1816,10 @@ class CThorJoinArg : implements IHThorJoinArg, public CThorArg
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
 
 //Join:
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) { return 0; }
 //Denormalize
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count) { return 0; }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count, unsigned flags) { return 0; }
 //Denormalize group
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows) { return 0; }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows, unsigned flags) { return 0; }
 };
 
 typedef CThorJoinArg CThorDenormalizeArg;
@@ -1852,11 +1851,10 @@ class CThorAllJoinArg : implements IHThorAllJoinArg, public CThorArg
     virtual unsigned getJoinFlags()                     { return 0; }
 
 //Join:
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) { return 0; }
 //Denormalize
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count) { return 0; }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count, unsigned flags) { return 0; }
 //Denormalize group
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows) { return 0; }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows, unsigned flags) { return 0; }
 };
 
 typedef CThorAllJoinArg CThorAllDenormalizeArg;
@@ -1910,11 +1908,10 @@ class CThorHashJoinArg : implements IHThorHashJoinArg, public CThorArg
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
 
 //Join:
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) { return 0; }
 //Denormalize
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count) { return 0; }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count, unsigned flags) { return 0; }
 //Denormalize group
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows) { return 0; }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows, unsigned flags) { return 0; }
 };
 
 

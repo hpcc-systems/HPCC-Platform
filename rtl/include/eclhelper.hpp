@@ -44,8 +44,8 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      163
-#define MIN_ACTIVITY_INTERFACE_VERSION  163             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      164
+#define MIN_ACTIVITY_INTERFACE_VERSION  164             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -1733,6 +1733,12 @@ enum {
     FFdynamicfilename            = 0x0004,
 };  
 
+// JoinTransformFlags
+enum {
+    JTFmatchedleft           = 0x0001,
+    JTFmatchedright          = 0x0002
+};
+
 struct IHThorAnyJoinBaseArg : public IHThorArg
 {
     virtual bool match(const void * _left, const void * _right) = 0;
@@ -1743,9 +1749,9 @@ struct IHThorAnyJoinBaseArg : public IHThorArg
 
 //Join:
 //Denormalize
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count) { return 0; }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count, unsigned _flags) { return 0; }
 //Denormalize group
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows) { return 0; }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows, unsigned _flags) { return 0; }
 
     inline bool isLeftAlreadyLocallySorted() { return (getJoinFlags() & JFleftSortedLocally) != 0; }
     inline bool isRightAlreadyLocallySorted() { return (getJoinFlags() & JFrightSortedLocally) != 0; }
@@ -1771,7 +1777,7 @@ struct IHThorJoinBaseArg : public IHThorAnyJoinBaseArg
     virtual ICompare * queryCompareLeftRightUpper() = 0;
     virtual ICompare * queryPrefixCompare() = 0;
 
-    virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
+    virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e, unsigned flags) { return 0; }
     virtual ICompare * queryCompareLeftKeyRightRow()=0;                         // compare serialized left key with right row
     virtual ICompare * queryCompareRightKeyLeftRow()=0;                         // as above if partition right selected
 };

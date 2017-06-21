@@ -12392,18 +12392,24 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     case no_selfjoin:
     case no_denormalize:
         {
-            MemberFunction func(*this, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned counter)");
+            MemberFunction func(*this, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned counter, unsigned flags)");
             ensureRowAllocated(func.ctx, "crSelf");
 
             IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
             associateCounter(func.ctx, counter, "counter");
+            associateLocalJoinTransformFlags(func.ctx, "flags", dataset1, no_left, selSeq);
+            associateLocalJoinTransformFlags(func.ctx, "flags", dataset2, no_right, selSeq);
+
             buildTransformBody(func.ctx, transform, dataset1, dataset2, instance->dataset, selSeq);
             break;
         }
     case no_denormalizegroup:
         {
-            MemberFunction func(*this, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned numRows, const void * * _rows)");
+            MemberFunction func(*this, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned numRows, const void * * _rows, unsigned flags)");
             ensureRowAllocated(func.ctx, "crSelf");
+            associateLocalJoinTransformFlags(func.ctx, "flags", dataset1, no_left, selSeq);
+            associateLocalJoinTransformFlags(func.ctx, "flags", dataset2, no_right, selSeq);
+
             func.ctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
 
 
@@ -12417,9 +12423,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     IHqlExpression * onFail = expr->queryAttribute(onFailAtom);
     if (onFail)
     {
-        MemberFunction func(*this, instance->startctx, "virtual size32_t onFailTransform(ARowBuilder & crSelf, const void * _left, const void * _right, IException * except)");
+        MemberFunction func(*this, instance->startctx, "virtual size32_t onFailTransform(ARowBuilder & crSelf, const void * _left, const void * _right, IException * except, unsigned flags)");
         ensureRowAllocated(func.ctx, "crSelf");
         associateLocalFailure(func.ctx, "except");
+        associateLocalJoinTransformFlags(func.ctx, "flags", dataset1, no_left, selSeq);
+        associateLocalJoinTransformFlags(func.ctx, "flags", dataset2, no_right, selSeq);
+
         buildTransformBody(func.ctx, onFail->queryChild(0), dataset1, dataset2, instance->dataset, selSeq);
     }
 
@@ -17460,6 +17469,22 @@ void HqlCppTranslator::buildSOAPtoXml(BuildCtx & ctx, IHqlExpression * dataset, 
     buildXmlSerialize(func.ctx, transform->queryRecord(), self, &assigns);
 }
 
+void HqlCppTranslator::associateLocalJoinTransformFlags(BuildCtx & ctx, const char * name, IHqlExpression *ds, node_operator side, IHqlExpression *selSeq)
+{
+    __int64 mask = 0;
+    if (side==no_right)
+        mask = JTFmatchedright;
+    else if (side==no_left)
+        mask = JTFmatchedleft;
+
+    OwnedIValue maskValue = createIntValue(mask, 4, false);
+    OwnedHqlExpr flagsVariable = createVariable(name, makeIntType(4, false));
+    OwnedHqlExpr matchedRowExpr  = createValue(no_band, makeIntType(4, false), flagsVariable.getClear(), createConstant(maskValue.getClear()));
+
+    OwnedHqlExpr markerExpr = createValue(no_matched_injoin, makeBoolType(), createSelector(side, ds, selSeq));
+    OwnedHqlExpr testExpr = createValue(no_ne, makeBoolType(), matchedRowExpr.getClear(), createConstant(createIntValue(0, 4, false)));
+    ctx.associateExpr(markerExpr,  testExpr);
+}
 
 IHqlExpression * HqlCppTranslator::associateLocalFailure(BuildCtx & ctx, const char * exceptionName)
 {

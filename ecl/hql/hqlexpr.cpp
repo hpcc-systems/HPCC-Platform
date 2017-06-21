@@ -1511,6 +1511,7 @@ const char *getOpString(node_operator op)
     case no_parse: return "PARSE";
     case no_newparse: return "PARSE";
     case no_skip: return "SKIP";
+    case no_matched_injoin: return "MATCHED";
     case no_matched: return "MATCHED";
     case no_matchtext: return "MATCHTEXT";
     case no_matchlength: return "MATCHLENGTH";
@@ -1850,6 +1851,7 @@ bool checkConstant(node_operator op)
     case no_xmlunicode:
     case no_xmlproject:
     case no_matched:
+    case no_matched_injoin:
     case no_matchtext:
     case no_matchunicode:
     case no_matchlength:

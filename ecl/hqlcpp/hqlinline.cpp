@@ -1515,6 +1515,7 @@ bool EvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool h
     case no_filepos:
     case no_file_logicalname:
     case no_counter:
+    case no_matched_injoin:
     case no_variable:       // this really should happen
         return true;        // would have been bound if found
     case no_id2blob:
