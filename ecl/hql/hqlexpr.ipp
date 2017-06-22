@@ -497,6 +497,7 @@ public:
     {
         return gpgSignature.get();
     }
+    virtual timestamp_type getTimeStamp();
 private:
     bool preloadFromFile();
     void ensureLoaded();

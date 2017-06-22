@@ -405,6 +405,11 @@ time_t CDateTime::getSimple() const
     return timegm(&ts);
 }
 
+unsigned __int64 CDateTime::getTimeStamp() const
+{
+    return (unsigned __int64)getSimple() * 1000000 + (nanosec / 1000);
+}
+
 StringBuffer & CDateTime::getString(StringBuffer & str, bool local) const
 {
     if(isNull()) return str;

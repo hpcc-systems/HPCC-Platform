@@ -94,6 +94,7 @@ const char * const helpText[] = {
     "!   -legacywhen   Use legacy when/side-effects semantics (deprecated)",
     "    --logfile <file> Write log to specified file",
     "!   --logdetail=n Set the level of detail in the log file",
+    "    --metacache=x Specify directory to store distributed meta information",
     "!   --nologfile   Do not write any logfile",
 #ifdef _WIN32
     "!   -m            Enable leak checking",

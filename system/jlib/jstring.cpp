@@ -1316,6 +1316,12 @@ StringAttr& StringAttr::operator = (StringAttr && from)
     return *this;
 }
 
+StringAttr& StringAttr::operator = (const StringAttr & from)
+{
+    set(from.str());
+    return *this;
+}
+
 void StringAttr::set(const char * _text)
 {
     char * oldtext = text;

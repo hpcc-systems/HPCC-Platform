@@ -255,6 +255,7 @@ public:
     StringAttr(const StringAttr & src);
     StringAttr(StringAttr && src);
     StringAttr& operator = (StringAttr && from);
+    StringAttr& operator = (const StringAttr & from);
     inline ~StringAttr(void) { free(text); }
     
     inline operator const char * () const       { return text; }
@@ -275,9 +276,6 @@ public:
     
 private:
     char *       text;
-    
-private:
-    StringAttr &operator = (const StringAttr & from);
 };
 
 
