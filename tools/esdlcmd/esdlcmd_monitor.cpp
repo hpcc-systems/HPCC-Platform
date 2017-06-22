@@ -28,6 +28,62 @@
 #include "esdl-publish.cpp"
 #include "xsdparser.hpp"
 
+bool isUTF16Bom(const char *check)
+{
+    return (check[0]=='\xfe' && check[1]=='\xff');
+}
+
+bool isUTF8Bom(const char *check)
+{
+    return (check[0]=='\xef' && check[1]=='\xbb' && check[2]=='\xbf');
+}
+
+static const char *skipBOM(const char *content)
+{
+    if (isUTF8Bom(content))
+        return content+3;
+
+    if (isUTF16Bom(content))
+        return content+2;
+
+    return content;
+}
+
+StringBuffer &appendEscapedEclString(StringBuffer &s, const char *content)
+{
+    if (!content || !*content)
+        return s;
+
+    content=skipBOM(content);
+
+    for (;*content;content++)
+    {
+        switch (*content)
+        {
+        case '\'':
+            s.append("\\'");
+            break;
+        case '\t':
+            s.append("\\t");
+            break;
+        case '\n':
+            s.append("\\n");
+            break;
+        case '\r':
+            s.append("\\r");
+            break;
+        case '\\':
+            s.append("\\\\");
+            break;
+        default:
+            s.append(*content);
+            break;
+        }
+    }
+    return s;
+}
+
+
 StringBuffer &getEsdlCmdComponentFilesPath(StringBuffer & path)
 {
     if (getComponentFilesRelPathFromBin(path))
@@ -274,6 +330,8 @@ public:
             else
             {
                 if (iter.matchOption(optXsltPath, ESDLOPT_XSLT_PATH))
+                    continue;
+                if (iter.matchFlag(optOutputCategoryList, ESDLOPT_OUTPUT_CATEGORIES))
                     continue;
                 if (EsdlConvertCmd::parseCommandLineOption(iter))
                     continue;
@@ -971,11 +1029,23 @@ public:
 
         StringBuffer ecl;
 
+        StringBuffer escapedTemplate;
+        appendEscapedEclString(escapedTemplate, diffTemplateContent);
+
+
+
+        ecl.appendf("STRING monitoringTemplate :='%s';\nBOOLEAN IncludeTemplate := false : STORED('IncludeTemplate');\nIF (IncludeTemplate, OUTPUT(monitoringTemplate, NAMED('MonitoringTemplate')));\nOUTPUT(HASHMD5(monitoringTemplate), NAMED('Hash'));\n", escapedTemplate.str());
+        filename.setf("Monitor_ActiveTemplate_%s.ecl", optMethod.str());
+        saveAsFile(".", filename, ecl);
+
+        if (optOutputCategoryList)
+            xform->setParameter("listCategories", "true()");
+
         xform->setParameter("diffmode", "'Monitor'");
         xform->setParameter("diffaction", "'Create'");
 
         xform->setParameter("platform", "'roxie'");
-        xform->transform(ecl);
+        xform->transform(ecl.clear());
         filename.setf("MonitorRoxie_create_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
@@ -1036,6 +1106,7 @@ public:
     StringAttr optXsltPath;
     StringAttr optMethod;
     unsigned optFlags;
+    bool optOutputCategoryList=false;  //hidden option, do not document
 };
 
 

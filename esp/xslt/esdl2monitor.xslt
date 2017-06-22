@@ -24,6 +24,7 @@
     <xsl:param name="platform" select="'roxie'"/>
     <xsl:param name="diffmode" select="'Monitor'"/>
     <xsl:param name="diffaction" select="'Run'"/>
+    <xsl:param name="listCategories" select="false()"/>
     <xsl:variable name="docname" select="/esxdl/@name"/>
     <xsl:template match="/">
         <xsl:apply-templates select="esxdl"/>
@@ -347,7 +348,7 @@ END;
 //  output(executedAction.prior, NAMED('PRIOR'));
   updateMonitor(DATASET([{executedAction.id, executedAction.responseXML}], monitorStoreRec));
 
-
+<xsl:if test="$listCategories">
   <xsl:if test="Template//*[@diff_monitor]">
   CategoryPathsRec := RECORD
     string categories {xpath('@categories')};
@@ -367,6 +368,7 @@ END;
       </xsl:for-each>
     <xsl:text>], CategoryPathsRec), NAMED('Categories'));</xsl:text>
   </xsl:if>
+</xsl:if>
 
   </xsl:when>
   <xsl:when test="$diffmode='Compare'">
