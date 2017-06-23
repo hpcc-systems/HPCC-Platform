@@ -121,14 +121,22 @@ interface IThorResult : extends IInterface
     virtual const void * getLinkedRowResult() = 0;
 };
 
+enum ThorGraphResultType:unsigned
+{
+    thorgraphresult_nul = 0x00,
+    thorgraphresult_distributed = 0x01,
+    thorgraphresult_grouped = 0x02,
+    thorgraphresult_sparse = 0x04
+};
+inline ThorGraphResultType mergeResultTypes(ThorGraphResultType l, ThorGraphResultType r) { return (ThorGraphResultType) (l|r); }
 class CActivityBase;
 // JCSMORE - based on IHThorGraphResults
 interface IThorGraphResults : extends IEclGraphResults
 {
     virtual void clear() = 0;
     virtual IThorResult *getResult(unsigned id, bool distributed=false) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
+    virtual IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
     virtual unsigned addResult(IThorResult *result) = 0;
     virtual void setResult(unsigned id, IThorResult *result) = 0;
     virtual unsigned count() = 0;
@@ -740,9 +748,9 @@ public:
 
     virtual IThorResult *getResult(unsigned id, bool distributed=false);
     virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false);
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 // IEclGraphResults
     virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id);
@@ -1195,10 +1203,10 @@ public:
         // NB: stream static after this, i.e. nothing can be added to this result
         return LINK(&results.item(id));
     }
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-    virtual IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT)
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT)
     {
-        return createResult(activity, results.ordinality(), rowIf, distributed, spillPriority);
+        return createResult(activity, results.ordinality(), rowIf, resultType, spillPriority);
     }
     virtual unsigned addResult(IThorResult *result)
     {
@@ -1237,7 +1245,7 @@ public:
     virtual activity_id queryOwnerId() const { return ownerId; }
 };
 
-extern graph_decl IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+extern graph_decl IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, ThorGraphResultType resulType, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 
 class CGraphElementBase;

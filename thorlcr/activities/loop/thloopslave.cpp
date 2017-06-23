@@ -275,7 +275,7 @@ public:
         helper->createParentExtract(extractBuilder);
         maxIterations = helper->numIterations();
         if ((int)maxIterations < 0) maxIterations = 0;
-        loopPending.setown(createOverflowableBuffer(*this, this, false, true));
+        loopPending.setown(createOverflowableBuffer(*this, this, ers_forbidden, true));
         loopPendingCount = 0;
         finishedLooping = ((container.getKind() == TAKloopcount) && (maxIterations == 0));
         if ((flags & IHThorLoopArg::LFnewloopagain) && !helper->loopFirstTime())
@@ -412,7 +412,7 @@ public:
                     if (!((const bool *)row.get())[0])
                         finishedLooping = true; // NB: will finish when loopPending has been consumed
                 }
-                loopPending.setown(createOverflowableBuffer(*this, this, false, true));
+                loopPending.setown(createOverflowableBuffer(*this, this, ers_forbidden, true));
                 loopPendingCount = 0;
                 ++loopCounter;
                 if ((container.getKind() == TAKloopcount) && (loopCounter > maxIterations))
@@ -470,7 +470,12 @@ public:
         if (!executed)
         {
             executed = true;
-            IThorResult *result = loopResults->createResult(*this, 0, this, !queryGraph().isLocalChild());
+            ThorGraphResultType resultType = thorgraphresult_nul;
+            if (!queryGraph().isLocalChild())
+                resultType = mergeResultTypes(resultType, thorgraphresult_distributed);
+            if (input->isGrouped())
+                resultType = mergeResultTypes(resultType, thorgraphresult_grouped);
+            IThorResult *result = loopResults->createResult(*this, 0, this, resultType);
             Owned<IRowWriter> resultWriter = result->getWriter();
             for (;;)
             {
@@ -629,7 +634,12 @@ public:
         abortSoon = false;
         assertex(container.queryResultsGraph());
         CGraphBase *graph = container.queryResultsGraph();
-        IThorResult *result = graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());  // NB graph owns result
+        ThorGraphResultType resultType = thorgraphresult_nul;
+        if (!queryGraph().isLocalChild())
+            resultType = mergeResultTypes(resultType, thorgraphresult_distributed);
+        if (input->isGrouped())
+            resultType = mergeResultTypes(resultType, thorgraphresult_grouped);
+        IThorResult *result = graph->createResult(*this, helper->querySequence(), this, resultType);  // NB graph owns result
         resultWriter.setown(result->getWriter());
     }
     CATCH_NEXTROW()
@@ -718,7 +728,12 @@ public:
     {
         IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
         CGraphBase *graph = container.queryResultsGraph();
-        return graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());
+        ThorGraphResultType resultType = thorgraphresult_nul;
+        if (!queryGraph().isLocalChild())
+            resultType = mergeResultTypes(resultType, thorgraphresult_distributed);
+        if (input->isGrouped())
+            resultType = mergeResultTypes(resultType, thorgraphresult_grouped);
+        return graph->createResult(*this, helper->querySequence(), this, resultType);
     }
 };
 
@@ -760,7 +775,11 @@ public:
             builder.appendOwn(row);
         }
         CGraphBase *graph = container.queryResultsGraph();
-        IThorResult *result = graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());
+        ThorGraphResultType resultType = thorgraphresult_nul;
+        if (!queryGraph().isLocalChild())
+            resultType = mergeResultTypes(resultType, thorgraphresult_distributed);
+        resultType = mergeResultTypes(resultType, thorgraphresult_sparse);
+        IThorResult *result = graph->createResult(*this, helper->querySequence(), this, resultType);
         Owned<IRowWriter> resultWriter = result->getWriter();
         size32_t dictSize = builder.getcount();
         byte ** dictRows = builder.queryrows();
@@ -1384,7 +1403,12 @@ public:
     {
         IHThorGraphLoopResultWriteArg *helper = (IHThorGraphLoopResultWriteArg *)queryHelper();
         CGraphBase *graph = container.queryResultsGraph();
-        return graph->createGraphLoopResult(*this, input->queryFromActivity(), !queryGraph().isLocalChild());
+        ThorGraphResultType resultType = thorgraphresult_nul;
+        if (!queryGraph().isLocalChild())
+            resultType = mergeResultTypes(resultType, thorgraphresult_distributed);
+        if (input->isGrouped())
+            resultType = mergeResultTypes(resultType, thorgraphresult_grouped);
+        return graph->createGraphLoopResult(*this, input->queryFromActivity(), resultType);
     }
 };
 

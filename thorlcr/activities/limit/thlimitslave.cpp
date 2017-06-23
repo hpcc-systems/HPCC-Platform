@@ -238,7 +238,7 @@ public:
     virtual void start() override
     {
         CLimitSlaveActivityBase::start();
-        buf.setown(createOverflowableBuffer(*this, this, true));
+        buf.setown(createOverflowableBuffer(*this, this, ers_eogonly));
     }
     CATCH_NEXTROW()
     {

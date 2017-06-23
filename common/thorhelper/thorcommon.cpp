@@ -1134,7 +1134,7 @@ protected:
     CThorStreamDeserializerSource source;
     Owned<ISourceRowPrefetcher> prefetcher;
     CThorContiguousRowBuffer prefetchBuffer; // used if prefetcher set
-    bool grouped;
+    EmptyRowSemantics emptyRowSemantics;
     bool eoi;
     bool eos;
     bool eog;
@@ -1156,13 +1156,12 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, bool _grouped)
-        : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(NULL) 
+    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics)
+        : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(NULL), emptyRowSemantics(_emptyRowSemantics)
     {
 #ifdef TRACE_CREATE
         PROGLOG("CRowStreamReader %d = %p",++rdnum,this);
 #endif
-        grouped = _grouped;
         eoi = false;
         eos = false;
         eog = false;
@@ -1175,7 +1174,7 @@ public:
         if (prefetcher)
             prefetchBuffer.setStream(strm);
         source.setStream(strm);
-        deserializer.set(rowif->queryRowDeserializer());            
+        deserializer.set(rowif->queryRowDeserializer());
     }
 
     ~CRowStreamReader()
@@ -1198,35 +1197,60 @@ public:
 
     const void *nextRow()
     {
-        if (eog) {
+        if (eog)
+        {
             eog = false;
-            return NULL;
+            return nullptr;
         }
         if (eos)
-            return NULL;
-        if (source.eos()) {
+            return nullptr;
+        if (source.eos())
+        {
             eos = true;
-            return NULL;
+            return nullptr;
         }
-        RtlDynamicRowBuilder rowBuilder(*allocator);
-        size_t size = deserializer->deserialize(rowBuilder,source);
-        if (grouped) {
+        if (ers_allow == emptyRowSemantics)
+        {
             byte b;
-            source.read(sizeof(b),&b);
-            eog = (b==1);
+            source.read(sizeof(b), &b);
+            if (1==b)
+                return nullptr;
+            RtlDynamicRowBuilder rowBuilder(*allocator);
+            size_t size = deserializer->deserialize(rowBuilder, source);
+            return rowBuilder.finalizeRowClear(size);
         }
-        return rowBuilder.finalizeRowClear(size);
+        else
+        {
+            RtlDynamicRowBuilder rowBuilder(*allocator);
+            size_t size = deserializer->deserialize(rowBuilder, source);
+            if (ers_eogonly == emptyRowSemantics)
+            {
+                byte b;
+                source.read(sizeof(b), &b);
+                eog = (b==1);
+            }
+            return rowBuilder.finalizeRowClear(size);
+        }
     }
 
     const void *prefetchRow(size32_t *sz)
     {
         if (eog) 
             eog = false;
-        else if (!eos) {
+        else if (!eos)
+        {
             if (source.eos()) 
                 eos = true;
-            else {
+            else
+            {
                 assertex(prefetcher);
+                if (ers_allow == emptyRowSemantics)
+                {
+                    byte b;
+                    strm->get(sizeof(b),&b);
+                    if (1==b)
+                        return nullptr;
+                }
                 prefetcher->readAhead(prefetchBuffer);
                 const byte * ret = prefetchBuffer.queryRow();
                 if (sz)
@@ -1242,7 +1266,8 @@ public:
     void prefetchDone()
     {
         prefetchBuffer.finishedRow();
-        if (grouped) {
+        if (ers_eogonly == emptyRowSemantics)
+        {
             byte b;
             strm->get(sizeof(b),&b);
             eog = (b==1);
@@ -1293,8 +1318,8 @@ class CLimitedRowStreamReader : public CRowStreamReader
     unsigned __int64 rownum;
 
 public:
-    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, bool _grouped)
-        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _tallycrc, _grouped)
+    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics)
+        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _tallycrc, _emptyRowSemantics)
     {
         maxrows = _maxrows;
         rownum = 0;
@@ -1329,6 +1354,7 @@ bool UseMemoryMappedRead = false;
 IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t offset, offset_t len, unsigned __int64 maxrows, unsigned rwFlags, IExpander *eexp)
 {
     bool compressed = TestRwFlag(rwFlags, rw_compress);
+    EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(rwFlags);
     if (UseMemoryMappedRead && !compressed)
     {
         PROGLOG("Memory Mapped read of %s",file->queryFilename());
@@ -1336,9 +1362,9 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         if (!mmfile)
             return NULL;
         if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
         else
-            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
     }
     else
     {
@@ -1354,9 +1380,9 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         if (!fileio)
             return NULL;
         if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
         else
-            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), TestRwFlag(rwFlags, rw_grouped));
+            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
     }
 }
 
@@ -1380,7 +1406,7 @@ class CRowStreamWriter : private IRowSerializerTarget, implements IExtRowWriter,
     Linked<IOutputRowSerializer> serializer;
     Linked<IEngineRowAllocator> allocator;
     CRC32 crc;
-    bool grouped;
+    EmptyRowSemantics emptyRowSemantics;
     bool tallycrc;
     unsigned nested;
     MemoryAttr ma;
@@ -1441,13 +1467,12 @@ class CRowStreamWriter : private IRowSerializerTarget, implements IExtRowWriter,
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowStreamWriter(IFileIOStream *_stream,IOutputRowSerializer *_serializer,IEngineRowAllocator *_allocator,bool _grouped, bool _tallycrc, bool _autoflush)
-        : stream(_stream), serializer(_serializer), allocator(_allocator)
+    CRowStreamWriter(IFileIOStream *_stream, IOutputRowSerializer *_serializer, IEngineRowAllocator *_allocator, EmptyRowSemantics _emptyRowSemantics, bool _tallycrc, bool _autoflush)
+        : stream(_stream), serializer(_serializer), allocator(_allocator), emptyRowSemantics(_emptyRowSemantics)
     {
 #ifdef TRACE_CREATE
         PROGLOG("createRowWriter %d = %p",++wrnum,this);
 #endif
-        grouped = _grouped;
         tallycrc = _tallycrc;
         nested = 0;
         buf = (byte *)ma.allocate(ROW_WRITER_BUFFERSIZE);
@@ -1472,25 +1497,43 @@ public:
 
     void putRow(const void *row)
     {
-        if (row) {
-            serializer->serialize(*this,(const byte *)row);
-            if (grouped) {
+        if (row)
+        {
+            if (ers_allow == emptyRowSemantics)
+            {
                 byte b = 0;
-                if (bufpos<ROW_WRITER_BUFFERSIZE) 
-                    buf[bufpos++] = b;
-                else 
-                    extbuf.append(b);
+                put(1, &b);
+                serializer->serialize(*this, (const byte *)row);
+            }
+            else
+            {
+                serializer->serialize(*this, (const byte *)row);
+                if (ers_eogonly == emptyRowSemantics)
+                {
+                    byte b = 0;
+                    if (bufpos<ROW_WRITER_BUFFERSIZE)
+                        buf[bufpos++] = b;
+                    else
+                        extbuf.append(b);
+                }
             }
             allocator->releaseRow(row);
         }
-        else if (grouped) { // backpatch
+        else if (ers_eogonly == emptyRowSemantics) // backpatch
+        {
             byte b = 1;
             if (extbuf.length())
-                extbuf.writeDirect(extbuf.length()-1,sizeof(b),&b);
-            else {
+                extbuf.writeDirect(extbuf.length()-1, sizeof(b), &b);
+            else
+            {
                 assertex(bufpos);
                 buf[bufpos-1] = b;
             }
+        }
+        else if (ers_allow == emptyRowSemantics)
+        {
+            byte b = 1;
+            put(1, &b);
         }
     }
 
@@ -1617,7 +1660,8 @@ IExtRowWriter *createRowWriter(IFileIOStream *strm, IRowInterfaces *rowIf, unsig
 {
     if (0 != (flags & (rw_extend|rw_buffered|COMP_MASK)))
         throw MakeStringException(0, "Unsupported createRowWriter flags");
-    Owned<CRowStreamWriter> writer = new CRowStreamWriter(strm, rowIf->queryRowSerializer(), rowIf->queryRowAllocator(), TestRwFlag(flags, rw_grouped), TestRwFlag(flags, rw_crc), TestRwFlag(flags, rw_autoflush));
+    EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(flags);
+    Owned<CRowStreamWriter> writer = new CRowStreamWriter(strm, rowIf->queryRowSerializer(), rowIf->queryRowAllocator(), emptyRowSemantics, TestRwFlag(flags, rw_crc), TestRwFlag(flags, rw_autoflush));
     return writer.getClear();
 }
 
