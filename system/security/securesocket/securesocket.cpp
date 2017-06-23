@@ -568,9 +568,18 @@ int CSecureSocket::secure_accept(int logLevel)
     err = SSL_accept(m_ssl);
     if(err == 0)
     {
-        char errbuf[512];
-        ERR_error_string_n(ERR_get_error(), errbuf, 512);
-        DBGLOG("SSL_accept returned 0, error - %s", errbuf);
+        int ret = SSL_get_error(m_ssl, err);
+        // if err == 0 && ret == SSL_ERROR_SYSCALL
+        // then client closed connection gracefully before ssl neg
+        // which can happen with port scan / VIP ...
+        // NOTE: ret could also be SSL_ERROR_ZERO_RETURN if client closed
+        // gracefully after ssl neg initiated ...
+        if ( (logLevel >= 5) || (ret != SSL_ERROR_SYSCALL) )
+        {
+            char errbuf[512];
+            ERR_error_string_n(ERR_get_error(), errbuf, 512);
+            DBGLOG("SSL_accept returned 0, error - %s", errbuf);
+        }
         return -1;
     }
     else if(err < 0)
