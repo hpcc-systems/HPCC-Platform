@@ -18,6 +18,12 @@
 #ifndef rtlrecord_hpp
 #define rtlrecord_hpp
 
+#if defined(_WIN32)
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
+
 #include "rtlfield.hpp"
 
 //These classe provides a relatively efficient way to access fields within a variable length record structure.
