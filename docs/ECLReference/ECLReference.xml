@@ -5,13 +5,11 @@
   <title>ECL Reference</title>
 
   <setinfo>
-    <corpauthor>HPCC Systems<superscript>®</superscript>
-      <para>
-        <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='CHMVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-      </para>
-    </corpauthor>
-
+    <corpauthor>HPCC Systems<superscript>®</superscript> <para>
+        <xi:include href="common/Version.xml"
+                    xpointer="xpointer(//*[@id='CHMVer'])"
+                    xmlns:xi="http://www.w3.org/2001/XInclude" />
+      </para></corpauthor>
   </setinfo>
 
   <xi:include href="../ECLLanguageReference/ECLR-includer.xml"
@@ -19,6 +17,10 @@
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="../ECLStandardLibraryReference/SLR-includer.xml"
+              xpointer="element(/1)"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="../DynamicESDL/DynamicESDL_Includer.xml"
               xpointer="element(/1)"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
