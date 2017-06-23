@@ -377,7 +377,7 @@ public:
 
     virtual bool check_connection()
     {
-        throw MakeStringException(-1, "CSecureSocket::check_connection: not implemented");
+        return m_socket->check_connection();
     }
 
     virtual bool isSecure() const override
