@@ -113,7 +113,7 @@ fi
 
 if [[ $eclcc != '' ]]; then
     ## Set flags
-    default_flags="-P$target_dir -legacy -platform=thorlcr -fforceGenerate -fregressionTest -b -S -shared"
+    default_flags="-P$target_dir -legacy -platform=thorlcr -fforceGenerate -fregressionTest -b -S -shared -meta+"
     flags="$default_flags $include_dir -fshowMetaInGraph -fspanMultipleCpp- $userflags"
 
     ## Prepare target directory

@@ -150,6 +150,7 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr)
 
         if (expr->isScope() && !isImport(expr))
         {
+            def->setProp("@type", "module");
             expandScopeSymbolsMeta(def, expr->queryScope());
         }
         else if (expr->isRecord())
@@ -157,6 +158,13 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr)
             def->setProp("@type", "record");
             expandRecordSymbolsMeta(def, expr);
         }
+        else
+        {
+            StringBuffer ecltype;
+            expr->queryType()->getECLType(ecltype);
+            def->setProp("@type", ecltype);
+        }
+
     }
 }
 
@@ -165,6 +173,18 @@ void expandScopeSymbolsMeta(IPropertyTree * meta, IHqlScope * scope)
 {
     if (!scope)
         return;
+
+    //The following symbols will not have parsed all their members, and can cause recursive dependency errors trying.
+    switch (queryExpression(scope)->getOperator())
+    {
+    case no_forwardscope:
+        meta->setPropBool("@forward", true);
+        return;
+    case no_remotescope:
+        //Strange e.g. shared me := myModule;
+        meta->setPropBool("@global", true);
+        return;
+    }
 
     HqlExprArray symbols;
     scope->getSymbols(symbols);

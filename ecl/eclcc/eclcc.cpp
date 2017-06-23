@@ -1200,7 +1200,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
                 if (instance.legacyImport)
                     importRootModulesToScope(scope, ctx);
 
-                instance.query.setown(parseQuery(scope, queryContents, ctx, NULL, NULL, true));
+                instance.query.setown(parseQuery(scope, queryContents, ctx, NULL, NULL, true, true));
 
                 if (instance.archive)
                 {
@@ -2484,11 +2484,12 @@ void EclCC::usage()
 // The following methods are concerned with running eclcc in batch mode (primarily to aid regression testing)
 void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
 {
-    StringBuffer basename, logFilename, xmlFilename, outFilename;
+    StringBuffer basename, logFilename, xmlFilename, outFilename, metaFilename;
 
     splitFilename(file.queryFilename(), NULL, NULL, &basename, &basename);
     addNonEmptyPathSepChar(logFilename.append(optOutputDirectory)).append(basename).append(".log");
     addNonEmptyPathSepChar(xmlFilename.append(optOutputDirectory)).append(basename).append(".xml");
+    addNonEmptyPathSepChar(metaFilename.append(optOutputDirectory)).append(basename).append(".meta");
 
     splitFilename(file.queryFilename(), NULL, NULL, &outFilename, &outFilename);
 
@@ -2529,6 +2530,9 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
                 Owned<IFile> xml = createIFile(xmlFilename);
                 info.stats.xmlSize = xml->size();
             }
+
+            if (info.generatedMeta)
+                saveXML(metaFilename, info.generatedMeta, 0, XML_Embed|XML_LineBreak);
 
             info.logStats();
         }

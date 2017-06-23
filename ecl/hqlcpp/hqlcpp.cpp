@@ -1419,7 +1419,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
             cppSystemScope = createScope();
             Owned<ISourcePath> sysPath = createSourcePath("<system-definitions>");
             Owned<IFileContents> systemContents = createFileContentsFromText(systemText.str(), sysPath, true, NULL);
-            OwnedHqlExpr query = parseQuery(cppSystemScope, systemContents, ctx, NULL, NULL, false);
+            OwnedHqlExpr query = parseQuery(cppSystemScope, systemContents, ctx, NULL, NULL, false, false);
             if (errs.errCount())
             {
                 StringBuffer errtext;
