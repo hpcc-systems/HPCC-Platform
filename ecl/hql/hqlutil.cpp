@@ -9155,7 +9155,7 @@ IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext &
     Owned<IHqlScope> scope = createPrivateScope();
     if (queryLegacyImportSemantics())
         importRootModulesToScope(scope, ctx);
-    return parseQuery(scope, mappedContents, ctx, NULL, macroParms, true);
+    return parseQuery(scope, mappedContents, ctx, NULL, macroParms, true, true);
 }
 
 static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx, bool syntaxCheck)

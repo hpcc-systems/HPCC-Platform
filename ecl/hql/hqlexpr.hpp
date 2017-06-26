@@ -1395,7 +1395,7 @@ extern HQL_API IHqlExpression * getCastExpr(IHqlExpression * expr, ITypeInfo * t
 
 extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit);
 extern HQL_API IHqlExpression *parseQuery(IHqlScope *scope, IFileContents * contents, 
-                                          HqlLookupContext & ctx, IXmlScope *xmlScope, IProperties * macroParams, bool loadImplicit);
+                                          HqlLookupContext & ctx, IXmlScope *xmlScope, IProperties * macroParams, bool loadImplicit, bool isRoot);
 extern HQL_API IHqlExpression *parseQuery(const char *in, IErrorReceiver * errs);
 
 extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * dataServer, const char * items = NULL);

@@ -74,6 +74,7 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDLOPT_NUMBER                  "-n"
 #define ESDLOPT_NO_COLLAPSE             "--show-inheritance"
 #define ESDLOPT_NO_ARRAYOF              "--no-arrayof"
+#define ESDLOPT_OUTPUT_CATEGORIES       "--output-categories"
 
 #define ESDLOPT_WSDL_ADDRESS            "--wsdl-address"
 

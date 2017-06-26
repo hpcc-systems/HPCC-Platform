@@ -93,7 +93,8 @@ enum RowReaderWriterFlags
     rw_autoflush      = 0x40,
     rw_buffered       = 0x80,
     rw_lzw            = 0x100, // if rw_compress
-    rw_lz4            = 0x200  // if rw_compress
+    rw_lz4            = 0x200, // if rw_compress
+    rw_sparse         = 0x400  // NB: mutually exclusive with rw_grouped
 };
 #define DEFAULT_RWFLAGS (rw_buffered|rw_autoflush|rw_compressblkcrc)
 inline bool TestRwFlag(unsigned flags, RowReaderWriterFlags flag) { return 0 != (flags & flag); }
@@ -158,6 +159,30 @@ interface IExtRowWriter: extends IRowWriter
     virtual offset_t getPosition() = 0;
     virtual void flush(CRC32 *crcout=NULL) = 0;
 };
+
+enum EmptyRowSemantics { ers_forbidden, ers_allow, ers_eogonly };
+inline unsigned mapESRToRWFlags(EmptyRowSemantics emptyRowSemantics)
+{
+    switch (emptyRowSemantics)
+    {
+        case ers_allow:
+            return rw_sparse;
+        case ers_eogonly:
+            return rw_grouped;
+        default:
+            return 0;
+    }
+}
+
+inline EmptyRowSemantics extractESRFromRWFlags(unsigned rwFlags)
+{
+    if (TestRwFlag(rwFlags, rw_sparse))
+        return ers_allow;
+    else if (TestRwFlag(rwFlags, rw_grouped))
+        return ers_eogonly;
+    else
+        return ers_forbidden;
+}
 
 interface IExpander;
 extern THORHELPER_API IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowif, unsigned flags=DEFAULT_RWFLAGS, IExpander *eexp=NULL);

@@ -2420,7 +2420,7 @@ public:
     {
         const ActivityEntry *l = *(const ActivityEntry **) _l;
         const ActivityEntry *r = *(const ActivityEntry **) _r;
-        return l->usage - r->usage;
+        return (l->usage > r->usage) ? +1 : (l->usage < r->usage) ? -1 : 0;
     }
 
     virtual void report(const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache)

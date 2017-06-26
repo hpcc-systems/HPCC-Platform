@@ -1211,7 +1211,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         {
             HqlLookupContext ctx(yyParser->lookupCtx);
             Owned<IFileContents> exportContents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
-            expr.setown(parseQuery(scope, exportContents, ctx, xmlScope, NULL, true));
+            expr.setown(parseQuery(scope, exportContents, ctx, xmlScope, NULL, true, false));
 
             if (expr && (expr->getOperator() == no_sizeof))
             {
@@ -1644,7 +1644,7 @@ void HqlLex::doIsValid(YYSTYPE & returnToken)
         HqlLookupContext ctx(yyParser->lookupCtx);
         ctx.errs.clear();   //Deliberately ignore any errors
         Owned<IFileContents> contents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
-        expr = parseQuery(scope, contents, ctx, xmlScope, NULL, true);
+        expr = parseQuery(scope, contents, ctx, xmlScope, NULL, true, false);
 
         if(expr)
         {

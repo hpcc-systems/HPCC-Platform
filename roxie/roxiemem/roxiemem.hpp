@@ -422,6 +422,7 @@ enum RoxieHeapFlags
     //internal flags
     RHForphaned         = 0x80000000,   // heap will no longer be used, can be deleted
 };
+inline RoxieHeapFlags operator | (RoxieHeapFlags l, RoxieHeapFlags r) { return (RoxieHeapFlags)((unsigned)l | (unsigned)r); }
 
 //This interface is here to allow atomic updates to allocations when they are being resized.  There are a few complications:
 //- If a new block is allocated, we just need to update the capacity/pointer atomically

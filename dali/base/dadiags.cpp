@@ -205,14 +205,27 @@ public:
                 }
                 else if (0 == stricmp(id, "settracetransactions")) {
                     PROGLOG("Dalidiag requests Trace Transactions");
-                    if(traceAllTransactions(true))
-                        mb.append("OK - no change");
-                    else
+                    if (traceAllTransactions())
                         mb.append("OK - transaction tracing enabled");
+                    else
+                        mb.append("OK - no change");
+                }
+                else if (0 == stricmp(id, "settraceslowtransactions")) {
+                    unsigned thresholdMs;
+                    params.read(thresholdMs);
+                    PROGLOG("Dalidiag requests Trace Slow Transactions (ms = %u)", thresholdMs);
+                    if (traceSlowTransactions(thresholdMs)) {
+                        if (thresholdMs)
+                            mb.append("OK - slow transaction tracing enabled");
+                        else
+                            mb.append("OK - transaction tracing disabled");
+                    }
+                    else
+                        mb.append("OK - no change");
                 }
                 else if (0 == stricmp(id, "cleartracetransactions")) {
                     PROGLOG("Dalidiag requests Trace Transactions stopped");
-                    if(traceAllTransactions(false))
+                    if (clearAllTransactions())
                         mb.append("OK - transaction tracing disabled");
                     else
                         mb.append("OK - no change");

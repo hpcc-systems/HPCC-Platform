@@ -296,7 +296,7 @@ public:
         unsigned maxIterations = helper->numIterations();
         if ((int)maxIterations < 0) maxIterations = 0;
         Owned<IThorGraphResults> loopResults = queryGraph().createThorGraphResults(maxIterations);
-        IThorResult *result = loopResults->createResult(*this, 0, this, true);
+        IThorResult *result = loopResults->createResult(*this, 0, this, mergeResultTypes(thorgraphresult_distributed, thorgraphresult_grouped));
 
         helper->createParentExtract(extractBuilder);
 
@@ -347,11 +347,11 @@ public:
     CLocalResultActivityMaster(CMasterGraphElement *info) : CLocalResultActivityMasterBase(info)
     {
     }
-    virtual void createResult()
+    virtual void createResult() override
     {
         IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
         CGraphBase *graph = container.queryResultsGraph();
-        graph->createResult(*this, helper->querySequence(), this, true); // NB graph owns result
+        graph->createResult(*this, helper->querySequence(), this, mergeResultTypes(thorgraphresult_distributed, thorgraphresult_grouped)); // NB graph owns result
     }
 };
 
@@ -370,7 +370,7 @@ public:
     {
         IHThorGraphLoopResultWriteArg *helper = (IHThorGraphLoopResultWriteArg *)queryHelper();
         CGraphBase *graph = container.queryResultsGraph();
-        graph->createGraphLoopResult(*this, inputRowIf, true); // NB graph owns result
+        graph->createGraphLoopResult(*this, inputRowIf, mergeResultTypes(thorgraphresult_distributed, thorgraphresult_grouped)); // NB graph owns result
     }
 };
 
@@ -390,7 +390,7 @@ public:
     {
         IHThorDictionaryResultWriteArg *helper = (IHThorDictionaryResultWriteArg *)queryHelper();
         CGraphBase *graph = container.queryResultsGraph();
-        graph->createResult(*this, helper->querySequence(), this, true); // NB graph owns result
+        graph->createResult(*this, helper->querySequence(), this, mergeResultTypes(thorgraphresult_distributed, thorgraphresult_sparse)); // NB graph owns result
     }
 };
 

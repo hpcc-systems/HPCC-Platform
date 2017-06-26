@@ -167,7 +167,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CWriteIntercept(CActivityBase &_activity, IThorRowInterfaces *_rowIf, unsigned _interval)
-        : activity(_activity), rowIf(_rowIf), interval(_interval), sampleRows(activity, rowIf, true)
+        : activity(_activity), rowIf(_rowIf), interval(_interval), sampleRows(activity, rowIf, ers_forbidden)
     {
         interval = _interval;
         idx = 0;
@@ -867,9 +867,9 @@ public:
     {
         // finds the keys within the ranges specified
         // uses empty keys (0 size) if none found
-        CThorExpandingRowArray low(*activity, keyIf, true);
-        CThorExpandingRowArray high(*activity, keyIf, true);
-        CThorExpandingRowArray mid(*activity, keyIf, true);
+        CThorExpandingRowArray low(*activity, keyIf, ers_allow);
+        CThorExpandingRowArray high(*activity, keyIf, ers_allow);
+        CThorExpandingRowArray mid(*activity, keyIf, ers_allow);
         low.deserializeExpand(lbufsize, lkeybuf);
         high.deserializeExpand(hbufsize, hkeybuf);
         unsigned n=low.ordinality();
@@ -936,13 +936,13 @@ public:
     }
     virtual void MultiBinChop(size32_t keybufsize, const byte * keybuf, unsigned num, rowcount_t * pos, byte cmpfn)
     {
-        CThorExpandingRowArray keys(*activity, keyIf, true);
+        CThorExpandingRowArray keys(*activity, keyIf, ers_allow);
         keys.deserialize(keybufsize, keybuf);
         doBinChop(keys, pos, num, cmpfn);
     }
     virtual void MultiBinChopStart(size32_t keybufsize, const byte * keybuf, byte cmpfn)
     {
-        CThorExpandingRowArray keys(*activity, keyIf, true);
+        CThorExpandingRowArray keys(*activity, keyIf, ers_allow);
         keys.deserializeExpand(keybufsize, keybuf);
         assertex(multibinchoppos==NULL); // check for reentrancy
         multibinchopnum = keys.ordinality();
@@ -971,7 +971,7 @@ public:
         for (i=0;i<mapsize;i++)
             ActPrintLog(activity, "%" RCPF "d ",overflowmap[i]);
 #endif
-        CThorExpandingRowArray keys(*activity, keyIf, true);
+        CThorExpandingRowArray keys(*activity, keyIf, ers_allow);
         keys.deserialize(keybufsize, keybuf);
         for (i=0;i<mapsize-1;i++)
             AdjustOverflow(overflowmap[i], keys.query(i), cmpfn);

@@ -3146,7 +3146,7 @@ friend class CBucket;
 };
 
 CHashTableRowTable::CHashTableRowTable(HashDedupSlaveActivityBase &_activity, IThorRowInterfaces *rowIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare)
-    : CThorExpandingRowArray(_activity, rowIf, true),
+    : CThorExpandingRowArray(_activity, rowIf, ers_allow),
       activity(_activity), iRowHash(_iRowHash), iKeyHash(_iKeyHash), iCompare(_iCompare)
 {
     htMax = htElements = 0;

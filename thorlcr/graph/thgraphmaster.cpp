@@ -2014,7 +2014,7 @@ class CCollatedResult : implements IThorResult, public CSimpleInterface
                 }
             }
         }
-        Owned<IThorResult> _result = ::createResult(activity, rowIf, false, spillPriority);
+        Owned<IThorResult> _result = ::createResult(activity, rowIf, thorgraphresult_nul, spillPriority);
         Owned<IRowWriter> resultWriter = _result->getWriter();
         for (unsigned s=0; s<numSlaves; s++)
         {
@@ -2748,21 +2748,21 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
     return true;
 }
 
-IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority)
 {
     Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, results->queryOwnerId(), spillPriority);
     results->setResult(id, result);
     return result;
 }
 
-IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority)
 {
     Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, localResults->queryOwnerId(), spillPriority);
     localResults->setResult(id, result);
     return result;
 }
 
-IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority)
 {
     Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, 0, localResults->queryOwnerId(), spillPriority);
     unsigned id = graphLoopResults->addResult(result);
