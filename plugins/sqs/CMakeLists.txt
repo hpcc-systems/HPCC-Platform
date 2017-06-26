@@ -64,6 +64,7 @@ if(SQS)
     target_link_libraries(
         sqs
         aws-cpp-sdk-sqs
+        aws-cpp-sdk-core
         eclrtl
         jlib
         ${ZLIB_LIBRARIES})
