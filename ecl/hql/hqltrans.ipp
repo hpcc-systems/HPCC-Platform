@@ -58,22 +58,22 @@ public:
     void endNewTransform(IHqlExpression * expr, IHqlExpression * transformed);
 
 public:
-    unsigned __int64 numAnalyse;
-    unsigned __int64 numAnalyseCalls;
-    unsigned __int64 numTransforms;
-    unsigned __int64 numTransformsSame;
-    unsigned __int64 numTransformCalls;
-    unsigned __int64 numTransformCallsSame;
-    unsigned __int64 numTransformSelects;
-    unsigned __int64 numTransformSelectsSame;
+    unsigned __int64 numAnalyse = 0;
+    unsigned __int64 numAnalyseCalls = 0;
+    unsigned __int64 numTransforms = 0;
+    unsigned __int64 numTransformsSame = 0;
+    unsigned __int64 numTransformCalls = 0;
+    unsigned __int64 numTransformCallsSame = 0;
+    unsigned __int64 numTransformSelects = 0;
+    unsigned __int64 numTransformSelectsSame = 0;
 #ifdef TRANSFORM_STATS_TIME
-    cycle_t totalTime;
-    cycle_t childTime;
-    cycle_t recursiveTime;
+    cycle_t totalTime = 0;
+    cycle_t childTime = 0;
+    cycle_t recursiveTime = 0;
 #endif
-    unsigned depth;
-    unsigned maxDepth;
-    unsigned maxGlobalDepth;
+    unsigned depth = 0;
+    unsigned maxDepth = 0;
+    unsigned maxGlobalDepth = 0;
 #ifdef TRANSFORM_STATS_OPS
     unsigned transformCount[no_last_pseudoop];
 #endif
@@ -100,7 +100,7 @@ public:
 public:
     const char * name;
 #ifdef TRANSFORM_STATS
-    unsigned numInstances;
+    unsigned numInstances = 0;
     HqlTransformStats stats;
 #endif
 };
