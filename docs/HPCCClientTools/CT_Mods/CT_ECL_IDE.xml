@@ -916,10 +916,12 @@
         <sect3 id="CT_ECLIDE_RepositoryToolbox" role="brk">
           <title>Repository Toolbox</title>
 
-          <para>This toolbox displays the ECL Folders for the current
-          configuration. ECL files are organized by folders displayed in a
+          <para>This toolbox displays the Files and Folders for the current
+          configuration. The files are organized by folders displayed in a
           tree format. Expand any folder branch to see the ECL files within
-          it.</para>
+          it. The IDE supports other languages in addition to ECL, namely
+          ESDL, KEL, SALT, and others. To help differentiate the files are
+          color coded according to the type of file they are. </para>
 
           <para><graphic fileref="../../images/CT12.jpg" /></para>
 
