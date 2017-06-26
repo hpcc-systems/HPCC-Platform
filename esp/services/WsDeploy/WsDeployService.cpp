@@ -2914,7 +2914,11 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
       IPropertyTree* pFolder = &iter->query();
 
       const char* pszCompType = pFolder->queryProp("@compType");
+      if (!pszCompType)
+        continue;
       const char* pszCompName = pFolder->queryProp(XML_ATTR_NAME);
+      if (!pszCompName)
+        continue;
 
       StringBuffer xpath;
       if (!strcmp(pszCompName, "Directories"))
@@ -2949,6 +2953,8 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
 
       const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
       const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
+      if (!buildSetName || !processName)
+        continue;
 
       if ( CConfigHelper::getInstance()->isInBuildSet(pszCompType,buildSetName) == false )
       {
@@ -3170,19 +3176,21 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
             if (!pMasterNodeTree)
             {
               xpath.clear().appendf(XML_TAG_THORSPAREPROCESS"/[@name='%s']", pszMName);
-              IPropertyTree* pSpareNodeTree = pComp->queryPropTree(xpath);            
-              const char* pszComputer = pSpareNodeTree->queryProp(XML_ATTR_COMPUTER);
-
-              if (pszComputer)
+              IPropertyTree* pSpareNodeTree = pComp->queryPropTree(xpath);
+              if (pSpareNodeTree)
               {
-                xpath.clear().appendf("Hardware/Computer/[@name='%s']", pszComputer);
-                IPropertyTree* pComputer= pEnvRoot->queryPropTree(xpath.str());
-                const char* pszNetAddr = pComputer->queryProp(XML_ATTR_NETADDRESS);
-                if (pszNetAddr)
-                  pMasterNode->addProp(XML_ATTR_NETADDRESS, pszNetAddr);
+                  const char* pszComputer = pSpareNodeTree->queryProp(XML_ATTR_COMPUTER);
+                  if (pszComputer)
+                  {
+                    xpath.clear().appendf("Hardware/Computer/[@name='%s']", pszComputer);
+                    IPropertyTree* pComputer= pEnvRoot->queryPropTree(xpath.str());
+                    const char* pszNetAddr = pComputer->queryProp(XML_ATTR_NETADDRESS);
+                    if (pszNetAddr)
+                      pMasterNode->addProp(XML_ATTR_NETADDRESS, pszNetAddr);
 
-                pMasterNode->addProp(XML_ATTR_NAME, pszComputer);
-                pMasterNode->addProp(XML_ATTR_PROCESS, "Spare");
+                    pMasterNode->addProp(XML_ATTR_NAME, pszComputer);
+                    pMasterNode->addProp(XML_ATTR_PROCESS, "Spare");
+                  }
               }
             }
             else
@@ -3273,9 +3281,12 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
             {
               xpath.clear().appendf("Hardware/Computer/[@name='%s']", pszComputer);
               IPropertyTree* pComputer= pEnvRoot->queryPropTree(xpath.str());
-              const char* pszNetAddr = pComputer->queryProp(XML_ATTR_NETADDRESS);
-              if (pszNetAddr)
-                pRoxieSlave->addProp(XML_ATTR_NETADDRESS, pszNetAddr);
+              if (pComputer)
+              {
+                const char* pszNetAddr = pComputer->queryProp(XML_ATTR_NETADDRESS);
+                if (pszNetAddr)
+                  pRoxieSlave->addProp(XML_ATTR_NETADDRESS, pszNetAddr);
+              }
             }
           }
         }
