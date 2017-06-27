@@ -761,10 +761,10 @@ public:
         }
 
     }
-    bool expandDiffTrees(IPropertyTree *ctxLocal, IPropertyTree &depTree, IPropertyTree *st, XpathTrack &xtrack, const char *name, bool monitored, bool inMonSection, StringArray &allSelectors)
+    bool expandDiffTrees(IPropertyTree *ctxLocal, IPropertyTree &depTree, IPropertyTree *st, XpathTrack &xtrack, const char *pname, bool monitored, bool inMonSection, StringArray &allSelectors)
     {
         bool mon_child = false; //we have monitored descendants
-        XTrackScope xscope(xtrack, name);
+        XTrackScope xscope(xtrack, pname);
         if (monitored)
             st->setPropBool("@diff_monitor", true);
 
@@ -788,13 +788,13 @@ public:
             ForEach(*children)
             {
                 IPropertyTree &child = children->query();
-                const char *name = child.queryProp("@name");
-                if (!name || !*name)
+                StringAttr childname = child.queryProp("@name");
+                if (childname.isEmpty())
                     continue;
 
-                if (globalStructDef && globalStructDef->hasProp(name))
+                if (globalStructDef && globalStructDef->hasProp(childname))
                 {
-                    IPropertyTree *globalChildDef = globalStructDef->queryPropTree(name);
+                    IPropertyTree *globalChildDef = globalStructDef->queryPropTree(childname);
                     mergePTree(&child, globalChildDef);
                 }
                 bool childMonSection = inMonSection;
@@ -832,7 +832,7 @@ public:
                     child.setPropBool("@_mon", true);
                 else if (monitored)
                     child.setPropBool("@_nomon", true);
-                VStringBuffer ctxMonFlag("_CheckField_%s", name);
+                VStringBuffer ctxMonFlag("_CheckField_%s", childname.str());
                 ctxLocal->setPropBool(ctxMonFlag, childMonitored);
 
                 const char *childElementName =child.queryName();
@@ -846,7 +846,7 @@ public:
                         if (childType)
                         {
                             childType->setPropBool("@_used", true);
-                            IPropertyTree *ctxChild = ensurePTree(ctxLocal, name);
+                            IPropertyTree *ctxChild = ensurePTree(ctxLocal, childname);
                             bool mon_elem = expandDiffTrees(ctxChild, depTree, childType, xtrack, NULL, childMonitored, childMonSection, allSelectors); //walk the type info
                             if (!monitored && mon_elem)
                             {
@@ -895,7 +895,7 @@ public:
                                         itemTypeDiffKeys->addPropTree("diff_match", LINK(diffIdTree));
                                 }
 
-                                IPropertyTree *ctxChild = ensurePTree(ctxLocal, name);
+                                IPropertyTree *ctxChild = ensurePTree(ctxLocal, childname);
                                 const char *item_tag = getArrayTemplateItemName(respTemplate, xtrack, child);
                                 bool mon_elem = expandDiffTrees(ctxChild, depTree, childType, xtrack, item_tag, childMonitored, childMonSection, allSelectors); //walk the type info
                                 if (!monitored && mon_elem)
@@ -923,16 +923,27 @@ public:
 
     IPropertyTree *checkExtractNestedResponseType(IPropertyTree *depTree, IPropertyTree *respType, StringBuffer &respTypeName)
     {
-        const char *altTypeName = respType->queryProp("EsdlElement[@name='response']/@complex_type");
-        if (altTypeName && *altTypeName)
+        StringBuffer typeName = respType->queryProp("@name");
+        if (!typeName.length()>2)
+            return respType;
+        if (!streq(typeName.str()+ typeName.length()-2, "Ex"))
+            return respType;
+        IPropertyTree *response = respType->queryPropTree("EsdlElement[@name='response']");
+        if (!response)
+            return respType;
+        const char *altTypeName = response->queryProp("@complex_type");
+        if (!altTypeName || !*altTypeName)
+            return respType;
+
+        VStringBuffer xpath("EsdlStruct[@name='%s']", altTypeName);
+        IPropertyTree *altType = depTree->queryPropTree(xpath);
+        if (altType)
         {
-            VStringBuffer xpath("EsdlStruct[@name='%s']", altTypeName);
-            IPropertyTree *altType = depTree->queryPropTree(xpath);
-            if (altType)
-            {
-                respType = altType;
-                respTypeName.set(altTypeName);
-            }
+            respType->setPropBool("@mon_child", true);
+            response->setPropBool("@mon_child", true);
+            response->setPropBool("@no_appendpath", true);
+            respTypeName.set(altTypeName);
+            return altType;
         }
         return respType;
     }
@@ -954,6 +965,9 @@ public:
 
         xml.append("\n</esxdl>");
 
+        VStringBuffer filename("esdl_rollup_monitor_%s.xml", optMethod.str());
+        saveAsFile(".", filename, xml);
+
         Owned<IPropertyTree> depTree = createPTreeFromXMLString(xml, ipt_ordered);
 
         monitoringTemplate.setown(createPTreeFromXMLString(diffTemplateContent, ipt_ordered));
@@ -963,23 +977,23 @@ public:
         removeEclHidden(depTree->getPropTree("RequestInfo"));
 
         VStringBuffer xpath("EsdlMethod[@name='%s']/@response_type", optMethod.str());
-        StringBuffer resp_type = depTree->queryProp(xpath);
-        if (!resp_type.length())
-            throw( MakeStringException(0, "Esdl Method not found %s", optMethod.str()));
+        StringAttr esp_resp_type = depTree->queryProp(xpath);
+        if (esp_resp_type.isEmpty())
+            throw( MakeStringException(0, "Esdl Method or response_type not found %s", optMethod.str()));
 
+        IPropertyTree *espRespTree = depTree->queryPropTree(xpath.setf("EsdlResponse[@name='%s']", esp_resp_type.str()));
+        if (!espRespTree)
+            espRespTree = depTree->queryPropTree(xpath.setf("EsdlStruct[@name='%s']", esp_resp_type.str()));
+        if (!espRespTree)
+            throw( MakeStringException(0, "Esdl Response type '%s' definition not found", esp_resp_type.str()));
+
+        StringBuffer resp_type = esp_resp_type.get();
         if (resp_type.length()>2 && resp_type.charAt(resp_type.length()-2)=='E' && resp_type.charAt(resp_type.length()-1)=='x')
             resp_type.setLength(resp_type.length()-2);
 
+        IPropertyTree *respTree = checkExtractNestedResponseType(depTree, espRespTree, resp_type);
+
         respTemplate = monitoringTemplate->queryPropTree(resp_type);
-
-        IPropertyTree *respTree = depTree->queryPropTree(xpath.setf("EsdlResponse[@name='%s']", resp_type.str()));
-        if (!respTree)
-            respTree = depTree->queryPropTree(xpath.setf("EsdlStruct[@name='%s']", resp_type.str()));
-
-        if (!respTree)
-            throw( MakeStringException(0, "Esdl Response type '%s' definition not found", resp_type.str()));
-
-        respTree = checkExtractNestedResponseType(depTree, respTree, resp_type);
 
         XpathTrack xtrack;
         Owned<IPropertyTree> ctxTree = createPTree();
@@ -1012,7 +1026,7 @@ public:
 
         toXML(depTree, xml.clear()); //refresh changes
 
-        VStringBuffer filename("%s_preprocess.xml", optMethod.str());
+        filename.setf("%s_preprocess.xml", optMethod.str());
         saveAsFile(".", filename, xml);
 
         Owned<IXslProcessor> xslp = getXslProcessor();
@@ -1024,15 +1038,12 @@ public:
 
         StringBuffer stringvar;
         xform->setParameter("requestType", stringvar.setf("'%s'", depTree->queryProp(xpath.setf("EsdlMethod[@name='%s']/@request_type", optMethod.str()))));
-        xform->setParameter("responseType", stringvar.setf("'%s'", resp_type.str()));
         xform->setParameter("queryName", stringvar.setf("'%s'", monitoringTemplate->queryProp("@queryName")));
 
         StringBuffer ecl;
 
         StringBuffer escapedTemplate;
         appendEscapedEclString(escapedTemplate, diffTemplateContent);
-
-
 
         ecl.appendf("STRING monitoringTemplate :='%s';\nBOOLEAN IncludeTemplate := false : STORED('IncludeTemplate');\nIF (IncludeTemplate, OUTPUT(monitoringTemplate, NAMED('MonitoringTemplate')));\nOUTPUT(HASHMD5(monitoringTemplate), NAMED('Hash'));\n", escapedTemplate.str());
         filename.setf("Monitor_ActiveTemplate_%s.ecl", optMethod.str());
@@ -1041,32 +1052,42 @@ public:
         if (optOutputCategoryList)
             xform->setParameter("listCategories", "true()");
 
+//-------Monitor---------
         xform->setParameter("diffmode", "'Monitor'");
+
+//-------Monitor::Create---------
         xform->setParameter("diffaction", "'Create'");
 
         xform->setParameter("platform", "'roxie'");
+        xform->setParameter("responseType", stringvar.setf("'%s'", resp_type.str()));
         xform->transform(ecl.clear());
         filename.setf("MonitorRoxie_create_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
         xform->setParameter("platform", "'esp'");
+        xform->setParameter("responseType", stringvar.setf("'%s'", esp_resp_type.str()));
         xform->transform(ecl.clear());
         filename.setf("MonitorESP_create_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
+//-------Monitor::Run---------
         xform->setParameter("diffaction", "'Run'");
 
         xform->setParameter("platform", "'roxie'");
+        xform->setParameter("responseType", stringvar.setf("'%s'", resp_type.str()));
         xform->transform(ecl.clear());
         filename.setf("MonitorRoxie_run_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
         xform->setParameter("platform", "'esp'");
+        xform->setParameter("responseType", stringvar.setf("'%s'", esp_resp_type.str()));
         xform->transform(ecl.clear());
         filename.setf("MonitorESP_run_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
+//-------Compare---------
         xform->setParameter("diffmode", "'Compare'");
+        xform->setParameter("responseType", stringvar.setf("'%s'", resp_type.str()));
         xform->transform(ecl.clear());
         filename.setf("Compare_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
