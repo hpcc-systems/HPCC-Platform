@@ -1085,6 +1085,21 @@ public:
         filename.setf("MonitorESP_run_%s.ecl", optMethod.str());
         saveAsFile(".", filename, ecl);
 
+//-------Monitor::Demo---------
+        xform->setParameter("diffaction", "'Demo'");
+
+        xform->setParameter("platform", "'roxie'");
+        xform->setParameter("responseType", stringvar.setf("'%s'", resp_type.str()));
+        xform->transform(ecl.clear());
+        filename.setf("MonitorRoxie_demo_%s.ecl", optMethod.str());
+        saveAsFile(".", filename, ecl);
+
+        xform->setParameter("platform", "'esp'");
+        xform->setParameter("responseType", stringvar.setf("'%s'", esp_resp_type.str()));
+        xform->transform(ecl.clear());
+        filename.setf("MonitorESP_demo_%s.ecl", optMethod.str());
+        saveAsFile(".", filename, ecl);
+
 //-------Compare---------
         xform->setParameter("diffmode", "'Compare'");
         xform->setParameter("responseType", stringvar.setf("'%s'", resp_type.str()));

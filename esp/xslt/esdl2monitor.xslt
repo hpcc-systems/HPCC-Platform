@@ -196,7 +196,7 @@ END;
   unsigned2 serviceTimeout := 1000 : stored('QueryTimeoutSecs', FORMAT(SEQUENCE(9)));
   unsigned1 serviceRetries := 3 : stored('QueryRetries', FORMAT(SEQUENCE(10)));
 
-<xsl:if test="$diffaction='Run'">
+<xsl:if test="$diffaction='Run' or $diffaction='Demo'">
   string monitorIdIn := '' : stored('MonitorId', FORMAT(SEQUENCE(9)));
 </xsl:if>
   requestIn := DATASET([], the_requestLayout) : STORED ('<xsl:value-of select="$requestType"/>', FEW, FORMAT(FIELDWIDTH(100),FIELDHEIGHT(30), sequence(100)));
@@ -340,6 +340,29 @@ END;
 
   executedAction := RunMonitor(monitorIdIn, requestIn).Result();
   updateMonitor(DATASET([{executedAction.id, executedAction.responseXML}], monitorStoreRec));
+  </xsl:when>
+  <xsl:when test="$diffaction='Demo'">
+
+DemoMonitor (string id, ROW(the_responseLayout) changedRow) := MODULE
+  SHARED monitorId := id;
+  SHARED monitorStore := getStoredMonitor(id);
+
+  SHARED oldResponse := FROMXML (the_responseLayout, monitorStore.result);
+
+  SHARED diff_result := the_differenceModule(false, '').AsRecord(changedRow, oldResponse);
+
+  EXPORT MonitorResultRec BuildMonitor() :=TRANSFORM
+    SELF.id := monitorId;
+    SELF.report := diff_result;
+  END;
+  EXPORT Result () := FUNCTION
+    RETURN ROW(BuildMonitor());
+  END;
+END;
+
+  STRING changedXML := '' : STORED ('changed', FORMAT(FIELDWIDTH(100), FIELDHEIGHT(30), sequence(1002)));
+  changedRow := FROMXML (the_responseLayout, changedXML);
+  executedAction := DemoMonitor(monitorIdIn, changedRow).Result();
   </xsl:when>
 </xsl:choose>
 
