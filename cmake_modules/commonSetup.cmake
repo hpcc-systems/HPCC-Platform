@@ -169,6 +169,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     endforeach()
     #"cmake -DEXAMPLEPLUGIN=ON <path-to/HPCC-Platform/>" will configure the plugin makefiles to be built with "make".
 
+  set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
+
   set(LIBMEMCACHED_MINVERSION "1.0.10")
   if(USE_LIBMEMCACHED)
     if(WIN32)
@@ -259,7 +261,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     set( PORTALURL "http://hpccsystems.com/download" )
   endif()
 
-  set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
 
   if(UNIX AND SIGN_MODULES)
       execute_process(COMMAND bash "-c" "gpg --version | awk 'NR==1{print $3}'"
