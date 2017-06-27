@@ -122,6 +122,7 @@ const char * const helpText[] = {
     "?!  -fcheckAsserts          Check ASSERT() statements",
     "?!  -fexportDependencies    Generate information about inter-definition dependencies",
     "?!  -fmaxCompileThreads     Number of compiler instances to compile the c++",
+    "?!  -fmaxErrors             Maximum number of errors to report",
     "?!  -fnoteRecordSizeInGraph Add estimates of record sizes to the graph",
     "?!  -fpickBestEngine        Allow simple thor queries to be passed to thor",
     "?!  -fobfuscateOutput       Remove details of the original ECL from output",
