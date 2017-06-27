@@ -31,7 +31,8 @@
 enum ThorPortKind
 {
     TPORT_watchdog,
-    TPORT_mp
+    TPORT_mp,
+    TPORT_debug
 };
 
 graph_decl unsigned short getFixedPort(ThorPortKind category);
