@@ -23,9 +23,7 @@
   casting to any other type will first implicitly cast to STRING and then cast
   to the target value type.</para>
 
-  <para>The upper size limit for any VARUNICODE value is 4GB (2^32), although
-  you are likely to run out of memory if you have too many of that
-  size.</para>
+  <para>The upper size limit for any VARUNICODE value is 4GB.</para>
 
   <para>Example:</para>
 

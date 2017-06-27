@@ -20,10 +20,6 @@
     string, prepend a backslash (\). To include the backslash character (\) in
     a constant string, use two backslashes (\\) together.</para>
 
-    <para>The upper size limit for any string constant is 4GB (2^32), although
-    you are likely to run out of memory if you have too many of that
-    size.</para>
-
     <programlisting>STRING20 MyString2 := 'Fred\'s Place';
                      //evaluated as: "Fred's Place"
 STRING20 MyString3 := 'Fred\\Ginger\'s Place';

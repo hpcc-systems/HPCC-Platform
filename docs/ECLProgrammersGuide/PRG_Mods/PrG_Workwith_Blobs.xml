@@ -74,11 +74,9 @@ imageData := DATASET('LE::imagedb',imageRecord,FLAT);
     contain XML data from multiple files, then it could be defined as a STRING
     value type. In that case, the first four bytes of the field would still
     contain an integer value specifying the number of bytes in the original
-    file, followed by the XML data from the file. </para>
+    file, followed by the XML data from the file.</para>
 
-    <para>The upper size limit for any STRING or DATA value is 4GB (2^32),
-    although you are likely to run out of memory if you have too many of that
-    size.</para>
+    <para>The upper size limit for any STRING or DATA value is 4GB. </para>
 
     <para>The addition of the RecPos field (a standard ECL “record pointer”
     field) allows us to create an INDEX, like this:</para>
