@@ -34,12 +34,13 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil",
     "hpcc/DynamicESDLDetailsWidget",
+    "hpcc/DynamicESDLDefinitionQueryWidget",
     "hpcc/TargetSelectWidget"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domClass, domConstruct,
                 registry,
                 tree, ColumnHider,
-                GridDetailsWidget, WsTopology, WsESDLConfig, DelayLoadWidget, ESPUtil, DynamicESDLDetailsWidget, TargetSelectWidget) {
+                GridDetailsWidget, WsTopology, WsESDLConfig, DelayLoadWidget, ESPUtil, DynamicESDLDetailsWidget, DynamicESDLDefinitionQueryWidget, TargetSelectWidget) {
     return declare("DynamicESDLWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -59,6 +60,7 @@ define([
         postCreate: function (args) {
             var context = this;
             this.inherited(arguments);
+
             this.detailsWidget = new DynamicESDLDetailsWidget({
                 id: this.id + "Details",
                 region: "right",
@@ -67,6 +69,12 @@ define([
                 minSize: 240
             });
             this.detailsWidget.placeAt(this.gridTab, "last");
+
+            this.definitionQueryWidget = new DynamicESDLDefinitionQueryWidget({
+                id: this.id + "_DynamicESDLDefinitionQueryWidget",
+                title: nlsHPCC.title_Definitions
+            });
+            this.definitionQueryWidget.placeAt(this._tabContainer, "last");
         },
 
         createGrid: function (domID) {
