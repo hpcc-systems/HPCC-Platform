@@ -6730,3 +6730,10 @@ void removeFileTraceIfFail(const char * filename)
     if (remove(filename) != 0)
         DBGLOG("Could not remove file '%s'", filename);
 }
+
+timestamp_type getTimeStamp(IFile * file)
+{
+    CDateTime modified;
+    file->getTime(nullptr, &modified, nullptr);
+    return modified.getTimeStamp();
+}

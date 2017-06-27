@@ -30,6 +30,7 @@
 #define CONST_STRLEN(x) (sizeof(x)-1)       // sizeof(const-string) = strlen(const-string) + 1 byte for the \0 terminator
 #define MATCHES_CONST_PREFIX(search, prefix) (strncmp(search, prefix, CONST_STRLEN(prefix)) == 0)
 
+typedef unsigned __int64 timestamp_type;
 enum CombineStatsAction
 {
     MergeStats,

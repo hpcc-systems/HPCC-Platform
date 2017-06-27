@@ -149,6 +149,7 @@ class FileSystemFile : public CEclSource
 {
 public:
     FileSystemFile(EclSourceType _type, IFile & _file, bool _allowPlugins);
+    FileSystemFile(const char * eclName, IFileContents * _fileContents);
 
 //interface IEclSource
     virtual IProperties * getProperties();
@@ -165,7 +166,7 @@ public:
     Linked<IFileContents> fileContents;
     StringAttr version;
     SharedObject pluginSO;
-    unsigned extraFlags;
+    unsigned extraFlags = 0;
 };
 
 
@@ -179,6 +180,9 @@ public:
 
     void expandDirectoryTree(IDirectoryIterator * dir, bool allowPlugins);
     void addFile(IFile &file, bool allowPlugins);
+
+    void addFile(const char * eclName, IFileContents * fileContents);
+    FileSystemDirectory * addDirectory(const char * name);
 
 protected:
     virtual void populateChildren();
@@ -203,6 +207,7 @@ public:
     virtual void checkCacheValid();
 
     void processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins);
+    void processSingle(const char * attrName, IFileContents * contents);
 
 public:
     FileSystemDirectory root;
@@ -275,6 +280,11 @@ FileSystemFile::FileSystemFile(EclSourceType _type, IFile & _file, bool _allowPl
         extraFlags = PLUGIN_IMPLICIT_MODULE;
         break;
     }
+}
+
+FileSystemFile::FileSystemFile(const char * eclName, IFileContents * _fileContents)
+: CEclSource(createIdAtom(eclName), ESTdefinition), file(nullptr), fileContents(_fileContents)
+{
 }
 
 bool FileSystemFile::checkValid()
@@ -410,6 +420,19 @@ void FileSystemDirectory::addFile(IFile &file, bool allowPlugins)
     expandedChildren = true;
 }
 
+void FileSystemDirectory::addFile(const char * eclName, IFileContents * fileContents)
+{
+    contents.append(*new FileSystemFile(eclName, fileContents));
+}
+
+FileSystemDirectory * FileSystemDirectory::addDirectory(const char * name)
+{
+    FileSystemDirectory * dir = new FileSystemDirectory(createIdAtom(name), nullptr);
+    contents.append(*dir);
+    return dir;
+}
+
+
 void FileSystemDirectory::expandDirectoryTree(IDirectoryIterator * dir, bool allowPlugins)
 {
     ForEach (*dir)
@@ -490,6 +513,23 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
     }
 }
 
+void FileSystemEclCollection::processSingle(const char * attrName, IFileContents * contents)
+{
+    FileSystemDirectory * directory = &root;
+    for (;;)
+    {
+        const char * dot = strchr(attrName, '.');
+        if (!dot)
+            break;
+
+        StringAttr name(attrName, dot-attrName);
+        directory = directory->addDirectory(name);
+        attrName = dot + 1;
+    }
+    directory->addFile(attrName, contents);
+}
+
+
 void FileSystemEclCollection::checkCacheValid()
 {
 }
@@ -498,6 +538,14 @@ extern HQL_API IEclSourceCollection * createFileSystemEclCollection(IErrorReceiv
 {
     Owned<FileSystemEclCollection> collection = new FileSystemEclCollection(trace);
     collection->processFilePath(errs, path, (flags & ESFallowplugins) != 0);
+    return collection.getClear();
+}
+
+
+static IEclSourceCollection * createSingleDefinitionEclCollectionNew(const char * attrName, IFileContents * contents)
+{
+    Owned<FileSystemEclCollection> collection = new FileSystemEclCollection(0);
+    collection->processSingle(attrName, contents);
     return collection.getClear();
 }
 
@@ -824,6 +872,9 @@ IEclSourceCollection * createSingleDefinitionEclCollection(const char * moduleNa
 
 IEclSourceCollection * createSingleDefinitionEclCollection(const char * attrName, IFileContents * contents)
 {
+    //Use the directory and file based collection - so that file information (including timestamps) is preserved.
+    return createSingleDefinitionEclCollectionNew(attrName, contents);
+#if 0
     const char * dot = strrchr(attrName, '.');
     if (dot)
     {
@@ -831,6 +882,7 @@ IEclSourceCollection * createSingleDefinitionEclCollection(const char * attrName
         return createSingleDefinitionEclCollection(module, dot+1, contents);
     }
     return createSingleDefinitionEclCollection("", attrName, contents);
+#endif
 }
 
 //---------------------------------------------------------------------------------------

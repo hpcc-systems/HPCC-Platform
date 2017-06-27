@@ -910,7 +910,7 @@ void HqlParseContext::setGatherMeta(const MetaOptions & options)
 {
     metaOptions = options;
     metaState.gatherNow = !options.onlyGatherRoot;
-    metaTree.setown(createPTree("Meta"));
+    metaTree.setown(createPTree("Meta", ipt_fast));
 }
 
 
@@ -922,6 +922,16 @@ static void setDefinitionText(IPropertyTree * target, const char * prop, IFileCo
 
     ISourcePath * sourcePath = contents->querySourcePath();
     target->setProp("@sourcePath", str(sourcePath));
+}
+
+IPropertyTree * HqlParseContext::beginMetaSource(IFileContents * contents)
+{
+    ISourcePath * sourcePath = contents->querySourcePath();
+
+    IPropertyTree * attr = createPTree("Source", ipt_fast);
+    attr->setProp("@sourcePath", str(sourcePath));
+    metaState.nesting.append(*attr);
+    return attr;
 }
 
 void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
@@ -942,15 +952,13 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
 
     if (checkBeginMeta())
     {
-        IPropertyTree * attr = metaTree->addPropTree("Source", createPTree("Source"));
+        IPropertyTree * attr = beginMetaSource(contents);
         setFullNameProp(attr, "@name", scope->queryFullName(), str(name));
-        attr->setProp("@sourcePath", str(sourcePath));
-        metaState.nesting.append(attr);
     }
 
     if (globalDependTree)
     {
-        IPropertyTree * attr = globalDependTree->addPropTree("Attribute", createPTree("Attribute"));
+        IPropertyTree * attr = globalDependTree->addPropTree("Attribute");
         attr->setProp("@module", scope->queryFullName());
         attr->setProp("@name", str(name));
         attr->setProp("@sourcePath", str(sourcePath));
@@ -974,9 +982,9 @@ void HqlParseContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents
     {
         ISourcePath * sourcePath = contents->querySourcePath();
 
-        IPropertyTree * attr = metaTree->addPropTree("Query", createPTree("Query"));
+        IPropertyTree * attr = createPTree("Query", ipt_fast);
         attr->setProp("@sourcePath", str(sourcePath));
-        metaState.nesting.append(attr);
+        metaState.nesting.append(*attr);
     }
 }
 
@@ -994,43 +1002,39 @@ void HqlParseContext::noteBeginModule(IHqlScope * scope, IFileContents * content
 
     if (checkBeginMeta())
     {
-        ISourcePath * sourcePath = contents->querySourcePath();
-
-        IPropertyTree * attr = metaTree->addPropTree("Source", createPTree("Source"));
-        attr->setProp("@sourcePath", str(sourcePath));
-        metaState.nesting.append(attr);
+        beginMetaSource(contents);
     }
 }
 
-void HqlParseContext::noteEndAttribute()
+void HqlParseContext::noteEndAttribute(bool success)
 {
     if (checkEndMeta())
-        finishMeta();
+        finishMeta(true, success);
 }
 
-void HqlParseContext::noteEndQuery()
+void HqlParseContext::noteEndQuery(bool success)
 {
     if (checkEndMeta())
-        finishMeta();
+        finishMeta(false, success);
 }
 
-void HqlParseContext::noteEndModule()
+void HqlParseContext::noteEndModule(bool success)
 {
     if (checkEndMeta())
-        finishMeta();
+        finishMeta(true, success);
 }
 
 void HqlParseContext::noteFinishedParse(IHqlScope * scope)
 {
     if (metaState.gatherNow)
-        expandScopeSymbolsMeta(metaState.nesting.tos(), scope);
+        expandScopeSymbolsMeta(&metaState.nesting.tos(), scope);
 }
 
 
 void HqlParseContext::notePrivateSymbols(IHqlScope * scope)
 {
     if (metaState.gatherNow)
-        expandScopeSymbolsMeta(metaState.nesting.tos(), scope);
+        expandScopeSymbolsMeta(&metaState.nesting.tos(), scope);
 }
 
 
@@ -1055,9 +1059,45 @@ bool HqlParseContext::checkEndMeta()
     return wasGathering;
 }
 
-void HqlParseContext::finishMeta()
+void HqlParseContext::finishMeta(bool isSeparateFile, bool success)
 {
-    metaState.nesting.pop();
+    if (metaState.nesting.empty())  // paranoid - could only happen on an internal error
+        return;
+
+    Owned<IPropertyTree> tos = &metaState.nesting.popGet();
+    if (isSeparateFile && !metaOptions.cacheLocation.isEmpty())
+    {
+        const char * originalPath = tos->queryProp("@sourcePath");
+        StringBuffer filename;
+        filename.append(metaOptions.cacheLocation);
+        addPathSepChar(filename);
+        filename.append(originalPath);
+        if (success)
+            filename.append(".eclmeta");
+        else
+            filename.append(".errmeta");
+        recursiveCreateDirectoryForFile(filename);
+
+        Owned<IFile> original = createIFile(originalPath);
+        Owned<IFile> file = createIFile(filename);
+
+        CDateTime originalTime;
+        CDateTime currentTime;
+        bool hasOriginal = original->getTime(nullptr, &originalTime, nullptr);
+        bool hasCurrent = file->getTime(nullptr, &currentTime, NULL);
+
+        //Overwrite the file if the original file is newer than the meta file
+        //This test will need to be improved later on, to reflect dependencies.
+        if (!hasOriginal || !hasCurrent || originalTime.compare(currentTime) > 0)
+        {
+            saveXML(filename, tos, 0, XML_Embed|XML_LineBreak);
+        }
+    }
+    else
+    {
+        IPropertyTree * tree = tos.getClear();
+        metaTree->addPropTree(tree->queryName(), tree);
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1082,7 +1122,7 @@ IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * n
     IPropertyTree * module = archive->queryPropTree(xpath);
     if (!module)
     {
-        module = archive->addPropTree("Module", createPTree());
+        module = archive->addPropTree("Module");
         module->setProp("@name", name ? name : "");
         module->setProp("@key", lowerName);
         if (scope)
@@ -1119,7 +1159,7 @@ extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, co
 {
     StringBuffer lowerName;
     lowerName.append(name).toLowerCase();
-    IPropertyTree * attr = module->addPropTree("Attribute", createPTree());
+    IPropertyTree * attr = module->addPropTree("Attribute");
     attr->setProp("@name", name);
     attr->setProp("@key", lowerName);
     return attr;
@@ -1180,7 +1220,7 @@ void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpressio
 
                 if (!curAttrTree->queryPropTree(xpath.str()))
                 {
-                    IPropertyTree * depend = curAttrTree->addPropTree("Depend", createPTree());
+                    IPropertyTree * depend = curAttrTree->addPropTree("Depend");
                     depend->setProp("@module", moduleName);
                     depend->setProp("@name", str(expr->queryName()));
                 }
@@ -1201,7 +1241,7 @@ void HqlLookupContext::createDependencyEntry(IHqlScope * parentScope, IIdAtom * 
     IPropertyTree * attr = queryNestedDependTree()->queryPropTree(xpath.str());
     if (!attr)
     {
-        attr = queryNestedDependTree()->addPropTree("Attr", createPTree());
+        attr = queryNestedDependTree()->addPropTree("Attr");
         attr->setProp("@module", moduleName);
         attr->setProp("@name", nameText);
     }
@@ -7879,6 +7919,14 @@ CFileContents::CFileContents(IFile * _file, ISourcePath * _sourcePath, bool _isS
         file.clear();
 }
 
+timestamp_type CFileContents::getTimeStamp()
+{
+    //MORE: Could store a timestamp if the source was the legacy repository which has no corresponding file
+    if (!file)
+        return 0;
+    return ::getTimeStamp(file);
+}
+
 bool CFileContents::preloadFromFile()
 {
     const char * filename = file->queryFilename();
@@ -8038,6 +8086,7 @@ public:
     virtual size32_t length() { return len; }
     virtual bool isImplicitlySigned() { return contents->isImplicitlySigned(); }
     virtual IHqlExpression * queryGpgSignature() { return contents->queryGpgSignature(); }
+    virtual timestamp_type getTimeStamp() { return contents->getTimeStamp(); }
 protected:
     Linked<IFileContents> contents;
     size32_t offset;

@@ -358,6 +358,7 @@ protected:
     StringArray allowedPermissions;
     StringArray allowSignedPermissions;
     StringArray deniedPermissions;
+    StringAttr optMetaLocation;
     bool defaultAllowed[2];
 
     ClusterType optTargetClusterType = RoxieCluster;
@@ -1088,7 +1089,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
         //Preserve command line mappings in the generated archive
         if (instance.archive)
-            instance.archive->addPropTree("OnWarning", createPTree())->setProp("@value",warningMappings.item(i));
+            instance.archive->addPropTree("OnWarning")->setProp("@value",warningMappings.item(i));
     }
 
     //Apply preserved onwarning mappings from any source archive
@@ -1147,7 +1148,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             parseCtx.maxErrors = optMaxErrors;
         parseCtx.unsuppressImmediateSyntaxErrors = optUnsuppressImmediateSyntaxErrors;
         if (!instance.archive)
-            parseCtx.globalDependTree.setown(createPTree(ipt_none)); //to locate associated manifests, keep separate from user specified MetaOptions
+            parseCtx.globalDependTree.setown(createPTree(ipt_fast)); //to locate associated manifests, keep separate from user specified MetaOptions
         if (optGenerateMeta || optIncludeMeta)
         {
             HqlParseContext::MetaOptions options;
@@ -1159,6 +1160,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             options.includeExternalUses = instance.wu->getDebugValueBool("metaIncludeExternalUse", true);
             options.includeLocations = instance.wu->getDebugValueBool("metaIncludeLocations", true);
             options.includeJavadoc = instance.wu->getDebugValueBool("metaIncludeJavadoc", true);
+            options.cacheLocation.set(optMetaLocation);
             parseCtx.setGatherMeta(options);
         }
 
@@ -1173,7 +1175,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         parseCtx.ignoreSignatures = instance.ignoreSignatures;
         bool exportDependencies = instance.wu->getDebugValueBool("exportDependencies",false);
         if (exportDependencies)
-            parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
+            parseCtx.nestedDependTree.setown(createPTree("Dependencies", ipt_fast));
 
         addTimeStamp(instance.wu, SSTcompilestage, "compile:parse", StWhenStarted);
         try
@@ -1495,9 +1497,15 @@ void EclCC::processFile(EclCompileInstance & instance)
 
     const char * curFilename = instance.inputFile->queryFilename();
     assertex(curFilename);
+    bool inputFromStdIn = streq(curFilename, "stdin:");
+    StringBuffer expandedSourceName;
+    if (!inputFromStdIn && !optNoSourcePath)
+        makeAbsolutePath(curFilename, expandedSourceName);
+    else
+        expandedSourceName.append(curFilename);
 
-    Owned<ISourcePath> sourcePath = optNoSourcePath ? NULL : createSourcePath(curFilename);
-    Owned<IFileContents> queryText = createFileContentsFromFile(curFilename, sourcePath, false, NULL);
+    Owned<ISourcePath> sourcePath = optNoSourcePath ? NULL : createSourcePath(expandedSourceName);
+    Owned<IFileContents> queryText = createFileContentsFromFile(expandedSourceName, sourcePath, false, NULL);
     const char * queryTxt = queryText->getText();
     if (optArchive || optGenerateDepend || optSaveQueryArchive)
         instance.archive.setown(createAttributeArchive());
@@ -1524,7 +1532,6 @@ void EclCC::processFile(EclCompileInstance & instance)
     {
         StringBuffer attributePath;
         bool withinRepository = false;
-        bool inputFromStdIn = streq(curFilename, "stdin:");
 
         //Specifying --main indicates that the query text (if present) replaces that definition
         if (optQueryRepositoryReference)
@@ -1536,13 +1543,6 @@ void EclCC::processFile(EclCompileInstance & instance)
         {
             withinRepository = !inputFromStdIn && !optNoSourcePath && checkWithinRepository(attributePath, curFilename);
         }
-
-
-        StringBuffer expandedSourceName;
-        if (!inputFromStdIn && !optNoSourcePath)
-            makeAbsolutePath(curFilename, expandedSourceName);
-        else
-            expandedSourceName.append(curFilename);
 
         EclRepositoryArray repositories;
         //Items first in the list have priority -Dxxx=y overrides all
@@ -2284,8 +2284,12 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optDebugMemLeak, "-m"))
         {
         }
-        else if (iter.matchFlag(optIncludeMeta, "-meta"))
+        else if (iter.matchFlag(optIncludeMeta, "-meta") || iter.matchFlag(optIncludeMeta, "--meta"))
         {
+        }
+        else if (iter.matchOption(optMetaLocation, "--metacache"))
+        {
+            optIncludeMeta = true;
         }
         else if (iter.matchFlag(optGenerateMeta, "-M"))
         {

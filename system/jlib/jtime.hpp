@@ -91,6 +91,7 @@ public:
     void getDate(unsigned & year, unsigned & month, unsigned & day, bool local = false) const;
     void getTime(unsigned & hour, unsigned & minute, unsigned & second, unsigned & nano, bool local = false) const;
     time_t getSimple() const;
+    unsigned __int64 getTimeStamp() const;
     StringBuffer & getString(StringBuffer & str, bool local = false) const;
     StringBuffer & getDateString(StringBuffer & str, bool local = false) const;
     StringBuffer & getTimeString(StringBuffer & str, bool local = false) const;
