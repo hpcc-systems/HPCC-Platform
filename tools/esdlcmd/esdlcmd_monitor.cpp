@@ -924,7 +924,7 @@ public:
     IPropertyTree *checkExtractNestedResponseType(IPropertyTree *depTree, IPropertyTree *respType, StringBuffer &respTypeName)
     {
         StringBuffer typeName = respType->queryProp("@name");
-        if (!typeName.length()>2)
+        if (typeName.length()<=2)
             return respType;
         if (!streq(typeName.str()+ typeName.length()-2, "Ex"))
             return respType;
