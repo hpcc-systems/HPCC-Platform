@@ -1710,5 +1710,7 @@ extern WORKUNIT_API void addWorkunitException(IWorkUnit * wu, IError * error, bo
 
 inline bool isGlobalScope(const char * scope) { return scope && (streq(scope, GLOBAL_SCOPE) || streq(scope, LEGACY_GLOBAL_SCOPE)); }
 
+extern WORKUNIT_API bool isValidPriorityValue(const char * priority);
+extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 
 #endif

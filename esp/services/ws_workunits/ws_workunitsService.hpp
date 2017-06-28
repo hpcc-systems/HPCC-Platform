@@ -273,6 +273,7 @@ public:
 
     bool onWUListArchiveFiles(IEspContext &context, IEspWUListArchiveFilesRequest &req, IEspWUListArchiveFilesResponse &resp);
     bool onWUGetArchiveFile(IEspContext &context, IEspWUGetArchiveFileRequest &req, IEspWUGetArchiveFileResponse &resp);
+    bool onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefinitionActionRequest &req, IEspWUEclDefinitionActionResponse &resp);
 private:
     void addProcessLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, const char* path);
     void addThorSlaveLogfile(Owned<IConstWorkUnit> &cwu,WsWuInfo& winfo, const char* path);
@@ -292,6 +293,19 @@ private:
     void readWUFile(const char *wuid, WsWuInfo &winfo, IConstWUFileOption &item, bool forDownload, MemoryBuffer &mb, StringBuffer &fileName, StringBuffer &fileMimeType);
     void zipAFolderToMB(const char *folderToZIP, const char *zipFileName, bool gzip, MemoryBuffer &mb);
     void setAttachmentFileName(IEspContext &context, const char *fileName);
+    void checkEclDefinitionSyntax(IEspContext &context, const char *target, const char *eclDefinition,
+        int msToWait, IArrayOf<IConstWUEclDefinitionActionResult> &results);
+    bool deployEclDefinition(IEspContext &context, const char *target, const char *name, int msToWait, StringBuffer &wuid, StringBuffer &result);
+    void deployEclDefinition(IEspContext &context, const char *target, const char *eclDefinition, int msToWait, IArrayOf<IConstWUEclDefinitionActionResult> &results);
+    void publishEclDefinition(IEspContext &context, const char *target, const char* eclDefinition, int msToWait, IEspWUEclDefinitionActionRequest &req,
+        IArrayOf<IConstWUEclDefinitionActionResult> &results);
+    const char* gatherQueryFileCopyErrors(IArrayOf<IConstLogicalFileError> &errors, StringBuffer &msg);
+    bool readDeployWUResponse(CWUDeployWorkunitResponse* deployResponse, StringBuffer &wuid, StringBuffer &result);
+    const char* gatherExceptionMessage(const IMultiException &me, StringBuffer &exceptionMsg);
+    const char* gatherWUException(IConstWUExceptionIterator &it, StringBuffer &exceptionMsg);
+    const char* gatherECLException(IArrayOf<IConstECLException> &exceptions, StringBuffer &exceptionMsg);
+    void addEclDefinitionActionResult(const char *eclDefinition, const char *result, const char* strAction, bool logResult,
+        IArrayOf<IConstWUEclDefinitionActionResult> &results);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;

@@ -27,6 +27,7 @@
 #include "eclcmd.hpp"
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
+#include "workunit.hpp"
 
 #define INIFILE "ecl.ini"
 #define SYSTEMCONFDIR CONFIG_DIR
