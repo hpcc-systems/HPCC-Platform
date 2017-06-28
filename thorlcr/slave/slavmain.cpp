@@ -435,9 +435,6 @@ public:
 
                             jobChannel.addDependencies(job->queryXGMML(), false);
                         }
-                        msg.clear();
-                        msg.append(false);
-                        queryNodeComm().reply(msg); // reply to sendGraph()
 
                         for (unsigned c=0; c<job->queryJobChannels(); c++)
                         {
@@ -446,6 +443,8 @@ public:
 
                             jobChannel.startGraph(*subGraph, true, 0, NULL);
                         }
+                        msg.clear();
+                        msg.append(false);
 
                         break;
                     }
