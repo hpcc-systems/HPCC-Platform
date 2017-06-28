@@ -23,11 +23,10 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/WsESDLConfig",
     "hpcc/ESPUtil",
-    "hpcc/ECLSourceWidget",
-    
+    "hpcc/DynamicESDLDefinitionDetailsWidget",
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
-                GridDetailsWidget, WsESDLConfig, ESPUtil, ECLSourceWidget) {
+                GridDetailsWidget, WsESDLConfig, ESPUtil, DynamicESDLDefinitionDetailsWidget) {
     return declare("DynamicESDLWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -37,7 +36,6 @@ define([
         init: function (params) {
             var context = this;
             if (this.inherited(arguments))
-                return;
 
             this._refreshActionState();
             this.refreshGrid();
@@ -47,8 +45,8 @@ define([
         postCreate: function (args) {
             var context = this;
             this.inherited(arguments);
-            this.definitionWidget = new ECLSourceWidget({
-                id: this.id + "DefinitionDetails",
+            this.definitionWidget = new DynamicESDLDefinitionDetailsWidget({
+                id: this.id + "_DefinitionDetails",
                 region: "right",
                 splitter: true,
                 style: "width: 80%",
@@ -70,17 +68,8 @@ define([
             retVal.on("dgrid-select", function (evt) {
                 var selection = context.grid.getSelected();
                 if (selection) {
-                    WsESDLConfig.GetESDLDefinition({
-                        request: {
-                            Id: selection[0].Name
-                        }
-                    }).then(function (response) {
-                        var xml = context.formatXml(response.GetESDLDefinitionResponse.XMLDefinition);
-                        context.definitionWidget.init({
-                            sourceMode: "xml",
-                            readOnly: true
-                        });
-                        context.definitionWidget.setText(xml);
+                    context.definitionWidget.init({
+                        Id: selection[0].Name
                     });
                 }
             });
@@ -100,6 +89,7 @@ define([
                 if (lang.exists("ListESDLDefinitionsResponse.Definitions.Definition", response)) {
                     arrayUtil.forEach(response.ListESDLDefinitionsResponse.Definitions.Definition, function (item, idx) {
                         var Def = {
+                            Id: idx,
                             Name: item.Id
                         }
                         results.push(Def);
@@ -107,6 +97,8 @@ define([
                 }
                 context.store.setData(results);
                 context.grid.refresh();
+                var firstRowSelection = context.store.query({Id: 0});
+                context.grid.select({Name:firstRowSelection[0].Name});
             });
         }
     });
