@@ -37,6 +37,7 @@
 
 #define MPPORT       0
 #define WATCHDOGPORT 1
+#define DEBUGPORT 2
 
 static CriticalSection *portallocsection;
 static IBitSet *portmap;
@@ -46,6 +47,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     portmap = createThreadSafeBitSet();
     portmap->set(MPPORT, true);
     portmap->set(WATCHDOGPORT, true);
+    portmap->set(DEBUGPORT, true);
     return true;
 }
 MODULE_EXIT()
@@ -77,6 +79,8 @@ unsigned short getExternalFixedPort(unsigned short masterBase, unsigned short ma
         return machineBase+WATCHDOGPORT;
     case TPORT_mp:
         return machineBase+MPPORT; 
+    case TPORT_debug:
+        return machineBase+DEBUGPORT;
     }
     LOG(MCerror,unknownJob,"getFixedPort: Unknown Port Kind!");
     return 0;

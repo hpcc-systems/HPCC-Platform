@@ -78,7 +78,8 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
     public:
         CThorDebugListener(CJobManager &_mgr) : threaded("CThorDebugListener", this), mgr(_mgr)
         {
-            port = globals->getPropInt("DebugPort", THOR_DEBUG_PORT);
+            unsigned defaultThorDebugPort = getFixedPort(getMasterPortBase(), TPORT_debug);
+            port = globals->getPropInt("DebugPort", defaultThorDebugPort);
             running = true;
             threaded.start();
         }
