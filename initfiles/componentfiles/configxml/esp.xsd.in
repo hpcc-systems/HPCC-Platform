@@ -408,7 +408,7 @@
 	                </xs:appinfo>
 	              </xs:annotation>
 	            </xs:attribute>
-	            <xs:attribute name="resourceURL" type="xs:string" use="optional" default="/favicon.ico,/esp/files/img/favicon.ico,/esp/files/eclwatch/img/Loginlogo.png,/esp/files/dojo/*,/esp/files/eclwatch/nls/*">
+	            <xs:attribute name="resourceURL" type="xs:string" use="optional" default="/favicon.ico,/esp/files/*">
 	              <xs:annotation>
 	                <xs:appinfo>
 	                  <width>50</width>
