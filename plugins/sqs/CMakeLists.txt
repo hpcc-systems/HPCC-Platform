@@ -13,6 +13,7 @@ if(SQS)
         aws-sdk-cpp
         SOURCE_DIR ${AWS_SDK_CPP_SOURCE_DIR}
         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp
+        CMAKE_ARGS -DCUSTOM_MEMORY_MANAGEMENT:string=0
         BUILD_COMMAND $(MAKE) LDFLAGS=-Wl,-rpath-link,${LIB_PATH} aws-cpp-sdk-sqs
         INSTALL_COMMAND "")
     add_library(aws-cpp-sdk-core SHARED IMPORTED)
