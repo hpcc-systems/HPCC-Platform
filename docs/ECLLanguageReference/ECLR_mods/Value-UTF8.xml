@@ -21,6 +21,8 @@
   while casting to any other type will first implicitly cast to STRING and
   then cast to the target value type.</para>
 
+  <para>The upper size limit for any UTF8 value is 4GB.</para>
+
   <para>Example:</para>
 
   <programlisting>utf8 FirstName := U'Noël'

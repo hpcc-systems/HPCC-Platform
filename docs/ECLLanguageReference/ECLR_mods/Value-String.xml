@@ -27,6 +27,8 @@
   the programmer is assumed to have supplied the correct hexadecimal EBCDIC
   value.</para>
 
+  <para>The upper size limit for any STRING value is 4GB.</para>
+
   <para>Example:</para>
 
   <programlisting>STRING1 MyString := IF(SomeAttribute &gt; 10,'1','0');

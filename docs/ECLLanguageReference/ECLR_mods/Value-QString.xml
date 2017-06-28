@@ -23,6 +23,8 @@
   to the size needed to contain the result of a cast or passed parameter. You
   may use set indexing into any QSTRING to parse out a substring.</para>
 
+  <para>The upper size limit for any QSTRING value is 4GB.</para>
+
   <para>Example:</para>
 
   <programlisting>QSTRING12 CompanyName := 'LEXISNEXIS';
