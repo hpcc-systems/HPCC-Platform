@@ -221,6 +221,7 @@ public:
     virtual IError * cloneSetSeverity(ErrorSeverity _severity) const = 0;
     virtual unsigned getActivity() const = 0;
     virtual const char * queryScope() const = 0;
+    virtual IPropertyTree * toTree() const = 0;
 };
 
 inline bool isError(IError * error) { return isError(error->getSeverity()); }
@@ -228,6 +229,7 @@ inline bool isFatal(IError * error) { return isFatal(error->getSeverity()); }
 
 extern jlib_decl IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0, unsigned activity = 0, const char * scope = nullptr);
 extern jlib_decl IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, unsigned activity, const char * scope);
+extern jlib_decl IError *createError(IPropertyTree * tree);
 
 #endif
 

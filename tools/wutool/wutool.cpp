@@ -786,7 +786,7 @@ protected:
                 );
         StringBuffer xml1, xml2, xml3;
         exportWorkUnitToXML(embeddedWU, xml1, false, false, false);
-        queryExtendedWU(createWu)->copyWorkUnit(embeddedWU, true);
+        queryExtendedWU(createWu)->copyWorkUnit(embeddedWU, true, true);
         createWu->setState(WUStateCompleted);
         exportWorkUnitToXML(createWu, xml2, false, false, false);
         createWu->commit();

@@ -1386,8 +1386,8 @@ public:
             { c->requestAbort(); }
     virtual unsigned calculateHash(unsigned prevHash)
             { return queryExtendedWU(c)->calculateHash(prevHash); }
-    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all)
-            { queryExtendedWU(c)->copyWorkUnit(cached, all); }
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool all)
+            { queryExtendedWU(c)->copyWorkUnit(cached, copyStats, all); }
     virtual IPropertyTree *queryPTree() const
             { return queryExtendedWU(c)->queryPTree(); }
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const
@@ -5341,7 +5341,7 @@ IPropertyTree *CLocalWorkUnit::queryPTree() const
     return p;
 }
 
-void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
+void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool all)
 {
     CLocalWorkUnit *from = QUERYINTERFACE(cached, CLocalWorkUnit);
     if (!from)
@@ -5395,10 +5395,8 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     copyTree(p, fromP, "Graphs");
     copyTree(p, fromP, "Workflow");
     copyTree(p, fromP, "WebServicesInfo");
-    if (all)
+    if (copyStats)
     {
-        // 'all' mode is used when setting up a dali WU from the embedded wu in a workunit dll
-
         // Merge timing info from both branches
         pt = fromP->getBranch("Statistics");
         if (pt)
@@ -5955,7 +5953,7 @@ IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(const IStatisticsFilter
     CriticalBlock block(crit);
     statistics.loadBranch(p,"Statistics");
     Owned<IConstWUStatisticIterator> localStats = new WorkUnitStatisticsIterator(statistics, 0, (IConstWorkUnit *) this, filter);
-    if (!filter->recurseChildScopes(SSTgraph, nullptr))
+    if (filter && !filter->recurseChildScopes(SSTgraph, nullptr))
         return *localStats.getClear();
 
     const char * wuid = p->queryName();
@@ -10797,4 +10795,44 @@ extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool r
         return conn->getRoot();
     else
         return NULL;
+}
+
+void addWorkunitException(IWorkUnit * wu, IError * error, bool removeTimeStamp)
+{
+    ErrorSeverity wuSeverity = SeverityInformation;
+    ErrorSeverity severity = error->getSeverity();
+
+    switch (severity)
+    {
+    case SeverityIgnore:
+        return;
+    case SeverityInformation:
+        break;
+    case SeverityWarning:
+        wuSeverity = SeverityWarning;
+        break;
+    case SeverityError:
+    case SeverityFatal:
+        wuSeverity = SeverityError;
+        break;
+    }
+
+    Owned<IWUException> exception = wu->createException();
+    exception->setSeverity(wuSeverity);
+
+    StringBuffer msg;
+    exception->setExceptionCode(error->errorCode());
+    exception->setExceptionMessage(error->errorMessage(msg).str());
+    exception->setExceptionSource(queryStatisticsComponentName());
+
+    exception->setExceptionFileName(error->getFilename());
+    exception->setExceptionLineNo(error->getLine());
+    exception->setExceptionColumn(error->getColumn());
+    if (removeTimeStamp)
+        exception->setTimeStamp(nullptr);
+
+    if (error->getActivity())
+        exception->setActivityId(error->getActivity());
+    if (error->queryScope())
+        exception->setScope(error->queryScope());
 }

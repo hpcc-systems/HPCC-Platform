@@ -537,6 +537,7 @@ bool HqlDllGenerator::abortRequested()
 bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
 {
     cycle_t startCycles = get_cycles_now();
+    addTimeStamp(wu, SSTcompilestage, "compile:compile c++", StWhenStarted);
     ForEachItemIn(i, sourceFiles)
         compiler->addSourceFile(sourceFiles.item(i));
 
@@ -596,9 +597,8 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
             errs->report(&cur);
     }
 
-    cycle_t elapsedCycles = get_cycles_now() - startCycles;
-    //For eclcc the workunit has been written to the resource - so any further timings will not be preserved -> need to report differently
-    queryActiveTimer()->addTiming("compile:compile c++", elapsedCycles);
+    unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
+    updateWorkunitTimeStat(wu, SSTcompilestage, "compile:compile c++", StTimeElapsed, NULL, elapsed);
 
     //Keep the files if there was a compile error.
     if (ok && deleteGenerated)

@@ -769,7 +769,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                     Owned<IConstWorkUnit> src(factory->openWorkUnit(wuid.str()));
                     NewWsWorkunit wu(factory, context);
                     wuid.set(wu->queryWuid());
-                    queryExtendedWU(wu)->copyWorkUnit(src, false);
+                    queryExtendedWU(wu)->copyWorkUnit(src, false, false);
 
                     SCMStringBuffer token;
                     wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
@@ -4311,7 +4311,7 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
     if (getWorkunitXMLFromFile(dllpath.str(), dllXML))
     {
         Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(dllXML.str());
-        queryExtendedWU(wu)->copyWorkUnit(embeddedWU, true);
+        queryExtendedWU(wu)->copyWorkUnit(embeddedWU, true, true);
     }
 
     wu.associateDll(dllpath.str(), dllname.str());

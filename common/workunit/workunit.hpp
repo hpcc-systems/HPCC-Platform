@@ -1343,7 +1343,7 @@ interface IWorkflowScheduleConnection : extends IInterface
 interface IExtendedWUInterface
 {
     virtual unsigned calculateHash(unsigned prevHash) = 0;
-    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all) = 0;
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool all) = 0;
     virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned,bool exportAssociatedFiles) = 0;
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const = 0;
     virtual IPropertyTree *queryPTree() const = 0;
@@ -1521,6 +1521,7 @@ extern WORKUNIT_API WUAction getWorkunitAction(const char * actionStr);
 
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind);
 extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool readonly);
+extern WORKUNIT_API void addWorkunitException(IWorkUnit * wu, IError * error, bool removeTimeStamp);
 
 inline bool isGlobalScope(const char * scope) { return scope && (streq(scope, GLOBAL_SCOPE) || streq(scope, LEGACY_GLOBAL_SCOPE)); }
 

@@ -17,6 +17,7 @@
 #include "jliball.hpp"
 #include "hqlwuerr.hpp"
 
+
 static void formatError(StringBuffer & out, int errNo, const char *msg, IIdAtom * modulename, IIdAtom * attributename, int lineno, int column)
 {
     out.append(str(modulename));
@@ -31,18 +32,6 @@ static void formatError(StringBuffer & out, int errNo, const char *msg, IIdAtom 
 }
 
 
-void WorkUnitErrorReceiver::initializeError(IWUException * exception, int errNo, const char *msg, const char *filename, int lineno, int column, int pos)
-{
-    exception->setExceptionCode(errNo);
-    exception->setExceptionMessage(msg);
-    exception->setExceptionSource(component);
-
-    exception->setExceptionFileName(filename);
-    exception->setExceptionLineNo(lineno);
-    exception->setExceptionColumn(column);
-    exception->setTimeStamp(NULL);
-}
-
 IError * WorkUnitErrorReceiver::mapError(IError * error)
 {
     return LINK(error);
@@ -50,34 +39,7 @@ IError * WorkUnitErrorReceiver::mapError(IError * error)
 
 void WorkUnitErrorReceiver::report(IError* eclError)
 {
-    ErrorSeverity wuSeverity = SeverityInformation;
-    ErrorSeverity severity = eclError->getSeverity();
-
-    switch (severity)
-    {
-    case SeverityIgnore:
-        return;
-    case SeverityInformation:
-        break;
-    case SeverityWarning:
-        wuSeverity = SeverityWarning;
-        break;
-    case SeverityError:
-    case SeverityFatal:
-        wuSeverity = SeverityError;
-        break;
-    }
-
-    Owned<IWUException> exception = wu->createException();
-    exception->setSeverity(wuSeverity);
-
-    StringBuffer msg;
-    initializeError(exception, eclError->errorCode(), eclError->errorMessage(msg).str(), 
-                    eclError->getFilename(), eclError->getLine(), eclError->getColumn(), eclError->getPosition());
-    if (eclError->getActivity())
-        exception->setActivityId(eclError->getActivity());
-    if (eclError->queryScope())
-        exception->setScope(eclError->queryScope());
+    addWorkunitException(wu, eclError, removeTimeStamp);
 }
 
 size32_t WorkUnitErrorReceiver::errCount()
