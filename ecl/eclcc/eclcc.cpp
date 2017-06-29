@@ -1501,13 +1501,10 @@ void EclCC::processFile(EclCompileInstance & instance)
     assertex(curFilename);
     bool inputFromStdIn = streq(curFilename, "stdin:");
     StringBuffer expandedSourceName;
-    if (!inputFromStdIn)
-    {
-        if (!optNoSourcePath)
-            makeAbsolutePath(curFilename, expandedSourceName);
-        else
-            expandedSourceName.append(curFilename);
-    }
+    if (!inputFromStdIn && !optNoSourcePath)
+        makeAbsolutePath(curFilename, expandedSourceName);
+    else
+        expandedSourceName.append(curFilename);
 
     Owned<ISourcePath> sourcePath = (optNoSourcePath||inputFromStdIn) ? NULL : createSourcePath(expandedSourceName);
     Owned<IFileContents> queryText = createFileContentsFromFile(expandedSourceName, sourcePath, false, NULL);
