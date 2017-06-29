@@ -585,6 +585,7 @@ int main(int argc,char **argv)
             unsigned throttleSlowDelayMs;
             unsigned throttleSlowCPULimit;
             unsigned sslport;
+            StringBuffer secMethod;
             
             class cpollthread: public Thread
             {
@@ -609,12 +610,12 @@ int main(int argc,char **argv)
                         unsigned _maxThreads, unsigned _maxThreadsDelayMs, unsigned _maxAsyncCopy,
                         unsigned _parallelRequestLimit, unsigned _throttleDelayMs, unsigned _throttleCPULimit,
                         unsigned _parallelSlowRequestLimit, unsigned _throttleSlowDelayMs, unsigned _throttleSlowCPULimit,
-                        unsigned _sslport)
+                        unsigned _sslport, const char * _secMethod)
             : connectMethod(_connectMethod), listenep(_listenep), pollthread(this),
                   maxThreads(_maxThreads), maxThreadsDelayMs(_maxThreadsDelayMs), maxAsyncCopy(_maxAsyncCopy),
                   parallelRequestLimit(_parallelRequestLimit), throttleDelayMs(_throttleDelayMs), throttleCPULimit(_throttleCPULimit),
                   parallelSlowRequestLimit(_parallelSlowRequestLimit), throttleSlowDelayMs(_throttleSlowDelayMs), throttleSlowCPULimit(_throttleSlowCPULimit),
-                  sslport(_sslport)
+                  sslport(_sslport), secMethod(_secMethod)
             {
                 stopped = false;
                 started = false;
@@ -714,7 +715,7 @@ int main(int argc,char **argv)
         } service(connectMethod, listenep,
                 maxThreads, maxThreadsDelayMs, maxAsyncCopy,
                 parallelRequestLimit, throttleDelayMs, throttleCPULimit,
-                parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit, sslport);
+                parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit, sslport, secMethod);
         service.start();
         return 0;
 #else
