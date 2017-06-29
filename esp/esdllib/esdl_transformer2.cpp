@@ -164,7 +164,7 @@ void Esdl2LocalContext::handleDataFor(IXmlWriterExt & writer)
             {
                 IMapping& et = it.query();
                 auto val = m_dataFor->mapToValue(&et)->get();
-                writer.outputUtf8(rtlUtf8Length(strlen(val),val),val, "@xsi:schemaLocation");
+                writer.outputInline(val);
             }
         }
     }
@@ -1111,8 +1111,9 @@ void Esdl2Struct::process(Esdl2TransformerContext &ctx, const char *out_name, Es
                                 if (ctx.writer->length() > len)
                                 {
                                     ESDL_DBG("Taking out data for DataFor '%s' from out buffer", chd.queryDataFor()->queryName());
-                                    local.setDataFor(chd.queryDataFor()->queryName(), ctx.writer->str()+len);
-                                    ctx.writer->rewindTo(location);
+                                    StringBuffer databuf;
+                                    ctx.writer->cutFrom(location, databuf);
+                                    local.setDataFor(chd.queryDataFor()->queryName(), databuf.str());
                                     if (esdlListItemCount == 1)
                                     {// Not call outputEndArray()
                                         esdlListName.clear();

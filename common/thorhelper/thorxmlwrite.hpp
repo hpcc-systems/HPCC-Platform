@@ -40,7 +40,9 @@ interface IXmlWriterExt : extends IXmlWriter
     virtual const char *str() const = 0;
     virtual IInterface *saveLocation() const = 0;
     virtual void rewindTo(IInterface *location) = 0;
+    virtual void cutFrom(IInterface *location, StringBuffer& databuf) = 0;
     virtual void outputNumericString(const char *field, const char *fieldname) = 0;
+    virtual void outputInline(const char* text) = 0;
 };
 
 class thorhelper_decl CommonXmlPosition : public CInterface, implements IInterface
@@ -71,6 +73,7 @@ public:
     void outputEndNested(const char *fieldname, bool doIndent);
 
     virtual void outputInlineXml(const char *text){closeTag(); out.append(text); flush(false);} //for appending raw xml content
+    virtual void outputInline(const char* text) { outputInlineXml(text); }
     virtual void outputQuoted(const char *text);
     virtual void outputQString(unsigned len, const char *field, const char *fieldname);
     virtual void outputString(unsigned len, const char *field, const char *fieldname);
@@ -119,6 +122,7 @@ public:
             nestLimit = position->nestLimit;
         }
     }
+    virtual void cutFrom(IInterface *location, StringBuffer& databuf);
 
     virtual void outputNumericString(const char *field, const char *fieldname)
     {
@@ -159,6 +163,7 @@ public:
         if (text && *text)
             outputUtf8(strlen(text), text, "xml");
     }
+    virtual void outputInline(const char* text) { out.append(text); }
     virtual void outputQuoted(const char *text);
     virtual void outputQString(unsigned len, const char *field, const char *fieldname);
     virtual void outputString(unsigned len, const char *field, const char *fieldname);
@@ -209,6 +214,7 @@ public:
             nestLimit = position->nestLimit;
         }
     }
+    virtual void cutFrom(IInterface *location, StringBuffer& databuf);
 
     void outputBeginRoot(){out.append('{');}
     void outputEndRoot(){out.append('}');}
@@ -315,6 +321,7 @@ public:
     virtual void outputUInt(unsigned __int64 field, unsigned size, const char *fieldname);
 
     void newline();
+
 protected:
     StringBuffer out;
 };
@@ -517,6 +524,7 @@ public:
     virtual unsigned length() const { return out.length(); }
     virtual const char* str() const { return out.str(); }
     virtual void rewindTo(IInterface* location) { };
+    virtual void cutFrom(IInterface *location, StringBuffer& databuf) { };
     virtual IInterface* saveLocation() const
     {
         if (flusher)
@@ -555,6 +563,7 @@ public:
         //if (text && *text)
           //outputUtf8(strlen(text), text, "xml");
     };
+    virtual void outputInline(const char* text) { out.append(text); }
 
     //IXmlWriterExt
     virtual void outputNumericString(const char* field, const char* fieldName);
