@@ -103,7 +103,6 @@ public:
 protected:
     StringBuffer m_QueueLabel;
     StringBuffer m_MonitorQueueLabel;
-    StringBuffer m_RootFolder;
     Schedule m_sched;
     Owned<IPropertyTree> directories;
 
