@@ -1540,14 +1540,16 @@ void CheckEspProperty()
 {
     if(!CurParam)
         return;
-    StringBuffer errmsg;
-    bool hasDup = CurParam->checkDup(errmsg, CurEspMessage->getParams());
+    StringArray ErrMsgs;
+    bool hasDup = CurParam->checkDup(ErrMsgs, CurEspMessage->getParams());
     if(hasDup)
     {
-        errnum = 11;
-        yyerror(errmsg.str());
-
-        throw MakeStringException(-1, "%s contains duplicate properties: %s", CurEspMessage->getName(), errmsg.str());
+        ForEachItemIn(i, ErrMsgs)
+        {
+            errnum = 11;
+            VStringBuffer ErrMsg("Warning: %s", ErrMsgs.item(i));
+            yyerror(ErrMsg.str());
+        }
     }
 }
 

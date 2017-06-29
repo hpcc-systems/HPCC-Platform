@@ -8220,7 +8220,8 @@ simpleDataSet
                             IHqlExpression *join = createDataset(no_join, left, createComma(right, cond, createComma(transform.getClear(), flags.getClear(), $12.getExpr())));
 
                             bool isLocal = join->hasAttribute(localAtom);
-                            parser->checkDistribution($3, left, isLocal, true);
+                            if (!join->hasAttribute(lookupAtom) && !isKeyedJoin(join))
+                                parser->checkDistribution($3, left, isLocal, true);
                             parser->checkDistribution($5, right, isLocal, true);
                             parser->checkJoinFlags($1, join);
                             parser->checkOnFailRecord(join, $1);

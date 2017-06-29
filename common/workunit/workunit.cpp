@@ -4768,7 +4768,7 @@ extern WORKUNIT_API void getDFUServerQueueNames(StringArray &ret, const char *pr
     {
         IPropertyTree &target = targets->query();
         if (target.hasProp("@queue"))
-            ret.appendUniq(target.queryProp("@queue"));
+            ret.appendListUniq(target.queryProp("@queue"), ",");
     }
     return;
 }

@@ -3266,7 +3266,6 @@ const void * CHThorAggregateActivity::nextRow()
 {
     if (eof)
         return NULL;
-    unsigned count = 0;
     const void * next = input->nextRow();
     if (!next && input->isGrouped())
     {
@@ -3300,7 +3299,7 @@ const void * CHThorAggregateActivity::nextRow()
     if (!input->isGrouped())        // either read all, or aborted early
         eof = true;
     
-    count++;
+    processed++;
     size32_t finalSize = outputMeta.getRecordSize(rowBuilder.getSelf());
     return rowBuilder.finalizeRowClear(finalSize);
 }

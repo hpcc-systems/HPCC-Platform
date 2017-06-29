@@ -24,6 +24,8 @@
   role="bold">Working with BLOBs</emphasis> for more information on this
   subject.</para>
 
+  <para>The upper size limit for any DATA value is 4GB.</para>
+
   <para>Example:</para>
 
   <programlisting>DATA8 MyHexString := x'1234567890ABCDEF'; 

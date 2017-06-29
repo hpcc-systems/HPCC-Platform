@@ -23,6 +23,8 @@
   casting to any other type will first implicitly cast to STRING and then cast
   to the target value type.</para>
 
+  <para>The upper size limit for any VARUNICODE value is 4GB.</para>
+
   <para>Example:</para>
 
   <programlisting>VARUNICODE16 MyUNIString := U'1234567890ABCDEF';

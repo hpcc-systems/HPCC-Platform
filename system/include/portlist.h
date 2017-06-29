@@ -95,8 +95,8 @@
 #define CCD_SNIFFER_PORT                9003
 
 #define ROXIE_SERVER_PORT               9876
+#define ROXIE_SSL_SERVER_PORT           19876
 
-#define THOR_DEBUG_PORT                 16000
 #define HTHOR_DEBUG_BASE_PORT           17000
 #define HTHOR_DEBUG_PORT_RANGE          10
 

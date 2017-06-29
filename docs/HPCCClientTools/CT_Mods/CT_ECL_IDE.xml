@@ -428,12 +428,14 @@
           </informaltable>
         </sect3>
 
-        <sect3 id="CT_ECLIDE_ColorsTab">
+        <sect3 id="CT_ECLIDE_ColorsTab" role="brk">
           <title>Colors tab</title>
 
           <para>The <emphasis role="bold">Colors tab</emphasis> allows you to
           configure the text, foreground and background colors to your
-          preference.</para>
+          preference. There are several predefined color schemes or you can
+          also choose to customize the color scheme to your preference.
+          <graphic fileref="../../images/CT04.jpg" vendor="IDE-SS" /></para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -445,8 +447,11 @@
                 <row>
                   <entry><emphasis role="bold">Element</emphasis></entry>
 
-                  <entry>Specify the Element the formatting should be applied
-                  to. The drop list shows all available elements.</entry>
+                  <entry>There are two Element fields. The one on the left
+                  allows you to choose one of the supported file types, such
+                  as ECL, ESDL, SALT, KEL, etc. To the right, you can choose
+                  the element to customize in the selected file type, such as
+                  comment, string, operator, etc.</entry>
                 </row>
 
                 <row>
@@ -916,10 +921,12 @@
         <sect3 id="CT_ECLIDE_RepositoryToolbox" role="brk">
           <title>Repository Toolbox</title>
 
-          <para>This toolbox displays the ECL Folders for the current
-          configuration. ECL files are organized by folders displayed in a
+          <para>This toolbox displays the Files and Folders for the current
+          configuration. The files are organized by folders displayed in a
           tree format. Expand any folder branch to see the ECL files within
-          it.</para>
+          it. The IDE supports other languages in addition to ECL, namely
+          ESDL, KEL, SALT, and others. To help differentiate the files are
+          color coded according to the type of file they are. </para>
 
           <para><graphic fileref="../../images/CT12.jpg" /></para>
 

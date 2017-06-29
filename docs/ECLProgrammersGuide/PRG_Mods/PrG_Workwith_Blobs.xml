@@ -43,7 +43,7 @@
     <emphasis>filename</emphasis> and <emphasis>filesize</emphasis>
     (FILENAME,FILESIZE) options if you need to be able to despray the contents
     of each record in the <emphasis>dstname</emphasis> back to the multiple
-    source files they originally came from. </para>
+    source files they originally came from.</para>
   </sect2>
 
   <sect2 id="Working_with_BLOB_Data">
@@ -75,6 +75,8 @@ imageData := DATASET('LE::imagedb',imageRecord,FLAT);
     value type. In that case, the first four bytes of the field would still
     contain an integer value specifying the number of bytes in the original
     file, followed by the XML data from the file.</para>
+
+    <para>The upper size limit for any STRING or DATA value is 4GB. </para>
 
     <para>The addition of the RecPos field (a standard ECL “record pointer”
     field) allows us to create an INDEX, like this:</para>

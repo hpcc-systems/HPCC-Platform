@@ -1146,6 +1146,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         HqlParseContext parseCtx(instance.dataServer, this, instance.archive);
         if (optFastSyntax)
             parseCtx.setFastSyntax();
+        unsigned maxErrorsDebugOption = instance.wu->getDebugValueInt("maxErrors", 0);
+        if (maxErrorsDebugOption != 0)
+            parseCtx.maxErrors = maxErrorsDebugOption;
         if (optMaxErrors > 0)
             parseCtx.maxErrors = optMaxErrors;
         parseCtx.unsuppressImmediateSyntaxErrors = optUnsuppressImmediateSyntaxErrors;

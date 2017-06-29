@@ -851,7 +851,7 @@ int main(int argc, char **argv)
     }
 
     StringAttr ip;
-    unsigned socketPort = ROXIE_SERVER_PORT;
+    unsigned socketPort = (useSSL) ? ROXIE_SSL_SERVER_PORT : ROXIE_SERVER_PORT;
     SplitIpPort(ip, socketPort, argv[1]);
 
     int ret = 0;

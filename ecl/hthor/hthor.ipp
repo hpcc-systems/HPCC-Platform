@@ -890,7 +890,7 @@ public:
 class CHThorAggregateActivity : public CHThorSimpleActivityBase
 {
     IHThorAggregateArg &helper;
-    bool eof;
+    bool eof = false;
 public:
     CHThorAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorAggregateArg &_arg, ThorActivityKind _kind);
 

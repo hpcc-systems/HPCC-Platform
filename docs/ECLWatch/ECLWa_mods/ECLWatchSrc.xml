@@ -1510,6 +1510,11 @@
             </listitem>
 
             <listitem>
+              <para>Select the <emphasis role="bold">Superfiles</emphasis> tab
+              (when enabled) to display the super file information. </para>
+            </listitem>
+
+            <listitem>
               <para>Select the<emphasis role="bold"> File Parts</emphasis> tab
               to view information about the various file parts.</para>
             </listitem>
@@ -1517,6 +1522,12 @@
             <listitem>
               <para>Select the <emphasis role="bold">Queries</emphasis> tab to
               see which queries use use which logical files.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">Graphs</emphasis> tab
+              (when enabled) to display any graphs associated with the file.
+              </para>
             </listitem>
 
             <listitem>
@@ -1529,7 +1540,7 @@
             <listitem>
               <para>Select the <emphasis role="bold">History</emphasis> tab to
               display a list of DFU Actions taken such as copy, remote copy,
-              spray, etc. for the file. </para>
+              spray, etc. for the file.</para>
             </listitem>
           </itemizedlist>On the File Details Summary tab, you can perform some
         actions on the selected file.</para>

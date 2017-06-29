@@ -17,10 +17,14 @@
   parameter. You may use set indexing into any string to parse out a
   substring.</para>
 
+  <para>The upper size limit for any VARSTRING value is 4GB.</para>
+
   <para>Example:</para>
 
   <programlisting>VARSTRING3 MyString := 'ABC';
        // declares MyString a 3-byte null-terminated string</programlisting>
 
-  <para>See Also: <link linkend="LENGTH">LENGTH</link>, <link linkend="TRIM">TRIM</link>, <link linkend="Set_Ordering_and_Indexing">Set Ordering and Indexing</link></para>
+  <para>See Also: <link linkend="LENGTH">LENGTH</link>, <link
+  linkend="TRIM">TRIM</link>, <link linkend="Set_Ordering_and_Indexing">Set
+  Ordering and Indexing</link></para>
 </sect1>
