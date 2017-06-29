@@ -23,7 +23,7 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/WsESDLConfig",
     "hpcc/ESPUtil",
-    "hpcc/DynamicESDLDefinitionDetailsWidget",
+    "hpcc/DynamicESDLDefinitionDetailsWidget"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
                 GridDetailsWidget, WsESDLConfig, ESPUtil, DynamicESDLDefinitionDetailsWidget) {
