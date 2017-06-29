@@ -43,6 +43,7 @@
 #include "rtlfield_imp.hpp"
 #include "roxiemem.hpp"
 
+#include <vector>
 
 namespace couchbaseembed
 {
@@ -215,12 +216,37 @@ namespace couchbaseembed
         CouchbaseConnection(const CouchbaseConnection &);
     };
 
+    struct PathTracker
+    {
+        StringBuffer    nodeName;
+        bool            isDataset;
+        unsigned int    currentDatasetRecord;
+        unsigned int    childDatasetRowCount;
+        unsigned int    childDatasetRowsProcessed;
+
+        // Simple constructor
+        PathTracker()
+        {}
+
+        // Constructor given node name and dataset bool
+        PathTracker(const StringBuffer& _nodeName, bool _isDataset)
+            :   nodeName(_nodeName), isDataset(_isDataset), currentDatasetRecord(0), childDatasetRowCount(0), childDatasetRowsProcessed(0)
+        {}
+
+        // Copy constructor
+        PathTracker(const PathTracker& other)
+            :   nodeName(other.nodeName), isDataset(other.isDataset), currentDatasetRecord(other.currentDatasetRecord), childDatasetRowCount(other.childDatasetRowCount), childDatasetRowsProcessed(other.childDatasetRowsProcessed)
+        {}
+    };
+
     class CouchbaseRowBuilder : public CInterfaceOf<IFieldSource>
     {
     public:
-        CouchbaseRowBuilder(IPropertyTree * resultrow) :  m_fieldsProcessedCount(0), m_rowFieldCount(0)
+        CouchbaseRowBuilder(IPropertyTree * resultrow)
         {
             m_oResultRow.set(resultrow);
+            if (!m_oResultRow)
+                failx("Missing result row data");
         }
 
         virtual bool getBooleanResult(const RtlFieldInfo *field);
@@ -253,12 +279,12 @@ namespace couchbaseembed
 
     protected:
         const char * nextField(const RtlFieldInfo * field);
+        const char * xpathOrName(const RtlFieldInfo * field) const;
+        void constructNewXPath(StringBuffer& outXPath, const char * nextNode) const;
     private:
         TokenDeserializer m_tokenDeserializer;
         Owned<IPropertyTree> m_oResultRow;
-        Owned<IPropertyTree> m_oNestedField;
-        int m_fieldsProcessedCount;
-        int m_rowFieldCount;
+        std::vector<PathTracker> m_pathStack;
     };
 
     // Bind Couchbase columns from an ECL record
