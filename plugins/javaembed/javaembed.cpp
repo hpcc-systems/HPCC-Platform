@@ -2382,6 +2382,12 @@ public:
     virtual void outputXmlns(const char *name, const char *uri)
     {
     }
+    virtual void cutFrom(IInterface *location, StringBuffer& databuf)
+    {
+    }
+    virtual void outputInline(const char* text)
+    {
+    }
 
 public:
     JNIEnv *JNIenv;
