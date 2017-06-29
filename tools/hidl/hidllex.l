@@ -8,6 +8,8 @@
 #include "hidlcomp.h"           
 #include "hidlgram.h"
 
+#define register
+
 extern YYSTYPE yylval;
 extern unsigned linenum;
 
