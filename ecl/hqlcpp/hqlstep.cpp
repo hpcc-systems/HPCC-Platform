@@ -828,11 +828,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMerge(BuildCtx & ctx, IHql
     buildInstancePrefix(instance);
 
     IHqlExpression * sortOrder = expr->queryChild(1);
-    instance->startctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
 
     //NOTE: left is used instead of dataset in sort list
-    DatasetReference dsRef(dataset, no_left, querySelSeq(expr));        
-    buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
+    DatasetReference dsRef(dataset, no_left, querySelSeq(expr));
+    StringBuffer compareClassInstance;
+    buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef, compareClassInstance);
+    MemberFunction func(*this, instance->startctx, "virtual ICompare * queryCompare()");
+    func.ctx.addReturnAddressOf(compareClassInstance);
 
     if (expr->hasAttribute(dedupAtom))
         doBuildBoolFunction(instance->classctx, "dedup", true);
@@ -931,8 +933,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 
     //virtual ICompare * queryEqualCompare()
     {
-        buildCompareClass(instance->nestedctx, "equalCompare", equalityList, leftRef);
-        instance->classctx.addQuotedLiteral("virtual ICompare * queryEqualCompare() { return &equalCompare; }");
+        StringBuffer compareClassInstance;
+        buildCompareClass(instance->nestedctx, "equalCompare", equalityList, leftRef, compareClassInstance);
+        MemberFunction func(*this, instance->classctx, "virtual ICompare * queryEqualCompare()");
+        func.ctx.addReturnAddressOf(compareClassInstance);
     }
 
     //virtual ICompareEq * queryExactCompare()
@@ -970,8 +974,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
     //NOTE: left is used instead of dataset in sort list
     //virtual ICompare * queryMergeCompare()
     {
-        buildCompareClass(instance->nestedctx, "mergeCompare", sortOrder, leftRef);
-        instance->classctx.addQuotedLiteral("virtual ICompare * queryMergeCompare() { return &mergeCompare; }");
+        StringBuffer compareClassInstance;
+        buildCompareClass(instance->nestedctx, "mergeCompare", sortOrder, leftRef, compareClassInstance);
+        MemberFunction func(*this, instance->classctx, "virtual ICompare * queryMergeCompare()");
+        func.ctx.addReturnAddressOf(compareClassInstance);
     }
 
     if (createClearRow)

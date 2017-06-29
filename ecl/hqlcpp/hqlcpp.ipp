@@ -790,6 +790,7 @@ struct HqlCppOptions
     bool                addLikelihoodToGraph;
     bool                translateDFSlayouts;
     bool                timeTransforms;
+    bool                useGlobalCompareClass;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1009,6 +1010,7 @@ public:
     inline ErrorSeverityMapper & queryLocalOnWarningMapper() { return *localOnWarnings; }
 
     unsigned getConsistentUID(IHqlExpression * ptr);
+    unsigned getNextGlobalCompareId();
     bool insideOnCreate(BuildCtx & ctx);
     bool insideOnStart(BuildCtx & ctx);
     bool tempRowRequiresFinalize(IHqlExpression * record) const;
@@ -1672,7 +1674,7 @@ public:
 
     void buildActivityFramework(ActivityInstance * instance);
     void buildActivityFramework(ActivityInstance * instance, bool alwaysExecuted);      // called for all actions
-    void buildCompareClass(BuildCtx & ctx, const char * name, IHqlExpression * sortList, const DatasetReference & dataset);
+    void buildCompareClass(BuildCtx & ctx, const char * name, IHqlExpression * sortList, const DatasetReference & dataset, StringBuffer & compareFuncName);
     void buildCompareClass(BuildCtx & ctx, const char * name, IHqlExpression * orderExpr, IHqlExpression * datasetLeft, IHqlExpression * datasetRight, IHqlExpression * selSeq);
     void buildCompareMemberLR(BuildCtx & ctx, const char * name, IHqlExpression * orderExpr, IHqlExpression * datasetLeft, IHqlExpression * datasetRight, IHqlExpression * selSeq);
     void buildCompareMember(BuildCtx & ctx, const char * name, IHqlExpression * cond, const DatasetReference & dataset);
@@ -2019,6 +2021,7 @@ protected:
     unsigned            nextFieldId;
     unsigned            curWfid;
     unsigned            implicitFunctionId = 0;
+    unsigned            nextGlobalCompareId = 1;
     HqlExprArray        internalFunctions;
     HqlExprArray        internalFunctionExternals;
     UniqueSequenceCounter spillSequence;

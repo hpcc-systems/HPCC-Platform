@@ -58,6 +58,48 @@ private:
     bool grouped;
 };
 
+class GlobalCompareClass
+{
+public:
+    GlobalCompareClass(HqlCppTranslator & _translator,
+                       IHqlExpression * sortList,
+                       const DatasetReference & dataset) : translator(_translator)
+    {
+        IHqlExpression *rec = dataset.queryDataset()->queryRecord();
+        searchKey.setown(createAttribute(noSortAtom, LINK(sortList), LINK(rec)));
+    }
+    void createGlobalCompareInstance(BuildCtx & ctx, const char * name)
+    {
+        StringBuffer s, endText;
+        unsigned id = translator.getNextGlobalCompareId();
+        instanceName.set(s.set(name).append(id));
+        className.set(s.set("CCompare").append(id));
+
+        s.set("struct ").append(className).append(" : public ICompare");
+        endText.append(" ").append(instanceName).append(";");
+        ctx.addQuotedCompound(s,endText);
+    }
+    const char * createAccessFunction(BuildCtx & ctx)
+    {
+        StringBuffer temp;
+        translator.createAccessFunctions(temp, ctx,  BuildCtx::NormalPrio, "ICompare", instanceName);
+        temp.append("()");
+        instanceAccessorFuncName.set(temp);
+        return instanceAccessorFuncName;
+    }
+
+    const char * queryInstanceName()          { return instanceName; }
+    const char * queryAccessorFunctionName()  { return instanceAccessorFuncName; };
+    IHqlExpression * getUniqueKey()           { return searchKey.getLink(); }
+private:
+    HqlCppTranslator & translator;
+    HqlExprAttr      searchKey;
+    StringAttr       instanceName;
+    StringAttr       className;
+    StringAttr       instanceAccessorFuncName;
+};
+
+
 //===========================================================================
 
 class SteppingFieldSelection
