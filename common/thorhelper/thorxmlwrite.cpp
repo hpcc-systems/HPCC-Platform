@@ -70,6 +70,30 @@ void CommonXmlWriter::closeTag()
     flush(false);
 }
 
+void CommonXmlWriter::cutFrom(IInterface *location, StringBuffer& databuf)
+{
+    if (flusher)
+        throwUnexpected();
+
+    CommonXmlPosition *position = dynamic_cast<CommonXmlPosition *>(location);
+    if (!position)
+        return;
+    if (position->pos < out.length())
+    {
+        size32_t startInd = position->pos;
+        if(!position->tagClosed && out.charAt(startInd) == '>')
+            startInd += 1;
+        if(!position->nestLimit && startInd < out.length() && out.charAt(startInd) == '\n')
+            startInd += 1;
+        if(startInd < out.length())
+            databuf.append(out.length() - startInd, out.str() + startInd);
+        out.setLength(position->pos);
+        tagClosed = position->tagClosed;
+        indent = position->indent;
+        nestLimit = position->nestLimit;
+    }
+}
+
 void CommonXmlWriter::outputQuoted(const char *text)
 {
     out.append(text);
@@ -594,6 +618,24 @@ void CommonJsonWriter::outputEndDataset(const char *dsname)
 {
     if (dsname && *dsname)
         outputEndNested(dsname);
+}
+
+void CommonJsonWriter::cutFrom(IInterface *location, StringBuffer& databuf)
+{
+    if (flusher)
+        throwUnexpected();
+
+    CommonXmlPosition *position = dynamic_cast<CommonXmlPosition *>(location);
+    if (!position)
+        return;
+    if (position->pos < out.length())
+    {
+        databuf.append(out.length() - position->pos, out.str() + position->pos);
+        out.setLength(position->pos);
+        needDelimiter = position->needDelimiter;
+        indent = position->indent;
+        nestLimit = position->nestLimit;
+    }
 }
 
 void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildren)
