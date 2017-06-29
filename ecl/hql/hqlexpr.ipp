@@ -470,7 +470,7 @@ private:
     bool delayedRead;
     bool implicitlySigned;
     LinkedHqlExpr gpgSignature;
-
+    enum { unchecked, unknown, dirty, clean } dirtyState = unchecked;
 public:
     CFileContents(IFile * _file, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature);
     CFileContents(const char *query, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature);
@@ -496,6 +496,53 @@ public:
     virtual IHqlExpression * queryGpgSignature()
     {
         return gpgSignature.get();
+    }
+    virtual bool isDirty() override
+    {
+        if (dirtyState==unchecked)
+        {
+            dirtyState = unknown;
+            if (sourcePath)
+            {
+                Owned<IPipeProcess> pipe = createPipeProcess();
+                VStringBuffer statusCmd("git status --porcelain -z -- %s", sourcePath->queryStr());
+                if (!pipe->run("git", statusCmd, ".", false, true, false, 0, false))
+                {
+                    WARNLOG("Failed to run git status for %s", sourcePath->queryStr());
+                }
+                else
+                {
+                    try
+                    {
+                        unsigned retcode = pipe->wait();
+                        StringBuffer buf;
+                        Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+                        const size32_t chunkSize = 128;
+                        for (;;)
+                        {
+                            size32_t sizeRead = pipeReader->read(chunkSize, buf.reserve(chunkSize));
+                            if (sizeRead < chunkSize)
+                            {
+                                buf.setLength(buf.length() - (chunkSize - sizeRead));
+                                break;
+                            }
+                        }
+                        if (retcode)
+                            WARNLOG("Failed to run git status for %s: returned %d (%s)", sourcePath->queryStr(), retcode, buf.str());
+                        else if (buf.length())
+                            dirtyState = dirty;
+                        else
+                            dirtyState = clean;
+                    }
+                    catch (IException *e)
+                    {
+                        EXCLOG(e, "Exception running git status");
+                        e->Release();
+                    }
+                }
+            }
+        }
+        return dirtyState==dirty;
     }
 private:
     bool preloadFromFile();
