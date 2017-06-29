@@ -40,7 +40,7 @@ const char * const helpText[] = {
     "    -foption[=value] Set an ecl option (#option)",
     "    -main <ref>   Compile definition <ref> from the source collection",
     "    -syntax       Perform a syntax check of the ECL",
-    "    -platform=hthor Generate code for hthor executable",
+    "    -E            Output preprocessed ECL in xml archive form",
     "    -platform=roxie Generate code for roxie cluster (default)",
     "    -platform=thor  Generate code for thor cluster",
     "",
@@ -77,6 +77,7 @@ const char * const helpText[] = {
     "!   -b            Batch mode.  Each source file is processed in turn.  Output",
     "!                 name depends on the input filename",
     "!   -checkVersion Enable/disable ecl version checking from archives",
+    "    -checkDirty   Report any modified attributes using git status",
     "!   --component   Set the name of the component this is executing on behalf of",
 #ifdef _WIN32
     "!   -brk <n>      Trigger a break point in eclcc after nth allocation",

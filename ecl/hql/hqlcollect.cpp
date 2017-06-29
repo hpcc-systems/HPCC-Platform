@@ -695,6 +695,15 @@ IProperties * CXmlEclElement::getProperties()
     //MORE: This should set individual properties rather than the "flags", or use flags defined in hqlexpr.hpp
     switch (type)
     {
+    case ESTdefinition:
+        {
+            if (elemTree->getPropBool("@dirty", false))
+            {
+                properties.setown(createProperties());
+                properties->setProp(str(flagsAtom), ob_sandbox);
+            }
+            break;
+        }
     case ESTplugin:
         {
             properties.setown(createProperties());

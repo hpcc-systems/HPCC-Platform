@@ -373,6 +373,7 @@ protected:
     bool logTimings = false;
     bool optArchive = false;
     bool optCheckEclVersion = true;
+    bool optCheckDirty = false;
     bool optDebugMemLeak = false;
     bool optEvaluateResult = false;
     bool optGenerateMeta = false;
@@ -1148,6 +1149,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         if (optMaxErrors > 0)
             parseCtx.maxErrors = optMaxErrors;
         parseCtx.unsuppressImmediateSyntaxErrors = optUnsuppressImmediateSyntaxErrors;
+        parseCtx.checkDirty = optCheckDirty;
         if (!instance.archive)
             parseCtx.globalDependTree.setown(createPTree(ipt_none)); //to locate associated manifests, keep separate from user specified MetaOptions
         if (optGenerateMeta || optIncludeMeta)
@@ -1498,7 +1500,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     Owned<ISourcePath> sourcePath = optNoSourcePath ? NULL : createSourcePath(curFilename);
     Owned<IFileContents> queryText = createFileContentsFromFile(curFilename, sourcePath, false, NULL);
     const char * queryTxt = queryText->getText();
-    if (optArchive || optGenerateDepend || optSaveQueryArchive)
+    if (optArchive || optGenerateDepend || optSaveQueryArchive || optCheckDirty)
         instance.archive.setown(createAttributeArchive());
 
     instance.wu.setown(createLocalWorkUnit(NULL));
@@ -1697,7 +1699,48 @@ void EclCC::generateOutput(EclCompileInstance & instance)
                 addManifestResourcesToArchive(instance.archive, resourceManifestFiles.item(i));
 
             if (optArchive)
+            {
+                if (optCheckDirty)
+                {
+                    Owned<IPipeProcess> pipe = createPipeProcess();
+                    if (!pipe->run("git", "git describe --tags --dirty --long", ".", false, true, false, 0, false))
+                    {
+                        WARNLOG("Failed to run git describe");
+                    }
+                    else
+                    {
+                        try
+                        {
+                            unsigned retcode = pipe->wait();
+                            StringBuffer buf;
+                            Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+                            const size32_t chunkSize = 128;
+                            for (;;)
+                            {
+                                size32_t sizeRead = pipeReader->read(chunkSize, buf.reserve(chunkSize));
+                                if (sizeRead < chunkSize)
+                                {
+                                    buf.setLength(buf.length() - (chunkSize - sizeRead));
+                                    break;
+                                }
+                            }
+                            if (retcode)
+                                WARNLOG("Failed to run git describe: returned %d (%s)", retcode, buf.str());
+                            else if (buf.length())
+                            {
+                                buf.replaceString("\n","");
+                                instance.archive->setProp("@git", buf);
+                            }
+                        }
+                        catch (IException *e)
+                        {
+                            EXCLOG(e, "Exception running git describe");
+                            e->Release();
+                        }
+                    }
+                }
                 outputXmlToOutputFile(instance, instance.archive);
+            }
         }
     }
 
@@ -1723,7 +1766,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
     const char * outputFilename = instance.outputFilename;
 
     instance.wu.setown(createLocalWorkUnit(NULL));
-    if (optArchive || optGenerateDepend || optSaveQueryArchive)
+    if (optArchive || optGenerateDepend || optSaveQueryArchive || optCheckDirty)
         instance.archive.setown(createAttributeArchive());
 
     EclRepositoryArray repositories;
@@ -2136,6 +2179,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optCheckEclVersion, "-checkVersion"))
+        {
+        }
+        else if (iter.matchFlag(optCheckDirty, "-checkDirty"))
         {
         }
         else if (iter.matchOption(optDFS, "-dfs") || /*deprecated*/ iter.matchOption(optDFS, "-dali"))
