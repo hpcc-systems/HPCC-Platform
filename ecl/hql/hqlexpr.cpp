@@ -914,7 +914,7 @@ void HqlParseContext::setGatherMeta(const MetaOptions & options)
 }
 
 
-static void setDefinitionText(IPropertyTree * target, const char * prop, IFileContents * contents)
+void HqlParseContext::setDefinitionText(IPropertyTree * target, const char * prop, IFileContents * contents)
 {
     StringBuffer sillyTempBuffer;
     getFileContentText(sillyTempBuffer, contents);  // We can't rely on IFileContents->getText() being null terminated..
@@ -922,6 +922,12 @@ static void setDefinitionText(IPropertyTree * target, const char * prop, IFileCo
 
     ISourcePath * sourcePath = contents->querySourcePath();
     target->setProp("@sourcePath", str(sourcePath));
+    if (checkDirty && contents->isDirty())
+    {
+        target->setPropBool("@dirty", true);
+        Owned<IError> error = createError(CategoryInformation, SeverityInformation, WRN_DEFINITION_SANDBOXED, "Definition has been modified", str(contents->querySourcePath()), 0, 0, 0);
+        orphanedWarnings.append(*error.getClear());
+    }
 }
 
 void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
@@ -8036,6 +8042,7 @@ public:
     virtual size32_t length() { return len; }
     virtual bool isImplicitlySigned() { return contents->isImplicitlySigned(); }
     virtual IHqlExpression * queryGpgSignature() { return contents->queryGpgSignature(); }
+    virtual bool isDirty() override { return contents->isDirty(); }
 protected:
     Linked<IFileContents> contents;
     size32_t offset;
