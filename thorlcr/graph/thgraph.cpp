@@ -1819,7 +1819,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
             if (childGraph == originalChildGraph)
                 originalAvailable = true;
             else
-                stack.append(*childGraph);
+                stack.append(*LINK(childGraph));
         }
     public:
         CChildParallelFactory(CGraphBase *_originalChildGraph) : originalChildGraph(_originalChildGraph)
@@ -1850,7 +1850,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
         {
             Owned<CGraphBase> childGraph = getGraph();
             Owned<IEclGraphResults> results = childGraph->evaluate(parentExtractSz, parentExtract);
-            pushGraph(childGraph.getClear());
+            pushGraph(childGraph);
             return results.getClear();
         }
     };
