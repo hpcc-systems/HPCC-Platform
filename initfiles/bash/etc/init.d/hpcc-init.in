@@ -131,15 +131,15 @@ log "--------------------------"
 #Check for existance of user
 check_user ${user}
 if [ $? -ne 1 ];then
-   log  "$user user does not exist on the system. Exiting ..."
-   echo "$user user does not exits on the system. Exiting ..."
+   log  "User ${user} does not exist on the system. Exiting ..."
+   echo "User ${user} does not exist on the system. Exiting ..."
    exit 3
 fi
 
 check_group ${group}
 if [ $? -ne 1 ];then
-   log  "Group for user ${group} does not exist on the system. Exiting ..."
-   echo "Group for user ${group} does not exist on the system. Exiting ..."
+   log  "Group ${group} does not exist on the system or not able to chgrp (sudo?). Exiting ..."
+   echo "Group ${group} does not exist on the system or not able to chgrp (sudo?). Exiting ..."
    exit 3
 fi
 
