@@ -132,7 +132,7 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter>
+  <chapter id="ESDLDatatypes">
     <title>ESDL Datatypes</title>
 
     <xi:include href="DynamicESDL/DESDL-Mods/ESDLbooleanbool.xml"
