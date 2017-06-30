@@ -81,11 +81,11 @@ void CommonXmlWriter::cutFrom(IInterface *location, StringBuffer& databuf)
     if (position->pos < out.length())
     {
         size32_t startInd = position->pos;
-        if(!position->tagClosed && out.charAt(startInd) == '>')
+        if (!position->tagClosed && out.charAt(startInd) == '>')
             startInd += 1;
-        if(!position->nestLimit && startInd < out.length() && out.charAt(startInd) == '\n')
+        if (!position->nestLimit && startInd < out.length() && out.charAt(startInd) == '\n')
             startInd += 1;
-        if(startInd < out.length())
+        if (startInd < out.length())
             databuf.append(out.length() - startInd, out.str() + startInd);
         out.setLength(position->pos);
         tagClosed = position->tagClosed;
