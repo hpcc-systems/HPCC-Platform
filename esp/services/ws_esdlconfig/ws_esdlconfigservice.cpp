@@ -730,10 +730,15 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
         if (existsESDLDefinition(esdlDefinitionName.str(), esdlver))
         {
             IPropertyTreeIterator * iter = methodstree->getElements("Method");
+            StringBuffer methodxpath;
             ForEach(*iter)
             {
                IPropertyTree &item = iter->query();
                const char * methodName = item.queryProp("@name");
+               methodxpath.setf("Method[@name='%s']", methodName);
+               if (methodstree->getCount(methodxpath) > 1)
+                   throw MakeStringException(-1, "Detected non-unique configuration entry: Method name='%s'", methodName);
+
                if (!existsESDLMethodDef(esdlDefinitionName.str(), esdlver, esdlServiceName, methodName))
                {
                    StringBuffer msg;
