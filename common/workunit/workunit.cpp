@@ -10823,7 +10823,8 @@ void addWorkunitException(IWorkUnit * wu, IError * error, bool removeTimeStamp)
     StringBuffer msg;
     exception->setExceptionCode(error->errorCode());
     exception->setExceptionMessage(error->errorMessage(msg).str());
-    exception->setExceptionSource(queryStatisticsComponentName());
+    const char * source = queryCreatorTypeName(queryStatisticsComponentType());
+    exception->setExceptionSource(source);
 
     exception->setExceptionFileName(error->getFilename());
     exception->setExceptionLineNo(error->getLine());
