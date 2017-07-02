@@ -622,5 +622,7 @@ extern jlib_decl int wait_write_multiple(UnsignedArray  &socks,     //IN   socke
                                         unsigned timeoutMS,         //IN   timeout
                                         UnsignedArray  &readySocks);//OUT  sockets ready to be written
 
+extern jlib_decl void throwJSocketException(int jsockErr);
+
 #endif
 

@@ -1002,7 +1002,8 @@ class CRemoteBase: public CInterface
             try {
                 if (tm.timemon) {
                     unsigned remaining;
-                    tm.timemon->timedout(&remaining);
+                    if (tm.timemon->timedout(&remaining))
+                        throwJSocketException(JSOCKERR_connection_failed);
                     socket.setown(ISocket::connect_timeout(ep,remaining));
                 }
                 else
@@ -1057,18 +1058,27 @@ class CRemoteBase: public CInterface
                 else
                     break;
             }
+            bool timeExpired = false;
             unsigned sleeptime = getRandom()%3000+1000;
-            if (tm.timemon) {
+            if (tm.timemon)
+            {
                 unsigned remaining;
-                tm.timemon->timedout(&remaining);
-                if (remaining/2<sleeptime)
-                    sleeptime = remaining/2;
+                if (tm.timemon->timedout(&remaining))
+                    timeExpired = true;
+                else
+                {
+                    if (remaining/2<sleeptime)
+                        sleeptime = remaining/2;
+                }
             }
-            Sleep(sleeptime);       // prevent multiple retries beating
-            if (ep.port == securitySettings.daFileSrvSSLPort)
-                PROGLOG("Retrying SECURE connect");
-            else
-                PROGLOG("Retrying connect");
+            if (!timeExpired)
+            {
+                Sleep(sleeptime);       // prevent multiple retries beating
+                if (ep.port == securitySettings.daFileSrvSSLPort)
+                    PROGLOG("Retrying SECURE connect");
+                else
+                    PROGLOG("Retrying connect");
+            }
         }
         if (ConnectionTable)
             ConnectionTable->addLink(ep,socket);
