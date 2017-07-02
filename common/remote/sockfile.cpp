@@ -950,6 +950,27 @@ static Semaphore                 treeCopySem;
 
 #define DEBUGSAMEIP false
 
+static void cleanupSocket(ISocket *sock)
+{
+    if (!sock)
+        return;
+    try
+    {
+        sock->shutdown();
+    }
+    catch (IException *e)
+    {
+        e->Release();
+    }
+    try
+    {
+        sock->close();
+    }
+    catch (IException *e)
+    {
+        e->Release();
+    }
+}
 
 //---------------------------------------------------------------------------
 
@@ -1011,11 +1032,24 @@ class CRemoteBase: public CInterface
                 if (ep.port == securitySettings.daFileSrvSSLPort)
                 {
 #ifdef _USE_OPENSSL
-                    Owned<ISecureSocket> ssock = createSecureSocket(socket.getClear(), ClientSocket);
-                    int status = ssock->secure_connect();
-                    if (status < 0)
+                    Owned<ISecureSocket> ssock;
+                    try
+                    {
+                        ssock.setown(createSecureSocket(socket.getClear(), ClientSocket));
+                        int status = ssock->secure_connect();
+                        if (status < 0)
+                            throw MakeStringException(-1, "Failure to establish secure connection");
+                        socket.setown(ssock.getLink());
+                    }
+                    catch (IException *e)
+                    {
+                        cleanupSocket(socket);
+                        socket.clear();
+                        cleanupSocket(ssock);
+                        ssock.clear();
+                        e->Release();
                         throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
-                    socket.setown(ssock.getLink());
+                    }
 #else
                     throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
 #endif
@@ -1052,7 +1086,7 @@ class CRemoteBase: public CInterface
                         WARNLOG("Remote file authenticate %s for %s ",e->errorMessage(err).str(),ep.getUrlStr(eps.clear()).str());
                         e->Release();
                         if (!retries)
-                            break;
+                            break; // MCK - is this a warning or an error ? If an error, should we close and throw here ?
                     }
                 }
                 else
@@ -5729,28 +5763,6 @@ public:
     IPooledThread *createCommandProcessor()
     {
         return new cCommandProcessor();
-    }
-
-    void cleanupSocket(ISocket *sock)
-    {
-        if (!sock)
-            return;
-        try
-        {
-            sock->shutdown();
-        }
-        catch (IException *e)
-        {
-            e->Release();
-        }
-        try
-        {
-            sock->close();
-        }
-        catch (IException *e)
-        {
-            e->Release();
-        }
     }
 
     void run(DAFSConnectCfg _connectMethod, SocketEndpoint &listenep, unsigned sslPort)
