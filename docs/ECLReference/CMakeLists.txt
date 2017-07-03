@@ -20,7 +20,8 @@ SET(XSLTPROC_DEPENDENCIES)
 FOREACH(T ${Current_Targets})
    IF("${T}" MATCHES ".*ECLLanguageReference.*" OR
       "${T}" MATCHES ".*ECLProgrammersGuide.*" OR
-      "${T}" MATCHES ".*ECLStandardLibraryReference.*")
+      "${T}" MATCHES ".*ECLStandardLibraryReference.*" OR
+      "${T}" MATCHES ".*ESDL_LangRef.*")
       LIST(APPEND XSLTPROC_DEPENDENCIES  ${T})
    ENDIF()
 ENDFOREACH()

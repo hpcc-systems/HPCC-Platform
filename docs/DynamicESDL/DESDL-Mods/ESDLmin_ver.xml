@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect2 id="ESDL_Attributes_min_ver">
+<sect1 id="ESDL_Attributes_min_ver">
   <title><emphasis role="bold">min_ver</emphasis></title>
 
   <para><indexterm>
@@ -13,4 +13,4 @@
   <para><emphasis role="bold">Example:</emphasis></para>
 
   <programlisting> [min_ver("1.03")] bool IsValid;   </programlisting>
-</sect2>
+</sect1>

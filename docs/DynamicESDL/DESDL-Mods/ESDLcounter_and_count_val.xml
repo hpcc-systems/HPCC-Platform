@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect2 id="ESDL_Attributes_counter-count_val">
+<sect1 id="ESDL_Attributes_counter-count_val">
   <title>counter <indexterm>
       <primary>counter</primary>
     </indexterm>and count_val</title>
@@ -26,4 +26,4 @@
 
   <programlisting>[counter] ESParray&lt;MyRecord, Record&gt; Records;
 [count_val] int TotalFound;   </programlisting>
-</sect2>
+</sect1>
