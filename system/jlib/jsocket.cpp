@@ -674,6 +674,11 @@ typedef union {
 #define INET6_ADDRSTRLEN 65
 #endif
 
+extern jlib_decl void throwJSocketException(int jsockErr)
+{
+    THROWJSOCKEXCEPTION2(jsockErr);
+}
+
 inline void LogErr(unsigned err,unsigned ref,const char *info,unsigned lineno,const char *tracename)
 {
     if (err)
