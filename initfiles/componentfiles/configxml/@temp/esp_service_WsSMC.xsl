@@ -403,7 +403,6 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
             <QueueLabel>dfuserver_queue</QueueLabel>
             <MonitorQueueLabel>dfuserver_monitor_queue</MonitorQueueLabel>
-            <RootFolder><xsl:choose><xsl:when test="not($isLinuxInstance)">c:\</xsl:when><xsl:otherwise>/c$/</xsl:otherwise></xsl:choose>thordata</RootFolder>
         </EspService>
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">
             <xsl:call-template name="bindAuthentication">

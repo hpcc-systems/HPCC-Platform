@@ -130,9 +130,6 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
     xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/MonitorQueueLabel", process, service);
     cfg->getProp(xpath.str(), m_MonitorQueueLabel);
 
-    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/RootFolder", process, service);
-    cfg->getProp(xpath.str(), m_RootFolder);
-
     directories.set(cfg->queryPropTree("Software/Directories"));
 
     StringBuffer prop;
@@ -140,9 +137,6 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
     PrintLog(prop.str());
     prop.clear();
     prop.appendf("monitorQueueLabel=%s", m_MonitorQueueLabel.str());
-    PrintLog(prop.str());
-    prop.clear();
-    prop.appendf("rootFolder=%s", m_RootFolder.str());
     PrintLog(prop.str());
 
     if (!daliClientActive())
