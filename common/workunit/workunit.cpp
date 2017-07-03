@@ -6090,6 +6090,8 @@ void CLocalWorkUnit::clearExceptions()
         p->removeProp(xpath);
         exceptions.remove(idx);
     }
+    if (exceptions.length() == 0)
+        p->removeProp("Exceptions");
 }
 
 
