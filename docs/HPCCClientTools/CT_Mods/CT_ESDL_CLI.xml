@@ -121,6 +121,12 @@
               </row>
 
               <row>
+                <entry>unbind-method</entry>
+
+                <entry>Remove ESDL based method binding on target ESP.</entry>
+              </row>
+
+              <row>
                 <entry>get-binding</entry>
 
                 <entry>Get ESDL binding.</entry>
@@ -400,7 +406,7 @@
                   <entry>servicename</entry>
 
                   <entry>The name of the service to publish. Optional if the
-                  ESDL definition contains only one service. </entry>
+                  ESDL definition contains only one service.</entry>
                 </row>
 
                 <row>
@@ -662,7 +668,7 @@
 
                 <entry>The Name of the ESDL Service (as defined in the ESDL
                 Definition). Optional if the ESDL definition contains only one
-                service. </entry>
+                service.</entry>
               </row>
 
               <row>
@@ -1125,6 +1131,114 @@
         <para><emphasis role="bold">Example:</emphasis></para>
 
         <programlisting>esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+      </sect2>
+
+      <sect2 id="CT_ESDL_CLI_esdl_unbind-method" role="brk">
+        <title>esdl unbind-method</title>
+
+        <para><emphasis role="bold">esdl unbind-method
+        &lt;TargetESPProcessName&gt; &lt;TargetESPBindingName&gt;
+        &lt;TargetServiceName&gt; &lt;TargetServiceDefVersion&gt;
+        &lt;TargetMethodName&gt; [options]</emphasis></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="140.55pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry>TargetESPProcessName</entry>
+
+                <entry>The target ESP Process name</entry>
+              </row>
+
+              <row>
+                <entry>TargetESPBindingName</entry>
+
+                <entry>The target ESP binding name associated with this
+                service</entry>
+              </row>
+
+              <row>
+                <entry>TargetServiceName</entry>
+
+                <entry>The name of the Service as defined in ESDL</entry>
+              </row>
+
+              <row>
+                <entry>TargetServiceDefVersion</entry>
+
+                <entry>The version of the target service ESDL
+                definition</entry>
+              </row>
+
+              <row>
+                <entry>TargetMethodName</entry>
+
+                <entry>The name of the target method</entry>
+              </row>
+
+              <row>
+                <entry>-s, --server</entry>
+
+                <entry>The IP Address or hostname of ESP server running ECL
+                Watch services</entry>
+              </row>
+
+              <row>
+                <entry>--port</entry>
+
+                <entry>The ECL Watch services port (Default is 8010)</entry>
+              </row>
+
+              <row>
+                <entry>-u, --username</entry>
+
+                <entry>The username (if necessary)</entry>
+              </row>
+
+              <row>
+                <entry>-pw, --password</entry>
+
+                <entry>The password (if necessary)</entry>
+              </row>
+
+              <row>
+                <entry>--version &lt;ver&gt;</entry>
+
+                <entry>ESDL service version</entry>
+              </row>
+
+              <row>
+                <entry>--help</entry>
+
+                <entry>display usage information for the given command</entry>
+              </row>
+
+              <row>
+                <entry>-v, --verbose</entry>
+
+                <entry>Output additional tracing information</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>Use this command to unbind a method configuration currently
+        associated with a given ESDL binding. </para>
+
+        <para>To unbind a method, provide the target ESP process name (esp
+        which hosts the service.). It is also necessary to provide the Port on
+        which this service is configured to run (ESP Binding), and the name of
+        the method you are unbinding. </para>
+
+        <para></para>
+
+        <para><emphasis role="bold">Example:</emphasis></para>
+
+        <programlisting>esdl unbind-method myesp mybinding WsMyService mymethod </programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_get-binding" role="brk">
