@@ -1043,12 +1043,14 @@ class CRemoteBase: public CInterface
                     }
                     catch (IException *e)
                     {
-                        cleanupSocket(socket);
-                        socket.clear();
                         cleanupSocket(ssock);
                         ssock.clear();
+                        cleanupSocket(socket);
+                        socket.clear();
+                        StringBuffer eMsg;
+                        e->errorMessage(eMsg);
                         e->Release();
-                        throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
+                        throw createDafsException(DAFSERR_connection_failed, eMsg.str());
                     }
 #else
                     throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
@@ -1374,17 +1376,6 @@ public:
     {
         ep = _ep;
         connectMethod = securitySettings.connectMethod;
-    }
-
-    void connect()
-    {
-        CriticalBlock block(crit);
-        CriticalBlock block2(CConnectionTable::crit); // this shouldn't ever block
-        if (AuthenticationEnabled) {
-            SocketEndpoint tep(ep);
-            setDafsEndpointPort(tep);
-            connectSocket(tep);
-        }
     }
 
     void disconnect()
