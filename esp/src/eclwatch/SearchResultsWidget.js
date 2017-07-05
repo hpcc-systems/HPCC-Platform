@@ -436,6 +436,7 @@ define([
             }
 
             var searchECL = false;
+            var searchECLText = false;
             var searchDFU = false;
             var searchFile = false;
             var searchQuery = false;
@@ -443,6 +444,7 @@ define([
             if (this.searchText.indexOf("ecl:") === 0) {
                 this.selectChild(this.eclTab);
                 searchECL = true;
+                searchECLText = true;
                 searchText = this.searchText.substring(4);
             } else if (this.searchText.indexOf("dfu:") === 0) {
                 this.selectChild(this.dfuTab);
@@ -477,6 +479,8 @@ define([
                 searchArray.push(WsWorkunits.WUQuery({ request: { Owner: searchText } }).then(function (response) {
                     context.loadWUQueryResponse(context.i18n.Owner, response);
                 }));
+            }
+            if (searchECLText) {
                 searchArray.push(WsWorkunits.WUQuery({ request: { ECL: searchText } }).then(function (response) {
                     context.loadWUQueryResponse(context.i18n.ECL, response);
                 }));
