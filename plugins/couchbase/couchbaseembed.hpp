@@ -216,26 +216,28 @@ namespace couchbaseembed
         CouchbaseConnection(const CouchbaseConnection &);
     };
 
+    enum PathNodeType {CPNTScalar, CPNTDataset, CPNTSet};
+
     struct PathTracker
     {
         StringBuffer    nodeName;
-        bool            isDataset;
-        unsigned int    currentDatasetRecord;
-        unsigned int    childDatasetRowCount;
-        unsigned int    childDatasetRowsProcessed;
+        PathNodeType    nodeType;
+        unsigned int    currentChildIndex;
+        unsigned int    childCount;
+        unsigned int    childrenProcessed;
 
         // Simple constructor
         PathTracker()
         {}
 
         // Constructor given node name and dataset bool
-        PathTracker(const StringBuffer& _nodeName, bool _isDataset)
-            :   nodeName(_nodeName), isDataset(_isDataset), currentDatasetRecord(0), childDatasetRowCount(0), childDatasetRowsProcessed(0)
+        PathTracker(const StringBuffer& _nodeName, PathNodeType _nodeType)
+            :   nodeName(_nodeName), nodeType(_nodeType), currentChildIndex(0), childCount(0), childrenProcessed(0)
         {}
 
         // Copy constructor
         PathTracker(const PathTracker& other)
-            :   nodeName(other.nodeName), isDataset(other.isDataset), currentDatasetRecord(other.currentDatasetRecord), childDatasetRowCount(other.childDatasetRowCount), childDatasetRowsProcessed(other.childDatasetRowsProcessed)
+            :   nodeName(other.nodeName), nodeType(other.nodeType), currentChildIndex(other.currentChildIndex), childCount(other.childCount), childrenProcessed(other.childrenProcessed)
         {}
     };
 
@@ -258,22 +260,12 @@ namespace couchbaseembed
         virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char * &result);
         virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar * &result);
         virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value);
-        virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll)
-        {
-            UNSUPPORTED("Embedded Couchbase support error: processBeginSet() not supported");
-        }
-        virtual bool processNextSet(const RtlFieldInfo * field)
-        {
-            UNSUPPORTED("Embedded Couchbase support error: processNextSet() not supported");
-            return false;
-        }
+        virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll);
+        virtual bool processNextSet(const RtlFieldInfo * field);
         virtual void processBeginDataset(const RtlFieldInfo * field);
         virtual void processBeginRow(const RtlFieldInfo * field);
         virtual bool processNextRow(const RtlFieldInfo * field);
-        virtual void processEndSet(const RtlFieldInfo * field)
-        {
-            UNSUPPORTED("Embedded Couchbase support error: processEndSet() not supported");
-        }
+        virtual void processEndSet(const RtlFieldInfo * field);
         virtual void processEndDataset(const RtlFieldInfo * field);
         virtual void processEndRow(const RtlFieldInfo * field);
 
